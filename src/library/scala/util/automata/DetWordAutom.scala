@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.automata
 
-
-import scala.collection.{Set, Map}
+import scala.collection.{ mutable, immutable }
 
 /** A deterministic automaton. States are integers, where
  *  0 is always the only initial state. Transitions are represented
@@ -24,21 +21,14 @@ import scala.collection.{Set, Map}
  *  @version 1.0
  */
 abstract class DetWordAutom[T <: AnyRef] {
-
   val nstates: Int
   val finals: Array[Int]
-  val delta: Array[Map[T,Int]]
+  val delta: Array[mutable.Map[T, Int]]
   val default: Array[Int]
 
-  def isFinal(q: Int) = finals(q) != 0
-  def isSink(q: Int) = delta(q).isEmpty && default(q) == q
-
-  def next(q: Int, label: T) = {
-    delta(q).get(label) match {
-      case Some(p) => p
-      case _       => default(q)
-    }
-  }
+  def isFinal(q: Int)        = finals(q) != 0
+  def isSink(q: Int)         = delta(q).isEmpty && default(q) == q
+  def next(q: Int, label: T) = delta(q).getOrElse(label, default(q))
 
   override def toString() = {
     val sb = new StringBuilder("[DetWordAutom  nstates=")

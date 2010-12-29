@@ -9,9 +9,7 @@ package html
 package page
 
 import model._
-
-import scala.xml.{NodeSeq, Text}
-import scala.collection.mutable.HashSet
+import scala.xml.{ NodeSeq, Text }
 
 class Template(tpl: DocTemplateEntity) extends HtmlPage {
 

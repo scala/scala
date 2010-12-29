@@ -8,10 +8,10 @@ package interpreter
 
 import xml.{ XML, Group, Node, NodeSeq }
 import XMLCompletion._
-import scala.collection.mutable.HashMap
+import scala.collection.{ mutable, immutable }
 
 class XMLCompletion(root: Node) extends CompletionAware {
-  private val nodeCache = new HashMap[String, Node]
+  private val nodeCache = new mutable.HashMap[String, Node]
   private def getNode(s: String): Option[Node] = {
     completions // make sure cache is populated
     nodeCache get s

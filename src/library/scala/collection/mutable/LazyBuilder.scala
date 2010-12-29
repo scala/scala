@@ -6,11 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package mutable
-
-import immutable.{List, Nil}
 
 /** A builder that constructs its result lazily. Iterators or iterables to
  *  be added to this builder with `++=` are not evaluated until `result` is called.

@@ -7,10 +7,9 @@
 \*                                                                      */
 
 
-
 package scala.collection
-import generic._
 
+import generic._
 import mutable.ListBuffer
 import immutable.List
 import scala.util.control.Breaks._

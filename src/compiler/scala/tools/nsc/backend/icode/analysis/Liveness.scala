@@ -9,7 +9,7 @@ package backend.icode
 package analysis
 
 import scala.collection.{ mutable, immutable }
-import scala.collection.immutable.{ Set, ListSet }
+import immutable.ListSet
 
 /**
  * Compute liveness information for local variables.

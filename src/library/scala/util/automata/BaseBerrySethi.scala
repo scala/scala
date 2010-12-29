@@ -10,12 +10,8 @@
 
 package scala.util.automata
 
-
 import scala.util.regexp.{ Base }
-
 import scala.collection.{ mutable, immutable }
-import mutable.{ HashMap }
-import immutable.{ Set }
 
 // todo: replace global variable pos with acc
 
@@ -30,7 +26,7 @@ abstract class BaseBerrySethi {
   protected var pos = 0
 
   // results which hold all info for the NondetWordAutomaton
-  protected var follow: HashMap[Int, Set[Int]] = _
+  protected var follow: mutable.HashMap[Int, Set[Int]] = _
 
   protected var finalTag: Int = _
 

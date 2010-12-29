@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import generic._
-import collection.immutable.Stream
 import TraversableView.NoBuilder
 
 /** A template trait for non-strict views of iterable collections.

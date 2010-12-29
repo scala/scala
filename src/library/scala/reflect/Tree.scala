@@ -7,10 +7,7 @@
 \*                                                                      */
 
 
-
 package scala.reflect
-
-import collection.immutable.{List, Nil}
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 abstract class Tree

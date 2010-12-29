@@ -7,10 +7,9 @@
 package scala.tools.nsc
 package util
 
-import java.io.{ File => JFile }
 import java.net.URL
-
-import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
+import scala.collection.{ mutable, immutable }
+import mutable.ListBuffer
 import io.{ File, Directory, Path, AbstractFile }
 import scala.tools.util.StringOps.splitWhere
 import Path.isJarOrZip

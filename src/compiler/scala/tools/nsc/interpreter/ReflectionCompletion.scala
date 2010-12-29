@@ -9,8 +9,6 @@ package interpreter
 import java.lang.reflect
 import reflect.{ Modifier, AccessibleObject }
 import Modifier.{ isPrivate, isProtected, isStatic }
-import scala.reflect.NameTransformer
-import scala.collection.mutable.HashMap
 import ReflectionCompletion._
 
 trait ReflectionCompletion extends CompletionAware {

@@ -7,10 +7,11 @@
 package scala.tools.nsc
 package matching
 
+import PartialFunction._
+import scala.collection.{ mutable, immutable }
 import util.Position
 import transform.ExplicitOuter
 import symtab.Flags
-import collection._
 import mutable.ListBuffer
 import immutable.IntMap
 import annotation.elidable
@@ -28,7 +29,6 @@ trait ParallelMatching extends ast.TreeDSL
   import CODE._
   import Types._
   import Debug._
-  import PartialFunction._
 
   /** Transition **/
   def toPats(xs: List[Tree]): List[Pattern] = xs map Pattern.apply

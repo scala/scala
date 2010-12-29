@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package backend.icode.analysis
 
-import scala.collection.mutable.{Map, HashMap, Set, HashSet, LinkedHashSet}
+import scala.collection.{ mutable, immutable }
 
 /** A generic framework for data flow analysis.
  */
@@ -16,11 +16,10 @@ trait DataFlowAnalysis[L <: SemiLattice] {
   type P <: ProgramPoint[P]
   val  lattice: L
 
-  val worklist: Set[P] = new LinkedHashSet
-
-  val in:  Map[P, lattice.Elem] = new HashMap
-  val out: Map[P, lattice.Elem] = new HashMap
-  val visited: HashSet[P] = new HashSet
+  val worklist: mutable.Set[P]          = new mutable.LinkedHashSet
+  val in:  mutable.Map[P, lattice.Elem] = new mutable.HashMap
+  val out: mutable.Map[P, lattice.Elem] = new mutable.HashMap
+  val visited: mutable.HashSet[P]       = new mutable.HashSet
 
   /** collect statistics? */
   var stat = true

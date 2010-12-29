@@ -6,10 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
+
 import generic._
-import immutable.{List, Stream}
+import immutable.{ List, Stream }
 import annotation.unchecked.uncheckedVariance
 
 /** A template trait for iterable collections of type `Iterable[A]`.

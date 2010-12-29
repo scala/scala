@@ -10,8 +10,7 @@
 
 package scala.util.automata
 
-import scala.collection.{ immutable, mutable, Map }
-import immutable.{ Set }
+import scala.collection.{ immutable, mutable }
 import mutable.{ HashSet, HashMap }
 import scala.util.regexp.WordExp
 
@@ -25,17 +24,14 @@ import scala.util.regexp.WordExp
 abstract class WordBerrySethi extends BaseBerrySethi {
   override val lang: WordExp
 
-  import lang.{ Alt, Eps, Letter, Meta, RegExp, Sequ, Star }
+  import lang.{ Alt, Eps, Letter, Meta, RegExp, Sequ, Star, _labelT }
 
-  protected var labels: HashSet[lang._labelT] = _
+  protected var labels: HashSet[_labelT]                   = _
   // don't let this fool you, only labelAt is a real, surjective mapping
-  protected var labelAt: immutable.Map[Int, lang._labelT] = _ // new alphabet "gamma"
-
-  protected var deltaq: Array[HashMap[lang._labelT, List[Int]]] = _ // delta
-
-  protected var defaultq: Array[List[Int]] = _ // default transitions
-
-  protected var initials: Set[Int] = _
+  protected var labelAt: Map[Int, _labelT]                 = _ // new alphabet "gamma"
+  protected var deltaq: Array[HashMap[_labelT, List[Int]]] = _ // delta
+  protected var defaultq: Array[List[Int]]                 = _ // default transitions
+  protected var initials: Set[Int]                         = _
 
   /** Computes <code>first(r)</code> where the word regexp <code>r</code>.
    *
@@ -75,13 +71,13 @@ abstract class WordBerrySethi extends BaseBerrySethi {
    */
 
   /** called at the leaves of the regexp */
-  protected def seenLabel(r: RegExp, i: Int, label: lang._labelT) {
+  protected def seenLabel(r: RegExp, i: Int, label: _labelT) {
     labelAt = labelAt.updated(i, label)
     this.labels += label
   }
 
   // overridden in BindingBerrySethi
-  protected def seenLabel(r: RegExp, label: lang._labelT): Int = {
+  protected def seenLabel(r: RegExp, label: _labelT): Int = {
     pos += 1
     seenLabel(r, pos, label)
     pos
@@ -95,7 +91,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
 
-  protected def makeTransition(src: Int, dest: Int, label: lang._labelT) {
+  protected def makeTransition(src: Int, dest: Int, label: _labelT) {
     val q = deltaq(src)
     q.update(label, dest :: q.getOrElse(label, Nil))
   }
@@ -114,11 +110,11 @@ abstract class WordBerrySethi extends BaseBerrySethi {
 
   protected def initializeAutom() {
     finals   = immutable.Map.empty[Int, Int]                    // final states
-    deltaq   = new Array[HashMap[lang._labelT, List[Int]]](pos) // delta
+    deltaq   = new Array[HashMap[_labelT, List[Int]]](pos) // delta
     defaultq = new Array[List[Int]](pos)                        // default transitions
 
     for (j <- 0 until pos) {
-      deltaq(j) = HashMap[lang._labelT, List[Int]]()
+      deltaq(j) = HashMap[_labelT, List[Int]]()
       defaultq(j) = Nil
     }
   }
@@ -129,7 +125,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       else makeTransition(j, k, labelAt(k))
     }
 
-  def automatonFrom(pat: RegExp, finalTag: Int): NondetWordAutom[lang._labelT] = {
+  def automatonFrom(pat: RegExp, finalTag: Int): NondetWordAutom[_labelT] = {
     this.finalTag = finalTag
 
     pat match {
@@ -150,14 +146,14 @@ abstract class WordBerrySethi extends BaseBerrySethi {
         val finalsArr   = 0 until pos map (k => finals.getOrElse(k, 0)) toArray  // 0 == not final
         val initialsArr = initials.toArray
 
-        val deltaArr: Array[Map[lang._labelT, immutable.BitSet]] =
+        val deltaArr: Array[mutable.Map[_labelT, immutable.BitSet]] =
           (0 until pos map { x =>
             HashMap(delta1(x).toSeq map { case (k, v) => k -> immutable.BitSet(v: _*) } : _*)
-          }) toArray
+          }).toArray
 
         val defaultArr  = 0 until pos map (k => immutable.BitSet(defaultq(k): _*)) toArray
 
-        new NondetWordAutom[lang._labelT] {
+        new NondetWordAutom[_labelT] {
           val nstates  = pos
           val labels   = WordBerrySethi.this.labels.toList
           val initials = initialsArr

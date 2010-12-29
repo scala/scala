@@ -6,21 +6,21 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.automata
+
+import scala.collection.{ mutable, immutable }
 
 class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
   import nfa.labels
-  import collection.{ mutable, Map }
-  import collection.immutable.BitSet
+  import immutable.BitSet
 
   def selectTag(Q: BitSet, finals: Array[Int]) =
     Q map finals filter (_ > 0) min
 
   def determinize: DetWordAutom[T] = {
     // for assigning numbers to bitsets
-    var indexMap    = Map[BitSet, Int]()
-    var invIndexMap = Map[Int, BitSet]()
+    var indexMap    = collection.Map[BitSet, Int]()
+    var invIndexMap = collection.Map[Int, BitSet]()
     var ix = 0
 
     // we compute the dfa with states = bitsets
@@ -29,10 +29,10 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
 
     var states = Set(q0, sink)    // initial set of sets
     val delta    = new mutable.HashMap[BitSet, mutable.HashMap[T, BitSet]]
-    var deftrans = Map(q0 -> sink, sink -> sink)  // initial transitions
-    var finals: Map[BitSet, Int]  = Map()
-
+    var deftrans = mutable.Map(q0 -> sink, sink -> sink)  // initial transitions
+    var finals: mutable.Map[BitSet, Int]  = mutable.Map()
     val rest = new mutable.Stack[BitSet]
+
     rest.push(sink, q0)
 
     def addFinal(q: BitSet) {
@@ -40,8 +40,8 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
         finals = finals.updated(q, selectTag(q, nfa.finals))
     }
     def add(Q: BitSet) {
-      if (!states.contains(Q)) {
-        states = states + Q
+      if (!states(Q)) {
+        states += Q
         rest push Q
         addFinal(Q)
       }
@@ -74,7 +74,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
 
     // create DetWordAutom, using indices instead of sets
     val nstatesR = states.size
-    val deltaR = new Array[Map[T,Int]](nstatesR)
+    val deltaR = new Array[mutable.Map[T, Int]](nstatesR)
     val defaultR = new Array[Int](nstatesR)
     val finalsR = new Array[Int](nstatesR)
 
@@ -83,7 +83,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
       val trans = delta(Q)
       val transDef = deftrans(Q)
       val qDef = indexMap(transDef)
-      val ntrans = new mutable.HashMap[T,Int]()
+      val ntrans = new mutable.HashMap[T, Int]()
 
       for ((label, value) <- trans) {
         val p = indexMap(value)

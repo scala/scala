@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection.generic
-import scala.collection._
 
-import mutable.{Buffer, StringBuilder}
-import immutable.{List, Stream}
-// import immutable.{List, Nil, ::, Stream}
+import scala.collection._
+import mutable.{ Buffer, StringBuilder }
+import immutable.{ List, Stream }
 
 /** <p>
  *    This trait implements a forwarder for traversable objects. It forwards
