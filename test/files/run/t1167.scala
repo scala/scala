@@ -8,6 +8,13 @@ trait Test1 {
   }
 }
 
+/* getName
+ *   Returns the binary name of the class if this class object represents a
+ *   reference type that is not an array type.
+ * getSimpleName
+ *   Returns the simple name of the underlying class as given in the source
+ *   code. Returns an empty string if the underlying class is anonymous.
+ */
 abstract class Foo {
   override def toString = getClass.getSimpleName
 

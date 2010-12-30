@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2010 LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -113,7 +113,7 @@ abstract class Inliners extends SubComponent {
     	override def default(k: Symbol) = 0
     }
 
-    def analyzeMethod(m: IMethod): Unit = {
+    def analyzeMethod(m: IMethod) {
       var sizeBeforeInlining = if (m.code ne null) m.code.blocks.length else 0
       var instrBeforeInlining = if (m.code ne null) m.code.blocks.foldLeft(0)(_ + _.length)  else 0
       var retry = false
@@ -240,6 +240,7 @@ abstract class Inliners extends SubComponent {
       case nme.foreach | nme.filter | nme.withFilter | nme.map | nme.flatMap => true
       case _                                                                 => false
     }
+
     private def isHigherOrderMethod(sym: Symbol) =
       sym.isMethod && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists isFunctionType)
 

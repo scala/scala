@@ -236,11 +236,11 @@ object ScriptRunner {
    */
   private def runCompiled(
     settings: GenericRunnerSettings,
-		compiledLocation: String,
-		scriptArgs: List[String]): Boolean =
-	{
-	  val pr = new PathResolver(settings)
-	  val classpath = File(compiledLocation).toURL +: pr.asURLs
+    compiledLocation: String,
+    scriptArgs: List[String]): Boolean =
+  {
+    val pr = new PathResolver(settings)
+    val classpath = File(compiledLocation).toURL +: pr.asURLs
 
     ObjectRunner.runAndCatch(classpath, scriptMain(settings), scriptArgs) match {
       case Left(ex) => ex.printStackTrace() ; false
@@ -255,13 +255,13 @@ object ScriptRunner {
    */
   def runScript(
     settings: GenericRunnerSettings,
-		scriptFile: String,
-		scriptArgs: List[String]): Boolean =
-	{
-	  if (File(scriptFile).isFile)
-	    withCompiledScript(settings, scriptFile) { runCompiled(settings, _, scriptArgs) }
-	  else
-	    throw new IOException("no such file: " + scriptFile)
+    scriptFile: String,
+    scriptArgs: List[String]): Boolean =
+  {
+    if (File(scriptFile).isFile)
+      withCompiledScript(settings, scriptFile) { runCompiled(settings, _, scriptArgs) }
+    else
+      throw new IOException("no such file: " + scriptFile)
   }
 
   /** Calls runScript and catches the enumerated exceptions, routing
@@ -269,11 +269,11 @@ object ScriptRunner {
    */
   def runScriptAndCatch(
     settings: GenericRunnerSettings,
-		scriptFile: String,
-		scriptArgs: List[String]): Either[Throwable, Boolean] =
-	{
-	  try Right(runScript(settings, scriptFile, scriptArgs))
-	  catch { case e => Left(unwrap(e)) }
+    scriptFile: String,
+    scriptArgs: List[String]): Either[Throwable, Boolean] =
+  {
+    try Right(runScript(settings, scriptFile, scriptArgs))
+    catch { case e => Left(unwrap(e)) }
   }
 
   /** Run a command
@@ -283,8 +283,8 @@ object ScriptRunner {
   def runCommand(
     settings: GenericRunnerSettings,
     command: String,
-		scriptArgs: List[String]) : Boolean =
-	{
+    scriptArgs: List[String]): Boolean =
+  {
     val scriptFile = File.makeTemp("scalacmd", ".scala")
     // save the command to the file
     scriptFile writeAll command

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2010 LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -7,18 +7,9 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.nio.ByteBuffer
-
 import scala.collection.{ mutable, immutable }
-import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.symtab._
-import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
 import ch.epfl.lamp.fjbg._
-import JAccessFlags._
-import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
-import java.io.{ DataOutputStream }
-import reflect.generic.{ PickleFormat, PickleBuffer }
 
 trait GenJVMUtil {
   self: GenJVM =>

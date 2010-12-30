@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2010 LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -1196,13 +1196,17 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else packSym
     }
 
-    /** Return the original enclosing method of this symbol. It
-     *  should return the same thing as enclMethod when called before
-     *  lambda lift, but it preserves the original nesting when called afterwards.
+    /** Return the original enclosing method of this symbol. It should return
+     *  the same thing as enclMethod when called before lambda lift,
+     *  but it preserves the original nesting when called afterwards.
      */
     def originalEnclosingMethod: Symbol = {
       if (isMethod) this
-      else originalOwner.getOrElse(this, rawowner).originalEnclosingMethod
+      else {
+        val owner = originalOwner.getOrElse(this, rawowner)
+        if (isLocalDummy) owner.enclClass.primaryConstructor
+        else owner.originalEnclosingMethod
+      }
     }
 
     /** The top-level class containing this symbol */
@@ -1260,16 +1264,19 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else NoSymbol
     }
 
-    /** A helper method that factors the common code used the discover a companion module of a class.
-     * If a companion module exists, its symbol is returned, otherwise, `NoSymbol` is returned.
-     * The method assumes that `this` symbol has already been checked to be a class (using `isClass`).
+    /** A helper method that factors the common code used the discover a
+     *  companion module of a class. If a companion module exists, its symbol is
+     *  returned, otherwise, `NoSymbol` is returned. The method assumes that
+     *  `this` symbol has already been checked to be a class (using `isClass`).
      *
-     * After refchecks nested objects get transformed to lazy vals so we filter on LAZY flag as well.
-     * @note The resident compiler may run many times over, and symbols may be reused. Therefore, a
-     *       module symbol that has been translated to a lazy val by refchecks is not guaranteed to
-     *       have MODULE set on the next run (even before refcheck). Flags are not part of symbol
-     *       history. Instead we rely on the fact that a synthetic lazy value must have been a
-     *       module.
+     *  After refchecks nested objects get transformed to lazy vals so we
+     *  filter on LAZY flag as well.
+     * @note The resident compiler may run many times over, and symbols may be
+     *       reused. Therefore, a module symbol that has been translated to a
+     *       lazy val by refchecks is not guaranteed to have MODULE set on the
+     *       next run (even before refcheck). Flags are not part of symbol
+     *       history. Instead we rely on the fact that a synthetic lazy value
+     *       must have been a  module.
      */
     private final def companionModule0: Symbol = {
       def isSyntheticLazy(sym: Symbol) =
@@ -1310,8 +1317,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (isModuleClass) companionClass else companionModule.moduleClass
 
     /**
-     * Returns the rawInfo of the owner. If the current phase has flat classes, it first
-     * applies all pending type maps to this symbol.
+     * Returns the rawInfo of the owner. If the current phase has flat classes,
+     * it first applies all pending type maps to this symbol.
      *
      * assume this is the ModuleSymbol for B in the following definition:
      *   package p { class A { object B { val x = 1 } } }
