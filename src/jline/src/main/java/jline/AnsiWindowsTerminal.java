@@ -84,7 +84,7 @@ public class AnsiWindowsTerminal
     }
 
     @Override
-    public boolean newlineAtWrapNeeded() {
+    public boolean hasWeirdWrap() {
         return false;
     }
 }

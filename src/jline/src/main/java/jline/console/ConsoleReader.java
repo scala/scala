@@ -326,6 +326,8 @@ public class ConsoleReader
         if (buf.length() != buf.cursor) { // not at end of line
             back(buf.length() - buf.cursor - 1);
         }
+        // force drawBuffer to check for weird wrap (after clear screen)
+        drawBuffer();
     }
 
     /**
@@ -508,23 +510,6 @@ public class ConsoleReader
 
     }
 
-    /* Handle case where terminal does not move cursor to the next line
-     * when a character is inserted at the width of the terminal.  This also
-     * fixes backspace issue, where it assumes that the terminal is doing this.
-     */
-    private final void newlineAtWrap() throws IOException {
-        /** On OSX this leads to failure to paste lines longer than the
-         *  the terminal width.  It spews some ansi control and truncates
-         *  the paste.
-         */
-        if (false && terminal.newlineAtWrapNeeded()) {
-            int width = getTerminal().getWidth();
-
-            if ((getCursorPosition() % width == 0) && getCurrentPosition() >= width)
-                println();
-        }
-    }
-
     /**
      * Write out the specified string to the buffer and the output stream.
      */
@@ -532,7 +517,6 @@ public class ConsoleReader
         buf.write(str);
         print(str);
         drawBuffer();
-        newlineAtWrap();
     }
 
     /**
@@ -554,7 +538,6 @@ public class ConsoleReader
             }
 
             drawBuffer();
-            newlineAtWrap();
         }
     }
 
@@ -567,25 +550,35 @@ public class ConsoleReader
     private void drawBuffer(final int clear) throws IOException {
         // debug ("drawBuffer: " + clear);
         if (buf.cursor == buf.length() && clear == 0) {
-            return;
-        }
-        char[] chars = buf.buffer.substring(buf.cursor).toCharArray();
-        if (mask != null) {
-            Arrays.fill(chars, mask);
-        }
-
-        print(chars);
-        clearAhead(clear);
-        if (terminal.isAnsiSupported()) {
-            if (chars.length > 0) {
-                // don't ask, it works
-                //back(Math.max(chars.length - 1, 1), true);
-                back(chars.length, true);
-            }
         } else {
-            back(chars.length);
+            char[] chars = buf.buffer.substring(buf.cursor).toCharArray();
+            if (mask != null) {
+                Arrays.fill(chars, mask);
+            }
+
+            print(chars);
+            clearAhead(clear, chars.length);
+            if (terminal.isAnsiSupported()) {
+                if (chars.length > 0) {
+                    back(chars.length);
+                }
+            } else {
+                back(chars.length);
+            }
         }
-//        flush();
+        if (terminal.hasWeirdWrap()) {
+            int width = terminal.getWidth();
+            // best guess on whether the cursor is in that weird location...
+            // Need to do this without calling ansi cursor location methods
+            // otherwise it breaks paste of wrapped lines in xterm.
+            if (getCursorPosition() == width
+                    && buf.cursor == buf.length() && clear == 0) {
+                // the following workaround is reverse-engineered from looking
+                // at what bash sent to the terminal in the same situation
+                print(32); // move cursor to next line by printing dummy space
+                print(13); // CR / not newline.
+            }
+        }
     }
 
     /**
@@ -598,19 +591,35 @@ public class ConsoleReader
 
     /**
      * Clear ahead the specified number of characters without moving the cursor.
+     *
+     * @param num the number of characters to clear
+     * @param delta the difference between the internal cursor and the screen
+     * cursor - if > 0, assume some stuff was printed and weird wrap has to be
+     * checked
      */
-    private void clearAhead(final int num) throws IOException {
+    private void clearAhead(final int num, int delta) throws IOException {
         if (num == 0) {
             return;
         }
 
         if (terminal.isAnsiSupported()) {
-            printAnsiSequence("K");
-            // if cursor+num wraps, then we need to clear the line(s) below too
+            // it's possible the real cursor is in the last column of a terminal
+            // with weird wrapping.
             int width = terminal.getWidth();
-            int cursor = getCursorPosition();
-            int curCol = cursor % width;
-            int endCol = (cursor + num) % width;
+            int screenCursorCol = getCursorPosition() + delta;
+            if (delta > 0 && terminal.hasWeirdWrap()
+                    && screenCursorCol % width == 0) {
+                // need to clear out the line below - cursor has not wrapped
+                printAnsiSequence("B");
+                printAnsiSequence("2K");
+                printAnsiSequence("A");
+            } else {
+                // clear current line
+                printAnsiSequence("K");
+            }
+            // if cursor+num wraps, then we need to clear the line(s) below too
+            int curCol = screenCursorCol % width;
+            int endCol = (screenCursorCol + num - 1) % width;
             int lines = num / width;
             if (endCol < curCol) lines++;
             for (int i = 0; i < lines; i++) {
@@ -631,29 +640,25 @@ public class ConsoleReader
 //        flush();
 
         // reset the visual cursor
-        back(num, true);
+        back(num);
 
 //        flush();
     }
 
-    private void back(final int num) throws IOException {
-        back(num, false);
-    }
-
     /**
      * Move the visual cursor backwards without modifying the buffer cursor.
-     * @param printed if true some characters were printed and we have to deal
-     * with new line at wrap
      */
-    private void back(final int num, boolean printed) throws IOException {
+    private void back(final int num) throws IOException {
         if (num == 0) return;
         if (terminal.isAnsiSupported()) {
             int width = getTerminal().getWidth();
             int cursor = getCursorPosition();
             int realCursor = cursor + num;
             // adjust cursor if it did not wrapped on its own
-            if (printed && terminal.newlineAtWrapNeeded() && realCursor%width == 0) {
-                realCursor--;
+            if (terminal.hasWeirdWrap() && realCursor%width == 0) {
+                if (getCurrentPosition() - 1 != realCursor%width) {
+                    realCursor--;
+                }
             }
             int realCol  = realCursor % width;
             int newCol = cursor % width;
@@ -702,6 +707,23 @@ public class ConsoleReader
             if (terminal.isAnsiSupported()) {
                 // debug("doing backspace redraw: " + getCursorPosition() + " on " + termwidth + ": " + lines);
                 printAnsiSequence("K");
+                // if cursor+num wraps, then we need to clear the line(s) below too
+                // last char printed is one pos less than cursor so we subtract
+                // one
+/*
+                // TODO: fixme (does not work - test with reverse search with wrapping line and CTRL-E)
+                int endCol = (getCursorPosition() + num - 1) % termwidth;
+                int curCol = getCursorPosition() % termwidth;
+                if (endCol < curCol) lines++;
+                for (int i = 1; i < lines; i++) {
+                    printAnsiSequence("B");
+                    printAnsiSequence("2K");
+                }
+                for (int i = 1; i < lines; i++) {
+                    printAnsiSequence("A");
+                }
+                return count;
+*/
             }
         }
         drawBuffer(count);
@@ -819,6 +841,15 @@ public class ConsoleReader
                 int oldLine = (cursor - where) / width;
                 int newLine = cursor / width;
                 if (newLine > oldLine) {
+                    if (terminal.hasWeirdWrap()) {
+                        // scroll up if at bottom
+                        // note:
+                        //   on rxvt cywgin terminal.getHeight() is incorrect
+                        //   MacOs xterm does not seem to support scrolling
+                        if (getCurrentAnsiRow() == terminal.getHeight()) {
+                            printAnsiSequence((newLine - oldLine) + "S");
+                        }
+                    }
                     printAnsiSequence((newLine - oldLine) + "B");
                 }
                 printAnsiSequence(1 +(cursor % width) + "G");
@@ -1716,7 +1747,7 @@ public class ConsoleReader
         }
 
         int num = buf.buffer.length() - cp;
-        clearAhead(num);
+        clearAhead(num, 0);
 
         for (int i = 0; i < num; i++) {
             buf.buffer.deleteCharAt(len - i - 1);
@@ -2104,4 +2135,30 @@ public class ConsoleReader
         return -1; // TODO: throw exception instead?
     }
 
+    // return row position, reported by the terminal
+    // needed to know whether to scroll up on cursor move in last col for weird
+    // wrapping terminals - not tested for anything else
+    private int getCurrentAnsiRow() {
+        // check for ByteArrayInputStream to disable for unit tests
+        if (terminal.isAnsiSupported() && !(in instanceof ByteArrayInputStream)) {
+            try {
+                printAnsiSequence("6n");
+                flush();
+                StringBuffer b = new StringBuffer(8);
+                // position is sent as <ESC>[{ROW};{COLUMN}R
+                int r;
+                while((r = in.read()) > -1 && r != 'R') {
+                    if (r != 27 && r != '[') {
+                        b.append((char) r);
+                    }
+                }
+                String[] pos = b.toString().split(";");
+                return Integer.parseInt(pos[0]);
+            } catch (Exception x) {
+                // no luck
+            }
+        }
+
+        return -1; // TODO: throw exception instead?
+    }
 }

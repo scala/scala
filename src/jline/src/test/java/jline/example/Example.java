@@ -22,8 +22,6 @@ public class Example
             + "\"foo\", \"bar\", and \"baz\"");
         System.out
             .println("  files - a completor that comples " + "file names");
-        System.out.println("  dictionary - a completor that comples "
-            + "english dictionary words");
         System.out.println("  classes - a completor that comples "
             + "java class names");
         System.out
@@ -31,6 +29,7 @@ public class Example
                 + "the next line is a password");
         System.out.println("  mask - is the character to print in place of "
             + "the actual password character");
+        System.out.println("  color - colored prompt and feedback");
         System.out.println("\n  E.g - java Example simple su '*'\n"
             + "will use the simple compleator with 'su' triggering\n"
             + "the use of '*' as a password mask.");
@@ -39,10 +38,12 @@ public class Example
     public static void main(String[] args) throws IOException {
         Character mask = null;
         String trigger = null;
+        boolean color = false;
 
         ConsoleReader reader = new ConsoleReader();
 
         reader.setBellEnabled(false);
+        reader.setPrompt("prompt> ");
 
         if ((args == null) || (args.length == 0)) {
             usage();
@@ -61,6 +62,10 @@ public class Example
             else if (args[0].equals("simple")) {
                 completors.add(new StringsCompleter("foo", "bar", "baz"));
             }
+            else if (args[0].equals("color")) {
+                color = true;
+                reader.setPrompt("\u001B[1mfoo\u001B[0m@bar\u001B[32m@baz\u001B[0m> ");
+            }
             else {
                 usage();
 
@@ -78,10 +83,15 @@ public class Example
         }
 
         String line;
-        PrintWriter out = new PrintWriter(System.out);
+        PrintWriter out = new PrintWriter(
+                reader.getTerminal().wrapOutIfNeeded(System.out));
 
-        while ((line = reader.readLine("prompt> ")) != null) {
-            out.println("======>\"" + line + "\"");
+        while ((line = reader.readLine()) != null) {
+            if (color){
+                out.println("\u001B[33m======>\u001B[0m\"" + line + "\"");
+            } else {
+                out.println("======>\"" + line + "\"");
+            }
             out.flush();
 
             // If we input the special word then we will mask

@@ -40,9 +40,12 @@ public interface Terminal
     OutputStream wrapOutIfNeeded(OutputStream out);
 
     /**
-     * For terminals that don't wrap when character is written in last column.
+     * For terminals that don't wrap when character is written in last column,
+     * only when the next character is written.
+     * These are the ones that have 'am' and 'xn' termcap attributes (xterm and
+     * rxvt flavors falls under that category)
      */
-    boolean newlineAtWrapNeeded();
+    boolean hasWeirdWrap();
 
     boolean isEchoEnabled();
 

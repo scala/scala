@@ -111,7 +111,7 @@ public abstract class TerminalSupport
     /**
      * Defaults to true which was the behaviour before this method was added.
      */
-    public boolean newlineAtWrapNeeded() {
+    public boolean hasWeirdWrap() {
         return true;
     }
 
