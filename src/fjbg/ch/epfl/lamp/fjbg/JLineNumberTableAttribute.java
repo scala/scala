@@ -1,16 +1,20 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.io.DataOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
  * Attribute storing correspondance between instructions and source
  * line numbers.
  *
- * @version 1.0
  * @author Michel Schinz
+ * @version 1.0
  */
 
 public class JLineNumberTableAttribute extends JAttribute {
@@ -32,8 +36,8 @@ public class JLineNumberTableAttribute extends JAttribute {
                                      int size,
                                      DataInputStream stream)
         throws IOException {
-        super(context, clazz);
-        code = (JCode)owner;
+        super(context, clazz, name);
+        this.code = (JCode)owner;
 
         int[] mapping = new int[code.getSize()];
 
@@ -43,6 +47,11 @@ public class JLineNumberTableAttribute extends JAttribute {
             int lineNum = stream.readShort();
             mapping[startPC] = lineNum;
         }
+
+        // Avoids duplication of LineNumberTable attribute
+        // (see method ensureLineNumberCapacity in class JCode).
+        assert code.lineNumbers == null;
+        code.lineNumbers = new int[0];
 
         int lineNum = 0;
         for (int pc = 0; pc < mapping.length; ++pc) {
@@ -54,6 +63,20 @@ public class JLineNumberTableAttribute extends JAttribute {
     }
 
     public String getName() { return "LineNumberTable"; }
+
+    // Follows javap output format for LineNumberTable attribute.
+    /*@Override*/ public String toString() {
+        StringBuffer buf = new StringBuffer("  LineNumberTable: ");
+        int[] encoding = encode();
+        for (int i = 0; i < encoding.length/2; ++i) {
+            buf.append("\n   line ");
+            buf.append(encoding[i * 2 + 1]);
+            buf.append(": ");
+            buf.append(encoding[i * 2]);
+        }
+        buf.append("\n");
+        return buf.toString();
+    }
 
     protected int[] encoding;
     protected int[] encode() {

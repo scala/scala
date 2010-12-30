@@ -1,10 +1,19 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Abstract superclass for a Java field or method.
+ *
+ * No two methods of fields in one class file may have the same name and
+ * descriptor. See sections 4.6 and 4.7 of the JVM specification.
  *
  * @author Michel Schinz
  * @version 1.0
@@ -26,9 +35,8 @@ abstract public class JFieldOrMethod extends JMember {
         this.owner = owner;
         this.type = type;
 
-        JConstantPool pool = owner.getConstantPool();
-        nameIndex = pool.addUtf8(name);
-        signatureIndex = pool.addUtf8(type.getSignature());
+        nameIndex = owner.pool.addUtf8(name);
+        signatureIndex = owner.pool.addUtf8(type.getSignature());
     }
 
     protected JFieldOrMethod(FJBGContext context,
@@ -102,6 +110,15 @@ abstract public class JFieldOrMethod extends JMember {
 
     public boolean isStrict() {
         return (accessFlags & JAccessFlags.ACC_STRICT) != 0;
+    }
+
+    // 1.5 specifics
+    public boolean isBridge() {
+        return (accessFlags & JAccessFlags.ACC_BRIDGE) != 0;
+    }
+
+    public boolean hasVarargs() {
+        return (accessFlags & JAccessFlags.ACC_VARARGS) != 0;
     }
 
     public void writeTo(DataOutputStream stream) throws IOException {

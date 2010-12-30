@@ -1,9 +1,13 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.util.List;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Abstract superclass for a Java class, field or method.
@@ -95,4 +99,11 @@ abstract public class JMember {
         return null;
     }
 
+    protected static String toExternalName(String name) {
+        return name.replace('/', '.');
+    }
+
+    protected static String toExternalName(JType tpe) {
+        return tpe.toString().replace(':', '.');
+    }
 }

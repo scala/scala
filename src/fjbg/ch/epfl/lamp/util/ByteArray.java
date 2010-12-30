@@ -1,7 +1,13 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.util;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Array of bytes.
@@ -16,17 +22,17 @@ public class ByteArray {
     protected final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
 
     protected byte[][] data = new byte[][] { new byte[BYTE_BLOCK_SIZE] };
-    protected int pos = 0;	// The next free position.
+    protected int pos = 0;  // The next free position.
 
     protected boolean frozen = false;
 
     public ByteArray() { }
 
     public ByteArray(InputStream stream, int size) throws IOException {
-    	size = pos;
-        for (int block = 0; size > 0; ++block) {
+        pos = size;
+        for (int i = 0; size > 0; ++i) {
             int sizeToRead = Math.min(BYTE_BLOCK_SIZE, size);
-            stream.read(data[block], 0, sizeToRead);
+            stream.read(data[i], 0, sizeToRead);
 
             size -= sizeToRead;
             if (size > 0) addNewBlock();
@@ -40,7 +46,7 @@ public class ByteArray {
     }
 
     public int getSize() {
-	return pos;
+        return pos;
     }
 
     protected void addNewBlock() {
@@ -64,42 +70,42 @@ public class ByteArray {
     }
 
     public void addU1(int i) {
-	assert i <= 0xFF : i;
-	addByte(i);
+        assert i <= 0xFF : i;
+        addByte(i);
     }
 
     public void addU2(int i) {
-	assert i <= 0xFFFF : i;
+        assert i <= 0xFFFF : i;
 
-	addByte(i >>> 8);
-	addByte(i & 0xFF);
+        addByte(i >>> 8);
+        addByte(i & 0xFF);
     }
 
     public void addU4(int i) {
-	addByte(i >>> 24);
-	addByte((i >>> 16) & 0xFF);
-	addByte((i >>>  8) & 0xFF);
-	addByte(i & 0xFF);
+        addByte(i >>> 24);
+        addByte((i >>> 16) & 0xFF);
+        addByte((i >>>  8) & 0xFF);
+        addByte(i & 0xFF);
     }
 
     public void putByte(int targetPos, int b) {
         assert !frozen;
-	assert targetPos < pos : targetPos + " >= " + pos;
+        assert targetPos < pos : targetPos + " >= " + pos;
 
-	data[targetPos >>> BYTE_BLOCK_BITS][targetPos & BYTE_BLOCK_MASK] = (byte)b;
+        data[targetPos >>> BYTE_BLOCK_BITS][targetPos & BYTE_BLOCK_MASK] = (byte)b;
     }
 
     public void putU2(int targetPos, int i) {
-	assert i < 0xFFFF : i;
-	putByte(targetPos, i >>> 8);
-	putByte(targetPos + 1, i & 0xFF);
+        assert i < 0xFFFF : i;
+        putByte(targetPos, i >>> 8);
+        putByte(targetPos + 1, i & 0xFF);
     }
 
     public void putU4(int targetPos, int i) {
-	putByte(targetPos, i >>> 24);
-	putByte(targetPos + 1, (i >>> 16) & 0xFF);
-	putByte(targetPos + 2, (i >>>  8) & 0xFF);
-	putByte(targetPos + 3, i & 0xFF);
+        putByte(targetPos, i >>> 24);
+        putByte(targetPos + 1, (i >>> 16) & 0xFF);
+        putByte(targetPos + 2, (i >>>  8) & 0xFF);
+        putByte(targetPos + 3, i & 0xFF);
     }
 
     public int getU1(int sourcePos) {
@@ -131,9 +137,9 @@ public class ByteArray {
     public void writeTo(OutputStream stream) throws IOException {
         if (!frozen) freeze();
 
-	for (int i = 0; i < data.length && data[i] != null; ++i) {
-	    int len = Math.min(BYTE_BLOCK_SIZE, pos - (i << BYTE_BLOCK_BITS));
-	    stream.write(data[i], 0, len);
-	}
+        for (int i = 0; i < data.length && data[i] != null; ++i) {
+            int len = Math.min(BYTE_BLOCK_SIZE, pos - (i << BYTE_BLOCK_BITS));
+            stream.write(data[i], 0, len);
+        }
     }
 }

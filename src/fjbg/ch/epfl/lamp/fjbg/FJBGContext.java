@@ -1,3 +1,7 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
@@ -132,9 +136,26 @@ public class FJBGContext {
         return new JCodeAttribute(this, clazz, owner);
     }
 
+    public JEnclosingMethodAttribute JEnclosingMethodAttribute(JClass clazz,
+                                                               String className,
+                                                               String methodName,
+                                                               JType methodType) {
+        return new JEnclosingMethodAttribute(this, clazz, className, methodName, methodType);
+    }
+
+    public JExceptionsAttribute JExceptionsAttribute(JClass clazz,
+                                                     JMethod owner) {
+        return new JExceptionsAttribute(this, clazz, owner);
+    }
+
     public JLineNumberTableAttribute JLineNumberTableAttribute(JClass clazz,
                                                                JCode owner) {
         return new JLineNumberTableAttribute(this, clazz, owner);
+    }
+
+    public JLocalVariableTableAttribute JLocalVariableTableAttribute(JClass clazz,
+                                                                     JCode owner) {
+        return new JLocalVariableTableAttribute(this, clazz, owner);
     }
 
     public JOtherAttribute JOtherAttribute(JClass clazz,
@@ -144,14 +165,6 @@ public class FJBGContext {
                                            int length) {
         return new JOtherAttribute(this, clazz, owner, name, contents, length);
     }
-
-    public JEnclosingMethodAttribute JEnclosingMethodAttribute(JClass clazz,
-                                                               String className,
-                                                               String methodName,
-                                                               JType methodType) {
-        return new JEnclosingMethodAttribute(this, clazz, className, methodName, methodType);
-    }
-
 
     public JOtherAttribute JOtherAttribute(JClass clazz,
                                            Object owner,
@@ -163,6 +176,11 @@ public class FJBGContext {
     public JSourceFileAttribute JSourceFileAttribute(JClass clazz,
                                                      String sourceFileName) {
         return new JSourceFileAttribute(this, clazz, sourceFileName);
+    }
+
+    public JStackMapTableAttribute JStackMapTableAttribute(JClass clazz,
+                                                           JCode owner) {
+        return new JStackMapTableAttribute(this, clazz, owner);
     }
 
     /// Repository

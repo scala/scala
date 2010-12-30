@@ -1,9 +1,13 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.util.*;
-import java.io.StringReader;
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
 
 /**
  * Representation of Java types.
@@ -90,6 +94,11 @@ abstract public class JType {
         }
     }
 
+    /**
+     * A signature is a string representing the generic type of a field or
+     * method, or generic type information for a class declaration.
+     * See section 4.4.4 of the JVM specification.
+     */
     public static JType parseSignature(String signature) {
         try {
             StringReader sigReader = new StringReader(signature);
@@ -114,103 +123,103 @@ abstract public class JType {
     protected JType() {}
 
     public static JType VOID = new JType() {
-            public int getSize() { return 0; }
-            public String getSignature() { return "V"; }
-            public int getTag() { return T_VOID; }
-            public String toString() { return "void"; }
-            public boolean isCompatibleWith(JType other) {
-                throw new UnsupportedOperationException("type VOID is no real "
-                                                        + "data type therefore "
-                                                        + "cannot be assigned to "
-                                                        + other.toString());
-            }
-        };
+        public int getSize() { return 0; }
+        public String getSignature() { return "V"; }
+        public int getTag() { return T_VOID; }
+        public String toString() { return "void"; }
+        public boolean isCompatibleWith(JType other) {
+            throw new UnsupportedOperationException("type VOID is no real "
+                                                    + "data type therefore "
+                                                    + "cannot be assigned to "
+                                                    + other.toString());
+        }
+    };
 
     public static JType BOOLEAN = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() { return "Z"; }
-            public int getTag() { return T_BOOLEAN; }
-            public String toString() { return "boolean"; }
-            public boolean isValueType() { return true; }
-            public boolean isCompatibleWith(JType other) {
-                return other == BOOLEAN
-                    || other == INT
-                    || other == BYTE
-                    || other == CHAR
-                    || other == SHORT;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() { return "Z"; }
+        public int getTag() { return T_BOOLEAN; }
+        public String toString() { return "boolean"; }
+        public boolean isValueType() { return true; }
+        public boolean isCompatibleWith(JType other) {
+            return other == BOOLEAN
+                || other == INT
+                || other == BYTE
+                || other == CHAR
+                || other == SHORT;
+        }
+    };
 
     public static JType BYTE = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() { return "B"; }
-            public int getTag() { return T_BYTE; }
-            public String toString() { return "byte"; }
-            public boolean isValueType() { return true; }
-            public boolean isCompatibleWith(JType other) {
-                return other == BOOLEAN
-                    || other == INT
-                    || other == BYTE
-                    || other == CHAR
-                    || other == SHORT;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() { return "B"; }
+        public int getTag() { return T_BYTE; }
+        public String toString() { return "byte"; }
+        public boolean isValueType() { return true; }
+        public boolean isCompatibleWith(JType other) {
+            return other == BOOLEAN
+                || other == INT
+                || other == BYTE
+                || other == CHAR
+                || other == SHORT;
+        }
+    };
 
     public static JType CHAR = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() { return "C"; }
-            public int getTag() { return T_CHAR; }
-            public String toString() { return "char"; }
-            public boolean isValueType() { return true; }
-            public boolean isCompatibleWith(JType other) {
-                return other == BOOLEAN
-                    || other == INT
-                    || other == BYTE
-                    || other == CHAR
-                    || other == SHORT;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() { return "C"; }
+        public int getTag() { return T_CHAR; }
+        public String toString() { return "char"; }
+        public boolean isValueType() { return true; }
+        public boolean isCompatibleWith(JType other) {
+            return other == BOOLEAN
+                || other == INT
+                || other == BYTE
+                || other == CHAR
+                || other == SHORT;
+        }
+    };
 
     public static JType SHORT = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() { return "S"; }
-            public int getTag() { return T_SHORT; }
-            public String toString() { return "short"; }
-            public boolean isValueType() { return true; }
-            public boolean isCompatibleWith(JType other) {
-                return other == BOOLEAN
-                    || other == INT
-                    || other == BYTE
-                    || other == CHAR
-                    || other == SHORT;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() { return "S"; }
+        public int getTag() { return T_SHORT; }
+        public String toString() { return "short"; }
+        public boolean isValueType() { return true; }
+        public boolean isCompatibleWith(JType other) {
+            return other == BOOLEAN
+                || other == INT
+                || other == BYTE
+                || other == CHAR
+                || other == SHORT;
+        }
+    };
 
     public static JType INT = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() { return "I"; }
-            public int getTag() { return T_INT; }
-            public String toString() { return "int"; }
-            public boolean isValueType() { return true; }
-            public boolean isCompatibleWith(JType other) {
-                return other == BOOLEAN
-                    || other == INT
-                    || other == BYTE
-                    || other == CHAR
-                    || other == SHORT;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() { return "I"; }
+        public int getTag() { return T_INT; }
+        public String toString() { return "int"; }
+        public boolean isValueType() { return true; }
+        public boolean isCompatibleWith(JType other) {
+            return other == BOOLEAN
+                || other == INT
+                || other == BYTE
+                || other == CHAR
+                || other == SHORT;
+        }
+    };
 
     public static JType FLOAT = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() { return "F"; }
-            public int getTag() { return T_FLOAT; }
-            public String toString() { return "float"; }
-            public boolean isValueType() { return true; }
-            public boolean isCompatibleWith(JType other) {
-                return other == FLOAT;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() { return "F"; }
+        public int getTag() { return T_FLOAT; }
+        public String toString() { return "float"; }
+        public boolean isValueType() { return true; }
+        public boolean isCompatibleWith(JType other) {
+            return other == FLOAT;
+        }
+    };
 
     public static JType LONG = new JType() {
             public int getSize() { return 2; }
@@ -252,37 +261,56 @@ abstract public class JType {
         };
 
     public static JType ADDRESS = new JType() {
-            public int getSize() { return 1; }
-            public String getSignature() {
-                throw new UnsupportedOperationException("type ADDRESS is no usable "
-                                                        + "data type and therefore "
-                                                        + "has no signature");
-            }
-            public int getTag() { return T_ADDRESS; }
-            public String toString() { return "<address>"; }
-            public boolean isCompatibleWith(JType other) {
-                return other == ADDRESS;
-            }
-        };
+        public int getSize() { return 1; }
+        public String getSignature() {
+            throw new UnsupportedOperationException("type ADDRESS is no usable "
+                                                    + "data type and therefore "
+                                                    + "has no signature");
+        }
+        public int getTag() { return T_ADDRESS; }
+        public String toString() { return "<address>"; }
+        public boolean isCompatibleWith(JType other) {
+            return other == ADDRESS;
+        }
+    };
 
     public static JType UNKNOWN = new JType() {
-            public int getSize() {
-                throw new UnsupportedOperationException("type UNKNOWN is no real "
-                                                        + "data type and therefore "
-                                                        + "has no size");
-            }
-            public String getSignature() {
-                throw new UnsupportedOperationException("type UNKNOWN is no real "
-                                                        + "data type and therefore "
-                                                        + "has no signature");
-            }
-            public int getTag() { return T_UNKNOWN; }
-            public String toString() { return "<unknown>"; }
-            public boolean isCompatibleWith(JType other) {
-                throw new UnsupportedOperationException("type UNKNOWN is no real "
-                                                        + "data type and therefore "
-                                                        + "cannot be assigned to "
-                                                        + other.toString());
-            }
-        };
+        public int getSize() {
+            throw new UnsupportedOperationException("type UNKNOWN is no real "
+                                                    + "data type and therefore "
+                                                    + "has no size");
+        }
+        public String getSignature() {
+            throw new UnsupportedOperationException("type UNKNOWN is no real "
+                                                    + "data type and therefore "
+                                                    + "has no signature");
+        }
+        public int getTag() { return T_UNKNOWN; }
+        public String toString() { return "<unknown>"; }
+        public boolean isCompatibleWith(JType other) {
+            throw new UnsupportedOperationException("type UNKNOWN is no real "
+                                                    + "data type and therefore "
+                                                    + "cannot be assigned to "
+                                                    + other.toString());
+        }
+    };
+
+    protected static String tagToString(int tag) {
+        switch (tag) {
+        case T_BOOLEAN : return "boolean";
+        case T_CHAR    : return "char";
+        case T_FLOAT   : return "float";
+        case T_DOUBLE  : return "double";
+        case T_BYTE    : return "byte";
+        case T_SHORT   : return "short";
+        case T_INT     : return "int";
+        case T_LONG    : return "long";
+        case T_VOID    : return "void"; // Non-standard
+        case T_ARRAY   : return "[]";
+        case T_OBJECT  : return "Object";
+        case T_UNKNOWN : return "<unknown>";
+        case T_ADDRESS : return "<address>";
+        default:         return ""+tag;
+        }
+    }
 }

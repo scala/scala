@@ -1,28 +1,34 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.util.LinkedList;
-import java.util.Iterator;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Representation of a Java method.
  *
- * @version 1.0
  * @author Michel Schinz
+ * @version 1.0
  */
 
 public class JMethod extends JFieldOrMethod {
     public final static String CLASS_CONSTRUCTOR_NAME = "<clinit>";
     public final static String INSTANCE_CONSTRUCTOR_NAME = "<init>";
 
-    protected final JCode code;
+    protected /*final*/ JCode code;
     protected final String[] argNames;
 
     protected final LinkedList/*<JLocalVariable>*/ localVariables =
         new LinkedList();
     protected int localVariableIndex = 0;
+
 
     protected JMethod(FJBGContext context,
                       JClass owner,
@@ -43,7 +49,6 @@ public class JMethod extends JFieldOrMethod {
         if (isAbstract() || isNative()) {
             code = null;
         } else {
-            JConstantPool pool = owner.getConstantPool();
             code = context.JCode(owner, this);
             addAttribute(context.JCodeAttribute(owner, this));
 
@@ -61,19 +66,23 @@ public class JMethod extends JFieldOrMethod {
         throws IOException {
         super(context, owner, stream);
 
-        // Fetch code from the attributes.
-        setCode: {
-            Iterator attrIt = attributes.iterator();
-            while (attrIt.hasNext()) {
-                Object attr = attrIt.next();
-                if (attr instanceof JCodeAttribute) {
-                    code = ((JCodeAttribute)attr).code;
-                    break setCode;
-                }
+        assert isAbstract() || isNative() || code != null;
+
+        int n = 0;
+        if (code != null) {
+            for (Iterator it = code.getAttributes().iterator(); it.hasNext(); ) {
+                JAttribute attr = (JAttribute)it.next();
+                if (attr instanceof JLocalVariableTableAttribute)
+                   n = ((JLocalVariableTableAttribute)attr).getMaxLocals();
             }
-            code = null;
         }
-        argNames = null;        // TODO get from attribute
+        this.localVariableIndex = n;
+
+
+        JType[] argTypes = ((JMethodType)getType()).getArgumentTypes();
+        argNames = new String[argTypes.length]; // TODO get from attribute
+        for (int i = 0; i < argNames.length; ++i)
+            argNames[i] = "v"+i;
     }
 
     public void freeze() throws JCode.OffsetTooBigException {
@@ -89,6 +98,12 @@ public class JMethod extends JFieldOrMethod {
         return ((JMethodType)type).getArgumentTypes();
     }
 
+    public int getArgsSize() {
+        int size = ((JMethodType)type).getArgsSize();
+        if (!isStatic()) size += 1;  // for this
+        return size;
+    }
+
     public String[] getArgumentNames() {
         return argNames;
     }
@@ -96,6 +111,12 @@ public class JMethod extends JFieldOrMethod {
     public JCode getCode() {
         assert !isAbstract();
         return code;
+    }
+
+    // Invoked by the JCode constructor
+    protected void setCode(JCode code) {
+        assert null == this.code;
+        this.code = code;
     }
 
     public JCodeIterator codeIterator() {
@@ -126,7 +147,53 @@ public class JMethod extends JFieldOrMethod {
             .toArray(new JLocalVariable[localVariables.size()]);
     }
 
+
     public int getMaxLocals() {
         return localVariableIndex;
+    }
+
+    // Follows javap output format for methods.
+    /*@Override*/ public String toString() {
+        StringBuffer buf = new StringBuffer(flagsToString());
+        String name = getName();
+        if (CLASS_CONSTRUCTOR_NAME.equals(name))
+            buf.append("{}");
+        else {
+            if (INSTANCE_CONSTRUCTOR_NAME.equals(name))
+                name = getOwner().getName();
+            else {
+                buf.append(toExternalName(getReturnType()));
+                buf.append(" ");
+            }
+            buf.append(toExternalName(name));
+            buf.append("(");
+            JType[] ts = getArgumentTypes();
+            for (int i = 0; i < ts.length; ++i) {
+                if (i > 0) buf.append(", ");
+                buf.append(toExternalName(ts[i]));
+            }
+            buf.append(")");
+        }
+        buf.append(";\n");
+        Iterator it = attributes.iterator();
+        while(it.hasNext()) {
+            JAttribute attr = (JAttribute)it.next();
+            buf.append(attr);
+        }
+        return buf.toString();
+    }
+
+    private String flagsToString() {
+        StringBuffer buf = new StringBuffer();
+        if (isPublic()) buf.append("public ");
+        else if (isProtected()) buf.append("protected ");
+        else if (isPrivate()) buf.append("private ");
+        if (isBridge()) buf.append("<bridge> ");
+        if (hasVarargs()) buf.append("<varargs> ");
+        if (isStatic()) buf.append("static ");
+        else if (isNative()) buf.append("native ");
+        if (isAbstract()) buf.append("abstract ");
+        else if (isFinal()) buf.append("final ");
+        return buf.toString();
     }
 }

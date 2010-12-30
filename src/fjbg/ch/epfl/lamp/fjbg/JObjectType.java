@@ -1,11 +1,15 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
 /**
  * Types for Java objects.
  *
- * @version 1.0
  * @author Michel Schinz
+ * @version 1.0
  */
 
 public class JObjectType extends JReferenceType {

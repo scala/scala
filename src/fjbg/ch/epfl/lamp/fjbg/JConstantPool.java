@@ -1,8 +1,14 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.util.*;
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Constant pool, holding constants for a Java class file.
@@ -48,6 +54,8 @@ public class JConstantPool {
             switch (tag) {
             case CONSTANT_Utf8:
                 e = new Utf8Entry(stream);
+                // no duplicates
+                entryToIndex.put(e, new Integer(currIndex));
                 break;
             case CONSTANT_Integer:
                 e = new IntegerEntry(stream);
@@ -93,28 +101,23 @@ public class JConstantPool {
      */
     public String getEntryType(int tag) {
         switch (tag) {
-        case 4 : return "Utf8";
-        case 5 : return "Integer";
-        case 6 : return "Float";
-        case 7 : return "Long";
-        case 8 : return "Double";
-        case 9 : return "Class";
-        case 10 : return "String";
-        case 11 : return "Fieldref";
-        case 12 : return "Methodref";
-        case 13 : return "InterfaceMethodref";
-        case 14 : return "NameAndType";
+        case CONSTANT_Utf8   : return "Utf8";
+        case CONSTANT_Integer : return "Integer";
+        case CONSTANT_Float  : return "Float";
+        case CONSTANT_Long   : return "Long";
+        case CONSTANT_Double : return "Double";
+        case CONSTANT_Class  : return "Class";
+        case CONSTANT_String : return "String";
+        case CONSTANT_Fieldref : return "Field";
+        case CONSTANT_Methodref : return "Method";
+        case CONSTANT_InterfaceMethodref : return "InterfaceMethod";
+        case CONSTANT_NameAndType : return "NameAndType";
         default : throw new Error("invalid constant pool tag : " + tag);
         }
     }
 
     public int addClass(String className) {
         return addDescriptor(className.replace('.', '/'));
-    }
-
-    public String lookupClass(int index) {
-        DescriptorEntry entry = (DescriptorEntry)lookupEntry(index);
-        return entry.getValue().replace('/', '.');
     }
 
     public int addDescriptor(JReferenceType type) {
@@ -138,9 +141,9 @@ public class JConstantPool {
     }
 
     public int addMethodRef(boolean isClass,
-			    String className,
-			    String methodName,
-			    String signature) {
+                            String className,
+                            String methodName,
+                            String signature) {
         return addEntry(new FieldOrMethodRefEntryValue(isClass
                                                        ? CONSTANT_Methodref
                                                        : CONSTANT_InterfaceMethodref,
@@ -190,14 +193,8 @@ public class JConstantPool {
         return addEntry(new Utf8Entry(value));
     }
 
-    public String lookupUtf8(int index) {
-        Utf8Entry entry = (Utf8Entry)lookupEntry(index);
-        return entry.getValue();
-    }
-
     protected int addEntry(EntryValue e) {
         assert !frozen;
-
         Integer idx = (Integer)entryToIndex.get(e);
         if (idx != null)
             return idx.intValue();
@@ -217,6 +214,9 @@ public class JConstantPool {
         return index;
     }
 
+    /// Lookup methods
+    //////////////////////////////////////////////////////////////////////
+
     public Entry lookupEntry(int index) {
         assert index > 0 && index < currIndex
             : "invalid index: " + index;
@@ -225,10 +225,28 @@ public class JConstantPool {
         return indexToEntry[index];
     }
 
+    public String lookupClass(int index) {
+        DescriptorEntry entry = (DescriptorEntry)lookupEntry(index);
+        return entry.getValue();
+    }
+
+    public String lookupNameAndType(int index) {
+        NameAndTypeEntry entry = (NameAndTypeEntry)lookupEntry(index);
+        return entry.getName()+":"+entry.getDescriptor();
+    }
+
+    public String lookupUtf8(int index) {
+        Utf8Entry entry = (Utf8Entry)lookupEntry(index);
+        return entry.getValue();
+    }
+
+    /// Output
+    //////////////////////////////////////////////////////////////////////
+
     public void writeTo(DataOutputStream stream) throws IOException {
         if (! frozen) freeze();
 
-	stream.writeShort(currIndex);
+        stream.writeShort(currIndex);
         for (int i = 0; i < currIndex; ++i) {
             Entry entry = indexToEntry[i];
             if (entry != null) {
@@ -236,6 +254,23 @@ public class JConstantPool {
                 entry.writeContentsTo(stream);
             }
         }
+    }
+
+    // Follows javap output format for constant pool.
+    /*@Override*/ public String toString() {
+        StringBuffer buf = new StringBuffer("  Constant pool:");
+        for (int i = 0; i < currIndex; ++i) {
+            Entry entry = indexToEntry[i];
+            if (entry != null) {
+                if (i > 0) buf.append("\n");
+                buf.append("const #");
+                buf.append(i);
+                buf.append(" = ");
+                buf.append(entry);
+            }
+        }
+        buf.append("\n");
+        return buf.toString();
     }
 
     /// Classes for the various kinds of entries
@@ -246,6 +281,7 @@ public class JConstantPool {
 
         int getSize();
         void writeContentsTo(DataOutputStream stream) throws IOException;
+        String toComment(String ownerClassName);
     }
 
     protected interface EntryValue extends Entry {
@@ -280,6 +316,15 @@ public class JConstantPool {
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeInt(value);
         }
+        /*@Override*/ public String toString() {
+            StringBuffer buf = new StringBuffer("int\t");
+            buf.append(getValue());
+            buf.append(";");
+            return buf.toString();
+        }
+        public String toComment(String ownerClassname) {
+            return "//int "+getValue();
+        }
     }
 
     public class FloatEntry extends ChildlessEntry implements Entry {
@@ -300,6 +345,15 @@ public class JConstantPool {
         public int getSize() { return 1; }
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeFloat(value);
+        }
+        /*@Override*/ public String toString() {
+            StringBuffer buf = new StringBuffer("float\t");
+            buf.append(getValue());
+            buf.append("f");
+            return buf.toString();
+        }
+        public String toComment(String ownerClassname) {
+            return "//float "+getValue()+"f";
         }
     }
 
@@ -322,6 +376,15 @@ public class JConstantPool {
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeLong(value);
         }
+        /*@Override*/ public String toString() {
+            StringBuffer buf = new StringBuffer("long\t");
+            buf.append(getValue());
+            buf.append("l;");
+            return buf.toString();
+        }
+        public String toComment(String ownerClassname) {
+            return "//long "+getValue()+"l";
+        }
     }
 
     public class DoubleEntry extends ChildlessEntry implements Entry {
@@ -342,6 +405,14 @@ public class JConstantPool {
         public int getSize() { return 2; }
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeDouble(value);
+        }
+        /*@Override*/ public String toString() {
+            StringBuffer buf = new StringBuffer("double\t");
+            buf.append(getValue());
+            return buf.toString();
+        }
+        public String toComment(String ownerClassname) {
+            return "//double "+getValue();
         }
     }
 
@@ -391,6 +462,14 @@ public class JConstantPool {
             else
                 stream.writeUTF(value);
         }
+        // Follows javap output format for Utf8 pool entries.
+        public String toString() { return "Asciz\t"+escaped(getValue())+";"; }
+        public String toComment(String ownerClassname) {
+            return "//Asciz "+escaped(getValue());
+        }
+        private String escaped(String s) {
+            return s.replace("\n", "\\n");
+        }
     }
 
     abstract public class StringEntry implements Entry {
@@ -411,6 +490,16 @@ public class JConstantPool {
         public int getSize() { return 1; }
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeShort(valueIndex);
+        }
+        // Follows javap output format for String pool entries.
+        public String toString() {
+            return "String\t#"+valueIndex+";\t//  "+escaped(getValue());
+        }
+        public String toComment(String ownerClassname) {
+            return "//String "+escaped(getValue());
+        }
+        private String escaped(String s) {
+            return s.replace("\n", "\\n");
         }
     }
 
@@ -457,6 +546,25 @@ public class JConstantPool {
         public int getSize() { return 1; }
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeShort(nameIndex);
+        }
+        // Follows javap output format for class pool entries.
+        public String toString() {
+            StringBuffer buf = new StringBuffer("class\t#");
+            buf.append(nameIndex);
+            buf.append(";\t//  ");
+            buf.append(getClassName());
+            return buf.toString();
+        }
+        public String toComment(String ownerClassname) {
+            return "//class "+getClassName();
+        }
+        private String getClassName() {
+            StringBuffer buf = new StringBuffer();
+            String value = getValue();
+            if (value.startsWith("[")) buf.append("\"");
+            buf.append(value);
+            if (value.startsWith("[")) buf.append("\"");
+            return buf.toString();
         }
     }
 
@@ -521,6 +629,22 @@ public class JConstantPool {
         public void writeContentsTo(DataOutputStream stream) throws IOException {
             stream.writeShort(classIndex);
             stream.writeShort(nameAndTypeIndex);
+        }
+        // Follows javap output format for field/method pool entries.
+        public String toString() {
+            return getEntryType(tag)+"\t#"+classIndex+".#"+nameAndTypeIndex+
+                   ";\t//  "+getName("")+":"+signature;
+        }
+        public String toComment(String ownerClassName) {
+            return "//"+getEntryType(tag)+" "+getName(ownerClassName)+":"+signature;
+        }
+        private String getName(String ownerClassName) {
+            String name = getFieldOrMethodName();
+            if (JMethod.INSTANCE_CONSTRUCTOR_NAME.equals(name))
+                name = "\""+name+"\"";
+            if (!getClassName().equals(ownerClassName))
+                name = getClassName()+"."+name;
+            return name;
         }
     }
 
@@ -597,6 +721,15 @@ public class JConstantPool {
             stream.writeShort(nameIndex);
             stream.writeShort(descriptorIndex);
         }
+        // Follows javap output format for name/type pool entries.
+        public String toString() {
+            String natName = getName();
+            if (JMethod.INSTANCE_CONSTRUCTOR_NAME.equals(natName))
+                natName = "\""+natName+"\"";
+            return "NameAndType\t#"+nameIndex+":#"+descriptorIndex+
+                   ";//  "+natName+":"+getDescriptor();
+        }
+        public String toComment(String ownerClassname) { return ""; }
     }
 
     protected class NameAndTypeEntryValue

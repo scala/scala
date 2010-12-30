@@ -1,14 +1,19 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.*;
-import java.io.*;
 
-import ch.epfl.lamp.util.*;
+import ch.epfl.lamp.util.ByteArray;
 
 /**
- * List of instructions, to which Java byte-code instructions can be
- * added.
+ * List of instructions, to which Java byte-code instructions can be added.
  *
  * @author Michel Schinz, Thomas Friedli
  * @version 1.0
@@ -50,7 +55,10 @@ public class JCode {
         this.context = context;
         this.pool = clazz.getConstantPool();
         this.owner = owner;
+        owner.setCode(this);
         int size = stream.readInt();
+        if (size >= 65536) // section 4.10
+            throw new Error("code size must be less than 65536: " + size);
         this.codeArray = new ByteArray(stream, size);
     }
 
@@ -516,20 +524,20 @@ public class JCode {
         emitU2(JOpcode.JSR, label.getOffset16(getPC() + 1, getPC()));
     }
     public void emitJSR(int targetPC) {
-	emitU2(JOpcode.JSR, targetPC - getPC());
+        emitU2(JOpcode.JSR, targetPC - getPC());
     }
     public void emitJSR() {
-	emitU2(JOpcode.JSR, 0);
+        emitU2(JOpcode.JSR, 0);
     }
 
     public void emitJSR_W(Label label) {
         emitU4(JOpcode.JSR_W, label.getOffset32(getPC() + 1, getPC()));
     }
     public void emitJSR_W(int targetPC) {
-	emitU4(JOpcode.JSR_W, targetPC - getPC());
+        emitU4(JOpcode.JSR_W, targetPC - getPC());
     }
     public void emitJSR_W() {
-	emitU4(JOpcode.JSR_W, 0);
+        emitU4(JOpcode.JSR_W, 0);
     }
 
     /*
@@ -537,10 +545,10 @@ public class JCode {
         emitU2(JOpcode.RET, label.getOffset16(getPC() + 1, getPC()));
     }
     public void emitRET(int targetPC) {
-	emitU1(JOpcode.RET, targetPC);
+        emitU1(JOpcode.RET, targetPC);
     }
     public void emitRET() {
-	emitU1(JOpcode.RET, 0);
+        emitU1(JOpcode.RET, 0);
     }
     */
 
@@ -553,42 +561,42 @@ public class JCode {
     }
 
     public void emitTABLESWITCH(int[] keys,
-				Label[] branches,
-				Label defaultBranch) {
-	assert keys.length == branches.length;
+                     Label[] branches,
+                     Label defaultBranch) {
+        assert keys.length == branches.length;
 
         int low = keys[0], high = keys[keys.length - 1];
-	int instrPC = getPC();
+        int instrPC = getPC();
 
-	setStackProduction(instrPC, JOpcode.TABLESWITCH);
-	codeArray.addU1(JOpcode.cTABLESWITCH);
-	while (getPC() % 4 != 0) codeArray.addU1(0);
+        setStackProduction(instrPC, JOpcode.TABLESWITCH);
+        codeArray.addU1(JOpcode.cTABLESWITCH);
+        while (getPC() % 4 != 0) codeArray.addU1(0);
 
         codeArray.addU4(defaultBranch.getOffset32(getPC(), instrPC));
         codeArray.addU4(low);
         codeArray.addU4(high);
-	for (int i = 0; i < branches.length; i++) {
+        for (int i = 0; i < branches.length; i++) {
             assert keys[i] == low + i;
             codeArray.addU4(branches[i].getOffset32(getPC(), instrPC));
-	}
+        }
     }
 
     public void emitLOOKUPSWITCH(int[] keys,
-				 Label[] branches,
-				 Label defaultBranch) {
-	assert keys.length == branches.length;
+                     Label[] branches,
+                     Label defaultBranch) {
+        assert keys.length == branches.length;
 
-	int instrPC = getPC();
-	setStackProduction(getPC(), JOpcode.LOOKUPSWITCH);
-	codeArray.addU1(JOpcode.cLOOKUPSWITCH);
-	while (getPC() % 4 != 0) codeArray.addU1(0);
+        int instrPC = getPC();
+        setStackProduction(getPC(), JOpcode.LOOKUPSWITCH);
+        codeArray.addU1(JOpcode.cLOOKUPSWITCH);
+        while (getPC() % 4 != 0) codeArray.addU1(0);
 
         codeArray.addU4(defaultBranch.getOffset32(getPC(), instrPC));
-	codeArray.addU4(branches.length);
-	for (int i = 0; i < branches.length; i++) {
-	    codeArray.addU4(keys[i]);
+        codeArray.addU4(branches.length);
+        for (int i = 0; i < branches.length; i++) {
+            codeArray.addU4(keys[i]);
             codeArray.addU4(branches[i].getOffset32(getPC(), instrPC));
-	}
+        }
     }
 
     public void emitIRETURN() { emit(JOpcode.IRETURN); }
@@ -700,63 +708,63 @@ public class JCode {
             || (opcode.code == JOpcode.cFSTORE)
             || (opcode.code == JOpcode.cDSTORE)
             || (opcode.code == JOpcode.cASTORE)
-	    || (opcode.code == JOpcode.cRET)
+            || (opcode.code == JOpcode.cRET)
             : "invalide opcode for WIDE: " + opcode;
 
-	setStackProduction(getPC(), opcode);
-	codeArray.addU1(JOpcode.WIDE.code);
+        setStackProduction(getPC(), opcode);
+        codeArray.addU1(JOpcode.WIDE.code);
         codeArray.addU1(opcode.code);
-	codeArray.addU2(index);
+        codeArray.addU2(index);
     }
     public void emitWIDE(JOpcode opcode, int index, int constant) {
-	assert opcode.code == JOpcode.cIINC
+        assert opcode.code == JOpcode.cIINC
             : "invalid opcode for WIDE: " + opcode;
 
-	setStackProduction(getPC(), opcode);
-	codeArray.addU1(JOpcode.cWIDE);
+        setStackProduction(getPC(), opcode);
+        codeArray.addU1(JOpcode.cWIDE);
         codeArray.addU1(opcode.code);
-	codeArray.addU2(index);
-	codeArray.addU2(constant);
+        codeArray.addU2(index);
+        codeArray.addU2(constant);
     }
 
     protected void emitU1(JOpcode opcode, int i1) {
         setStackProduction(getPC(), opcode);
         codeArray.addU1(opcode.code);
-	codeArray.addU1(i1);
+        codeArray.addU1(i1);
     }
 
     protected void emitU1U1(JOpcode opcode, int i1, int i2) {
         setStackProduction(getPC(), opcode);
         codeArray.addU1(opcode.code);
-	codeArray.addU1(i1);
-	codeArray.addU1(i2);
+        codeArray.addU1(i1);
+        codeArray.addU1(i2);
     }
 
     protected void emitU2(JOpcode opcode, int i1) {
         setStackProduction(getPC(), opcode);
         codeArray.addU1(opcode.code);
-	codeArray.addU2(i1);
+        codeArray.addU2(i1);
     }
 
     protected void emitU2U1(JOpcode opcode, int i1, int i2) {
         setStackProduction(getPC(), opcode);
         codeArray.addU1(opcode.code);
-	codeArray.addU2(i1);
-	codeArray.addU1(i2);
+        codeArray.addU2(i1);
+        codeArray.addU1(i2);
     }
 
     protected void emitU2U1U1(JOpcode opcode, int i1, int i2, int i3) {
         setStackProduction(getPC(), opcode);
         codeArray.addU1(opcode.code);
-	codeArray.addU2(i1);
-	codeArray.addU1(i2);
-	codeArray.addU1(i3);
+        codeArray.addU2(i1);
+        codeArray.addU1(i2);
+        codeArray.addU1(i3);
     }
 
     protected void emitU4(JOpcode opcode, int i1) {
         setStackProduction(getPC(), opcode);
         codeArray.addU1(opcode.code);
-	codeArray.addU4(i1);
+        codeArray.addU4(i1);
     }
 
     protected int getU1(int sourcePos) {
@@ -798,27 +806,27 @@ public class JCode {
             stackProduction = new int[256];
             Arrays.fill(stackProduction, UNKNOWN_STACK_SIZE);
         } else {
-        	while (pc >= stackProduction.length) {
-	            int[] newStackProduction = new int[stackProduction.length * 2];
-	            System.arraycopy(stackProduction, 0,
-	                             newStackProduction, 0,
-	                             stackProduction.length);
-	            Arrays.fill(newStackProduction,
-	                        stackProduction.length,
-	                        newStackProduction.length,
-	                        UNKNOWN_STACK_SIZE);
-	            stackProduction = newStackProduction;
-	        }
+            while (pc >= stackProduction.length) {
+                    int[] newStackProduction = new int[stackProduction.length * 2];
+                    System.arraycopy(stackProduction, 0,
+                                     newStackProduction, 0,
+                                     stackProduction.length);
+                    Arrays.fill(newStackProduction,
+                                stackProduction.length,
+                                newStackProduction.length,
+                                UNKNOWN_STACK_SIZE);
+                    stackProduction = newStackProduction;
+                }
         }
-    	stackProduction[pc] = production;
+        stackProduction[pc] = production;
     }
 
     protected void setStackProduction(int pc, JOpcode opcode) {
         // TODO we should instead check whether the opcode has known
         // stack consumption/production.
         if (getStackProduction(pc) == UNKNOWN_STACK_SIZE)
-//        		&& opcode.hasKnownProducedDataSize()
-//        		&& opcode.hasKnownConsumedDataSize())
+//                && opcode.hasKnownProducedDataSize()
+//                && opcode.hasKnownConsumedDataSize())
             setStackProduction(pc,
                                opcode.getProducedDataSize()
                                - opcode.getConsumedDataSize());
@@ -1043,6 +1051,27 @@ public class JCode {
             stream.writeShort(handlerPC);
             stream.writeShort(catchTypeIndex);
         }
+
+        // Follows javap output format for exception handlers.
+        /*@Override*/public String toString() {
+            StringBuffer buf = new StringBuffer("    ");
+            if (startPC < 10) buf.append(" ");
+            buf.append(startPC);
+            buf.append("    ");
+            if (endPC < 10) buf.append(" ");
+            buf.append(endPC);
+            buf.append("    ");
+            buf.append(handlerPC);
+            buf.append("   ");
+            if (catchType != null) {
+                buf.append("Class ");
+                buf.append(catchType);
+            }
+            else
+                buf.append("any");
+            return buf.toString();
+        }
+
     }
 
     public void addExceptionHandler(ExceptionHandler handler) {
@@ -1065,7 +1094,7 @@ public class JCode {
         addExceptionHandler(startPC, endPC, handlerPC, null);
     }
 
-    public List/*<JExceptionHandler>*/ getExceptionHandlers() {
+    public List/*<ExceptionHandler>*/ getExceptionHandlers() {
         return exceptionHandlers;
     }
 
@@ -1122,9 +1151,145 @@ public class JCode {
     }
 
     // Output
+    //////////////////////////////////////////////////////////////////////
+
     public void writeTo(DataOutputStream stream) throws IOException {
         assert frozen;
         stream.writeInt(getSize());
-	codeArray.writeTo(stream);
+        codeArray.writeTo(stream);
+    }
+
+    // Follows javap output format for opcodes.
+    /*@Override*/ public String toString() {
+        StringBuffer buf = new StringBuffer();
+        JOpcode opcode = null;
+        int pc = 0, addr = 0;
+        while (pc < codeArray.getSize()) {
+            buf.append("\n   ");
+            buf.append(pc);
+            buf.append(":\t");
+            opcode = JOpcode.OPCODES[codeArray.getU1(pc)];
+            buf.append(decode(opcode, pc));
+            if (opcode.code == JOpcode.cTABLESWITCH ||
+                opcode.code == JOpcode.cLOOKUPSWITCH) {
+                addr = ((pc / 4 + 1) + 1) * 4; // U4 aligned data
+                int low = codeArray.getU4(addr);
+                int high = codeArray.getU4(addr+4);
+                pc = addr + (2/*low+high*/ + (high - low + 1)/*targets*/) * 4;
+            } else
+                pc += opcode.getSize();
+        }
+        if (exceptionHandlers.size() > 0) {
+            buf.append("\n  Exception table:\n   from   to  target type\n");
+            Iterator it = exceptionHandlers.iterator();
+            while (it.hasNext()) {
+                ExceptionHandler exh = (ExceptionHandler)it.next();
+                buf.append(exh);
+                buf.append("\n");
+            }
+        }
+        return buf.toString();
+    }
+
+    private String decode(JOpcode opcode, int pc) {
+        String ownerClassName = owner.getOwner().getName();
+        int data, data2;
+        StringBuilder buf = new StringBuilder();
+        buf.append(opcode.name.toLowerCase());
+        switch (opcode.code) {
+        case JOpcode.cALOAD: case JOpcode.cASTORE: case JOpcode.cBIPUSH:
+        case JOpcode.cDLOAD: case JOpcode.cDSTORE:
+        case JOpcode.cFLOAD: case JOpcode.cFSTORE:
+        case JOpcode.cILOAD: case JOpcode.cISTORE:
+        case JOpcode.cLLOAD: case JOpcode.cLSTORE:
+            data = codeArray.getU1(pc+1);
+            buf.append("\t");
+            buf.append(data);
+            break;
+        case JOpcode.cLDC:
+            data = codeArray.getU1(pc+1);
+            buf.append("\t#");
+            buf.append(data);
+            buf.append("; ");
+            buf.append(pool.lookupEntry(data).toComment(ownerClassName));
+            break;
+        case JOpcode.cNEWARRAY:
+            data = codeArray.getU1(pc+1);
+            buf.append(" ");
+            buf.append(JType.tagToString(data));
+            break;
+        case JOpcode.cIINC:
+            data = codeArray.getU1(pc+1);
+            data2 = codeArray.getU1(pc+2);
+            buf.append("\t");
+            buf.append(data);
+            buf.append(", ");
+            buf.append(data2);
+            break;
+        case JOpcode.cSIPUSH:
+            data = codeArray.getU2(pc+1);
+            buf.append("\t");
+            buf.append(data);
+            break;
+        case JOpcode.cANEWARRAY: case JOpcode.cCHECKCAST:
+        case JOpcode.cGETFIELD: case JOpcode.cGETSTATIC:
+        case JOpcode.cINSTANCEOF:
+        case JOpcode.cINVOKESPECIAL: case JOpcode.cINVOKESTATIC:
+        case JOpcode.cINVOKEVIRTUAL:
+        case JOpcode.cLDC_W: case JOpcode.cLDC2_W: case JOpcode.cNEW:
+        case JOpcode.cPUTFIELD: case JOpcode.cPUTSTATIC:
+            data = codeArray.getU2(pc+1);
+            buf.append("\t#");
+            buf.append(data);
+            buf.append("; ");
+            buf.append(pool.lookupEntry(data).toComment(ownerClassName));
+            break;
+        case JOpcode.cIF_ACMPEQ: case JOpcode.cIF_ACMPNE:
+        case JOpcode.cIFEQ: case JOpcode.cIFGE: case JOpcode.cIFGT:
+        case JOpcode.cIFLE: case JOpcode.cIFLT: case JOpcode.cIFNE:
+        case JOpcode.cIFNONNULL: case JOpcode.cIFNULL:
+        case JOpcode.cIF_ICMPEQ: case JOpcode.cIF_ICMPGE:
+        case JOpcode.cIF_ICMPGT: case JOpcode.cIF_ICMPLE:
+        case JOpcode.cIF_ICMPLT: case JOpcode.cIF_ICMPNE:
+            data = codeArray.getU2(pc+1); // maybe S2 offset
+            buf.append("\t");
+            buf.append(pc+data);
+            break;
+        case JOpcode.cGOTO:
+            data = codeArray.getS2(pc+1); // always S2 offset
+            buf.append("\t");
+            buf.append(pc+data);
+            break;
+        case JOpcode.cINVOKEINTERFACE:
+            data = codeArray.getU2(pc+1);
+            data2 = codeArray.getU1(pc+3);
+            buf.append("\t#");
+            buf.append(data);
+            buf.append(",  ");
+            buf.append(data2);
+            buf.append("; ");
+            buf.append(pool.lookupEntry(data).toComment(ownerClassName));
+            break;
+        case JOpcode.cTABLESWITCH:
+            buf.append("{ //");
+            int addr = ((pc / 4 + 1) + 1) * 4; // U4 aligned data
+            int low = codeArray.getU4(addr);
+            int high = codeArray.getU4(addr+4);
+            buf.append(low);
+            buf.append(" to ");
+            buf.append(high);
+            for (int i = low; i <= high; ++i) {
+                buf.append("\n\t\t");
+                buf.append(i);
+                buf.append(": ");
+                buf.append(pc+codeArray.getU4(addr+(i-1)*4));
+                buf.append(";");
+            }
+            buf.append("\n\t\tdefault: ");
+            buf.append(pc+codeArray.getU4(addr-4));
+            buf.append(" }");
+        default:
+        }
+        return buf.toString();
     }
 }

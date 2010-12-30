@@ -1,12 +1,22 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 /**
  * Abstract superclass for attributes which can be attached to various
  * parts of a class file.
+ *
+ * Attributes are used for classes (section 4.2), fields (section 4.6),
+ * methods (section 4.7) and the Code attribute (section 4.8.3).
+ * See sections 4.2 and later of the JVM specification.
  *
  * @author Michel Schinz
  * @version 1.0

@@ -1,11 +1,15 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
 /**
  * Labels which can be attached to instructions.
  *
- * @version 1.0
  * @author Michel Schinz
+ * @version 1.0
  */
 
 public class JLabel {
@@ -15,12 +19,12 @@ public class JLabel {
     public boolean isAnchored() { return anchor != UNDEFINED_ANCHOR; }
 
     public int getAnchor() {
-	assert isAnchored();
+        assert isAnchored();
         return anchor;
     }
 
     public void setAnchor(int anchor) {
-	assert !isAnchored();
+        assert !isAnchored();
         this.anchor = anchor;
     }
 }

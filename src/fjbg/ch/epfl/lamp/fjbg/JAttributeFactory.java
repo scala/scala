@@ -1,10 +1,15 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
-import java.io.*;
-import java.util.*;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 
 /**
  * Extensible factory to build subclasses of JAttribute based on an
@@ -43,9 +48,16 @@ public class JAttributeFactory {
                              Constructor defaultConstructor) {
         this.context = context;
         this.defaultConstructor = defaultConstructor;
+        registerClass("BootstrapInvokeDynamic", JBootstrapInvokeDynamic.class);
         registerClass("Code", JCodeAttribute.class);
+        registerClass("ConstantValue", JConstantValueAttribute.class);
+        registerClass("EnclosingMethod", JEnclosingMethodAttribute.class);
+        registerClass("Exceptions", JExceptionsAttribute.class);
+        registerClass("InnerClasses", JInnerClassesAttribute.class);
         registerClass("LineNumberTable", JLineNumberTableAttribute.class);
+        registerClass("LocalVariableTable", JLocalVariableTableAttribute.class);
         registerClass("SourceFile", JSourceFileAttribute.class);
+        registerClass("StackMapTable", JStackMapTableAttribute.class);
     }
 
     public JAttributeFactory(FJBGContext context) {

@@ -1,3 +1,7 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
@@ -7,8 +11,8 @@ import java.io.*;
 /**
  * Representation of a Java class.
  *
- * @author Michel Schinz
- * @version 1.0
+ * @author Michel Schinz, Stephane Micheloud
+ * @version 1.1
  */
 public class JClass extends JMember {
 
@@ -81,7 +85,7 @@ public class JClass extends JMember {
         pool = context.JConstantPool(stream);
         accessFlags = stream.readShort();
 
-	// This class, super class and interfaces
+        // This class, super class and interfaces
         name = pool.lookupClass(stream.readShort());
         superclassName = pool.lookupClass(stream.readShort());
         interfaceNames = new String[stream.readShort()];
@@ -97,11 +101,17 @@ public class JClass extends JMember {
         for (int i = 0; i < methodsCount; ++i)
             addMethod(context.JMethod(this, stream));
 
+        String fileName = null;
         int attributesCount = stream.readShort();
-        for (int i = 0; i < attributesCount; ++i)
-            addAttribute(attributeFactory.newInstance(this, this, stream));
-
-        sourceFileName = null;
+        for (int i = 0; i < attributesCount; ++i) {
+            JAttribute attr = attributeFactory.newInstance(this, this, stream);
+            if (attr instanceof JSourceFileAttribute)
+                fileName = ((JSourceFileAttribute)attr).getFileName();
+            else if (attr instanceof JInnerClassesAttribute)
+                innerClasses = (JInnerClassesAttribute)attr;
+            addAttribute(attr);
+        }
+        sourceFileName = fileName;
     }
 
     /**
@@ -118,12 +128,42 @@ public class JClass extends JMember {
     public String[] getInterfaceNames() { return interfaceNames; }
 
     /**
+     * Gets the source file name of this class.
+     * @return The string representing the source file name of this class.
+     */
+    public String getSourceFileName() { return sourceFileName; }
+
+    /**
      * Gets the type of the objects that are instances of the class.
      * @return The type of the instances of the class.
      */
     public JType getType() { return new JObjectType(name); }
 
     public JClass getJClass() { return this; }
+
+    public boolean isPublic() {
+        return (accessFlags & JAccessFlags.ACC_PUBLIC) != 0;
+    }
+
+    public boolean isPrivate() {
+        return (accessFlags & JAccessFlags.ACC_PRIVATE) != 0;
+    }
+
+    public boolean isProtected() {
+        return (accessFlags & JAccessFlags.ACC_PROTECTED) != 0;
+    }
+
+    public boolean isStatic() {
+        return (accessFlags & JAccessFlags.ACC_STATIC) != 0;
+    }
+
+    public boolean isFinal() {
+        return (accessFlags & JAccessFlags.ACC_FINAL) != 0;
+    }
+
+    public boolean isAbstract() {
+        return (accessFlags & JAccessFlags.ACC_ABSTRACT) != 0;
+    }
 
     /**
      * Gets the version number of the class.
@@ -134,8 +174,8 @@ public class JClass extends JMember {
      */
     public void setVersion(int major, int minor) {
         assert !frozen;
-	this.major = major;
-	this.minor = minor;
+        this.major = major;
+        this.minor = minor;
     }
 
     /**
@@ -171,12 +211,12 @@ public class JClass extends JMember {
      * @return The boolean representing if the class is an interface or not.
      */
     public boolean isInterface() {
-	return (accessFlags & JAccessFlags.ACC_INTERFACE) != 0;
+        return (accessFlags & JAccessFlags.ACC_INTERFACE) != 0;
     }
 
     public void addField(JField field) {
         assert !frozen;
-	fields.add(field);
+        fields.add(field);
     }
 
     /**
@@ -191,7 +231,7 @@ public class JClass extends JMember {
 
     protected void addMethod(JMethod method) {
         assert !frozen;
-	methods.add(method);
+        methods.add(method);
     }
 
     /**
@@ -221,6 +261,10 @@ public class JClass extends JMember {
     public void removeMethod(JMethod m) {
         assert !frozen;
         methods.remove(m);
+    }
+
+    public JField[] getFields() {
+        return (JField[])fields.toArray(new JField[fields.size()]);
     }
 
     public JMethod[] getMethods() {
@@ -254,13 +298,13 @@ public class JClass extends JMember {
             if (!parent.mkdirs())
                 throw new IOException("cannot create directory " + parent);
 
-	FileOutputStream fStream = new FileOutputStream(file);
+        FileOutputStream fStream = new FileOutputStream(file);
         BufferedOutputStream bStream = new BufferedOutputStream(fStream);
-	DataOutputStream dStream = new DataOutputStream(bStream);
-	writeTo(dStream);
-	dStream.close();
+        DataOutputStream dStream = new DataOutputStream(bStream);
+        writeTo(dStream);
+        dStream.close();
         bStream.close();
-	fStream.close();
+        fStream.close();
     }
 
     public void setBootstrapClass(String bootstrapClass) {
@@ -276,44 +320,109 @@ public class JClass extends JMember {
     public void writeTo(DataOutputStream stream) throws IOException {
         if (!frozen) freeze();
 
-	int thisClassIdx = pool.addClass(name);
-	int superClassIdx = pool.addClass(superclassName);
-	int[] interfacesIdx = new int[interfaceNames.length];
+        int thisClassIdx = pool.addClass(name);
+        int superClassIdx = pool.addClass(superclassName);
+        int[] interfacesIdx = new int[interfaceNames.length];
 
-	for (int i = 0; i < interfaceNames.length; ++i)
-	    interfacesIdx[i] = pool.addClass(interfaceNames[i]);
+        for (int i = 0; i < interfaceNames.length; ++i)
+            interfacesIdx[i] = pool.addClass(interfaceNames[i]);
 
         pool.freeze();
 
-	// Magic number.
-	stream.writeInt(MAGIC_NUMBER);
-	// Version
-	stream.writeShort(minor);
-	stream.writeShort(major);
-	// Constant pool
-	pool.writeTo(stream);
-	// Access flags
-	stream.writeShort(accessFlags);
+        // Magic number.
+        stream.writeInt(MAGIC_NUMBER);
+        // Version
+        stream.writeShort(minor);
+        stream.writeShort(major);
+        // Constant pool
+        pool.writeTo(stream);
+        // Access flags
+        stream.writeShort(accessFlags);
 
-	// This class, super class and interfaces
-	stream.writeShort(thisClassIdx);
-	stream.writeShort(superClassIdx);
-	stream.writeShort(interfacesIdx.length);
-	for (int i = 0; i < interfacesIdx.length; ++i)
-	    stream.writeShort(interfacesIdx[i]);
+        // This class, super class and interfaces
+        stream.writeShort(thisClassIdx);
+        stream.writeShort(superClassIdx);
+        stream.writeShort(interfacesIdx.length);
+        for (int i = 0; i < interfacesIdx.length; ++i)
+            stream.writeShort(interfacesIdx[i]);
 
-	// Fields and methods
-	stream.writeShort(fields.size());
+        // Fields and methods
+        stream.writeShort(fields.size());
         Iterator fieldsIt = fields.iterator();
         while (fieldsIt.hasNext())
             ((JField)fieldsIt.next()).writeTo(stream);
 
-	stream.writeShort(methods.size());
+        stream.writeShort(methods.size());
         Iterator methodsIt = methods.iterator();
         while (methodsIt.hasNext())
             ((JMethod)methodsIt.next()).writeTo(stream);
 
-	// Attributes
+        // Attributes
         JAttribute.writeTo(attributes, stream);
+    }
+
+    // Follows javap output format for ClassFile.
+    /*@Override*/ public String toString() {
+        StringBuffer buf = new StringBuffer();
+        if (sourceFileName != null) {
+            buf.append("Compiled from \"");
+            buf.append(sourceFileName);
+            buf.append("\"\n");
+        }
+        buf.append(getMemberName());
+        buf.append(toExternalName(getName()));
+        if (!isInterface()) {
+            buf.append(" extends ");
+            buf.append(toExternalName(getSuperclassName()));
+        }
+        if (interfaceNames.length > 0) {
+            if (isInterface()) buf.append(" extends ");
+            else buf.append(" implements ");
+            for (int i = 0; i < interfaceNames.length; ++i) {
+                if (i > 0) buf.append(",");
+                buf.append(toExternalName(interfaceNames[i]));
+            }
+        }
+        buf.append("\n");
+        Iterator attrsIt = attributes.iterator();
+        while (attrsIt.hasNext()) {
+            JAttribute attr = (JAttribute)attrsIt.next();
+            buf.append(attr);
+        }
+        buf.append("  minor version: ");
+        buf.append(minor);
+        buf.append("\n  major version: ");
+        buf.append(major);
+        buf.append("\n");
+        buf.append(pool);
+        buf.append("\n{\n");
+        JField[] jfields = getFields();
+        for (int i = 0; i < jfields.length; ++i) {
+            if (i > 0) buf.append("\n");
+            buf.append(jfields[i]);
+        }
+        buf.append("\n");
+        JMethod[] jmethods = getMethods();
+        for (int i = 0; i < jmethods.length; ++i) {
+            if (i > 0) buf.append("\n");
+            buf.append(jmethods[i]);
+        }
+        buf.append("\n}\n");
+        return buf.toString();
+    }
+
+    private String getMemberName() {
+        StringBuffer buf = new StringBuffer();
+        if (isPublic()) buf.append("public ");
+        else if (isProtected()) buf.append("protected ");
+        else if (isPrivate()) buf.append("private ");
+        if (isInterface())
+            buf.append("interface ");
+        else {
+            if (isAbstract()) buf.append("abstract ");
+            else if (isFinal()) buf.append("final ");
+            buf.append("class ");
+        }
+        return buf.toString();
     }
 }

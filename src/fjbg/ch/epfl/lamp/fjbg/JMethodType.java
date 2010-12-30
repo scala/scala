@@ -1,3 +1,7 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
@@ -5,8 +9,8 @@ package ch.epfl.lamp.fjbg;
  * Type for Java methods. These types do not really exist in Java, but
  * are provided here because they are useful in several places.
  *
- * @version 1.0
  * @author Michel Schinz
+ * @version 1.0
  */
 
 public class JMethodType extends JType {

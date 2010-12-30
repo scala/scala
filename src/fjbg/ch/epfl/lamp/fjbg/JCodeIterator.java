@@ -1,3 +1,7 @@
+/* FJBG -- Fast Java Bytecode Generator
+ * Copyright 2002-2011 LAMP/EPFL
+ * @author  Michel Schinz
+ */
 
 package ch.epfl.lamp.fjbg;
 
@@ -6,8 +10,8 @@ import ch.epfl.lamp.util.ByteArray;
 /**
  * Iterator used to examine the contents of an instruction list.
  *
- * @version 1.0
  * @author Michel Schinz, Thomas Friedli
+ * @version 1.0
  */
 
 public class JCodeIterator {
