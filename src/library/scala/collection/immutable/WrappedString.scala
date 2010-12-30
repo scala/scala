@@ -29,7 +29,7 @@ import scala.util.matching.Regex
  *  @define Coll WrappedString
  *  @define coll wrapped string
  */
-class WrappedString(override val self: String) extends IndexedSeq[Char] with StringLike[WrappedString] with Proxy {
+class WrappedString(val self: String) extends IndexedSeq[Char] with StringLike[WrappedString] {
 
   override protected[this] def thisCollection: WrappedString = this
   override protected[this] def toCollection(repr: WrappedString): WrappedString = repr
@@ -39,6 +39,7 @@ class WrappedString(override val self: String) extends IndexedSeq[Char] with Str
 
   override def slice(from: Int, until: Int): WrappedString =
     new WrappedString(self.substring(from max 0, until min self.length))
+  override def toString = self
 }
 
 /** A companion object for wrapped strings.
