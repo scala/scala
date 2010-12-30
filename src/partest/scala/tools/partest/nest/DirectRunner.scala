@@ -51,6 +51,13 @@ trait DirectRunner {
     println("Dumping partest internals.")
     println("results.size = " + results.size + ", " + workers.size + " workers.")
     workers foreach println
+    workers filter (_.currentFileElapsed > 60) foreach { w =>
+      val elapsed = w.currentFileElapsed
+      println("A worker requires euthanasia! At least so it seems, since I received")
+      println("a signal and this one has been in la-la land for " + elapsed + " seconds.")
+      println("Attempting to force test timeout.")
+      w.forceTimeout()
+    }
   }
 
   def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, Int] = {

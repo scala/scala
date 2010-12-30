@@ -209,7 +209,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   protected lazy val root             = new ZipRootCreator(_.parent)()
   protected def DirEntryConstructor   = new DirEntry(_, _, _)
   protected def FileEntryConstructor  = new FileEntry(_, _, _, _)
-  protected def ZipTravConstructor    = zipTraversableFromZipFile _
+  protected def ZipTravConstructor    = new ZipFileIterable(_)
 
   abstract class Entry(
     override val container: AbstractFile,
@@ -247,15 +247,14 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     override def input = archive getInputStream entry
   }
 
-  private def zipTraversableFromZipFile(z: ZipFile): ZipTrav =
-    new Iterable[ZipEntry] with ZipTrav {
-      def zis: () => ZipInputStream = null    // not valid for this type
-      def iterator = new Iterator[ZipEntry] {
-        val enum    = z.entries()
-        def hasNext = enum.hasMoreElements
-        def next    = enum.nextElement
-      }
+  class ZipFileIterable(z: ZipFile) extends Iterable[ZipEntry] with ZipTrav {
+    def zis: () => ZipInputStream = null    // not valid for this type
+    def iterator = new Iterator[ZipEntry] {
+      val enum    = z.entries()
+      def hasNext = enum.hasMoreElements
+      def next    = enum.nextElement
     }
+  }
 }
 
 /**

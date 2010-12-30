@@ -116,15 +116,54 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
                  else
                    fileManager.JAVAC_CMD
 
+  private var currentTimerTask: KickableTimerTask = _
+
+  def cancelTimerTask() = if (currentTimerTask != null) currentTimerTask.cancel()
+  def updateTimerTask(body: => Unit) = {
+    cancelTimerTask()
+    currentTimerTask = new KickableTimerTask(body)
+    timer.schedule(currentTimerTask, fileManager.oneTestTimeout)
+  }
+
+  class KickableTimerTask(body: => Unit) extends TimerTask {
+    def run() = body
+    def kick() = {
+      cancel()
+      body
+    }
+  }
+
   /** Formerly deeper inside, these next few things are now promoted outside so
    *  I can see what they're doing when the world comes to a premature stop.
    */
   private val filesRemaining = new mutable.HashSet[File]
   private def addFilesRemaining(xs: Traversable[File]) = filesRemaining ++= xs
   private var currentTestFile: File = _
+  private var currentFileStart: Long = System.currentTimeMillis
+
+  def currentFileElapsed = (System.currentTimeMillis - currentFileStart) / 1000
+  def forceTimeout() = {
+    println("Let's see what them threads are doing before I kill that test.")
+    system.allThreads foreach { t =>
+      println(t)
+      t.getStackTrace foreach println
+      println("")
+    }
+    currentTimerTask.kick()
+  }
+
+  private def currentFileString = {
+    "Current test file is: %s\n  Started: %s (%s seconds ago)\n  Current time: %s".format(
+      currentTestFile,
+      new java.util.Date(currentFileStart),
+      currentFileElapsed,
+      new java.util.Date()
+    )
+  }
   private def getNextFile() = synchronized {
     currentTestFile = filesRemaining.head
     filesRemaining -= currentTestFile
+    currentFileStart = System.currentTimeMillis
     currentTestFile
   }
   // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
@@ -133,8 +172,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     status(key) = num
   }
   override def toString = (
-    ">> Partest Worker:\n" +
-    "Current test file is: " + currentTestFile + "\n" +
+    ">> Partest Worker in state " + getState + ":\n" +
+    currentFileString +
     "There are " + filesRemaining.size + " files remaining:\n" +
     filesRemaining.toList.sortBy(_.toString).map("  " + _ + "\n").mkString("") +
     "\nstatus hashmap contains " + status.size + " entries:\n" +
@@ -485,15 +524,6 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       runTestCommon(file, kind, expectFailure = false)((logFile, outDir) => {
         val fileBase = basename(file.getName)
         val dir      = file.getParentFile
-
-        //TODO: detect whether we have to use Runtime.exec
-        // val useRuntime = true
-        //
-        // if (useRuntime)
-        //   execTest(outDir, logFile, fileBase)
-        // else
-        //   execTestObjectRunner(file, outDir, logFile)
-        // // NestUI.verbose(this+" finished running "+fileBase)
         execTest(outDir, logFile, fileBase)
 
         diffCheck(compareOutput(dir, fileBase, kind, logFile))
@@ -1022,10 +1052,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       actor {
         val testFile = getNextFile()
-        val ontimeout = new TimerTask {
-          def run() = parent ! Timeout(testFile)
-        }
-        timer.schedule(ontimeout, fileManager.timeout.toLong)
+        updateTimerTask(parent ! Timeout(testFile))
 
         val context =
           try processSingleFile(testFile)
@@ -1060,8 +1087,10 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
                 if (logs != null) Some(logs.file) else None,
                 if (logs != null) logs.writers else None)
           }
-          if (filesRemaining.isEmpty)
+          if (filesRemaining.isEmpty) {
+            cancelTimerTask()
             reportAll(status.toMap, topcont)
+          }
       }
     }
   }
