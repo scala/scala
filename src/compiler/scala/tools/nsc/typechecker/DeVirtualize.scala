@@ -10,7 +10,7 @@ import symtab.Flags._
 import transform.{ InfoTransform, TypingTransformers }
 import scala.collection.mutable.ListBuffer
 
-abstract class DeVirtualize extends InfoTransform with TypingTransformers {
+abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
 
   import global._
   import definitions._
@@ -639,5 +639,7 @@ maps to:
 
     def newD(z:Int): D = new DC2(z).asInstanceOf[D]
   }
+
+*/
 
 */

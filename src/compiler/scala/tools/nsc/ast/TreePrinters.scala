@@ -149,7 +149,7 @@ trait TreePrinters { trees: SymbolTable =>
 
     def printAnnotations(tree: Tree) {
       val annots =
-        if (tree.symbol.rawAnnotations.nonEmpty) tree.symbol.annotations
+        if (tree.symbol.hasAssignedAnnotations) tree.symbol.annotations
         else tree.asInstanceOf[MemberDef].mods.annotations
 
       annots foreach (annot => print("@"+annot+" "))
@@ -176,7 +176,7 @@ trait TreePrinters { trees: SymbolTable =>
 
           print(word + " " + symName(tree, name))
           printTypeParams(tparams)
-          print(if (mods.isDeferred) " <: " else " extends "); print(impl) // (part of DEVIRTUALIZE)
+          print(if (mods.isDeferred) " <: " else " extends "); print(impl)
 
         case PackageDef(packaged, stats) =>
           printAnnotations(tree)

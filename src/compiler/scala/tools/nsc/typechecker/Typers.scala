@@ -350,9 +350,7 @@ trait Typers { self: Analyzer =>
         case st: SubType =>
           checkNonCyclic(pos, st.supertype)
         case ct: CompoundType =>
-          var p = ct.parents
-          while (!p.isEmpty && checkNonCyclic(pos, p.head)) p = p.tail
-          p.isEmpty
+          ct.parents forall (x => checkNonCyclic(pos, x))
         case _ =>
           true
       }
