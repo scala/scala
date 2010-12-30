@@ -50,7 +50,7 @@ trait FileManager {
   var SCALAC_OPTS = PartestDefaults.scalacOpts
   var JAVA_OPTS   = PartestDefaults.javaOpts
   var timeout     = PartestDefaults.timeout
-  var oneTestTimeout = 5 * 60 * 1000 // if one test takes over 5 minutes it must go
+  var oneTestTimeout = 15 * 60 * 1000 // okay, let's try 15
 
   /** Only when --debug is given. */
   lazy val testTimings = new HashMap[String, Long]
