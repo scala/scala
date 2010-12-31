@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Scala Distribution
-Bundle-SymbolicName: scala.tools.nsc;singleton:=true
+Bundle-SymbolicName: org.scala-ide.scala.compiler;singleton:=true
 Bundle-Version: 2.9.0.alpha
 Eclipse-LazyStart: true
 Bundle-ClassPath: 
@@ -9,7 +9,8 @@ Bundle-ClassPath:
  bin,
  lib/fjbg.jar,
  lib/jline.jar,
- lib/msil.jar
+ lib/msil.jar,
+ lib/scala-library.jar
 Export-Package: 
  scala.tools.nsc,
  scala.tools.nsc.ast,
@@ -42,4 +43,5 @@ Export-Package:
  ch.epfl.lamp.util
 Require-Bundle: 
  org.apache.ant,
- scala.library
+ org.scala-ide.scala.library
+ 

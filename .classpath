@@ -6,5 +6,7 @@
 	<classpathentry kind="lib" path="lib/jline.jar"/>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry exported="true" kind="lib" path="lib/fjbg.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="lib" path="lib/forkjoin.jar"/>
+	<classpathentry kind="lib" path="lib/scala-library.jar"/>
+	<classpathentry kind="output" path="build/quick/classes/compiler"/>
 </classpath>
