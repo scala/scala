@@ -94,7 +94,8 @@ class Random(val self: java.util.Random) {
    *  from the ASCII range 33-126.
    */
   def nextPrintableChar(): Char = {
-    val (low, high) = (33, 126)
+    val low  = 33
+    val high = 127
     (self.nextInt(high - low) + low).toChar
   }
 
