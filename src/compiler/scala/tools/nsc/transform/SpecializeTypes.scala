@@ -452,7 +452,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       log("specializedClass: " + cls)
       for (m <- normMembers if needsSpecialization(outerEnv ++ env, m) && satisfiable(fullEnv)) {
         if (settings.debug.value) log(" * looking at: " + m)
-        if (!m.isDeferred) concreteSpecMethods += m
+        if (!m.isDeferred) addConcreteSpecMethod(m)
 
         // specialized members have to be overridable.
         if (m.hasFlag(PRIVATE))
@@ -506,7 +506,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           val specVal = specializedOverload(cls, m, env)
 
-          concreteSpecMethods += m
+          addConcreteSpecMethod(m)
           specVal.asInstanceOf[TermSymbol].setAlias(m)
 
           enterMember(specVal)
@@ -662,7 +662,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (settings.debug.value) log("specializeMember %s with tps: %s stvars(sym): %s".format(sym, tps, specializedTypeVars(sym)))
       val tps1 = if (sym.isConstructor) tps filter (tp => sym.info.paramTypes.contains(tp)) else tps
       val tps2 = tps1 intersect specializedTypeVars(sym).toList
-      if (!sym.isDeferred) concreteSpecMethods += sym
+      if (!sym.isDeferred) addConcreteSpecMethod(sym)
 
       specializeOn(tps2) map {m => info(m) = SpecialOverload(sym, typeEnv(m)); m}
     } else
@@ -746,7 +746,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val om = specializedOverload(clazz, overridden, env)
       log("Added specialized overload for %s in env: %s with type: %s".format(overriding.fullName, env, om.info))
       typeEnv(om) = env
-      concreteSpecMethods += overriding
+      addConcreteSpecMethod(overriding)
       if (!overriding.isDeferred) {  // concrete method
         // if the override is a normalized member, 'om' gets the implementation from
         // its original target, and adds the environment of the normalized member (that is,
@@ -1019,6 +1019,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             body(tree.symbol) = rhs
             //          body(tree.symbol) = tree // whole method
             parameters(tree.symbol) = vparamss map (_ map (_.symbol))
+            concreteSpecMethods -= tree.symbol
           } // no need to descend further down inside method bodies
 
         case ValDef(mods, name, tpt, rhs) if concreteSpecMethods(tree.symbol) =>
@@ -1089,7 +1090,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (settings.debug.value)
             log("[%s] looking at Select: %s sym: %s: %s [tree.tpe: %s]".format(tree.pos.line, tree, symbol, symbol.info, tree.tpe))
 
-          if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) {
+          if (specializedTypeVars(symbol.info).nonEmpty && name != nme.CONSTRUCTOR) {
             val env = unify(symbol.tpe, tree.tpe, emptyEnv)
             if (settings.debug.value) log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
             if (!env.isEmpty) {
@@ -1415,6 +1416,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Concrete methods that use a specialized type, or override such methods. */
   private val concreteSpecMethods: mutable.Set[Symbol] = new mutable.HashSet
 
+  /** Add method m to the set of symbols for which we need an implementation tree
+   *  in the tree transformer.
+   *
+   *  @note This field is part of the specializeTypes subcomponent, so any symbols
+   *        that here are not garbage collected at the end of a compiler run!
+   */
+  def addConcreteSpecMethod(m: Symbol) {
+    if (currentRun.compiles(m)) concreteSpecMethods += m
+  }
+
   private def makeArguments(fun: Symbol, vparams: List[Symbol]): List[Tree] = {
     def needsCast(tp1: Type, tp2: Type): Boolean =
       !(tp1 <:< tp2)
@@ -1451,4 +1462,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
   }
 
+  def printSpecStats() {
+    println("    concreteSpecMembers: %7d".format(concreteSpecMethods.size))
+    println("    overloads:           %7d".format(overloads.size))
+    println("    typeEnv:             %7d".format(typeEnv.size))
+    println("    info:                %7d".format(info.size))
+  }
 }

@@ -159,7 +159,7 @@ abstract class SymbolLoaders {
       root.setInfo(new PackageClassInfoType(new Scope(), root))
 
       val sourcepaths = classpath.sourcepaths
-      for (classRep <- classpath.classes ; if doLoad(classRep)) {
+      for (classRep <- classpath.classes if doLoad(classRep)) {
         ((classRep.binary, classRep.source) : @unchecked) match {
           case (Some(bin), Some(src)) if needCompile(bin, src) =>
             enterToplevelsFromSource(root, classRep.name, src)

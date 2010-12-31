@@ -540,14 +540,14 @@ self =>
       }
     }
     val result = locals.values.toList
-    if (debugIDE) for (m <- result) println(m)
+//    if (debugIDE) for (m <- result) println(m)
     result
   }
 
   def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
     informIDE("getTypeCompletion " + pos)
     respondGradually(response) { typeMembers(pos) }
-    if (debugIDE) typeMembers(pos)
+    //if (debugIDE) typeMembers(pos)
   }
 
   def typeMembers(pos: Position): Stream[List[TypeMember]] = {
