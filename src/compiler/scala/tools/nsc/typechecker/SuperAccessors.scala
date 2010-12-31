@@ -434,18 +434,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         && (sym.owner.enclosingPackageClass == packageAccessBoundry(sym))
       )
       val host = hostForAccessorOf(sym, clazz)
-      def isSelfType = (host.thisSym != host) && {
-        if (host.thisSym.tpe.typeSymbol.isJavaDefined)
+      def isSelfType = !(host.tpe <:< host.typeOfThis) && {
+        if (host.typeOfThis.typeSymbol.isJavaDefined)
           restrictionError(pos, unit,
-            "%s accesses protected %s from self type %s.".format(clazz, sym, host.thisSym.tpe)
+            "%s accesses protected %s from self type %s.".format(clazz, sym, host.typeOfThis)
           )
         true
       }
       def isJavaProtected = host.isTrait && sym.isJavaDefined && {
         restrictionError(pos, unit,
-          "%s accesses protected %s inside a concrete trait method. " +
-          "Add an accessor in a class extending %s to work around this bug." .
-            format(clazz, sym, sym.enclClass)
+          """|%s accesses protected %s inside a concrete trait method.
+             |Add an accessor in a class extending %s as a workaround.""".stripMargin.format(
+                clazz, sym, sym.enclClass)
         )
         true
       }
