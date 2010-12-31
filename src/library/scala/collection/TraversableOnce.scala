@@ -629,20 +629,16 @@ trait TraversableOnce[+A] {
 }
 
 object TraversableOnce {
-  implicit def traversableOnceCanBuildFrom[T]: TraversableOnceCanBuildFrom[T] =
-    new TraversableOnceCanBuildFrom[T]
-
-  implicit def wrapTraversableOnce[A](trav: TraversableOnce[A]): TraversableOnceMonadOps[A] =
-    new TraversableOnceMonadOps(trav)
-
-  implicit def flattenTraversableOnce[A](travs: TraversableOnce[TraversableOnce[A]]): TraversableOnceFlattenOps[A] =
-    new TraversableOnceFlattenOps[A](travs)
+  implicit def traversableOnceCanBuildFrom[T] = new OnceCanBuildFrom[T]
+  implicit def wrapTraversableOnce[A](trav: TraversableOnce[A]) = new MonadOps(trav)
+  implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]) =
+    new FlattenOps[A](travs map ev)
 
   /** With the advent of TraversableOnce, it can be useful to have a builder which
    *  operates on Iterators so they can be treated uniformly along with the collections.
    *  See scala.util.Random.shuffle for an example.
    */
-  class TraversableOnceCanBuildFrom[A] extends generic.CanBuildFrom[TraversableOnce[A], A, TraversableOnce[A]] {
+  class OnceCanBuildFrom[A] extends generic.CanBuildFrom[TraversableOnce[A], A, TraversableOnce[A]] {
     def newIterator = new ArrayBuffer[A] mapResult (_.iterator)
 
     /** Creates a new builder on request of a collection.
@@ -657,11 +653,11 @@ object TraversableOnce {
     def apply() = newIterator
   }
 
-  class TraversableOnceFlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {
+  class FlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {
     def flatten: Iterator[A] = travs.foldLeft(Iterator.empty: Iterator[A])(_ ++ _)
   }
 
-  class TraversableOnceMonadOps[+A](trav: TraversableOnce[A]) {
+  class MonadOps[+A](trav: TraversableOnce[A]) {
     def map[B](f: A => B): TraversableOnce[B] = trav.toIterator map f
     def flatMap[B](f: A => TraversableOnce[B]): TraversableOnce[B] = trav.toIterator flatMap f
     def withFilter(p: A => Boolean) = trav.toIterator filter p
