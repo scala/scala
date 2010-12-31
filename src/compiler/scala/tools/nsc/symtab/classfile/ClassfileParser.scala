@@ -462,7 +462,7 @@ abstract class ClassfileParser {
       ss = s substring start
       sym = owner.info.decls lookup ss
       if (sym == NoSymbol) {
-        sym = owner.newClass(NoPosition, ss) setInfo completer
+        sym = owner.newClass(NoPosition, newTypeName(ss)) setInfo completer
         owner.info.decls enter sym
         if (settings.debug.value && settings.verbose.value)
           println("loaded "+sym+" from file "+file)
@@ -748,7 +748,7 @@ abstract class ClassfileParser {
                         case '*' => TypeBounds(definitions.NothingClass.tpe,
                                                definitions.AnyClass.tpe)
                       }
-                      val newtparam = sym.newExistential(sym.pos, "?"+i) setInfo bounds
+                      val newtparam = sym.newExistential(sym.pos, newTypeName("?"+i)) setInfo bounds
                       existentials += newtparam
                       xs += newtparam.tpe //@M should probably be .tpeHK
                       i += 1

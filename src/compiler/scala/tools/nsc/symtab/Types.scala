@@ -3213,7 +3213,7 @@ A type's typeSymbol should never be inspected directly.
 
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
     val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
-      clazz.newExistential(clazz.pos, "?"+i).setInfo(tparam.info.bounds)
+      clazz.newExistential(clazz.pos, newTypeName("?"+i)).setInfo(tparam.info.bounds)
     }
     for (tparam <- eparams) tparam setInfo tparam.info.substSym(tparams, eparams)
     eparams
@@ -3600,7 +3600,7 @@ A type's typeSymbol should never be inspected directly.
         val symowner = oldSym.owner
         val bound = singletonBounds(actualsIndexed(actualIdx))
 
-        val sym = symowner.newExistential(oldSym.pos, oldSym.name+".type")
+        val sym = symowner.newExistential(oldSym.pos, newTypeName(oldSym.name + ".type"))
         sym.setInfo(bound)
         sym.setFlag(oldSym.flags)
 

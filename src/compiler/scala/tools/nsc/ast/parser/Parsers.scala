@@ -323,7 +323,7 @@ self =>
         Nil,
         List(Nil),
         TypeTree(),
-        Block(List(Apply(Select(Super("", ""), nme.CONSTRUCTOR), Nil)), Literal(Constant(())))
+        Block(List(Apply(Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR), Nil)), Literal(Constant(())))
       )
 
       // def main

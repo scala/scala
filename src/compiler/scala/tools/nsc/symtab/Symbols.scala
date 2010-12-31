@@ -32,9 +32,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   private var recursionTable = immutable.Map.empty[Symbol, Int]
 
   private var nextexid = 0
-  private def freshExistentialName() = {
+  private def freshExistentialName(suffix: String) = {
     nextexid += 1
-    "_"+nextexid
+    newTypeName("_" + nextexid + suffix)
   }
 
   /** The original owner of a class. Used by the backend to generate
@@ -210,18 +210,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       argtypess map (_.map(param))
     }
 
-    /** Make an existential variable.
-     *  @param name    suffix to be appended to the freshly generated name
-     *                 It's ususally "", except for type variables abstracting
-     *                 over values, where it is ".type".
-     *  @param owner   The owner of the variable
-     *  @param bounds  The variable's bounds
-     */
     final def newExistential(pos: Position, name: TypeName): Symbol =
       newAbstractType(pos, name).setFlag(EXISTENTIAL)
 
     final def freshExistential(suffix: String): Symbol =
-      newExistential(pos, freshExistentialName()+suffix)
+      newExistential(pos, freshExistentialName(suffix))
 
     /** Synthetic value parameters when parameter symbols are not available.
      *  Calling this method multiple times will re-use the same parameter names.

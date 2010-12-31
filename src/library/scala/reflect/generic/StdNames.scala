@@ -3,13 +3,7 @@ package generic
 
 import scala.reflect.NameTransformer
 
-trait LowPriorityStdNames {
-  self: Universe =>
-
-  implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
-}
-
-trait StdNames extends LowPriorityStdNames {
+trait StdNames {
   self: Universe =>
 
   val nme: LibraryTermNames
