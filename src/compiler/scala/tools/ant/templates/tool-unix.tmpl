@@ -82,12 +82,15 @@ fi
 # -D options will be available as system properties.
 declare -a java_args
 declare -a scala_args
-CPSWITCH="-cp $TOOL_CLASSPATH"
 
 while [ $# -gt 0 ]; do
   case "$1" in
     -D*)
       java_args=("${java_args[@@]}" "$1")
+      shift
+      ;;
+    -toolcp)
+      TOOL_CLASSPATH="$TOOL_CLASSPATH:$2"
       shift
       ;;
     -J*)
@@ -104,6 +107,9 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+: ${CPSWITCH:="-cp $TOOL_CLASSPATH"}
+
 # reset "$@@" to the remaining args
 set -- "${scala_args[@@]}"
 
