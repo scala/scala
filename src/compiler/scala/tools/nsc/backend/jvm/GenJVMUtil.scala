@@ -35,7 +35,7 @@ trait GenJVMUtil {
   )
 
   private val javaNameCache = {
-    val map = new mutable.HashMap[Symbol, String]()
+    val map = new mutable.WeakHashMap[Symbol, String]()
     map ++= List(
       NothingClass        -> RuntimeNothingClass.fullName('/'),
       RuntimeNothingClass -> RuntimeNothingClass.fullName('/'),

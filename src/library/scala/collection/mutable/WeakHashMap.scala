@@ -15,7 +15,9 @@ import JavaConversions._
 import generic._
 
 
-/** A hash map with references to entries which are weakly reachable.
+/** A hash map with references to entries which are weakly reachable. Entries are
+ *  removed from this map when the key is no longer (strongly) referenced. This class wraps
+ *  `java.util.WeakHashMap`.
  *
  *  @tparam A      type of keys contained in this map
  *  @tparam B      type of values associated with the keys
