@@ -175,10 +175,15 @@ abstract class TreeInfo {
 
   /** Is tpt of the form T* ? */
   def isRepeatedParamType(tpt: Tree) = tpt match {
-    case TypeTree()                                                        => definitions.isRepeatedParamType(tpt.tpe)
+    case TypeTree()                                                          => definitions.isRepeatedParamType(tpt.tpe)
     case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), _)      => true
     case AppliedTypeTree(Select(_, tpnme.JAVA_REPEATED_PARAM_CLASS_NAME), _) => true
-    case _                                                                 => false
+    case _                                                                   => false
+  }
+  /** The parameter ValDefs from a def of the form T*. */
+  def repeatedParams(tree: Tree): List[ValDef] = tree match {
+    case DefDef(_, _, _, vparamss, _, _)  => vparamss.flatten filter (vd => isRepeatedParamType(vd.tpt))
+    case _                                => Nil
   }
 
   /** Is tpt a by-name parameter type? */

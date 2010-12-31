@@ -394,7 +394,12 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         false
     }
 
-    def isSeqType(tp: Type) = cond(tp.normalize) { case TypeRef(_, SeqClass, List(tparam)) => true }
+    def isSeqType(tp: Type) = elementType(SeqClass, tp.normalize) != NoType
+
+    def elementType(container: Symbol, tp: Type): Type = tp match {
+      case TypeRef(_, `container`, arg :: Nil)  => arg
+      case _                                    => NoType
+    }
 
     def seqType(arg: Type)    = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
     def arrayType(arg: Type)  = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))

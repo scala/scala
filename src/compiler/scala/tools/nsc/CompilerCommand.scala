@@ -19,7 +19,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   /** The name of the command */
   def cmdName = "scalac"
-  private def isFsc = cmdName == "fsc"
 
   private val helpSyntaxColumnWidth: Int =
     (settings.visibleSettings map (_.helpSyntax.length)) max
@@ -42,7 +41,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   """.stripMargin.trim + "\n\n"
 
   /** Creates a help message for a subset of options based on cond */
-  def createUsageMsg(label: String, shouldExplain: Boolean, cond: (Setting) => Boolean): String = {
+  def createUsageMsg(label: String, shouldExplain: Boolean, cond: Setting => Boolean): String = {
     def helpStr(s: Setting) = format(s.helpSyntax) + "  " + s.helpDescription
 
     val usage         = "Usage: %s <options> <source files>\n" format cmdName
@@ -59,29 +58,30 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   }
 
   /** Messages explaining usage and options */
-  def usageMsg    = createUsageMsg("where possible standard", false, _.isStandard)
-  def fscUsageMsg = createUsageMsg("where possible standard", false, ( st => st.isStandard || st.name == "-shutdown"))
+  def usageMsg    =
+    if (cmdName == "fsc")
+      createUsageMsg("where possible standard", false, st => st.isStandard || st.name == "-shutdown")
+    else
+      createUsageMsg("where possible standard", false, _.isStandard)
   def xusageMsg   = createUsageMsg("Possible advanced", true, _.isAdvanced)
   def yusageMsg   = createUsageMsg("Possible private", true, _.isPrivate)
 
   // If any of these settings is set, the compiler shouldn't start;
   // an informative message of some sort should be printed instead.
-  // (note: do not add "files.isEmpty" do this list)
-  val stopSettings = List[(() => Boolean, (Global) => String)](
-    ((() => (settings.help.value _)() && isFsc), fscUsageMsg + _.pluginOptionsHelp),
-    (settings.help.value _,         usageMsg + _.pluginOptionsHelp),
-    (settings.Xhelp.value _,        _ => xusageMsg),
-    (settings.Yhelp.value _,        _ => yusageMsg),
-    (settings.showPlugins.value _,  _.pluginDescriptions),
-    (settings.showPhases.value _,   _.phaseDescriptions)
-  )
-  def shouldStopWithInfo: Boolean = stopSettings exists { _._1() }
+  def shouldStopWithInfo = {
+    import settings.{ Setting => _, _ }
+    Set[BooleanSetting](help, Xhelp, Yhelp, showPlugins, showPhases) exists (_.value)
+  }
 
-  def getInfoMessage(compiler: Global): String =
-    stopSettings.find(pair => (pair._1)()) match {
-      case Some((test, getMessage)) => getMessage(compiler)
-      case None => ""
-    }
+  def getInfoMessage(global: Global): String = {
+    import settings._
+    if (help.value)               usageMsg + global.pluginOptionsHelp
+    else if (Xhelp.value)         xusageMsg
+    else if (Yhelp.value)         yusageMsg
+    else if (showPlugins.value)   global.pluginDescriptions
+    else if (showPhases.value)    global.phaseDescriptions
+    else                          ""
+  }
 
   /**
    * Expands all arguments starting with @ to the contents of the

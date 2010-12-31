@@ -111,7 +111,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
       val tp = expandAlias(tp0)
       tp match {
         case ClassInfoType(parents, decls, clazz) =>
-          val parents1 = parents mapConserve (uncurry)
+          val parents1 = parents mapConserve uncurry
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, clazz) // @MAT normalize in decls??
         case PolyType(_, _) =>
@@ -159,7 +159,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
     private val repeatedParams = mutable.Map[Symbol, List[ValDef]]()
 
     override def transformUnit(unit: CompilationUnit) {
-      freeMutableVars.clear
+      freeMutableVars.clear()
       freeLocalsTraverser(unit.body)
       super.transformUnit(unit)
     }
@@ -367,7 +367,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
 
           DefDef(m, mkUnchecked(
             if (cases exists treeInfo.isDefaultCase) Literal(true)
-            else Match(substTree(selector.duplicate), (cases map transformCase) ::: List(defaultCase))
+            else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
           ))
         }
 
@@ -375,14 +375,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           if (isPartial) List(applyMethodDef, isDefinedAtMethodDef)
           else List(applyMethodDef)
 
-        localTyper.typed {
-          atPos(fun.pos) {
-            Block(
-              List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, fun.pos)),
-              Typed(
-                New(TypeTree(anonClass.tpe), List(List())),
-                TypeTree(fun.tpe)))
-          }
+        localTyper.typedPos(fun.pos) {
+          Block(
+            List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, fun.pos)),
+            Typed(
+              New(TypeTree(anonClass.tpe), List(List())),
+              TypeTree(fun.tpe)))
         }
       }
     }
@@ -458,13 +456,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         if (!isByNameParamType(formal)) {
           arg
         } else if (isByNameRef(arg)) {
-          byNameArgs.addEntry(arg)
+          byNameArgs += arg
           arg setType functionType(List(), arg.tpe)
         } else {
-          val fun = localTyper.typed(
-            Function(List(), arg) setPos arg.pos).asInstanceOf[Function];
-          new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(arg);
-          transformFunction(fun)
+          val result = localTyper.typed(
+            Function(Nil, arg) setPos arg.pos).asInstanceOf[Function]
+          new ChangeOwnerTraverser(currentOwner, result.symbol).traverse(arg)
+          transformFunction(result)
         }
       }
     }
@@ -487,11 +485,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
     def mainTransform(tree: Tree): Tree = {
 
       def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
-        val savedNeedTryLift = needTryLift
+        val saved = needTryLift
         needTryLift = needLift
-        val t = f
-        needTryLift = savedNeedTryLift
-        t
+        try f
+        finally needTryLift = saved
       }
 
       /** A try or synchronized needs to be lifted anyway for MSIL if it contains
@@ -509,20 +506,17 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         val sym = currentOwner.newMethod(tree.pos, unit.freshTermName("liftedTree"))
         sym.setInfo(MethodType(List(), tree.tpe))
         new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
-        localTyper.typed {
-          atPos(tree.pos) {
-            Block(List(DefDef(sym, List(List()), tree)),
-                  Apply(Ident(sym), Nil))
-          }
-        }
+        localTyper.typedPos(tree.pos)(Block(
+          List(DefDef(sym, List(Nil), tree)),
+          Apply(Ident(sym), Nil)
+        ))
       }
 
       def withInConstructorFlag(inConstructorFlag: Long)(f: => Tree): Tree = {
-        val savedInConstructorFlag = this.inConstructorFlag
+        val saved = this.inConstructorFlag
         this.inConstructorFlag = inConstructorFlag
-        val t = f
-        this.inConstructorFlag = savedInConstructorFlag
-        t
+        try f
+        finally this.inConstructorFlag = saved
       }
 
       if (isElidable(tree)) elideIntoUnit(tree)
@@ -621,12 +615,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         case _ =>
           val tree1 = super.transform(tree)
           if (isByNameRef(tree1)) {
-            val tree2 = tree1 setType functionType(List(), tree1.tpe)
+            val tree2 = tree1 setType functionType(Nil, tree1.tpe)
             return {
               if (noApply contains tree2) tree2
-              else localTyper.typed {
-                atPos(tree1.pos) { Apply(Select(tree2, nme.apply), List()) }
-              }
+              else localTyper.typedPos(tree1.pos)(Apply(Select(tree2, nme.apply), Nil))
             }
           }
           tree1
@@ -689,7 +681,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
                     case _ =>
                       false
                   })) catches
-              else catches ::: List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname))));
+              else catches :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Ident(exname)))
             val catchall =
               atPos(tree.pos) {
                 CaseDef(
@@ -699,7 +691,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
               }
             if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = localTyper.typedCases(
-              tree, List(catchall), ThrowableClass.tpe, WildcardType);
+              tree, List(catchall), ThrowableClass.tpe, WildcardType)
             treeCopy.Try(tree, body, catches1, finalizer)
           }
         case Apply(Apply(fn, args), args1) =>
@@ -724,86 +716,88 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
      * which is used later.
      */
     private def saveRepeatedParams(dd: DefDef): Unit =
-      if (dd.symbol.isConstructor) unit.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.") else {
-        val allparams = dd.vparamss.flatten
-        val reps = allparams.filter(p => isRepeatedParamType(p.symbol.tpe))
-        if (reps.isEmpty)
+      if (dd.symbol.isConstructor)
+        unit.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.")
+      else treeInfo.repeatedParams(dd) match {
+        case Nil  =>
           unit.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
-        else repeatedParams.put(dd.symbol, reps)
+        case reps =>
+          repeatedParams(dd.symbol) = reps
       }
 
     /* Called during post transform, after the method argument lists have been flattened.
      * It looks for the method in the `repeatedParams` map, and generates a Java-style
      * varargs forwarder. It then adds the forwarder to the `newMembers` sequence.
      */
-    private def addJavaVarargsForwarders(dd: DefDef, flatdd: DefDef, tree: Tree) = if (repeatedParams.contains(dd.symbol)) {
-      def toArrayType(tp: Type): Type = tp match {
-        case TypeRef(_, SeqClass, List(tparg)) =>
-          // to prevent generation of an `Object` parameter from `Array[T]` parameter later
-          // as this would crash the Java compiler which expects an `Object[]` array for varargs
-          //   e.g.        def foo[T](a: Int, b: T*)
-          //   becomes     def foo[T](a: Int, b: Array[Object])
-          //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
-          if (tparg.typeSymbol.isTypeParameterOrSkolem) arrayType(ObjectClass.tpe) else arrayType(tparg)
+    private def addJavaVarargsForwarders(dd: DefDef, flatdd: DefDef, tree: Tree): Unit = {
+      if (!repeatedParams.contains(dd.symbol))
+        return
+
+      def toSeqType(tp: Type): Type = {
+        val arg = elementType(ArrayClass, tp)
+        seqType(arg)
       }
-      def toSeqType(tp: Type): Type = tp match {
-        case TypeRef(_, ArrayClass, List(tparg)) => seqType(tparg)
-      }
-      def seqElemType(tp: Type): Type = tp match {
-        case TypeRef(_, SeqClass, List(tparg)) => tparg
-      }
-      def arrayElemType(tp: Type): Type = tp match {
-        case TypeRef(_, ArrayClass, List(tparg)) => tparg
+      def toArrayType(tp: Type): Type = {
+        val arg = elementType(SeqClass, tp)
+        // to prevent generation of an `Object` parameter from `Array[T]` parameter later
+        // as this would crash the Java compiler which expects an `Object[]` array for varargs
+        //   e.g.        def foo[T](a: Int, b: T*)
+        //   becomes     def foo[T](a: Int, b: Array[Object])
+        //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
+        arrayType(
+          if (arg.typeSymbol.isTypeParameterOrSkolem) ObjectClass.tpe
+          else arg
+        )
       }
 
-      val reps = repeatedParams(dd.symbol)
-      val rpsymbols = reps.map(_.symbol).toSet
-      val theTyper = typer.atOwner(tree, currentClass)
-      val flatparams = flatdd.vparamss(0)
+      val reps          = repeatedParams(dd.symbol)
+      val rpsymbols     = reps.map(_.symbol).toSet
+      val theTyper      = typer.atOwner(tree, currentClass)
+      val flatparams    = flatdd.vparamss.head
 
       // create the type
-      val forwformals = for (p <- flatparams) yield
-        if (rpsymbols contains p.symbol) toArrayType(p.symbol.tpe)
-        else p.symbol.tpe
-      val forwresult = dd.symbol.tpe match {
-        case MethodType(_, resultType) => resultType
-        case PolyType(_, MethodType(_, resultType)) => resultType
+      val forwformals = flatparams map {
+        case p if rpsymbols(p.symbol) => toArrayType(p.symbol.tpe)
+        case p                        => p.symbol.tpe
       }
-      val forwformsyms = (forwformals zip flatparams) map {
-        case (tp, oldparam) => currentClass.newValueParameter(oldparam.symbol.pos, oldparam.name).setInfo(tp)
-      }
+      val forwresult = dd.symbol.tpe.finalResultType
+      val forwformsyms = (forwformals, flatparams).zipped map ((tp, oldparam) =>
+        currentClass.newValueParameter(oldparam.symbol.pos, oldparam.name).setInfo(tp)
+      )
+      def mono = MethodType(forwformsyms, forwresult)
       val forwtype = dd.symbol.tpe match {
-        case MethodType(_, _) => MethodType(forwformsyms, forwresult)
-        case PolyType(tparams, _) => PolyType(tparams, MethodType(forwformsyms, forwresult))
+        case MethodType(_, _) => mono
+        case PolyType(tps, _) => PolyType(tps, mono)
       }
 
       // create the symbol
-      val forwsym = currentClass.newMethod(dd.pos, dd.name).setFlag(VARARGS | SYNTHETIC | flatdd.symbol.flags).setInfo(forwtype)
+      val forwsym = (
+        currentClass.newMethod(dd.pos, dd.name)
+        . setFlag (VARARGS | SYNTHETIC | flatdd.symbol.flags)
+        . setInfo (forwtype)
+      )
 
       // create the tree
-      val forwtree = theTyper.typed {
-        val locals: List[Tree] = for ((argsym, fp) <- (forwsym ARGS) zip flatparams) yield
-          if (rpsymbols contains fp.symbol)
+      val forwtree = theTyper.typedPos(dd.pos) {
+        val locals = (forwsym ARGS, flatparams).zipped map {
+          case (_, fp) if !rpsymbols(fp.symbol) => null
+          case (argsym, fp)                     =>
             Block(Nil,
               gen.mkCast(
-                gen.mkWrapArray(Ident(argsym), arrayElemType(argsym.tpe)),
-                seqType(seqElemType(fp.symbol.tpe))
+                gen.mkWrapArray(Ident(argsym), elementType(ArrayClass, argsym.tpe)),
+                seqType(elementType(SeqClass, fp.symbol.tpe))
               )
             )
-          else null
-        val seqargs = for ((l, argsym) <- locals zip (forwsym ARGS)) yield
-          if (l == null) Ident(argsym)
-          else l
+        }
+        val seqargs = (locals, forwsym ARGS).zipped map {
+          case (null, argsym) => Ident(argsym)
+          case (l, _)         => l
+        }
         val end = if (forwsym.isConstructor) List(UNIT) else Nil
 
-        atPos(dd.pos) {
-          val t = DEF(forwsym) === BLOCK {
-            (List(
-              Apply(gen.mkAttributedRef(flatdd.symbol), seqargs)
-            ) ::: end): _*
-          }
-          t
-        }
+        DEF(forwsym) === BLOCK(
+          Apply(gen.mkAttributedRef(flatdd.symbol), seqargs) :: end : _*
+        )
       }
 
       // check if the method with that name and those arguments already exists in the template
@@ -819,7 +813,6 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           newMembers += forwtree
       }
     }
-
   }
 
   /** Set of mutable local variables that are free in some inner method. */
@@ -837,10 +830,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
     var maybeEscaping = false
 
     def withEscaping(body: => Unit) {
-      val savedEscaping = maybeEscaping
+      val saved = maybeEscaping
       maybeEscaping = true
-      body
-      maybeEscaping = savedEscaping
+      try body
+      finally maybeEscaping = saved
     }
 
     override def traverse(tree: Tree) = tree match {
@@ -852,12 +845,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
       /** A method call with a by-name parameter represents escape. */
       case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
         traverse(fn)
-        (fn.symbol.paramss.head zip args) foreach {
-          case (param, arg) =>
-            if (param.tpe != null && isByNameParamType(param.tpe))
-              withEscaping(traverse(arg))
-            else
-              traverse(arg)
+        (fn.symbol.paramss.head, args).zipped foreach { (param, arg) =>
+          if (param.tpe != null && isByNameParamType(param.tpe))
+            withEscaping(traverse(arg))
+          else
+            traverse(arg)
         }
       /** The rhs of a closure represents escape. */
       case Function(vparams, body) =>

@@ -90,12 +90,9 @@ abstract class SymbolTable extends reflect.generic.Universe
   final def atPhase[T](ph: Phase)(op: => T): T = {
     // Eugene: insert same thread assertion here
     val current = phase
-    try {
-      phase = ph
-      op
-    } finally {
-      phase = current
-    }
+    phase = ph
+    try op
+    finally phase = current
   }
   final def afterPhase[T](ph: Phase)(op: => T): T =
     atPhase(ph.next)(op)
