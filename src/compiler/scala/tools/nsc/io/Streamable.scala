@@ -8,7 +8,7 @@ package io
 
 import java.net.{ URI, URL }
 import java.io.{ BufferedInputStream, InputStream, PrintStream, File => JFile }
-import java.io.{ BufferedReader, InputStreamReader }
+import java.io.{ BufferedReader, InputStreamReader, Closeable => JCloseable }
 import scala.io.{ Codec, BufferedSource, Source }
 import collection.mutable.ArrayBuffer
 import Path.fail
@@ -105,6 +105,11 @@ object Streamable {
     def slurp(): String = slurp(creationCodec)
     def slurp(codec: Codec) = chars(codec).mkString
   }
+
+  /** Call a function on something Closeable, finally closing it. */
+  def closing[T <: JCloseable, U](stream: T)(f: T => U): U =
+    try f(stream)
+    finally stream.close()
 
   def bytes(is: InputStream): Array[Byte] =
     new Bytes { val inputStream = is } toByteArray

@@ -12,7 +12,7 @@ package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, File => JFile }
+  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, File => JFile, Closeable => JCloseable }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 
@@ -26,8 +26,12 @@ object File {
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
     apply(JFile.createTempFile(prefix, suffix, dir))
 
-  type Closeable = { def close(): Unit }
-  def closeQuietly(target: Closeable) {
+  type HasClose = { def close(): Unit }
+
+  def closeQuietly(target: HasClose) {
+    try target.close() catch { case e: IOException => }
+  }
+  def closeQuietly(target: JCloseable) {
     try target.close() catch { case e: IOException => }
   }
 
@@ -37,11 +41,15 @@ object File {
   // the exceptions so as not to cause spurious failures when no write access is available,
   // e.g. google app engine.
   try {
+    import Streamable.closing
     val tmp = JFile.createTempFile("bug6503430", null, null)
-    val in = new FileInputStream(tmp).getChannel()
-    val out = new FileOutputStream(tmp, true).getChannel()
-    out.transferFrom(in, 0, 0)
-    tmp.delete()
+    try closing(new FileInputStream(tmp)) { in =>
+      val inc = in.getChannel()
+      closing(new FileOutputStream(tmp, true)) { out =>
+        out.getChannel().transferFrom(inc, 0, 0)
+      }
+    }
+    finally tmp.delete()
   }
   catch {
     case _: IllegalArgumentException | _: IllegalStateException | _: IOException | _: SecurityException => ()
@@ -132,7 +140,7 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
         pos += out.transferFrom(in, pos, count)
       }
     }
-    finally List[Closeable](out, out_s, in, in_s) foreach closeQuietly
+    finally List[HasClose](out, out_s, in, in_s) foreach closeQuietly
 
     if (this.length != dest.length)
       fail("Failed to completely copy %s to %s".format(name, dest.name))
