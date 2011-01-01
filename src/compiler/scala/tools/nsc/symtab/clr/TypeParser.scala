@@ -150,8 +150,8 @@ abstract class TypeParser {
     val canBeTakenAddressOf = (typ.IsValueType || typ.IsEnum) && (typ.FullName != "System.Enum")
 
     if(canBeTakenAddressOf) {
-      clazzBoxed = clazz.owner.newClass(clazz.name append "Boxed")
-      clazzMgdPtr = clazz.owner.newClass(clazz.name append "MgdPtr")
+      clazzBoxed = clazz.owner.newClass(clazz.name.toTypeName append "Boxed")
+      clazzMgdPtr = clazz.owner.newClass(clazz.name.toTypeName append "MgdPtr")
       clrTypes.mdgptrcls4clssym(clazz) =  clazzMgdPtr
       /* adding typMgdPtr to clrTypes.sym2type should happen early (before metadata for supertypes is parsed,
          before metadata for members are parsed) so that clazzMgdPtr can be found by getClRType. */

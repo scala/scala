@@ -35,11 +35,11 @@ trait Names extends reflect.generic.Names {
 
   /** hashtable for finding term names quickly
    */
-  private val termHashtable = new Array[Name](HASH_SIZE)
+  private val termHashtable = new Array[TermName](HASH_SIZE)
 
   /** hashtable for finding type names quickly
    */
-  private val typeHashtable = new Array[Name](HASH_SIZE)
+  private val typeHashtable = new Array[TypeName](HASH_SIZE)
 
   /** the hashcode of a name
    */
@@ -145,26 +145,16 @@ trait Names extends reflect.generic.Names {
   def nameChars: Array[Char] = chrs
   @deprecated("") def view(s: String): TermName = newTermName(s)
 
-  override def onNameTranslate(name: Name): Unit = {
-    if (nameDebug) {
-      Console println "Translating %s '%s' to %s.".format(
-        if (isTypeName(name)) "type" else "term",
-        name,
-        if (isTypeName(name)) "term" else "type"
-      )
-    }
-  }
-
 // Classes ----------------------------------------------------------------------
 
   /** The name class. */
-  abstract class Name(index: Int, len: Int) extends Function1[Int, Char] {
+  sealed abstract class Name(index: Int, len: Int) extends Function1[Int, Char] {
     /** Index into name table */
     def start: Int = index
 
     /** next name in the same hash bucket
      */
-    var next: Name = null
+    def next: Name
 
     /** return the length of this name
      */
@@ -399,12 +389,8 @@ trait Names extends reflect.generic.Names {
       else newTermName(res)
     }
 
-    def append(suffix: String): Name = {
-      val chars = this + suffix
-      if (isTypeName) newTypeName(chars)
-      else newTermName(chars)
-    }
-    def append(suffix: Name): Name = append(suffix.toString)
+    def append(suffix: String): Name
+    def append(suffix: Name): Name
 
     /** Replace $op_name by corresponding operator symbol.
      */
@@ -416,7 +402,7 @@ trait Names extends reflect.generic.Names {
   }
 
   final class TermName(index: Int, len: Int, hash: Int) extends Name(index, len) {
-    next = termHashtable(hash)
+    var next: TermName = termHashtable(hash)
     termHashtable(hash) = this
     def isTermName: Boolean = true
     def isTypeName: Boolean = false
@@ -430,13 +416,15 @@ trait Names extends reflect.generic.Names {
         n = new TypeName(index, len, h);
       n
     }
+    def append(suffix: String): TermName = newTermName(this + suffix)
+    def append(suffix: Name): TermName = append(suffix.toString)
     def companionName: TypeName = toTypeName
     def subName(from: Int, to: Int): TermName =
       newTermName(chrs, start + from, to - from)
   }
 
   final class TypeName(index: Int, len: Int, hash: Int) extends Name(index, len) {
-    next = typeHashtable(hash)
+    var next: TypeName = typeHashtable(hash)
     typeHashtable(hash) = this
     def isTermName: Boolean = false
     def isTypeName: Boolean = true
@@ -450,6 +438,9 @@ trait Names extends reflect.generic.Names {
       n
     }
     def toTypeName: TypeName = this
+
+    def append(suffix: String): TypeName = newTypeName(this + suffix)
+    def append(suffix: Name): TypeName = append(suffix.toString)
     def companionName: TermName = toTermName
     def subName(from: Int, to: Int): TypeName =
       newTypeName(chrs, start + from, to - from)

@@ -70,7 +70,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       newSyntheticMethod(name, flags | OVERRIDE, tpeCons)
 
     def newSyntheticMethod(name: Name, flags: Int, tpeCons: Symbol => Type) = {
-      val method = clazz.newMethod(clazz.pos.focus, name) setFlag flags
+      val method = clazz.newMethod(clazz.pos.focus, name.toTermName) setFlag flags
       createdMethodSymbols += method
       method setInfo tpeCons(method)
       clazz.info.decls.enter(method)

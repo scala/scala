@@ -69,7 +69,7 @@ trait EtaExpansion { self: Analyzer =>
           val vname: Name = freshName()
           // Problem with ticket #2351 here
           defs += atPos(tree.pos) {
-            ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree)
+            ValDef(Modifiers(SYNTHETIC), vname.toTermName, TypeTree(), tree)
           }
           Ident(vname) setPos tree.pos.focus
         }
@@ -103,7 +103,7 @@ trait EtaExpansion { self: Analyzer =>
       case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>
         val params = paramSyms map (sym =>
           ValDef(Modifiers(SYNTHETIC | PARAM),
-                 sym.name, TypeTree(sym.tpe) , EmptyTree))
+                 sym.name.toTermName, TypeTree(sym.tpe) , EmptyTree))
         atPos(tree.pos.makeTransparent) {
           Function(params, expand(Apply(tree, params map gen.paramToArg), restpe))
         }

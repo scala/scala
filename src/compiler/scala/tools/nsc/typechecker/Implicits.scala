@@ -149,8 +149,10 @@ self: Analyzer =>
    */
   def memberWildcardType(name: Name, tp: Type) = {
     val result = refinedType(List(WildcardType), NoSymbol)
-    var psym = if (name.isTypeName) result.typeSymbol.newAbstractType(NoPosition, name)
-               else result.typeSymbol.newValue(NoPosition, name)
+    var psym = name match {
+      case x: TypeName  => result.typeSymbol.newAbstractType(NoPosition, x)
+      case x: TermName  => result.typeSymbol.newValue(NoPosition, x)
+    }
     psym setInfo tp
     result.decls enter psym
     result

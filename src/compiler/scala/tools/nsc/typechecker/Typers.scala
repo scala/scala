@@ -12,8 +12,9 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.{ HashMap, ListBuffer }
+import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.util.BatchSourceFile
+import mutable.ListBuffer
 import symtab.Flags._
 
 import util.Statistics
@@ -39,7 +40,7 @@ trait Typers extends Modes {
   // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
   // is cached here and re-used in typedDefDef / typedValDef
   // Also used to cache imports type-checked by namer.
-  val transformed = new HashMap[Tree, Tree]
+  val transformed = new mutable.HashMap[Tree, Tree]
 
   final val shortenImports = false
 
@@ -1620,7 +1621,7 @@ trait Typers extends Modes {
             case Some(repl) =>
               silent(_.typedTypeConstructor(stringParser(repl).typ())) match {
                 case tpt: Tree =>
-                  val alias = enclClass.newAliasType(useCase.pos, name)
+                  val alias = enclClass.newAliasType(useCase.pos, name.toTypeName)
                   val tparams = cloneSymbols(tpt.tpe.typeSymbol.typeParams, alias)
                   alias setInfo polyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
                   context.scope.enter(alias)
@@ -1631,7 +1632,7 @@ trait Typers extends Modes {
         }
       for (tree <- trees; t <- tree)
         t match {
-          case Ident(name) if (name.length > 0 && name(0) == '$') => defineAlias(name)
+          case Ident(name) if name startsWith '$' => defineAlias(name)
           case _ =>
         }
       useCase.aliases = context.scope.toList
@@ -2446,13 +2447,13 @@ trait Typers extends Modes {
             //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
             def freshArgType(tp: Type): (Type, List[Symbol]) = tp match {
               case MethodType(params, _) =>
-                (params(0).tpe, List())
+                (params(0).tpe, Nil)
               case PolyType(tparams, restype) =>
                 val tparams1 = cloneSymbols(tparams)
                 (freshArgType(restype)._1.substSym(tparams, tparams1), tparams1)
               case OverloadedType(_, _) =>
                 error(fun.pos, "cannot resolve overloaded unapply")
-                (ErrorType, List())
+                (ErrorType, Nil)
             }
             val (unappFormal, freeVars) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
             val context1 = context.makeNewScope(context.tree, context.owner)
@@ -2462,7 +2463,7 @@ trait Typers extends Modes {
 
             // turn any unresolved type variables in freevars into existential skolems
             val skolems = freeVars map { fv =>
-              val skolem = new TypeSkolem(context1.owner, fun.pos, fv.name, fv)
+              val skolem = new TypeSkolem(context1.owner, fun.pos, fv.name.toTypeName, fv)
               skolem.setInfo(fv.info.cloneInfo(skolem))
                 .setFlag(fv.flags | EXISTENTIAL).resetFlag(PARAM)
               skolem
@@ -2725,7 +2726,10 @@ trait Typers extends Modes {
      */
     protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
       val typeParams: List[Symbol] = rawSyms map { sym =>
-        val name = if (sym.isType) sym.name else newTypeName(sym.name+".type")
+        val name = sym.name match {
+          case x: TypeName  => x
+          case x            => newTypeName(x+".type")
+        }
         val bound = sym.existentialBound
         val sowner = if (isRawParameter(sym)) context.owner else sym.owner
         val quantified: Symbol = sowner.newAbstractType(sym.pos, name).setFlag(EXISTENTIAL)
@@ -2985,7 +2989,7 @@ trait Typers extends Modes {
 
       def typedBind(name: Name, body: Tree) = {
         var vble = tree.symbol
-        if (name.isTypeName) {
+        def typedBindType(name: TypeName) = {
           assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
           if (vble == NoSymbol)
             vble =
@@ -2998,7 +3002,8 @@ trait Typers extends Modes {
           vble = if (vble.name == tpnme.WILDCARD) context.scope.enter(vble)
                  else namer.enterInScope(vble)
           tree setSymbol vble setType vble.tpe
-        } else {
+        }
+        def typedBindTerm(name: TermName) = {
           if (vble == NoSymbol)
             vble = context.owner.newValue(tree.pos, name)
           if (vble.name.toTermName != nme.WILDCARD) {
@@ -3011,6 +3016,10 @@ trait Typers extends Modes {
             if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
             else body1.tpe)
           treeCopy.Bind(tree, name, body1) setSymbol vble setType body1.tpe   // burak, was: pt
+        }
+        name match {
+          case x: TypeName  => typedBindType(x)
+          case x: TermName  => typedBindTerm(x)
         }
       }
 
@@ -3042,7 +3051,7 @@ trait Typers extends Modes {
         if (treeInfo.mayBeVarGetter(varsym)) {
           lhs1 match {
             case Select(qual, name) =>
-              val sel = Select(qual, nme.getterToSetter(name)) setPos lhs.pos
+              val sel = Select(qual, nme.getterToSetter(name.toTermName)) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
               return typed(app, mode, pt)
 

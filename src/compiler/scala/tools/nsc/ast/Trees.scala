@@ -119,7 +119,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     atPos(sym.pos) {
       ClassDef(Modifiers(sym.flags),
-               sym.name,
+               sym.name.toTypeName,
                sym.typeParams map TypeDef,
                impl) setSymbol sym
     }
@@ -192,7 +192,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     atPos(sym.pos) {
-      TypeDef(Modifiers(sym.flags), sym.name, sym.typeParams map TypeDef, rhs) setSymbol sym
+      TypeDef(Modifiers(sym.flags), sym.name.toTypeName, sym.typeParams map TypeDef, rhs) setSymbol sym
     }
 
   /** A TypeDef node which defines abstract type or type parameter for given `sym' */
@@ -288,9 +288,9 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     (superRef /: argss) (Apply)
   }
 
-  def Super(sym: Symbol, mix: Name): Tree = Super(sym.name, mix) setSymbol sym
+  def Super(sym: Symbol, mix: Name): Tree = Super(sym.name.toTypeName, mix.toTypeName) setSymbol sym
 
-  def This(sym: Symbol): Tree = This(sym.name) setSymbol sym
+  def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym
 
   def Select(qualifier: Tree, sym: Symbol): Select =
     Select(qualifier, sym.name) setSymbol sym
@@ -406,7 +406,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   class StrictTreeCopier extends TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template) =
-      new ClassDef(mods, name, tparams, impl).copyAttrs(tree)
+      new ClassDef(mods, name.toTypeName, tparams, impl).copyAttrs(tree)
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
       new PackageDef(pid, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
@@ -416,7 +416,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
       new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree)
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree) =
-      new TypeDef(mods, name, tparams, rhs).copyAttrs(tree)
+      new TypeDef(mods, name.toTypeName, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) =
@@ -470,9 +470,9 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
       new ApplyDynamic(qual, args).copyAttrs(tree)
     def Super(tree: Tree, qual: Name, mix: Name) =
-      new Super(qual, mix).copyAttrs(tree)
+      new Super(qual.toTypeName, mix.toTypeName).copyAttrs(tree)
     def This(tree: Tree, qual: Name) =
-      new This(qual).copyAttrs(tree)
+      new This(qual.toTypeName).copyAttrs(tree)
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
       new Select(qualifier, selector).copyAttrs(tree)
     def Ident(tree: Tree, name: Name) =
@@ -489,7 +489,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     def SingletonTypeTree(tree: Tree, ref: Tree) =
       new SingletonTypeTree(ref).copyAttrs(tree)
     def SelectFromTypeTree(tree: Tree, qualifier: Tree, selector: Name) =
-      new SelectFromTypeTree(qualifier, selector).copyAttrs(tree)
+      new SelectFromTypeTree(qualifier, selector.toTypeName).copyAttrs(tree)
     def CompoundTypeTree(tree: Tree, templ: Template) =
       new CompoundTypeTree(templ).copyAttrs(tree)
     def AppliedTypeTree(tree: Tree, tpt: Tree, args: List[Tree]) =

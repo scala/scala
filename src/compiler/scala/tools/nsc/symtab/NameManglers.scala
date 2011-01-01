@@ -45,7 +45,7 @@ trait NameManglers {
 
     /** The expanded setter name of `name' relative to this class `base`
      */
-    def expandedSetterName(name: Name, base: Symbol): Name =
+    def expandedSetterName(name: TermName, base: Symbol): TermName =
       expandedName(name, base, separator = TRAIT_SETTER_SEPARATOR_STRING)
 
     /** If `name' is an expandedName name, the original name.
@@ -80,20 +80,20 @@ trait NameManglers {
       } else
         (name, "", "")
 
-    def getterName(name: Name): Name     = if (isLocalName(name)) localToGetter(name) else name
-    def getterToLocal(name: Name): Name  = name append LOCAL_SUFFIX_STRING
-    def getterToSetter(name: Name): Name = name append SETTER_SUFFIX
-    def localToGetter(name: Name): Name  = name stripEnd LOCAL_SUFFIX_STRING
+    def getterName(name: TermName): TermName     = if (isLocalName(name)) localToGetter(name) else name
+    def getterToLocal(name: TermName): TermName  = name.toTermName append LOCAL_SUFFIX_STRING
+    def getterToSetter(name: TermName): TermName = name.toTermName append SETTER_SUFFIX
+    def localToGetter(name: TermName): TermName  = name stripEnd LOCAL_SUFFIX_STRING toTermName
 
-    def setterToGetter(name: Name): Name = {
+    def setterToGetter(name: TermName): TermName = {
       val p = name.pos(TRAIT_SETTER_SEPARATOR_STRING)
       if (p < name.length)
         setterToGetter(name.subName(p + TRAIT_SETTER_SEPARATOR_STRING.length, name.length))
       else
-        name stripEnd SETTER_SUFFIX
+        name stripEnd SETTER_SUFFIX toTermName
     }
 
-    def defaultGetterName(name: Name, pos: Int): Name = {
+    def defaultGetterName(name: Name, pos: Int): TermName = {
       val prefix = if (isConstructorName(name)) "init" else name
       newTermName(prefix + DEFAULT_GETTER_STRING + pos)
     }

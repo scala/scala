@@ -58,7 +58,7 @@ abstract class RefChecks extends InfoTransform {
 
       sym setFlag (lateMETHOD | STABLE)
       if (isNestedModule) {
-        val moduleVar = sym.owner.info.decl(nme.moduleVarName(sym.name))
+        val moduleVar = sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName))
         if (moduleVar == NoSymbol) {
           val tree = gen.mkModuleVarDef(sym)
           tree.symbol.setInfo(tp)
@@ -1004,7 +1004,7 @@ abstract class RefChecks extends InfoTransform {
             val cdef = mkClassDef(false)
 
             if (!sym.allOverriddenSymbols.isEmpty) {
-              val factory = sym.owner.newMethod(sym.pos, sym.name)
+              val factory = sym.owner.newMethod(sym.pos, sym.name.toTermName)
                 .setFlag(sym.flags | STABLE).resetFlag(MODULE)
                 .setInfo(PolyType(List(), sym.moduleClass.tpe))
               sym.owner.info.decls.enter(factory)
@@ -1029,7 +1029,7 @@ abstract class RefChecks extends InfoTransform {
                 if (!transformedInfo)
                   gen.mkModuleVarDef(sym)
                 else {
-                  val vsym0 = sym.owner.info.decl(nme.moduleVarName(sym.name))
+                  val vsym0 = sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName))
                   // In case we are dealing with local symbol then we already have correct error with forward reference
                   ValDef(if (vsym0 == NoSymbol) gen.mkModuleVarDef(sym).symbol else vsym0, EmptyTree)
                 }

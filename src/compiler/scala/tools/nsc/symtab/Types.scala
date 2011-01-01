@@ -2135,7 +2135,7 @@ A type's typeSymbol should never be inspected directly.
       def mkSkolem(tparam: Symbol): Symbol = {
         val skolem = new TypeSkolem(
           if (owner == NoSymbol) tparam.owner else owner,
-          tparam.pos, tparam.name, origin)
+          tparam.pos, tparam.name.toTypeName, origin)
         skolem.setInfo(tparam.info.cloneInfo(skolem))
               .setFlag(tparam.flags | EXISTENTIAL)
               .resetFlag(PARAM)
@@ -2416,7 +2416,7 @@ A type's typeSymbol should never be inspected directly.
      */
     def registerTypeSelection(sym: Symbol, tp: Type): Boolean = {
       val bound = refinedType(List(WildcardType), NoSymbol)
-      val bsym = bound.typeSymbol.newAliasType(NoPosition, sym.name)
+      val bsym = bound.typeSymbol.newAliasType(NoPosition, sym.name.toTypeName)
       bsym setInfo tp
       bound.decls enter bsym
       registerBound(bound, false)
@@ -5120,7 +5120,7 @@ A type's typeSymbol should never be inspected directly.
               else {
                 def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                   TypeBounds(glb(bnds map (_.lo), decr(depth)), lub(bnds map (_.hi), decr(depth)))
-                lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name)
+                lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name.toTypeName)
                   .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
               }
             }

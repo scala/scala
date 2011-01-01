@@ -234,7 +234,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  body of the method, there's a local copy of `T' which is a TypeSkolem.
      */
     final def newTypeSkolem: Symbol =
-      new TypeSkolem(owner, pos, name, this)
+      new TypeSkolem(owner, pos, name.toTypeName, this)
         .setFlag(flags)
 
     final def newClass(pos: Position, name: TypeName) =
@@ -272,9 +272,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       clazz
     }
 
-    final def newErrorSymbol(name: Name): Symbol =
-      if (name.isTypeName) newErrorClass(name)
-      else newErrorValue(name)
+    final def newErrorSymbol(name: Name): Symbol = name match {
+      case x: TypeName  => newErrorClass(x)
+      case x: TermName  => newErrorValue(x)
+    }
 
 // Locking and unlocking ------------------------------------------------------
 
@@ -927,7 +928,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
           oldsymbuf += sym
           newsymbuf += (
             if (sym.isClass)
-              tp.typeSymbol.newAbstractType(sym.pos, sym.name).setInfo(sym.existentialBound)
+              tp.typeSymbol.newAbstractType(sym.pos, sym.name.toTypeName).setInfo(sym.existentialBound)
             else
               sym.cloneSymbol(tp.typeSymbol))
         }
@@ -1652,6 +1653,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   class TermSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
   extends Symbol(initOwner, initPos, initName) {
     final override def isTerm = true
+
+    override def name: TermName = super.name
     privateWithin = NoSymbol
 
     var referenced: Symbol = NoSymbol
@@ -1796,6 +1799,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     private var tpeCache: Type = _
     private var tpePeriod = NoPeriod
 
+    override def name: TypeName = super.name.asInstanceOf[TypeName]
     final override def isType = true
     override def isNonClassType = true
     override def isAbstractType = isDeferred
@@ -1874,7 +1878,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
 
     def cloneSymbolImpl(owner: Symbol): Symbol =
-      new TypeSymbol(owner, pos, name)
+      new TypeSymbol(owner, pos, name)  //.toTypeName)
 
     incCounter(typeSymbolCount)
   }
@@ -1956,7 +1960,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         }
         flatname
       }
-      else rawname
+      else rawname.asInstanceOf[TypeName]
 
     private var thisTypeCache: Type = _
     private var thisTypePeriod = NoPeriod
@@ -2061,14 +2065,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def originalEnclosingMethod = this
   }
 
-  def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
-    val syms1 = syms map (_.cloneSymbol)
+  def cloneSymbols[T <: Symbol](syms: List[T]): List[T] = {
+    val syms1 = syms map (_.cloneSymbol.asInstanceOf[T])
     for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
     syms1
   }
 
-  def cloneSymbols(syms: List[Symbol], owner: Symbol): List[Symbol] = {
-    val syms1 = syms map (_.cloneSymbol(owner))
+  def cloneSymbols[T <: Symbol](syms: List[T], owner: Symbol): List[T] = {
+    val syms1 = syms map (_.cloneSymbol(owner).asInstanceOf[T])
     for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
     syms1
   }

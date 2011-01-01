@@ -153,7 +153,7 @@ abstract class TreeGen {
     stabilize(mkAttributedRef(sym))
 
   def mkAttributedThis(sym: Symbol): Tree =
-    This(sym.name) setSymbol sym setType sym.thisType
+    This(sym.name.toTypeName) setSymbol sym setType sym.thisType
 
   def mkAttributedIdent(sym: Symbol): Tree =
     Ident(sym.name) setSymbol sym setType sym.tpe
@@ -372,7 +372,7 @@ abstract class TreeGen {
   /** Try to convert Select(qual, name) to a SelectFromTypeTree.
    */
   def convertToSelectFromType(qual: Tree, origName: Name) = convertToTypeName(qual) match {
-    case Some(qual1)  => SelectFromTypeTree(qual1 setPos qual.pos, origName)
+    case Some(qual1)  => SelectFromTypeTree(qual1 setPos qual.pos, origName.toTypeName)
     case _            => EmptyTree
   }
 

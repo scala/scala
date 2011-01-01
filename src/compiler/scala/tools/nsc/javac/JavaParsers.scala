@@ -898,7 +898,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           Ident(nme.EMPTY_PACKAGE_NAME)
         }
       thisPackageName = gen.convertToTypeName(pkg) match {
-        case Some(t)  => t.name
+        case Some(t)  => t.name.toTypeName
         case _        => tpnme.EMPTY
       }
       val buf = new ListBuffer[Tree]

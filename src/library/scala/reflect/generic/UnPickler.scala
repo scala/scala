@@ -267,14 +267,14 @@ abstract class UnPickler {
       }
 
       finishSym(tag match {
-        case TYPEsym  => owner.newAbstractType(name)
-        case ALIASsym => owner.newAliasType(name)
+        case TYPEsym  => owner.newAbstractType(mkTypeName(name))
+        case ALIASsym => owner.newAliasType(mkTypeName(name))
         case CLASSsym =>
           val sym = (isClassRoot, isModuleFlag) match {
             case (true, true)   => moduleRoot.moduleClass
             case (true, false)  => classRoot
-            case (false, true)  => owner.newModuleClass(name)
-            case (false, false) => owner.newClass(name)
+            case (false, true)  => owner.newModuleClass(mkTypeName(name))
+            case (false, false) => owner.newClass(mkTypeName(name))
           }
           if (!atEnd)
             sym.typeOfThis = newLazyTypeRef(readNat())
@@ -510,7 +510,7 @@ abstract class UnPickler {
           setSymModsName()
           val impl = readTemplateRef()
           val tparams = until(end, readTypeDefRef)
-          ClassDef(mods, name, tparams, impl)
+          ClassDef(mods, mkTypeName(name), tparams, impl)
 
         case MODULEtree =>
           setSymModsName()
@@ -534,7 +534,7 @@ abstract class UnPickler {
           setSymModsName()
           val rhs = readTreeRef()
           val tparams = until(end, readTypeDefRef)
-          TypeDef(mods, name, tparams, rhs)
+          TypeDef(mods, mkTypeName(name), tparams, rhs)
 
         case LABELtree =>
           setSymName()
@@ -657,13 +657,13 @@ abstract class UnPickler {
 
         case SUPERtree =>
           setSym()
-          val qual = readNameRef()
-          val mix = readNameRef()
+          val qual = readTypeNameRef()
+          val mix = readTypeNameRef()
           Super(qual, mix)
 
         case THIStree =>
           setSym()
-          This(readNameRef())
+          This(readTypeNameRef())
 
         case SELECTtree =>
           setSym()
@@ -691,7 +691,7 @@ abstract class UnPickler {
 
         case SELECTFROMTYPEtree =>
           val qualifier = readTreeRef()
-          val selector = readNameRef()
+          val selector = readTypeNameRef()
           SelectFromTypeTree(qualifier, selector)
 
         case COMPOUNDTYPEtree =>
@@ -744,6 +744,9 @@ abstract class UnPickler {
     protected def readAnnotationRef(): AnnotationInfo = at(readNat(), readAnnotation)
     protected def readModifiersRef(): Modifiers       = at(readNat(), readModifiers)
     protected def readTreeRef(): Tree                 = at(readNat(), readTree)
+
+    protected def readTypeNameRef(): TypeName         = mkTypeName(readNameRef())
+    protected def readTermNameRef(): TermName         = mkTermName(readNameRef())
 
     protected def readTemplateRef(): Template =
       readTreeRef() match {

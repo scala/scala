@@ -19,22 +19,6 @@ trait Names {
   def isTermName(name: Name): Boolean
   def isTypeName(name: Name): Boolean
 
-  /** These should come out before 2.9 ships, but they have to be
-   *  in the library to reach a few bits like the unpickler.
-   */
-  def onNameTranslate(name: Name): Unit = ()
-  implicit def promoteTypeNamesAsNecessary(name: Name): TypeName = {
-    if (isTermName(name))
-      onNameTranslate(name)
-
-    mkTypeName(name)
-  }
-  implicit def promoteTermNamesAsNecessary(name: Name): TermName = {
-    if (isTypeName(name))
-      onNameTranslate(name)
-
-    mkTermName(name)
-  }
+  implicit def promoteTermNamesAsNecessary(name: Name): TermName = mkTermName(name)
 }
-
 
