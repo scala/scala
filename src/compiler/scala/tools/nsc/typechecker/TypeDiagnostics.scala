@@ -41,30 +41,6 @@ trait TypeDiagnostics {
 
   private def currentUnit = currentRun.currentUnit
 
-  /** For ease of debugging.  The mode definitions are in Typers.scala.
-   */
-  private val modeNameMap = Map[Int, String](
-    (1 << 0)  -> "EXPRmode",
-    (1 << 1)  -> "PATTERNmode",
-    (1 << 2)  -> "TYPEmode",
-    (1 << 3)  -> "SCCmode",
-    (1 << 4)  -> "FUNmode",
-    (1 << 5)  -> "POLYmode",
-    (1 << 6)  -> "QUALmode",
-    (1 << 7)  -> "TAPPmode",
-    (1 << 8)  -> "SUPERCONSTRmode",
-    (1 << 9)  -> "SNDTRYmode",
-    (1 << 10) -> "LHSmode",
-    (1 << 11) -> "<DOES NOT EXIST mode>",
-    (1 << 12) -> "STARmode",
-    (1 << 13) -> "ALTmode",
-    (1 << 14) -> "HKmode",
-    (1 << 15) -> "BYVALmode",
-    (1 << 16) -> "TYPEPATmode"
-  )
-  def modeString(mode: Int): String =
-    (modeNameMap filterKeys (bit => (bit & mode) != 0)).values mkString " "
-
   /** It can be quite difficult to know which of the many functions called "error"
    *  is being called at any given point in the compiler.  To alleviate this I am
    *  renaming such functions inside this trait based on where it originated.
