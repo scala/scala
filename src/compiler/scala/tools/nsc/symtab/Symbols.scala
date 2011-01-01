@@ -1801,6 +1801,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def isAbstractType = isDeferred
     override def isAliasType = !isDeferred
 
+    private def newTypeRef(targs: List[Type]) = {
+      val pre = if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType
+      typeRef(pre, this, targs)
+    }
+
     /** Let's say you have a type definition
      *
      *    type T <: Number
@@ -1823,8 +1828,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
             else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
             // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
             // memberType should be used instead, that's why it uses tpeHK and not tpe
-          tpeCache = typeRef(if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType,
-                             this, targs)
+          tpeCache = newTypeRef(targs)
         }
       }
       assert(tpeCache ne null/*, "" + this + " " + phase*/)//debug
@@ -1836,8 +1840,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     override def typeConstructor: Type = {
       if ((tyconCache eq null) || tyconRunId != currentRunId) {
-        tyconCache = typeRef(if (hasFlag(PARAM | EXISTENTIAL)) NoPrefix else owner.thisType,
-                             this, List())
+        tyconCache = newTypeRef(Nil)
         tyconRunId = currentRunId
       }
       assert(tyconCache ne null)

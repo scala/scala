@@ -15,6 +15,7 @@ abstract class SymbolTable extends reflect.generic.Universe
                               with Symbols
                               with Types
                               with Scopes
+                              with Caches
                               with Definitions
                               with reflect.generic.Constants
                               with BaseTypeSeqs

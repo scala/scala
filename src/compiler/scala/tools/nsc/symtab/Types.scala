@@ -1648,8 +1648,10 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 //    assert(!(sym hasFlag (PARAM | EXISTENTIAL)) || pre == NoPrefix, this)
 //    assert(args.isEmpty || !sym.info.typeParams.isEmpty, this)
 //    assert(args.isEmpty || ((sym ne AnyClass) && (sym ne NothingClass))
-    private var parentsCache: List[Type] = _
-    private var parentsPeriod = NoPeriod
+
+    private val parentsCache = new ListOfTypesCache {
+      @inline final def calculate() = thisInfo.parents map transform
+    }
     private var baseTypeSeqCache: BaseTypeSeq = _
     private var baseTypeSeqPeriod = NoPeriod
 
@@ -1729,19 +1731,7 @@ A type's typeSymbol should never be inspected directly.
       if (sym.isAbstractType) thisInfo.bounds // transform(thisInfo.bounds).asInstanceOf[TypeBounds] // ??? seems to be doing asSeenFrom twice
       else super.bounds
 
-    override def parents: List[Type] = {
-      val period = parentsPeriod
-      if (period != currentPeriod) {
-        parentsPeriod = currentPeriod
-        if (!isValidForBaseClasses(period)) {
-          parentsCache = thisInfo.parents map transform
-        } else if (parentsCache == null) { // seems this can happen if things are currupted enough, see #2641
-          parentsCache = List(AnyClass.tpe)
-        }
-      }
-      parentsCache
-    }
-
+    override def parents: List[Type] = parentsCache.get()
     override def typeOfThis = transform(sym.typeOfThis)
 
 /*
@@ -3910,25 +3900,6 @@ A type's typeSymbol should never be inspected directly.
     var d = 0
     for (tp <- ts) d = math.max(d, tp.baseTypeSeqDepth)
     d + LubGlbMargin
-  }
-
-  final def isValid(period: Period): Boolean =
-    period != 0 && runId(period) == currentRunId && {
-      val pid = phaseId(period)
-      if (phase.id > pid) infoTransformers.nextFrom(pid).pid >= phase.id
-      else infoTransformers.nextFrom(phase.id).pid >= pid
-    }
-
-  final def isValidForBaseClasses(period: Period): Boolean = {
-    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
-      it.pid >= limit ||
-      !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
-    );
-    period != 0 && runId(period) == currentRunId && {
-      val pid = phaseId(period)
-      if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
-      else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), pid)
-    }
   }
 
   /** Is intersection of given types populated? That is,
