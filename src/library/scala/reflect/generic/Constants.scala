@@ -7,6 +7,7 @@ package scala.reflect
 package generic
 
 import java.lang.Integer.toOctalString
+import annotation.switch
 
 trait Constants {
   self: Universe =>
@@ -201,23 +202,32 @@ trait Constants {
       else if (tag == ClassTag) signature(typeValue)
       else value.toString()
 
+    @switch def escapedChar(ch: Char): String = ch match {
+      case '\b' => "\\b"
+      case '\t' => "\\t"
+      case '\n' => "\\n"
+      case '\f' => "\\f"
+      case '\r' => "\\r"
+      case '"'  => "\\\""
+      case '\'' => "\\\'"
+      case '\\' => "\\\\"
+      case _    => String.valueOf(ch)
+    }
+
     def escapedStringValue: String = {
       def escape(text: String): String = {
-        val buf = new StringBuilder
-        for (c <- text.iterator)
-          if (c.isControl)
-            buf.append("\\0" + toOctalString(c.asInstanceOf[Int]))
-          else
-            buf.append(c)
-        buf.toString
+        text map { ch =>
+          if (ch.isControl) "\\0" + toOctalString(ch)
+          else escapedChar(ch)
+        } mkString ""
       }
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
         case ClassTag  => "classOf[" + signature(typeValue) + "]"
-        case CharTag   => escape("\'" + charValue + "\'")
+        case CharTag   => escape("'" + escapedChar(charValue) + "'")
         case LongTag   => longValue.toString() + "L"
-        case _         => value.toString()
+        case _         => "" + value
       }
     }
     def typeValue: Type     = value.asInstanceOf[Type]
