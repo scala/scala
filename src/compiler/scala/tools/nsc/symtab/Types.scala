@@ -1673,7 +1673,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
           volatileRecursions += 1
           if (volatileRecursions < LogVolatileThreshold)
             bounds.hi.isVolatile
-          else if (pendingVolatiles contains sym)
+          else if (pendingVolatiles(sym))
             true // we can return true here, because a cycle will be detected
                  // here afterwards and an error will result anyway.
           else
@@ -3376,6 +3376,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A base class to compute all substitutions */
   abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
+    val fromContains = from.toSet // avoiding repeatedly traversing from
     assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
     /** Are `sym' and `sym1' the same.
@@ -3408,8 +3409,7 @@ A type's typeSymbol should never be inspected directly.
 
     def apply(tp0: Type): Type = if (from.isEmpty) tp0 else {
       val boundSyms = tp0.boundSyms
-      val tp1 = if (boundSyms.isEmpty || !(boundSyms exists (from contains))) tp0
-                else renameBoundSyms(tp0)
+      val tp1 = if (boundSyms exists fromContains) renameBoundSyms(tp0) else tp0
       val tp = mapOver(tp1)
 
       tp match {
@@ -3435,8 +3435,7 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A map to implement the `substSym' method. */
-  class SubstSymMap(from: List[Symbol], to: List[Symbol])
-  extends SubstMap(from, to) {
+  class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
       case TypeRef(pre, _, args) => typeRef(pre, sym, args)
       case SingleType(pre, _) => singleType(pre, sym)
@@ -3464,7 +3463,7 @@ A type's typeSymbol should never be inspected directly.
       object trans extends TypeMapTransformer {
 
         def termMapsTo(sym: Symbol) =
-          if (from contains sym)
+          if (fromContains(sym))
             Some(to(from.indexOf(sym)))
           else
             None
@@ -3500,7 +3499,7 @@ A type's typeSymbol should never be inspected directly.
       object trans extends TypeMapTransformer {
         override def transform(tree: Tree) =
           tree match {
-            case Ident(name) if from contains tree.symbol =>
+            case Ident(name) if fromContains(tree.symbol) =>
               val totpe = to(from.indexOf(tree.symbol))
               if (!totpe.isStable) giveup()
               else Ident(name).setPos(tree.pos).setSymbol(tree.symbol).setType(totpe)
@@ -3528,7 +3527,7 @@ A type's typeSymbol should never be inspected directly.
   class SubstWildcardMap(from: List[Symbol]) extends TypeMap {
     def apply(tp: Type): Type = try {
       tp match {
-        case TypeRef(_, sym, _) if (from contains sym) =>
+        case TypeRef(_, sym, _) if from contains sym =>
           BoundedWildcardType(sym.info.bounds)
         case _ =>
           mapOver(tp)
@@ -3747,7 +3746,7 @@ A type's typeSymbol should never be inspected directly.
         case ThisType(sym) =>
           register(sym)
         case TypeRef(NoPrefix, sym, args) =>
-          register(sym.owner); args foreach {arg => apply(arg); ()}
+          register(sym.owner); args foreach apply
         case SingleType(NoPrefix, sym) =>
           register(sym.owner)
         case _ =>
@@ -4353,7 +4352,7 @@ A type's typeSymbol should never be inspected directly.
     undoLog undoUnless { // if subtype test fails, it should not affect constraints on typevars
       if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
         val p = new SubTypePair(tp1, tp2)
-        if (pendingSubTypes contains p)
+        if (pendingSubTypes(p))
           false
         else
           try {
@@ -4464,15 +4463,11 @@ A type's typeSymbol should never be inspected directly.
   /** Does type `tp1' conform to `tp2'?
    */
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
-    if (tp1 eq tp2) return true
-    if (isErrorOrWildcard(tp1)) return true
-    if (isErrorOrWildcard(tp2)) return true
-    if (tp1 eq NoType) return false
-    if (tp2 eq NoType) return false
+    if ((tp1 eq tp2) || isErrorOrWildcard(tp1) || isErrorOrWildcard(tp2)) return true
+    if ((tp1 eq NoType) || (tp2 eq NoType)) return false
     if (tp1 eq NoPrefix) return (tp2 eq NoPrefix) || tp2.typeSymbol.isPackageClass
-    if (tp2 eq NoPrefix) return (tp1 eq NoPrefix) || tp1.typeSymbol.isPackageClass
-    if (isSingleType(tp1) && isSingleType(tp2) ||
-        isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
+    if (tp2 eq NoPrefix) return tp1.typeSymbol.isPackageClass
+    if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2)) return tp1 =:= tp2
     if (tp1.isHigherKinded || tp2.isHigherKinded) return isHKSubType0(tp1, tp2, depth)
 
     /** First try, on the right:
@@ -4545,12 +4540,10 @@ A type's typeSymbol should never be inspected directly.
       incCounter(ctr3);
       val sym2 = tp2.sym
       sym2 match {
+        case NotNullClass => tp1.isNotNull
+        case SingletonClass => tp1.isStable || fourthTry
         case _: ClassSymbol =>
-          if (sym2 == NotNullClass)
-            tp1.isNotNull
-          else if (sym2 == SingletonClass)
-            tp1.isStable || fourthTry
-          else if (isRaw(sym2, tp2.args))
+          if (isRaw(sym2, tp2.args))
             isSubType(tp1, rawToExistential(tp2), depth)
           else if (sym2.name == tpnme.REFINE_CLASS_NAME)
             isSubType(tp1, sym2.info, depth)
@@ -4620,18 +4613,17 @@ A type's typeSymbol should never be inspected directly.
     def fourthTry = { incCounter(ctr4); tp1 match {
       case tr1 @ TypeRef(_, sym1, _) =>
         sym1 match {
+          case NothingClass => true
+          case NullClass =>
+            tp2 match {
+              case TypeRef(_, sym2, _) =>
+                sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) &&
+                !(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)
+              case _ =>
+                isSingleType(tp2) && tp1 <:< tp2.widen
+            }
           case _: ClassSymbol =>
-            if (sym1 == NothingClass)
-              true
-            else if (sym1 == NullClass)
-              tp2 match {
-                case TypeRef(_, sym2, _) =>
-                  sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) &&
-                  !(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)
-                case _ =>
-                  isSingleType(tp2) && tp1 <:< tp2.widen
-              }
-            else if (isRaw(sym1, tr1.args))
+            if (isRaw(sym1, tr1.args))
               isSubType(rawToExistential(tp1), tp2, depth)
             else
               sym1.name == tpnme.REFINE_CLASS_NAME &&
