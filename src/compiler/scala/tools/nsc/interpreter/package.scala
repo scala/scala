@@ -21,9 +21,6 @@ package object interpreter {
     x
   }
 
-  /** Frequency counter */
-  def freq[T](seq: Seq[T]) = seq groupBy identity mapValues (_.length)
-
   /** Heuristically strip interpreter wrapper prefixes
    *  from an interpreter output string.
    */

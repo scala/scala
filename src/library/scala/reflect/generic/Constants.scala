@@ -227,7 +227,7 @@ trait Constants {
         case ClassTag  => "classOf[" + signature(typeValue) + "]"
         case CharTag   => escape("'" + escapedChar(charValue) + "'")
         case LongTag   => longValue.toString() + "L"
-        case _         => "" + value
+        case _         => String.valueOf(value)
       }
     }
     def typeValue: Type     = value.asInstanceOf[Type]

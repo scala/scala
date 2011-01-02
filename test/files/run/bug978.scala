@@ -13,14 +13,14 @@ object Test extends Application {
 //  val set = new collection.jcl.HashSet[Foo]
 
   val max = 200
-  for (val x <- 1 to max)
+  for (x <- 1 to max)
     set += new Foo(x)
 
   testRemove(2)
   testExists(2)
 
   def testRemove(m: Int) {
-    for (val x <- 1 to max; x % m == 0) {
+    for (x <- 1 to max; if x % m == 0) {
       val f = new Foo(x)
       set -= f
       assert(!(set contains f))
@@ -29,7 +29,7 @@ object Test extends Application {
   }
 
   def testExists(m: Int) {
-    for (val x <- 1 to max; x % m == 1) {
+    for (x <- 1 to max; if x % m == 1) {
       val f = new Foo(x)
       assert(set contains f, "For element: " + f + " set: " + set)
     }

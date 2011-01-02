@@ -13,6 +13,9 @@ package object util {
   /** Apply a function and return the passed value */
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
+  /** Frequency counter */
+  def freq[T](xs: Traversable[T]): Map[T, Int] = xs groupBy identity mapValues (_.size)
+
   /** Execute code and then wait for all Threads created during its
    *  execution to complete.
    */

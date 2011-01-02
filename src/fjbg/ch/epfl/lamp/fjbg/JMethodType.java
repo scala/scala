@@ -72,4 +72,16 @@ public class JMethodType extends JType {
     public boolean isCompatibleWith(JType other) {
         return false;
     }
+    public boolean equals(Object o) {
+        if (o instanceof JMethodType)
+            return ((JMethodType)o).getSignature().equals(this.getSignature());
+        else
+            return false;
+    }
+    public int hashCode() {
+        if (signature == null)
+            return 0;
+        else
+            return signature.hashCode();
+    }
 }

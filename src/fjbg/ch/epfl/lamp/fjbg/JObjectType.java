@@ -53,4 +53,13 @@ public class JObjectType extends JReferenceType {
         return other instanceof JObjectType
             || other == JType.REFERENCE;
     }
+    public boolean equals(Object o) {
+        if (o instanceof JObjectType)
+            return ((JObjectType)o).getSignature().equals(this.getSignature());
+        else
+            return false;
+    }
+    public int hashCode() {
+        return name.hashCode();
+    }
 }
