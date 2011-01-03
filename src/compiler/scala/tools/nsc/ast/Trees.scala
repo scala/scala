@@ -89,8 +89,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
     def equalsStructure(that : Tree) = equalsStructure0(that)(_ eq _)
     def equalsStructure0(that: Tree)(f: (Tree,Tree) => Boolean): Boolean =
-      (tree == that) || ((tree.getClass == that.getClass) && {    // XXX defining any kind of equality in terms of getClass is a mistake
-        assert(tree.productArity == that.productArity)
+      f(tree, that) || ((tree.productArity == that.productArity) && {
         def equals0(this0: Any, that0: Any): Boolean = (this0, that0) match {
           case (x: Tree, y: Tree)         => f(x, y) || (x equalsStructure0 y)(f)
           case (xs: List[_], ys: List[_]) => (xs corresponds ys)(equals0)
@@ -103,7 +102,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
             true
         }
 
-        (tree.productIterator.toList corresponds that.productIterator.toList)(equals0) && compareOriginals()
+        (tree.productIterator zip that.productIterator forall { case (x, y) => equals0(x, y) }) && compareOriginals()
       })
 
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
@@ -948,6 +947,8 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
+    def fromContains = typeSubst.fromContains
+
     override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
       if (tree.isDef) {

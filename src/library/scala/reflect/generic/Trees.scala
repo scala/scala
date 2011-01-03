@@ -104,10 +104,10 @@ trait Trees { self: Universe =>
      */
     def children: List[Tree] = {
       def subtrees(x: Any): List[Tree] = x match {
-        case EmptyTree => List()
-        case t: Tree => List(t)
+        case EmptyTree   => Nil
+        case t: Tree     => List(t)
         case xs: List[_] => xs flatMap subtrees
-        case _ => List()
+        case _           => Nil
       }
       productIterator.toList flatMap subtrees
     }
@@ -135,12 +135,8 @@ trait Trees { self: Universe =>
       buffer.toString
     }
 
-    override def hashCode(): Int = super.hashCode()
-
-    override def equals(that: Any): Boolean = that match {
-      case t: Tree => this eq t
-      case _ => false
-    }
+    final override def hashCode(): Int = System.identityHashCode(this)
+    final override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
   }
 
   private[scala] def duplicateTree(tree: Tree): Tree = tree
