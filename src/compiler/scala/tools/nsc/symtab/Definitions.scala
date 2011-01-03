@@ -641,15 +641,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     val abbrvTag = new HashMap[Symbol, Char]
     private val numericWeight = new HashMap[Symbol, Int]
 
-    def isNumericSubClass(sub: Symbol, sup: Symbol) =
-      numericWeight get sub match {
-        case Some(w1) =>
-          numericWeight get sup match {
-            case Some(w2) => w2 % w1 == 0
-            case None => false
-          }
-        case None => false
-      }
+    def isNumericSubClass(sub: Symbol, sup: Symbol) = {
+      val cmp = for (w1 <- numericWeight get sub ; w2 <- numericWeight get sup) yield w2 % w1
+      cmp exists (_ == 0)
+    }
 
     /** Create a companion object for scala.Unit.
      */

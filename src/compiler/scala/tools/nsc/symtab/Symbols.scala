@@ -1015,6 +1015,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       (that == AnyClass ||
        that != NothingClass && (that isSubClass AnyRefClass))
     }
+    final def isNumericSubClass(that: Symbol): Boolean =
+      definitions.isNumericSubClass(this, that)
 
 // Overloaded Alternatives ---------------------------------------------------------
 

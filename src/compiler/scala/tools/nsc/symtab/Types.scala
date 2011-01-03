@@ -77,6 +77,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   def uniqueTypeCount = if (uniques == null) 0 else uniques.size
 
   private var explainSwitch = false
+  private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
   private final val alternativeNarrow = false
 
@@ -415,7 +416,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
     /** For a (potentially wrapped) poly or existential type, its bound symbols,
      *  the empty list for all other types */
-    def boundSyms: List[Symbol] = List()
+    def boundSyms: immutable.Set[Symbol] = emptySymbolSet
 
     /** Mixin a NotNull trait unless type already has one
      *  ...if the option is given, since it is causing typing bugs.
@@ -1689,7 +1690,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       }
     }
 
-    override val isTrivial: Boolean =
+    override lazy val isTrivial: Boolean =
       !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
 
     override def isNotNull =
@@ -1987,7 +1988,7 @@ A type's typeSymbol should never be inspected directly.
 
     override def paramTypes = params map (_.tpe)
 
-    override def boundSyms = params ::: resultType.boundSyms
+    override def boundSyms = immutable.Set[Symbol](params ++ resultType.boundSyms: _*)
 
     // this is needed for plugins to work correctly, only TypeConstraint annotations are supposed to be carried over
     // TODO: this should probably be handled in a more structured way in adapt -- remove this map in resultType and watch the continuations tests fail
@@ -2061,7 +2062,7 @@ A type's typeSymbol should never be inspected directly.
     override def decls: Scope = resultType.decls
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
-    override def boundSyms: List[Symbol] = typeParams ::: resultType.boundSyms
+    override def boundSyms = immutable.Set[Symbol](typeParams ++ resultType.boundSyms: _*)
     override def prefix: Type = resultType.prefix
     override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
     override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
@@ -2110,7 +2111,7 @@ A type's typeSymbol should never be inspected directly.
     override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
-    override def boundSyms: List[Symbol] = quantified
+    override def boundSyms = quantified.toSet
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
     override def params = underlying.params mapConserve { param =>
@@ -3447,11 +3448,11 @@ A type's typeSymbol should never be inspected directly.
         else if (matches(from.head, sym)) to.head
         else subst(sym, from.tail, to.tail)
       tp match {
-        case TypeRef(pre, sym, args) if !(pre eq NoPrefix) =>
+        case TypeRef(pre, sym, args) if pre ne NoPrefix =>
           val newSym = subst(sym, from, to)
           // assert(newSym.typeParams.length == sym.typeParams.length, "typars mismatch in SubstSymMap: "+(sym, sym.typeParams, newSym, newSym.typeParams))
           mapOver(typeRef(pre, newSym, args)) // mapOver takes care of subst'ing in args
-        case SingleType(pre, sym) if !(pre eq NoPrefix) =>
+        case SingleType(pre, sym) if pre ne NoPrefix =>
           mapOver(singleType(pre, subst(sym, from, to)))
         case _ =>
           super.apply(tp)
