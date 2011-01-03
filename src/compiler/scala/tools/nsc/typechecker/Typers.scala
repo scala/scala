@@ -4194,10 +4194,7 @@ trait Typers extends Modes {
       // We disable implicits because otherwise some constructs will
       // type check which should not.  The pattern matcher does not
       // perform implicit conversions in an attempt to consummate a match.
-      val savedImplicitsEnabled = context.implicitsEnabled
-      context.implicitsEnabled = false
-      try typed(tree, PATTERNmode, pt)
-      finally context.implicitsEnabled = savedImplicitsEnabled
+      context.withImplicitsDisabled(typed(tree, PATTERNmode, pt))
     }
 
     /** Types a (fully parameterized) type tree */

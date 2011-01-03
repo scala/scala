@@ -358,11 +358,6 @@ trait Infer {
         true
     }
 
-    def isCompatible(tp: Type, pt: Type): Boolean = {
-      val tp1 = normalize(tp)
-      (tp1 weak_<:< pt) || isCoercible(tp1, pt)
-    }
-
     final def normSubType(tp: Type, pt: Type): Boolean = tp match {
       case mt @ MethodType(params, restpe) =>
         if (mt.isImplicit) normSubType(restpe, pt)
@@ -398,10 +393,12 @@ trait Infer {
         tp <:< pt
     }
 
-    def isCompatibleArg(tp: Type, pt: Type): Boolean = {
+    def isCompatible(tp: Type, pt: Type): Boolean = {
       val tp1 = normalize(tp)
       (tp1 weak_<:< pt) || isCoercible(tp1, pt)
     }
+    def isCompatibleArgs(tps: List[Type], pts: List[Type]) =
+      (tps corresponds pts)(isCompatible)
 
     def isWeaklyCompatible(tp: Type, pt: Type): Boolean =
       pt.typeSymbol == UnitClass || // can perform unit coercion
@@ -412,20 +409,10 @@ trait Infer {
     /** Like weakly compatible but don't apply any implicit conversions yet.
      *  Used when comparing the result type of a method with its prototype.
      */
-    def isConservativelyCompatible(tp: Type, pt: Type): Boolean = {
-      val savedImplicitsEnabled = context.implicitsEnabled
-      context.implicitsEnabled = false
-      try {
-        isWeaklyCompatible(tp, pt)
-      } finally {
-        context.implicitsEnabled = savedImplicitsEnabled
-      }
-    }
+    def isConservativelyCompatible(tp: Type, pt: Type): Boolean =
+      context.withImplicitsDisabled(isWeaklyCompatible(tp, pt))
 
     def isCoercible(tp: Type, pt: Type): Boolean = false
-
-    def isCompatibleArgs(tps: List[Type], pts: List[Type]) =
-      (tps corresponds pts)(isCompatibleArg)
 
     /* -- Type instantiation------------------------------------------------ */
 
@@ -653,7 +640,7 @@ trait Infer {
       // Then define remaining type variables from argument types.
       (argtpes, formals).zipped map { (argtpe, formal) =>
         //@M isCompatible has side-effect: isSubtype0 will register subtype checks in the tvar's bounds
-        if (!isCompatibleArg(argtpe.deconst.instantiateTypeParams(tparams, tvars),
+        if (!isCompatible(argtpe.deconst.instantiateTypeParams(tparams, tvars),
                              formal.instantiateTypeParams(tparams, tvars))) {
           throw new DeferredNoInstance(() =>
             "argument expression's type is not compatible with formal parameter type" +
@@ -1640,20 +1627,18 @@ trait Infer {
       if (context.implicitsEnabled) {
         val reportGeneralErrors = context.reportGeneralErrors
         context.reportGeneralErrors = false
-        context.implicitsEnabled = false
         try {
-          infer
-        } catch {
-          case ex: CyclicReference =>
-            throw ex
-          case ex: TypeError =>
+          context.withImplicitsDisabled(infer)
+        }
+        catch {
+          case ex: CyclicReference  => throw ex
+          case ex: TypeError        =>
             context.reportGeneralErrors = reportGeneralErrors
-            context.implicitsEnabled = true
             infer
         }
         context.reportGeneralErrors = reportGeneralErrors
-        context.implicitsEnabled = true
-      } else infer
+      }
+      else infer
     }
 
     /** Assign <code>tree</code> the type of unique polymorphic alternative

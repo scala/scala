@@ -138,6 +138,13 @@ trait Contexts { self: Analyzer =>
       tparams
     }
 
+    def withImplicitsDisabled[T](op: => T): T = {
+      val saved = implicitsEnabled
+      implicitsEnabled = false
+      try op
+      finally implicitsEnabled = saved
+    }
+
     /**
      *  @param unit    ...
      *  @param tree    ...
