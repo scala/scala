@@ -27,6 +27,7 @@ abstract class SymbolTable extends reflect.generic.Universe
                               with TreePrinters
                               with Positions
                               with DocComments
+                              with TypeDebugging
 {
   def settings: Settings
   def rootLoader: LazyType

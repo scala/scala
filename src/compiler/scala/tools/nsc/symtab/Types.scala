@@ -104,7 +104,6 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   object undoLog {
     private type UndoLog = List[(TypeVar, TypeConstraint)]
     private[nsc] var log: UndoLog = List()
-    private[nsc] def size() = log.size
 
     /** Undo all changes to constraints to type variables upto `limit'
      */
@@ -116,29 +115,32 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       }
     }
 
-    private[Types] def record(tv: TypeVar) = {log = (tv, tv.constr.cloneInternal) :: log}
-    private[nsc] def clear() { log = List() }
+    private[Types] def record(tv: TypeVar) = {
+      log ::= (tv, tv.constr.cloneInternal)
+    }
+    private[nsc] def clear() {
+      if (settings.debug.value)
+        self.log("Clearing " + log.size + " entries from the undoLog.")
+
+      log = Nil
+    }
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
       val before = log
-      val result = try {
-        block
-      } finally {
-        undoTo(before)
-      }
-      result
+
+      try block
+      finally undoTo(before)
     }
 
     // if `block` evaluates to false, it should not affect constraints on typevars
     def undoUnless(block: => Boolean): Boolean = {
       val before = log
       var result = false
-      try {
-        result = block
-      } finally {
-        if(!result) undoTo(before)
-      }
+
+      try result = block
+      finally if (!result) undoTo(before)
+
       result
     }
   }
@@ -155,20 +157,6 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   } with TreeGen
 
   import gen._
-
-  // @M toString that is safe during debugging (does not normalize, ...)
-  def debugString(tp: Type): String = tp match {
-    case TypeRef(pre, sym, args) =>  debugString(pre) +"."+ sym.nameString + (args map debugString).mkString("[",", ","]")
-    case ThisType(sym) => sym.nameString+".this"
-    case SingleType(pre, sym) => debugString(pre) +"."+ sym.nameString +".type"
-    case RefinedType(parents, defs) => (parents map debugString).mkString("", " with ", "") + defs.toList.mkString(" {", " ;\n ", "}")
-    case ClassInfoType(parents, defs, clazz) =>  "class "+ clazz.nameString + (parents map debugString).mkString("", " with ", "") + defs.toList.mkString("{", " ;\n ", "}")
-    case PolyType(tparams, result) => tparams.mkString("[", ", ", "] ") + debugString(result)
-    case TypeBounds(lo, hi) => ">: "+ debugString(lo) +" <: "+ debugString(hi)
-    case tv @ TypeVar(_, _) => tv.toString
-    case ExistentialType(tparams, qtpe) => "forsome "+ tparams.mkString("[", ", ", "] ") + debugString(qtpe)
-    case _ => tp.toString
-  }
 
   /** A proxy for a type (identified by field `underlying') that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
