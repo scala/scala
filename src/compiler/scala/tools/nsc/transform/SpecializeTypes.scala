@@ -1002,6 +1002,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
+  /** Return the generic class corresponding to this specialized class. */
+  def originalClass(clazz: Symbol): Symbol =
+    if (clazz.hasFlag(SPECIALIZED)) {
+      val (originalName, _, _) = nme.splitSpecializedName(clazz.name)
+      clazz.owner.info.decl(originalName).suchThat(_.isClass)
+    } else NoSymbol
+
+  def illegalSpecializedInheritance(clazz: Symbol): Boolean = {
+    clazz.hasFlag(SPECIALIZED) && originalClass(clazz).info.parents.exists { p =>
+      hasSpecializedParams(p.typeSymbol) && !p.typeSymbol.isTrait
+    }
+  }
+
   def specializeCalls(unit: CompilationUnit) = new TypingTransformer(unit) {
     /** Map a specializable method to it's rhs, when not deferred. */
     val body: mutable.Map[Symbol, Tree] = new mutable.HashMap
@@ -1085,6 +1098,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
             case None => super.transform(tree)
           }
+
+        case Select(Super(_, _), name) if illegalSpecializedInheritance(currentClass) =>
+          val pos = tree.pos
+          log(pos.source.file.name+":"+pos.line+": not specializing call to super inside illegal specialized inheritance class.")
+          log(pos.lineContent)
+          tree
 
         case Select(qual, name) =>
           if (settings.debug.value)
@@ -1403,9 +1422,40 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     atPos(pos) { (receiver /: argss) (Apply) }
   }
 
+  /** Forward to the generic class constructor. If the current class initializes
+   *  specialized fields corresponding to parameters, it passes null to the superclass
+   *  constructor. This saves the boxing cost for initializing generic fields that are
+   *  never used.
+   *
+   *  For example:
+   *  {{{
+   *    case class Tuple2[T, U](x: T, y: U)
+   *
+   *    class Tuple2$II {
+   *      val _x$I: Int = ..
+   *      def x = _x$I
+   *      // same for y
+   *      def this(x: Int, y: Int) {
+   *        super.this(null.asInstanceOf[Int], null.asInstanceOf[Int])
+   *      }
+   *    }
+   *  }}
+   */
   private def forwardCtorCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
+
+    /** A constructor parameter `f' initializes a specialized field
+     *  iff:
+     *    - it is specialized itself
+     *    - there is a getter for the original (non-specialized) field in the same class
+     *    - there is a getter for the specialized field in the same class
+     */
+    def initializesSpecializedField(f: Symbol): Boolean =
+      (f.name.endsWith("$sp")
+          && clazz.info.member(nme.originalName(f.name)).isPublic
+          && (clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol))
+
     val argss = paramss map (_ map (x =>
-      if (x.name.endsWith("$sp") && clazz.info.member(nme.originalName(x.name)).isPublic)
+      if (initializesSpecializedField(x.symbol))
         gen.mkAsInstanceOf(Literal(Constant(null)), x.symbol.tpe)
       else
         Ident(x.symbol))
