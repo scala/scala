@@ -691,10 +691,14 @@ abstract class GenICode extends SubComponent  {
                   ctx1.bb.emit(STORE_LOCAL(tmp))
                   true
                 }
+
+                // duplicate finalizer (takes care of anchored labels)
+                val f1 = duplicateFinalizer(Set.empty ++ ctx1.labels.keySet, ctx1, f)
+
                 // we have to run this without the same finalizer in
                 // the list, otherwise infinite recursion happens for
                 // finalizers that contain 'return'
-                ctx1 = genLoad(f, ctx1.removeFinalizer(f), UNIT)
+                ctx1 = genLoad(f1, ctx1.removeFinalizer(f), UNIT)
                 saved
             }
           }
