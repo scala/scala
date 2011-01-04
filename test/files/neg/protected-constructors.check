@@ -1,0 +1,25 @@
+protected-constructors.scala:17: error: too many arguments for constructor Foo1: ()dingus.Foo1
+    val foo1 = new Foo1("abc")
+               ^
+protected-constructors.scala:18: error: constructor Foo2 in class Foo2 cannot be accessed in object P
+ Access to protected constructor Foo2 not permitted because
+ enclosing class object P in package hungus is not a subclass of 
+ class Foo2 in package dingus where target is defined
+    val foo2 = new Foo2("abc")
+               ^
+protected-constructors.scala:19: error: class Foo3 in object Ding cannot be accessed in object dingus.Ding
+ Access to protected class Foo3 not permitted because
+ enclosing class object P in package hungus is not a subclass of 
+ object Ding in package dingus where target is defined
+    val foo3 = new Ding.Foo3("abc")
+                        ^
+protected-constructors.scala:15: error: class Foo3 in object Ding cannot be accessed in object dingus.Ding
+ Access to protected class Foo3 not permitted because
+ enclosing class object P in package hungus is not a subclass of 
+ object Ding in package dingus where target is defined
+    class Bar3 extends Ding.Foo3("abc")
+                            ^
+protected-constructors.scala:15: error: too many arguments for constructor Object: ()java.lang.Object
+    class Bar3 extends Ding.Foo3("abc")
+               ^
+5 errors found
