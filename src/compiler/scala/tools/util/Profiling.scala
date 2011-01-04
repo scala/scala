@@ -22,11 +22,24 @@ abstract class Profiling {
   def stopProfiling(): Unit
   def captureSnapshot(): Unit
 
-  def profile[T](body: => T): T = {
+  def allocationFreq: Option[Int] // record every Nth allocation
+  def startRecordingAllocations(): Unit
+  def stopRecordingAllocations(): Unit
+
+  def profile[T](body: => T): T = profileCPU(body)
+
+  def profileCPU[T](body: => T): T = {
     startProfiling()
     val result = body
     stopProfiling()
     captureSnapshot()
+    result
+  }
+
+  def profileMem[T](body: => T): T = {
+    startRecordingAllocations()
+    val result = body
+    stopRecordingAllocations()
     result
   }
 

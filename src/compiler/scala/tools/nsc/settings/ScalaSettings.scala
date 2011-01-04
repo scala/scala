@@ -112,8 +112,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports.")
   // Not actually doing anything, so disabled.
   // val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values.")
-  val Yprofile      = PhasesSetting     ("-Yprofile", "(Requires jvm -agentpath to contain yjgpagent) Profile")
-  val YprofileRes   = BooleanSetting    ("-Yprofile-resident", "Profile memory, get heap snapshot after each compiler run (requires yjpagent, see above).")
+  val Yprofile      = PhasesSetting     ("-Yprofile", "(Requires jvm -agentpath to contain yjgpagent) Profile CPU usage of given phases.")
+  val YprofileMem   = BooleanSetting    ("-Yprofile-memory", "Profile memory, get heap snapshot after each compiler run (requires yjpagent, see above).")
   val YprofileClass = StringSetting     ("-Yprofile-class", "class", "Name of profiler class.", "scala.tools.util.YourkitProfiling")
   val Yrecursion    = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some(0, Int.MaxValue), (_: String) => None)
   val selfInAnnots  = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations.")

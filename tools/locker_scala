@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+
+THISDIR=`dirname $0`
+CP=`$THISDIR/lockercp`
+CLASS="scala.tools.nsc.MainGenericRunner"
+
+java -classpath "$CP" $CLASS -usejavacp "$@"

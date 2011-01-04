@@ -2,12 +2,24 @@ package scala.tools
 package util
 
 import com.yourkit.api._
+import com.yourkit.runtime._
 import nsc.io._
 
 class YourkitProfiling extends Profiling {
   @volatile private var active = false
-  private var recordAllocation = false
+  @volatile private var freq: Option[Int] = None
   lazy val controller = new Controller
+
+  def defaultFreq = 100
+  def allocationFreq = freq
+  def setAllocationFreq(x: Int) = freq = if (x <= 0) None else Some(x)
+
+  def startRecordingAllocations() = {
+    controller.startAllocationRecording(true, freq getOrElse defaultFreq, false, 0)
+  }
+  def stopRecordingAllocations() = {
+    controller.stopAllocationRecording()
+  }
 
   def startProfiling(): Unit = {
     if (isActive)
@@ -15,21 +27,32 @@ class YourkitProfiling extends Profiling {
 
     active = true
     daemonize(true) {
-      controller.startCPUProfiling(ProfilingModes.CPU_SAMPLING, Controller.DEFAULT_FILTERS)
-      if (recordAllocation)
-        controller.startAllocationRecording(true, 100, false, 0)
+      try {
+        controller.startCPUProfiling(ProfilingModes.CPU_SAMPLING, Controller.DEFAULT_FILTERS)
+        if (freq.isDefined)
+          startRecordingAllocations()
+      }
+      catch {
+        case _: PresentableException  => () // if it's already running, no big deal
+      }
     }
   }
 
-  def captureSnapshot() =
-    daemonize(false)(controller.captureSnapshot(ProfilingModes.SNAPSHOT_WITH_HEAP))
+  def captureSnapshot() = {
+    daemonize(true)(controller.captureSnapshot(ProfilingModes.SNAPSHOT_WITH_HEAP))
+  }
 
   def stopProfiling() = {
-    if (recordAllocation)
-      controller.stopAllocationRecording()
+    try {
+      if (freq.isDefined)
+        stopRecordingAllocations()
 
-    controller.stopCPUProfiling()
-    active = false
+      controller.stopCPUProfiling()
+    }
+    catch {
+      case _: PresentableException  => () // if it's already running, no big deal
+    }
+    finally active = false
   }
 
   def advanceGeneration(desc: String) {

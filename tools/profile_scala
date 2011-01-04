@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+
+# Uses quick by default
+CLASSPATH=`tools/quickcp`
+
+AGENT=${YOURKIT_PATH:-/Applications/YourKit.app/bin/mac/libyjpagent.jnilib}
+
+java $JAVA_OPTS \
+  -classpath $CLASSPATH \
+  -agentpath:$AGENT=$YNP_STARTUP_OPTIONS \
+  scala.tools.nsc.MainGenericRunner -usejavacp \
+  -i <(cat <<EOF
+lazy val profiler = new scala.tools.util.YourkitProfiling { }
+import profiler._
+EOF
+) "$@"

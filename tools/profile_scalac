@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# To influence behavior, you can set:
+#
+#   YOURKIT_PATH
+#   YOURKIT_PROFILE_PHASES
+#   YNP_STARTUP_OPTIONS
+#
+
+# Start cpu sampling immediately
+DEFAULT_OPTS="sampling,onexit=snapshot"
+
+# Uses quick by default
+CLASSPATH=`tools/quickcp`
+
+AGENT=${YOURKIT_PATH:-/Applications/YourKit.app/bin/mac/libyjpagent.jnilib}
+OPTS=${YNP_STARTUP_OPTIONS:-$DEFAULT_OPTS}
+PHASES=${YOURKIT_PROFILE_PHASES:-all}
+
+java $JAVA_OPTS \
+  -classpath $CLASSPATH \
+  -agentpath:$AGENT=$OPTS \
+  scala.tools.nsc.Main -usejavacp \
+  -Yprofile:$PHASES \
+  "$@"
