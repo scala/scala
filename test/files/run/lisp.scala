@@ -20,7 +20,7 @@ class LispTokenizer(s: String) extends Iterator[String] {
         do i = i + 1
         while (!isDelimiter(s charAt i))
       s.substring(start, i)
-    } else error("premature end of string")
+    } else system.error("premature end of string")
 }
 
 //############################################################################
@@ -102,7 +102,7 @@ object LispCaseClasses extends Lisp {
   var indent: Int = 0
 
   def lispError[a](msg: String): a =
-    error("error: " + msg + "\n" + curexp);
+    system.error("error: " + msg + "\n" + curexp);
 
   trait Environment {
     def lookup(n: String): Data;
@@ -201,7 +201,7 @@ object LispCaseClasses extends Lisp {
 
     val ps: List[String] = toList(params) map {
       case SYM(name) => name
-      case _ => error("illegal parameter list");
+      case _ => system.error("illegal parameter list");
     }
 
     FUN(args => eval(expr, extendEnv(env, ps, args)))
@@ -237,7 +237,7 @@ object LispCaseClasses extends Lisp {
     val it = new LispTokenizer(s);
     def parseExpr(token: String): Data = {
       if (token == "(") parseList
-      else if (token == ")") error("unbalanced parentheses")
+      else if (token == ")") system.error("unbalanced parentheses")
       else if ('0' <= token.charAt(0) && token.charAt(0) <= '9')
         NUM(token.toInt)
       else if (token.charAt(0) == '\"' && token.charAt(token.length()-1)=='\"')
@@ -270,7 +270,7 @@ object LispAny extends Lisp {
   var indent: Int = 0;
 
   def lispError[a](msg: String): a =
-    error("error: " + msg + "\n" + curexp);
+    system.error("error: " + msg + "\n" + curexp);
 
   trait Environment {
     def lookup(n: String): Data;
@@ -392,7 +392,7 @@ object LispAny extends Lisp {
 
     val ps: List[String] = asList(params) map {
       case Symbol(name) => name
-      case _ => error("illegal parameter list");
+      case _ => system.error("illegal parameter list");
     }
 
     Lambda(args => eval(expr, extendEnv(env, ps, args)))
@@ -428,7 +428,7 @@ object LispAny extends Lisp {
     val it = new LispTokenizer(s);
     def parseExpr(token: String): Data = {
       if (token == "(") parseList
-      else if (token == ")") error("unbalanced parentheses")
+      else if (token == ")") system.error("unbalanced parentheses")
       //else if (Character.isDigit(token.charAt(0)))
       else if (token.charAt(0).isDigit)
         token.toInt

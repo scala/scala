@@ -459,6 +459,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           byNameArgs += arg
           arg setType functionType(List(), arg.tpe)
         } else {
+          if (opt.verboseDebug) {
+            val posstr  = arg.pos.source.path + ":" + arg.pos.line
+            val permstr = if (fun.isPrivate) "private" else "notprivate"
+            log("byname | %s | %s | %s".format(posstr, fun.fullName, permstr))
+          }
+
           val result = localTyper.typed(
             Function(Nil, arg) setPos arg.pos).asInstanceOf[Function]
           new ChangeOwnerTraverser(currentOwner, result.symbol).traverse(arg)

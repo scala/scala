@@ -16,6 +16,8 @@ package object util {
   /** Frequency counter */
   def freq[T](xs: Traversable[T]): Map[T, Int] = xs groupBy identity mapValues (_.size)
 
+  def freqrank[T](xs: Traversable[(T, Int)]): List[(Int, T)] = xs.toList map (_.swap) sortBy (-_._1)
+
   /** Execute code and then wait for all Threads created during its
    *  execution to complete.
    */
