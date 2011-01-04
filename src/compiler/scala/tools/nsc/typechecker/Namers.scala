@@ -47,8 +47,10 @@ trait Namers { self: Analyzer =>
   // synthetic `copy' (reps `apply', `unapply') methods are added. To compute
   // their signatures, the corresponding ClassDef is needed.
   // During naming, for each case class module symbol, the corresponding ClassDef
-  // is stored in this map.
-  private[typechecker] val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
+  // is stored in this map. The map is cleared lazily, i.e. when the new symbol
+  // is created with the same name, the old one (if present) is wiped out, or the
+  // entry is deleted when it is used and no longer needed.
+  private val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -59,7 +61,6 @@ trait Namers { self: Analyzer =>
   private[typechecker] val classAndNamerOfModule = new HashMap[Symbol, (ClassDef, Namer)]
 
   def resetNamer() {
-    caseClassOfModuleClass.clear
     classAndNamerOfModule.clear
   }
 
@@ -203,6 +204,7 @@ trait Namers { self: Analyzer =>
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
       } else {
+        caseClassOfModuleClass -= c
         var sym = context.owner.newClass(tree.pos, tree.name)
         sym = sym.setFlag(tree.mods.flags | inConstructorFlag)
         sym = setPrivateWithin(tree, sym, tree.mods)
