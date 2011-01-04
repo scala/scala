@@ -1940,7 +1940,7 @@ abstract class GenICode extends SubComponent  {
       def enterMethod(m: IMethod, d: DefDef): Context = {
         val ctx1 = new Context(this) setMethod(m)
         ctx1.labels = new mutable.HashMap()
-        ctx1.method.code = new Code(m.symbol.simpleName.toString(), m)
+        ctx1.method.code = new Code(m)
         ctx1.bb = ctx1.method.code.startBlock
         ctx1.defdef = d
         ctx1.scope = EmptyScope

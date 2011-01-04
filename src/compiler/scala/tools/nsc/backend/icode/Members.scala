@@ -26,6 +26,7 @@ trait Members { self: ICodes =>
    * other multi-block piece of code, like exception handlers.
    */
   class Code(label: String, method: IMethod) {
+    def this(method: IMethod) = this(method.symbol.simpleName.toString, method)
 
     /** The set of all blocks */
     val blocks: ListBuffer[BasicBlock] = new ListBuffer
