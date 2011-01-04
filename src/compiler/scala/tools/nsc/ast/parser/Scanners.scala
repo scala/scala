@@ -112,7 +112,7 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Should doc comments be built? */
-    def buildDocs: Boolean = onlyPresentation
+    def buildDocs: Boolean = forScaladoc
 
     /** buffer for the documentation comment
      */

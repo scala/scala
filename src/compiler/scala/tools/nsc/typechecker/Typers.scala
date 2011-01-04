@@ -691,7 +691,7 @@ trait Typers extends Modes {
     protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree = tree.tpe match {
       case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (-1)
         adaptAnnotations(tree, mode, pt)
-      case ct @ ConstantType(value) if inNoModes(mode, TYPEmode | FUNmode) && (ct <:< pt) && !onlyPresentation => // (0)
+      case ct @ ConstantType(value) if inNoModes(mode, TYPEmode | FUNmode) && (ct <:< pt) && !forScaladoc => // (0)
         val sym = tree.symbol
         if (sym != null && sym.isDeprecated) {
           val msg = sym.toString + sym.locationString +" is deprecated: "+ sym.deprecationMessage.getOrElse("")
@@ -1800,7 +1800,7 @@ trait Typers extends Modes {
       try {
         namer.enterSyms(block.stats)
         for (stat <- block.stats) {
-          if (onlyPresentation && stat.isDef) {
+          if (forInteractive && stat.isDef) {
             // this might be redundant now
             var e = context.scope.lookupEntry(stat.symbol.name)
             while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
@@ -2380,7 +2380,7 @@ trait Typers extends Modes {
                *  than ideal from a consistency standpoint, but it shouldn't be
                *  altered without due caution.
                */
-              if (fun.symbol == List_apply && args.isEmpty && !onlyPresentation)
+              if (fun.symbol == List_apply && args.isEmpty && !forInteractive)
                 atPos(tree.pos)(gen.mkNil setType restpe)
               else
                 constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
@@ -3486,13 +3486,13 @@ trait Typers extends Modes {
             setError(tree1)
           }
 
-          if (name == nme.ERROR && onlyPresentation)
+          if (name == nme.ERROR && forInteractive)
             return makeErrorTree
 
           if (!qual.tpe.widen.isErroneous)
             notAMember(tree, qual, name)
 
-          if (onlyPresentation) makeErrorTree else setError(tree)
+          if (forInteractive) makeErrorTree else setError(tree)
         } else {
           val tree1 = tree match {
             case Select(_, _) => treeCopy.Select(tree, qual, name)
@@ -3776,7 +3776,7 @@ trait Typers extends Modes {
           labelTyper(ldef).typedLabelDef(ldef)
 
         case ddef @ DocDef(comment, defn) =>
-          if (onlyPresentation && (sym ne null) && (sym ne NoSymbol)) {
+          if (forScaladoc && (sym ne null) && (sym ne NoSymbol)) {
             docComments(sym) = comment
             comment.defineVariables(sym)
             val typer1 = newTyper(context.makeNewScope(tree, context.owner))
@@ -4065,7 +4065,7 @@ trait Typers extends Modes {
             // whatever type to tree; we just have to survive until a real error message is issued.
             tree setType AnyClass.tpe
         case Import(expr, selectors) =>
-          assert(onlyPresentation) // should not happen in normal circumstances.
+          assert(forInteractive) // should not happen in normal circumstances.
           tree setType tree.symbol.tpe
         case _ =>
           abort("unexpected tree: " + tree.getClass + "\n" + tree)//debug

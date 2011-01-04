@@ -955,7 +955,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         dependencyAnalysis.saveDependencyAnalysis()
     }
 
-    /** Compile list of abstract files */
+    /** Compile list of abstract files. */
     def compileFiles(files: List[AbstractFile]) {
       try compileSources(files map getSourceFile)
       catch { case ex: IOException => globalError(ex.getMessage()) }
@@ -1153,6 +1153,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forJVM           = opt.jvm
   def forMSIL          = opt.msil
   def forInteractive   = false
-  def onlyPresentation = false
+  def forScaladoc      = false
   def createJavadoc    = false
 }

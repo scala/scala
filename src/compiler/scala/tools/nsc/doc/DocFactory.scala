@@ -36,7 +36,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
       phasesSet += pickler
       phasesSet += refchecks
     }
-    override def onlyPresentation = true
+    override def forScaladoc = true
     lazy val addSourceless = {
       val sless = new SourcelessComments { val global = compiler }
       docComments ++= sless.comments

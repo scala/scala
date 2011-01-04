@@ -51,7 +51,6 @@ self =>
   @inline final def informIDE(msg: => String) =
     if (verboseIDE) reporter.info(NoPosition, msg, true)
 
-  override def onlyPresentation = true
   override def forInteractive = true
 
   /** A map of all loaded files to the rich compilation units that correspond to them.

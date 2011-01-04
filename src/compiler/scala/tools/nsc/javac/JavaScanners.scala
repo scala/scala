@@ -652,7 +652,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
         docBuffer = null
         in.next
         val scalaDoc = ("/**", "*/")
-        if (in.ch == '*' && onlyPresentation)
+        if (in.ch == '*' && forScaladoc)
           docBuffer = new StringBuilder(scalaDoc._1)
         do {
           do {

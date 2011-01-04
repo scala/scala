@@ -124,7 +124,7 @@ object Foo2 {
 	    phasesSet += analyzer.namerFactory
 	    phasesSet += analyzer.typerFactory
 	  }
-	  override def onlyPresentation = true
+	  override def forScaladoc = true
 	}
         if (reporter.hasErrors) {
           reporter.flush()
