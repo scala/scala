@@ -146,8 +146,10 @@ object Queue extends SeqFactory[Queue] {
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
-  override def empty[A]: Queue[A] = new Queue[A](Nil, Nil)
+  override def empty[A]: Queue[A] = EmptyQueue.asInstanceOf[Queue[A]]
   override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
+
+  private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
 
   @deprecated("Use Queue.empty instead")
   val Empty: Queue[Nothing] = Queue()

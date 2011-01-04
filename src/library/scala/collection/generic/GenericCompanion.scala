@@ -43,9 +43,11 @@ abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
    *  @return a new $coll with elements `elems`
    */
   def apply[A](elems: A*): CC[A] = {
-    val b = newBuilder[A]
-    b ++= elems
-    b.result
+    if (elems.isEmpty) empty[A]
+    else {
+      val b = newBuilder[A]
+      b ++= elems
+      b.result
+    }
   }
 }
-

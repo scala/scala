@@ -23,7 +23,9 @@ object ListMap extends ImmutableMapFactory[ListMap] {
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] =
     new MapCanBuildFrom[A, B]
-  def empty[A, B]: ListMap[A, B] = new ListMap
+  def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
+
+  private object EmptyListMap extends ListMap[Any, Nothing] { }
 }
 
 /** This class implements immutable maps using a list-based data structure.
