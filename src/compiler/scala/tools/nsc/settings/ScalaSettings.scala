@@ -145,12 +145,19 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val noSelfCheck   = BooleanSetting    ("-Yno-self-type-checks", "Suppress check for self-type conformance among inherited members.")
   val YvirtClasses  = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
-  val YpresentationVerbose = BooleanSetting("-YpresentationVerbose", "Print information about presentation compiler tasks.")
-  val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",   "Enable debugging output for the presentation compiler.")
-
-  // Warnings
+  /**
+   * Warnings
+   */
   val Ywarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
 
+  /**
+   * IDE-specific settings
+   */
+  val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
+  val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
+
+  val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation comnpiler events into file", "")
+  val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation comnpiler events from file", "")
   /**
    * "fsc-specific" settings.
    */

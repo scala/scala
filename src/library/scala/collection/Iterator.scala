@@ -743,11 +743,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
     def hasNext =
       hdDefined || self.hasNext
 
-    def next =
+    def next() =
       if (hdDefined) {
         hdDefined = false
         hd
-      } else self.next
+      } else self.next()
   }
 
   /** A flexible iterator for transforming an `Iterator[A]` into an

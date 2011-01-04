@@ -1,17 +1,19 @@
 package scala.tools.nsc
 package interactive
 
-import java.io.{ PrintWriter, StringWriter }
+import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler}
+import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler, LogReplay, Logger, Replayer, NullLogger}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
+import scala.tools.nsc.io.JSON._
+import scala.tools.nsc.util.Pickler._
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
@@ -20,13 +22,26 @@ class Global(settings: Settings, reporter: Reporter)
      with CompilerControl
      with RangePositions
      with ContextTrees
-     with RichCompilationUnits {
+     with RichCompilationUnits
+     with Picklers {
 self =>
 
   import definitions._
 
   val debugIDE: Boolean = settings.YpresentationDebug.value
   val verboseIDE: Boolean = settings.YpresentationVerbose.value
+
+  private def replayName = settings.YpresentationReplay.value
+  private def logName = settings.YpresentationLog.value
+
+  lazy val log =
+    if (replayName != "") new Replayer(new FileReader(replayName))
+    else if (logName != "") new Logger(new FileWriter(logName))
+    else NullLogger
+
+//  import log.logreplay
+
+  def logreplay[T](label: String, x: T): T = x
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
@@ -82,7 +97,7 @@ self =>
    */
   override def signalDone(context: Context, old: Tree, result: Tree) {
     def integrateNew() {
-      // Don't think this is needed anymore, let's see if we can remove
+      // still needed?
       context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
     if (activeLocks == 0) { // can we try to avoid that condition (?)
@@ -165,6 +180,9 @@ self =>
 
   // ----------------- Polling ---------------------------------------
 
+  var moreWorkAtNode: Int = -1
+  var nodesSeen = 0
+
   /** Called from runner thread and signalDone:
    *  Poll for interrupts and execute them immediately.
    *  Then, poll for exceptions and execute them.
@@ -182,27 +200,45 @@ self =>
         pollForWork()
       case _ =>
     }
-    if (pendingResponse.isCancelled)
-      throw CancelException
-    scheduler.pollThrowable() match {
-      case Some(ex @ FreshRunReq) =>
-        newTyperRun()
-        minRunId = currentRunId
-        if (outOfDate) throw ex
-        else outOfDate = true
-      case Some(ex: Throwable) => throw ex
-      case _ =>
+
+    def nodeWithWork(): Option[Int] = {
+      nodesSeen += 1
+      if (scheduler.moreWork || pendingResponse.isCancelled) Some(nodesSeen) else None
     }
-    scheduler.nextWorkItem() match {
-      case Some(action) =>
-        try {
-          debugLog("picked up work item: "+action)
-          action()
-          debugLog("done with work item: "+action)
-        } finally {
-          debugLog("quitting work item: "+action)
-        }
+
+    logreplay("atnode", nodeWithWork()) match {
+      case Some(id) =>
+        assert(id >= nodesSeen)
+        moreWorkAtNode = id
       case None =>
+    }
+
+    if (nodesSeen == moreWorkAtNode) {
+
+      if (logreplay("cancelled", pendingResponse.isCancelled)) {
+        throw CancelException
+      }
+
+      logreplay("exception thrown", scheduler.pollThrowable()) match {
+        case Some(ex @ FreshRunReq) =>
+          newTyperRun()
+          minRunId = currentRunId
+          if (outOfDate) throw ex
+          else outOfDate = true
+        case Some(ex: Throwable) => throw ex
+        case _ =>
+      }
+      logreplay("workitem", scheduler.nextWorkItem()) match {
+        case Some(action) =>
+          try {
+            debugLog("picked up work item: "+action)
+            action()
+            debugLog("done with work item: "+action)
+          } finally {
+            debugLog("quitting work item: "+action)
+          }
+        case None =>
+      }
     }
   }
 
@@ -291,13 +327,11 @@ self =>
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
     allSources = allSources filter (s => unitOfFile contains (s.file))
 
-    informIDE("Parsing %d files.".format(allSources.size))
     for (s <- allSources) {
       val unit = unitOf(s)
       if (unit.status == NotLoaded) parse(unit)
     }
 
-    informIDE("Typechecking %d files.".format(allSources.size))
     for (s <- allSources) {
       val unit = unitOf(s)
       if (!unit.isUpToDate) typeCheck(unit)

@@ -18,6 +18,36 @@ trait CompilerControl { self: Global =>
     override def toString = "reload "+sources
   }
 
+  class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
+    def apply() = self.getTypedTreeAt(pos, response)
+    override def toString = "typeat "+pos.source+" "+pos.show
+  }
+
+  class AskTypeItem(val source: SourceFile, val forceReload: Boolean, response: Response[Tree]) extends WorkItem {
+    def apply() = self.getTypedTree(source, forceReload, response)
+    override def toString = "typecheck"
+  }
+
+  class AskLastTypeItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
+    def apply() = self.getLastTypedTree(source, response)
+    override def toString = "reconcile"
+  }
+
+  class AskTypeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
+    def apply() = self.getTypeCompletion(pos, response)
+    override def toString = "type completion "+pos.source+" "+pos.show
+  }
+
+  class AskScopeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
+    def apply() = self.getScopeCompletion(pos, response)
+    override def toString = "scope completion "+pos.source+" "+pos.show
+  }
+
+  class AskToDoFirstItem(val source: SourceFile) extends WorkItem {
+    def apply() = moveToFront(List(source))
+    override def toString = "dofirst "+source
+  }
+
   /** Info given for every member found by completion
    */
   abstract class Member {
@@ -108,53 +138,34 @@ trait CompilerControl { self: Global =>
   /** Set sync var `response` to the smallest fully attributed tree that encloses position `pos`.
    */
   def askTypeAt(pos: Position, response: Response[Tree]) =
-    scheduler postWorkItem new WorkItem {
-      def apply() = self.getTypedTreeAt(pos, response)
-      override def toString = "typeat "+pos.source+" "+pos.show
-    }
+    scheduler postWorkItem new AskTypeAtItem(pos, response)
 
   /** Set sync var `response` to the fully attributed & typechecked tree contained in `source`.
    */
   def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =
-    scheduler postWorkItem new WorkItem {
-      def apply() = self.getTypedTree(source, forceReload, response)
-      override def toString = "typecheck"
-  }
+    scheduler postWorkItem new AskTypeItem(source, forceReload, response)
 
   /** Set sync var `response` to the last fully attributed & typechecked tree produced from `source`.
    *  If no such tree exists yet, do a normal askType(source, false, response)
    */
   def askLastType(source: SourceFile, response: Response[Tree]) =
-    scheduler postWorkItem new WorkItem {
-      def apply() = self.getLastTypedTree(source, response)
-      override def toString = "reconcile"
-  }
+    scheduler postWorkItem new AskLastTypeItem(source, response)
 
   /** Set sync var `response' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
-    scheduler postWorkItem new WorkItem {
-      def apply() = self.getTypeCompletion(pos, response)
-      override def toString = "type completion "+pos.source+" "+pos.show
-    }
+    scheduler postWorkItem new AskTypeCompletionItem(pos, response)
 
   /** Set sync var `response' to list of members that are visible
    *  as members of the scope enclosing `pos`.
    */
   def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
-    scheduler postWorkItem new WorkItem {
-      def apply() = self.getScopeCompletion(pos, response)
-      override def toString = "scope completion "+pos.source+" "+pos.show
-    }
+    scheduler postWorkItem new AskScopeCompletionItem(pos, response)
 
   /** Ask to do unit first on present and subsequent type checking passes */
-  def askToDoFirst(f: SourceFile) = {
-    scheduler postWorkItem new WorkItem {
-      def apply() = moveToFront(List(f))
-      override def toString = "dofirst "+f
-    }
-  }
+  def askToDoFirst(f: SourceFile) =
+    scheduler postWorkItem new AskToDoFirstItem(f)
 
   /** Cancel current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
