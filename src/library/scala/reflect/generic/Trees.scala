@@ -135,8 +135,8 @@ trait Trees { self: Universe =>
       buffer.toString
     }
 
-    final override def hashCode(): Int = System.identityHashCode(this)
-    final override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
+    override def hashCode(): Int = System.identityHashCode(this)
+    override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
   }
 
   private[scala] def duplicateTree(tree: Tree): Tree = tree
