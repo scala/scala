@@ -81,18 +81,28 @@ extends IndexedSeq[T]
 /** A companion object used to create instances of `WrappedArray`.
  */
 object WrappedArray {
-  def make[T](x: AnyRef): WrappedArray[T] = x match {
-    case x: Array[AnyRef] => wrapRefArray[AnyRef](x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Int] => wrapIntArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Double] => wrapDoubleArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Long] => wrapLongArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Float] => wrapFloatArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Char] => wrapCharArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Byte] => wrapByteArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Short] => wrapShortArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Boolean] => wrapBooleanArray(x).asInstanceOf[WrappedArray[T]]
-    case x: Array[Unit] => wrapUnitArray(x).asInstanceOf[WrappedArray[T]]
-  }
+  // This is reused for all calls to empty.
+  private val EmptyWrappedArray  = new ofRef[AnyRef](new Array[AnyRef](0))
+  def empty[T <: AnyRef]: WrappedArray[T] = EmptyWrappedArray.asInstanceOf[WrappedArray[T]]
+
+  // If make is called explicitly we use whatever we're given, even if it's
+  // empty.  This may be unnecesssary (if WrappedArray is to honor the collections
+  // contract all empty ones must be equal, so discriminating based on the reference
+  // equality of an empty array should not come up) but we may as well be
+  // conservative since wrapRefArray contributes most of the unnecessary allocations.
+  def make[T](x: AnyRef): WrappedArray[T] = (x match {
+    case null              => null
+    case x: Array[AnyRef]  => new ofRef[AnyRef](x)
+    case x: Array[Int]     => new ofInt(x)
+    case x: Array[Double]  => new ofDouble(x)
+    case x: Array[Long]    => new ofLong(x)
+    case x: Array[Float]   => new ofFloat(x)
+    case x: Array[Char]    => new ofChar(x)
+    case x: Array[Byte]    => new ofByte(x)
+    case x: Array[Short]   => new ofShort(x)
+    case x: Array[Boolean] => new ofBoolean(x)
+    case x: Array[Unit]    => new ofUnit(x)
+  }).asInstanceOf[WrappedArray[T]]
 
   implicit def canBuildFrom[T](implicit m: ClassManifest[T]): CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] =
     new CanBuildFrom[WrappedArray[_], T, WrappedArray[T]] {
