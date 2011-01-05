@@ -1,0 +1,16 @@
+t4044.scala:9: error: AnyRef takes no type parameters, expected: one
+  M[AnyRef] // error, (AnyRef :: *) not kind-conformant to (N :: * -> * -> *)
+    ^
+t4044.scala:9: error: kinds of the type arguments (<error>) do not conform to the expected kinds of the type parameters (type N).
+<error>'s type parameters do not match type N's expected parameters: <none> has no type parameters, but type N has one
+  M[AnyRef] // error, (AnyRef :: *) not kind-conformant to (N :: * -> * -> *)
+   ^
+t4044.scala:11: error: kinds of the type arguments (Test.A) do not conform to the expected kinds of the type parameters (type N).
+Test.A's type parameters do not match type N's expected parameters: type _ has no type parameters, but type O has one
+  M[A] // error, (A :: (* -> *) not kind-conformant to (N :: * -> * -> *)
+   ^
+t4044.scala:15: error: kinds of the type arguments (Test.C) do not conform to the expected kinds of the type parameters (type N).
+Test.C's type parameters do not match type N's expected parameters: type _ has one type parameter, but type _ has none
+  M[C] // error, (C :: (* -> * -> * -> *) not kind-conformant to (N :: * -> * -> *)
+   ^
+four errors found

@@ -5486,7 +5486,7 @@ A type's typeSymbol should never be inspected directly.
         def stricterBounds(as: Iterable[(Symbol, Symbol)]) { if(explainErrors) _stricterBounds ++= as }
 
         for ((hkarg, hkparam) <- hkargs zip hkparams) {
-          if (hkparam.typeParams.isEmpty) { // base-case: kind *
+          if (hkparam.typeParams.isEmpty && hkarg.typeParams.isEmpty) { // base-case: kind *
             if (!variancesMatch(hkarg, hkparam))
               varianceMismatch(hkarg, hkparam)
 
