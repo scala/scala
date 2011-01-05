@@ -416,6 +416,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       def enterMember(sym: Symbol): Symbol = {
         typeEnv(sym) = fullEnv ++ typeEnv(sym) // append the full environment
         sym.setInfo(sym.info.substThis(clazz, ThisType(cls)).subst(oldClassTParams, newClassTParams map (_.tpe)))
+
+        // we remove any default parameters. At this point, they have been all
+        // resolved by the type checker. Later on, erasure re-typechecks everything and
+        // chokes if it finds default parameters for specialized members, even though
+        // they are never needed.
+        sym.info.paramss.flatten foreach (_.resetFlag(DEFAULTPARAM))
+
         decls1.enter(subst(fullEnv)(sym))
       }
 
@@ -1052,7 +1059,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         log("[specSym] checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
                 .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
-          val specMember = qual.tpe.member(specializedName(symbol, env))
+          val specMember = qual.tpe.member(specializedName(symbol, env)) suchThat (_.tpe =:= qual.tpe)
           if (specMember ne NoSymbol)
             if (typeEnv(specMember) == env) Some(specMember)
             else {
@@ -1135,8 +1142,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           } else overloads(symbol).find(_.sym.info =:= symbol.info) match {
               case Some(specMember) =>
                 val qual1 = transform(qual)
-                if (settings.debug.value) log("** routing " + tree + " to " + specMember.sym.fullName + " tree: " + Select(qual1, specMember.sym.name))
-                localTyper.typedOperator(atPos(tree.pos)(Select(qual1, specMember.sym.name)))
+                if (settings.debug.value) log("** routing " + tree + " to " + specMember.sym.fullName + " tree: " + Select(qual1, specMember.sym))
+                localTyper.typedOperator(atPos(tree.pos)(Select(qual1, specMember.sym)))
               case None =>
                 super.transform(tree)
           }
