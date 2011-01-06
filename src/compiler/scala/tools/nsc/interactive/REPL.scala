@@ -124,6 +124,7 @@ object REPL {
         case List("complete", file, off1) =>
           doComplete(makePos(file, off1, off1))
         case List("quit") =>
+          comp.askShutdown()
           system.exit(1)
         case _ =>
           println("unrecongized command")

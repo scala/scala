@@ -7,13 +7,12 @@ import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler, LogReplay, Logger, Replayer, NullLogger}
+import scala.tools.nsc.io.{AbstractFile, LogReplay, Logger, NullLogger, Replayer}
+import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
-import scala.tools.nsc.io.JSON._
-import scala.tools.nsc.util.Pickler._
+import scala.tools.nsc.io.Pickler._
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
@@ -34,14 +33,13 @@ self =>
   private def replayName = settings.YpresentationReplay.value
   private def logName = settings.YpresentationLog.value
 
-  lazy val log =
+  val log =
     if (replayName != "") new Replayer(new FileReader(replayName))
     else if (logName != "") new Logger(new FileWriter(logName))
     else NullLogger
 
-//  import log.logreplay
+  import log.logreplay
 
-  def logreplay[T](label: String, x: T): T = x
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
@@ -120,6 +118,7 @@ self =>
 	  } catch {
             case ex : Throwable =>
 	      if (context.unit != null) integrateNew()
+              log.flush()
               throw ex
 	  }
           if (typerRun == currentTyperRun)
@@ -201,12 +200,13 @@ self =>
     }
 
     def nodeWithWork(): Option[Int] = {
-      nodesSeen += 1
       if (scheduler.moreWork || pendingResponse.isCancelled) Some(nodesSeen) else None
     }
 
+    nodesSeen += 1
     logreplay("atnode", nodeWithWork()) match {
       case Some(id) =>
+        debugLog("some work at node "+id+" current = "+nodesSeen)
         assert(id >= nodesSeen)
         moreWorkAtNode = id
       case None =>
@@ -224,7 +224,7 @@ self =>
           minRunId = currentRunId
           if (outOfDate) throw ex
           else outOfDate = true
-        case Some(ex: Throwable) => throw ex
+        case Some(ex: Throwable) => log.flush(); throw ex
         case _ =>
       }
       logreplay("workitem", scheduler.nextWorkItem()) match {
@@ -237,6 +237,7 @@ self =>
             debugLog("quitting work item: "+action)
           }
         case None =>
+          debugLog("no work found")
       }
     }
   }
@@ -288,10 +289,12 @@ self =>
    */
   def newRunnerThread: Thread = new Thread("Scala Presentation Compiler V"+threadId) {
     override def run() {
+      debugLog("starting new runner thread")
       try {
         while (true) {
-          scheduler.waitForMoreWork()
+          logreplay("wait for more work", { scheduler.waitForMoreWork(); true })
           pollForWork()
+          debugLog("got more work")
           while (outOfDate) {
             try {
               backgroundCompile()
@@ -299,12 +302,15 @@ self =>
             } catch {
               case FreshRunReq =>
             }
+            log.flush()
           }
         }
       } catch {
-        case ShutdownReq =>
-          ;
+        case ex @ ShutdownReq =>
+          debugLog("exiting presentation compiler")
+          log.close()
         case ex =>
+          log.flush()
           outOfDate = false
           compileRunner = newRunnerThread
           compileRunner.start()

@@ -4,16 +4,17 @@ package interactive
 import util.{SourceFile, BatchSourceFile}
 import io.{AbstractFile, PlainFile}
 
-import util.{Pickler, CondPickler, Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition}
-import util.Pickler._
+import util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition}
+import io.{Pickler, CondPickler}
+import io.Pickler._
 import collection.mutable
 
 trait Picklers { self: Global =>
 
-  lazy val freshRunReq = obj(FreshRunReq)
-  lazy val shutdownReq = obj(ShutdownReq)
+  lazy val freshRunReq = singletonPickler(FreshRunReq)
+  lazy val shutdownReq = singletonPickler(ShutdownReq)
 
-  def defaultThrowable[T <: Throwable]: CondPickler[T] = anyJavaInstance[T] cond { _ => true }
+  def defaultThrowable[T <: Throwable]: CondPickler[T] = javaInstancePickler[T] cond { _ => true }
 
   implicit lazy val throwable: Pickler[Throwable] =
     freshRunReq | shutdownReq | defaultThrowable
@@ -27,7 +28,7 @@ trait Picklers { self: Global =>
     override def default(key: AbstractFile) = Array()
   }
 
-  type Diff = (Int /*start*/, Int /*end*/, Array[Char] /*replacement*/)
+  type Diff = (Int /*start*/, Int /*end*/, String /*replacement*/)
 
   def delta(f: AbstractFile, cs: Array[Char]): Diff = {
     val bs = sourceFilesSeen(f)
@@ -37,7 +38,7 @@ trait Picklers { self: Global =>
     var end2 = cs.length
     while (end > start && end2 > start && bs(end - 1) == cs(end2 - 1)) { end -= 1; end2 -= 1 }
     sourceFilesSeen(f) = cs
-    (start, end, cs.slice(start, end2))
+    (start, end, cs.slice(start, end2).mkString(""))
   }
 
   def patch(f: AbstractFile, d: Diff): Array[Char] = {
@@ -69,7 +70,7 @@ trait Picklers { self: Global =>
       .wrapped { case source ~ start ~ point ~ end => new TransparentPosition(source, start, point, end) } { p => p.source ~ p.start ~ p.point ~ p.end }
       .asClass (classOf[TransparentPosition])
 
-  lazy val noPosition = obj(NoPosition)
+  lazy val noPosition = singletonPickler(NoPosition)
 
   implicit lazy val position: Pickler[Position] = transparentPosition | rangePosition | offsetPosition | noPosition
 
