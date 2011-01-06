@@ -34,7 +34,14 @@ object History {
   val ScalaHistoryFile = ".scala_history"
 
   def apply(): History = new History(
-    try new FileHistory(new File(userHome, ScalaHistoryFile))
+    try new FileHistory(new File(userHome, ScalaHistoryFile)) {
+      // flush after every add to avoid installing a shutdown hook.
+      // (The shutdown hook approach also loses history when they aren't run.)
+      override def add(item: CharSequence): Unit = {
+        super.add(item)
+        flush()
+      }
+    }
     catch {
       case x: Exception =>
         Console.println("Error creating file history: memory history only. " + x)

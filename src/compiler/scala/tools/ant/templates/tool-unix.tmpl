@@ -8,6 +8,26 @@
 # PARTICULAR PURPOSE.
 ##############################################################################
 
+function onExit() {
+  if [[ -n "$scaladebug" ]]; then
+    echo "scala script runner trapped exit, running handler."
+  fi
+    
+  local exit_status=${1:-$?}
+
+  # reenable echo
+  case "$TERM" in
+      rxvt* | xterm*)
+          stty icanon echo
+          ;;
+  esac
+  
+  exit $exit_status
+}
+
+# install exit handler
+trap onExit EXIT
+
 cygwin=false;
 case "`uname`" in
     CYGWIN*) cygwin=true ;;
@@ -50,9 +70,6 @@ if [ -z "$TOOL_CLASSPATH" ] ; then
     done
 fi
 
-EXEC=exec
-CYGWIN_TERM_PRE=
-CYGWIN_TERM_POST=
 CYGWIN_JLINE_TERMINAL=
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
@@ -64,15 +81,10 @@ if $cygwin; then
     TOOL_CLASSPATH=`cygpath --path --$format "$TOOL_CLASSPATH"`
     case "$TERM" in
         rxvt* | xterm*)
-            EXEC=
-            CYGWIN_TERM_PRE="stty -icanon min 1 -echo"
-            CYGWIN_TERM_POST="stty icanon echo"
+            stty -icanon min 1 -echo
             CYGWIN_JLINE_TERMINAL="-Djline.terminal=jline.UnixTerminal"
-            trap "$CYGWIN_TERM_POST" SIGINT
         ;;
     esac
-else
-    trap "stty echo" SIGINT
 fi
 
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="@javaflags@"
@@ -117,9 +129,7 @@ if [ -z "$JAVACMD" -a -n "$JAVA_HOME" -a -x "$JAVA_HOME/bin/java" ]; then
     JAVACMD="$JAVA_HOME/bin/java"
 fi
 
-eval $CYGWIN_TERM_PRE
-
-$EXEC "${JAVACMD:=java}" \
+"${JAVACMD:=java}" \
   $JAVA_OPTS \
   "${java_args[@@]}" \
   $CPSWITCH \
@@ -128,5 +138,3 @@ $EXEC "${JAVACMD:=java}" \
   -Denv.emacs="$EMACS" \
   $CYGWIN_JLINE_TERMINAL \
   @properties@ @class@ @toolflags@ "$@@"
-  
-eval $CYGWIN_TERM_POST

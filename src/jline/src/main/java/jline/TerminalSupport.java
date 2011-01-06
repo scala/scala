@@ -8,6 +8,7 @@
 package jline;
 
 import jline.internal.Log;
+import jline.internal.Configuration;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,11 +25,15 @@ public abstract class TerminalSupport
 {
     public static String DEFAULT_KEYBINDINGS_PROPERTIES = "keybindings.properties";
 
+    public static final String JLINE_SHUTDOWNHOOK = "jline.shutdownhook";
+
     public static final int DEFAULT_WIDTH = 80;
 
     public static final int DEFAULT_HEIGHT = 24;
 
     private Thread shutdownHook;
+
+    private boolean shutdownHookEnabled;
 
     private boolean supported;
 
@@ -38,6 +43,7 @@ public abstract class TerminalSupport
 
     protected TerminalSupport(final boolean supported) {
         this.supported = supported;
+        this.shutdownHookEnabled = Configuration.getBoolean(JLINE_SHUTDOWNHOOK, false);
     }
 
     public void init() throws Exception {
@@ -54,7 +60,14 @@ public abstract class TerminalSupport
         init();
     }
 
+    // Shutdown hooks causes classloader leakage in sbt,
+    // so they are only installed if -Djline.shutdownhook is true.
     protected void installShutdownHook(final Thread hook) {
+        if (!shutdownHookEnabled) {
+            Log.debug("Not install shutdown hook " + hook + " because they are disabled.");
+            return;
+        }
+
         assert hook != null;
 
         if (shutdownHook != null) {
@@ -72,6 +85,9 @@ public abstract class TerminalSupport
     }
 
     protected void removeShutdownHook() {
+        if (!shutdownHookEnabled)
+            return;
+
         if (shutdownHook != null) {
             try {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
