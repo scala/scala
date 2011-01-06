@@ -27,7 +27,7 @@ trait Namers { self: Analyzer =>
       case TypeRef(pre, sym, args)
       if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
 //        println("DESKOLEMIZING "+sym+" in "+sym.owner)
-        mapOver(TypeRef(NoPrefix, sym.deSkolemize, args))
+        mapOver(typeRef(NoPrefix, sym.deSkolemize, args))
 /*
       case PolyType(tparams1, restpe) =>
         new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)

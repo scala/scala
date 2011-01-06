@@ -1750,13 +1750,13 @@ A type's typeSymbol should never be inspected directly.
     // (!result.isEmpty) IFF isHigherKinded
     override def typeParams: List[Symbol] = if (isHigherKinded) typeParamsDirect else List()
 
-    override def typeConstructor = TypeRef(pre, sym, List())
+    override def typeConstructor = typeRef(pre, sym, Nil)
 
     // a reference (in a Scala program) to a type that has type parameters, but where the reference does not include type arguments
     // note that it doesn't matter whether the symbol refers to a java or scala symbol,
     // it does matter whether it occurs in java or scala code
     // typerefs w/o type params that occur in java signatures/code are considered raw types, and are represented as existential types
-    override def isHigherKinded = (args.isEmpty && !typeParamsDirect.isEmpty)
+    override def isHigherKinded = args.isEmpty && typeParamsDirect.nonEmpty
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
@@ -2700,19 +2700,18 @@ A type's typeSymbol should never be inspected directly.
   def appliedType(tycon: Type, args: List[Type]): Type =
     if (args.isEmpty) tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
     else tycon match {
-      case TypeRef(pre, sym, _) =>
-        val args1 = if(sym == NothingClass || sym == AnyClass) List() else args //@M drop type args to Any/Nothing
-        typeRef(pre, sym, args1)
-      case PolyType(tparams, restpe) => restpe.instantiateTypeParams(tparams, args)
-      case ExistentialType(tparams, restpe) => ExistentialType(tparams, appliedType(restpe, args))
-      case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
-      case RefinedType(parents, decls) => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
-      case TypeBounds(lo, hi) => TypeBounds(appliedType(lo, args), appliedType(hi, args))
-      case tv@TypeVar(_, constr) => tv.applyArgs(args)
-      case AnnotatedType(annots, underlying, self) => AnnotatedType(annots, appliedType(underlying, args), self)
-      case ErrorType => tycon
-      case WildcardType => tycon // needed for neg/t0226
-      case _ => abort(debugString(tycon))
+      case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => typeRef(pre, sym, Nil)   //@M drop type args to Any/Nothing
+      case TypeRef(pre, sym, _)                           => typeRef(pre, sym, args)
+      case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
+      case ExistentialType(tparams, restpe)               => ExistentialType(tparams, appliedType(restpe, args))
+      case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
+      case RefinedType(parents, decls)                    => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
+      case TypeBounds(lo, hi)                             => TypeBounds(appliedType(lo, args), appliedType(hi, args))
+      case tv@TypeVar(_, _)                               => tv.applyArgs(args)
+      case AnnotatedType(annots, underlying, self)        => AnnotatedType(annots, appliedType(underlying, args), self)
+      case ErrorType                                      => tycon
+      case WildcardType                                   => tycon // needed for neg/t0226
+      case _                                              => abort(debugString(tycon))
     }
 
   /** A creator for type parameterizations
@@ -2830,7 +2829,7 @@ A type's typeSymbol should never be inspected directly.
   object dropSingletonType extends TypeMap {
     def apply(tp: Type): Type = {
       tp match {
-        case TypeRef(_, sym, _) if (sym == SingletonClass) =>
+        case TypeRef(_, SingletonClass, _) =>
           AnyClass.tpe
         case tp1 @ RefinedType(parents, decls) =>
           var parents1 = parents filter (_.typeSymbol != SingletonClass)
@@ -3224,7 +3223,7 @@ A type's typeSymbol should never be inspected directly.
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        existentialAbstraction(eparams, typeRef(pre, sym, eparams map (_.tpe)))
       case _ =>
         mapOver(tp)
     }
@@ -5323,9 +5322,9 @@ A type's typeSymbol should never be inspected directly.
             None  // something is wrong: an array without a type arg.
           } else {
             val args = argss map (_.head)
-            if (args.tail forall (_ =:= args.head)) Some(TypeRef(pre, sym, List(args.head)))
+            if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
             else if (args exists (arg => isValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
-            else Some(TypeRef(pre, sym, List(lub(args))))
+            else Some(typeRef(pre, sym, List(lub(args))))
           }
         } else {
           val args = (sym.typeParams, argss.transpose).zipped map {

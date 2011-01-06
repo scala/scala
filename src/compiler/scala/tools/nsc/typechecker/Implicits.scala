@@ -750,7 +750,7 @@ self: Analyzer =>
           companion.moduleClass match {
             case mc: ModuleClassSymbol =>
               buf += (mc.implicitMembers map (im =>
-                new ImplicitInfo(im.name, SingleType(pre, companion), im)))
+                new ImplicitInfo(im.name, singleType(pre, companion), im)))
             case _ =>
           }
         }

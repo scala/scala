@@ -132,8 +132,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         def fromTypesToClassArrayLiteral(paramTypes: List[Type]): Tree =
           ArrayValue(TypeTree(ClassClass.tpe), paramTypes map LIT)
 
-        def theTypeClassArray =
-          TypeRef(ArrayClass.tpe.prefix, ArrayClass, List(ClassClass.tpe))
+        def theTypeClassArray = arrayType(ClassClass.tpe)
 
         /* ... */
         def reflectiveMethodCache(method: String, paramTypes: List[Type]): Symbol = dispatchType match {

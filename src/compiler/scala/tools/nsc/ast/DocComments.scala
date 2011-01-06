@@ -347,7 +347,7 @@ trait DocComments { self: SymbolTable =>
 
       def select(site: Type, name: Name, orElse: => Type): Type = {
         val member = site.nonPrivateMember(name)
-        if (member.isTerm) SingleType(site, member)
+        if (member.isTerm) singleType(site, member)
         else if (member.isType) site.memberType(member)
         else orElse
       }
@@ -395,10 +395,10 @@ trait DocComments { self: SymbolTable =>
               else {
                 val alias1 = alias.cloneSymbol(definitions.RootClass)
                 alias1.name = repl.toTypeName
-                TypeRef(NoPrefix, alias1, List())
+                typeRef(NoPrefix, alias1, Nil)
               }
             case None =>
-              TypeRef(NoPrefix, alias, List())
+              typeRef(NoPrefix, alias, Nil)
           }
 
       def subst(sym: Symbol, from: List[Symbol], to: List[Type]): Type =
@@ -411,7 +411,7 @@ trait DocComments { self: SymbolTable =>
           case tp1 @ TypeRef(pre, sym, args) if (sym.name.length > 1 && sym.name(0) == '$') =>
             subst(sym, aliases, aliasExpansions) match {
               case TypeRef(pre1, sym1, _) =>
-                TypeRef(pre1, sym1, args)
+                typeRef(pre1, sym1, args)
               case _ =>
                 tp1
             }
