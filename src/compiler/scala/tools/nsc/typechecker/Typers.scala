@@ -1797,14 +1797,20 @@ trait Typers extends Modes {
      */
     def typedBlock(block: Block, mode: Int, pt: Type): Block = {
       val syntheticPrivates = new ListBuffer[Symbol]
+      def enterIfNotThere(sym: Symbol) {
+        var e = context.scope.lookupEntry(sym.name)
+        while ((e ne null) && (e.sym ne sym)) e = e.tail
+        if (e eq null) context.scope.enter(sym)
+      }
       try {
         namer.enterSyms(block.stats)
         for (stat <- block.stats) {
           if (forInteractive && stat.isDef) {
-            // this might be redundant now
-            var e = context.scope.lookupEntry(stat.symbol.name)
-            while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
-            if (e eq null) context.scope.enter(stat.symbol)
+            // this logic is needed in case typer was interrupted half way through a block and then comes
+            // back to do the block again. In that case the definitions that were already attributed as well as any
+            // default parameters of such methods need to be re-entered in the current scope.
+            enterIfNotThere(stat.symbol)
+            defaultParametersOfMethod(stat.symbol) foreach enterIfNotThere
           }
           enterLabelDef(stat)
         }

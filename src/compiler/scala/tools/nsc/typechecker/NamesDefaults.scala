@@ -8,7 +8,8 @@ package typechecker
 
 import symtab.Flags._
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, WeakHashMap}
+import scala.collection.immutable.Set
 
 /**
  *  @author Lukas Rytz
@@ -19,6 +20,10 @@ trait NamesDefaults { self: Analyzer =>
   import global._
   import definitions._
 
+  val defaultParametersOfMethod = new WeakHashMap[Symbol, Set[Symbol]] {
+    override def default(key: Symbol) = Set()
+  }
+
   case class NamedApplyInfo(qual: Option[Tree], targs: List[Tree],
                             vargss: List[List[Tree]], blockTyper: Typer)
   val noApplyInfo = NamedApplyInfo(None, Nil, Nil, null)
@@ -28,7 +33,6 @@ trait NamesDefaults { self: Analyzer =>
     case _ => None
   }
   def isNamed(arg: Tree) = nameOf(arg).isDefined
-
 
   /** @param pos maps indicies from old to new */
   def reorderArgs[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
