@@ -15,7 +15,7 @@ import annotation.unchecked.uncheckedVariance
 package object parallel {
 
   /* constants */
-  val MIN_FOR_COPY = -1
+  val MIN_FOR_COPY = 512
   val CHECK_RATE = 512
   val SQRT2 = math.sqrt(2)
   val availableProcessors = java.lang.Runtime.getRuntime.availableProcessors
@@ -46,17 +46,6 @@ package object parallel {
   val tasksupport = getTaskSupport
 
   /* implicit conversions */
-
-  /** An implicit conversion providing arrays with a `par` method, which
-   *  returns a parallel array.
-   *
-   *  @tparam T      type of the elements in the array, which is a subtype of AnyRef
-   *  @param array   the array to be parallelized
-   *  @return        a `Parallelizable` object with a `par` method=
-   */
-  implicit def array2ParArray[T <: AnyRef](array: Array[T]) = new Parallelizable[mutable.ParArray[T]] {
-    def par = mutable.ParArray.handoff[T](array)
-  }
 
   trait FactoryOps[From, Elem, To] {
     trait Otherwise[R] {

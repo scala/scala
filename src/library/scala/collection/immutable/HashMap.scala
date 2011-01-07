@@ -75,7 +75,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
 
   protected type Merger[B1] = ((A, B1), (A, B1)) => (A, B1)
 
-  protected def get0(key: A, hash: Int, level: Int): Option[B] = None
+  private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
 
   private[collection] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[B1]): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
@@ -117,7 +117,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
   // TODO: add HashMap2, HashMap3, ...
 
-  class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[HashMap] var value: (B @uncheckedVariance), private[HashMap] var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
+  class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[collection] var value: (B @uncheckedVariance), private[collection] var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
     override def size = 1
 
     private[collection] def getKey = key
@@ -188,7 +188,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     }
   }
 
-  private class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uncheckedVariance]) extends HashMap[A,B] {
+  private[collection] class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uncheckedVariance]) extends HashMap[A,B] {
     override def size = kvs.size
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
@@ -230,7 +230,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     }
   }
 
-  class HashTrieMap[A,+B](private[HashMap] var bitmap: Int, private[HashMap] var elems: Array[HashMap[A,B @uncheckedVariance]],
+  class HashTrieMap[A,+B](private[HashMap] var bitmap: Int, private[collection] var elems: Array[HashMap[A,B @uncheckedVariance]],
       private[HashMap] var size0: Int) extends HashMap[A,B] {
 /*
     def this (level: Int, m1: HashMap1[A,B], m2: HashMap1[A,B]) = {

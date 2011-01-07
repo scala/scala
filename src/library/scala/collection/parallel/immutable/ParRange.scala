@@ -3,7 +3,6 @@ package scala.collection.parallel.immutable
 
 
 import scala.collection.immutable.Range
-import scala.collection.parallel.ParSeq
 import scala.collection.parallel.Combiner
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.ParIterableIterator
@@ -27,9 +26,9 @@ self =>
 
   type SCPI = SignalContextPassingIterator[ParRangeIterator]
 
-  override def toParSeq = this // TODO remove when we have ParSeq, when ParVector is in place
+  override def toParSeq = this
 
-  override def toParSet[U >: Int] = toParCollection[U, ParSet[U]](() => HashSetCombiner[U]) // TODO remove when we have ParSeq, when ParVector is in place
+  override def toParSet[U >: Int] = toParCollection[U, ParSet[U]](() => HashSetCombiner[U])
 
   class ParRangeIterator(range: Range = self.range)
   extends ParIterator {

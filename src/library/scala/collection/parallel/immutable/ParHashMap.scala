@@ -141,7 +141,7 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 }
 
 
-private[immutable] abstract class HashMapCombiner[K, V]
+private[parallel] abstract class HashMapCombiner[K, V]
 extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), HashMapCombiner[K, V]](HashMapCombiner.rootsize) {
 self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   import HashMapCombiner._
@@ -180,6 +180,28 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     else {
       val trie = new HashMap.HashTrieMap(bitmap, root, sz)
       new ParHashMap[K, V](trie)
+    }
+  }
+
+  def groupByKey[Repr](cbf: () => Combiner[V, Repr]): ParHashMap[K, Repr] = {
+    val bucks = buckets.filter(_ != null).map(_.headPtr)
+    val root = new Array[HashMap[K, AnyRef]](bucks.length)
+
+    executeAndWaitResult(new CreateGroupedTrie(cbf, bucks, root, 0, bucks.length))
+
+    var bitmap = 0
+    var i = 0
+    while (i < rootsize) {
+      if (buckets(i) ne null) bitmap |= 1 << i
+      i += 1
+    }
+    val sz = root.foldLeft(0)(_ + _.size)
+
+    if (sz == 0) new ParHashMap[K, Repr]
+    else if (sz == 1) new ParHashMap[K, Repr](root(0).asInstanceOf[HashMap[K, Repr]])
+    else {
+      val trie = new HashMap.HashTrieMap(bitmap, root.asInstanceOf[Array[HashMap[K, Repr]]], sz)
+      new ParHashMap[K, Repr](trie)
     }
   }
 
@@ -225,6 +247,64 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     def split = {
       val fp = howmany / 2
       List(new CreateTrie(bucks, root, offset, fp), new CreateTrie(bucks, root, offset + fp, howmany - fp))
+    }
+    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(root.length, parallelismLevel)
+  }
+
+  class CreateGroupedTrie[Repr](cbf: () => Combiner[V, Repr], bucks: Array[Unrolled[(K, V)]], root: Array[HashMap[K, AnyRef]], offset: Int, howmany: Int)
+  extends Task[Unit, CreateGroupedTrie[Repr]] {
+    @volatile var result = ()
+    def leaf(prev: Option[Unit]) = {
+      var i = offset
+      val until = offset + howmany
+      while (i < until) {
+        root(i) = createGroupedTrie(bucks(i)).asInstanceOf[HashMap[K, AnyRef]]
+        i += 1
+      }
+      result = result
+    }
+    private def createGroupedTrie(elems: Unrolled[(K, V)]): HashMap[K, Repr] = {
+      var trie = new HashMap[K, Combiner[V, Repr]]
+
+      var unrolled = elems
+      var i = 0
+      while (unrolled ne null) {
+        val chunkarr = unrolled.array
+        val chunksz = unrolled.size
+        while (i < chunksz) {
+          val kv = chunkarr(i)
+          val hc = trie.computeHash(kv._1)
+
+          // check to see if already present
+          val cmb: Combiner[V, Repr] = trie.get0(kv._1, hc, rootbits) match {
+            case Some(cmb) => cmb
+            case None =>
+              val cmb: Combiner[V, Repr] = cbf()
+              trie = trie.updated0[Combiner[V, Repr]](kv._1, hc, rootbits, cmb, null, null)
+              cmb
+          }
+          cmb += kv._2
+          i += 1
+        }
+        i = 0
+        unrolled = unrolled.next
+      }
+
+      evaluateCombiners(trie)
+      trie.asInstanceOf[HashMap[K, Repr]]
+    }
+    private def evaluateCombiners(trie: HashMap[K, Combiner[V, Repr]]): Unit = trie match {
+      case hm1: HashMap.HashMap1[_, _] =>
+        hm1.asInstanceOf[HashMap.HashMap1[K, Repr]].value = hm1.value.result
+        hm1.kv = null
+      case hmc: HashMap.HashMapCollision1[_, _] =>
+        hmc.asInstanceOf[HashMap.HashMapCollision1[K, Repr]].kvs = hmc.kvs map { p => (p._1, p._2.result) }
+      case htm: HashMap.HashTrieMap[_, _] =>
+        for (hm <- htm.elems) evaluateCombiners(hm)
+    }
+    def split = {
+      val fp = howmany / 2
+      List(new CreateGroupedTrie(cbf, bucks, root, offset, fp), new CreateGroupedTrie(cbf, bucks, root, offset + fp, howmany - fp))
     }
     def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(root.length, parallelismLevel)
   }

@@ -66,6 +66,7 @@ trait BenchmarkRegister {
   register(parallel_array.AggregateLight)
   register(parallel_array.ScanLight)
   register(parallel_array.ScanMedium)
+  register(parallel_array.GroupByLight)
   register(parallel_array.MatrixMultiplication)
 
   // parallel views

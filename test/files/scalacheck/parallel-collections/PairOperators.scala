@@ -73,6 +73,10 @@ trait PairOperators[K, V] extends Operators[(K, V)] {
 
   def newArray(sz: Int) = new Array[(K, V)](sz)
 
+  def groupByFunctions = (koperators.groupByFunctions zip voperators.groupByFunctions) map {
+    opt => { (p: (K, V)) => (opt._1(p._1), opt._2(p._2)) }
+  }
+
 }
 
 

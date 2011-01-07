@@ -29,6 +29,7 @@ class ParCollProperties extends Properties("Parallel collections") {
   include(mutable.IntParallelHashSetCheck)
 
   // parallel vectors
+  include(immutable.IntParallelVectorCheck)
 
   /*   Views   */
 

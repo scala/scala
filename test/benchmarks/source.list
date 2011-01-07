@@ -22,6 +22,7 @@ src/scala/collection/parallel/benchmarks/parallel_array/SumLight.scala
 src/scala/collection/parallel/benchmarks/parallel_array/MinLight.scala
 src/scala/collection/parallel/benchmarks/parallel_array/CountList.scala
 src/scala/collection/parallel/benchmarks/parallel_array/PatchHalf.scala
+src/scala/collection/parallel/benchmarks/parallel_array/GroupBy.scala
 src/scala/collection/parallel/benchmarks/parallel_array/DiffHalf.scala
 src/scala/collection/parallel/benchmarks/parallel_array/TakeMany.scala
 src/scala/collection/parallel/benchmarks/parallel_array/PartialMapLight.scala
@@ -65,6 +66,7 @@ src/scala/collection/parallel/benchmarks/generic/ParallelBenches.scala
 src/scala/collection/parallel/benchmarks/generic/Dummy.scala
 src/scala/collection/parallel/benchmarks/parallel_range/RangeBenches.scala
 src/scala/collection/parallel/benchmarks/misc/Dictionary.scala
+src/scala/collection/parallel/benchmarks/misc/Loader.scala
 src/scala/collection/parallel/benchmarks/misc/Coder.scala
 src/scala/collection/parallel/benchmarks/Bench.scala
 src/scala/collection/parallel/benchmarks/hashtries/Foreach.scala

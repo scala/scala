@@ -235,22 +235,23 @@ self =>
     }
   } otherwise super.endsWith(that)
 
-  override def patch[U >: T, That](from: Int, patch: Seq[U], replaced: Int)
-  (implicit bf: CanBuildFrom[Repr, U, That]): That = if (patch.isParSeq && bf.isParallel) {
-    val that = patch.asParSeq
-    val pbf = bf.asParallel
+  override def patch[U >: T, That](from: Int, patch: Seq[U], replaced: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
     val realreplaced = replaced min (length - from)
-    val pits = parallelIterator.psplit(from, replaced, length - from - realreplaced)
-    val copystart = new Copy[U, That](() => pbf(repr), pits(0))
-    val copymiddle = wrap {
-      val tsk = new that.Copy[U, That](() => pbf(repr), that.parallelIterator)
-      tasksupport.executeAndWaitResult(tsk)
-    }
-    val copyend = new Copy[U, That](() => pbf(repr), pits(2))
-    executeAndWaitResult(((copystart parallel copymiddle) { _ combine _ } parallel copyend) { _ combine _ } mapResult {
-      _.result
-    })
-  } else patch_sequential(from, patch, replaced)
+    if (patch.isParSeq && bf.isParallel && (size - realreplaced + patch.size) > MIN_FOR_COPY) {
+      val that = patch.asParSeq
+      val pbf = bf.asParallel
+      val pits = parallelIterator.psplit(from, replaced, length - from - realreplaced)
+      val copystart = new Copy[U, That](() => pbf(repr), pits(0))
+      val copymiddle = wrap {
+        val tsk = new that.Copy[U, That](() => pbf(repr), that.parallelIterator)
+        tasksupport.executeAndWaitResult(tsk)
+      }
+      val copyend = new Copy[U, That](() => pbf(repr), pits(2))
+      executeAndWaitResult(((copystart parallel copymiddle) { _ combine _ } parallel copyend) { _ combine _ } mapResult {
+        _.result
+      })
+    } else patch_sequential(from, patch, replaced)
+  }
 
   private def patch_sequential[U >: T, That](from: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
     val b = bf(repr)

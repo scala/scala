@@ -21,6 +21,7 @@ trait Operators[T] {
   def foldArguments: List[(T, (T, T) => T)]
   def addAllTraversables: List[Traversable[T]]
   def newArray(sz: Int): Array[T]
+  def groupByFunctions: List[T => T]
 }
 
 

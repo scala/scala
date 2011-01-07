@@ -15,6 +15,7 @@ import compat.Platform
 
 import scala.collection.generic._
 import scala.collection.mutable.Builder
+import scala.collection.parallel.immutable.ParVector
 
 
 object Vector extends SeqFactory[Vector] {
@@ -32,11 +33,14 @@ object Vector extends SeqFactory[Vector] {
 // in principle, most members should be private. however, access privileges must
 // be carefully chosen to not prevent method inlining
 
-final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends IndexedSeq[A]
-                 with GenericTraversableTemplate[A, Vector]
-                 with IndexedSeqLike[A, Vector[A]]
-                 with VectorPointer[A @uncheckedVariance]
-                 with Serializable { self =>
+final class Vector[+A](private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
+extends IndexedSeq[A]
+   with GenericTraversableTemplate[A, Vector]
+   with IndexedSeqLike[A, Vector[A]]
+   with VectorPointer[A @uncheckedVariance]
+   with Serializable
+   with Parallelizable[ParVector[A]]
+{ self =>
 
 override def companion: GenericCompanion[Vector] = Vector
 
@@ -49,14 +53,19 @@ override def companion: GenericCompanion[Vector] = Vector
 
   def length = endIndex - startIndex
 
+  def par = new ParVector(this)
+
   override def lengthCompare(len: Int): Int = length - len
 
-
-  @inline override def iterator: VectorIterator[A] = {
-    val s = new VectorIterator[A](startIndex, endIndex)
+  private[collection] final def initIterator[B >: A](s: VectorIterator[B]) {
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
+  }
+
+  @inline override def iterator: VectorIterator[A] = {
+    val s = new VectorIterator[A](startIndex, endIndex)
+    initIterator(s)
     s
   }
 
@@ -602,7 +611,7 @@ override def companion: GenericCompanion[Vector] = Vector
 }
 
 
-final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with VectorPointer[A @uncheckedVariance] {
+class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31

@@ -60,6 +60,10 @@ trait IntOperators extends Operators[Int] {
     Array.fill(1000)(1).toSeq
   )
   def newArray(sz: Int) = new Array[Int](sz)
+  def groupByFunctions = List(
+    _ % 2, _ % 3, _ % 5, _ % 10, _ % 154, _% 3217,
+    _ * 2, _ + 1
+  )
 }
 
 
