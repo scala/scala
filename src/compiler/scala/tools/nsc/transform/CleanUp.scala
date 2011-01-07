@@ -32,9 +32,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
     private var localTyper: analyzer.Typer = null
 
-    private lazy val serialVersionUIDAnnotation =
-      AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
-
     private object MethodDispatchType extends scala.Enumeration {
       val NO_CACHE, MONO_CACHE, POLY_CACHE = Value
     }

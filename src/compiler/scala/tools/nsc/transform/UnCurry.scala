@@ -158,6 +158,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
     private val newMembers = mutable.ArrayBuffer[Tree]()
     private val repeatedParams = mutable.Map[Symbol, List[ValDef]]()
 
+    private lazy val serialVersionUIDAnnotation =
+      AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
+
     override def transformUnit(unit: CompilationUnit) {
       freeMutableVars.clear()
       freeLocalsTraverser(unit.body)
@@ -334,6 +337,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         val applyMethod = anonClass.newMethod(fun.pos, nme.apply) setFlag FINAL
         applyMethod setInfo MethodType(applyMethod newSyntheticValueParams formals, restpe)
         anonClass.info.decls enter applyMethod
+        anonClass.addAnnotation(serialVersionUIDAnnotation)
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
         new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
