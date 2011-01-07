@@ -9,7 +9,7 @@ object GroupByLight extends Companion {
   override def comparisons = List()
   override def defaultSize = 10000
 
-  val fun = (a: Cont) => a.in % 2
+  val fun = (a: Cont) => a.in % 32
 }
 
 
