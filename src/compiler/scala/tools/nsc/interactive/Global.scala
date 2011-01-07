@@ -40,7 +40,6 @@ self =>
 
   import log.logreplay
 
-
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
     if (debugIDE) println(msg)
@@ -213,7 +212,6 @@ self =>
     }
 
     if (nodesSeen == moreWorkAtNode) {
-
       if (logreplay("cancelled", pendingResponse.isCancelled)) {
         throw CancelException
       }
