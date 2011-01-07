@@ -3769,6 +3769,7 @@ A type's typeSymbol should never be inspected directly.
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
+          if (settings.debug.value) println(pre+"."+sym+" does no longer exist, phase = "+phase)
           throw new MissingTypeControl // For build manager purposes
           //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
