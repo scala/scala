@@ -3002,8 +3002,7 @@ trait Typers extends Modes {
               if (isFullyDefined(pt))
                 context.owner.newAliasType(tree.pos, name) setInfo pt
               else
-                context.owner.newAbstractType(tree.pos, name) setInfo
-                  TypeBounds(NothingClass.tpe, AnyClass.tpe)
+                context.owner.newAbstractType(tree.pos, name) setInfo TypeBounds.empty
           val rawInfo = vble.rawInfo
           vble = if (vble.name == tpnme.WILDCARD) context.scope.enter(vble)
                  else namer.enterInScope(vble)
@@ -3895,7 +3894,7 @@ trait Typers extends Modes {
           def subArrayType(pt: Type) =
             if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
             else {
-              val tparam = context.owner freshExistential "" setInfo TypeBounds(NothingClass.tpe, pt)
+              val tparam = context.owner freshExistential "" setInfo TypeBounds.upper(pt)
               ExistentialType(List(tparam), arrayType(tparam.tpe))
             }
           val (expr1, baseClass) = expr0.tpe.typeSymbol match {

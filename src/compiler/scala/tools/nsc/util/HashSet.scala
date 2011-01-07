@@ -6,22 +6,24 @@
 package scala.tools.nsc
 package util
 
-class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] {
-  def this(initialCapacity: Int) = this("No Label", initialCapacity)
-  def this(label: String) = this(label, 16)
-  def this() = this(16)
+object HashSet {
+  def apply[T >: Null <: AnyRef](): HashSet[T] = this(16)
+  def apply[T >: Null <: AnyRef](label: String): HashSet[T] = this(label, 16)
+  def apply[T >: Null <: AnyRef](initialCapacity: Int): HashSet[T] = this("No Label", initialCapacity)
+  def apply[T >: Null <: AnyRef](label: String, initialCapacity: Int): HashSet[T] =
+    new HashSet[T](label, initialCapacity)
+}
 
+class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) extends Set[T] {
   private var used = 0
   private var table = new Array[AnyRef](initialCapacity)
-  // System.err.println("Created: " + this)
+  private def index(x: Int): Int = math.abs(x % table.length)
 
   def size: Int = used
   def clear() {
     used = 0
     table = new Array[AnyRef](initialCapacity)
   }
-
-  private def index(x: Int): Int = math.abs(x % table.length)
 
   def findEntryOrUpdate(x: T): T = {
     var h = index(x.##)
@@ -42,7 +44,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   def findEntry(x: T): T = {
     var h = index(x.##)
     var entry = table(h)
-    while ((entry ne null) && entry != x) {
+    while ((entry ne null) && x != entry) {
       h = index(h + 1)
       entry = table(h)
     }
@@ -53,7 +55,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     var h = index(x.##)
     var entry = table(h)
     while (entry ne null) {
-      if (entry == x) return
+      if (x == entry) return
       h = index(h + 1)
       entry = table(h)
     }

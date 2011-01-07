@@ -698,7 +698,7 @@ trait Implicits {
      */
     def applicableInfos(iss: Infoss, isLocal: Boolean): Map[ImplicitInfo, SearchResult] = {
       val start       = startCounter(subtypeAppInfos)
-      val computation = new ImplicitComputation(iss, if (isLocal) new util.HashSet[Name](512) else null) { }
+      val computation = new ImplicitComputation(iss, if (isLocal) util.HashSet[Name](512) else null) { }
       val applicable  = computation.findAll()
 
       stopCounter(subtypeAppInfos, start)
@@ -716,7 +716,7 @@ trait Implicits {
      */
     def searchImplicit(implicitInfoss: Infoss, isLocal: Boolean): SearchResult =
       if (implicitInfoss.forall(_.isEmpty)) SearchFailure
-      else new ImplicitComputation(implicitInfoss, if (isLocal) new util.HashSet[Name](512) else null) findBest()
+      else new ImplicitComputation(implicitInfoss, if (isLocal) util.HashSet[Name](128) else null) findBest()
 
     /** The parts of a type is the smallest set of types that contains
      *    - the type itself

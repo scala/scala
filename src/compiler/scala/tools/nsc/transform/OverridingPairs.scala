@@ -146,25 +146,16 @@ abstract class OverridingPairs {
     /** Do `sym1` and `sym2` have a common subclass in `parents`?
      *  In that case we do not follow their overriding pairs
      */
-    private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = {
-      index get sym1.owner match {
-        case Some(index1) =>
-          index get sym2.owner match {
-            case Some(index2) =>
-              intersectionContainsElementLeq(subParents(index1), subParents(index2), index1 min index2)
-            case None =>
-              false
-          }
-        case None =>
-          false
-      }
-    }
+    private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = (
+      for (index1 <- index get sym1.owner ; index2 <- index get sym2.owner) yield
+        intersectionContainsElementLeq(subParents(index1), subParents(index2), index1 min index2)
+    ).exists(_ == true)
 
     /** The scope entries that have already been visited as overridden
      *  (maybe excluded because of hasCommonParentAsSubclass).
      *  These will not appear as overriding
      */
-    private val visited = new HashSet[ScopeEntry]("visited", 64)
+    private val visited = HashSet[ScopeEntry]("visited", 64)
 
     /** The current entry candidate for overriding
      */

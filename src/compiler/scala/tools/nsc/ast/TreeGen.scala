@@ -28,8 +28,6 @@ abstract class TreeGen {
   def productConstr               = scalaDot(tpnme.Product)
   def serializableConstr          = scalaDot(tpnme.Serializable)
 
-  private def isRootOrEmptyPackageClass(s: Symbol) = s.isRoot || s.isEmptyPackageClass
-
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
     val cls = if (abstractFun)
       mkAttributedRef(AbstractFunctionClass(argtpes.length))
@@ -55,7 +53,7 @@ abstract class TreeGen {
     case NoPrefix =>
       EmptyTree
     case ThisType(clazz) =>
-      if (isRootOrEmptyPackageClass(clazz)) EmptyTree
+      if (clazz.isEffectiveRoot) EmptyTree
       else mkAttributedThis(clazz)
     case SingleType(pre, sym) =>
       val qual = mkAttributedStableRef(pre, sym)
@@ -107,9 +105,9 @@ abstract class TreeGen {
   def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
     val qual = mkAttributedQualifier(pre)
     qual match {
-      case EmptyTree                                              => mkAttributedIdent(sym)
-      case This(clazz) if isRootOrEmptyPackageClass(qual.symbol)  => mkAttributedIdent(sym)
-      case _                                                      => mkAttributedSelect(qual, sym)
+      case EmptyTree                                  => mkAttributedIdent(sym)
+      case This(clazz) if qual.symbol.isEffectiveRoot => mkAttributedIdent(sym)
+      case _                                          => mkAttributedSelect(qual, sym)
     }
   }
 
@@ -159,24 +157,20 @@ abstract class TreeGen {
     Ident(sym.name) setSymbol sym setType sym.tpe
 
   def mkAttributedSelect(qual: Tree, sym: Symbol): Tree = {
-    def tpe = qual.tpe
-
-    def isUnqualified(n: Name)        = n match { case nme.ROOT | nme.EMPTY_PACKAGE_NAME => true ; case _ => false }
-    def hasUnqualifiedName(s: Symbol) = s != null && isUnqualified(s.name.toTermName)
-    def isInPkgObject(s: Symbol)      = s != null && s.owner.isPackageObjectClass && s.owner.owner == tpe.typeSymbol
-
-    if (hasUnqualifiedName(qual.symbol))
+    // Tests involving the repl fail without the .isEmptyPackage condition.
+    if (qual.symbol != null && (qual.symbol.isEffectiveRoot || qual.symbol.isEmptyPackage))
       mkAttributedIdent(sym)
     else {
-      val pkgQualifier            =
-        if (!isInPkgObject(sym)) qual else {
+      val pkgQualifier =
+        if (sym != null && sym.owner.isPackageObjectClass && sym.owner.owner == qual.tpe.typeSymbol) {
           val obj = sym.owner.sourceModule
-          Select(qual, nme.PACKAGEkw) setSymbol obj setType singleType(tpe, obj)
+          Select(qual, nme.PACKAGEkw) setSymbol obj setType singleType(qual.tpe, obj)
         }
-      val tree = Select(pkgQualifier, sym)
+        else qual
 
+      val tree = Select(pkgQualifier, sym)
       if (pkgQualifier.tpe == null) tree
-      else tree setType (tpe memberType sym)
+      else tree setType (qual.tpe memberType sym)
     }
   }
 

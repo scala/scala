@@ -6,7 +6,8 @@
 package scala.tools.nsc
 package symtab
 
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.{ HashMap }
 import scala.tools.nsc.util.NoPosition
 import Flags._
 import PartialFunction._
@@ -16,6 +17,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
   self: SymbolTable =>
 
   object definitions extends AbsDefinitions {
+    private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
     // symbols related to packages
@@ -620,14 +622,13 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       newMethod(owner, name).setInfo(PolyType(List(),restpe))
 
     private def newTypeParam(owner: Symbol, index: Int): Symbol =
-      owner.newTypeParameter(NoPosition, newTypeName("T" + index))
-        .setInfo(TypeBounds(NothingClass.typeConstructor, AnyClass.typeConstructor))
+      owner.newTypeParameter(NoPosition, newTypeName("T" + index)) setInfo TypeBounds.empty
 
     val boxedClass = new HashMap[Symbol, Symbol]
     val boxedModule = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol]     // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol]       // Type -> Method
-    val primitiveCompanions = new HashSet[Symbol]     // AnyVal -> Companion
+    val primitiveCompanions = new mutable.HashSet[Symbol]     // AnyVal -> Companion
     /** Maps a companion object like scala.Int to scala.runtime.Int. */
     lazy val runtimeCompanions = (primitiveCompanions map { sym =>
       sym -> getModule("scala.runtime." + sym.name)
@@ -855,11 +856,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     //   }
     // }
 
-    private var isInitialized = false
-
     def init {
       if (isInitialized) return
-      isInitialized = true
 
       EmptyPackageClass.setInfo(ClassInfoType(Nil, new Scope, EmptyPackageClass))
       EmptyPackage.setInfo(EmptyPackageClass.tpe)
@@ -889,7 +887,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL
       Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL
       Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL
-      Object_ne = newMethod(ObjectClass, "ne", anyrefparam, booltype) setFlag FINAL
+      Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype) setFlag FINAL
       Object_synchronized = newPolyMethodCon(
         ObjectClass, nme.synchronized_,
         tparam => msym => MethodType(msym.newSyntheticValueParams(List(tparam.typeConstructor)), tparam.typeConstructor)) setFlag FINAL
@@ -966,6 +964,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         newMethod(StringClass, "replace", List(charType, charType), stringType)
         newMethod(StringClass, "toCharArray", List(), arrayType(charType))
       }
+      isInitialized = true
     } //init
 
     var nbScalaCallers: Int = 0

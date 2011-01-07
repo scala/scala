@@ -1061,7 +1061,7 @@ trait Namers { self: Analyzer =>
       val tparamSyms = typer.reenterTypeParams(tparams) //@M make tparams available in scope (just for this abstypedef)
       val tp = typer.typedType(rhs).tpe match {
         case TypeBounds(lt, rt) if (lt.isError || rt.isError) =>
-          TypeBounds(NothingClass.tpe, AnyClass.tpe)
+          TypeBounds.empty
         case tp @ TypeBounds(lt, rt) if (tpsym hasFlag JAVA) =>
           TypeBounds(lt, objToAny(rt))
         case tp =>

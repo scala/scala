@@ -1122,7 +1122,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   }
 
   private class ResetLocalAttrsTraverser extends ResetAttrsTraverser {
-    private val erasedSyms = new HashSet[Symbol](8)
+    private val erasedSyms = HashSet[Symbol](8)
     override protected def isLocal(sym: Symbol) = erasedSyms(sym)
     override protected def resetDef(tree: Tree) {
       erasedSyms addEntry tree.symbol

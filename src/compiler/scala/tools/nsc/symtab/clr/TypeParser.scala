@@ -83,7 +83,7 @@ abstract class TypeParser {
     for (cnstrnt <- tvarCILDef.Constraints) {
       ts += getCLRType(cnstrnt) // TODO we're definitely not at or after erasure, no need to call objToAny, right?
     }
-    TypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, clazz))
+    TypeBounds.upper(intersectionType(ts.toList, clazz))
     // TODO variance???
   }
 

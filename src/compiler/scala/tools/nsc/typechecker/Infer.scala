@@ -431,7 +431,7 @@ trait Infer {
       }
       val tp1 = tp map {
         case WildcardType =>
-          addTypeParam(TypeBounds(NothingClass.tpe, AnyClass.tpe))
+          addTypeParam(TypeBounds.empty)
         case BoundedWildcardType(bounds) =>
           addTypeParam(bounds)
         case t => t

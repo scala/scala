@@ -459,7 +459,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def pushTypeBounds(sym: Symbol) {
-      savedTypeBounds = (sym, sym.info) :: savedTypeBounds
+      savedTypeBounds ::= ((sym, sym.info))
     }
 
     def restoreTypeBounds(tp: Type): Type = {
