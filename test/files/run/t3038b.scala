@@ -6,12 +6,12 @@ class A {
     @transient val c1 = 5
     @transient val c2 = 6
     def run = {
-        a1
-        a2
-        b1
-        b2
-        c1
-        c2
+        println(a1)
+        println(a2)
+        println(b1)
+        println(b2)
+        println(c1)
+        println(c2)
     }
 }
 

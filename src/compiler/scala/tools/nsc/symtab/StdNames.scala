@@ -328,10 +328,16 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     def bitmapName(n: Int): TermName = bitmapName(n, "")
 
     /** The name of bitmaps for initialized transient lazy vals. */
-    def bitmapNameForTransitive(n: Int): TermName = bitmapName(n, "trans$")
+    def bitmapNameForTransient(n: Int): TermName = bitmapName(n, "trans$")
 
     /** The name of bitmaps for initialized private lazy vals. */
     def bitmapNameForPrivate(n: Int): TermName = bitmapName(n, "priv$")
+
+    /** The name of bitmaps for checkinit values */
+    def bitmapNameForCheckinit(n: Int): TermName = bitmapName(n, "init$")
+
+    /** The name of bitmaps for checkinit values that have transient flag*/
+    def bitmapNameForCheckinitTransient(n: Int): TermName = bitmapName(n, "inittrans$")
 
     /** Base strings from which synthetic names are derived. */
     val BITMAP_PREFIX               = "bitmap$"
