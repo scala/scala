@@ -38,7 +38,7 @@ extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
   def companion = ForeachHeavy
   override def repetitionsPerRun = 250
 
-  def runpar = pa.foreach(ForeachHeavy.fun)
+  def runpar = pa.pforeach(ForeachHeavy.fun)
   def runseq = sequentialForeach(ForeachHeavy.fun, sz)
   def runjsr = jsrarr.apply(ForeachHeavy.funjsr)
   def comparisonMap = collection.Map("jsr" -> runjsr _)

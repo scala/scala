@@ -383,16 +383,23 @@ self =>
     executeAndWaitResult(new Aggregate(z, seqop, combop, parallelIterator))
   }
 
-  /** Applies a function `f` to all the elements of the receiver.
+  /** Applies a function `f` to all the elements of $coll.
    *
    *  $undefinedorder
    *
    *  @tparam U    the result type of the function applied to each element, which is always discarded
-   *  @param f     function that's applied to each element
+   *  @param f     function applied to each element
    */
-  override def foreach[U](f: T => U): Unit = {
+  def pforeach[U](f: T => U): Unit = {
     executeAndWaitResult(new Foreach(f, parallelIterator))
   }
+
+  /** Applies a function `f` to all the elements of $coll in a sequential order.
+   *
+   *  @tparam U    the result type of the function applied to each element, which is always discarded
+   *  @param f     function applied to each element
+   */
+  override def foreach[U](f: T => U) = iterator.foreach(f)
 
   override def count(p: T => Boolean): Int = {
     executeAndWaitResult(new Count(p, parallelIterator))

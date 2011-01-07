@@ -19,7 +19,7 @@ class ForeachLight(sz: Int, p: Int, what: String)
 extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
   def companion = ForeachLight
 
-  def runpar = pa.foreach(ForeachLight.fun)
+  def runpar = pa.pforeach(ForeachLight.fun)
   def runseq = sequentialForeach(ForeachLight.fun, sz)
   def runjsr = jsrarr.apply(ForeachLight.funjsr)
   def comparisonMap = collection.Map("jsr" -> runjsr _)

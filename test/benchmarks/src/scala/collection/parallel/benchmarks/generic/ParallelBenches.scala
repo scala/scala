@@ -144,7 +144,7 @@ self =>
   extends SeqBench with SeqViewBench {
     def comparisonMap = collection.Map("seqview" -> runseqview _)
     def runseq = this.seqcoll.foreach(operators.eachFun)
-    def runpar = this.parcoll.foreach(operators.eachFun)
+    def runpar = this.parcoll.pforeach(operators.eachFun)
     def runseqview = {
       this.seqview.foreach(operators.eachFun)
     }
@@ -161,7 +161,7 @@ self =>
   extends SeqBench with SeqViewBench {
     def comparisonMap = collection.Map("seqview" -> runseqview _)
     def runseq = this.seqcoll.slice(0, size / 2).foreach(operators.eachFun)
-    def runpar = this.parcoll.slice(0, size / 2).foreach(operators.eachFun)
+    def runpar = this.parcoll.slice(0, size / 2).pforeach(operators.eachFun)
     def runseqview = this.seqview.slice(0, size / 2).foreach(operators.eachFun)
     def companion = IterationS
   }
@@ -176,7 +176,7 @@ self =>
   extends SeqBench with SeqViewBench {
     def comparisonMap = collection.Map("seqview" -> runseqview _)
     def runseq = this.seqcoll.map(operators.mapper).foreach(operators.eachFun)
-    def runpar = this.parcoll.map(operators.mapper).foreach(operators.eachFun)
+    def runpar = this.parcoll.map(operators.mapper).pforeach(operators.eachFun)
     def runseqview = this.seqview.map(operators.mapper).foreach(operators.eachFun)
     def companion = IterationM
   }
@@ -196,7 +196,7 @@ self =>
       val withapp = this.seqcoll.++(sqappended)
       withapp.foreach(operators.eachFun)
     }
-    def runpar = this.parcoll.++(appended).foreach(operators.eachFun)
+    def runpar = this.parcoll.++(appended).pforeach(operators.eachFun)
     def runseqview = this.seqview.++(appended).foreach(operators.eachFun)
     def companion = IterationA
   }
@@ -215,7 +215,7 @@ self =>
       val withzip = this.seqcoll.zip(zipped)
       withzip.foreach(operators.eachPairFun)
     }
-    def runpar = this.parcoll.zip(zipped).foreach(operators.eachPairFun)
+    def runpar = this.parcoll.zip(zipped).pforeach(operators.eachPairFun)
     def runseqview = this.seqview.zip(zipped).foreach(operators.eachPairFun)
     def companion = IterationZ
   }
@@ -235,7 +235,7 @@ self =>
       val withpatch = this.seqcollAsSeq.patch(size / 4, sqpatch, size / 2)
       withpatch.foreach(operators.eachFun)
     }
-    def runpar = this.parcoll.patch(size / 4, patch, size / 2).foreach(operators.eachFun)
+    def runpar = this.parcoll.patch(size / 4, patch, size / 2).pforeach(operators.eachFun)
     def runseqview = this.seqview.patch(size / 4, patch, size / 2).foreach(operators.eachFun)
     def companion = IterationP
   }

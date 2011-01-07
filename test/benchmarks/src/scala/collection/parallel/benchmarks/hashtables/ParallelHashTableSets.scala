@@ -91,7 +91,7 @@ trait ParHashTableSetBenches[T] extends StandardParIterableBenches[T, ParHashSet
   extends IterableBench {
     def comparisonMap = collection.Map()
     def runseq = this.seqcoll.foreach(operators.foreachFun)
-    def runpar = this.parcoll.foreach(operators.foreachFun)
+    def runpar = this.parcoll.pforeach(operators.foreachFun)
     def companion = Foreach
   }
 
@@ -115,7 +115,7 @@ object RefParHashTableSetBenches extends ParHashTableSetBenches[Dummy] {
     val array = new Array[Int](size)
     def comparisonMap = collection.Map()
     def runseq = for (x <- this.seqcoll) array(x.in) += 1
-    def runpar = for (x <- this.parcoll) array(x.in) += 1
+    def runpar = this.parcoll.pforeach { x => array(x.in) += 1 }
     def companion = ForeachSet
 
     override def onEnd {
