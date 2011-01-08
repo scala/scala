@@ -38,6 +38,15 @@ trait DocComments { self: SymbolTable =>
   def docCommentPos(sym: Symbol): Position =
     getDocComment(sym) map (_.pos) getOrElse NoPosition
 
+  /** A version which doesn't consider self types, as a temporary measure:
+   *  an infinite loop has broken out between superComment and cookedDocComment
+   *  since r23926.
+   */
+  private def allInheritedOverriddenSymbols(sym: Symbol): List[Symbol] = {
+    if (!sym.owner.isClass) Nil
+    else sym.owner.ancestors map (sym overriddenSymbol _) filter (_ != NoSymbol)
+  }
+
   /** The raw doc comment of symbol `sym`, minus @usecase and @define sections, augmented by
    *  missing sections of an inherited doc comment.
    *  If a symbol does not have a doc comment but some overridden version of it does,
@@ -121,23 +130,15 @@ trait DocComments { self: SymbolTable =>
     (str /: wikiReplacements) { (str1, regexRepl) => regexRepl._1 replaceAllIn(str1, regexRepl._2) }
 
 
-  private def getDocComment(sym: Symbol): Option[DocComment] = docComments get sym match {
-    case None => mapFind(sym.allOverriddenSymbols)(docComments get)
-    case some => some
-  }
+  private def getDocComment(sym: Symbol): Option[DocComment] =
+    mapFind(sym :: allInheritedOverriddenSymbols(sym))(docComments get _)
 
   /** The cooked doc comment of an overridden symbol */
   protected def superComment(sym: Symbol): Option[String] =
-    sym.allOverriddenSymbols.view map { cookedDocComment(_) } find ("" !=)
+    allInheritedOverriddenSymbols(sym).iterator map (x => cookedDocComment(x)) find (_ != "")
 
-  private def mapFind[A, B](xs: Iterable[A])(f: A => Option[B]): Option[B] = {
-    var res: Option[B] = None
-    val it = xs.iterator
-    while (res.isEmpty && it.hasNext) {
-      res = f(it.next())
-    }
-    res
-  }
+  private def mapFind[A, B](xs: Iterable[A])(f: A => Option[B]): Option[B] =
+    xs collectFirst f.unlift
 
   private def isMovable(str: String, sec: (Int, Int)): Boolean =
     startsWithTag(str, sec, "@param") ||
