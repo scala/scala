@@ -1382,7 +1382,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     final def allOverriddenSymbols: List[Symbol] =
       if (!owner.isClass) Nil
-      else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
+      else owner.thisSym.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
     /** The symbol accessed by a super in the definition of this symbol when
      *  seen from class `base'. This symbol is always concrete.

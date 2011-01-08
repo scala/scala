@@ -18,7 +18,7 @@ package scala.actors
  */
 trait AbstractActor extends OutputChannel[Any] with CanReply[Any, Any] {
 
-  type Future[+R] = scala.actors.Future[R]
+  type Future[+R] <: scala.actors.Future[R]
 
   private[actors] def exiting: Boolean = false
 

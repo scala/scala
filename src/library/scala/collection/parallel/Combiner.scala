@@ -22,7 +22,12 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
 self: EnvironmentPassingCombiner[Elem, To] =>
   private[collection] final val tasksupport = getTaskSupport
 
-  type EPC = EnvironmentPassingCombiner[Elem, To]
+  // type EPC = EnvironmentPassingCombiner[Elem, To]
+  //
+  // [scalacfork] /scratch/trunk2/src/library/scala/collection/parallel/Combiner.scala:25: error: contravariant type Elem occurs in invariant position in type scala.collection.parallel.EnvironmentPassingCombiner[Elem,To] of type EPC
+  // [scalacfork]   type EPC = EnvironmentPassingCombiner[Elem, To]
+  // [scalacfork]        ^
+  // [scalacfork] one error found
 
   /** Combines the contents of the receiver builder and the `other` builder,
    *  producing a new builder containing both their elements.

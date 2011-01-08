@@ -18,6 +18,8 @@ import scala.collection.mutable.HashMap
 private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends AbstractActor with Serializable {
   import java.io.{IOException, ObjectOutputStream, ObjectInputStream}
 
+  type Future[+P] = scala.actors.Future[P]
+
   @transient
   private[remote] var del: Actor = null
   startDelegate()
