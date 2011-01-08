@@ -47,7 +47,7 @@ trait MarkupParsers {
 
   import global._
 
-  class MarkupParser(parser: UnitParser, final val preserveWS: Boolean) extends scala.xml.parsing.MarkupParserCommon {
+  class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends scala.xml.parsing.MarkupParserCommon {
 
     import Tokens.{ EMPTY, LBRACE, RBRACE }
 
