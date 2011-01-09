@@ -155,9 +155,9 @@ object Predef extends LowPriorityImplicits {
 
   final class Ensuring[A](val x: A) {
     def ensuring(cond: Boolean): A = { assert(cond); x }
-    def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
+    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); x }
     def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
-    def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
+    def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(x), msg); x }
   }
   implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
