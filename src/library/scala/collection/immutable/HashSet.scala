@@ -12,8 +12,6 @@ package scala.collection
 package immutable
 
 import generic._
-import annotation.unchecked.uncheckedVariance
-
 import collection.parallel.immutable.ParHashSet
 
 /** This class implements immutable sets using a hash trie.
@@ -81,11 +79,8 @@ class HashSet[A] extends Set[A]
   protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = this
 
   protected def writeReplace(): AnyRef = new HashSet.SerializationProxy(this)
-
   override def toParIterable = par
-
   override def toParSet[B >: A] = par.asInstanceOf[ParHashSet[B]]
-
 }
 
 /** $factoryInfo
@@ -100,6 +95,29 @@ class HashSet[A] extends Set[A]
  *  @define willNotTerminateInf
  */
 object HashSet extends ImmutableSetFactory[HashSet] {
+
+  class TrieIterator[A](elems: Array[HashSet[A]]) extends TrieIteratorBase[A, HashSet[A]](elems) {
+    import TrieIteratorBase._
+
+    type This = TrieIterator[A]
+
+    private[immutable] def recreateIterator() = new TrieIterator(elems)
+    private[immutable] type ContainerType = HashSet1[A]
+    private[immutable] type TrieType      = HashTrieSet[A]
+    private[immutable] type CollisionType = HashSetCollision1[A]
+    private[immutable] def determineType(x: HashSet[A]) = x match {
+      case _: HashSet1[_]          => CONTAINER_TYPE
+      case _: HashTrieSet[_]       => TRIE_TYPE
+      case _: HashSetCollision1[_] => COLLISION_TYPE
+    }
+    private[immutable] def getElem(cc: ContainerType): A      = cc.key
+    private[immutable] def getElems(t: TrieType)     = t.elems
+    private[immutable] def collisionToArray(c: CollisionType) = c.ks map (x => HashSet(x)) toArray
+    private[immutable] def newThisType(xs: Array[HashSet[A]]) = new TrieIterator(xs)
+    private[immutable] def newDeepArray(size: Int)            = new Array[Array[HashSet[A]]](size)
+    private[immutable] def newSingleArray(el: HashSet[A])     = Array(el)
+  }
+
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
@@ -135,7 +153,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def foreach[U](f: A => U): Unit = f(key)
   }
 
-  private class HashSetCollision1[A](private[HashSet] var hash: Int, var ks: ListSet[A]) extends HashSet[A] {
+  private[immutable] class HashSetCollision1[A](private[HashSet] var hash: Int, var ks: ListSet[A]) extends HashSet[A] {
     override def size = ks.size
 
     override def get0(key: A, hash: Int, level: Int): Boolean =
@@ -272,154 +290,11 @@ time { mNew.iterator.foreach( p => ()) }
 time { mNew.iterator.foreach( p => ()) }
 
 */
-
     override def foreach[U](f: A =>  U): Unit = {
       var i = 0;
       while (i < elems.length) {
         elems(i).foreach(f)
         i += 1
-      }
-    }
-  }
-
-
-  class TrieIterator[A](elems: Array[HashSet[A]]) extends Iterator[A] {
-    protected var depth = 0
-    protected var arrayStack = new Array[Array[HashSet[A]]](6)
-    protected var posStack = new Array[Int](6)
-
-    protected var arrayD = elems
-    protected var posD = 0
-
-    protected var subIter: Iterator[A] = null // to traverse collision nodes
-
-    def dupIterator: TrieIterator[A] = {
-      val t = new TrieIterator(elems)
-      t.depth = depth
-      t.arrayStack = arrayStack
-      t.posStack = posStack
-      t.arrayD = arrayD
-      t.posD = posD
-      t.subIter = subIter
-      t
-    }
-
-    def hasNext = (subIter ne null) || depth >= 0
-
-    def next: A = {
-      if (subIter ne null) {
-        val el = subIter.next
-        if (!subIter.hasNext)
-          subIter = null
-        el
-      } else
-        next0(arrayD, posD)
-    }
-
-    @scala.annotation.tailrec private[this] def next0(elems: Array[HashSet[A]], i: Int): A = {
-      if (i == elems.length - 1) { // reached end of level, pop stack
-        depth -= 1
-        if (depth >= 0) {
-          arrayD = arrayStack(depth)
-          posD = posStack(depth)
-          arrayStack(depth) = null
-        } else {
-          arrayD = null
-          posD = 0
-        }
-      } else
-        posD += 1
-
-      elems(i) match {
-        case m: HashTrieSet[_] => // push current pos onto stack and descend
-          if (depth >= 0) {
-            arrayStack(depth) = arrayD
-            posStack(depth) = posD
-          }
-          depth += 1
-          val elems = m.elems.asInstanceOf[Array[HashSet[A]]]
-          arrayD = elems
-          posD = 0
-          next0(elems, 0)
-        case m: HashSet1[_] => m.key
-        case m =>
-          subIter = m.iterator
-          next
-      }
-    }
-
-    // assumption: contains 2 or more elements
-    // splits this iterator into 2 iterators
-    // returns the 1st iterator, its number of elements, and the second iterator
-    def split: ((Iterator[A], Int), Iterator[A]) = {
-      def collisionToArray(c: HashSetCollision1[_]) =
-        c.asInstanceOf[HashSetCollision1[A]].ks.toList map { HashSet() + _ } toArray
-      def arrayToIterators(arr: Array[HashSet[A]]) = {
-        val (fst, snd) = arr.splitAt(arr.length / 2)
-        val szsnd = snd.foldLeft(0)(_ + _.size)
-        ((new TrieIterator(snd), szsnd), new TrieIterator(fst))
-      }
-      def splitArray(ad: Array[HashSet[A]]): ((Iterator[A], Int), Iterator[A]) = if (ad.length > 1) {
-        arrayToIterators(ad)
-      } else ad(0) match {
-        case c: HashSetCollision1[a] => arrayToIterators(collisionToArray(c.asInstanceOf[HashSetCollision1[A]]))
-        case hm: HashTrieSet[a] => splitArray(hm.elems.asInstanceOf[Array[HashSet[A]]])
-      }
-
-      // 0) simple case: no elements have been iterated - simply divide arrayD
-      if (arrayD != null && depth == 0 && posD == 0) {
-        return splitArray(arrayD)
-      }
-
-      // otherwise, some elements have been iterated over
-      // 1) collision case: if we have a subIter, we return subIter and elements after it
-      if (subIter ne null) {
-        val buff = subIter.toBuffer
-        subIter = null
-        ((buff.iterator, buff.length), this)
-      } else {
-        // otherwise find the topmost array stack element
-        if (depth > 0) {
-          // 2) topmost comes before (is not) arrayD
-          //    steal a portion of top to create a new iterator
-          val topmost = arrayStack(0)
-          if (posStack(0) == arrayStack(0).length - 1) {
-            // 2a) only a single entry left on top
-            // this means we have to modify this iterator - pop topmost
-            val snd = Array(arrayStack(0).last)
-            val szsnd = snd(0).size
-            // modify this - pop
-            depth -= 1
-            arrayStack = arrayStack.tail ++ Array[Array[HashSet[A]]](null)
-            posStack = posStack.tail ++ Array[Int](0)
-            // we know that `this` is not empty, since it had something on the arrayStack and arrayStack elements are always non-empty
-            ((new TrieIterator[A](snd), szsnd), this)
-          } else {
-            // 2b) more than a single entry left on top
-            val (fst, snd) = arrayStack(0).splitAt(arrayStack(0).length - (arrayStack(0).length - posStack(0) + 1) / 2)
-            arrayStack(0) = fst
-            val szsnd = snd.foldLeft(0)(_ + _.size)
-            ((new TrieIterator[A](snd), szsnd), this)
-          }
-        } else {
-          // 3) no topmost element (arrayD is at the top)
-          //    steal a portion of it and update this iterator
-          if (posD == arrayD.length - 1) {
-            // 3a) positioned at the last element of arrayD
-            val arr: Array[HashSet[A]] = arrayD(posD) match {
-              case c: HashSetCollision1[a] => collisionToArray(c).asInstanceOf[Array[HashSet[A]]]
-              case ht: HashTrieSet[_] => ht.asInstanceOf[HashTrieSet[A]].elems
-              case _ => system.error("cannot divide single element")
-            }
-            arrayToIterators(arr)
-          } else {
-            // 3b) arrayD has more free elements
-            val (fst, snd) = arrayD.splitAt(arrayD.length - (arrayD.length - posD + 1) / 2)
-            arrayD = fst
-            val szsnd = snd.foldLeft(0)(_ + _.size)
-            ((new TrieIterator[A](snd), szsnd), this)
-          }
-        }
       }
     }
   }
