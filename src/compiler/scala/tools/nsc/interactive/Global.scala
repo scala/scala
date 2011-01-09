@@ -8,7 +8,7 @@ import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{AbstractFile, LogReplay, Logger, NullLogger, Replayer}
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler}
+import scala.tools.nsc.util.{SourceFile, BatchSourceFile, Position, RangePosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
@@ -163,14 +163,92 @@ self =>
    */
   override lazy val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
-    override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
-      // todo: change
-      if (root.isEmptyPackageClass) {
-	// currentRun is null for the empty package, since its type is taken during currentRun
-	// initialization. todo: remove when refactored.
-	super.enterToplevelsFromSource(root, name, src)
+
+    import syntaxAnalyzer.{OutlineParser, MalformedInput}
+
+    /** In browse mode, it can happen that an encountered symbol is already
+     *  present. For instance, if the source file has a name different from
+     *  the classes and objects it contains, the symbol loader will always
+     *  reparse the source file. The symbols it encounters might already be loaded
+     *  as class files. In this case we return the one which has a sourcefile
+     *  (and the other has not), and issue an error if both have sourcefiles.
+     */
+    override def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
+      completer.sourcefile match {
+        case Some(src) =>
+          (if (member.isModule) member.moduleClass else member).sourceFile = src
+        case _ =>
+      }
+      val decls = owner.info.decls
+      val existing = decls.lookup(member.name)
+      if (existing == NoSymbol) {
+        decls enter member
+        member
+      } else if (existing.sourceFile == null) {
+        decls unlink existing
+        decls enter member
+        member
       } else {
-	currentRun.compileLate(src)
+        if (member.sourceFile != null) {
+          if (existing.sourceFile != member.sourceFile)
+            error(member+"is defined twice,"+
+                  "\n in "+existing.sourceFile+
+                  "\n and also in "+member.sourceFile)
+        }
+        existing
+      }
+    }
+
+    def browseTopLevel(root: Symbol, src: AbstractFile) {
+
+      class BrowserTraverser extends Traverser {
+        var packagePrefix = ""
+        var entered = 0
+        def addPackagePrefix(pkg: Tree): Unit = pkg match {
+          case Select(pre, name) =>
+            addPackagePrefix(pre)
+            packagePrefix += ("." + name)
+          case Ident(name) =>
+            if (packagePrefix.length != 0) packagePrefix += "."
+            packagePrefix += name
+          case _ =>
+            throw new MalformedInput(pkg.pos.point, "illegal tree node in package prefix: "+pkg)
+        }
+        override def traverse(tree: Tree): Unit = tree match {
+          case PackageDef(pkg, body) =>
+            addPackagePrefix(pkg)
+            body foreach traverse
+          case ClassDef(_, name, _, _) =>
+            if (packagePrefix == root.fullName) {
+              enterClass(root, name.toString, new SourcefileLoader(src))
+              entered += 1
+            } else println("prefixes differ: "+packagePrefix+","+root.fullName)
+          case ModuleDef(_, name, _) =>
+            if (packagePrefix == root.fullName) {
+              enterModule(root, name.toString, new SourcefileLoader(src))
+              entered += 1
+            } else println("prefixes differ: "+packagePrefix+","+root.fullName)
+          case _ =>
+        }
+      }
+
+      System.out.println("Browsing "+src)
+      val source = new BatchSourceFile(src)
+      val body = new OutlineParser(source).parse()
+      System.out.println(body)
+      val browser = new BrowserTraverser
+      browser.traverse(body)
+      if (browser.entered == 0)
+        warning("No classes or objects found in "+source+" that go in "+root)
+    }
+
+    override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
+      try {
+        browseTopLevel(root, src)
+      } catch {
+        case ex: syntaxAnalyzer.MalformedInput =>
+          println("caught malformed input exception at offset "+ex.offset+": "+ex.msg)
+          super.enterToplevelsFromSource(root, name, src)
       }
     }
   }

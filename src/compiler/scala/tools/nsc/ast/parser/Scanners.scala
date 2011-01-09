@@ -1027,7 +1027,7 @@ trait Scanners extends ScannersCommon {
       else "'<" + token + ">'"
   }
 
-  class MalformedInput extends Exception
+  class MalformedInput(val offset: Int, val msg: String) extends Exception
 
   /** A scanner for a given source file not necessarily attached to a compilation unit.
    *  Useful for looking inside source files that aren not currently compiled to see what's there
@@ -1038,8 +1038,8 @@ trait Scanners extends ScannersCommon {
 
     // suppress warnings, throw exception on errors
     def warning(off: Offset, msg: String): Unit = {}
-    def error  (off: Offset, msg: String): Unit = throw new MalformedInput
-    def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput
+    def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
+    def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
   }
 
   /** A scanner over a given compilation unit

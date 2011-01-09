@@ -151,8 +151,8 @@ self =>
     def warning(offset: Int, msg: String) {}
     def deprecationWarning(offset: Int, msg: String) {}
 
-    def syntaxError(offset: Int, msg: String): Unit = throw new MalformedInput
-    def incompleteInputError(msg: String): Unit = throw new MalformedInput
+    def syntaxError(offset: Int, msg: String): Unit = throw new MalformedInput(offset, msg)
+    def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
 
     /** the markup parser */
     lazy val xmlp = new MarkupParser(this, true)
@@ -170,14 +170,21 @@ self =>
 
     def skipBraces[T](body: T): T = {
       accept(LBRACE)
-      while (in.token != EOF && in.token != RBRACE)
-    	  if (in.token == XMLSTART) xmlLiteral() else in.nextToken()
-    	body
+      var openBraces = 1
+      while (in.token != EOF && openBraces > 0) {
+        if (in.token == XMLSTART) xmlLiteral()
+        else {
+          if (in.token == LBRACE) openBraces += 1
+          else if (in.token == RBRACE) openBraces -= 1
+          in.nextToken()
+        }
+      }
+      body
     }
 
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
-    override def templateStatSeq(isPre: Boolean) = skipBraces(emptyValDef, List())
+    override def templateBody(isPre: Boolean) = skipBraces(emptyValDef, List(EmptyTree))
   }
 
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
