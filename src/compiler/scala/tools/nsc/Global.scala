@@ -1149,10 +1149,18 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     })
   }
-
+  // In order to not outright break code which overrides onlyPresentation (like sbt 0.7.5.RC0)
+  // I restored and deprecated it.  That would be enough to avoid the compilation
+  // failure, but the override wouldn't accomplish anything.  So now forInteractive
+  // and forScaladoc default to onlyPresentation, which is the same as defaulting
+  // to false except in old code.  The downside is that this leaves us calling a
+  // deprecated method: but I see no simple way out, so I leave it for now.
   def forJVM           = opt.jvm
   def forMSIL          = opt.msil
-  def forInteractive   = false
-  def forScaladoc      = false
+  def forInteractive   = onlyPresentation
+  def forScaladoc      = onlyPresentation
   def createJavadoc    = false
+
+  @deprecated("Use forInteractive or forScaladoc, depending on what you're after")
+  def onlyPresentation = false
 }
