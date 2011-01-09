@@ -59,6 +59,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     }
 
     def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
+    def isTyped     = (tree.tpe ne null) && !tree.tpe.isErroneous
 
     /** Apply `f' to each subtree */
     def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(tree) }

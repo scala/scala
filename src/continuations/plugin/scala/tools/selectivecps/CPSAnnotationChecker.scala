@@ -362,7 +362,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
       tree match {
 
-        case Apply(fun @ Select(qual, name), args) if (fun.tpe ne null) && !fun.tpe.isErroneous =>
+        case Apply(fun @ Select(qual, name), args) if fun.isTyped =>
 
           // HACK: With overloaded methods, fun will never get annotated. This is because
           // the 'overloaded' type gets annotated, but not the alternatives (among which
@@ -372,12 +372,12 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
           transChildrenInOrder(tree, tpe, qual::(transArgList(fun, args).flatten), Nil)
 
-        case TypeApply(fun @ Select(qual, name), args) if (fun.tpe ne null) && !fun.tpe.isErroneous =>
+        case TypeApply(fun @ Select(qual, name), args) if fun.isTyped =>
           vprintln("[checker] checking select apply " + tree + "/" + tpe)
 
           transChildrenInOrder(tree, tpe, List(qual, fun), Nil)
 
-        case Apply(fun, args) if (fun.tpe ne null) && !fun.tpe.isErroneous =>
+        case Apply(fun, args) if fun.isTyped =>
 
           vprintln("[checker] checking unknown apply " + tree + "/" + tpe)
 
@@ -389,7 +389,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
           transChildrenInOrder(tree, tpe, List(fun), Nil)
 
-        case Select(qual, name) =>
+        case Select(qual, name) if qual.isTyped =>
 
           vprintln("[checker] checking select " + tree + "/" + tpe)
 
