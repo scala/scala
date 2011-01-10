@@ -1,4 +1,4 @@
-t2462a.scala:2: error: Cannot construct a collection of type List[String] with elements of type Int based on a collection of type List[String].
+t2462a.scala:2: error: Cannot construct a collection of type List[String] with elements of type Int based on a collection of type List[Int].
   List(1,2,3).map[Int, List[String]](x => 1)
                                     ^
 one error found
