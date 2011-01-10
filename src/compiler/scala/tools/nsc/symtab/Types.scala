@@ -7,8 +7,8 @@ package scala.tools.nsc
 package symtab
 
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.ListBuffer
 import scala.ref.WeakReference
+import scala.collection.mutable.ListBuffer
 import ast.TreeGen
 import util.{ Position, NoPosition }
 import util.Statistics._
@@ -1342,12 +1342,27 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       baseClassesCache
     }
 
-    def memo[A](op1: => A)(op2: Type => A) = {
-      (for (ref <- intersectionWitness.get(parents); w <- ref.get)
-         yield if (w eq this) op1 else op2(w)) getOrElse {
+    /** The slightly less idiomatic use of Options is due to
+     *  performance considerations. A version using for comprehensions
+     *  might be too slow (this is deemed a hotspot of the type checker).
+     *
+     *  See with Martin before changing this method.
+     */
+    def memo[A](op1: => A)(op2: Type => A): A = {
+      def updateCache(): A = {
         intersectionWitness(parents) = new WeakReference(this)
         op1
       }
+
+      intersectionWitness get parents match {
+        case Some(ref) =>
+          ref.get match {
+            case Some(w) => if (w eq this) op1 else op2(w)
+            case None => updateCache()
+          }
+        case None => updateCache()
+      }
+
     }
 
     override def baseType(sym: Symbol): Type = {

@@ -49,7 +49,6 @@ trait Typers extends Modes {
     resetNamer()
     resetImplicits()
     transformed.clear()
-    //println("%,d entries in intersectionWitness".format(intersectionWitness.size))
   }
 
   object UnTyper extends Traverser {
