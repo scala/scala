@@ -67,7 +67,7 @@ extends Map[Key, Value]
    with MapLike[Key, Value, OpenHashMap[Key, Value]] {
 
   import OpenHashMap.OpenEntry
-  type Entry = OpenEntry[Key, Value]
+  private type Entry = OpenEntry[Key, Value]
 
   /**
    * A default constructor creates a hashmap with initial size 8.

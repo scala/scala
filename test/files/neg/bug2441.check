@@ -1,0 +1,4 @@
+bug2441.scala:12: error: private class Y escapes its defining scope as part of type Some[B.Y]
+  override def f = Some(new B.Y)
+               ^
+one error found

@@ -366,11 +366,12 @@ trait Typers extends Modes {
         def checkNoEscape(sym: Symbol) {
           if (sym.isPrivate && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
             var o = owner
-            while (o != NoSymbol && o != sym.owner &&
-                   !o.isLocal && !o.hasFlag(PRIVATE) &&
+            while (o != NoSymbol && o != sym.owner && o != sym.owner.linkedClassOfClass &&
+                   !o.isLocal && !o.isPrivate &&
                    !o.privateWithin.hasTransOwner(sym.owner))
               o = o.owner
-            if (o == sym.owner) addHidden(sym)
+            if (o == sym.owner || o == sym.owner.linkedClassOfClass)
+              addHidden(sym)
           } else if (sym.owner.isTerm && !sym.isTypeParameterOrSkolem) {
             var e = scope.lookupEntry(sym.name)
             var found = false
