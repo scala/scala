@@ -6,40 +6,17 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
-
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable.Builder
-import scala.collection.mutable.MapBuilder
-
-
+import scala.collection.generic.{ CanBuildFrom, BitOperations }
+import scala.collection.mutable.{ Builder, MapBuilder }
 
 /** Utility class for long maps.
  *  @author David MacIver
  */
-private[immutable] object LongMapUtils{
-  def zero(i : Long, mask : Long) = (i & mask) == 0L;
-  def mask(i : Long, mask : Long) = i & (complement(mask - 1) ^ mask)
-  def hasMatch(key : Long, prefix : Long, m : Long) = mask(key, m) == prefix;
-  def unsignedCompare(i : Long, j : Long) = (i < j) ^ (i < 0) ^ (j < 0)
-  def shorter(m1 : Long, m2 : Long) = unsignedCompare(m2, m1)
-  def complement(i : Long) = (-1) ^ i;
-  def branchMask(i : Long, j : Long) = highestOneBit(i ^ j);
-
-  def highestOneBit(j : Long) = {
-    var i = j;
-    i |= (i >>  1);
-    i |= (i >>  2);
-    i |= (i >>  4);
-    i |= (i >>  8);
-    i |= (i >> 16);
-    i |= (i >> 32);
-    i - (i >>> 1);
-  }
+private[immutable] object LongMapUtils extends BitOperations.Long {
+  def branchMask(i: Long, j: Long) = highestOneBit(i ^ j)
 
   def join[T](p1 : Long, t1 : LongMap[T], p2 : Long, t2 : LongMap[T]) : LongMap[T] = {
     val m = branchMask(p1, p2);

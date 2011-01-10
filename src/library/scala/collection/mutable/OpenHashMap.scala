@@ -6,11 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
-
 
 /**
  *  @define Coll OpenHashMap
@@ -19,28 +16,15 @@ package mutable
  *  @since 2.7
  */
 object OpenHashMap {
-  def apply[K, V](elems : (K, V)*) = {
-    val dict = new OpenHashMap[K, V];
-    elems.foreach({case (x, y) => dict(x) = y});
-    dict;
-  }
+  import generic.BitOperations.Int.highestOneBit
 
-  def empty[K, V] = new OpenHashMap[K, V];
+  def apply[K, V](elems : (K, V)*) = new OpenHashMap[K, V] ++= elems
+  def empty[K, V] = new OpenHashMap[K, V]
 
   final private class OpenEntry[Key, Value](val key: Key,
                                             val hash: Int,
                                             var value: Option[Value])
                 extends HashEntry[Key, OpenEntry[Key, Value]]
-
-  private[mutable] def highestOneBit(j : Int) = { // This should really go somewhere central as we're now code sharing by cut and paste. :(
-    var i = j;
-    i |= (i >>  1);
-    i |= (i >>  2);
-    i |= (i >>  4);
-    i |= (i >>  8);
-    i |= (i >> 16);
-    i - (i >>> 1);
-  }
 
   private[mutable] def nextPowerOfTwo(i : Int) = highestOneBit(i) << 1;
 }

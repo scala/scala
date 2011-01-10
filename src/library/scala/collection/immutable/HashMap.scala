@@ -102,7 +102,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
  *  @author  Tiark Rompf
  *  @since   2.3
  */
-object HashMap extends ImmutableMapFactory[HashMap] {
+object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]
@@ -344,14 +344,7 @@ time { mNew.iterator.foreach( p => ()) }
     }
 
     private def printBitmap(bm: Int) {
-      var i = 32
-      var b = bm
-      while (i != 0) {
-	print((b & 1) + " ")
-	b = b >>> 1
-	i -= 1
-      }
-      println
+      println(bitString(bm, " "))
     }
 
     private def posOf(n: Int, bm: Int) = {
@@ -434,13 +427,10 @@ time { mNew.iterator.foreach( p => ()) }
             // condition below is due to 2 things:
             // 1) no unsigned int compare on JVM
             // 2) 0 (no lsb) should always be greater in comparison
-            // also, search for unsigned compare Scala to find Dave's solution
-            // and compare a and b defined as below:
             val a = thislsb - 1
             val b = thatlsb - 1
-            // ! our case indeed is more specific, but this didn't help:
-            // if ((thislsb > 0 && thislsb < thatlsb) || thatlsb == 0 || (thatlsb < 0 && thislsb != 0)) {
-            if ((a < b) ^ (a < 0) ^ (b < 0)) {
+
+            if (unsignedCompare(thislsb - 1, thatlsb - 1)) {
               // println("an element from this trie")
               val m = thiselems(thisi)
               totalelems += m.size
