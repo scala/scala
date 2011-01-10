@@ -135,20 +135,17 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** size of this file if it is a concrete file. */
   def sizeOption: Option[Int] = None
 
-  /** returns contents of file (if applicable) in a byte array.
+  /** Returns contents of file (if applicable) in a Char array.
    *  warning: use <code>Global.getSourceFile()</code> to use the proper
-   *  encoding when converting to the char array .
-   *
-   *  @throws java.io.IOException
-   */
-  final def toCharArray = new String(toByteArray).toCharArray
-
-  /** returns contents of file (if applicable) in a byte array.
-   *
-   *  @throws java.io.IOException
+   *  encoding when converting to the char array.
    */
   @throws(classOf[IOException])
-  final def toByteArray: Array[Byte] = {
+  def toCharArray = new String(toByteArray).toCharArray
+
+  /** Returns contents of file (if applicable) in a byte array.
+   */
+  @throws(classOf[IOException])
+  def toByteArray: Array[Byte] = {
     val in = input
     var rest = sizeOption.get
     val arr = new Array[Byte](rest)
@@ -169,10 +166,6 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    *  name. If there is no such file, returns <code>null</code>. The argument
    *  <code>directory</code> tells whether to look for a directory or
    *  a regular file.
-   *
-   *  @param name      ...
-   *  @param directory ...
-   *  @return          ...
    */
   def lookupName(name: String, directory: Boolean): AbstractFile
 
