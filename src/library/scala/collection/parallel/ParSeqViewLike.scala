@@ -160,7 +160,7 @@ self =>
   override def collect[S, That](pf: PartialFunction[T, S])(implicit bf: CanBuildFrom[This, S, That]): That = filter(pf.isDefinedAt).map(pf)(bf)
   override def scanLeft[S, That](z: S)(op: (S, T) => S)(implicit bf: CanBuildFrom[This, S, That]): That = newForced(thisParSeq.scanLeft(z)(op)).asInstanceOf[That]
   override def scanRight[S, That](z: S)(op: (T, S) => S)(implicit bf: CanBuildFrom[This, S, That]): That = newForced(thisParSeq.scanRight(z)(op)).asInstanceOf[That]
-  override def groupBy[K](f: T => K): collection.immutable.Map[K, This] = thisParSeq.groupBy(f).mapValues(xs => newForced(xs).asInstanceOf[This])
+  override def groupBy[K](f: T => K): immutable.ParMap[K, This] = thisParSeq.groupBy(f).map(kv => (kv._1, newForced(kv._2).asInstanceOf[This]))
   override def force[U >: T, That](implicit bf: CanBuildFrom[Coll, U, That]) = bf ifParallel { pbf =>
     executeAndWaitResult(new Force(pbf, parallelIterator).mapResult(_.result).asInstanceOf[Task[That, _]])
   } otherwise {

@@ -520,11 +520,11 @@ self =>
     executeAndWaitResult(new Partition(pred, cbfactory, parallelIterator) mapResult { p => (p._1.result, p._2.result) })
   }
 
-  // override def groupBy[K](f: T => K): immutable.ParMap[K, Repr] = {
-  //   executeAndWaitResult(new GroupBy(f, () => HashMapCombiner[K, T], parallelIterator) mapResult {
-  //     rcb => rcb.groupByKey(cbfactory)
-  //   })
-  // }
+  override def groupBy[K](f: T => K): immutable.ParMap[K, Repr] = {
+    executeAndWaitResult(new GroupBy(f, () => HashMapCombiner[K, T], parallelIterator) mapResult {
+      rcb => rcb.groupByKey(cbfactory)
+    })
+  }
 
   override def take(n: Int): Repr = {
     val actualn = if (size > n) n else size

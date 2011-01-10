@@ -131,6 +131,7 @@ trait BenchmarkRegister {
 
   // general examples
   register(misc.Coder)
+  register(misc.Loader)
 }
 
 
