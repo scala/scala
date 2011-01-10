@@ -3,7 +3,7 @@ tailrec.scala:45: error: could not optimize @tailrec annotated method facfail: i
            ^
 tailrec.scala:50: error: could not optimize @tailrec annotated method fail1: it is neither private nor final so can be overridden
   @tailrec def fail1(x: Int): Int = fail1(x)
-                                    ^
+               ^
 tailrec.scala:55: error: could not optimize @tailrec annotated method fail2: it contains a recursive call not in tail position
     case x :: xs  => x :: fail2[T](xs)
                        ^

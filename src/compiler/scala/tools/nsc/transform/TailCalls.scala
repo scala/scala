@@ -6,7 +6,8 @@
 package scala.tools.nsc
 package transform
 
-import scala.tools.nsc.symtab.Flags
+import symtab.Flags
+import Flags.SYNTHETIC
 
 /** Perform tail recursive call elimination.
  *
@@ -86,9 +87,9 @@ abstract class TailCalls extends Transform {
   class TailCallElimination(unit: CompilationUnit) extends Transformer {
     private val defaultReason = "it contains a recursive call not in tail position"
 
-    class Context {
+    class Context() {
       /** The current method */
-      var currentMethod: Symbol = NoSymbol
+      var method: Symbol = NoSymbol
 
       /** The current tail-call label */
       var label: Symbol = NoSymbol
@@ -101,38 +102,57 @@ abstract class TailCalls extends Transform {
 
       /** The reason this method could not be optimized. */
       var failReason = defaultReason
-      var failPos: Position = null
+      var failPos    = method.pos
 
-      /** Is the label accessed? */
+      /** Has the label been accessed? */
       var accessed = false
 
       def this(that: Context) = {
         this()
-        this.currentMethod = that.currentMethod
-        this.label         = that.label
-        this.tparams       = that.tparams
-        this.tailPos       = that.tailPos
-        this.accessed      = that.accessed
-        this.failPos       = that.failPos
+        this.method   = that.method
+        this.tparams  = that.tparams
+        this.tailPos  = that.tailPos
+        this.accessed = that.accessed
+        this.failPos  = that.failPos
+        this.label    = that.label
+      }
+      def this(dd: DefDef) {
+        this()
+        this.method   = dd.symbol
+        this.tparams  = dd.tparams map (_.symbol)
+        this.tailPos  = true
+        this.accessed = false
+        this.failPos  = dd.pos
+
+        /** Create a new method symbol for the current method and store it in
+          * the label field.
+          */
+        this.label    = {
+          val label     = method.newLabel(method.pos, "_" + method.name)
+          val thisParam = method.newSyntheticValueParam(currentClass.typeOfThis)
+          label setInfo MethodType(thisParam :: method.tpe.params, method.tpe.finalResultType)
+        }
+        if (isEligible)
+          label setInfo label.tpe.substSym(method.tpe.typeParams, tparams)
       }
 
-      def enclosingType   = currentMethod.enclClass.typeOfThis
+      def enclosingType    = method.enclClass.typeOfThis
+      def methodTypeParams = method.tpe.typeParams
+      def isEligible       = method.isEffectivelyFinal
+      // @tailrec annotation indicates mandatory transformation
+      def isMandatory      = method.hasAnnotation(TailrecClass) && !forMSIL
+      def isTransformed    = isEligible && accessed
+      def tailrecFailure() = unit.error(failPos, "could not optimize @tailrec annotated " + method + ": " + failReason)
 
-      /** Create a new method symbol for the current method and store it in
-        * the label field.
-        */
-      def makeLabel(): Unit = {
-        label = currentMethod.newLabel(currentMethod.pos, "_" + currentMethod.name)
-        accessed = false
-      }
+      def newThis(pos: Position) = method.newValue(pos, nme.THIS) setInfo currentClass.typeOfThis setFlag SYNTHETIC
 
       override def toString(): String = (
-        "" + currentMethod.name + " tparams: " + tparams + " tailPos: " + tailPos +
+        "" + method.name + " tparams: " + tparams + " tailPos: " + tailPos +
         " accessed: " + accessed + "\nLabel: " + label + "\nLabel type: " + label.info
       )
     }
 
-    private var ctx: Context    = new Context()
+    private var ctx: Context = new Context()
     private def noTailContext() = {
       val t = new Context(ctx)
       t.tailPos = false
@@ -164,93 +184,74 @@ abstract class TailCalls extends Transform {
 
         def receiverIsSame    = ctx.enclosingType.widen =:= receiver.tpe.widen
         def receiverIsSuper   = ctx.enclosingType.widen <:< receiver.tpe.widen
-        def isRecursiveCall   = ctx.currentMethod eq fun.symbol
-        def isMandatory       = ctx.currentMethod hasAnnotation TailrecClass
-        def isEligible        = ctx.currentMethod.isEffectivelyFinal
+        def isRecursiveCall   = (ctx.method eq fun.symbol) && ctx.tailPos
         def transformArgs     = noTailTransforms(args)
         def matchesTypeArgs   = ctx.tparams sameElements (targs map (_.tpe.typeSymbol))
 
         /** Records failure reason in Context for reporting.
+         *  Position is unchanged (by default, the method definition.)
          */
-        def cannotRewrite(reason: String) = {
-          ctx.failReason = reason
-          ctx.failPos = fun.pos
+        def fail(reason: String) = {
+          log("Cannot rewrite recursive call at: " + fun.pos + " because: " + reason)
 
+          ctx.failReason = reason
           treeCopy.Apply(tree, target, transformArgs)
         }
-        def notRecursiveReason() =
-          if (receiverIsSuper) "it contains a recursive call targetting a supertype"
-          else "it contains a recursive call not in tail position"
-
-        def rewriteTailCall(recv: Tree, otherArgs: List[Tree]): Tree = {
+        /** Position of failure is that of the tree being considered.
+         */
+        def failHere(reason: String) = {
+          ctx.failPos = fun.pos
+          fail(reason)
+        }
+        def rewriteTailCall(recv: Tree): Tree = {
           log("Rewriting tail recursive method call at: " + fun.pos)
 
           ctx.accessed = true
-          typedPos(fun.pos)(Apply(Ident(ctx.label), recv :: otherArgs))
+          typedPos(fun.pos)(Apply(Ident(ctx.label), recv :: transformArgs))
         }
 
-        if (!isRecursiveCall)           cannotRewrite(notRecursiveReason())
-        else if (!isEligible)           cannotRewrite("it is neither private nor final so can be overridden")
-        else if (!ctx.tailPos)          cannotRewrite(defaultReason)
-        else if (!matchesTypeArgs)      cannotRewrite("it is called recursively with different type arguments")
-        else if (receiver == EmptyTree) rewriteTailCall(This(currentClass), transformArgs)
-        else if (forMSIL)               cannotRewrite("it cannot be optimized on MSIL")
-        else if (!receiverIsSame)       cannotRewrite("it changes type of 'this' on a polymorphic recursive call")
-        else                            rewriteTailCall(receiver, transformArgs)
+        if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
+        else if (!isRecursiveCall) {
+          if (receiverIsSuper)          failHere("it contains a recursive call targetting a supertype")
+          else                          failHere(defaultReason)
+        }
+        else if (!matchesTypeArgs)      failHere("it is called recursively with different type arguments")
+        else if (receiver == EmptyTree) rewriteTailCall(This(currentClass))
+        else if (forMSIL)               fail("it cannot be optimized on MSIL")
+        else if (!receiverIsSame)       failHere("it changes type of 'this' on a polymorphic recursive call")
+        else                            rewriteTailCall(receiver)
       }
 
       tree match {
         case dd @ DefDef(mods, name, tparams, vparams, tpt, rhs) =>
           log("Entering DefDef: " + name)
-          val newCtx = new Context(ctx)
-          newCtx.failPos = dd.pos
-          newCtx.currentMethod = tree.symbol
-          newCtx.makeLabel()
-          val currentClassParam = tree.symbol.newSyntheticValueParam(currentClass.typeOfThis)
-          newCtx.label setInfo MethodType(currentClassParam :: tree.symbol.tpe.params, tree.symbol.tpe.finalResultType)
-          newCtx.tailPos = true
+          val newCtx = new Context(dd)
 
-          val isEligible  = newCtx.currentMethod.isEffectivelyFinal
-          val isMandatory = dd.symbol.hasAnnotation(TailrecClass) && !forMSIL  // @tailrec annotation indicates mandatory transformation
-
-          if (isEligible) {
-            newCtx.tparams = Nil
-            log("  Considering " + name + " for tailcalls")
-            tree.symbol.tpe match {
-              case PolyType(tpes, restpe) =>
-                newCtx.tparams = tparams map (_.symbol)
-                newCtx.label setInfo newCtx.label.tpe.substSym(tpes, tparams map (_.symbol))
-              case _ =>
-            }
-          }
+          log("Considering " + name + " for tailcalls")
           val newRHS = transform(rhs, newCtx)
-          def tailrecFailure(pos: Position, reason: String) {
-            unit.error(pos, "could not optimize @tailrec annotated " + newCtx.currentMethod + ": " + reason)
-          }
 
           treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, {
-            if (isEligible && newCtx.accessed) {
+            if (newCtx.isTransformed) {
               /** We have rewritten the tree, but there may be nested recursive calls remaining.
                *  If @tailrec is given we need to fail those now.
                */
-              if (isMandatory) {
-                for (t @ Apply(fn, _) <- newRHS ; if fn.symbol == newCtx.currentMethod)
-                  tailrecFailure(t.pos, defaultReason)
+              if (newCtx.isMandatory) {
+                for (t @ Apply(fn, _) <- newRHS ; if fn.symbol == newCtx.method) {
+                  newCtx.failPos = t.pos
+                  newCtx.tailrecFailure()
+                }
               }
-
-              val newThis = newCtx.currentMethod
-                . newValue (tree.pos, nme.THIS)
-                . setInfo (currentClass.typeOfThis)
-                . setFlag (Flags.SYNTHETIC)
+              val newThis = newCtx.newThis(tree.pos)
+              val vpSyms  = vparams.flatten map (_.symbol)
 
               typedPos(tree.pos)(Block(
                 List(ValDef(newThis, This(currentClass))),
-                LabelDef(newCtx.label, newThis :: (vparams.flatten map (_.symbol)), newRHS)
+                LabelDef(newCtx.label, newThis :: vpSyms, newRHS)
               ))
             }
             else {
-              if (isMandatory)
-                tailrecFailure(newCtx.failPos, newCtx.failReason)
+              if (newCtx.isMandatory)
+                newCtx.tailrecFailure()
 
               newRHS
             }
