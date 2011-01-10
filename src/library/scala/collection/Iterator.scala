@@ -429,6 +429,17 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
   }
 
+  def scanLeft[B](z: B)(op: (B, A) => B): Iterator[B] = new Iterator[B] {
+    var hasNext = true
+    var elem = z
+    def next() = if (hasNext) {
+      val res = elem
+      if (self.hasNext) elem = op(elem, self.next())
+      else hasNext = false
+      res
+    } else Iterator.empty.next()
+  }
+
   /** Takes longest prefix of values produced by this iterator that satisfy a predicate.
    *  @param   p  The predicate used to test elements.
    *  @return  An iterator returning the values produced by this iterator, until
