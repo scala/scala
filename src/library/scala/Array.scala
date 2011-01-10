@@ -483,7 +483,7 @@ object Array extends FallbackArrayBuilding {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[T](_length: Int) {
+final class Array[T](_length: Int) extends java.io.Serializable {
 
    /** Multidimensional array creation */
    @deprecated("use `Array.ofDim' instead")
