@@ -340,7 +340,7 @@ object Predef extends LowPriorityImplicits {
    * simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `U <: T`)
    * in part contributed by Jason Zaugg
    */
-  sealed abstract class <:<[-From, +To] extends (From => To)
+  sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
   implicit def conforms[A]: A <:< A = new (A <:< A) { def apply(x: A) = x }
   // not in the <:< companion object because it is also intended to subsume identity (which is no longer implicit)
 
@@ -348,14 +348,14 @@ object Predef extends LowPriorityImplicits {
    *
    * @see <:< for expressing subtyping constraints
    */
-  sealed abstract class =:=[From, To] extends (From => To)
+  sealed abstract class =:=[From, To] extends (From => To) with Serializable
   object =:= {
     implicit def tpEquals[A]: A =:= A = new (A =:= A) {def apply(x: A) = x}
   }
 
   // less useful due to #2781
   @deprecated("Use From => To instead")
-  sealed abstract class <%<[-From, +To] extends (From => To)
+  sealed abstract class <%<[-From, +To] extends (From => To) with Serializable
   object <%< {
     implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}
   }
