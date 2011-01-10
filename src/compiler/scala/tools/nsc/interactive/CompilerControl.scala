@@ -74,7 +74,7 @@ trait CompilerControl { self: Global =>
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner
    */
-  protected val scheduler = new WorkScheduler
+  protected[interactive] val scheduler = new WorkScheduler
 
   /** The compilation unit corresponding to a source file
    *  if it does not yet exist creat a new one atomically
@@ -177,9 +177,12 @@ trait CompilerControl { self: Global =>
 
   /** Ask for a computation to be done quickly on the presentation compiler thread */
   def ask[A](op: () => A): A = scheduler doQuickly op
+}
 
   // ---------------- Interpreted exceptions -------------------
 
-  object FreshRunReq extends ControlThrowable
-  object ShutdownReq extends ControlThrowable
-}
+/** It has to stay top-level so that the PresentationCompilerThread may access it. */
+object FreshRunReq extends ControlThrowable
+
+/** It has to stay top-level so that the PresentationCompilerThread may access it. */
+object ShutdownReq extends ControlThrowable

@@ -71,7 +71,7 @@ self =>
   /** Is a background compiler run needed?
    *  Note: outOfDate is true as long as there is a background compile scheduled or going on.
    */
-  private var outOfDate = false
+  protected[interactive] var outOfDate = false
 
   /** Units compiled by a run with id >= minRunId are considered up-to-date  */
   private[interactive] var minRunId = 1
@@ -269,53 +269,22 @@ self =>
   // ----------------- The Background Runner Thread -----------------------
 
   /** The current presentation compiler runner */
-  @volatile protected var compileRunner = newRunnerThread
-  compileRunner.start()
+  @volatile protected[interactive] var compileRunner = newRunnerThread()
 
-  private var threadId = 1
+  private var threadId = 0
 
   /** Create a new presentation compiler runner.
    */
-  def newRunnerThread: Thread = new Thread("Scala Presentation Compiler V"+threadId) {
-    override def run() {
-      debugLog("starting new runner thread")
-      try {
-        while (true) {
-          logreplay("wait for more work", { scheduler.waitForMoreWork(); true })
-          pollForWork(NoPosition)
-          debugLog("got more work")
-          while (outOfDate) {
-            try {
-              backgroundCompile()
-              outOfDate = false
-            } catch {
-              case FreshRunReq =>
-            }
-            log.flush()
-          }
-        }
-      } catch {
-        case ex @ ShutdownReq =>
-          debugLog("exiting presentation compiler")
-          log.close()
-        case ex =>
-          log.flush()
-          outOfDate = false
-          compileRunner = newRunnerThread
-          compileRunner.start()
-          ex match {
-            case FreshRunReq =>   // This shouldn't be reported
-            case _ : ValidateException => // This will have been reported elsewhere
-            case _ => ex.printStackTrace(); informIDE("Fatal Error: "+ex)
-          }
-      }
-    }
+  def newRunnerThread(): Thread = {
     threadId += 1
+    compileRunner = new PresentationCompilerThread(this, threadId)
+    compileRunner.start()
+    compileRunner
   }
 
   /** Compile all loaded source files in the order given by `allSources`.
    */
-  private def backgroundCompile() {
+  protected[interactive] def backgroundCompile() {
     informIDE("Starting new presentation compiler type checking pass")
     reporter.reset()
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
