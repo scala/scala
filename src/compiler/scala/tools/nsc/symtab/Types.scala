@@ -8,6 +8,7 @@ package symtab
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
+import scala.ref.WeakReference
 import ast.TreeGen
 import util.{ Position, NoPosition }
 import util.Statistics._
@@ -150,7 +151,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = new mutable.WeakHashMap[List[Type], Type]
+  val intersectionWitness = new mutable.WeakHashMap[List[Type], WeakReference[Type]]
 
   private object gen extends {
     val global : Types.this.type = Types.this
@@ -1341,12 +1342,12 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       baseClassesCache
     }
 
-    def memo[A](op1: => A)(op2: Type => A) = intersectionWitness get parents match {
-      case Some(w) =>
-        if (w eq this) op1 else op2(w)
-      case none =>
-        intersectionWitness(parents) = this
+    def memo[A](op1: => A)(op2: Type => A) = {
+      (for (ref <- intersectionWitness.get(parents); w <- ref.get)
+         yield if (w eq this) op1 else op2(w)) getOrElse {
+        intersectionWitness(parents) = new WeakReference(this)
         op1
+      }
     }
 
     override def baseType(sym: Symbol): Type = {
