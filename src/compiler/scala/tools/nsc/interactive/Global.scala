@@ -114,7 +114,7 @@ self =>
       while(true)
         try {
           try {
-            pollForWork()
+            pollForWork(old.pos)
 	  } catch {
             case ex : Throwable =>
 	      if (context.unit != null) integrateNew()
@@ -176,7 +176,7 @@ self =>
    *  Then, poll for exceptions and execute them.
    *  Then, poll for work reload/typedTreeAt/doFirst commands during background checking.
    */
-  def pollForWork() {
+  def pollForWork(pos: Position) {
     scheduler.pollInterrupt() match {
       case Some(ir) =>
 	try {
@@ -185,7 +185,7 @@ self =>
 	} finally {
 	  activeLocks -= 1
 	}
-        pollForWork()
+        pollForWork(pos)
       case _ =>
     }
 
@@ -219,7 +219,7 @@ self =>
       logreplay("workitem", scheduler.nextWorkItem()) match {
         case Some(action) =>
           try {
-            debugLog("picked up work item: "+action)
+            debugLog("picked up work item at "+pos+": "+action)
             action()
             debugLog("done with work item: "+action)
           } finally {
@@ -282,7 +282,7 @@ self =>
       try {
         while (true) {
           logreplay("wait for more work", { scheduler.waitForMoreWork(); true })
-          pollForWork()
+          pollForWork(NoPosition)
           debugLog("got more work")
           while (outOfDate) {
             try {
@@ -359,7 +359,7 @@ self =>
    */
   def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
-    if (currentlyChecked == Some(unit) || unit.status > JustParsed) reset(unit)
+    //if (currentlyChecked == Some(unit) || unit.status > JustParsed) reset(unit) // not deeded for idempotent type checker phase
     if (unit.status == NotLoaded) parse(unit)
     currentlyChecked = Some(unit)
     currentTyperRun.typeCheck(unit)
@@ -412,9 +412,11 @@ self =>
     } catch {
       case CancelException =>
         ;
+/* Commented out. Typing should always cancel requests
       case ex @ FreshRunReq =>
         scheduler.postWorkItem(() => respondGradually(response)(op))
         throw ex
+*/
       case ex =>
         response raise ex
         throw ex
@@ -459,7 +461,7 @@ self =>
       unit.targetPos = pos
       try {
         debugLog("starting targeted type check")
-        newTyperRun()
+        //newTyperRun()   // not deeded for idempotent type checker phase
         typeCheck(unit)
         println("tree not found at "+pos)
         EmptyTree
@@ -477,7 +479,7 @@ self =>
     val unit = unitOf(source)
     if (forceReload) reset(unit)
     if (unit.status <= JustParsed) {
-      newTyperRun()
+      //newTyperRun()   // not deeded for idempotent type checker phase
       typeCheck(unit)
     }
     unit.body
@@ -678,10 +680,10 @@ self =>
   class TyperRun extends Run {
     // units is always empty
 
-    /** canRedefine is used to detect double declarations in multiple source files.
+    /** canRedefine is used to detect double declarations of classes and objects
+     *  in multiple source files.
      *  Since the IDE rechecks units several times in the same run, these tests
      *  are disabled by always returning true here.
-     *  (I think we don't need that anymore)
      */
     override def canRedefine(sym: Symbol) = true
 

@@ -173,10 +173,10 @@ trait Namers { self: Analyzer =>
       if (!(sym.isSourceMethod && sym.owner.isClass && !sym.owner.isPackageClass)) {
         var prev = scope.lookupEntry(sym.name)
         if ((prev ne null) && prev.owner == scope && conflict(sym, prev.sym)) {
-           doubleDefError(sym.pos, prev.sym)
-           sym setInfo ErrorType
-           scope unlink prev.sym // let them co-exist...
-           scope enter sym
+          doubleDefError(sym.pos, prev.sym)
+          sym setInfo ErrorType
+          scope unlink prev.sym // let them co-exist...
+          scope enter sym
         } else scope enter sym
       } else scope enter sym
     }
@@ -338,13 +338,32 @@ trait Namers { self: Analyzer =>
       } else setInfo(sym)(ltype)
     }
 
+    def enterIfNotThere(sym: Symbol) {
+      val scope = context.scope
+      var e = scope.lookupEntry(sym.name)
+      while ((e ne null) && (e.owner eq scope) && (e.sym ne sym)) e = e.tail
+      if (!((e ne null) && (e.owner eq scope))) context.scope.enter(sym)
+    }
+
     def enterSym(tree: Tree): Context = {
       def finishWith(tparams: List[TypeDef]) { enterSymFinishWith(tree, tparams) }
       def finish = finishWith(Nil)
       def sym = tree.symbol
-      if (sym != NoSymbol)
+      if (sym != NoSymbol) {
+        if (forInteractive && sym != null && sym.owner.isTerm) {
+          // this logic is needed in case typer was interrupted half way through and then comes
+          // back to do the tree again. In that case the definitions that were already
+          // attributed as well as any default parameters of such methods need to be
+          // re-entered in the current scope.
+          enterIfNotThere(sym)
+          if (sym.isLazy) {
+            val acc = sym.lazyAccessor
+            if (acc != NoSymbol) enterIfNotThere(acc)
+          }
+          defaultParametersOfMethod(sym) foreach enterIfNotThere
+        }
         return this.context
-
+      }
       try {
         val owner = context.owner
         tree match {

@@ -1798,23 +1798,9 @@ trait Typers extends Modes {
      */
     def typedBlock(block: Block, mode: Int, pt: Type): Block = {
       val syntheticPrivates = new ListBuffer[Symbol]
-      def enterIfNotThere(sym: Symbol) {
-        var e = context.scope.lookupEntry(sym.name)
-        while ((e ne null) && (e.sym ne sym)) e = e.tail
-        if (e eq null) context.scope.enter(sym)
-      }
       try {
         namer.enterSyms(block.stats)
-        for (stat <- block.stats) {
-          if (forInteractive && stat.isDef) {
-            // this logic is needed in case typer was interrupted half way through a block and then comes
-            // back to do the block again. In that case the definitions that were already attributed as well as any
-            // default parameters of such methods need to be re-entered in the current scope.
-            enterIfNotThere(stat.symbol)
-            defaultParametersOfMethod(stat.symbol) foreach enterIfNotThere
-          }
-          enterLabelDef(stat)
-        }
+        for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
           // This is very tricky stuff, because we are navigating
@@ -1888,6 +1874,13 @@ trait Typers extends Modes {
         error(x.pos, "_* may only come last")
 
       val pat1: Tree = typedPattern(cdef.pat, pattpe)
+
+      if (forInteractive) {
+        for (bind @ Bind(name, _) <- cdef.pat)
+          if (name.toTermName != nme.WILDCARD && bind.symbol != null && bind.symbol != NoSymbol)
+            namer.enterIfNotThere(bind.symbol)
+      }
+
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanClass.tpe)
       var body1: Tree = typed(cdef.body, pt)
