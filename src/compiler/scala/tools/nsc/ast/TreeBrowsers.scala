@@ -94,7 +94,7 @@ abstract class TreeBrowsers {
 
     /** Return the index'th child of parent */
     def getChild(parent: Any, index: Int): AnyRef =
-      packChildren(parent).drop(index).head
+      packChildren(parent)(index)
 
     /** Return the number of children this 'parent' has */
     def getChildCount(parent: Any): Int =
@@ -102,16 +102,16 @@ abstract class TreeBrowsers {
 
     /** Return the index of the given child */
     def getIndexOfChild(parent: Any, child: Any): Int =
-      packChildren(parent).dropWhile(c => c != child).length
+      packChildren(parent) indexOf child
 
     /** Return the root node */
     def getRoot(): AnyRef = program
 
     /** Test whether the given node is a leaf */
-    def isLeaf(node: Any): Boolean = packChildren(node).length == 0
+    def isLeaf(node: Any): Boolean = packChildren(node).isEmpty
 
     def removeTreeModelListener(l: TreeModelListener): Unit =
-      listeners filterNot (_ == l)
+      listeners = listeners filterNot (_ == l)
 
     /** we ignore this message for now */
     def valueForPathChanged(path: TreePath, newValue: Any) = ()
