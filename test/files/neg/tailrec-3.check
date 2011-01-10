@@ -1,0 +1,10 @@
+tailrec-3.scala:4: error: could not optimize @tailrec annotated method quux: it contains a recursive call not in tail position
+  @tailrec private def quux(xs: List[String]): List[String] = quux(quux(xs))
+                                                                       ^
+tailrec-3.scala:6: error: could not optimize @tailrec annotated method quux2: it contains a recursive call not in tail position
+    case x1 :: x2 :: rest => quux2(x1 :: quux2(rest))
+                                              ^
+tailrec-3.scala:10: error: could not optimize @tailrec annotated method quux3: it contains a recursive call not in tail position
+    case x :: xs if quux3(List("abc"))  => quux3(xs)
+                         ^
+three errors found
