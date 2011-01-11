@@ -413,7 +413,9 @@ self =>
   def reload(sources: List[SourceFile], response: Response[Unit]) {
     informIDE("reload" + sources)
     respond(response)(reloadSources(sources))
-    if (outOfDate) throw FreshRunReq // cancel background compile
+    if (outOfDate)
+      if (activeLocks == 0) throw FreshRunReq // cancel background compile
+      else scheduler.raise(FreshRunReq)  // cancel background compile on the next poll
     else outOfDate = true            // proceed normally and enable new background compile
   }
 
