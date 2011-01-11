@@ -440,7 +440,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
   /** The modifier typer which retypes with erased types. */
   class Eraser(context: Context) extends Typer(context) {
-
     /** Box `tree' of unboxed type */
     private def box(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
@@ -454,9 +453,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           case x          =>
             assert(x != ArrayClass)
             tree match {
-              case Apply(boxFun, List(arg)) if (isUnbox(tree.symbol)) =>
-                log("boxing an unbox: " + tree)
-                log("replying with " + arg)
+              /** Can't always remove a Box(Unbox(x)) combination because the process of boxing x
+               *  may lead to throwing an exception.
+               */
+              case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && isBoxedValueClass(arg.tpe.typeSymbol) =>
+                log("boxing an unbox: " + tree + " and replying with " + arg)
                 arg
               case _ =>
                 (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectClass.tpe

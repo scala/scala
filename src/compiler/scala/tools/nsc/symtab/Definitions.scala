@@ -629,6 +629,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     val unboxMethod = new HashMap[Symbol, Symbol]     // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol]       // Type -> Method
     val primitiveCompanions = new mutable.HashSet[Symbol]     // AnyVal -> Companion
+
+    lazy val boxedClassValues = boxedClass.values.toSet
+
     /** Maps a companion object like scala.Int to scala.runtime.Int. */
     lazy val runtimeCompanions = (primitiveCompanions map { sym =>
       sym -> getModule("scala.runtime." + sym.name)
@@ -798,6 +801,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol): Boolean =
       (sym eq UnitClass) || (boxedClass contains sym)
+
+    /** Is symbol a boxed value class, e.g. java.lang.Integer? */
+    def isBoxedValueClass(sym: Symbol): Boolean =
+      (sym eq BoxedUnitClass) || boxedClassValues(sym)
 
     /** If symbol is a value class or a boxed value class, return the value class: otherwise NoSymbol. */
     def unboxedValueClass(sym: Symbol): Symbol =
