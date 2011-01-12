@@ -17,7 +17,7 @@ final class ProcessIO(
   val processOutput: InputStream => Unit,
   val processError: InputStream => Unit
 ) {
-	def withInput(write: OutputStream => Unit): ProcessIO   = new ProcessIO(write, processOutput, processError)
-	def withOutput(process: InputStream => Unit): ProcessIO = new ProcessIO(writeInput, process, processError)
-	def withError(process: InputStream => Unit): ProcessIO  = new ProcessIO(writeInput, processOutput, process)
+  def withInput(write: OutputStream => Unit): ProcessIO   = new ProcessIO(write, processOutput, processError)
+  def withOutput(process: InputStream => Unit): ProcessIO = new ProcessIO(writeInput, process, processError)
+  def withError(process: InputStream => Unit): ProcessIO  = new ProcessIO(writeInput, processOutput, process)
 }

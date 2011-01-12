@@ -10,7 +10,7 @@ package scala.sys
 package process
 
 trait ProcessLogger {
-	def info(s: => String): Unit
-	def error(s: => String): Unit
-	def buffer[T](f: => T): T
+  def info(s: => String): Unit
+  def error(s: => String): Unit
+  def buffer[T](f: => T): T
 }
