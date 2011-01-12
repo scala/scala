@@ -46,8 +46,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val sourcedir     = StringSetting     ("-Xsourcedir", "directory", "(Requires -target:msil) Mirror source folder structure in output directory.", ".").dependsOn(target, "msil")
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions or assumptions.")
-  val elidebelow    = IntSetting        ("-Xelide-below", "Generate calls to @elidable-marked methods only if method priority is greater than argument.",
-                                                elidable.ASSERTION, None, elidable.byName.get(_))
+  val elidebelow    = IntSetting        ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
+                                                elidable.MINIMUM, None, elidable.byName get _)
   val noForwarders  = BooleanSetting    ("-Xno-forwarders", "Do not generate static forwarders in mirror classes.")
   val future        = BooleanSetting    ("-Xfuture", "Turn on future language features.")
   val genPhaseGraph = StringSetting     ("-Xgenerate-phase-graph", "file", "Generate the phase graphs (outputs .dot files) to fileX.dot.", "")
