@@ -87,7 +87,8 @@ class ConsoleRunner extends DirectRunner {
     def argNarrowsTests(x: String) = denotesTestSet(x) || denotesTestFile(x) || denotesTestDir(x)
 
     NestUI._verbose         = parsed isSet "--verbose"
-    fileManager.showDiff    = parsed isSet "--show-diff"
+    fileManager.showDiff    = true
+    // parsed isSet "--show-diff"
     fileManager.updateCheck = parsed isSet "--update-check"
     fileManager.showLog     = parsed isSet "--show-log"
     fileManager.failed      = parsed isSet "--failed"
@@ -205,7 +206,9 @@ class ConsoleRunner extends DirectRunner {
         resultsToStatistics(runTestsForFiles(files, kind))
       }
 
-    NestUI.verbose("Run sets: "+enabledSets)
+    if (enabledSets.nonEmpty)
+      NestUI.verbose("Run sets: "+enabledSets)
+
     val results = runTestsFileLists ::: (enabledSets map runTests)
 
     (results map (_._1) sum, results map (_._2) sum)

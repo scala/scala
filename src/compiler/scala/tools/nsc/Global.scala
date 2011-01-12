@@ -158,7 +158,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
     if (opt.richExes) Exceptional(t).force().context()
-    else util.stringFromWriter(t printStackTrace _)
+    else util.stackTraceString(t)
 
 // ------------ File interface -----------------------------------------
 

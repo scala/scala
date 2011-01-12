@@ -11,7 +11,7 @@ object Slave extends Actor {
     loop {
       react {
         case 'doWork =>
-          Console.err.println("Done")
+          Console.out.println("Done")
           reply('done)
       }
     }
@@ -50,7 +50,7 @@ object Test {
       Master.start()
       react {
         case Exit(from, reason) if (from == Slave) =>
-          Console.err.println(Slave.getState)
+          Console.out.println(Slave.getState)
       }
       } catch {
         case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>

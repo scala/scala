@@ -7,6 +7,8 @@ object Test {
   val baseargs = Array("-usejavacp", "-bootclasspath", basedir + "/scala-library.jar", "-cp", basedir + "/scala-compiler.jar")
 
   def main(args: Array[String]): Unit = {
-    Main process (baseargs ++ Array("-Xshow-phases"))
+    Console.withErr(Console.out) {
+      Main process (baseargs ++ Array("-Xshow-phases"))
+    }
   }
 }

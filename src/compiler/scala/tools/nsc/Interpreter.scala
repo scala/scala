@@ -1041,7 +1041,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
     private def bindUnexceptionally(t: Throwable) = {
       quietBind("lastException", classOf[Throwable], t)
-      stringFromWriter(t printStackTrace _)
+      stackTraceString(t)
     }
 
     /** load and run the code using reflection */

@@ -83,12 +83,12 @@ object StreamAppender {
 class StreamAppender(reader: BufferedReader, writer: PrintWriter) extends Runnable {
   override def run() = runAndMap(identity)
   private def lines() = Iterator continually reader.readLine() takeWhile (_ != null)
-  def closeAll() = {
-    reader.close()
-    writer.close()
-  }
 
   def runAndMap(f: String => String) =
     try lines() map f foreach (writer println _)
     catch { case e: IOException => e.printStackTrace() }
+    finally {
+      reader.close()
+      writer.close()
+    }
 }

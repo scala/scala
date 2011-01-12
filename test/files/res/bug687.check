@@ -6,6 +6,3 @@ method equals:(x$1: Any)Boolean in class Any
 have same type after erasure: (o: java.lang.Object)Boolean
   override def equals(o : Object) = false;
                ^
-
-nsc> 
-nsc> 

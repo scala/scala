@@ -12,7 +12,7 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileInputStream, FileOutputStream, BufferedReader,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
-import scala.tools.nsc.io.{ Path, Directory }
+import scala.tools.nsc.io.{ Path, Directory, File => SFile }
 import scala.collection.mutable.HashMap
 
 trait FileManager {
@@ -50,7 +50,9 @@ trait FileManager {
   var SCALAC_OPTS = PartestDefaults.scalacOpts
   var JAVA_OPTS   = PartestDefaults.javaOpts
   var timeout     = PartestDefaults.timeout
-  var oneTestTimeout = 15 * 60 * 1000 // okay, let's try 15
+  // how can 15 minutes not be enough? What are you doing, run/lisp.scala?
+  // You complete in 11 seconds on my machine.
+  var oneTestTimeout = 60 * 60 * 1000
 
   /** Only when --debug is given. */
   lazy val testTimings = new HashMap[String, Long]
@@ -64,8 +66,9 @@ trait FileManager {
     new LogFile(dir, fileBase + "-" + kind + ".log")
 
   def getLogFile(file: File, kind: String): LogFile = {
-    val dir = file.getParentFile
+    val dir      = file.getParentFile
     val fileBase = basename(file.getName)
+
     getLogFile(dir, fileBase, kind)
   }
 
@@ -75,38 +78,27 @@ trait FileManager {
   def overwriteFileWith(dest: File, file: File) =
     dest.isFile && copyFile(file, dest)
 
-
   def copyFile(from: File, dest: File): Boolean = {
-    def copyFile0(from: File, to: File): Boolean =
-      try {
-        val appender = StreamAppender(from, to)
-        appender.run()
-        appender.closeAll()
-        true
-      } catch {
-        case _: IOException => false
-      }
-
     if (from.isDirectory) {
       assert(dest.isDirectory, "cannot copy directory to file")
       val subDir:Directory = Path(dest) / Directory(from.getName)
       subDir.createDirectory()
-      from.listFiles.toList.forall(copyFile(_, subDir))
-    } else
-      copyFile0(from, if (dest.isDirectory) new File(dest, from.getName) else dest)
+      from.listFiles.toList forall (copyFile(_, subDir))
+    }
+    else {
+      val to = if (dest.isDirectory) new File(dest, from.getName) else dest
+
+      try {
+        SFile(to) writeAll SFile(from).slurp()
+        true
+      }
+      catch { case _: IOException => false }
+    }
   }
 
   def mapFile(file: File, suffix: String, dir: File, replace: String => String) {
-    val tmpFile = File.createTempFile("tmp", suffix, dir) // prefix required by API
+    val f = SFile(file)
 
-    val appender = StreamAppender(file, tmpFile)
-    appender.runAndMap(replace)
-    appender.closeAll()
-
-    val appender2 = StreamAppender(tmpFile, file)
-    appender2.run()
-    appender2.closeAll()
-
-    tmpFile.delete()
+    f.printlnAll(f.lines.toList map replace: _*)
   }
 }

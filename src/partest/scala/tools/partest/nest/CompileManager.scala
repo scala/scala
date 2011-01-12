@@ -37,10 +37,11 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   }
 
   def newSettings(out: Option[String]) = {
+    // val settings = new Settings(Console.err println _)
     val settings = new Settings(_ => ())
     settings.deprecation.value = true
     settings.nowarnings.value = false
-    settings.encoding.value = "ISO-8859-1"    // XXX why?
+    settings.encoding.value = "ISO-8859-1"
 
     val classpathElements = fileManager.LATEST_LIB :: out.toList
     settings.classpath.value = ClassPath.join(classpathElements: _*)

@@ -12,7 +12,7 @@ package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, File => JFile, Closeable => JCloseable }
+  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, File => JFile, Closeable => JCloseable }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 
@@ -105,6 +105,9 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
   def bufferedWriter(append: Boolean, codec: Codec): BufferedWriter =
     new BufferedWriter(writer(append, codec))
 
+  def printWriter(): PrintWriter = new PrintWriter(bufferedWriter(), true)
+  def printWriter(append: Boolean): PrintWriter = new PrintWriter(bufferedWriter(append), true)
+
   /** Creates a new file and writes all the Strings to it. */
   def writeAll(strings: String*): Unit = {
     val out = bufferedWriter()
@@ -121,6 +124,13 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
   def appendAll(strings: String*): Unit = {
     val out = bufferedWriter(append = true)
     try strings foreach (out write _)
+    finally out.close()
+  }
+
+  /** Calls println on each string (so it adds a newline in the PrintWriter fashion.) */
+  def printlnAll(strings: String*): Unit = {
+    val out = printWriter()
+    try strings foreach (out println _)
     finally out close
   }
 

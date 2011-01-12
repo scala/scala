@@ -58,4 +58,5 @@ package object util {
     ps.close()
     bs.toString()
   }
+  def stackTraceString(ex: Throwable): String = stringFromWriter(ex printStackTrace _)
 }
