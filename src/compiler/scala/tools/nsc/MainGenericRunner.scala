@@ -31,7 +31,7 @@ object MainGenericRunner {
 
   def main(args: Array[String]) {
     if (!process(args))
-      system.exit(1)
+      sys.exit(1)
   }
 
   def process(args: Array[String]): Boolean = {

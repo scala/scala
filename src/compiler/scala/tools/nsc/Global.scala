@@ -236,7 +236,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     // XXX: short term, but I can't bear to add another option.
     // scalac -Dscala.timings will make this true.
-    def timings       = system.props contains "scala.timings"
+    def timings       = sys.props contains "scala.timings"
 
     def debug           = settings.debug.value
     def deprecation     = settings.deprecation.value

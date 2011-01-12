@@ -199,6 +199,6 @@ object Tester {
     println("filenames = "+filenames)
     val files = filenames.toArray map (str => new BatchSourceFile(AbstractFile.getFile(str)): SourceFile)
     new Tester(args(0).toInt, files, settings).run()
-    system.exit(0)
+    sys.exit(0)
   }
 }

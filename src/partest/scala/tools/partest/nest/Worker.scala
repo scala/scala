@@ -144,7 +144,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   def currentFileElapsed = (System.currentTimeMillis - currentFileStart) / 1000
   def forceTimeout() = {
     println("Let's see what them threads are doing before I kill that test.")
-    system.allThreads foreach { t =>
+    sys.allThreads foreach { t =>
       println(t)
       t.getStackTrace foreach println
       println("")

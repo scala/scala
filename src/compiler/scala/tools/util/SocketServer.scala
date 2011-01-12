@@ -42,7 +42,7 @@ abstract class SocketServer
 
   def fatal(msg: String): Nothing = {
     System.err.println(msg)
-    system.exit(1)
+    sys.exit(1)
   }
 
   private def warn(msg: String) {

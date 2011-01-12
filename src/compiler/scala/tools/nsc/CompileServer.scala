@@ -36,7 +36,7 @@ class StandardCompileServer extends SocketServer {
   private def exit(code: Int): Nothing = {
     System.err.close()
     System.out.close()
-    system.exit(code)
+    sys.exit(code)
   }
 
   private val runtime = Runtime.getRuntime()

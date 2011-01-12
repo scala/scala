@@ -62,9 +62,9 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
 
     log("Executing ant task scalacfork, origin: %s".format(originOfThis), Project.MSG_VERBOSE)
 
-    val compilerPath = this.compilerPath getOrElse system.error("Mandatory attribute 'compilerpath' is not set.")
-    val sourceDir = this.sourceDir getOrElse system.error("Mandatory attribute 'srcdir' is not set.")
-    val destinationDir = this.destinationDir getOrElse system.error("Mandatory attribute 'destdir' is not set.")
+    val compilerPath = this.compilerPath getOrElse sys.error("Mandatory attribute 'compilerpath' is not set.")
+    val sourceDir = this.sourceDir getOrElse sys.error("Mandatory attribute 'srcdir' is not set.")
+    val destinationDir = this.destinationDir getOrElse sys.error("Mandatory attribute 'destdir' is not set.")
 
     val settings = new Settings
     settings.d = destinationDir
@@ -114,7 +114,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
     val res = execWithArgFiles(java, paths)
 
     if (failOnError && res != 0)
-      system.error("Compilation failed because of an internal compiler error;"+
+      sys.error("Compilation failed because of an internal compiler error;"+
             " see the error output for details.")
   }
 }

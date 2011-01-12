@@ -11,7 +11,7 @@ package scala
 import scala.collection.immutable
 import collection.JavaConverters._
 
-/** The package object `scala.system` contains methods for reading
+/** The package object `scala.sys` contains methods for reading
  *  and altering core aspects of the virtual machine as well as the
  *  world outside of it.
  *
@@ -19,7 +19,7 @@ import collection.JavaConverters._
  *  @version 2.9
  *  @since   2.9
  */
-package object system {
+package object sys {
   /** Throw a new RuntimeException with the supplied message.
    *
    *  @return   Nothing.
@@ -50,7 +50,7 @@ package object system {
   /** A bidirectional, mutable Map representing the current system Properties.
    *
    *  @return   a PropertiesMap.
-   *  @see      `scala.system.PropertiesMap`
+   *  @see      `scala.sys.PropertiesMap`
    */
   def props: PropertiesMap = new PropertiesMap
 

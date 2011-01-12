@@ -45,7 +45,7 @@ object Scheduler extends DelegatingScheduler {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].snapshot()
     } else
-      system.error("scheduler does not implement snapshot")
+      sys.error("scheduler does not implement snapshot")
   }
 
   /* Only <code>ForkJoinScheduler</code> implements this method.
@@ -55,7 +55,7 @@ object Scheduler extends DelegatingScheduler {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].restart()
     } else
-      system.error("scheduler does not implement restart")
+      sys.error("scheduler does not implement restart")
   }
 
 }

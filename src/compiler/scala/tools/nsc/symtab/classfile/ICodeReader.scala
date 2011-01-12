@@ -360,12 +360,12 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.pop         => code.emit(DROP(INT))   // any 1-word type would do
         case JVM.pop2        => code.emit(DROP(LONG))  // any 2-word type would do
         case JVM.dup         => code.emit(DUP(ObjectReference)) // TODO: Is the kind inside DUP ever needed?
-        case JVM.dup_x1      => code.emit(DUP_X1)      // system.error("Unsupported JVM bytecode: dup_x1")
-        case JVM.dup_x2      => code.emit(DUP_X2)      // system.error("Unsupported JVM bytecode: dup_x2")
+        case JVM.dup_x1      => code.emit(DUP_X1)      // sys.error("Unsupported JVM bytecode: dup_x1")
+        case JVM.dup_x2      => code.emit(DUP_X2)      // sys.error("Unsupported JVM bytecode: dup_x2")
         case JVM.dup2        => code.emit(DUP(LONG))   // TODO: Is the kind inside DUP ever needed?
-        case JVM.dup2_x1     => code.emit(DUP2_X1)     // system.error("Unsupported JVM bytecode: dup2_x1")
-        case JVM.dup2_x2     => code.emit(DUP2_X2)     // system.error("Unsupported JVM bytecode: dup2_x2")
-        case JVM.swap        => system.error("Unsupported JVM bytecode: swap")
+        case JVM.dup2_x1     => code.emit(DUP2_X1)     // sys.error("Unsupported JVM bytecode: dup2_x1")
+        case JVM.dup2_x2     => code.emit(DUP2_X2)     // sys.error("Unsupported JVM bytecode: dup2_x2")
+        case JVM.swap        => sys.error("Unsupported JVM bytecode: swap")
 
         case JVM.iadd        => code.emit(CALL_PRIMITIVE(Arithmetic(ADD, INT)))
         case JVM.ladd        => code.emit(CALL_PRIMITIVE(Arithmetic(ADD, LONG)))
@@ -452,8 +452,8 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.if_acmpne   => code.emit(LCJUMP(parseJumpTarget, pc + size, NE, ObjectReference))
 
         case JVM.goto        => emit(LJUMP(parseJumpTarget))
-        case JVM.jsr         => system.error("Cannot handle jsr/ret")
-        case JVM.ret         => system.error("Cannot handle jsr/ret")
+        case JVM.jsr         => sys.error("Cannot handle jsr/ret")
+        case JVM.ret         => sys.error("Cannot handle jsr/ret")
         case JVM.tableswitch =>
           val padding = if ((pc + size) % 4 != 0) 4 - ((pc + size) % 4) else 0
           size += padding
@@ -578,14 +578,14 @@ abstract class ICodeReader extends ClassfileParser {
             case JVM.fstore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, FLOAT)));  size += 2
             case JVM.dstore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, DOUBLE))); size += 2
             case JVM.astore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, ObjectReference))); size += 2
-            case JVM.ret => system.error("Cannot handle jsr/ret")
+            case JVM.ret => sys.error("Cannot handle jsr/ret")
             case JVM.iinc =>
               size += 4
               val local = code.getLocal(in.nextChar, INT)
               code.emit(CONSTANT(Constant(in.nextChar)))
               code.emit(CALL_PRIMITIVE(Arithmetic(ADD, INT)))
               code.emit(STORE_LOCAL(local))
-            case _ => system.error("Invalid 'wide' operand")
+            case _ => sys.error("Invalid 'wide' operand")
           }
 
         case JVM.multianewarray =>
@@ -598,9 +598,9 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.ifnull    => code.emit(LCZJUMP(parseJumpTarget, pc + size, EQ, ObjectReference))
         case JVM.ifnonnull => code.emit(LCZJUMP(parseJumpTarget, pc + size, NE, ObjectReference))
         case JVM.goto_w    => code.emit(LJUMP(parseJumpTargetW))
-        case JVM.jsr_w     => system.error("Cannot handle jsr/ret")
+        case JVM.jsr_w     => sys.error("Cannot handle jsr/ret")
 
-//        case _ => system.error("Unknown bytecode")
+//        case _ => sys.error("Unknown bytecode")
       }
       pc += size
     }

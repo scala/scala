@@ -42,7 +42,7 @@ object Test {
 object Functions {
   object Set1 {
     def f[T, R](x: FF1[T, R]) = ()
-    def h[T, R] : FF1[T, R] = system.error("")
+    def h[T, R] : FF1[T, R] = sys.error("")
 
     def ff1 = f[B, B](h[A, A]) // fail
     def ff2 = f[B, B](h[B, A]) // fail
@@ -56,7 +56,7 @@ object Functions {
   }
   object Set2 {
     def f[T, R](x: FF2[T, R]) = ()
-    def h[T, R] : FF2[T, R] = system.error("")
+    def h[T, R] : FF2[T, R] = sys.error("")
 
     def ff1 = f[B, B](h[A, A]) // suggest
     def ff2 = f[B, B](h[B, A]) // suggest

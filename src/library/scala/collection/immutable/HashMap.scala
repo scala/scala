@@ -452,7 +452,7 @@ time { mNew.iterator.foreach( p => ()) }
         new HashTrieMap[A, B1](this.bitmap | that.bitmap, merged, totalelems)
       case hm: HashMapCollision1[_, _] => that.merge0(this, level, merger)
       case hm: HashMap[_, _] => this
-      case _ => system.error("section supposed to be unreachable.")
+      case _ => sys.error("section supposed to be unreachable.")
     }
   }
 

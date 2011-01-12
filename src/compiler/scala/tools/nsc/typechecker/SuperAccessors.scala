@@ -39,7 +39,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
 
     private def accDefBuf(clazz: Symbol) =
-      accDefs collectFirst { case (`clazz`, buf) => buf } getOrElse system.error("no acc def buf for "+clazz)
+      accDefs collectFirst { case (`clazz`, buf) => buf } getOrElse sys.error("no acc def buf for "+clazz)
 
     private def transformArgs(args: List[Tree], params: List[Symbol]) =
       ((args, params).zipped map { (arg, param) =>
@@ -406,7 +406,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *  self type is a Java class, and a protected accessor is needed, we issue
      *  an error. If the self type is a Scala class, we don't add an accessor.
      *  An accessor is not needed if the access boundary is larger than the
-     *  enclosing package, since that translates to 'public' on the host system.
+     *  enclosing package, since that translates to 'public' on the host sys.
      *  (as Java has no real package nesting).
      *
      * If the access happens inside a 'trait', access is more problematic since

@@ -75,7 +75,7 @@ abstract class Relation extends AnyRef with Iterable[Tuple] {
         resultNext = result.next()
         newTuple
       }
-      else system.error("next on empty iterator")
+      else sys.error("next on empty iterator")
     }
   }
 

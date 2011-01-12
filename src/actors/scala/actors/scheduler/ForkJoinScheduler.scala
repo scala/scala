@@ -160,9 +160,9 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
   def restart() {
     synchronized {
       if (!snapshoting)
-        system.error("snapshot has not been invoked")
+        sys.error("snapshot has not been invoked")
       else if (isActive)
-        system.error("scheduler is still active")
+        sys.error("scheduler is still active")
       else
         snapshoting = false
 

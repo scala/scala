@@ -301,7 +301,7 @@ abstract class TailCalls extends Transform {
             rewriteApply(fun, fun, Nil, args)
 
         case Alternative(_) | Star(_) | Bind(_, _) =>
-          system.error("We should've never gotten inside a pattern")
+          sys.error("We should've never gotten inside a pattern")
         case EmptyTree | Super(_, _) | This(_) | Select(_, _) | Ident(_) | Literal(_) | Function(_, _) | TypeTree() =>
           tree
         case _ =>

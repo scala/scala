@@ -45,7 +45,7 @@ public class ThreadHelpers {
 
     /**
      * Abstraction of the exception handler which receives notifications of
-     * exceptions occurred possibly in various parts of the system. Exception
+     * exceptions occurred possibly in various parts of the sys. Exception
      * handlers present attractive approach to exception handling in multi-threaded
      * systems, as they can handle exceptions that occurred in different threads.
      * <p>

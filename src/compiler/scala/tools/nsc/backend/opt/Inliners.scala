@@ -296,7 +296,7 @@ abstract class Inliners extends SubComponent {
       def isMonadic     = isMonadicMethod(sym)
 
       def handlers      = m.exh
-      def blocks        = if (m.code eq null) system.error("blocks = null + " + m) else m.code.blocks
+      def blocks        = if (m.code eq null) sys.error("blocks = null + " + m) else m.code.blocks
       def locals        = m.locals
       def length        = blocks.length
       def openBlocks    = blocks filterNot (_.closed)

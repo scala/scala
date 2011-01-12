@@ -301,7 +301,7 @@ abstract class CopyPropagation {
                   out.bindings += (LocalVar(local) -> v)
               }
             case Nil =>
-              system.error("Incorrect icode in " + method + ". Expecting something on the stack.")
+              sys.error("Incorrect icode in " + method + ". Expecting something on the stack.")
           }
           out.stack = out.stack drop 1;
 

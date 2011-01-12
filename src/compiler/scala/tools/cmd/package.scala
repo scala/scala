@@ -12,7 +12,7 @@ package object cmd {
 
   def runAndExit(body: => Unit): Nothing = {
     body
-    system.exit(0)
+    sys.exit(0)
   }
 
   def toOpt(s: String)              = if (s startsWith "--") s else "--" + s

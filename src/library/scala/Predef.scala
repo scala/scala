@@ -58,14 +58,14 @@ object Predef extends LowPriorityImplicits {
 
   // Deprecated
 
-  @deprecated("Use system.error(message) instead")
-  def error(message: String): Nothing = system.error(message)
+  @deprecated("Use sys.error(message) instead")
+  def error(message: String): Nothing = sys.error(message)
 
-  @deprecated("Use system.exit() instead")
-  def exit(): Nothing = system.exit()
+  @deprecated("Use sys.exit() instead")
+  def exit(): Nothing = sys.exit()
 
-  @deprecated("Use system.exit(status) instead")
-  def exit(status: Int): Nothing = system.exit(status)
+  @deprecated("Use sys.exit(status) instead")
+  def exit(status: Int): Nothing = sys.exit(status)
 
   @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead")
   def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)

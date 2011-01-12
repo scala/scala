@@ -630,7 +630,7 @@ self =>
         new ScanToArray(left, z, op, targetarr),
         new ScanToArray(right, z, op, targetarr)
       )
-      case _ => system.error("Can only split scan tree internal nodes.")
+      case _ => sys.error("Can only split scan tree internal nodes.")
     }
     def shouldSplitFurther = tree match {
       case ScanNode(_, _) => true

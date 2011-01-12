@@ -19,12 +19,12 @@ trait ReflectionCompletion extends CompletionAware {
   def reflectName(m: AccessibleObject) = m match {
     case x: reflect.Method  => x.getName
     case x: reflect.Field   => x.getName
-    case x                  => system.error(x.toString)
+    case x                  => sys.error(x.toString)
   }
   def isPublic(m: AccessibleObject) = m match {
     case x: reflect.Method  => Modifier isPublic x.getModifiers
     case x: reflect.Field   => Modifier isPublic x.getModifiers
-    case x                  => system.error(x.toString)
+    case x                  => sys.error(x.toString)
   }
 
   lazy val (staticMethods, instanceMethods) = clazz.getMethods.toList partition (x => isStatic(x.getModifiers))

@@ -79,6 +79,6 @@ object ScalaDoc {
 
   def main(args: Array[String]): Unit = {
     process(args)
-    system.exit(if (reporter.hasErrors) 1 else 0)
+    sys.exit(if (reporter.hasErrors) 1 else 0)
   }
 }

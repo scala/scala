@@ -684,7 +684,7 @@ abstract class TreeBrowsers {
                         toDocument(thistpe) :/: ", " :/:
                         toDocument(supertpe) ::")"))
       case _ =>
-        system.error("Unknown case: " + t.toString() +", "+ t.getClass)
+        sys.error("Unknown case: " + t.toString() +", "+ t.getClass)
     }
   }
 

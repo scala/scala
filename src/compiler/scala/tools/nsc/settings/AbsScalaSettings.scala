@@ -32,7 +32,7 @@ trait AbsScalaSettings {
   /** **/
   abstract class SettingGroup(val prefix: String) extends AbsSetting {
     def name = prefix
-    def helpDescription: String = system.error("todo")
+    def helpDescription: String = sys.error("todo")
     def unparse: List[String] = List(name)
   }
 }

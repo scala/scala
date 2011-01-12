@@ -48,7 +48,7 @@ trait ServerConsole extends Thread {
     }
     terminate()
     println("Server exited ("+mkTimeString(currentTime - startTime)+")")
-    system.exit(0)
+    sys.exit(0)
   }
 
   protected def trace(msg: String) {

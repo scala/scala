@@ -16,7 +16,7 @@ The widget class hierarchy loosely resembles that of Java Swing. The main differ
   child component. In the end, it is not more work to move all children to a newly created 
   panel.)
    
-  The event system. TODO
+  The event sys. TODO
   
 
 The library comprises three main packages:

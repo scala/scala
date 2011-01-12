@@ -112,6 +112,12 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
     finally out close
   }
 
+  def writeBytes(bytes: Array[Byte]): Unit = {
+    val out = bufferedOutput()
+    try out write bytes
+    finally out close
+  }
+
   def appendAll(strings: String*): Unit = {
     val out = bufferedWriter(append = true)
     try strings foreach (out write _)

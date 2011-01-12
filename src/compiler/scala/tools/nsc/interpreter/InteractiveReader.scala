@@ -23,7 +23,7 @@ trait InteractiveReader {
 
   def readLine(prompt: String): String = {
     def handler: Catcher[String] = {
-      case e: ClosedByInterruptException          => system.error("Reader closed by interrupt.")
+      case e: ClosedByInterruptException          => sys.error("Reader closed by interrupt.")
       // Terminal has to be re-initialized after SIGSTP or up arrow etc. stop working.
       case e: IOException if restartSystemCall(e) => reset() ; readLine(prompt)
     }

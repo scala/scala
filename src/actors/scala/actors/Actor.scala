@@ -543,7 +543,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
         received = Some(TIMEOUT)
         senders = this :: senders
       } else
-        system.error("unhandled timeout")
+        sys.error("unhandled timeout")
     }
 
     var done = false

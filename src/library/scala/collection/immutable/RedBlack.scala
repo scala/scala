@@ -98,7 +98,7 @@ abstract class RedBlack[A] extends Serializable {
       }
       def subl(t: Tree[B]) = t match {
         case BlackTree(x, xv, a, b) => RedTree(x, xv, a, b)
-        case _ => system.error("Defect: invariance violation; expected black, got "+t)
+        case _ => sys.error("Defect: invariance violation; expected black, got "+t)
       }
       def balLeft(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
         case (RedTree(y, yv, a, b), c) =>
@@ -107,7 +107,7 @@ abstract class RedBlack[A] extends Serializable {
           balance(x, xv, bl, RedTree(y, yv, a, b))
         case (bl, RedTree(y, yv, BlackTree(z, zv, a, b), c)) =>
           RedTree(z, zv, BlackTree(x, xv, bl, a), balance(y, yv, b, subl(c)))
-        case _ => system.error("Defect: invariance violation at "+right)
+        case _ => sys.error("Defect: invariance violation at "+right)
       }
       def balRight(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
         case (a, RedTree(y, yv, b, c)) =>
@@ -116,7 +116,7 @@ abstract class RedBlack[A] extends Serializable {
           balance(x, xv, RedTree(y, yv, a, b), bl)
         case (RedTree(y, yv, a, BlackTree(z, zv, b, c)), bl) =>
           RedTree(z, zv, balance(y, yv, subl(a), b), BlackTree(x, xv, c, bl))
-        case _ => system.error("Defect: invariance violation at "+left)
+        case _ => sys.error("Defect: invariance violation at "+left)
       }
       def delLeft = left match {
         case _: BlackTree[_] => balLeft(key, value, left.del(k), right)
@@ -237,7 +237,7 @@ abstract class RedBlack[A] extends Serializable {
         case BlackTree(_, _, _, _) :: tail =>
           if (depth == 1) zipper else findDepth(tail, depth - 1)
         case _ :: tail => findDepth(tail, depth)
-        case Nil => system.error("Defect: unexpected empty zipper while computing range")
+        case Nil => sys.error("Defect: unexpected empty zipper while computing range")
       }
 
       // Blackening the smaller tree avoids balancing problems on union;

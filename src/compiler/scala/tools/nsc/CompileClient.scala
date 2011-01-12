@@ -114,7 +114,7 @@ class StandardCompileClient {
   }
 
   def main(args: Array[String]): Unit =
-    system.exit(try main0(args) catch { case e: Exception => 1 })
+    sys.exit(try main0(args) catch { case e: Exception => 1 })
 }
 
 

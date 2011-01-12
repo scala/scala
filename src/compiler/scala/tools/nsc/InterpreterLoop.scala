@@ -117,7 +117,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   private def installSigIntHandler() {
     def onExit() {
       Console.println("") // avoiding "shell prompt in middle of line" syndrome
-      system.exit(1)
+      sys.exit(1)
     }
     ignoring(classOf[Exception]) {
       SignalManager("INT") = {

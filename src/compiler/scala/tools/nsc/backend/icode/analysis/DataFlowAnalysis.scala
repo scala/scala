@@ -82,7 +82,7 @@ trait DataFlowAnalysis[L <: SemiLattice] {
       Console.println("in: " + in.mkString("", "\n", ""))
       Console.println("out: " + out.mkString("", "\n", ""))
       e.printStackTrace
-      system.error("Could not find element " + e.getMessage)
+      sys.error("Could not find element " + e.getMessage)
   }
 
   /** ...

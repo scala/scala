@@ -34,7 +34,7 @@ object MainTokenMetric {
   }
 
   def process(args: Array[String]) {
-    val settings = new Settings(system.error)
+    val settings = new Settings(sys.error)
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
     try {
@@ -50,7 +50,7 @@ object MainTokenMetric {
 
   def main(args: Array[String]) {
     process(args)
-    system.exit(if (reporter.hasErrors) 1 else 0)
+    sys.exit(if (reporter.hasErrors) 1 else 0)
   }
 
 }

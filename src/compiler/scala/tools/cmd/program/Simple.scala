@@ -66,8 +66,8 @@ object Simple {
    *  inaccessible due to the overriding var.
    */
   trait Ticket2338WontFixWorkaround {
-    def enforceArity_=(x: Boolean): Unit = system.error("unreachable")
-    def onlyKnownOptions_=(x: Boolean): Unit = system.error("unreachable")
+    def enforceArity_=(x: Boolean): Unit = sys.error("unreachable")
+    def onlyKnownOptions_=(x: Boolean): Unit = sys.error("unreachable")
   }
 
   /** Configurability simplicity achieved by turning defs into vars and letting

@@ -62,7 +62,7 @@ import java.rmi.server.UnicastRemoteObject
  *           Thread.sleep(Long.MAX_VALUE)
  *         } <b>catch</b> {
  *           <b>case</b> e: InterruptedException => // do nothing
- *           <b>case</b> e: Throwable => e.printStackTrace(); system.exit(1)
+ *           <b>case</b> e: Throwable => e.printStackTrace(); sys.exit(1)
  *         }
  *       } while (<b>true</b>)
  *     }
@@ -115,14 +115,14 @@ object RMIDelegate {
     if (args.length > 0) {
       if (args(0) equals "-help") {
         println("Usage: rmidelegate <options> <port>")
-        system.exit(0)
+        sys.exit(0)
       }
       try {
         port = args(0).toInt
       } catch {
         case e: NumberFormatException =>
           println("Usage: rmidelegate <options> <port>")
-          system.exit(1)
+          sys.exit(1)
       }
       val opts = args filter (_ startsWith "-J-D")
       for (opt <- opts) {
@@ -149,7 +149,7 @@ object RMIDelegate {
          // do nothing
        case e: Throwable =>
          e.printStackTrace()
-         system.exit(1)
+         sys.exit(1)
       }
     } while (true)
   }

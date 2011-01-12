@@ -35,7 +35,7 @@ abstract class ValidatingMarkupHandler extends MarkupHandler with Logged {
     val res = decl.contentModel.validate(ns);
     Console.println("res = "+res);
     if(!res)
-      //system.error("invalid!");
+      //sys.error("invalid!");
   }
   */
 

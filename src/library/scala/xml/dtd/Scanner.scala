@@ -44,7 +44,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   final def next = if (it.hasNext) c = it.next else c = ENDCH
 
   final def acc(d: Char) {
-    if (c == d) next else system.error("expected '"+d+"' found '"+c+"' !");
+    if (c == d) next else sys.error("expected '"+d+"' found '"+c+"' !");
   }
 
   final def accS(ds: Seq[Char]) { ds foreach acc }
@@ -65,7 +65,7 @@ class Scanner extends Tokens with parsing.TokenTests {
       case ENDCH => END
       case _     =>
         if (isNameStart(c)) name; // NAME
-        else system.error("unexpected character:" + c)
+        else sys.error("unexpected character:" + c)
     }
 
   final def name = {

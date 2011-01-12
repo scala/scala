@@ -62,7 +62,7 @@ class ConsoleFileManager extends FileManager {
 
   if (!srcDir.isDirectory) {
     NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
-    system.exit(1)
+    sys.exit(1)
   }
 
   CLASSPATH = {

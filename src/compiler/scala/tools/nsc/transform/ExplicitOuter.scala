@@ -450,7 +450,7 @@ abstract class ExplicitOuter extends InfoTransform
           if (sym.isClassConstructor) {
             rhs match {
               case Literal(_) =>
-                system.error("unexpected case") //todo: remove
+                sys.error("unexpected case") //todo: remove
               case _ =>
                 val clazz = sym.owner
                 val vparamss1 =

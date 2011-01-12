@@ -126,7 +126,7 @@ public abstract class BindingFlags {
      * throws an exception if the caller supplies a non-null Binder object,
      * since that implies that the caller is supplying BindToXXX
      * implementations that will pick the appropriate method.
-     * Reflection models the accessibility rules of the common type system.
+     * Reflection models the accessibility rules of the common type sys.
      * For example, if the caller is in the same assembly, the caller
      * does not need special permissions for internal members. Otherwise,
      * the caller needs ReflectionPermission. This is consistent with

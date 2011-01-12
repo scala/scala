@@ -120,7 +120,7 @@ object Main extends AnyRef with EvalLoop {
 
   def main(args: Array[String]) {
     process(args)
-    system exit (if (reporter.hasErrors) 1 else 0)
+    sys.exit(if (reporter.hasErrors) 1 else 0)
   }
 
 }

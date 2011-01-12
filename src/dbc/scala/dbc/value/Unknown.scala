@@ -16,7 +16,7 @@ abstract class Unknown extends Value {
 
   val dataType: datatype.Unknown;
 
-  def sqlString = system.error("An 'ANY' value cannot be represented.");
+  def sqlString = sys.error("An 'ANY' value cannot be represented.");
 
 }
 

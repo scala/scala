@@ -90,8 +90,8 @@ class Same extends ScalaMatchingTask {
 
   /** Tests if all mandatory attributes are set and valid. */
   private def validateAttributes = {
-    if (origin.isEmpty) system.error("Mandatory attribute 'dir' is not set.")
-    if (destination.isEmpty) system.error("Mandatory attribute 'todir' is not set.")
+    if (origin.isEmpty) sys.error("Mandatory attribute 'dir' is not set.")
+    if (destination.isEmpty) sys.error("Mandatory attribute 'todir' is not set.")
   }
 
   private def reportDiff(f1: File, f2: File) = {
@@ -150,7 +150,7 @@ class Same extends ScalaMatchingTask {
     }
     if (!allEqualNow)
       if (failing)
-        system.error("There were differences between '" + origin.get + "' and '" + destination.get + "'")
+        sys.error("There were differences between '" + origin.get + "' and '" + destination.get + "'")
       else
         log("There were differences between '" + origin.get + "' and '" + destination.get + "'")
     else {

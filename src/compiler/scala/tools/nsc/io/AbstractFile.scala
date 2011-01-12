@@ -61,7 +61,7 @@ object AbstractFile {
  * <p>
  *   This class and its children serve to unify handling of files and
  *   directories. These files and directories may or may not have some
- *   real counter part within the file system. For example, some file
+ *   real counter part within the file sys. For example, some file
  *   handles reference files within a zip archive or virtual ones
  *   that exist only in memory.
  * </p>

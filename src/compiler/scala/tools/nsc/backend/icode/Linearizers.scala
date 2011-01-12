@@ -191,7 +191,7 @@ trait Linearizers {
    */
   class DumpLinearizer extends Linearizer {
     def linearize(m: IMethod): List[BasicBlock] = m.code.blocks.toList
-    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = system.error("not implemented")
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = sys.error("not implemented")
   }
 
   /** The MSIL linearizer is used only for methods with at least one exception handler.
@@ -328,7 +328,7 @@ trait Linearizers {
     }
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
-      system.error("not implemented")
+      sys.error("not implemented")
     }
   }
 }

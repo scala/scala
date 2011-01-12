@@ -118,7 +118,7 @@ private[immutable] abstract class IntMapIterator[V, T](it : IntMap[V]) extends I
       case t@IntMap.Tip(_, _) => valueOf(t);
       // This should never happen. We don't allow IntMap.Nil in subtrees of the IntMap
       // and don't return an IntMapIterator for IntMap.Nil.
-      case IntMap.Nil => system.error("Empty maps not allowed as subtrees");
+      case IntMap.Nil => sys.error("Empty maps not allowed as subtrees");
     }
 }
 
@@ -254,8 +254,8 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
 
   final override def apply(key : Int) : T = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key);
-    case IntMap.Tip(key2, value) => if (key == key2) value else system.error("Key not found");
-    case IntMap.Nil => system.error("key not found");
+    case IntMap.Tip(key2, value) => if (key == key2) value else sys.error("Key not found");
+    case IntMap.Nil => sys.error("key not found");
   }
 
   def + [S >: T] (kv: (Int, S)): IntMap[S] = updated(kv._1, kv._2)
@@ -417,7 +417,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   final def firstKey : Int = this match {
     case Bin(_, _, l, r) => l.firstKey;
     case Tip(k, v) => k;
-    case IntMap.Nil => system.error("Empty set")
+    case IntMap.Nil => sys.error("Empty set")
   }
 
   /**
@@ -426,6 +426,6 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   final def lastKey : Int = this match {
     case Bin(_, _, l, r) => r.lastKey;
     case Tip(k, v) => k;
-    case IntMap.Nil => system.error("Empty set")
+    case IntMap.Nil => sys.error("Empty set")
   }
 }
