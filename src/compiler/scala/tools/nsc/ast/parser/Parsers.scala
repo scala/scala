@@ -2801,6 +2801,7 @@ self =>
               ts += makePackaging(start, pkg, topstats())
             } else {
               ts += inBraces(makePackaging(start, pkg, topStatSeq()))
+              acceptStatSepOpt()
               ts ++= topStatSeq()
             }
           }

@@ -30,15 +30,17 @@ class Loader(val size: Int, val parallelism: Int, val runWhat: String) extends B
 
   reset
 
+  val wa = Dictionary.wordarray ++ Dictionary.wordarray ++ Dictionary.wordarray
+
   def runseq {
     val m = Map(
       '2' -> "ABC", '3' -> "DEF", '4' -> "GHI", '5' -> "JKL",
       '6' -> "MNO", '7' -> "PQRS", '8' -> "TUV", '9' -> "WXYZ"
     )
     val charCode: Map[Char, Char] = for ((digit, letters) <- m; letter <- letters) yield letter -> digit
-    def wordCode(word: String): String = word.toUpperCase map charCode
+    def wordCode(word: String): String = (word.toUpperCase.toList map charCode).toString
 
-    Dictionary.wordarray groupBy wordCode
+    wa groupBy wordCode
   }
 
   def runpar {
@@ -47,9 +49,9 @@ class Loader(val size: Int, val parallelism: Int, val runWhat: String) extends B
       '6' -> "MNO", '7' -> "PQRS", '8' -> "TUV", '9' -> "WXYZ"
     )
     val charCode: Map[Char, Char] = for ((digit, letters) <- m; letter <- letters) yield letter -> digit
-    def wordCode(word: String): String = word.toUpperCase map charCode
+    def wordCode(word: String): String = (word.toUpperCase.toList map charCode).toString
 
-    Dictionary.wordarray.par groupBy wordCode
+    wa.par groupBy wordCode
   }
 
   def reset = runWhat match {
