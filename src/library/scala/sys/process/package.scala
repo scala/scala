@@ -11,7 +11,8 @@ package scala.sys
 package object process extends ProcessImplicits {
   // These are in a nested object instead of at the package level
   // due to the issues described in tickets #3160 and #3836.
-  private[process] object processAliases {
+  private[process] object processInternal {
+    type =?>[-A, +B]     = PartialFunction[A, B]
     type Closeable       = java.io.Closeable
     type File            = java.io.File
     type IOException     = java.io.IOException
@@ -21,5 +22,13 @@ package object process extends ProcessImplicits {
     type OutputStream    = java.io.OutputStream
     type SyncVar[T]      = scala.concurrent.SyncVar[T]
     type URL             = java.net.URL
+
+    def onInterrupt[T](handler: => T): Throwable =?> T = {
+      case _: InterruptedException => handler
+    }
+
+    def ioFailure[T](handler: IOException => T): Throwable =?> T = {
+      case e: IOException => handler(e)
+    }
   }
 }

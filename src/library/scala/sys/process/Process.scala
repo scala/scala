@@ -9,7 +9,7 @@
 package scala.sys
 package process
 
-import processAliases._
+import processInternal._
 import ProcessBuilder._
 
 /** Represents a process that is running or has finished running.
@@ -23,7 +23,7 @@ trait Process {
 }
 
 /** Methods for constructing simple commands that can then be combined. */
-object Process extends ProcessCreation { }
+object Process extends ProcessImpl with ProcessCreation { }
 
 trait ProcessCreation {
 	def apply(command: String): ProcessBuilder                         = apply(command, None)
@@ -50,7 +50,7 @@ trait ProcessCreation {
 
 	/** create ProcessBuilder with working dir optionaly set to File and extra environment variables */
 	def apply(command: Seq[String], cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
-		val jpb = new JProcessBuilder(command.toArray : _*)
+		val jpb = new JProcessBuilder(command.toArray: _*)
 		cwd foreach (jpb directory _)
 		extraEnv foreach { case (k, v) => jpb.environment.put(k, v) }
 		apply(jpb)

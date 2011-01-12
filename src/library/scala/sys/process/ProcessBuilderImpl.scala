@@ -9,14 +9,16 @@
 package scala.sys
 package process
 
-import processAliases._
+import processInternal._
+import Process._
 import java.io.{ FileInputStream, FileOutputStream }
+import BasicIO.{ Uncloseable, Streamed }
 import Uncloseable.protect
 
 private[process] trait ProcessBuilderImpl {
   self: ProcessBuilder.type =>
 
-  class Dummy(override val toString: String, exitValue: => Int) extends AbstractBuilder {
+  private[process] class Dummy(override val toString: String, exitValue: => Int) extends AbstractBuilder {
   	override def run(io: ProcessIO): Process = new DummyProcess(exitValue)
   	override def canPipeTo = true
   }
@@ -83,10 +85,10 @@ private[process] trait ProcessBuilderImpl {
   	def #&&(other: ProcessBuilder): ProcessBuilder = new AndBuilder(this, other)
   	def ###(other: ProcessBuilder): ProcessBuilder = new SequenceBuilder(this, other)
 
-  	def run(): Process                                          = run(false)
-  	def run(connectInput: Boolean): Process                     = run(BasicIO.standard(connectInput))
-  	def run(log: ProcessLogger): Process                        = run(log, false)
-  	def run(log: ProcessLogger, connectInput: Boolean): Process = run(BasicIO(log, connectInput))
+    def run(): Process                                          = run(false)
+    def run(connectInput: Boolean): Process                     = run(BasicIO.standard(connectInput))
+    def run(log: ProcessLogger): Process                        = run(log, false)
+    def run(log: ProcessLogger, connectInput: Boolean): Process = run(BasicIO(connectInput, log))
 
   	def !!                      = slurp(None, false)
   	def !!(log: ProcessLogger)  = slurp(Some(log), false)
@@ -106,7 +108,7 @@ private[process] trait ProcessBuilderImpl {
 
   	private[this] def slurp(log: Option[ProcessLogger], withIn: Boolean): String = {
   		val buffer = new StringBuffer
-  		val code   = this ! BasicIO(buffer, log, withIn)
+  		val code   = this ! BasicIO(withIn, buffer, log)
 
   		if (code == 0) buffer.toString
   		else sys.error("Nonzero exit value: " + code)
@@ -118,7 +120,7 @@ private[process] trait ProcessBuilderImpl {
   	  log: Option[ProcessLogger]
   	): Stream[String] = {
   		val streamed = Streamed[String](nonZeroException)
-  		val process  = run(new ProcessIO(BasicIO.input(withInput), BasicIO.processFully(streamed.process), BasicIO.getErr(log)))
+  		val process  = run(BasicIO(withInput, streamed.process, log))
 
   		Spawn(streamed done process.exitValue())
   		streamed.stream()
@@ -130,10 +132,10 @@ private[process] trait ProcessBuilderImpl {
   	def canPipeTo = false
   }
 
-  class URLImpl(url: URL) extends URLBuilder with Source {
+  private[process] class URLImpl(url: URL) extends URLBuilder with Source {
   	protected def toSource = new URLInput(url)
   }
-  class FileImpl(base: File) extends FileBuilder with Sink with Source {
+  private[process] class FileImpl(base: File) extends FileBuilder with Sink with Source {
   	protected def toSource = new FileInput(base)
   	protected def toSink   = new FileOutput(base, false)
 

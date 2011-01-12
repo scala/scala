@@ -9,16 +9,46 @@
 package scala.sys
 package process
 
-import processAliases._
-import java.io.{ BufferedReader, InputStreamReader }
+import processInternal._
+import java.io.{ BufferedReader, InputStreamReader, FilterInputStream, FilterOutputStream }
+import java.util.concurrent.LinkedBlockingQueue
 
 object BasicIO {
 	final val BufferSize = 8192
 	final val Newline    = props("line.separator")
 
-	def apply(buffer: StringBuffer, log: Option[ProcessLogger], withIn: Boolean) =
+  private[process] final class Streamed[T](
+    val process:   T => Unit,
+    val    done: Int => Unit,
+    val  stream:  () => Stream[T]
+  )
+
+  private[process] object Streamed {
+  	def apply[T](nonzeroException: Boolean): Streamed[T] = {
+  		val q = new LinkedBlockingQueue[Either[Int, T]]
+  		def next(): Stream[T] = q.take match {
+  			case Left(0)    => Stream.empty
+  			case Left(code) => if (nonzeroException) sys.error("Nonzero exit code: " + code) else Stream.empty
+  			case Right(s)   => Stream.cons(s, next)
+  		}
+  		new Streamed((s: T) => q put Right(s), code => q put Left(code), () => next())
+  	}
+  }
+
+  private[process] object Uncloseable {
+  	def apply(in: InputStream): InputStream      = new FilterInputStream(in) { override def close() { } }
+  	def apply(out: OutputStream): OutputStream   = new FilterOutputStream(out) { override def close() { } }
+  	def protect(in: InputStream): InputStream    = if (in eq System.in) Uncloseable(in) else in
+  	def protect(out: OutputStream): OutputStream = if ((out eq System.out) || (out eq System.err)) Uncloseable(out) else out
+  }
+
+	def apply(withIn: Boolean, output: String => Unit, log: Option[ProcessLogger]) =
+	  new ProcessIO(input(withIn), processFully(output), getErr(log))
+
+	def apply(withIn: Boolean, buffer: StringBuffer, log: Option[ProcessLogger]) =
 	  new ProcessIO(input(withIn), processFully(buffer), getErr(log))
-	def apply(log: ProcessLogger, withIn: Boolean) =
+
+	def apply(withIn: Boolean, log: ProcessLogger) =
 	  new ProcessIO(input(withIn), processInfoFully(log), processErrFully(log))
 
 	def getErr(log: Option[ProcessLogger]) = log match {
@@ -58,11 +88,11 @@ object BasicIO {
 
 	def transferFully(in: InputStream, out: OutputStream): Unit =
 		try transferFullyImpl(in, out)
-		catch { case _: InterruptedException => () }
+		catch onInterrupt(())
 
 	private[this] def appendLine(buffer: Appendable): String => Unit = line => {
-		buffer.append(line)
-		buffer.append(Newline)
+	  buffer append line
+	  buffer append Newline
 	}
 
 	private[this] def transferFullyImpl(in: InputStream, out: OutputStream) {
@@ -78,4 +108,3 @@ object BasicIO {
 		loop()
 	}
 }
-

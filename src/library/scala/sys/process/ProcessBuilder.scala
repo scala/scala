@@ -9,7 +9,7 @@
 package scala.sys
 package process
 
-import processAliases._
+import processInternal._
 import ProcessBuilder._
 
 /** Represents a runnable process. */
