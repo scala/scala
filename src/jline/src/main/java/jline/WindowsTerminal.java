@@ -302,7 +302,7 @@ public class WindowsTerminal
          * control keys are processed by the system and are not returned in the
          * ReadFile or ReadConsole buffer. If the ENABLE_LINE_INPUT mode is also
          * enabled, backspace, carriage return, and linefeed characters are handled
-         * by the sys.
+         * by the system.
          */
         ENABLE_PROCESSED_INPUT(1),
 

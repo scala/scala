@@ -28,7 +28,7 @@ import static jline.console.Key.*;
  * <em>/dev/tty</em> file to disable character echoing and enable
  * character input. All known unix systems (including
  * Linux and Macintosh OS X) support the <em>stty</em>), so this
- * implementation should work for an reasonable POSIX sys.
+ * implementation should work for an reasonable POSIX system.
  *
  * @author <a href="mailto:mwp1@cornell.edu">Marc Prud'hommeaux</a>
  * @author <a href="mailto:dwkemp@gmail.com">Dale Kemp</a>

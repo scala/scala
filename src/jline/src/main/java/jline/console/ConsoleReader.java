@@ -555,8 +555,20 @@ public class ConsoleReader
             if (mask != null) {
                 Arrays.fill(chars, mask);
             }
-
-            print(chars);
+            if (terminal.hasWeirdWrap()) {
+                // need to determine if wrapping will occur:
+                int width = terminal.getWidth();
+                int pos = getCursorPosition();
+                for (int i = 0; i < chars.length; i++) {
+                    print(chars[i]);
+                    if ((pos + i + 1) % width == 0) {
+                        print(32); // move cursor to next line by printing dummy space
+                        print(13); // CR / not newline.
+                    }
+                }
+            } else {
+                print(chars);
+            }
             clearAhead(clear, chars.length);
             if (terminal.isAnsiSupported()) {
                 if (chars.length > 0) {
@@ -571,7 +583,7 @@ public class ConsoleReader
             // best guess on whether the cursor is in that weird location...
             // Need to do this without calling ansi cursor location methods
             // otherwise it breaks paste of wrapped lines in xterm.
-            if (getCursorPosition() == width
+            if (getCursorPosition() > 0 && (getCursorPosition() % width == 0)
                     && buf.cursor == buf.length() && clear == 0) {
                 // the following workaround is reverse-engineered from looking
                 // at what bash sent to the terminal in the same situation
@@ -603,20 +615,10 @@ public class ConsoleReader
         }
 
         if (terminal.isAnsiSupported()) {
-            // it's possible the real cursor is in the last column of a terminal
-            // with weird wrapping.
             int width = terminal.getWidth();
             int screenCursorCol = getCursorPosition() + delta;
-            if (delta > 0 && terminal.hasWeirdWrap()
-                    && screenCursorCol % width == 0) {
-                // need to clear out the line below - cursor has not wrapped
-                printAnsiSequence("B");
-                printAnsiSequence("2K");
-                printAnsiSequence("A");
-            } else {
-                // clear current line
-                printAnsiSequence("K");
-            }
+            // clear current line
+            printAnsiSequence("K");
             // if cursor+num wraps, then we need to clear the line(s) below too
             int curCol = screenCursorCol % width;
             int endCol = (screenCursorCol + num - 1) % width;
@@ -654,12 +656,6 @@ public class ConsoleReader
             int width = getTerminal().getWidth();
             int cursor = getCursorPosition();
             int realCursor = cursor + num;
-            // adjust cursor if it did not wrapped on its own
-            if (terminal.hasWeirdWrap() && realCursor%width == 0) {
-                if (getCurrentPosition() - 1 != realCursor%width) {
-                    realCursor--;
-                }
-            }
             int realCol  = realCursor % width;
             int newCol = cursor % width;
             int moveup = num / width;
