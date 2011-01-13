@@ -101,7 +101,10 @@ abstract class BrowsingLoaders extends SymbolLoaders {
    */
   override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
     try {
-      browseTopLevel(root, src)
+      if (root == definitions.EmptyPackageClass)
+        super.enterToplevelsFromSource(root, name, src)
+      else
+        browseTopLevel(root, src)
     } catch {
       case ex: syntaxAnalyzer.MalformedInput =>
         println("caught malformed input exception at offset "+ex.offset+": "+ex.msg)
