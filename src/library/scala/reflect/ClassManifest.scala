@@ -9,61 +9,82 @@
 package scala.reflect
 
 import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
+import java.lang.{ Class => JClass }
 
-/** <p>
-  *   A <code>ClassManifest[T]</code> is an opaque descriptor for type <code>T</code>.
-  *   Currently, its only use is to give access to the erasure of the type as a
-  *   <code>Class</code> instance.
-  * </p>
-  * <p>
-  *   <b>BE AWARE</b>: The different type-relation operators are all forwarded
-  *   to the erased type as an approximation of the final semantics where
-  *   these operators should be on the unerased type.
-  * </p>
-  */
+/** A ClassManifest[T] is an opaque descriptor for type T.
+ *  It is used by the compiler to preserve information necessary
+ *  for instantiating Arrays in those cases where the element type
+ *  is unknown at compile time.
+ *
+ *  The type-relation operators make an effort to present a
+ *  more accurate picture than can be realized with erased types,
+ *  but they should not be relied upon to give correct answers.
+ *  In particular they are likely to be wrong when variance is
+ *  involved or when a subtype has a different number of type
+ *  arguments than a supertype.
+ */
 trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
-
   /** A class representing the type U to which T would be erased. Note
     * that there is no subtyping relationship between T and U. */
-  def erasure: Predef.Class[_]
+  def erasure: JClass[_]
 
-  /** Tests whether the type represented by this manifest is a subtype of
-    * the type represented by `that' manifest. BE AWARE: the current
-    * implementation is an approximation, as the test is done on the
-    * erasure of the type. */
-  def <:<(that: ClassManifest[_]): Boolean = {
-    def subtype(sub: Predef.Class[_], sup: Predef.Class[_]): Boolean = {
-      val subSuperClass = sub.getSuperclass
-      val subSuperInterfaces = sub.getInterfaces.toList
-      val subSuper =
-        (if (subSuperClass == null) Nil else List(subSuperClass)) ::: subSuperInterfaces
-      (subSuper contains sup) || (subSuper exists (subtype(_, sup)))
-    }
-    def subargs(args1: List[OptManifest[_]], args2: List[OptManifest[_]]): Boolean = {
-      (args1 zip args2) forall {
-        case (x: ClassManifest[_], y: ClassManifest[_]) => x <:< y // !!! [Martin] this is wrong, need to take variance into account
-        case (NoManifest, NoManifest) => true
-        case _ => false
+  private def subtype(sub: JClass[_], sup: JClass[_]): Boolean = {
+    def loop(left: Set[JClass[_]], seen: Set[JClass[_]]): Boolean = {
+      left.nonEmpty && {
+        val next = left.head
+        val supers = next.getInterfaces.toSet ++ Option(next.getSuperclass)
+        supers(sup) || {
+          val xs = left ++ supers filterNot seen
+          loop(xs - next, seen + next)
+        }
       }
     }
+    loop(Set(sub), Set())
+  }
 
-    import Manifest.{ AnyVal, Nothing, Null }
+  private def subargs(args1: List[OptManifest[_]], args2: List[OptManifest[_]]) = (args1 corresponds args2) {
+    // !!! [Martin] this is wrong, need to take variance into account
+    case (x: ClassManifest[_], y: ClassManifest[_]) => x <:< y
+    case (x, y)                                     => (x eq NoManifest) && (y eq NoManifest)
+  }
 
-    that match {
-      // All types which conform to AnyVal will override <:<.
-      case _: AnyValManifest[_]     => false
-      // Anything which conforms to a bottom type will override <:<.
-      case AnyVal | Nothing | Null  => false
-      case _  =>
-        (this.erasure == that.erasure || subtype(this.erasure, that.erasure)) &&
+  /** Tests whether the type represented by this manifest is a subtype
+    * of the type represented by `that' manifest, subject to the limitations
+    * described in the header.
+    */
+  def <:<(that: ClassManifest[_]): Boolean = {
+    // All types which could conform to these types will override <:<.
+    def cannotMatch = {
+      import Manifest._
+      that.isInstanceOf[AnyValManifest[_]] || (that eq AnyVal) || (that eq Nothing) || (that eq Null)
+    }
+
+    // This is wrong, and I don't know how it can be made right
+    // without more development of Manifests, due to arity-defying
+    // relationships like:
+    //
+    //   List[String] <: AnyRef
+    //   Map[Int, Int] <: Iterable[(Int, Int)]
+    //
+    // Given the manifest for Map[A, B] how do I determine that a
+    // supertype has single type argument (A, B) ? I don't see how we
+    // can say whether X <:< Y when type arguments are involved except
+    // when the erasure is the same, even before considering variance.
+    !cannotMatch && {
+      // this part is wrong for not considering variance
+      if (this.erasure == that.erasure)
         subargs(this.typeArguments, that.typeArguments)
+      // this part is wrong for punting unless the rhs has no type
+      // arguments, but it's better than a blindfolded pinata swing.
+      else
+        that.typeArguments.isEmpty && subtype(this.erasure, that.erasure)
     }
   }
 
   /** Tests whether the type represented by this manifest is a supertype
-    * of the type represented by `that' manifest. BE AWARE: the current
-    * implementation is an approximation, as the test is done on the
-    * erasure of the type. */
+    * of the type represented by `that' manifest, subject to the limitations
+    * described in the header.
+    */
   def >:>(that: ClassManifest[_]): Boolean =
     that <:< this
 
@@ -72,18 +93,18 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
     case _                    => false
   }
 
-  /** Tests whether the type represented by this manifest is equal to the
-    * type represented by `that' manifest. BE AWARE: the current
-    * implementation is an approximation, as the test is done on the
-    * erasure of the type. */
+  /** Tests whether the type represented by this manifest is equal to
+    * the type represented by `that' manifest, subject to the limitations
+    * described in the header.
+    */
   override def equals(that: Any): Boolean = that match {
-    case m: ClassManifest[_] if m canEqual this => this.erasure == m.erasure
-    case _ => false
+    case m: ClassManifest[_] => (m canEqual this) && (this.erasure == m.erasure)
+    case _                   => false
   }
   override def hashCode = this.erasure.##
 
-  protected def arrayClass[T](tp: Predef.Class[_]): Predef.Class[Array[T]] =
-    java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[Predef.Class[Array[T]]]
+  protected def arrayClass[T](tp: JClass[_]): JClass[Array[T]] =
+    java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[JClass[Array[T]]]
 
   def arrayManifest: ClassManifest[Array[T]] =
     ClassManifest.classType[Array[T]](arrayClass[T](erasure))
@@ -125,7 +146,7 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
 
 /** <p>
   *   This object is used by the compiler and <b>should not be used in client
-  *   code</b>. The object <code>Manifest</code> defines factory methods for
+  *   code</b>. The object Manifest defines factory methods for
   *   manifests.
   * </p>
   * <p>
@@ -134,32 +155,32 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
   * </p>
   */
 object ClassManifest {
-  val Byte = Manifest.Byte
-  val Short = Manifest.Short
-  val Char = Manifest.Char
-  val Int = Manifest.Int
-  val Long = Manifest.Long
-  val Float = Manifest.Float
-  val Double = Manifest.Double
+  val Byte    = Manifest.Byte
+  val Short   = Manifest.Short
+  val Char    = Manifest.Char
+  val Int     = Manifest.Int
+  val Long    = Manifest.Long
+  val Float   = Manifest.Float
+  val Double  = Manifest.Double
   val Boolean = Manifest.Boolean
-  val Unit = Manifest.Unit
-  val Any = Manifest.Any
-  val Object = Manifest.Object
-  val AnyVal = Manifest.AnyVal
+  val Unit    = Manifest.Unit
+  val Any     = Manifest.Any
+  val Object  = Manifest.Object
+  val AnyVal  = Manifest.AnyVal
   val Nothing = Manifest.Nothing
-  val Null = Manifest.Null
+  val Null    = Manifest.Null
 
-  def fromClass[T](clazz: Predef.Class[T]): ClassManifest[T] = clazz match {
-    case java.lang.Byte.TYPE => Byte.asInstanceOf[ClassManifest[T]]
-    case java.lang.Short.TYPE => Short.asInstanceOf[ClassManifest[T]]
+  def fromClass[T](clazz: JClass[T]): ClassManifest[T] = clazz match {
+    case java.lang.Byte.TYPE      => Byte.asInstanceOf[ClassManifest[T]]
+    case java.lang.Short.TYPE     => Short.asInstanceOf[ClassManifest[T]]
     case java.lang.Character.TYPE => Char.asInstanceOf[ClassManifest[T]]
-    case java.lang.Integer.TYPE => Int.asInstanceOf[ClassManifest[T]]
-    case java.lang.Long.TYPE => Long.asInstanceOf[ClassManifest[T]]
-    case java.lang.Float.TYPE => Float.asInstanceOf[ClassManifest[T]]
-    case java.lang.Double.TYPE => Double.asInstanceOf[ClassManifest[T]]
-    case java.lang.Boolean.TYPE => Boolean.asInstanceOf[ClassManifest[T]]
-    case java.lang.Void.TYPE => Unit.asInstanceOf[ClassManifest[T]]
-    case _ => classType[T with AnyRef](clazz).asInstanceOf[ClassManifest[T]]
+    case java.lang.Integer.TYPE   => Int.asInstanceOf[ClassManifest[T]]
+    case java.lang.Long.TYPE      => Long.asInstanceOf[ClassManifest[T]]
+    case java.lang.Float.TYPE     => Float.asInstanceOf[ClassManifest[T]]
+    case java.lang.Double.TYPE    => Double.asInstanceOf[ClassManifest[T]]
+    case java.lang.Boolean.TYPE   => Boolean.asInstanceOf[ClassManifest[T]]
+    case java.lang.Void.TYPE      => Unit.asInstanceOf[ClassManifest[T]]
+    case _                        => classType[T with AnyRef](clazz).asInstanceOf[ClassManifest[T]]
   }
 
   def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = Manifest.singleType(value)
@@ -171,18 +192,18 @@ object ClassManifest {
     *       pass varargs as arrays into this, we get an infinitely recursive call
     *       to boxArray. (Besides, having a separate case is more efficient)
     */
-  def classType[T <: AnyRef](clazz: Predef.Class[_]): ClassManifest[T] =
+  def classType[T <: AnyRef](clazz: JClass[_]): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
   /** ClassManifest for the class type `clazz[args]', where `clazz' is
     * a top-level or static class and `args` are its type arguments */
-  def classType[T <: AnyRef](clazz: Predef.Class[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
+  def classType[T <: AnyRef](clazz: JClass[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
   /** ClassManifest for the class type `clazz[args]', where `clazz' is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
-  def classType[T <: AnyRef](prefix: OptManifest[_], clazz: Predef.Class[_], args: OptManifest[_]*): ClassManifest[T] =
+  def classType[T <: AnyRef](prefix: OptManifest[_], clazz: JClass[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
   def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
@@ -193,7 +214,7 @@ object ClassManifest {
   /** ClassManifest for the abstract type `prefix # name'. `upperBound' is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
-  def abstractType[T](prefix: OptManifest[_], name: String, clazz: Predef.Class[_], args: OptManifest[_]*): ClassManifest[T] =
+  def abstractType[T](prefix: OptManifest[_], name: String, clazz: JClass[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassManifest[T] {
       def erasure = clazz
       override val typeArguments = args.toList
@@ -217,7 +238,7 @@ object ClassManifest {
   * a top-level or static class. */
 private class ClassTypeManifest[T <: AnyRef](
   prefix: Option[OptManifest[_]],
-  val erasure: Predef.Class[_],
+  val erasure: JClass[_],
   override val typeArguments: List[OptManifest[_]]) extends ClassManifest[T]
 {
   override def toString =
