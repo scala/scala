@@ -319,7 +319,7 @@ self =>
   def parse(unit: RichCompilationUnit): Unit = {
     debugLog("parsing: "+unit)
     currentTyperRun.compileLate(unit)
-    if (!reporter.hasErrors) validatePositions(unit.body)
+    if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
     if (!unit.isJava) syncTopLevelSyms(unit)
     unit.status = JustParsed
   }
