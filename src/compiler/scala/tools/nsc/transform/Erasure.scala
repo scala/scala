@@ -983,9 +983,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                   tree
             }
             // todo: also handle the case where the singleton type is buried in a compound
-          else if (fn.symbol == Any_isInstanceOf)
+          else if (fn.symbol == Any_isInstanceOf) {
             fn match {
               case TypeApply(sel @ Select(qual, name), List(targ)) =>
+                if (qual.tpe != null && isValueClass(qual.tpe.typeSymbol) && targ.tpe != null && targ.tpe <:< AnyRefClass.tpe)
+                  unit.error(sel.pos, "isInstanceOf cannot test if value types are references.")
+
                 def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =
                   Apply(
                     TypeApply(
@@ -1009,6 +1012,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                 }
               case _ => tree
             }
+          }
           else {
             def doDynamic(fn: Tree, qual: Tree): Tree = {
               if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty)

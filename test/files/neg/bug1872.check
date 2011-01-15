@@ -1,0 +1,4 @@
+bug1872.scala:3: error: isInstanceOf cannot test if value types are references.
+  def f(x: Int) = x.isInstanceOf[util.Random]
+                    ^
+one error found
