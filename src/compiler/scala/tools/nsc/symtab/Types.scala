@@ -1762,7 +1762,9 @@ A type's typeSymbol should never be inspected directly.
     private def typeArgsOrDummies = if (!isHigherKinded) args else dummyArgs
 
     // @MAT was typeSymbol.unsafeTypeParams, but typeSymbol normalizes now
-    private def typeParamsDirect = sym.unsafeTypeParams
+    private def typeParamsDirect =
+      if (isDefinitionsInitialized) sym.typeParams
+      else sym.unsafeTypeParams
 
     // placeholders derived from type params
     private def dummyArgs = typeParamsDirect map (_.typeConstructor) //@M must be .typeConstructor
@@ -1824,32 +1826,18 @@ A type's typeSymbol should never be inspected directly.
                                betaReduce.normalize // beta-reduce, but don't do partial application -- cycles have been checked in typeRef
       else if (sym.isRefinementClass)
                                sym.info.normalize // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
-      // else if (args nonEmpty) {
-      //   val argsNorm = args mapConserve (_.dealias)
-      //   if(argsNorm ne args) TypeRef(pre, sym, argsNorm)
-      //   else this
-      // }
       else {
         if(sym.isAliasType) ErrorType //println("!!error: "+(pre, sym, sym.info, sym.info.typeParams, args))
         else super.normalize
       }
 
-   // track number of type parameters that we saw when caching normalization,
-   // so we can refresh our cache when the known list of type parameters changes (due to further class file loading)
-   // TODO: this would not be necessary if we could replace the call to sym.unsafeTypeParams in typeParamsDirect
-   // by a call to sym.typeParams, but need to verify that that does not lead to spurious "illegal cycle" errors
-   // the need for refreshing the cache is illustrated by #2278
    // TODO: test case that is compiled  in a specific order and in different runs
-    private var normalizeTyparCount = -1
-
     override def normalize: Type = {
       if (phase.erasedTypes) normalize0
       else {
-        val len = typeParamsDirect.length
-        if (normalized == null || len != normalizeTyparCount) {
-          normalizeTyparCount = len
+        if (normalized == null)
           normalized = normalize0
-        }
+
         normalized
       }
     }
