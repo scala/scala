@@ -149,6 +149,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val PartialFunctionClass = getClass("scala.PartialFunction")
     lazy val SymbolClass          = getClass("scala.Symbol")
     lazy val StringClass          = getClass(sn.String)
+    lazy val StringModule         = StringClass.linkedClassOfClass
     lazy val ClassClass           = getClass(sn.Class)
       def Class_getMethod = getMember(ClassClass, nme.getMethod_)
 

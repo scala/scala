@@ -26,7 +26,7 @@ abstract class GenICode extends SubComponent  {
   import icodes._
   import icodes.opcodes._
   import definitions.{
-    ArrayClass, ObjectClass, ThrowableClass, StringClass, NothingClass, NullClass, AnyRefClass,
+    ArrayClass, ObjectClass, ThrowableClass, StringClass, StringModule, NothingClass, NullClass, AnyRefClass,
     Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeModule,
     BoxedNumberClass, BoxedCharacterClass,
     getMember, runtimeCompanions
@@ -1321,6 +1321,34 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
+    /** The Object => String overload.
+     */
+    private lazy val String_valueOf: Symbol = getMember(StringModule, "valueOf") filter (sym =>
+      sym.info.paramTypes match {
+        case List(pt) => pt.typeSymbol == ObjectClass
+        case _        => false
+      }
+    )
+
+    // I wrote it this way before I realized all the primitive types are
+    // boxed at this point, so I'd have to unbox them.  Keeping it around in
+    // case we want to get more precise.
+    //
+    // private def valueOfForType(tp: Type): Symbol = {
+    //   val xs = getMember(StringModule, "valueOf") filter (sym =>
+    //     // We always exclude the Array[Char] overload because java throws an NPE if
+    //     // you pass it a null.  It will instead find the Object one, which doesn't.
+    //     sym.info.paramTypes match {
+    //       case List(pt) => pt.typeSymbol != ArrayClass && (tp <:< pt)
+    //       case _        => false
+    //     }
+    //   )
+    //   xs.alternatives match {
+    //     case List(sym)  => sym
+    //     case _          => NoSymbol
+    //   }
+    // }
+
     /** Generate string concatenation.
      *
      *  @param tree ...
@@ -1328,22 +1356,25 @@ abstract class GenICode extends SubComponent  {
      *  @return     ...
      */
     def genStringConcat(tree: Tree, ctx: Context): Context = {
-      val Apply(Select(larg, _), rarg) = tree
-      var ctx1 = ctx
-
-      val concatenations = liftStringConcat(tree)
-      if (settings.debug.value)
-        log("Lifted string concatenations for " + tree + "\n to: " + concatenations);
-
-      ctx1.bb.emit(CALL_PRIMITIVE(StartConcat), tree.pos);
-      for (elem <- concatenations) {
-        val kind = toTypeKind(elem.tpe)
-        ctx1 = genLoad(elem, ctx1, kind)
-        ctx1.bb.emit(CALL_PRIMITIVE(StringConcat(kind)), elem.pos)
+      liftStringConcat(tree) match {
+        // Optimization for expressions of the form "" + x.  We can avoid the StringBuilder.
+        case List(Literal(Constant("")), arg) =>
+          if (settings.debug.value) log("Rewriting \"\" + x as String.valueOf(x) for: " + arg)
+          val ctx1 = genLoad(arg, ctx, ObjectReference)
+          ctx1.bb.emit(CALL_METHOD(String_valueOf, Static(false)), arg.pos)
+          ctx1
+        case concatenations =>
+          if (settings.debug.value) log("Lifted string concatenations for " + tree + "\n to: " + concatenations)
+          var ctx1 = ctx
+          ctx1.bb.emit(CALL_PRIMITIVE(StartConcat), tree.pos)
+          for (elem <- concatenations) {
+            val kind = toTypeKind(elem.tpe)
+            ctx1 = genLoad(elem, ctx1, kind)
+            ctx1.bb.emit(CALL_PRIMITIVE(StringConcat(kind)), elem.pos)
+          }
+          ctx1.bb.emit(CALL_PRIMITIVE(EndConcat), tree.pos)
+          ctx1
       }
-      ctx1.bb.emit(CALL_PRIMITIVE(EndConcat), tree.pos)
-
-      ctx1
     }
 
     /** Generate the scala ## method.
