@@ -656,7 +656,7 @@ self =>
      *  Since the IDE rechecks units several times in the same run, these tests
      *  are disabled by always returning true here.
      */
-    override def canRedefine(sym: Symbol) = sym.sourceFile ne null
+    override def canRedefine(sym: Symbol) = true
 
     def typeCheck(unit: CompilationUnit): Unit = {
       activeLocks = 0
