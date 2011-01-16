@@ -3443,21 +3443,21 @@ trait Typers extends Modes {
             adaptToName(qual, name)
           } catch {
             case ex: TypeError =>
-            // this happens if implicits are ambiguous; try again with more context info.
-            // println("last ditch effort: "+qual+" . "+name) // DEBUG
-            context.tree match {
-              case Apply(tree1, args) if tree1 eq tree => // try handling the arguments
-                // println("typing args: "+args) // DEBUG
-                silent(_.typedArgs(args, mode)) match {
-                  case args: List[_] =>
-                    adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
-                  case _ =>
-                    throw ex
-                }
-              case _ =>
-                // println("not in an apply: "+context.tree+"/"+tree) // DEBUG
-                throw ex
-            }
+              // this happens if implicits are ambiguous; try again with more context info.
+              // println("last ditch effort: "+qual+" . "+name)
+              context.tree match {
+                case Apply(tree1, args) if tree1 eq tree => // try handling the arguments
+                  // println("typing args: "+args)
+                  silent(_.typedArgs(args, mode)) match {
+                    case args: List[_] =>
+                      adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
+                    case _ =>
+                      throw ex
+                  }
+                case _ =>
+                  // println("not in an apply: "+context.tree+"/"+tree)
+                  throw ex
+              }
           }
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
@@ -3466,6 +3466,22 @@ trait Typers extends Modes {
           if (context.owner.toplevelClass.isJavaDefined && name.isTypeName) {
             val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
             if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
+          }
+
+          // try to expand according to Dynamic rules.
+
+          if (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass) {
+            val op = context.tree match {
+              case Apply(tree1, args) if tree1 eq tree =>
+                "_invoke_" +
+                (if (args.length <= Dynamic_OptInvokeMaxArgCount) args.length.toString
+                 else "")
+              case _ =>
+                "_select_"
+            }
+            return typed1(
+              util.trace("dynatype: ")(Apply(Select(qual, op), List(Literal(Constant(name.toString))))),
+                          mode, pt)
           }
 
           if (settings.debug.value) {

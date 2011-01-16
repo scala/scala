@@ -595,6 +595,16 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val ntree = typedWithPos(symapp.pos)(REF(staticFieldSym))
 
         super.transform(ntree)
+
+      // This transform replaces Array(Predef.wrapArray(Array(...)), <manifest>)
+      // with just Array(...)
+      case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(array)), _))
+      if (wrapRefArrayMeth.symbol == Predef_wrapRefArray &&
+          appMeth.symbol == ArrayModule_overloadedApply.suchThat {
+            _.tpe.resultType.dealias.typeSymbol == ObjectClass
+          }) =>
+        super.transform(array)
+
       case _ =>
         super.transform(tree)
     }
