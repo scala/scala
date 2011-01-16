@@ -880,6 +880,12 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.##)
 
+  /** The equals method for arbitrary sequences. Compares this sequence to
+   *  some other object.
+   *  @param    that  The object to compare the sequence to
+   *  @return   `true` if `that` is a sequence that has the same elements as
+   *            this sequence in the same order, `false` otherwise
+   */
   override def equals(that: Any): Boolean = that match {
     case that: Seq[_] => (that canEqual this) && (this sameElements that)
     case _            => false
