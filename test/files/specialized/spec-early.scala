@@ -12,4 +12,5 @@ class Foo[@specialized(Int) T](_x: T) extends {
 object Test extends Application {
   new Foo("a")
   new Foo(42)
+  println(runtime.BoxesRunTime.integerBoxCount)
 }

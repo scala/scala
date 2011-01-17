@@ -9,6 +9,7 @@ object Test {
   def main(args: Array[String]) {
     new E[Int]
     println("goodbye")
+    println(runtime.BoxesRunTime.integerBoxCount)
   }
 }
 

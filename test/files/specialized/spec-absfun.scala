@@ -13,6 +13,7 @@ object Test {
   def main(args: Array[String]) {
     notSpecialized()
     specialized()
+    println(runtime.BoxesRunTime.integerBoxCount)
   }
 
   def notSpecialized() {

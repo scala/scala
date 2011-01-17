@@ -49,6 +49,13 @@ public final class BoxesRunTime
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
 
     public static int booleanBoxCount = 0;
+    public static int characterBoxCount = 0;
+    public static int byteBoxCount = 0;
+    public static int shortBoxCount = 0;
+    public static int integerBoxCount = 0;
+    public static int longBoxCount = 0;
+    public static int floatBoxCount = 0;
+    public static int doubleBoxCount = 0;
 
     public static java.lang.Boolean boxToBoolean(boolean b) {
 	booleanBoxCount++;
@@ -56,30 +63,37 @@ public final class BoxesRunTime
     }
 
     public static java.lang.Character boxToCharacter(char c) {
+	characterBoxCount++;
         return java.lang.Character.valueOf(c);
     }
 
     public static java.lang.Byte boxToByte(byte b) {
+	byteBoxCount++;
         return java.lang.Byte.valueOf(b);
     }
 
     public static java.lang.Short boxToShort(short s) {
+	shortBoxCount++;
         return java.lang.Short.valueOf(s);
     }
 
     public static java.lang.Integer boxToInteger(int i) {
+	integerBoxCount++;
         return java.lang.Integer.valueOf(i);
     }
 
     public static java.lang.Long boxToLong(long l) {
+	longBoxCount++;
         return java.lang.Long.valueOf(l);
     }
 
     public static java.lang.Float boxToFloat(float f) {
+	floatBoxCount++;
         return java.lang.Float.valueOf(f);
     }
 
     public static java.lang.Double boxToDouble(double d) {
+	doubleBoxCount++;
         // System.out.println("box " + d);
         // (new Throwable()).printStackTrace();
         return java.lang.Double.valueOf(d);

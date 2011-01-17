@@ -7,6 +7,8 @@ object Test {
 
     val i = new Extended(1)
     println(i.foo) //infinite loop with StackOverflowError
+
+    println(runtime.BoxesRunTime.integerBoxCount)
   }
 }
 

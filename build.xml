@@ -1568,6 +1568,7 @@ BOOTRAPING TEST AND TEST SUITE
       <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck">
 	<include name="*.scala"/>
       </scalachecktests>
+      <specializedtests dir="${partest.dir}/${partest.srcdir}/specialized"/>
       <!-- <scripttests dir="${partest.dir}/${partest.srcdir}/script" includes="*.scala"/> -->
     </partest>
   </target>

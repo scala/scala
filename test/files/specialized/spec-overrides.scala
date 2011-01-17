@@ -17,4 +17,6 @@ object Test extends Application {
   assert(d2.default == 1.0, d2.default)
   assert((d2: Base[_]).default == 1.0, (d2: Base[_]).default)
   assert((d2: D1).default == 1.0, (d2: D1).default)
+
+  println(runtime.BoxesRunTime.integerBoxCount)
 }

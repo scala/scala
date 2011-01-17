@@ -13,5 +13,6 @@ object Test {
   def main(args: Array[String]) {
     println((new A("abc")).foo.value)
     println((new A(10)).foo.value)
+    println(runtime.BoxesRunTime.integerBoxCount)
   }
 }
