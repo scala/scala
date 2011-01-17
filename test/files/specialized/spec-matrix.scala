@@ -32,8 +32,6 @@ object Test {
 
     mult(m, n)
     println("*")
-
-    println(runtime.BoxesRunTime.integerBoxCount)
   }
 
   def randomMatrix(n: Int, m: Int) = {
