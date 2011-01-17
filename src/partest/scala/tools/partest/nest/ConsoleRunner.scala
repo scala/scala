@@ -35,7 +35,8 @@ class ConsoleRunner extends DirectRunner {
       TestSet("shootout", pathFilter, "Testing shootout tests"),
       TestSet("script", pathFilter, "Testing script tests"),
       TestSet("scalacheck", x => pathFilter(x) || x.isDirectory, "Testing ScalaCheck tests"),
-      TestSet("scalap", _.isDirectory, "Run scalap decompiler tests")
+      TestSet("scalap", _.isDirectory, "Run scalap decompiler tests"),
+      TestSet("specialized", pathFilter, "Testing specialized tests")
     )
   }
 
