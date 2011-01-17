@@ -61,7 +61,7 @@ trait DirectRunner {
   }
 
   def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, Int] = {
-    /** NO DUPLICATES, or partest will blow the count and hang forever. **/
+    /** NO DUPLICATES, or partest will blow the count and hang forever. */
     val kindFiles = _kindFiles.distinct
     val groupSize = (kindFiles.length / numActors) + 1
 

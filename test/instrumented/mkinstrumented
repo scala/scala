@@ -1,0 +1,46 @@
+#
+# 
+# Used to compile a jar with instrumented versions of certain classes.
+# 
+
+
+
+
+if [ $# -ne 1 ]
+then
+  echo "Must provide build dir ('target' or 'build')."
+  exit 1
+fi
+
+
+BUILDDIR=$1
+TOPDIR=../..
+SCALAC=$TOPDIR/$BUILDDIR/pack/bin/scalac
+SRC_DIR=library/
+SCALALIB=$TOPDIR/$BUILDDIR/pack/lib/scala-library.jar
+CLASSDIR=classes/
+ARTIFACT=instrumented.jar
+
+
+# compile it
+rm -rf $CLASSDIR
+mkdir $CLASSDIR
+JSOURCES=`find $SRC_DIR -name "*.java" -print`
+SOURCES=`find $SRC_DIR \( -name "*.scala" -o -name "*.java" \) -print`
+echo $SOURCES
+$SCALAC -d $CLASSDIR $SOURCES
+javac -cp $SCALALIB -d $CLASSDIR $JSOURCES
+
+
+# jar it up
+rm $ARTIFACT
+cd $CLASSDIR
+jar cf $ARTIFACT .
+mv $ARTIFACT ../
+cd ..
+
+
+
+
+
+

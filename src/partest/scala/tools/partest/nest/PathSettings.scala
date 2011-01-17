@@ -31,6 +31,13 @@ object PathSettings {
   // Directory <root>/test/files/lib
   lazy val srcLibDir = Directory(srcDir / "lib")
 
+  // Directory <root>/test/files/speclib
+  lazy val srcSpecLibDir = Directory(srcDir / "speclib")
+
+  lazy val srcSpecLib: File = srcSpecLibDir.files find (_.name startsWith "instrumented") getOrElse {
+    sys.error("No instrumented.jar found in %s".format(srcSpecLibDir))
+  }
+
   // Directory <root>/build
   lazy val buildDir: Directory = {
     val bases      = testRoot :: testRoot.parents

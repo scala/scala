@@ -273,7 +273,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     (command #> output !)
   }
 
-  def execTest(outDir: File, logFile: File, fileBase: String) {
+  def execTest(outDir: File, logFile: File, fileBase: String, classpathPrefix: String = "") {
     // check whether there is a ".javaopts" file
     val argsFile  = new File(logFile.getParentFile, fileBase + ".javaopts")
     val argString = file2String(argsFile)
@@ -299,12 +299,13 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Duser.language=en -Duser.country=US"
     ) ++ extras
 
+    val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
     val cmd = (
       List(
         JAVACMD,
         JAVA_OPTS,
         argString,
-        "-classpath " + join(outDir.toString, CLASSPATH)
+        "-classpath " + join(outDir.toString, classpath)
       ) ++ propertyOptions ++ List(
         "scala.tools.nsc.MainGenericRunner",
         "-usejavacp",
@@ -502,6 +503,16 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         diffCheck(compareOutput(dir, fileBase, kind, logFile))
       })
 
+    def runSpecializedTest(file: File, kind: String): LogContext =
+      runTestCommon(file, kind, expectFailure = false)((logFile, outDir) => {
+        val fileBase  = basename(file.getName)
+        val dir       = file.getParentFile
+
+        // adding the instrumented library to the classpath
+        execTest(outDir, logFile, fileBase, PathSettings.srcSpecLib.toString)
+        diffCheck(compareOutput(dir, fileBase, kind, logFile))
+      })
+
     def processSingleFile(file: File): LogContext = kind match {
       case "scalacheck" =>
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
@@ -554,6 +565,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       case "run" | "jvm" =>
         runJvmTest(file, kind)
+
+      case "specialized" =>
+        runSpecializedTest(file, kind)
 
       case "buildmanager" =>
         val logFile = createLogFile(file, kind)

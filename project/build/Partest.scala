@@ -46,13 +46,14 @@ trait PartestRunner{
   lazy val scriptFilesTest       = TestSet(Std,"script", "Running script files", testFiles / "script" * ("*.scala"))
   lazy val shootoutFilesTest     = TestSet(Std,"shootout", "Running shootout tests", testFiles / "shootout" * ("*.scala"))
   lazy val scalapFilesTest       = TestSet(Std,"scalap", "Running scalap tests", testFiles / "scalap" * ("*.scala"))
+  lazy val specializedFilesTest  = TestSet(Std,"specialized", "Running specialized tests", testFiles / "specialized" * ("*.scala"))
 
   lazy val negContinuationTest = TestSet(Continuations,"neg", "Compiling continuations files that are expected to fail", testFiles / "continuations-neg" * ("*.scala" || DirectoryFilter))
   lazy val runContinuationTest = TestSet(Continuations,"run", "Compiling and running continuations files", testFiles / "continuations-run" ** ("*.scala" ))
 
   lazy val continuationScalaOpts = "-Xpluginsdir "+continuationPluginConfig.packagingConfig.jarDestination.asFile.getParent+" -Xplugin-require:continuations -P:continuations:enable"
 
-  lazy val testSuiteFiles:List[TestSet] = List(posFilesTest,negFilesTest,runFilesTest,jvmFilesTest,resFilesTest,buildmanagerFilesTest,scalacheckFilesTest,shootoutFilesTest,scalapFilesTest)
+  lazy val testSuiteFiles:List[TestSet] = List(posFilesTest,negFilesTest,runFilesTest,jvmFilesTest,resFilesTest,buildmanagerFilesTest,scalacheckFilesTest,shootoutFilesTest,scalapFilesTest,specializedFilesTest)
   lazy val testSuiteContinuation:List[TestSet]=List(negContinuationTest,runContinuationTest)
 
   private lazy val filesTestMap:Map[String,TestSet] =
