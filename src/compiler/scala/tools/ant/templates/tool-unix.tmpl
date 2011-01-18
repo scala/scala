@@ -17,7 +17,7 @@ function onExit() {
 
   # reenable echo
   case "$TERM" in
-      rxvt* | xterm*)
+      rxvt* | xterm* | screen*)
           stty icanon echo
           ;;
   esac
