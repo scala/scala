@@ -156,8 +156,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
   val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
 
-  val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation comnpiler events into file", "")
-  val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation comnpiler events from file", "")
+  val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
+  val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
   /**
    * "fsc-specific" settings.
    */
