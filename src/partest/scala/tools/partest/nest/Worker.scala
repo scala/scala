@@ -360,12 +360,15 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       lines foreach (x => NestUI.normal(x + "\n"))
     }
   }
+  def logStackTrace(logFile: File, t: Throwable, msg: String): Boolean = {
+    SFile(logFile).writeAll(msg, stackTraceString(t))
+    outputLogFile(logFile) // if running the test threw an exception, output log file
+    false
+  }
+
   def exHandler(logFile: File): PartialFunction[Throwable, Boolean] = exHandler(logFile, "")
   def exHandler(logFile: File, msg: String): PartialFunction[Throwable, Boolean] = {
-    case e: Exception =>
-      SFile(logFile).writeAll(msg, stackTraceString(e))
-      outputLogFile(logFile) // if running the test threw an exception, output log file
-      false
+    case e: Exception => logStackTrace(logFile, e, msg)
   }
 
   /** Runs a list of tests.
@@ -966,10 +969,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             try processSingleFile(testFile)
             catch {
               case t: Throwable =>
-                NestUI.shout("Caught something while invoking processSingleFile(%s)".format(testFile))
-                t.printStackTrace
-                NestUI.normal("There were " + filesRemaining.size + " files remaining: " + filesRemaining.mkString(", "))
-                LogContext(null, None)
+                val logFile = createLogFile(testFile, kind)
+                logStackTrace(logFile, t, "Possible compiler crash during test of: " + testFile)
+                LogContext(logFile, None)
             }
           parent ! Result(testFile, context)
         }

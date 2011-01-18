@@ -116,8 +116,4 @@ object NestUI {
       println(msg)
     }
   }
-  def shout(msg: String) {
-    warning("something is wrong:")
-    println(msg)
-  }
 }
