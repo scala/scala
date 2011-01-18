@@ -515,6 +515,7 @@ self =>
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       if (!sym.name.decode.containsName(Dollar) &&
           !sym.isSynthetic &&
+          sym.hasRawInfo &&
           !locals.contains(sym.name)) {
         locals(sym.name) = new ScopeMember(
           sym,
@@ -554,13 +555,6 @@ self =>
   def typeMembers(pos: Position): Stream[List[TypeMember]] = {
     var tree = typedTreeAt(pos)
 
-    // Let's say you have something like val x: List[Int] and ypu want to get completion after List
-    // Then the tree found at first is a TypeTree, ????
-    tree match {
-      case tt : TypeTree if tt.original != null => tree = tt.original // ???
-      case _ =>
-    }
-
     // if tree consists of just x. or x.fo where fo is not yet a full member name
     // ignore the selection and look in just x.
     tree match {
@@ -571,6 +565,7 @@ self =>
     val context = doLocateContext(pos)
 
     if (tree.tpe == null)
+      // TODO: guard with try/catch to deal with ill-typed qualifiers.
       tree = analyzer.newTyper(context).typedQualifier(tree)
 
     debugLog("typeMembers at "+tree+" "+tree.tpe)
@@ -592,7 +587,7 @@ self =>
       }
     }
 
-    /** Create a fucntion application of  a given view function to `tree` and typechecked it.
+    /** Create a function application of a given view function to `tree` and typechecked it.
      */
     def viewApply(view: SearchResult): Tree = {
       assert(view.tree != EmptyTree)
