@@ -369,19 +369,23 @@ trait NamesDefaults { self: Analyzer =>
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params)
       if (missing forall (_.hasDefaultFlag)) {
-        val defaultArgs = missing map (p => {
-          var default1 = qual match {
-            case Some(q) => gen.mkAttributedSelect(q.duplicate, defaultGetter(p, context))
-            case None    => gen.mkAttributedRef(defaultGetter(p, context))
+        val defaultArgs = missing flatMap (p => {
+          val defGetter = defaultGetter(p, context)
+          if (defGetter == NoSymbol) None // prevent crash in erroneous trees, #3649
+          else {
+            var default1 = qual match {
+              case Some(q) => gen.mkAttributedSelect(q.duplicate, defGetter)
+              case None    => gen.mkAttributedRef(defGetter)
 
-          }
-          default1 = if (targs.isEmpty) default1
-                     else TypeApply(default1, targs.map(_.duplicate))
-          val default2 = (default1 /: previousArgss)((tree, args) =>
-            Apply(tree, args.map(_.duplicate)))
-          atPos(pos) {
-            if (positional) default2
-            else AssignOrNamedArg(Ident(p.name), default2)
+            }
+            default1 = if (targs.isEmpty) default1
+                       else TypeApply(default1, targs.map(_.duplicate))
+            val default2 = (default1 /: previousArgss)((tree, args) =>
+              Apply(tree, args.map(_.duplicate)))
+            Some(atPos(pos) {
+              if (positional) default2
+              else AssignOrNamedArg(Ident(p.name), default2)
+            })
           }
         })
         (givenArgs ::: defaultArgs, Nil)
