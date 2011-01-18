@@ -36,6 +36,24 @@ class LowPriorityImplicits {
   implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
   implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
+  // These eight implicits exist solely to exclude Null from the domain of
+  // the boxed types, so that e.g. "var x: Int = null" is a compile time
+  // error rather than a delayed null pointer exception by way of the
+  // conversion from java.lang.Integer.  If defined in the same file as
+  // Integer2int, they would have higher priority because Null is a subtype
+  // of Integer.  We balance that out and create conflict by moving the
+  // definition into the superclass.
+  //
+  // Caution: do not adjust tightrope tension without safety goggles in place.
+  implicit def Byte2byteNullConflict(x: Null): Byte          = sys.error("value error")
+  implicit def Short2shortNullConflict(x: Null): Short       = sys.error("value error")
+  implicit def Character2charNullConflict(x: Null): Char     = sys.error("value error")
+  implicit def Integer2intNullConflict(x: Null): Int         = sys.error("value error")
+  implicit def Long2longNullConflict(x: Null): Long          = sys.error("value error")
+  implicit def Float2floatNullConflict(x: Null): Float       = sys.error("value error")
+  implicit def Double2doubleNullConflict(x: Null): Double    = sys.error("value error")
+  implicit def Boolean2booleanNullConflict(x: Null): Boolean = sys.error("value error")
+
   implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
     if (xs eq null) null
     else WrappedArray.make(xs)

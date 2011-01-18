@@ -1,0 +1,19 @@
+bug4158.scala:3: error: type mismatch;
+ found   : Null(null)
+ required: Int
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method Integer2intNullConflict in class LowPriorityImplicits of type (x: Null)Int
+ and method Integer2int in object Predef of type (x: java.lang.Integer)Int
+ are possible conversion functions from Null(null) to Int
+  var y = null: Int
+          ^
+bug4158.scala:2: error: type mismatch;
+ found   : Null(null)
+ required: Int
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method Integer2intNullConflict in class LowPriorityImplicits of type (x: Null)Int
+ and method Integer2int in object Predef of type (x: java.lang.Integer)Int
+ are possible conversion functions from Null(null) to Int
+  var x: Int = null
+               ^
+two errors found
