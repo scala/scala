@@ -153,7 +153,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ClassClass           = getClass(sn.Class)
       def Class_getMethod = getMember(ClassClass, nme.getMethod_)
     lazy val DynamicClass         = getClass("scala.Dynamic")
-      val Dynamic_OptInvokeMaxArgCount = 7
 
     // fundamental modules
     lazy val PredefModule: Symbol = getModule("scala.Predef")
