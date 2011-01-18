@@ -16,5 +16,5 @@ public class VolatileObjectRef implements java.io.Serializable {
 
     volatile public Object elem;
     public VolatileObjectRef(Object elem) { this.elem = elem; }
-    public String toString() { return "" + elem; }
+    public String toString() { return String.valueOf(elem); }
 }

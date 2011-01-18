@@ -144,7 +144,7 @@ public class JStackMapTableAttribute extends JAttribute {
             case 8: // ITEM_Uninitialized
                 return "<uninitialized>";
             default:
-                return ""+tag;
+                return String.valueOf(tag);
             }
         }
     }

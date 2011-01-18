@@ -310,7 +310,7 @@ abstract public class JType {
         case T_OBJECT  : return "Object";
         case T_UNKNOWN : return "<unknown>";
         case T_ADDRESS : return "<address>";
-        default:         return ""+tag;
+        default:         return String.valueOf(tag);
         }
     }
 }
