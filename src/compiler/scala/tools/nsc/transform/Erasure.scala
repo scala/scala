@@ -440,6 +440,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
   /** The modifier typer which retypes with erased types. */
   class Eraser(context: Context) extends Typer(context) {
+    private def safeToRemoveUnbox(cls: Symbol): Boolean =
+      (cls == definitions.NullClass) || isBoxedValueClass(cls)
+
     /** Box `tree' of unboxed type */
     private def box(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
@@ -455,8 +458,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             tree match {
               /** Can't always remove a Box(Unbox(x)) combination because the process of boxing x
                *  may lead to throwing an exception.
+               *
+               *  This is important for specialization: calls to the super constructor should not box/unbox specialized
+               *  fields (see TupleX). (ID)
                */
-              case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && isBoxedValueClass(arg.tpe.typeSymbol) =>
+              case Apply(boxFun, List(arg)) if isUnbox(tree.symbol) && safeToRemoveUnbox(arg.tpe.typeSymbol) =>
                 log("boxing an unbox: " + tree + " and replying with " + arg)
                 arg
               case _ =>

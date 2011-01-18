@@ -30,18 +30,27 @@ object Test {
     val m = randomMatrix(200, 100)
     val n = randomMatrix(100, 200)
 
-    mult(m, n)
-    println("*")
+    val p = mult(m, n)
+    println(p(0, 0))
+    println("Boxed doubles: " + runtime.BoxesRunTime.doubleBoxCount)
+    println("Boxed integers: " + runtime.BoxesRunTime.integerBoxCount)
   }
 
   def randomMatrix(n: Int, m: Int) = {
     val r = new util.Random(10)
-    val x = new Matrix[Int](n, m)
+    val x = new Matrix[Double](n, m)
     for (i <- 0 until n; j <- 0 until m)
-      x(i, j) = r.nextInt
+      x(i, j) = (r.nextInt % 1000).toDouble
     x
   }
 
+  def printMatrix[Double](m: Matrix[Double]) {
+    for (i <- 0 until m.rows) {
+      for (j <- 0 until m.cols)
+        print("%5.3f ".format(m(i, j)))
+      println
+    }
+  }
 
   def multManifest[@specialized(Int) T](m: Matrix[T], n: Matrix[T])(implicit cm: ClassManifest[T], num: Numeric[T]) {
     val p = new Matrix[T](m.rows, n.cols)
@@ -56,15 +65,16 @@ object Test {
       }
   }
 
-  def mult(m: Matrix[Int], n: Matrix[Int]) {
-    val p = new Matrix[Int](m.rows, n.cols)
+  def mult(m: Matrix[Double], n: Matrix[Double]) = {
+    val p = new Matrix[Double](m.rows, n.cols)
 
     for (i <- 0 until m.rows)
       for (j <- 0 until n.cols) {
-        var sum = 0
+        var sum = 0.0
         for (k <- 0 until n.rows)
           sum += m(i, k) * n(k, j)
         p(i, j) = sum
       }
+    p
   }
 }
