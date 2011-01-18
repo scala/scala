@@ -227,7 +227,7 @@ trait Scopes {
 
     /** lookup a symbol entry matching given name.
      *  @note from Martin: I believe this is a hotspot or will be one
-     *  in future versions of the type sys. I have reverted the previous
+     *  in future versions of the type system. I have reverted the previous
      *  change to use iterators as too costly.
      */
     def lookupEntry(name: Name): ScopeEntry = {
@@ -248,7 +248,7 @@ trait Scopes {
 
     /** lookup next entry with same name as this one
      *  @note from Martin: I believe this is a hotspot or will be one
-     *  in future versions of the type sys. I have reverted the previous
+     *  in future versions of the type system. I have reverted the previous
      *  change to use iterators as too costly.
      */
     def lookupNextEntry(entry: ScopeEntry): ScopeEntry = {
