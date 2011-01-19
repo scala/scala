@@ -33,7 +33,7 @@ object Test {
     val p = mult(m, n)
     println(p(0, 0))
     println("Boxed doubles: " + runtime.BoxesRunTime.doubleBoxCount)
-    println("Boxed integers: " + runtime.BoxesRunTime.integerBoxCount)
+//    println("Boxed integers: " + runtime.BoxesRunTime.integerBoxCount)
   }
 
   def randomMatrix(n: Int, m: Int) = {
