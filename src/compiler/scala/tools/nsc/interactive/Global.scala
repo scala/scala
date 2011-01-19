@@ -197,12 +197,12 @@ self =>
     logreplay("atnode", nodeWithWork()) match {
       case Some(id) =>
         debugLog("some work at node "+id+" current = "+nodesSeen)
-        assert(id >= nodesSeen)
+//        assert(id >= nodesSeen)
         moreWorkAtNode = id
       case None =>
     }
 
-    if (nodesSeen == moreWorkAtNode) {
+    if (nodesSeen >= moreWorkAtNode) {
       if (logreplay("cancelled", pendingResponse.isCancelled)) {
         throw CancelException
       }

@@ -3777,7 +3777,7 @@ A type's typeSymbol should never be inspected directly.
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
           if (settings.debug.value) println(pre+"."+sym+" does no longer exist, phase = "+phase)
-          throw new MissingTypeControl // For build manager purposes
+          throw new MissingTypeControl // For build manager and presentation compiler purposes
           //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
         /** The two symbols have the same fully qualified name */
@@ -3816,7 +3816,7 @@ A type's typeSymbol should never be inspected directly.
           if (sym1 == sym) tp else ThisType(sym1)
         } catch {
         	case ex: MissingTypeControl =>
-            NoType
+            tp
         }
       case SingleType(pre, sym) =>
         if (sym.isPackage) tp
@@ -3839,7 +3839,7 @@ A type's typeSymbol should never be inspected directly.
             case ex: MissingAliasControl =>
               apply(tp.dealias)
             case _: MissingTypeControl =>
-              NoType
+              tp
           }
         }
       case MethodType(params, restp) =>
