@@ -1358,7 +1358,7 @@ abstract class GenICode extends SubComponent  {
     def genStringConcat(tree: Tree, ctx: Context): Context = {
       liftStringConcat(tree) match {
         // Optimization for expressions of the form "" + x.  We can avoid the StringBuilder.
-        case List(Literal(Constant("")), arg) =>
+        case List(Literal(Constant("")), arg) if !forMSIL =>
           if (settings.debug.value) log("Rewriting \"\" + x as String.valueOf(x) for: " + arg)
           val ctx1 = genLoad(arg, ctx, ObjectReference)
           ctx1.bb.emit(CALL_METHOD(String_valueOf, Static(false)), arg.pos)
