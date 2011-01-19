@@ -41,7 +41,7 @@ trait DirectRunner {
    *  signs of dementia.
    */
   private var workers: List[Worker]       = Nil
-  private var logsToDelete: List[LogFile] = Nil
+  private var logsToDelete: List[File]    = Nil
   private var outdirsToDelete: List[File] = Nil
   private val results                     = new mutable.HashMap[String, Int]()
   private def addResults(kvs: Traversable[(String, Int)]) = synchronized { results ++= kvs }
@@ -83,7 +83,7 @@ trait DirectRunner {
     workers foreach { w =>
       receiveWithin(3600 * 1000) {
         case Results(res, logs, outdirs) =>
-          logsToDelete ++= (logs filter (_.toDelete))
+          logsToDelete ++= logs
           outdirsToDelete ++= outdirs
           addResults(res)
         case TIMEOUT =>

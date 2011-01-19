@@ -62,10 +62,10 @@ trait FileManager {
     testTimings.toList sortBy (-_._2) foreach { case (k, v) => println("%s: %s".format(k, v)) }
   }
 
-  def getLogFile(dir: File, fileBase: String, kind: String): LogFile =
-    new LogFile(dir, fileBase + "-" + kind + ".log")
+  def getLogFile(dir: File, fileBase: String, kind: String): File =
+    new File(dir, fileBase + "-" + kind + ".log")
 
-  def getLogFile(file: File, kind: String): LogFile = {
+  def getLogFile(file: File, kind: String): File = {
     val dir      = file.getParentFile
     val fileBase = basename(file.getName)
 

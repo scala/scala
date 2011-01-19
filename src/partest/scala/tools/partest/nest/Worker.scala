@@ -27,19 +27,23 @@ import scala.tools.nsc.interactive.{ BuildManager, RefinedBuildManager }
 import scala.sys.process._
 
 case class RunTests(kind: String, files: List[File])
-case class Results(results: Map[String, Int], logs: List[LogFile], outdirs: List[File])
+case class Results(results: Map[String, Int], logs: List[File], outdirs: List[File])
 
-case class LogContext(file: LogFile, writers: Option[(StringWriter, PrintWriter)])
+class LogContext(val file: File, val writers: Option[(StringWriter, PrintWriter)])
+
+object LogContext {
+  def apply(file: File, swr: StringWriter, wr: PrintWriter): LogContext = {
+    require (file != null)
+    new LogContext(file, Some((swr, wr)))
+  }
+  def apply(file: File): LogContext = new LogContext(file, None)
+}
 
 abstract class TestResult {
   def file: File
 }
 case class Result(override val file: File, context: LogContext) extends TestResult
 case class Timeout(override val file: File) extends TestResult
-
-class LogFile(parent: File, child: String) extends File(parent, child) {
-  var toDelete = false
-}
 
 class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
   def testRootDir: Directory = origmanager.testRootDir
@@ -127,9 +131,12 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
    *  I can see what they're doing when the world comes to a premature stop.
    */
   private val filesRemaining = new mutable.HashSet[File]
-  private def addFilesRemaining(xs: Traversable[File]) = synchronized { filesRemaining ++= xs }
   private var currentTestFile: File = _
   private var currentFileStart: Long = System.currentTimeMillis
+  private val logsToDelete = new mutable.HashSet[File]
+
+  private def addFilesRemaining(xs: Traversable[File]) = synchronized { filesRemaining ++= xs }
+  private def addLogToDelete(f: File) = synchronized { logsToDelete += f }
 
   def currentFileElapsed = (System.currentTimeMillis - currentFileStart) / 1000
   def forceTimeout() = {
@@ -162,25 +169,26 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       new java.util.Date()
     )
   }
-  private def getNextFile(): File = synchronized {
-    if (filesRemaining.isEmpty) null
+  private def getNextFile(): File = {
+    if (filesRemaining.isEmpty) {
+      currentTestFile = null
+    }
     else {
       currentTestFile = filesRemaining.head
       filesRemaining -= currentTestFile
       currentFileStart = System.currentTimeMillis
-      currentTestFile
     }
+
+    currentTestFile
   }
   // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
   private val status = new mutable.HashMap[String, Int]
-  private def updateStatus(key: String, num: Int) = synchronized {
-    status(key) = num
-  }
+  private def updateStatus(key: String, num: Int) = status(key) = num
+
   override def toString = (
     ">> Partest Worker in state " + getState + ":\n" +
     currentFileString + "\n" +
     "There are " + filesRemaining.size + " files remaining:\n" +
-    filesRemaining.toList.sortBy(_.toString).map("  " + _ + "\n").mkString("") +
     "\nstatus hashmap contains " + status.size + " entries:\n" +
     status.toList.map(x => "  " + x._1 + " -> " + x._2).sorted.mkString("\n") + "\n"
   )
@@ -230,10 +238,10 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   }
 
   var log = ""
-  var createdLogFiles: List[LogFile] = Nil
+  var createdLogFiles: List[File] = Nil
   var createdOutputDirs: List[File] = Nil
 
-  def createLogFile(file: File, kind: String): LogFile = {
+  def createLogFile(file: File, kind: String): File = {
     val logFile = fileManager.getLogFile(file, kind)
     createdLogFiles ::= logFile
     logFile
@@ -422,7 +430,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       val logFile = createLogFile(file, kind)
 
       if (fileManager.failed && !logFile.canRead)
-        LogContext(logFile, None)
+        LogContext(logFile)
       else {
         val (swr, wr) = initNextTest()
         printInfoStart(file, wr)
@@ -444,7 +452,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         }
         catch exHandler(logFile)
 
-        LogContext(logFile, Some((swr, wr)))
+        LogContext(logFile, swr, wr)
       }
     }
 
@@ -695,11 +703,11 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
               diffCheck(compareOutput(file, fileBase, kind, logFile))
             }
-            LogContext(logFile, Some((swr, wr)))
+            LogContext(logFile, swr, wr)
           } else
-            LogContext(logFile, None)
+            LogContext(logFile)
         } else
-          LogContext(logFile, None)
+          LogContext(logFile)
 
       case "res" => {
           // simulate resident compiler loop
@@ -779,9 +787,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             }
             fileManager.mapFile(logFile, "tmp", dir, replaceSlashes(dir, _))
             diffCheck(compareOutput(dir, fileBase, kind, logFile))
-            LogContext(logFile, Some((swr, wr)))
+            LogContext(logFile, swr, wr)
           } else
-            LogContext(logFile, None)
+            LogContext(logFile)
         }
 
       case "shootout" => {
@@ -822,10 +830,10 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
               diffCheck(compareOutput(dir, fileBase, kind, logFile))
             }
 
-            LogContext(logFile, Some((swr, wr)))
+            LogContext(logFile, swr, wr)
           }
           else
-            LogContext(logFile, None)
+            LogContext(logFile)
         }
 
       case "scalap" =>
@@ -901,9 +909,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
                 succeeded = false
             }
 
-            LogContext(logFile, Some((swr, wr)))
+            LogContext(logFile, swr, wr)
           } else
-            LogContext(logFile, None)
+            LogContext(logFile)
       }
     }
 
@@ -918,36 +926,32 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       val Timeout = 2
     }
 
-    def reportResult(state: Int, logFile: Option[LogFile], writers: Option[(StringWriter, PrintWriter)]) {
+    def reportResult(state: Int, logFile: File, writers: Option[(StringWriter, PrintWriter)]) {
       val isGood    = state == TestState.Ok
       val isFail    = state == TestState.Fail
       val isTimeout = state == TestState.Timeout
+      val hasLog    = logFile != null
 
-      if (!isGood) {
+      // delete log file only if test was successful
+      if (isGood && hasLog) {
+        if (!isPartestDebug)
+          addLogToDelete(logFile)
+      }
+      else {
         errors += 1
         NestUI.verbose("incremented errors: "+errors)
       }
 
-      // delete log file only if test was successful
-      if (isGood && !isPartestDebug)
-        logFile foreach (_.toDelete = true)
-
       writers foreach { case (swr, wr) =>
-        if (swr == null || wr == null || fileManager == null || logFile.exists(_ == null)) {
-          NestUI.normal("Something is wrong, why are you sending nulls here?")
-          NestUI.normal(List(swr, wr, fileManager, logFile) mkString " ")
-        }
-        else {
-          if (isTimeout) printInfoTimeout(wr)
-          else printInfoEnd(isGood, wr)
-          wr.flush()
-          swr.flush()
-          NestUI.normal(swr.toString)
-          if (isFail && fileManager.showDiff && diff != "")
-            NestUI.normal(diff)
-          if (isFail && fileManager.showLog)
-            logFile foreach showLog
-        }
+        if (isTimeout) printInfoTimeout(wr)
+        else printInfoEnd(isGood, wr)
+        wr.flush()
+        swr.flush()
+        NestUI.normal(swr.toString)
+        if (isFail && fileManager.showDiff && diff != "")
+          NestUI.normal(diff)
+        if (isFail && fileManager.showLog && hasLog)
+          showLog(logFile)
       }
     }
 
@@ -961,7 +965,11 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       actor {
         val testFile = getNextFile()
-        if (testFile == null) done = true
+        if (testFile == null) {
+          done = true
+          cancelTimerTask()
+          reportAll(status.toMap, topcont)
+        }
         else {
           updateTimerTask(parent ! Timeout(testFile))
 
@@ -971,39 +979,32 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
               case t: Throwable =>
                 val logFile = createLogFile(testFile, kind)
                 logStackTrace(logFile, t, "Possible compiler crash during test of: " + testFile)
-                LogContext(logFile, None)
+                LogContext(logFile)
             }
           parent ! Result(testFile, context)
         }
       }
 
       react {
-        case res: TestResult =>
-          val path = res.file.getCanonicalPath
-          if (status contains path) {
-            // ignore message
-            NestUI.debug("Why are we receiving duplicate messages? Received: " + res + "\nPath is " + path)
-          }
-          else res match {
-            case Timeout(_) =>
-              updateStatus(path, TestState.Timeout)
-              val swr = new StringWriter
-              val wr = new PrintWriter(swr)
-              printInfoStart(res.file, wr)
-              reportResult(TestState.Timeout, None, Some((swr, wr)))
-            case Result(_, logs) =>
-              val state = if (succeeded) TestState.Ok else TestState.Fail
-              updateStatus(path, state)
-              reportResult(
-                state,
-                Option(logs) map (_.file),
-                Option(logs) flatMap (_.writers)
-              )
-          }
-          if (filesRemaining.isEmpty) {
-            cancelTimerTask()
-            reportAll(status.toMap, topcont)
-          }
+        case Timeout(file) =>
+          updateStatus(file.getCanonicalPath, TestState.Timeout)
+          val swr = new StringWriter
+          val wr = new PrintWriter(swr)
+          printInfoStart(file, wr)
+          reportResult(
+            TestState.Timeout,
+            null,
+            Some((swr, wr))
+          )
+
+        case Result(file, logs) =>
+          val state = if (succeeded) TestState.Ok else TestState.Fail
+          updateStatus(file.getCanonicalPath, state)
+          reportResult(
+            state,
+            logs.file,
+            logs.writers
+          )
       }
     }
   }
