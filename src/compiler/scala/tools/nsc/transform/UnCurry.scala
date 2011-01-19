@@ -10,7 +10,7 @@ import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 
 /*<export> */
-/** - uncurry all symbol and tree types (@see UnCurryPhase)
+/** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
  *  - for every type application: f[Ts] ==> f[Ts]() unless followed by parameters

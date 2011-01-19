@@ -6,12 +6,15 @@
 package scala.tools.nsc
 package transform
 
-/** <p>
- *    A base class for transforms.
- *  </p>
- *  <p>
- *    A transform contains a compiler phase which applies a tree transformer.
- *  </p>
+/**
+ * An InfoTransform contains a compiler phase that transforms trees and symbol infos -- making sure they stay consistent.
+ * The symbol info is transformed assuming it is consistent right before this phase.
+ * The info transformation is triggered by Symbol::rawInfo, which caches the results in the symbol's type history.
+ * This way sym.info (during an atPhase(p)) can look up what the symbol's info should look like at the beginning of phase p.
+ * (If the transformed info had not been stored yet, rawInfo will compute the info by composing the info-transformers
+ *  of the most recent phase before p, up to the transformer of the phase right before p.)
+ *
+ * Concretely, atPhase(p) { sym.info } yields the info *before* phase p has transformed it. Imagine you're a phase and it all makes sense.
  */
 trait InfoTransform extends Transform {
   import global.{Symbol, Type, InfoTransformer, infoTransformers}
