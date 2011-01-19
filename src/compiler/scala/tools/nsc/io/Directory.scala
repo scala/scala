@@ -72,16 +72,4 @@ class Directory(jfile: JFile) extends Path(jfile) {
    */
   def subdirs(depth: Int = 1): Iterator[Directory] =
     deepList(depth) collect { case x: Directory => x }
-
-  /** Deletes the directory recursively. Returns false on failure.
-   *  Use with caution!
-   */
-  def deleteRecursively(): Boolean = deleteRecursively(jfile)
-  private def deleteRecursively(f: JFile): Boolean = {
-    if (f.isDirectory) f.listFiles match {
-      case null =>
-      case xs   => xs foreach deleteRecursively
-    }
-    f.delete()
-  }
 }

@@ -11,6 +11,7 @@ package partest
 
 import util._
 import nsc.io._
+import scala.sys.process._
 
 trait Actions {
   partest: Universe =>
@@ -43,53 +44,10 @@ trait Actions {
       isDryRun || execAndLog(cmd)
     }
 
-    /** Runs <code>command</code> redirecting standard out and
-     *  error out to <code>output</code> file.
-     */
-    private def runCommandOld(command: String, output: java.io.File): Int = {
-      import java.io._
-      import nest.StreamAppender
-
-      // NestUI.verbose("running command:\n"+command)
-      val proc = Runtime.getRuntime.exec(command)
-      val in = proc.getInputStream
-      val err = proc.getErrorStream
-      val writer = new PrintWriter(new FileWriter(output), true)
-      val inApp = StreamAppender(in, writer)
-      val errApp = StreamAppender(err, writer)
-      val async = new Thread(errApp)
-      async.start()
-      inApp.run()
-      async.join()
-      writer.close()
-
-      try proc.exitValue()
-      catch { case _: IllegalThreadStateException => 0 }
-    }
-
     /** Exec a process to run a command.  Assumes 0 exit value is success.
      *  Of necessity, also treats no available exit value as success.
      */
-    protected def execAndLog(cmd: String): Boolean = {
-      runCommandOld(cmd, logFile.jfile) == 0
-
-      // var proc: Process = null
-      //
-      // val result = interruptMeIn(cmd, testTimeout) {
-      //   loggingResult {
-      //     proc = Process.exec(toArgs(cmd), execEnv, execCwd.orNull, true)
-      //     proc.slurp()
-      //   }
-      //   proc != null && (proc.waitFor() == 0)
-      // }
-      // result getOrElse {
-      //   warning("Process never terminated: '%s'" format cmd)
-      //   if (proc != null)
-      //     proc.destroy()
-      //
-      //   false
-      // }
-    }
+    protected def execAndLog(cmd: String) = (cmd #> logFile.jfile !) == 0
   }
 
   trait ScriptableTest {

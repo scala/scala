@@ -12,7 +12,6 @@ import java.io.{ File, FilenameFilter, IOException, StringWriter }
 import java.net.URI
 import scala.util.Properties.{ propOrElse, scalaCmd, scalacCmd }
 import scala.tools.util.PathResolver
-import scala.tools.nsc.{ Settings }
 import scala.tools.nsc.{ io, util }
 import util.{ ClassPath }
 import io.{ Path, Directory }

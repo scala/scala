@@ -248,6 +248,19 @@ class Path private[io] (val jfile: JFile) {
   // deletions
   def delete() = jfile.delete()
   def deleteIfExists() = if (jfile.exists()) delete() else false
+
+  /** Deletes the path recursively. Returns false on failure.
+   *  Use with caution!
+   */
+  def deleteRecursively(): Boolean = deleteRecursively(jfile)
+  private def deleteRecursively(f: JFile): Boolean = {
+    if (f.isDirectory) f.listFiles match {
+      case null =>
+      case xs   => xs foreach deleteRecursively
+    }
+    f.delete()
+  }
+
   def truncate() =
     isFile && {
       val raf = new RandomAccessFile(jfile, "rw")

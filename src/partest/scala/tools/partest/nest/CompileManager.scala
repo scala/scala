@@ -17,9 +17,17 @@ import io.Path
 import java.io.{ File, BufferedReader, PrintWriter, FileReader, Writer, FileWriter, StringWriter }
 import File.pathSeparator
 
-class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter)
-extends ConsoleReporter(settings, reader, writer) {
-  def this(settings: Settings) = this(settings, Console.in, new PrintWriter(new FileWriter("/dev/null")))
+class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends ConsoleReporter(settings, Console.in, writer) {
+  shortname = true
+}
+
+class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
+  def this(cp: String) = this(cp, _ => ())
+
+  deprecation.value = true
+  nowarnings.value  = false
+  encoding.value    = "ISO-8859-1"
+  classpath.value   = cp
 }
 
 abstract class SimpleCompiler {
@@ -30,28 +38,17 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
     new Global(settings, reporter)
 
-  def newGlobal(settings: Settings, logWriter: FileWriter): Global = {
-    val rep = newReporter(settings, logWriter)
-    rep.shortname = true
-    newGlobal(settings, rep)
+  def newGlobal(settings: Settings, logWriter: FileWriter): Global =
+    newGlobal(settings, new ExtConsoleReporter(settings, new PrintWriter(logWriter)))
+
+  def newSettings(): TestSettings = new TestSettings(fileManager.LATEST_LIB)
+  def newSettings(outdir: String): TestSettings = {
+    val cp = ClassPath.join(fileManager.LATEST_LIB, outdir)
+    val s = new TestSettings(cp)
+    s.outdir.value = outdir
+
+    s
   }
-
-  def newSettings(out: Option[String]) = {
-    // val settings = new Settings(Console.err println _)
-    val settings = new Settings(_ => ())
-    settings.deprecation.value = true
-    settings.nowarnings.value = false
-    settings.encoding.value = "ISO-8859-1"
-
-    val classpathElements = fileManager.LATEST_LIB :: out.toList
-    settings.classpath.value = ClassPath.join(classpathElements: _*)
-    out foreach (settings.outdir.value = _)
-
-    settings
-  }
-
-  def newReporter(sett: Settings, writer: Writer = new StringWriter) =
-    new ExtConsoleReporter(sett, Console.in, new PrintWriter(writer))
 
   private def updatePluginPath(options: String): String = {
     val dir = fileManager.testRootDir
@@ -68,7 +65,10 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   }
 
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
-    val testSettings = newSettings(out map (_.getAbsolutePath))
+    val testSettings = out match {
+      case Some(f)  => newSettings(f.getAbsolutePath)
+      case _        => newSettings()
+    }
     val logWriter = new FileWriter(log)
 
     // check whether there is a ".flags" file
@@ -106,7 +106,6 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       }
 
       testRep.printSummary
-      testRep.writer.flush
       testRep.writer.close
     }
     finally logWriter.close()
@@ -147,7 +146,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 // }
 
 class CompileManager(val fileManager: FileManager) {
-  var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)
+  var compiler: SimpleCompiler = new DirectCompiler(fileManager)
 
   var numSeparateCompilers = 1
   def createSeparateCompiler() = {

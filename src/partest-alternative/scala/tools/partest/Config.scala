@@ -71,20 +71,6 @@ trait Config {
 
     /** Internal **/
     private def repo  = partestDir.parent.normalize
-    // XXX - is this needed? Where?
-    //
-    // private val pluginOptionString = "-Xplugin:"
-    // private def updatedPluginPath(options: String): String = {
-    //   val (pluginArgs, rest) = toArgs(options) partition (_ startsWith pluginOptionString)
-    //   // join all plugin paths as one classpath
-    //   val pluginPaths = ClassPath.join(pluginArgs map (_ stripPrefix pluginOptionString): _*)
-    //   // map all paths to absolute
-    //   val newPath = ClassPath.map(pluginPaths, x => absolutize(x).path)
-    //   // recreate option
-    //   val pluginOption = if (newPath == "") None else Some(pluginOptionString + newPath)
-    //
-    //   fromArgs(rest ::: pluginOption.toList)
-    // }
 
     private def pathForComponent(what: String, jarFormat: String = "scala-%s.jar"): Path = {
       def asDir = testBuildDir / "classes" / what
