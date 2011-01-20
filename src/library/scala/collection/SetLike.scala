@@ -141,7 +141,7 @@ self =>
    *  @param elem the element to test for membership.
    *  @return  `true` if `elem` is contained in this set, `false` otherwise.
    */
-  def apply(elem: A): Boolean = contains(elem)
+  def apply(elem: A): Boolean = this contains elem
 
   /** Computes the intersection between this set and another set.
    *
@@ -149,7 +149,7 @@ self =>
    *  @return  a new set consisting of all elements that are both in this
    *  set and in the given set `that`.
    */
-  def intersect(that: Set[A]): This = filter(that.contains)
+  def intersect(that: Set[A]): This = this filter that
 
   /** Computes the intersection between this set and another set.
    *
@@ -158,7 +158,7 @@ self =>
    *  @return  a new set consisting of all elements that are both in this
    *  set and in the given set `that`.
    */
-  def &(that: Set[A]): This = intersect(that)
+  def &(that: Set[A]): This = this intersect that
 
  /**  This method is an alias for `intersect`.
    *  It computes an intersection with set `that`.
@@ -166,7 +166,8 @@ self =>
    *
    *  @param that the set to intersect with
    */
-  @deprecated("use & instead") def ** (that: Set[A]): This = intersect(that)
+  @deprecated("use & instead")
+  def ** (that: Set[A]): This = &(that)
 
   /** Computes the union between of set and another set.
    *
@@ -174,7 +175,7 @@ self =>
    *  @return  a new set consisting of all elements that are in this
    *  set or in the given set `that`.
    */
-  def union(that: Set[A]): This = this.++(that)
+  def union(that: Set[A]): This = this ++ that
 
   /** Computes the union between this set and another set.
    *
@@ -183,7 +184,7 @@ self =>
    *  @return  a new set consisting of all elements that are in this
    *  set or in the given set `that`.
    */
-  def | (that: Set[A]): This = union(that)
+  def | (that: Set[A]): This = this union that
 
   /** Computes the difference of this set and another set.
    *
@@ -191,7 +192,7 @@ self =>
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set `that`.
    */
-  def diff(that: Set[A]): This = --(that)
+  def diff(that: Set[A]): This = this -- that
 
   /** The difference of this set and another set.
    *
@@ -200,7 +201,7 @@ self =>
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set `that`.
    */
-  def &~(that: Set[A]): This = diff(that)
+  def &~(that: Set[A]): This = this diff that
 
   /** Tests whether this set is a subset of another set.
    *
@@ -208,7 +209,74 @@ self =>
    *  @return     `true` if this set is a subset of `that`, i.e. if
    *              every element of this set is also an element of `that`.
    */
-  def subsetOf(that: Set[A]): Boolean = forall(that.contains)
+  def subsetOf(that: Set[A]) = this forall that
+
+  /** An iterator over all subsets of this set of the given size.
+   *
+   *  @param len  the size of the subsets.
+   *  @return     the iterator.
+   */
+  def subsets(len: Int): Iterator[This] = {
+    if (len < 0 || len > size) throw new IllegalArgumentException(len.toString)
+    else new SubsetsItr(self.toIndexedSeq, len)
+  }
+
+  /** An iterator over all subsets of this set.
+   *
+   *  @return     the iterator.
+   */
+  def subsets: Iterator[This] = new Iterator[This] {
+    private val elms = self.toIndexedSeq
+    private var len = 0
+    private var itr: Iterator[This] = Iterator.empty
+
+    def hasNext = len <= elms.size || itr.hasNext
+    def next = {
+      if (!itr.hasNext) {
+        if (len > elms.size) Iterator.empty.next
+        else {
+          itr = new SubsetsItr(elms, len)
+          len += 1
+        }
+      }
+
+      itr.next
+    }
+  }
+
+  /** An Iterator include all subsets containing exactly len elements.
+   *  If the elements in 'This' type is ordered, then the subsets will also be in the same order.
+   *  ListSet(1,2,3).subsets => {1},{2},{3},{1,2},{1,3},{2,3},{1,2,3}}
+   *
+   *  @author Eastsun
+   *  @date 2010.12.6
+   */
+  private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends Iterator[This] {
+    private val idxs = Array.range(0, len+1)
+    private var _hasNext = true
+    idxs(len) = elms.size
+
+    def hasNext = _hasNext
+    def next: This = {
+      if (!hasNext) Iterator.empty.next
+
+      val buf = self.newBuilder
+      idxs.slice(0, len) foreach (idx => buf += elms(idx))
+      val result = buf.result
+
+      var i = len - 1
+      while (i >= 0 && idxs(i) == idxs(i+1)-1) i -= 1
+
+      if (i < 0) _hasNext = false
+      else {
+        idxs(i) += 1
+        for (j <- (i+1) until len)
+          idxs(j) = idxs(j-1) + 1
+      }
+
+      result
+    }
+  }
 
   /** Defines the prefix of this object's `toString` representation.
    *  @return  a string representation which starts the result of `toString` applied to this set.

@@ -79,8 +79,6 @@ object BitSet extends BitSetFactory[BitSet] {
     else new BitSetN(elems)
   }
 
-  private val hashSeed = "BitSet".hashCode
-
   class BitSet1(val elems: Long) extends BitSet {
     protected def nwords = 1
     protected def word(idx: Int) = if (idx == 0) elems else 0L

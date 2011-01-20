@@ -372,18 +372,127 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return   An Iterator which traverses the distinct permutations of this $coll.
    *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
    */
-  def permutations: Iterator[Repr] = {
-    val seen = mutable.HashSet[A]()
-    val xs = thisCollection.toIndexedSeq
+  def permutations: Iterator[Repr] =
+    if (isEmpty) Iterator(repr)
+    else new PermutationsItr
 
-    if (xs.isEmpty) Iterator.empty
-    else if (xs.tail.isEmpty) Iterator(repr)
-    else xs.indices collect {
-      case idx if !seen(xs(idx))  =>
-        seen += xs(idx)
-        val rest = (xs take idx) ++ (xs drop (idx + 1))
-        rest.permutations map (newBuilder += xs(idx) ++= _ result)
-    } reduceLeft (_ ++ _)
+  /** Iterates over combinations.
+   *
+   *  @return   An Iterator which traverses the possible n-element combinations of this $coll.
+   *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
+   */
+  def combinations(n: Int): Iterator[Repr] =
+    if (n < 0 || n > size) Iterator.empty
+    else new CombinationsItr(n)
+
+  private class PermutationsItr extends Iterator[Repr] {
+    private[this] val (elms, idxs) = init()
+    private var _hasNext = true
+
+    def hasNext = _hasNext
+    def next: Repr = {
+      if (!hasNext)
+        Iterator.empty.next
+
+      val result = (self.newBuilder ++= elms).result
+      var i = idxs.length - 2
+      while(i >= 0 && idxs(i) >= idxs(i+1))
+        i -= 1
+
+      if (i < 0)
+        _hasNext = false
+      else {
+        var j = idxs.length - 1
+        while(idxs(j) <= idxs(i)) j -= 1
+          swap(i,j)
+
+        val len = (idxs.length - i) / 2
+        var k = 1
+        while (k <= len) {
+          swap(i+k, idxs.length - k)
+          k += 1
+        }
+      }
+      result
+    }
+    private def swap(i: Int, j: Int) {
+      var tmpI = idxs(i)
+      idxs(i) = idxs(j)
+      idxs(j) = tmpI
+      var tmpE = elms(i)
+      elms(i) = elms(j)
+      elms(j) = tmpE
+    }
+
+    private[this] def init() = {
+      val m = mutable.HashMap[A, Int]()
+      val (es, is) = thisCollection map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2) unzip
+
+      (es.toBuffer, is.toArray)
+    }
+  }
+
+  private class CombinationsItr(n: Int) extends Iterator[Repr] {
+    // generating all nums such that:
+    // (1) nums(0) + .. + nums(length-1) = n
+    // (2) 0 <= nums(i) <= cnts(i), where 0 <= i <= cnts.length-1
+    private val (elms, cnts, nums) = init()
+    private val offs = cnts.scanLeft(0)(_ + _)
+    private var _hasNext = true
+
+    def hasNext = _hasNext
+    def next: Repr = {
+      if (!hasNext)
+        Iterator.empty.next
+
+      /** Calculate this result. */
+      val buf = self.newBuilder
+      for(k <- 0 until nums.length; j <- 0 until nums(k))
+        buf += elms(offs(k)+j)
+      val res = buf.result
+
+      /** Prepare for the next call to next. */
+      var idx = nums.length - 1
+      while (idx >= 0 && nums(idx) == cnts(idx))
+        idx -= 1
+
+      idx = nums.lastIndexWhere(_ > 0, idx - 1)
+
+      if (idx < 0)
+        _hasNext = false
+      else {
+        var sum = nums.slice(idx + 1, nums.length).sum + 1
+        nums(idx) -= 1
+        for (k <- (idx+1) until nums.length) {
+          nums(k) = sum min cnts(k)
+          sum -= nums(k)
+        }
+      }
+
+      res
+    }
+
+    /** Rearrange seq to newSeq a0a0..a0a1..a1...ak..ak such that
+     *  seq.count(_ == aj) == cnts(j)
+     *
+     *  @return     (newSeq,cnts,nums)
+     */
+    private def init(): (IndexedSeq[A], Array[Int], Array[Int]) = {
+      val m = mutable.HashMap[A, Int]()
+
+      // e => (e, weight(e))
+      val (es, is) = thisCollection map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2) unzip
+      val cs = new Array[Int](m.size)
+      is foreach (i => cs(i) += 1)
+      val ns = new Array[Int](cs.length)
+
+      var r = n
+      0 until ns.length foreach { k =>
+        ns(k) = r min cs(k)
+        r -= ns(k)
+      }
+      (es.toIndexedSeq, cs, ns)
+    }
   }
 
   /** Returns new $coll wih elements in reversed order.

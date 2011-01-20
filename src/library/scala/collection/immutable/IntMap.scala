@@ -55,14 +55,14 @@ object IntMap {
     // develops.  Case objects and custom equality don't mix without
     // careful handling.
     override def equals(that : Any) = that match {
-      case (that : AnyRef) if (this eq that) => true;
-      case (that : IntMap[_]) => false; // The only empty IntMaps are eq Nil
-      case that => super.equals(that);
+      case _: this.type => true
+      case _: IntMap[_] => false // The only empty IntMaps are eq Nil
+      case _            => super.equals(that)
     }
-  };
+  }
 
   private[immutable] case class Tip[+T](key : Int, value : T) extends IntMap[T]{
-    def withValue[S](s : S) =
+    def withValue[S](s: S) =
       if (s.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[IntMap.Tip[S]];
       else IntMap.Tip(key, s);
   }
