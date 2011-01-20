@@ -289,6 +289,7 @@ object ScalaRunTime {
     // The recursively applied attempt to prettify Array printing
     def inner(arg: Any): String = arg match {
       case null                         => "null"
+      case ""                           => "\"\""
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
       case x: collection.Map[_, _]      => x take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
