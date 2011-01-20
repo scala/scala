@@ -20,6 +20,9 @@ object Completion {
     && !(code startsWith "./")
     && !(code startsWith "..")
   )
+  def looksLikePath(code: String) = (code != null) && (code.length >= 2) && (
+    Set("/", "\\", "./", "../", "~/") exists (code startsWith _)
+  )
 
   object Forwarder {
     def apply(forwardTo: () => Option[CompletionAware]): CompletionAware = new CompletionAware {
@@ -348,7 +351,9 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
         else tryCompletion(Parsed.dotted(buf drop 1, cursor), lastResultFor)
 
       def regularCompletion = tryCompletion(mkDotted, topLevelFor)
-      def fileCompletion    = tryCompletion(mkUndelimited, FileCompletion completionsFor _.buffer)
+      def fileCompletion    =
+        if (!looksLikePath(buf)) None
+        else tryCompletion(mkUndelimited, FileCompletion completionsFor _.buffer)
 
       /** This is the kickoff point for all manner of theoretically possible compiler
        *  unhappiness - fault may be here or elsewhere, but we don't want to crash the

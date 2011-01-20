@@ -72,6 +72,12 @@ import Interpreter._
 class Interpreter(val settings: Settings, out: PrintWriter) {
   repl =>
 
+  /** whether to print out result lines */
+  private[nsc] var printResults: Boolean = true
+
+  /** whether to print errors */
+  private[nsc] var totalSilence: Boolean = false
+
   private val RESULT_OBJECT_PREFIX = "RequestResult$"
 
   def println(x: Any) = {
@@ -89,6 +95,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** reporter */
   object reporter extends ConsoleReporter(settings, null, out) {
     override def printMessage(msg: String) {
+      if (totalSilence)
+        return
+
       out println (
         if (truncationOK) clean(msg)
         else cleanNoTruncate(msg)
@@ -170,9 +179,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   import compiler.definitions
   import definitions.{ EmptyPackage, getMember }
 
-  /** whether to print out result lines */
-  private[nsc] var printResults: Boolean = true
-
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
     val wasPrinting = printResults
@@ -180,6 +186,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       printResults = false
       operation
     }
+  }
+  def beSilentDuring[T](operation: => T): T = {
+    val saved = totalSilence
+    totalSilence = true
+    try operation
+    finally totalSilence = saved
   }
 
   /** whether to bind the lastException variable */
@@ -527,6 +539,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       if (reporter.hasErrors)   Some(Nil)  // the result did not parse, so stop
       else if (justNeedsMore)   None
       else                      Some(trees)
+    }
+  }
+  def isParseable(line: String): Boolean = {
+    beSilentDuring {
+      parse(line) match {
+        case Some(xs) => xs.nonEmpty
+        case _        => false
+      }
     }
   }
 

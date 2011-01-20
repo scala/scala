@@ -549,10 +549,11 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       interpretStartingWith(interpreter.mostRecentVar + code)
     }
     else {
-      val result = for (comp <- in.completion ; res <- comp execute code) yield res
-      result match {
-        case Some(res)  => injectAndName(res) ; None   // completion took responsibility, so do not parse
-        case _          => reallyInterpret
+      if (interpreter.isParseable(code)) reallyInterpret
+      else {
+        val res = in.completion flatMap (_ execute code) map injectAndName
+        if (res.isDefined) None // completion took responsibility, so do not parse
+        else reallyInterpret    // we know it will fail, this is to show the error
       }
     }
   }
