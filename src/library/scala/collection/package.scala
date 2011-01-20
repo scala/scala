@@ -68,26 +68,40 @@ package scala
  *
  */
 package object collection {
-  import scala.collection.generic.CanBuildFrom // can't refer to CanBuild here
+  import scala.collection.generic.CanBuildFrom
 
-  /** Provides a CanBuildFrom instance that builds a specific target collection (`To') irrespective of the original collection (`From').
+  /** Provides a CanBuildFrom instance that builds a specific target collection (`To')
+   *  irrespective of the original collection (`From').
    */
-  def breakOut[From, T, To](implicit b : CanBuildFrom[Nothing, T, To]) =
-    new CanBuildFrom[From, T, To] { // TODO: could we just return b instead?
-      def apply(from: From) = b.apply() ; def apply() = b.apply()
+  def breakOut[From, T, To](implicit b: CanBuildFrom[Nothing, T, To]): CanBuildFrom[From, T, To] =
+    // can't just return b because the argument to apply could be cast to From in b
+    new CanBuildFrom[From, T, To] {
+      def apply(from: From) = b.apply()
+      def apply()           = b.apply()
     }
+}
 
+package collection {
+  /** Collection internal utility functions.
+   */
   private[collection] object DebugUtils {
-    /* debug utils */
+    def unsupported(msg: String)     = throw new UnsupportedOperationException(msg)
+    def noSuchElement(msg: String)   = throw new NoSuchElementException(msg)
+    def indexOutOfBounds(index: Int) = throw new IndexOutOfBoundsException(index.toString)
+    def illegalArgument(msg: String) = throw new IllegalArgumentException(msg)
+
     def buildString(closure: (Any => Unit) => Unit): String = {
       var output = ""
-      def appendln(s: Any) = output += s + "\n"
-      closure(appendln)
+      closure(output += _ + "\n")
+
       output
     }
 
-    def arrayString[T](array: Array[T], from: Int, until: Int) = array.slice(from, until).map(x => if (x != null) x.toString else "n/a").mkString(" | ")
-
+    def arrayString[T](array: Array[T], from: Int, until: Int): String = {
+      array.slice(from, until) map {
+        case null => "n/a"
+        case x    => "" + x
+      } mkString " | "
+    }
   }
-
 }
