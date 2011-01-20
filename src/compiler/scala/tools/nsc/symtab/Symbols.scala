@@ -510,6 +510,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         case ConstantType(_) => true
         case PolyType(_, ConstantType(_)) => true
         case MethodType(_, ConstantType(_)) => true
+        case NullaryMethodType(ConstantType(_)) => true
         case _ => false
       })
 
@@ -1604,8 +1605,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         tp match {
           case PolyType(tparams, res) =>
             typeParamsString + infoString(res)
+          case NullaryMethodType(res) =>
+            infoString(res)
           case MethodType(params, res) =>
-           params.map(_.defString).mkString("(", ",", ")") + infoString(res)
+            params.map(_.defString).mkString("(", ",", ")") + infoString(res)
           case _ =>
             ": " + tp
         }

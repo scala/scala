@@ -568,6 +568,7 @@ trait Typers extends Modes {
       case ExistentialType(_, tpe1) => isNarrowable(tpe1)
       case AnnotatedType(_, tpe1, _) => isNarrowable(tpe1)
       case PolyType(_, tpe1) => isNarrowable(tpe1)
+      case NullaryMethodType(tpe1) => isNarrowable(tpe1)
       case _ => !phase.erasedTypes
     }
 
@@ -702,7 +703,7 @@ trait Typers extends Modes {
       case OverloadedType(pre, alts) if !inFunMode(mode) => // (1)
         inferExprAlternative(tree, pt)
         adapt(tree, mode, pt, original)
-      case PolyType(List(), restpe) => // (2)
+      case NullaryMethodType(restpe) => // (2)
         adapt(tree setType restpe, mode, pt, original)
       case TypeRef(_, ByNameParamClass, List(arg))
       if ((mode & EXPRmode) != 0)   => // (2)
@@ -1591,6 +1592,8 @@ trait Typers extends Modes {
       if (meth.owner.isStructuralRefinement && meth.allOverriddenSymbols.isEmpty && !(meth.isPrivate || meth.hasAccessBoundary)) {
         val tp: Type = meth.tpe match {
           case mt: MethodType => mt
+          case NullaryMethodType(res) => res
+ // TODO_NMT: drop NullaryMethodType from resultType?
           case pt: PolyType => pt.resultType
           case _ => NoType
         }
@@ -1624,7 +1627,7 @@ trait Typers extends Modes {
                 case tpt: Tree =>
                   val alias = enclClass.newAliasType(useCase.pos, name.toTypeName)
                   val tparams = cloneSymbols(tpt.tpe.typeSymbol.typeParams, alias)
-                  alias setInfo polyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
+                  alias setInfo typeFun(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
                   context.scope.enter(alias)
                 case _ =>
               }
@@ -2175,6 +2178,7 @@ trait Typers extends Modes {
     }
 
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
+      // TODO_NMT: check the assumption that args nonEmpty
       var fun = fun0
       if (fun.hasSymbol && fun.symbol.isOverloaded) {
         // remove alternatives with wrong number of parameters without looking at types.
@@ -3148,7 +3152,7 @@ trait Typers extends Modes {
           val expr2 = Function(List(), expr1) setPos expr1.pos
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)
-        case PolyType(List(), restpe) =>
+        case NullaryMethodType(restpe) =>
           val expr2 = Function(List(), expr1) setPos expr1.pos
           new ChangeOwnerTraverser(context.owner, expr2.symbol).traverse(expr2)
           typed1(expr2, mode, pt)

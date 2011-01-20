@@ -114,6 +114,8 @@ trait Implicits {
     private def containsError(tp: Type): Boolean = tp match {
       case PolyType(tparams, restpe) =>
         containsError(restpe)
+      case NullaryMethodType(restpe) =>
+        containsError(restpe)
       case MethodType(params, restpe) =>
         params.exists(_.tpe.isError) || containsError(restpe)
       case _ =>

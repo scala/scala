@@ -66,9 +66,9 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
   trait CompilerCompletion {
     def tp: Type
     def effectiveTp = tp match {
-      case MethodType(Nil, resType) => resType
-      case PolyType(Nil, resType)   => resType
-      case _                        => tp
+      case MethodType(Nil, resType)   => resType
+      case NullaryMethodType(resType) => resType
+      case _                          => tp
     }
 
     // for some reason any's members don't show up in subclasses, which

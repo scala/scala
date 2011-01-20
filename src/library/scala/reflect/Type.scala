@@ -49,6 +49,8 @@ case class TypeBounds(lo: Type, hi: Type) extends Type
   * <code>(formals1 ... formalsn) restpe</code> */
 case class MethodType(formals: List[Symbol], restpe: Type) extends Type
 
+/** This type is required by the compiler and <b>should not be used in client code</b>. */
+case class NullaryMethodType(resultType: Type) extends Type
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 case class PolyType(typeParams: List[Symbol], typeBounds: List[(Type, Type)], resultType: Type) extends Type
@@ -71,5 +73,6 @@ extends MethodType(formals, restpe)
   case reflect.AppliedType(tpe, args) =>
   case reflect.TypeBounds(lo, hi) =>
   case reflect.MethodType(formals, restpe) => //can also be ImplicitMethodType
+  case reflect.NullaryMethodType(restpe) =>
   case reflect.PolyType(typeParams, typeBounds, resultType) =>
 */

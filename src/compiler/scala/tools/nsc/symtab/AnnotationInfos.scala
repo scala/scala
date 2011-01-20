@@ -107,6 +107,8 @@ trait AnnotationInfos extends reflect.generic.AnnotationInfos { self: SymbolTabl
       this
     }
 
+    lazy val isTrivial: Boolean = atp.isTrivial && !(args exists (_.exists(_.isInstanceOf[This]))) // see annotationArgRewriter
+
     override def toString: String = atp +
       (if (!args.isEmpty) args.mkString("(", ", ", ")") else "") +
       (if (!assocs.isEmpty) (assocs map { case (x, y) => x+" = "+y } mkString ("(", ", ", ")")) else "")

@@ -69,6 +69,9 @@ trait Types { self: Universe =>
   type MethodType <: Type
   val MethodType: MethodTypeExtractor
 
+  type NullaryMethodType <: Type
+  val NullaryMethodType: NullaryMethodTypeExtractor
+
   type PolyType <: Type
   val PolyType: PolyTypeExtractor
 
@@ -130,6 +133,11 @@ trait Types { self: Universe =>
   abstract class MethodTypeExtractor {
     def apply(params: List[Symbol], resultType: Type): MethodType
     def unapply(tpe: MethodType): Option[(List[Symbol], Type)]
+  }
+
+  abstract class NullaryMethodTypeExtractor {
+    def apply(resultType: Type): NullaryMethodType
+    def unapply(tpe: NullaryMethodType): Option[(Type)]
   }
 
   abstract class PolyTypeExtractor {

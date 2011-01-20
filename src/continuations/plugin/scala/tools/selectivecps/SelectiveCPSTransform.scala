@@ -50,8 +50,8 @@ abstract class SelectiveCPSTransform extends PluginComponent with
   def transformCPSType(tp: Type): Type = {  // TODO: use a TypeMap? need to handle more cases?
     tp match {
       case PolyType(params,res) => PolyType(params, transformCPSType(res))
-      case MethodType(params,res) =>
-        MethodType(params, transformCPSType(res))
+      case NullaryMethodType(res) => NullaryMethodType(transformCPSType(res))
+      case MethodType(params,res) => MethodType(params, transformCPSType(res))
       case TypeRef(pre, sym, args) => TypeRef(pre, sym, args.map(transformCPSType(_)))
       case _ =>
         getExternalAnswerTypeAnn(tp) match {

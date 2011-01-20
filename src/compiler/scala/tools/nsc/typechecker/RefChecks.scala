@@ -66,7 +66,7 @@ abstract class RefChecks extends InfoTransform {
           sym.setFlag(LAZY | ACCESSOR)
         }
       }
-      PolyType(List(), tp)
+      NullaryMethodType(tp)
     } else tp
   }
 
@@ -244,12 +244,12 @@ abstract class RefChecks extends InfoTransform {
       }
 
       def overridesType(tp1: Type, tp2: Type): Boolean = (tp1.normalize, tp2.normalize) match {
-        case (MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
+        case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) =>
           rtp1 <:< rtp2
-        case (PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
+        case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
           rtp1 <:< rtp2
         case (TypeRef(_, sym, _),  _) if (sym.isModuleClass) =>
-          overridesType(PolyType(List(), tp1), tp2)
+          overridesType(NullaryMethodType(tp1), tp2)
         case _ =>
           tp1 <:< tp2
       }
@@ -753,6 +753,8 @@ abstract class RefChecks extends InfoTransform {
             validateVariance(hi, variance)
           case MethodType(formals, result) =>
             validateVariance(result, variance)
+          case NullaryMethodType(result) =>
+            validateVariance(result, variance)
           case PolyType(tparams, result) =>
             // type parameters will be validated separately, because they are defined explicitly.
             validateVariance(result, variance)
@@ -1006,7 +1008,7 @@ abstract class RefChecks extends InfoTransform {
             if (!sym.allOverriddenSymbols.isEmpty) {
               val factory = sym.owner.newMethod(sym.pos, sym.name.toTermName)
                 .setFlag(sym.flags | STABLE).resetFlag(MODULE)
-                .setInfo(PolyType(List(), sym.moduleClass.tpe))
+                .setInfo(NullaryMethodType(sym.moduleClass.tpe))
               sym.owner.info.decls.enter(factory)
               val ddef =
                 atPhase(phase.next) {
@@ -1043,7 +1045,7 @@ abstract class RefChecks extends InfoTransform {
                     sym.resetFlag(MODULE | FINAL | CASE)
                     sym.setFlag(LAZY | ACCESSOR | SYNTHETIC)
 
-                    sym.setInfo(PolyType(List(), sym.tpe))
+                    sym.setInfo(NullaryMethodType(sym.tpe))
                     sym setFlag (lateMETHOD | STABLE)
                   }
 

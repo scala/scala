@@ -101,6 +101,8 @@ object Print extends Function1[Any, String] {
       "[" + Print(lo) + " ... " + Print(hi) + "]"
     case reflect.MethodType(formals, resultType) =>
       formals.map(Print).mkString("(", ", ", ")") + " => " + Print(resultType)
+    case reflect.NullaryMethodType(resultType) =>
+      " => " + Print(resultType)
     case reflect.PolyType(typeParams, typeBounds, resultType) =>
       val z = (typeParams, typeBounds).zipped map ((tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]")
       z.mkString("[", ", ", "]") + " -> " + Print(resultType)

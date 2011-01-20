@@ -652,6 +652,12 @@ abstract class TreeBrowsers {
                         toDocument(result) :: ")")
         )
 
+      case NullaryMethodType(result) =>
+        Document.group(
+          Document.nest(4,"NullaryMethodType(" :/:
+                        toDocument(result) :: ")")
+        )
+
       case PolyType(tparams, result) =>
         Document.group(
           Document.nest(4,"PolyType(" :/:

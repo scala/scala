@@ -78,6 +78,8 @@ trait Variances {
       varianceInTypes(parents)(tparam) & varianceInSyms(defs.toList)(tparam)
     case MethodType(params, restpe) =>
       flip(varianceInSyms(params)(tparam)) & varianceInType(restpe)(tparam)
+    case NullaryMethodType(restpe) =>
+      varianceInType(restpe)(tparam)
     case PolyType(tparams, restpe) =>
       flip(varianceInSyms(tparams)(tparam)) & varianceInType(restpe)(tparam)
     case ExistentialType(tparams, restpe) =>

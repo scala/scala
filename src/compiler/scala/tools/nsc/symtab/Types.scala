@@ -50,14 +50,13 @@ import scala.annotation.tailrec
   case MethodType(paramtypes, result) =>
     // (paramtypes)result
     // For instance def m(): T is represented as MethodType(List(), T)
+  case NullaryMethodType(result) => // eliminated by uncurry
+    // an eval-by-name type
+    // For instance def m: T is represented as NullaryMethodType(T)
   case PolyType(tparams, result) =>
-    // [tparams]result where result is a MethodType or ClassInfoType
-    // or
-    // []T  for a eval-by-name type
-    // For instance def m: T is represented as PolyType(List(), T)
+    // [tparams]result where result is a (Nullary)MethodType or ClassInfoType
 
   // The remaining types are not used after phase `typer'.
-
   case OverloadedType(pre, tparams, alts) =>
     // all alternatives of an overloaded ident
   case AntiPolyType(pre, targs) =>
@@ -365,7 +364,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     /** For a typeref, its arguments. The empty list for all other types */
     def typeArgs: List[Type] = List()
 
-    /** For a method or poly type, its direct result type,
+    /** For a (nullary) method or poly type, its direct result type,
      *  the type itself for all other types. */
     def resultType: Type = this
 
@@ -379,11 +378,11 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def remove(clazz: Symbol): Type = this
 
-    /** For a curried method or poly type its non-method result type,
+    /** For a curried/nullary method or poly type its non-method result type,
      *  the type itself for all other types */
     def finalResultType: Type = this
 
-    /** For a method or poly type, the number of its value parameter sections,
+    /** For a method type, the number of its value parameter sections,
      *  0 for all other types */
     def paramSectionCount: Int = 0
 
@@ -708,7 +707,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *    - Either both types are polytypes with the same number of
      *      type parameters and their result types match after renaming
      *      corresponding type parameters
-     *    - Or both types are method types with equivalent type parameter types
+     *    - Or both types are (nullary) method types with equivalent type parameter types
      *      and matching result types
      *    - Or both types are equivalent
      *    - Or phase.erasedTypes is false and both types are neither method nor
@@ -1137,14 +1136,6 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       else sym.tpe
   }
 
-  // case class DeBruijnIndex(level: Int, paramId: Int) extends Type {
-  //   override def isTrivial = true
-  //   override def isStable = true
-  //   override def safeToString = "<param "+level+"."+paramId+">"
-  //   override def kind = "DeBruijnIndex"
-  //   // todo: this should be a subtype, which forwards to underlying
-  // }
-
   /** A class for singleton types of the form <prefix>.<sym.name>.type.
    *  Cannot be created directly; one should always use
    *  `singleType' for creation.
@@ -1416,7 +1407,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     override def normalize = {
       if (isHigherKinded) {
-        PolyType(
+        typeFun(
           typeParams,
           RefinedType(
             parents map {
@@ -1807,11 +1798,10 @@ A type's typeSymbol should never be inspected directly.
       transform(sym.info.resultType)
     }
 
-    // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
     // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
     @inline private def etaExpand: Type = {
       val tpars = sym.info.typeParams // must go through sym.info for typeParams to initialise symbol
-      PolyType(tpars, typeRef(pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
+      typeFunAnon(tpars, typeRef(pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
     }
 
     override def dealias: Type =
@@ -1963,11 +1953,10 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A class representing a method type with parameters.
-   *  Note that a parameterless method is instead encoded
-   *  as a PolyType, as shown here:
+   *  Note that a parameterless method is represented by a NullaryMethodType:
    *
    *    def m(): Int        MethodType(Nil, Int)
-   *    def m: Int          PolyType(Nil, Int)
+   *    def m: Int          NullaryMethodType(Int)
    */
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type {
@@ -1989,6 +1978,7 @@ A type's typeSymbol should never be inspected directly.
 
     override def boundSyms = immutable.Set[Symbol](params ++ resultType.boundSyms: _*)
 
+    // AM to TR: #dropNonContraintAnnotations
     // this is needed for plugins to work correctly, only TypeConstraint annotations are supposed to be carried over
     // TODO: this should probably be handled in a more structured way in adapt -- remove this map in resultType and watch the continuations tests fail
     object dropNonContraintAnnotations extends TypeMap {
@@ -2040,18 +2030,47 @@ A type's typeSymbol should never be inspected directly.
     override def isJava = true
   }
 
-  /** A class representing a polymorphic type or, if typeParams.isEmpty, a parameterless method type.
+  case class NullaryMethodType(override val resultType: Type) extends Type {
+    // AM to TR: #dropNonContraintAnnotations
+    // change isTrivial to the commented version and watch continuations-run/t3225.scala fail
+    // isTrivial implies asSeenFrom is bypassed, since it's supposed to be the identity map
+    // it's not really the identity due to dropNonContraintAnnotations
+    override def isTrivial: Boolean = false //resultType.isTrivial -- `false` to make continuations plugin work (so that asSeenFromMap drops non-constrain annotations even when type doesn't change otherwise)
+    override def prefix: Type = resultType.prefix
+    override def narrow: Type = resultType.narrow
+    override def finalResultType: Type = resultType.finalResultType
+    override def termSymbol: Symbol = resultType.termSymbol
+    override def typeSymbol: Symbol = resultType.typeSymbol
+    override def parents: List[Type] = resultType.parents
+    override def decls: Scope = resultType.decls
+    override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
+    override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
+    override def baseClasses: List[Symbol] = resultType.baseClasses
+    override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
+    override def boundSyms = resultType.boundSyms
+    override def isVolatile = resultType.isVolatile
+    override def safeToString: String = "=> "+ resultType
+    override def kind = "NullaryMethodType"
+  }
+
+  object NullaryMethodType extends NullaryMethodTypeExtractor
+
+  /** A type function or the type of a polymorphic value (and thus of kind *).
    *
-   *  (@M: note that polymorphic nullary methods have non-empty tparams,
-   *   e.g., isInstanceOf or def makeList[T] = new List[T].
-   *   Ideally, there would be a NullaryMethodType, but since the only polymorphic values are methods, it's not that problematic.
-   *   More pressingly, we should add a TypeFunction type for anonymous type constructors -- for now, PolyType is used in:
-   *     - normalize: for eta-expansion of type aliases
-   *     - typeDefSig )
+   * Before the introduction of NullaryMethodType, a polymorphic nullary method (e.g, def isInstanceOf[T]: Boolean)
+   * used to be typed as PolyType(tps, restpe), and a monomorphic one as PolyType(Nil, restpe)
+   * This is now: PolyType(tps, NullaryMethodType(restpe)) and NullaryMethodType(restpe)
+   * by symmetry to MethodTypes: PolyType(tps, MethodType(params, restpe)) and MethodType(params, restpe)
+   *
+   * Thus, a PolyType(tps, TypeRef(...)) unambiguously indicates a type function (which results from eta-expanding a type constructor alias).
+   * Similarly, PolyType(tps, ClassInfoType(...)) is a type constructor.
+   *
+   * A polytype is of kind * iff its resultType is a (nullary) method type.
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type {
-    // assert(!(typeParams contains NoSymbol), this)
+    //assert(!(typeParams contains NoSymbol), this)
+    assert(typeParams nonEmpty, this) // used to be a marker for nullary method type, illegal now (see @NullaryMethodType)
 
     override def paramSectionCount: Int = resultType.paramSectionCount
     override def paramss: List[List[Symbol]] = resultType.paramss
@@ -2071,19 +2090,18 @@ A type's typeSymbol should never be inspected directly.
     override def isVolatile = resultType.isVolatile
     override def finalResultType: Type = resultType.finalResultType
 
-    /** @M: typeDefSig now wraps a TypeBounds in a PolyType
+    /** @M: typeDefSig wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter
      *  wrap lo&hi in polytypes to bind variables
      */
     override def bounds: TypeBounds =
-      TypeBounds(PolyType(typeParams, resultType.bounds.lo),
-                 PolyType(typeParams, resultType.bounds.hi))
+      TypeBounds(typeFun(typeParams, resultType.bounds.lo),
+                 typeFun(typeParams, resultType.bounds.hi))
 
     override def isHigherKinded = !typeParams.isEmpty
 
     override def safeToString: String =
-      (if (typeParams.isEmpty) "=> "
-       else (typeParams map (_.defString) mkString ("[", ",", "]")))+resultType
+      (typeParams map (_.defString) mkString ("[", ",", "]"))+ resultType
 
     override def cloneInfo(owner: Symbol) = {
       val tparams = cloneSymbols(typeParams, owner)
@@ -2167,7 +2185,7 @@ A type's typeSymbol should never be inspected directly.
         }
       var ustr = underlying.toString
       underlying match {
-        case MethodType(_, _) | PolyType(_, _) => ustr = "("+ustr+")"
+        case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) => ustr = "("+ustr+")"
         case _ =>
       }
       val str =
@@ -2439,8 +2457,7 @@ A type's typeSymbol should never be inspected directly.
     override def normalize: Type =
       if  (constr.instValid) constr.inst
       else if (isHigherKinded) {  // get here when checking higher-order subtyping of the typevar by itself (TODO: check whether this ever happens?)
-        // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-        PolyType(params, applyArgs(params map (_.typeConstructor)))
+        typeFun(params, applyArgs(params map (_.typeConstructor)))
       } else {
         super.normalize
       }
@@ -2482,6 +2499,9 @@ A type's typeSymbol should never be inspected directly.
     assert(!annotations.isEmpty)
 
     override protected def rewrap(tp: Type) = AnnotatedType(annotations, tp, selfsym)
+
+    override def isTrivial: Boolean = isTrivial0
+    private lazy val isTrivial0 = underlying.isTrivial && (annotations forall (_.isTrivial))
 
     override def safeToString: String = {
       val attString =
@@ -2725,16 +2745,24 @@ A type's typeSymbol should never be inspected directly.
       case _                                              => abort(debugString(tycon))
     }
 
-  /** A creator for type parameterizations
-   *  If tparams is empty, simply returns result type
+  /** A creator for type parameterizations that strips empty type parameter lists.
+   * Use this factory method to indicate the type has kind * (it's a polymorphic value)
+   * until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty)
    */
   def polyType(tparams: List[Symbol], tpe: Type): Type =
-    if (tparams.isEmpty) tpe
-    else
-      PolyType(tparams, tpe match {
-        case PolyType(List(), tpe1) => tpe1
-        case _ => tpe
-      })
+    if (tparams nonEmpty) typeFun(tparams, tpe)
+    else tpe // it's okay to be forgiving here
+
+  /** A creator for anonymous type functions, where the symbol for the type function still needs to be created
+   * TODO_NMT:
+   *  - can we avoid this whole synthetic owner business? harden ASF instead to deal with orphan type params
+   *  - orthogonally: try to recycle the class symbol in the common case type C[X] = Class[X]  (where appliedType(this, dummyArgs) =:= appliedType(sym.info, dummyArgs))
+   */
+  def typeFunAnon(tps: List[Symbol], body: Type): Type = typeFun(tps, body)
+
+  /** A creator for a type functions, assuming the type parameters tps already have the right owner
+   */
+  def typeFun(tps: List[Symbol], body: Type): Type = PolyType(tps, body)
 
   /** A creator for existential types. This generates:
    *
@@ -3011,8 +3039,11 @@ A type's typeSymbol should never be inspected directly.
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
+      case NullaryMethodType(result) =>
+        val result1 = this(result)
+        if (result1 eq result) tp
+        else NullaryMethodType(result1)
       case ConstantType(_) => tp
-      // case DeBruijnIndex(_, _) => tp
       case SuperType(thistp, supertp) =>
         val thistp1 = this(thistp)
         val supertp1 = this(supertp)
@@ -3251,13 +3282,13 @@ A type's typeSymbol should never be inspected directly.
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
-        /** Rewrite "this" trees as needed for asSeenFrom */
+        /** Rewrite `This` trees in annotation argument trees */
         def rewriteThis(tree: Tree): Tree =
           tree match {
             case This(_)
             if (tree.symbol isNonBottomSubClass clazz) &&
                (pre.widen.typeSymbol isNonBottomSubClass tree.symbol) =>
-              if (pre.isStable) {
+              if (pre.isStable) { // XXX why is this in this method? pull it out and guard the call `annotationArgRewriter.transform(tree)`?
                 val termSym =
                   pre.typeSymbol.owner.newValue(
                     pre.typeSymbol.pos,
@@ -3846,6 +3877,10 @@ A type's typeSymbol should never be inspected directly.
         val restp1 = this(restp)
         if (restp1 eq restp) tp
         else copyMethodType(tp, params, restp1)
+      case NullaryMethodType(restp) =>
+        val restp1 = this(restp)
+        if (restp1 eq restp) tp
+        else NullaryMethodType(restp1)
       case PolyType(tparams, restp) =>
         val restp1 = this(restp)
         if (restp1 eq restp) tp
@@ -4235,6 +4270,14 @@ A type's typeSymbol should never be inspected directly.
             return isSameTypes(mt1.paramTypes, mt2.paramTypes) &&
               mt1.resultType =:= mt2.resultType &&
               mt1.isImplicit == mt2.isImplicit
+          // note: no case NullaryMethodType(restpe) => return mt1.params.isEmpty && mt1.resultType =:= restpe
+          case _ =>
+        }
+      case NullaryMethodType(restpe1) =>
+        tp2 match {
+          // note: no case mt2: MethodType => return mt2.params.isEmpty && restpe  =:= mt2.resultType
+          case NullaryMethodType(restpe2) =>
+            return restpe1 =:= restpe2
           case _ =>
         }
       case PolyType(tparams1, res1) =>
@@ -4584,13 +4627,14 @@ A type's typeSymbol should never be inspected directly.
              matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
              (res1 <:< res2) &&
              mt1.isImplicit == mt2.isImplicit)
+          // TODO: if mt1.params.isEmpty, consider NullaryMethodType?
           case _ =>
             false
         }
-      case pt2 @ PolyType(List(), _) =>
+      case pt2 @ NullaryMethodType(_) =>
         tp1 match {
-          case pt1 @ PolyType(List(), _) =>
-            // other polytypes were already checked in isHKSubType
+          // TODO: consider MethodType mt for which mt.params.isEmpty??
+          case pt1 @ NullaryMethodType(_) =>
             pt1.resultType <:< pt2.resultType
           case _ =>
             false
@@ -4706,7 +4750,7 @@ A type's typeSymbol should never be inspected directly.
             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
             matchesType(res1, res2, alwaysMatchSimple) &&
             mt1.isImplicit == mt2.isImplicit
-          case PolyType(List(), res2) =>
+          case NullaryMethodType(res2) =>
             if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
             else matchesType(tp1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
@@ -4714,16 +4758,25 @@ A type's typeSymbol should never be inspected directly.
           case _ =>
             false
         }
-      case PolyType(tparams1, res1) =>
+      case mt1 @ NullaryMethodType(res1) =>
         tp2 match {
-          case PolyType(tparams2, res2) =>
-            matchesQuantified(tparams1, tparams2, res1, res2)
-          case MethodType(List(), res2) if (tparams1.isEmpty) =>
+          case mt2 @ MethodType(Nil, res2)  => // could never match if params nonEmpty, and !mt2.isImplicit is implied by empty param list
+            matchesType(res1, res2, alwaysMatchSimple)
+          case NullaryMethodType(res2) =>
             matchesType(res1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
           case _ =>
-            tparams1.isEmpty && matchesType(res1, tp2, alwaysMatchSimple)
+            matchesType(res1, tp2, alwaysMatchSimple)
+        }
+      case PolyType(tparams1, res1) =>
+        tp2 match {
+          case PolyType(tparams2, res2) =>
+            matchesQuantified(tparams1, tparams2, res1, res2)
+          case ExistentialType(_, res2) =>
+            alwaysMatchSimple && matchesType(tp1, res2, true)
+          case _ =>
+            false // remember that tparams1.nonEmpty is now an invariant of PolyType
         }
       case ExistentialType(tparams1, res1) =>
         tp2 match {
@@ -4752,9 +4805,9 @@ A type's typeSymbol should never be inspected directly.
         tp1.isImplicit == tp2.isImplicit
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         matchesQuantified(tparams1, tparams2, res1, res2)
-      case (PolyType(List(), rtp1), MethodType(List(), rtp2)) =>
+      case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
         matchesType(rtp1, rtp2, alwaysMatchSimple)
-      case (MethodType(List(), rtp1), PolyType(List(), rtp2)) =>
+      case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) =>
         matchesType(rtp1, rtp2, alwaysMatchSimple)
       case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
         matchesQuantified(tparams1, tparams2, res1, res2)
@@ -4762,9 +4815,9 @@ A type's typeSymbol should never be inspected directly.
         matchesType(res1, tp2, alwaysMatchSimple)
       case (_, ExistentialType(_, res2)) if alwaysMatchSimple =>
         matchesType(tp1, res2, alwaysMatchSimple)
-      case (PolyType(List(), rtp1), _) =>
+      case (NullaryMethodType(rtp1), _) =>
         matchesType(rtp1, tp2, alwaysMatchSimple)
-      case (_, PolyType(List(), rtp2)) =>
+      case (_, NullaryMethodType(rtp2)) =>
         matchesType(tp1, rtp2, alwaysMatchSimple)
       case (MethodType(_, _), _) => false
       case (PolyType(_, _), _)   => false
@@ -5077,6 +5130,8 @@ A type's typeSymbol should never be inspected directly.
         PolyType(tparams1, lub0(matchingInstTypes(ts, tparams1)))
       case ts @ MethodType(params, _) :: rest =>
         MethodType(params, lub0(matchingRestypes(ts, params map (_.tpe))))
+      case ts @ NullaryMethodType(_) :: rest =>
+        NullaryMethodType(lub0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
       case ts =>
@@ -5192,6 +5247,8 @@ A type's typeSymbol should never be inspected directly.
         PolyType(tparams1, glb0(matchingInstTypes(ts, tparams1)))
       case ts @ MethodType(params, _) :: rest =>
         MethodType(params, glb0(matchingRestypes(ts, params map (_.tpe))))
+      case ts @ NullaryMethodType(_) :: rest =>
+        NullaryMethodType(glb0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
       case ts =>
@@ -5432,6 +5489,8 @@ A type's typeSymbol should never be inspected directly.
   private def matchingRestypes(tps: List[Type], pts: List[Type]): List[Type] =
     tps map {
       case MethodType(params1, res) if (isSameTypes(params1 map (_.tpe), pts)) =>
+        res
+      case NullaryMethodType(res) if pts isEmpty =>
         res
       case _ =>
         throw new NoCommonType(tps)

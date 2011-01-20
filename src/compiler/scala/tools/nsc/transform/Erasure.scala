@@ -402,7 +402,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
   val deconstMap = new TypeMap {
    def apply(tp: Type): Type = tp match {
      case PolyType(_, _) => mapOver(tp)
-     case MethodType(_, _) => mapOver(tp)
+     case MethodType(_, _) => mapOver(tp) // nullarymethod was eliminated during uncurry
      case _ => tp.deconst
    }
   }

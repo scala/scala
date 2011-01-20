@@ -79,6 +79,8 @@ trait Reifiers {
       if (_log_reify_type_) println("cannot handle ClassInfoType "+tp); reflect.NoType
     case MethodType(params, result) =>
       reflect.MethodType(params.map(reify), reify(result))
+    case NullaryMethodType(result) =>
+      reflect.NullaryMethodType(reify(result))
     case PolyType(tparams, result) =>
       val boundss =
 	for {
@@ -146,6 +148,8 @@ trait Reifiers {
 	TypeBounds(unreify(lo), unreify(hi))
       case reflect.MethodType(params, restpe) =>
 	MethodType(params.map(unreify), unreify(restpe))
+      case reflect.NullaryMethodType(restpe) =>
+	NullaryMethodType(unreify(restpe))
       case reflect.PolyType(typeParams, typeBounds, resultType) =>
 	PolyType(typeParams.map(unreify), unreify(resultType))
       //todo: treat ExistentialType

@@ -232,7 +232,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
     val param = clazz.newMethod(clazz.pos, paramFieldName(clazz, index))
       .setFlag(PROTECTED | LOCAL | DEFERRED | EXPANDEDNAME | SYNTHETIC | STABLE)
     atPhase(ownPhase.next) {
-      param.setInfo(PolyType(List(), tpe))
+      param.setInfo(NullaryMethodType(tpe))
     }
     param
   }
@@ -294,7 +294,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
     factory setInfo new PolyTypeCompleter(factory, clazz) {
       private def copyType(tpe: Type): Type = tpe match {
         case MethodType(formals, restpe) => MethodType(formals, copyType(restpe))
-        case PolyType(List(), restpe) => PolyType(List(), copyType(restpe))
+        case NullaryMethodType(restpe) => NullaryMethodType(copyType(restpe))
         case PolyType(_, _) => abort("bad case: "+tpe)
         case _ => owner.thisType.memberType(abstractType(clazz))
       }
@@ -394,7 +394,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
           case (pt, i) =>
             val pfield = cclazz.newMethod(cclazz.pos, paramFieldName(clazz, i))
               .setFlag(PROTECTED | LOCAL | EXPANDEDNAME | SYNTHETIC | STABLE)
-              .setInfo(PolyType(List(), pt))
+              .setInfo(NullaryMethodType(pt))
             cclazz.info.decls enter pfield
             atPos(factory.pos) {
               DefDef(pfield, Ident(fixParamName(i)))

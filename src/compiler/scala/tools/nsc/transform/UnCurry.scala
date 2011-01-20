@@ -66,10 +66,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           tp0
         case MethodType(h :: t, restpe) if h.isImplicit =>
           apply(MethodType(h.cloneSymbol.resetFlag(IMPLICIT) :: t, restpe))
-        case PolyType(List(), restpe) => // nullary method type
+        case NullaryMethodType(restpe) =>
           apply(MethodType(List(), restpe))
-        case PolyType(tparams, restpe) => // polymorphic nullary method type, since it didn't occur in a higher-kinded position
-          PolyType(tparams, apply(MethodType(List(), restpe)))
         case TypeRef(pre, ByNameParamClass, List(arg)) =>
           apply(functionType(List(), arg))
         case TypeRef(pre, RepeatedParamClass, args) =>
@@ -81,29 +79,6 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           expandAlias(mapOver(tp))
       }
     }
-
-//@M TODO: better fix for the gross hack that conflates polymorphic nullary method types with type functions
-// `[tpars] tref` (PolyType(tpars, tref)) could uncurry to either:
-//   - `[tpars]() tref` (PolyType(tpars, MethodType(List(), tref))
-//         a nullary method types uncurry to a method with an empty argument list
-//   - `[tpars] tref`   (PolyType(tpars, tref))
-//         a proper type function -- see mapOverArgs: can only occur in args of TypeRef (right?))
-// the issue comes up when a partial type application gets normalised to a polytype, like `[A] Function1[X, A]`
-// should not apply the uncurry transform to such a type
-// see #2594 for an example
-
-    // decide whether PolyType represents a nullary method type (only if type has kind *)
-    // for higher-kinded types, leave PolyType intact
-    override def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams) { (arg, tparam) =>
-        arg match {
-          // is this a higher-kinded position? (TODO: confirm this is the only case)
-          case PolyType(tparams, restpe) if tparam.typeParams.nonEmpty =>  // higher-kinded type param
-            PolyType(tparams, apply(restpe)) // could not be a nullary method type
-          case _ =>
-            this(arg)
-        }
-      }
   }
 
   private val uncurryType = new TypeMap {
@@ -640,10 +615,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(): Tree = {
-        def needsParens = tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)
+        def needsParens = tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType] // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the whole tree is a polymorphic nullary method application
         def repair = {
-          if (!tree.tpe.isInstanceOf[MethodType])
-            tree.tpe = MethodType(Nil, tree.tpe)
+          if (!tree.tpe.isInstanceOf[MethodType]) // i.e., it's a NullaryMethodType
+            tree.tpe = MethodType(Nil, tree.tpe.resultType) // TODO_NMT: I think the original `tree.tpe` was wrong, since that would set the method's resulttype to PolyType(Nil, restp) instead of restp
 
           atPos(tree.pos)(Apply(tree, Nil) setType tree.tpe.resultType)
         }

@@ -149,6 +149,8 @@ trait BaseTypeSeqs {
         max(maxDpth(lo), maxDpth(hi))
       case MethodType(paramtypes, result) =>
         maxDpth(result)
+      case NullaryMethodType(result) =>
+        maxDpth(result)
       case PolyType(tparams, result) =>
         max(maxDpth(result), maxDpth(tparams map (_.info)) + 1)
       case ExistentialType(tparams, result) =>

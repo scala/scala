@@ -327,6 +327,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case PolyType(tparams, resTpe) =>
       specializedTypeVars(tparams map (_.info)) ++ specializedTypeVars(resTpe)
 
+    case NullaryMethodType(resTpe) => // since this method may be run at phase typer (before uncurry, where NMTs are eliminated)
+      specializedTypeVars(resTpe)
     case MethodType(argSyms, resTpe) =>
       specializedTypeVars(argSyms map (_.tpe)) ++ specializedTypeVars(resTpe)
 
@@ -889,7 +891,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (settings.debug.value) log("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
 //        if (clazz.name.toString == "$colon$colon")
 //          (new Throwable).printStackTrace
-        PolyType(targs, ClassInfoType(parents,
+        polyType(targs, ClassInfoType(parents,
           new Scope(specializeClass(clazz, typeEnv(clazz)) ::: specialOverrides(clazz)),
           clazz))
 

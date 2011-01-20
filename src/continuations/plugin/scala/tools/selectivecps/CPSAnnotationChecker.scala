@@ -373,9 +373,10 @@ abstract class CPSAnnotationChecker extends CPSUtils {
           transChildrenInOrder(tree, tpe, qual::(transArgList(fun, args).flatten), Nil)
 
         case TypeApply(fun @ Select(qual, name), args) if fun.isTyped =>
+          def stripNullaryMethodType(tp: Type) = tp match { case NullaryMethodType(restpe) => restpe case tp => tp }
           vprintln("[checker] checking select apply " + tree + "/" + tpe)
 
-          transChildrenInOrder(tree, tpe, List(qual, fun), Nil)
+          transChildrenInOrder(tree, stripNullaryMethodType(tpe), List(qual, fun), Nil)
 
         case Apply(fun, args) if fun.isTyped =>
 
@@ -406,7 +407,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
             // we have to do it here so we don't lose the cps information (wouldn't trigger our
             // adapt and there is no Apply/TypeApply created)
             tpe match {
-              case PolyType(List(), restpe) =>
+              case NullaryMethodType(restpe) =>
                 //println("yep: " + restpe + "," + restpe.getClass)
                 transChildrenInOrder(tree, restpe, List(qual), Nil)
               case _ : PolyType => tpe

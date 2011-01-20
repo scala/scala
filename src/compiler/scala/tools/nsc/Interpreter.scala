@@ -156,7 +156,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     else null
   }
 
-  import compiler.{ Traverser, CompilationUnit, Symbol, Name, TermName, TypeName, Type, TypeRef, PolyType }
+  import compiler.{ Traverser, CompilationUnit, Symbol, Name, TermName, TypeName, Type, TypeRef, NullaryMethodType }
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
     ModuleDef, Ident, BackQuotedIdent, Select, TypeDef, Import, MemberDef, DocDef,
@@ -1008,7 +1008,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       def toType(name: Name): T = {
         // the types are all =>T; remove the =>
         val tp1 = afterTyper(resObjSym.info.nonPrivateDecl(name).tpe match {
-          case PolyType(Nil, tp)  => tp
+          case NullaryMethodType(tp)  => tp
           case tp                 => tp
         })
         // normalize non-public types so we don't see protected aliases like Self

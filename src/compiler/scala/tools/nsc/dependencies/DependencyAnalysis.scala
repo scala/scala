@@ -234,6 +234,10 @@ trait DependencyAnalysis extends SubComponent with Files {
               checkType(t.resultType)
               updateReferences(t.typeSymbol.fullName)
 
+            case t: NullaryMethodType =>
+              checkType(t.resultType)
+              updateReferences(t.typeSymbol.fullName)
+
             case t             =>
               updateReferences(t.typeSymbol.fullName)
           }

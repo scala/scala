@@ -182,6 +182,8 @@ abstract class Pickler extends SubComponent {
           putSymbol(clazz); putTypes(parents); putSymbols(decls.toList)
         case MethodType(params, restpe) =>
           putType(restpe); putSymbols(params)
+        case NullaryMethodType(restpe) =>
+          putType(restpe)
         case PolyType(tparams, restpe) =>
           /** no longer needed since all params are now local
           tparams foreach { tparam =>
@@ -575,7 +577,11 @@ abstract class Pickler extends SubComponent {
           writeRef(restpe); writeRefs(formals)
           if (mt.isImplicit) IMPLICITMETHODtpe
           else METHODtpe
-        case PolyType(tparams, restpe) =>
+        case mt @ NullaryMethodType(restpe) => // reuse POLYtpe since those can never have an empty list of tparams -- TODO: is there any way this can come back and bite us in the bottom?
+        // ugliness and thrift aside, this should make this somewhat more backward compatible
+        // (I'm not sure how old scalac's would deal with nested PolyTypes, as these used to be folded into one)
+          writeRef(restpe); writeRefs(Nil); POLYtpe
+        case PolyType(tparams, restpe) => // invar: tparams nonEmpty
           writeRef(restpe); writeRefs(tparams); POLYtpe
         case ExistentialType(tparams, restpe) =>
           writeRef(restpe); writeRefs(tparams); EXISTENTIALtpe

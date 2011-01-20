@@ -116,6 +116,8 @@ abstract class Changes {
       mt1.isImplicit == mt2.isImplicit
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
+    case (NullaryMethodType(res1), NullaryMethodType(res2)) =>
+      sameType(res1, res2)
     case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
       sameTypeParams(tparams1, tparams2)(false) && sameType(res1, res2)(false)
     case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>

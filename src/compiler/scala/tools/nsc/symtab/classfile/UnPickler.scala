@@ -50,7 +50,7 @@ abstract class UnPickler extends reflect.generic.UnPickler {
       private val definedAtRunId = currentRunId
       private val p = phase
       override def complete(sym: Symbol) : Unit = {
-        val tp = at(i, readType)
+        val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
         if (p != phase) atPhase(p) (sym setInfo tp)
         else sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
