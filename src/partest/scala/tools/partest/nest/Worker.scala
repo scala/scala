@@ -349,28 +349,29 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     runCommand(cmd, logFile)
   }
 
-  def getCheckFile(dir: File) = {
-    def chkFile(s: String) = Directory(dir) / "%s%s.check".format(fileBase, s)
-    val checkFile = if (chkFile("").isFile) chkFile("") else chkFile("-" + kind)
+  def getCheckFilePath(dir: File, suffix: String = "") = {
+    def chkFile(s: String) = (Directory(dir) / "%s%s.check".format(fileBase, s)).toFile
 
-    Some(checkFile) filter (_.canRead)
+    if (chkFile("").isFile || suffix == "") chkFile("")
+    else chkFile("-" + suffix)
   }
+  def getCheckFile(dir: File) = Some(getCheckFilePath(dir, kind)) filter (_.canRead)
 
-  def existsCheckFile(dir: File) = getCheckFile(dir).isDefined
-
-  def compareOutput(dir: File, logFile: File): String =
+  def compareOutput(dir: File, logFile: File): String = {
+    val checkFile = getCheckFilePath(dir, kind)
     // if check file exists, compare with log file
-    getCheckFile(dir) match {
-      case Some(f)  =>
-        val diff = compareFiles(logFile, f.jfile)
-        if (diff != "" && fileManager.updateCheck) {
-          NestUI.verbose("output differs from log file: updating checkfile\n")
-          f.toFile writeAll file2String(logFile)
-          ""
-        }
-        else diff
-      case _        => file2String(logFile)
+    val diff =
+      if (checkFile.canRead) compareFiles(logFile, checkFile.jfile)
+      else file2String(logFile)
+
+    if (diff != "" && fileManager.updateCheck) {
+      NestUI.verbose("output differs from log file: updating checkfile\n")
+      val toWrite = if (checkFile.exists) checkFile else getCheckFilePath(dir, "")
+      toWrite writeAll file2String(logFile)
+      ""
     }
+    else diff
+  }
 
   def file2String(f: File) =
     try SFile(f).slurp()
@@ -582,11 +583,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
           // compare log file to check file
           val dir      = file.getParentFile
 
-          diffCheck(
-            // diff is contents of logFile
-            if (!existsCheckFile(dir)) file2String(logFile)
-            else compareOutput(dir, logFile)
-          )
+          // diff is contents of logFile
+          diffCheck(compareOutput(dir, logFile))
         })
 
       case "run" | "jvm" =>
