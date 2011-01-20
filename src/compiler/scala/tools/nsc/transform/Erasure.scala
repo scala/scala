@@ -400,21 +400,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     }
 
   val deconstMap = new TypeMap {
-   def apply(tp: Type): Type = tp match {
-     case PolyType(_, _) => mapOver(tp)
-     case MethodType(_, _) => mapOver(tp) // nullarymethod was eliminated during uncurry
-     case _ => tp.deconst
-   }
-  }
-
-  /** The symbol which is called by a bridge;
-   *  @pre phase > erasure
-   */
-  def bridgedSym(bridge: Symbol) =
-    bridge.owner.info.nonPrivateDecl(bridge.name) suchThat { sym =>
-      !sym.isBridge && matchesType(sym.tpe, bridge.tpe, true) &&
-      (sym.tpe.resultType <:< bridge.tpe.resultType)
+    def apply(tp: Type): Type = tp match {
+      case PolyType(_, _) => mapOver(tp)
+      case MethodType(_, _) => mapOver(tp) // nullarymethod was eliminated during uncurry
+      case _ => tp.deconst
     }
+  }
 
 // -------- erasure on trees ------------------------------------------
 
@@ -970,7 +961,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               args)
 
         case Apply(fn @ Select(qual, _), Nil) if (fn.symbol == Any_## || fn.symbol == Object_##) =>
-          Apply(gen.mkAttributedRef(scalaRuntimeHash), List(qual))
+          // This is unattractive, but without it we crash here on ().## because after
+          // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
+          // This must be because some earlier transformation is being skipped on ##, but so
+          // far I don't know what.  We also crash on null.## but unless we want to implement
+          // my good idea that null.## works (like null == "abc" works) we have to NPE.
+          val arg = qual.tpe.typeSymbol match {
+            case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))       // ({ expr; UNIT }).##
+            case NullClass  => Typed(qual, TypeTree(ObjectClass.tpe)) // (null: Object).##
+            case _          => qual
+          }
+          Apply(gen.mkAttributedRef(scalaRuntimeHash), List(arg))
 
         case Apply(fn, args) =>
           if (fn.symbol == Any_asInstanceOf)
