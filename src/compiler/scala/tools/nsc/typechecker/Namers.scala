@@ -1324,9 +1324,9 @@ trait Namers { self: Analyzer =>
       checkNoConflict(DEFERRED, PRIVATE)
       checkNoConflict(FINAL, SEALED)
       checkNoConflict(PRIVATE, PROTECTED)
-      checkNoConflict(PRIVATE, OVERRIDE)
-      /* checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant */
-      checkNoConflict(ABSTRACT, FINAL)  // bug #1833
+      // checkNoConflict(PRIVATE, OVERRIDE) // this one leads to bad error messages like #4174, so catch in refchecks
+      // checkNoConflict(PRIVATE, FINAL)    // can't do this because FINAL also means compile-time constant
+      checkNoConflict(ABSTRACT, FINAL)
       checkNoConflict(DEFERRED, FINAL)
 
       // @PP: I added this as a sanity check because these flags are supposed to be

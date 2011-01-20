@@ -1,0 +1,4 @@
+bug4174.scala:7: error: method bar overrides nothing
+    foo(new C { override def bar = 1 })
+                             ^
+one error found
