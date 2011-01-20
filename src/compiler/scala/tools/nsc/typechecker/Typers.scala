@@ -1543,8 +1543,15 @@ trait Typers extends Modes {
       // because of initialization issues; bug #473
       for (arg <- superArgs ; tree <- arg) {
         val sym = tree.symbol
-        if (sym != null && sym.isModule && (sym.info.baseClasses contains clazz))
-          error(rhs.pos, "super constructor cannot be passed a self reference unless parameter is declared by-name")
+        if (sym != null && (sym.info.baseClasses contains clazz)) {
+          if (sym.isModule)
+            error(tree.pos, "super constructor cannot be passed a self reference unless parameter is declared by-name")
+          tree match {
+            case This(qual) =>
+              error(tree.pos, "super constructor arguments cannot reference unconstructed `this`")
+            case _ => ()
+          }
+        }
       }
 
       if (superConstr.symbol.isPrimaryConstructor) {

@@ -1,0 +1,4 @@
+bug4166.scala:3: error: super constructor arguments cannot reference unconstructed `this`
+class Demo extends Base(new { Demo.this }) {
+                              ^
+one error found

@@ -1,4 +1,4 @@
 bug473.scala:3: error: super constructor cannot be passed a self reference unless parameter is declared by-name
 case object Voop extends Foo(Voop)
-                 ^
+                             ^
 one error found
