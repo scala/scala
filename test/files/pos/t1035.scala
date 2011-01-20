@@ -1,5 +1,5 @@
 //A fatal error or Scala compiler
-// Scala compiler version 2.7.1-final -- (c) 2002-2010 LAMP/EPFL
+// Scala compiler version 2.7.1-final -- (c) 2002-2011 LAMP/EPFL
 // Carlos Loria cloria@artinsoft.com
 // 7/10/2008
 

@@ -1,4 +1,4 @@
-// tested using Scala compiler version 2.4.0-RC1 -- (c) 2002-2010 LAMP/EPFL
+// tested using Scala compiler version 2.4.0-RC1 -- (c) 2002-2011 LAMP/EPFL
 
 // Many thanks to all at LAMP for the work that goes into Scala.
 
