@@ -14,3 +14,11 @@ trait ProcessLogger {
   def error(s: => String): Unit
   def buffer[T](f: => T): T
 }
+
+object ProcessLogger {
+  def apply(fn: String => Unit): ProcessLogger = new ProcessLogger {
+    def info(s: => String): Unit = fn(s)
+    def error(s: => String): Unit = fn(s)
+    def buffer[T](f: => T): T = f
+  }
+}
