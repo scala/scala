@@ -959,7 +959,7 @@ trait Implicits {
 
     def allImplicits: List[SearchResult] = {
       def search(iss: Infoss, isLocal: Boolean) = applicableInfos(iss, isLocal).values
-      search(context.implicitss, true) ++ search(implicitsOfExpectedType, false) toList
+      (search(context.implicitss, true) ++ search(implicitsOfExpectedType, false)).toList.filter(_.tree ne EmptyTree)
     }
   }
 

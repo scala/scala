@@ -48,6 +48,11 @@ trait CompilerControl { self: Global =>
     override def toString = "dofirst "+source
   }
 
+  class AskLinkPosItem(sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
+    def apply() = self.getLinkPos(sym, source, response)
+    override def toString = "linkpos "+sym+" in "+source
+  }
+
   /** Info given for every member found by completion
    */
   abstract class Member {
@@ -145,6 +150,18 @@ trait CompilerControl { self: Global =>
   def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =
     scheduler postWorkItem new AskTypeItem(source, forceReload, response)
 
+  /** Set sync var `response` to the position of the definition of the given link in
+   *  the given sourcefile.
+   *
+   *  @param   sym      The symbol referenced by the link (might come from a classfile)
+   *  @param   source   The source file that's supposed to contain the definition
+   *  @param   response A response that will be set to the following:
+   *                    If `source` contains a definition that is referenced by the given link
+   *                    the position of that definition, otherwise NoPosition.
+   */
+  def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
+    scheduler postWorkItem new AskLinkPosItem(sym, source, response)
+
   /** Set sync var `response` to the last fully attributed & typechecked tree produced from `source`.
    *  If no such tree exists yet, do a normal askType(source, false, response)
    */
@@ -181,8 +198,13 @@ trait CompilerControl { self: Global =>
 
   // ---------------- Interpreted exceptions -------------------
 
-/** It has to stay top-level so that the PresentationCompilerThread may access it. */
+/** Signals a request for a fresh background compiler run.
+ *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
+ */
 object FreshRunReq extends ControlThrowable
 
-/** It has to stay top-level so that the PresentationCompilerThread may access it. */
+/** Signals a request for a shutdown of the presentation compiler.
+ *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
+ */
 object ShutdownReq extends ControlThrowable
+

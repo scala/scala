@@ -170,6 +170,7 @@ self =>
 
   var moreWorkAtNode: Int = -1
   var nodesSeen = 0
+  var noWorkFoundAtNode: Int = -1
 
   /** Called from runner thread and signalDone:
    *  Poll for interrupts and execute them immediately.
@@ -226,7 +227,10 @@ self =>
             debugLog("quitting work item: "+action)
           }
         case None =>
-          debugLog("no work found")
+          if (nodesSeen > noWorkFoundAtNode) {
+            debugLog("no work found")
+            noWorkFoundAtNode = nodesSeen
+          }
       }
     }
   }
@@ -477,6 +481,32 @@ self =>
       if (unit.status > JustParsed) unit.body
       else if (unit.lastBody ne EmptyTree) unit.lastBody
       else typedTree(source, false)
+    }
+  }
+
+  def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
+    informIDE("getLinkPos "+sym+" "+source)
+    respond(response) {
+      reloadSources(List(source))
+      val owner = sym.owner
+      if (owner.isClass) {
+        val pre = adaptToNewRunMap(ThisType(owner))
+        val newsym = pre.decl(sym.name) filter { alt =>
+          sym.isType || matchesType(pre.memberType(alt), pre.memberType(sym), false)
+        }
+        if (newsym == NoSymbol) {
+          debugLog("link not found "+sym+" "+source+" "+pre)
+          NoPosition
+        } else if (newsym.isOverloaded) {
+          debugLog("link ambiguous "+sym+" "+source+" "+pre+" "+newsym.alternatives)
+          NoPosition
+        } else {
+          debugLog("link found for "+newsym+": "+newsym.pos)
+          newsym.pos
+        }
+      } else
+        debugLog("link not in class "+sym+" "+source+" "+owner)
+        NoPosition
     }
   }
 

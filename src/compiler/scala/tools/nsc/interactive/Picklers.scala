@@ -109,6 +109,12 @@ trait Picklers { self: Global =>
       .wrapped { new AskToDoFirstItem(_) } { _.source }
       .asClass (classOf[AskToDoFirstItem])
 
+  /** We cannot pickle symbols, so we return always RootClass */
+  implicit def askLinkPosItem: CondPickler[AskLinkPosItem] =
+    pkl[SourceFile]
+      .wrapped { new AskLinkPosItem(definitions.RootClass, _, new Response) } { _.source }
+      .asClass (classOf[AskLinkPosItem])
+
   implicit def emptyAction: CondPickler[EmptyAction] =
     pkl[Unit]
       .wrapped { _ => new EmptyAction } { _ => () }
