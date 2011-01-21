@@ -11,9 +11,10 @@ import java.util.regex.Pattern
 import java.net._
 import java.security.SecureRandom
 
-import io.{ File, Path, Process, Socket }
+import io.{ File, Path, Socket }
 import scala.util.control.Exception.catching
 import scala.tools.util.StringOps.splitWhere
+import scala.sys.process._
 
 /** This class manages sockets for the fsc offline compiler.  */
 class CompileSocket {
@@ -47,7 +48,7 @@ class CompileSocket {
 
   protected def fatal(msg: String) = {
     fscError(msg)
-    throw new Exception("fsc failure")
+    sys.error("fsc failure")
   }
 
   protected def info(msg: String) =
@@ -82,12 +83,10 @@ class CompileSocket {
     Seq(vmCommand) ++ vmArgs ++ Seq(serverClass) filterNot (_ == "")
 
   /** Start a new server; returns true iff it succeeds */
-  private def startNewServer(vmArgs: String) {
+  private def startNewServer(vmArgs: String) = {
     val cmd = serverCommand(vmArgs split " " toSeq)
-    info("[Executed command: %s]" format cmd)
-    try Process exec cmd catch {
-      case ex: IOException => fatal("Cannot start compilation daemon.\ntried command: %s" format cmd)
-    }
+    info("[Executing command: %s]" format cmd)
+    (cmd.! == 0) || fatal("Cannot start compilation daemon.\ntried command: %s" format cmd)
   }
 
   /** The port identification file */

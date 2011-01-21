@@ -1,7 +1,7 @@
 package scala.tools
 package partest
 
-import nsc.io.{ File, Path, Process, Directory }
+import nsc.io.{ File, Path, Directory }
 import util.{ PathResolver }
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 

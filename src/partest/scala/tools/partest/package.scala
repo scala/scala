@@ -5,9 +5,10 @@
 package scala.tools
 
 import java.io.{ File => JFile }
-import nsc.io.{ Path, Process, Directory }
+import nsc.io.{ Path, Directory }
 import util.{ PathResolver }
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
+import scala.sys.process.javaVmArguments
 
 package object partest {
   import nest.NestUI
@@ -22,10 +23,11 @@ package object partest {
     (files.size, failures.size)
   }
 
-  def vmArgString = {
-    val str = Process.javaVmArguments mkString " "
-    "Java VM started with arguments: '%s'" format str
-  }
+  def vmArgString = javaVmArguments.mkString(
+    "Java VM started with arguments: '",
+    " ",
+    "'"
+  )
 
   def allPropertiesString = {
     import collection.JavaConversions._

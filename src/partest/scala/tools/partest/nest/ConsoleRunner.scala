@@ -15,7 +15,7 @@ import RunnerUtils._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
-import io.{ Path, Process }
+import io.{ Path }
 
 class ConsoleRunner extends DirectRunner {
   import PathSettings.{ srcDir, testRoot }

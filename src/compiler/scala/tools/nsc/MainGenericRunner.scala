@@ -11,7 +11,7 @@ import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.net.{ URL, MalformedURLException }
 import scala.tools.util.PathResolver
 
-import io.{ File, Process }
+import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
 

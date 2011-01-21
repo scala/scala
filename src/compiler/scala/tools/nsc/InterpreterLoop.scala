@@ -9,6 +9,7 @@ import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader, PrintWriter }
 import java.io.IOException
 
+import scala.sys.process.Process
 import scala.tools.nsc.{ InterpreterResults => IR }
 import scala.tools.util.SignalManager
 import scala.annotation.tailrec
@@ -17,7 +18,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
 import util.{ ClassPath }
 import interpreter._
-import io.{ File, Process }
+import io.File
 
 // Classes to wrap up interpreter commands and their results
 // You can add new commands by adding entries to val commands
@@ -317,17 +318,11 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   }
 
   /** fork a shell and run a command */
-  def runShellCmd(line: String) {
-    // we assume if they're using :sh they'd appreciate being able to pipeline
-    interpreter.beQuietDuring {
-      interpreter.interpret("import _root_.scala.tools.nsc.io.Process.Pipe._")
-    }
-    val p = Process(line)
-    // only bind non-empty streams
-    def add(name: String, it: Iterator[String]) =
-      if (it.hasNext) interpreter.bind(name, "scala.List[String]", it.toList)
-
-    List(("stdout", p.stdout), ("stderr", p.stderr)) foreach (add _).tupled
+  def runShellCmd(cmd: String) {
+    interpreter.beQuietDuring { interpreter.interpret("import _root_.scala.sys.process._") }
+    val xs = Process(cmd).lines
+    if (xs.nonEmpty)
+      interpreter.bind("stdout", "scala.Stream[String]", xs)
   }
 
   def withFile(filename: String)(action: File => Unit) {

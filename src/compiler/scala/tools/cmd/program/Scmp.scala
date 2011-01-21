@@ -8,6 +8,7 @@ package cmd
 package program
 
 import nsc.io._
+import scala.sys.process._
 
 object Scmp {
   private val scmpUsage = """
@@ -42,16 +43,16 @@ object Scmp {
       fromArgs(residualArgs.patch(1, toArgs(extras), 0))
 
     def runCmd(cmd: String) = {
-      val output = Process(cmd, redirect = true).slurp()
-
-      returning(File.makeTemp())(_ writeAll output)
+      val tmpfile = File.makeTemp()
+      (cmd #> tmpfile.jfile !)
+      tmpfile
     }
 
     val cmds = List(p1args, p2args) map createCmd
     println(cmds.mkString("Running command lines:\n  ", "\n  ", ""))
 
     val files = cmds map runCmd map (_.path)
-    val diff = Process("diff %s %s".format(files: _*)).slurp()
+    val diff = "diff %s %s".format(files: _*).!!
 
     if (diff.isEmpty) println("No differences.")
     else println(diff)
