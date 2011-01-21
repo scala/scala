@@ -60,10 +60,6 @@ self =>
    */
   var allSources: List[SourceFile] = List()
 
-  /** The currently checked source file
-   */
-  var currentlyChecked: Option[RichCompilationUnit] = None
-
   /** The currently active typer run */
   private var currentTyperRun: TyperRun = _
   newTyperRun()
@@ -115,21 +111,15 @@ self =>
         try {
           try {
             pollForWork(old.pos)
-	  } catch {
+          } catch {
             case ex : Throwable =>
-	      if (context.unit != null) integrateNew()
+            if (context.unit != null) integrateNew()
               log.flush()
               throw ex
-	  }
+          }
           if (typerRun == currentTyperRun)
             return
 
-          // @Martin
-          // Guard against NPEs in integrateNew if context.unit == null here.
-          // But why are we doing this at all? If it was non-null previously
-          // integrateNew will already have been called. If it was null previously
-          // it will still be null now?
-          // if (context.unit != null)
           integrateNew()
           throw FreshRunReq
         } catch {
@@ -168,6 +158,8 @@ self =>
 
   // ----------------- Polling ---------------------------------------
 
+  case class WorkEvent(atNode: Int, atMillis: Long)
+
   var moreWorkAtNode: Int = -1
   var nodesSeen = 0
   var noWorkFoundAtNode: Int = -1
@@ -178,25 +170,13 @@ self =>
    *  Then, poll for work reload/typedTreeAt/doFirst commands during background checking.
    */
   def pollForWork(pos: Position) {
-    scheduler.pollInterrupt() match {
-      case Some(ir) =>
-	try {
-	  activeLocks += 1
-          ir.execute()
-	} finally {
-	  activeLocks -= 1
-	}
-        pollForWork(pos)
-      case _ =>
-    }
-
-    def nodeWithWork(): Option[Int] = {
-      if (scheduler.moreWork || pendingResponse.isCancelled) Some(nodesSeen) else None
-    }
+    def nodeWithWork(): Option[WorkEvent] =
+      if (scheduler.moreWork || pendingResponse.isCancelled) Some(new WorkEvent(nodesSeen, System.currentTimeMillis))
+      else None
 
     nodesSeen += 1
     logreplay("atnode", nodeWithWork()) match {
-      case Some(id) =>
+      case Some(WorkEvent(id, _)) =>
         debugLog("some work at node "+id+" current = "+nodesSeen)
 //        assert(id >= nodesSeen)
         moreWorkAtNode = id
@@ -204,6 +184,19 @@ self =>
     }
 
     if (nodesSeen >= moreWorkAtNode) {
+
+      logreplay("asked", scheduler.pollInterrupt()) match {
+        case Some(ir) =>
+          try {
+            activeLocks += 1
+            ir.execute()
+          } finally {
+            activeLocks -= 1
+          }
+          pollForWork(pos)
+        case _ =>
+      }
+
       if (logreplay("cancelled", pendingResponse.isCancelled)) {
         throw CancelException
       }
@@ -296,6 +289,7 @@ self =>
 
     for (s <- allSources) {
       val unit = unitOf(s)
+      if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
       if (unit.status == NotLoaded) parse(unit)
     }
 
@@ -307,7 +301,7 @@ self =>
     informIDE("Everything is now up to date")
   }
 
-  /** Reset unit to just-parsed state */
+  /** Reset unit to unloaded state */
   def reset(unit: RichCompilationUnit): Unit = {
     unit.depends.clear()
     unit.defined.clear()
@@ -328,15 +322,13 @@ self =>
     unit.status = JustParsed
   }
 
-  /** Make sure unit is typechecked with new typer run
+  /** Make sure unit is typechecked
    */
   def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
-    //if (currentlyChecked == Some(unit) || unit.status > JustParsed) reset(unit) // not deeded for idempotent type checker phase
     if (unit.status == NotLoaded) parse(unit)
-    currentlyChecked = Some(unit)
+    unit.status = PartiallyChecked
     currentTyperRun.typeCheck(unit)
-    currentlyChecked = None
     unit.lastBody = unit.body
     unit.status = currentRunId
   }
@@ -361,7 +353,7 @@ self =>
 
   /** Move list of files to front of allSources */
   def moveToFront(fs: List[SourceFile]) {
-    allSources = fs ++ (allSources diff fs)
+    allSources = fs ::: (allSources diff fs)
   }
 
   // ----------------- Implementations of client commands -----------------------
@@ -453,7 +445,7 @@ self =>
     informIDE("typedTree" + source + " forceReload: " + forceReload)
     val unit = unitOf(source)
     if (forceReload) reset(unit)
-    if (unit.status <= JustParsed) {
+    if (unit.status <= PartiallyChecked) {
       //newTyperRun()   // not deeded for idempotent type checker phase
       typeCheck(unit)
     }
@@ -478,7 +470,7 @@ self =>
     informIDE("getLastTyped" + source)
     respond(response) {
       val unit = unitOf(source)
-      if (unit.status > JustParsed) unit.body
+      if (unit.status > PartiallyChecked) unit.body
       else if (unit.lastBody ne EmptyTree) unit.lastBody
       else typedTree(source, false)
     }

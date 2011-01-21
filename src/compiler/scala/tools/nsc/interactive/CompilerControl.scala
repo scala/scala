@@ -48,7 +48,7 @@ trait CompilerControl { self: Global =>
     override def toString = "dofirst "+source
   }
 
-  class AskLinkPosItem(sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
+  class AskLinkPosItem(val sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
     def apply() = self.getLinkPos(sym, source, response)
     override def toString = "linkpos "+sym+" in "+source
   }
@@ -82,7 +82,7 @@ trait CompilerControl { self: Global =>
   protected[interactive] val scheduler = new WorkScheduler
 
   /** The compilation unit corresponding to a source file
-   *  if it does not yet exist creat a new one atomically
+   *  if it does not yet exist create a new one atomically
    */
   def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile.synchronized {
     unitOfFile get s.file match {

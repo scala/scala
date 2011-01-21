@@ -28,7 +28,7 @@ abstract class InterruptReq {
   def getResult(): R = synchronized {
     while (result.isEmpty) {
       try {
-	wait()
+        wait()
       } catch { case _ : InterruptedException => () }
     }
 

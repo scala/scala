@@ -1,13 +1,14 @@
 package scala.tools.nsc
 package interactive
 
-import util.{SourceFile, BatchSourceFile}
+import util.{SourceFile, BatchSourceFile, InterruptReq}
 import io.{AbstractFile, PlainFile}
 
 import util.{Position, RangePosition, NoPosition, OffsetPosition, TransparentPosition, EmptyAction}
 import io.{Pickler, CondPickler}
 import io.Pickler._
 import collection.mutable
+import mutable.ListBuffer
 
 trait Picklers { self: Global =>
 
@@ -74,6 +75,50 @@ trait Picklers { self: Global =>
 
   implicit lazy val position: Pickler[Position] = transparentPosition | rangePosition | offsetPosition | noPosition
 
+  implicit lazy val namePickler: Pickler[Name] =
+    pkl[String] .wrapped {
+      str => if ((str.length > 1) && (str endsWith "!")) newTypeName(str.init) else newTermName(str)
+    } {
+      name => if (name.isTypeName) name.toString+"!" else name.toString
+    }
+
+  implicit lazy val symPickler: Pickler[Symbol] = {
+    def ownerNames(sym: Symbol, buf: ListBuffer[Name]): ListBuffer[Name] = {
+      if (!sym.isRoot) {
+        ownerNames(sym.owner, buf)
+        buf += (if (sym.isModuleClass) sym.sourceModule else sym).name
+        if (!sym.isType && !sym.isStable) {
+          val sym1 = sym.owner.info.decl(sym.name)
+          if (sym1.isOverloaded) {
+            val index = sym1.alternatives.indexOf(sym)
+            assert(index >= 0, sym1+" not found in alternatives "+sym1.alternatives)
+            buf += index.toString
+          }
+        }
+      }
+      buf
+    }
+    def makeSymbol(root: Symbol, names: List[Name]): Symbol = names match {
+      case List() =>
+        root
+      case name :: rest =>
+        val sym = root.info.decl(name)
+        if (sym.isOverloaded) makeSymbol(sym.alternatives(rest.head.toString.toInt), rest.tail)
+        else makeSymbol(sym, rest)
+    }
+    pkl[List[Name]] .wrapped { makeSymbol(definitions.RootClass, _) } { ownerNames(_, new ListBuffer).toList }
+  }
+
+  implicit def workEvent: Pickler[WorkEvent] = {
+    (pkl[Int] ~ pkl[Long])
+      .wrapped { case id ~ ms => WorkEvent(id, ms) } { w => w.atNode ~ w.atMillis }
+  }
+
+  implicit def interruptReq: Pickler[InterruptReq] = {
+    val emptyIR: InterruptReq = new InterruptReq { type R = Unit; val todo = () => () }
+    pkl[Unit] .wrapped { _ =>  emptyIR } { _ => () }
+  }
+
   implicit def reloadItem: CondPickler[ReloadItem] =
     pkl[List[SourceFile]]
       .wrapped { ReloadItem(_, new Response) } { _.sources }
@@ -109,10 +154,9 @@ trait Picklers { self: Global =>
       .wrapped { new AskToDoFirstItem(_) } { _.source }
       .asClass (classOf[AskToDoFirstItem])
 
-  /** We cannot pickle symbols, so we return always RootClass */
   implicit def askLinkPosItem: CondPickler[AskLinkPosItem] =
-    pkl[SourceFile]
-      .wrapped { new AskLinkPosItem(definitions.RootClass, _, new Response) } { _.source }
+    (pkl[Symbol] ~ pkl[SourceFile])
+      .wrapped { case sym ~ source => new AskLinkPosItem(sym, source, new Response) } { item => item.sym ~ item.source }
       .asClass (classOf[AskLinkPosItem])
 
   implicit def emptyAction: CondPickler[EmptyAction] =
