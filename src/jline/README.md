@@ -13,15 +13,12 @@ Building
 
 ### Requirements
 
-* Maven 2+
+* SBT
 * Java 5+
 
-Check out and build:
+This is a fork with scala specific modifications.
+The original repository was: git://github.com/jdillon/jline2.git
 
-    git clone git://github.com/jdillon/jline2.git
-    cd jline2
-    mvn install
+You can now build with sbt:
 
-To build the jdk14 jar:
-
-    mvn install -Dretro
+  sbt update proguard

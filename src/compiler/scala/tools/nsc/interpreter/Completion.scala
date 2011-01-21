@@ -7,8 +7,8 @@
 package scala.tools.nsc
 package interpreter
 
-import jline._
-import jline.console.completer._
+import scala.tools.jline._
+import scala.tools.jline.console.completer._
 import java.util.{ List => JList }
 import util.returning
 

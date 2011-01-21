@@ -167,7 +167,7 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Import-Package>!jline*,javax.swing;resolution:=optional,*</Import-Package>
+                                <Import-Package>!scala.tools.jline*,javax.swing;resolution:=optional,*</Import-Package>
                                 <DynamicImport-Package>*</DynamicImport-Package>
                             </instructions>
                         </configuration>

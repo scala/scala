@@ -7,10 +7,10 @@ package scala.tools.nsc
 package interpreter
 
 import java.io.File
-import jline.console.history._
-import jline.console.history.{ FileHistory, PersistentHistory, History => JHistory }
-import jline.console.history.History.{ Entry => JEntry }
-import jline.console.ConsoleReader
+import scala.tools.jline.console.history._
+import scala.tools.jline.console.history.{ FileHistory, PersistentHistory, History => JHistory }
+import scala.tools.jline.console.history.History.{ Entry => JEntry }
+import scala.tools.jline.console.ConsoleReader
 import scala.collection.JavaConverters._
 import Properties.userHome
 
