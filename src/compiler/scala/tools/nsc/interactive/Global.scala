@@ -484,7 +484,7 @@ self =>
       if (owner.isClass) {
         val pre = adaptToNewRunMap(ThisType(owner))
         val newsym = pre.decl(sym.name) filter { alt =>
-          sym.isType || matchesType(pre.memberType(alt), pre.memberType(sym), false)
+          sym.isType || matchesType(pre.memberType(alt), adaptToNewRunMap(sym.tpe), false)
         }
         if (newsym == NoSymbol) {
           debugLog("link not found "+sym+" "+source+" "+pre)
