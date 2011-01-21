@@ -198,10 +198,10 @@ scala>
 scala> 
 scala> 
 scala>      |      |      | res9: java.lang.String = 
-
+"
 hello
 there
-
+"
 
 scala> 
 scala>      |      | You typed two blank lines.  Starting a new command.
