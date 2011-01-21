@@ -9,52 +9,58 @@ package model
 
 import scala.collection._
 
-class IndexModelFactory {
+object IndexModelFactory {
 
-  /** SortedMap[symbol name, SortedSet[owner template]] */
-  type SymbolMap = immutable.SortedMap[String,SortedSet[model.TemplateEntity]]
-  /** Map[symbol's first letter, SymbolMap] */
-  type IndexModel = Map[Char, SymbolMap]
+  def makeIndex(universe: Universe): Index = new Index {
 
-  def makeModel(universe:Universe)={
-    import model._
+    lazy val firstLetterIndex: Map[Char, SymbolMap] = {
 
-    val index = new mutable.HashMap[Char,SymbolMap] {
-      /* Owner template ordering */
-      implicit def orderingSet = math.Ordering.String.on { x:TemplateEntity => x.name.toLowerCase }
-      /* symbol name ordering */
-      implicit def orderingMap = math.Ordering.String.on { x:String => x.toLowerCase }
+      val result = new mutable.HashMap[Char,SymbolMap] {
 
-      def addMember(d:MemberEntity) = {
-        val firstLetter = {
-          val ch = d.name.head.toLower
-          if(ch.isLetterOrDigit) ch else '#'
+        /* Owner template ordering */
+        implicit def orderingSet = math.Ordering.String.on { x: TemplateEntity => x.name.toLowerCase }
+        /* symbol name ordering */
+        implicit def orderingMap = math.Ordering.String.on { x: String => x.toLowerCase }
+
+        def addMember(d: MemberEntity) = {
+          val firstLetter = {
+            val ch = d.name.head.toLower
+            if(ch.isLetterOrDigit) ch else '#'
+          }
+          this(firstLetter) =
+          if(this.contains(firstLetter)) {
+            val letter = this(firstLetter)
+            val value = this(firstLetter).get(d.name).getOrElse(SortedSet.empty[TemplateEntity]) + d.inDefinitionTemplates.head
+              letter + ((d.name, value))
+          } else {
+            immutable.SortedMap( (d.name, SortedSet(d.inDefinitionTemplates.head)) )
+          }
         }
-        this(firstLetter) =
-        if(this.contains(firstLetter)) {
-          val letter = this(firstLetter)
-          val value = this(firstLetter).get(d.name).getOrElse(SortedSet.empty[TemplateEntity]) + d.inDefinitionTemplates.head
-            letter + ((d.name, value))
-        } else {
-          immutable.SortedMap( (d.name, SortedSet(d.inDefinitionTemplates.head)) )
-        }
-      }
-    }
 
-    //@scala.annotation.tailrec // TODO
-    def gather(owner:DocTemplateEntity):Unit =
-    for(m <- owner.members if m.inDefinitionTemplates.isEmpty || m.inDefinitionTemplates.head == owner)
-      m match {
-        case tpl:DocTemplateEntity =>
-          index.addMember(tpl)
-          gather(tpl)
-        case alias:AliasType => index.addMember(alias)
-        case absType:AbstractType => index.addMember(absType)
-        case non:NonTemplateMemberEntity if !non.isConstructor => index.addMember(non)
-        case x @ _ =>
       }
+
+      //@scala.annotation.tailrec // TODO
+      def gather(owner: DocTemplateEntity): Unit =
+        for(m <- owner.members if m.inDefinitionTemplates.isEmpty || m.inDefinitionTemplates.head == owner)
+          m match {
+            case tpl: DocTemplateEntity =>
+              result.addMember(tpl)
+              gather(tpl)
+            case alias: AliasType =>
+              result.addMember(alias)
+            case absType: AbstractType =>
+              result.addMember(absType)
+            case non: NonTemplateMemberEntity if !non.isConstructor =>
+              result.addMember(non)
+            case x @ _ =>
+          }
 
       gather(universe.rootPackage)
-      index.toMap
+
+      result.toMap
+
+    }
+
   }
+
 }

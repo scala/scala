@@ -343,27 +343,38 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     } ++
     { if (mbr.deprecation.isEmpty || isReduced) NodeSeq.Empty else
         <div class="block"><ol>deprecated:
-          { <li>{ bodyToHtml(mbr.deprecation.get) }</li> }
+          { <li class="cmt">{ bodyToHtml(mbr.deprecation.get) }</li> }
         </ol></div>
     } ++
     { mbr.comment match {
         case Some(comment) =>
           <xml:group>
+            { if(!comment.example.isEmpty && !isReduced)
+              <div class="block">Example{ if (comment.example.length > 1) "s" else ""} :
+                <ol>{
+                  val exampleXml: List[scala.xml.NodeSeq] =
+                    for(example <- comment.example ) yield
+                      <li class="cmt">{ bodyToHtml(example) }</li>
+                  exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
+                }</ol>
+              </div>
+              else NodeSeq.Empty
+            }
             { if(!comment.version.isEmpty && !isReduced)
                 <div class="block"><ol>version
-                  { for(body <- comment.version.toList) yield <li>{bodyToHtml(body)}</li> }
+                  { for(body <- comment.version.toList) yield <li class="cmt">{bodyToHtml(body)}</li> }
                 </ol></div>
               else NodeSeq.Empty
             }
             { if(!comment.since.isEmpty && !isReduced)
                 <div class="block"><ol>since
-                  { for(body <- comment.since.toList) yield <li>{bodyToHtml(body)}</li> }
+                  { for(body <- comment.since.toList) yield <li class="cmt">{bodyToHtml(body)}</li> }
                 </ol></div>
               else NodeSeq.Empty
             }
             { if(!comment.see.isEmpty && !isReduced)
                 <div class="block"><ol>see also:
-                  { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li>{bodyToHtml(see)}</li> )
+                  { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li class="cmt">{bodyToHtml(see)}</li> )
                     seeXml.reduceLeft(_ ++ Text(", ") ++ _)
                   }
                 </ol></div>

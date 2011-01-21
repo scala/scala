@@ -45,6 +45,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>bottom,</li>
  *    <li>addparams,</li>
  *    <li>deprecation,</li>
+ *    <li>docgenerator,</li>
  *    <li>unchecked.</li>
  *  </ul>
  *  <p>
@@ -98,6 +99,9 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** The character encoding of the files to compile. */
   private var encoding: Option[String] = None
+
+  /** The fully qualified name of a doclet class, which will be used to generate the documentation. */
+  private var docgenerator: Option[String] = None
 
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
@@ -263,6 +267,14 @@ class Scaladoc extends ScalaMatchingTask {
    */
   def setEncoding(input: String) {
     encoding = Some(input)
+  }
+
+  /** Sets the <code>docgenerator</code> attribute.
+   *
+   *  @param input A fully qualified class name of a doclet.
+   */
+  def setDocgenerator(input: String) {
+    docgenerator = Some(input)
   }
 
   /** Sets the <code>docversion</code> attribute.
@@ -508,6 +520,7 @@ class Scaladoc extends ScalaMatchingTask {
     if (!docsourceurl.isEmpty) docSettings.docsourceurl.value =decodeEscapes(docsourceurl.get)
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
+    if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
 
     docSettings processArgumentString addParams

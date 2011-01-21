@@ -14,7 +14,7 @@ import scala.collection._
 import scala.xml._
 import scala.util.parsing.json.{JSONObject, JSONArray}
 
-class Index(universe: Universe, indexModel: IndexModelFactory#IndexModel) extends HtmlPage {
+class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
 
   def path = List("index.html")
 
@@ -68,7 +68,7 @@ class Index(universe: Universe, indexModel: IndexModelFactory#IndexModel) extend
     <div id="browser" class="ui-layout-west">
       <div class="ui-west-north">{
         <div class="letters">
-	      { for(l <- indexModel.keySet.toList.sortBy( _.toString )) yield { // TODO there should be a better way to do that
+	      { for(l <- index.firstLetterIndex.keySet.toList.sortBy( _.toString )) yield { // TODO there should be a better way to do that
 	          val ch = if(l=='#') "%23" else l // url encoding if needed
               <a target="template" href={"index/index-"+ch+".html"}>{l.toUpper}</a> ++ xml.Text(" ")
           } }
