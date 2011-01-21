@@ -479,6 +479,7 @@ self =>
   def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
     informIDE("getLinkPos "+sym+" "+source)
     respond(response) {
+      val preExisting = unitOfFile isDefinedAt source.file
       reloadSources(List(source))
       val owner = sym.owner
       if (owner.isClass) {
@@ -486,6 +487,7 @@ self =>
         val newsym = pre.decl(sym.name) filter { alt =>
           sym.isType || matchesType(pre.memberType(alt), adaptToNewRunMap(sym.tpe), false)
         }
+        if (!preExisting) removeUnitOf(source)
         if (newsym == NoSymbol) {
           debugLog("link not found "+sym+" "+source+" "+pre)
           NoPosition
