@@ -212,12 +212,13 @@ self =>
   def subsetOf(that: Set[A]) = this forall that
 
   /** An iterator over all subsets of this set of the given size.
+   *  If the requested size is impossible, an empty iterator is returned.
    *
    *  @param len  the size of the subsets.
    *  @return     the iterator.
    */
   def subsets(len: Int): Iterator[This] = {
-    if (len < 0 || len > size) throw new IllegalArgumentException(len.toString)
+    if (len < 0 || len > size) Iterator.empty
     else new SubsetsItr(self.toIndexedSeq, len)
   }
 

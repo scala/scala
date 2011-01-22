@@ -966,7 +966,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           // This must be because some earlier transformation is being skipped on ##, but so
           // far I don't know what.  We also crash on null.## but unless we want to implement
           // my good idea that null.## works (like null == "abc" works) we have to NPE.
-          val arg = qual.tpe.typeSymbol match {
+          val arg = qual.tpe.typeSymbolDirect match {
             case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))       // ({ expr; UNIT }).##
             case NullClass  => Typed(qual, TypeTree(ObjectClass.tpe)) // (null: Object).##
             case _          => qual
