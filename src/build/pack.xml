@@ -189,6 +189,7 @@ MAIN DISTRIBUTION SBAZ
         </copy>
       </sequential>
     </macrodef>
+    <mvn-copy-lib mvn.artifact.name="jline"/>
     <mvn-copy-lib mvn.artifact.name="scala-library"/>
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-dbc"/>
@@ -213,6 +214,13 @@ MAIN DISTRIBUTION SBAZ
       </sequential>
     </macrodef>
     <mvn-copy-plugin mvn.artifact.name="continuations"/>
+  </target>
+
+  <target name="pack-maven.srcs" depends="pack-maven.libs">
+    <jar destfile="${dists.dir}/maven/${version.number}/jline/jline-src.jar"
+         basedir="${src.dir}/jline/src/main/java">
+      <include name="**/*"/>
+    </jar>
   </target>
 
   <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
@@ -240,7 +248,7 @@ MAIN DISTRIBUTION SBAZ
     </copy>
   </target>
 
-  <target name="pack-maven.scripts" depends="pack-maven.latest.unix,pack-maven.latest.win">
+  <target name="pack-maven.scripts" depends="pack-maven.latest.unix,pack-maven.latest.win,pack-maven.srcs">
     <copy todir="${dists.dir}/maven/${version.number}"
           file="${lib-ant.dir}/maven-ant-tasks-2.0.9.jar"/>
     <copy tofile="${dists.dir}/maven/${version.number}/build.xml"

@@ -114,6 +114,7 @@
             <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
           </extra-attachments>
         </deploy-local>
+      	<deploy-local name="jline" version="@{version}" repository="@{repository}"/>
         <deploy-local name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-dbc" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
@@ -176,6 +177,7 @@
             <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
           </extra-attachments>
         </deploy-remote>
+      	<deploy-remote name="jline" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
         <deploy-remote name="scala-dbc" version="@{version}" repository="@{repository}" />
         <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>

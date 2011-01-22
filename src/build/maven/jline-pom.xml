@@ -3,11 +3,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.scala-lang</groupId>
-	<artifactId>scala-compiler</artifactId>
+	<artifactId>jline</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
 	<url>http://www.scala-lang.org/</url>
-	<inceptionYear>2002</inceptionYear>
+	<inceptionYear>2011</inceptionYear>
 	<organization>
 		<name>LAMP/EPFL</name>
 		<url>http://lamp.epfl.ch/</url>
@@ -19,6 +19,11 @@
 			</url>
 			<distribution>repo</distribution>
 		</license>
+    <license>
+      <name>The BSD License</name>
+      <url>http://www.opensource.org/licenses/bsd-license.php</url>
+      <distribution>repo</distribution>
+    </license>
 	</licenses>
 	<scm>
 		<connection>scm:svn:http://lampsvn.epfl.ch/svn-repos/scala/scala/trunk</connection>
@@ -31,16 +36,11 @@
 	</issueManagement>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-library</artifactId>
-			<version>@VERSION@</version>
-		</dependency>
     <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>jline</artifactId>
-      <version>@VERSION@</version>
-      <optional>true</optional>
+        <groupId>org.fusesource.jansi</groupId>
+        <artifactId>jansi</artifactId>
+        <version>1.4</version>
+        <!--<scope>provided</scope>-->
     </dependency>
 	</dependencies>
 	<distributionManagement>
