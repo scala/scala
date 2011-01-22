@@ -82,17 +82,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
    */
   class BytecodeGenerator extends BytecodeUtil {
     def debugLevel = settings.debuginfo.indexOfChoice
-    import scala.tools.reflect.SigParser
-    def verifySig(sym: Symbol, sig: String) = {
-      val ok =
-        if (sym.isMethod) SigParser verifyMethod sig
-        else if (sym.isTerm) SigParser verifyType sig
-        else SigParser verifyClass sig
-
-      def label = if (ok) "[ OK ] " else "[BAD!] "
-      if (settings.verbose.value || !ok)
-        println(label + sym + " in " + sym.owner.skipPackageObject.fullName + "\n  " + sig)
-    }
 
     val MIN_SWITCH_DENSITY = 0.7
     val INNER_CLASSES_FLAGS =
@@ -523,6 +512,17 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       nannots
     }
 
+    /** Run the signature parser to catch bogus signatures.
+     *  XXX But we should not be generating bogus signatures!
+     *  The ticket is #4067.
+     */
+    import scala.tools.reflect.SigParser
+    def isValidSignature(sym: Symbol, sig: String) = (
+      if (sym.isMethod) SigParser verifyMethod sig
+      else if (sym.isTerm) SigParser verifyType sig
+      else SigParser verifyClass sig
+    )
+
     // @M don't generate java generics sigs for (members of) implementation
     // classes, as they are monomorphic (TODO: ok?)
     private def noGenericSignature(sym: Symbol) = (
@@ -543,17 +543,29 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
         // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
         erasure.javaSig(sym, memberTpe) foreach { sig =>
-          if (settings.Yverifysigs.value)
-            verifySig(sym, sig)
+          /** Since we're using a sun internal class for signature validation,
+           *  we have to allow for it not existing or otherwise malfunctioning:
+           *  in which case we treat every signature as valid.  Medium term we
+           *  should certainly write independent signature validation.
+           */
+          if (!SigParser.isParserAvailable || isValidSignature(sym, sig)) {
+            val index = jmember.getConstantPool.addUtf8(sig).toShort
+            if (opt.verboseDebug)
+              atPhase(currentRun.erasurePhase) {
+                println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
+              }
+            val buf = ByteBuffer.allocate(2)
+            buf putShort index
+            addAttribute(jmember, tpnme.SignatureATTR, buf)
+          }
+          else {
+            val msg = "!! Suppressing invalid generic sig for %s in %s: %s".format(
+              sym, sym.owner.skipPackageObject.fullName, sig
+            )
 
-          val index = jmember.getConstantPool.addUtf8(sig).toShort
-          if (opt.verboseDebug)
-            atPhase(currentRun.erasurePhase) {
-              println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
-            }
-          val buf = ByteBuffer.allocate(2)
-          buf putShort index
-          addAttribute(jmember, tpnme.SignatureATTR, buf)
+            if (settings.Yverifysigs.value) Console.println(msg)
+            else log(msg)
+          }
         }
       }
     }
