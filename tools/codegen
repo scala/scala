@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+
+THISDIR=`dirname $0`
+SCALALIB=$THISDIR/../src/library/scala
+
+scala scala.tools.cmd.gen.Codegen "$@"
