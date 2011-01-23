@@ -87,7 +87,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
       }
     }
 
-    System.out.println("Browsing "+src)
+//    System.out.println("Browsing "+src)
     val source = new BatchSourceFile(src)
     val body = new OutlineParser(source).parse()
     System.out.println(body)

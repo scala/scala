@@ -2,13 +2,14 @@ package scala.tools.nsc
 package interactive
 
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
+import collection.mutable.{ArrayBuffer, SynchronizedBuffer}
 
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.{AbstractFile, LogReplay, Logger, NullLogger, Replayer}
-import scala.tools.nsc.util.{SourceFile, BatchSourceFile, Position, RangePosition, NoPosition, WorkScheduler}
+import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
+import scala.tools.nsc.util.{ SourceFile, BatchSourceFile, Position, RangePosition, NoPosition, WorkScheduler }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
@@ -45,9 +46,9 @@ self =>
   @inline final def debugLog(msg: => String) =
     if (debugIDE) println(msg)
 
-  /** Inform with msg only when debugIDE is true. */
+  /** Inform with msg only when verboseIDE is true. */
   @inline final def informIDE(msg: => String) =
-    if (verboseIDE) reporter.info(NoPosition, msg, true)
+    if (verboseIDE) println("["+msg+"]")
 
   override def forInteractive = true
 
@@ -55,6 +56,40 @@ self =>
    */
   val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
                        SynchronizedMap[AbstractFile, RichCompilationUnit]
+
+  protected val toBeRemoved = new ArrayBuffer[AbstractFile] with SynchronizedBuffer[AbstractFile]
+
+  /** The compilation unit corresponding to a source file
+   *  if it does not yet exist create a new one atomically
+   *  Note: We want to rmeove this.
+   */
+  protected[interactive] def getOrCreateUnitOf(s: SourceFile): RichCompilationUnit =
+    unitOfFile.synchronized {
+      unitOfFile get s.file match {
+        case Some(unit) =>
+          unit
+        case None =>
+          println("*** precondition violated: executing operation on non-loaded file " + s)
+          val unit = new RichCompilationUnit(s)
+          unitOfFile(s.file) = unit
+          unit
+      }
+    }
+
+  /** Work through toBeRemoved list to remove any units.
+   *  Then return optionlly unit associated with given source.
+   */
+  protected[interactive] def getUnit(s: SourceFile): Option[RichCompilationUnit] = {
+    toBeRemoved.synchronized {
+      for (f <- toBeRemoved) {
+        unitOfFile -= f
+        allSources = allSources filter (_.file != f)
+      }
+      toBeRemoved.clear()
+    }
+    unitOfFile get s.file
+  }
+
 
   /** A list giving all files to be typechecked in the order they should be checked.
    */
@@ -90,8 +125,8 @@ self =>
    */
   override def signalDone(context: Context, old: Tree, result: Tree) {
     def integrateNew() {
-      // still needed?
-      context.unit.body = new TreeReplacer(old, result) transform context.unit.body
+      if (context.unit == null)
+        context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
     if (activeLocks == 0) { // can we try to avoid that condition (?)
       if (context.unit != null &&
@@ -107,7 +142,7 @@ self =>
       }
       val typerRun = currentTyperRun
 
-      while(true)
+      while (true)
         try {
           try {
             pollForWork(old.pos)
@@ -123,7 +158,8 @@ self =>
           integrateNew()
           throw FreshRunReq
         } catch {
-          case ex : ValidateException => // Ignore, this will have been reported elsewhere
+          case ex: ValidateException => // Ignore, this will have been reported elsewhere
+            debugLog("validate exception caught: "+ex)
         }
     }
   }
@@ -162,7 +198,6 @@ self =>
 
   var moreWorkAtNode: Int = -1
   var nodesSeen = 0
-  var noWorkFoundAtNode: Int = -1
 
   /** Called from runner thread and signalDone:
    *  Poll for interrupts and execute them immediately.
@@ -220,10 +255,6 @@ self =>
             debugLog("quitting work item: "+action)
           }
         case None =>
-          if (nodesSeen > noWorkFoundAtNode) {
-            debugLog("no work found")
-            noWorkFoundAtNode = nodesSeen
-          }
       }
     }
   }
@@ -287,14 +318,12 @@ self =>
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
     allSources = allSources filter (s => unitOfFile contains (s.file))
 
-    for (s <- allSources) {
-      val unit = unitOf(s)
+    for (s <- allSources; unit <- getUnit(s)) {
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
       if (unit.status == NotLoaded) parse(unit)
     }
 
-    for (s <- allSources) {
-      val unit = unitOf(s)
+    for (s <- allSources; unit <- getUnit(s)) {
       if (!unit.isUpToDate) typeCheck(unit)
     }
 
@@ -376,7 +405,7 @@ self =>
       }
     } catch {
       case CancelException =>
-        ;
+        debugLog("cancelled")
 /* Commented out. Typing should always cancel requests
       case ex @ FreshRunReq =>
         scheduler.postWorkItem(() => respondGradually(response)(op))
@@ -424,11 +453,11 @@ self =>
       debugLog("already attributed")
       tree
     } else {
-      val unit = unitOf(pos)
+      val unit = getOrCreateUnitOf(pos.source)
       unit.targetPos = pos
       try {
         debugLog("starting targeted type check")
-        //newTyperRun()   // not deeded for idempotent type checker phase
+        //newTyperRun()   // not needed for idempotent type checker phase
         typeCheck(unit)
         println("tree not found at "+pos)
         EmptyTree
@@ -443,7 +472,7 @@ self =>
   /** A fully attributed tree corresponding to the entire compilation unit  */
   def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
     informIDE("typedTree" + source + " forceReload: " + forceReload)
-    val unit = unitOf(source)
+    val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
     if (unit.status <= PartiallyChecked) {
       //newTyperRun()   // not deeded for idempotent type checker phase
@@ -460,13 +489,13 @@ self =>
 
   /** Set sync var `response` to a fully attributed tree corresponding to the
    *  entire compilation unit  */
-  def getTypedTree(source : SourceFile, forceReload: Boolean, response: Response[Tree]) {
+  def getTypedTree(source: SourceFile, forceReload: Boolean, response: Response[Tree]) {
     respond(response)(typedTree(source, forceReload))
   }
 
   /** Set sync var `response` to the last fully attributed tree produced from the
    *  entire compilation unit  */
-  def getLastTypedTree(source : SourceFile, response: Response[Tree]) {
+  def getLastTypedTree(source: SourceFile, response: Response[Tree]) {
     informIDE("getLastTyped" + source)
     respond(response) {
       val unit = unitOf(source)
@@ -485,7 +514,18 @@ self =>
       if (owner.isClass) {
         val pre = adaptToNewRunMap(ThisType(owner))
         val newsym = pre.decl(sym.name) filter { alt =>
-          sym.isType || matchesType(pre.memberType(alt), adaptToNewRunMap(sym.tpe), false)
+          sym.isType || {
+            try {
+              val tp1 = pre.memberType(alt)
+              val tp2 = adaptToNewRunMap(sym.tpe)
+              matchesType(tp1, tp2, false)
+            } catch {
+              case ex: Throwable =>
+                println("error in hyperlinking: "+ex)
+                ex.printStackTrace()
+                false
+            }
+          }
         }
         if (!preExisting) removeUnitOf(source)
         if (newsym == NoSymbol) {
@@ -619,7 +659,9 @@ self =>
         analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
           .typed(Apply(view.tree, List(tree)) setPos tree.pos)
       } catch {
-        case ex: TypeError => EmptyTree
+        case ex: TypeError =>
+          debugLog("type error caught")
+          EmptyTree
       }
     }
 
