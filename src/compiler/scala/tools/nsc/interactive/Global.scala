@@ -413,8 +413,11 @@ self =>
         throw ex
 */
       case ex =>
+        if (debugIDE) {
+          println("exception thrown during response: "+ex)
+          ex.printStackTrace()
+        }
         response raise ex
-        throw ex
     } finally {
       pendingResponse = prevResponse
     }
