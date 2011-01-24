@@ -38,7 +38,7 @@ abstract class InteractiveTest {
 
   val completionMarker = "/*!*/"
   val typedAtMarker = "/*?*/"
-  val TIMEOUT = 5000 // 5 seconds
+  val TIMEOUT = 10000 // timeout in milliseconds
 
   val settings = new Settings
   val reporter= new StoreReporter
@@ -107,7 +107,7 @@ abstract class InteractiveTest {
         f(pos, members)
       case None =>
         println("TIMEOUT: " + r)
-      case _ =>
+      case Some(r) =>
         println("ERROR: " + r)
     }
   }
@@ -117,7 +117,7 @@ abstract class InteractiveTest {
    */
   def completionTests() {
     askAllSources(completionMarker) { pos =>
-      println("askTypeCompletion at " + pos)
+      println("askTypeCompletion at " + pos.source.file.name + ((pos.line, pos.column)))
       val r = new Response[List[compiler.Member]]
       compiler.askTypeCompletion(pos, r)
       r
@@ -164,7 +164,7 @@ abstract class InteractiveTest {
     tester.run()
   }
 
-  val runRandomTests = true
+  val runRandomTests = false
 
   def main(args: Array[String]) {
     reloadSources()

@@ -1,7 +1,7 @@
 reload: Tester.scala
-askTypeCompletion at source-/Users/dragos/workspace/git/scala/test/files/presentation/simple-tests/src/Tester.scala,line-12,offset=268
-askTypeCompletion at source-/Users/dragos/workspace/git/scala/test/files/presentation/simple-tests/src/Tester.scala,line-23,offset=722
-askTypeCompletion at source-/Users/dragos/workspace/git/scala/test/files/presentation/simple-tests/src/Tester.scala,line-105,offset=3041
+askTypeCompletion at Tester.scala(12,39)
+askTypeCompletion at Tester.scala(23,24)
+askTypeCompletion at Tester.scala(105,29)
 
 ================================================================================
 [response] aksTypeCompletion at (12,39)
