@@ -40,6 +40,7 @@ self =>
     else NullLogger
 
   import log.logreplay
+  debugLog("interactive compiler from 23 Jan")
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
 
   /** Print msg only when debugIDE is true. */
