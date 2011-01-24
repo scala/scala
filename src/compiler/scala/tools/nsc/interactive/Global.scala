@@ -42,6 +42,7 @@ self =>
   import log.logreplay
   debugLog("interactive compiler from 23 Jan")
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
+  debugLog("classpath: "+classPath)
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
@@ -64,18 +65,21 @@ self =>
    *  if it does not yet exist create a new one atomically
    *  Note: We want to rmeove this.
    */
-  protected[interactive] def getOrCreateUnitOf(s: SourceFile): RichCompilationUnit =
+  protected[interactive] def getOrCreateUnitOf(source: SourceFile): RichCompilationUnit =
     unitOfFile.synchronized {
-      unitOfFile get s.file match {
+      unitOfFile get source.file match {
         case Some(unit) =>
           unit
         case None =>
-          println("*** precondition violated: executing operation on non-loaded file " + s)
-          val unit = new RichCompilationUnit(s)
-          unitOfFile(s.file) = unit
+          println("*** precondition violated: executing operation on non-loaded file " + source)
+          val unit = new RichCompilationUnit(source)
+          unitOfFile(source.file) = unit
           unit
       }
     }
+
+  protected [interactive] def onUnitOf[T](source: SourceFile)(op: RichCompilationUnit => T): T =
+    op(unitOfFile.getOrElse(source.file, new RichCompilationUnit(source)))
 
   /** Work through toBeRemoved list to remove any units.
    *  Then return optionlly unit associated with given source.
@@ -90,7 +94,6 @@ self =>
     }
     unitOfFile get s.file
   }
-
 
   /** A list giving all files to be typechecked in the order they should be checked.
    */
@@ -450,7 +453,7 @@ self =>
 
   /** A fully attributed tree located at position `pos`  */
   def typedTreeAt(pos: Position): Tree = {
-    debugLog("typedTreeAt " + pos)
+    informIDE("typedTreeAt " + pos)
     val tree = locateTree(pos)
     debugLog("at pos "+pos+" was found: "+tree+tree.pos.show)
     if (stabilizedType(tree) ne null) {
@@ -475,7 +478,7 @@ self =>
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
   def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
-    informIDE("typedTree" + source + " forceReload: " + forceReload)
+    informIDE("typedTree " + source + " forceReload: " + forceReload)
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
     if (unit.status <= PartiallyChecked) {
@@ -487,7 +490,6 @@ self =>
 
   /** Set sync var `response` to a fully attributed tree located at position `pos`  */
   def getTypedTreeAt(pos: Position, response: Response[Tree]) {
-    informIDE("getTypedTreeAt" + pos)
     respond(response)(typedTreeAt(pos))
   }
 
@@ -502,7 +504,7 @@ self =>
   def getLastTypedTree(source: SourceFile, response: Response[Tree]) {
     informIDE("getLastTyped" + source)
     respond(response) {
-      val unit = unitOf(source)
+      val unit = getOrCreateUnitOf(source)
       if (unit.status > PartiallyChecked) unit.body
       else if (unit.lastBody ne EmptyTree) unit.lastBody
       else typedTree(source, false)
@@ -520,7 +522,7 @@ self =>
         val newsym = pre.decl(sym.name) filter { alt =>
           sym.isType || {
             try {
-              val tp1 = pre.memberType(alt)
+              val tp1 = pre.memberType(alt) onTypeError NoType
               val tp2 = adaptToNewRunMap(sym.tpe)
               matchesType(tp1, tp2, false)
             } catch {
@@ -587,7 +589,7 @@ self =>
           !locals.contains(sym.name)) {
         locals(sym.name) = new ScopeMember(
           sym,
-          pre.memberType(sym),
+          pre.memberType(sym) onTypeError ErrorType,
           context.isAccessible(sym, pre, false),
           viaImport)
       }
@@ -643,7 +645,7 @@ self =>
     val members = new LinkedHashMap[Symbol, TypeMember]
 
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) {
-      val symtpe = pre.memberType(sym)
+      val symtpe = pre.memberType(sym) onTypeError ErrorType
       if (scope.lookupAll(sym.name) forall (sym => !(members(sym).tpe matches symtpe))) {
         scope enter sym
         members(sym) = new TypeMember(
@@ -746,6 +748,17 @@ self =>
   class TyperResult(val tree: Tree) extends ControlThrowable
 
   assert(globalPhase.id == 0)
+
+  implicit def addOnTypeError[T](x: => T): OnTypeError[T] = new OnTypeError(x)
+
+  class OnTypeError[T](op: => T) {
+    def onTypeError(alt: => T) = try {
+      op
+    } catch {
+      case ex: TypeError => alt
+    }
+  }
 }
 
 object CancelException extends Exception
+

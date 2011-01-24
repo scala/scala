@@ -53,11 +53,11 @@ trait CompilerControl { self: Global =>
    *  if it does not yet exist create a new one atomically
    *  Note: We want to get roid of this operation as it messes compiler invariants.
    */
-  @deprecated("use getUnitOf(s) instead")
+  @deprecated("use getUnitOf(s) or onUnitOf(s) instead")
   def unitOf(s: SourceFile): RichCompilationUnit = getOrCreateUnitOf(s)
 
   /** The compilation unit corresponding to a position */
-  @deprecated("use getUnitOf(pos.source) instead")
+  @deprecated("use getUnitOf(pos.source) or onUnitOf(pos.source) instead")
   def unitOf(pos: Position): RichCompilationUnit = getOrCreateUnitOf(pos.source)
 
   /** Removes the CompilationUnit corresponding to the given SourceFile
@@ -75,14 +75,14 @@ trait CompilerControl { self: Global =>
   }
 
   /** Locate smallest tree that encloses position
+   *  @pre Position must be loaded
    */
-  def locateTree(pos: Position): Tree =
-    new Locator(pos) locateIn unitOf(pos).body
+  def locateTree(pos: Position): Tree = onUnitOf(pos.source) { unit => new Locator(pos) locateIn unit.body }
 
   /** Locates smallest context that encloses position as an optional value.
    */
   def locateContext(pos: Position): Option[Context] =
-    locateContext(unitOf(pos).contexts, pos)
+    for (unit <- getUnit(pos.source); cx <- locateContext(unit.contexts, pos)) yield cx
 
   /** Returns the smallest context that contains given `pos`, throws FatalError if none exists.
    */
@@ -113,8 +113,13 @@ trait CompilerControl { self: Global =>
   /** Sets sync var `response` to the fully attributed & typechecked tree contained in `source`.
    *  @pre `source` needs to be loaded.
    */
-  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =
+  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) = {
+    if (debugIDE) {
+      println("ask type called")
+      new Exception().printStackTrace()
+    }
     scheduler postWorkItem new AskTypeItem(source, forceReload, response)
+  }
 
   /** Sets sync var `response` to the position of the definition of the given link in
    *  the given sourcefile.
