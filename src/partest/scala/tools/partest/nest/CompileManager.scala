@@ -84,14 +84,15 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
 
     val testFileFn: (File, FileManager) => TestFile = kind match {
-      case "pos"         => PosTestFile.apply
-      case "neg"         => NegTestFile.apply
-      case "run"         => RunTestFile.apply
-      case "jvm"         => JvmTestFile.apply
-      case "shootout"    => ShootoutTestFile.apply
-      case "scalap"      => ScalapTestFile.apply
-      case "scalacheck"  => ScalaCheckTestFile.apply
-      case "specialized" => SpecializedTestFile.apply
+      case "pos"          => PosTestFile.apply
+      case "neg"          => NegTestFile.apply
+      case "run"          => RunTestFile.apply
+      case "jvm"          => JvmTestFile.apply
+      case "shootout"     => ShootoutTestFile.apply
+      case "scalap"       => ScalapTestFile.apply
+      case "scalacheck"   => ScalaCheckTestFile.apply
+      case "specialized"  => SpecializedTestFile.apply
+      case "presentation" => PresentationTestFile.apply
     }
     val test: TestFile = testFileFn(files.head, fileManager)
     test.defineSettings(command.settings, out.isEmpty)

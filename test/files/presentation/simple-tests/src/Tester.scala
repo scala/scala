@@ -9,8 +9,8 @@ import collection.mutable.ArrayBuffer
 
 class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
 
-  val reporter = new StoreReporter
-  val compiler = new Global(settings, reporter)
+  val reporter/*?*/ = new StoreReporter/*!*/
+  val compiler/*?*/ = new Global(settings, reporter)
 
   def askAndListen[T, U](msg: String,  arg: T, op: (T, Response[U]) => Unit) {
     if (settings.verbose.value) print(msg+" "+arg+": ")
@@ -20,7 +20,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     op(arg, res)
     while (!res.isComplete && !res.isCancelled) {
       if (System.currentTimeMillis() > limit) {
-        print("c"); res.cancel()
+        print("c"); res./*!*/cancel()
       } else res.get(TIMEOUT) match {
         case Some(Left(t)) =>
           /**/
@@ -102,7 +102,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     def insertAll() {
       for (chr <- if (toLeft) deleted else deleted.reverse) {
         val sf = inputs(sfidx)
-        val (pre, post) = sf./**/content splitAt pos
+        val (pre, post) = sf./*!*/content splitAt pos
         pos += 1
         val sf1 = new BatchSourceFile(sf.file, pre ++ (chr +: post))
         inputs(sfidx) = sf1

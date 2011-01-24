@@ -72,6 +72,11 @@ class PartestTask extends Task with CompilationPathProperty {
     specializedFiles = Some(input)
   }
 
+  def addConfiguredPresentationTests(input: FileSet) {
+    presentationFiles = Some(input)
+  }
+
+
   def setSrcDir(input: String) {
     srcDir = Some(input)
   }
@@ -146,6 +151,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private var shootoutFiles: Option[FileSet] = None
   private var scalapFiles: Option[FileSet] = None
   private var specializedFiles: Option[FileSet] = None
+  private var presentationFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
@@ -170,13 +176,24 @@ class PartestTask extends Task with CompilationPathProperty {
       // println("----> " + fileSet)
 
       val fileTests = getFiles(Some(fs)) filterNot (x => shouldExclude(x.getName))
-      val dirTests: Iterator[SPath] = fileSetToDir(fs).dirs filterNot (x => shouldExclude(x.name))
-      val dirResult = dirTests.toList.toArray map (_.jfile)
+      val dirResult = getDirs(Some(fs))  filterNot (x => shouldExclude(x.getName))
       // println("dirs: " + dirResult.toList)
       // println("files: " + fileTests.toList)
 
       dirResult ++ fileTests
   }
+
+  private def getDirs(fileSet: Option[FileSet]): Array[File] = fileSet match {
+    case None     => Array()
+    case Some(fs) =>
+      def shouldExclude(name: String) = (name endsWith ".obj") || (name startsWith ".")
+
+      val dirTests: Iterator[SPath] = fileSetToDir(fs).dirs filterNot (x => shouldExclude(x.name))
+      val dirResult = dirTests.toList.toArray map (_.jfile)
+
+      dirResult
+  }
+
 
   private def getPosFiles          = getFilesAndDirs(posFiles)
   private def getNegFiles          = getFilesAndDirs(negFiles)
@@ -189,6 +206,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getShootoutFiles     = getFiles(shootoutFiles)
   private def getScalapFiles       = getFiles(scalapFiles)
   private def getSpecializedFiles  = getFiles(specializedFiles)
+  private def getPresentationFiles = getDirs(presentationFiles)
 
   override def execute() {
     if (isPartestDebug || debug) {
@@ -236,7 +254,8 @@ class PartestTask extends Task with CompilationPathProperty {
       (getScriptFiles, "script", "Running script files"),
       (getShootoutFiles, "shootout", "Running shootout tests"),
       (getScalapFiles, "scalap", "Running scalap tests"),
-      (getSpecializedFiles, "specialized", "Running specialized files")
+      (getSpecializedFiles, "specialized", "Running specialized files"),
+      (getPresentationFiles, "presentation", "Running presentation compiler test files")
     )
 
     def runSet(set: TFSet): (Int, Int, Iterable[String]) = {

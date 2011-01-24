@@ -55,3 +55,4 @@ case class SpecializedTestFile(file: JFile, fileManager: FileManager) extends Te
     settings.classpath.value = ClassPath.join(PathSettings.srcSpecLib.toString, settings.classpath.value)
   }
 }
+case class PresentationTestFile(file: JFile, fileManager: FileManager) extends TestFile("presentation")

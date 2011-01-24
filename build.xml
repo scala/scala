@@ -1566,11 +1566,14 @@ BOOTRAPING TEST AND TEST SUITE
       <buildmanagertests dir="${partest.dir}/${partest.srcdir}/buildmanager" includes="*"/>
       <scalaptests dir="${partest.dir}/${partest.srcdir}/scalap" includes="**/*.scala"/>
       <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck">
-	<include name="*.scala"/>
+        <include name="*.scala"/>
       </scalachecktests>
       <specializedtests dir="${partest.dir}/${partest.srcdir}/specialized">
-	<include name="*.scala"/>
+        <include name="*.scala"/>
       </specializedtests>
+      <presentationtests dir="${partest.dir}/${partest.srcdir}/presentation">
+        <include name="*/*.scala"/>
+      </presentationtests>
       <!-- <scripttests dir="${partest.dir}/${partest.srcdir}/script" includes="*.scala"/> -->
     </partest>
   </target>
