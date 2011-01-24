@@ -366,7 +366,7 @@ trait Implicits {
              // println("  "*context.openImplicits.length+"typed implicit "+info+" for "+pt) //@MDEBUG
              typedImplicit0(info, ptChecked)
            } catch {
-             case DivergentImplicit =>
+             case ex: DivergentImplicit =>
                // println("DivergentImplicit for pt:"+ pt +", open implicits:"+context.openImplicits) //@MDEBUG
                if (context.openImplicits.tail.isEmpty) {
                  if (!(pt.isErroneous))
@@ -1005,5 +1005,6 @@ trait Implicits {
     }
   }
 
-  private val DivergentImplicit = new Exception()
+  private class DivergentImplicit extends Exception()
+  private def DivergentImplicit = new DivergentImplicit
 }
