@@ -48,6 +48,11 @@ class Exceptional(val ex: Throwable)(implicit prefs: ScalaPrefs) {
   def causes  = Exceptional.causes(ex)
   def summary = unwrapped.toString + "\n  at " + apply(0).shortNameString
 
+  private def println(msg: Any) = {
+    Console println msg
+    Console.flush()
+  }
+
   def show(): Unit         = println(context())
   def show(num: Int): Unit = println(context(num))
   def showCauses()         = println((ex :: causes).mkString("", "\n  caused by -> ", ""))
@@ -66,6 +71,7 @@ object Exceptional {
   /** Some handy functions. */
   def stack()  = JavaStackFrame frames ((new Throwable).getStackTrace dropWhile isLocal)
   def showme() = apply(new Throwable).show()
+  def showstack() = apply(new Throwable).showTable()
 
   /** A frame formatter with more refined aesthetics than the default.
    *  Come, let us be civilized.

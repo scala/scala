@@ -25,7 +25,7 @@ package scala
  *
  *  @since 2.8
  */
-class specialized(types: runtime.AnyValCompanion*) extends annotation.StaticAnnotation {
+class specialized(types: AnyValCompanion*) extends annotation.StaticAnnotation {
   def this() {
     this(Unit, Boolean, Byte, Short, Char, Int, Long, Float, Double)
   }

@@ -42,10 +42,6 @@ trait GenJVMUtil {
       NullClass           -> RuntimeNullClass.fullName('/'),
       RuntimeNullClass    -> RuntimeNullClass.fullName('/')
     )
-    primitiveCompanions foreach { sym =>
-      map(sym) = "scala/runtime/" + sym.name + "$"
-    }
-
     map
   }
 

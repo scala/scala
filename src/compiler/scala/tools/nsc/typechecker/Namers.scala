@@ -790,6 +790,14 @@ trait Namers { self: Analyzer =>
         classAndNamerOfModule(module) = (cdef, templateNamer)
       }
 
+      if (opt.verbose) {
+        log(
+          "ClassInfoType(\n%s,\n%s,\n%s)".format(
+            "  " + (parents map (_.typeSymbol) mkString ", "),
+            if (global.opt.debug) decls.toList map (">> " + _) mkString("\n", "\n", "") else "  <decls>",
+            "  " + clazz)
+        )
+      }
       ClassInfoType(parents, decls, clazz)
     }
 
@@ -1376,7 +1384,7 @@ trait Namers { self: Analyzer =>
    * Finds the companion module of a class symbol. Calling .companionModule
    * does not work for classes defined inside methods.
    */
-  def companionModuleOf(clazz: Symbol, context: Context) =
+  def companionModuleOf(clazz: Symbol, context: Context): Symbol = {
     try {
       var res = clazz.companionModule
       if (res == NoSymbol)
@@ -1388,8 +1396,9 @@ trait Namers { self: Analyzer =>
         context.error(clazz.pos, e.getMessage)
         NoSymbol
     }
+  }
 
-  def companionClassOf(module: Symbol, context: Context) =
+  def companionClassOf(module: Symbol, context: Context): Symbol = {
     try {
       var res = module.companionClass
       if (res == NoSymbol)
@@ -1400,6 +1409,7 @@ trait Namers { self: Analyzer =>
         context.error(module.pos, e.getMessage)
         NoSymbol
     }
+  }
 
   def companionSymbolOf(sym: Symbol, context: Context) =
     if (sym.isTerm) companionClassOf(sym, context)

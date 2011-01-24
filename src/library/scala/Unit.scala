@@ -6,9 +6,18 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+// generated on Sun Jan 23 21:13:38 PST 2011
 
-/** See scala.AnyValCompanion.
- */
-@deprecated("Use scala.AnyValCompanion instead")
-private[scala] trait AnyValCompanion extends scala.AnyValCompanion { }
+package scala
+
+import java.{ lang => jl }
+
+import runtime.BoxedUnit
+
+final class Unit extends AnyVal { }
+
+object Unit extends AnyValCompanion {
+  override def toString = "object scala.Unit"
+  def box(x: Unit): BoxedUnit = BoxedUnit.UNIT
+  def unbox(x: jl.Object): Unit = ()
+}

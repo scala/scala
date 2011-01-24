@@ -174,7 +174,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
           ClassInfoType(
-            if ((clazz == ObjectClass) || (isValueClass(clazz))) List()
+            if (clazz == ObjectClass || isValueClass(clazz)) Nil
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
             else removeDoubleObject(parents map this),
             decls, clazz)

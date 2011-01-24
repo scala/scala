@@ -283,6 +283,16 @@ self =>
     /** Are we inside the Scala package? Set for files that start with package scala
      */
     private var inScalaPackage = false
+    private var currentPackage = ""
+    def resetPackage() {
+      inScalaPackage = false
+      currentPackage = ""
+    }
+    private lazy val anyValNames: Set[Name] = tpnme.ScalaValueNames.toSet + tpnme.AnyVal
+
+    private def inScalaRootPackage       = inScalaPackage && currentPackage == "scala"
+    private def isScalaArray(name: Name) = inScalaRootPackage && name == tpnme.Array
+    private def isAnyValType(name: Name) = inScalaRootPackage && anyValNames(name)
 
     def parseStartRule: () => Tree
 
@@ -600,7 +610,6 @@ self =>
     def isUnaryOp = isIdent && raw.isUnary(in.name)
     def isRawStar = isIdent && in.name == raw.STAR
     def isRawBar  = isIdent && in.name == raw.BAR
-    def isScalaArray(name: Name) = inScalaPackage && name == tpnme.Array
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
 
@@ -1048,6 +1057,20 @@ self =>
       val id = atPos(start) { Ident(ident()) }
       if (in.token == DOT) { selectors(id, false, in.skipToken()) }
       else id
+    }
+    /** Calls qualId() and manages some package state.
+     */
+    private def pkgQualId() = {
+      if (in.token == IDENTIFIER && in.name.encode == nme.scala_)
+        inScalaPackage = true
+
+      val pkg = qualId()
+      newLineOptWhenFollowedBy(LBRACE)
+
+      if (currentPackage == "") currentPackage = pkg.toString
+      else currentPackage = currentPackage + "." + pkg
+
+      pkg
     }
 
     /** SimpleExpr    ::= literal
@@ -2515,27 +2538,36 @@ self =>
      *  TraitExtends     ::= 'extends' | `<:'
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      val (parents0, argss, self, body) =
-        if (in.token == EXTENDS || settings.YvirtClasses && mods.hasTraitFlag && in.token == SUBTYPE) {
+      val (parents0, argss, self, body) = (
+        if (in.token == EXTENDS || in.token == SUBTYPE && mods.hasTraitFlag) {
           in.nextToken()
           template(mods.hasTraitFlag)
-        } else if ((in.token == SUBTYPE) && mods.hasTraitFlag) {
-          in.nextToken()
-          template(true)
-        } else {
+        }
+        else {
           newLineOptWhenFollowedBy(LBRACE)
           val (self, body) = templateBodyOpt(false)
           (List(), List(List()), self, body)
         }
-      var parents = parents0
-      if (!isInterface(mods, body) && !isScalaArray(name))
-        parents = parents :+ scalaScalaObjectConstr
-      if (parents.isEmpty)
-        parents = List(scalaAnyRefConstr)
-      if (mods.isCase) parents ++= List(productConstr, serializableConstr)
+      )
+
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
-        Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
+        if (isAnyValType(name)) {
+          val parent = if (name == tpnme.AnyVal) tpnme.Any else tpnme.AnyVal
+          Template(List(scalaDot(parent)), self, body)
+        }
+        else {
+          val parents = (
+            if (!isInterface(mods, body) && !isScalaArray(name)) parents0 :+ scalaScalaObjectConstr
+            else if (parents0.isEmpty) List(scalaAnyRefConstr)
+            else parents0
+          ) ++ (
+            if (mods.isCase) List(productConstr, serializableConstr)
+            else Nil
+          )
+
+          Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
+        }
       }
     }
 
@@ -2596,8 +2628,7 @@ self =>
     /** Packaging ::= package QualId [nl] `{' TopStatSeq `}'
      */
     def packaging(start: Int): Tree = {
-      val pkg = qualId()
-      newLineOptWhenFollowedBy(LBRACE)
+      val pkg = pkgQualId()
       val stats = inBracesOrNil(topStatSeq())
       makePackaging(start, pkg, stats)
     }
@@ -2790,10 +2821,7 @@ self =>
             }
           } else {
             in.flushDoc
-            if (in.token == IDENTIFIER && in.name.encode == nme.scala_)
-              inScalaPackage = true
-            val pkg = qualId()
-            newLineOptWhenFollowedBy(LBRACE)
+            val pkg = pkgQualId()
             if (in.token == EOF) {
               ts += makePackaging(start, pkg, List())
             } else if (isStatSep) {
@@ -2810,6 +2838,8 @@ self =>
         }
         ts.toList
       }
+
+      resetPackage()
       topstats() match {
         case List(stat @ PackageDef(_, _)) => stat
         case stats =>

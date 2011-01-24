@@ -22,7 +22,6 @@ trait AnyValTemplates {
 
 package scala
 
-import scala.runtime.AnyValCompanion
 import java.{ lang => jl }
 
   """.trim.format(now) + "\n\n"

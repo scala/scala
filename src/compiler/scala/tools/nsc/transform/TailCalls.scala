@@ -192,7 +192,8 @@ abstract class TailCalls extends Transform {
          *  Position is unchanged (by default, the method definition.)
          */
         def fail(reason: String) = {
-          log("Cannot rewrite recursive call at: " + fun.pos + " because: " + reason)
+          if (settings.debug.value)
+            log("Cannot rewrite recursive call at: " + fun.pos + " because: " + reason)
 
           ctx.failReason = reason
           treeCopy.Apply(tree, target, transformArgs)

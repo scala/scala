@@ -23,6 +23,9 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val Short: NameType   = "Short"
     final val Unit: NameType    = "Unit"
 
+    final val ScalaValueNames: scala.List[NameType] =
+      scala.List(Byte, Char, Short, Int, Long, Float, Double, Boolean, Unit)
+
     // types whose companions we utilize
     final val Array: NameType  = "Array"
     final val List: NameType   = "List"

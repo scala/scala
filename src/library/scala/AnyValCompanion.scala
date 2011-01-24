@@ -6,9 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.runtime
+package scala
 
-/** See scala.AnyValCompanion.
+/** A common supertype for companion classes of primitive types.
+ *
+ *  A common trait for /companion/ objects of primitive types comes handy
+ *  when parameterizing code on types. For instance, the specialized
+ *  annotation is passed a sequence of types on which to specialize:
+ *  {{{
+ *     class Tuple1[@specialized(Unit, Int, Double) T]
+ *  }}}
+ *
  */
-@deprecated("Use scala.AnyValCompanion instead")
-private[scala] trait AnyValCompanion extends scala.AnyValCompanion { }
+private[scala] trait AnyValCompanion { }
