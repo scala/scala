@@ -6,6 +6,7 @@ import scala.tools.nsc.doc.html.page.Index
 import java.net.URLClassLoader
 
 object Test extends Properties("Index") {
+
   def getClasspath = {
     // these things can be tricky
     // this test previously relied on the assumption that the current thread's classloader is an url classloader and contains all the classpaths
@@ -17,9 +18,7 @@ object Test extends Properties("Index") {
   }
 
   val docFactory = {
-    val settings = new doc.Settings((s: String) => {
-      Console.err.println(s)
-    })
+    val settings = new doc.Settings({Console.err.println(_)})
 
     settings.classpath.value = getClasspath
     println(settings.classpath.value)
@@ -29,24 +28,16 @@ object Test extends Properties("Index") {
     new doc.DocFactory(reporter, settings)
   }
 
-  val indexModelFactory = {
-    val settings = new doc.Settings((s: String) => {
-      Console.err.println(s)
-    })
-    settings.classpath.value = getClasspath
-
-    val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
-
-    new doc.model.IndexModelFactory
-  }
+  val indexModelFactory = doc.model.IndexModelFactory
 
   def createIndex(path: String): Option[Index] = {
-    val maybeModel = {
+
+    val maybeUniverse = {
       //val stream = new java.io.ByteArrayOutputStream
       //val original = Console.out
       //Console.setOut(stream)
 
-      val result = docFactory.universe(List(path))
+      val result = docFactory.makeUniverse(List(path))
 
       // assert(stream.toString == "model contains 2 documentable templates\n")
       //Console.setOut(original)
@@ -54,13 +45,14 @@ object Test extends Properties("Index") {
       result
     }
 
-    maybeModel match {
-      case Some(model) => {
-        val index = new Index(model, indexModelFactory.makeModel(model))
+    maybeUniverse match {
+      case Some(universe) => {
+        val index = new Index(universe, indexModelFactory.makeIndex(universe))
         return Some(index)
       }
       case _ => return None
     }
+
   }
 
   property("path") = {
@@ -90,7 +82,8 @@ object Test extends Properties("Index") {
 
   property("allPackages") = {
     createIndex("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
-      case Some(index) => {
+
+      case Some(index) =>
         index.allPackages.map(_.toString) == List(
           "scala",
           "scala.tools",
@@ -99,9 +92,11 @@ object Test extends Properties("Index") {
           "scala.tools.nsc.doc.html",
           "scala.tools.nsc.doc.html.page"
         )
-      }
 
-      case None => false
+      case None =>
+        false
+
     }
   }
+
 }
