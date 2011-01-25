@@ -72,12 +72,20 @@ abstract class BitSet {
   }
 
   override def hashCode: Int = {
-    var h = hashSeed
+    import scala.util.MurmurHash._
+    var h = startHash(hashSeed)
+    var c = startMagicA
+    var k = startMagicB
     for (idx <- 0 until nwords) {
       val w = word(idx)
-      h = (h * 41 + (w >>> 32).toInt) * 41 + w.toInt
+      h = extendHash(h, (w>>>32).toInt, c, k)
+      c = nextMagicA(c)
+      k = nextMagicB(k)
+      h = extendHash(h, w.toInt, c, k)
+      c = nextMagicA(c)
+      k = nextMagicB(k)
     }
-    h
+    finalizeHash(h)
   }
 
   def addString(sb: StringBuilder, start: String, sep: String, end: String) {

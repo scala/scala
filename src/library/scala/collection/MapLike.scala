@@ -334,7 +334,9 @@ self =>
   override /*PartialFunction*/
   def toString = super[IterableLike].toString
 
-  override def hashCode() = this map (_.##) sum
+  // This hash code must be symmetric in the contents but ought not
+  // collide trivially.
+  override def hashCode() = util.MurmurHash.symmetricHash(this,Map.hashSeed)
 
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,

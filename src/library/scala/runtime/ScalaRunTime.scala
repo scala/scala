@@ -157,19 +157,21 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
-  def _hashCodeMurmur(x: Product): Int =
-    scala.util.MurmurHash.product(x)
-
   def _hashCode(x: Product): Int = {
+    import scala.util.MurmurHash._
     val arr =  x.productArity
-    var code = arr
+    var h = startHash(arr)
+    var c = startMagicA
+    var k = startMagicB
     var i = 0
     while (i < arr) {
       val elem = x.productElement(i)
-      code = code * 41 + (if (elem == null) 0 else elem.##)
+      h = extendHash(h, if (elem == null) 0 else elem.##, c, k)
+      c = nextMagicA(c)
+      k = nextMagicB(k)
       i += 1
     }
-    code
+    finalizeHash(h)
   }
 
   /** Fast path equality method for inlining; used when -optimise is set.

@@ -290,7 +290,8 @@ self =>
   //    override def hashCode() = this map (_.hashCode) sum
   // Calling map on a set drops duplicates: any hashcode collisions would
   // then be dropped before they can be added.
-  override def hashCode() = this.foldLeft(0)(_ + _.hashCode)
+  // Hash should be symmetric in set entries, but without trivial collisions.
+  override def hashCode() = util.MurmurHash.symmetricHash(this,Set.hashSeed)
 
   /** Compares this set with another object for equality.
    *

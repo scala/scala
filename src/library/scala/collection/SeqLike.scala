@@ -987,7 +987,11 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   /** Hashcodes for $Coll produce a value from the hashcodes of all the
    *  elements of the $coll.
    */
-  override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.##)
+  override def hashCode() = {
+    val h = new util.MurmurHash[A](Seq.hashSeed)
+    this.foreach(h)
+    h.hash
+  }
 
   /** The equals method for arbitrary sequences. Compares this sequence to
    *  some other object.

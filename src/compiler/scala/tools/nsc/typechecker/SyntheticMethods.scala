@@ -135,11 +135,6 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
 
-    // XXX short term, expecting to make murmur the default as soon as it is put through some paces.
-    def hashCodeTarget: Name =
-      if (settings.Ymurmur.value) "hashCodeMurmur"
-      else nme.hashCode_
-
     /** The equality method for case modules:
      *   def equals(that: Any) = this eq that
      */
@@ -257,7 +252,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
         // methods for case classes only
         def classMethods = List(
-          Object_hashCode -> (() => forwardingMethod(nme.hashCode_, "_" + hashCodeTarget)),
+          Object_hashCode -> (() => forwardingMethod(nme.hashCode_, "_" + nme.hashCode_)),
           Object_toString -> (() => forwardingMethod(nme.toString_, "_" + nme.toString_)),
           Object_equals   -> (() => equalsClassMethod)
         )

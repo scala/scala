@@ -8,121 +8,188 @@
 
 package scala.util
 
-/** An implementation of MurmurHash 2.0.
- *  http://sites.google.com/site/murmurhash/
+/** An implementation of Austin Appleby's MurmurHash 3.0 algorithm
+ *  (32 bit version); reference: http://code.google.com/p/smhasher
  *
- *  It is here primarily for use by case classes.
+ *  This is the hash used by collections and case classes (including
+ *  tuples).
  *
- *  @author  archontophoenix
+ *  @author  Rex Kerr
  *  @version 2.9
  *  @since   2.9
  */
 
+import java.lang.Integer.{ rotateLeft => rotl }
+
+/** A class designed to generate well-distributed non-cryptographic
+ *  hashes.  It is designed to be passed to a collection's foreach method,
+ *  or can take individual hash values with append.  Its own hash code is
+ *  set equal to the hash code of whatever it is hashing.
+ */
+class MurmurHash[@specialized(Int,Long,Float,Double) T](seed: Int) extends (T => Unit) {
+  import MurmurHash._
+
+  private var h = startHash(seed)
+  private var c = hiddenMagicA
+  private var k = hiddenMagicB
+  private var hashed = false
+  private var hashvalue = h
+
+  /** Begin a new hash using the same seed. */
+  def reset() {
+    h = startHash(seed)
+    c = hiddenMagicA
+    k = hiddenMagicB
+    hashed = false
+  }
+
+  /** Incorporate the hash value of one item. */
+  def apply(t: T) {
+    h = extendHash(h,t.##,c,k)
+    c = nextMagicA(c)
+    k = nextMagicB(k)
+    hashed = false
+  }
+
+  /** Incorporate a known hash value. */
+  def append(i: Int) {
+    h = extendHash(h,i,c,k)
+    c = nextMagicA(c)
+    k = nextMagicB(k)
+    hashed = false
+  }
+
+  /** Retrieve the hash value */
+  def hash = {
+    if (!hashed) {
+      hashvalue = finalizeHash(h)
+      hashed = true
+    }
+    hashvalue
+  }
+  override def hashCode = hash
+}
+
+/** An object designed to generate well-distributed non-cryptographic
+ *  hashes.  It is designed to hash a collection of integers; along with
+ *  the integers to hash, it generates two magic streams of integers to
+ *  increase the distribution of repetitive input sequences.  Thus,
+ *  three methods need to be called at each step (to start and to
+ *  incorporate a new integer) to update the values.  Only one method
+ *  needs to be called to finalize the hash.
+ */
+
 object MurmurHash {
-  private def bytesProvided (v: Any) = v match {
-    case x: Byte      => 1
-    case x: Short     => 2
-    case x: Int       => 4
-    case x: Long      => 8
-    case x: Float     => 4
-    case x: Double    => 8
-    case x: Boolean   => 1
-    case x: Char      => 2
-    case x: Unit      => 0
-    case _            => 4
+  // Magic values used for MurmurHash's 32 bit hash.
+  // Don't change these without consulting a hashing expert!
+  final private val visibleMagic = 0x971e137b
+  final private val hiddenMagicA = 0x95543787
+  final private val hiddenMagicB = 0x2ad7eb25
+  final private val visibleMixer = 0x52dce729
+  final private val hiddenMixerA = 0x7b7d159c
+  final private val hiddenMixerB = 0x6bce6396
+  final private val finalMixer1 = 0x85ebca6b
+  final private val finalMixer2 = 0xc2b2ae35
+
+  // Arbitrary values used for hashing certain classes
+  final private val seedString = 0xf7ca7fd2
+  final private val seedArray = 0x3c074a61
+
+  /** The first 23 magic integers from the first stream are stored here */
+  val storedMagicA =
+    Iterator.iterate(hiddenMagicA)(nextMagicA).take(23).toArray
+
+  /** The first 23 magic integers from the second stream are stored here */
+  val storedMagicB =
+    Iterator.iterate(hiddenMagicB)(nextMagicB).take(23).toArray
+
+  /** Begin a new hash with a seed value. */
+  def startHash(seed: Int) = seed ^ visibleMagic
+
+  /** The initial magic integers in the first stream. */
+  def startMagicA = hiddenMagicA
+
+  /** The initial magic integer in the second stream. */
+  def startMagicB = hiddenMagicB
+
+  /** Incorporates a new value into an existing hash.
+   *
+   *  @param   hash    the prior hash value
+   *  @param  value    the new value to incorporate
+   *  @param magicA    a magic integer from the stream
+   *  @param magicB    a magic integer from a different stream
+   *  @return          the updated hash value
+   */
+  def extendHash(hash: Int, value: Int, magicA: Int, magicB: Int) = {
+    (hash ^ rotl(value*magicA,11)*magicB)*3 + visibleMixer
   }
 
-  private def highInt (v: Any): Int = {
-    val l = v match {
-      case x: Long   => x
-      case x: Double => java.lang.Double.doubleToRawLongBits(x)
-      case _         => throw new IllegalArgumentException("No highInt: " + v)
-    }
+  /** Given a magic integer from the first stream, compute the next */
+  def nextMagicA(magicA: Int) = magicA*5 + hiddenMixerA
 
-    l >>> 32 toInt
+  /** Given a magic integer from the second stream, compute the next */
+  def nextMagicB(magicB: Int) = magicB*5 + hiddenMixerB
+
+  /** Once all hashes have been incorporated, this performs a final mixing */
+  def finalizeHash(hash: Int) = {
+    var i = (hash ^ (hash>>>16))
+    i *= finalMixer1
+    i ^= (i >>> 13)
+    i *= finalMixer2
+    i ^= (i >>> 16)
+    i
   }
 
-  final val m = 0x5bd1e995
-  final val r = 24
-
-  private def step (hh: Int, kk: Int): Int = {
-    var h = hh
-    var k = kk
-    k *= m
-    k ^= k >>> r
-    k *= m
-    h *= m
-    h ^ k
+  /** Compute a high-quality hash of an array */
+  def arrayHash[@specialized T](a: Array[T]) = {
+    var h = startHash(a.length * seedArray)
+    var c = hiddenMagicA
+    var k = hiddenMagicB
+    var j = 0
+    while (j < a.length) {
+      h = extendHash(h, a(j).##, c, k)
+      c = nextMagicA(c)
+      k = nextMagicB(k)
+      j += 1
+    }
+    finalizeHash(h)
   }
 
-  def product(p: Product): Int = product(p, 0)
-  def product(p: Product, seed: Int): Int = {
-    // Initialize the hash to a 'random' value
-    var n = p.productArity
-    var h = seed ^ n
-    var partial = 0
-    var nextPartialByte = 0
-    while (n > 0) {
-      n -= 1
-      val el: Any = p.productElement(n)
-      bytesProvided(el) match {
-        case 0 =>
-        case 1 =>
-          partial |= el.## << (nextPartialByte * 8)
-          if (nextPartialByte < 3)
-            nextPartialByte += 1
-          else {
-            h = step(h,partial)
-            partial = 0
-            nextPartialByte = 0
-          }
-        case 2 =>
-          val i = el.##
-          partial |= i << (nextPartialByte * 8)
-          if (nextPartialByte < 2)
-            nextPartialByte += 2
-          else {
-            h = step(h,partial)
-            nextPartialByte -= 2
-            partial = if (nextPartialByte == 0) 0 else i >>> 8
-          }
-        case 4 =>
-          h = step(h, el.##)
-        case 8 =>
-          h = step(h, el.##)
-          h = step(h, highInt(el))
-      }
+  /** Compute a high-quality hash of a string */
+  def stringHash(s: String) = {
+    var h = startHash(s.length * seedString)
+    var c = hiddenMagicA
+    var k = hiddenMagicB
+    var j = 0
+    while (j+1 < s.length) {
+      val i = (s.charAt(j)<<16) + s.charAt(j+1);
+      h = extendHash(h,i,c,k)
+      c = nextMagicA(c)
+      k = nextMagicB(k)
+      j += 2
     }
-    // Handle the last few bytes of the input array
-    if (nextPartialByte > 0) {
-      h ^= partial
-      h *= m
-    }
-    // Do a few final mixes of the hash to ensure the last few
-    // bytes are well-incorporated.
-    h ^= h >>> 13
-    h *= m
-    h ^ (h >>> 15)
+    if (j < s.length) h = extendHash(h,s.charAt(j),c,k)
+    finalizeHash(h)
   }
 
-  def string(s: String): Int = {
-    // Initialize the hash to a 'random' value
-    var n = s.length
-    var h = n
-    var nn = n & ~ 1
-    while (nn > 0) {
-      nn -= 2
-      h = step(h, (s(nn + 1) << 16) | s(nn))
-    }
-    // Handle the last few bytes of the input array
-    if ((n & 1) != 0) {
-      h ^= s(n - 1)
-      h *= m
-    }
-    // Do a few final mixes of the hash to ensure the last few
-    // bytes are well-incorporated.
-    h ^= h >>> 13
-    h *= m
-    h ^ (h >>> 15)
+  /** Compute a hash that is symmetric in its arguments--that is,
+   *  where the order of appearance of elements does not matter.
+   *  This is useful for hashing sets, for example.
+   */
+  def symmetricHash[T](xs: TraversableOnce[T], seed: Int) = {
+    var a,b,n = 0
+    var c = 1
+    xs.foreach(i => {
+      val h = i.##
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+      n += 1
+    })
+    var h = startHash(seed * n)
+    h = extendHash(h, a, storedMagicA(0), storedMagicB(0))
+    h = extendHash(h, b, storedMagicA(1), storedMagicB(1))
+    h = extendHash(h, c, storedMagicA(2), storedMagicB(2))
+    finalizeHash(h)
   }
 }
