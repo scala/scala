@@ -132,7 +132,7 @@ abstract class InteractiveTest {
    */
   def typeAtTests() {
     askAllSources(typedAtMarker) { pos =>
-      println("askTypeAt at " + pos)
+      println("askTypeAt at " + pos.source.file.name + ((pos.line, pos.column)))
       val r = new Response[compiler.Tree]
       compiler.askTypeAt(pos, r)
       r
