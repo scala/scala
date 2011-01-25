@@ -492,17 +492,17 @@ abstract class TreeBuilder {
    */
   def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
     val binder   = freshTermName("x")
-    val pat      = atPos(catchExpr.pos)(Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable))))
+    val pat      = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
     val catchDef = ValDef(NoMods, freshTermName("catchExpr"), TypeTree(), catchExpr)
     val catchFn  = Ident(catchDef.name)
-    val body     = Block(
+    val body     = atPos(catchExpr.pos.makeTransparent)(Block(
       List(catchDef),
       If(
         Apply(Select(catchFn, nme.isDefinedAt), List(Ident(binder))),
         Apply(Select(catchFn, nme.apply), List(Ident(binder))),
         Throw(Ident(binder))
       )
-    )
+    ))
     makeCaseDef(pat, EmptyTree, body)
   }
 
