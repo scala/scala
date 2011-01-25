@@ -23,18 +23,26 @@ object Test extends InteractiveTest {
     println(this.reporter.infos.mkString("\n"))
   }
 
+  // You can enable settings for the presentation compiler here
+  // but don't leave them in the nightly build since the log will most likely
+  // contain absolute paths
+
+//  settings.YpresentationDebug.value = true
+//  settings.YpresentationVerbose.value = true
+
   override def runTest {
     import compiler._
     val src = sourceFiles(0) // only one under src/
-    val pos = rangePos(src, 426, 426, 433)
-    val pos1 = src.position(19, 15)
+    //val pos = rangePos(src, 426, 426, 433)
+    val pos1 = src.position(19, 15)  // this is an offset position
 
-    // reload is issued already by the framework, but we can redo it here as an example
+    // reload is issued already by the framework, so we don't need to do it, but it doesn't hurt
     val reload = new Response[Unit]
     compiler.askReload(List(src), reload)
     reload.get // it's important to let reload finish before asking other things.
 
-    askForPos(pos)
+    // re-enable when positions in the primary constructor are handled reliably
+//    askForPos(pos)
     println("=" * 20)
     askForPos(pos1)
 

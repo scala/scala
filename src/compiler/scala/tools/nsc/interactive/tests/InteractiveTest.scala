@@ -124,7 +124,9 @@ abstract class InteractiveTest {
     } { (pos, members) =>
       println("\n" + "=" * 80)
       println("[response] aksTypeCompletion at " + (pos.line, pos.column))
-      println(members.sortBy(_.sym.name.toString).mkString("\n"))
+      // we skip getClass because it changed signature between 1.5 and 1.6, so there is no
+      // universal check file that we can provide for this to work
+      println(members.sortBy(_.sym.name.toString).filterNot(_.sym.name.toString == "getClass").mkString("\n"))
     }
   }
 
