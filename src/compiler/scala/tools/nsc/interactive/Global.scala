@@ -2,14 +2,14 @@ package scala.tools.nsc
 package interactive
 
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
-import collection.mutable.{ArrayBuffer, SynchronizedBuffer}
+import collection.mutable.{ArrayBuffer, ListBuffer, SynchronizedBuffer, HashMap}
 
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
-import scala.tools.nsc.util.{ SourceFile, BatchSourceFile, Position, RangePosition, NoPosition, WorkScheduler }
+import scala.tools.nsc.util.{ SourceFile, BatchSourceFile, Position, RangePosition, NoPosition, WorkScheduler, MultiHashMap }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
@@ -59,24 +59,27 @@ self =>
   val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
                        SynchronizedMap[AbstractFile, RichCompilationUnit]
 
+  /** A list containing all those files that need to be removed
+   *  Units are removed by getUnit, typically once a unit is finished compiled.
+   */
   protected val toBeRemoved = new ArrayBuffer[AbstractFile] with SynchronizedBuffer[AbstractFile]
+
+  /** A map that associates with each abstract file the set of responses that are waiting
+   *  (via waitLoadedTyped) for the unit associated with the abstract file to be loaded and completely typechecked.
+   */
+  protected val waitLoadedTypeResponses = new MultiHashMap[SourceFile, Response[Tree]]
+
+  /** A map that associates with each abstract file the set of responses that ware waiting
+   *  (via buildStructure) for the unit associated with the abstract file to be structure-analyzed
+   */
+  protected var buildStructureResponses = new MultiHashMap[SourceFile, Response[List[Symbol]]]
 
   /** The compilation unit corresponding to a source file
    *  if it does not yet exist create a new one atomically
    *  Note: We want to rmeove this.
    */
   protected[interactive] def getOrCreateUnitOf(source: SourceFile): RichCompilationUnit =
-    unitOfFile.synchronized {
-      unitOfFile get source.file match {
-        case Some(unit) =>
-          unit
-        case None =>
-          println("*** precondition violated: executing operation on non-loaded file " + source)
-          val unit = new RichCompilationUnit(source)
-          unitOfFile(source.file) = unit
-          unit
-      }
-    }
+    unitOfFile.getOrElse(source.file, { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) })
 
   protected [interactive] def onUnitOf[T](source: SourceFile)(op: RichCompilationUnit => T): T =
     op(unitOfFile.getOrElse(source.file, new RichCompilationUnit(source)))
@@ -329,9 +332,21 @@ self =>
 
     for (s <- allSources; unit <- getUnit(s)) {
       if (!unit.isUpToDate) typeCheck(unit)
+      for (r <- waitLoadedTypeResponses(unit.source))
+        r set unit.body
     }
 
     informIDE("Everything is now up to date")
+
+    for ((source, rs) <- waitLoadedTypeResponses; r <- rs) r raise new NoSuchUnitError(source.file)
+    waitLoadedTypeResponses.clear()
+
+    var atOldRun = true
+    for ((source, rs) <- buildStructureResponses; r <- rs) {
+      if (atOldRun) { newTyperRun(); atOldRun = false }
+      buildStructureNow(source, r)
+    }
+    buildStructureResponses.clear()
   }
 
   /** Reset unit to unloaded state */
@@ -511,6 +526,7 @@ self =>
     }
   }
 
+  /** Implements CompilerControl.askLinkPos */
   def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
     informIDE("getLinkPos "+sym+" "+source)
     respond(response) {
@@ -702,6 +718,66 @@ self =>
       }
     }
   }
+
+  /** Implements CompilerControl.askLoadedTyped */
+  protected def waitLoadedTyped(source: SourceFile, response: Response[Tree]) {
+    getUnit(source) match {
+      case Some(unit) =>
+        if (unit.isUpToDate) response set unit.body
+        else waitLoadedTypeResponses(source) += response
+      case None =>
+        reloadSources(List(source))
+        waitLoadedTyped(source, response)
+    }
+  }
+
+  /** Implements CompilerControl.askStructure */
+  protected def buildStructure(source: SourceFile, keepLoaded: Boolean, response: Response[List[Symbol]]) {
+    getUnit(source) match {
+      case Some(unit) =>
+        buildStructureNow(source, response)
+      case None =>
+        if (keepLoaded) {
+          reloadSources(List(source))
+          buildStructureNow(source, response)
+        } else {
+          buildStructureResponses(source) += response
+        }
+    }
+  }
+
+  /** Builds structure of given source file */
+  protected def buildStructureNow(source: SourceFile, response: Response[List[Symbol]]) {
+    def forceSym(sym: Symbol) {
+      sym.info.decls.iterator foreach forceSym
+    }
+    respond(response) {
+      onUnitOf(source) { unit =>
+        if (unit.status == NotLoaded) parse(unit)
+        structureTraverser.traverse(unit.body)
+        val topLevelSyms = structureTraverser.getResult
+        topLevelSyms foreach forceSym
+        topLevelSyms
+      }
+    }
+  }
+
+  object structureTraverser extends Traverser {
+    private var topLevelSyms = new ListBuffer[Symbol]
+    override def traverse(tree: Tree) = tree match {
+      case PackageDef(pkg, body) =>
+        body foreach traverse
+      case md: MemberDef =>
+        topLevelSyms += md.symbol
+      case _ =>
+    }
+    def getResult: List[Symbol] = {
+      val result = topLevelSyms.toList
+      topLevelSyms.clear()
+      result
+    }
+  }
+
 
   // ---------------- Helper classes ---------------------------
 

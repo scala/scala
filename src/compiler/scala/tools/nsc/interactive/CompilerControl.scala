@@ -157,6 +157,29 @@ trait CompilerControl { self: Global =>
   def askToDoFirst(source: SourceFile) =
     scheduler postWorkItem new AskToDoFirstItem(source)
 
+  /** If source is not yet loaded, loads it, and starts a new run, otherwise
+   *  continues with current pass.
+   *  Waits until source is fully type checked and returns body in response.
+   *  @param source    The source file that needs to be fully typed.
+   *  @param response  The response, which is set to the fully attributed tree of `source`.
+   *                   If the unit corresponding to `source` has been removed in the meantime
+   *                   the a NoSuchUnitError is raised in the response.
+   */
+  def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
+    scheduler postWorkItem new AskLoadedTypedItem(source, response)
+
+  /** Build structure of source file. The structure consists of a list of top-level symbols
+   *  in the source file, which might contain themselves nested symbols in their scopes.
+   *  All reachable symbols are forced, i.e. their types are completed.
+   *  @param source       The source file to be analyzed
+   *  @param keepLoaded   If set to `true`, source file will be kept as a loaded unit afterwards.
+   *                      If keepLoaded is `false` the operation is run at low priority, only after
+   *                      everything is brought up to date in a regular type checker run.
+   *  @param response     The response, which is set to the list of toplevel symbols found in `source`
+   */
+  def askStructure(source: SourceFile, keepLoaded: Boolean, response: Response[List[Symbol]]) =
+    scheduler postWorkItem new AskStructureItem(source, keepLoaded, response)
+
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
@@ -232,6 +255,16 @@ trait CompilerControl { self: Global =>
     def apply() = self.getLinkPos(sym, source, response)
     override def toString = "linkpos "+sym+" in "+source
   }
+
+  class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
+    def apply() = self.waitLoadedTyped(source, response)
+    override def toString = "wait loaded & typed "+source
+  }
+
+  class AskStructureItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[List[Symbol]]) extends WorkItem {
+    def apply() = self.buildStructure(source, keepLoaded, response)
+    override def toString = "buildStructure "+source+", keepLoaded = "+keepLoaded
+  }
 }
 
   // ---------------- Interpreted exceptions -------------------
@@ -245,4 +278,6 @@ object FreshRunReq extends ControlThrowable
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
  */
 object ShutdownReq extends ControlThrowable
+
+class NoSuchUnitError(file: AbstractFile) extends Exception("no unit found for file "+file)
 
