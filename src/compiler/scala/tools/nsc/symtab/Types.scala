@@ -1947,8 +1947,7 @@ A type's typeSymbol should never be inspected directly.
 
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = {
-      class rawTypeRef extends TypeRef(pre, sym, args) with UniqueType
-      unique(new rawTypeRef)
+      unique(new TypeRef(pre, sym, args) with UniqueType)
     }
   }
 
@@ -2611,6 +2610,8 @@ A type's typeSymbol should never be inspected directly.
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
+      // why not do the hash-consing in the SingleType.apply()
+      //  factory, like the other UniqueTypes?
       unique(new SingleType(pre1, sym1) with UniqueType)
     }
   }
