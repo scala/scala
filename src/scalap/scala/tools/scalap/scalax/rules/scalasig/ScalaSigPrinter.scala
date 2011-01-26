@@ -223,6 +223,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     }
 
     t match {
+      case NullaryMethodType(resType) => if (printResult) { print(" : "); printType(resType) }
       case mt@MethodType(resType, paramSymbols) => _pmt(mt)
       case mt@ImplicitMethodType(resType, paramSymbols) => _pmt(mt)
       case pt@PolyType(mt, typeParams) => {
@@ -374,6 +375,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
       case ImplicitMethodType(resultType, _) => toString(resultType, sep)
       case MethodType(resultType, _) => toString(resultType, sep)
+      case NullaryMethodType(resultType) => toString(resultType, sep)
 
       case PolyType(typeRef, symbols) => typeParamString(symbols) + toString(typeRef, sep)
       case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + processName(cons) + toString(typeRef, sep)

@@ -17,6 +17,7 @@ case class RefinedType(classSym : Symbol, typeRefs : List[Type]) extends Type
 case class ClassInfoType(symbol : Symbol, typeRefs : Seq[Type]) extends Type
 case class ClassInfoTypeWithCons(symbol : Symbol, typeRefs : Seq[Type], cons: String) extends Type
 case class MethodType(resultType : Type, paramSymbols : Seq[Symbol]) extends Type
+case class NullaryMethodType(resultType : Type) extends Type
 case class PolyType(typeRef : Type, symbols : Seq[TypeSymbol]) extends Type
 case class PolyTypeWithCons(typeRef : Type, symbols : Seq[TypeSymbol], cons: String) extends Type
 case class ImplicitMethodType(resultType : Type, paramSymbols : Seq[Symbol]) extends Type
