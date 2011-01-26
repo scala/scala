@@ -30,6 +30,9 @@
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
+  <component name="EntryPointsManager">
+    <entry_points version="2.0" />
+  </component>
   <component name="InspectionProjectProfileManager">
     <profiles>
       <profile version="1.0" is_locked="false">
@@ -212,9 +215,10 @@
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
   </component>
   <component name="libraryTable">
-    <library name="lib">
+    <library name="compiler-locker">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
+        <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
+        <root url="file://$PROJECT_DIR$/../../build/locker/classes/compiler" />
         <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
@@ -222,10 +226,9 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="compiler-locker">
+    <library name="lib">
       <CLASSES>
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/compiler" />
+        <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />

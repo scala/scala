@@ -17,8 +17,12 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="actors" />
+    <orderEntry type="module" module-name="scalap" />
+    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="ant" level="application" />
   </component>
 </module>
 
