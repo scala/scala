@@ -4,8 +4,8 @@
 
 package scala.tools
 
-import java.io.{ File => JFile }
-import nsc.io.{ Path, Directory }
+import java.io.{ FileNotFoundException, File => JFile }
+import nsc.io.{ Path, Directory, File => SFile }
 import util.{ PathResolver }
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 import scala.sys.process.javaVmArguments
@@ -15,6 +15,11 @@ package object partest {
 
   implicit private[partest] def temporaryPath2File(x: Path): JFile = x.jfile
   implicit private[partest] def temporaryFile2Path(x: JFile): Path = Path(x)
+
+  def path2String(path: String) = file2String(new JFile(path))
+  def file2String(f: JFile) =
+    try SFile(f).slurp()
+    catch { case _: FileNotFoundException => "" }
 
   def basename(name: String): String = Path(name).stripExtension
 

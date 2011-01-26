@@ -65,6 +65,16 @@ class ConsoleRunner extends DirectRunner {
     "--grep", "--srcpath", "--buildpath", "--classpath"
   )
 
+  // true if a test path matches the --grep expression.
+  private def pathMatchesExpr(path: Path, expr: String) = {
+    def pred(p: Path) = file2String(p.toFile) contains expr
+    def srcs = path.toDirectory.deepList() filter (_.hasExtension("scala", "java"))
+
+    (path.isFile && pred(path)) ||
+    (path.isDirectory && srcs.exists(pred)) ||
+    (pred(Path(path.toAbsolute.stripExtension + ".check")))
+  }
+
   def main(argstr: String) {
     val parsed = CommandLineParser(argstr) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
     val args = parsed.residualArgs
@@ -112,15 +122,21 @@ class ConsoleRunner extends DirectRunner {
     }
 
     // If --grep is given we suck in every file it matches.
-    parsed get "--grep" foreach { expr =>
-      val allFiles = srcDir.deepList() filter (_ hasExtension "scala") map (_.toFile) toList
-      val files = allFiles filter (_.slurp() contains expr)
 
-      if (files.isEmpty) NestUI.failure("--grep string '%s' matched no files." format expr)
-      else NestUI.verbose("--grep string '%s' matched %d file(s)".format(expr, files.size))
+    val grepOption = parsed get "--grep"
+    val grepPaths = grepOption.toList flatMap { expr =>
+      val subjectDirs = testSetKinds map (srcDir / _ toDirectory)
+      val testPaths   = subjectDirs flatMap (_.files filter (x => x.hasExtension("scala") || x.isDirectory))
+      val paths       = testPaths filter (p => pathMatchesExpr(p, expr))
 
-      files foreach (x => addTestFile(x.jfile))
+      if (paths.isEmpty)
+         NestUI.failure("--grep string '%s' matched no tests." format expr)
+
+      paths map (_.jfile)
     }
+    val grepMessage = grepOption map (x => "Argument '%s' matched %d test(s)".format(x, grepPaths.size)) getOrElse ""
+
+    grepPaths foreach addTestFile
     args foreach (x => addTestFile(new File(x)))
 
     // If no file arguments were given, we assume --all
@@ -155,6 +171,10 @@ class ConsoleRunner extends DirectRunner {
     ) foreach (x => NestUI outline (x + "\n"))
 
     NestUI.verbose("available processors: " + Runtime.getRuntime().availableProcessors())
+
+    // Dragged down here so it isn't buried under the banner.
+    if (grepMessage != "")
+      NestUI.normal(grepMessage + "\n")
 
     val start = System.currentTimeMillis
     val (successes, failures) = testCheckAll(enabledTestSets)
@@ -203,8 +223,9 @@ class ConsoleRunner extends DirectRunner {
     val (valid, invalid) = testFiles partition (x => testSetKinds contains kindOf(x))
     invalid foreach (x => NestUI.failure("Invalid test file '%s', skipping.\n" format x))
 
+    val grouped = (valid groupBy kindOf).toList sortBy (x => testSetKinds indexOf x._1)
     val runTestsFileLists =
-      for ((kind, files) <- valid groupBy kindOf toList) yield {
+      for ((kind, files) <- grouped) yield {
         NestUI.outline("\nTesting individual files\n")
         resultsToStatistics(runTestsForFiles(files, kind))
       }

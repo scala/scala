@@ -374,10 +374,6 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     else diff
   }
 
-  def file2String(f: File) =
-    try SFile(f).slurp()
-    catch { case _: FileNotFoundException => "" }
-
   def isJava(f: File) = SFile(f) hasExtension "java"
   def isScala(f: File) = SFile(f) hasExtension "scala"
   def isJavaOrScala(f: File) = isJava(f) || isScala(f)
