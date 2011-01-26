@@ -46,7 +46,7 @@ import java.util.NoSuchElementException;
  * @param <E> the type of elements held in this collection
  *
  */
-public class LinkedBlockingQueue<E> extends AbstractQueue<E>
+public class LinkedBlockingQueue<E> extends java.util.AbstractQueue<E>
         implements BlockingQueue<E>, java.io.Serializable {
     private static final long serialVersionUID = -6903933977591709194L;
 
