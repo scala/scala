@@ -65,6 +65,7 @@ abstract class Pickler extends SubComponent {
     private var entries   = new Array[AnyRef](256)
     private var ep        = 0
     private val index     = new LinkedHashMap[AnyRef, Int]
+    private lazy val nonClassRoot = root.ownersIterator.find(! _.isClass) getOrElse NoSymbol
 
     private def isRootSym(sym: Symbol) =
       sym.name.toTermName == rootName && sym.owner == rootOwner
@@ -74,7 +75,11 @@ abstract class Pickler extends SubComponent {
      *  Question: Should this be done for refinement class symbols as well?
      */
     private def localizedOwner(sym: Symbol) =
-      if (isLocal(sym) && !isRootSym(sym) && !isLocal(sym.owner)) root
+      if (isLocal(sym) && !isRootSym(sym) && !isLocal(sym.owner))
+        // don't use a class as the localized owner for type parameters that are not owned by a class: those are not instantiated by asSeenFrom
+        // however, they would suddenly be considered by asSeenFrom if their localized owner became a class (causing the crashes of #4079, #2741)
+        (if(sym.isTypeParameter && !sym.owner.isClass) nonClassRoot
+         else root)
       else sym.owner
 
     /** Is root in symbol.owner*, or should it be treated as a local symbol

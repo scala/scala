@@ -2754,9 +2754,10 @@ A type's typeSymbol should never be inspected directly.
     else tpe // it's okay to be forgiving here
 
   /** A creator for anonymous type functions, where the symbol for the type function still needs to be created
-   * TODO_NMT:
-   *  - can we avoid this whole synthetic owner business? harden ASF instead to deal with orphan type params
-   *  - orthogonally: try to recycle the class symbol in the common case type C[X] = Class[X]  (where appliedType(this, dummyArgs) =:= appliedType(sym.info, dummyArgs))
+   *
+   * TODO:
+   * type params of anonymous type functions, which currently can only arise from normalising type aliases, are owned by the type alias of which they are the eta-expansion
+   * higher-order subtyping expects eta-expansion of type constructors that arise from a class; here, the type params are owned by that class, but is that the right thing to do?
    */
   def typeFunAnon(tps: List[Symbol], body: Type): Type = typeFun(tps, body)
 
@@ -3362,7 +3363,15 @@ A type's typeSymbol should never be inspected directly.
             else if (pre1.isStable) singleType(pre1, sym)
             else pre1.memberType(sym).resultType //todo: this should be rolled into existential abstraction
           }
-        case TypeRef(prefix, sym, args) if (sym.isTypeParameter) =>
+        // AM: Martin, is this description accurate?
+        // walk the owner chain of `clazz` (the original argument to asSeenFrom) until we find the type param's owner (while rewriting pre as we crawl up the owner chain)
+        // once we're at the owner, extract the information that pre encodes about the type param,
+        // by minimally subsuming pre to the type instance of the class that owns the type param,
+        // the type we're looking for is the type instance's type argument at the position corresponding to the type parameter
+        // optimisation: skip this type parameter if it's not owned by a class, as those params are not influenced by the prefix through which they are seen
+        // (concretely: type params of anonymous type functions, which currently can only arise from normalising type aliases, are owned by the type alias of which they are the eta-expansion)
+        // (skolems also aren't affected: they are ruled out by the isTypeParameter check)
+        case TypeRef(prefix, sym, args) if (sym.isTypeParameter && sym.owner.isClass) =>
           def toInstance(pre: Type, clazz: Symbol): Type =
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp)
             //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
