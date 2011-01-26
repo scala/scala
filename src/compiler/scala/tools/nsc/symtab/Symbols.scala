@@ -23,10 +23,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   val emptySymbolArray = new Array[Symbol](0)
 
   /** Used for deciding in the IDE whether we can interrupt the compiler */
-  protected var activeLocks = 0
+  //protected var activeLocks = 0
 
   /** Used for debugging only */
-  protected var lockedSyms = collection.immutable.Set[Symbol]()
+  //protected var lockedSyms = collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = immutable.Map.empty[Symbol, Int]
@@ -307,14 +307,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         } else { handler }
       } else {
         rawflags |= LOCKED
-        activeLocks += 1
+//        activeLocks += 1
+//        lockedSyms += this
       }
     }
 
     // Unlock a symbol
     def unlock() = {
       if ((rawflags & LOCKED) != 0L) {
-        activeLocks -= 1
+//        activeLocks -= 1
+//        lockedSyms -= this
         rawflags = rawflags & ~LOCKED
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
@@ -699,7 +701,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
           }
         } else {
           rawflags |= LOCKED
-          activeLocks += 1
+//          activeLocks += 1
+ //         lockedSyms += this
         }
         val current = phase
         try {
