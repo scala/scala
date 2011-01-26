@@ -14,6 +14,8 @@ import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
 import scala.tools.nsc.io.Pickler._
+import scala.annotation.tailrec
+import scala.reflect.generic.Flags.LOCKED
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
@@ -114,6 +116,8 @@ self =>
   /** Units compiled by a run with id >= minRunId are considered up-to-date  */
   private[interactive] var minRunId = 1
 
+  private var interruptsEnabled = true
+
   private val NoResponse: Response[_] = new Response[Any]
 
   /** The response that is currently pending, i.e. the compiler
@@ -135,7 +139,11 @@ self =>
       if (context.unit == null)
         context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
-    if (activeLocks == 0) { // can we try to avoid that condition (?)
+    @tailrec def noLocks(sym: Symbol): Boolean = {
+      sym == NoSymbol ||
+      (sym.rawflags & LOCKED) == 0 && noLocks(sym.owner)
+    }
+    if (interruptsEnabled && noLocks(context.owner)) {
       if (context.unit != null &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
@@ -230,10 +238,10 @@ self =>
       logreplay("asked", scheduler.pollInterrupt()) match {
         case Some(ir) =>
           try {
-            activeLocks += 1
+            interruptsEnabled = false
             ir.execute()
           } finally {
-            activeLocks -= 1
+            interruptsEnabled = true
           }
           pollForWork(pos)
         case _ =>
@@ -332,6 +340,7 @@ self =>
 
     for (s <- allSources; unit <- getUnit(s)) {
       if (!unit.isUpToDate) typeCheck(unit)
+      else debugLog("already up to date: "+unit)
       for (r <- waitLoadedTypeResponses(unit.source))
         r set unit.body
     }
@@ -458,11 +467,9 @@ self =>
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reload(sources: List[SourceFile], response: Response[Unit]) {
-    informIDE("reload" + sources)
+    informIDE("reload: " + sources)
     respond(response)(reloadSources(sources))
-    if (outOfDate)
-      if (activeLocks == 0) throw FreshRunReq // cancel background compile
-      else scheduler.raise(FreshRunReq)  // cancel background compile on the next poll
+    if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
 
@@ -778,7 +785,6 @@ self =>
     }
   }
 
-
   // ---------------- Helper classes ---------------------------
 
   /** A transformer that replaces tree `from` with tree `to` in a given tree */
@@ -802,7 +808,6 @@ self =>
     override def canRedefine(sym: Symbol) = true
 
     def typeCheck(unit: CompilationUnit): Unit = {
-      activeLocks = 0
       applyPhase(typerPhase, unit)
     }
 
