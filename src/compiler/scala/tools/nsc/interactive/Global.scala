@@ -303,10 +303,10 @@ self =>
 
   // ----------------- The Background Runner Thread -----------------------
 
+  private var threadId = 0
+
   /** The current presentation compiler runner */
   @volatile protected[interactive] var compileRunner = newRunnerThread()
-
-  private var threadId = 0
 
   /** Create a new presentation compiler runner.
    */
