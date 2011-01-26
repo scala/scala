@@ -1,7 +1,5 @@
 reload: Tester.scala
 askTypeCompletion at Tester.scala(12,39)
-askTypeCompletion at Tester.scala(23,24)
-askTypeCompletion at Tester.scala(105,29)
 
 ================================================================================
 [response] aksTypeCompletion at (12,39)
@@ -71,6 +69,7 @@ TypeMember(method withSource,[A](src: scala.tools.nsc.util.SourceFile)(op: => A)
 TypeMember(method withoutTruncating,[T](body: => T)T,true,true,<none>)
 TypeMember(value x,=> scala.tools.nsc.reporters.StoreReporter,true,false,method any2ArrowAssoc)
 TypeMember(value x,scala.tools.nsc.reporters.StoreReporter,false,false,method any2ArrowAssoc)
+askTypeCompletion at Tester.scala(23,24)
 
 ================================================================================
 [response] aksTypeCompletion at (23,24)
@@ -125,6 +124,7 @@ TypeMember(method wait,(x$1: Long,x$2: Int)Unit,true,true,<none>)
 TypeMember(method wait,(x$1: Long)Unit,true,true,<none>)
 TypeMember(value x,=> scala.tools.nsc.interactive.Response[U],true,false,method any2ArrowAssoc)
 TypeMember(value x,scala.tools.nsc.interactive.Response[U],false,false,method any2ArrowAssoc)
+askTypeCompletion at Tester.scala(105,29)
 
 ================================================================================
 [response] aksTypeCompletion at (105,29)
@@ -181,8 +181,8 @@ TypeMember(method wait,(x$1: Long)Unit,true,true,<none>)
 TypeMember(value x,=> scala.tools.nsc.util.SourceFile,true,false,method any2ArrowAssoc)
 TypeMember(value x,scala.tools.nsc.util.SourceFile,false,false,method any2ArrowAssoc)
 askTypeAt at Tester.scala(12,14)
-askTypeAt at Tester.scala(13,14)
 [response] askTypeAt at (12,14)
 private[this] val reporter: scala.tools.nsc.reporters.StoreReporter = new reporters.StoreReporter()
+askTypeAt at Tester.scala(13,14)
 [response] askTypeAt at (13,14)
 private[this] val compiler: scala.tools.nsc.interactive.Global = new Global(Tester.this.settings, Tester.this.reporter)
