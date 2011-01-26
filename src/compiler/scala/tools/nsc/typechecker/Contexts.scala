@@ -113,7 +113,10 @@ trait Contexts { self: Analyzer =>
     var inConstructorSuffix = false         // are we in a secondary constructor
                                             // after the this constructor call?
     var returnsSeen = false                 // for method context: were returns encountered?
-    var inSelfSuperCall = false             // is this a context for a constructor self or super call?
+    var inSelfSuperCall = false             // is this context (enclosed in) a constructor call?
+    // (the call to the super or self constructor in the first line of a constructor)
+    // in this context the object's fields should not be in scope
+
     var reportAmbiguousErrors = false
     var reportGeneralErrors = false
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
@@ -184,6 +187,7 @@ trait Contexts { self: Analyzer =>
       c.variance = this.variance
       c.depth = if (scope == this.scope) this.depth else this.depth + 1
       c.imports = imports
+      c.inSelfSuperCall = inSelfSuperCall
       c.reportAmbiguousErrors = this.reportAmbiguousErrors
       c.reportGeneralErrors = this.reportGeneralErrors
       c.diagnostic = this.diagnostic
@@ -524,7 +528,17 @@ trait Contexts { self: Analyzer =>
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
-      val nextOuter = if (owner.isConstructor) outer.outer.outer else outer
+      // nextOuter determines which context is searched next for implicits (after `this`, which contributes `newImplicits` below)
+      // in most cases, it is simply the outer context
+      // if we're owned by a constructor, the actual current context and the conceptual context are different when it comes to scoping:
+      // the current conceptual scope is the context enclosing the blocks that represent the constructor body
+      // (TODO: why is there more than one such block in the outer chain?)
+      val scopingCtx =
+        if(owner.isConstructor) nextEnclosing(c => !c.tree.isInstanceOf[Block]) // drop the constructor body blocks (they come in varying numbers depending on whether we are in the ctor call in the first statement or after)
+        // scopingCtx == the constructor definition (if we were after the ctor call) or the class that contains this constructor (if we are in the ctor call)
+        else this
+      val nextOuter = scopingCtx.outer
+
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
@@ -544,8 +558,8 @@ trait Contexts { self: Analyzer =>
             assert(imports.tail == nextOuter.imports)
             collectImplicitImports(imports.head)
           } else if (owner.isPackageClass) {
- 	    // the corresponding package object may contain implicit members.
- 	    collectImplicits(owner.tpe.implicitMembers, owner.tpe)
+            // the corresponding package object may contain implicit members.
+            collectImplicits(owner.tpe.implicitMembers, owner.tpe)
           } else List()
         implicitsCache = if (newImplicits.isEmpty) nextOuter.implicitss
                          else newImplicits :: nextOuter.implicitss
