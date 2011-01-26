@@ -15,6 +15,8 @@
 
 /sandbox/
 
+/.classpath
+
 /src/intellij/*.iml
 /src/intellij/*.ipr
 /src/intellij/*.iws
