@@ -37,6 +37,8 @@ import scala.tools.nsc.ast._
  */
 trait CompilerControl { self: Global =>
 
+  import syntaxAnalyzer.SourceFileParser
+
   type Response[T] = scala.tools.nsc.interactive.Response[T]
 
   /** The scheduler by which client and compiler communicate
@@ -188,6 +190,13 @@ trait CompilerControl { self: Global =>
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
 
+  /** Returns parse tree for source `source`. No symbols are entered. No errors are reported.
+   *  Instead, any syntax error will raise a MalformedInput exception in response. (raise means: set to Right(...))
+   */
+  def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
+    new SourceFileParser(source).parse()
+  }
+
   /** Asks for a computation to be done quickly on the presentation compiler thread */
   def ask[A](op: () => A): A = scheduler doQuickly op
 
@@ -214,7 +223,7 @@ trait CompilerControl { self: Global =>
 
   // items that get sent to scheduler
 
-   abstract class WorkItem extends (() => Unit)
+  abstract class WorkItem extends (() => Unit)
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = reload(sources, response)
