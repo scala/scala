@@ -80,8 +80,12 @@ abstract class BrowsingLoaders extends SymbolLoaders {
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
         case ModuleDef(_, name, _) =>
           if (packagePrefix == root.fullName) {
-            enterModule(root, name.toString, new SourcefileLoader(src))
+            val module = enterModule(root, name.toString, new SourcefileLoader(src))
             entered += 1
+            if (name == nme.PACKAGEkw) {
+              println("open package module: "+module)
+              loaders.openPackageModule(module)()
+            }
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
         case _ =>
       }
