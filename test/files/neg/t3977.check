@@ -1,0 +1,4 @@
+t3977.scala:12: error: could not find implicit value for parameter w: False#If[E]
+  new NotNull
+  ^
+one error found

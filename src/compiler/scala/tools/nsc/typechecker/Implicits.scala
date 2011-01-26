@@ -911,8 +911,8 @@ trait Implicits {
           case SearchFailure if sym == OptManifestClass => wrapResult(gen.mkAttributedRef(NoManifest))
           case result                                   => result
         }
-      case TypeRef(_, sym, _) if sym.isAbstractType =>
-        implicitManifestOrOfExpectedType(pt.bounds.lo)
+      case tp@TypeRef(_, sym, _) if sym.isAbstractType =>
+        implicitManifestOrOfExpectedType(tp.bounds.lo) // #3977: use tp (==pt.dealias), not pt (if pt is a type alias, pt.bounds.lo == pt)
       case _ =>
         searchImplicit(implicitsOfExpectedType, false)
         // shouldn't we pass `pt` to `implicitsOfExpectedType`, or is the recursive case
