@@ -15,21 +15,35 @@ package scala.concurrent
  *  @version 1.0, 10/03/2003
  */
 class SyncVar[A] {
-  private var isDefined: Boolean = false
-  private var value: A = _
+  @volatile private var isDefined: Boolean = false
+  @volatile private var value: A = _
 
   def get = synchronized {
     while (!isDefined) wait()
     value
   }
 
+  /** Like Object.wait but reports millis elapsed.
+   */
+  private def waitMeasuringElapsed(timeout: Long): Long = {
+    val start = System.currentTimeMillis
+    wait(timeout)
+    System.currentTimeMillis - start
+  }
+
   def get(timeout: Long): Option[A] = synchronized {
-    if (!isDefined) {
-      try wait(timeout)
-      catch { case _: InterruptedException => () }
-    }
-    if (isDefined) Some(value)
-    else None
+    /** Defending against the system clock going backward
+     *  by counting time elapsed directly.  Loop required
+     *  to deal with spurious wakeups.
+     */
+  	var rest = timeout
+  	while (!isDefined && rest >= 0) {
+  	  val elapsed = waitMeasuringElapsed(timeout)
+  	  if (!isDefined && elapsed > 0)
+  	    rest -= elapsed
+  	}
+  	if (isDefined) Some(value)
+  	else None
   }
 
   def take() = synchronized {
