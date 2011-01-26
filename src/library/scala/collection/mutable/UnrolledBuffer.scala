@@ -1,9 +1,8 @@
-package scala.collection.parallel
+package scala.collection.mutable
 
 
 
 import collection.generic._
-import collection.mutable.Builder
 
 import annotation.tailrec
 
@@ -52,11 +51,11 @@ extends collection.mutable.Buffer[T]
   @transient private var lastptr = headptr
   @transient private var sz = 0
 
-  private[parallel] def headPtr = headptr
-  private[parallel] def headPtr_=(head: Unrolled[T]) = headptr = head
-  private[parallel] def lastPtr = lastptr
-  private[parallel] def lastPtr_=(last: Unrolled[T]) = lastptr = last
-  private[parallel] def size_=(s: Int) = sz = s
+  private[collection] def headPtr = headptr
+  private[collection] def headPtr_=(head: Unrolled[T]) = headptr = head
+  private[collection] def lastPtr = lastptr
+  private[collection] def lastPtr_=(last: Unrolled[T]) = lastptr = last
+  private[collection] def size_=(s: Int) = sz = s
 
   protected[this] override def newBuilder = new UnrolledBuffer[T]
 
@@ -66,6 +65,13 @@ extends collection.mutable.Buffer[T]
 
   def classManifestCompanion = UnrolledBuffer
 
+  /** Concatenates the targer unrolled buffer to this unrolled buffer.
+   *
+   *  The specified buffer `that` is cleared after this operation. This is
+   *  an O(1) operation.
+   *
+   *  @param that    the unrolled buffer whose elements are added to this buffer
+   */
   def concat(that: UnrolledBuffer[T]) = {
     // bind the two together
     if (!lastptr.bind(that.headptr)) lastptr = that.lastPtr
@@ -124,17 +130,17 @@ extends collection.mutable.Buffer[T]
 
   def apply(idx: Int) =
     if (idx >= 0 && idx < sz) headptr(idx)
-    else outofbounds(idx)
+    else throw new IndexOutOfBoundsException(idx.toString)
 
   def update(idx: Int, newelem: T) =
     if (idx >= 0 && idx < sz) headptr(idx) = newelem
-    else outofbounds(idx)
+    else throw new IndexOutOfBoundsException(idx.toString)
 
   def remove(idx: Int) =
     if (idx >= 0 && idx < sz) {
       sz -= 1
       headptr.remove(idx, this)
-    } else outofbounds(idx)
+    } else throw new IndexOutOfBoundsException(idx.toString)
 
   def +=:(elem: T) = {
     headptr = headptr.prepend(elem)
@@ -142,11 +148,11 @@ extends collection.mutable.Buffer[T]
     this
   }
 
-  def insertAll(idx: Int, elems: Traversable[T]) =
+  def insertAll(idx: Int, elems: collection.Traversable[T]) =
     if (idx >= 0 && idx <= sz) {
       headptr.insertAll(idx, elems, this)
       sz += elems.size
-    } else outofbounds(idx)
+    } else throw new IndexOutOfBoundsException(idx.toString)
 
   private def writeObject(out: java.io.ObjectOutputStream) {
     out.defaultWriteObject
@@ -181,13 +187,13 @@ object UnrolledBuffer extends ClassManifestTraversableFactory[UnrolledBuffer] {
 
   val waterline = 50
   val waterlineDelim = 100
-  private[parallel] val unrolledlength = 32
+  private[collection] val unrolledlength = 32
 
   /** Unrolled buffer node.
    */
-  class Unrolled[T: ClassManifest] private[parallel] (var size: Int, var array: Array[T], var next: Unrolled[T], val buff: UnrolledBuffer[T] = null) {
-    private[parallel] def this() = this(0, new Array[T](unrolledlength), null, null)
-    private[parallel] def this(b: UnrolledBuffer[T]) = this(0, new Array[T](unrolledlength), null, b)
+  class Unrolled[T: ClassManifest] private[collection] (var size: Int, var array: Array[T], var next: Unrolled[T], val buff: UnrolledBuffer[T] = null) {
+    private[collection] def this() = this(0, new Array[T](unrolledlength), null, null)
+    private[collection] def this(b: UnrolledBuffer[T]) = this(0, new Array[T](unrolledlength), null, b)
 
     private def nextlength = if (buff eq null) unrolledlength else buff.calcNextLength(array.length)
 
@@ -272,7 +278,7 @@ object UnrolledBuffer extends ClassManifestTraversableFactory[UnrolledBuffer] {
       if (next eq null) true else false // checks if last node was thrown out
     } else false
 
-    @tailrec final def insertAll(idx: Int, t: Traversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
+    @tailrec final def insertAll(idx: Int, t: collection.Traversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
       // divide this node at the appropriate position and insert all into head
       // update new next
       val newnextnode = new Unrolled[T](0, new Array(array.length), null, buff)

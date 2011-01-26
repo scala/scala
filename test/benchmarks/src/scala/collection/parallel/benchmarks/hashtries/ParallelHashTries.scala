@@ -135,6 +135,9 @@ object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] {
       a.num = a.in % 2
       (a, p._2)
     }
+    val flatmapper = (p: DPair) => {
+      List(p, p, p, p, p)
+    }
     override val mapper2 = (p: DPair) => {
       val a = 1 //heavy(p._1.in)
       (new Dummy(p._1.in * -2 + a), p._2)

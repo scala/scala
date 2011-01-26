@@ -2,7 +2,7 @@
 
 
 
-import collection.parallel.UnrolledBuffer
+import collection.mutable.UnrolledBuffer
 
 
 

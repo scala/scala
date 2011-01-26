@@ -10,8 +10,8 @@ import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParIterableIterator
 import scala.collection.parallel.EnvironmentPassingCombiner
-import scala.collection.parallel.UnrolledBuffer.Unrolled
-import scala.collection.parallel.UnrolledBuffer
+import scala.collection.mutable.UnrolledBuffer.Unrolled
+import scala.collection.mutable.UnrolledBuffer
 import scala.collection.generic.ParSetFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParTemplate

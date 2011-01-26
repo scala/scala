@@ -58,6 +58,9 @@ object DummyOperators extends Operators[Dummy] {
     }
     a
   }
+  val flatmapper = (a: Dummy) => {
+    List(a, a, a, a, a)
+  }
   val taker = (a: Dummy) => {
     a.in >= 0
   }

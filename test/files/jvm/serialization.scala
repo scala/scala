@@ -604,9 +604,9 @@ object Test9_parallel {
     println()
 
     // UnrolledBuffer
-    val ub = new UnrolledBuffer[String]
+    val ub = new collection.mutable.UnrolledBuffer[String]
     ub ++= List("one", "two")
-    val _ub: UnrolledBuffer[String] = read(write(ub))
+    val _ub: collection.mutable.UnrolledBuffer[String] = read(write(ub))
     check(ub, _ub)
 
     // mutable.ParArray

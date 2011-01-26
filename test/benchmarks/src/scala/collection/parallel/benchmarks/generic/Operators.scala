@@ -14,6 +14,7 @@ trait Operators[T] {
   def mapper: T => T
   def mapper2: T => T = error("unsupported")
   def heavymapper: T => T
+  def flatmapper: T => Seq[T]
   def taker: T => Boolean
   def eachFun: T => Unit
   def eachPairFun: ((T, T)) => Unit = error("unsupported")
@@ -43,6 +44,9 @@ trait IntOperators extends Operators[Int] {
       i += 1
     }
     n + sum
+  }
+  val flatmapper: Int => Seq[Int] = (n: Int) => {
+    List(n, n, n, n, n)
   }
   val taker: Int => Boolean = _ < 10000
   val eachFun: Int => Unit = { n =>

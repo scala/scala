@@ -7,11 +7,11 @@ package scala.collection.parallel.mutable
 import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.UnrolledBuffer
+import scala.collection.mutable.UnrolledBuffer.Unrolled
 import scala.collection.parallel.TaskSupport
 import scala.collection.parallel.EnvironmentPassingCombiner
 import scala.collection.parallel.unsupportedop
-import scala.collection.parallel.UnrolledBuffer
-import scala.collection.parallel.UnrolledBuffer.Unrolled
 import scala.collection.parallel.Combiner
 
 

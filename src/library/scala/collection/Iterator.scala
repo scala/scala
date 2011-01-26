@@ -440,6 +440,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
     } else Iterator.empty.next()
   }
 
+  def scanRight[B](z: B)(op: (A, B) => B): Iterator[B] = toBuffer.scanRight(z)(op).iterator
+
   /** Takes longest prefix of values produced by this iterator that satisfy a predicate.
    *  @param   p  The predicate used to test elements.
    *  @return  An iterator returning the values produced by this iterator, until

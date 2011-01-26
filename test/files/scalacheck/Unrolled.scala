@@ -2,7 +2,7 @@ import org.scalacheck._
 import Prop._
 import Gen._
 
-import collection.parallel.UnrolledBuffer
+import collection.mutable.UnrolledBuffer
 
 object Test extends Properties("UnrolledBuffer") {
 

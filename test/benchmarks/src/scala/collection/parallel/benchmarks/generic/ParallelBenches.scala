@@ -117,6 +117,34 @@ trait StandardParIterableBenches[T, Coll <: ParIterable[T]] extends ParIterableB
     def companion = Map
   }
 
+  object Filter extends IterableBenchCompanion {
+    override def defaultSize = 5000
+    def benchName = "filter";
+    def apply(sz: Int, p: Int, w: String) = new Filter(sz, p, w)
+  }
+
+  class Filter(val size: Int, val parallelism: Int, val runWhat: String)
+  extends IterableBench {
+    def comparisonMap = collection.Map()
+    def runseq = this.seqcoll.filter(operators.filterer)
+    def runpar = this.parcoll.filter(operators.filterer)
+    def companion = Filter
+  }
+
+  object FlatMap extends IterableBenchCompanion {
+    override def defaultSize = 5000
+    def benchName = "flatmap";
+    def apply(sz: Int, p: Int, w: String) = new FlatMap(sz, p, w)
+  }
+
+  class FlatMap(val size: Int, val parallelism: Int, val runWhat: String)
+  extends IterableBench {
+    def comparisonMap = collection.Map()
+    def runseq = this.seqcoll.flatMap(operators.flatmapper)
+    def runpar = this.parcoll.flatMap(operators.flatmapper)
+    def companion = FlatMap
+  }
+
 }
 
 

@@ -13,7 +13,9 @@ package scala.collection
 import generic._
 import mutable.{ Builder, ListBuffer }
 import annotation.tailrec
+import annotation.migration
 import annotation.unchecked.{ uncheckedVariance => uV }
+
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *  $traversableInfo
@@ -429,19 +431,18 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     result
   }
 
-  /**
-   * Produces a collection containing cummulative results of applying the
-   * operator going left to right.
+  /** Produces a collection containing cummulative results of applying the
+   *  operator going left to right.
    *
-   * $willNotTerminateInf
-   * $orderDependent
+   *  $willNotTerminateInf
+   *  $orderDependent
    *
-   * @tparam B      the type of the elements in the resulting collection
-   * @tparam That   the actual type of the resulting collection
-   * @param z       the initial value
-   * @param op      the binary operator applied to the intermediate result and the element
-   * @param bf      $bfinfo
-   * @return        collection with intermediate results
+   *  @tparam B      the type of the elements in the resulting collection
+   *  @tparam That   the actual type of the resulting collection
+   *  @param z       the initial value
+   *  @param op      the binary operator applied to the intermediate result and the element
+   *  @param bf      $bfinfo
+   *  @return        collection with intermediate results
    */
   def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
@@ -452,24 +453,36 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b.result
   }
 
-  /**
-   * Produces a collection containing cummulative results of applying the operator going right to left.
-   * $willNotTerminateInf
-   * $orderDependent
+  /** Produces a collection containing cummulative results of applying the operator going right to left.
+   *  The head of the collection is the last cummulative result.
+   *  $willNotTerminateInf
+   *  $orderDependent
    *
-   * @tparam B      the type of the elements in the resulting collection
-   * @tparam That   the actual type of the resulting collection
-   * @param z       the initial value
-   * @param op      the binary operator applied to the intermediate result and the element
-   * @param bf      $bfinfo
-   * @return        collection with intermediate results
+   *  Example:
+   *  {{{
+   *    List(1, 2, 3, 4).scanRight(0)(_ + _) == List(10, 9, 7, 4, 0)
+   *  }}}
+   *
+   *  @tparam B      the type of the elements in the resulting collection
+   *  @tparam That   the actual type of the resulting collection
+   *  @param z       the initial value
+   *  @param op      the binary operator applied to the intermediate result and the element
+   *  @param bf      $bfinfo
+   *  @return        collection with intermediate results
    */
+  @migration(2, 9,
+    "This scanRight definition has changed in 2.9.\n" +
+    "The previous behavior can be reproduced with scanRight.reverse."
+  )
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
-    b.sizeHint(this, 1)
+    var scanned = List(z)
     var acc = z
-    b += acc
-    for (x <- reversed) { acc = op(x, acc); b += acc }
+    for (x <- reversed) {
+      acc = op(x, acc)
+      scanned ::= acc
+    }
+    val b = bf(repr)
+    for (elem <- scanned) b += elem
     b.result
   }
 

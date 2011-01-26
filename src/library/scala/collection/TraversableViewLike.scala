@@ -13,6 +13,7 @@ package scala.collection
 import generic._
 import mutable.{Builder, ArrayBuffer}
 import TraversableView.NoBuilder
+import annotation.migration
 
 
 /** A template trait for non-strict views of traversable collections.
@@ -217,6 +218,10 @@ self =>
   override def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
     newForced(thisSeq.scanLeft(z)(op)).asInstanceOf[That]
 
+  @migration(2, 9,
+    "This scanRight definition has changed in 2.9.\n" +
+    "The previous behavior can be reproduced with scanRight.reverse."
+  )
   override def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
     newForced(thisSeq.scanRight(z)(op)).asInstanceOf[That]
 

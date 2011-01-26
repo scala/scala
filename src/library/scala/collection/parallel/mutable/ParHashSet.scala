@@ -8,7 +8,7 @@ import collection.mutable.HashSet
 import collection.mutable.FlatHashTable
 import collection.parallel.Combiner
 import collection.parallel.EnvironmentPassingCombiner
-import collection.parallel.UnrolledBuffer
+import collection.mutable.UnrolledBuffer
 
 
 

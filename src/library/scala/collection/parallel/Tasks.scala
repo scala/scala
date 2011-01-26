@@ -417,9 +417,9 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
 
 
 object ForkJoinTasks {
-  val defaultForkJoinPool: ForkJoinPool = new ForkJoinPool
-  defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors)
-  defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors)
+  val defaultForkJoinPool: ForkJoinPool = scala.parallel.forkjoinpool
+  // defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors)
+  // defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors)
 }
 
 
