@@ -7,6 +7,7 @@ package scala.tools.nsc
 
 package object interpreter {
   private[nsc] val DebugProperty = "scala.repl.debug"
+  private[nsc] val PowerProperty = "scala.repl.power"
   private[nsc] var _debug = false
   private[nsc] def isReplDebug = _debug || (sys.props contains DebugProperty)
 

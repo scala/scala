@@ -324,7 +324,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     // XXX temporarily putting this here because of tricky initialization order issues
     // so right now it's not bound until after you issue a command.
     if (prevRequests.size == 1)
-      quietBind("settings", "scala.tools.nsc.InterpreterSettings", isettings)
+      quietBind("settings", isettings)
 
     // println("\n  s1 = %s\n  s2 = %s\n  s3 = %s".format(
     //   tripart(referencedNameMap.keysIterator.toSet, boundNameMap.keysIterator.toSet): _*
@@ -523,7 +523,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
-  private def parse(line: String): Option[List[Tree]] = {
+  def parse(line: String): Option[List[Tree]] = {
     var justNeedsMore = false
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
       // simple parse: just parse it, nothing else
@@ -669,6 +669,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** A name creator used for objects created by <code>bind()</code>. */
   private lazy val newBinder = new NameCreator("binder")
 
+  def bindToType[T: ClassManifest](name: String, value: T): IR.Result =
+    bind(name, classManifest[T].erasure.getName, value)
+
+  def bind[T: ClassManifest](name: String, value: Any): IR.Result =
+    bind(name, classManifest[T].erasure.getName, value)
+
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
    *
@@ -694,6 +700,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     interpret("val %s = %s.value".format(name, binderName))
   }
 
+  def quietBind[T: ClassManifest](name: String, value: T): IR.Result =
+    quietBind(name, classManifest[T].erasure.getName, value)
   def quietBind(name: String, clazz: Class[_], value: Any): IR.Result =
     quietBind(name, clazz.getName, value) // XXX need to port toTypeString
   def quietBind(name: String, boundType: String, value: Any): IR.Result =
@@ -1056,11 +1064,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           override def contextPrelude = super.contextPrelude + "/* The repl internal portion of the stack trace is elided. */\n"
         }
 
-      quietBind("lastException", classOf[Exceptional], ex)
+      quietBind("lastException", ex)
       ex.contextHead + "\n(access lastException for the full trace)"
     }
     private def bindUnexceptionally(t: Throwable) = {
-      quietBind("lastException", classOf[Throwable], t)
+      quietBind("lastException", t)
       stackTraceString(t)
     }
 
@@ -1096,64 +1104,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
   }
-
-  /** A container class for methods to be injected into the repl
-   *  in power mode.
-   */
-  object power {
-    lazy val compiler: repl.compiler.type = repl.compiler
-    import compiler.{ phaseNames, atPhase, currentRun }
-
-    def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
-    def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
-    def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
-    def mkUnit(code: String) = new CompilationUnit(mkSourceFile(code))
-
-    def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
-    def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
-    def mkTypedTrees(code: String*): List[compiler.Tree] = {
-      class TyperRun extends compiler.Run {
-        override def stopPhase(name: String) = name == "superaccessors"
-      }
-
-      reporter.reset
-      val run = new TyperRun
-      run compileSources (code.toList.zipWithIndex map {
-        case (s, i) => new BatchSourceFile("<console %d>".format(i), s)
-      })
-      run.units.toList map (_.body)
-    }
-    def mkTypedTree(code: String) = mkTypedTrees(code).head
-    def mkType(id: String): compiler.Type = stringToCompilerType(id)
-
-    def dump(): String = (
-      ("Names used: " :: allreferencedNames) ++
-      ("\nIdentifiers: " :: unqualifiedIds)
-    ) mkString " "
-
-    lazy val allPhases: List[Phase] = phaseNames map (currentRun phaseNamed _)
-    def atAllPhases[T](op: => T): List[(String, T)] = allPhases map (ph => (ph.name, atPhase(ph)(op)))
-    def showAtAllPhases(op: => Any): Unit =
-      atAllPhases(op.toString) foreach { case (ph, op) => Console.println("%15s -> %s".format(ph, op take 240)) }
-  }
-
-  def unleash(): Unit = beQuietDuring {
-    interpret("import scala.tools.nsc._")
-    repl.bind("repl", "scala.tools.nsc.Interpreter", this)
-    interpret("val global: repl.compiler.type = repl.compiler")
-    interpret("val power: repl.power.type = repl.power")
-    // interpret("val replVars = repl.replVars")
-  }
-
-  /** Artificial object demonstrating completion */
-  // lazy val replVars = CompletionAware(
-  //   Map[String, CompletionAware](
-  //     "ids" -> CompletionAware(() => unqualifiedIds, completionAware _),
-  //     "synthVars" -> CompletionAware(() => allBoundNames filter isSynthVarName map (_.toString)),
-  //     "types" -> CompletionAware(() => allSeenTypes map (_.toString)),
-  //     "implicits" -> CompletionAware(() => allImplicits map (_.toString))
-  //   )
-  // )
 
   /** Returns the name of the most recent interpreter result.
    *  Mostly this exists so you can conveniently invoke methods on

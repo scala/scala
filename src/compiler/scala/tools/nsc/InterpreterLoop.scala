@@ -26,9 +26,6 @@ import io.File
 trait InterpreterControl {
   self: InterpreterLoop =>
 
-  // the default result means "keep running, and don't record that line"
-  val defaultResult = Result(true, None)
-
   private def isQuoted(s: String) =
     (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
 
@@ -49,12 +46,12 @@ trait InterpreterControl {
   }
 
   case class LineArg(name: String, help: String, f: (String) => Result) extends Command {
-    def usage(): String = ":" + name + " <line>"
+    def usage(): String = ":" + name + " "
     def apply(args: List[String]) = f(args mkString " ")
   }
 
   case class OneArg(name: String, help: String, f: (String) => Result) extends Command {
-    def usage(): String = ":" + name + " <arg>"
+    def usage(): String = ":" + name + " "
     def apply(args: List[String]) =
       if (args.size == 1) f(args.head)
       else commandError("requires exactly one argument")
@@ -66,16 +63,26 @@ trait InterpreterControl {
   }
 
   // the result of a single command
-  case class Result(keepRunning: Boolean, lineToRecord: Option[String])
+  case class Result(val keepRunning: Boolean, val lineToRecord: Option[String])
+  object Result {
+    // the default result means "keep running, and don't record that line"
+    val default = Result(true, None)
+
+    // most commands do not want to micromanage the Result, but they might want
+    // to print something to the console, so we accomodate Unit and String returns.
+    implicit def resultFromUnit(x: Unit): Result = default
+    implicit def resultFromString(msg: String): Result = {
+      out println msg
+      default
+    }
+  }
 }
 
-/** The
- *  <a href="http://scala-lang.org/" target="_top">Scala</a>
- *  interactive shell.  It provides a read-eval-print loop around
- *  the Interpreter class.
- *  After instantiation, clients should call the <code>main()</code> method.
+/** The Scala interactive shell.  It provides a read-eval-print loop
+ *  around the Interpreter class.
+ *  After instantiation, clients should call the main() method.
  *
- *  <p>If no in0 is specified, then input will come from the console, and
+ *  If no in0 is specified, then input will come from the console, and
  *  the class will attempt to provide input editing feature such as
  *  input history.
  *
@@ -95,6 +102,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
 
   var settings: Settings = _          // set by main()
   var interpreter: Interpreter = _    // set by createInterpreter()
+  var replPower: Power = _
 
   // classpath entries added via :cp
   var addedClasspath: String = ""
@@ -141,6 +149,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     if (interpreter ne null) {
       interpreter.close
       interpreter = null
+      replPower = null
       Thread.currentThread.setContextClassLoader(originalClassLoader)
     }
   }
@@ -224,26 +233,15 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   /** Prompt to print when awaiting input */
   val prompt = Properties.shellPromptString
 
-  // most commands do not want to micromanage the Result, but they might want
-  // to print something to the console, so we accomodate Unit and String returns.
-  object CommandImplicits {
-    implicit def u2ir(x: Unit): Result = defaultResult
-    implicit def s2ir(s: String): Result = {
-      out println s
-      defaultResult
-    }
-  }
-
   /** Standard commands **/
   val standardCommands: List[Command] = {
-    import CommandImplicits._
     List(
        LineArg("cp", "add an entry (jar or directory) to the classpath", addClasspath),
        NoArgs("help", "print this help message", printHelp),
        VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
        LineArg("h?", "search the history", searchHistory),
        OneArg("load", "load and interpret a Scala file", load),
-       NoArgs("power", "enable power user mode", power),
+       NoArgs("power", "enable power user mode", powerCmd),
        NoArgs("quit", "exit the interpreter", () => Result(false, None)),
        NoArgs("replay", "reset execution and replay all previous commands", replay),
        LineArg("sh", "fork a shell and run a command", runShellCmd),
@@ -252,26 +250,52 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   }
 
   /** Power user commands */
-  var powerUserOn = false
   val powerCommands: List[Command] = {
-    import CommandImplicits._
     List(
-      OneArg("completions", "generate list of completions for a given String", completions),
-      NoArgs("dump", "displays a view of the interpreter's internal state", () => interpreter.power.dump())
-
-      // VarArgs("tree", "displays ASTs for specified identifiers",
-      //   (xs: List[String]) => interpreter dumpTrees xs)
-      // LineArg("meta", "given code which produces scala code, executes the results",
-      //   (xs: List[String]) => )
+      NoArgs("dump", "displays a view of the interpreter's internal state", replPower.toString _),
+      LineArg("phase", "set the implicit phase for power commands", phaseCommand),
+      LineArg("symfilter", "change the filter for symbol printing", symfilterCmd)
     )
+  }
+  private def symfilterCmd(line: String): Result = {
+    if (line == "") {
+      replPower.vars.symfilter set "_ => true"
+      "Remove symbol filter."
+    }
+    else {
+      replPower.vars.symfilter set line
+      "Set symbol filter to '" + line + "'."
+    }
+  }
+  private def phaseCommand(_name: String): Result = {
+    val name = _name.toLowerCase
+    // This line crashes us in TreeGen:
+    //
+    //   if (interpreter.power.phased set name) "..."
+    //
+    // Exception in thread "main" java.lang.AssertionError: assertion failed: ._7.type
+    //  at scala.Predef$.assert(Predef.scala:99)
+    //  at scala.tools.nsc.ast.TreeGen.mkAttributedQualifier(TreeGen.scala:69)
+    //  at scala.tools.nsc.ast.TreeGen.mkAttributedQualifier(TreeGen.scala:44)
+    //  at scala.tools.nsc.ast.TreeGen.mkAttributedRef(TreeGen.scala:101)
+    //  at scala.tools.nsc.ast.TreeGen.mkAttributedStableRef(TreeGen.scala:143)
+    //
+    // But it works like so, type annotated.
+    val x: Phased = replPower.phased
+    if (name == "") "Active phase is '" + x.get + "'"
+    else if (x set name) "Active phase is now '" + name + "'"
+    else "'" + name + "' does not appear to be a valid phase."
   }
 
   /** Available commands */
-  def commands: List[Command] = standardCommands ::: (if (powerUserOn) powerCommands else Nil)
+  def commands: List[Command] = standardCommands ++ (
+    if (replPower == null) Nil
+    else powerCommands
+  )
 
   /** The main read-eval-print loop for the interpreter.  It calls
-   *  <code>command()</code> for each line of input, and stops when
-   *  <code>command()</code> returns <code>false</code>.
+   *  command() for each line of input, and stops when
+   *  command() returns false.
    */
   def repl() {
     def readOneLine() = {
@@ -286,6 +310,11 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
         case Result(_, Some(finalLine)) => addReplay(finalLine) ; true
         case _                          => true
       }
+
+    if (sys.props contains PowerProperty) {
+      plushln("Starting in power mode, one moment...\n")
+      powerCmd()
+    }
 
     while (processLine(readOneLine)) { }
   }
@@ -359,19 +388,16 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     injectAndName(xs)
   }
 
-  def power() {
-    val powerUserBanner =
-      """** Power User mode enabled - BEEP BOOP      **
-        |** scala.tools.nsc._ has been imported      **
-        |** New vals! Try repl, global, power        **
-        |** New cmds! :help to discover them         **
-        |** New defs! Type power.<tab> to reveal     **""".stripMargin
+  def powerCmd(): Result = {
+    if (replPower != null)
+      return "Already in power mode."
 
-    powerUserOn = true
-    interpreter.unleash()
+    replPower = new Power(interpreter) { }
+    replPower.unleash()
     injectOne("history", in.historyList)
     in.completion foreach (x => injectOne("completion", x))
-    out println powerUserBanner
+
+    replPower.banner
   }
 
   def verbosity() = {
@@ -553,7 +579,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     }
   }
 
-  // runs :load <file> on any files passed via -i
+  // runs :load `file` on any files passed via -i
   def loadFiles(settings: Settings) = settings match {
     case settings: GenericRunnerSettings =>
       for (filename <- settings.loadfiles.value) {
@@ -600,20 +626,31 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   private def objClass(x: Any) = x.asInstanceOf[AnyRef].getClass
   private def objName(x: Any) = {
     val clazz = objClass(x)
-    val typeParams = clazz.getTypeParameters
-    val basename = clazz.getName
-    val tpString = if (typeParams.isEmpty) "" else "[%s]".format(typeParams map (_ => "_") mkString ", ")
+    clazz.getName + tpString(clazz)
+  }
 
-    basename + tpString
+  def tpString[T: ClassManifest] : String =
+    tpString(classManifest[T].erasure)
+
+  def tpString(clazz: Class[_]): String = {
+    clazz.getTypeParameters.size match {
+      case 0    => ""
+      case x    => List.fill(x)("_").mkString("[", ", ", "]")
+    }
+  }
+
+  def inject[T: ClassManifest](name: String, value: T): (String, String) = {
+    interpreter.bind[T](name, value)
+    (name, objName(value))
   }
 
   // injects one value into the repl; returns pair of name and class
-  def injectOne(name: String, obj: Any): Tuple2[String, String] = {
+  def injectOne(name: String, obj: Any): (String, String) = {
     val className = objName(obj)
     interpreter.quietBind(name, className, obj)
     (name, className)
   }
-  def injectAndName(obj: Any): Tuple2[String, String] = {
+  def injectAndName(obj: Any): (String, String) = {
     val name = interpreter.getVarName
     val className = objName(obj)
     interpreter.bind(name, className, obj)

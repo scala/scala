@@ -113,10 +113,6 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
 
     def methodSignatureString(sym: Symbol) = {
       def asString = new MethodSymbolOutput(sym).methodString()
-
-      if (isCompletionDebug)
-        repl.power.showAtAllPhases(asString)
-
       atPhase(currentRun.typerPhase)(asString)
     }
 

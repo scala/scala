@@ -92,6 +92,16 @@ trait CompletionAware {
 object CompletionAware {
   val Empty = new CompletionAware { def completions(verbosity: Int) = Nil }
 
+  /** Artificial object demonstrating completion */
+  // lazy val replVars = CompletionAware(
+  //   Map[String, CompletionAware](
+  //     "ids" -> CompletionAware(() => unqualifiedIds, completionAware _),
+  //     "synthVars" -> CompletionAware(() => allBoundNames filter isSynthVarName map (_.toString)),
+  //     "types" -> CompletionAware(() => allSeenTypes map (_.toString)),
+  //     "implicits" -> CompletionAware(() => allImplicits map (_.toString))
+  //   )
+  // )
+
   // class Forwarder(underlying: CompletionAware) extends CompletionAware {
   //   override def completions() = underlying.completions()
   //   override def filterNotFunction(s: String) = underlying.filterNotFunction(s)
