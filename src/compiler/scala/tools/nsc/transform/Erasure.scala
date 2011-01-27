@@ -15,11 +15,9 @@ abstract class Erasure extends AddInterfaces
                           with typechecker.Analyzer
                           with ast.TreeDSL
 {
-  import global._                  // the global environment
-  import definitions._             // standard classes and methods
+  import global._
+  import definitions._
   import CODE._
-
-  def typedPos(pos: Position)(tree: Tree) = this.typer.typedPos(pos)(tree)
 
   val phaseName: String = "erasure"
 
@@ -868,7 +866,7 @@ abstract class Erasure extends AddInterfaces
           val level = unboundedGenericArrayLevel(arg.tpe)
           def isArrayTest(arg: Tree) =
             gen.mkRuntimeCall("isArray", List(arg, Literal(Constant(level))))
-          typedPos(tree.pos) {
+          global.typer.typedPos(tree.pos) {
             if (level == 1) isArrayTest(qual)
             else
               gen.evalOnce(qual, currentOwner, unit) { qual1 =>
@@ -888,7 +886,7 @@ abstract class Erasure extends AddInterfaces
           if (unboundedGenericArrayLevel(qual.tpe.widen) == 1)
             // convert calls to apply/update/length on generic arrays to
             // calls of ScalaRunTime.array_xxx method calls
-            typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
+            global.typer.typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
           else
             // store exact array erasure in map to be retrieved later when we might
             // need to do the cast in adaptMember

@@ -299,7 +299,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           MethodType(List(protAcc.newSyntheticValueParam(objType)),
                      memberType.cloneInfo(protAcc).asSeenFrom(qual.tpe, sym.owner))
       }
-      if (settings.debug.value) log("accType: " + accType)
 
       var protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s))
       if (protAcc == NoSymbol) {

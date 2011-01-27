@@ -11,33 +11,29 @@ import symtab.Flags._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-/** <ul>
- *    <li>
- *      <code>productArity</code>, <code>element</code> implementations added
- *      to case classes
- *    </li>
- *    <li>
- *      <code>equals</code>, <code>hashCode</code> and </code>toString</code>
- *      methods are added to case classes, unless they are defined in the
- *      class or a baseclass different from <code>java.lang.Object</code>
- *    </li>
- *    <li>
- *      <code>toString</code> method is added to case objects, unless they
- *      are defined in the class or a baseclass different from
- *      <code>java.lang.Object</code>
- *    </li>
- *  </ul>
+/** Synthetic method implementations for case classes and case objects.
+ *
+ *  Added to all case classes/objects:
+ *    def productArity: Int
+ *    def productElement(n: Int): Any
+ *    def productPrefix: String
+ *    def productIterator: Iterator[Any]
+ *
+ *  Selectively added to case classes/objects, unless a non-default
+ *  implementation already exists:
+ *    def equals(other: Any): Boolean
+ *    def hashCode(): Int
+ *    def canEqual(other: Any): Boolean
+ *    def toString(): String
+ *
+ *  Special handling:
+ *    protected def readResolve(): AnyRef
  */
 trait SyntheticMethods extends ast.TreeDSL {
   self: Analyzer =>
 
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-
-  // @S: type hack: by default, we are used from global.analyzer context
-  // so this cast won't fail. If we aren't in global.analyzer, we have
-  // to override this method anyways.
-  protected def typer : Typer = global.typer.asInstanceOf[Typer]
 
   /** In general case classes/objects are not given synthetic equals methods if some
    *  non-AnyRef implementation is inherited.  However if you let a case object inherit
@@ -54,8 +50,9 @@ trait SyntheticMethods extends ast.TreeDSL {
    *  the opportunity for removal arises, this can be simplified.
    */
   def addSyntheticMethods(templ: Template, clazz: Symbol, context: Context): Template = {
-    val localContext         = if (reporter.hasErrors) context makeSilent false else context
-    val localTyper           = newTyper(localContext)
+    val localTyper = newTyper(
+      if (reporter.hasErrors) context makeSilent false else context
+    )
 
     def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info nonPrivateMember meth.name
