@@ -16,8 +16,6 @@ abstract class ScalaBuildProject extends Project {
   lazy val fjbgJar = lib / fjbgJarName
   lazy val msilJar = lib /  msilJarName
 
-
-
 }
 
 object ScalaBuildProject {

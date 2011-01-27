@@ -34,18 +34,18 @@ object AdditionalResources {
 
 trait ResourcesToCopy {
   self : CompilationStep =>
+
   def getResources(from: Path, filter: FileFilter): PathFinder = (from ##)** filter
   def getResources(from: Path): PathFinder = getResources(from, AdditionalResources.basicFilter)
 
   def copyDestination: Path
   def filesToCopy: PathFinder
+
   def copy = {
     log.info("Copying files for "+name)
-    try {
-      FileUtilities.copy(filesToCopy.get, copyDestination, log)
-    } catch {
-      case e => Some(e.toString)
-    }
+    try   { FileUtilities.copy(filesToCopy.get, copyDestination, log) }
+    catch { case e => Some(e.toString) }
+
     None
   }
 }
@@ -62,21 +62,17 @@ trait PropertiesToWrite {
 
     val properties = new Properties
 
-    def insert(list: List[(String, String)]): Unit = list match {
-      case Nil =>
-      case x :: xs => {
-        properties setProperty(x._1, x._2)
-        insert(xs)
-      }
-    }
+    def insert(list: List[(String, String)]): Unit =
+     list foreach { case (k, v) => properties.setProperty(k, v) }
 
     try {
       insert(propertyList)
       val destFile = propertyDestination.asFile
       val stream = new FileOutputStream(destFile)
       properties.store(stream, null)
-    } catch {
-      case e => Some(e.toString)
+    }
+    catch {
+      case e: Exception => Some(e.toString)
     }
     None
   }

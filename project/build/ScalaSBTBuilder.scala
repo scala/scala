@@ -6,7 +6,12 @@ import ScalaSBTBuilder._
  * This class is the entry point for building scala with SBT.
  * @author Grégory Moix
  */
-class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProject {
+class ScalaSBTBuilder(val info: ProjectInfo)
+            extends Project
+               with ReflectiveProject
+               with BasicDependencyProject
+               // with IdeaProject
+               with MavenStyleScalaPaths {
   /** This secret system property turns off transitive dependencies during change
    *  detection.  It's a short term measure.  BE AWARE! That means you can no longer
    *  trust sbt to recompile everything: it's only recompiling changed files.
@@ -15,17 +20,28 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
    */
   System.setProperty("sbt.intransitive", "true")
 
-  override def dependencies: Iterable[Project] = info.dependencies  ++ locker.dependencies ++ quick.dependencies ++ strap.dependencies ++ libs.dependencies
+  // Required by BasicDependencyProject
+  def fullUnmanagedClasspath(config: Configuration) = unmanagedClasspath
+
+  override def dependencies: Iterable[Project] = (
+    info.dependencies ++
+    locker.dependencies ++
+    quick.dependencies ++
+    strap.dependencies ++
+    libs.dependencies
+  )
   override def shouldCheckOutputDirectories = false
 
-  override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"||AdditionalResources.basicFilter) // Support of triggered execution at top level
+  // Support of triggered execution at top level
+  override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java" || AdditionalResources.basicFilter)
+
   // Top Level Tasks
-  lazy val build         = task {None}.dependsOn(quick.binPack, quick.binQuick).describedAs(buildTaskDescription)
   lazy val buildFjbg     = libs.buildFjbg.describedAs(buildFjbgTaskDescription)
   lazy val buildForkjoin = libs.buildForkjoin.describedAs(buildForkjoinTaskDescription)
   lazy val buildMsil     = libs.buildMsil.describedAs(buildMislTaskDescription)
   lazy val clean         = quick.clean.dependsOn(libs.clean).describedAs(cleanTaskDescription)
   lazy val cleanAll      = locker.clean.dependsOn(libs.clean).describedAs(cleanAllTaskDescription)
+  lazy val compile       = task {None}.dependsOn(quick.binPack, quick.binQuick).describedAs(buildTaskDescription)
   lazy val docs          = quick.scaladoc.describedAs(docsTaskDescription)
   lazy val newFjbg       = libs.newFjbg.describedAs(newFjbgTaskDescription)
   lazy val newForkjoin   = libs.newForkjoin.describedAs(newForkjoinTaskDescription)
@@ -33,9 +49,13 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
   lazy val newMsil       = libs.newMsil.describedAs(newMsilTaskDescription)
   lazy val newStarr      = quick.newStarr.describedAs(newStarrTaskDescription)
   lazy val palo          = locker.pack.describedAs(paloTaskDescription)
-  lazy val partest       = quick.externalPartest.describedAs(partestTaskDescription)
   lazy val pasta         = quick.pasta.describedAs(pastaTaskDescription)
   lazy val stabilityTest = strap.stabilityTest.describedAs(stabilityTestTaskDescription)
+  lazy val test          = quick.externalPartest.describedAs(partestTaskDescription)
+
+  // Non-standard names for tasks chosen earlier which I point at the standard ones.
+  lazy val build = compile
+  lazy val partest = test
 
   // Top level variables
 
@@ -56,8 +76,6 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
 
     getVersion+".r"+getRevision+"-b"+getTimeString
   }
-
-
 
   /* LAYER DEFINITIONS
    * We define here what's specific to each layer are they differ.
@@ -187,12 +205,9 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
     lazy val compileLibraryOnly = task {
       compile(libraryConfig, cleanCompilation _)
     }
-    lazy val externalCompileLibraryOnly = task {
-      val runner = new ExternalTaskRunner(projectRoot, this.name, compileLibraryOnly.name, "Error during external compilation", log)
-      runner.runTask
-    }.dependsOn(startLayer)
+    lazy val externalCompileLibraryOnly = task(maybeFork(compileLibraryOnly)) dependsOn startLayer
 
-    def createNewStarrJar: Option[String] = {
+    def createNewStarrJar: Option[String] ={
       import Packer._
       createJar(libraryWS.starrPackagingConfig, log) orElse
       createJar(compilerConfig.starrPackagingConfig, log)
@@ -247,10 +262,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
       log.warn("Stability test must be run on a clean build in order to yield correct results.")
       compare
     }.dependsOn(finishLayer)
-
   }
-
-
 
   /**
    * An additional subproject used to build new version of forkjoin, fjbg and msil
@@ -313,7 +325,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
 
     lazy val msilConfig =  new CompilationStep("msil", pathLayout, log) with Packaging {
       def label = "new msil library"
-      override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java"|"*.scala", ".svn"|"tests")
+      override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java" |"*.scala", ".svn" |"tests")
       def dependencies = Seq()
       override def classpath = super.classpath +++ quick.libraryOutput
       def options = Seq()

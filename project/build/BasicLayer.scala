@@ -13,12 +13,16 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
            with AdditionalResources
            with LayerCompilation
            with BuildInfoEnvironment
-{
+           with ForkSBT {
   layer =>
 
   // All path values must be lazy in order to avoid initialization issues (sbt way of doing things)
 
   def buildInfoEnvironmentLocation: Path = outputRootPath / ("build-"+name+".properties")
+
+  val forkProperty = "scala.sbt.forked"
+  def isDebug  = info.logger atLevel Level.Debug
+  def isForked = System.getProperty(forkProperty) != null
 
   // Support of triggered execution at project level
   override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java" || AdditionalResources.basicFilter)
@@ -43,20 +47,15 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
    * was created correctly and compile it if necessary
    */
   lazy val startLayer = previousLayer match {
-    case Some(previous) => task {
-      None
-    }.dependsOn(previous.finishLayer)
-    case None => task {None}
+    case Some(previous) => task(None) dependsOn previous.finishLayer
+    case _              => task(None)
   }
 
-  def buildLayer: Option[String] = {
-    externalCompilation orElse
-    writeProperties
-  }
+  def buildLayer = externalCompilation orElse writeProperties
 
-  lazy val build = task {
-    buildLayer
-  }.dependsOn(startLayer)
+  lazy val build = compile
+
+  lazy val compile = task(buildLayer) dependsOn startLayer
 
   /**
    * Finish the compilation and ressources copy and generation
@@ -64,39 +63,40 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
    * it permit locker to override it in order to lock the layer when the compilation
    * is finished.
    */
-  lazy val finishLayer: ManagedTask = task {None}.dependsOn(build)
+  lazy val finishLayer: ManagedTask = task(None) dependsOn compile
 
-  def cleaningList = layerOutput :: layerEnvironment.envBackingPath :: packingDestination :: Nil
+  def cleaningList = List(
+    layerOutput,
+    layerEnvironment.envBackingPath,
+    packingDestination
+  )
 
   def  cleanFiles = FileUtilities.clean(cleaningList, true, log)
 
+  // We use super.task, so cleaning is done in every case, even when locked
   lazy val clean: Task = nextLayer match {
-    case None => super.task { cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
-    case Some(next) => super.task {cleanFiles}.dependsOn {next.clean}
-
+    case Some(next)   => super.task(cleanFiles) dependsOn next.clean
+    case _            => super.task(cleanFiles)
   }
-
-  lazy val cleanBuild = task {
-      cleanFiles orElse buildLayer
-    }.dependsOn(startLayer)
+  lazy val cleanBuild = task(cleanFiles orElse buildLayer) dependsOn startLayer
 
   // Utility methods (for quick access)
-  def libraryOutput = libraryConfig.outputDirectory
-  def actorsOutput = actorsConfig.outputDirectory
-  def dbcOutput = dbcConfig.outputDirectory
-  def swingOutput = swingConfig.outputDirectory
-  def scalapOutput = scalapConfig.outputDirectory
-  def librarySrcDir = libraryConfig.srcDir
-  def compilerOutput = compilerConfig.outputDirectory
-  def compilerSrcDir = compilerConfig.srcDir
-  def actorsSrcDir = actorsConfig.srcDir
-  def swingSrcDir = swingConfig.srcDir
-  def outputLibraryJar = libraryWS.packagingConfig.jarDestination
+  def actorsOutput      = actorsConfig.outputDirectory
+  def actorsSrcDir      = actorsConfig.srcDir
+  def compilerOutput    = compilerConfig.outputDirectory
+  def compilerSrcDir    = compilerConfig.srcDir
+  def dbcOutput         = dbcConfig.outputDirectory
+  def libraryOutput     = libraryConfig.outputDirectory
+  def librarySrcDir     = libraryConfig.srcDir
   def outputCompilerJar = compilerConfig.packagingConfig.jarDestination
-  def outputPartestJar = partestConfig.packagingConfig.jarDestination
-  def outputScalapJar = scalapConfig.packagingConfig.jarDestination
+  def outputLibraryJar  = libraryWS.packagingConfig.jarDestination
+  def outputPartestJar  = partestConfig.packagingConfig.jarDestination
+  def outputScalapJar   = scalapConfig.packagingConfig.jarDestination
+  def scalapOutput      = scalapConfig.outputDirectory
+  def swingOutput       = swingConfig.outputDirectory
+  def swingSrcDir       = swingConfig.srcDir
 
-  // CONFIGURATION OF THE COMPILTATION STEPS
+  // CONFIGURATION OF THE COMPILATION STEPS
 
  /**
    *  Configuration of the core library compilation
@@ -210,7 +210,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
 
     lazy val packagingConfig = new PackagingConfiguration(
       libsDestination / scalapJarName,
-      List(outputDirectory ##,decoderProperties)
+      List(outputDirectory ##, decoderProperties)
     )
   }
 
@@ -227,7 +227,10 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
     def filesToCopy = getResources(srcDir)
 
     def propertyDestination = outputDirectory / "partest.properties"
-    def propertyList = ("version.number",partestVersionNumber.value.toString)::("copyright.string",copyright.value)::Nil
+    def propertyList = List(
+      ("version.number", partestVersionNumber.value.toString),
+      ("copyright.string", copyright.value)
+    )
 
     lazy val packagingConfig = new PackagingConfiguration(libsDestination / partestJarName, List(outputDirectory ##))
 

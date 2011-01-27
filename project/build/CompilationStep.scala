@@ -1,7 +1,7 @@
 import sbt._
 import AdditionalResources._
 
-trait  Step extends Dag[Step] {
+trait Step extends Dag[Step] {
   def dependencies: Iterable[Step]
 }
 

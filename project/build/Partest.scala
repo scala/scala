@@ -91,7 +91,6 @@ trait PartestRunner {
     val javac    = Some(javaHome / "bin" / "javac" asFile)
     val timeout  = Some("2400000")
     val loader   = info.launcher.topLoader
-    val isDebug  = info.logger atLevel Level.Debug
 
     log.debug("Ready to run tests")
 
@@ -106,15 +105,21 @@ trait PartestRunner {
     )
   }
 
-  lazy val externalPartest = task {args => task {
-       val runner = new ExternalTaskRunner(projectRoot,this.name, "partest " + args.mkString(" "),"Some tests have failed", log)
-       runner.runTask
-    }.dependsOn(pack)
+  def partestDebugProp =
+    if (isDebug) List("-Dpartest.debug=true")
+    else Nil
 
-  }.completeWith(partestCompletionList)
+  lazy val externalPartest = task { args =>
+    task {
+      if (isForked) partest(args).run
+      else withJVMArgs(partestDebugProp ++ args: _*) {
+        if (forkTasks("partest")) None
+        else Some("Some tests failed.")
+      }
+    } dependsOn pack
+  } completeWith partestCompletionList
 
-  lazy val partest = task{
-    args =>
+  lazy val partest = task { args =>
     var failedOnly = false
 
     def setOptions(options: List[String], acc: List[String]): List[String] = options match {
@@ -128,9 +133,8 @@ trait PartestRunner {
     }
 
     def resolveSets(l: List[String], rem: List[String], acc: List[TestSet]): (List[String], List[TestSet]) = {
-      def searchSet(arg: String): Option[TestSet] = {
-        filesTestMap.get(arg)
-      }
+      def searchSet(arg: String): Option[TestSet] = filesTestMap get arg
+
       l match {
         case x :: xs => searchSet(x) match {
           case Some(s) => resolveSets(xs, rem, s :: acc)
@@ -167,33 +171,56 @@ trait PartestRunner {
 
     val keys = setOptions(args.toList, Nil)
 
-    if (keys.length == 0) task {runPartest(testSuiteFiles, None, failedOnly) orElse runPartest(testSuiteContinuation, None, failedOnly)} // this is the case where there were only config options, we will run the standard test suite
+    if (keys.length == 0) task {
+      runPartest(testSuiteFiles, None, failedOnly) orElse {
+        runPartest(testSuiteContinuation, None, failedOnly)
+      } // this is the case where there were only config options, we will run the standard test suite
+    }
     else {
-      val (fileNames, sets) = resolveSets(keys, Nil, Nil)
-      val (notFound, allSets)= resolveFiles(fileNames, sets)
-      if (!notFound.isEmpty) log.info("Don't know what to do with : \n"+notFound.mkString("\n"))
+      val (fileNames, sets)   = resolveSets(keys, Nil, Nil)
+      val (notFound, allSets) = resolveFiles(fileNames, sets)
+      if (!notFound.isEmpty)
+        log.info("Don't know what to do with : \n"+notFound.mkString("\n"))
 
-      val (std, continuations) = allSets.partition(_.SType == TestSetType.Std)
-      task {runPartest(std, None, failedOnly) orElse runPartest(continuations, Some(continuationScalaOpts), failedOnly)}
-   }
-
+      val (std, continuations) = allSets partition (_.SType == TestSetType.Std)
+      task {
+        runPartest(std, None, failedOnly) orElse {
+          runPartest(continuations, Some(continuationScalaOpts), failedOnly)
+        }
+      }
+    }
   }.completeWith(partestCompletionList)
 
 }
 
 object Partest {
-  def runTest(parentLoader:ClassLoader, config:TestConfiguration,javacmd:Option[File],javaccmd:Option[File],scalacOpts:Option[String],timeout:Option[String],
-              showDiff:Boolean,showLog:Boolean,runFailed:Boolean,errorOnFailed:Boolean,debug:Boolean,log:Logger):Option[String] = {
+  def runTest(
+    parentLoader: ClassLoader,
+    config: TestConfiguration,
+    javacmd: Option[File],
+    javaccmd: Option[File],
+    scalacOpts: Option[String],
+    timeout: Option[String],
+    showDiff: Boolean,
+    showLog: Boolean,
+    runFailed: Boolean,
+    errorOnFailed: Boolean,
+    debug: Boolean,
+    log: Logger
+  ): Option[String] = {
 
     if (debug)
-      System.setProperty("partest.debug", "true")
+      log.setLevel(Level.Debug)
 
     if (config.classpath.isEmpty)
       return Some("The classpath is empty")
 
     log.debug("Classpath is "+ config.classpath)
 
-    val classloader = new URLClassLoader(Array(config.classpath.toSeq.map(_.asURL):_*),ClassLoader.getSystemClassLoader.getParent)
+    val classloader = new URLClassLoader(
+      Array(config.classpath.toSeq.map(_.asURL):_*),
+      ClassLoader.getSystemClassLoader.getParent
+    )
     val runner: AnyRef =
       classloader.loadClass("scala.tools.partest.nest.SBTRunner").newInstance().asInstanceOf[AnyRef]
     val fileManager: AnyRef =

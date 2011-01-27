@@ -9,7 +9,6 @@ import FileUtilities._
 trait Compilation {
   self : ScalaBuildProject with BuildInfoEnvironment =>
 
-
   def lastUsedCompilerVersion = layerEnvironment.lastCompilerVersion
 
   def instantiationCompilerJar: Path
@@ -31,14 +30,10 @@ trait Compilation {
     instanceScope[Option[String]]{  scala =>
       lazy val analyzing = new AnalyzingCompiler(scala, componentManager, xsbt.ClasspathOptions.manual, log)
 
-      def compilerVersionHasChanged: Boolean ={
-        val lastVersion = lastUsedCompilerVersion.value
-        !(lastVersion.compareTo(scala.actualVersion) == 0)
-
-      }
+      def compilerVersionHasChanged = lastUsedCompilerVersion.value != scala.actualVersion
 
       def checkAndClean(cleanFunction:() => Option[String]): Option[String] ={
-        if (compilerVersionHasChanged){
+        if (compilerVersionHasChanged) {
           log.info("The compiler version used to build this layer has changed since last time or this is a clean build.")
           lastUsedCompilerVersion.update(scala.actualVersion)
           layerEnvironment.saveEnvironment
@@ -49,16 +44,17 @@ trait Compilation {
         }
       }
 
-      def compile0(steps: List[Step]): Option[String] = steps match {
-        case x :: xs => x match {
-          case c: CompilationStep => {
+      def compile0(steps: List[Step]): Option[String] = {
+        steps foreach {
+          case c: CompilationStep =>
             val conditional = new CompileConditional(c, analyzing)
             log.info("")
-            conditional.run orElse copy(c) orElse earlyPackaging(c) orElse compile0(xs)
-          }
-          case _ => compile0(xs)
+            val res = conditional.run orElse copy(c) orElse earlyPackaging(c)
+            if (res.isDefined)
+              return res
+          case _ => ()
         }
-        case Nil => None
+        None
       }
 
       /**
@@ -104,8 +100,5 @@ trait LayerCompilation extends Compilation {
    */
   lazy val compilation = task {compile(allSteps, cleanCompilation _)}
 
-  def externalCompilation: Option[String] = {
-    val runner = new ExternalTaskRunner(projectRoot, this.name, compilation.name, "Error during external compilation", log)
-    runner.runTask
-  }
+  def externalCompilation: Option[String] = maybeFork(compilation)
 }

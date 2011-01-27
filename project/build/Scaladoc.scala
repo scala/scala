@@ -34,10 +34,7 @@ trait Scaladoc {
     (antJar +++ jlineJar +++ msilJar +++ fjbgJar +++ forkJoinJar +++ outputLibraryJar +++ outputCompilerJar  +++ outputPartestJar +++ outputScalapJar ).get
 
   }
-  lazy val scaladoc = task {
-    val externalSbt = new ExternalTaskRunner(projectRoot, this.name, generateScaladoc.name, "Error generating the scaladoc", log)
-    externalSbt.runTask
-  }.dependsOn(pack)
+  lazy val scaladoc = task(maybeFork(generateScaladoc, "Error generating scaladoc")) dependsOn pack
 
   lazy val generateScaladoc = task {
     instanceScope[Option[String]]{ scala =>
