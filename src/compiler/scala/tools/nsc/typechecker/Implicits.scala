@@ -73,14 +73,6 @@ trait Implicits {
   def resetImplicits() { implicitsCache.clear() }
   private val ManifestSymbols = Set(PartialManifestClass, FullManifestClass, OptManifestClass)
 
-  /** If type `pt` an instance of Manifest or OptManifest, or an abstract type lower-bounded
-   *  by such an instance?
-   */
-  def isManifest(pt: Type): Boolean = pt.dealias match {
-    case TypeRef(_, sym, _) => ManifestSymbols(sym) || sym.isAbstractType && isManifest(pt.bounds.lo)
-    case _                  => false
-  }
-
   /** The result of an implicit search
    *  @param  tree    The tree representing the implicit
    *  @param  subst   A substituter that represents the undetermined type parameters
