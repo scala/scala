@@ -56,29 +56,17 @@ abstract class TreeGen {
       if (clazz.isEffectiveRoot) EmptyTree
       else mkAttributedThis(clazz)
     case SingleType(pre, sym) =>
-      val qual = mkAttributedStableRef(pre, sym)
-      qual.tpe match {
-        case MethodType(List(), restpe) =>
-          Apply(qual, List()) setType restpe
-        case _ =>
-          qual
-      }
+      applyIfNoArgs(mkAttributedStableRef(pre, sym))
     case TypeRef(pre, sym, args) =>
       if (sym.isRoot) {
         mkAttributedThis(sym)
       } else if (sym.isModuleClass) {
-        val qual = mkAttributedRef(pre, sym.sourceModule)
-        qual.tpe match {
-          case MethodType(List(), restpe) =>
-            Apply(qual, List()) setType restpe
-          case _ =>
-            qual
-        }
+        applyIfNoArgs(mkAttributedRef(pre, sym.sourceModule))
       } else if (sym.isModule || sym.isClass) {
         assert(phase.erasedTypes, tpe)
         mkAttributedThis(sym)
       } else if (sym.isType) {
-        assert(termSym != NoSymbol)
+        assert(termSym != NoSymbol, tpe)
         mkAttributedIdent(termSym) setType tpe
       } else {
         mkAttributedRef(pre, sym)
@@ -94,11 +82,18 @@ abstract class TreeGen {
       // I am unclear whether this is reachable, but
       // the following implementation looks logical -Lex
       val firstStable = parents.find(_.isStable)
-      assert(!firstStable.isEmpty)
+      assert(!firstStable.isEmpty, tpe)
       mkAttributedQualifier(firstStable.get)
 
     case _ =>
       abort("bad qualifier: " + tpe)
+  }
+  /** If this is a reference to a method with an empty
+   *  parameter list, wrap it in an apply.
+   */
+  private def applyIfNoArgs(qual: Tree) = qual.tpe match {
+    case MethodType(Nil, restpe) => Apply(qual, Nil) setType restpe
+    case _                       => qual
   }
 
   /** Builds a reference to given symbol with given stable prefix. */
