@@ -77,170 +77,144 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
   object JavaScannerConfiguration {
 //  Keywords -----------------------------------------------------------------
-    /** Keyword array; maps from name indices to tokens */
-    private var key: Array[Byte] = _
-    private var maxKey = 0
-    private var tokenName = new Array[Name](128)
 
-    {
-      var tokenCount = 0
+    private val allKeywords = List[(Name, Int)](
+      javanme.ABSTRACTkw     -> ABSTRACT,
+      javanme.ASSERTkw       -> ASSERT,
+      javanme.BOOLEANkw      -> BOOLEAN,
+      javanme.BREAKkw        -> BREAK,
+      javanme.BYTEkw         -> BYTE,
+      javanme.CASEkw         -> CASE,
+      javanme.CATCHkw        -> CATCH,
+      javanme.CHARkw         -> CHAR,
+      javanme.CLASSkw        -> CLASS,
+      javanme.CONSTkw        -> CONST,
+      javanme.CONTINUEkw     -> CONTINUE,
+      javanme.DEFAULTkw      -> DEFAULT,
+      javanme.DOkw           -> DO,
+      javanme.DOUBLEkw       -> DOUBLE,
+      javanme.ELSEkw         -> ELSE,
+      javanme.ENUMkw         -> ENUM,
+      javanme.EXTENDSkw      -> EXTENDS,
+      javanme.FINALkw        -> FINAL,
+      javanme.FINALLYkw      -> FINALLY,
+      javanme.FLOATkw        -> FLOAT,
+      javanme.FORkw          -> FOR,
+      javanme.IFkw           -> IF,
+      javanme.GOTOkw         -> GOTO,
+      javanme.IMPLEMENTSkw   -> IMPLEMENTS,
+      javanme.IMPORTkw       -> IMPORT,
+      javanme.INSTANCEOFkw   -> INSTANCEOF,
+      javanme.INTkw          -> INT,
+      javanme.INTERFACEkw    -> INTERFACE,
+      javanme.LONGkw         -> LONG,
+      javanme.NATIVEkw       -> NATIVE,
+      javanme.NEWkw          -> NEW,
+      javanme.PACKAGEkw      -> PACKAGE,
+      javanme.PRIVATEkw      -> PRIVATE,
+      javanme.PROTECTEDkw    -> PROTECTED,
+      javanme.PUBLICkw       -> PUBLIC,
+      javanme.RETURNkw       -> RETURN,
+      javanme.SHORTkw        -> SHORT,
+      javanme.STATICkw       -> STATIC,
+      javanme.STRICTFPkw     -> STRICTFP,
+      javanme.SUPERkw        -> SUPER,
+      javanme.SWITCHkw       -> SWITCH,
+      javanme.SYNCHRONIZEDkw -> SYNCHRONIZED,
+      javanme.THISkw         -> THIS,
+      javanme.THROWkw        -> THROW,
+      javanme.THROWSkw       -> THROWS,
+      javanme.TRANSIENTkw    -> TRANSIENT,
+      javanme.TRYkw          -> TRY,
+      javanme.VOIDkw         -> VOID,
+      javanme.VOLATILEkw     -> VOLATILE,
+      javanme.WHILEkw        -> WHILE
+    )
 
-      // Enter keywords
-
-      def enterKeyword(s: String, tokenId: Int) {
-        val n = newTermName(s)
-        while (tokenId >= tokenName.length) {
-          val newTokName = new Array[Name](tokenName.length * 2)
-          Array.copy(tokenName, 0, newTokName, 0, newTokName.length)
-          tokenName = newTokName
-        }
-        tokenName(tokenId) = n
-        if (n.start > maxKey) maxKey = n.start
-        if (tokenId >= tokenCount) tokenCount = tokenId + 1
-      }
-
-      enterKeyword("abstract", ABSTRACT)
-      enterKeyword("assert", ASSERT)
-      enterKeyword("boolean", BOOLEAN)
-      enterKeyword("break", BREAK)
-      enterKeyword("byte", BYTE)
-      enterKeyword("case", CASE)
-      enterKeyword("catch", CATCH)
-      enterKeyword("char", CHAR)
-      enterKeyword("class", CLASS)
-      enterKeyword("const", CONST)
-      enterKeyword("continue", CONTINUE)
-      enterKeyword("default", DEFAULT)
-      enterKeyword("do", DO)
-      enterKeyword("double", DOUBLE)
-      enterKeyword("else", ELSE)
-      enterKeyword("enum", ENUM)
-      enterKeyword("extends", EXTENDS)
-      enterKeyword("final", FINAL)
-      enterKeyword("finally", FINALLY)
-      enterKeyword("float", FLOAT)
-      enterKeyword("for", FOR)
-      enterKeyword("if", IF)
-      enterKeyword("goto", GOTO)
-      enterKeyword("implements", IMPLEMENTS)
-      enterKeyword("import", IMPORT)
-      enterKeyword("instanceof", INSTANCEOF)
-      enterKeyword("int", INT)
-      enterKeyword("interface", INTERFACE)
-      enterKeyword("long", LONG)
-      enterKeyword("native", NATIVE)
-      enterKeyword("new", NEW)
-      enterKeyword("package", PACKAGE)
-      enterKeyword("private", PRIVATE)
-      enterKeyword("protected", PROTECTED)
-      enterKeyword("public", PUBLIC)
-      enterKeyword("return", RETURN)
-      enterKeyword("short", SHORT)
-      enterKeyword("static", STATIC)
-      enterKeyword("strictfp", STRICTFP)
-      enterKeyword("super", SUPER)
-      enterKeyword("switch", SWITCH)
-      enterKeyword("synchronized", SYNCHRONIZED)
-      enterKeyword("this", THIS)
-      enterKeyword("throw", THROW)
-      enterKeyword("throws", THROWS)
-      enterKeyword("transient", TRANSIENT)
-      enterKeyword("try", TRY)
-      enterKeyword("void", VOID)
-      enterKeyword("volatile", VOLATILE)
-      enterKeyword("while", WHILE)
-
-      // Build keyword array
-      key = new Array[Byte](maxKey + 1)
-      for (i <- 0 to maxKey)
-        key(i) = IDENTIFIER
-      for (j <- 0 until tokenCount)
-        if (tokenName(j) ne null)
-          key(tokenName(j).start) = j.toByte
-
+    private var kwOffset = -1
+    private val kwArray: Array[Int] = {
+      val (offset, arr) = createKeywordArray(allKeywords, IDENTIFIER)
+      kwOffset = offset
+      arr
     }
+    final val tokenName = allKeywords map (_.swap) toMap
 
 //Token representation -----------------------------------------------------
 
-  /** Convert name to token */
-  def name2token(name: TermName): Int =
-    if (name.start <= maxKey) key(name.start) else IDENTIFIER
+    /** Convert name to token */
+    def name2token(name: Name) = {
+      val idx = name.start - kwOffset
+      if (idx >= 0 && idx < kwArray.length) kwArray(idx)
+      else IDENTIFIER
+    }
 
-  /** Returns the string representation of given token. */
-  def token2string(token: Int): String = token match {
-    case IDENTIFIER =>
-      "identifier"/* + \""+name+"\""*/
-    case CHARLIT =>
-      "character literal"
-    case INTLIT =>
-      "integer literal"
-    case LONGLIT =>
-      "long literal"
-    case FLOATLIT =>
-      "float literal"
-    case DOUBLELIT =>
-      "double literal"
-    case STRINGLIT =>
-      "string literal"
-    case COMMA => "`,'"
-    case SEMI => "`;'"
-    case DOT => "`.'"
-    case AT => "`@'"
-    case COLON => "`:'"
-    case ASSIGN => "`='"
-    case EQEQ => "`=='"
-    case BANGEQ => "`!='"
-    case LT => "`<'"
-    case GT => "`>'"
-    case LTEQ => "`<='"
-    case GTEQ => "`>='"
-    case BANG => "`!'"
-    case QMARK => "`?'"
-    case AMP => "`&'"
-    case BAR => "`|'"
-    case PLUS => "`+'"
-    case MINUS => "`-'"
-    case ASTERISK => "`*'"
-    case SLASH => "`/'"
-    case PERCENT => "`%'"
-    case HAT => "`^'"
-    case LTLT => "`<<'"
-    case GTGT => "`>>'"
-    case GTGTGT => "`>>>'"
-    case AMPAMP => "`&&'"
-    case BARBAR => "`||'"
-    case PLUSPLUS => "`++'"
-    case MINUSMINUS => "`--'"
-    case TILDE => "`~'"
-    case DOTDOTDOT => "`...'"
-    case AMPEQ => "`&='"
-    case BAREQ => "`|='"
-    case PLUSEQ => "`+='"
-    case MINUSEQ => "`-='"
-    case ASTERISKEQ => "`*='"
-    case SLASHEQ => "`/='"
-    case PERCENTEQ => "`%='"
-    case HATEQ => "`^='"
-    case LTLTEQ => "`<<='"
-    case GTGTEQ => "`>>='"
-    case GTGTGTEQ => "`>>>='"
-    case LPAREN => "`('"
-    case RPAREN => "`)'"
-    case LBRACE => "`{'"
-    case RBRACE => "`}'"
-    case LBRACKET => "`['"
-    case RBRACKET => "`]'"
-    case EOF => "eof"
-    case ERROR => "something"
-    case _ =>
-      try {
-        "`" + tokenName(token) + "'"
-      } catch {
-        case _: ArrayIndexOutOfBoundsException =>
-          "`<" + token + ">'"
-        case _: NullPointerException =>
-          "`<(" + token + ")>'"
-      }
+    /** Returns the string representation of given token. */
+    def token2string(token: Int): String = token match {
+      case IDENTIFIER => "identifier"
+      case CHARLIT    => "character literal"
+      case DOUBLELIT  => "double literal"
+      case FLOATLIT   => "float literal"
+      case INTLIT     => "integer literal"
+      case LONGLIT    => "long literal"
+      case STRINGLIT  => "string literal"
+      case EOF        => "eof"
+      case ERROR      => "something"
+      case AMP        => "`&'"
+      case AMPAMP     => "`&&'"
+      case AMPEQ      => "`&='"
+      case ASSIGN     => "`='"
+      case ASTERISK   => "`*'"
+      case ASTERISKEQ => "`*='"
+      case AT         => "`@'"
+      case BANG       => "`!'"
+      case BANGEQ     => "`!='"
+      case BAR        => "`|'"
+      case BARBAR     => "`||'"
+      case BAREQ      => "`|='"
+      case COLON      => "`:'"
+      case COMMA      => "`,'"
+      case DOT        => "`.'"
+      case DOTDOTDOT  => "`...'"
+      case EQEQ       => "`=='"
+      case GT         => "`>'"
+      case GTEQ       => "`>='"
+      case GTGT       => "`>>'"
+      case GTGTEQ     => "`>>='"
+      case GTGTGT     => "`>>>'"
+      case GTGTGTEQ   => "`>>>='"
+      case HAT        => "`^'"
+      case HATEQ      => "`^='"
+      case LBRACE     => "`{'"
+      case LBRACKET   => "`['"
+      case LPAREN     => "`('"
+      case LT         => "`<'"
+      case LTEQ       => "`<='"
+      case LTLT       => "`<<'"
+      case LTLTEQ     => "`<<='"
+      case MINUS      => "`-'"
+      case MINUSEQ    => "`-='"
+      case MINUSMINUS => "`--'"
+      case PERCENT    => "`%'"
+      case PERCENTEQ  => "`%='"
+      case PLUS       => "`+'"
+      case PLUSEQ     => "`+='"
+      case PLUSPLUS   => "`++'"
+      case QMARK      => "`?'"
+      case RBRACE     => "`}'"
+      case RBRACKET   => "`]'"
+      case RPAREN     => "`)'"
+      case SEMI       => "`;'"
+      case SLASH      => "`/'"
+      case SLASHEQ    => "`/='"
+      case TILDE      => "`~'"
+      case _ =>
+        try ("`" + tokenName(token) + "'")
+        catch {
+          case _: ArrayIndexOutOfBoundsException =>
+            "`<" + token + ">'"
+          case _: NullPointerException =>
+            "`<(" + token + ")>'"
+        }
     }
   }
 

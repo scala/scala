@@ -9,6 +9,7 @@ package classfile
 
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
+import scala.io.Codec
 import reflect.generic.{ PickleBuffer, PickleFormat }
 import scala.collection.mutable.LinkedHashMap
 import PickleFormat._
@@ -498,7 +499,9 @@ abstract class Pickler extends SubComponent {
     /** Write a name in UTF8 format. */
     private def writeName(name: Name) {
       ensureCapacity(name.length * 3)
-      writeIndex = name.copyUTF8(bytes, writeIndex)
+      val utfBytes = Codec fromUTF8 name.toString
+      compat.Platform.arraycopy(utfBytes, 0, bytes, writeIndex, utfBytes.length)
+      writeIndex += utfBytes.length
     }
 
     /** Write an annotation */

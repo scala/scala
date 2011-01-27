@@ -1759,7 +1759,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (isFlatAdjusted) {
         if (flatname == null) {
           assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname, rawowner))
-          flatname = newTermName(compactify(rawowner.name + "$" + rawname))
+          flatname = nme.flattenedName(rawowner.name, rawname)
         }
         flatname
       } else rawname
@@ -1963,7 +1963,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (needsFlatClasses) {
         if (flatname == null) {
           assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname+idString, rawowner))
-          flatname = newTypeName(compactify(rawowner.name + "$" + rawname))
+          flatname = tpnme.flattenedName(rawowner.name, rawname)
         }
         flatname
       }

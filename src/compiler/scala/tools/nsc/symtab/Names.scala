@@ -361,6 +361,8 @@ trait Names extends reflect.generic.Names {
     final def stripEnd(suffix: Name): Name      = subName(0, len - suffix.length)
     final def stripEnd(suffix: String): Name    = subName(0, len - suffix.length)
 
+    def lastIndexOf(ch: Char) = toChars lastIndexOf ch
+
     /** Return the subname with characters from start to end-1.
      */
     def subName(from: Int, to: Int): Name

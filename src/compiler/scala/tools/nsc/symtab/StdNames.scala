@@ -11,6 +11,75 @@ import scala.collection.immutable
 trait StdNames extends reflect.generic.StdNames with NameManglers {
   self: SymbolTable =>
 
+  /** This should be the first trait in the linearization. */
+  trait CompilerKeywords {
+    private var kws: Set[TermName] = Set()
+    private def kw(s: String): TermName = {
+      val result = newTermName(s)
+      kws = kws + result
+      result
+    }
+
+    final val ABSTRACTkw: TermName  = kw("abstract")
+    final val CASEkw: TermName      = kw("case")
+    final val CLASSkw: TermName     = kw("class")
+    final val CATCHkw: TermName     = kw("catch")
+    final val DEFkw: TermName       = kw("def")
+    final val DOkw: TermName        = kw("do")
+    final val ELSEkw: TermName      = kw("else")
+    final val EXTENDSkw: TermName   = kw("extends")
+    final val FALSEkw: TermName     = kw("false")
+    final val FINALkw: TermName     = kw("final")
+    final val FINALLYkw: TermName   = kw("finally")
+    final val FORkw: TermName       = kw("for")
+    final val FORSOMEkw: TermName   = kw("forSome")
+    final val IFkw: TermName        = kw("if")
+    final val IMPLICITkw: TermName  = kw("implicit")
+    final val IMPORTkw: TermName    = kw("import")
+    final val LAZYkw: TermName      = kw("lazy")
+    final val MATCHkw: TermName     = kw("match")
+    final val NEWkw: TermName       = kw("new")
+    final val NULLkw: TermName      = kw("null")
+    final val OBJECTkw: TermName    = kw("object")
+    final val OVERRIDEkw: TermName  = kw("override")
+    final val PACKAGEkw: TermName   = kw("package")
+    final val PRIVATEkw: TermName   = kw("private")
+    final val PROTECTEDkw: TermName = kw("protected")
+    final val RETURNkw: TermName    = kw("return")
+    final val SEALEDkw: TermName    = kw("sealed")
+    final val SUPERkw: TermName     = kw("super")
+    final val THISkw: TermName      = kw("this")
+    final val THROWkw: TermName     = kw("throw")
+    final val TRAITkw: TermName     = kw("trait")
+    final val TRUEkw: TermName      = kw("true")
+    final val TRYkw: TermName       = kw("try")
+    final val TYPEkw: TermName      = kw("type")
+    final val VALkw: TermName       = kw("val")
+    final val VARkw: TermName       = kw("var")
+    final val WITHkw: TermName      = kw("with")
+    final val WHILEkw: TermName     = kw("while")
+    final val YIELDkw: TermName     = kw("yield")
+    final val DOTkw: TermName       = kw(".")
+    final val USCOREkw: TermName    = kw("_")
+    final val COLONkw: TermName     = kw(":")
+    final val EQUALSkw: TermName    = kw("=")
+    final val ARROWkw: TermName     = kw("=>")
+    final val LARROWkw: TermName    = kw("<-")
+    final val SUBTYPEkw: TermName   = kw("<:")
+    final val VIEWBOUNDkw: TermName = kw("<%")
+    final val SUPERTYPEkw: TermName = kw(">:")
+    final val HASHkw: TermName      = kw("#")
+    final val ATkw: TermName        = kw("@")
+
+    final val keywords = {
+      val result = kws.toSet
+      kws = null
+      result
+    }
+
+    final val javaKeywords = new JavaKeywords()
+  }
+
   trait CompilerCommonNames extends LibraryCommonNames {
     // value types are all used as terms as well
     final val Boolean: NameType = "Boolean"
@@ -81,60 +150,8 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val SyntheticATTR: NameType              = "Synthetic"
   }
 
-  trait CompilerTermNames extends CompilerCommonNames {
-    // Scala keywords
-    final val ABSTRACTkw: NameType  = "abstract"
-    final val CASEkw: NameType      = "case"
-    final val CLASSkw: NameType     = "class"
-    final val CATCHkw: NameType     = "catch"
-    final val DEFkw: NameType       = "def"
-    final val DOkw: NameType        = "do"
-    final val ELSEkw: NameType      = "else"
-    final val EXTENDSkw: NameType   = "extends"
-    final val FALSEkw: NameType     = "false"
-    final val FINALkw: NameType     = "final"
-    final val FINALLYkw: NameType   = "finally"
-    final val FORkw: NameType       = "for"
-    final val FORSOMEkw: NameType   = "forSome"
-    final val IFkw: NameType        = "if"
-    final val IMPLICITkw: NameType  = "implicit"
-    final val IMPORTkw: NameType    = "import"
-    final val LAZYkw: NameType      = "lazy"
-    final val MATCHkw: NameType     = "match"
-    final val NEWkw: NameType       = "new"
-    final val NULLkw: NameType      = "null"
-    final val OBJECTkw: NameType    = "object"
-    final val OVERRIDEkw: NameType  = "override"
-    final val PACKAGEkw: NameType   = "package"
-    final val PRIVATEkw: NameType   = "private"
-    final val PROTECTEDkw: NameType = "protected"
-    final val RETURNkw: NameType    = "return"
-    final val REQUIRESkw: NameType  = "requires"
-    final val SEALEDkw: NameType    = "sealed"
-    final val SUPERkw: NameType     = "super"
-    final val THISkw: NameType      = "this"
-    final val THROWkw: NameType     = "throw"
-    final val TRAITkw: NameType     = "trait"
-    final val TRUEkw: NameType      = "true"
-    final val TRYkw: NameType       = "try"
-    final val TYPEkw: NameType      = "type"
-    final val VALkw: NameType       = "val"
-    final val VARkw: NameType       = "var"
-    final val WITHkw: NameType      = "with"
-    final val WHILEkw: NameType     = "while"
-    final val YIELDkw: NameType     = "yield"
-    final val DOTkw: NameType       = "."
-    final val USCOREkw: NameType    = "_"
-    final val COLONkw: NameType     = ":"
-    final val EQUALSkw: NameType    = "="
-    final val ARROWkw: NameType     = "=>"
-    final val LARROWkw: NameType    = "<-"
-    final val SUBTYPEkw: NameType   = "<:"
-    final val VIEWBOUNDkw: NameType = "<%"
-    final val SUPERTYPEkw: NameType = ">:"
-    final val HASHkw: NameType      = "#"
-    final val ATkw: NameType        = "@"
 
+  trait CompilerTermNames extends CompilerKeywords with CompilerCommonNames {
     // Compiler internal names
     val ANYNAME: NameType               = "<anyname>"
     val CONSTRUCTOR: NameType           = "<init>"
@@ -270,26 +287,16 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val toDouble: NameType = "toDouble"
   }
 
-  object tpnme extends CompilerTypeNames with LibraryTypeNames {
+  object tpnme extends CompilerTypeNames with LibraryTypeNames with TypeNameMangling {
     type NameType = TypeName
     implicit def createNameType(name: String): TypeName = newTypeName(name)
   }
 
-  object nme extends CompilerTermNames with LibraryTermNames with NameMangling {
+  val javanme = nme.javaKeywords
+
+  object nme extends CompilerTermNames with LibraryTermNames with TermNameMangling {
     type NameType = TermName
     implicit def createNameType(name: String): TermName = newTermName(name)
-
-    final val keywords = Set[TermName](
-      ABSTRACTkw, CASEkw, CLASSkw, CATCHkw, DEFkw, DOkw, ELSEkw,
-      EXTENDSkw, FALSEkw, FINALkw, FINALLYkw, FORkw, FORSOMEkw, IFkw,
-      IMPLICITkw, IMPORTkw, LAZYkw, MATCHkw, NEWkw, NULLkw, OBJECTkw,
-      OVERRIDEkw, PACKAGEkw, PRIVATEkw, PROTECTEDkw, RETURNkw, REQUIRESkw,
-      SEALEDkw, SUPERkw, THISkw, THROWkw, TRAITkw, TRUEkw, TRYkw, TYPEkw,
-      VALkw, VARkw, WITHkw, WHILEkw, YIELDkw
-    ) ++ Set[TermName](
-      DOTkw, USCOREkw, COLONkw, EQUALSkw, ARROWkw, LARROWkw, SUBTYPEkw,
-      VIEWBOUNDkw, SUPERTYPEkw, HASHkw, ATkw
-    )
 
     /** Translate a String into a list of simple TypeNames and TermNames.
      *  In all segments before the last, type/term is determined by whether
@@ -424,6 +431,72 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val JavaLang            : TermName
 
     val Boxed: immutable.Map[TypeName, TypeName]
+  }
+
+  class JavaKeywords {
+    private var kws: Set[TermName] = Set()
+    private def kw(s: String): TermName = {
+      val result = newTermName(s)
+      kws = kws + result
+      result
+    }
+
+    final val ABSTRACTkw: TermName     = kw("abstract")
+    final val ASSERTkw: TermName       = kw("assert")
+    final val BOOLEANkw: TermName      = kw("boolean")
+    final val BREAKkw: TermName        = kw("break")
+    final val BYTEkw: TermName         = kw("byte")
+    final val CASEkw: TermName         = kw("case")
+    final val CATCHkw: TermName        = kw("catch")
+    final val CHARkw: TermName         = kw("char")
+    final val CLASSkw: TermName        = kw("class")
+    final val CONSTkw: TermName        = kw("const")
+    final val CONTINUEkw: TermName     = kw("continue")
+    final val DEFAULTkw: TermName      = kw("default")
+    final val DOkw: TermName           = kw("do")
+    final val DOUBLEkw: TermName       = kw("double")
+    final val ELSEkw: TermName         = kw("else")
+    final val ENUMkw: TermName         = kw("enum")
+    final val EXTENDSkw: TermName      = kw("extends")
+    final val FINALkw: TermName        = kw("final")
+    final val FINALLYkw: TermName      = kw("finally")
+    final val FLOATkw: TermName        = kw("float")
+    final val FORkw: TermName          = kw("for")
+    final val IFkw: TermName           = kw("if")
+    final val GOTOkw: TermName         = kw("goto")
+    final val IMPLEMENTSkw: TermName   = kw("implements")
+    final val IMPORTkw: TermName       = kw("import")
+    final val INSTANCEOFkw: TermName   = kw("instanceof")
+    final val INTkw: TermName          = kw("int")
+    final val INTERFACEkw: TermName    = kw("interface")
+    final val LONGkw: TermName         = kw("long")
+    final val NATIVEkw: TermName       = kw("native")
+    final val NEWkw: TermName          = kw("new")
+    final val PACKAGEkw: TermName      = kw("package")
+    final val PRIVATEkw: TermName      = kw("private")
+    final val PROTECTEDkw: TermName    = kw("protected")
+    final val PUBLICkw: TermName       = kw("public")
+    final val RETURNkw: TermName       = kw("return")
+    final val SHORTkw: TermName        = kw("short")
+    final val STATICkw: TermName       = kw("static")
+    final val STRICTFPkw: TermName     = kw("strictfp")
+    final val SUPERkw: TermName        = kw("super")
+    final val SWITCHkw: TermName       = kw("switch")
+    final val SYNCHRONIZEDkw: TermName = kw("synchronized")
+    final val THISkw: TermName         = kw("this")
+    final val THROWkw: TermName        = kw("throw")
+    final val THROWSkw: TermName       = kw("throws")
+    final val TRANSIENTkw: TermName    = kw("transient")
+    final val TRYkw: TermName          = kw("try")
+    final val VOIDkw: TermName         = kw("void")
+    final val VOLATILEkw: TermName     = kw("volatile")
+    final val WHILEkw: TermName        = kw("while")
+
+    final val keywords = {
+      val result = kws.toSet
+      kws = null
+      result
+    }
   }
 
   private abstract class JavaNames extends SymbolNames {

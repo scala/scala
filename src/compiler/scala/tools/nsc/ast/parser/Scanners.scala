@@ -29,6 +29,16 @@ trait ScannersCommon {
     def error  (off: Int, msg: String): Unit
     def incompleteInputError(off: Int, msg: String): Unit
   }
+
+  def createKeywordArray(keywords: Seq[(Name, Int)], defaultToken: Int): (Int, Array[Int]) = {
+    val names = keywords sortBy (_._1.start) map { case (k, v) => (k.start, v) }
+    val low   = names.head._1
+    val high  = names.last._1
+    val arr   = Array.fill(high - low + 1)(defaultToken)
+
+    names foreach { case (k, v) => arr(k + low) = v }
+    (low, arr)
+  }
 }
 
 trait Scanners extends ScannersCommon {
@@ -908,92 +918,74 @@ trait Scanners extends ScannersCommon {
 
   // ------------- keyword configuration -----------------------------------
 
-  /** Keyword array; maps from name indices to tokens */
-  private var keyCode: Array[Byte] = _
-  /** The highest name index of a keyword token */
-  private var maxKey = 0
-  /** An array of all keyword token names */
-  private var keyName = new Array[TermName](128)
-  /** The highest keyword token plus one */
-  private var tokenCount = 0
+  private val allKeywords = List[(Name, Int)](
+    nme.ABSTRACTkw  -> ABSTRACT,
+    nme.CASEkw      -> CASE,
+    nme.CATCHkw     -> CATCH,
+    nme.CLASSkw     -> CLASS,
+    nme.DEFkw       -> DEF,
+    nme.DOkw        -> DO,
+    nme.ELSEkw      -> ELSE,
+    nme.EXTENDSkw   -> EXTENDS,
+    nme.FALSEkw     -> FALSE,
+    nme.FINALkw     -> FINAL,
+    nme.FINALLYkw   -> FINALLY,
+    nme.FORkw       -> FOR,
+    nme.FORSOMEkw   -> FORSOME,
+    nme.IFkw        -> IF,
+    nme.IMPLICITkw  -> IMPLICIT,
+    nme.IMPORTkw    -> IMPORT,
+    nme.LAZYkw      -> LAZY,
+    nme.MATCHkw     -> MATCH,
+    nme.NEWkw       -> NEW,
+    nme.NULLkw      -> NULL,
+    nme.OBJECTkw    -> OBJECT,
+    nme.OVERRIDEkw  -> OVERRIDE,
+    nme.PACKAGEkw   -> PACKAGE,
+    nme.PRIVATEkw   -> PRIVATE,
+    nme.PROTECTEDkw -> PROTECTED,
+    nme.RETURNkw    -> RETURN,
+    nme.SEALEDkw    -> SEALED,
+    nme.SUPERkw     -> SUPER,
+    nme.THISkw      -> THIS,
+    nme.THROWkw     -> THROW,
+    nme.TRAITkw     -> TRAIT,
+    nme.TRUEkw      -> TRUE,
+    nme.TRYkw       -> TRY,
+    nme.TYPEkw      -> TYPE,
+    nme.VALkw       -> VAL,
+    nme.VARkw       -> VAR,
+    nme.WHILEkw     -> WHILE,
+    nme.WITHkw      -> WITH,
+    nme.YIELDkw     -> YIELD,
+    nme.DOTkw       -> DOT,
+    nme.USCOREkw    -> USCORE,
+    nme.COLONkw     -> COLON,
+    nme.EQUALSkw    -> EQUALS,
+    nme.ARROWkw     -> ARROW,
+    nme.LARROWkw    -> LARROW,
+    nme.SUBTYPEkw   -> SUBTYPE,
+    nme.VIEWBOUNDkw -> VIEWBOUND,
+    nme.SUPERTYPEkw -> SUPERTYPE,
+    nme.HASHkw      -> HASH,
+    nme.ATkw        -> AT
+  )
 
-  /** Enter keyword with given name and token id */
-  protected def enterKeyword(n: TermName, tokenId: Int) {
-    while (tokenId >= keyName.length) {
-      val newTokName = new Array[TermName](keyName.length * 2)
-      compat.Platform.arraycopy(keyName, 0, newTokName, 0, newTokName.length)
-      keyName = newTokName
-    }
-    keyName(tokenId) = n
-    if (n.start > maxKey) maxKey = n.start
-    if (tokenId >= tokenCount) tokenCount = tokenId + 1
+  private var kwOffset: Int = -1
+  private val kwArray: Array[Int] = {
+    val (offset, arr) = createKeywordArray(allKeywords, IDENTIFIER)
+    kwOffset = offset
+    arr
   }
 
-  /** Enter all keywords */
-  protected def enterKeywords() {
-    enterKeyword(nme.ABSTRACTkw, ABSTRACT)
-    enterKeyword(nme.CASEkw, CASE)
-    enterKeyword(nme.CATCHkw, CATCH)
-    enterKeyword(nme.CLASSkw, CLASS)
-    enterKeyword(nme.DEFkw, DEF)
-    enterKeyword(nme.DOkw, DO)
-    enterKeyword(nme.ELSEkw, ELSE)
-    enterKeyword(nme.EXTENDSkw, EXTENDS)
-    enterKeyword(nme.FALSEkw, FALSE)
-    enterKeyword(nme.FINALkw, FINAL)
-    enterKeyword(nme.FINALLYkw, FINALLY)
-    enterKeyword(nme.FORkw, FOR)
-    enterKeyword(nme.FORSOMEkw, FORSOME)
-    enterKeyword(nme.IFkw, IF)
-    enterKeyword(nme.IMPLICITkw, IMPLICIT)
-    enterKeyword(nme.IMPORTkw, IMPORT)
-    enterKeyword(nme.LAZYkw, LAZY)
-    enterKeyword(nme.MATCHkw, MATCH)
-    enterKeyword(nme.NEWkw, NEW)
-    enterKeyword(nme.NULLkw, NULL)
-    enterKeyword(nme.OBJECTkw, OBJECT)
-    enterKeyword(nme.OVERRIDEkw, OVERRIDE)
-    enterKeyword(nme.PACKAGEkw, PACKAGE)
-    enterKeyword(nme.PRIVATEkw, PRIVATE)
-    enterKeyword(nme.PROTECTEDkw, PROTECTED)
-    enterKeyword(nme.RETURNkw, RETURN)
-    enterKeyword(nme.SEALEDkw, SEALED)
-    enterKeyword(nme.SUPERkw, SUPER)
-    enterKeyword(nme.THISkw, THIS)
-    enterKeyword(nme.THROWkw, THROW)
-    enterKeyword(nme.TRAITkw, TRAIT)
-    enterKeyword(nme.TRUEkw, TRUE)
-    enterKeyword(nme.TRYkw, TRY)
-    enterKeyword(nme.TYPEkw, TYPE)
-    enterKeyword(nme.VALkw, VAL)
-    enterKeyword(nme.VARkw, VAR)
-    enterKeyword(nme.WHILEkw, WHILE)
-    enterKeyword(nme.WITHkw, WITH)
-    enterKeyword(nme.YIELDkw, YIELD)
-    enterKeyword(nme.DOTkw, DOT)
-    enterKeyword(nme.USCOREkw, USCORE)
-    enterKeyword(nme.COLONkw, COLON)
-    enterKeyword(nme.EQUALSkw, EQUALS)
-    enterKeyword(nme.ARROWkw, ARROW)
-    enterKeyword(nme.LARROWkw, LARROW)
-    enterKeyword(nme.SUBTYPEkw, SUBTYPE)
-    enterKeyword(nme.VIEWBOUNDkw, VIEWBOUND)
-    enterKeyword(nme.SUPERTYPEkw, SUPERTYPE)
-    enterKeyword(nme.HASHkw, HASH)
-    enterKeyword(nme.ATkw, AT)
-  }
-
-  { // initialization
-    enterKeywords()
-    // Build keyword array
-    keyCode = Array.fill(maxKey + 1)(IDENTIFIER)
-    for (j <- 0 until tokenCount if keyName(j) ne null)
-      keyCode(keyName(j).start) = j.toByte
-  }
+  final val token2name = allKeywords map (_.swap) toMap
 
   /** Convert name to token */
-  def name2token(name: Name): Int =
-    if (name.start <= maxKey) keyCode(name.start) else IDENTIFIER
+  final def name2token(name: Name) = {
+    val idx = name.start - kwOffset
+    if (idx >= 0 && idx < kwArray.length) kwArray(idx)
+    else IDENTIFIER
+  }
 
 // Token representation ----------------------------------------------------
 
@@ -1023,8 +1015,10 @@ trait Scanners extends ScannersCommon {
     case CASEOBJECT => "case object"
     case XMLSTART => "$XMLSTART$<"
     case _ =>
-      if (token <= maxKey) "'" + keyName(token) + "'"
-      else "'<" + token + ">'"
+      (token2name get token) match {
+        case Some(name) => "'" + name + "'"
+        case _          => "'<" + token + ">'"
+      }
   }
 
   class MalformedInput(val offset: Int, val msg: String) extends Exception
