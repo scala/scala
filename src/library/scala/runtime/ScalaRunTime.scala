@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.runtime
 
 import scala.reflect.ClassManifest
@@ -17,9 +15,12 @@ import scala.collection.immutable.{ NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
 import scala.xml.{ Node, MetaData }
 import scala.util.control.ControlThrowable
+import java.lang.Double.doubleToLongBits
 import java.lang.reflect.{ Modifier, Method => JMethod }
 
-/* The object <code>ScalaRunTime</code> provides ...
+/** The object ScalaRunTime provides support methods required by
+ *  the scala runtime.  All these methods should be considered
+ *  outside the API and subject to change or removal without notice.
  */
 object ScalaRunTime {
   def isArray(x: AnyRef): Boolean = isArray(x, 1)
@@ -212,29 +213,27 @@ object ScalaRunTime {
     if (iv == fv) return iv
 
     val lv = fv.toLong
-    if (lv == fv) return lv.hashCode
+    if (lv == fv) return hash(lv)
     else fv.hashCode
   }
   @inline def hash(lv: Long): Int = {
-    val iv = lv.toInt
-    if (iv == lv) iv else lv.hashCode
+    val low = lv.toInt
+    val lowSign = low >>> 31
+    val high = (lv >>> 32).toInt
+    low ^ (high + lowSign)
   }
   @inline def hash(x: Int): Int = x
   @inline def hash(x: Short): Int = x.toInt
   @inline def hash(x: Byte): Int = x.toInt
   @inline def hash(x: Char): Int = x.toInt
-  @inline def hash(x: Boolean): Int = x.hashCode
+  @inline def hash(x: Boolean): Int = if (x) trueHashcode else falseHashcode
   @inline def hash(x: Unit): Int = 0
-
   @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
 
-  /** XXX Why is there one boxed implementation in here? It would seem
-   *  we should have all the numbers or none of them.
-   */
-  @inline def hash(x: java.lang.Long): Int = {
-    val iv = x.intValue
-    if (iv == x.longValue) iv else x.hashCode
-  }
+  // These are so these values are constant folded into def hash(Boolean)
+  // rather than being recalculated all the time.
+  private final val trueHashcode = true.hashCode
+  private final val falseHashcode = false.hashCode
 
   /** A helper method for constructing case class equality methods,
    *  because existential types get in the way of a clean outcome and

@@ -281,14 +281,22 @@ trait TreeDSL {
       if (args.isEmpty) New(TypeTree(sym.tpe))
       else New(TypeTree(sym.tpe), List(args.toList))
 
-    def VAR(name: Name, tp: Type): ValTreeStart = VAR(name) withType tp
-    def VAR(name: Name): ValTreeStart           = new ValTreeStart(name) withFlags Flags.MUTABLE
-    def VAL(name: Name, tp: Type): ValTreeStart = VAL(name) withType tp
-    def VAL(name: Name): ValTreeStart           = new ValTreeStart(name)
-    def VAL(sym: Symbol): ValSymStart           = new ValSymStart(sym)
+    def DEF(name: Name, tp: Type): DefTreeStart     = DEF(name) withType tp
+    def DEF(name: Name): DefTreeStart               = new DefTreeStart(name)
+    def DEF(sym: Symbol): DefSymStart               = new DefSymStart(sym)
 
-    def DEF(name: Name): DefTreeStart = new DefTreeStart(name)
-    def DEF(sym: Symbol): DefSymStart = new DefSymStart(sym)
+    def VAL(name: Name, tp: Type): ValTreeStart     = VAL(name) withType tp
+    def VAL(name: Name): ValTreeStart               = new ValTreeStart(name)
+    def VAL(sym: Symbol): ValSymStart               = new ValSymStart(sym)
+
+    def VAR(name: Name, tp: Type): ValTreeStart     = VAL(name, tp) withFlags Flags.MUTABLE
+    def VAR(name: Name): ValTreeStart               = VAL(name) withFlags Flags.MUTABLE
+    def VAR(sym: Symbol): ValSymStart               = VAL(sym) withFlags Flags.MUTABLE
+
+    def LAZYVAL(name: Name, tp: Type): ValTreeStart = VAL(name, tp) withFlags Flags.LAZY
+    def LAZYVAL(name: Name): ValTreeStart           = VAL(name) withFlags Flags.LAZY
+    def LAZYVAL(sym: Symbol): ValSymStart           = VAL(sym) withFlags Flags.LAZY
+
     def AND(guards: Tree*) =
       if (guards.isEmpty) EmptyTree
       else guards reduceLeft gen.mkAnd
