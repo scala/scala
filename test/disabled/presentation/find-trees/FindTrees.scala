@@ -33,7 +33,7 @@ object Test extends InteractiveTest {
   override def runTest {
     import compiler._
     val src = sourceFiles(0) // only one under src/
-    //val pos = rangePos(src, 426, 426, 433)
+    val pos = rangePos(src, 426, 426, 433)
     val pos1 = src.position(19, 15)  // this is an offset position
 
     // reload is issued already by the framework, so we don't need to do it, but it doesn't hurt
@@ -42,7 +42,7 @@ object Test extends InteractiveTest {
     reload.get // it's important to let reload finish before asking other things.
 
     // re-enable when positions in the primary constructor are handled reliably
-//    askForPos(pos)
+    askForPos(pos)
     println("=" * 20)
     askForPos(pos1)
 
