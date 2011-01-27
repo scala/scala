@@ -22,6 +22,7 @@ trait CodegenSpec extends Spec with Meta.StdOpts with Interpolation {
   val anyvals  = "anyvals" / "generate sources for AnyVal types" --?
   val products = "products" / "generate sources for ProductN, FunctionN, etc." --?
   val genall   = "all" / "generate sources for everything" --?
+  val stamp    = "stamp" / "add a timestamp to the generated files" --?
 }
 
 object CodegenSpec extends CodegenSpec with Reference {

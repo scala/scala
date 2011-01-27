@@ -7,7 +7,7 @@ package scala.tools.cmd
 package gen
 
 trait AnyValTemplates {
-  def now = "" + new java.util.Date
+  def timestampString = "// generated on " + new java.util.Date + "\n"
 
   def template = """
 /*                     __                                               *\
@@ -18,13 +18,12 @@ trait AnyValTemplates {
 **                          |/                                          **
 \*                                                                      */
 
-// generated on %s
-
+%s
 package scala
 
 import java.{ lang => jl }
 
-  """.trim.format(now) + "\n\n"
+  """.trim.format(timestampString) + "\n\n"
 
   val booleanBody = """
 final class Boolean extends AnyVal {
@@ -62,7 +61,7 @@ object Unit extends AnyValCompanion {
   """.trim
 }
 
-object AnyVals extends AnyValTemplates {
+class AnyVals extends AnyValTemplates {
   val B = "Byte"
   val S = "Short"
   val C = "Char"
@@ -203,3 +202,5 @@ object AnyVals extends AnyValTemplates {
     ) ++ commonCompanion
   }
 }
+
+object AnyVals extends AnyVals { }
