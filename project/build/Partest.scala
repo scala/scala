@@ -3,30 +3,30 @@ import java.io.File
 import java.net.URLClassLoader
 import TestSet.{filter}
 
-class TestSet(val SType:TestSetType.Value,val kind:String, val description:String,val files:Array[File]){
+class TestSet(val SType: TestSetType.Value, val kind: String, val description: String, val files: Array[File]){
   /**
    * @param a list of file that we want to know wheter they are members of the test set or not
    * @return two lists : the first contains files that are member of the test set, the second contains the files that aren't
    */
-  def splitContent(f:List[File]):(List[File],List[File]) = {
-    f.partition((f:File) => files.elements.exists((e:File)=> f==e))
+  def splitContent(f: List[File]):(List[File], List[File]) = {
+    f.partition((f: File) => files.elements.exists((e: File) => f == e))
   }
 }
 
 object TestSet {
-    def apply(sType:TestSetType.Value,kind:String,description:String,files:PathFinder)= new TestSet(sType,kind,description,filter(files))
-    def filter(p:PathFinder):Array[File]=( p --- p **(HiddenFileFilter || GlobFilter("*.obj")||GlobFilter("*.log"))).getFiles.toArray
+    def apply(sType: TestSetType.Value, kind: String, description: String, files: PathFinder)= new TestSet(sType, kind, description, filter(files))
+    def filter(p: PathFinder): Array[File] =( p --- p **(HiddenFileFilter || GlobFilter("*.obj")||GlobFilter("*.log"))).getFiles.toArray
 }
 
 object TestSetType extends Enumeration {
-  val Std,Continuations = Value
+  val Std, Continuations = Value
 }
 
-class TestConfiguration(val library:Path, val classpath:Iterable[Path], val testRoot:Path,
-                        val tests:List[TestSet],val junitReportDir:Option[Path]){
+class TestConfiguration(val library: Path, val classpath: Iterable[Path], val testRoot: Path,
+                        val tests: List[TestSet], val junitReportDir: Option[Path]){
 }
 
-trait PartestRunner{
+trait PartestRunner {
   self: BasicLayer with Packer =>
 
   import Partest.runTest
@@ -51,19 +51,32 @@ trait PartestRunner{
   lazy val negContinuationTest = TestSet(Continuations,"neg", "Compiling continuations files that are expected to fail", testFiles / "continuations-neg" * ("*.scala" || DirectoryFilter))
   lazy val runContinuationTest = TestSet(Continuations,"run", "Compiling and running continuations files", testFiles / "continuations-run" ** ("*.scala" ))
 
-  lazy val continuationScalaOpts = "-Xpluginsdir "+continuationPluginConfig.packagingConfig.jarDestination.asFile.getParent+" -Xplugin-require:continuations -P:continuations:enable"
+  lazy val continuationScalaOpts = (
+    "-Xpluginsdir " +
+    continuationPluginConfig.packagingConfig.jarDestination.asFile.getParent +
+    " -Xplugin-require:continuations -P:continuations:enable"
+  )
 
-  lazy val testSuiteFiles:List[TestSet] = List(posFilesTest,negFilesTest,runFilesTest,jvmFilesTest,resFilesTest,buildmanagerFilesTest,scalacheckFilesTest,shootoutFilesTest,scalapFilesTest,specializedFilesTest)
-  lazy val testSuiteContinuation:List[TestSet]=List(negContinuationTest,runContinuationTest)
+  lazy val testSuiteFiles: List[TestSet] = List(
+    posFilesTest, negFilesTest, runFilesTest, jvmFilesTest, resFilesTest,
+    buildmanagerFilesTest, scalacheckFilesTest, shootoutFilesTest, scalapFilesTest,
+    specializedFilesTest
+  )
+  lazy val testSuiteContinuation: List[TestSet] = List(negContinuationTest, runContinuationTest)
 
-  private lazy val filesTestMap:Map[String,TestSet] =
-    Map(testSuiteFiles.map(s=> (s.kind,s) ):_*)+ (("continuations-neg",negContinuationTest),("continuations-run",runContinuationTest))
+  private lazy val filesTestMap: Map[String, TestSet] =
+    Map(testSuiteFiles.map(s => (s.kind,s) ):_*)+ (("continuations-neg",negContinuationTest),("continuations-run", runContinuationTest))
 
   private lazy val partestOptions = List("-failed")
 
-  private lazy val partestCompletionList = filesTestMap.keys.toList:::partestOptions:::filesTestMap.values.toList.flatMap{_.files.map(_.toString.substring(testFiles.asFile.toString.length+1))}
+  private lazy val partestCompletionList: Seq[String] = {
+    val len = testFiles.asFile.toString.length + 1
 
-  private def runPartest(tests:List[TestSet],scalacOpts:Option[String], failedOnly:Boolean) = {
+    filesTestMap.keys.toList ++ partestOptions ++
+    (filesTestMap.values.toList flatMap (_.files) map (_.toString take len))
+  }
+
+  private def runPartest(tests: List[TestSet], scalacOpts: Option[String], failedOnly: Boolean) = {
 
     val config = new TestConfiguration(
       outputLibraryJar,
@@ -104,45 +117,43 @@ trait PartestRunner{
     args =>
     var failedOnly = false
 
-
-    def setOptions(options:List[String],acc:List[String]):List[String]= options match{
-      case x::xs => x match{
-        case "-failed" => {failedOnly= true; log.info("Only tests that failed previously will be run"); setOptions(xs,acc)}
-        case _ => setOptions(xs,x::acc)
-
-      }
-      case Nil => acc
+    def setOptions(options: List[String], acc: List[String]): List[String] = options match {
+      case "-failed" :: xs =>
+        failedOnly = true
+        log.info("Only tests that failed previously will be run")
+        setOptions(xs, acc)
+      case x :: xs =>
+        setOptions(xs, x :: acc)
+      case _ => acc
     }
 
-
-
-    def resolveSets(l:List[String],rem:List[String],acc:List[TestSet]): (List[String], List[TestSet]) = {
-      def searchSet(arg:String):Option[TestSet] = {
+    def resolveSets(l: List[String], rem: List[String], acc: List[TestSet]): (List[String], List[TestSet]) = {
+      def searchSet(arg: String): Option[TestSet] = {
         filesTestMap.get(arg)
       }
-      l match{
-        case x::xs => searchSet(x) match{
-          case Some(s)=> resolveSets(xs,rem,s::acc)
-          case None => resolveSets(xs,x::rem,acc)
+      l match {
+        case x :: xs => searchSet(x) match {
+          case Some(s) => resolveSets(xs, rem, s :: acc)
+          case None => resolveSets(xs, x :: rem, acc)
           }
-        case Nil => (rem,acc)
+        case Nil => (rem, acc)
       }
     }
 
-    def resolveFiles(l:List[String],sets:List[TestSet]):(List[String],List[TestSet]) = {
-      def resolve0(filesToResolve:List[File],setsToSearchIn:List[TestSet],setAcc:List[TestSet]):(List[String],List[TestSet])= {
+    def resolveFiles(l: List[String], sets: List[TestSet]):(List[String], List[TestSet]) = {
+      def resolve0(filesToResolve: List[File], setsToSearchIn: List[TestSet], setAcc: List[TestSet]):(List[String], List[TestSet])= {
         filesToResolve match {
-          case Nil => (Nil,setAcc) // If we have no files left to resolve, we can return the list of the set we have
+          case Nil => (Nil, setAcc) // If we have no files left to resolve, we can return the list of the set we have
           case list => {
             setsToSearchIn match {
-              case Nil => (list.map(_.toString),setAcc)// If we already had search all sets to find a match, we return the list of the files that where problematic and the set we have
-              case x::xs => {
-                val (found, notFound)=x.splitContent(list)
+              case Nil => (list.map(_.toString), setAcc)// If we already had search all sets to find a match, we return the list of the files that where problematic and the set we have
+              case x :: xs => {
+                val (found, notFound)= x.splitContent(list)
                 if(!found.isEmpty){
-                  val newSet = new TestSet(x.SType,x.kind,x.description,found.toArray)
-                  resolve0(notFound,xs,newSet::setAcc)
-                }else{
-                  resolve0(notFound,xs,setAcc)
+                  val newSet = new TestSet(x.SType, x.kind, x.description, found.toArray)
+                  resolve0(notFound, xs, newSet :: setAcc)
+                } else {
+                  resolve0(notFound, xs, setAcc)
                 }
               }
             }
@@ -151,19 +162,19 @@ trait PartestRunner{
 
       }
 
-      resolve0(l.map(Path.fromString(testFiles,_).asFile),filesTestMap.values.toList,sets)
+      resolve0(l.map(Path.fromString(testFiles, _).asFile), filesTestMap.values.toList, sets)
     }
 
-    val keys = setOptions(args.toList,Nil)
+    val keys = setOptions(args.toList, Nil)
 
-    if (keys.length == 0) task{runPartest(testSuiteFiles,None,failedOnly) orElse runPartest(testSuiteContinuation,None,failedOnly)} // this is the case where there were only config options, we will run the standard test suite
+    if (keys.length == 0) task {runPartest(testSuiteFiles, None, failedOnly) orElse runPartest(testSuiteContinuation, None, failedOnly)} // this is the case where there were only config options, we will run the standard test suite
     else {
-      val (fileNames, sets) =resolveSets(keys,Nil,Nil)
-      val (notFound,allSets)=resolveFiles(fileNames,sets)
+      val (fileNames, sets) = resolveSets(keys, Nil, Nil)
+      val (notFound, allSets)= resolveFiles(fileNames, sets)
       if (!notFound.isEmpty) log.info("Don't know what to do with : \n"+notFound.mkString("\n"))
 
       val (std, continuations) = allSets.partition(_.SType == TestSetType.Std)
-      task{runPartest(std,None,failedOnly) orElse runPartest(continuations,Some(continuationScalaOpts),failedOnly)}
+      task {runPartest(std, None, failedOnly) orElse runPartest(continuations, Some(continuationScalaOpts), failedOnly)}
    }
 
   }.completeWith(partestCompletionList)
@@ -192,7 +203,7 @@ object Partest {
       runner.getClass.getMethod("reflectiveRunTestsForFiles", Array(classOf[Array[File]], classOf[String]): _*)
 
     def runTestsForFiles(kindFiles: Array[File], kind: String) = {
-      val result = runMethod.invoke(runner, Array(kindFiles, kind): _*).asInstanceOf[java.util.HashMap[String,Int]]
+      val result = runMethod.invoke(runner, Array(kindFiles, kind): _*).asInstanceOf[java.util.HashMap[String, Int]]
       scala.collection.jcl.Conversions.convertMap(result)
     }
 
@@ -219,7 +230,7 @@ object Partest {
       setFileManagerStringProperty("JAVACMD", javacmd.get.getAbsolutePath)
     if (!javaccmd.isEmpty)
       setFileManagerStringProperty("JAVAC_CMD", "javac")
-    setFileManagerStringProperty("CLASSPATH",(config.classpath.map(_.absolutePath).mkString(File.pathSeparator)))
+    setFileManagerStringProperty("CLASSPATH", (config.classpath.map(_.absolutePath).mkString(File.pathSeparator)))
     setFileManagerStringProperty("LATEST_LIB", config.library.absolutePath)
     setFileManagerStringProperty("SCALAC_OPTS", scalacOpts getOrElse "")
 
@@ -232,10 +243,10 @@ object Partest {
 
     def resultsToStatistics(results: Iterable[(_, Int)]): (Int, Int) = {
       val (files, failures) = results map (_._2 == 0) partition (_ == true)
-      def count(i:Iterable[_]):Int={
+      def count(i: Iterable[_]): Int ={
         var c = 0
-        for (elem <-i) yield{
-            c=c+1
+        for (elem <-i) yield {
+            c = c+1
         }
         c
       }
@@ -243,7 +254,7 @@ object Partest {
     }
 
 
-    def runSet(set: TestSet): (Int, Int,Iterable[String]) = {
+    def runSet(set: TestSet): (Int, Int, Iterable[String]) = {
       val (files, name, msg) = (set.files, set.kind, set.description)
       log.debug("["+name+"] "+ msg+files.mkString(", files :\n","\n",""))
       if (files.isEmpty) {
@@ -260,10 +271,10 @@ object Partest {
           case (path, 2)    => path + " [TIMOUT]"
         })
 
-        val r=(succs, fails, failed)
+        val r =(succs, fails, failed)
 
-        config.junitReportDir match{
-          case Some(d)=> {
+        config.junitReportDir match {
+          case Some(d) => {
             val report = testReport(name, results, succs, fails)
             scala.xml.XML.save(d/name+".xml", report)
           }
@@ -279,8 +290,7 @@ object Partest {
     val allFailures = _results.map (_._2).foldLeft(0)( _ + _ )
     val allFailedPaths = _results flatMap (_._3)
 
-
-    def f(msg:String):Option[String] =
+    def f(msg: String): Option[String] =
       if (errorOnFailed && allFailures > 0) {
         Some(msg)
         }
@@ -299,7 +309,7 @@ object Partest {
   }
 
   private def oneResult(res: (String, Int)) =
-    <testcase name={res._1}>{
+    <testcase name ={res._1}>{
   	  res._2 match {
   	    case 0 => scala.xml.NodeSeq.Empty
         case 1 => <failure message="Test failed"/>
@@ -308,7 +318,7 @@ object Partest {
   	}</testcase>
 
   private def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) =
-    <testsuite name={kind} tests={(succs + fails).toString} failures={fails.toString}>
+    <testsuite name ={kind} tests ={(succs + fails).toString} failures ={fails.toString}>
   	  <properties/>
   	  {
   	    results.map(oneResult(_))

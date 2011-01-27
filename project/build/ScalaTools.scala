@@ -7,8 +7,8 @@ import scala.io._
  * Based on scala.tools.ant.ScalaTool
  * @author Grégory Moix (for the sbt adaptation)
  */
-trait ScalaTools{
-  self:BasicLayer =>
+trait ScalaTools {
+  self: BasicLayer =>
 
   lazy val templatesLocation = compilerConfig.srcDir/ "scala" / "tools" / "ant" / "templates"
   lazy val unixTemplate = templatesLocation / "tool-unix.tmpl"
@@ -18,7 +18,7 @@ trait ScalaTools{
   // XXX encoding and generalize
   private def getResourceAsCharStream(resource: Path): Stream[Char] = {
     val stream = new FileInputStream(resource.asFile)
-    def streamReader():Stream[Char]= stream.read match{
+    def streamReader(): Stream[Char] = stream.read match {
       case -1 => Stream.empty
       case value => Stream.cons(value.asInstanceOf[Char], streamReader())
 
@@ -80,7 +80,7 @@ trait ScalaTools{
     builder.toString
   }
 
-  private def writeFile(file: File, content: String, makeExecutable:Boolean):Option[String] =
+  private def writeFile(file: File, content: String, makeExecutable: Boolean): Option[String] =
     if (file.exists() && !file.canWrite())
       Some("File " + file + " is not writable")
     else {
@@ -93,12 +93,12 @@ trait ScalaTools{
 
   /** Gets the value of the classpath attribute in a Scala-friendly form.
    * @return The class path as a list of files. */
-  private def getUnixclasspath(classpath:List[String]): String =
+  private def getUnixclasspath(classpath: List[String]): String =
     transposeVariableMarkup(classpath.mkString("", ":", "").replace('\\', '/'), "${", "}")
 
   /** Gets the value of the classpath attribute in a Scala-friendly form.
    * @return The class path as a list of files. */
-  private def getWinclasspath(classpath:List[String]): String =
+  private def getWinclasspath(classpath: List[String]): String =
     transposeVariableMarkup(classpath.mkString("", ";", "").replace('/', '\\'), "%", "%")
 
   /** Performs the tool creation of a tool with for a given os
@@ -111,8 +111,8 @@ trait ScalaTools{
    * @param template
    * @param classpathFormater
    */
-  private def tool(template:Path,classpathFormater: List[String]=>String, file:Path,mainClass:String,
-                   properties:String,javaFlags:String,toolFlags:String,classPath:List[Path],makeExecutable:Boolean):Option[String] = {
+  private def tool(template: Path, classpathFormater: List[String] => String, file: Path, mainClass: String,
+                   properties: String, javaFlags: String, toolFlags: String, classPath: List[Path], makeExecutable: Boolean): Option[String] = {
     val patches = Map (
       ("class", mainClass),
       ("properties", properties),
@@ -121,18 +121,18 @@ trait ScalaTools{
       ("classpath", classpathFormater(classPath.map(_.absolutePath)))
       )
 
-    val result = readAndPatchResource(template,patches)
-    writeFile(file.asFile,result,makeExecutable)
+    val result = readAndPatchResource(template, patches)
+    writeFile(file.asFile, result, makeExecutable)
 
   }
-  private def generateTool(config:ToolConfiguration):Option[String] =
-    generateTool(config.toolName,config.destination,config.mainClass,config.properties,config.javaFlags,config.toolFlags,config.classPath)
+  private def generateTool(config: ToolConfiguration): Option[String] =
+    generateTool(config.toolName, config.destination, config.mainClass, config.properties, config.javaFlags, config.toolFlags, config.classPath)
 
-  private def generateTool(toolName:String,destination:Path,mainClass:String, properties:String,javaFlags:String,toolFlags:String,classPath:List[Path]):Option[String] ={
+  private def generateTool(toolName: String, destination: Path, mainClass: String, properties: String, javaFlags: String, toolFlags: String, classPath: List[Path]): Option[String] ={
     val unixFile = destination / toolName
     val winFile = destination /(toolName + ".bat")
-    tool(unixTemplate,getUnixclasspath,unixFile,mainClass, properties,javaFlags,toolFlags,classPath,true) orElse
-            tool(winTemplate,getWinclasspath,winFile,mainClass, properties,javaFlags,toolFlags,classPath,false)
+    tool(unixTemplate, getUnixclasspath, unixFile, mainClass, properties, javaFlags, toolFlags, classPath, true) orElse
+            tool(winTemplate, getWinclasspath, winFile, mainClass, properties, javaFlags, toolFlags, classPath, false)
   }
 
 
@@ -144,7 +144,7 @@ trait ScalaTools{
   /**
    * A class that holds the different parameters of a tool
    */
-  class ToolConfiguration(val toolName:String, val destination:Path, val mainClass:String, val properties:String, val javaFlags:String,val toolFlags:String,val classPath:List[Path])
+  class ToolConfiguration(val toolName: String, val destination: Path, val mainClass: String, val properties: String, val javaFlags: String, val toolFlags: String, val classPath: List[Path])
 
   /**
    * Generate all tools
@@ -152,7 +152,7 @@ trait ScalaTools{
    * @param classpath Should be specified when you want to use a specific classpath, could be Nil if you want
    * to make the bin use what is in the lib folder of the distribution.
    */
-  def tools(destination:Path,classpath:List[Path]) = task{
+  def tools(destination: Path, classpath: List[Path]) = task {
     val scala = new ToolConfiguration("scala", destination, "scala.tools.nsc.MainGenericRunner", "",defaultJavaFlags, "", classpath)
     val scalac = new ToolConfiguration("scalac", destination, "scala.tools.nsc.Main", "",defaultJavaFlags, "", classpath)
     val scaladoc = new ToolConfiguration("scaladoc",destination,"scala.tools.nsc.ScalaDoc", "",defaultJavaFlags,"", classpath)
@@ -160,17 +160,17 @@ trait ScalaTools{
     val scalap = new ToolConfiguration("scalap",destination, "scala.tools.scalap.Main", "",defaultJavaFlags, "", classpath)
 
 
-    val toolList = scala ::scalac::scaladoc::fsc::scalap::Nil
+    val toolList = scala :: scalac :: scaladoc :: fsc :: scalap :: Nil
 
-    def process(list:List[ToolConfiguration]):Option[String] = list match{
-      case x::xs => {
+    def process(list: List[ToolConfiguration]): Option[String] = list match {
+      case x :: xs => {
         log.debug("Generating "+x.toolName+" bin")
         generateTool(x) orElse process(xs)
       }
       case Nil => None
 
     }
-    FileUtilities.createDirectory(destination,log)
+    FileUtilities.createDirectory(destination, log)
     process(toolList)
 
   }

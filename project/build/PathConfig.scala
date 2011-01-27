@@ -6,10 +6,10 @@ import sbt._
   * @author Grégory Moix
   */
 abstract class PathConfig {
-  def projectRoot:Path
-  def sources:Path
-  def analysis:Path
-  def output:Path
+  def projectRoot: Path
+  def sources: Path
+  def analysis: Path
+  def output: Path
 }
 
 object PathConfig {
@@ -17,25 +17,25 @@ object PathConfig {
   val analysis = "analysis"
 }
 
-trait SimpleOutputLayout{
-  def outputDir:Path
+trait SimpleOutputLayout {
+  def outputDir: Path
   lazy val classesOutput = outputDir / PathConfig.classes
   lazy val analysisOutput = outputDir / PathConfig.analysis
 
 }
 
-class PathLayout(val projectRoot:Path, val outputDir:Path) extends SimpleOutputLayout {
+class PathLayout(val projectRoot: Path, val outputDir: Path) extends SimpleOutputLayout {
   lazy val srcDir = projectRoot / "src"
   /**
     * An utility method to easily create StandardPathConfig from a given path layout
     */
-  def /(name:String)= new StandardPathConfig(this, name)
+  def /(name: String)= new StandardPathConfig(this, name)
 }
 
 /**
   *
   */
-class StandardPathConfig(layout: PathLayout, name:String) extends PathConfig{
+class StandardPathConfig(layout: PathLayout, name: String) extends PathConfig {
   lazy val projectRoot = layout.projectRoot
   lazy val sources = layout.srcDir / name
   lazy val analysis = layout.analysisOutput / name

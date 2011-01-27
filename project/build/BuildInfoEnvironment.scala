@@ -1,7 +1,7 @@
 import sbt._
-trait BuildInfoEnvironment{
+trait BuildInfoEnvironment {
   self : Project =>
-  def buildInfoEnvironmentLocation:Path
+  def buildInfoEnvironmentLocation: Path
   /**
    * Environment for storing properties that
    * 1) need to be saved across sbt session
@@ -15,7 +15,7 @@ trait BuildInfoEnvironment{
     // the properties file will be read/stored
     def envBackingPath = buildInfoEnvironmentLocation
     // define some properties
-    lazy val lastCompilerVersion:Property[String] = propertyOptional[String]("")
+    lazy val lastCompilerVersion: Property[String] = propertyOptional[String]("")
   }
 
 }

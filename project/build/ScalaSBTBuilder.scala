@@ -20,21 +20,21 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
 
   override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"||AdditionalResources.basicFilter) // Support of triggered execution at top level
   // Top Level Tasks
-  lazy val build = task{None}.dependsOn(quick.binPack,quick.binQuick).describedAs(buildTaskDescription)
-  lazy val clean = quick.clean.dependsOn(libs.clean).describedAs(cleanTaskDescription)
-  lazy val cleanAll = locker.clean.dependsOn(libs.clean).describedAs(cleanAllTaskDescription)
-  lazy val docs = quick.scaladoc.describedAs(docsTaskDescription)
-  lazy val palo = locker.pack.describedAs(paloTaskDescription)
-  lazy val pasta = quick.pasta.describedAs(pastaTaskDescription)
-  lazy val newStarr = quick.newStarr.describedAs(newStarrTaskDescription)
-  lazy val newLocker=locker.newLocker.describedAs(newLockerTaskDescription)
-  lazy val buildForkjoin=libs.buildForkjoin.describedAs(buildForkjoinTaskDescription)
-  lazy val newForkjoin = libs.newForkjoin.describedAs(newForkjoinTaskDescription)
-  lazy val buildFjbg = libs.buildFjbg.describedAs(buildFjbgTaskDescription)
-  lazy val newFjbg = libs.newFjbg.describedAs(newFjbgTaskDescription)
-  lazy val buildMsil = libs.buildMsil.describedAs(buildMislTaskDescription)
-  lazy val newMsil = libs.newMsil.describedAs(newMsilTaskDescription)
-  lazy val partest = quick.externalPartest.describedAs(partestTaskDescription)
+  lazy val build         = task {None}.dependsOn(quick.binPack, quick.binQuick).describedAs(buildTaskDescription)
+  lazy val buildFjbg     = libs.buildFjbg.describedAs(buildFjbgTaskDescription)
+  lazy val buildForkjoin = libs.buildForkjoin.describedAs(buildForkjoinTaskDescription)
+  lazy val buildMsil     = libs.buildMsil.describedAs(buildMislTaskDescription)
+  lazy val clean         = quick.clean.dependsOn(libs.clean).describedAs(cleanTaskDescription)
+  lazy val cleanAll      = locker.clean.dependsOn(libs.clean).describedAs(cleanAllTaskDescription)
+  lazy val docs          = quick.scaladoc.describedAs(docsTaskDescription)
+  lazy val newFjbg       = libs.newFjbg.describedAs(newFjbgTaskDescription)
+  lazy val newForkjoin   = libs.newForkjoin.describedAs(newForkjoinTaskDescription)
+  lazy val newLocker     = locker.newLocker.describedAs(newLockerTaskDescription)
+  lazy val newMsil       = libs.newMsil.describedAs(newMsilTaskDescription)
+  lazy val newStarr      = quick.newStarr.describedAs(newStarrTaskDescription)
+  lazy val palo          = locker.pack.describedAs(paloTaskDescription)
+  lazy val partest       = quick.externalPartest.describedAs(partestTaskDescription)
+  lazy val pasta         = quick.pasta.describedAs(pastaTaskDescription)
   lazy val stabilityTest = strap.stabilityTest.describedAs(stabilityTestTaskDescription)
 
   // Top level variables
@@ -44,7 +44,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
    * the first time it is needed, meaning that this number will be kept
    * until sbt quit.
    */
-  lazy val versionNumber:String ={
+  lazy val versionNumber: String ={
     def getTimeString: String = {
       import java.util.Calendar;
       import java.text.SimpleDateFormat;
@@ -66,20 +66,20 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
    * not know what the main project definition is, as it will find many classes that extends Project
    */
 
-  lazy val locker=project(info.projectPath,"locker", new LockerLayer(_))
-  lazy val quick=project(info.projectPath,"quick",new QuickLayer(_,locker))
-  lazy val strap=project(info.projectPath,"strap", new StrapLayer(_, quick))
-  lazy val libs=project(info.projectPath,"libs", new LibsBuilder(_))
+  lazy val locker = project(info.projectPath,"locker", new LockerLayer(_))
+  lazy val quick = project(info.projectPath,"quick", new QuickLayer(_, locker))
+  lazy val strap = project(info.projectPath,"strap", new StrapLayer(_, quick))
+  lazy val libs = project(info.projectPath,"libs", new LibsBuilder(_))
 
 
   /**
    * Definition of what is specific to the locker layer. It implements SimplePacker in order to
    * be able to create palo (packed locker)
    */
-  class LockerLayer(info:ProjectInfo) extends BasicLayer(info,versionNumber,None)  with Packer{
+  class LockerLayer(info: ProjectInfo) extends BasicLayer(info, versionNumber, None)  with Packer {
 
 
-    override lazy val nextLayer=Some(quick)
+    override lazy val nextLayer = Some(quick)
     lazy val instantiationCompilerJar = lib / compilerJarName
     lazy val instantiationLibraryJar = lib / libraryJarName
     lazy val lockFile = layerOutput / "locker.lock"
@@ -90,7 +90,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
      * whether the layer is locked or not should call super.task instead
      */
     override def task(action : => Option[String])=
-      super.task{
+      super.task {
         if (lockFile.exists) {
           log.info(name +" is locked")
           None
@@ -98,27 +98,27 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
         else action
       }
 
-    def deleteLock = FileUtilities.clean(lockFile,log)
+    def deleteLock = FileUtilities.clean(lockFile, log)
     def createLock = {
       log.info("locking "+name)
-      FileUtilities.touch(lockFile,log)
+      FileUtilities.touch(lockFile, log)
     }
 
     /**
      * Task for locking locker
      */
-    lazy val lock = super.task{
+    lazy val lock = super.task {
       createLock
     }
 
     /**
      * Task for unlocking locker
      */
-    lazy val unlock = super.task{
+    lazy val unlock = super.task {
       deleteLock
     }
 
-    lazy val newLocker = super.task{
+    lazy val newLocker = super.task {
       createNewLocker
     }
     def createNewLocker = {
@@ -133,18 +133,18 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
      */
     override lazy val finishLayer = lock.dependsOn(build)
 
-    override lazy val pack = super.task{packF}.dependsOn(finishLayer)
+    override lazy val pack = super.task {packF}.dependsOn(finishLayer)
 
 
-    override lazy val packingDestination:Path = outputRootPath /"palo"
+    override lazy val packingDestination: Path = outputRootPath /"palo"
 
     override lazy val libraryWS = {
-        new WrapperStep(libraryConfig::Nil) with WrapperPackaging{
+        new WrapperStep(libraryConfig :: Nil) with WrapperPackaging {
           lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName, jarContent)
          }
      }
      override val minimalCompilation = true
-     override lazy val pluginsWS:WrapperStep = new WrapperStep(Nil)
+     override lazy val pluginsWS: WrapperStep = new WrapperStep(Nil)
      override lazy val toolsWS = new WrapperStep(Nil)
   }
 
@@ -153,105 +153,98 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
    * Definition of what is specific to the quick layer. It implements Packer in order to create pack, ScalaTools
    * for creating the binaries and Scaladoc to generate the documentation
    */
-  class QuickLayer(info:ProjectInfo, previous:BasicLayer) extends BasicLayer(info,versionNumber,Some(previous)) with PartestRunner
-          with Packer with ScalaTools with Scaladoc{
+  class QuickLayer(info: ProjectInfo, previous: BasicLayer) extends BasicLayer(info, versionNumber, Some(previous)) with PartestRunner
+          with Packer with ScalaTools with Scaladoc {
 
-    override lazy val nextLayer=Some(strap)
+    override lazy val nextLayer = Some(strap)
 
 
     lazy val instantiationCompilerJar = previous.compilerOutput
     lazy val instantiationLibraryJar = previous.libraryOutput
 
 
-    override lazy val packingDestination:Path = outputRootPath/ "pack"
+    override lazy val packingDestination: Path = outputRootPath/ "pack"
 
-    override def libraryToCopy = jlineJar::Nil
-    override def compilerAdditionalJars = msilJar::fjbgJar::Nil
-    override def libraryAdditionalJars = forkJoinJar::Nil
+    override def libraryToCopy = jlineJar :: Nil
+    override def compilerAdditionalJars = msilJar :: fjbgJar :: Nil
+    override def libraryAdditionalJars = forkJoinJar :: Nil
 
-    override def cleaningList = packedStarrOutput::super.cleaningList
+    override def cleaningList = packedStarrOutput :: super.cleaningList
 
 
-    override lazy val libraryWS = new WrapperStep(libraryConfig::actorsConfig::dbcConfig::swingConfig::Nil) with Packaging{
+    override lazy val libraryWS = new WrapperStep(libraryConfig :: actorsConfig :: dbcConfig :: swingConfig :: Nil) with Packaging {
         def jarContent = List(libraryConfig , actorsConfig, continuationLibraryConfig).map(_.outputDirectory ##)
-        lazy val starrJarContent=List(libraryConfig , actorsConfig,dbcConfig,swingConfig, continuationLibraryConfig).map(_.outputDirectory ##)
-        lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName,jarContent,libraryAdditionalJars)
-        lazy val starrPackagingConfig = new PackagingConfiguration(packedStarrOutput/libraryJarName,starrJarContent)
+        lazy val starrJarContent = List(libraryConfig , actorsConfig, dbcConfig, swingConfig, continuationLibraryConfig).map(_.outputDirectory ##)
+        lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName, jarContent, libraryAdditionalJars)
+        lazy val starrPackagingConfig = new PackagingConfiguration(packedStarrOutput/libraryJarName, starrJarContent)
 
     }
 
-    override lazy val toolsWS = new WrapperStep(scalacheckConfig::scalapConfig::partestConfig::Nil)
+    override lazy val toolsWS = new WrapperStep(scalacheckConfig :: scalapConfig :: partestConfig :: Nil)
 
     // An additional task for building only the library of quick
     // Used for compiling msil
-    lazy val compileLibraryOnly = task{
+    lazy val compileLibraryOnly = task {
       compile(libraryConfig, cleanCompilation _)
     }
-    lazy val externalCompileLibraryOnly = task{
-      val runner = new ExternalTaskRunner(projectRoot,this.name,compileLibraryOnly.name,"Error during external compilation", log)
+    lazy val externalCompileLibraryOnly = task {
+      val runner = new ExternalTaskRunner(projectRoot, this.name, compileLibraryOnly.name, "Error during external compilation", log)
       runner.runTask
     }.dependsOn(startLayer)
 
-
-    def createNewStarrJar:Option[String]={
+    def createNewStarrJar: Option[String] = {
       import Packer._
-      createJar(libraryWS.starrPackagingConfig,log) orElse
-      createJar(compilerConfig.starrPackagingConfig,log)
+      createJar(libraryWS.starrPackagingConfig, log) orElse
+      createJar(compilerConfig.starrPackagingConfig, log)
     }
-    lazy val pasta = task{
+    lazy val pasta = task {
       createNewStarrJar
     }.dependsOn(build)
 
-    lazy val newStarr = task{
+    lazy val newStarr = task {
       val files = (packedStarrOutput ##) * "*.jar"
-      FileUtilities.copy(files.get,lib,true,log) match{
-        case Right(_) =>None
-        case Left(_) =>Some("Error occured when copying the new starr to its destination")
+      FileUtilities.copy(files.get, lib, true, log) match {
+        case Right(_) => None
+        case Left(_) => Some("Error occured when copying the new starr to its destination")
       }
 
     }.dependsOn(pasta)
 
-
-
-
-
     /*
      * Defining here the creation of the binaries for quick and pack
      */
-    private lazy val quickBinClasspath = libraryOutput::actorsOutput::dbcOutput::swingOutput::compilerOutput::scalapOutput::forkJoinJar::fjbgJar::msilJar::jlineJar::Nil
+    private lazy val quickBinClasspath = libraryOutput :: actorsOutput :: dbcOutput :: swingOutput :: compilerOutput :: scalapOutput :: forkJoinJar :: fjbgJar :: msilJar :: jlineJar :: Nil
     private lazy val packBinClasspath  = Nil
     lazy val binQuick = tools(layerOutput / "bin", quickBinClasspath).dependsOn(finishLayer)
     lazy val binPack = tools(packingDestination / "bin", packBinClasspath).dependsOn(pack)
-
-
   }
 
 
   /**
    * Definition of what is specific to the strap layer
    */
-  class StrapLayer(info:ProjectInfo, previous:BasicLayer) extends BasicLayer(info,versionNumber,Some(previous)) {
+  class StrapLayer(info: ProjectInfo, previous: BasicLayer) extends BasicLayer(info, versionNumber, Some(previous)) {
 
     lazy val instantiationCompilerJar = previous.compilerOutput
     lazy val instantiationLibraryJar = previous.libraryOutput
     private val quick = previous
 
-    override lazy val libraryWS = new WrapperStep(libraryConfig::actorsConfig::dbcConfig::swingConfig::Nil) with WrapperPackaging{
-        lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName,Set())
+    override lazy val libraryWS = new WrapperStep(libraryConfig :: actorsConfig :: dbcConfig :: swingConfig :: Nil) with WrapperPackaging {
+        lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName, Set())
 
          }
 
-    override lazy val toolsWS= new WrapperStep(scalacheckConfig::scalapConfig::partestConfig::Nil)
+    override lazy val toolsWS = new WrapperStep(scalacheckConfig :: scalapConfig :: partestConfig :: Nil)
 
 
     def compare = {
       import PathConfig.classes
-      def filter(path:Path)= path.descendentsExcept(AllPassFilter, HiddenFileFilter || "*.properties")
-      Comparator.compare(quick.pathLayout.outputDir/classes ##,this.pathLayout.outputDir/classes ##, filter _ ,log)
+      def filter(path: Path)= path.descendentsExcept(AllPassFilter, HiddenFileFilter || "*.properties")
+      Comparator.compare(quick.pathLayout.outputDir/classes ##, this.pathLayout.outputDir/classes ##, filter _ , log)
     }
 
-    lazy val stabilityTest=task{
-      log.warn("Stability test must be runned on a clean build in order to yield correct results.")
+    lazy val stabilityTest = task {
+      log.warn("Stability test must be run on a clean build in order to yield correct results.")
       compare
     }.dependsOn(finishLayer)
 
@@ -260,80 +253,80 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with ReflectiveProj
 
 
   /**
-   * An additional subproject used to build new version of forkjoin,fjbg and msil
+   * An additional subproject used to build new version of forkjoin, fjbg and msil
    */
-  class LibsBuilder(val info:ProjectInfo) extends ScalaBuildProject with ReflectiveProject with Compilation with BuildInfoEnvironment {
+  class LibsBuilder(val info: ProjectInfo) extends ScalaBuildProject with ReflectiveProject with Compilation with BuildInfoEnvironment {
     override def dependencies = info.dependencies
-    override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"||AdditionalResources.basicFilter) // Support of triggered execution at project level
+    override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java" ||AdditionalResources.basicFilter) // Support of triggered execution at project level
 
 
-    def buildInfoEnvironmentLocation:Path=outputRootPath / ("build-"+name+".properties")
+    def buildInfoEnvironmentLocation: Path = outputRootPath / ("build-"+name+".properties")
 
-    def instantiationCompilerJar:Path=locker.compilerOutput
-    def instantiationLibraryJar:Path=locker.libraryOutput
+    def instantiationCompilerJar: Path = locker.compilerOutput
+    def instantiationLibraryJar: Path = locker.libraryOutput
 
     def libsDestination = layerOutput
 
-    lazy val checkJavaVersion = task{
+    lazy val checkJavaVersion = task {
       val version = System.getProperty("java.version")
-      log.debug("java.version="+version)
+      log.debug("java.version ="+version)
       val required = "1.6"
       if (version.startsWith(required)) None else Some("Incompatible java version : required "+required)
     }
 
 
-    private def simpleBuild(step:CompilationStep with Packaging)=task{
+    private def simpleBuild(step: CompilationStep with Packaging)= task {
       import Packer._
-      compile(step) orElse createJar(step,log)
+      compile(step) orElse createJar(step, log)
     }.dependsOn(locker.finishLayer)
 
-    private def copyJar(step:CompilationStep with Packaging, name:String) = task {
-      FileUtilities.copyFile(step.packagingConfig.jarDestination,lib/name,log)
+    private def copyJar(step: CompilationStep with Packaging, name: String) = task {
+      FileUtilities.copyFile(step.packagingConfig.jarDestination, lib/name, log)
     }
 
-    lazy val newForkjoin = copyJar(forkJoinConfig,forkjoinJarName).dependsOn(buildForkjoin)
-    lazy val buildForkjoin= simpleBuild(forkJoinConfig).dependsOn(checkJavaVersion)
+    lazy val newForkjoin = copyJar(forkJoinConfig, forkjoinJarName).dependsOn(buildForkjoin)
+    lazy val buildForkjoin = simpleBuild(forkJoinConfig).dependsOn(checkJavaVersion)
     lazy val newFjbg = copyJar(fjbgConfig, fjbgJarName).dependsOn(buildFjbg)
     lazy val buildFjbg = simpleBuild(fjbgConfig)
-    lazy val newMsil = copyJar(msilConfig,msilJarName).dependsOn(buildMsil)
+    lazy val newMsil = copyJar(msilConfig, msilJarName).dependsOn(buildMsil)
     // TODO As msil contains scala files, maybe needed compile it with an ExternalSBTRunner
     lazy val buildMsil = simpleBuild(msilConfig).dependsOn(quick.externalCompileLibraryOnly)
 
-    lazy val forkJoinConfig = new CompilationStep("forkjoin",pathLayout,log) with Packaging{
+    lazy val forkJoinConfig = new CompilationStep("forkjoin", pathLayout, log) with Packaging {
       def label = "new forkjoin library"
       override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java", ".svn")
       def dependencies = Seq()
       def options = Seq()
       override def javaOptions = Seq("-target","1.5","-source","1.5","-g")
-      lazy val packagingConfig = new PackagingConfiguration(libsDestination/forkjoinJarName,List(outputDirectory ##))
+      lazy val packagingConfig = new PackagingConfiguration(libsDestination/forkjoinJarName, List(outputDirectory ##))
     }
 
-    lazy val fjbgConfig =  new CompilationStep("fjbg",pathLayout,log) with Packaging{
+    lazy val fjbgConfig =  new CompilationStep("fjbg", pathLayout, log) with Packaging {
       def label = "new fjbg library"
       override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java", ".svn")
       def dependencies = Seq()
       def options = Seq()
       override def javaOptions = Seq("-target","1.5","-source","1.4","-g")
-      lazy val packagingConfig = new PackagingConfiguration(libsDestination/fjbgJarName,List(outputDirectory ##))
+      lazy val packagingConfig = new PackagingConfiguration(libsDestination/fjbgJarName, List(outputDirectory ##))
 
     }
 
-    lazy val msilConfig =  new CompilationStep("msil",pathLayout,log) with Packaging{
+    lazy val msilConfig =  new CompilationStep("msil", pathLayout, log) with Packaging {
       def label = "new msil library"
       override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java"|"*.scala", ".svn"|"tests")
       def dependencies = Seq()
       override def classpath = super.classpath +++ quick.libraryOutput
       def options = Seq()
       override def javaOptions = Seq("-target","1.5","-source","1.4","-g")
-      lazy val packagingConfig = new PackagingConfiguration(libsDestination/msilJarName,List(outputDirectory ##))
+      lazy val packagingConfig = new PackagingConfiguration(libsDestination/msilJarName, List(outputDirectory ##))
 
     }
 
-    def cleaningList=layerOutput::layerEnvironment.envBackingPath::Nil
+    def cleaningList = layerOutput :: layerEnvironment.envBackingPath :: Nil
 
-    def  cleanFiles = FileUtilities.clean(cleaningList,true,log)
+    def  cleanFiles = FileUtilities.clean(cleaningList, true, log)
 
-    lazy val clean:Task = task{cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
+    lazy val clean: Task = task {cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
 
   }
 }

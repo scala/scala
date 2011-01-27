@@ -1,15 +1,15 @@
 import sbt._
-import java.io.{File,FileInputStream}
+import java.io.{File, FileInputStream}
 
 // Based on scala.tools.ant.Same
 object Comparator {
 
-    private def getMappedPath(path:Path,baseDirectory:Path):Path= {
-      Path.fromString(baseDirectory,path.relativePath)
+    private def getMappedPath(path: Path, baseDirectory: Path): Path = {
+      Path.fromString(baseDirectory, path.relativePath)
     }
 
 
-    def compare(origin:Path,dest:Path,filter:Path=>PathFinder,log:Logger):Option[String] = {
+    def compare(origin: Path, dest: Path, filter: Path => PathFinder, log: Logger): Option[String] = {
       log.info("Comparing the contents of "+origin.absolutePath+ " with "+dest.absolutePath)
       var allEqualNow = true
 
@@ -33,7 +33,7 @@ object Comparator {
 
       for (originPath <- originPaths.filter(! _.isDirectory)){
         log.debug("origin :" + originPath.absolutePath)
-        val destPath = getMappedPath(originPath,dest)
+        val destPath = getMappedPath(originPath, dest)
         log.debug("dest   :" + destPath.absolutePath)
         var equalNow = true
         val originFile = originPath.asFile
