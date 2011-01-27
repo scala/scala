@@ -53,8 +53,10 @@ object AbstractFile {
    * @param file ...
    * @return     ...
    */
-  def getURL(url: URL): AbstractFile =
-    Option(url) collect { case url: URL if Path.isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
+  def getURL(url: URL): AbstractFile = {
+    if (url == null || !Path.isJarOrZip(url.getPath)) null
+    else ZipArchive fromURL url
+  }
 }
 
 /**
