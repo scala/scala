@@ -139,11 +139,10 @@ self =>
       if (context.unit == null)
         context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
-    @tailrec def noLocks(sym: Symbol): Boolean = {
-      sym == NoSymbol ||
-      (sym.rawflags & LOCKED) == 0 && noLocks(sym.owner)
-    }
-    if (interruptsEnabled && noLocks(context.owner)) {
+    @inline def isUnlocked(sym: Symbol) = (sym.rawflags & LOCKED) == 0
+    @tailrec def noLocks(sym: Symbol): Boolean = sym == NoSymbol || isUnlocked(sym) && noLocks(sym.owner)
+    def noImportLocks: Boolean = context.imports forall (imp => isUnlocked(imp.tree.symbol))
+    if (interruptsEnabled && noLocks(context.owner) && noImportLocks) {
       if (context.unit != null &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
@@ -477,7 +476,7 @@ self =>
   def typedTreeAt(pos: Position): Tree = {
     informIDE("typedTreeAt " + pos)
     val tree = locateTree(pos)
-    debugLog("at pos "+pos+" was found: "+tree+tree.pos.show)
+    debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
     if (stabilizedType(tree) ne null) {
       debugLog("already attributed")
       tree
