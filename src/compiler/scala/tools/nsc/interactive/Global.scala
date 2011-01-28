@@ -328,7 +328,7 @@ self =>
 
     for (s <- allSources; unit <- getUnit(s)) {
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
-      if (unit.status == NotLoaded) parse(unit)
+      if (unit.status == NotLoaded) parseAndEnter(unit)
     }
 
     for (s <- allSources; unit <- getUnit(s)) {
@@ -364,7 +364,7 @@ self =>
   }
 
   /** Parse unit and create a name index. */
-  def parse(unit: RichCompilationUnit): Unit = {
+  def parseAndEnter(unit: RichCompilationUnit): Unit = {
     debugLog("parsing: "+unit)
     currentTyperRun.compileLate(unit)
     if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
@@ -372,11 +372,14 @@ self =>
     unit.status = JustParsed
   }
 
+  @deprecated("use parseTree(unit.source) instead")
+  def parse(unit: RichCompilationUnit) = parseAndEnter(unit)
+
   /** Make sure unit is typechecked
    */
   def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
-    if (unit.status == NotLoaded) parse(unit)
+    if (unit.status == NotLoaded) parseAndEnter(unit)
     unit.status = PartiallyChecked
     currentTyperRun.typeCheck(unit)
     unit.lastBody = unit.body
@@ -447,7 +450,7 @@ self =>
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
     reset(unit)
-    parse(unit)
+    parseAndEnter(unit)
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
@@ -516,18 +519,6 @@ self =>
    *  entire compilation unit  */
   def getTypedTree(source: SourceFile, forceReload: Boolean, response: Response[Tree]) {
     respond(response)(typedTree(source, forceReload))
-  }
-
-  /** Set sync var `response` to the last fully attributed tree produced from the
-   *  entire compilation unit  */
-  def getLastTypedTree(source: SourceFile, response: Response[Tree]) {
-    informIDE("getLastTyped" + source)
-    respond(response) {
-      val unit = getOrCreateUnitOf(source)
-      if (unit.status > PartiallyChecked) unit.body
-      else if (unit.lastBody ne EmptyTree) unit.lastBody
-      else typedTree(source, false)
-    }
   }
 
   /** Implements CompilerControl.askLinkPos */
@@ -759,7 +750,7 @@ self =>
     }
     respond(response) {
       onUnitOf(source) { unit =>
-        if (unit.status == NotLoaded) parse(unit)
+        if (unit.status == NotLoaded) parseAndEnter(unit)
         structureTraverser.traverse(unit.body)
         val topLevelSyms = structureTraverser.getResult
         topLevelSyms foreach forceSym

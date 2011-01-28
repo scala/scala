@@ -193,12 +193,13 @@ trait CompilerControl { self: Global =>
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
 
-  /** Returns parse tree for source `source`. No symbols are entered. Syntax errors are reported.
-   */
+  @deprecated("use parseTree(source) instead")
   def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
     parseTree(source)
   }
 
+  /** Returns parse tree for source `source`. No symbols are entered. Syntax errors are reported.
+   */
   def parseTree(source: SourceFile): Tree = ask { () =>
     getUnit(source) match {
       case Some(unit) if unit.status >= JustParsed =>
