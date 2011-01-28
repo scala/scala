@@ -134,11 +134,6 @@ trait Picklers { self: Global =>
       .wrapped { case source ~ forceReload => new AskTypeItem(source, forceReload, new Response) } { w => w.source ~ w.forceReload }
       .asClass (classOf[AskTypeItem])
 
-  implicit def askLastTypeItem: CondPickler[AskLastTypeItem] =
-    pkl[SourceFile]
-      .wrapped { new AskLastTypeItem(_, new Response) } { _.source }
-      .asClass (classOf[AskLastTypeItem])
-
   implicit def askTypeCompletionItem: CondPickler[AskTypeCompletionItem] =
     pkl[Position]
       .wrapped { new AskTypeCompletionItem(_, new Response) } { _.pos }
@@ -175,6 +170,6 @@ trait Picklers { self: Global =>
       .asClass (classOf[EmptyAction])
 
   implicit def action: Pickler[() => Unit] =
-    reloadItem | askTypeAtItem | askTypeItem | askLastTypeItem | askTypeCompletionItem | askScopeCompletionItem |
+    reloadItem | askTypeAtItem | askTypeItem | askTypeCompletionItem | askScopeCompletionItem |
     askToDoFirstItem | askLinkPosItem | askLoadedTypedItem | askStructureItem | emptyAction
 }

@@ -114,7 +114,7 @@ trait CompilerControl { self: Global =>
   }
 
   /** Sets sync var `response` to the smallest fully attributed tree that encloses position `pos`.
-   *  @pre The source file belonging to `pos` needs to be loaded.
+   *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be be loaded.
    */
   def askTypeAt(pos: Position, response: Response[Tree]) =
     scheduler postWorkItem new AskTypeAtItem(pos, response)
@@ -144,20 +144,16 @@ trait CompilerControl { self: Global =>
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
     scheduler postWorkItem new AskLinkPosItem(sym, source, response)
 
-  /** Sets sync var `response` to the last fully attributed & typechecked tree produced from `source`.
-   *  If no such tree exists yet, do a normal askType(source, false, response)
-   */
-  def askLastType(source: SourceFile, response: Response[Tree]) =
-    scheduler postWorkItem new AskLastTypeItem(source, response)
-
   /** Sets sync var `response' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
+   *  @pre  source is loaded
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
     scheduler postWorkItem new AskTypeCompletionItem(pos, response)
 
   /** Sets sync var `response' to list of members that are visible
    *  as members of the scope enclosing `pos`.
+   *  @pre  source is loaded
    */
   def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
     scheduler postWorkItem new AskScopeCompletionItem(pos, response)
@@ -253,11 +249,6 @@ trait CompilerControl { self: Global =>
   class AskTypeItem(val source: SourceFile, val forceReload: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTree(source, forceReload, response)
     override def toString = "typecheck"
-  }
-
-  class AskLastTypeItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
-    def apply() = self.getLastTypedTree(source, response)
-    override def toString = "reconcile"
   }
 
   class AskTypeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {

@@ -466,29 +466,33 @@ self =>
     else outOfDate = true            // proceed normally and enable new background compile
   }
 
-  /** A fully attributed tree located at position `pos`  */
-  def typedTreeAt(pos: Position): Tree = {
-    informIDE("typedTreeAt " + pos)
-    val tree = locateTree(pos)
-    debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
-    if (stabilizedType(tree) ne null) {
-      debugLog("already attributed")
-      tree
-    } else {
-      val unit = getOrCreateUnitOf(pos.source)
-      unit.targetPos = pos
-      try {
-        debugLog("starting targeted type check")
-        //newTyperRun()   // not needed for idempotent type checker phase
-        typeCheck(unit)
-        println("tree not found at "+pos)
-        EmptyTree
-      } catch {
-        case ex: TyperResult => new Locator(pos) locateIn ex.tree
-      } finally {
-        unit.targetPos = NoPosition
+  /** A fully attributed tree located at position `pos` */
+  def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+    case None =>
+      reloadSources(List(pos.source))
+      val result = typedTreeAt(pos)
+      removeUnitOf(pos.source)
+      result
+    case Some(unit) =>
+      informIDE("typedTreeAt " + pos)
+      val tree = locateTree(pos)
+      debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
+      if (stabilizedType(tree) ne null) {
+        debugLog("already attributed")
+        tree
+      } else {
+        unit.targetPos = pos
+        try {
+          debugLog("starting targeted type check")
+          typeCheck(unit)
+          println("tree not found at "+pos)
+          EmptyTree
+        } catch {
+          case ex: TyperResult => new Locator(pos) locateIn ex.tree
+        } finally {
+          unit.targetPos = NoPosition
+        }
       }
-    }
   }
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
