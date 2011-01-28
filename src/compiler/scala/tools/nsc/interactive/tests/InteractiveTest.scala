@@ -2,7 +2,7 @@ package scala.tools.nsc.interactive
 package tests
 
 import scala.tools.nsc.Settings
-import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{BatchSourceFile, SourceFile, Position}
 import scala.tools.nsc.io._
 
@@ -41,7 +41,7 @@ abstract class InteractiveTest {
   val TIMEOUT = 10000 // timeout in milliseconds
 
   val settings = new Settings
-  val reporter= new StoreReporter
+  val reporter= new ConsoleReporter(settings)
 
   // need this so that the classpath comes from what partest
   // instead of scala.home
@@ -147,7 +147,10 @@ abstract class InteractiveTest {
       println("[response] aksTypeCompletion at " + (pos.line, pos.column))
       // we skip getClass because it changed signature between 1.5 and 1.6, so there is no
       // universal check file that we can provide for this to work
-      println(members.sortBy(_.sym.name.toString).filterNot(_.sym.name.toString == "getClass").mkString("\n"))
+      println("retreived %d members".format(members.size))
+      compiler ask { () =>
+        println(members.sortBy(_.sym.name.toString).filterNot(_.sym.name.toString == "getClass").mkString("\n"))
+      }
     }
   }
 
@@ -161,7 +164,7 @@ abstract class InteractiveTest {
       r
     } { (pos, tree) =>
       println("[response] askTypeAt at " + (pos.line, pos.column))
-      println(tree)
+      compiler.ask(() => println(tree))
     }
   }
 
