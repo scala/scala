@@ -20,7 +20,6 @@ object Test extends InteractiveTest {
       case Left(t) =>
         println("retrieved tree: " + t)
     }
-    println(this.reporter.infos.mkString("\n"))
   }
 
   // You can enable settings for the presentation compiler here
