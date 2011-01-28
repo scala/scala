@@ -13,6 +13,14 @@ import java.util.{ List => JList }
 import util.returning
 
 object Completion {
+  object Empty extends Completion {
+    def resetVerbosity() = ()
+    def execute(line: String) = None
+    def completer() = new NullCompleter
+  }
+
+  def apply(repl: Interpreter): Completion = new CompletionImpl(repl)
+
   def looksLikeInvocation(code: String) = (
         (code != null)
     &&  (code startsWith ".")
@@ -33,9 +41,19 @@ object Completion {
 }
 import Completion._
 
+trait Completion {
+  def resetVerbosity(): Unit
+  def execute(line: String): Option[Any]
+  def completer(): Completer
+}
+
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
-class Completion(val repl: Interpreter) extends CompletionOutput {
+class CompletionImpl(val repl: Interpreter) extends Completion with CompletionOutput {
+  val global: repl.global.type = repl.global
+  import global._
+  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
+
   // verbosity goes up with consecutive tabs
   private var verbosity: Int = 0
   def resetVerbosity() = verbosity = 0
@@ -43,10 +61,6 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
   def isCompletionDebug = repl.isCompletionDebug
   def DBG(msg: => Any) = if (isCompletionDebug) println(msg.toString)
   def debugging[T](msg: String): T => T = (res: T) => returning[T](res)(x => DBG(msg + x))
-
-  lazy val global: repl.compiler.type = repl.compiler
-  import global._
-  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
 
   // XXX not yet used.
   lazy val dottedPaths = {
@@ -284,12 +298,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
   def completions(buf: String): List[String] =
     topLevelFor(Parsed.dotted(buf + ".", buf.length + 1))
 
-  // jline's entry point
-  lazy val jline: ArgumentCompleter = {
-    val c = new ArgumentCompleter(new JLineDelimiter, new JLineCompletion)
-    c setStrict false
-    c
-  }
+  def completer() = new JLineCompletion
 
   /** This gets a little bit hairy.  It's no small feat delegating everything
    *  and also keeping track of exactly where the cursor is and where it's supposed

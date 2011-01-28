@@ -31,6 +31,7 @@ class History(val jhistory: JHistory) {
 }
 
 object History {
+  val Empty: History = null
   val ScalaHistoryFile = ".scala_history"
 
   def apply(): History = new History(

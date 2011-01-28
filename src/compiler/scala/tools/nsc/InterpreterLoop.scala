@@ -94,15 +94,13 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   def this(in0: BufferedReader, out: PrintWriter) = this(Some(in0), out)
   def this() = this(None, new PrintWriter(Console.out))
 
-  /** The input stream from which commands come, set by main() */
-  var in: InteractiveReader = _
+  var in: InteractiveReader = _   // the input stream from which commands come
+  var settings: Settings = _
+  var intp: Interpreter = _
+  var power: Power = _
 
   /** The context class loader at the time this object was created */
   protected val originalClassLoader = Thread.currentThread.getContextClassLoader
-
-  var settings: Settings = _          // set by main()
-  var interpreter: Interpreter = _    // set by createInterpreter()
-  var replPower: Power = _
 
   // classpath entries added via :cp
   var addedClasspath: String = ""
@@ -130,10 +128,10 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     }
     ignoring(classOf[Exception]) {
       SignalManager("INT") = {
-        if (interpreter == null)
+        if (intp == null)
           onExit()
-        else if (interpreter.lineManager.running)
-          interpreter.lineManager.cancel()
+        else if (intp.lineManager.running)
+          intp.lineManager.cancel()
         else if (in.currentLine != "") {
           // non-empty buffer, so make them hit ctrl-C a second time
           SignalManager("INT") = onExit()
@@ -146,10 +144,10 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
 
   /** Close the interpreter and set the var to null. */
   def closeInterpreter() {
-    if (interpreter ne null) {
-      interpreter.close
-      interpreter = null
-      replPower = null
+    if (intp ne null) {
+      intp.close
+      intp = null
+      power = null
       Thread.currentThread.setContextClassLoader(originalClassLoader)
     }
   }
@@ -159,7 +157,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     if (addedClasspath != "")
       settings.classpath append addedClasspath
 
-    interpreter = new Interpreter(settings, out) {
+    intp = new Interpreter(settings, out) {
       override protected def createLineManager() = new Line.Manager {
         override def onRunaway(line: Line[_]): Unit = {
           val template = """
@@ -176,9 +174,9 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       override protected def parentClassLoader =
         settings.explicitParentLoader.getOrElse( classOf[InterpreterLoop].getClassLoader )
     }
-    interpreter.setContextClassLoader()
+    intp.setContextClassLoader()
     installSigIntHandler()
-    // interpreter.quietBind("settings", "scala.tools.nsc.InterpreterSettings", interpreter.isettings)
+    // intp.quietBind("settings", "scala.tools.nsc.InterpreterSettings", intp.isettings)
   }
 
   /** print a friendly help message */
@@ -203,12 +201,14 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   }
 
   /** Show the history */
-  def printHistory(xs: List[String]) {
+  def printHistory(xs: List[String]): Result = {
+    if (in.history eq History.Empty)
+      return "No history available."
+
     val defaultLines = 20
-    val h       = in.history getOrElse { return println("No history available.") }
-    val current = h.index
+    val current = in.history.index
     val count   = try xs.head.toInt catch { case _: Exception => defaultLines }
-    val lines   = in.historyList takeRight count
+    val lines   = in.history.asList takeRight count
     val offset  = current - lines.size + 1
 
     for ((line, index) <- lines.zipWithIndex)
@@ -217,21 +217,20 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
 
   /** Some print conveniences */
   def println(x: Any) = out println x
-  def plush(x: Any) = { out print x ; out.flush() }
+  def plush(x: Any)   = { out print x ; out.flush() }
   def plushln(x: Any) = { out println x ; out.flush() }
 
   /** Search the history */
   def searchHistory(_cmdline: String) {
     val cmdline = _cmdline.toLowerCase
-    val h       = in.history getOrElse { return println("No history available.") }
-    val offset  = h.index - h.size + 1
+    val offset  = in.history.index - in.history.size + 1
 
-    for ((line, index) <- h.asStrings.zipWithIndex ; if line.toLowerCase contains cmdline)
+    for ((line, index) <- in.history.asStrings.zipWithIndex ; if line.toLowerCase contains cmdline)
       println("%d %s".format(index + offset, line))
   }
 
   /** Prompt to print when awaiting input */
-  val prompt = Properties.shellPromptString
+  def prompt = Properties.shellPromptString
 
   /** Standard commands **/
   val standardCommands: List[Command] = {
@@ -252,18 +251,18 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   /** Power user commands */
   val powerCommands: List[Command] = {
     List(
-      NoArgs("dump", "displays a view of the interpreter's internal state", replPower.toString _),
+      NoArgs("dump", "displays a view of the interpreter's internal state", power.toString _),
       LineArg("phase", "set the implicit phase for power commands", phaseCommand),
       LineArg("symfilter", "change the filter for symbol printing", symfilterCmd)
     )
   }
   private def symfilterCmd(line: String): Result = {
     if (line == "") {
-      replPower.vars.symfilter set "_ => true"
+      power.vars.symfilter set "_ => true"
       "Remove symbol filter."
     }
     else {
-      replPower.vars.symfilter set line
+      power.vars.symfilter set line
       "Set symbol filter to '" + line + "'."
     }
   }
@@ -271,7 +270,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     val name = _name.toLowerCase
     // This line crashes us in TreeGen:
     //
-    //   if (interpreter.power.phased set name) "..."
+    //   if (intp.power.phased set name) "..."
     //
     // Exception in thread "main" java.lang.AssertionError: assertion failed: ._7.type
     //  at scala.Predef$.assert(Predef.scala:99)
@@ -281,7 +280,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     //  at scala.tools.nsc.ast.TreeGen.mkAttributedStableRef(TreeGen.scala:143)
     //
     // But it works like so, type annotated.
-    val x: Phased = replPower.phased
+    val x: Phased = power.phased
     if (name == "") "Active phase is '" + x.get + "'"
     else if (x set name) "Active phase is now '" + name + "'"
     else "'" + name + "' does not appear to be a valid phase."
@@ -289,15 +288,15 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
 
   /** Available commands */
   def commands: List[Command] = standardCommands ++ (
-    if (replPower == null) Nil
+    if (power == null) Nil
     else powerCommands
   )
 
-  /** The main read-eval-print loop for the interpreter.  It calls
+  /** The main read-eval-print loop for the repl.  It calls
    *  command() for each line of input, and stops when
    *  command() returns false.
    */
-  def repl() {
+  def loop() {
     def readOneLine() = {
       out.flush
       in readLine prompt
@@ -311,11 +310,6 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
         case _                          => true
       }
 
-    if (sys.props contains PowerProperty) {
-      plushln("Starting in power mode, one moment...\n")
-      powerCmd()
-    }
-
     while (processLine(readOneLine)) { }
   }
 
@@ -327,7 +321,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     try file applyReader { reader =>
       in = new SimpleReader(reader, out, false)
       plushln("Loading " + file + "...")
-      repl()
+      loop()
     }
     finally {
       in = oldIn
@@ -348,10 +342,10 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
 
   /** fork a shell and run a command */
   def runShellCmd(cmd: String) {
-    interpreter.beQuietDuring { interpreter.interpret("import _root_.scala.sys.process._") }
+    intp.beQuietDuring { intp.interpret("import _root_.scala.sys.process._") }
     val xs = Process(cmd).lines
     if (xs.nonEmpty)
-      interpreter.bind("stdout", "scala.Stream[String]", xs)
+      intp.bind("stdout", "scala.Stream[String]", xs)
   }
 
   def withFile(filename: String)(action: File => Unit) {
@@ -381,28 +375,21 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     else out.println("The path '" + f + "' doesn't seem to exist.")
   }
 
-  def completions(arg: String): Unit = {
-    val comp = in.completion getOrElse { return println("Completion unavailable.") }
-    val xs  = comp completions arg
-
-    injectAndName(xs)
-  }
-
   def powerCmd(): Result = {
-    if (replPower != null)
+    if (power != null)
       return "Already in power mode."
 
-    replPower = new Power(interpreter) { }
-    replPower.unleash()
-    injectOne("history", in.historyList)
-    in.completion foreach (x => injectOne("completion", x))
+    power = new Power(intp) { }
+    power.unleash()
+    injectOne("history", in.history.asList)
+    injectOne("completion", in.completion)
 
-    replPower.banner
+    power.banner
   }
 
   def verbosity() = {
-    val old = interpreter.printResults
-    interpreter.printResults = !old
+    val old = intp.printResults
+    intp.printResults = !old
     out.println("Switched " + (if (old) "off" else "on") + " result printing.")
   }
 
@@ -419,7 +406,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     // not a command
     if (!line.startsWith(":")) {
       // Notice failure to create compiler
-      if (interpreter.compiler == null) return Result(false, None)
+      if (intp.global == null) return Result(false, None)
       else return Result(true, interpretStartingWith(line))
     }
 
@@ -507,7 +494,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       for (PasteCommand(cmd, trailing) <- xs) {
         out.flush()
         def runCode(code: String, extraLines: List[String]) {
-          (interpreter interpret code) match {
+          (intp interpret code) match {
             case IR.Incomplete if extraLines.nonEmpty =>
               runCode(code + "\n" + extraLines.head, extraLines.tail)
             case _ => ()
@@ -528,9 +515,9 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     */
   def interpretStartingWith(code: String): Option[String] = {
     // signal completion non-completion input has been received
-    in.completion foreach (_.resetVerbosity())
+    in.completion.resetVerbosity()
 
-    def reallyInterpret = interpreter.interpret(code) match {
+    def reallyInterpret = intp.interpret(code) match {
       case IR.Error       => None
       case IR.Success     => Some(code)
       case IR.Incomplete  =>
@@ -544,7 +531,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
             // parser thinks the input is still incomplete, but since this is
             // a file being read non-interactively we want to fail.  So we send
             // it straight to the compiler for the nice error message.
-            interpreter.compileString(code)
+            intp.compileString(code)
             None
 
           case line => interpretStartingWith(code + "\n" + line)
@@ -566,13 +553,13 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       interpretAsPastedTranscript(List(code))
       None
     }
-    else if (Completion.looksLikeInvocation(code) && interpreter.mostRecentVar != "") {
-      interpretStartingWith(interpreter.mostRecentVar + code)
+    else if (Completion.looksLikeInvocation(code) && intp.mostRecentVar != "") {
+      interpretStartingWith(intp.mostRecentVar + code)
     }
     else {
-      if (interpreter.isParseable(code)) reallyInterpret
+      if (intp.isParseable(code)) reallyInterpret
       else {
-        val res = in.completion flatMap (_ execute code) map injectAndName
+        val res = (in.completion execute code) map injectAndName
         if (res.isDefined) None // completion took responsibility, so do not parse
         else reallyInterpret    // we know it will fail, this is to show the error
       }
@@ -601,14 +588,16 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       case None       =>
         // the interpreter is passed as an argument to expose tab completion info
         if (settings.Xnojline.value || Properties.isEmacsShell) new SimpleReader
-        else if (settings.noCompletion.value) InteractiveReader.createDefault()
-        else InteractiveReader.createDefault(interpreter)
+        else InteractiveReader(
+          if (settings.noCompletion.value) Completion.Empty
+          else Completion(intp)
+        )
     }
 
     loadFiles(settings)
     try {
       // it is broken on startup; go ahead and exit
-      if (interpreter.reporter.hasErrors) return
+      if (intp.reporter.hasErrors) return
 
       printWelcome()
 
@@ -617,8 +606,12 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       // our best to look ready.  Ideally the user will spend a
       // couple seconds saying "wow, it starts so fast!" and by the time
       // they type a command the compiler is ready to roll.
-      interpreter.initialize()
-      repl()
+      intp.initialize()
+      if (sys.props contains PowerProperty) {
+        plushln("Starting in power mode, one moment...\n")
+        powerCmd()
+      }
+      loop()
     }
     finally closeInterpreter()
   }
@@ -640,20 +633,20 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   }
 
   def inject[T: ClassManifest](name: String, value: T): (String, String) = {
-    interpreter.bind[T](name, value)
+    intp.bind[T](name, value)
     (name, objName(value))
   }
 
   // injects one value into the repl; returns pair of name and class
   def injectOne(name: String, obj: Any): (String, String) = {
     val className = objName(obj)
-    interpreter.quietBind(name, className, obj)
+    intp.quietBind(name, className, obj)
     (name, className)
   }
   def injectAndName(obj: Any): (String, String) = {
-    val name = interpreter.getVarName
+    val name = intp.getVarName
     val className = objName(obj)
-    interpreter.bind(name, className, obj)
+    intp.bind(name, className, obj)
     (name, className)
   }
 
@@ -683,5 +676,37 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       case ""     => if (command.ok) main(command.settings) // else nothing
       case help   => plush(help)
     }
+  }
+}
+
+object InterpreterLoop {
+  implicit def loopToInterpreter(repl: InterpreterLoop): Interpreter = repl.intp
+
+  // provide the enclosing type T
+  //  in order to set up the interpreter's classpath and parent class loader properly
+  def breakIf[T: Manifest](assertion: => Boolean, args: NamedParam[_]*): Unit =
+    if (assertion) break[T](args.toList)
+
+  // start a repl, binding supplied args
+  def break[T: Manifest](args: List[NamedParam[_]]): Unit = {
+    val msg = if (args.isEmpty) "" else "  Binding " + args.size + " value%s.".format(
+      if (args.size == 1) "" else "s"
+    )
+    Console.println("Debug repl starting." + msg)
+    val repl = new InterpreterLoop {
+      override def prompt = "\ndebug> "
+    }
+    repl.settings = new Settings(Console println _)
+    repl.settings.embeddedDefaults[T]
+    repl.createInterpreter()
+    repl.in = InteractiveReader(repl)
+
+    // rebind exit so people don't accidentally call sys.exit by way of predef
+    repl.quietRun("""def exit = println("Type :quit to resume program execution.")""")
+    args foreach (p => repl.bind(p.name, p.tpe, p.value))
+    repl.loop()
+
+    Console.println("\nDebug repl exiting.")
+    repl.closeInterpreter()
   }
 }

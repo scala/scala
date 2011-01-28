@@ -10,14 +10,14 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ HashMap }
 import scala.tools.nsc.util.{ NoPosition, BatchSourceFile }
 
-/** A class for methods to be injected into the repl in power mode.
+/** A class for methods to be injected into the intp in power mode.
  */
-class Power(repl: Interpreter) {
-  val global: repl.compiler.type = repl.compiler
+class Power(intp: Interpreter) {
+  val global: intp.global.type = intp.global
 
   import global._
   import definitions.{ getMember, getModule, getClass => getCompilerClass }
-  import repl.{ beQuietDuring, interpret, parse }
+  import intp.{ beQuietDuring, interpret, parse }
 
   object phased extends Phased {
     val global: Power.this.global.type = Power.this.global
@@ -29,7 +29,7 @@ class Power(repl: Interpreter) {
 
     def set(code: String) = interpret(path + ".value = " + code)
     def get: T = value
-    override def toString = "repl." + path + ".value = \"" + code + "\""
+    override def toString = "intp." + path + ".value = \"" + code + "\""
   }
 
   object vars {
@@ -40,16 +40,17 @@ class Power(repl: Interpreter) {
   }
 
   def banner = """
-    |** Power User mode enabled - BEEP BOOP      **
+    |** Power User mode enabled - BEEP BOOP WHIR **
     |** scala.tools.nsc._ has been imported      **
-    |** New vals! Try repl, global, power        **
+    |** global._ and definitions._ also imported **
+    |** New vals! Try repl, intp, global, power  **
     |** New cmds! :help to discover them         **
     |** New defs! Type power.<tab> to reveal     **
   """.stripMargin.trim
 
   def init = """
     |import scala.tools.nsc._
-    |val global: repl.compiler.type = repl.compiler
+    |val global: intp.global.type = intp.global
     |import global._
     |import definitions._
     |import power.{ phased, show, clazz, module }
@@ -59,8 +60,9 @@ class Power(repl: Interpreter) {
    */
   def unleash(): Unit = {
     def f = {
-      repl.bind[Interpreter]("repl", repl)
-      repl.bind[Power]("power", this)
+      intp.bind[InterpreterLoop]("repl", this)
+      intp.bind[Interpreter]("intp", intp)
+      intp.bind[Power]("power", this)
       init split '\n' foreach interpret
     }
     if (isReplDebug) f
@@ -122,7 +124,7 @@ class Power(repl: Interpreter) {
     run.units.toList map (_.body)
   }
   def mkTypedTree(code: String) = mkTypedTrees(code).head
-  def mkType(id: String): Type = repl.stringToCompilerType(id)
+  def mkType(id: String): Type = intp.stringToCompilerType(id)
 
   override def toString = """
     |** Power mode status **
@@ -131,7 +133,7 @@ class Power(repl: Interpreter) {
     |Identifiers: %s
   """.stripMargin.format(
       phased.get,
-      repl.allreferencedNames mkString " ",
-      repl.unqualifiedIds mkString " "
+      intp.allreferencedNames mkString " ",
+      intp.unqualifiedIds mkString " "
     )
 }

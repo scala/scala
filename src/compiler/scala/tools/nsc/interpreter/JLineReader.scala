@@ -11,25 +11,32 @@ import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer._
 
 /** Reads from the console using JLine */
-class JLineReader(interpreter: Interpreter) extends InteractiveReader {
-  def this() = this(null)
+class JLineReader(val completion: Completion) extends InteractiveReader {
+  lazy val history = History()
 
-  override lazy val history    = Some(History())
-  override lazy val completion = Option(interpreter) map (x => new Completion(x))
-  override def reset()         = consoleReader.getTerminal().reset()
-  override def init()          = consoleReader.getTerminal().init()
+  def reset() = consoleReader.getTerminal().reset()
+  def init()  = consoleReader.getTerminal().init()
+
   override def redrawLine()    = {
     consoleReader.flush()
     consoleReader.drawLine()
     consoleReader.flush()
   }
 
+  def argCompletor: ArgumentCompleter = {
+    val c = new ArgumentCompleter(new JLineDelimiter, completion.completer())
+    c setStrict false
+    c
+  }
+
   val consoleReader = {
     val r = new ConsoleReader()
     r setBellEnabled false
-    history foreach { r setHistory _.jhistory }
-    completion foreach { c =>
-      r addCompleter c.jline
+    if (history ne History.Empty)
+      r setHistory history.jhistory
+
+    if (completion ne Completion.Empty) {
+      r addCompleter argCompletor
       r setAutoprintThreshold 250 // max completion candidates without warning
     }
 

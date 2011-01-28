@@ -157,27 +157,22 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** the public, go through the future compiler */
-  lazy val compiler: Global = {
+  lazy val global: Global = {
     initialize()
 
     // blocks until it is ; false means catastrophic failure
     if (_isInitialized()) _compiler
     else null
   }
+  @deprecated("Use `global` for access to the compiler instance.")
+  lazy val compiler = global
 
-  import compiler.{ Traverser, CompilationUnit, Symbol, Name, TermName, TypeName, Type, TypeRef, NullaryMethodType }
-  import compiler.{
-    Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
-    ModuleDef, Ident, BackQuotedIdent, Select, TypeDef, Import, MemberDef, DocDef,
-    ImportSelector, EmptyTree, NoType }
-  import compiler.{ opt, nme, newTermName, newTypeName }
+  import global._
+  import definitions.{ EmptyPackage, getMember }
   import nme.{
     INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX,
     INTERPRETER_IMPORT_WRAPPER, INTERPRETER_WRAPPER_SUFFIX, USCOREkw
   }
-
-  import compiler.definitions
-  import definitions.{ EmptyPackage, getMember }
 
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
@@ -193,6 +188,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     try operation
     finally totalSilence = saved
   }
+
+  def quietRun[T](code: String) = beQuietDuring(interpret(code))
 
   /** whether to bind the lastException variable */
   private var bindLastException = true
@@ -530,7 +527,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       def simpleParse(code: String): List[Tree] = {
         reporter.reset
         val unit = new CompilationUnit(new BatchSourceFile("<console>", code))
-        val scanner = new compiler.syntaxAnalyzer.UnitParser(unit)
+        val scanner = new syntaxAnalyzer.UnitParser(unit)
 
         scanner.templateStatSeq(false)._2
       }
@@ -555,7 +552,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    */
   def compileSources(sources: SourceFile*): Boolean = {
     reporter.reset
-    new compiler.Run() compileSources sources.toList
+    new Run() compileSources sources.toList
     !reporter.hasErrors
   }
 
@@ -572,11 +569,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     if (code.lines exists (_.trim endsWith "// show")) {
       Console println code
       parse(code) match {
-        case Some(trees)  => trees foreach (t => DBG(compiler.asCompactString(t)))
+        case Some(trees)  => trees foreach (t => DBG(asCompactString(t)))
         case _            => DBG("Parse error:\n\n" + code)
       }
     }
-    val run = new compiler.Run()
+    val run = new Run()
     run.compileSources(List(new BatchSourceFile(label, code)))
     run
   }
@@ -655,7 +652,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       else IR.Error
     }
 
-    if (compiler == null) IR.Error
+    if (global == null) IR.Error
     else requestFromLine(line, synthetic) match {
       case Left(result) => result
       case Right(req)   =>
@@ -668,6 +665,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** A name creator used for objects created by <code>bind()</code>. */
   private lazy val newBinder = new NameCreator("binder")
+
+  def bind[T](p: NamedParam[T]): IR.Result =
+    bind(p.name, p.tpe, p.value)
 
   def bindToType[T: ClassManifest](name: String, value: T): IR.Result =
     bind(name, classManifest[T].erasure.getName, value)
@@ -837,7 +837,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   private class TypeAliasHandler(typeDef: TypeDef) extends MemberHandler(typeDef) {
     lazy val TypeDef(mods, name, _, _) = typeDef
-    def isAlias() = mods.isPublic && compiler.treeInfo.isAliasTypeDef(typeDef)
+    def isAlias() = mods.isPublic && treeInfo.isAliasTypeDef(typeDef)
     override lazy val boundNames = if (isAlias) List(name) else Nil
 
     override def resultExtractionCode(req: Request, code: PrintWriter) =
@@ -1015,7 +1015,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       !reporter.hasErrors
     }
 
-    def afterTyper[T](op: => T): T = compiler.atPhase(objRun.typerPhase.next)(op)
+    def afterTyper[T](op: => T): T = atPhase(objRun.typerPhase.next)(op)
 
     /** The outermost wrapper object */
     lazy val outerResObjSym: Symbol = getMember(EmptyPackage, newTermName(objectName))
@@ -1029,7 +1029,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       }
 
     /* typeOf lookup with encoding */
-    def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(compiler encode name))
+    def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name)))
     def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbol.simpleName)
 
     private def typeMap[T](f: Type => T): Map[Name, T] = {
@@ -1124,7 +1124,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def requestForIdent(line: String): Option[Request] = requestForName(newTermName(line))
 
   // XXX literals.
-  def stringToCompilerType(id: String): compiler.Type = {
+  def stringToCompilerType(id: String): Type = {
     // if it's a recognized identifier, the type of that; otherwise treat the
     // String like a value (e.g. scala.collection.Map) .
     def findType = typeForIdent(id) match {
@@ -1284,7 +1284,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
 /** Utility methods for the Interpreter. */
 object Interpreter {
-
   import scala.collection.generic.CanBuildFrom
   def partialFlatMap[A, B, CC[X] <: Traversable[X]]
     (coll: CC[A])
@@ -1296,57 +1295,6 @@ object Interpreter {
       b ++= x
 
     b.result
-  }
-
-  object DebugParam {
-    implicit def tuple2debugparam[T](x: (String, T))(implicit m: Manifest[T]): DebugParam[T] =
-      DebugParam(x._1, x._2)
-
-    implicit def any2debugparam[T](x: T)(implicit m: Manifest[T]): DebugParam[T] =
-      DebugParam("p" + getCount(), x)
-
-    private var counter = 0
-    def getCount() = { counter += 1; counter }
-  }
-  case class DebugParam[T](name: String, param: T)(implicit m: Manifest[T]) {
-    val manifest = m
-    val typeStr = {
-      val str = manifest.toString
-      // I'm sure there are more to be discovered...
-      val regexp1 = """(.*?)\[(.*)\]""".r
-      val regexp2str = """.*\.type#"""
-      val regexp2 = (regexp2str + """(.*)""").r
-
-      (str.replaceAll("""\n""", "")) match {
-        case regexp1(clazz, typeArgs) => "%s[%s]".format(clazz, typeArgs.replaceAll(regexp2str, ""))
-        case regexp2(clazz)           => clazz
-        case _                        => str
-      }
-    }
-  }
-  // provide the enclosing type T
-  //  in order to set up the interpreter's classpath and parent class loader properly
-  def breakIf[T: Manifest](assertion: => Boolean, args: DebugParam[_]*): Unit =
-    if (assertion) break[T](args.toList)
-
-  // start a repl, binding supplied args
-  def break[T: Manifest](args: List[DebugParam[_]]): Unit = {
-    val intLoop = new InterpreterLoop
-    intLoop.settings = new Settings(Console.println)
-    intLoop.settings.embeddedDefaults[T]
-    intLoop.createInterpreter
-    intLoop.in = InteractiveReader.createDefault(intLoop.interpreter)
-
-    // rebind exit so people don't accidentally call sys.exit by way of predef
-    intLoop.interpreter.beQuietDuring {
-      intLoop.interpreter.interpret("""def exit = println("Type :quit to resume program execution.")""")
-      for (p <- args) {
-        intLoop.interpreter.bind(p.name, p.typeStr, p.param)
-        Console println "%s: %s".format(p.name, p.typeStr)
-      }
-    }
-    intLoop.repl()
-    intLoop.closeInterpreter
   }
 
   def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)

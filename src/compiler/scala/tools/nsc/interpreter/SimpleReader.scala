@@ -18,7 +18,11 @@ extends InteractiveReader {
   def this() = this(Console.in, new PrintWriter(Console.out), true)
   def this(in: File, out: PrintWriter, interactive: Boolean) = this(in.bufferedReader(), out, interactive)
 
-  def close() = in.close()
+  lazy val history = History.Empty
+  lazy val completion = Completion.Empty
+
+  def init() = ()
+  def reset() = ()
   def readOneLine(prompt: String): String = {
     if (interactive) {
       out.print(prompt)

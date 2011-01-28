@@ -12,7 +12,7 @@ package interpreter
  *  as is also in progress with error messages.
  */
 trait CompletionOutput {
-  self: Completion =>
+  self: CompletionImpl =>
 
   import global._
   import definitions.{ NothingClass, AnyClass, isTupleTypeOrSubtype, isFunctionType, isRepeatedParamType }
