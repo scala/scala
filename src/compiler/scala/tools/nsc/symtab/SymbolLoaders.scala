@@ -62,8 +62,10 @@ abstract class SymbolLoaders {
   def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
     val clazz = enterClass(root, name, completer)
     val module = enterModule(root, name, completer)
-    assert(clazz.companionModule == module || clazz.isAnonymousClass, module)
-    assert(module.companionClass == clazz, clazz)
+    if (!clazz.isAnonymousClass) {
+      assert(clazz.companionModule == module, module)
+      assert(module.companionClass == clazz, clazz)
+    }
   }
 
   /** In batch mode: Enter class and module with given `name` into scope of `root`

@@ -1347,9 +1347,16 @@ trait Namers { self: Analyzer =>
     val tree: Tree
   }
 
+  var lockedCount = 0
+
   def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleter {
     val tree = t
-    override def complete(sym: Symbol) = c(sym)
+    override def complete(sym: Symbol) = try {
+      lockedCount += 1
+      c(sym)
+    } finally {
+      lockedCount -= 1
+    }
   }
 
   /** A class representing a lazy type with known type parameters.
@@ -1357,10 +1364,13 @@ trait Namers { self: Analyzer =>
   class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends TypeCompleter {
     override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
     override val tree = restp.tree
-    override def complete(sym: Symbol) {
+    override def complete(sym: Symbol) = try {
+      lockedCount += 1
       if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
         newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
       restp.complete(sym)
+    } finally {
+      lockedCount -= 1
     }
   }
 

@@ -83,9 +83,6 @@ self =>
   protected[interactive] def getOrCreateUnitOf(source: SourceFile): RichCompilationUnit =
     unitOfFile.getOrElse(source.file, { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) })
 
-  protected [interactive] def onUnitOf[T](source: SourceFile)(op: RichCompilationUnit => T): T =
-    op(unitOfFile.getOrElse(source.file, new RichCompilationUnit(source)))
-
   /** Work through toBeRemoved list to remove any units.
    *  Then return optionlly unit associated with given source.
    */
@@ -139,10 +136,7 @@ self =>
       if (context.unit == null)
         context.unit.body = new TreeReplacer(old, result) transform context.unit.body
     }
-    @inline def isUnlocked(sym: Symbol) = (sym.rawflags & LOCKED) == 0
-    @tailrec def noLocks(sym: Symbol): Boolean = sym == NoSymbol || isUnlocked(sym) && noLocks(sym.owner)
-    def noImportLocks: Boolean = context.imports forall (imp => isUnlocked(imp.tree.symbol))
-    if (interruptsEnabled && noLocks(context.owner) && noImportLocks) {
+    if (interruptsEnabled && analyzer.lockedCount == 0) {
       if (context.unit != null &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
@@ -711,8 +705,10 @@ self =>
         addTypeMember(sym, pre, true, NoSymbol)
       members.values.toList #:: {
         val applicableViews: List[SearchResult] =
-          new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
-            .allImplicits
+          if (ownerTpe.isErroneous) List()
+          else new ImplicitSearch(
+            tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true,
+            context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
         for (view <- applicableViews) {
           val vtree = viewApply(view)
           val vpre = stabilizedType(vtree)
