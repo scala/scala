@@ -250,9 +250,9 @@ abstract class Erasure extends AddInterfaces
               val bounds = tp.typeSymbol.info.bounds
               if (AnyRefClass.tpe <:< bounds.hi) {
                 if (bounds.lo <:< NullClass.tpe) "*"
-                else "-" + jsig(bounds.lo)
+                else "-" + boxedSig(bounds.lo)
               }
-              else "+" + jsig(bounds.hi)
+              else "+" + boxedSig(bounds.hi)
             }
             else if (tp.typeSymbol == UnitClass) {
               jsig(ObjectClass.tpe)
@@ -319,7 +319,7 @@ abstract class Erasure extends AddInterfaces
           "("+(params map (_.tpe) map jsig).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
         case RefinedType(parents, decls) if (!parents.isEmpty) =>
-          jsig(parents.head)
+          boxedSig(parents.head)
         case ClassInfoType(parents, _, _) =>
           (parents map jsig).mkString
         case AnnotatedType(_, atp, _) =>
