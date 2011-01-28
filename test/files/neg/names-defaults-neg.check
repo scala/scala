@@ -36,11 +36,7 @@ names-defaults-neg.scala:22: error: parameter specified twice: a
 names-defaults-neg.scala:23: error: parameter specified twice: b
   test1(b = 1, b = "2")
                  ^
-names-defaults-neg.scala:26: error: {
-  val x$5: Int(3) = 3;
-  val x$6: Int(1) = 1;
-  Test.this.test3(1, 3)
-} of type Int does not take parameters
+names-defaults-neg.scala:26: error: Int does not take parameters
   test3(b = 3, a = 1)(3)
                      ^
 names-defaults-neg.scala:35: error: ambiguous reference to overloaded definition,

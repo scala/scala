@@ -2507,7 +2507,7 @@ trait Typers extends Modes {
 
 /* --- end unapply  --- */
         case _ =>
-          errorTree(tree, fun+" of type "+fun.tpe+" does not take parameters")
+          errorTree(tree, fun.tpe+" does not take parameters")
       }
     }
 
