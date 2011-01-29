@@ -66,7 +66,7 @@ import IMain._
  * @author Moez A. Abdel-Gawad
  * @author Lex Spoon
  */
-class IMain(val settings: Settings, out: PrintWriter) {
+class IMain(val settings: Settings, protected val out: PrintWriter) {
   repl =>
 
   /** construct an interpreter that reports to Console */
@@ -86,27 +86,14 @@ class IMain(val settings: Settings, out: PrintWriter) {
   }
   import formatting._
 
-  def println(x: Any) = {
-    out.println(x)
-    out.flush()
-  }
-
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None)
 
   /** reporter */
-  object reporter extends ConsoleReporter(settings, null, out) {
-    override def printMessage(msg: String) {
-      if (totalSilence)
-        return
-
-      out println (
-        if (truncationOK) clean(msg)
-        else cleanNoTruncate(msg)
-      )
-      out.flush()
-    }
-  }
+  lazy val reporter: ConsoleReporter = new IMain.ReplReporter(this)
+  import reporter.{ printMessage => println }
+  // not sure if we have some motivation to print directly to console
+  private def echo(msg: String) { Console println msg }
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -285,7 +272,7 @@ class IMain(val settings: Settings, out: PrintWriter) {
 
   def printAllTypeOf = {
     prevRequests foreach { req =>
-      req.typeOf foreach { case (k, v) => Console.println(k + " => " + v) }
+      req.typeOf foreach { case (k, v) => echo(k + " => " + v) }
     }
   }
 
@@ -562,7 +549,7 @@ class IMain(val settings: Settings, out: PrintWriter) {
      *  with "// show" and see what's going on.
      */
     if (code.lines exists (_.trim endsWith "// show")) {
-      Console println code
+      echo(code)
       parse(code) match {
         case Some(trees)  => trees foreach (t => DBG(asCompactString(t)))
         case _            => DBG("Parse error:\n\n" + code)
@@ -737,8 +724,8 @@ class IMain(val settings: Settings, out: PrintWriter) {
     }
     def generatesValue: Option[Name] = None
 
-    def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
-    def resultExtractionCode(req: Request, code: PrintWriter) { }
+    def extraCodeToEvaluate(req: Request): String = ""
+    def resultExtractionCode(req: Request): String = ""
 
     override def toString = "%s(used = %s)".format(this.getClass.toString split '.' last, referencedNames)
   }
@@ -753,18 +740,16 @@ class IMain(val settings: Settings, out: PrintWriter) {
     override lazy val boundNames = List(vname)
     override def generatesValue = Some(vname)
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
+    override def resultExtractionCode(req: Request): String = {
       val isInternal = isGeneratedVarName(vname) && req.lookupTypeOf(vname) == "Unit"
-      if (!mods.isPublic || isInternal) return
+      if (!mods.isPublic || isInternal) ""
+      else {
+        lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(req fullPath vname, maxStringElements)
+        // if this is a lazy val we avoid evaluating it here
+        val resultString = if (mods.isLazy) codegenln(false, "<lazy>") else extractor
 
-      lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(req fullPath vname, maxStringElements)
-
-      // if this is a lazy val we avoid evaluating it here
-      val resultString = if (mods.isLazy) codegenln(false, "<lazy>") else extractor
-      val codeToPrint =
         """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf vname), resultString)
-
-      code print codeToPrint
+      }
     }
   }
 
@@ -776,8 +761,8 @@ class IMain(val settings: Settings, out: PrintWriter) {
       if (vparamss.isEmpty || vparamss.head.isEmpty) Some(name)
       else None
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) =
-      if (mods.isPublic) code print codegenln(name, ": ", req.typeOf(name))
+    override def resultExtractionCode(req: Request) =
+      if (mods.isPublic) codegenln(name, ": ", req.typeOf(name)) else ""
   }
 
   private class AssignHandler(member: Assign) extends MemberHandler(member) {
@@ -785,16 +770,15 @@ class IMain(val settings: Settings, out: PrintWriter) {
     val helperName = newTermName(synthVarNameCreator())
     override def generatesValue = Some(helperName)
 
-    override def extraCodeToEvaluate(req: Request, code: PrintWriter) =
-      code println """val %s = %s""".format(helperName, lhs)
+    override def extraCodeToEvaluate(req: Request) =
+      """val %s = %s""".format(helperName, lhs)
 
     /** Print out lhs instead of the generated varName */
-    override def resultExtractionCode(req: Request, code: PrintWriter) {
+    override def resultExtractionCode(req: Request) = {
       val lhsType = string2code(req lookupTypeOf helperName)
       val res = string2code(req fullPath helperName)
-      val codeToPrint = """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res)
 
-      code println codeToPrint
+      """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res) + "\n"
     }
   }
 
@@ -803,8 +787,8 @@ class IMain(val settings: Settings, out: PrintWriter) {
     override lazy val boundNames = List(name)
     override def generatesValue = Some(name)
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) =
-      code println codegenln("defined module ", name)
+    override def resultExtractionCode(req: Request) =
+      codegenln("defined module ", name)
   }
 
   private class ClassHandler(classdef: ClassDef) extends MemberHandler(classdef) {
@@ -812,8 +796,8 @@ class IMain(val settings: Settings, out: PrintWriter) {
     override lazy val boundNames =
       name :: (if (mods.isCase) List(name.toTermName) else Nil)
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) =
-      code print codegenln("defined %s %s".format(classdef.keyword, name))
+    override def resultExtractionCode(req: Request) =
+      codegenln("defined %s %s".format(classdef.keyword, name))
   }
 
   private class TypeAliasHandler(typeDef: TypeDef) extends MemberHandler(typeDef) {
@@ -821,8 +805,8 @@ class IMain(val settings: Settings, out: PrintWriter) {
     def isAlias() = mods.isPublic && treeInfo.isAliasTypeDef(typeDef)
     override lazy val boundNames = if (isAlias) List(name) else Nil
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) =
-      code println codegenln("defined type alias ", name)
+    override def resultExtractionCode(req: Request) =
+      codegenln("defined type alias ", name) + "\n"
   }
 
   private class ImportHandler(imp: Import) extends MemberHandler(imp) {
@@ -851,9 +835,7 @@ class IMain(val settings: Settings, out: PrintWriter) {
     val importedNames: List[Name] =
       selectorRenames filterNot (_ == USCOREkw) flatMap (_.bothNames)
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) = {
-      code println codegenln(imp.toString)
-    }
+    override def resultExtractionCode(req: Request) = codegenln(imp.toString) + "\n"
   }
 
   /** One line of code submitted by the user for interpretation */
@@ -906,21 +888,16 @@ class IMain(val settings: Settings, out: PrintWriter) {
     def toCompute = line
 
     /** generate the source code for the object that computes this request */
-    def objectSourceCode: String = stringFromWriter { code =>
+    private object ObjectSourceCode extends CodeAssembler[MemberHandler] {
       val preamble = """
         |object %s {
         |  %s%s
       """.stripMargin.format(objectName, importsPreamble, indentCode(toCompute))
       val postamble = importsTrailer + "\n}"
-
-      code println preamble
-      handlers foreach { _.extraCodeToEvaluate(this, code) }
-      code println postamble
+      val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
     }
 
-    /** generate source code for the object that retrieves the result
-        from objectSourceCode */
-    def resultObjectSourceCode: String = stringFromWriter { code =>
+    private object ResultObjectSourceCode extends CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
@@ -933,7 +910,6 @@ class IMain(val settings: Settings, out: PrintWriter) {
           |}""".stripMargin.format(fullPath(vname))
         case _  => ""
       }
-
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
       val preamble = """
@@ -949,11 +925,14 @@ class IMain(val settings: Settings, out: PrintWriter) {
       |  }
       |}
       """.stripMargin
-
-      code println preamble
-      handlers foreach { _.resultExtractionCode(this, code) }
-      code println postamble
+      val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
+
+    // Generate the object which runs the line of code.
+    def objectSourceCode: String = ObjectSourceCode(handlers)
+
+    // Generate the object which retrieves the result from the objectSourceCode object.
+    def resultObjectSourceCode: String = ResultObjectSourceCode(handlers)
 
     // compile the object containing the user's code
     lazy val objRun = compileAndSaveRun("<console>", objectSourceCode)
@@ -1242,6 +1221,32 @@ class IMain(val settings: Settings, out: PrintWriter) {
 
 /** Utility methods for the Interpreter. */
 object IMain {
+  trait CodeAssembler[T] {
+    def preamble: String
+    def generate: T => String
+    def postamble: String
+
+    def apply(contributors: List[T]): String = stringFromWriter { code =>
+      code println preamble
+      contributors map generate foreach (code print _)
+      code println postamble
+    }
+  }
+  class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, intp.out) {
+    import intp._
+
+    override def printMessage(msg: String) {
+      if (totalSilence)
+        return
+
+      out println (
+        if (truncationOK) clean(msg)
+        else cleanNoTruncate(msg)
+      )
+      out.flush()
+    }
+  }
+
   import scala.collection.generic.CanBuildFrom
   def partialFlatMap[A, B, CC[X] <: Traversable[X]]
     (coll: CC[A])
