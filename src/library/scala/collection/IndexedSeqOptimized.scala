@@ -190,7 +190,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
     i - start
   }
 
-  private def negLength(n: Int) = if (n == length) -1 else n
+  private def negLength(n: Int) = if (n >= length) -1 else n
 
   override /*SeqLike*/
   def indexWhere(p: A => Boolean, from: Int): Int = {
