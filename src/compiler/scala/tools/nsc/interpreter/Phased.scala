@@ -13,7 +13,7 @@ trait Phased {
   val global: Global
   import global._
 
-  private var active: PhaseName = Typer
+  private var active: PhaseName = NoPhaseName
   private var multi: Seq[PhaseName] = Nil
 
   def get = active
@@ -29,6 +29,39 @@ trait Phased {
       true
     }
   }
+
+  private def parsePhaseChange(str: String): Option[Int] = {
+    if (str == "") Some(0)
+    else if (str startsWith ".prev") parsePhaseChange(str drop 5) map (_ - 1)
+    else if (str startsWith ".next") parsePhaseChange(str drop 5) map (_ + 1)
+    else str.head match {
+      case '+' | '-' =>
+        val (num, rest) = str.tail.span(_.isDigit)
+        val diff = if (str.head == '+') num.toInt else -num.toInt
+        parsePhaseChange(rest) map (_ + diff)
+      case _ =>
+        None
+    }
+  }
+
+  /** Takes a string like 4, typer+2, typer.next, etc.
+   *  and turns it into a PhaseName instance.
+   */
+  private def parseInternal(str: String): PhaseName = {
+    if (str.isEmpty) NoPhaseName
+    else if (str forall (_.isDigit)) PhaseName(str.toInt)
+    else {
+      val (name, rest) = str.toLowerCase span (_.isLetter)
+      val start        = PhaseName(name)
+      val change       = parsePhaseChange(rest)
+
+      if (start.isEmpty || change.isEmpty) NoPhaseName
+      else PhaseName(start.id + change.get)
+    }
+  }
+  def parse(str: String): PhaseName =
+    try parseInternal(str)
+    catch { case _: Exception => NoPhaseName }
 
   def apply[T](body: => T): T = atPhase(get)(body)
   def multi[T](body: => T): Seq[T] = multi map (ph => at(ph)(body))
@@ -65,6 +98,7 @@ trait Phased {
     lazy val nameMap = all.map(x => x.name -> x).toMap withDefaultValue NoPhaseName
     multi = all
 
+    def apply(id: Int): PhaseName = all find (_.id == id) getOrElse NoPhaseName
     implicit def apply(s: String): PhaseName = nameMap(s)
     implicit def defaultPhaseName: PhaseName = active
   }
@@ -72,6 +106,7 @@ trait Phased {
     lazy val id   = phase.id
     lazy val name = toString.toLowerCase
     def phase     = currentRun.phaseNamed(name)
+    def isEmpty   = this eq NoPhaseName
 
     // Execute some code during this phase.
     def apply[T](body: => T): T = atPhase(phase)(body)

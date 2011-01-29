@@ -207,9 +207,21 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     List(
       NoArgs("dump", "displays a view of the interpreter's internal state", power.toString _),
       LineArg("phase", "set the implicit phase for power commands", phaseCommand),
-      LineArg("symfilter", "change the filter for symbol printing", symfilterCmd)
+      LineArg("symfilter", "change the filter for symbol printing", symfilterCmd),
+      LineArg("wrap", "code to wrap around all executions", wrapCommand)
     )
   }
+  private def wrapCommand(line: String): Result = {
+    if (line == "") {
+      intp.setExecutionWrapper("")
+      "Cleared wrapper."
+    }
+    else {
+      intp.setExecutionWrapper(line)
+      "Set wrapper to '" + line + "'"
+    }
+  }
+
   private def symfilterCmd(line: String): Result = {
     if (line == "") {
       power.vars.symfilter set "_ => true"
@@ -220,8 +232,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       "Set symbol filter to '" + line + "'."
     }
   }
-  private def phaseCommand(_name: String): Result = {
-    val name = _name.toLowerCase
+  private def pathToPhased = intp.pathToTerm("power") + ".phased"
+  private def phaseCommand(name: String): Result = {
     // This line crashes us in TreeGen:
     //
     //   if (intp.power.phased set name) "..."
@@ -234,10 +246,31 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     //  at scala.tools.nsc.ast.TreeGen.mkAttributedStableRef(TreeGen.scala:143)
     //
     // But it works like so, type annotated.
-    val x: Phased = power.phased
-    if (name == "") "Active phase is '" + x.get + "'"
-    else if (x set name) "Active phase is now '" + name + "'"
-    else "'" + name + "' does not appear to be a valid phase."
+    val phased: Phased = power.phased
+    import phased.NoPhaseName
+
+    if (name == "clear") {
+      phased.set(NoPhaseName)
+      intp.clearExecutionWrapper()
+      "Cleared active phase."
+    }
+    else if (name == "") phased.get match {
+      case NoPhaseName => "Usage: :phase <expr> (e.g. typer, erasure.next, erasure+3)"
+      case ph          => "Active phase is '%s'.  (To clear, :phase clear)".format(phased.get)
+    }
+    else {
+      val what = phased.parse(name)
+      if (what.isEmpty || !phased.set(what))
+        "'" + name + "' does not appear to represent a valid phase."
+      else {
+        intp.setExecutionWrapper(pathToPhased)
+        val activeMessage =
+          if (what.toString.length == name.length) "" + what
+          else "%s (%s)".format(what, name)
+
+        "Active phase is now: " + activeMessage
+      }
+    }
   }
 
   /** Available commands */
