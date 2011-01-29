@@ -234,7 +234,15 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   def topLevel = topLevelBase ++ imported
 
   // the first tier of top level objects (doesn't include file completion)
-  def topLevelFor(parsed: Parsed) = topLevel flatMap (_ completionsFor parsed)
+  def topLevelFor(parsed: Parsed): List[String] = {
+    topLevel foreach { ca =>
+      ca completionsFor parsed match {
+        case Nil  => ()
+        case xs   => return xs
+      }
+    }
+    Nil
+  }
 
   // the most recent result
   def lastResult = Forwarder(() => ids follow intp.mostRecentVar)
