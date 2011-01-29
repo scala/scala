@@ -10,38 +10,35 @@ import java.io.IOException
 import java.nio.channels.ClosedByInterruptException
 import scala.util.control.Exception._
 import InteractiveReader._
+import Properties.isMac
 
 /** Reads lines from an input stream */
 trait InteractiveReader {
   val interactive: Boolean
-  protected def readOneLine(prompt: String): String
 
   def history: History
   def completion: Completion
+
   def init(): Unit
   def reset(): Unit
 
-  def redrawLine(): Unit = ()
-  def currentLine = ""    // the current buffer contents, if available
+  protected def readOneLine(prompt: String): String
+  def redrawLine(): Unit
+  def currentLine: String
 
-  def readLine(prompt: String): String = {
-    def handler: Catcher[String] = {
-      case e: ClosedByInterruptException          => sys.error("Reader closed by interrupt.")
-      // Terminal has to be re-initialized after SIGSTP or up arrow etc. stop working.
-      case e: IOException if restartSystemCall(e) => reset() ; readLine(prompt)
-    }
-    catching(handler) { readOneLine(prompt) }
-  }
-
-  // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
-  private def restartSystemCall(e: Exception): Boolean =
-    Properties.isMac && (e.getMessage == msgEINTR)
+  def readLine(prompt: String): String =
+    // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP
+    if (isMac) restartSysCalls(readOneLine(prompt), reset())
+    else readOneLine(prompt)
 }
 
 object InteractiveReader {
   val msgEINTR = "Interrupted system call"
-  def apply(): InteractiveReader = new SimpleReader
+  def restartSysCalls[R](body: => R, reset: => Unit): R =
+    try body catch {
+      case e: IOException if e.getMessage == msgEINTR => reset ; body
+    }
 
-  // @deprecated("Use `apply` instead") def createDefault(intp: IMain): InteractiveReader = apply(intp)
-  // @deprecated("Use `apply` instead") def createDefault(comp: Completion): InteractiveReader = apply(comp)
+  def apply(): InteractiveReader = SimpleReader()
 }
+

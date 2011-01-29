@@ -16,65 +16,27 @@ import scala.tools.jline.console.history.History.{ Entry => JEntry }
 import scala.tools.jline.console.ConsoleReader
 import scala.collection.JavaConverters._
 import Properties.userHome
-
-/** A wrapper for JLine's History.
- */
-class JLineHistory(val jhistory: JHistory) extends History {
-  def asJavaList = jhistory.entries()
-  def asStrings = asList map (_.value.toString)
-  def asList: List[JEntry] = asJavaList.asScala.toList
-  def index = jhistory.index()
-  def size = jhistory.size()
-
-  def grep(s: String) = asStrings filter (_ contains s)
-  def flush() = jhistory match {
-    case x: PersistentHistory => x.flush()
-    case _                    => ()
-  }
-}
-
-object JLineHistory {
-  val ScalaHistoryFile = ".scala_history"
-
-  def apply() = new JLineHistory(
-    try newFile()
-    catch { case x : Exception =>
-      Console.println("Error creating file history: memory history only. " + x)
-      newMemory()
-    }
-  )
-
-  def newMemory() = new MemoryHistory()
-  def newFile() = new FileHistory(new File(userHome, ScalaHistoryFile)) {
-    // flush after every add to avoid installing a shutdown hook.
-    // (The shutdown hook approach also loses history when they aren't run.)
-    override def add(item: CharSequence): Unit = {
-      super.add(item)
-      flush()
-    }
-  }
-}
+import Completion._
 
 /** Reads from the console using JLine */
 class JLineReader(val completion: Completion) extends InteractiveReader {
+  val interactive = true
   lazy val history = JLineHistory()
 
   def reset() = consoleReader.getTerminal().reset()
   def init()  = consoleReader.getTerminal().init()
 
-  override def redrawLine()    = {
-    consoleReader.flush()
-    consoleReader.drawLine()
-    consoleReader.flush()
+  def scalaToJline(tc: ScalaCompleter): Completer = new Completer {
+    def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
+      val buf   = if (_buf == null) "" else _buf
+      val Candidates(newCursor, newCandidates) = tc.complete(buf, cursor)
+      newCandidates foreach (candidates add _)
+      newCursor
+    }
   }
 
   def argCompletor: ArgumentCompleter = {
-    val wrapped = new Completer {
-      val cc = completion.completer()
-      def complete(buffer: String, cursor: Int, candidates: JList[CharSequence]): Int =
-        cc.complete(buffer, cursor, candidates)
-    }
-    val c = new ArgumentCompleter(new JLineDelimiter, wrapped)
+    val c = new ArgumentCompleter(new JLineDelimiter, scalaToJline(completion.completer()))
     c setStrict false
     c
   }
@@ -82,10 +44,10 @@ class JLineReader(val completion: Completion) extends InteractiveReader {
   val consoleReader = {
     val r = new ConsoleReader()
     r setBellEnabled false
-    if (history ne History.Empty)
+    if (history ne NoHistory)
       r setHistory history.jhistory
 
-    if (completion ne Completion.Empty) {
+    if (completion ne NoCompletion) {
       r addCompleter argCompletor
       r setAutoprintThreshold 400 // max completion candidates without warning
     }
@@ -93,15 +55,16 @@ class JLineReader(val completion: Completion) extends InteractiveReader {
     r
   }
 
-  override def currentLine: String = consoleReader.getCursorBuffer.buffer.toString
+  def currentLine: String = consoleReader.getCursorBuffer.buffer.toString
+  def redrawLine() = {
+    consoleReader.flush()
+    consoleReader.drawLine()
+    consoleReader.flush()
+  }
   def readOneLine(prompt: String) = consoleReader readLine prompt
-  val interactive = true
 }
 
 object JLineReader {
-  def apply(intp: IMain): InteractiveReader = apply(new JLineCompletion(intp))
-  def apply(comp: Completion): InteractiveReader = {
-    try new JLineReader(comp)
-    catch { case e @ (_: Exception | _: NoClassDefFoundError) => new SimpleReader }
-  }
+  def apply(intp: IMain): JLineReader = apply(new JLineCompletion(intp))
+  def apply(comp: Completion): JLineReader = new JLineReader(comp)
 }

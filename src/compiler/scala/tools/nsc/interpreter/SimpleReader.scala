@@ -13,15 +13,15 @@ class SimpleReader(
   in: BufferedReader,
   out: PrintWriter,
   val interactive: Boolean)
-extends InteractiveReader {
-  def this() = this(Console.in, new PrintWriter(Console.out), true)
-  def this(in: io.File, out: PrintWriter, interactive: Boolean) = this(in.bufferedReader(), out, interactive)
-
-  lazy val history = History.Empty
-  lazy val completion = Completion.Empty
+extends InteractiveReader
+{
+  val history = NoHistory
+  val completion = NoCompletion
 
   def init() = ()
   def reset() = ()
+  def redrawLine() = ()
+  def currentLine = ""
   def readOneLine(prompt: String): String = {
     if (interactive) {
       out.print(prompt)
@@ -29,4 +29,12 @@ extends InteractiveReader {
     }
     in.readLine()
   }
+}
+
+object SimpleReader {
+  def defaultIn  = Console.in
+  def defaultOut = new PrintWriter(Console.out)
+
+  def apply(in: BufferedReader = defaultIn, out: PrintWriter = defaultOut, interactive: Boolean = true): SimpleReader =
+    new SimpleReader(in, out, interactive)
 }

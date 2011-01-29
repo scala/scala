@@ -7,30 +7,37 @@ package scala.tools.nsc
 package interpreter
 
 import java.util.{ List => JList }
+import Completion._
 
 /** An implementation-agnostic completion interface which makes no
  *  reference to the jline classes.
  */
 trait Completion {
   type ExecResult
-  trait Instance {
-    def complete(buffer: String, cursor: Int, candidates: JList[CharSequence]): Int
-  }
   def resetVerbosity(): Unit
   def execute(line: String): Option[ExecResult]
-  def completer(): Instance
+  def completer(): ScalaCompleter
+}
+object NoCompletion extends Completion {
+  type ExecResult = Nothing
+  def resetVerbosity() = ()
+  def execute(line: String) = None
+  def completer() = NullCompleter
 }
 
 object Completion {
-  object Empty extends Completion {
-    type ExecResult = Nothing
-    object NullCompleter extends Instance {
-      def complete(buffer: String, cursor: Int, candidates: JList[CharSequence]) = -1
-    }
-    def resetVerbosity() = ()
-    def execute(line: String) = None
-    def completer() = NullCompleter
+  def empty: Completion = NoCompletion
+
+  case class Candidates(cursor: Int, candidates: List[String]) { }
+  val NoCandidates = Candidates(-1, Nil)
+
+  object NullCompleter extends ScalaCompleter {
+    def complete(buffer: String, cursor: Int): Candidates = NoCandidates
   }
+  trait ScalaCompleter {
+    def complete(buffer: String, cursor: Int): Candidates
+  }
+
   def looksLikeInvocation(code: String) = (
         (code != null)
     &&  (code startsWith ".")

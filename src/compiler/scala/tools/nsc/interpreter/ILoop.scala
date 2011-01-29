@@ -154,7 +154,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   /** Show the history */
   def printHistory(xs: List[String]): Result = {
-    if (in.history eq History.Empty)
+    if (in.history eq NoHistory)
       return "No history available."
 
     val defaultLines = 20
@@ -273,7 +273,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     val oldReplay = replayCommandStack
 
     try file applyReader { reader =>
-      in = new SimpleReader(reader, out, false)
+      in = SimpleReader(reader, out, false)
       plushln("Loading " + file + "...")
       loop()
     }
@@ -530,29 +530,39 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     case _ =>
   }
 
+  /** Tries to create a JLineReader, falling back to SimpleReader:
+   *  unless settings or properties are such that it should start
+   *  with SimpleReader.
+   */
+  def chooseReader(settings: Settings): InteractiveReader = {
+    if (settings.Xnojline.value || Properties.isEmacsShell)
+      SimpleReader()
+    else try JLineReader(
+      if (settings.noCompletion.value) NoCompletion
+      else new JLineCompletion(intp)
+    )
+    catch {
+      case _: Exception | _: NoClassDefFoundError => SimpleReader()
+    }
+  }
+
   def process(settings: Settings): Boolean = {
     this.settings = settings
     createInterpreter()
 
     // sets in to some kind of reader depending on environmental cues
     in = in0 match {
-      case Some(in0)  => new SimpleReader(in0, out, true)
-      case None       =>
-        // the interpreter is passed as an argument to expose tab completion info
-        if (settings.Xnojline.value || Properties.isEmacsShell) new SimpleReader
-        else JLineReader(
-          if (settings.noCompletion.value) Completion.Empty
-          else new JLineCompletion(intp)
-        )
+      case Some(reader) => SimpleReader(reader, out, true)
+      case None         => chooseReader(settings)
     }
 
     loadFiles(settings)
+    // it is broken on startup; go ahead and exit
+    if (intp.reporter.hasErrors)
+      return false
+
+    printWelcome()
     try {
-      // it is broken on startup; go ahead and exit
-      if (intp.reporter.hasErrors) return false
-
-      printWelcome()
-
       // this is about the illusion of snappiness.  We call initialize()
       // which spins off a separate thread, then print the prompt and try
       // our best to look ready.  Ideally the user will spend a

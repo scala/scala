@@ -16,13 +16,14 @@ trait History {
   def grep(s: String): List[String]
   def flush(): Unit
 }
+object NoHistory extends History {
+  def asStrings       = Nil
+  def grep(s: String) = Nil
+  def index           = 0
+  def size            = 0
+  def flush()         = ()
+}
 
 object History {
-  object Empty extends History {
-    def asStrings       = Nil
-    def grep(s: String) = Nil
-    def index           = 0
-    def size            = 0
-    def flush()         = ()
-  }
+  def empty: History = NoHistory
 }

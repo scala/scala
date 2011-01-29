@@ -19,24 +19,35 @@ import scala.reflect.NameTransformer
  */
 trait TypeStrings {
   private val ObjectClass = classOf[java.lang.Object]
-  private val primitives = Set[String]("byte", "char", "short", "int", "long", "float", "double", "boolean")
-  private def unbox(s: String): String = s.stripPrefix("java.lang.") match {
-    case "Integer"    => "scala.Int"
-    case "Character"  => "scala.Char"
-    case "Void"       => "scala.Unit"
-    case x @ ("Byte" | "Short" | "Long" | "Float" | "Double" | "Boolean") => "scala." + x
-    case _            => NameTransformer.decode(s)
-  }
+  private val primitives = Set[String]("byte", "char", "short", "int", "long", "float", "double", "boolean", "void")
+  private val primitiveMap = primitives.toList map { x =>
+    val key = x match {
+      case "void" => "Void"
+      case "int"  => "Integer"
+      case "char" => "Character"
+      case s      => s.capitalize
+    }
+    val value = x match {
+      case "void" => "Unit"
+      case s      => s.capitalize
+    }
+
+    ("java.lang." + key) -> ("scala." + value)
+  } toMap
 
   def scalaName(s: String): String = {
-    if (s endsWith "$") (s dropRight 1) + ".type"
-    else if (primitives(s)) "scala." + s.capitalize
+    if (s endsWith "$") s.init + ".type"
     else if (s == "void") "scala.Unit"
-    else unbox(s)
+    else if (primitives(s)) "scala." + s.capitalize
+    else primitiveMap.getOrElse(s, NameTransformer decode s)
   }
   def scalaName(clazz: JClass): String       = scalaName(clazz.getName)
   def scalaName(m: ClassManifest[_]): String = scalaName(m.erasure)
   def anyClass(x: Any): JClass               = if (x == null) null else x.asInstanceOf[AnyRef].getClass
+
+  private def brackets(tps: String*): String =
+    if (tps.isEmpty) ""
+    else tps.mkString("[", ", ", "]")
 
   private def tvarString(tvar: TypeVariable[_]): String = tvarString(tvar.getBounds.toList)
   private def tvarString(bounds: List[AnyRef]): String = {
@@ -44,21 +55,19 @@ trait TypeStrings {
     if (xs.isEmpty) "_"
     else scalaName(xs.head)
   }
-  private def tparamString(clazz: JClass): String = {
-    val tps = clazz.getTypeParameters.toList
-    if (tps.isEmpty)
-      return ""
+  private def tparamString(clazz: JClass): String =
+    brackets(clazz.getTypeParameters map tvarString: _*)
 
-    (tps map tvarString).mkString("[", ", ", "]")
-  }
-  private def tparamString[T: Manifest] : String = {
-    val tps = manifest[T].typeArguments
-    if (tps.isEmpty)
-      return ""
+  private def tparamString[T: Manifest] : String =
+    brackets(manifest[T].typeArguments map (m => tvarString(List(m.erasure))): _*)
 
-    tps.map(m => tvarString(List(m.erasure))).mkString("[", ", ", "]")
-  }
-  /** Going for an overabundance of caution right now.
+  /** Going for an overabundance of caution right now.  Later these types
+   *  can be a lot more precise, but right now the manifests have a habit of
+   *  introducing material which is not syntactically valid as scala source.
+   *  When this happens it breaks the repl.  It would be nice if we mandated
+   *  that manifest toString methods (or some other method, since it's bad
+   *  practice to rely on toString for correctness) generated the VALID string
+   *  representation of the type.
    */
   def fromTypedValue[T: Manifest](x: T): String = fromManifest[T]
   def fromValue(value: Any): String             = if (value == null) "Null" else fromClazz(anyClass(value))

@@ -264,7 +264,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   def completions(buf: String): List[String] =
     topLevelFor(Parsed.dotted(buf + ".", buf.length + 1))
 
-  def completer() = new JLineCompleterClass
+  def completer(): ScalaCompleter = new JLineTabCompletion
 
   /** This gets a little bit hairy.  It's no small feat delegating everything
    *  and also keeping track of exactly where the cursor is and where it's supposed
@@ -272,7 +272,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
    *  string in the list of completions, that means we are expanding a unique
    *  completion, so don't update the "last" buffer because it'll be wrong.
    */
-  class JLineCompleterClass extends Instance with Completer {
+  class JLineTabCompletion extends ScalaCompleter {
     // For recording the buffer on the last tab hit
     private var lastBuf: String = ""
     private var lastCursor: Int = -1
@@ -281,35 +281,43 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def isConsecutiveTabs(buf: String, cursor: Int) =
       cursor == lastCursor && buf == lastBuf
 
+    def sameHead(xs: List[String]) = {
+      if (xs.isEmpty || xs.head.length == 0) false
+      else {
+        val y :: ys = xs
+        val ch = y.head
+        ys forall (s => s.length > 0 && s.head == ch)
+      }
+    }
     // Longest common prefix
-    def commonPrefix(xs: List[String]) =
-      if (xs.isEmpty) ""
-      else xs.reduceLeft(_ zip _ takeWhile (x => x._1 == x._2) map (_._1) mkString)
+    def commonPrefix(xs: List[String]): String = {
+      if (sameHead(xs)) xs.head + commonPrefix(xs map (_.tail))
+      else ""
+    }
 
     // This is jline's entry point for completion.
-    override def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
-      val buf = if (_buf == null) "" else _buf
+    override def complete(buf: String, cursor: Int): Candidates = {
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
       DBG("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
 
       // we don't try lower priority completions unless higher ones return no results.
-      def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Int] = {
+      def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Candidates] = {
         completionFunction(p) match {
           case Nil  => None
           case xs   =>
-            // modify in place and return the position
-            xs foreach (candidates add _)
-
-            // update the last buffer unless this is an alternatives list
-            if (xs contains "") Some(p.cursor)
-            else {
-              val advance = commonPrefix(xs)
-              lastCursor = p.position + advance.length
-              lastBuf = (buf take p.position) + advance
-
-              DBG("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(p, lastBuf, lastCursor, p.position))
-              Some(p.position)
-            }
+            Some(Candidates(
+              if (xs contains "") p.cursor
+              else {
+                // update the last buffer unless this is an alternatives list
+                val advance = commonPrefix(xs)
+                lastCursor = p.position + advance.length
+                lastBuf = (buf take p.position) + advance
+                DBG("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(
+                  p, lastBuf, lastCursor, p.position))
+                p.position
+              },
+              xs)
+            )
         }
       }
 
@@ -332,14 +340,12 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
        *  compiler still throws some Errors it may not be.
        */
       try {
-        (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
+        (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse Candidates(cursor, Nil)
       }
       catch {
         case ex: Exception =>
-          DBG("Error: complete(%s, %s, _) provoked %s".format(_buf, cursor, ex))
-          candidates add " "
-          candidates add "<completion error>"
-          cursor
+          DBG("Error: complete(%s, %s) provoked %s".format(buf, cursor, ex))
+          Candidates(cursor, List(" ", "<completion error>"))
       }
     }
   }

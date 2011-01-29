@@ -91,7 +91,6 @@ class IMain(val settings: Settings, out: PrintWriter) {
     out.flush()
   }
 
-
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None)
 
