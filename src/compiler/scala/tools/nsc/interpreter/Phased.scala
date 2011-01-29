@@ -48,7 +48,7 @@ trait Phased {
    *  and turns it into a PhaseName instance.
    */
   private def parseInternal(str: String): PhaseName = {
-    if (str.isEmpty) NoPhaseName
+    if (str == "") NoPhaseName
     else if (str forall (_.isDigit)) PhaseName(str.toInt)
     else {
       val (name, rest) = str.toLowerCase span (_.isLetter)
