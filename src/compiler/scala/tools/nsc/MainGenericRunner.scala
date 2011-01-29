@@ -3,17 +3,16 @@
  * @author  Lex Spoon
  */
 
-
 package scala.tools.nsc
 
 import java.io.IOException
-import java.lang.{ClassNotFoundException, NoSuchMethodException}
-import java.net.{ URL, MalformedURLException }
+import java.net.URL
 import scala.tools.util.PathResolver
 
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
+import interpreter.{ ILoop }
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -74,7 +73,7 @@ object MainGenericRunner {
     else command.thingToRun match {
       case None             =>
         // We start the repl when no arguments are given.
-        new InterpreterLoop main settings
+        new ILoop main settings
         true  // not actually reached in general
 
       case Some(thingToRun) =>

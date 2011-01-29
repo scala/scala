@@ -18,7 +18,6 @@ trait InteractiveReader {
 
   def history: History
   def completion: Completion
-
   def init(): Unit
   def reset(): Unit
 
@@ -41,14 +40,8 @@ trait InteractiveReader {
 
 object InteractiveReader {
   val msgEINTR = "Interrupted system call"
-
   def apply(): InteractiveReader = new SimpleReader
-  def apply(repl: Interpreter): InteractiveReader = apply(Completion(repl))
-  def apply(comp: Completion): InteractiveReader = {
-    try new JLineReader(comp)
-    catch { case e @ (_: Exception | _: NoClassDefFoundError) => apply() }
-  }
 
-  @deprecated("Use `apply` instead") def createDefault(repl: Interpreter): InteractiveReader = apply(repl)
-  @deprecated("Use `apply` instead") def createDefault(comp: Completion): InteractiveReader = apply(comp)
+  // @deprecated("Use `apply` instead") def createDefault(intp: IMain): InteractiveReader = apply(intp)
+  // @deprecated("Use `apply` instead") def createDefault(comp: Completion): InteractiveReader = apply(comp)
 }

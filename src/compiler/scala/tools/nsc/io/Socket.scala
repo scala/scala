@@ -7,7 +7,6 @@ package scala.tools.nsc
 package io
 
 import java.io.{ IOException, InputStreamReader, BufferedReader, PrintWriter }
-import java.net.{ URL, MalformedURLException }
 import java.net.{ InetAddress, Socket => JSocket }
 import scala.util.control.Exception._
 

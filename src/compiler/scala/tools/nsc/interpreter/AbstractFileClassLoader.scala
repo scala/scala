@@ -29,7 +29,7 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     file.toByteArray
   }
 
-  override def findClass(name: String): Class[_] = {
+  override def findClass(name: String): JClass = {
     val bytes = getBytesForClass(name)
     defineClass(name, bytes, 0, bytes.length)
   }

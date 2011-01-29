@@ -12,10 +12,11 @@ package interpreter
  *  as is also in progress with error messages.
  */
 trait CompletionOutput {
-  self: CompletionImpl =>
-
+  val global: Global
   import global._
   import definitions.{ NothingClass, AnyClass, isTupleTypeOrSubtype, isFunctionType, isRepeatedParamType }
+
+  def DBG(msg: => Any): Unit
 
   /** Reducing fully qualified noise for some common packages.
    */

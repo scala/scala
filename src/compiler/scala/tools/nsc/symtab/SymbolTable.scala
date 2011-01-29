@@ -102,7 +102,7 @@ abstract class SymbolTable extends reflect.generic.Universe
   /** Break into repl debugger if assertion is true */
   // def breakIf(assertion: => Boolean, args: Any*): Unit =
   //   if (assertion)
-  //     InterpreterLoop.break(args.toList)
+  //     ILoop.break(args.toList)
 
   /** The set of all installed infotransformers */
   var infoTransformers = new InfoTransformer {

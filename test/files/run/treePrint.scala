@@ -34,9 +34,9 @@ object Test {
     settings.classpath.value = System.getProperty("java.class.path")
     settings.Ycompacttrees.value = true
 
-    val repl = new Interpreter(settings, new PrintWriter(new NullOutputStream))
-    val power = new Power(repl)
-    repl.interpret("""def initialize = "Have to interpret something or we get errors." """)
+    val intp = new IMain(settings, new PrintWriter(new NullOutputStream))
+    val power = new Power(intp)
+    intp.interpret("""def initialize = "Have to interpret something or we get errors." """)
     println(power mkTree code)
   }
 }

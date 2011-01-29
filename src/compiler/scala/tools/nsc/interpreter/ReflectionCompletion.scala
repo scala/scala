@@ -12,7 +12,7 @@ import Modifier.{ isPrivate, isProtected, isStatic }
 import ReflectionCompletion._
 
 trait ReflectionCompletion extends CompletionAware {
-  def clazz: Class[_]
+  def clazz: JClass
   protected def visibleMembers: List[AccessibleObject]
   protected def memberCompletions = visibleMembers filter isPublic map reflectName
 
@@ -32,13 +32,13 @@ trait ReflectionCompletion extends CompletionAware {
 
   /** Oops, mirror classes don't descend from scalaobject.
    */
-  def isScalaClazz(cl: Class[_]) = {
+  def isScalaClazz(cl: JClass) = {
     (allInterfacesFor(cl) exists (_.getName == "scala.ScalaObject")) ||
     (classForName(cl.getName + "$").isDefined)
   }
-  def allInterfacesFor(cl: Class[_]): List[Class[_]] = allInterfacesFor(cl, Nil)
+  def allInterfacesFor(cl: JClass): List[JClass] = allInterfacesFor(cl, Nil)
 
-  private def allInterfacesFor(cl: Class[_], acc: List[Class[_]]): List[Class[_]] = {
+  private def allInterfacesFor(cl: JClass, acc: List[JClass]): List[JClass] = {
     if (cl == null) acc.distinct
     else allInterfacesFor(cl.getSuperclass, acc ::: cl.getInterfaces.toList)
   }
@@ -48,7 +48,7 @@ trait ReflectionCompletion extends CompletionAware {
  *  It completes to instance fields and methods, and delegates to another
  *  InstanceCompletion object if it can determine the result type of the element.
  */
-class InstanceCompletion(val clazz: Class[_]) extends ReflectionCompletion {
+class InstanceCompletion(val clazz: JClass) extends ReflectionCompletion {
   protected def visibleMembers = instanceMethods ::: instanceFields
   def extras = List("isInstanceOf", "asInstanceOf", "toString")
   lazy val completions = memberCompletions ::: extras
@@ -65,7 +65,7 @@ class InstanceCompletion(val clazz: Class[_]) extends ReflectionCompletion {
 /** The complementary class to InstanceCompletion.  It has logic to deal with
  *  java static members and scala companion object members.
  */
-class StaticCompletion(val clazz: Class[_]) extends ReflectionCompletion {
+class StaticCompletion(val clazz: JClass) extends ReflectionCompletion {
   protected def visibleMembers = whichMethods ::: whichFields
   lazy val completions = memberCompletions
   def completions(verbosity: Int) = completions
@@ -102,7 +102,7 @@ object ReflectionCompletion {
     val flags = STATIC | PRIVATE | PROTECTED
     (m.getModifiers & flags) == 0
   }
-  private def getAnyClass(x: Any): Class[_] = x.asInstanceOf[AnyRef].getClass
+  private def getAnyClass(x: Any): JClass = x.asInstanceOf[AnyRef].getClass
 
   def methodsOf(target: Any): List[String] =
     getAnyClass(target).getMethods filter skipModifiers map (_.getName) toList

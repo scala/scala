@@ -1,16 +1,8 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
- * @author  Martin Odersky
- */
-
 package scala.tools.nsc
 
-/** A command line for the interpreter.
- *
- *  @author  Lex Spoon
- *  @version 1.0
+import interpreter._
+
+/** A compatibility stub.
  */
-class InterpreterCommand(arguments: List[String], error: String => Unit) extends CompilerCommand(arguments, error) {
-  override val cmdName = "scala"
-  override lazy val fileEndings = List(".scalaint")
-}
+@deprecated("Use a class in the scala.tools.nsc.interpreter package.")
+class InterpreterCommand(arguments: List[String], error: String => Unit) extends CommandLine(arguments, error) { }

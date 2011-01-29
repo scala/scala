@@ -4,10 +4,10 @@
  */
 
 package scala.tools.nsc
+package interpreter
 
-object InterpreterResults {
-
-  /** A result from interpreting one line of input. */
+object Results {
+  /** A result from the Interpreter interpreting one line of input. */
   abstract sealed class Result
 
   /** The line was interpreted successfully. */
@@ -16,9 +16,7 @@ object InterpreterResults {
   /** The line was erroneous in some way. */
   case object Error extends Result
 
-  /** The input was incomplete.  The caller should request more
-   *  input.
+  /** The input was incomplete.  The caller should request more input.
    */
   case object Incomplete extends Result
-
 }

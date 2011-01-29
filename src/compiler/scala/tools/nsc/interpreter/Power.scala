@@ -7,12 +7,14 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
-import mutable.{ HashMap }
-import scala.tools.nsc.util.{ NoPosition, BatchSourceFile }
+import scala.tools.nsc.util.{ BatchSourceFile }
 
 /** A class for methods to be injected into the intp in power mode.
  */
-class Power(intp: Interpreter) {
+class Power(repl: ILoop, intp: IMain) {
+  def this(repl: ILoop) = this(repl, repl.intp)
+  def this(intp: IMain) = this(null, intp)
+
   val global: intp.global.type = intp.global
 
   import global._
@@ -60,8 +62,13 @@ class Power(intp: Interpreter) {
    */
   def unleash(): Unit = {
     def f = {
-      intp.bind[InterpreterLoop]("repl", this)
-      intp.bind[Interpreter]("intp", intp)
+      if (repl != null) {
+        intp.bind[ILoop]("repl", repl)
+        intp.bind[History]("history", repl.in.history)
+        intp.bind[Completion]("completion", repl.in.completion)
+      }
+
+      intp.bind[IMain]("intp", intp)
       intp.bind[Power]("power", this)
       init split '\n' foreach interpret
     }

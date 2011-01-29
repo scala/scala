@@ -6,47 +6,23 @@
 package scala.tools.nsc
 package interpreter
 
-import java.io.File
-import scala.tools.jline.console.history._
-import scala.tools.jline.console.history.{ FileHistory, PersistentHistory, History => JHistory }
-import scala.tools.jline.console.history.History.{ Entry => JEntry }
-import scala.tools.jline.console.ConsoleReader
-import scala.collection.JavaConverters._
-import Properties.userHome
-
-/** Primarily, a wrapper for JLine's History.
+/** An implementation-agnostic history interface which makes no
+ *  reference to the jline classes.
  */
-class History(val jhistory: JHistory) {
-  def asJavaList = jhistory.entries()
-  def asStrings = asList map (_.value.toString)
-  def asList: List[JEntry] = asJavaList.asScala.toList
-  def index = jhistory.index()
-  def size = jhistory.size()
-
-  def grep(s: String) = asStrings filter (_ contains s)
-  def flush() = jhistory match {
-    case x: PersistentHistory => x.flush()
-    case _                    => ()
-  }
+trait History {
+  def asStrings: List[String]
+  def index: Int
+  def size: Int
+  def grep(s: String): List[String]
+  def flush(): Unit
 }
 
 object History {
-  val Empty: History = null
-  val ScalaHistoryFile = ".scala_history"
-
-  def apply(): History = new History(
-    try new FileHistory(new File(userHome, ScalaHistoryFile)) {
-      // flush after every add to avoid installing a shutdown hook.
-      // (The shutdown hook approach also loses history when they aren't run.)
-      override def add(item: CharSequence): Unit = {
-        super.add(item)
-        flush()
-      }
-    }
-    catch {
-      case x: Exception =>
-        Console.println("Error creating file history: memory history only. " + x)
-        new MemoryHistory()
-    }
-  )
+  object Empty extends History {
+    def asStrings       = Nil
+    def grep(s: String) = Nil
+    def index           = 0
+    def size            = 0
+    def flush()         = ()
+  }
 }
