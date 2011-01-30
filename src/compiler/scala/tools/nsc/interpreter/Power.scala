@@ -140,7 +140,7 @@ class Power(repl: ILoop, intp: IMain) {
     |Identifiers: %s
   """.stripMargin.format(
       phased.get,
-      intp.allreferencedNames mkString " ",
+      intp.allDefinedNames mkString " ",
       intp.unqualifiedIds mkString " "
     )
 }

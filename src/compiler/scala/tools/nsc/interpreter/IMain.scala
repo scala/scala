@@ -19,7 +19,6 @@ import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
 import Exceptional.unwrap
-
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.{ cond, condOpt }
 import scala.util.control.Exception.{ ultimately }
@@ -67,7 +66,7 @@ import IMain._
  * @author Lex Spoon
  */
 class IMain(val settings: Settings, protected val out: PrintWriter) {
-  repl =>
+  intp =>
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
@@ -91,7 +90,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
   /** reporter */
   lazy val reporter: ConsoleReporter = new IMain.ReplReporter(this)
-  import reporter.{ printMessage => println }
+  import reporter.{ printMessage, withoutTruncating }
   // not sure if we have some motivation to print directly to console
   private def echo(msg: String) { Console println msg }
 
@@ -116,19 +115,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     try {
       new _compiler.Run() compileSources List(new BatchSourceFile("<init>", source))
       if (isReplDebug || settings.debug.value)
-        println("Repl compiler initialized.")
+        printMessage("Repl compiler initialized.")
       true
     }
     catch {
       case x: AbstractMethodError =>
-        println("""
+        printMessage("""
           |Failed to initialize compiler: abstract method error.
           |This is most often remedied by a full clean and recompile.
           |""".stripMargin
         )
         x.printStackTrace()
         false
-      case x: MissingRequirementError => println("""
+      case x: MissingRequirementError => printMessage("""
         |Failed to initialize compiler: %s not found.
         |** Note that as of 2.8 scala does not assume use of the java classpath.
         |** For the old behavior pass -usejavacp to scala, or if using a Settings
@@ -158,10 +157,24 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
   import global._
   import definitions.{ EmptyPackage, getMember }
-  import nme.{
-    INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX,
-    INTERPRETER_IMPORT_WRAPPER, INTERPRETER_WRAPPER_SUFFIX, USCOREkw
+  import nme.{ INTERPRETER_IMPORT_WRAPPER, INTERPRETER_WRAPPER_SUFFIX }
+
+  object naming extends {
+    val global: intp.global.type = intp.global
+  } with Naming {
+    // make sure we don't overwrite their unwisely named res3 etc.
+    override def freshUserVarName(): String = {
+      val name = super.freshUserVarName()
+      if (definedNameMap contains name) freshUserVarName()
+      else name
+    }
   }
+  import naming._
+
+  lazy val memberHandlers = new {
+    val intp: IMain.this.type = IMain.this
+  } with MemberHandlers
+  import memberHandlers._
 
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
@@ -255,36 +268,30 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def setContextClassLoader() = classLoader.setAsContext()
 
   /** the previous requests this interpreter has processed */
-  private val prevRequests      = new mutable.ArrayBuffer[Request]()
-  private val referencedNameMap = new mutable.HashMap[Name, Request]()
-  private val boundNameMap      = new mutable.HashMap[Name, Request]()
+  private lazy val prevRequests      = mutable.ArrayBuffer[Request]()
+  private lazy val referencedNameMap = mutable.Map[Name, Request]()
+  private lazy val definedNameMap: mutable.Map[Name, Request]      = mutable.Map[Name, Request]()
   private def allHandlers       = prevRequests.toList flatMap (_.handlers)
   private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
+  private def importHandlers = allHandlers collect { case x: ImportHandler => x }
 
-  def pathToTerm(id: String): String = {
-    val name = id.toTermName
-    if (boundNameMap contains name) {
-      val req = boundNameMap(name)
-      req.fullPath(name)
-    }
-    else id
-  }
-
-  def printAllTypeOf = {
-    prevRequests foreach { req =>
-      req.typeOf foreach { case (k, v) => echo(k + " => " + v) }
-    }
+  def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
+  def pathToType(id: String): String = pathToName(newTypeName(id))
+  def pathToTerm(id: String): String = pathToName(newTermName(id))
+  def pathToName(name: Name): String = {
+    if (definedNameMap contains name)
+      definedNameMap(name) fullPath name
+    else name.toString
   }
 
   /** Most recent tree handled which wasn't wholly synthetic. */
   private def mostRecentlyHandledTree: Option[Tree] = {
-    for {
-      req <- prevRequests.reverse
-      handler <- req.handlers.reverse
-      name <- handler.generatesValue
-      if !isSynthVarName(name)
-    } return Some(handler.member)
-
+    prevRequests.reverse foreach { req =>
+      req.handlers.reverse foreach {
+        case x: MemberDefHandler if x.definesValue && !isInternalVarName(x.name)  => return Some(x.member)
+        case _ => ()
+      }
+    }
     None
   }
 
@@ -314,12 +321,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     prevRequests += req
     req.referencedNames foreach (x => referencedNameMap(x) = req)
 
-    req.boundNames foreach { name =>
-      if (boundNameMap contains name) {
-        if (name.isTypeName) handleTypeRedefinition(name.toTypeName, boundNameMap(name), req)
-        else handleTermRedefinition(name.toTermName, boundNameMap(name), req)
+    req.definedNames foreach { name =>
+      if (definedNameMap contains name) {
+        if (name.isTypeName) handleTypeRedefinition(name.toTypeName, definedNameMap(name), req)
+        else handleTermRedefinition(name.toTermName, definedNameMap(name), req)
       }
-      boundNameMap(name) = req
+      definedNameMap(name) = req
     }
 
     // XXX temporarily putting this here because of tricky initialization order issues
@@ -328,69 +335,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       quietBind("settings", isettings)
   }
 
-  private def keyList[T](x: collection.Map[T, _]): List[T] = x.keys.toList sortBy (_.toString)
-  def allreferencedNames      = keyList(referencedNameMap)
-  def allBoundNames           = keyList(boundNameMap)
-  def allSeenTypes            = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
-  def allDefinedTypes         = prevRequests.toList flatMap (_.definedTypes.values.toList) distinct
-  def allValueGeneratingNames = allHandlers flatMap (_.generatesValue)
-  def allImplicits            = partialFlatMap(allHandlers) {
-    case x: MemberHandler if x.definesImplicit => x.boundNames
-  }
-
-  /** Generates names pre0, pre1, etc. via calls to apply method */
-  class NameCreator(pre: String) {
-    private var x = -1
-    var mostRecent: String = ""
-
-    def apply(): String = {
-      x += 1
-      val name = pre + x.toString
-      // make sure we don't overwrite their unwisely named res3 etc.
-      mostRecent =
-        if (allBoundNames exists (_.toString == name)) apply()
-        else name
-
-      mostRecent
-    }
-    def reset(): Unit = x = -1
-    def didGenerate(name: String) =
-      (name startsWith pre) && ((name drop pre.length) forall (_.isDigit))
-  }
-
-  /** allocate a fresh line name */
-  private lazy val lineNameCreator = new NameCreator(INTERPRETER_LINE_PREFIX)
-
-  /** allocate a fresh var name */
-  private lazy val varNameCreator = new NameCreator(INTERPRETER_VAR_PREFIX)
-
-  /** allocate a fresh internal variable name */
-  private lazy val synthVarNameCreator = new NameCreator(INTERPRETER_SYNTHVAR_PREFIX)
-
-  /** Check if a name looks like it was generated by varNameCreator */
-  private def isGeneratedVarName(name: String): Boolean = varNameCreator didGenerate name
-  private def isSynthVarName(name: String): Boolean = synthVarNameCreator didGenerate name
-  private def isSynthVarName(name: Name): Boolean = synthVarNameCreator didGenerate name.toString
-
-  def getVarName = varNameCreator()
-  def getSynthVarName = synthVarNameCreator()
-
-  /** Truncate a string if it is longer than isettings.maxPrintString */
-  private def truncPrintString(str: String): String = {
-    val maxpr = isettings.maxPrintString
-    val trailer = "..."
-
-    if (maxpr <= 0 || str.length <= maxpr) str
-    else str.substring(0, maxpr-3) + trailer
-  }
-
-  /** Clean up a string for output */
-  private def clean(str: String) = truncPrintString(cleanNoTruncate(str))
-  private def cleanNoTruncate(str: String) =
-    if (isettings.unwrapStrings) stripWrapperGunk(str)
-    else str
-
-  implicit def name2string(name: Name) = name.toString
+  def allSeenTypes    = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
+  def allDefinedTypes = prevRequests.toList flatMap (_.definedTypes.values.toList) distinct
+  def allImplicits    = allHandlers filter (_.definesImplicit) flatMap (_.definedNames)
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -433,16 +380,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
           case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.boundNames exists isWanted)
+          case x                => x.definesImplicit || (x.definedNames exists isWanted)
         }
 
         reqs match {
           case Nil                                    => Nil
           case rh :: rest if !keepHandler(rh.handler) => select(rest, wanted)
           case rh :: rest                             =>
-            val importedNames = rh.handler match { case x: ImportHandler => x.importedNames ; case _ => Nil }
             import rh.handler._
-            val newWanted = wanted ++ referencedNames -- boundNames -- importedNames
+            val newWanted = wanted ++ referencedNames -- definedNames -- importedNames
             rh :: select(rest, newWanted)
         }
       }
@@ -475,19 +421,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
           if (x.importsWildcard || (currentImps exists (x.importedNames contains _)))
             addWrapper()
 
-          code append (x.member.toString + "\n")
+          code append (x.member + "\n")
 
           // give wildcard imports a import wrapper all to their own
           if (x.importsWildcard) addWrapper()
           else currentImps ++= x.importedNames
 
-        // For other requests, import each bound variable.
+        // For other requests, import each defined name.
         // import them explicitly instead of with _, so that
         // ambiguity errors will not be generated. Also, quote
         // the name of the variable, so that we don't need to
         // handle quoting keywords separately.
         case x =>
-          for (imv <- x.boundNames) {
+          for (imv <- x.definedNames) {
             if (currentImps contains imv) addWrapper()
 
             code append ("import %s\n" format (req fullPath imv))
@@ -566,18 +512,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   private def buildRequest(line: String, lineName: String, trees: List[Tree]): Request =
     new Request(line, lineName, trees)
 
-  private def chooseHandler(member: Tree): MemberHandler = member match {
-    case member: DefDef               => new DefHandler(member)
-    case member: ValDef               => new ValHandler(member)
-    case member@Assign(Ident(_), _)   => new AssignHandler(member)
-    case member: ModuleDef            => new ModuleHandler(member)
-    case member: ClassDef             => new ClassHandler(member)
-    case member: TypeDef              => new TypeAliasHandler(member)
-    case member: Import               => new ImportHandler(member)
-    case DocDef(_, documented)        => chooseHandler(documented)
-    case member                       => new GenericHandler(member)
-  }
-
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
     val trees = parse(indentCode(line)) match {
       case None         => return Left(IR.Incomplete)
@@ -586,7 +520,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     }
 
     // use synthetic vars to avoid filling up the resXX slots
-    def varName = if (synthetic) getSynthVarName else getVarName
+    def varName = if (synthetic) freshInternalVarName() else freshUserVarName()
 
     // Treat a single bare expression specially. This is necessary due to it being hard to
     // modify code at a textual level, and it being hard to submit an AST to the compiler.
@@ -601,7 +535,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     }
 
     // figure out what kind of request
-    Right(buildRequest(line, lineNameCreator(), trees))
+    Right(buildRequest(line, freshLineName(), trees))
   }
 
   /** <p>
@@ -622,16 +556,28 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def interpret(line: String, synthetic: Boolean): IR.Result = {
     def loadAndRunReq(req: Request) = {
       val (result, succeeded) = req.loadAndRun
-      // don't truncate stack traces
-      if (!succeeded) out print cleanNoTruncate(result)
-      else if (printResults) out print clean(result)
+      /** To our displeasure, ConsoleReporter offers only printMessage,
+       *  which tacks a newline on the end.  Since that breaks all the
+       *  output checking, we have to take one off to balance.
+       */
+      def show() = {
+        if (result == "") ()
+        else printMessage(result stripSuffix "\n")
+      }
 
-      // book-keeping
-      if (succeeded && !synthetic)
-        recordRequest(req)
+      if (succeeded) {
+        if (printResults)
+          show()
+        if (!synthetic)       // book-keeping
+          recordRequest(req)
 
-      if (succeeded) IR.Success
-      else IR.Error
+        IR.Success
+      }
+      else {
+        // don't truncate stack traces
+        withoutTruncating(show())
+        IR.Error
+      }
     }
 
     if (global == null) IR.Error
@@ -646,7 +592,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   }
 
   /** A name creator used for objects created by <code>bind()</code>. */
-  private lazy val newBinder = new NameCreator("binder")
+  private lazy val newBinder = new naming.NameCreator("binder")
 
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
@@ -679,10 +625,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
-    virtualDirectory.clear
+    virtualDirectory.clear()
     resetClassLoader()
-    lineNameCreator.reset()
-    varNameCreator.reset()
+    resetAllCreators()
     prevRequests.clear
   }
 
@@ -693,153 +638,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     reporter.flush
   }
 
-  /** A traverser that finds all mentioned identifiers, i.e. things
-   *  that need to be imported.  It might return extra names.
-   */
-  private class ImportVarsTraverser extends Traverser {
-    val importVars = new mutable.HashSet[Name]()
-
-    override def traverse(ast: Tree) = ast match {
-      case Ident(name) =>
-        // XXX this is obviously inadequate but it's going to require some effort
-        // to get right.
-        if (name.toString startsWith "x$") ()
-        else importVars += name
-      case _        => super.traverse(ast)
-    }
-  }
-
-  /** Class to handle one member among all the members included
-   *  in a single interpreter request.
-   */
-  private sealed abstract class MemberHandler(val member: Tree) {
-    lazy val referencedNames: List[Name] = {
-      val ivt = new ImportVarsTraverser()
-      ivt traverse member
-      ivt.importVars.toList
-    }
-    def boundNames: List[Name] = Nil
-    val definesImplicit = cond(member) {
-      case tree: MemberDef => tree.mods.isImplicit
-    }
-    def generatesValue: Option[Name] = None
-
-    def extraCodeToEvaluate(req: Request): String = ""
-    def resultExtractionCode(req: Request): String = ""
-
-    override def toString = "%s(used = %s)".format(this.getClass.toString split '.' last, referencedNames)
-  }
-
-  private class GenericHandler(member: Tree) extends MemberHandler(member)
-
-  private class ValHandler(member: ValDef) extends MemberHandler(member) {
-    val maxStringElements = 1000  // no need to mkString billions of elements
-    lazy val ValDef(mods, vname, _, _) = member
-    lazy val prettyName = NameTransformer.decode(vname)
-
-    override lazy val boundNames = List(vname)
-    override def generatesValue = Some(vname)
-
-    override def resultExtractionCode(req: Request): String = {
-      val isInternal = isGeneratedVarName(vname) && req.lookupTypeOf(vname) == "Unit"
-      if (!mods.isPublic || isInternal) ""
-      else {
-        lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(req fullPath vname, maxStringElements)
-        // if this is a lazy val we avoid evaluating it here
-        val resultString = if (mods.isLazy) codegenln(false, "<lazy>") else extractor
-
-        """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf vname), resultString)
-      }
-    }
-  }
-
-  private class DefHandler(defDef: DefDef) extends MemberHandler(defDef) {
-    lazy val DefDef(mods, name, _, vparamss, _, _) = defDef
-    override lazy val boundNames = List(name)
-    // true if 0-arity
-    override def generatesValue =
-      if (vparamss.isEmpty || vparamss.head.isEmpty) Some(name)
-      else None
-
-    override def resultExtractionCode(req: Request) =
-      if (mods.isPublic) codegenln(name, ": ", req.typeOf(name)) else ""
-  }
-
-  private class AssignHandler(member: Assign) extends MemberHandler(member) {
-    val lhs = member.lhs.asInstanceOf[Ident] // an unfortunate limitation
-    val helperName = newTermName(synthVarNameCreator())
-    override def generatesValue = Some(helperName)
-
-    override def extraCodeToEvaluate(req: Request) =
-      """val %s = %s""".format(helperName, lhs)
-
-    /** Print out lhs instead of the generated varName */
-    override def resultExtractionCode(req: Request) = {
-      val lhsType = string2code(req lookupTypeOf helperName)
-      val res = string2code(req fullPath helperName)
-
-      """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res) + "\n"
-    }
-  }
-
-  private class ModuleHandler(module: ModuleDef) extends MemberHandler(module) {
-    lazy val ModuleDef(mods, name, _) = module
-    override lazy val boundNames = List(name)
-    override def generatesValue = Some(name)
-
-    override def resultExtractionCode(req: Request) =
-      codegenln("defined module ", name)
-  }
-
-  private class ClassHandler(classdef: ClassDef) extends MemberHandler(classdef) {
-    lazy val ClassDef(mods, name, _, _) = classdef
-    override lazy val boundNames =
-      name :: (if (mods.isCase) List(name.toTermName) else Nil)
-
-    override def resultExtractionCode(req: Request) =
-      codegenln("defined %s %s".format(classdef.keyword, name))
-  }
-
-  private class TypeAliasHandler(typeDef: TypeDef) extends MemberHandler(typeDef) {
-    lazy val TypeDef(mods, name, _, _) = typeDef
-    def isAlias() = mods.isPublic && treeInfo.isAliasTypeDef(typeDef)
-    override lazy val boundNames = if (isAlias) List(name) else Nil
-
-    override def resultExtractionCode(req: Request) =
-      codegenln("defined type alias ", name) + "\n"
-  }
-
-  private class ImportHandler(imp: Import) extends MemberHandler(imp) {
-    val Import(expr, selectors) = imp
-    def targetType = stringToCompilerType(expr.toString) match {
-      case NoType => None
-      case x      => Some(x)
-    }
-
-    private def selectorWild    = selectors filter (_.name == USCOREkw)   // wildcard imports, e.g. import foo._
-    private def selectorRenames = selectors map (_.rename) filterNot (_ == null)
-
-    /** Whether this import includes a wildcard import */
-    val importsWildcard = selectorWild.nonEmpty
-
-    /** Complete list of names imported by a wildcard */
-    def wildcardImportedNames: List[Name] = (
-      for (tpe <- targetType ; if importsWildcard) yield
-        tpe.nonPrivateMembers filter (x => x.isMethod && x.isPublic) map (_.name) distinct
-    ).toList.flatten
-
-    /** The individual names imported by this statement */
-    /** XXX come back to this and see what can be done with wildcards now that
-     *  we know how to enumerate the identifiers.
-     */
-    val importedNames: List[Name] =
-      selectorRenames filterNot (_ == USCOREkw) flatMap (_.bothNames)
-
-    override def resultExtractionCode(req: Request) = codegenln(imp.toString) + "\n"
-  }
-
   /** One line of code submitted by the user for interpretation */
-  private class Request(val line: String, val lineName: String, val trees: List[Tree]) {
+  // private
+  class Request(val line: String, val lineName: String, val trees: List[Tree]) {
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
     def originalLine = if (_originalLine == null) line else _originalLine
@@ -851,26 +652,17 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     def resultObjectName = RESULT_OBJECT_PREFIX + objectName
 
     /** handlers for each tree in this request */
-    val handlers: List[MemberHandler] = trees map chooseHandler
+    val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
 
     /** all (public) names defined by these statements */
-    val boundNames = handlers flatMap (_.boundNames)
+    val definedNames = handlers flatMap (_.definedNames)
 
     /** list of names used by this expression */
     val referencedNames: List[Name] = handlers flatMap (_.referencedNames)
 
     /** def and val names */
-    def defNames = partialFlatMap(handlers) { case x: DefHandler => x.boundNames }
-    def valueNames = partialFlatMap(handlers) {
-      case x: AssignHandler => List(x.helperName)
-      case x: ValHandler    => boundNames
-      case x: ModuleHandler => List(x.name)
-    }
-    /** Type names */
-    def typeNames = handlers collect {
-      case x: ClassHandler     => x.name
-      case x: TypeAliasHandler => x.name
-    }
+    def termNames = handlers flatMap (_.definesTerm)
+    def typeNames = handlers flatMap (_.definesType)
 
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
@@ -901,15 +693,17 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
-      val valueExtractor = handlers.last.generatesValue match {
-        case Some(vname) if typeOf contains vname =>
-          """
-          |lazy val scala_repl_value = {
-          |  scala_repl_result
-          |  %s
-          |}""".stripMargin.format(fullPath(vname))
-        case _  => ""
-      }
+      val valueExtractor =
+        if (!handlers.last.definesValue) ""
+        else handlers.last.definesTerm match {
+          case Some(vname) if typeOf contains vname =>
+            """
+            |lazy val scala_repl_value = {
+            |  scala_repl_result
+            |  %s
+            |}""".stripMargin.format(fullPath(vname))
+          case _  => ""
+        }
       // first line evaluates object to make sure constructor is run
       // initial "" so later code can uniformly be: + etc
       val preamble = """
@@ -989,7 +783,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
 
     /* typeOf lookup with encoding */
-    def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name)))
+    def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))
     def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbol.simpleName)
 
     private def typeMap[T](f: Type => T): Map[Name, T] = {
@@ -1005,7 +799,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
           case tp                                   => f(tp)
         })
       }
-      valueNames ++ defNames ++ typeNames map (x => x -> toType(x)) toMap
+      termNames ++ typeNames map (x => x -> toType(x)) toMap
     }
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x)
@@ -1071,15 +865,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    */
   def mostRecentVar: String =
     if (mostRecentlyHandledTree.isEmpty) ""
-    else mostRecentlyHandledTree.get match {
+    else "" + (mostRecentlyHandledTree.get match {
       case x: ValOrDefDef           => x.name
       case Assign(Ident(name), _)   => name
       case ModuleDef(_, name, _)    => name
-      case _                        => varNameCreator.mostRecent
-    }
+      case _                        => naming.mostRecentVar
+    })
 
   private def requestForName(name: Name): Option[Request] =
-    prevRequests.reverse find (_.boundNames contains name)
+    prevRequests.reverse find (_.definedNames contains name)
 
   private def requestForIdent(line: String): Option[Request] = requestForName(newTermName(line))
 
@@ -1150,7 +944,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     if (manifest[T] eq Manifest.Nothing)
       evalError("Could not infer type: try 'eval[SomeType](%s)' instead".format(line))
 
-    val lhs = getSynthVarName
+    val lhs = freshInternalVarName()
     beQuietDuring { interpret("val " + lhs + " = { " + line + " } ") }
 
     // TODO - can we meaningfully compare the inferred type T with
@@ -1179,13 +973,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   }
 
   /** Another entry point for tab-completion, ids in scope */
-  private def unqualifiedIdNames() = partialFlatMap(allHandlers) {
-    case x: AssignHandler => List(x.helperName)
-    case x: ValHandler    => List(x.vname)
-    case x: ModuleHandler => List(x.name)
-    case x: DefHandler    => List(x.name)
-    case x: ImportHandler => x.importedNames
-  } filterNot isSynthVarName
+  private def simpleTermNames =
+    allHandlers flatMap (_.definedOrImported) filter (x => x.isTermName && !isInternalVarName(x))
 
   /** Types which have been wildcard imported, such as:
    *    val x = "abc" ; import x._  // type java.lang.String
@@ -1199,12 +988,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *  into the compiler scopes.
    */
   def wildcardImportedTypes(): List[Type] = {
-    val xs = allHandlers collect { case x: ImportHandler if x.importsWildcard => x.targetType }
-    xs.flatten.reverse.distinct
+    importHandlers flatMap {
+      case x if x.importsWildcard => x.targetType
+      case _                      => None
+    } distinct
   }
 
   /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).distinct.sorted
+  def unqualifiedIds() = (simpleTermNames map (_.toString)).distinct.sorted
 
   /** For static/object method completion */
   def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path
@@ -1235,14 +1026,26 @@ object IMain {
   class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, intp.out) {
     import intp._
 
+    /** Truncate a string if it is longer than isettings.maxPrintString */
+    private def truncPrintString(str: String): String = {
+      val maxpr = isettings.maxPrintString
+      val trailer = "..."
+
+      if (!truncationOK || maxpr <= 0 || str.length <= maxpr) str
+      else (str take maxpr-3) + trailer
+    }
+
+    /** Clean up a string for output */
+    private def clean(str: String) = truncPrintString(
+      if (isettings.unwrapStrings) stripWrapperGunk(str)
+      else str
+    )
+
     override def printMessage(msg: String) {
       if (totalSilence)
         return
 
-      out println (
-        if (truncationOK) clean(msg)
-        else cleanNoTruncate(msg)
-      )
+      out println clean(msg)
       out.flush()
     }
   }
@@ -1258,29 +1061,5 @@ object IMain {
       b ++= x
 
     b.result
-  }
-
-  def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
-  def codegenln(xs: String*): String = codegenln(true, xs: _*)
-
-  def codegen(xs: String*): String = codegen(true, xs: _*)
-  def codegen(leadingPlus: Boolean, xs: String*): String = {
-    val front = if (leadingPlus) "+ " else ""
-    front + (xs map string2codeQuoted mkString " + ")
-  }
-
-  def string2codeQuoted(str: String) = "\"" + string2code(str) + "\""
-
-  /** Convert a string into code that can recreate the string.
-   *  This requires replacing all special characters by escape
-   *  codes. It does not add the surrounding " marks.  */
-  def string2code(str: String): String = {
-    val res = new StringBuilder
-    for (c <- str) c match {
-      case '"' | '\'' | '\\'  => res += '\\' ; res += c
-      case _ if c.isControl   => res ++= Chars.char2uescape(c)
-      case _                  => res += c
-    }
-    res.toString
   }
 }

@@ -641,7 +641,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     (name, objName(value))
   }
   def injectAndName(obj: Any): (String, String) = {
-    val name = intp.getVarName
+    val name = intp.naming.freshUserVarName()
     val className = objName(obj)
     intp.bind(name, className, obj)
     (name, className)
