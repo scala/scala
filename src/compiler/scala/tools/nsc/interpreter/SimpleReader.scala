@@ -17,6 +17,7 @@ extends InteractiveReader
 {
   val history = NoHistory
   val completion = NoCompletion
+  val keyBindings: List[KeyBinding] = Nil
 
   def init() = ()
   def reset() = ()

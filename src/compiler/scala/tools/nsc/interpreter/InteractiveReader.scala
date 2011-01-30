@@ -18,6 +18,7 @@ trait InteractiveReader {
 
   def history: History
   def completion: Completion
+  def keyBindings: List[KeyBinding]
 
   def init(): Unit
   def reset(): Unit

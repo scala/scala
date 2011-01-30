@@ -17,14 +17,19 @@ import scala.tools.jline.console.ConsoleReader
 import scala.collection.JavaConverters._
 import Properties.userHome
 import Completion._
+import io.Streamable.slurp
 
 /** Reads from the console using JLine */
 class JLineReader(val completion: Completion) extends InteractiveReader {
   val interactive = true
   lazy val history = JLineHistory()
+  lazy val keyBindings =
+    try KeyBinding parse slurp(term.getDefaultBindings)
+    catch { case _: Exception => Nil }
 
-  def reset() = consoleReader.getTerminal().reset()
-  def init()  = consoleReader.getTerminal().init()
+  private def term = consoleReader.getTerminal()
+  def reset() = term.reset()
+  def init()  = term.init()
 
   def scalaToJline(tc: ScalaCompleter): Completer = new Completer {
     def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {

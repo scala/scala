@@ -193,6 +193,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
        NoArgs("help", "print this help message", printHelp),
        VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
        LineArg("h?", "search the history", searchHistory),
+       LineArg("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
        OneArg("load", "load and interpret a Scala file", load),
        NoArgs("power", "enable power user mode", powerCmd),
        NoArgs("quit", "exit the interpreter", () => Result(false, None)),
@@ -211,15 +212,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       LineArg("wrap", "code to wrap around all executions", wrapCommand)
     )
   }
-  private def wrapCommand(line: String): Result = {
-    if (line == "") {
-      intp.setExecutionWrapper("")
-      "Cleared wrapper."
-    }
+  private def keybindingsCommand(line: String): Result = {
+    if (in.keyBindings.isEmpty) "Key bindings unavailable."
     else {
-      intp.setExecutionWrapper(line)
-      "Set wrapper to '" + line + "'"
+      println("Reading jline properties for default key bindings.")
+      println("Accuracy not guaranteed: treat this as a guideline only.\n")
+      in.keyBindings foreach println
     }
+  }
+  private def wrapCommand(line: String): Result = {
+    intp setExecutionWrapper line
+    if (line == "") "Cleared wrapper."
+    else "Set wrapper to '" + line + "'"
   }
 
   private def symfilterCmd(line: String): Result = {
@@ -404,7 +408,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     commands.filter(_.name startsWith cmd) match {
       case List(x)  => x(args)
       case Nil      => withError("Unknown command.  Type :help for help.")
-      case xs       => withError(ambiguous(xs))
+      case xs       =>
+        xs find (_.name == cmd) match {
+          case Some(exact)  => exact(args)
+          case _            => withError(ambiguous(xs))
+        }
     }
   }
 
