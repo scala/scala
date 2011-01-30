@@ -82,11 +82,11 @@ class CompileSocket {
   private def serverCommand(vmArgs: Seq[String]): Seq[String] =
     Seq(vmCommand) ++ vmArgs ++ Seq(serverClass) filterNot (_ == "")
 
-  /** Start a new server; returns true iff it succeeds */
+  /** Start a new server. */
   private def startNewServer(vmArgs: String) = {
     val cmd = serverCommand(vmArgs split " " toSeq)
     info("[Executing command: %s]" format cmd)
-    (cmd.! == 0) || fatal("Cannot start compilation daemon.\ntried command: %s" format cmd)
+    cmd.run()
   }
 
   /** The port identification file */
