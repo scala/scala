@@ -58,7 +58,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     // for some reason any's members don't show up in subclasses, which
     // we need so 5.<tab> offers asInstanceOf etc.
     private def anyMembers = AnyClass.tpe.nonPrivateMembers
-    def anyRefMethodsToShow = List("isInstanceOf", "asInstanceOf", "toString")
+    def anyRefMethodsToShow = Set("isInstanceOf", "asInstanceOf", "toString")
 
     def tos(sym: Symbol) = sym.name.decode.toString
     def memberNamed(s: String) = members find (x => tos(x) == s)
@@ -89,8 +89,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
                                               with CompilerCompletion {
     def excludeEndsWith: List[String] = Nil
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
-    def excludeNames: List[String] =
-      anyref.methodNames.filterNot(anyRefMethodsToShow contains) ++ List("_root_")
+    def excludeNames: List[String] = (anyref.methodNames filterNot anyRefMethodsToShow) :+ "_root_"
 
     def methodSignatureString(sym: Symbol) = {
       def asString = new MethodSymbolOutput(sym).methodString()
@@ -144,28 +143,13 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
   // the unqualified vals/defs/etc visible in the repl
   object ids extends CompletionAware {
-    override def completions(verbosity: Int) = intp.unqualifiedIds :+ "classOf"
-    // we try to use the compiler and fall back on reflection if necessary
-    // (which at present is for anything defined in the repl session.)
+    override def completions(verbosity: Int) = intp.unqualifiedIds ++ List("classOf") //, "_root_")
+    // now we use the compiler for everything.
     override def follow(id: String) = {
-      if (completions(0) contains id) {
-        for (clazz <- intp clazzForIdent id) yield {
-          // XXX The isMemberClass check is a workaround for the crasher described
-          // in the comments of #3431.  The issue as described by iulian is:
-          //
-          // Inner classes exist as symbols
-          // inside their enclosing class, but also inside their package, with a mangled
-          // name (A$B). The mangled names should never be loaded, and exist only for the
-          // optimizer, which sometimes cannot get the right symbol, but it doesn't care
-          // and loads the bytecode anyway.
-          //
-          // So this solution is incorrect, but in the short term the simple fix is
-          // to skip the compiler any time completion is requested on a nested class.
-          if (clazz.isMemberClass) new InstanceCompletion(clazz)
-          else (typeOf(clazz.getName) map TypeMemberCompletion.apply) getOrElse new InstanceCompletion(clazz)
-        }
-      }
-      else None
+      if (completions(0) contains id)
+        intp typeOfExpression id map (tpe => TypeMemberCompletion(tpe))
+      else
+        None
     }
     override def toString = "<repl ids> (%s)".format(completions(0).size)
   }
@@ -353,7 +337,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
       catch {
         case ex: Exception =>
           DBG("Error: complete(%s, %s) provoked %s".format(buf, cursor, ex))
-          Candidates(cursor, List(" ", "<completion error>"))
+          Candidates(cursor, List(" ", "<completion error: " + ex.getMessage +  ">"))
       }
     }
   }

@@ -64,11 +64,12 @@ class Power(repl: ILoop, intp: IMain) {
     if (repl != null) {
       intp.bind[ILoop]("repl", repl)
       intp.bind[History]("history", repl.in.history)
-      intp.bind[Completion]("completion", repl.in.completion)
+      intp.bind("completion", repl.in.completion)
     }
 
     intp.bind[IMain]("intp", intp)
     intp.bind[Power]("power", this)
+    intp.bind[ISettings]("isettings", intp.isettings)
     init split '\n' foreach interpret
   }
 
@@ -127,7 +128,7 @@ class Power(repl: ILoop, intp: IMain) {
     run.units.toList map (_.body)
   }
   def mkTypedTree(code: String) = mkTypedTrees(code).head
-  def mkType(id: String): Type = intp.stringToCompilerType(id)
+  def mkType(id: String): Type = intp.typeOfExpression(id) getOrElse NoType
 
   override def toString = """
     |** Power mode status **

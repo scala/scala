@@ -95,6 +95,7 @@ trait MemberHandlers {
    *  in a single interpreter request.
    */
   sealed abstract class MemberHandler(val member: Tree) {
+    def tpe = member.tpe
     def definesImplicit = false
     def definesValue    = false
 
@@ -102,9 +103,9 @@ trait MemberHandlers {
     def definesType     = Option.empty[TypeName]
 
     lazy val referencedNames = ImportVarsTraverser(member)
-    def importedNames     = List[Name]()
-    def definedNames      = definesTerm.toList ++ definesType.toList
-    def definedOrImported = definedNames ++ importedNames
+    def importedNames        = List[Name]()
+    def definedNames         = definesTerm.toList ++ definesType.toList
+    def definedOrImported    = definedNames ++ importedNames
 
     def extraCodeToEvaluate(req: Request): String = ""
     def resultExtractionCode(req: Request): String = ""
@@ -185,7 +186,7 @@ trait MemberHandlers {
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
-    def targetType = Some(intp.stringToCompilerType(expr.toString)) filterNot (_ == NoType)
+    def targetType = intp.typeOfExpression("" + expr)
 
     private def selectorWild    = selectors filter (_.name == nme.USCOREkw)   // wildcard imports, e.g. import foo._
     private def selectorRenames = selectors map (_.rename) filterNot (_ == null)

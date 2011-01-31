@@ -272,10 +272,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   /** the previous requests this interpreter has processed */
   private lazy val prevRequests      = mutable.ArrayBuffer[Request]()
   private lazy val referencedNameMap = mutable.Map[Name, Request]()
-  private lazy val definedNameMap: mutable.Map[Name, Request]      = mutable.Map[Name, Request]()
-  private def allHandlers       = prevRequests.toList flatMap (_.handlers)
-  private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
-  private def importHandlers = allHandlers collect { case x: ImportHandler => x }
+  private lazy val definedNameMap    = mutable.Map[Name, Request]()
+  private def allHandlers            = prevRequests.toList flatMap (_.handlers)
+  private def allReqAndHandlers      = prevRequests.toList flatMap (req => req.handlers map (req -> _))
+  private def importHandlers         = allHandlers collect { case x: ImportHandler => x }
 
   def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
   def pathToType(id: String): String = pathToName(newTypeName(id))
@@ -314,14 +314,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     }
   }
   def recordRequest(req: Request) {
-    if (req == null || referencedNameMap == null) {
-      DBG("Received null value at recordRequest.")
+    if (req == null || referencedNameMap == null)
       return
-    }
-    def tripart[T](set1: Set[T], set2: Set[T]) = {
-      val intersect = set1 intersect set2
-      List(set1 -- intersect, intersect, set2 -- intersect)
-    }
 
     prevRequests += req
     req.referencedNames foreach (x => referencedNameMap(x) = req)
@@ -333,11 +327,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
       definedNameMap(name) = req
     }
-
-    // XXX temporarily putting this here because of tricky initialization order issues
-    // so right now it's not bound until after you issue a command.
-    if (prevRequests.size == 1)
-      quietBind("settings", isettings)
   }
 
   def allSeenTypes    = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
@@ -675,7 +664,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       * append to objectName to access anything bound by request.
       */
     val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      importsCode(Set.empty ++ referencedNames)
+      importsCode(referencedNames.toSet)
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: String): String = "%s.`%s`".format(objectName + accessPath, vname)
@@ -880,24 +869,49 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     })
 
   private def requestForName(name: Name): Option[Request] =
-    prevRequests.reverse find (_.definedNames contains name)
+    definedNameMap get name
 
-  private def requestForIdent(line: String): Option[Request] = requestForName(newTermName(line))
+  private def requestForIdent(line: String): Option[Request] =
+    requestForName(newTermName(line)) orElse requestForName(newTypeName(line))
 
-  // XXX literals.
-  def stringToCompilerType(id: String): Type = {
-    // if it's a recognized identifier, the type of that; otherwise treat the
-    // String like a value (e.g. scala.collection.Map) .
-    def findType = typeForIdent(id) match {
-      case Some(x)  => definitions.getClass(newTermName(x)).tpe
-      case _        => definitions.getModule(newTermName(id)).tpe
+  def definitionForName(name: Name): Option[MemberHandler] =
+    requestForName(name) flatMap { req =>
+      req.handlers find (_.definedNames contains name)
     }
 
-    try findType catch { case _: MissingRequirementError => NoType }
-  }
+  def typeOfDefinedName(name: Name): Option[Type] =
+    if (name == nme.ROOTPKG) Some(definitions.RootClass.tpe)
+    else requestForName(name) flatMap (_.compilerTypeOf get name)
 
-  def typeForIdent(id: String): Option[String] =
-    requestForIdent(id) flatMap (x => x.typeOf get newTermName(id))
+  // XXX literals.
+  // 1) Identifiers defined in the repl.
+  // 2) A path loadable via getModule.
+  // 3) Try interpreting it as an expression.
+  def typeOfExpression(expr: String): Option[Type] = {
+    val name = newTermName(expr)
+
+    def asModule = {
+      try Some(definitions.getModule(name).tpe)
+      catch { case _: MissingRequirementError => None }
+    }
+    def asExpr = beSilentDuring {
+      val lhs = freshInternalVarName()
+      interpret("val " + lhs + " = { " + expr + " } ") match {
+        case IR.Success => typeOfExpression(lhs)
+        case _          => None
+      }
+    }
+
+    typeOfDefinedName(name) orElse asModule orElse asExpr
+  }
+  // def compileAndTypeExpr(expr: String): Option[Typer] = {
+  //   class TyperRun extends Run {
+  //     override def stopPhase(name: String) = name == "superaccessors"
+  //   }
+  // }
+
+  def clazzForIdent(id: String): Option[Class[_]] =
+    extractionValueForIdent(id) flatMap (x => Option(x) map (_.getClass))
 
   def methodsOf(name: String) =
     evalExpr[List[String]](methodsCode(name)) map (x => NameTransformer.decode(getOriginalName(x)))
@@ -924,9 +938,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     // We don't use implicitly so as to fail without failing.
     // evalExpr[T]("""implicitly[%s]""".format(manifest[T]))
   }
-
-  def clazzForIdent(id: String): Option[Class[_]] =
-    extractionValueForIdent(id) flatMap (x => Option(x) map (_.getClass))
 
   private def methodsCode(name: String) =
     "%s.%s(%s)".format(classOf[ReflectionCompletion].getName, "methodsOf", name)

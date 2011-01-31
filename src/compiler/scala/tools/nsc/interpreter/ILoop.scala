@@ -128,7 +128,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
     intp.setContextClassLoader()
     installSigIntHandler()
-    // intp.quietBind("settings", "scala.tools.nsc.InterpreterSettings", intp.isettings)
   }
 
   /** print a friendly help message */
