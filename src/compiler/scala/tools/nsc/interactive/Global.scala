@@ -677,7 +677,7 @@ self =>
           .typed(Apply(view.tree, List(tree)) setPos tree.pos)
       } catch {
         case ex: TypeError =>
-          debugLog("type error caught")
+          debugLog("type error caught: "+ex)
           EmptyTree
       }
     }
@@ -737,8 +737,10 @@ self =>
         if (keepLoaded) {
           reloadSources(List(source))
           buildStructureNow(source, response)
-        } else {
+        } else if (outOfDate) {
           buildStructureResponses(source) += response
+        } else {
+          buildStructureNow(source, response)
         }
     }
   }
@@ -746,7 +748,10 @@ self =>
   /** Builds structure of given source file */
   protected def buildStructureNow(source: SourceFile, response: Response[List[Symbol]]) {
     def forceSym(sym: Symbol) {
-      sym.info.decls.iterator foreach forceSym
+      sym.info match {
+        case t: CompoundType => t.decls.iterator foreach forceSym
+        case _ =>
+      }
     }
     respond(response) {
       onUnitOf(source) { unit =>
