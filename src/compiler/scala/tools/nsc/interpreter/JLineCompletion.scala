@@ -11,6 +11,7 @@ import scala.tools.jline.console.completer._
 import java.util.{ List => JList }
 import util.returning
 import Completion._
+import collection.mutable.ListBuffer
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
@@ -117,7 +118,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
         if (alts.nonEmpty) "" :: alts else Nil
       }
 
-    override def toString = "TypeMemberCompletion(%s)".format(tp)
+    override def toString = "%s (%d members)".format(tp, members.size)
   }
 
   class PackageCompletion(tp: Type) extends TypeMemberCompletion(tp) {
@@ -146,7 +147,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     override def completions(verbosity: Int) = intp.unqualifiedIds :+ "classOf"
     // we try to use the compiler and fall back on reflection if necessary
     // (which at present is for anything defined in the repl session.)
-    override def follow(id: String) =
+    override def follow(id: String) = {
       if (completions(0) contains id) {
         for (clazz <- intp clazzForIdent id) yield {
           // XXX The isMemberClass check is a workaround for the crasher described
@@ -165,6 +166,8 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
         }
       }
       else None
+    }
+    override def toString = "<repl ids> (%s)".format(completions(0).size)
   }
 
   // wildcard imports in the repl like "import global._" or "import String._"
@@ -230,18 +233,21 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   }
 
   // the list of completion aware objects which should be consulted
+  // for top level unqualified, it's too noisy to let much in.
   lazy val topLevelBase: List[CompletionAware] = List(ids, rootClass, predef, scalalang, javalang, literals)
   def topLevel = topLevelBase ++ imported
+  def topLevelThreshold = 50
 
   // the first tier of top level objects (doesn't include file completion)
   def topLevelFor(parsed: Parsed): List[String] = {
+    val buf = new ListBuffer[String]
     topLevel foreach { ca =>
-      ca completionsFor parsed match {
-        case Nil  => ()
-        case xs   => return xs
-      }
+      buf ++= (ca completionsFor parsed)
+
+      if (buf.size > topLevelThreshold)
+        return buf.toList.sorted
     }
-    Nil
+    buf.toList
   }
 
   // the most recent result
@@ -289,18 +295,14 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def isConsecutiveTabs(buf: String, cursor: Int) =
       cursor == lastCursor && buf == lastBuf
 
-    def sameHead(xs: List[String]) = {
-      if (xs.isEmpty || xs.head.length == 0) false
-      else {
-        val y :: ys = xs
-        val ch = y.head
-        ys forall (s => s.length > 0 && s.head == ch)
-      }
-    }
     // Longest common prefix
     def commonPrefix(xs: List[String]): String = {
-      if (sameHead(xs)) xs.head + commonPrefix(xs map (_.tail))
-      else ""
+      if (xs.isEmpty || xs.contains("")) ""
+      else xs.head.head match {
+        case ch =>
+          if (xs.tail forall (_.head == ch)) "" + ch + commonPrefix(xs map (_.tail))
+          else ""
+      }
     }
 
     // This is jline's entry point for completion.
@@ -310,23 +312,21 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
       // we don't try lower priority completions unless higher ones return no results.
       def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Candidates] = {
-        completionFunction(p) match {
-          case Nil  => None
-          case xs   =>
-            Some(Candidates(
-              if (xs contains "") p.cursor
-              else {
-                // update the last buffer unless this is an alternatives list
-                val advance = commonPrefix(xs)
-                lastCursor = p.position + advance.length
-                lastBuf = (buf take p.position) + advance
-                DBG("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(
-                  p, lastBuf, lastCursor, p.position))
-                p.position
-              },
-              xs)
-            )
-        }
+        val winners = completionFunction(p)
+        if (winners.isEmpty)
+          return None
+        val newCursor =
+          if (winners contains "") p.cursor
+          else {
+            val advance = commonPrefix(winners)
+            lastCursor = p.position + advance.length
+            lastBuf = (buf take p.position) + advance
+            DBG("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(
+              p, lastBuf, lastCursor, p.position))
+            p.position
+          }
+
+        Some(Candidates(newCursor, winners))
       }
 
       def mkDotted      = Parsed.dotted(buf, cursor) withVerbosity verbosity

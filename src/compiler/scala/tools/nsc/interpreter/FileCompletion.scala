@@ -19,8 +19,10 @@ import io.{ Directory, Path }
  */
 object FileCompletion {
   def executionFor(buffer: String): Option[Path] = {
-    val p = Path(buffer)
-    if (p.exists) Some(p) else None
+    Some(Directory.Home match {
+      case Some(d) if buffer startsWith "~" => d / buffer.tail
+      case _                                => Path(buffer)
+    }) filter (_.exists)
   }
 
   private def fileCompletionForwarder(buffer: String, where: Directory): List[String] = {

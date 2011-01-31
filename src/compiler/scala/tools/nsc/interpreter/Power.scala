@@ -60,20 +60,16 @@ class Power(repl: ILoop, intp: IMain) {
 
   /** Starts up power mode and runs whatever is in init.
    */
-  def unleash(): Unit = {
-    def f = {
-      if (repl != null) {
-        intp.bind[ILoop]("repl", repl)
-        intp.bind[History]("history", repl.in.history)
-        intp.bind[Completion]("completion", repl.in.completion)
-      }
-
-      intp.bind[IMain]("intp", intp)
-      intp.bind[Power]("power", this)
-      init split '\n' foreach interpret
+  def unleash(): Unit = beQuietDuring {
+    if (repl != null) {
+      intp.bind[ILoop]("repl", repl)
+      intp.bind[History]("history", repl.in.history)
+      intp.bind[Completion]("completion", repl.in.completion)
     }
-    if (isReplDebug) f
-    else beQuietDuring { f }
+
+    intp.bind[IMain]("intp", intp)
+    intp.bind[Power]("power", this)
+    init split '\n' foreach interpret
   }
 
   object show {

@@ -49,18 +49,16 @@ class Parsed private (
   def isEscaped = !isAtStart && isEscapeChar(currentChar) && !isEscapeChar(prev.currentChar)
   def isDelimiter = !isQuoted && !isEscaped && isDelimiterChar(currentChar)
 
-  def asJlineArgumentList =
-    if (isEmpty) new ArgumentList(Array[String](), 0, 0, cursor)
-    else new ArgumentList(args.toArray, args.size - 1, currentArg.length, cursor)
-
   override def toString = "Parsed(%s / %d)".format(buffer, cursor)
 }
 
 object Parsed {
+  val DefaultDelimiters = "[]{},`; \t".toSet
+
   private def onull(s: String) = if (s == null) "" else s
 
   def apply(s: String): Parsed = apply(onull(s), onull(s).length)
-  def apply(s: String, cursor: Int): Parsed = apply(onull(s), cursor, "{},`; \t" contains _)
+  def apply(s: String, cursor: Int): Parsed = apply(onull(s), cursor, DefaultDelimiters)
   def apply(s: String, cursor: Int, delimited: Char => Boolean): Parsed =
     new Parsed(onull(s), cursor, delimited)
 

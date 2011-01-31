@@ -114,8 +114,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
     try {
       new _compiler.Run() compileSources List(new BatchSourceFile("<init>", source))
-      if (isReplDebug || settings.debug.value)
-        printMessage("Repl compiler initialized.")
+      if (isReplDebug || settings.debug.value) {
+        // Can't use printMessage here, it deadlocks
+        Console.println("Repl compiler initialized.")
+      }
       true
     }
     catch {
@@ -311,8 +313,11 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       DBG("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
     }
   }
-
   def recordRequest(req: Request) {
+    if (req == null || referencedNameMap == null) {
+      DBG("Received null value at recordRequest.")
+      return
+    }
     def tripart[T](set1: Set[T], set2: Set[T]) = {
       val intersect = set1 intersect set2
       List(set1 -- intersect, intersect, set2 -- intersect)
@@ -466,11 +471,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       else                      Some(trees)
     }
   }
+
   def isParseable(line: String): Boolean = {
     beSilentDuring {
       parse(line) match {
-        case Some(xs) => xs.nonEmpty
-        case _        => false
+        case Some(xs) => xs.nonEmpty  // parses as-is
+        case None     => true         // incomplete
       }
     }
   }
@@ -568,7 +574,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       if (succeeded) {
         if (printResults)
           show()
-        if (!synthetic)       // book-keeping
+        if (!synthetic)  // book-keeping
           recordRequest(req)
 
         IR.Success
@@ -622,6 +628,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
   def bind(p: NamedParam): IR.Result                       = bind(p.name, p.tpe, p.value)
   def bind[T: Manifest](name: String, value: T): IR.Result = bind((name, value))
+  def bindValue(x: Any): IR.Result                         = bind(freshUserVarName(), TypeStrings.fromValue(x), x)
 
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {

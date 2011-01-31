@@ -509,25 +509,28 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     // signal completion non-completion input has been received
     in.completion.resetVerbosity()
 
-    def reallyInterpret = intp.interpret(code) match {
-      case IR.Error       => None
-      case IR.Success     => Some(code)
-      case IR.Incomplete  =>
-        if (in.interactive && code.endsWith("\n\n")) {
-          out.println("You typed two blank lines.  Starting a new command.")
-          None
-        }
-        else in.readLine(CONTINUATION_STRING) match {
-          case null =>
-            // we know compilation is going to fail since we're at EOF and the
-            // parser thinks the input is still incomplete, but since this is
-            // a file being read non-interactively we want to fail.  So we send
-            // it straight to the compiler for the nice error message.
-            intp.compileString(code)
+    def reallyInterpret = {
+      val reallyResult = intp.interpret(code)
+      (reallyResult, reallyResult match {
+        case IR.Error       => None
+        case IR.Success     => Some(code)
+        case IR.Incomplete  =>
+          if (in.interactive && code.endsWith("\n\n")) {
+            out.println("You typed two blank lines.  Starting a new command.")
             None
+          }
+          else in.readLine(CONTINUATION_STRING) match {
+            case null =>
+              // we know compilation is going to fail since we're at EOF and the
+              // parser thinks the input is still incomplete, but since this is
+              // a file being read non-interactively we want to fail.  So we send
+              // it straight to the compiler for the nice error message.
+              intp.compileString(code)
+              None
 
-          case line => interpretStartingWith(code + "\n" + line)
-        }
+            case line => interpretStartingWith(code + "\n" + line)
+          }
+      })
     }
 
     /** Here we place ourselves between the user and the interpreter and examine
@@ -549,12 +552,25 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       interpretStartingWith(intp.mostRecentVar + code)
     }
     else {
-      if (intp.isParseable(code)) reallyInterpret
-      else (in.completion execute code) match {
-        // completion took responsibility, so do not parse
-        // but do directly inject the result
-        case Some(res)  => injectAndName(res) ; None
-        case _          => reallyInterpret // we know it will fail, this is to show the error
+      def runCompletion = in.completion execute code map (intp bindValue _)
+      /** Due to my accidentally letting file completion execution sneak ahead
+       *  of actual parsing this now operates in such a way that the scala
+       *  interpretation always wins.  However to avoid losing useful file
+       *  completion I let it fail and then check the others.  So if you
+       *  type /tmp it will echo a failure and then give you a Directory object.
+       *  It's not pretty: maybe I'll implement the silence bits I need to avoid
+       *  echoing the failure.
+       */
+      if (intp isParseable code) {
+        val (code, result) = reallyInterpret
+        if (power != null && code == IR.Error)
+          runCompletion
+
+        result
+      }
+      else runCompletion match {
+        case Some(_)  => None // completion hit: avoid the latent error
+        case _        => reallyInterpret._2  // trigger the latent error
       }
     }
   }
@@ -618,33 +634,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
     finally closeInterpreter()
     true
-  }
-
-  private def objClass(x: Any) = x.asInstanceOf[AnyRef].getClass
-  private def objName(x: Any) = {
-    val clazz = objClass(x)
-    clazz.getName + tpString(clazz)
-  }
-
-  def tpString[T: Manifest] : String =
-    tpString(manifest[T].erasure)
-
-  def tpString(clazz: Class[_]): String = {
-    clazz.getTypeParameters.size match {
-      case 0    => ""
-      case x    => List.fill(x)("_").mkString("[", ", ", "]")
-    }
-  }
-
-  def inject[T: Manifest](name: String, value: T): (String, String) = {
-    intp.bind[T](name, value)
-    (name, objName(value))
-  }
-  def injectAndName(obj: Any): (String, String) = {
-    val name = intp.naming.freshUserVarName()
-    val className = objName(obj)
-    intp.bind(name, className, obj)
-    (name, className)
   }
 
   /** process command-line arguments and do as they request */

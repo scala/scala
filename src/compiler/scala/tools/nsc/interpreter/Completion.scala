@@ -45,9 +45,8 @@ object Completion {
     && !(code startsWith "./")
     && !(code startsWith "..")
   )
-  def looksLikePath(code: String) = (code != null) && (code.length >= 2) && (
-    Set("/", "\\", "./", "../", "~/") exists (code startsWith _)
-  )
+  private val pathStarts = """/ \ ./ ../ ~/""" split ' ' toSet
+  def looksLikePath(code: String) = (code != null) && (pathStarts exists (code startsWith _))
   object Forwarder {
     def apply(forwardTo: () => Option[CompletionAware]): CompletionAware = new CompletionAware {
       def completions(verbosity: Int) = forwardTo() map (_ completions verbosity) getOrElse Nil

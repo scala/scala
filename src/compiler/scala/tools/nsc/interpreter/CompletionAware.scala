@@ -64,16 +64,16 @@ trait CompletionAware {
    *  to other CompletionAware objects.
    */
   def completionsFor(parsed: Parsed): List[String] = {
-    import parsed._
-
+    import parsed.{ buffer, verbosity }
     val comps = completions(verbosity) filter (_ startsWith buffer)
+    val exact = comps contains buffer
+
     val results =
-      if (isEmpty) comps
-      else if (isUnqualified && !isLastDelimiter) {
-        if (verbosity > 0 && (comps contains buffer)) alternativesFor(buffer)
+      if (parsed.isEmpty) comps
+      else if (parsed.isUnqualified && !parsed.isLastDelimiter)
+        if (verbosity > 0 && exact) alternativesFor(buffer)
         else comps
-      }
-      else follow(bufferHead) map (_ completionsFor bufferTail) getOrElse Nil
+      else follow(parsed.bufferHead) map (_ completionsFor parsed.bufferTail) getOrElse Nil
 
     results filterNot filterNotFunction map mapFunction sortWith (sortFunction _)
   }
