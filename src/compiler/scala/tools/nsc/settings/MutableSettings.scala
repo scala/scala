@@ -550,6 +550,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
+    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
 
     withHelpSyntax(name + ":<" + helpArg + ">")
   }

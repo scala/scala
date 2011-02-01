@@ -48,6 +48,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   @deprecated("Use `intp` instead.")
   def interpreter = intp
 
+  @deprecated("Use `intp` instead.")
+  def interpreter_= (i: Interpreter){
+    intp = i
+  }
+
   /** The context class loader at the time this object was created */
   protected val originalClassLoader = Thread.currentThread.getContextClassLoader
 
