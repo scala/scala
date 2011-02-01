@@ -41,8 +41,15 @@ trait SyntheticMethods extends ast.TreeDSL {
    *  associated badness: see ticket #883.  So if it sees such a thing this has happened
    *  (by virtue of the symbol being in createdMethodSymbols) it re-overrides it with
    *  reference equality.
+   *
+   *  TODO: remove once (deprecated) case class inheritance is dropped form nsc.
    */
   private val createdMethodSymbols = new mutable.HashSet[Symbol]
+
+  /** Clear the cache of createdMethodSymbols.  */
+  def resetSynthetics() {
+    createdMethodSymbols.clear()
+  }
 
   /** Add the synthetic methods to case classes.  Note that a lot of the
    *  complexity herein is a consequence of case classes inheriting from

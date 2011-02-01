@@ -45,10 +45,12 @@ trait Typers extends Modes {
   final val shortenImports = false
 
   def resetTyper() {
+    //println("resetTyper called")
     resetContexts()
     resetNamer()
     resetImplicits()
     transformed.clear()
+    resetSynthetics()
   }
 
   object UnTyper extends Traverser {
