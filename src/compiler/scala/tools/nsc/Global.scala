@@ -645,6 +645,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   private var curRun: Run = null
   private var curRunId = 0
 
+  /** Remove the current run when not needed anymore. Used by the build
+   *  manager to save on the memory foot print. The current run holds on
+   *  to all compilation units, which in turn hold on to trees.
+   */
+  private [nsc] def dropRun() {
+    curRun = null
+  }
+
   /** The currently active run
    */
   def currentRun: Run = curRun

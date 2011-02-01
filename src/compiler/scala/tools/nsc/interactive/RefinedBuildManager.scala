@@ -180,6 +180,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     }
 
     update0(files)
+    // remove the current run in order to save some memory
+    compiler.dropRun()
   }
 
   // Attempt to break the cycling reference deps as soon as possible and reduce
