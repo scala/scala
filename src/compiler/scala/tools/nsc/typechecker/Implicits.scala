@@ -997,6 +997,6 @@ trait Implicits {
     }
   }
 
-  private class DivergentImplicit extends TypeError("Divergent implicit search")
-  private val DivergentImplicit = new DivergentImplicit
+  private class DivergentImplicit extends Exception()
+  private def DivergentImplicit = new DivergentImplicit
 }
