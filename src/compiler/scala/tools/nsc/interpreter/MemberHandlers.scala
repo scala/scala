@@ -98,6 +98,10 @@ trait MemberHandlers {
     def tpe = member.tpe
     def definesImplicit = false
     def definesValue    = false
+    def isLegalTopLevel = member match {
+      case _: ModuleDef | _: ClassDef | _: Import => true
+      case _                                      => false
+    }
 
     def definesTerm     = Option.empty[TermName]
     def definesType     = Option.empty[TypeName]

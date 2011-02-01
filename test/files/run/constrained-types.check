@@ -121,7 +121,7 @@ y: java.lang.String = hello
 
 -----
 val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message
-<console>:6: error: not found: value e
+<console>:8: error: not found: value e
        val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message
                               ^
 

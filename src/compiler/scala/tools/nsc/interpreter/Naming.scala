@@ -21,7 +21,7 @@ trait Naming {
 
     def apply(): String = {
       x += 1
-      mostRecent = pre + x.toString
+      mostRecent = pre + x
       mostRecent
     }
     def reset(): Unit = x = -1
@@ -37,6 +37,10 @@ trait Naming {
   def isInternalVarName(name: String): Boolean = internalVar didGenerate name
   def isInternalVarName(name: Name): Boolean   = internalVar didGenerate name.toString
 
+  val freshLineId            = {
+    var x = 0
+    () => { x += 1 ; x }
+  }
   def freshLineName()        = line()
   def freshUserVarName()     = userVar()
   def freshInternalVarName() = internalVar()

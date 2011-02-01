@@ -50,7 +50,7 @@ import IMain._
  *    all variables defined by that code.  To extract the result of an
  *    interpreted line to show the user, a second "result object" is created
  *    which imports the variables exported by the above object and then
- *    exports a single member named "scala_repl_result".  To accomodate user expressions
+ *    exports a single member named "$export".  To accomodate user expressions
  *    that read from variables or methods defined in previous statements, "import"
  *    statements are used.
  *  </p>
@@ -158,8 +158,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   lazy val compiler = global
 
   import global._
-  import definitions.{ EmptyPackage, getMember }
-  import nme.{ INTERPRETER_IMPORT_WRAPPER, INTERPRETER_WRAPPER_SUFFIX }
+  import nme.{ INTERPRETER_IMPORT_WRAPPER }
 
   object naming extends {
     val global: intp.global.type = intp.global
@@ -257,7 +256,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
     new AbstractFileClassLoader(virtualDirectory, parent)
   }
-  private def loadByName(s: String): Class[_] = (classLoader tryToInitializeClass s).get
+  private def loadByName(s: String): Class[_] =
+    (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
+
   private def methodByName(c: Class[_], name: String): reflect.Method =
     c.getMethod(name, classOf[Object])
 
@@ -485,27 +486,11 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
 
-  def compileAndSaveRun(label: String, code: String) = {
-    /** Secret bookcase entrance for repl debuggers: end the line
-     *  with "// show" and see what's going on.
-     */
-    if (code.lines exists (_.trim endsWith "// show")) {
-      echo(code)
-      parse(code) match {
-        case Some(trees)  => trees foreach (t => DBG(asCompactString(t)))
-        case _            => DBG("Parse error:\n\n" + code)
-      }
-    }
-    val run = new Run()
-    run.compileSources(List(new BatchSourceFile(label, code)))
-    run
-  }
 
   /** Build a request from the user. <code>trees</code> is <code>line</code>
    *  after being parsed.
    */
-  private def buildRequest(line: String, lineName: String, trees: List[Tree]): Request =
-    new Request(line, lineName, trees)
+  private def buildRequest(line: String, trees: List[Tree]): Request = new Request(line, trees)
 
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
     val trees = parse(indentCode(line)) match {
@@ -530,7 +515,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     }
 
     // figure out what kind of request
-    Right(buildRequest(line, freshLineName(), trees))
+    Right(buildRequest(line, trees))
   }
 
   /** <p>
@@ -634,18 +619,62 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     reporter.flush
   }
 
+  /** Here is where we:
+   *
+   *  1) Read some source code, and put it in the "read" object.
+   *  2) Evaluate the read object, and put the result in the "eval" object.
+   *  3) Create a String for human consumption, and put it in the "print" object.
+   *
+   *  Read! Eval! Print! Some of that not yet centralized here.
+   */
+  class ReadEvalPrint(val packageName: String) {
+    val readName  = "$read"
+    val evalName  = "$eval"
+    val printName = "$print"
+
+    val valueMethod = "$result"
+
+    // TODO: split it out into a package object and a regular
+    // object and we can do that much less wrapping.
+    def packageDecl = "package " + packageName
+
+    def pathTo(name: String)   = packageName + "." + name
+    def packaged(code: String) = packageDecl + "\n\n" + code
+
+    def readPath  = pathTo(readName)
+    def evalPath  = pathTo(evalName)
+    def printPath = pathTo(printName)
+
+    lazy val readRoot = definitions.getModule(readPath)   // the outermost wrapper
+    lazy val eval     = loadByName(evalPath)
+    lazy val runEval  =
+      try Some(eval getMethod valueMethod invoke eval)
+      catch { case ex: Exception => None }
+
+    // def compileAndTypeExpr(expr: String): Option[Typer] = {
+    //   class TyperRun extends Run {
+    //     override def stopPhase(name: String) = name == "superaccessors"
+    //   }
+    // }
+    def compile(source: String) = compileAndSaveRun("<console>", source)
+    def compileAndSaveRun(label: String, code: String) = {
+      showCodeIfDebugging(code)
+      val run = new Run()
+      run.compileSources(List(new BatchSourceFile(label, packaged(code))))
+      run
+    }
+  }
+
   /** One line of code submitted by the user for interpretation */
   // private
-  class Request(val line: String, val lineName: String, val trees: List[Tree]) {
+  class Request(val line: String, val trees: List[Tree]) {
+    val lineId      = freshLineId()
+    val linePackage = "$line" + lineId
+    val lineRep     = new ReadEvalPrint(linePackage)
+
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
     def originalLine = if (_originalLine == null) line else _originalLine
-
-    /** name to use for the object that will compute "line" */
-    def objectName = lineName + INTERPRETER_WRAPPER_SUFFIX
-
-    /** name of the object that retrieves the result from the above object */
-    def resultObjectName = RESULT_OBJECT_PREFIX + objectName
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
@@ -667,7 +696,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       importsCode(referencedNames.toSet)
 
     /** Code to access a variable with the specified name */
-    def fullPath(vname: String): String = "%s.`%s`".format(objectName + accessPath, vname)
+    def fullPath(vname: String) = (
+      lineRep.readPath + accessPath + ".`%s`".format(vname)
+    )
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: Name): String = fullPath(vname.toString)
@@ -680,7 +711,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       val preamble = """
         |object %s {
         |  %s%s
-      """.stripMargin.format(objectName, importsPreamble, indentCode(toCompute))
+      """.stripMargin.format(lineRep.readName, importsPreamble, indentCode(toCompute))
       val postamble = importsTrailer + "\n}"
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
     }
@@ -689,13 +720,13 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
-      val valueExtractor =
+      val evalResult =
         if (!handlers.last.definesValue) ""
         else handlers.last.definesTerm match {
           case Some(vname) if typeOf contains vname =>
             """
-            |lazy val scala_repl_value = {
-            |  scala_repl_result
+            |lazy val $result = {
+            |  $export
             |  %s
             |}""".stripMargin.format(fullPath(vname))
           case _  => ""
@@ -705,10 +736,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       val preamble = """
       |object %s {
       |  %s
-      |  val scala_repl_result: String = %s {
+      |  val $export: String = %s {
       |    %s
       |    (""
-      """.stripMargin.format(resultObjectName, valueExtractor, executionWrapper, objectName + accessPath)
+      """.stripMargin.format(
+        lineRep.evalName, evalResult, executionWrapper, lineRep.readName + accessPath
+      )
 
       val postamble = """
       |    )
@@ -718,27 +751,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
-    // Generate the object which runs the line of code.
-    def objectSourceCode: String = ObjectSourceCode(handlers)
-
-    // Generate the object which retrieves the result from the objectSourceCode object.
-    def resultObjectSourceCode: String = ResultObjectSourceCode(handlers)
-
     // compile the object containing the user's code
-    lazy val objRun = compileAndSaveRun("<console>", objectSourceCode)
+    lazy val compileRead = lineRep compile ObjectSourceCode(handlers)
 
     // compile the result-extraction object
-    lazy val extractionObjectRun = compileAndSaveRun("<console>", resultObjectSourceCode)
+    lazy val compileEval = lineRep compile  ResultObjectSourceCode(handlers)
 
-    lazy val loadedResultObject = loadByName(resultObjectName)
-
-    def extractionValue(): Option[AnyRef] = {
-      // ensure it has run
-      extractionObjectRun
-
-      // load it and retrieve the value
-      try Some(loadedResultObject getMethod "scala_repl_value" invoke loadedResultObject)
-      catch { case _: Exception => None }
+    // get it
+    def getEvalTyped[T] : Option[T] = getEval map (_.asInstanceOf[T])
+    def getEval: Option[AnyRef] = {
+      // ensure it has been compiled
+      compileEval
+      // try to load it and call the value method
+      lineRep.runEval
     }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
@@ -748,32 +773,28 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       reporter.reset
 
       // compile the main object
-      objRun
+      compileRead
 
       // bail on error
-      if (reporter.hasErrors)
-        return false
+      !reporter.hasErrors && {
+        // extract and remember types
+        typeOf
+        definedTypes
 
-      // extract and remember types
-      typeOf
-      definedTypes
+        // compile the result-extraction object
+        compileEval
 
-      // compile the result-extraction object
-      extractionObjectRun
-
-      // success
-      !reporter.hasErrors
+        // success
+        !reporter.hasErrors
+      }
     }
 
-    def afterTyper[T](op: => T): T = atPhase(objRun.typerPhase.next)(op)
-
-    /** The outermost wrapper object */
-    lazy val outerResObjSym: Symbol = getMember(EmptyPackage, newTermName(objectName))
+    def afterTyper[T](op: => T): T = atPhase(compileRead.typerPhase.next)(op)
 
     /** The innermost object inside the wrapper, found by
       * following accessPath into the outer one. */
     lazy val resObjSym =
-      accessPath.split("\\.").foldLeft(outerResObjSym) { (sym, name) =>
+      accessPath.split("\\.").foldLeft(lineRep.readRoot) { (sym, name) =>
         if (name == "") sym else
         afterTyper(sym.info member newTermName(name))
       }
@@ -810,7 +831,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       val ex: Exceptional =
         if (isettings.showInternalStackTraces) Exceptional(t)
         else new Exceptional(t) {
-          override def spanFn(frame: JavaStackFrame) = !(frame.className startsWith resultObjectName)
+          override def spanFn(frame: JavaStackFrame) = !(frame.className startsWith lineRep.evalPath)
           override def contextPrelude = super.contextPrelude + "/* The repl internal portion of the stack trace is elided. */\n"
         }
 
@@ -838,8 +859,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
 
       try {
-        val resultValMethod = loadedResultObject getMethod "scala_repl_result"
-        val execution       = lineManager.set(originalLine)(resultValMethod invoke loadedResultObject)
+        val resultValMethod = lineRep.eval getMethod "$export"
+        val execution       = lineManager.set(originalLine)(resultValMethod invoke lineRep.eval)
 
         execution.await()
         execution.state match {
@@ -904,14 +925,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
     typeOfDefinedName(name) orElse asModule orElse asExpr
   }
-  // def compileAndTypeExpr(expr: String): Option[Typer] = {
-  //   class TyperRun extends Run {
-  //     override def stopPhase(name: String) = name == "superaccessors"
-  //   }
-  // }
 
   def clazzForIdent(id: String): Option[Class[_]] =
-    extractionValueForIdent(id) flatMap (x => Option(x) map (_.getClass))
+    for (res <- getEvalForIdent(id); v <- Option(res)) yield v.getClass
 
   def methodsOf(name: String) =
     evalExpr[List[String]](methodsCode(name)) map (x => NameTransformer.decode(getOriginalName(x)))
@@ -922,8 +938,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     clazzForIdent(name) flatMap (_ => evalExpr[Option[CompletionAware]](asCompletionAwareCode(name)))
   }
 
-  def extractionValueForIdent(id: String): Option[AnyRef] =
-    requestForIdent(id) flatMap (_.extractionValue)
+  def getEvalForIdent(id: String): Option[AnyRef] =
+    requestForIdent(id) flatMap (_.getEval)
 
   /** Executes code looking for a manifest of type T.
    */
@@ -976,15 +992,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     if (req == null || !req.compile || req.handlers.size != 1)
       evalError("Eval error.")
 
-    try req.extractionValue.get.asInstanceOf[T] catch {
-      case e: Exception => evalError(e.getMessage)
-    }
+    try req.getEvalTyped[T] getOrElse evalError("No result.")
+    catch { case e: Exception => evalError(e.getMessage) }
   }
 
   def interpretExpr[T: Manifest](code: String): Option[T] = beQuietDuring {
     interpret(code) match {
       case IR.Success =>
-        try prevRequests.last.extractionValue map (_.asInstanceOf[T])
+        try prevRequests.last.getEvalTyped[T]
         catch { case e: Exception => out println e ; None }
       case _ => None
     }
@@ -1021,6 +1036,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   /** Parse the ScalaSig to find type aliases */
   def aliasForType(path: String) = ByteCode.aliasForType(path)
 
+  def showCodeIfDebugging(code: String) {
+    /** Secret bookcase entrance for repl debuggers: end the line
+     *  with "// show" and see what's going on.
+     */
+    if (code.lines exists (_.trim endsWith "// show")) {
+      echo(code)
+      parse(code) foreach (ts => ts foreach (t => DBG(asCompactString(t))))
+    }
+  }
   // debugging
   def isCompletionDebug = settings.Ycompletion.value
   def DBG(s: => String) =
