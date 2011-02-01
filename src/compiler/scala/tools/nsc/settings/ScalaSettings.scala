@@ -23,6 +23,9 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
 
+  BooleanSetting("-J<flag>",  "Pass <flag> directly to runtime system")
+  BooleanSetting("-Dprop=value",  "Pass -Dprop=value directly to runtime system")
+
   /**
    *  Standard settings
    */
@@ -156,10 +159,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
 
   val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
   val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
-  /**
-   * "fsc-specific" settings.
-   */
-  val fscShutdown   = BooleanSetting    ("-shutdown", "Shutdown the fsc daemon")
 
   /**
    * -P "Plugin" settings

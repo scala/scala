@@ -21,7 +21,7 @@ import scala.tools.util.SocketServer
  *  @version 1.0
  */
 class StandardCompileServer extends SocketServer {
-  def compileSocket: CompileSocket = CompileSocket // todo: make this a lazy val
+  lazy val compileSocket: CompileSocket = CompileSocket
 
   val versionMsg = "Fast Scala compiler " +
     Properties.versionString + " -- " +
@@ -75,26 +75,24 @@ class StandardCompileServer extends SocketServer {
     val guessedPassword = in.readLine()
     val input = in.readLine()
 
+    def fscError(msg: String): Unit = out println (
+      FakePos("fsc"),
+      msg + "\n  fsc -help  gives more information"
+    )
     if (input == null || password != guessedPassword)
       return
 
     val args = input.split("\0", -1).toList
-    if (args contains "-shutdown") {
-      out.println("[Compile server exited]")
-      shutDown = true
-      return
-    }
-    if (args contains "-reset") {
-      out.println("[Compile server was reset]")
-      compiler = null
-      return
-    }
-
-    def fscError(msg: String) {
-      out.println(FakePos("fsc"), msg + "\n  fsc -help  gives more information")
-    }
-
     val command = newOfflineCompilerCommand(args, new Settings(fscError))
+
+    if (command.fscShutdown.value) {
+      shutDown = true
+      return out.println("[Compile server exited]")
+    }
+    if (command.fscReset.value) {
+      compiler = null
+      return out.println("[Compile server was reset]")
+    }
 
     reporter = new ConsoleReporter(command.settings, in, out) {
       // disable prompts, so that compile server cannot block
@@ -112,7 +110,7 @@ class StandardCompileServer extends SocketServer {
           compiler.reporter = reporter
         }
         else {
-          if (args contains "-verbose") {
+          if (command.verbose) {
             val reason = if (compiler == null) "compiler is null" else "settings not equal"
             out.println("[Starting new compile server instance because %s]".format(reason))
           }
@@ -124,14 +122,15 @@ class StandardCompileServer extends SocketServer {
       }
       catch {
         case ex @ FatalError(msg) =>
-          if (command.settings.debug.value)
-            ex.printStackTrace(out);
-        reporter.error(null, "fatal error: " + msg)
-        compiler = null
+          if (command.debug)
+            ex.printStackTrace(out)
+
+          reporter.error(null, "fatal error: " + msg)
+          compiler = null
         case ex: Throwable =>
           ex.printStackTrace(out);
-        reporter.error(null, "fatal error (server aborted): " + ex.getMessage())
-        shutDown = true
+          reporter.error(null, "fatal error (server aborted): " + ex.getMessage())
+          shutDown = true
       }
     }
 
@@ -139,7 +138,10 @@ class StandardCompileServer extends SocketServer {
     if (isMemoryFullEnough)
       compiler = null
   }
+}
 
+
+object CompileServer extends StandardCompileServer {
   /** A directory holding redirected output */
   private val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
 
@@ -151,12 +153,11 @@ class StandardCompileServer extends SocketServer {
     redirect(System.setErr, "scala-compile-server-err.log")
     System.err.println("...starting server on socket "+port+"...")
     System.err.flush()
+
     compileSocket.setPort(port)
     run()
+
     compileSocket.deletePort(port)
     exit(0)
   }
 }
-
-
-object CompileServer extends StandardCompileServer

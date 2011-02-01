@@ -47,7 +47,9 @@ import util.Exceptional.unwrap
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-object ScriptRunner {
+class ScriptRunner extends CompileSocketShared {
+  lazy val compileSocket = CompileSocket
+
   /* While I'm chasing down the fsc and script bugs. */
   def DBG(msg: Any) {
     System.err.println(msg.toString)
@@ -124,38 +126,18 @@ object ScriptRunner {
     }
 
   /** Compile a script using the fsc compilation daemon.
-   *
-   *  @param settings     ...
-   *  @param scriptFileIn ...
-   *  @return             ...
    */
-  private def compileWithDaemon(
-      settings: GenericRunnerSettings,
-      scriptFileIn: String): Boolean =
-  {
-    val scriptFile        = Path(scriptFileIn).toAbsolute.path
-    val compSettingNames  = new Settings(sys.error).visibleSettings.toList map (_.name)
-    val compSettings      = settings.visibleSettings.toList filter (compSettingNames contains _.name)
-    val coreCompArgs      = compSettings flatMap (_.unparse)
-    val compArgs          = coreCompArgs ::: List("-Xscript", scriptMain(settings), scriptFile)
-    var compok            = true
+  private def compileWithDaemon(settings: GenericRunnerSettings, scriptFileIn: String) = {
+    val scriptFile       = Path(scriptFileIn).toAbsolute.path
+    val compSettingNames = new Settings(sys.error).visibleSettings.toList map (_.name)
+    val compSettings     = settings.visibleSettings.toList filter (compSettingNames contains _.name)
+    val coreCompArgs     = compSettings flatMap (_.unparse)
+    val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
 
-    val socket = CompileSocket getOrCreateSocket "" getOrElse (return false)
-    socket.applyReaderAndWriter { (in, out) =>
-      out println (CompileSocket getPassword socket.getPort)
-      out println (compArgs mkString "\0")
-
-      try {
-        for (fromServer <- (Iterator continually in.readLine()) takeWhile (_ != null)) {
-          Console.err println fromServer
-          if (CompileSocket.errorPattern matcher fromServer matches)
-            compok = false
-        }
-      }
-      finally socket.close()
+    CompileSocket getOrCreateSocket "" match {
+      case Some(sock) => fscCompile(sock, compArgs)
+      case _          => false
     }
-
-    compok
   }
 
   protected def newGlobal(settings: Settings, reporter: Reporter) =
@@ -293,3 +275,5 @@ object ScriptRunner {
     finally scriptFile.delete()  // in case there was a compilation error
   }
 }
+
+object ScriptRunner extends ScriptRunner { }

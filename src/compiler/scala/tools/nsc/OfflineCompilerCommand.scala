@@ -9,18 +9,19 @@ package scala.tools.nsc
  *
  * @author Martin Odersky and Lex Spoon
  */
-class OfflineCompilerCommand(
-  arguments: List[String],
-  settings: Settings)
-extends CompilerCommand(arguments, settings) {
-  override val cmdName = "fsc"
+class OfflineCompilerCommand(arguments: List[String], _settings: Settings)
+                  extends CompilerCommand(arguments, _settings)
+{
+  override def cmdName = "fsc"
   import settings._
 
   disable(prompt)
   disable(resident)
 
-  BooleanSetting("-reset",    "Reset compile server caches")
-  BooleanSetting("-shutdown", "Shutdown compile server")
-  StringSetting ("-server",   "hostname:portnumber", "Specify compile server socket", "")
-  BooleanSetting("-J<flag>",  "Pass <flag> directly to runtime system")
+  def verbose = settings.verbose.value
+  def debug = settings.debug.value
+
+  val fscReset    = BooleanSetting("-reset",    "Reset compile server caches")
+  val fscShutdown = BooleanSetting("-shutdown", "Shutdown compile server")
+  val fscServer   = StringSetting ("-server",   "hostname:portnumber", "Specify compile server socket", "")
 }

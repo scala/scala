@@ -17,17 +17,21 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   /** file extensions of files that the compiler can process */
   lazy val fileEndings = Properties.fileEndings
 
+  val (ok, files) =
+    if (shouldProcessArguments) processArguments
+    else (true, Nil)
+
   /** The name of the command */
   def cmdName = "scalac"
 
-  private val helpSyntaxColumnWidth: Int =
+  private def helpSyntaxColumnWidth: Int =
     (settings.visibleSettings map (_.helpSyntax.length)) max
 
   private def format(s: String): String =
     if (s.length >= helpSyntaxColumnWidth) s
     else s + (" " * (helpSyntaxColumnWidth - s.length))
 
-  private val explainAdvanced = "\n" + """
+  private def explainAdvanced = "\n" + """
     |-- Notes on option parsing --
     |Boolean settings are always false unless set.
     |Where multiple values are accepted, they should be comma-separated.
@@ -58,11 +62,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   }
 
   /** Messages explaining usage and options */
-  def usageMsg    =
-    if (cmdName == "fsc")
-      createUsageMsg("where possible standard", false, st => st.isStandard || st.name == "-shutdown")
-    else
-      createUsageMsg("where possible standard", false, _.isStandard)
+  def usageMsg    = createUsageMsg("where possible standard", false, _.isStandard)
   def xusageMsg   = createUsageMsg("Possible advanced", true, _.isAdvanced)
   def yusageMsg   = createUsageMsg("Possible private", true, _.isPrivate)
 
@@ -108,8 +108,4 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
     settings.processArguments(expandedArguments, true)
   }
-
-  val (ok, files) =
-    if (shouldProcessArguments) processArguments
-    else (true, Nil)
 }

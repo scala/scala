@@ -14,8 +14,8 @@ import util.ClassPath
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
  */
-class StandardCompileClient {
-  def compileSocket: CompileSocket = CompileSocket  // todo: should be lazy val
+class StandardCompileClient extends CompileSocketShared {
+  lazy val compileSocket: CompileSocket = CompileSocket
 
   val versionMsg  = "Fast " + Properties.versionMsg
   var verbose     = false
@@ -85,37 +85,19 @@ class StandardCompileClient {
       if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
       else Some(compileSocket.getSocket(serverAdr))
 
-    val sawerror: Boolean = socket match {
-      case None =>
-        val msg = if (shutdown) "[No compilation server running.]" else "Compilation failed."
-        Console println msg
-        !shutdown
-
-      case Some(sock) =>
-        var wasError = false
-
-        sock.applyReaderAndWriter { (in, out) =>
-          out println compileSocket.getPassword(sock.getPort())
-          out println args.mkString("\0")
-          def loop: Unit = in.readLine() match {
-            case null       => ()
-            case fromServer =>
-              if (compileSocket.errorPattern matcher fromServer matches)
-                wasError = true
-
-              Console println fromServer
-              loop
-          }
-          loop
-        }
-        wasError
+    val success = socket match {
+      case Some(sock) => fscCompile(sock, args)
+      case _          =>
+        Console.println(
+          if (shutdown) "[No compilation server running.]" else "Compilation failed."
+        )
+        shutdown
     }
-    if (sawerror) 1 else 0
+    if (success) 1 else 0
   }
+}
 
+object CompileClient extends StandardCompileClient {
   def main(args: Array[String]): Unit =
     sys.exit(try main0(args) catch { case e: Exception => 1 })
 }
-
-
-object CompileClient extends StandardCompileClient
