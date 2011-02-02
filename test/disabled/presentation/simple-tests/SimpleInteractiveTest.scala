@@ -6,6 +6,6 @@ import scala.tools.nsc.interactive.tests._
  */
 object Test extends InteractiveTest {
   override val runRandomTests = false
-  settings.YpresentationDebug.value = true
+//  settings.YpresentationDebug.value = true
 //  override val synchronousRequests = false
 }
