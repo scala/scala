@@ -84,7 +84,7 @@ object REPL {
     val typeatResult = new Response[comp.Tree]
     val completeResult = new Response[List[comp.Member]]
     val typedResult = new Response[comp.Tree]
-    val structureResult = new Response[List[comp.Symbol]]
+    val structureResult = new Response[comp.Tree]
 
     def makePos(file: String, off1: String, off2: String) = {
       val source = toSourceFile(file)
@@ -103,7 +103,7 @@ object REPL {
       show(typedResult)
     }
     def doStructure(file: String) {
-      comp.askStructure(toSourceFile(file), false, structureResult)
+      comp.askParsedEntered(toSourceFile(file), false, structureResult)
       show(structureResult)
     }
 

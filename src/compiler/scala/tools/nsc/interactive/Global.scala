@@ -73,13 +73,13 @@ self =>
   protected val waitLoadedTypeResponses = new MultiHashMap[SourceFile, Response[Tree]]
 
   /** A map that associates with each abstract file the set of responses that ware waiting
-   *  (via buildStructure) for the unit associated with the abstract file to be structure-analyzed
+   *  (via build) for the unit associated with the abstract file to be parsed and entered
    */
-  protected var buildStructureResponses = new MultiHashMap[SourceFile, Response[List[Symbol]]]
+  protected var getParsedEnteredResponses = new MultiHashMap[SourceFile, Response[Tree]]
 
   /** The compilation unit corresponding to a source file
    *  if it does not yet exist create a new one atomically
-   *  Note: We want to rmeove this.
+   *  Note: We want to remove this.
    */
   protected[interactive] def getOrCreateUnitOf(source: SourceFile): RichCompilationUnit =
     unitOfFile.getOrElse(source.file, { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) })
@@ -345,11 +345,11 @@ self =>
     waitLoadedTypeResponses.clear()
 
     var atOldRun = true
-    for ((source, rs) <- buildStructureResponses; r <- rs) {
+    for ((source, rs) <- getParsedEnteredResponses; r <- rs) {
       if (atOldRun) { newTyperRun(); atOldRun = false }
-      buildStructureNow(source, r)
+      getParsedEnteredNow(source, r)
     }
-    buildStructureResponses.clear()
+    getParsedEnteredResponses.clear()
   }
 
   /** Reset unit to unloaded state */
@@ -724,55 +724,30 @@ self =>
     }
   }
 
-  /** Implements CompilerControl.askStructure */
-  protected def buildStructure(source: SourceFile, keepLoaded: Boolean, response: Response[List[Symbol]]) {
+  /** Implements CompilerControl.askParsedEntered */
+  protected def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) {
     getUnit(source) match {
       case Some(unit) =>
-        buildStructureNow(source, response)
+        getParsedEnteredNow(source, response)
       case None =>
         if (keepLoaded) {
           reloadSources(List(source))
-          buildStructureNow(source, response)
+          getParsedEnteredNow(source, response)
         } else if (outOfDate) {
-          buildStructureResponses(source) += response
+          getParsedEnteredResponses(source) += response
         } else {
-          buildStructureNow(source, response)
+          getParsedEnteredNow(source, response)
         }
     }
   }
 
-  /** Builds structure of given source file */
-  protected def buildStructureNow(source: SourceFile, response: Response[List[Symbol]]) {
-    def forceSym(sym: Symbol) {
-      sym.info match {
-        case t: CompoundType => t.decls.iterator foreach forceSym
-        case _ =>
-      }
-    }
+  /** Parses and enteres given source file, stroring parse tree in response */
+  protected def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
     respond(response) {
       onUnitOf(source) { unit =>
         if (unit.status == NotLoaded) parseAndEnter(unit)
-        structureTraverser.traverse(unit.body)
-        val topLevelSyms = structureTraverser.getResult
-        topLevelSyms foreach forceSym
-        topLevelSyms
+        unit.body
       }
-    }
-  }
-
-  object structureTraverser extends Traverser {
-    private var topLevelSyms = new ListBuffer[Symbol]
-    override def traverse(tree: Tree) = tree match {
-      case PackageDef(pkg, body) =>
-        body foreach traverse
-      case md: MemberDef =>
-        topLevelSyms += md.symbol
-      case _ =>
-    }
-    def getResult: List[Symbol] = {
-      val result = topLevelSyms.toList
-      topLevelSyms.clear()
-      result
     }
   }
 

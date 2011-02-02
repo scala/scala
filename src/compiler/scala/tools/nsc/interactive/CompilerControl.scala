@@ -173,17 +173,15 @@ trait CompilerControl { self: Global =>
   def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
     scheduler postWorkItem new AskLoadedTypedItem(source, response)
 
-  /** Build structure of source file. The structure consists of a list of top-level symbols
-   *  in the source file, which might contain themselves nested symbols in their scopes.
-   *  All reachable symbols are forced, i.e. their types are completed.
+  /** Set sync var `response` to the parse tree of `source` with all top-level symbols entered.
    *  @param source       The source file to be analyzed
    *  @param keepLoaded   If set to `true`, source file will be kept as a loaded unit afterwards.
    *                      If keepLoaded is `false` the operation is run at low priority, only after
    *                      everything is brought up to date in a regular type checker run.
-   *  @param response     The response, which is set to the list of toplevel symbols found in `source`
+   *  @param response     The response.
    */
-  def askStructure(source: SourceFile, keepLoaded: Boolean, response: Response[List[Symbol]]) =
-    scheduler postWorkItem new AskStructureItem(source, keepLoaded, response)
+  def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
+    scheduler postWorkItem new AskParsedEnteredItem(source, keepLoaded, response)
 
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
@@ -199,6 +197,7 @@ trait CompilerControl { self: Global =>
   }
 
   /** Returns parse tree for source `source`. No symbols are entered. Syntax errors are reported.
+   *  Can be called asynchronously from presentation compiler.
    */
   def parseTree(source: SourceFile): Tree = ask { () =>
     getUnit(source) match {
@@ -277,9 +276,9 @@ trait CompilerControl { self: Global =>
     override def toString = "wait loaded & typed "+source
   }
 
-  class AskStructureItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[List[Symbol]]) extends WorkItem {
-    def apply() = self.buildStructure(source, keepLoaded, response)
-    override def toString = "buildStructure "+source+", keepLoaded = "+keepLoaded
+  class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
+    def apply() = self.getParsedEntered(source, keepLoaded, response)
+    override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
   }
 }
 
