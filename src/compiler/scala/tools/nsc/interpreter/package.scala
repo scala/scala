@@ -45,17 +45,6 @@ package object interpreter {
   private[nsc] def isQuoted(s: String) =
     (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
 
-  // The two name forms this is catching are the two sides of this assignment:
-  //
-  // $line3.$read.$iw.$iw.Bippy = $line3.$read$$iw$$iw$Bippy@4a6a00ca
-  private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+\.\$(read|eval|print)[$.]""", "")
-  private def removeIWPackages(s: String)  = s.replaceAll("""\$iw[$.]""", "")
-
-  /** Heuristically strip interpreter wrapper prefixes
-   *  from an interpreter output string.
-   */
-  def stripWrapperGunk(str: String) = removeIWPackages(removeLineWrapper(str))
-
   /** Class objects */
   def classForName(name: String): Option[JClass] =
     try Some(Class forName name)

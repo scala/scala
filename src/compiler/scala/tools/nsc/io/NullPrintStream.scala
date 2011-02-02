@@ -22,4 +22,16 @@ object NullPrintStream extends NullPrintStream {
         body
       }
     }
+
+  def sinkingSystemOutAndErr[T](body: => T): T = {
+    val savedOut = System.out
+    val savedErr = System.err
+    System setOut NullPrintStream
+    System setErr NullPrintStream
+    try body
+    finally {
+      System setOut savedOut
+      System setErr savedErr
+    }
+  }
 }

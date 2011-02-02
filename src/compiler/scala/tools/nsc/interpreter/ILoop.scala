@@ -8,11 +8,10 @@ package interpreter
 
 import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader, PrintWriter }
-import java.io.IOException
 
 import scala.sys.process.Process
 import scala.tools.nsc.interpreter.{ Results => IR }
-import scala.tools.util.SignalManager
+import scala.tools.util.{ SignalManager, Javap }
 import scala.annotation.tailrec
 import scala.util.control.Exception.{ ignoring }
 import scala.collection.mutable.ListBuffer
@@ -197,12 +196,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
        NoArgs("help", "print this help message", printHelp),
        VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
        LineArg("h?", "search the history", searchHistory),
+       LineArg("javap", "disassemble a file or class name", javapCommand),
        LineArg("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
        OneArg("load", "load and interpret a Scala file", load),
        NoArgs("power", "enable power user mode", powerCmd),
        NoArgs("quit", "exit the interpreter", () => Result(false, None)),
        NoArgs("replay", "reset execution and replay all previous commands", replay),
-       LineArg("sh", "fork a shell and run a command", runShellCmd),
+       LineArg("sh", "fork a shell and run a command", shCommand),
        NoArgs("silent", "disable/enable automatic printing of results", verbosity)
     )
   }
@@ -215,6 +215,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       LineArg("symfilter", "change the filter for symbol printing", symfilterCmd),
       LineArg("wrap", "code to wrap around all executions", wrapCommand)
     )
+  }
+  private def javapCommand(line: String): Result = {
+    if (line == "")
+      return ":javap <filename or classname>"
+    val javap  = new Javap(intp.classLoader) {
+      override def defaultPrintWriter = new IMain.ReplStrippingWriter(intp)
+    }
+    val path   = intp.pathToFlatName(line)
+    val result = javap guess path
+
+    if (result.isError) "Failed: " + result.value
+    else result.show()
   }
   private def keybindingsCommand(line: String): Result = {
     if (in.keyBindings.isEmpty) "Key bindings unavailable."
@@ -336,11 +348,16 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   /** fork a shell and run a command */
-  def runShellCmd(cmd: String) {
-    intp.beQuietDuring { intp.interpret("import _root_.scala.sys.process._") }
-    val xs = Process(cmd).lines
-    if (xs.nonEmpty)
-      intp.bind("stdout", "scala.Stream[String]", xs)
+  def shCommand(cmd: String): Result = {
+    if (cmd == "")
+      return "Usage: sh <command line>"
+
+    intp quietRun "import _root_.scala.sys.process._"
+    val pb = Process(cmd)
+    intp.bind("builder", pb)
+    val stdout = Process(cmd).lines
+    intp.bind("stdout", stdout)
+    ()
   }
 
   def withFile(filename: String)(action: File => Unit) {

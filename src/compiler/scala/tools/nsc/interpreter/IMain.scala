@@ -25,45 +25,37 @@ import scala.util.control.Exception.{ ultimately }
 import scala.reflect.NameTransformer
 import IMain._
 
-/** <p>
- *    An interpreter for Scala code.
- *  </p>
- *  <p>
- *    The main public entry points are <code>compile()</code>,
- *    <code>interpret()</code>, and <code>bind()</code>.
- *    The <code>compile()</code> method loads a
- *    complete Scala file.  The <code>interpret()</code> method executes one
- *    line of Scala code at the request of the user.  The <code>bind()</code>
- *    method binds an object to a variable that can then be used by later
- *    interpreted code.
- *  </p>
- *  <p>
- *    The overall approach is based on compiling the requested code and then
- *    using a Java classloader and Java reflection to run the code
- *    and access its results.
- *  </p>
- *  <p>
- *    In more detail, a single compiler instance is used
- *    to accumulate all successfully compiled or interpreted Scala code.  To
- *    "interpret" a line of code, the compiler generates a fresh object that
- *    includes the line of code and which has public member(s) to export
- *    all variables defined by that code.  To extract the result of an
- *    interpreted line to show the user, a second "result object" is created
- *    which imports the variables exported by the above object and then
- *    exports a single member named "$export".  To accomodate user expressions
- *    that read from variables or methods defined in previous statements, "import"
- *    statements are used.
- *  </p>
- *  <p>
- *    This interpreter shares the strengths and weaknesses of using the
- *    full compiler-to-Java.  The main strength is that interpreted code
- *    behaves exactly as does compiled code, including running at full speed.
- *    The main weakness is that redefining classes and methods is not handled
- *    properly, because rebinding at the Java level is technically difficult.
- *  </p>
+/** An interpreter for Scala code.
  *
- * @author Moez A. Abdel-Gawad
- * @author Lex Spoon
+ *  The main public entry points are compile(), interpret(), and bind().
+ *  The compile() method loads a complete Scala file.  The interpret() method
+ *  executes one line of Scala code at the request of the user.  The bind()
+ *  method binds an object to a variable that can then be used by later
+ *  interpreted code.
+ *
+ *  The overall approach is based on compiling the requested code and then
+ *  using a Java classloader and Java reflection to run the code
+ *  and access its results.
+ *
+ *  In more detail, a single compiler instance is used
+ *  to accumulate all successfully compiled or interpreted Scala code.  To
+ *  "interpret" a line of code, the compiler generates a fresh object that
+ *  includes the line of code and which has public member(s) to export
+ *  all variables defined by that code.  To extract the result of an
+ *  interpreted line to show the user, a second "result object" is created
+ *  which imports the variables exported by the above object and then
+ *  exports a single member named "$export".  To accomodate user expressions
+ *  that read from variables or methods defined in previous statements, "import"
+ *  statements are used.
+ *
+ *  This interpreter shares the strengths and weaknesses of using the
+ *  full compiler-to-Java.  The main strength is that interpreted code
+ *  behaves exactly as does compiled code, including running at full speed.
+ *  The main weakness is that redefining classes and methods is not handled
+ *  properly, because rebinding at the Java level is technically difficult.
+ *
+ *  @author Moez A. Abdel-Gawad
+ *  @author Lex Spoon
  */
 class IMain(val settings: Settings, protected val out: PrintWriter) {
   intp =>
@@ -275,6 +267,17 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   private def allReqAndHandlers      = prevRequests.toList flatMap (req => req.handlers map (req -> _))
   private def importHandlers         = allHandlers collect { case x: ImportHandler => x }
 
+  /** Given a simple repl-defined name, returns the real name of
+   *  the class representing it, e.g. for "Bippy" it may return
+   *
+   *    $line19.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$Bippy
+   */
+  def pathToFlatName(id: String): String = {
+    requestForIdent(id) match {
+      case Some(req)    => req fullFlatName id
+      case _            => id
+    }
+  }
   def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
   def pathToType(id: String): String = pathToName(newTypeName(id))
   def pathToTerm(id: String): String = pathToName(newTermName(id))
@@ -484,8 +487,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     compileSources(new BatchSourceFile("<script>", code))
 
 
-  /** Build a request from the user. <code>trees</code> is <code>line</code>
-   *  after being parsed.
+  /** Build a request from the user. `trees` is `line` after being parsed.
    */
   private def buildRequest(line: String, trees: List[Tree]): Request = new Request(line, trees)
 
@@ -515,16 +517,16 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     Right(buildRequest(line, trees))
   }
 
-  /** <p>
+  /**
    *    Interpret one line of input.  All feedback, including parse errors
    *    and evaluation results, are printed via the supplied compiler's
    *    reporter.  Values defined are available for future interpreted
    *    strings.
-   *  </p>
-   *  <p>
+   *
+   *
    *    The return value is whether the line was interpreter successfully,
    *    e.g. that there were no parse errors.
-   *  </p>
+   *
    *
    *  @param line ...
    *  @return     ...
@@ -585,8 +587,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
         |}
       """.stripMargin.format(bindRep.evalName, boundType, boundType)
       )
-    bindRep.call("set", value)
-    interpret("val %s = %s.value".format(name, bindRep.evalPath))
+    bindRep.callOpt("set", value) match {
+      case Some(_)  => interpret("val %s = %s.value".format(name, bindRep.evalPath))
+      case _        => DBG("Set failed in bind(%s, %s, %s)".format(name, boundType, value)) ; IR.Error
+    }
   }
 
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
@@ -637,12 +641,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     def evalPath  = pathTo(evalName)
     def printPath = pathTo(printName)
 
-    def call(name: String, args: Any*) =
+    def call(name: String, args: Any*): AnyRef =
       evalMethod(name).invoke(evalClass, args.map(_.asInstanceOf[AnyRef]): _*)
+
+    def callOpt(name: String, args: Any*): Option[AnyRef] =
+      try Some(call(name, args: _*))
+      catch { case ex: Exception =>
+        quietBind("lastException", ex)
+        None
+      }
 
     lazy val readRoot  = definitions.getModule(readPath)   // the outermost wrapper
     lazy val evalClass = loadByName(evalPath)
-    lazy val evalValue = try Some(call(valueMethod)) catch { case ex: Exception => None }
+    lazy val evalValue = callOpt(valueMethod)
 
     def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
     def afterTyper[T](op: => T): T = {
@@ -703,6 +714,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     def fullPath(vname: String) = (
       lineRep.readPath + accessPath + ".`%s`".format(vname)
     )
+    /** Same as fullpath, but after it has been flattened, so:
+     *  $line5.$iw.$iw.$iw.Bippy      // fullPath
+     *  $line5.$iw$$iw$$iw$Bippy      // fullFlatName
+     */
+    def fullFlatName(name: String) =
+      lineRep.readPath + accessPath.replace('.', '$') + "$" + name
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: Name): String = fullPath(vname.toString)
@@ -849,7 +866,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
 
       try {
-        val execution = lineManager.set(originalLine)(lineRep call "$export")
+        val execution = lineManager.set(originalLine) {
+          lineRep call "$export"
+        }
         execution.await()
 
         execution.state match {
@@ -1054,43 +1073,61 @@ object IMain {
       code println postamble
     }
   }
-  class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, intp.out) {
-    import intp._
 
-    /** Truncate a string if it is longer than isettings.maxPrintString */
-    private def truncPrintString(str: String): String = {
-      val maxpr = isettings.maxPrintString
-      val trailer = "..."
-
-      if (!truncationOK || maxpr <= 0 || str.length <= maxpr) str
-      else (str take maxpr-3) + trailer
-    }
-
-    /** Clean up a string for output */
-    private def clean(str: String) = truncPrintString(
-      if (isettings.unwrapStrings) stripWrapperGunk(str)
+  trait StrippingWriter {
+    def isStripping: Boolean
+    def stripImpl(str: String): String
+    def strip(str: String): String = if (isStripping) stripImpl(str) else str
+  }
+  trait TruncatingWriter {
+    def maxStringLength: Int
+    def isTruncating: Boolean
+    def truncate(str: String): String = {
+      if (isTruncating && str.length > maxStringLength)
+        (str take maxStringLength - 3) + "..."
       else str
-    )
-
-    override def printMessage(msg: String) {
-      if (totalSilence)
-        return
-
-      out println clean(msg)
-      out.flush()
     }
   }
+  abstract class StrippingTruncatingWriter(out: PrintWriter)
+          extends PrintWriter(out)
+             with StrippingWriter
+             with TruncatingWriter {
+    self =>
 
-  import scala.collection.generic.CanBuildFrom
-  def partialFlatMap[A, B, CC[X] <: Traversable[X]]
-    (coll: CC[A])
-    (pf: PartialFunction[A, CC[B]])
-    (implicit bf: CanBuildFrom[CC[A], B, CC[B]]) =
-  {
-    val b = bf(coll)
-    for (x <- coll collect pf)
-      b ++= x
+    def clean(str: String): String = truncate(strip(str))
+    override def write(str: String) = super.write(clean(str))
+  }
+  class ReplStrippingWriter(intp: IMain) extends StrippingTruncatingWriter(intp.out) {
+    import intp._
+    def maxStringLength    = isettings.maxPrintString
+    def isStripping        = isettings.unwrapStrings
+    def isTruncating       = reporter.truncationOK
 
-    b.result
+    def stripImpl(str: String): String = {
+      val cleaned = removeIWPackages(removeLineWrapper(str))
+      var ctrlChars = 0
+      cleaned map { ch =>
+        if (ch.isControl && !ch.isWhitespace) {
+          ctrlChars += 1
+          if (ctrlChars > 5) return "[line elided for control chars: possibly a scala signature]"
+          else '?'
+        }
+        else ch
+      }
+    }
+
+    // The two name forms this is catching are the two sides of this assignment:
+    //
+    // $line3.$read.$iw.$iw.Bippy =
+    //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
+    private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
+    private def removeIWPackages(s: String) = s.replaceAll("""\$iw[$.]""", "")
+  }
+
+  class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, new ReplStrippingWriter(intp)) {
+    override def printMessage(msg: String) {
+      if (intp.totalSilence) ()
+      else super.printMessage(msg)
+    }
   }
 }
