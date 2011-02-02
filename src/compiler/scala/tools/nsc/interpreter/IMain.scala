@@ -259,9 +259,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   private def loadByName(s: String): Class[_] =
     (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
 
-  private def methodByName(c: Class[_], name: String): reflect.Method =
-    c.getMethod(name, classOf[Object])
-
   protected def parentClassLoader: ClassLoader =
     settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
 
@@ -571,9 +568,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     }
   }
 
-  /** A name creator used for objects created by <code>bind()</code>. */
-  private lazy val newBinder = new naming.NameCreator("binder")
-
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
    *
@@ -583,20 +577,16 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *  @return          an indication of whether the binding succeeded
    */
   def bind(name: String, boundType: String, value: Any): IR.Result = {
-    val binderName = newBinder()
-
-    compileString("""
-      |object %s {
-      |  var value: %s = _
-      |  def set(x: Any) = value = x.asInstanceOf[%s]
-      |}
-    """.stripMargin.format(binderName, boundType, boundType))
-
-    val binderObject = loadByName(binderName)
-    val setterMethod = methodByName(binderObject, "set")
-
-    setterMethod.invoke(null, value.asInstanceOf[AnyRef])
-    interpret("val %s = %s.value".format(name, binderName))
+    val bindRep = new ReadEvalPrint()
+    val run = bindRep.compile("""
+        |object %s {
+        |  var value: %s = _
+        |  def set(x: Any) = value = x.asInstanceOf[%s]
+        |}
+      """.stripMargin.format(bindRep.evalName, boundType, boundType)
+      )
+    bindRep.call("set", value)
+    interpret("val %s = %s.value".format(name, bindRep.evalPath))
   }
 
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
@@ -627,12 +617,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *
    *  Read! Eval! Print! Some of that not yet centralized here.
    */
-  class ReadEvalPrint(val packageName: String) {
-    val readName  = "$read"
-    val evalName  = "$eval"
-    val printName = "$print"
+  class ReadEvalPrint(lineId: Int) {
+    def this() = this(freshLineId())
 
-    val valueMethod = "$result"
+    val packageName = "$line" + lineId
+    val readName    = "$read"
+    val evalName    = "$eval"
+    val printName   = "$print"
+    val valueMethod = "$result"   // no-args method giving result
 
     // TODO: split it out into a package object and a regular
     // object and we can do that much less wrapping.
@@ -645,32 +637,44 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     def evalPath  = pathTo(evalName)
     def printPath = pathTo(printName)
 
-    lazy val readRoot = definitions.getModule(readPath)   // the outermost wrapper
-    lazy val eval     = loadByName(evalPath)
-    lazy val runEval  =
-      try Some(eval getMethod valueMethod invoke eval)
-      catch { case ex: Exception => None }
+    def call(name: String, args: Any*) =
+      evalMethod(name).invoke(evalClass, args.map(_.asInstanceOf[AnyRef]): _*)
+
+    lazy val readRoot  = definitions.getModule(readPath)   // the outermost wrapper
+    lazy val evalClass = loadByName(evalPath)
+    lazy val evalValue = try Some(call(valueMethod)) catch { case ex: Exception => None }
+
+    def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
+    def afterTyper[T](op: => T): T = {
+      assert(lastRun != null, "Internal error: trying to use atPhase, but Run is null." + this)
+      atPhase(lastRun.typerPhase.next)(op)
+    }
 
     // def compileAndTypeExpr(expr: String): Option[Typer] = {
     //   class TyperRun extends Run {
     //     override def stopPhase(name: String) = name == "superaccessors"
     //   }
     // }
-    def compile(source: String) = compileAndSaveRun("<console>", source)
-    def compileAndSaveRun(label: String, code: String) = {
+    private var lastRun: Run = _
+    private def evalMethod(name: String) = {
+      val methods = evalClass.getMethods filter (_.getName == name)
+      assert(methods.size == 1, "Internal error - eval object method " + name + " is overloaded: " + methods)
+      methods.head
+    }
+    private def compileAndSaveRun(label: String, code: String) = {
       showCodeIfDebugging(code)
-      val run = new Run()
-      run.compileSources(List(new BatchSourceFile(label, packaged(code))))
-      run
+      reporter.reset
+      lastRun = new Run()
+      lastRun.compileSources(List(new BatchSourceFile(label, packaged(code))))
+      !reporter.hasErrors
     }
   }
 
   /** One line of code submitted by the user for interpretation */
   // private
   class Request(val line: String, val trees: List[Tree]) {
-    val lineId      = freshLineId()
-    val linePackage = "$line" + lineId
-    val lineRep     = new ReadEvalPrint(linePackage)
+    val lineRep     = new ReadEvalPrint()
+    import lineRep.{ afterTyper }
 
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
@@ -751,45 +755,31 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       val generate = (m: MemberHandler) => m resultExtractionCode Request.this
     }
 
-    // compile the object containing the user's code
-    lazy val compileRead = lineRep compile ObjectSourceCode(handlers)
-
-    // compile the result-extraction object
-    lazy val compileEval = lineRep compile  ResultObjectSourceCode(handlers)
-
     // get it
     def getEvalTyped[T] : Option[T] = getEval map (_.asInstanceOf[T])
     def getEval: Option[AnyRef] = {
       // ensure it has been compiled
-      compileEval
+      compile
       // try to load it and call the value method
-      lineRep.runEval
+      lineRep.evalValue
     }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
      *  If all goes well, the "types" map is computed. */
-    def compile(): Boolean = {
+    lazy val compile: Boolean = {
       // error counting is wrong, hence interpreter may overlook failure - so we reset
       reporter.reset
 
-      // compile the main object
-      compileRead
-
-      // bail on error
-      !reporter.hasErrors && {
+      // compile the object containing the user's code
+      lineRep.compile(ObjectSourceCode(handlers)) && {
         // extract and remember types
         typeOf
         definedTypes
 
         // compile the result-extraction object
-        compileEval
-
-        // success
-        !reporter.hasErrors
+        lineRep compile ResultObjectSourceCode(handlers)
       }
     }
-
-    def afterTyper[T](op: => T): T = atPhase(compileRead.typerPhase.next)(op)
 
     /** The innermost object inside the wrapper, found by
       * following accessPath into the outer one. */
@@ -859,10 +849,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
 
       try {
-        val resultValMethod = lineRep.eval getMethod "$export"
-        val execution       = lineManager.set(originalLine)(resultValMethod invoke lineRep.eval)
-
+        val execution = lineManager.set(originalLine)(lineRep call "$export")
         execution.await()
+
         execution.state match {
           case Done       => ("" + execution.get(), true)
           case Threw      => if (bindLastException) handleException(execution.caught()) else throw execution.caught()
