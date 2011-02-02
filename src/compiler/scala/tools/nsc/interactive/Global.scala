@@ -14,6 +14,7 @@ import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
 import scala.tools.nsc.io.Pickler._
+import scala.tools.nsc.typechecker.DivergentImplicit
 import scala.annotation.tailrec
 import scala.reflect.generic.Flags.LOCKED
 
@@ -672,14 +673,9 @@ self =>
      */
     def viewApply(view: SearchResult): Tree = {
       assert(view.tree != EmptyTree)
-      try {
-        analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
-          .typed(Apply(view.tree, List(tree)) setPos tree.pos)
-      } catch {
-        case ex: TypeError =>
-          debugLog("type error caught: "+ex)
-          EmptyTree
-      }
+      analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
+        .typed(Apply(view.tree, List(tree)) setPos tree.pos)
+        .onTypeError(EmptyTree)
     }
 
     /** Names containing $ are not valid completions. */
@@ -831,7 +827,12 @@ self =>
     def onTypeError(alt: => T) = try {
       op
     } catch {
-      case ex: TypeError => alt
+      case ex: TypeError =>
+        debugLog("type error caught: "+ex)
+        alt
+      case ex: DivergentImplicit =>
+        debugLog("divergent implicit caught: "+ex)
+        alt
     }
   }
 }

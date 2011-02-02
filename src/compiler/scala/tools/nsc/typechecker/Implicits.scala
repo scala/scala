@@ -996,7 +996,6 @@ trait Implicits {
       }
     }
   }
-
-  private class DivergentImplicit extends Exception
-  private val DivergentImplicit = new DivergentImplicit
 }
+class DivergentImplicit extends Exception
+object DivergentImplicit extends DivergentImplicit
