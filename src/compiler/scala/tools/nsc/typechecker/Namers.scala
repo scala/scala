@@ -6,7 +6,8 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, WeakHashMap}
+import scala.ref.WeakReference
 import symtab.Flags
 import symtab.Flags._
 
@@ -50,7 +51,7 @@ trait Namers { self: Analyzer =>
   // is stored in this map. The map is cleared lazily, i.e. when the new symbol
   // is created with the same name, the old one (if present) is wiped out, or the
   // entry is deleted when it is used and no longer needed.
-  private val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
+  private val caseClassOfModuleClass = new WeakHashMap[Symbol, WeakReference[ClassDef]]
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -204,7 +205,6 @@ trait Namers { self: Analyzer =>
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
       } else {
-        caseClassOfModuleClass -= c
         var sym = context.owner.newClass(tree.pos, tree.name)
         sym = sym.setFlag(tree.mods.flags | inConstructorFlag)
         sym = setPrivateWithin(tree, sym, tree.mods)
@@ -381,7 +381,7 @@ trait Namers { self: Analyzer =>
                 context.error(tree.pos, "Implementation restriction: case classes cannot have more than " + MaxFunctionArity + " parameters.")
 
               val m = ensureCompanionObject(tree, caseModuleDef(tree))
-              caseClassOfModuleClass(m.moduleClass) = tree
+              caseClassOfModuleClass(m.moduleClass) = new WeakReference(tree)
             }
             val hasDefault = impl.body exists {
               case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => vparamss.flatten exists (_.mods.hasDefault)
@@ -761,7 +761,8 @@ trait Namers { self: Analyzer =>
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already; here, "clazz" is the module class
       if (clazz.isModuleClass) {
-        Namers.this.caseClassOfModuleClass get clazz map { cdef =>
+        Namers.this.caseClassOfModuleClass get clazz map { cdefRef =>
+          val cdef = cdefRef()
           addApplyUnapply(cdef, templateNamer)
           caseClassOfModuleClass -= clazz
         }
@@ -773,7 +774,8 @@ trait Namers { self: Analyzer =>
       // @check: this seems to work only if the type completer of the class runs before the one of the
       // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasModuleFlag) {
-        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass map { cdef =>
+        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass map { cdefRef =>
+          val cdef = cdefRef()
           def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
           if (!hasCopy(decls) &&
                   !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
