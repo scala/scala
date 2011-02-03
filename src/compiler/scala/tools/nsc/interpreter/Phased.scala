@@ -66,6 +66,11 @@ trait Phased {
   def apply[T](body: => T): T = atPhase(get)(body)
   def multi[T](body: => T): Seq[T] = multi map (ph => at(ph)(body))
   def all[T](body: => T): Seq[T] = ats(PhaseName.all)(body)
+  def allshow[T](body: => T): Seq[T] = {
+    val pairs = atz(PhaseName.all)(body)
+    pairs foreach { case (ph, op) => Console.println("%15s -> %s".format(ph, op.toString take 240)) }
+    pairs map (_._2)
+  }
 
   def at[T](ph: PhaseName)(body: => T): T = {
     val saved = get

@@ -291,7 +291,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     private def addEnclosingMethodAttribute(jclass: JClass, clazz: Symbol) {
       val sym = clazz.originalEnclosingMethod
       if (sym.isMethod) {
-        log("enclosing method for %s is %s (%s)".format(clazz, sym, sym.enclClass))
+        log("enclosing method for %s is %s (in %s)".format(clazz, sym, sym.enclClass))
         jclass addAttribute fjbgContext.JEnclosingMethodAttribute(
           jclass,
           javaName(sym.enclClass),
@@ -300,15 +300,21 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
         )
       } else if (clazz.isAnonymousClass) {
         val enclClass = clazz.rawowner
-        assert(enclClass.isClass)
+        assert(enclClass.isClass, "" + enclClass)
         val sym = enclClass.primaryConstructor
-        log("enclosing method for %s is %s (%s)".format(clazz, sym, enclClass))
-        jclass addAttribute fjbgContext.JEnclosingMethodAttribute(
-          jclass,
-          javaName(enclClass),
-          javaName(sym),
-          JMethodType.ARGLESS_VOID_FUNCTION
-        )
+        if (sym == NoSymbol)
+          log("Ran out of room looking for an enclosing method for %s: no constructor here.".format(
+            enclClass, clazz)
+          )
+        else {
+          log("enclosing method for %s is %s (in %s)".format(clazz, sym, enclClass))
+          jclass addAttribute fjbgContext.JEnclosingMethodAttribute(
+            jclass,
+            javaName(enclClass),
+            javaName(sym),
+            javaType(sym).asInstanceOf[JMethodType]
+          )
+        }
       }
     }
 
