@@ -58,7 +58,7 @@ import IMain._
  *  @author Lex Spoon
  */
 class IMain(val settings: Settings, protected val out: PrintWriter) {
-  intp =>
+  imain =>
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
@@ -150,10 +150,11 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   lazy val compiler = global
 
   import global._
+  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule, RootClass }
   import nme.{ INTERPRETER_IMPORT_WRAPPER }
 
   object naming extends {
-    val global: intp.global.type = intp.global
+    val global: imain.global.type = imain.global
   } with Naming {
     // make sure we don't overwrite their unwisely named res3 etc.
     override def freshUserVarName(): String = {
@@ -164,16 +165,26 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   }
   import naming._
 
+  // object dossiers extends {
+  //   val intp: imain.type = imain
+  // } with Dossiers { }
+  // import dossiers._
+
   lazy val memberHandlers = new {
-    val intp: IMain.this.type = IMain.this
+    val intp: imain.type = imain
   } with MemberHandlers
   import memberHandlers._
+
+  def atPickler[T](op: => T): T = atPhase(currentRun.picklerPhase)(op)
+  def afterTyper[T](op: => T): T = atPhase(currentRun.typerPhase.next)(op)
 
   /** Temporarily be quiet */
   def beQuietDuring[T](operation: => T): T = {
     val wasPrinting = printResults
     ultimately(printResults = wasPrinting) {
-      printResults = false
+      if (isReplDebug) echo(">> beQuietDuring")
+      else printResults = false
+
       operation
     }
   }
@@ -259,14 +270,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   // Set the current Java "context" class loader to this interpreter's class loader
   def setContextClassLoader() = classLoader.setAsContext()
 
-  /** the previous requests this interpreter has processed */
-  private lazy val prevRequests      = mutable.ArrayBuffer[Request]()
-  private lazy val referencedNameMap = mutable.Map[Name, Request]()
-  private lazy val definedNameMap    = mutable.Map[Name, Request]()
-  private def allHandlers            = prevRequests.toList flatMap (_.handlers)
-  private def allReqAndHandlers      = prevRequests.toList flatMap (req => req.handlers map (req -> _))
-  private def importHandlers         = allHandlers collect { case x: ImportHandler => x }
-
   /** Given a simple repl-defined name, returns the real name of
    *  the class representing it, e.g. for "Bippy" it may return
    *
@@ -278,6 +281,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       case _            => id
     }
   }
+
   def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
   def pathToType(id: String): String = pathToName(newTypeName(id))
   def pathToTerm(id: String): String = pathToName(newTermName(id))
@@ -329,10 +333,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       definedNameMap(name) = req
     }
   }
-
-  def allSeenTypes    = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
-  def allDefinedTypes = prevRequests.toList flatMap (_.definedTypes.values.toList) distinct
-  def allImplicits    = allHandlers filter (_.definesImplicit) flatMap (_.definedNames)
 
   /** Compute imports that allow definitions from previous
    *  requests to be visible in a new request.  Returns
@@ -592,6 +592,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       case _        => DBG("Set failed in bind(%s, %s, %s)".format(name, boundType, value)) ; IR.Error
     }
   }
+  def rebind(p: NamedParam): IR.Result = {
+    val name     = p.name
+    val oldType  = typeOfTerm(name) getOrElse { return IR.Error }
+    val newType  = p.tpe
+    val tempName = freshInternalVarName()
+
+    quietRun("val %s = %s".format(tempName, name))
+    quietRun("val %s = %s.asInstanceOf[%s]".format(name, tempName, newType))
+  }
 
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
   def bind(p: NamedParam): IR.Result                       = bind(p.name, p.tpe, p.value)
@@ -651,14 +660,24 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
         None
       }
 
-    lazy val readRoot  = definitions.getModule(readPath)   // the outermost wrapper
     lazy val evalClass = loadByName(evalPath)
     lazy val evalValue = callOpt(valueMethod)
 
     def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
-    def afterTyper[T](op: => T): T = {
+    def lineAfterTyper[T](op: => T): T = {
       assert(lastRun != null, "Internal error: trying to use atPhase, but Run is null." + this)
       atPhase(lastRun.typerPhase.next)(op)
+    }
+
+    /** The innermost object inside the wrapper, found by
+      * following accessPath into the outer one.
+      */
+    def resolvePathToSymbol(accessPath: String): Symbol = {
+      val readRoot  = definitions.getModule(readPath)   // the outermost wrapper
+      (accessPath split '.').foldLeft(readRoot) { (sym, name) =>
+        if (name == "") sym else
+        lineAfterTyper(sym.info member newTermName(name))
+      }
     }
 
     // def compileAndTypeExpr(expr: String): Option[Typer] = {
@@ -685,7 +704,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   // private
   class Request(val line: String, val trees: List[Tree]) {
     val lineRep     = new ReadEvalPrint()
-    import lineRep.{ afterTyper }
+    import lineRep.lineAfterTyper
 
     private var _originalLine: String = null
     def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
@@ -778,7 +797,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       // ensure it has been compiled
       compile
       // try to load it and call the value method
-      lineRep.evalValue
+      lineRep.evalValue filterNot (_ == null)
     }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
@@ -791,20 +810,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       lineRep.compile(ObjectSourceCode(handlers)) && {
         // extract and remember types
         typeOf
-        definedTypes
+        typesOfDefinedTerms
 
         // compile the result-extraction object
         lineRep compile ResultObjectSourceCode(handlers)
       }
     }
 
-    /** The innermost object inside the wrapper, found by
-      * following accessPath into the outer one. */
-    lazy val resObjSym =
-      accessPath.split("\\.").foldLeft(lineRep.readRoot) { (sym, name) =>
-        if (name == "") sym else
-        afterTyper(sym.info member newTermName(name))
-      }
+    lazy val resultSymbol = lineRep.resolvePathToSymbol(accessPath)
+    def applyToResultMember[T](name: Name, f: Symbol => T) = lineAfterTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
     /* typeOf lookup with encoding */
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))
@@ -813,12 +827,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     private def typeMap[T](f: Type => T): Map[Name, T] = {
       def toType(name: Name): T = {
         // the types are all =>T; remove the =>
-        val tp1 = afterTyper(resObjSym.info.nonPrivateDecl(name).tpe match {
+        val tp1 = lineAfterTyper(resultSymbol.info.nonPrivateDecl(name).tpe match {
           case NullaryMethodType(tp)  => tp
           case tp                 => tp
         })
         // normalize non-public types so we don't see protected aliases like Self
-        afterTyper(tp1 match {
+        lineAfterTyper(tp1 match {
           case TypeRef(_, sym, _) if !sym.isPublic  => f(tp1.normalize)
           case tp                                   => f(tp)
         })
@@ -830,9 +844,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     /** String representations of same. */
     lazy val typeOf         = typeMap[String](_.toString)
 
-    lazy val definedTypes: Map[Name, Type] = {
-      typeNames map (x => x -> afterTyper(resObjSym.info.nonPrivateDecl(x).tpe)) toMap
-    }
+    // lazy val definedTypes: Map[Name, Type] = {
+    //   typeNames map (x => x -> afterTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
+    // }
+    lazy val definedSymbols: Map[Name, Symbol] =
+      termNames map (x => x -> applyToResultMember(x, x => x)) toMap
+
+    lazy val typesOfDefinedTerms: Map[Name, Type] =
+      termNames map (x => x -> applyToResultMember(x, _.tpe)) toMap
 
     private def bindExceptionally(t: Throwable) = {
       val ex: Exceptional =
@@ -866,9 +885,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
 
       try {
-        val execution = lineManager.set(originalLine) {
-          lineRep call "$export"
-        }
+        val execution = lineManager.set(originalLine)(lineRep call "$export")
         execution.await()
 
         execution.state match {
@@ -903,26 +920,62 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   private def requestForIdent(line: String): Option[Request] =
     requestForName(newTermName(line)) orElse requestForName(newTypeName(line))
 
+  def safeClass(name: String): Option[Symbol] = {
+    try Some(definitions.getClass(newTypeName(name)))
+    catch { case _: MissingRequirementError => None }
+  }
+  def safeModule(name: String): Option[Symbol] = {
+    try Some(definitions.getModule(newTermName(name)))
+    catch { case _: MissingRequirementError => None }
+  }
+
   def definitionForName(name: Name): Option[MemberHandler] =
     requestForName(name) flatMap { req =>
       req.handlers find (_.definedNames contains name)
     }
+  //
 
-  def typeOfDefinedName(name: Name): Option[Type] =
-    if (name == nme.ROOTPKG) Some(definitions.RootClass.tpe)
-    else requestForName(name) flatMap (_.compilerTypeOf get name)
+  def valueOfTerm(id: String): Option[AnyRef] =
+    requestForIdent(id) flatMap (_.getEval)
+
+  def classOfTerm(id: String): Option[Class[_]] =
+    valueOfTerm(id) map (_.getClass)
+
+  def typeOfTerm(id: String): Option[Type] = newTermName(id) match {
+    case nme.ROOTPKG  => Some(RootClass.tpe)
+    case name         => requestForName(name) flatMap (_.compilerTypeOf get name)
+  }
+  def symbolOfTerm(id: String): Symbol =
+    requestForIdent(id) flatMap (_.definedSymbols get newTermName(id)) getOrElse NoSymbol
+
+  def runtimeClassAndTypeOfTerm(id: String): Option[(Class[_], Type)] =
+    for (clazz <- classOfTerm(id) ; tpe <- runtimeTypeOfTerm(id)) yield ((clazz, tpe))
+
+  def runtimeTypeOfTerm(id: String): Option[Type] = {
+    for {
+      tpe <- typeOfTerm(id)
+      clazz <- classOfTerm(id)
+      val staticSym = tpe.typeSymbol
+      runtimeSym <- safeClass(clazz.getName)
+      if runtimeSym != staticSym
+      if runtimeSym isSubClass staticSym
+    } yield {
+      runtimeSym.info
+    }
+  }
 
   // XXX literals.
   // 1) Identifiers defined in the repl.
   // 2) A path loadable via getModule.
   // 3) Try interpreting it as an expression.
+  private var typeOfExpressionDepth = 0
   def typeOfExpression(expr: String): Option[Type] = {
-    val name = newTermName(expr)
-
-    def asModule = {
-      try Some(definitions.getModule(name).tpe)
-      catch { case _: MissingRequirementError => None }
+    if (typeOfExpressionDepth > 2) {
+      DBG("Terminating typeOfExpression recursion for expression: " + expr)
+      return None
     }
+
+    def asModule = safeModule(expr) map (_.tpe)
     def asExpr = beSilentDuring {
       val lhs = freshInternalVarName()
       interpret("val " + lhs + " = { " + expr + " } ") match {
@@ -931,91 +984,40 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
     }
 
-    typeOfDefinedName(name) orElse asModule orElse asExpr
+    typeOfExpressionDepth += 1
+    try typeOfTerm(expr) orElse asModule orElse asExpr
+    finally typeOfExpressionDepth -= 1
   }
+  // def compileAndTypeExpr(expr: String): Option[Typer] = {
+  //   class TyperRun extends Run {
+  //     override def stopPhase(name: String) = name == "superaccessors"
+  //   }
+  // }
 
-  def clazzForIdent(id: String): Option[Class[_]] =
-    for (res <- getEvalForIdent(id); v <- Option(res)) yield v.getClass
+  private def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
+  private def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
 
-  def methodsOf(name: String) =
-    evalExpr[List[String]](methodsCode(name)) map (x => NameTransformer.decode(getOriginalName(x)))
+  def importHandlers = allHandlers collect { case x: ImportHandler => x }
+  def definedTerms   = onlyTerms(allDefinedNames) filterNot isInternalVarName
+  def definedTypes   = onlyTypes(allDefinedNames)
+  def importedTerms  = onlyTerms(importHandlers flatMap (_.importedNames))
+  def importedTypes  = onlyTypes(importHandlers flatMap (_.importedNames))
 
-  def completionAware(name: String) = {
-    // XXX working around "object is not a value" crash, i.e.
-    // import java.util.ArrayList ; ArrayList.<tab>
-    clazzForIdent(name) flatMap (_ => evalExpr[Option[CompletionAware]](asCompletionAwareCode(name)))
-  }
+  /** the previous requests this interpreter has processed */
+  private lazy val prevRequests      = mutable.ArrayBuffer[Request]()
+  private lazy val referencedNameMap = mutable.Map[Name, Request]()
+  private lazy val definedNameMap    = mutable.Map[Name, Request]()
+  private def allHandlers            = prevRequests.toList flatMap (_.handlers)
+  private def allReqAndHandlers      = prevRequests.toList flatMap (req => req.handlers map (req -> _))
+  def allSeenTypes                   = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
+  def allImplicits                   = allHandlers filter (_.definesImplicit) flatMap (_.definedNames)
 
-  def getEvalForIdent(id: String): Option[AnyRef] =
-    requestForIdent(id) flatMap (_.getEval)
+  private def membersAtPickler(sym: Symbol): List[Symbol] =
+    atPickler(sym.info.nonPrivateMembers)
 
-  /** Executes code looking for a manifest of type T.
-   */
-  def manifestFor[T: Manifest] =
-    evalExpr[Manifest[T]]("""manifest[%s]""".format(manifest[T]))
-
-  /** Executes code looking for an implicit value of type T.
-   */
-  def implicitFor[T: Manifest] = {
-    val s = manifest[T].toString
-    evalExpr[Option[T]]("{ def f(implicit x: %s = null): %s = x ; Option(f) }".format(s, s))
-    // We don't use implicitly so as to fail without failing.
-    // evalExpr[T]("""implicitly[%s]""".format(manifest[T]))
-  }
-
-  private def methodsCode(name: String) =
-    "%s.%s(%s)".format(classOf[ReflectionCompletion].getName, "methodsOf", name)
-
-  private def asCompletionAwareCode(name: String) =
-    "%s.%s(%s)".format(classOf[CompletionAware].getName, "unapply", name)
-
-  private def getOriginalName(name: String): String =
-    nme.originalName(newTermName(name)).toString
-
-  case class InterpreterEvalException(msg: String) extends Exception(msg)
-  def evalError(msg: String) = throw InterpreterEvalException(msg)
-
-  /** The user-facing eval in :power mode wraps an Option.
-   */
-  def eval[T: Manifest](line: String): Option[T] =
-    try Some(evalExpr[T](line))
-    catch { case InterpreterEvalException(msg) => out println indentCode(msg) ; None }
-
-  def evalExpr[T: Manifest](line: String): T = {
-    // Nothing means the type could not be inferred.
-    if (manifest[T] eq Manifest.Nothing)
-      evalError("Could not infer type: try 'eval[SomeType](%s)' instead".format(line))
-
-    val lhs = freshInternalVarName()
-    beQuietDuring { interpret("val " + lhs + " = { " + line + " } ") }
-
-    // TODO - can we meaningfully compare the inferred type T with
-    //   the internal compiler Type assigned to lhs?
-    // def assignedType = prevRequests.last.typeOf(newTermName(lhs))
-
-    val req = requestFromLine(lhs, true) match {
-      case Left(result) => evalError(result.toString)
-      case Right(req)   => req
-    }
-    if (req == null || !req.compile || req.handlers.size != 1)
-      evalError("Eval error.")
-
-    try req.getEvalTyped[T] getOrElse evalError("No result.")
-    catch { case e: Exception => evalError(e.getMessage) }
-  }
-
-  def interpretExpr[T: Manifest](code: String): Option[T] = beQuietDuring {
-    interpret(code) match {
-      case IR.Success =>
-        try prevRequests.last.getEvalTyped[T]
-        catch { case e: Exception => out println e ; None }
-      case _ => None
-    }
-  }
-
-  /** Another entry point for tab-completion, ids in scope */
-  private def simpleTermNames =
-    allHandlers flatMap (_.definedOrImported) filter (x => x.isTermName && !isInternalVarName(x))
+  /** Symbols whose contents are language-defined to be imported. */
+  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
+  def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
 
   /** Types which have been wildcard imported, such as:
    *    val x = "abc" ; import x._  // type java.lang.String
@@ -1028,21 +1030,49 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *  scope twiddling which should be swept away in favor of digging
    *  into the compiler scopes.
    */
-  def wildcardImportedTypes(): List[Type] = {
+  def sessionWildcards: List[Type] = {
     importHandlers flatMap {
       case x if x.importsWildcard => x.targetType
       case _                      => None
     } distinct
   }
+  def wildcardTypes = languageWildcards ++ sessionWildcards
+
+  def languageSymbols = languageWildcardSyms flatMap membersAtPickler
+  def sessionSymbols  = importHandlers flatMap (_.importedSymbols)
+  def importedSymbols = languageSymbols ++ sessionSymbols
+  def implicitSymbols = importedSymbols filter (_.isImplicit)
+
+  /** Tuples of (source, imported symbols) in the order they were imported.
+   */
+  def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
+    val lang    = languageWildcardSyms map (sym => (sym, membersAtPickler(sym)))
+    val session = importHandlers filter (_.targetType.isDefined) map { mh =>
+      (mh.targetType.get.typeSymbol, mh.importedSymbols)
+    }
+
+    lang ++ session
+  }
+  def implicitSymbolsBySource: List[(Symbol, List[Symbol])] = {
+    importedSymbolsBySource map {
+      case (k, vs) => (k, vs filter (_.isImplicit))
+    } filterNot (_._2.isEmpty)
+  }
+
+  def visibleTermNames: List[Name] = definedTerms ++ importedTerms distinct
 
   /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds() = (simpleTermNames map (_.toString)).distinct.sorted
-
-  /** For static/object method completion */
-  def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path
+  def unqualifiedIds = visibleTermNames map (_.toString) filterNot (_ contains "$") sorted
 
   /** Parse the ScalaSig to find type aliases */
   def aliasForType(path: String) = ByteCode.aliasForType(path)
+
+  def withoutUnwrapping(op: => Unit): Unit = {
+    val saved = isettings.unwrapStrings
+    isettings.unwrapStrings = false
+    try op
+    finally isettings.unwrapStrings = saved
+  }
 
   def showCodeIfDebugging(code: String) {
     /** Secret bookcase entrance for repl debuggers: end the line
@@ -1050,14 +1080,18 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
      */
     if (code.lines exists (_.trim endsWith "// show")) {
       echo(code)
-      parse(code) foreach (ts => ts foreach (t => DBG(asCompactString(t))))
+      parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(DBG(asCompactString(t)))))
     }
   }
   // debugging
-  def isCompletionDebug = settings.Ycompletion.value
-  def DBG(s: => String) =
-    try if (isReplDebug) repldbg(s)
+  def debugging[T](msg: String)(res: T) = {
+    DBG(msg + " " + res)
+    res
+  }
+  def DBG(s: => String) = if (isReplDebug) {
+    try repldbg(s)
     catch { case x: AssertionError => repldbg("Assertion error printing debug string:\n  " + x) }
+  }
 }
 
 /** Utility methods for the Interpreter. */
@@ -1121,7 +1155,7 @@ object IMain {
     // $line3.$read.$iw.$iw.Bippy =
     //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
     private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
-    private def removeIWPackages(s: String) = s.replaceAll("""\$iw[$.]""", "")
+    private def removeIWPackages(s: String) = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
   }
 
   class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, new ReplStrippingWriter(intp)) {

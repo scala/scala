@@ -14,7 +14,7 @@ import util.Chars
 trait MemberHandlers {
   val intp: IMain
 
-  import intp.{ Request, global, naming }
+  import intp.{ Request, global, naming, atPickler }
   import global._
   import naming._
 
@@ -81,10 +81,10 @@ trait MemberHandlers {
   }
 
   sealed abstract class MemberDefHandler(override val member: MemberDef) extends MemberHandler(member) {
-    def name: Name = member.name
+    def name: Name      = member.name
     def mods: Modifiers = member.mods
-    def keyword = member.keyword
-    def prettyName = NameTransformer.decode(name)
+    def keyword         = member.keyword
+    def prettyName      = NameTransformer.decode(name)
 
     override def definesImplicit = member.mods.isImplicit
     override def definesTerm: Option[TermName] = Some(name.toTermName) filter (_ => name.isTermName)
@@ -95,7 +95,6 @@ trait MemberHandlers {
    *  in a single interpreter request.
    */
   sealed abstract class MemberHandler(val member: Tree) {
-    def tpe = member.tpe
     def definesImplicit = false
     def definesValue    = false
     def isLegalTopLevel = member match {
@@ -192,24 +191,30 @@ trait MemberHandlers {
     val Import(expr, selectors) = imp
     def targetType = intp.typeOfExpression("" + expr)
 
-    private def selectorWild    = selectors filter (_.name == nme.USCOREkw)   // wildcard imports, e.g. import foo._
+    // wildcard imports, e.g. import foo._
+    private def selectorWild    = selectors filter (_.name == nme.USCOREkw)
+    // renamed imports, e.g. import foo.{ bar => baz }
     private def selectorRenames = selectors map (_.rename) filterNot (_ == null)
 
     /** Whether this import includes a wildcard import */
     val importsWildcard = selectorWild.nonEmpty
 
-    /** Complete list of names imported by a wildcard */
-    def wildcardImportedNames: List[Name] = (
-      for (tpe <- targetType ; if importsWildcard) yield
-        tpe.nonPrivateMembers filter (x => x.isMethod && x.isPublic) map (_.name) distinct
-    ).toList.flatten
+    def implicitSymbols = importedSymbols filter (_.isImplicit)
+    def importedSymbols = individualSymbols ++ wildcardSymbols
 
-    /** The individual names imported by this statement */
-    /** XXX come back to this and see what can be done with wildcards now that
-     *  we know how to enumerate the identifiers.
-     */
-    override lazy val importedNames: List[Name] =
-      selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames)
+    lazy val individualSymbols: List[Symbol] =
+      atPickler(targetType.toList flatMap (tp => individualNames map (tp nonPrivateMember _)))
+
+    lazy val wildcardSymbols: List[Symbol] =
+      if (importsWildcard) atPickler(targetType.toList flatMap (_.nonPrivateMembers))
+      else Nil
+
+    /** Complete list of names imported by a wildcard */
+    lazy val wildcardNames: List[Name]   = wildcardSymbols map (_.name)
+    lazy val individualNames: List[Name] = selectorRenames filterNot (_ == nme.USCOREkw) flatMap (_.bothNames)
+
+    /** The names imported by this statement */
+    override lazy val importedNames: List[Name] = wildcardNames ++ individualNames
 
     override def resultExtractionCode(req: Request) = codegenln(imp.toString) + "\n"
   }

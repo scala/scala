@@ -20,23 +20,11 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   import global._
   import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
   type ExecResult = Any
+  import intp.{ DBG, debugging, afterTyper }
 
   // verbosity goes up with consecutive tabs
   private var verbosity: Int = 0
   def resetVerbosity() = verbosity = 0
-
-  def isCompletionDebug = intp.isCompletionDebug
-  def DBG(msg: => Any) = if (isCompletionDebug) println(msg.toString)
-  def debugging[T](msg: String): T => T = (res: T) => returning[T](res)(x => DBG(msg + x))
-
-  // XXX not yet used.
-  lazy val dottedPaths = {
-    def walk(tp: Type): scala.List[Symbol] = {
-      val pkgs = tp.nonPrivateMembers filter (_.isPackage)
-      pkgs ++ (pkgs map (_.tpe) flatMap walk)
-    }
-    walk(RootClass.tpe)
-  }
 
   def getType(name: String, isModule: Boolean) = {
     val f = if (isModule) definitions.getModule(_: Name) else definitions.getClass(_: Name)
@@ -66,7 +54,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
 
     // XXX we'd like to say "filterNot (_.isDeprecated)" but this causes the
     // compiler to crash for reasons not yet known.
-    def members     = (effectiveTp.nonPrivateMembers ++ anyMembers) filter (_.isPublic)
+    def members     = afterTyper((effectiveTp.nonPrivateMembers ++ anyMembers) filter (_.isPublic))
     def methods     = members filter (_.isMethod)
     def packages    = members filter (_.isPackage)
     def aliases     = members filter (_.isAliasType)
@@ -78,6 +66,31 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   }
 
   object TypeMemberCompletion {
+    def apply(tp: Type, runtimeType: Type, param: NamedParam): TypeMemberCompletion = {
+      new TypeMemberCompletion(tp) {
+        var upgraded = false
+        lazy val upgrade = {
+          intp rebind param
+          intp.reporter.printMessage("\nRebinding stable value %s from %s to %s".format(param.name, tp, param.tpe))
+          upgraded = true
+          new TypeMemberCompletion(runtimeType)
+        }
+        override def completions(verbosity: Int) = {
+          super.completions(verbosity) ++ (
+            if (verbosity == 0) Nil
+            else upgrade.completions(verbosity)
+          )
+        }
+        override def follow(s: String) = super.follow(s) orElse {
+          if (upgraded) upgrade.follow(s)
+          else None
+        }
+        override def alternativesFor(id: String) = super.alternativesFor(id) ++ (
+          if (upgraded) upgrade.alternativesFor(id)
+          else Nil
+        ) distinct
+      }
+    }
     def apply(tp: Type): TypeMemberCompletion = {
       if (tp.typeSymbol.isPackageClass) new PackageCompletion(tp)
       else new TypeMemberCompletion(tp)
@@ -91,10 +104,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
     def excludeNames: List[String] = (anyref.methodNames filterNot anyRefMethodsToShow) :+ "_root_"
 
-    def methodSignatureString(sym: Symbol) = {
-      def asString = new MethodSymbolOutput(sym).methodString()
-      atPhase(currentRun.typerPhase)(asString)
-    }
+    def methodSignatureString(sym: Symbol) = afterTyper(new MethodSymbolOutput(sym).methodString())
 
     def exclude(name: String): Boolean = (
       (name contains "$") ||
@@ -146,16 +156,29 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     override def completions(verbosity: Int) = intp.unqualifiedIds ++ List("classOf") //, "_root_")
     // now we use the compiler for everything.
     override def follow(id: String) = {
-      if (completions(0) contains id)
-        intp typeOfExpression id map (tpe => TypeMemberCompletion(tpe))
+      if (completions(0) contains id) {
+        intp typeOfExpression id map { tpe =>
+          intp runtimeClassAndTypeOfTerm id match {
+            case Some((clazz, runtimeType)) =>
+              val sym = intp.symbolOfTerm(id)
+              if (sym.isStable) {
+                val param = new NamedParam.Untyped(id, intp valueOfTerm id getOrElse null)
+                TypeMemberCompletion(tpe, runtimeType, param)
+              }
+              else TypeMemberCompletion(tpe)
+            case _        =>
+              TypeMemberCompletion(tpe)
+          }
+        }
+      }
       else
         None
     }
     override def toString = "<repl ids> (%s)".format(completions(0).size)
   }
 
-  // wildcard imports in the repl like "import global._" or "import String._"
-  private def imported = intp.wildcardImportedTypes map TypeMemberCompletion.imported
+  // user-issued wildcard imports like "import global._" or "import String._"
+  private def imported = intp.sessionWildcards map TypeMemberCompletion.imported
 
   // literal Ints, Strings, etc.
   object literals extends CompletionAware {

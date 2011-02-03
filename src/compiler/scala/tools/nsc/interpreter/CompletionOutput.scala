@@ -13,10 +13,9 @@ package interpreter
  */
 trait CompletionOutput {
   val global: Global
+
   import global._
   import definitions.{ NothingClass, AnyClass, isTupleTypeOrSubtype, isFunctionType, isRepeatedParamType }
-
-  def DBG(msg: => Any): Unit
 
   /** Reducing fully qualified noise for some common packages.
    */
@@ -81,9 +80,7 @@ trait CompletionOutput {
         case NullaryMethodType(resType)         => ": " + typeToString(resType)
         case PolyType(tparams, resType)         => tparamsString(tparams) + typeToString(resType)
         case mt @ MethodType(_, _)              => methodTypeToString(mt)
-        case x                                  =>
-          DBG("methodString(): %s / %s".format(x.getClass, x))
-          x.toString
+        case x                                  => x.toString
       })
   }
 }

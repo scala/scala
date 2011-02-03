@@ -41,7 +41,18 @@ trait TypeStrings {
     else if (primitives(s)) "scala." + s.capitalize
     else primitiveMap.getOrElse(s, NameTransformer decode s)
   }
-  def scalaName(clazz: JClass): String       = scalaName(clazz.getName)
+  def scalaName(clazz: JClass): String       = {
+    val name = clazz.getName
+    scalaName(clazz.getEnclosingClass match {
+      case null   => name
+      case encl   =>
+        val enclName = encl.getName
+        if (name startsWith (enclName + "$"))
+          enclName + "." + (name stripPrefix (enclName + "$"))
+        else
+          name
+    })
+  }
   def scalaName(m: ClassManifest[_]): String = scalaName(m.erasure)
   def anyClass(x: Any): JClass               = if (x == null) null else x.asInstanceOf[AnyRef].getClass
 
@@ -55,8 +66,9 @@ trait TypeStrings {
     if (xs.isEmpty) "_"
     else scalaName(xs.head)
   }
-  private def tparamString(clazz: JClass): String =
+  private def tparamString(clazz: JClass): String = {
     brackets(clazz.getTypeParameters map tvarString: _*)
+  }
 
   private def tparamString[T: Manifest] : String =
     brackets(manifest[T].typeArguments map (m => tvarString(List(m.erasure))): _*)
@@ -76,6 +88,20 @@ trait TypeStrings {
 
   /** Reducing fully qualified noise for some common packages.
    */
+  def quieter(tpe: String, alsoStrip: String*): String = {
+    val transforms = List(
+      "scala.collection.immutable." -> "immutable.",
+      "scala.collection.mutable." -> "mutable.",
+      "scala.collection.generic." -> "generic.",
+      "java.lang." -> "jl.",
+      "scala.runtime." -> "runtime."
+    ) ++ (alsoStrip map (_ -> ""))
+
+    transforms.foldLeft(tpe) {
+      case (res, (k, v)) => res.replaceAll(k, v)
+    }
+  }
+
   val typeTransforms = List(
     "java.lang." -> "",
     "scala.collection.immutable." -> "immutable.",

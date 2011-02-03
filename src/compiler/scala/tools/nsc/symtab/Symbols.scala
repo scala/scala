@@ -597,6 +597,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
       rawowner = owner
     }
+    private[Symbols] def flattenName(): Name = {
+      // TODO: this assertion causes me a lot of trouble in the interpeter in situations
+      // where everything proceeds smoothly if there's no assert.  I don't think calling "name"
+      // on a symbol is the right place to throw fatal exceptions if things don't look right.
+      // It really hampers exploration.
+      assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname + idString, rawowner))
+      nme.flattenedName(rawowner.name, rawname)
+    }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
@@ -1757,10 +1765,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     override def name: TermName =
       if (isFlatAdjusted) {
-        if (flatname == null) {
-          assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname, rawowner))
-          flatname = nme.flattenedName(rawowner.name, rawname)
-        }
+        if (flatname == null)
+          flatname = flattenName().toTermName
+
         flatname
       } else rawname
 
@@ -1961,10 +1968,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     override def name: TypeName =
       if (needsFlatClasses) {
-        if (flatname == null) {
-          assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname+idString, rawowner))
-          flatname = tpnme.flattenedName(rawowner.name, rawname)
-        }
+        if (flatname == null)
+          flatname = flattenName().toTypeName
         flatname
       }
       else rawname.asInstanceOf[TypeName]

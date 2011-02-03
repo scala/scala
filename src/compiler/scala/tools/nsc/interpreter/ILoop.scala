@@ -196,6 +196,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
        NoArgs("help", "print this help message", printHelp),
        VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
        LineArg("h?", "search the history", searchHistory),
+       LineArg("implicits", "show the implicits in scope (-v to include Predef)", implicitsCommand),
        LineArg("javap", "disassemble a file or class name", javapCommand),
        LineArg("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
        OneArg("load", "load and interpret a Scala file", load),
@@ -215,6 +216,79 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       LineArg("symfilter", "change the filter for symbol printing", symfilterCmd),
       LineArg("wrap", "code to wrap around all executions", wrapCommand)
     )
+  }
+
+  private val typeTransforms = List(
+    "scala.collection.immutable." -> "immutable.",
+    "scala.collection.mutable." -> "mutable.",
+    "scala.collection.generic." -> "generic.",
+    "java.lang." -> "jl.",
+    "scala.runtime." -> "runtime."
+  )
+
+  private def implicitsCommand(line: String): Result = {
+    val intp = ILoop.this.intp
+    import intp._
+    import global.Symbol
+
+    def p(x: Any) = intp.reporter.printMessage("" + x)
+    def toDefString(sym: Symbol) = {
+      TypeStrings.quieter(
+        intp.afterTyper(sym.defString),
+        sym.owner.name + ".this.",
+        sym.owner.fullName + "."
+      )
+    }
+
+    // If an argument is given, only show a source with that
+    // in its name somewhere.
+    val args     = line split "\\s+"
+    val filtered = intp.implicitSymbolsBySource filter {
+      case (source, syms) =>
+        (args contains "-v") || {
+          if (line == "") (source.fullName.toString != "scala.Predef")
+          else (args exists (source.name.toString contains _))
+        }
+    }
+
+    if (filtered.isEmpty)
+      return "No implicits have been imported other than those in Predef."
+
+    filtered foreach {
+      case (source, syms) =>
+        p("/* " + syms.size + " implicit members imported from " + source.fullName + " */")
+
+        // This groups the members by where the symbol is defined
+        val byOwner = syms groupBy (_.owner)
+        val sortedOwners = byOwner.toList sortBy { case (owner, _) => intp.afterTyper(source.info.baseClasses indexOf owner) }
+
+        sortedOwners foreach {
+          case (owner, members) =>
+            // Within each owner, we cluster results based on the final result type
+            // if there are more than a couple, and sort each cluster based on name.
+            // This is really just trying to make the 100 or so implicits imported
+            // by default into something readable.
+            val memberGroups: List[List[Symbol]] = {
+              val groups = members groupBy (_.tpe.finalResultType) toList
+              val (big, small) = groups partition (_._2.size > 3)
+              val xss = (
+                (big sortBy (_._1.toString) map (_._2)) :+
+                (small flatMap (_._2))
+              )
+
+              xss map (xs => xs sortBy (_.name.toString))
+            }
+
+            val ownerMessage = if (owner == source) " defined in " else " inherited from "
+            p("  /* " + members.size + ownerMessage + owner.fullName + " */")
+
+            memberGroups foreach { group =>
+              group foreach (s => p("  " + toDefString(s)))
+              p("")
+            }
+        }
+        p("")
+    }
   }
   private def javapCommand(line: String): Result = {
     if (line == "")

@@ -11,6 +11,7 @@ import NamedParam._
 trait NamedParamCreator {
   protected def freshName: () => String
 
+  def apply(name: String, tpe: String, value: Any): NamedParam = NamedParamClass(name, tpe, value)
   def apply[T: Manifest](name: String, x: T): NamedParam = new Typed[T](name, x)
   def apply[T: Manifest](x: T): NamedParam = apply(freshName(), x)
 
@@ -34,6 +35,8 @@ object NamedParam extends NamedParamCreator {
     () => { counter += 1; "p" + counter }
   }
 }
+
+case class NamedParamClass(name: String, tpe: String, value: Any) extends NamedParam { }
 
 trait NamedParam {
   def name: String

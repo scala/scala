@@ -401,6 +401,8 @@ trait Names extends reflect.generic.Names {
       (if (nameDebug && isTypeName) "!" else ""))//debug
 
     def isOperatorName: Boolean = decode != toString
+    def nameKind: String = if (isTypeName) "type" else "term"
+    def longString: String = nameKind + " " + NameTransformer.decode(toString)
   }
 
   final class TermName(_index: Int, _len: Int, hash: Int) extends Name(_index, _len) {
