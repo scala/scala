@@ -2,7 +2,7 @@ package scala.tools.nsc.interactive
 package tests
 
 import scala.tools.nsc.Settings
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.util.{BatchSourceFile, SourceFile, Position}
 import scala.tools.nsc.io._
 
@@ -41,7 +41,7 @@ abstract class InteractiveTest {
   val TIMEOUT = 10000 // timeout in milliseconds
 
   val settings = new Settings
-  val reporter= new ConsoleReporter(settings)
+  val reporter= new StoreReporter
 
   // need this so that the classpath comes from what partest
   // instead of scala.home
