@@ -43,7 +43,7 @@ self =>
     else NullLogger
 
   import log.logreplay
-  debugLog("interactive compiler from 23 Jan")
+  debugLog("interactive compiler from 3 Feb")
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
   debugLog("classpath: "+classPath)
 

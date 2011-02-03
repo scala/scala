@@ -36,6 +36,7 @@ abstract class Flatten extends InfoTransform {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if (pre.typeSymbol.isClass && !pre.typeSymbol.isPackageClass) =>
         assert(args.isEmpty)
+        assert(sym.toplevelClass != NoSymbol, sym.ownerChain)
         typeRef(sym.toplevelClass.owner.thisType, sym, args)
       case ClassInfoType(parents, decls, clazz) =>
         var parents1 = parents
