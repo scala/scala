@@ -11,7 +11,7 @@ trait Dynamic {
    *  @param name  The name of the invoked method
    *  @param args  The arguments to the method
    */
-  def invokeDynamic(name: String)(args: Any*): Any
+  def applyDynamic(name: String)(args: Any*): Any
 
   /** Returns the underlying value typed as an instance of type T
    *  @param T  The target type

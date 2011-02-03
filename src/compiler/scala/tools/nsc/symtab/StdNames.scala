@@ -212,7 +212,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val head: NameType             = "head"
     val identity: NameType         = "identity"
     val inlinedEquals: NameType    = "inlinedEquals"
-    val invokeDynamic: NameType    = "invokeDynamic"
+    val applyDynamic: NameType     = "applyDynamic"
     val isArray: NameType          = "isArray"
     val isDefinedAt: NameType      = "isDefinedAt"
     val isEmpty: NameType          = "isEmpty"

@@ -3488,7 +3488,7 @@ trait Typers extends Modes {
           // try to expand according to Dynamic rules.
 
           if (qual.tpe.widen.typeSymbol isNonBottomSubClass DynamicClass) {
-            var dynInvoke = Apply(Select(qual, nme.invokeDynamic), List(Literal(Constant(name.decode))))
+            var dynInvoke = Apply(Select(qual, nme.applyDynamic), List(Literal(Constant(name.decode))))
             context.tree match {
               case Apply(tree1, args) if tree1 eq tree =>
                 ;
