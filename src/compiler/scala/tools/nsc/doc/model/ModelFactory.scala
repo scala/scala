@@ -26,16 +26,17 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   private var universe: Universe = null
 
   /**  */
-  def makeModel: Universe = {
-    val universe = new Universe { thisUniverse =>
-      thisFactory.universe = thisUniverse
-      val settings = thisFactory.settings
-      val rootPackage =
-        makeRootPackage getOrElse { throw new Error("no documentable class found in compilation units") }
+  def makeModel: Option[Universe] = {
+    makeRootPackage map { rootPack =>
+      val universe = new Universe { thisUniverse =>
+        thisFactory.universe = thisUniverse
+        val settings = thisFactory.settings
+        val rootPackage = rootPack
+      }
+      modelFinished = true
+      thisFactory.universe = null
+      universe
     }
-    modelFinished = true
-    thisFactory.universe = null
-    universe
   }
 
   /** */
@@ -419,8 +420,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           else None
         else
           Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
-                override def isLazyVal = true
-              })
+            override def isLazyVal = true
+          })
       else if (bSym.isGetter && bSym.accessed.isMutable)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true

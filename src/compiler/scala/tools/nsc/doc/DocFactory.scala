@@ -4,8 +4,8 @@ package scala.tools.nsc
 package doc
 
 import reporters.Reporter
-import util.NoPosition
 import java.lang.ClassNotFoundException
+import util.{Position, NoPosition}
 
 /** A documentation processor controls the process of generating Scala documentation, which is as follows.
   *
@@ -53,9 +53,14 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     assert(settings.docformat.value == "html")
     if (!reporter.hasErrors) {
       val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory with model.TreeFactory)
-      val madeModel = Some(modelFactory.makeModel)
-      println("model contains " + modelFactory.templatesCount + " documentable templates")
-      madeModel
+      modelFactory.makeModel match {
+        case Some(madeModel) =>
+          println("model contains " + modelFactory.templatesCount + " documentable templates")
+          Some(madeModel)
+        case None =>
+          println("no documentable class found in compilation units")
+          None
+      }
     }
     else None
   }
