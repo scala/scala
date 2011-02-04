@@ -326,6 +326,10 @@ div.members > ol > li {
   font-style: bold;
 }
 
+.cmt em, .cmt i {
+  font-style: italic;
+}
+
 /* Comments structured layout */
 
 p.comment {
