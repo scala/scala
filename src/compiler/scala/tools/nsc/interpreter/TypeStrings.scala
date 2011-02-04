@@ -41,17 +41,18 @@ trait TypeStrings {
     else if (primitives(s)) "scala." + s.capitalize
     else primitiveMap.getOrElse(s, NameTransformer decode s)
   }
-  def scalaName(clazz: JClass): String       = {
-    val name = clazz.getName
-    scalaName(clazz.getEnclosingClass match {
-      case null   => name
-      case encl   =>
-        val enclName = encl.getName
-        if (name startsWith (enclName + "$"))
-          enclName + "." + (name stripPrefix (enclName + "$"))
-        else
-          name
-    })
+  // Trying to put humpty dumpty back together again.
+  def scalaName(clazz: JClass): String = {
+    val name      = clazz.getName
+    val isAnon    = clazz.isScalaAnonymous
+    val enclClass = clazz.getEnclosingClass
+    def enclPre   = enclClass.getName + "$"
+    def enclMatch = name startsWith enclPre
+
+    scalaName(
+      if (enclClass == null || isAnon || !enclMatch) name
+      else enclClass.getName + "." + (name stripPrefix enclPre)
+    )
   }
   def scalaName(m: ClassManifest[_]): String = scalaName(m.erasure)
   def anyClass(x: Any): JClass               = if (x == null) null else x.asInstanceOf[AnyRef].getClass

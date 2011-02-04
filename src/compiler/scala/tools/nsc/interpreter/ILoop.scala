@@ -111,31 +111,33 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
   }
 
+  class ILoopInterpreter extends IMain(settings, out) {
+    override lazy val formatting = new Formatting {
+      def prompt = ILoop.this.prompt
+    }
+    override protected def createLineManager() = new Line.Manager {
+      override def onRunaway(line: Line[_]): Unit = {
+        val template = """
+          |// She's gone rogue, captain! Have to take her out!
+          |// Calling Thread.stop on runaway %s with offending code:
+          |// scala> %s""".stripMargin
+
+        println(template.format(line.thread, line.code))
+        // XXX no way to suppress the deprecation warning
+        line.thread.stop()
+        in.redrawLine()
+      }
+    }
+    override protected def parentClassLoader =
+      settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
+  }
+
   /** Create a new interpreter. */
   def createInterpreter() {
     if (addedClasspath != "")
       settings.classpath append addedClasspath
 
-    intp = new IMain(settings, out) {
-      override lazy val formatting = new Formatting {
-        def prompt = ILoop.this.prompt
-      }
-      override protected def createLineManager() = new Line.Manager {
-        override def onRunaway(line: Line[_]): Unit = {
-          val template = """
-            |// She's gone rogue, captain! Have to take her out!
-            |// Calling Thread.stop on runaway %s with offending code:
-            |// scala> %s""".stripMargin
-
-          println(template.format(line.thread, line.code))
-          // XXX no way to suppress the deprecation warning
-          line.thread.stop()
-          in.redrawLine()
-        }
-      }
-      override protected def parentClassLoader =
-        settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
-    }
+    intp = new ILoopInterpreter
     intp.setContextClassLoader()
     installSigIntHandler()
   }

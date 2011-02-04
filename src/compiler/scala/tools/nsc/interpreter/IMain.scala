@@ -948,8 +948,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def symbolOfTerm(id: String): Symbol =
     requestForIdent(id) flatMap (_.definedSymbols get newTermName(id)) getOrElse NoSymbol
 
-  def runtimeClassAndTypeOfTerm(id: String): Option[(Class[_], Type)] =
-    for (clazz <- classOfTerm(id) ; tpe <- runtimeTypeOfTerm(id)) yield ((clazz, tpe))
+  def runtimeClassAndTypeOfTerm(id: String): Option[(Class[_], Type)] = {
+    for {
+      clazz <- classOfTerm(id)
+      tpe <- runtimeTypeOfTerm(id)
+      nonAnon <- clazz.supers find (!_.isScalaAnonymous)
+    } yield {
+      (nonAnon, tpe)
+    }
+  }
 
   def runtimeTypeOfTerm(id: String): Option[Type] = {
     for {
