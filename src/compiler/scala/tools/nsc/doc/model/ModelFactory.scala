@@ -27,16 +27,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
 
   /**  */
   def makeModel: Option[Universe] = {
-    makeRootPackage map { rootPack =>
-      val universe = new Universe { thisUniverse =>
-        thisFactory.universe = thisUniverse
-        val settings = thisFactory.settings
-        val rootPackage = rootPack
-      }
-      modelFinished = true
-      thisFactory.universe = null
-      universe
+    val universe = new Universe { thisUniverse =>
+      thisFactory.universe = thisUniverse
+      val settings = thisFactory.settings
+      private val rootPackageMaybe = makeRootPackage
+      val rootPackage = rootPackageMaybe getOrElse null
     }
+    modelFinished = true
+    if (universe.rootPackage != null) Some(universe) else None
   }
 
   /** */
