@@ -187,11 +187,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   /** The start of a scaladoc code block */
   protected val CodeBlockStart =
-    new Regex("""(.*)\{\{\{(.*)""")
+    new Regex("""(.*)((?:\{\{\{)|(?:\u000E<pre(?: [^>]*)?>\u000E))(.*)""")
 
   /** The end of a scaladoc code block */
   protected val CodeBlockEnd =
-    new Regex("""(.*)\}\}\}(.*)""")
+    new Regex("""(.*)((?:\}\}\})|(?:\u000E</pre>\u000E))(.*)""")
 
   /** A key used for a tag map. The key is built from the name of the tag and from the linked symbol if the tag has one.
     * Equality on tag keys is structural. */
@@ -246,28 +246,28 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       inCodeBlock: Boolean
     ): Comment = remaining match {
 
-      case CodeBlockStart(before, after) :: ls if (!inCodeBlock) =>
+      case CodeBlockStart(before, marker, after) :: ls if (!inCodeBlock) =>
         if (before.trim != "")
-          parse0(docBody, tags, lastTagKey, before :: ("{{{" + after) :: ls, false)
+          parse0(docBody, tags, lastTagKey, before :: (marker + after) :: ls, false)
         else if (after.trim != "")
-          parse0(docBody, tags, lastTagKey, "{{{" :: after :: ls, true)
+          parse0(docBody, tags, lastTagKey, marker :: after :: ls, true)
         else lastTagKey match {
           case Some(key) =>
             val value =
               ((tags get key): @unchecked) match {
-                case Some(b :: bs) => (b + endOfLine + "{{{") :: bs
+                case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
             parse0(docBody, tags + (key -> value), lastTagKey, ls, true)
           case None =>
-            parse0(docBody + endOfLine + "{{{", tags, lastTagKey, ls, true)
+            parse0(docBody + endOfLine + marker, tags, lastTagKey, ls, true)
         }
 
-      case CodeBlockEnd(before, after) :: ls =>
+      case CodeBlockEnd(before, marker, after) :: ls =>
         if (before.trim != "")
-          parse0(docBody, tags, lastTagKey, before :: ("}}}" + after) :: ls, true)
+          parse0(docBody, tags, lastTagKey, before :: (marker + after) :: ls, true)
         else if (after.trim != "")
-          parse0(docBody, tags, lastTagKey, "}}}" :: after :: ls, false)
+          parse0(docBody, tags, lastTagKey, marker :: after :: ls, false)
         else lastTagKey match {
           case Some(key) =>
             val value =
@@ -277,7 +277,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
               }
             parse0(docBody, tags + (key -> value), lastTagKey, ls, false)
           case None =>
-            parse0(docBody + endOfLine + "}}}", tags, lastTagKey, ls, false)
+            parse0(docBody + endOfLine + marker, tags, lastTagKey, ls, false)
         }
 
       case SymbolTag(name, sym, body) :: ls if (!inCodeBlock) =>
@@ -372,8 +372,9 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     *  - Removed start-of-line star and one whitespace afterwards (if present).
     *  - Removed all end-of-line whitespace.
     *  - Only `endOfLine` is used to mark line endings. */
-  def parseWiki(string: String, pos: Position): Body =
+  def parseWiki(string: String, pos: Position): Body = {
     new WikiParser(string.toArray, pos).document()
+  }
 
   /** TODO
     *
