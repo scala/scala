@@ -545,10 +545,10 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
           val current = inline0()
           (iss.last, current) match {
-            case (Text(t1), Text(t2)) =>
+            case (Text(t1), Text(t2)) if skipEndOfLine =>
               iss.update(iss.length - 1, Text(t1 + endOfLine + t2))
-            case (_, Text(t)) if skipEndOfLine =>
-              iss += Text(endOfLine + t)
+            case (i1, i2) if skipEndOfLine =>
+              iss ++= List(Text(endOfLine.toString), i2)
             case _ => iss += current
           }
         }
