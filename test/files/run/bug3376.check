@@ -1,0 +1,13 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+scala> defined class M
+
+scala> m1: M[Int] = mmm
+
+scala> m2: M[Float] = mmm
+
+scala> m3: M[String] = mmm
+
+scala> 

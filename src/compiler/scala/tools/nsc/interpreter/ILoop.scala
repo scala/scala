@@ -17,7 +17,7 @@ import scala.annotation.tailrec
 import scala.util.control.Exception.{ ignoring }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
-import util.{ ClassPath }
+import util.{ ClassPath, stringFromWriter, stringFromStream }
 import interpreter._
 import io.File
 
@@ -769,6 +769,26 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): IMain = repl.intp
+
+  /** Creates an interpreter loop with default settings and feeds
+   *  the given code to it as input.
+   */
+  def run(code: String): String = {
+    import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
+
+    stringFromStream { ostream =>
+      Console.withOut(ostream) {
+        val input    = new BufferedReader(new StringReader(code))
+        val output   = new PrintWriter(new OutputStreamWriter(ostream))
+        val repl     = new ILoop(input, output)
+        val settings = new Settings
+        settings.classpath.value = sys.props("java.class.path")
+
+        repl main settings
+      }
+    }
+  }
+  def run(lines: List[String]): String = run(lines map (_ + "\n") mkString)
 
   // provide the enclosing type T
   // in order to set up the interpreter's classpath and parent class loader properly
