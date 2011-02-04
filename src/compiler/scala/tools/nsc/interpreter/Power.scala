@@ -8,6 +8,7 @@ package interpreter
 
 import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.util.{ BatchSourceFile }
+import session.{ History }
 
 /** A class for methods to be injected into the intp in power mode.
  */

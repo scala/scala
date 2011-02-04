@@ -24,18 +24,18 @@ package scala.tools.nsc
  */
 package object interpreter {
   private[nsc] val DebugProperty = "scala.repl.debug"
+  private[nsc] val TraceProperty = "scala.repl.trace"
   private[nsc] val PowerProperty = "scala.repl.power"
-  private[nsc] var _debug = false
-  private[nsc] def isReplDebug = _debug || (sys.props contains DebugProperty)
+  private[nsc] var isReplDebug   = sys.props contains DebugProperty // Also set by -Yrepl-debug
 
   type JClass = java.lang.Class[_]
   private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
 
   /** Debug output */
-  def repldbg(msg: String) = if (isReplDebug) Console println msg
+  private[nsc] def repldbg(msg: String) = if (isReplDebug) Console println msg
 
   /** Tracing */
-  def tracing[T](msg: String)(x: T): T = {
+  private[nsc] def tracing[T](msg: String)(x: T): T = {
     if (isReplDebug)
       println("(" + msg + ") " + x)
 
@@ -46,7 +46,7 @@ package object interpreter {
     (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
 
   /** Class objects */
-  def classForName(name: String): Option[JClass] =
+  private[nsc] def classForName(name: String): Option[JClass] =
     try Some(Class forName name)
     catch { case _: ClassNotFoundException | _: SecurityException => None }
 }

@@ -9,6 +9,7 @@ package interpreter
 import java.io.IOException
 import java.nio.channels.ClosedByInterruptException
 import scala.util.control.Exception._
+import session.History
 import InteractiveReader._
 import Properties.isMac
 

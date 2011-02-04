@@ -10,8 +10,9 @@ import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader, PrintWriter }
 
 import scala.sys.process.Process
+import session._
 import scala.tools.nsc.interpreter.{ Results => IR }
-import scala.tools.util.{ SignalManager, Javap }
+import scala.tools.util.{ SignalManager, Signallable, Javap }
 import scala.annotation.tailrec
 import scala.util.control.Exception.{ ignoring }
 import scala.collection.mutable.ListBuffer
@@ -48,12 +49,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   def interpreter = intp
 
   @deprecated("Use `intp` instead.")
-  def interpreter_= (i: Interpreter){
-    intp = i
-  }
+  def interpreter_= (i: Interpreter): Unit = intp = i
+
+  def history = in.history
 
   /** The context class loader at the time this object was created */
   protected val originalClassLoader = Thread.currentThread.getContextClassLoader
+
+  // Install a signal handler so we can be prodded.
+  private val signallable =
+    if (isReplDebug) Signallable("Dump repl state.")(dumpCommand(""))
+    else null
 
   // classpath entries added via :cp
   var addedClasspath: String = ""
@@ -157,13 +163,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   /** Show the history */
   def printHistory(xs: List[String]): Result = {
-    if (in.history eq NoHistory)
+    if (history eq NoHistory)
       return "No history available."
 
     val defaultLines = 20
-    val current = in.history.index
+    val current = history.index
     val count   = try xs.head.toInt catch { case _: Exception => defaultLines }
-    val lines   = in.history.asStrings takeRight count
+    val lines   = history.asStrings takeRight count
     val offset  = current - lines.size + 1
 
     for ((line, index) <- lines.zipWithIndex)
@@ -178,9 +184,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   /** Search the history */
   def searchHistory(_cmdline: String) {
     val cmdline = _cmdline.toLowerCase
-    val offset  = in.history.index - in.history.size + 1
+    val offset  = history.index - history.size + 1
 
-    for ((line, index) <- in.history.asStrings.zipWithIndex ; if line.toLowerCase contains cmdline)
+    for ((line, index) <- history.asStrings.zipWithIndex ; if line.toLowerCase contains cmdline)
       println("%d %s".format(index + offset, line))
   }
 
@@ -211,11 +217,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   /** Power user commands */
   val powerCommands: List[LoopCommand] = {
     List(
-      NoArgs("dump", "displays a view of the interpreter's internal state", power.toString _),
+      LineArg("dump", "displays a view of the interpreter's internal state", dumpCommand),
       LineArg("phase", "set the implicit phase for power commands", phaseCommand),
       LineArg("symfilter", "change the filter for symbol printing", symfilterCmd),
       LineArg("wrap", "code to wrap around all executions", wrapCommand)
     )
+  }
+
+  private def dumpCommand(line: String): Result = {
+    println(power)
+    history.asStrings takeRight 30 foreach println
+    in.redrawLine()
   }
 
   private val typeTransforms = List(

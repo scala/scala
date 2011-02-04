@@ -22,9 +22,12 @@ object File {
 
   def apply(path: Path)(implicit codec: Codec) = new File(path.jfile)(codec)
 
-  // Create a temporary file
-  def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
-    apply(JFile.createTempFile(prefix, suffix, dir))
+  // Create a temporary file, which will be deleted upon jvm exit.
+  def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) = {
+    val jfile = JFile.createTempFile(prefix, suffix, dir)
+    jfile.deleteOnExit()
+    apply(jfile)
+  }
 
   type HasClose = { def close(): Unit }
 

@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package interpreter
 
-import java.util.{ List => JList }
 import Completion._
 
 /** An implementation-agnostic completion interface which makes no

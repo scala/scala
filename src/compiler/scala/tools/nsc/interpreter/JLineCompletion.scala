@@ -8,8 +8,6 @@ package interpreter
 
 import scala.tools.jline._
 import scala.tools.jline.console.completer._
-import java.util.{ List => JList }
-import util.returning
 import Completion._
 import collection.mutable.ListBuffer
 

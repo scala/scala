@@ -7,6 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 import java.io.{ BufferedReader, PrintWriter }
+import session.NoHistory
 
 /** Reads using standard JDK API */
 class SimpleReader(
