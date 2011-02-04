@@ -208,12 +208,24 @@ self =>
   var moreWorkAtNode: Int = -1
   var nodesSeen = 0
 
+  /** The number of pollForWorks after which the presentation compiler yields.
+   *  Yielding improves responsiveness on systems with few cores because it
+   *  gives the UI thread a chance to get new tasks and interrupt the presentation
+   *  compiler with them.
+   */
+  final val yieldPeriod = 8
+
   /** Called from runner thread and signalDone:
    *  Poll for interrupts and execute them immediately.
    *  Then, poll for exceptions and execute them.
    *  Then, poll for work reload/typedTreeAt/doFirst commands during background checking.
+   *  @param pos   The position of the tree if polling while typechecking, NoPosition otherwise
+   *
    */
   def pollForWork(pos: Position) {
+    if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
+      Thread.`yield`()
+
     def nodeWithWork(): Option[WorkEvent] =
       if (scheduler.moreWork || pendingResponse.isCancelled) Some(new WorkEvent(nodesSeen, System.currentTimeMillis))
       else None
