@@ -42,30 +42,33 @@ trait PartestRunner {
   lazy val jvmFilesTest          = TestSet(Std,"jvm", "Compiling and running files", testFiles / "jvm" *("*.scala" || DirectoryFilter))
   lazy val resFilesTest          = TestSet(Std,"res", "Running resident compiler scenarii", testFiles / "res" * ("*.res"))
   lazy val buildmanagerFilesTest = TestSet(Std,"buildmanager", "Running Build Manager scenarii", testFiles / "buildmanager" * DirectoryFilter)
-  lazy val scalacheckFilesTest   = TestSet(Std,"scalacheck", "Running scalacheck tests", testFiles / "scalacheck" * ("*.scala" || DirectoryFilter))
+  // lazy val scalacheckFilesTest   = TestSet(Std,"scalacheck", "Running scalacheck tests", testFiles / "scalacheck" * ("*.scala" || DirectoryFilter))
   lazy val scriptFilesTest       = TestSet(Std,"script", "Running script files", testFiles / "script" * ("*.scala"))
   lazy val shootoutFilesTest     = TestSet(Std,"shootout", "Running shootout tests", testFiles / "shootout" * ("*.scala"))
   lazy val scalapFilesTest       = TestSet(Std,"scalap", "Running scalap tests", testFiles / "scalap" * ("*.scala"))
   lazy val specializedFilesTest  = TestSet(Std,"specialized", "Running specialized tests", testFiles / "specialized" * ("*.scala"))
 
-  lazy val negContinuationTest = TestSet(Continuations,"neg", "Compiling continuations files that are expected to fail", testFiles / "continuations-neg" * ("*.scala" || DirectoryFilter))
-  lazy val runContinuationTest = TestSet(Continuations,"run", "Compiling and running continuations files", testFiles / "continuations-run" ** ("*.scala" ))
-
-  lazy val continuationScalaOpts = (
-    "-Xpluginsdir " +
-    continuationPluginConfig.packagingConfig.jarDestination.asFile.getParent +
-    " -Xplugin-require:continuations -P:continuations:enable"
-  )
+  // lazy val negContinuationTest = TestSet(Continuations,"neg", "Compiling continuations files that are expected to fail", testFiles / "continuations-neg" * ("*.scala" || DirectoryFilter))
+  // lazy val runContinuationTest = TestSet(Continuations,"run", "Compiling and running continuations files", testFiles / "continuations-run" ** ("*.scala" ))
+  //
+  // lazy val continuationScalaOpts = (
+  //   "-Xpluginsdir " +
+  //   continuationPluginConfig.packagingConfig.jarDestination.asFile.getParent +
+  //   " -Xplugin-require:continuations -P:continuations:enable"
+  // )
 
   lazy val testSuiteFiles: List[TestSet] = List(
     posFilesTest, negFilesTest, runFilesTest, jvmFilesTest, resFilesTest,
-    buildmanagerFilesTest, scalacheckFilesTest, shootoutFilesTest, scalapFilesTest,
+    buildmanagerFilesTest,
+    //scalacheckFilesTest,
+    shootoutFilesTest, scalapFilesTest,
     specializedFilesTest
   )
-  lazy val testSuiteContinuation: List[TestSet] = List(negContinuationTest, runContinuationTest)
+  lazy val testSuiteContinuation: List[TestSet] = Nil // List(negContinuationTest, runContinuationTest)
 
   private lazy val filesTestMap: Map[String, TestSet] =
-    Map(testSuiteFiles.map(s => (s.kind,s) ):_*)+ (("continuations-neg",negContinuationTest),("continuations-run", runContinuationTest))
+    Map(testSuiteFiles.map(s => (s.kind,s) ):_*)
+    // + (("continuations-neg",negContinuationTest),("continuations-run", runContinuationTest))
 
   private lazy val partestOptions = List("-failed")
 
@@ -171,10 +174,8 @@ trait PartestRunner {
 
     val keys = setOptions(args.toList, Nil)
 
-    if (keys.length == 0) task {
-      runPartest(testSuiteFiles, None, failedOnly) orElse {
-        runPartest(testSuiteContinuation, None, failedOnly)
-      } // this is the case where there were only config options, we will run the standard test suite
+    if (keys.isEmpty) {
+      task { runPartest(testSuiteFiles, None, failedOnly) }
     }
     else {
       val (fileNames, sets)   = resolveSets(keys, Nil, Nil)
@@ -182,13 +183,26 @@ trait PartestRunner {
       if (!notFound.isEmpty)
         log.info("Don't know what to do with : \n"+notFound.mkString("\n"))
 
-      val (std, continuations) = allSets partition (_.SType == TestSetType.Std)
-      task {
-        runPartest(std, None, failedOnly) orElse {
-          runPartest(continuations, Some(continuationScalaOpts), failedOnly)
-        }
-      }
+      task { runPartest(allSets, None, failedOnly) }
     }
+    // if (keys.length == 0) task {
+    //   runPartest(testSuiteFiles, None, failedOnly) orElse {
+    //     runPartest(testSuiteContinuation, None, failedOnly)
+    //   } // this is the case where there were only config options, we will run the standard test suite
+    // }
+    // else {
+    //   val (fileNames, sets)   = resolveSets(keys, Nil, Nil)
+    //   val (notFound, allSets) = resolveFiles(fileNames, sets)
+    //   if (!notFound.isEmpty)
+    //     log.info("Don't know what to do with : \n"+notFound.mkString("\n"))
+    //
+    //   val (std, continuations) = allSets partition (_.SType == TestSetType.Std)
+    //   task {
+    //     runPartest(std, None, failedOnly) orElse {
+    //       runPartest(continuations, Some(continuationScalaOpts), failedOnly)
+    //     }
+    //   }
+    // }
   }.completeWith(partestCompletionList)
 
 }
