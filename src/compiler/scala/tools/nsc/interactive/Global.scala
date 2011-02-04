@@ -328,6 +328,7 @@ self =>
     allSources = allSources filter (s => unitOfFile contains (s.file))
 
     for (s <- allSources; unit <- getUnit(s)) {
+      pollForWork(NoPosition)
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
       if (unit.status == NotLoaded) parseAndEnter(unit)
     }
