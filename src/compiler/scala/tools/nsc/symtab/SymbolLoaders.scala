@@ -188,8 +188,10 @@ abstract class SymbolLoaders {
       for (classRep <- classpath.classes if doLoad(classRep)) {
         ((classRep.binary, classRep.source) : @unchecked) match {
           case (Some(bin), Some(src)) if needCompile(bin, src) =>
+            if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
             enterToplevelsFromSource(root, classRep.name, src)
           case (None, Some(src)) =>
+            if (settings.verbose.value) inform("[symloader] no class, picked up source file for " + src.path)
             enterToplevelsFromSource(root, classRep.name, src)
           case (Some(bin), _) =>
             enterClassAndModule(root, classRep.name, newClassLoader(bin))
