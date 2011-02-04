@@ -3810,7 +3810,9 @@ A type's typeSymbol should never be inspected directly.
       } else if (sym.isModuleClass) {
         val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
         // Handle nested objects properly
-        if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
+        val result = if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
+        assert(result != NoSymbol, sym+" "+adaptedSym+" "+adaptedSym.isLazy)
+        result
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
