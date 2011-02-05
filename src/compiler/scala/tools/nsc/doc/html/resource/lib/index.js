@@ -35,18 +35,7 @@ $(document).ready(function() {
     scheduler = new Scheduler();
     scheduler.addLabel("init", 1);
     scheduler.addLabel("focus", 2);
-    scheduler.addLabel("kind", 3);
     scheduler.addLabel("filter", 4);
-
-    scheduler.addForAll = function(labelName, elems, fn) {
-        var idx = 0;
-        var elem = undefined;
-        while (idx < elems.length) {
-            elem = elems[idx];
-            scheduler.add(labelName, function(elem0) { fn(elem0); }, undefined, [elem]);
-            idx = idx + 1;
-        }
-    }
 
     prepareEntityList();
 
@@ -59,16 +48,6 @@ $(document).ready(function() {
 var Index = {};
 
 (function (ns) {
-    function toId(name) {
-        return name.replace(/[^A-Za-z0-9-]/g, function (str) {
-            return '-' + str.charCodeAt(0);
-        });
-    }
-
-    ns.idOfPackage = function (name) {
-        return 'package-' + toId(name);
-    }
-
     function openLink(t, type) {
         var href;
         if (type == 'object') {
@@ -87,7 +66,20 @@ var Index = {};
         ].join('');
     }
 
-    ns.createListItem = function (template) {
+    function createPackageHeader(pack) {
+        return [
+            '<li class="pack">',
+            '<a class="packfocus">focus</a><a class="packhide">hide</a>',
+            '<h3>',
+            '<a class="tplshow" target="template" href="',
+            pack.replace(/\./g, '/'),
+            '/package.html">',
+            pack,
+            '</a></h3></li>'
+        ].join('');
+    };
+
+    function createListItem(template) {
         var inner = '';
 
 
@@ -111,6 +103,76 @@ var Index = {};
             '</span></a></li>'
         ].join('');
     }
+
+
+    ns.createPackageTree = function (pack, matched, focused) {
+        var html = $.map(matched, function (child, i) {
+            return createListItem(child);
+        }).join('');
+
+        var header;
+        if (focused && pack == focused) {
+            header = '';
+        } else {
+            header = createPackageHeader(pack);
+        }
+
+        return [
+            '<ol class="packages">',
+            header,
+            '<ol class="templates">',
+            html,
+            '</ol></ol>'
+        ].join('');
+    }
+
+    ns.keys = function (obj) {
+        var result = [];
+        var key;
+        for (key in obj) {
+            result.push(key);
+        }
+        return result;
+    }
+
+    var hiddenPackages = {};
+
+    function subPackages(pack) {
+        return $.grep($('#tpl ol.packages'), function (element, index) {
+            var pack = $('h3', element).text();
+            return pack.indexOf(pack + '.') == 0;
+        });
+    }
+
+    ns.hidePackage = function (ol) {
+        var selected = $('h3', ol).text();
+        hiddenPackages[selected] = true;
+
+        $('ol.templates', ol).hide();
+
+        $.each(subPackages(selected), function (index, element) {
+            $(element).hide();
+        });
+    }
+
+    ns.showPackage = function (ol, state) {
+        var selected = $('h3', ol).text();
+        hiddenPackages[selected] = false;
+
+        $('ol.templates', ol).show();
+
+        $.each(subPackages(selected), function (index, element) {
+            $(element).show();
+
+            // When the filter is in "packs" state,
+            // we don't want to show the `.templates`
+            var key = $('h3', element).text();
+            if (hiddenPackages[key] || state == 'packs') {
+                $('ol.templates', element).hide();
+            }
+        });
+    }
+
 })(Index);
 
 function configureEntityList() {
@@ -169,42 +231,60 @@ function configureTextFilter() {
 //   @param query The string of the query
 function textFilter() {
     scheduler.clear("filter");
-    scheduler.add("filter", function() {
-        var query = $("#textfilter input").attr("value")
-        var queryRegExp;
-        if (query.toLowerCase() != query) {
-            // Regexp that matches CamelCase subbits: "BiSe" is
-            // "[a-z]*Bi[a-z]*Se" and matches "BitSet", "ABitSet", ...
-            queryRegExp = new RegExp(query.replace(/([A-Z])/g,"[a-z]*$1"));
-        }
-        else { // if query is all lower case make a normal case insensitive search
-            queryRegExp = new RegExp(query, "i");
-        }
 
-        $.each(Index.PACKAGES, function (package, children) {
+    $('#tpl').html('');
+
+    var query = $("#textfilter input").attr("value") || '';
+
+    var queryRegExp;
+    if (query.toLowerCase() != query) {
+        // Regexp that matches CamelCase subbits: "BiSe" is
+        // "[a-z]*Bi[a-z]*Se" and matches "BitSet", "ABitSet", ...
+        queryRegExp = new RegExp(query.replace(/([A-Z])/g,"[a-z]*$1"));
+    }
+    else { // if query is all lower case make a normal case insensitive search
+        queryRegExp = new RegExp(query, "i");
+    }
+
+
+    var index = 0;
+
+    var searchLoop = function () {
+        var packages = Index.keys(Index.PACKAGES).sort();
+
+        while (packages[index]) {
+            var pack = packages[index];
+            var children = Index.PACKAGES[pack];
+            index++;
+
+            if (focusFilterState) {
+                if (pack == focusFilterState ||
+                    pack.indexOf(focusFilterState + '.') == 0) {
+                    ;
+                } else {
+                    continue;
+                }
+            }
+
             var matched = $.grep(children, function (child, i) {
                 return queryRegExp.test(child.name);
             });
 
-            var pack = $('#' + Index.idOfPackage(package));
-            if (matched.length == 0) {
-                $("> h3", pack).hide();
-                $("> .packhide", pack).hide();
-                $("> .packfocus", pack).hide();
-                $("> .templates", pack).html('');
+            if (matched.length > 0) {
+                $('#tpl').append(Index.createPackageTree(pack, matched,
+                                                         focusFilterState));
+                scheduler.add('filter', searchLoop);
                 return;
             }
+        }
 
-            var html = $.map(matched, function (child, i) {
-                return Index.createListItem(child);
-            }).join('');
-            $("> h3", pack).show();
-            $("> .templates", pack).html(html);
-            if(kindFilterState=="all") $("> .templates", pack).show();
-            $("> .packhide", pack).show();
-            $("> .packfocus", pack).show();
+        $('#tpl a.packfocus').click(function () {
+            focusFilter($(this).parent().parent());
         });
-    });
+        configureHideFilter();
+    };
+    
+    scheduler.add('filter', searchLoop);
 }
 
 /* Configures the hide tool by adding the hide link to all packages. */
@@ -212,14 +292,15 @@ function configureHideFilter() {
     $('#tpl li.pack a.packhide').click(function () {
         var packhide = $(this)
         var action = packhide.text();
+
+        var ol = $(this).parent().parent();
+
         if (action == "hide") {
-            $("~ ol", packhide).hide();
+            Index.hidePackage(ol);
             packhide.text("show");
         }
         else {
-            // When the filter is in "packs" state, we don't want to show the `.templates`, only `.packages`
-            var selector = kindFilterState=="packs" ? "~ ol.packages" : "~ ol"
-            $(selector, packhide).show();
+            Index.showPackage(ol, kindFilterState);
             packhide.text("hide");
         }
         return false;
@@ -234,18 +315,12 @@ function configureFocusFilter() {
         if ($("#focusfilter").length == 0) {
             $("#filter").append("<div id='focusfilter'>focused on <span class='focuscoll'></span> <a class='focusremove'><img class='icon' src='lib/remove.png'/></a></div>");
             $("#focusfilter > .focusremove").click(function(event) {
-                scheduler.clear("filter");
-                scheduler.add("focus", function() {
-                    $("#tpl > ol.templates").replaceWith(topLevelTemplates.clone());
-                    topLevelTemplates = undefined;
-                    $("#tpl > ol.packages").replaceWith(topLevelPackages.clone());
-                    topLevelPackages = undefined;
-                    $("#focusfilter").hide();
-                    $("#kindfilter").show();
-                    resizeFilterBlock();
-                    focusFilterState = null;
-                    configureEntityList();
-                });
+                textFilter();
+
+                $("#focusfilter").hide();
+                $("#kindfilter").show();
+                resizeFilterBlock();
+                focusFilterState = null;
             });
             $("#focusfilter").hide();
             resizeFilterBlock();
@@ -263,29 +338,19 @@ function configureFocusFilter() {
    focuses package into the top-level templates and packages position of the index. The original top-level
      @param package The <li> element that corresponds to the package in the entity index */
 function focusFilter(package) {
-    scheduler.add("focus", function() {
-        scheduler.clear("filter");
-        var currentFocus = package.attr("title");
-        $("#focusfilter > .focuscoll").empty();
-        $("#focusfilter > .focuscoll").append(currentFocus);
+    scheduler.clear("filter");
 
-        if (! topLevelTemplates) {
-            topLevelTemplates = $("#tpl > ol.templates").clone();
-        }
-        if (! topLevelPackages) {
-            topLevelPackages = $("#tpl > ol.packages").clone();
-        }
+    var currentFocus = $('h3', package).text();
+    $("#focusfilter > .focuscoll").empty();
+    $("#focusfilter > .focuscoll").append(currentFocus);
 
-        var packTemplates = $("> ol.templates", package);
-        var packPackages = $("> ol.packages", package);
-        $("#tpl > ol.templates").replaceWith(packTemplates);
-        $("#tpl > ol.packages").replaceWith(packPackages);
-        $("#focusfilter").show();
-        $("#kindfilter").hide();
-        resizeFilterBlock();
-        focusFilterState = package;
-        kindFilterSync();
-    });
+    $("#focusfilter").show();
+    $("#kindfilter").hide();
+    resizeFilterBlock();
+    focusFilterState = currentFocus;
+    kindFilterSync();
+
+    textFilter();
 }
 
 function configureKindFilter() {
@@ -314,16 +379,10 @@ function kindFilter(kind) {
 
 /* Applies the kind filter. */
 function kindFilterSync() {
-    scheduler.add("kind", function () {
-        if (kindFilterState == "all" || focusFilterState != null)
-            scheduler.add("kind", function() {
-                $("#tpl h3 + ol.templates").show();
-            });
-        else
-            scheduler.add("kind", function() {
-                $("#tpl h3 + ol.templates").hide();
-            });
-    });
+    if (kindFilterState == "all" || focusFilterState != null)
+        $("#tpl ol.templates").show();
+    else
+        $("#tpl ol.templates").hide();
 }
 
 function resizeFilterBlock() {

@@ -80,7 +80,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
         def packageElem(pack: model.Package): NodeSeq = {
           <xml:group>
             { if (!pack.isRootPackage)
-                <h3><a class="tplshow" href={ relativeLinkTo(pack) }>{ pack.qualifiedName }</a></h3>
+                <h3><a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a></h3>
               else NodeSeq.Empty
             }
             <ol class="templates">{
@@ -96,7 +96,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
                   ++
                   { if (includeText) <span class="tplLink">{ Text(packageQualifiedName(entity)) }</span> else NodeSeq.Empty }
                 )
-                <a class="tplshow" href={ relativeLinkTo(entity) }><span class={ entityType }>({ Text(entityType) })</span>{ linkContent }</a>
+                <a class="tplshow" href={ relativeLinkTo(entity) } target="template"><span class={ entityType }>({ Text(entityType) })</span>{ linkContent }</a>
               }
 
               for (tn <- tpls.keySet.toSeq sortBy (_.toLowerCase)) yield {
@@ -124,9 +124,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
             }</ol>
             <ol class="packages"> {
               for (sp <- pack.packages sortBy (_.name.toLowerCase)) yield
-                <li id={
-                  "package-" + toId(sp.qualifiedName)
-                } class="pack" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
+                <li class="pack" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
             }</ol>
           </xml:group>
         }
@@ -134,13 +132,6 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
       }</div></div>{ scriptElement }
     </div>
     </xml:group>
-
-  def toId(str: String) = {
-    val pattern = "[^A-Za-z0-9-]".r
-    pattern.replaceSomeIn(str, (m: scala.util.matching.Regex.Match) => {
-      Some("-" + m.group(0).charAt(0).toInt)
-    })
-  }
 
   def mergeByQualifiedName(source: List[DocTemplateEntity]): Map[String, List[DocTemplateEntity]]= {
     var result = Map[String, List[DocTemplateEntity]]()
