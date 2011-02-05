@@ -60,24 +60,5 @@ object AA
   def foo[T](x: T) = { object A; false }
 }
 
-// issue 3292
-import scala.swing._
-import scala.swing.GridBagPanel._
-
-object Grid {
-
-  def later(code : => Unit) =
-    javax.swing.SwingUtilities.invokeLater(new Runnable { def run { code }})
-
-  def test = later {
-    val frame = new Dialog {
-      contents = new GridBagPanel {
-        val c = new Constraints
-      }
-    }
-  }
-
-}
-
 // issue 3325
 object O { def f[@specialized T] { for(k <- Nil: List[T]) { } } }
