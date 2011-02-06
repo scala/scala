@@ -137,7 +137,7 @@ askTypeCompletion at Tester.scala(27,23)
 
 ================================================================================
 [response] aksTypeCompletion at (27,23)
-retreived 196 members
+retreived 197 members
 TypeMember(method $asInstanceOf,[T0]()T0,true,false,method any2stringadd)
 TypeMember(method !=,(x$1: AnyRef)Boolean,true,false,method any2stringadd)
 TypeMember(method !=,(x$1: Any)Boolean,true,false,method any2stringadd)
@@ -220,6 +220,7 @@ TypeMember(value Yrecursion,=> Tester.this.settings.IntSetting,true,true,<none>)
 TypeMember(value Yrepldebug,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value YrichExes,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value Yshow,=> Tester.this.settings.PhasesSetting,true,true,<none>)
+TypeMember(value Yshowsyms,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value Ystatistics,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value Ytyperdebug,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value YvirtClasses,=> Boolean,true,true,<none>)
