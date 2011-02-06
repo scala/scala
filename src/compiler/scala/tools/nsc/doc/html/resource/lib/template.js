@@ -36,6 +36,7 @@ $(document).ready(function(){
     });
     $("#ancestors > ol > li.hideall").click(function() {
         $("#ancestors > ol > li.in").removeClass("in").addClass("out");
+        $("#linearization li:first").removeClass("out").addClass("in");
         filter();
     })
     $("#ancestors > ol > li.showall").click(function() {
