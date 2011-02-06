@@ -16,7 +16,7 @@ import reporters.{ Reporter, ConsoleReporter }
 import util.{ Exceptional, ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
 import reflect.generic.{ PickleBuffer, PickleFormat }
 
-import symtab.{ Flags, SymbolTable, SymbolLoaders }
+import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
 import dependencies.DependencyAnalysis
 import plugins.Plugins
@@ -249,6 +249,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def profileMem      = settings.YprofileMem.value
     def richExes        = settings.YrichExes.value
     def showTrees       = settings.Xshowtrees.value
+    def showSymbols     = settings.Yshowsyms.value
     def target          = settings.target.value
     def typerDebug      = settings.Ytyperdebug.value
     def unchecked       = settings.unchecked.value
@@ -854,6 +855,21 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     // If -Yprofile isn't given this will never be triggered.
     lazy val profiler = Class.forName(opt.profileClass).newInstance().asInstanceOf[Profiling]
 
+    // Similarly, this will only be created under -Yshow-syms.
+    object trackerFactory extends SymbolTrackers {
+      val global: Global.this.type = Global.this
+      lazy val trackers = currentRun.units.toList map (x => SymbolTracker(x))
+      def snapshot() = {
+        inform("\n[[symbol layout at end of " + phase + "]]")
+        atPhase(phase.next) {
+          trackers foreach { t =>
+            t.snapshot()
+            inform(t.show())
+          }
+        }
+      }
+    }
+
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val depSources = dependencyAnalysis.calculateFiles(_sources.distinct) // bug #1268, scalac confused by duplicated filenames
@@ -898,6 +914,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           if (opt.showTrees) nodePrinters.printAll()
           else printAllUnits()
         }
+        // print the symbols presently attached to AST nodes
+        if (opt.showSymbols)
+          trackerFactory.snapshot()
+
         // print members
         if (opt.showPhase)
           showMembers()

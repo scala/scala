@@ -120,6 +120,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Yrecursion    = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some(0, Int.MaxValue), (_: String) => None)
   val selfInAnnots  = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations.")
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs.")
+  val Yshowsyms     = BooleanSetting    ("-Yshow-syms", "Print the AST symbol hierarchy after each phase.")
   val skip          = PhasesSetting     ("-Yskip", "Skip")
   val Ynosqueeze    = BooleanSetting    ("-Yno-squeeze", "Disable creation of compact code in matching.")
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics.") .
