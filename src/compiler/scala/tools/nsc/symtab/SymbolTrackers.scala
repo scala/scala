@@ -31,7 +31,8 @@ trait SymbolTrackers {
   case class Change(
     added: Set[Symbol],
     removed: Set[Symbol],
-    changedOwner: Map[Symbol, Symbol]
+    owners: Map[Symbol, Symbol],  // symbol -> previous owner
+    flags: Map[Symbol, Long]      // symbol -> previous flags
   )
 
   object SymbolTracker {
@@ -47,19 +48,22 @@ trait SymbolTrackers {
   }
 
   class SymbolTracker(sourceFn: () => Set[Symbol]) {
-    private var history    = List[Change]()
+    def flagsMask: Long = Flags.PrintableFlags
+
+    private var current    = Set[Symbol]()
+    private var history    = List[Change](Change(Set(), Set(), Map(), Map()))
     private var prev       = Set[Symbol]()
+    private var prevFlags  = Map[Symbol, Long]()
     private var prevOwners = Map[Symbol, Symbol]()
-    private def changedOwner(sym: Symbol) = prevOwners get sym filter (_ != sym.owner)
-    private def changedOwnerString(sym: Symbol) = changedOwner(sym) match {
-      case Some(prev) => "[Owner changed: was " + ownersString(sym, 2) + "]"
-      case _          => ""
-    }
+
+    private def changed                    = history.head
+    private def isAdded(sym: Symbol)       = changed added sym
+    private def isOwnerChange(sym: Symbol) = changed.owners contains sym
+    private def isFlagsChange(sym: Symbol) = changed.flags contains sym
+
     private implicit def NodeOrdering: Ordering[Node] = Ordering by (_.root)
     private def ownersString(sym: Symbol, num: Int) = sym.ownerChain drop 1 take num mkString " -> "
-    private def allOwnersString(sym: Symbol) = sym.ownerChain mkString " -> "
-    private def isAdded(sym: Symbol) = history.nonEmpty && history.head.added(sym)
-    private def isOwnerChange(sym: Symbol) = history.nonEmpty && (history.head.changedOwner contains sym)
+    private def allOwnersString(sym: Symbol)        = sym.ownerChain mkString " -> "
 
     object Node {
       def nodes(syms: Set[Symbol]): List[Node] = {
@@ -80,11 +84,43 @@ trait SymbolTrackers {
       }
     }
     class Node(val root: Symbol, val children: List[Hierarchy]) extends Hierarchy {
-      def indicatorString = if (isAdded(root)) "* " else "  "
+      def masked = root.flags & flagsMask
+      def indicatorString =
+        if (isAdded(root)) "* "
+        else List(
+          if (isFlagsChange(root)) "F" else "",
+          if (isOwnerChange(root)) "O" else "",
+          "  "
+        ).mkString take 2
 
+      def changedOwnerString = changed.owners get root match {
+        case Some(prev) => " [Owner was " + prev + ", now " + root.owner + "]"
+        case _          => ""
+      }
+      def flagSummaryString = changed.flags get root match {
+        case Some(oldFlags) =>
+          val added   = masked & ~oldFlags
+          val removed = oldFlags & ~masked
+          val steady  = masked & ~(added | removed)
+          val all     = masked | oldFlags
+          val strs    = 0 to 63 map { bit =>
+            val flag = 1L << bit
+            val prefix = (
+              if ((added & flag) != 0L) "+"
+              else if ((removed & flag) != 0L) "-"
+              else ""
+            )
+            if ((all & flag) == 0L) ""
+            else prefix + Flags.flagToString(flag)
+          }
+
+          " " + strs.filterNot(_ == "").mkString("[", " ", "]")
+        case _ =>
+          if (masked == 0L) ""
+          else " " + Flags.flagsToString(masked)
+      }
       def symString(sym: Symbol) = (
-        sym + changedOwnerString(sym) + " " +
-        sym.hasFlagsToString(Flags.PrintableFlags)
+        sym + changedOwnerString + flagSummaryString
       )
 
       def flatten = children.foldLeft(Set(root))(_ ++ _.flatten)
@@ -101,24 +137,36 @@ trait SymbolTrackers {
     }
 
     def snapshot(): Unit = {
-      val syms    = sourceFn()
-      val added   = syms filterNot prev
-      val removed = prev filterNot syms
-      val changed = ({
-        for (sym <- prev intersect syms; old <- changedOwner(sym)) yield
+      current = sourceFn()
+
+      val added   = current filterNot prev
+      val removed = prev filterNot current
+      val steady  = prev intersect current
+
+      def changedOwner(sym: Symbol) = prevOwners get sym filter (_ != sym.owner)
+      def changedFlags(sym: Symbol) = prevFlags get sym filter (_ != (sym.flags & flagsMask))
+
+      val owners = ({
+        for (sym <- steady; old <- changedOwner(sym)) yield
+          (sym, old)
+      }).toMap
+      val flags = ({
+        for (sym <- steady; old <- changedFlags(sym)) yield
           (sym, old)
       }).toMap
 
-      val change = Change(added, removed, changed)
-      prev       = syms
-      prevOwners = syms map (s => (s, s.owner)) toMap;
+      val change = Change(added, removed, owners, flags)
+
+      prev       = current
+      prevOwners = current map (s => (s, s.owner)) toMap;
+      prevFlags  = current map (s => (s, (s.flags & flagsMask))) toMap;
       history    = change :: history
     }
     def show(): String = {
-      val hierarchy = Node(sourceFn())
-      val removed   = if (history.isEmpty) Set() else history.head.removed
+      val hierarchy = Node(current)
+      val removed   = history.head.removed
 
-      hierarchy.toString() + (
+      "" + hierarchy + (
         if (removed.isEmpty) ""
         else removed map allOwnersString mkString (
           "\n\n!!! " + removed.size + " symbols vanished:\n", "\n", ""

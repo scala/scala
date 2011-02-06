@@ -612,10 +612,6 @@ trait Namers { self: Analyzer =>
      *  value should not be widened, so it has a use even in situations
      *  whether it is otherwise redundant (such as in a singleton.)
      *  Locally defined symbols are also excluded from widening.
-     *
-     *  PP:is there a useful difference in practice between widen
-     *  and deconst which wouldn't be achieved by simply calling widen
-     *  in both situations? If so, could an example of this be added?
      */
     private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
