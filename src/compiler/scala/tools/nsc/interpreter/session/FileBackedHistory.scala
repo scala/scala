@@ -65,7 +65,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     historyFile.writeAll(lines: _*)
   }
 
-  def load() = {
+  def load(): Unit = {
     val lines = historyFile.lines().toIndexedSeq
     repldbg("Loading " + lines.size + " into history.")
 
@@ -76,6 +76,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
       repldbg("File exceeds maximum size: truncating to " + maxSize + " entries.")
       sync()
     }
+    moveToEnd()
   }
   def flush(): Unit = {
     val toAppend = drainBufferFile()
