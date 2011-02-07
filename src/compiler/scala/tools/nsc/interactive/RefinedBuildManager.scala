@@ -101,7 +101,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   private def update(files: Set[AbstractFile]) = {
     val coll: mutable.Map[AbstractFile, immutable.Set[AbstractFile]] =
         mutable.HashMap[AbstractFile, immutable.Set[AbstractFile]]()
-    compiler.reporter.reset
+    compiler.reporter.reset()
 
     // See if we really have corresponding symbols, not just those
     // which share the name

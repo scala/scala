@@ -26,6 +26,7 @@ class Global(settings: Settings, reporter: Reporter)
      with RangePositions
      with ContextTrees
      with RichCompilationUnits
+     with Reporters
      with Picklers {
 self =>
 
@@ -373,6 +374,7 @@ self =>
     unit.toCheck.clear()
     unit.targetPos = NoPosition
     unit.contexts.clear()
+    unit.problems.clear()
     unit.body = EmptyTree
     unit.status = NotLoaded
   }

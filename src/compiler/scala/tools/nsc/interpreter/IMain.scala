@@ -448,7 +448,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
       // simple parse: just parse it, nothing else
       def simpleParse(code: String): List[Tree] = {
-        reporter.reset
+        reporter.reset()
         val unit = new CompilationUnit(new BatchSourceFile("<console>", code))
         val scanner = new syntaxAnalyzer.UnitParser(unit)
 
@@ -475,7 +475,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *  no compilation errors, or false otherwise.
    */
   def compileSources(sources: SourceFile*): Boolean = {
-    reporter.reset
+    reporter.reset()
     new Run() compileSources sources.toList
     !reporter.hasErrors
   }
@@ -693,7 +693,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     }
     private def compileAndSaveRun(label: String, code: String) = {
       showCodeIfDebugging(code)
-      reporter.reset
+      reporter.reset()
       lastRun = new Run()
       lastRun.compileSources(List(new BatchSourceFile(label, packaged(code))))
       !reporter.hasErrors
@@ -804,7 +804,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
      *  If all goes well, the "types" map is computed. */
     lazy val compile: Boolean = {
       // error counting is wrong, hence interpreter may overlook failure - so we reset
-      reporter.reset
+      reporter.reset()
 
       // compile the object containing the user's code
       lineRep.compile(ObjectSourceCode(handlers)) && {

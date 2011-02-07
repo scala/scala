@@ -878,7 +878,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         return
 
       val startTime = currentTime
-      reporter.reset
+      reporter.reset()
       for (source <- sources) addUnit(new CompilationUnit(source))
 
       globalPhase = firstPhase

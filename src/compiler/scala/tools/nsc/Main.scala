@@ -34,7 +34,7 @@ object Main extends AnyRef with EvalLoop {
     loop { line =>
       val args = line.split(' ').toList
       val command = new CompilerCommand(args, new Settings(scalacError))
-      compiler.reporter.reset
+      compiler.reporter.reset()
       new compiler.Run() compile command.files
     }
   }
@@ -59,7 +59,7 @@ object Main extends AnyRef with EvalLoop {
 
       reloaded.get.right.toOption match {
         case Some(ex) => reporter.cancelled = true // Causes exit code to be non-0
-        case None => reporter.reset // Causes other compiler errors to be ignored
+        case None => reporter.reset() // Causes other compiler errors to be ignored
       }
       askShutdown
     }
