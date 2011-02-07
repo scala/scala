@@ -38,12 +38,12 @@ body {
   font-size: 10pt;
 }
 
-a {
+a[href] {
   text-decoration: underline;
   color: #69481D; /* brown */
 }
 
-a:hover {
+a[href]:hover {
   text-decoration: none;
 }
 
@@ -328,6 +328,10 @@ div.members > ol > li {
 
 .cmt em, .cmt i {
   font-style: italic;
+}
+
+.cmt strong, .cmt b {
+  font-weight: bold;
 }
 
 /* Comments structured layout */
