@@ -1,0 +1,18 @@
+Arguments: ''
+public class Bippy extends java.lang.Object implements scala.ScalaObject{
+public scala.collection.immutable.List f(scala.collection.immutable.List);
+public Bippy();
+Arguments: '-v'
+public class Bippy extends java.lang.Object implements scala.ScalaObject
+public #28= #25 of #27; //Bippy=class Bippy of class
+public scala.collection.immutable.List f(scala.collection.immutable.List);
+public Bippy();
+Arguments: '-s'
+public class Bippy extends java.lang.Object implements scala.ScalaObject{
+public scala.collection.immutable.List f(scala.collection.immutable.List);
+public Bippy();
+Arguments: '-private'
+public class Bippy extends java.lang.Object implements scala.ScalaObject{
+private int privateMethod();
+public scala.collection.immutable.List f(scala.collection.immutable.List);
+public Bippy();

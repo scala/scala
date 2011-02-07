@@ -23,12 +23,13 @@ package scala.tools.nsc
  *  IMain contains { global: Global }
  */
 package object interpreter {
+  type JClass = java.lang.Class[_]
+
   private[nsc] val DebugProperty = "scala.repl.debug"
   private[nsc] val TraceProperty = "scala.repl.trace"
   private[nsc] val PowerProperty = "scala.repl.power"
   private[nsc] var isReplDebug   = sys.props contains DebugProperty // Also set by -Yrepl-debug
 
-  type JClass = java.lang.Class[_]
   private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
 
   /** Debug output */
@@ -42,6 +43,7 @@ package object interpreter {
     x
   }
 
+  private[nsc] def words(s: String) = s.trim split "\\s+" toList
   private[nsc] def isQuoted(s: String) =
     (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
 

@@ -304,17 +304,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
         p("")
     }
   }
+
+  private object javap extends Javap(intp.classLoader, new IMain.ReplStrippingWriter(intp)) {
+    override def tryClass(path: String): Array[Byte] = super.tryClass(intp pathToFlatName path)
+  }
+
   private def javapCommand(line: String): Result = {
     if (line == "")
-      return ":javap <filename or classname>"
-    val javap  = new Javap(intp.classLoader) {
-      override def defaultPrintWriter = new IMain.ReplStrippingWriter(intp)
-    }
-    val path   = intp.pathToFlatName(line)
-    val result = javap guess path
+      return ":javap [-lcsvp] [path1 path2 ...]"
 
-    if (result.isError) "Failed: " + result.value
-    else result.show()
+    javap(words(line)) foreach { res =>
+      if (res.isError) return "Failed: " + res.value
+      else res.show()
+    }
   }
   private def keybindingsCommand(line: String): Result = {
     if (in.keyBindings.isEmpty) "Key bindings unavailable."
