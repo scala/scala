@@ -121,7 +121,7 @@ class Power(repl: ILoop, intp: IMain) {
       override def stopPhase(name: String) = name == "superaccessors"
     }
 
-    reporter.reset
+    reporter.reset()
     val run = new TyperRun
     run compileSources (code.toList.zipWithIndex map {
       case (s, i) => new BatchSourceFile("<console %d>".format(i), s)
