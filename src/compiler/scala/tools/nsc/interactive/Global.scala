@@ -26,7 +26,6 @@ class Global(settings: Settings, reporter: Reporter)
      with RangePositions
      with ContextTrees
      with RichCompilationUnits
-     with Reporters
      with Picklers {
 self =>
 
