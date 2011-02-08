@@ -193,6 +193,13 @@ override def companion: GenericCompanion[Vector] = Vector
   override /*IterableLike*/ def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
 
+  // concat (stub)
+
+  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
+    super.++(that)
+  }
+
+
 
   // semi-private api
 
@@ -683,6 +690,9 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
     lo += 1
     this
   }
+
+  override def ++=(xs: TraversableOnce[A]): this.type =
+    super.++=(xs)
 
   def result: Vector[A] = {
     val size = blockIndex + lo
