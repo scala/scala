@@ -17,9 +17,9 @@ import scala.annotation.tailrec
 import scala.util.control.Exception.{ ignoring }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
-import util.{ ClassPath, stringFromWriter, stringFromStream }
+import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import interpreter._
-import io.File
+import io.{ File, Sources }
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -44,6 +44,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   var settings: Settings = _
   var intp: IMain = _
   var power: Power = _
+
+  // TODO
+  // object opt extends AestheticSettings
 
   @deprecated("Use `intp` instead.")
   def interpreter = intp
@@ -389,6 +392,25 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     else powerCommands
   )
 
+  private val crashRecovery: PartialFunction[Throwable, Unit] = {
+    case ex: Throwable =>
+      if (settings.YrichExes.value) {
+        val sources = implicitly[Sources]
+        out.println("\n" + ex.getMessage)
+        out.println(
+          if (isReplDebug) "[searching " + sources.path + " for exception contexts...]"
+          else "[searching for exception contexts...]"
+        )
+        out.println(Exceptional(ex).force().context())
+      }
+      else {
+        out.println(util.stackTraceString(ex))
+      }
+      out.println("Attempting session recovery...")
+
+      replay()
+  }
+
   /** The main read-eval-print loop for the repl.  It calls
    *  command() for each line of input, and stops when
    *  command() returns false.
@@ -407,7 +429,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
         case _                          => true
       }
 
-    while (processLine(readOneLine)) { }
+    while (true) {
+      try if (!processLine(readOneLine)) return
+      catch crashRecovery
+    }
   }
 
   /** interpret all lines from a specified file */

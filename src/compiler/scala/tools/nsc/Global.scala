@@ -15,6 +15,7 @@ import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ Exceptional, ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
 import reflect.generic.{ PickleBuffer, PickleFormat }
+import settings.{ AestheticSettings }
 
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
 import symtab.classfile.Pickler
@@ -206,15 +207,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     informComplete("[search path for class files: " + classPath.asClasspathString + "]")
   }
 
-  /** Taking flag checking to a somewhat higher level. */
-  object opt {
+  object opt extends AestheticSettings {
+    def settings = Global.this.settings
+
     // protected implicit lazy val globalPhaseOrdering: Ordering[Phase] = Ordering[Int] on (_.id)
     def isActive(ph: Settings#PhasesSetting)  = ph containsPhase globalPhase
     def wasActive(ph: Settings#PhasesSetting) = ph containsPhase globalPhase.prev
-
-    // Some(value) if setting has been set by user, None otherwise.
-    def optSetting[T](s: Settings#Setting): Option[T] =
-      if (s.isDefault) None else Some(s.value.asInstanceOf[T])
 
     // Allows for syntax like scalac -Xshow-class Random@erasure,typer
     private def splitClassAndPhase(str: String, term: Boolean): Name = {
@@ -228,52 +226,35 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     }
 
-    val showClass    = optSetting[String](settings.Xshowcls) map (x => splitClassAndPhase(x, false))
-    val showObject   = optSetting[String](settings.Xshowobj) map (x => splitClassAndPhase(x, true))
-    def script       = optSetting[String](settings.script)
-    def encoding     = optSetting[String](settings.encoding)
-    def sourceReader = optSetting[String](settings.sourceReader)
+    // debugging
+    def checkPhase = wasActive(settings.check)
+    def logPhase   = isActive(settings.log)
+    def typerDebug = settings.Ytyperdebug.value
+    def writeICode = settings.writeICode.value
+
+    // showing/printing things
+    def browsePhase   = isActive(settings.browse)
+    def echoFilenames = opt.debug && (opt.verbose || currentRun.size < 5)
+    def noShow        = settings.Yshow.isDefault
+    def printLate     = settings.printLate.value
+    def printPhase    = isActive(settings.Xprint)
+    def showNames     = List(showClass, showObject).flatten
+    def showPhase     = isActive(settings.Yshow)
+    def showSymbols   = settings.Yshowsyms.value
+    def showTrees     = settings.Xshowtrees.value
+    val showClass     = optSetting[String](settings.Xshowcls) map (x => splitClassAndPhase(x, false))
+    val showObject    = optSetting[String](settings.Xshowobj) map (x => splitClassAndPhase(x, true))
+
+    // profiling
+    def profCPUPhase = isActive(settings.Yprofile) && !profileAll
+    def profileAll   = settings.Yprofile.doAllPhases
+    def profileAny   = !settings.Yprofile.isDefault || !settings.YprofileMem.isDefault
+    def profileClass = settings.YprofileClass.value
+    def profileMem   = settings.YprofileMem.value
 
     // XXX: short term, but I can't bear to add another option.
     // scalac -Dscala.timings will make this true.
     def timings       = sys.props contains "scala.timings"
-
-    def debug           = settings.debug.value
-    def deprecation     = settings.deprecation.value
-    def experimental    = settings.Xexperimental.value
-    def fatalWarnings   = settings.Xwarnfatal.value
-    def logClasspath    = settings.Ylogcp.value
-    def printLate       = settings.printLate.value
-    def printStats      = settings.Ystatistics.value
-    def profileClass    = settings.YprofileClass.value
-    def profileMem      = settings.YprofileMem.value
-    def richExes        = settings.YrichExes.value
-    def showTrees       = settings.Xshowtrees.value
-    def showSymbols     = settings.Yshowsyms.value
-    def target          = settings.target.value
-    def typerDebug      = settings.Ytyperdebug.value
-    def unchecked       = settings.unchecked.value
-    def verbose         = settings.verbose.value
-    def writeICode      = settings.writeICode.value
-    def declsOnly       = false
-
-    /** Flags as applied to the current or previous phase */
-    def browsePhase  = isActive(settings.browse)
-    def checkPhase   = wasActive(settings.check)
-    def logPhase     = isActive(settings.log)
-    def printPhase   = isActive(settings.Xprint)
-    def showPhase    = isActive(settings.Yshow)
-    def profCPUPhase = isActive(settings.Yprofile) && !profileAll
-
-    /** Derived values */
-    def noShow        = settings.Yshow.isDefault
-    def showNames     = List(showClass, showObject).flatten
-    def profileAll    = settings.Yprofile.doAllPhases
-    def profileAny    = !settings.Yprofile.isDefault || !settings.YprofileMem.isDefault
-    def jvm           = target startsWith "jvm"
-    def msil          = target == "msil"
-    def verboseDebug  = debug && verbose
-    def echoFilenames = opt.debug && (opt.verbose || currentRun.size < 5)
   }
 
   // True if -Xscript has been set, indicating a script run.

@@ -64,10 +64,25 @@ trait LowPrioritySourcesImplicits {
 
 
 object Sources extends LowPrioritySourcesImplicits {
-  val scalaSourceJars     = List("scala-library-src.jar", "scala-compiler-src.jar")
-  val sourcePathEnv       = envOrElse("SOURCEPATH", "")
-  val scalaLibraryJarPath = (scalaSourceJars map locateJarByName).flatten map (_.path)
-  val defaultSources      = apply(scalaLibraryJarPath :+ sourcePathEnv: _*)
+  // Examples of what libraryJar might be, each of which we'd like to find
+  // the source files automatically:
+  //
+  // /scala/trunk/build/pack/lib/scala-library.jar
+  // /scala/trunk/build/quick/classes/library
+  // /scala/inst/scala-2.9.0.r24213-b20110206233447/lib/scala-library.jar
+  private def libraryJar = Path.locateJarByClass(classOf[ScalaObject]) map (_.toAbsolute.path)
+  private def autoSourcePaths: List[String] = libraryJar.toList flatMap { lib =>
+    val markers = List("build/pack/lib", "build/quick/classes", "scala-library.jar")
+    markers filter (lib contains _) flatMap { m =>
+      val dir = Path(lib take lib.indexOf(m)) / "src"
+
+      if (dir.exists) ClassPath.expandDir(dir.path)
+      else Nil
+    }
+  }
+
+  val sourcePathEnv   = envOrElse("SOURCEPATH", "")
+  val defaultSources  = apply(autoSourcePaths :+ sourcePathEnv: _*)
 
   def apply(paths: String*): Sources = new Sources(ClassPath.join(paths: _*))
 }
