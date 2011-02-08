@@ -46,7 +46,7 @@ abstract class SourceFile {
   final def skipWhitespace(offset: Int): Int =
     if (content(offset).isWhitespace) skipWhitespace(offset + 1) else offset
 
-  def identifier(pos: Position, compiler: Global): Option[String] = None
+  def identifier(pos: Position): Option[String] = None
 }
 
 object ScriptSourceFile {
@@ -101,12 +101,12 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
   def start = 0
   def isSelfContained = true
 
-  override def identifier(pos: Position, compiler: Global) =
+  override def identifier(pos: Position) =
     if (pos.isDefined && pos.source == this && pos.point != -1) {
       def isOK(c: Char) = isIdentifierPart(c) || isOperatorPart(c)
       Some(new String(content drop pos.point takeWhile isOK))
     } else {
-      super.identifier(pos, compiler)
+      super.identifier(pos)
     }
 
   def isLineBreak(idx: Int) =

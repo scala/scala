@@ -170,7 +170,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             val fields = presupers filter (
               vdef => nme.localToGetter(vdef.name) == name)
             assert(fields.length == 1)
-            constrStatBuf += mkAssign(fields.head.symbol, Ident(stat.symbol))
+            val to = fields.head.symbol
+            if (!to.tpe.isInstanceOf[ConstantType])
+              constrStatBuf += mkAssign(to, Ident(stat.symbol))
           case _ =>
         }
       }
