@@ -3810,8 +3810,17 @@ A type's typeSymbol should never be inspected directly.
       } else if (sym.isModuleClass) {
         val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
         // Handle nested objects properly
-        val result = if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
-        assert(result != NoSymbol, sym+" "+adaptedSym+" "+adaptedSym.isLazy)
+        val result0 = if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
+        val result = if (result0 == NoSymbol)
+          // The only possible way we got here is when
+          // object is defined inside the method and unfortunately
+          // we have no way of retrieving that information (and using it)
+          // at this point, so just use the old symbol.
+          // This also means that sym.sourceModule == adaptedSym since
+          // pre == NoPrefix. see #4215
+          sym
+        else result0
+
         result
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
