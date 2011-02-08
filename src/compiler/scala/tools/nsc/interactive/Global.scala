@@ -36,6 +36,8 @@ self =>
 
   private def replayName = settings.YpresentationReplay.value
   private def logName = settings.YpresentationLog.value
+  private def afterTypeDelay = settings.YpresentationDelay.value
+  private final val SleepTime = 10
 
   val log =
     if (replayName != "") new Replayer(new FileReader(replayName))
@@ -207,6 +209,7 @@ self =>
 
   var moreWorkAtNode: Int = -1
   var nodesSeen = 0
+  var lastWasReload = false
 
   /** The number of pollForWorks after which the presentation compiler yields.
    *  Yielding improves responsiveness on systems with few cores because it
@@ -266,7 +269,10 @@ self =>
         case Some(ex: Throwable) => log.flush(); throw ex
         case _ =>
       }
-      logreplay("workitem", scheduler.nextWorkItem()) match {
+
+    lastWasReload = false
+
+    logreplay("workitem", scheduler.nextWorkItem()) match {
         case Some(action) =>
           try {
             debugLog("picked up work item at "+pos+": "+action)
@@ -343,6 +349,15 @@ self =>
       pollForWork(NoPosition)
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
       if (unit.status == NotLoaded) parseAndEnter(unit)
+    }
+
+    /** Sleep window */
+    if (afterTypeDelay > 0 && lastWasReload) {
+      val limit = System.currentTimeMillis() + afterTypeDelay
+      while (System.currentTimeMillis() < limit) {
+        Thread.sleep(SleepTime)
+        pollForWork(NoPosition)
+      }
     }
 
     for (s <- allSources; unit <- getUnit(s)) {
@@ -479,6 +494,7 @@ self =>
   /** Make sure a set of compilation units is loaded and parsed */
   def reload(sources: List[SourceFile], response: Response[Unit]) {
     informIDE("reload: " + sources)
+    lastWasReload = true
     respond(response)(reloadSources(sources))
     if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
