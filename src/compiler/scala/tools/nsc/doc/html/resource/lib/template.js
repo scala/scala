@@ -2,12 +2,20 @@
 // code by Gilles Dubochet with contributions by Pedro Furlanetto
 
 $(document).ready(function(){
-    var prefilters = $("#linearization li").filter(function(){
-        var name = $(this).attr("name");
-        return name == "scala.Any" || name == "scala.AnyRef";
-    });
-    prefilters.removeClass("in");
-    prefilters.addClass("out");
+    var isHiddenClass;
+    if (document.title == 'scala.AnyRef') {
+        isHiddenClass = function (name) {
+            return name == 'scala.Any';
+        };
+    } else {
+        isHiddenClass = function (name) {
+            return name == 'scala.Any' || name == 'scala.AnyRef';
+        };
+    }
+
+    $("#linearization li").filter(function(){
+        return isHiddenClass($(this).attr("name"));
+    }).removeClass("in").addClass("out");
     filter();
 
     var input = $("#textfilter input");
@@ -42,8 +50,7 @@ $(document).ready(function(){
     $("#ancestors > ol > li.showall").click(function() {
         var filtered =
             $("#linearization li.out").filter(function() {
-                var name = $(this).attr("name");
-                return !(name == "scala.Any" || name == "scala.AnyRef");
+                return ! isHiddenClass($(this).attr("name"));
             });
         filtered.removeClass("out").addClass("in");
         filter();
