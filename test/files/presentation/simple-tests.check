@@ -137,7 +137,7 @@ askTypeCompletion at Tester.scala(27,23)
 
 ================================================================================
 [response] aksTypeCompletion at (27,23)
-retreived 197 members
+retreived 198 members
 TypeMember(method $asInstanceOf,[T0]()T0,true,false,method any2stringadd)
 TypeMember(method !=,(x$1: AnyRef)Boolean,true,false,method any2stringadd)
 TypeMember(method !=,(x$1: Any)Boolean,true,false,method any2stringadd)
@@ -209,6 +209,7 @@ TypeMember(value Ynotnull,=> Tester.this.settings.BooleanSetting,true,true,<none
 TypeMember(value Ypmatdebug,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value Ypmatnaive,=> Tester.this.settings.BooleanSetting,true,true,<none>)
 TypeMember(value YpresentationDebug,=> Tester.this.settings.BooleanSetting,true,true,<none>)
+TypeMember(value YpresentationDelay,=> Tester.this.settings.IntSetting,true,true,<none>)
 TypeMember(value YpresentationLog,=> Tester.this.settings.StringSetting,true,true,<none>)
 TypeMember(value YpresentationReplay,=> Tester.this.settings.StringSetting,true,true,<none>)
 TypeMember(value YpresentationVerbose,=> Tester.this.settings.BooleanSetting,true,true,<none>)
@@ -367,7 +368,7 @@ TypeMember(method file,=> scala.tools.nsc.io.AbstractFile,true,false,<none>)
 TypeMember(method finalize,()Unit,false,true,<none>)
 TypeMember(method formatted,(fmtstr: String)String,true,false,method any2stringadd)
 TypeMember(method hashCode,()Int,true,true,<none>)
-TypeMember(method identifier,(pos: scala.tools.nsc.util.Position,compiler: scala.tools.nsc.Global)Option[String],true,false,<none>)
+TypeMember(method identifier,(pos: scala.tools.nsc.util.Position)Option[String],true,false,<none>)
 TypeMember(method isInstanceOf,[T0]=> Boolean,true,true,<none>)
 TypeMember(method isLineBreak,(idx: Int)Boolean,true,false,<none>)
 TypeMember(method isSelfContained,=> Boolean,true,false,<none>)
