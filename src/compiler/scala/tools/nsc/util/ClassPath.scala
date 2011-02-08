@@ -79,6 +79,9 @@ object ClassPath {
   /** Split the classpath and map them into Paths */
   def toPaths(cp: String): List[Path] = split(cp) map (x => Path(x).toAbsolute)
 
+  /** Make all classpath components absolute. */
+  def makeAbsolute(cp: String): String = fromPaths(toPaths(cp): _*)
+
   /** Join the paths as a classpath */
   def fromPaths(paths: Path*): String = join(paths map (_.path): _*)
 

@@ -47,7 +47,7 @@ import util.Exceptional.unwrap
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-class ScriptRunner extends CompileSocketShared {
+class ScriptRunner extends HasCompileSocket {
   lazy val compileSocket = CompileSocket
 
   /* While I'm chasing down the fsc and script bugs. */
@@ -135,7 +135,7 @@ class ScriptRunner extends CompileSocketShared {
     val compArgs         = coreCompArgs ++ List("-Xscript", scriptMain(settings), scriptFile)
 
     CompileSocket getOrCreateSocket "" match {
-      case Some(sock) => fscCompile(sock, compArgs)
+      case Some(sock) => compileOnServer(sock, compArgs)
       case _          => false
     }
   }

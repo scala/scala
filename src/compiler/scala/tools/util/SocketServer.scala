@@ -32,14 +32,14 @@ abstract class SocketServer {
   // therefore unable to contact this server instance,
   // the process will just eventually terminate by itself.
   def fscIdleMinutes = {
-    sys.props("scala.fsc.idle.minutes") match {
+    sys.props("scala.config.fsc.idle-minutes") match {
       case null   => 30
       case str    => try str.toInt catch { case _: Exception => 30 }
     }
   }
   def fscIdleMillis = fscIdleMinutes * 60 * 1000
 
-  def shutDown: Boolean
+  def shutdown: Boolean
   def session()
 
   var out: PrintWriter = _
@@ -68,14 +68,15 @@ abstract class SocketServer {
   // @todo: this is going to be a prime candidate for ARM
   def doSession(clientSocket: Socket) = {
     out = new PrintWriter(clientSocket.getOutputStream(), true)
-    in = bufferedReader(clientSocket)
+    in  = bufferedReader(clientSocket)
     val bufout = bufferedOutput(clientSocket)
 
-    scala.Console.withOut(bufout) { session() }
-
-    bufout.close()
-    out.close()
-    in.close()
+    try scala.Console.withOut(bufout)(session())
+    finally {
+      bufout.close()
+      out.close()
+      in.close()
+    }
   }
 
   def run() {
@@ -86,12 +87,12 @@ abstract class SocketServer {
     }
 
     try {
-      while (!shutDown) {
+      while (!shutdown) {
         val clientSocket = try serverSocket.accept() catch {
           case e: IOException => fail("Accept on port %d failed; exiting.")
         }
-        doSession(clientSocket)
-        clientSocket.close()
+        try doSession(clientSocket)
+        finally clientSocket.close()
       }
     }
     catch {

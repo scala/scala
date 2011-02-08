@@ -34,7 +34,7 @@ trait AbsSettings {
   // two AbsSettings objects are equal if their visible settings are equal.
   override def hashCode() = visibleSettings.hashCode
   override def equals(that: Any) = that match {
-    case s: AbsSettings => this.visibleSettings == s.visibleSettings
+    case s: AbsSettings => this.userSetSettings == s.userSetSettings
     case _              => false
   }
   override def toString() = "Settings {\n%s}\n" format (userSetSettings map ("  " + _ + "\n") mkString)

@@ -16,9 +16,9 @@ import scala.util.control.Exception.catching
 import scala.tools.util.StringOps.splitWhere
 import scala.sys.process._
 
-trait CompileSocketShared {
+trait HasCompileSocket {
   def compileSocket: CompileSocket
-  def fscCompile(sock: Socket, args: Seq[String]): Boolean = {
+  def compileOnServer(sock: Socket, args: Seq[String]): Boolean = {
     var noErrors = true
 
     sock.applyReaderAndWriter { (in, out) =>
