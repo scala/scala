@@ -217,6 +217,7 @@ trait CompilerControl { self: Global =>
     val sym: Symbol
     val tpe: Type
     val accessible: Boolean
+    def implicitlyAdded = false
   }
 
   case class TypeMember(
@@ -224,7 +225,9 @@ trait CompilerControl { self: Global =>
     tpe: Type,
     accessible: Boolean,
     inherited: Boolean,
-    viaView: Symbol) extends Member
+    viaView: Symbol) extends Member {
+    override def implicitlyAdded = viaView != NoSymbol
+  }
 
   case class ScopeMember(
     sym: Symbol,

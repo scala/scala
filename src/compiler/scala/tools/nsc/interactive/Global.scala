@@ -16,7 +16,7 @@ import scala.tools.nsc.ast._
 import scala.tools.nsc.io.Pickler._
 import scala.tools.nsc.typechecker.DivergentImplicit
 import scala.annotation.tailrec
-import scala.reflect.generic.Flags.LOCKED
+import scala.reflect.generic.Flags.{ACCESSOR, PARAMACCESSOR}
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
@@ -45,7 +45,7 @@ self =>
     else NullLogger
 
   import log.logreplay
-  debugLog("interactive compiler from 3 Feb")
+  debugLog("interactive compiler from 9 Feb")
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
   debugLog("classpath: "+classPath)
 
@@ -270,9 +270,9 @@ self =>
         case _ =>
       }
 
-    lastWasReload = false
+      lastWasReload = false
 
-    logreplay("workitem", scheduler.nextWorkItem()) match {
+      logreplay("workitem", scheduler.nextWorkItem()) match {
         case Some(action) =>
           try {
             debugLog("picked up work item at "+pos+": "+action)
@@ -619,22 +619,49 @@ self =>
 
   val Dollar = newTermName("$")
 
+  class Members[M <: Member] extends LinkedHashMap[Name, Set[M]] {
+    override def default(key: Name) = Set()
+
+    private def matching(sym: Symbol, symtpe: Type, ms: Set[M]): Option[M] = ms.find { m =>
+      (m.sym.name == sym.name) && (m.sym.isType || (m.tpe matches symtpe))
+    }
+
+    private def keepSecond(m: M, sym: Symbol, implicitlyAdded: Boolean): Boolean =
+      m.sym.hasFlag(ACCESSOR | PARAMACCESSOR) &&
+      !sym.hasFlag(ACCESSOR | PARAMACCESSOR) &&
+      (!implicitlyAdded || m.implicitlyAdded)
+
+    def add(sym: Symbol, pre: Type, implicitlyAdded: Boolean)(toMember: (Symbol, Type) => M) {
+      if ((sym.isGetter || sym.isSetter) && sym.accessed != NoSymbol) {
+        add(sym.accessed, pre, implicitlyAdded)(toMember)
+      } else if (!sym.name.decode.containsName(Dollar) && !sym.isSynthetic && sym.hasRawInfo) {
+        val symtpe = pre.memberType(sym) onTypeError ErrorType
+        matching(sym, symtpe, this(sym.name)) match {
+          case Some(m) =>
+            if (keepSecond(m, sym, implicitlyAdded)) {
+              //print(" -+ "+sym.name)
+              this(sym.name) = this(sym.name) - m + toMember(sym, symtpe)
+            }
+          case None =>
+            //print(" + "+sym.name)
+            this(sym.name) = this(sym.name) + toMember(sym, symtpe)
+        }
+      }
+    }
+
+    def allMembers: List[M] = values.toList.flatten
+  }
+
   /** Return all members visible without prefix in context enclosing `pos`. */
   def scopeMembers(pos: Position): List[ScopeMember] = {
     typedTreeAt(pos) // to make sure context is entered
     val context = doLocateContext(pos)
-    val locals = new LinkedHashMap[Name, ScopeMember]
+    val locals = new Members[ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
-      if (!sym.name.decode.containsName(Dollar) &&
-          !sym.isSynthetic &&
-          sym.hasRawInfo &&
-          !locals.contains(sym.name)) {
-        locals(sym.name) = new ScopeMember(
-          sym,
-          pre.memberType(sym) onTypeError ErrorType,
-          context.isAccessible(sym, pre, false),
-          viaImport)
+      locals.add(sym, pre, false) { (s, st) =>
+        new ScopeMember(s, st, context.isAccessible(s, pre, false), viaImport)
       }
+    //print("add scope members")
     var cx = context
     while (cx != NoContext) {
       for (sym <- cx.scope)
@@ -646,14 +673,15 @@ self =>
       }
       cx = cx.outer
     }
-
+    //print("\nadd imported members")
     for (imp <- context.imports) {
       val pre = imp.qual.tpe
       for (sym <- imp.allImportedSymbols) {
         addScopeMember(sym, pre, imp.qual)
       }
     }
-    val result = locals.values.toList
+    // println()
+    val result = locals.allMembers
 //    if (debugIDE) for (m <- result) println(m)
     result
   }
@@ -683,17 +711,13 @@ self =>
     debugLog("typeMembers at "+tree+" "+tree.tpe)
 
     val superAccess = tree.isInstanceOf[Super]
-    val scope = new Scope
-    val members = new LinkedHashMap[Symbol, TypeMember]
+    val members = new Members[TypeMember]
 
-    def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) {
-      val symtpe = pre.memberType(sym) onTypeError ErrorType
-      if (scope.lookupAll(sym.name) forall (sym => !(members(sym).tpe matches symtpe))) {
-        scope enter sym
-        members(sym) = new TypeMember(
-          sym,
-          symtpe,
-          context.isAccessible(sym, pre, superAccess && (viaView == NoSymbol)),
+    def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) = {
+      val implicitlyAdded = viaView != NoSymbol
+      members.add(sym, pre, implicitlyAdded) { (s, st) =>
+        new TypeMember(s, st,
+          context.isAccessible(s, pre, superAccess && !implicitlyAdded),
           inherited,
           viaView)
       }
@@ -708,10 +732,6 @@ self =>
         .onTypeError(EmptyTree)
     }
 
-    /** Names containing $ are not valid completions. */
-    def shouldDisplay(sym: Symbol): Boolean =
-      !sym.name.toString.contains("$")
-
     val pre = stabilizedType(tree)
     val ownerTpe = tree.tpe match {
       case analyzer.ImportType(expr) => expr.tpe
@@ -719,26 +739,25 @@ self =>
       case _ => tree.tpe
     }
 
-    for (sym <- ownerTpe.decls if shouldDisplay(sym))
+    //print("add members")
+    for (sym <- ownerTpe.members)
       addTypeMember(sym, pre, false, NoSymbol)
-    members.values.toList #:: {
-      for (sym <- ownerTpe.members if shouldDisplay(sym))
-        addTypeMember(sym, pre, true, NoSymbol)
-      members.values.toList #:: {
-        val applicableViews: List[SearchResult] =
-          if (ownerTpe.isErroneous) List()
-          else new ImplicitSearch(
-            tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true,
-            context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
-        for (view <- applicableViews) {
-          val vtree = viewApply(view)
-          val vpre = stabilizedType(vtree)
-          for (sym <- vtree.tpe.members) {
-            addTypeMember(sym, vpre, false, view.tree.symbol)
-          }
+    members.allMembers #:: {
+      //print("\nadd pimped")
+      val applicableViews: List[SearchResult] =
+        if (ownerTpe.isErroneous) List()
+        else new ImplicitSearch(
+          tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true,
+          context.makeImplicit(reportAmbiguousErrors = false)).allImplicits
+      for (view <- applicableViews) {
+        val vtree = viewApply(view)
+        val vpre = stabilizedType(vtree)
+        for (sym <- vtree.tpe.members) {
+          addTypeMember(sym, vpre, false, view.tree.symbol)
         }
-        Stream(members.values.toList)
       }
+      //println()
+      Stream(members.allMembers)
     }
   }
 
