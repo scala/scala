@@ -7,6 +7,8 @@
 \*                                                                      */
 
 
+/* INSTRUMENTED VERSION */
+
 
 package scala.runtime;
 

@@ -55,7 +55,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     /** Is typeenv `t1` included in `t2`? All type variables in `t1`
      *  are defined in `t2` and:
-     *  - are bound to the same type
+     *  - are bound to the same type, or
      *  - are an AnyRef specialization and `t2` is bound to a subtype of AnyRef
      */
     def includes(t1: TypeEnv, t2: TypeEnv) = t1 forall {
@@ -399,7 +399,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def typeParamSubAnyRef(sym: Symbol, cls: Symbol) = anyrefSpecCache.get(sym) match {
     case Some(tsub) => tsub.tpe
     case None =>
-      val tparam = cls.newTypeParameter(sym.pos, newTypeName(sym.name.toString + "$c"))
+      val tparam = cls.newTypeParameter(sym.pos, newTypeName(sym.name.toString + "$sp"))
       tparam.setInfo(TypeBounds(sym.info.bounds.lo, AnyRefClass.tpe))
       anyrefSpecCache.put(sym, tparam)
       tparam.tpe
@@ -1194,9 +1194,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         log("[specSym] checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
                 .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
-          val specMember = qual.tpe.member(specializedName(symbol, env)) suchThat (_.tpe =:= qual.tpe)
+          val specMember = qual.tpe.member(specializedName(symbol, env)) // suchThat (_.tpe =:= qual.tpe)
+          // @I: why does a member of a qualifier have to have the same type as the qualifier?  ^^^
+          // log("[specSym] found: " + qual.tpe.member(specializedName(symbol, env)).tpe + " =:= " + qual.tpe)
+          // log("[specSym] found specMember: " + specMember)
           if (specMember ne NoSymbol)
-            if (typeEnv(specMember) == env) Some(specMember)
+            if (TypeEnv.includes(typeEnv(specMember), env)) Some(specMember)
             else {
               log("wrong environments for specialized member: \n\ttypeEnv(%s) = %s\n\tenv = %s".format(specMember, typeEnv(specMember), env))
               None
@@ -1224,15 +1227,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) =>
           if (settings.debug.value) log("checking typeapp for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
           val qual1 = transform(qual)
+          // log(">>> TypeApply: " + tree + ", qual1: " + qual1)
           specSym(qual1) match {
             case Some(specMember) =>
               if (settings.debug.value) log("found " + specMember.fullName)
               assert(symbol.info.typeParams.length == targs.length)
-              //log("!!! In TypeApply: " + specMember)
+              // log("!!! In TypeApply: " + specMember + "; " + symbol)
               val env = typeEnv(specMember)
-              //log("env: " + env)
+              // log("env: " + env)
+              def isResidual(env: TypeEnv, tvar: Symbol) =
+                !env.isDefinedAt(tvar) || (env.isDefinedAt(tvar) && !isValueClass(env(tvar).typeSymbol))
               val residualTargs =
-                for ((tvar, targ) <- symbol.info.typeParams.zip(targs) if !env.isDefinedAt(tvar))
+                for ((tvar, targ) <- symbol.info.typeParams.zip(targs) if isResidual(env, tvar))
                   yield targ
               assert(residualTargs.length == specMember.info.typeParams.length,
                 "residual: %s, tparams: %s, env: %s".format(residualTargs, symbol.info.typeParams, env))
@@ -1255,7 +1261,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           //log("!!! select " + tree + " -> " + symbol.info + " specTypeVars: " + specializedTypeVars(symbol.info))
           if (specializedTypeVars(symbol.info).nonEmpty && name != nme.CONSTRUCTOR) {
-            log("!!! unifying " + symbol.tpe + " and " + tree.tpe)
+            log("!!! unifying " + (symbol, symbol.tpe) + " and " + (tree, tree.tpe))
             val env = unify(symbol.tpe, tree.tpe, emptyEnv)
             log("!!! found env: " + env + "; overloads: " + overloads(symbol))
             if (settings.debug.value) log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
