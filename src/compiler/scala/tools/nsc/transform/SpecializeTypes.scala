@@ -30,7 +30,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass, ScalaValueClasses,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
-    AnyRefClass, Predef_AnyRef, ObjectClass
+    AnyRefClass, Predef_AnyRef, ObjectClass,
+    isValueClass
   }
   private def isSpecialized(sym: Symbol) = sym hasAnnotation SpecializedClass
 
@@ -64,7 +65,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // log(tpe.getClass)
         t2tpopt match {
           case Some(t2tp) => t2tp == tpe || {
-            (!primitiveTypes.contains(tpe)) && (t2tp <:< AnyRefClass.tpe)
+            (!primitiveTypes.contains(tpe)) && (!isValueClass(t2tp.typeSymbol)) // u.t.b. (t2tp <:< AnyRefClass.tpe)
           }
           case None => false
         }
@@ -209,6 +210,20 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     for ((tvar, tpe) <- sym.info.typeParams.zip(args) if !isSpecialized(tvar) || !isPrimitive(tpe))
       yield tpe
 
+  private def isBoundedGeneric(tp: Type) = tp match {
+    case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
+    case TypeRef(_, sym, _) => !isValueClass(sym)
+    case _ => false
+  }
+
+  // TODO
+  // @I: if we replace `isBoundedGeneric` with (tp <:< AnyRefClass.tpe), then pos/spec-List.scala fails - why?
+  //     Does this kind of check fail for similar reasons? Does `sym.isAbstractType` make a difference?
+  private def subtypeOfAnyRef(tp: Type) = {
+    log(tp + " <:< AnyRef " + isBoundedGeneric(tp) + ", " + tp.typeSymbol.isAbstractType)
+    !isValueClass(tp.typeSymbol) && isBoundedGeneric(tp)
+  }
+
   val specializedType = new TypeMap {
     override def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if !args.isEmpty =>
@@ -216,7 +231,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // when searching for a specialized class, take care to map all
         // type parameters that are subtypes of AnyRef to AnyRef
         val args1 = args map {
-          case x if x <:< AnyRefClass.tpe => AnyRefClass.tpe
+          case x if subtypeOfAnyRef(x) => AnyRefClass.tpe // used to be: case x if x <:< AnyRefClass.tpe
           case x => x
         }
         // log("!!! specializedType " + tp + ", " + pre1 + ", " + args1)
@@ -907,7 +922,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       log("Unify - basic case: " + tp1 + ", " + tp2)
       if (definitions.isValueClass(tp2.typeSymbol))
         env + ((sym1, tp2))
-      else if (isSpecializedOnAnyRef(sym1) && (tp2 <:< AnyRefClass.tpe))
+      else if (isSpecializedOnAnyRef(sym1) && subtypeOfAnyRef(tp2)) // u.t.b. tp2 <:< AnyRefClass.tpe
         env + ((sym1, tp2))
       else
         env
@@ -1240,9 +1255,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           //log("!!! select " + tree + " -> " + symbol.info + " specTypeVars: " + specializedTypeVars(symbol.info))
           if (specializedTypeVars(symbol.info).nonEmpty && name != nme.CONSTRUCTOR) {
-            //log("!!! unifying " + symbol.tpe + " and " + tree.tpe)
+            log("!!! unifying " + symbol.tpe + " and " + tree.tpe)
             val env = unify(symbol.tpe, tree.tpe, emptyEnv)
-            //log("!!! found env: " + env + "; overloads: " + overloads(symbol))
+            log("!!! found env: " + env + "; overloads: " + overloads(symbol))
             if (settings.debug.value) log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
             if (!env.isEmpty) {
               val specMember = overload(symbol, env)

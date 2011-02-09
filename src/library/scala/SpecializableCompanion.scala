@@ -8,6 +8,6 @@
 
 package scala
 
-/** A common supertype for companion classes.
+/** A common supertype for companion classes which specialization takes into account.
  */
-private[scala] trait AnyCompanion
+private[scala] trait SpecializableCompanion
