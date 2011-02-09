@@ -242,10 +242,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   lazy val primitiveTypes = ScalaValueClasses map (_.tpe)
 
-  private def tParamSubAnyRef(sym: Symbol) = {
-    val tparam = sym.owner.newTypeParameter(sym.pos, sym.name.asInstanceOf[TypeName])
-      .setInfo(TypeBounds.upper(AnyRefClass.tpe))
-    tparam.tpe
+  private val anyrefSpecCache = mutable.Map[Symbol, Symbol]()
+  private def tParamSubAnyRef(sym: Symbol, cls: Symbol) = anyrefSpecCache.get(sym) match {
+    case Some(tsub) => tsub.tpe
+    case None =>
+      val tparam = cls.newTypeParameter(sym.pos, newTypeName(sym.name.toString + "$c"))
+      tparam.setInfo(TypeBounds(sym.info.bounds.lo, AnyRefClass.tpe))
+      anyrefSpecCache.put(sym, tparam)
+      tparam.tpe
   }
 
    /** Return the concrete types `sym' should be specialized at.
@@ -259,7 +263,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             primitiveTypes
           case _ =>
             val tpes = args map {
-              t => if (t.symbol == RefModule) tParamSubAnyRef(sym) else t.symbol.companionClass.tpe
+              t => if (t.symbol == RefModule) AnyRefClass.tpe else t.symbol.companionClass.tpe
             }
             log(sym + " specialized on " + tpes)
             tpes
@@ -345,7 +349,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     case ExistentialType(_, res) => specializedTypeVars(res)
     case AnnotatedType(_, tp, _) => specializedTypeVars(tp)
-    case TypeBounds(hi, lo) => specializedTypeVars(hi) ++ specializedTypeVars(lo)
+    case TypeBounds(hi, lo) => specializedTypeVars(hi) ++ specializedTypeVars(lo) // @I: it's (lo, hi) - swap them?
     case _ => immutable.ListSet.empty[Symbol]
   }
 
@@ -354,10 +358,27 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   def survivingParams(params: List[Symbol], env: TypeEnv) =
     params.filter(p => !isSpecialized(p) || !isPrimitive(env(p)))
 
-  def cloneAndRemoveAnnotation(syms: List[Symbol], owner: Symbol) = {
-    val cloned = cloneSymbols(syms, owner)
-    cloned foreach { _.removeAnnotation(SpecializedClass) }
+  /** Produces the symbols from type parameters of the original class.
+   *
+   *  Non-specialized type parameters are cloned into new ones.
+   *  Type parameters specialized on AnyRef have preexisting symbols that were
+   *  created with `concreteTypes`, so those are taken.
+   *
+   *  For instance, a @specialized(AnyRef) T, will become T <: AnyRef.
+   */
+  def produceTypeParameters(syms: List[Symbol], owner: Symbol, env: TypeEnv) = {
+    val cloned = for (s <- syms) yield if (!env.contains(s)) s.cloneSymbol(owner) else env(s).typeSymbol
+    for ((orig, cln) <- syms zip cloned) {
+      cln.removeAnnotation(SpecializedClass)
+      if (env.contains(orig)) cln.setInfo(TypeBounds(cln.info.bounds.lo, AnyRefClass.tpe))
+    }
     cloned
+  }
+
+  /** Maps AnyRef bindings into type parameters */
+  private def mapAnyRefs(env: TypeEnv, cls: Symbol): TypeEnv = env map {
+    case (sym, tp) if tp == AnyRefClass.tpe => (sym, tParamSubAnyRef(sym, cls))
+    case x => x
   }
 
   /** Specialize 'clazz', in the environment `outerEnv`. The outer
@@ -369,12 +390,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  each combination of `stps`.
    */
   def specializeClass(clazz: Symbol, outerEnv: TypeEnv): List[Symbol] = {
-    def specializedClass(env: TypeEnv, normMembers: List[Symbol]): Symbol = {
-      val cls = clazz.owner.newClass(clazz.pos, specializedName(clazz, env).toTypeName)
+    def specializedClass(env0: TypeEnv, normMembers: List[Symbol]): Symbol = {
+      val cls = clazz.owner.newClass(clazz.pos, specializedName(clazz, env0).toTypeName)
                               .setFlag(SPECIALIZED | clazz.flags)
                               .resetFlag(CASE)
       cls.sourceFile = clazz.sourceFile
       currentRun.symSource(cls) = clazz.sourceFile // needed later on by mixin
+
+      val env = mapAnyRefs(env0, cls)
 
       typeEnv(cls) = env
       this.specializedClass((clazz, env)) = cls
@@ -395,7 +418,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // oldClassTParams = unspecParams
         val survivedParams = survivingParams(clazz.info.typeParams, env)
         oldClassTParams = survivedParams
-        newClassTParams = cloneAndRemoveAnnotation(survivedParams, cls) map subst(env)
+        newClassTParams = produceTypeParameters(survivedParams, cls, env) map subst(env)
         log("new tparams " + newClassTParams.zip(newClassTParams map {_.tpe}))
 
         def applyContext(tpe: Type) =
@@ -422,6 +445,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
 
         var parents = List(applyContext(atPhase(currentRun.typerPhase)(clazz.tpe)))
+        log("Parent: " + parents.head + ", sym: " + parents.head.typeSymbol)
         if (parents.head.typeSymbol.isTrait)
           parents = parents.head.parents.head :: parents
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
@@ -1197,6 +1221,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if info.isDefinedAt(symbol) =>
           if (symbol.isConstructor) {
+            log("Transforming defdef: " + ddef + ", " + vparamss.flatMap(x => x).map(x => x.tpt.symbol + ", " + x.tpt.symbol.id))
             val t = atOwner(symbol) {
               val superRef: Tree = Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR)
               forwardCtorCall(tree.pos, superRef, vparamss, symbol.owner)
@@ -1245,14 +1270,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
             case SpecialOverload(original, env) =>
               if (settings.debug.value) log("completing specialized " + symbol.fullName + " calling " + original)
+              log("special overload " + original + " -> " + env)
               val t = DefDef(symbol, { vparamss =>
                 val fun = Apply(Select(This(symbol.owner), original),
                                 makeArguments(original, vparamss.head))
 
+                log("inside defdef: " + symbol + ", owner: " + symbol.owner)
                 gen.maybeMkAsInstanceOf(fun,
                   symbol.owner.thisType.memberType(symbol).finalResultType,
                   symbol.owner.thisType.memberType(original).finalResultType)
               })
+              log("created special overload tree " + t)
               if (settings.debug.value) log("created " + t)
               localTyper.typed(t)
 
