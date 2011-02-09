@@ -154,13 +154,15 @@ abstract class Compat
 	def nameString(s: Symbol, sep: Char): String = s.fullNameString(sep)
 	def isExistential(s: Symbol): Boolean = s.isExistential
 	def isNonClassType(s: Symbol): Boolean = s.isTypeMember
+	val LocalChild = global.tpnme.LOCAL_CHILD
+	val Nullary = global.NullaryMethodType
 
 	def linkedClass(s: Symbol): Symbol = s.linkedClassOfModule
 
 	/** After 2.8.0.Beta1, fullNameString was renamed fullName.
 	* linkedClassOfModule was renamed companionClass. */
-	private implicit def symCompat(sym: Symbol): SymCompat = new SymCompat(sym)
-	private final class SymCompat(s: Symbol)
+	private[this] implicit def symCompat(sym: Symbol): SymCompat = new SymCompat(sym)
+	private[this] final class SymCompat(s: Symbol)
 	{
 		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
 		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
@@ -172,14 +174,29 @@ abstract class Compat
 	// In 2.8, hasAttribute is renamed to hasAnnotation
 		def hasAnnotation(a: Symbol) = s.hasAttribute(a); def hasAttribute(a: Symbol) = sourceCompatibilityOnly
 	}
+	private[this] final class MiscCompat
+	{
+		// in 2.9, nme.LOCALCHILD was renamed to tpnme.LOCAL_CHILD
+		def tpnme = nme
+		def LOCAL_CHILD = nme.LOCALCHILD
+		def LOCALCHILD = sourceCompatibilityOnly
 
-	def hasAnnotation(s: Symbol)(ann: Symbol) = atPhase(currentRun.typerPhase) { s.hasAnnotation(ann) }
+		def NullaryMethodType = NullaryMethodTpe
+	}
+	// in 2.9, NullaryMethodType was added to Type
+	object NullaryMethodTpe {
+		def unapply(t: Type): Option[Type] = None
+	}
+
+	final def hasAnnotation(s: Symbol)(ann: Symbol) = atPhase(currentRun.typerPhase) { s.hasAnnotation(ann) }
 
 	/** After 2.8.0.Beta1, getArchive was renamed archive.*/
-	private implicit def zipCompat(z: ZipArchive#Entry): ZipCompat = new ZipCompat(z)
-	private final class ZipCompat(z: ZipArchive#Entry)
+	private[this] implicit def zipCompat(z: ZipArchive#Entry): ZipCompat = new ZipCompat(z)
+	private[this] final class ZipCompat(z: ZipArchive#Entry)
 	{
 		def getArchive = z.archive; def archive = sourceCompatibilityOnly
 	}
-	private def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
+	private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
+
+	private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
 }

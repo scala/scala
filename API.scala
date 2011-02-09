@@ -17,7 +17,9 @@ object API
 	// for 2.7 compatibility: this class was removed in 2.8
 	type ImplicitMethodType = AnyRef
 }
-import API._ // imports ImplicitMethodType, which will preserve source compatibility in 2.7 for defDef
+ // imports ImplicitMethodType, which will preserve source compatibility in 2.7 for defDef
+import API._
+
 final class API(val global: Global, val callback: xsbti.AnalysisCallback) extends Compat
 {
 	import global._
@@ -161,6 +163,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 					build(base, typeParameters(in, typeParams0), Nil)
 				case MethodType(params, resultType) => // in 2.7, params is of type List[Type], in 2.8 it is List[Symbol]
 					build(resultType, typeParams, (params: xsbti.api.ParameterList) :: valueParameters)
+				case Nullary(resultType) => // 2.9 and later
+					build(resultType, typeParams, valueParameters)
 				case returnType =>
 					new xsbti.api.Def(valueParameters.reverse.toArray, processType(in, returnType), typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(in,s))
 			}
@@ -196,8 +200,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	}
 	private def fieldDef[T](in: Symbol, s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
 	{
-		val t = viewer(in).memberType(s)
+		val t = dropNullary(viewer(in).memberType(s))
 		create(processType(in, t), simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
+	}
+	private def dropNullary(t: Type): Type = t match {
+		case Nullary(un) => un
+		case _ => t
 	}
 		
 	private def typeDef(in: Symbol, s: Symbol): xsbti.api.TypeMember =
@@ -262,7 +270,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			None
 	}
 	private def ignoreClass(sym: Symbol): Boolean =
-		sym.isLocalClass || sym.isAnonymousClass || fullName(sym).endsWith(nme.LOCALCHILD)
+		sym.isLocalClass || sym.isAnonymousClass || fullName(sym).endsWith(LocalChild)
 
 	// This filters private[this] vals/vars that were not in the original source.
 	//  The getter will be used for processing instead.
@@ -314,6 +322,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(in, result), typeParameters(in, tparams))
 			case NoType => error("NoType")
 			case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
+			case Nullary(resultType) => error("Unexpected nullary method type " + in + " in " + in.owner)
 			case _ => error("Unhandled type " + t.getClass + " : " + t)
 		}
 	}
