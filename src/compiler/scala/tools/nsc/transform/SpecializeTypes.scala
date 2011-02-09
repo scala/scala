@@ -34,6 +34,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
   private def isSpecialized(sym: Symbol) = sym hasAnnotation SpecializedClass
 
+  private def isSpecializedOnAnyRef(sym: Symbol) = sym.getAnnotation(SpecializedClass) match {
+    case Some(AnnotationInfo(_, args, _)) =>
+      args.find(_.symbol == RefModule) match {
+        case Some(_) => true
+        case None => false
+      }
+    case _ => false
+  }
+
   object TypeEnv {
     /** Return a new type environment binding specialized type parameters of sym to
      *  the given args. Expects the lists to have the same length.
@@ -43,12 +52,22 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       emptyEnv ++ (sym.info.typeParams zip args filter (kv => isSpecialized(kv._1)))
     }
 
-    /** Is this typeenv included in `other'? All type variables in this environment
-     *  are defined in `other' and bound to the same type.
+    /** Is typeenv `t1` included in `t2`? All type variables in `t1`
+     *  are defined in `t2` and:
+     *  - are bound to the same type
+     *  - are an AnyRef specialization and `t2` is bound to a subtype of AnyRef
      */
     def includes(t1: TypeEnv, t2: TypeEnv) = t1 forall {
       case (sym, tpe) =>
-        t2 get sym exists (_ == tpe)
+        val t2tpopt = t2 get sym
+        // log("includes: " + t2tpopt.map(_.getClass))
+        // log(tpe.getClass)
+        t2tpopt match {
+          case Some(t2tp) => t2tp == tpe || {
+            (!primitiveTypes.contains(tpe)) && (t2tp <:< AnyRefClass.tpe)
+          }
+          case None => false
+        }
     }
 
     /** Reduce the given environment to contain mappings only for type variables in tps. */
@@ -364,9 +383,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       tparam.tpe
   }
 
+  // holds mappings from members to the type variables in the class that they were specialized for
   private val wasSpecializedForTypeVars = mutable.Map[Symbol, immutable.Set[Symbol]]() withDefaultValue immutable.Set[Symbol]()
 
-  def isPrimitive(tpe: Type) = definitions.ScalaValueClasses contains tpe.typeSymbol
+  def isPrimitive(tpe: Type) = primitiveTypes contains tpe
 
   def survivingParams(params: List[Symbol], env: TypeEnv) =
     params.filter(p => !isSpecialized(p) || !isPrimitive(env(p)))
@@ -867,7 +887,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 //    println("\tunify \t" + tp1 + "\n\t\t" + tp2)
     (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if isSpecialized(sym1) =>
+      log("Unify - basic case: " + tp1 + ", " + tp2)
       if (definitions.isValueClass(tp2.typeSymbol))
+        env + ((sym1, tp2))
+      else if (isSpecializedOnAnyRef(sym1) && (tp2 <:< AnyRefClass.tpe))
         env + ((sym1, tp2))
       else
         env
@@ -1196,11 +1219,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (settings.debug.value)
             log("[%s] looking at Select: %s sym: %s: %s [tree.tpe: %s]".format(tree.pos.line, tree, symbol, symbol.info, tree.tpe))
 
+          //log("!!! select " + tree + " -> " + symbol.info + " specTypeVars: " + specializedTypeVars(symbol.info))
           if (specializedTypeVars(symbol.info).nonEmpty && name != nme.CONSTRUCTOR) {
+            //log("!!! unifying " + symbol.tpe + " and " + tree.tpe)
             val env = unify(symbol.tpe, tree.tpe, emptyEnv)
+            //log("!!! found env: " + env + "; overloads: " + overloads(symbol))
             if (settings.debug.value) log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
             if (!env.isEmpty) {
               val specMember = overload(symbol, env)
+              //log("!!! found member: " + specMember)
               if (specMember.isDefined) {
                 log("** routing " + tree + " to " + specMember.get.sym.fullName)
                 localTyper.typedOperator(atPos(tree.pos)(Select(transform(qual), specMember.get.sym.name)))
