@@ -29,7 +29,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass, ScalaValueClasses,
-    SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass
+    SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
+    AnyRefClass, RefModule, ObjectClass
   }
   private def isSpecialized(sym: Symbol) = sym hasAnnotation SpecializedClass
 
@@ -232,17 +233,24 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       nme.getterToLocal(specializedName(nme.localToGetter(name), types1, types2))
     else {
       val (base, cs, ms) = nme.splitSpecializedName(name)
+      val abbrevs = definitions.abbrvTag withDefaultValue definitions.abbrvTag(ObjectClass)
       newTermName(base.toString + "$"
-                  + "m" + ms + types1.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "")
-                  + "c" + cs + types2.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "$sp"))
+                  + "m" + ms + types1.map(t => abbrevs(t.typeSymbol)).mkString("", "", "")
+                  + "c" + cs + types2.map(t => abbrevs(t.typeSymbol)).mkString("", "", "$sp"))
     }
   }
 
   lazy val primitiveTypes = ScalaValueClasses map (_.tpe)
 
+  private def tParamSubAnyRef(sym: Symbol) = {
+    val tparam = sym.owner.newTypeParameter(sym.pos, sym.name.asInstanceOf[TypeName])
+      .setInfo(TypeBounds.upper(AnyRefClass.tpe))
+    tparam.tpe
+  }
+
    /** Return the concrete types `sym' should be specialized at.
    */
-  def concreteTypes(sym: Symbol): List[Type] =
+  def concreteTypes(sym: Symbol): List[Type] = {
     sym.getAnnotation(SpecializedClass) match {
       case Some(AnnotationInfo(_, args, _)) =>
         args match {
@@ -250,13 +258,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             log(sym + " specialized on everything")
             primitiveTypes
           case _ =>
-            val tpes = args.map(_.symbol.companionClass.tpe)
+            val tpes = args map {
+              t => if (t.symbol == RefModule) tParamSubAnyRef(sym) else t.symbol.companionClass.tpe
+            }
             log(sym + " specialized on " + tpes)
             tpes
         }
       case _ =>
         Nil
     }
+  }
 
   /** Return a list of all type environments for all specializations
    *  of @specialized types in `tps'.
@@ -338,6 +349,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _ => immutable.ListSet.empty[Symbol]
   }
 
+  def isPrimitive(tpe: Type) = definitions.ScalaValueClasses contains tpe.typeSymbol
+
+  def survivingParams(params: List[Symbol], env: TypeEnv) =
+    params.filter(p => !isSpecialized(p) || !isPrimitive(env(p)))
+
+  def cloneAndRemoveAnnotation(syms: List[Symbol], owner: Symbol) = {
+    val cloned = cloneSymbols(syms, owner)
+    cloned foreach { _.removeAnnotation(SpecializedClass) }
+    cloned
+  }
+
   /** Specialize 'clazz', in the environment `outerEnv`. The outer
    *  environment contains bindings for specialized types of enclosing
    *  classes.
@@ -369,12 +391,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       // has to be a val in order to be computed early. It is later called
       // within 'atPhase(next)', which would lead to an infinite cycle otherwise
       val specializedInfoType: Type = {
-        val (_, unspecParams) = splitParams(clazz.info.typeParams)
-        oldClassTParams = unspecParams
-        newClassTParams = cloneSymbols(unspecParams, cls) map subst(env)
+        // val (_, unspecParams) = splitParams(clazz.info.typeParams)
+        // oldClassTParams = unspecParams
+        val survivedParams = survivingParams(clazz.info.typeParams, env)
+        oldClassTParams = survivedParams
+        newClassTParams = cloneAndRemoveAnnotation(survivedParams, cls) map subst(env)
+        log("new tparams " + newClassTParams.zip(newClassTParams map {_.tpe}))
 
         def applyContext(tpe: Type) =
-          subst(env, tpe).subst(unspecParams, newClassTParams map (_.tpe))
+          subst(env, tpe).subst(survivedParams, newClassTParams map (_.tpe))
 
         /** Return a list of specialized parents to be re-mixed in a specialized subclass.
          *  Assuming env = [T -> Int] and
@@ -586,6 +611,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     })
 
     var hasSubclasses = false
+    log("For " + clazz + " - " + specializations(clazz.info.typeParams))
     for (env <- specializations(clazz.info.typeParams) if satisfiable(env)) {
       val spc = specializedClass(env, decls1)
       log("entered " + spc + " in " + clazz.owner)
