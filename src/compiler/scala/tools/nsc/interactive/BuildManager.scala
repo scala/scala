@@ -31,6 +31,8 @@ trait BuildManager {
   /** Save dependency information to `file'. */
   def saveTo(file: AbstractFile, fromFile: AbstractFile => String)
 
+  def compiler: scala.tools.nsc.Global
+
   /** Delete classfiles derived from the supplied set of sources */
   def deleteClassfiles(sources : Set[AbstractFile]) {
     val targets = compiler.dependencyAnalysis.dependencies.targets
