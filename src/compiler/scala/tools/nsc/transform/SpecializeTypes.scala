@@ -30,13 +30,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass, ScalaValueClasses,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
-    AnyRefClass, RefModule, ObjectClass
+    AnyRefClass, Predef_AnyRef, ObjectClass
   }
   private def isSpecialized(sym: Symbol) = sym hasAnnotation SpecializedClass
 
   private def isSpecializedOnAnyRef(sym: Symbol) = sym.getAnnotation(SpecializedClass) match {
     case Some(AnnotationInfo(_, args, _)) =>
-      args.find(_.symbol == RefModule) match {
+      args.find(_.symbol == Predef_AnyRef) match {
         case Some(_) => true
         case None => false
       }
@@ -285,7 +285,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             primitiveTypes
           case _ =>
             val tpes = args map {
-              t => if (t.symbol == RefModule) AnyRefClass.tpe else t.symbol.companionClass.tpe
+              t => if (t.symbol == Predef_AnyRef) AnyRefClass.tpe else t.symbol.companionClass.tpe
             }
             log(sym + " specialized on " + tpes)
             tpes
@@ -715,6 +715,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *     m[T, U](x: T, y: U),
    *     m$I[ U](x: Int, y: U),
    *     m$D[ U](x: Double, y: U)
+   *     // etc.
    */
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     if (settings.debug.value) log("normalizeMember: " + sym.fullName)
@@ -1464,10 +1465,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       })
 
       // replace value and type parameters of the old method with the new ones
-      log("Adding body for " + tree.symbol + " - origtparams: " + origtparams + "; tparams: " + tparams)
-      log("Type vars of: " + source + ": " + source.typeParams)
-      log("Type env of: " + tree.symbol + ": " + boundTvars)
-      log("newtparams: " + newtparams)
+      // log("Adding body for " + tree.symbol + " - origtparams: " + origtparams + "; tparams: " + tparams)
+      // log("Type vars of: " + source + ": " + source.typeParams)
+      // log("Type env of: " + tree.symbol + ": " + boundTvars)
+      // log("newtparams: " + newtparams)
       val symSubstituter = new ImplementationAdapter(
         parameters(source).flatten ::: origtparams,
         vparamss1.flatten.map(_.symbol) ::: newtparams,

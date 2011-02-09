@@ -50,7 +50,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       tpnme.Double  -> DOUBLE_TAG,
       tpnme.Boolean -> BOOL_TAG,
       tpnme.Unit    -> VOID_TAG,
-      tpnme.Object  -> CLASS_TAG
+      tpnme.Object  -> TVAR_TAG
     )
 
     private def classesMap[T](f: Name => T) = symbolsMap(ScalaValueClassesNoUnit, f)
@@ -231,6 +231,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     // fundamental modules
     lazy val PredefModule: Symbol = getModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
+      def Predef_AnyRef = getMember(PredefModule, "AnyRef") // used by the specialization annotation
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_error    = getMember(PredefModule, nme.error)
       def Predef_identity = getMember(PredefModule, nme.identity)
@@ -248,7 +249,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
       def scalaRuntimeHash = getMember(ScalaRunTimeModule, "hash")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
-    lazy val RefModule = getModule("scala.Ref")
 
     // classes with special meanings
     lazy val NotNullClass     = getClass("scala.NotNull")

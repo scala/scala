@@ -38,6 +38,7 @@ object Predef extends LowPriorityImplicits {
   type Set[A]     = immutable.Set[A]
   val Map         = immutable.Map
   val Set         = immutable.Set
+  val AnyRef      = new AnyCompanion {}   // a dummy used by the specialization annotation
 
   // Manifest types, companions, and incantations for summoning
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
