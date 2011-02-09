@@ -132,6 +132,11 @@ trait NameManglers {
       val prefix = if (isConstructorName(name)) "init" else name
       newTermName(prefix + DEFAULT_GETTER_STRING + pos)
     }
+    def defaultGetterToMethod(name: Name): TermName = {
+      val p = name.pos(DEFAULT_GETTER_STRING)
+      if (p < name.length) name.subName(0, p)
+      else name
+    }
 
     def implClassName(name: Name): TypeName     = name append IMPL_CLASS_SUFFIX toTypeName
     def interfaceName(implname: Name): TypeName = implname stripEnd IMPL_CLASS_SUFFIX toTypeName

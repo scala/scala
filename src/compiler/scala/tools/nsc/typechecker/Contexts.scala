@@ -302,16 +302,26 @@ trait Contexts { self: Analyzer =>
      *  @param sym2 ...
      *  @param rest ...
      */
-    def ambiguousError(pos: Position, pre: Type, sym1: Symbol,
-                       sym2: Symbol, rest: String) {
-      val msg =
-        ("ambiguous reference to overloaded definition,\n" +
-         "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
-         "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
-         "\nmatch " + rest)
+    def ambiguousError(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String) {
+      val (reportPos, msg) = (
+        if (sym1.hasDefaultFlag && sym2.hasDefaultFlag && sym1.enclClass == sym2.enclClass) {
+          val methodName = nme.defaultGetterToMethod(sym1.name)
+          (sym1.enclClass.pos,
+           "in "+ sym1.enclClass +", multiple overloaded alternatives of " + methodName +
+                     " define default arguments")
+        }
+        else {
+          (pos,
+            ("ambiguous reference to overloaded definition,\n" +
+             "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
+             "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
+             "\nmatch " + rest)
+          )
+        }
+      )
       if (reportAmbiguousErrors) {
         if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
-          unit.error(pos, msg)
+          unit.error(reportPos, msg)
       } else throw new TypeError(pos, msg)
     }
 
