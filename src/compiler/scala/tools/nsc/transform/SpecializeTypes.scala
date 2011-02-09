@@ -36,11 +36,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def isSpecialized(sym: Symbol) = sym hasAnnotation SpecializedClass
 
   private def isSpecializedOnAnyRef(sym: Symbol) = sym.getAnnotation(SpecializedClass) match {
-    case Some(AnnotationInfo(_, args, _)) =>
-      args.find(_.symbol == Predef_AnyRef) match {
-        case Some(_) => true
-        case None => false
-      }
+    case Some(AnnotationInfo(_, args, _)) => args.exists(_.symbol == Predef_AnyRef)
     case _ => false
   }
 
@@ -718,7 +714,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       atPhase(phase.next)(clazz.owner.info.decls enter spc) //!! assumes fully specialized classes
     }
-    if (hasSubclasses) clazz.resetFlag(FINAL)
+    if (hasSubclasses) clazz.resetFlag(FINAL) //TODO
     //log("decls: " + decls1 + ", overloads: " + overloads.mkString("\n"))
     decls1
   }
@@ -1185,6 +1181,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
+    def doesConform(treeType: Type, memberType: Type) =
+      (isPrimitive(treeType) && (treeType =:= memberType)) || { // anyref specialization
+        false
+      }
+
     override def transform(tree: Tree): Tree = {
       val symbol = tree.symbol
 
@@ -1194,10 +1195,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         log("[specSym] checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
                 .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
-          val specMember = qual.tpe.member(specializedName(symbol, env)) // suchThat (_.tpe =:= qual.tpe)
-          // @I: why does a member of a qualifier have to have the same type as the qualifier?  ^^^
-          // log("[specSym] found: " + qual.tpe.member(specializedName(symbol, env)).tpe + " =:= " + qual.tpe)
-          // log("[specSym] found specMember: " + specMember)
+          val specMember = qual.tpe.member(specializedName(symbol, env)) suchThat (s => doesConform(tree.tpe, s.tpe))
+          log("[specSym] found: " + qual.tpe.member(specializedName(symbol, env)).tpe + ", instantiated as: " + tree.tpe)
+          log("[specSym] found specMember: " + specMember)
           if (specMember ne NoSymbol)
             if (TypeEnv.includes(typeEnv(specMember), env)) Some(specMember)
             else {
