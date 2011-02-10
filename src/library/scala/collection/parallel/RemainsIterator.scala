@@ -626,7 +626,7 @@ self =>
   override def zipAllParSeq[S, U >: T, R >: S](that: ParSeqIterator[S], thisElem: U, thatElem: R) = new ZippedAll[U, R](that, thisElem, thatElem)
 
   def reverse: ParSeqIterator[T] = {
-    val pa = mutable.ParArray.fromTraversables(self)
+    val pa = mutable.ParArray.fromTraversables(self).reverse
     new pa.ParArrayIterator with pa.SCPI {
       override def reverse = self
     }
