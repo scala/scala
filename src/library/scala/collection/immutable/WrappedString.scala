@@ -47,5 +47,10 @@ class WrappedString(val self: String) extends IndexedSeq[Char] with StringLike[W
  *  @since 2.8
  */
 object WrappedString {
+  implicit def canBuildFrom: CanBuildFrom[WrappedString, Char, WrappedString] = new CanBuildFrom[WrappedString, Char, WrappedString] {
+    def apply(from: WrappedString) = newBuilder
+    def apply() = newBuilder
+  }
+
   def newBuilder: Builder[Char, WrappedString] = StringBuilder.newBuilder mapResult (x => new WrappedString(x))
 }
