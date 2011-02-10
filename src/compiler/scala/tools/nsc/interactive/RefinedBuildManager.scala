@@ -116,10 +116,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     def update0(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
       deleteClassfiles(files)
       val run = compiler.newRun()
-      if (settings.Ybuildmanagerdebug.value) {
-        compiler.inform("classpath used: " + compiler.settings.classpath)
+      if (settings.Ybuildmanagerdebug.value)
         compiler.inform("compiling " + toStringSet(files))
-      }
       buildingFiles(files)
 
       run.compileFiles(files.toList)
