@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel.mutable
 
 
@@ -25,17 +34,18 @@ import scala.collection.Sequentializable
  *  cannot be changed after it's been created.
  *
  *  `ParArray` internally keeps an array containing the elements. This means that
- *  bulk operations based on traversal are fast, but those returning a parallel array as a result
- *  are slightly slower. The reason for this is that `ParArray` uses lazy builders that
- *  create the internal data array only after the size of the array is known. The fragments
- *  are then copied into the resulting data array in parallel using fast array copy operations.
- *  Operations for which the resulting array size is known in advance are optimised to use this
- *  information.
+ *  bulk operations based on traversal ensure fast access to elements. `ParArray` uses lazy builders that
+ *  create the internal data array only after the size of the array is known. In the meantime, they keep
+ *  the result set fragmented. The fragments
+ *  are copied into the resulting data array in parallel using fast array copy operations once all the combiners
+ *  are populated in parallel.
  *
  *  @tparam T        type of the elements in the array
  *
  *  @define Coll ParArray
  *  @define coll parallel array
+ *
+ *  @author Aleksandar Prokopec
  */
 @SerialVersionUID(1L)
 class ParArray[T] private[mutable] (val arrayseq: ArraySeq[T])
@@ -673,9 +683,10 @@ self =>
 }
 
 
-
-
-
+/** $factoryinfo
+ *  @define Coll mutable.ParArray
+ *  @define coll parallel array
+ */
 object ParArray extends ParFactory[ParArray] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParArray[T]] = new GenericCanCombineFrom[T]
   def newBuilder[T]: Combiner[T, ParArray[T]] = newCombiner

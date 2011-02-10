@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection
 package parallel.immutable
 
@@ -16,6 +25,20 @@ import immutable.VectorIterator
 
 
 
+/** Immutable parallel vectors, based on vectors.
+ *
+ *  $paralleliterableinfo
+ *
+ *  $sideeffects
+ *
+ *  @tparam T    the element type of the vector
+ *
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
+ *
+ *  @define Coll immutable.ParVector
+ *  @define coll immutable parallel vector
+ */
 class ParVector[+T](private[this] val vector: Vector[T])
 extends ParSeq[T]
    with GenericParTemplate[T, ParVector]
@@ -61,6 +84,10 @@ extends ParSeq[T]
 
 
 
+/** $factoryInfo
+ *  @define Coll immutable.ParVector
+ *  @define coll immutable parallel vector
+ */
 object ParVector extends ParFactory[ParVector] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParVector[T]] =
     new GenericCanCombineFrom[T]

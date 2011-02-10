@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -15,7 +24,16 @@ import scala.collection.generic.CanCombineFrom
 
 
 
-
+/** A template trait for parallel maps.
+ *
+ *  $sideeffects
+ *
+ *  @tparam K    the key type of the map
+ *  @tparam V    the value type of the map
+ *
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
+ */
 trait ParMap[K, +V]
 extends Map[K, V]
    with GenericParMapTemplate[K, V, ParMap]

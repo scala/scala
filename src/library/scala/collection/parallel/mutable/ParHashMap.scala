@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 package mutable
 
@@ -12,6 +21,18 @@ import collection.mutable.UnrolledBuffer
 
 
 
+/** A parallel hash map.
+ *
+ *  `ParHashMap` is a parallel map which internally keeps elements within a hash table.
+ *  It uses chaining to resolve collisions.
+ *
+ *  @tparam T        type of the elements in the parallel hash map
+ *
+ *  @define Coll ParHashMap
+ *  @define coll parallel hash map
+ *
+ *  @author Aleksandar Prokopec
+ */
 @SerialVersionUID(1L)
 class ParHashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
 extends ParMap[K, V]
@@ -118,6 +139,10 @@ self =>
 }
 
 
+/** $factoryinfo
+ *  @define Coll mutable.ParHashMap
+ *  @define coll parallel hash map
+ */
 object ParHashMap extends ParMapFactory[ParHashMap] {
   var iters = 0
 

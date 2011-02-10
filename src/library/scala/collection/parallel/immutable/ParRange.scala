@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel.immutable
 
 
@@ -9,6 +18,20 @@ import scala.collection.parallel.ParIterableIterator
 
 
 
+/** Parallel ranges.
+ *
+ *  $paralleliterableinfo
+ *
+ *  $sideeffects
+ *
+ *  @param range    the sequential range this parallel range was obtained from
+ *
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
+ *
+ *  @define Coll immutable.ParRange
+ *  @define coll immutable parallel range
+ */
 @SerialVersionUID(1L)
 class ParRange(val range: Range)
 extends ParSeq[Int]

@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -22,12 +31,12 @@ import scala.collection.parallel.immutable.ParRange
  *  which carries information about the type of the sequential version of the view.
  *
  *  @tparam T         the type of the elements this view can traverse
- *  @tparam Coll      the type of the collection this view is derived from
- *  @tparam CollSeq   TODO
+ *  @tparam Coll      the type of the parallel collection this view is derived from
+ *  @tparam CollSeq   the type of the sequential collection corresponding to the underlying parallel collection
  *  @tparam This      the actual representation type of this view
  *  @tparam ThisSeq   the type of the sequential representation of this view
  *
- *  @since 2.8
+ *  @since 2.9
  */
 trait ParIterableViewLike[+T,
                           +Coll <: Parallel,

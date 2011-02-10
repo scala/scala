@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel.mutable
 
 
@@ -7,7 +16,7 @@ import scala.collection.parallel.ParIterableLike
 import scala.collection.parallel.Combiner
 
 
-/** A template trait for parallel iterable collections.
+/** A template trait for mutable parallel iterable collections.
  *
  *  $paralleliterableinfo
  *
@@ -15,8 +24,8 @@ import scala.collection.parallel.Combiner
  *
  *  @tparam T    the element type of the collection
  *
- *  @author prokopec
- *  @since 2.8
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
  */
 trait ParIterable[T] extends collection.mutable.Iterable[T]
                         with collection.parallel.ParIterable[T]

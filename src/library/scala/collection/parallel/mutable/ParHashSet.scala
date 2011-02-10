@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel.mutable
 
 
@@ -13,6 +22,18 @@ import collection.mutable.UnrolledBuffer
 
 
 
+/** A parallel hash set.
+ *
+ *  `ParHashSet` is a parallel set which internally keeps elements within a hash table.
+ *  It uses linear probing to resolve collisions.
+ *
+ *  @tparam T        type of the elements in the parallel hash map
+ *
+ *  @define Coll ParHashMap
+ *  @define coll parallel hash map
+ *
+ *  @author Aleksandar Prokopec
+ */
 @SerialVersionUID(1L)
 class ParHashSet[T] private[collection] (contents: FlatHashTable.Contents[T])
 extends ParSet[T]
@@ -86,8 +107,8 @@ extends ParSet[T]
 
 
 /** $factoryInfo
- *  @define Coll mutable.ParSet
- *  @define coll mutable parallel set
+ *  @define Coll mutable.ParHashSet
+ *  @define coll parallel hash set
  */
 object ParHashSet extends ParSetFactory[ParHashSet] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParHashSet[T]] = new GenericCanCombineFrom[T]

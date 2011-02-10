@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -12,7 +21,7 @@ import scala.collection.parallel.immutable.repetition
 
 
 
-trait RemainsIterator[+T] extends Iterator[T] {
+private[collection] trait RemainsIterator[+T] extends Iterator[T] {
   /** The number of elements this iterator has yet to iterate.
    *  This method doesn't change the state of the iterator.
    */
@@ -26,7 +35,7 @@ trait RemainsIterator[+T] extends Iterator[T] {
  *  @param T          type of the elements iterated.
  *  @param IterRepr   iterator type.
  */
-trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
+private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
 
   /* accessors */
 
@@ -358,6 +367,11 @@ trait AugmentedSeqIterator[+T] extends AugmentedIterableIterator[T] {
 }
 
 
+/** Parallel iterators allow splitting and provide a `remaining` method to
+ *  obtain the number of elements remaining in the iterator.
+ *
+ *  @param T          type of the elements iterated.
+ */
 trait ParIterableIterator[+T]
 extends AugmentedIterableIterator[T]
    with Splitter[T]
@@ -500,6 +514,10 @@ self =>
 }
 
 
+/** Parallel sequence iterators allow splitting into arbitrary subsets.
+ *
+ *  @param T          type of the elements iterated.
+ */
 trait ParSeqIterator[+T]
 extends ParIterableIterator[T]
    with AugmentedSeqIterator[T]

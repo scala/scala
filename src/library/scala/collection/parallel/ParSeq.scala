@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -11,11 +20,16 @@ import scala.collection.parallel.mutable.ParArrayCombiner
 import scala.collection.parallel.mutable.ParArray
 
 
+
 /** A template trait for parallel sequences.
  *
  *  $parallelseqinfo
  *
  *  $sideeffects
+ *
+ *  @tparam T      the type of the elements in this parallel sequence
+ *
+ *  @author Aleksandar Prokopec
  */
 trait ParSeq[+T] extends Seq[T]
                     with ParIterable[T]

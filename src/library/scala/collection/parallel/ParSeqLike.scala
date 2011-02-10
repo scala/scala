@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -12,29 +21,29 @@ import scala.collection.generic.VolatileAbort
 
 
 
-// TODO update docs!!
 /** A template trait for sequences of type `ParSeq[T]`, representing
  *  parallel sequences with element type `T`.
  *
  *  $parallelseqinfo
  *
- *  @tparam T        the type of the elements contained in this collection
- *  @tparam Repr     the type of the actual collection containing the elements
+ *  @tparam T           the type of the elements contained in this collection
+ *  @tparam Repr        the type of the actual collection containing the elements
+ *  @tparam Sequential  the type of the sequential version of this parallel collection
  *
  *  @define parallelseqinfo
- *  Parallel sequences inherit the `IndexedSeq` trait. This means they provide
- *  efficient indexing and length computations. Like their sequential counterparts
+ *  Parallel sequences inherit the `Seq` trait. Their indexing and length computations
+ *  are defined to be efficient. Like their sequential counterparts
  *  they always have a defined order of elements. This means they will produce resulting
  *  parallel sequences in the same way sequential sequences do. However, the order
- *  in which they iterate over elements to produce results is not defined and is generally
+ *  in which they perform bulk operations on elements to produce results is not defined and is generally
  *  nondeterministic. If the higher-order functions given to them produce no sideeffects,
  *  then this won't be noticeable.
  *
  *  This trait defines a new, more general `split` operation and reimplements the `split`
  *  operation of `ParallelIterable` trait using the new `split` operation.
  *
- *  @author prokopec
- *  @since 2.8
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
  */
 trait ParSeqLike[+T, +Repr <: Parallel, +Sequential <: Seq[T] with SeqLike[T, Sequential]]
 extends scala.collection.SeqLike[T, Repr]

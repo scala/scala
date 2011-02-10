@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel.immutable
 
 
@@ -24,9 +33,19 @@ import scala.collection.immutable.HashSet
 
 
 
-/** Parallel hash trie set.
+/** Immutable parallel hash set, based on hash tries.
  *
- *  @author prokopec
+ *  $paralleliterableinfo
+ *
+ *  $sideeffects
+ *
+ *  @tparam T    the element type of the set
+ *
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
+ *
+ *  @define Coll immutable.ParHashSet
+ *  @define coll immutable parallel hash set
  */
 @SerialVersionUID(1L)
 class ParHashSet[T] private[immutable] (private[this] val trie: HashSet[T])
@@ -108,6 +127,10 @@ self =>
 }
 
 
+/** $factoryinfo
+ *  @define Coll immutable.ParHashSet
+ *  @define coll immutable parallel hash set
+ */
 object ParHashSet extends ParSetFactory[ParHashSet] {
   def newCombiner[T]: Combiner[T, ParHashSet[T]] = HashSetCombiner[T]
 

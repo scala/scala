@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection
 package parallel.mutable
 
@@ -9,6 +18,12 @@ import collection.parallel.ParIterableIterator
 
 
 
+/** Parallel flat hash table.
+ *
+ *  @tparam T        type of the elements in the table
+ *
+ *  @author Aleksandar Prokopec
+ */
 trait ParFlatHashTable[T] extends collection.mutable.FlatHashTable[T] {
 
   override def alwaysInitSizeMap = true

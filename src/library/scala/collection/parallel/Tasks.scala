@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -13,10 +22,7 @@ import annotation.unchecked.uncheckedVariance
 
 
 /** A trait that declares task execution capabilities used
- *  by parallel collections. Parallel collections inherit a subtrait
- *  of this trait.
- *
- *  One implementation trait of `TaskExecution` is `ForkJoinTaskExecution`.
+ *  by parallel collections.
  */
 trait Tasks {
 
@@ -214,6 +220,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 }
 
 
+/** An implementation of tasks objects based on the Java thread pooling API. */
 trait ThreadPoolTasks extends Tasks {
   import java.util.concurrent._
 

@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel
 
 
@@ -14,10 +23,11 @@ import scala.collection.generic.CanCombineFrom
 
 /** A template view of a non-strict view of a parallel sequence.
  *
- *  @tparam T
- *  @tparam Coll
+ *  @tparam T         the type of elements in this parallel sequence
+ *  @tparam Coll      the type of the underlying parallel collection
+ *  @tparam CollSeq   the type of the sequential collection corresponding to the underlying parallel collection
  *
- *  @since 2.8
+ *  @since 2.9
  */
 trait ParSeqView[+T, +Coll <: Parallel, +CollSeq]
 extends ParSeqViewLike[T, Coll, CollSeq, ParSeqView[T, Coll, CollSeq], SeqView[T, CollSeq]]

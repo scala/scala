@@ -1,3 +1,12 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
 package scala.collection.parallel.immutable
 
 
@@ -23,9 +32,20 @@ import annotation.unchecked.uncheckedVariance
 
 
 
-/** Parallel hash trie map.
+/** Immutable parallel hash map, based on hash tries.
  *
- *  @author prokopec
+ *  $paralleliterableinfo
+ *
+ *  $sideeffects
+ *
+ *  @tparam K    the key type of the map
+ *  @tparam V    the value type of the map
+ *
+ *  @author Aleksandar Prokopec
+ *  @since 2.9
+ *
+ *  @define Coll immutable.ParHashMap
+ *  @define coll immutable parallel hash map
  */
 @SerialVersionUID(1L)
 class ParHashMap[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
@@ -126,6 +146,10 @@ self =>
 }
 
 
+/** $factoryinfo
+ *  @define Coll immutable.ParHashMap
+ *  @define coll immutable parallel hash map
+ */
 object ParHashMap extends ParMapFactory[ParHashMap] {
   def empty[K, V]: ParHashMap[K, V] = new ParHashMap[K, V]
 
