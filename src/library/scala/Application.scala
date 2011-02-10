@@ -47,9 +47,9 @@ trait Application extends DelayedInit {
   private val initCode = new ListBuffer[() => Unit]
 
   /** The init hook. This saves all initialization code for execution within `main`.
-   *  This methos is normally never called directly from user code.
-   *  Instead it is called as compiler-generated code for those classes, objects, and traits
-   *  that inherit from the `DelayedInit` trait and that do not themselves define
+   *  This method is normally never called directly from user code.
+   *  Instead it is called as compiler-generated code for those classes and objects
+   *  (but not traits) that inherit from the `DelayedInit` trait and that do not themselves define
    *  a `delayedInit` method.
    *  @param body the initialization code to be stored for later execution
    */
