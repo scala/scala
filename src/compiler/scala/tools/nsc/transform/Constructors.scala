@@ -403,12 +403,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
         } else stats
       }
-
+/*
       def isInitDef(stat: Tree) = stat match {
         case dd: DefDef => dd.symbol == delayedInitMethod
         case _ => false
       }
-
+*/
       def delayedInitClosure(stats: List[Tree]) =
         localTyper.typed {
           atPos(impl.pos) {
@@ -494,7 +494,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       var (uptoSuperStats, remainingConstrStats) = splitAtSuper(constrStatBuf.toList)
 
       val needsDelayedInit =
-        (clazz isSubClass DelayedInitClass) && !(defBuf exists isInitDef) && remainingConstrStats.nonEmpty
+        (clazz isSubClass DelayedInitClass) /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty
 
       if (needsDelayedInit) {
         val dicl = new ConstructorTransformer(unit) transform delayedInitClosure(remainingConstrStats)
