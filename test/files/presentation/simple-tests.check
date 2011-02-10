@@ -3,7 +3,7 @@ askTypeCompletion at Tester.scala(16,25)
 
 ================================================================================
 [response] aksTypeCompletion at (16,25)
-retreived 75 members
+retreived 77 members
 TypeMember(method !=,(x$1: AnyRef)Boolean,true,true,<none>)
 TypeMember(method !=,(x$1: Any)Boolean,true,true,<none>)
 TypeMember(method ==,(x$1: AnyRef)Boolean,true,true,<none>)
@@ -46,6 +46,8 @@ TypeMember(method formatted,(fmtstr: String)String,true,false,method any2stringa
 TypeMember(method hashCode,()Int,true,true,<none>)
 TypeMember(value helpDescription,String,false,true,<none>)
 TypeMember(method helpSyntax,=> String,true,true,<none>)
+TypeMember(method internalOnly,()Tester.this.settings.verbose.type,true,true,<none>)
+TypeMember(variable internalSetting,Boolean,false,true,<none>)
 TypeMember(method isAdvanced,=> Boolean,true,true,<none>)
 TypeMember(method isDefault,=> Boolean,true,true,<none>)
 TypeMember(method isForDebug,=> Boolean,true,true,<none>)
@@ -132,7 +134,7 @@ askTypeCompletion at Tester.scala(27,23)
 
 ================================================================================
 [response] aksTypeCompletion at (27,23)
-retreived 195 members
+retreived 196 members
 TypeMember(method !=,(x$1: AnyRef)Boolean,true,true,<none>)
 TypeMember(method !=,(x$1: Any)Boolean,true,true,<none>)
 TypeMember(method ==,(x$1: AnyRef)Boolean,true,true,<none>)
@@ -255,6 +257,7 @@ TypeMember(method equals,(that: Any)Boolean,true,true,<none>)
 TypeMember(value errorFn,(String) => Unit,false,false,<none>)
 TypeMember(value explaintypes,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(variable explicitParentLoader,Option[java.lang.ClassLoader],false,true,<none>)
+TypeMember(value exposeEmptyPackage,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value extdirs,Tester.this.settings.PathSetting,false,true,<none>)
 TypeMember(method finalize,()Unit,false,true,<none>)
 TypeMember(method formatted,(fmtstr: String)String,true,false,method any2stringadd)

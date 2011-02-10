@@ -3575,6 +3575,14 @@ trait Typers extends Modes {
                                           // for being inaccessible; used for error reporting
         var inaccessibleExplanation: String = ""
 
+        // If a special setting is given, the empty package will be checked as a
+        // last ditch effort before failing.  This method sets defSym and returns
+        // true if a member of the given name exists.
+        def checkEmptyPackage(): Boolean = {
+          defSym = EmptyPackageClass.tpe.nonPrivateMember(name)
+          defSym != NoSymbol
+        }
+
         // A symbol qualifies if it exists and is not stale. Stale symbols
         // are made to disappear here. In addition,
         // if we are in a constructor of a pattern, we ignore all definitions
@@ -3679,15 +3687,20 @@ trait Typers extends Modes {
               if (!(shortenImports && qual0.symbol.isPackage)) // optimization: don't write out package prefixes
                 qual = atPos(tree.pos.focusStart)(resetPos(qual0.duplicate))
               pre = qual.tpe
-            } else {
+            }
+            else if (settings.exposeEmptyPackage.value && checkEmptyPackage())
+              log("Allowing empty package member " + name + " due to settings.")
+            else {
               if (settings.debug.value) {
                 log(context.imports)//debug
               }
               if (inaccessibleSym eq NoSymbol) {
                 error(tree.pos, "not found: "+decodeWithNamespace(name))
-              } else accessError(
+              }
+              else accessError(
                 tree, inaccessibleSym, context.enclClass.owner.thisType,
-                inaccessibleExplanation)
+                inaccessibleExplanation
+              )
               defSym = context.owner.newErrorSymbol(name)
             }
           }

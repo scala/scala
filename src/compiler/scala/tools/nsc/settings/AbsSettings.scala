@@ -82,7 +82,12 @@ trait AbsSettings {
     def respondsTo(label: String) = (name == label) || (abbreviations contains label)
 
     /** If the setting should not appear in help output, etc. */
-    def isInternalOnly = false
+    private var internalSetting = false
+    def isInternalOnly = internalSetting
+    def internalOnly(): this.type = {
+      internalSetting = true
+      this
+    }
 
     /** Issue error and return */
     def errorAndValue[T](msg: String, x: T): T = { errorFn(msg) ; x }

@@ -226,11 +226,9 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   def PhasesSetting(name: String, descr: String) = add(new PhasesSetting(name, descr))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
-    val prepend = new StringSetting(name + "/p", "", "", "") with InternalSetting
-    val append = new StringSetting(name + "/a", "", "", "") with InternalSetting
+    val prepend = StringSetting(name + "/p", "", "", "").internalOnly()
+    val append = StringSetting(name + "/a", "", "", "").internalOnly()
 
-    add[StringSetting](prepend)
-    add[StringSetting](append)
     add(new PathSetting(name, descr, default, prepend, append))
   }
 

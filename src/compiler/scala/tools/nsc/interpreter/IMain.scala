@@ -94,6 +94,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *  on the future.
    */
   private val _compiler: Global = newCompiler(settings, reporter)
+  private var _initializeComplete = false
+  def isInitializeComplete = _initializeComplete
+
   private def _initialize(): Boolean = {
     val source = """
       |// this is assembled to force the loading of approximately the
@@ -104,7 +107,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       |}
       |""".stripMargin
 
-    try {
+    val result = try {
       new _compiler.Run() compileSources List(new BatchSourceFile("<init>", source))
       if (isReplDebug || settings.debug.value) {
         // Can't use printMessage here, it deadlocks
@@ -129,6 +132,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       )
       false
     }
+
+    try result
+    finally _initializeComplete = result
   }
 
   // set up initialization future
@@ -225,6 +231,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
     settings.outputDirs setSingleOutput virtualDirectory
+    settings.exposeEmptyPackage.value = true
     new Global(settings, reporter)
   }
 
@@ -1167,8 +1174,13 @@ object IMain {
 
   class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, new ReplStrippingWriter(intp)) {
     override def printMessage(msg: String) {
-      if (intp.totalSilence) ()
-      else super.printMessage(msg)
+      // Avoiding deadlock when the compiler starts logging before
+      // the lazy val is done.
+      if (intp.isInitializeComplete) {
+        if (intp.totalSilence) ()
+        else super.printMessage(msg)
+      }
+      else Console.println(msg)
     }
   }
 }
