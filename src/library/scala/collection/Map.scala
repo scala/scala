@@ -48,7 +48,7 @@ object Map extends MapFactory[Map] {
    */
   abstract class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
     override def size               = underlying.size
-    def get(key: A)                 = underlying.get(key) orElse Some(default(key))
+    def get(key: A)                 = underlying.get(key) // removed in 2.9: orElse Some(default(key))
     def iterator                    = underlying.iterator
     override def default(key: A): B = d(key)
   }
