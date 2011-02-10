@@ -174,6 +174,9 @@ trait Position {
 
   def column: Int = throw new UnsupportedOperationException("Position.column")
 
+  /** Convert this to a position around `point` that spans a single source line */
+  def toSingleLine: Position = this
+
   def lineContent: String =
     if (isDefined) source.lineToString(line - 1)
     else "NO_LINE"
@@ -254,6 +257,15 @@ extends OffsetPosition(source, point) {
   override def includes(pos: Position) = pos.isDefined && start <= pos.startOrPoint && pos.endOrPoint <= end
   override def union(pos: Position) =
     if (pos.isRange) new RangePosition(source, start min pos.start, point, end max pos.end) else this
+
+  override def toSingleLine: Position = source match {
+    case bs: BatchSourceFile
+    if end > 0 && bs.offsetToLine(start) < bs.offsetToLine(end - 1) =>
+      val pointLine = bs.offsetToLine(point)
+      new RangePosition(source, bs.lineToOffset(pointLine), point, bs.lineToOffset(pointLine + 1))
+    case _ => this
+  }
+
   override def toString = "RangePosition("+source+", "+start+", "+point+", "+end+")"
   override def show = "["+start+":"+end+"]"
   private var focusCache: Position = NoPosition

@@ -102,7 +102,7 @@ self =>
 
   /** A list giving all files to be typechecked in the order they should be checked.
    */
-  var allSources: List[SourceFile] = List()
+  protected var allSources: List[SourceFile] = List()
 
   /** The currently active typer run */
   private var currentTyperRun: TyperRun = _
@@ -114,7 +114,7 @@ self =>
   protected[interactive] var outOfDate = false
 
   /** Units compiled by a run with id >= minRunId are considered up-to-date  */
-  private[interactive] var minRunId = 1
+  protected[interactive] var minRunId = 1
 
   private var interruptsEnabled = true
 
@@ -207,16 +207,16 @@ self =>
 
   case class WorkEvent(atNode: Int, atMillis: Long)
 
-  var moreWorkAtNode: Int = -1
-  var nodesSeen = 0
-  var lastWasReload = false
+  private var moreWorkAtNode: Int = -1
+  private var nodesSeen = 0
+  private var lastWasReload = false
 
   /** The number of pollForWorks after which the presentation compiler yields.
    *  Yielding improves responsiveness on systems with few cores because it
    *  gives the UI thread a chance to get new tasks and interrupt the presentation
    *  compiler with them.
    */
-  final val yieldPeriod = 8
+  private final val yieldPeriod = 8
 
   /** Called from runner thread and signalDone:
    *  Poll for interrupts and execute them immediately.
@@ -225,7 +225,7 @@ self =>
    *  @param pos   The position of the tree if polling while typechecking, NoPosition otherwise
    *
    */
-  def pollForWork(pos: Position) {
+  protected[interactive] def pollForWork(pos: Position) {
     if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
       Thread.`yield`()
 
@@ -330,7 +330,7 @@ self =>
 
   /** Create a new presentation compiler runner.
    */
-  def newRunnerThread(): Thread = {
+  protected[interactive] def newRunnerThread(): Thread = {
     threadId += 1
     compileRunner = new PresentationCompilerThread(this, threadId)
     compileRunner.start()
@@ -381,7 +381,7 @@ self =>
   }
 
   /** Reset unit to unloaded state */
-  def reset(unit: RichCompilationUnit): Unit = {
+  protected def reset(unit: RichCompilationUnit): Unit = {
     unit.depends.clear()
     unit.defined.clear()
     unit.synthetics.clear()
@@ -394,7 +394,7 @@ self =>
   }
 
   /** Parse unit and create a name index. */
-  def parseAndEnter(unit: RichCompilationUnit): Unit = {
+  protected def parseAndEnter(unit: RichCompilationUnit): Unit = {
     debugLog("parsing: "+unit)
     currentTyperRun.compileLate(unit)
     if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
@@ -403,11 +403,11 @@ self =>
   }
 
   @deprecated("use parseTree(unit.source) instead")
-  def parse(unit: RichCompilationUnit) = parseAndEnter(unit)
+  private def parse(unit: RichCompilationUnit) = parseAndEnter(unit)
 
   /** Make sure unit is typechecked
    */
-  def typeCheck(unit: RichCompilationUnit) {
+  protected def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
     if (unit.status == NotLoaded) parseAndEnter(unit)
     unit.status = PartiallyChecked
@@ -476,7 +476,7 @@ self =>
     }
   }
 
-  def reloadSource(source: SourceFile) {
+  protected def reloadSource(source: SourceFile) {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
     reset(unit)
@@ -484,7 +484,7 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reloadSources(sources: List[SourceFile]) {
+  protected def reloadSources(sources: List[SourceFile]) {
     newTyperRun()
     minRunId = currentRunId
     sources foreach reloadSource
@@ -492,7 +492,7 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: List[SourceFile], response: Response[Unit]) {
+  protected def reload(sources: List[SourceFile], response: Response[Unit]) {
     informIDE("reload: " + sources)
     lastWasReload = true
     respond(response)(reloadSources(sources))
@@ -501,7 +501,7 @@ self =>
   }
 
   /** A fully attributed tree located at position `pos` */
-  def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  protected def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       val result = typedTreeAt(pos)
@@ -530,7 +530,7 @@ self =>
   }
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
-  def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
+  protected def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
     informIDE("typedTree " + source + " forceReload: " + forceReload)
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
@@ -542,18 +542,18 @@ self =>
   }
 
   /** Set sync var `response` to a fully attributed tree located at position `pos`  */
-  def getTypedTreeAt(pos: Position, response: Response[Tree]) {
+  protected def getTypedTreeAt(pos: Position, response: Response[Tree]) {
     respond(response)(typedTreeAt(pos))
   }
 
   /** Set sync var `response` to a fully attributed tree corresponding to the
    *  entire compilation unit  */
-  def getTypedTree(source: SourceFile, forceReload: Boolean, response: Response[Tree]) {
+  protected def getTypedTree(source: SourceFile, forceReload: Boolean, response: Response[Tree]) {
     respond(response)(typedTree(source, forceReload))
   }
 
   /** Implements CompilerControl.askLinkPos */
-  def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
+  protected def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
     informIDE("getLinkPos "+sym+" "+source)
     respond(response) {
       val preExisting = unitOfFile isDefinedAt source.file
@@ -612,14 +612,14 @@ self =>
 
   import analyzer.{SearchResult, ImplicitSearch}
 
-  def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
+  protected def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
     informIDE("getScopeCompletion" + pos)
     respond(response) { scopeMembers(pos) }
   }
 
-  val Dollar = newTermName("$")
+  private val Dollar = newTermName("$")
 
-  class Members[M <: Member] extends LinkedHashMap[Name, Set[M]] {
+  private class Members[M <: Member] extends LinkedHashMap[Name, Set[M]] {
     override def default(key: Name) = Set()
 
     private def matching(sym: Symbol, symtpe: Type, ms: Set[M]): Option[M] = ms.find { m =>
@@ -653,7 +653,7 @@ self =>
   }
 
   /** Return all members visible without prefix in context enclosing `pos`. */
-  def scopeMembers(pos: Position): List[ScopeMember] = {
+  protected def scopeMembers(pos: Position): List[ScopeMember] = {
     typedTreeAt(pos) // to make sure context is entered
     val context = doLocateContext(pos)
     val locals = new Members[ScopeMember]
@@ -686,13 +686,13 @@ self =>
     result
   }
 
-  def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
+  protected def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
     informIDE("getTypeCompletion " + pos)
     respondGradually(response) { typeMembers(pos) }
     //if (debugIDE) typeMembers(pos)
   }
 
-  def typeMembers(pos: Position): Stream[List[TypeMember]] = {
+  protected def typeMembers(pos: Position): Stream[List[TypeMember]] = {
     var tree = typedTreeAt(pos)
 
     // if tree consists of just x. or x.fo where fo is not yet a full member name
@@ -741,7 +741,7 @@ self =>
 
     //print("add members")
     for (sym <- ownerTpe.members)
-      addTypeMember(sym, pre, false, NoSymbol)
+      addTypeMember(sym, pre, sym.owner != ownerTpe.typeSymbol, NoSymbol)
     members.allMembers #:: {
       //print("\nadd pimped")
       val applicableViews: List[SearchResult] =
