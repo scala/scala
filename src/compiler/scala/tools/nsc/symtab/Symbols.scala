@@ -850,11 +850,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * This is done in checkAccessible and overriding checks in refchecks
      * We can't do this on class loading because it would result in infinite cycles.
      */
-    private var triedCooking: Boolean = false
     final def cookJavaRawInfo() {
       // println("cookJavaRawInfo: "+(rawname, triedCooking))
-      if(triedCooking) return else triedCooking = true // only try once...
+      if (hasFlag(TRIEDCOOKING)) return else setFlag(TRIEDCOOKING) // only try once...
+      val oldInfo = info
       doCookJavaRawInfo()
+      if ((info ne oldInfo) && settings.verbose.value)
+        println("cooking "+this+": "+oldInfo+" --> "+info) // DEBUG
     }
 
     protected def doCookJavaRawInfo(): Unit

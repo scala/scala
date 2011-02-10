@@ -77,6 +77,8 @@ class Flags extends ModifierFlags {
   final val VBRIDGE       = 0x40000000000L// symbol is a varargs bridge
 
   final val VARARGS       = 0x80000000000L// symbol is a Java-style varargs method
+  final val TRIEDCOOKING  = 0x100000000000L // ``Cooking'' has been tried on this symbol
+                                            // A Java method's type is ``cooked'' by transforming raw types to existentials
 
   // pickling and unpickling of flags
 
