@@ -275,26 +275,38 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       join(outDir.toString, CLASSPATH),
       files mkString " "
     )
-    def fail(msg: String) = {
-      SFile(output) appendAll msg
-      false
-    }
-    try runCommand(cmd, output) match {
-      case 0    => true
-      case code => fail("javac failed with exit code " + code + "\n" + cmd + "\n")
-    }
+
+    try runCommand(cmd, output)
     catch exHandler(output, "javac command '" + cmd + "' failed:\n")
   }
 
   /** Runs command redirecting standard out and
    *  error out to output file.
    */
-  def runCommand(command: String, output: File): Int = {
+  def runCommand(command: String, outFile: File): Boolean = {
     NestUI.verbose("running command:\n"+command)
-    (command #> output !)
+
+    // This is laboriously avoiding #> since it swallows exit failure code.
+    // To be revisited. XXX.
+    val out = new StringBuilder
+    val err = new StringBuilder
+    val errorLogger = ProcessLogger(x => err append (x + "\n"))
+    val pio = BasicIO(
+      false,
+      x => out append (x + "\n"),
+      Some(errorLogger)
+    )
+    val process = Process(command) run pio
+    val code    = process.exitValue()
+    SFile(outFile) writeAll out.toString
+
+    (code == 0) || {
+      SFile(outFile).appendAll(command + " failed with code: " + code + "\n", err.toString)
+      false
+    }
   }
 
-  def execTest(outDir: File, logFile: File, classpathPrefix: String = "") {
+  def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
     // check whether there is a ".javaopts" file
     val argsFile  = new File(logFile.getParentFile, fileBase + ".javaopts")
     val argString = file2String(argsFile)
@@ -335,17 +347,6 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         "jvm"
       )
     ) mkString " "
-
-    // val errors = new StringBuilder
-    // val errorLogger = ProcessLogger(errors append _)
-    // NestUI.verbose("running command:\n"+command)
-    // val code = (command #> output ! errorLogger)
-    // if (code != 0 || isPartestDebug) {
-    //   SFile(logFile).appendAll(
-    //     "\nNon-zero exit code: " + code + ", appending stderr output.\n\n",
-    //     errors.toString
-    //   )
-    // }
 
     runCommand(cmd, logFile)
   }
@@ -525,8 +526,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       runTestCommon(file, expectFailure = false)((logFile, outDir) => {
         val dir      = file.getParentFile
 
-        execTest(outDir, logFile)
-        diffCheck(compareOutput(dir, logFile))
+        execTest(outDir, logFile) && diffCheck(compareOutput(dir, logFile))
       })
 
     def runSpecializedTest(file: File): LogContext =
@@ -534,7 +534,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         val dir       = file.getParentFile
 
         // adding the instrumented library to the classpath
-        execTest(outDir, logFile, PathSettings.srcSpecLib.toString)
+        execTest(outDir, logFile, PathSettings.srcSpecLib.toString) &&
         diffCheck(compareOutput(dir, logFile))
       })
 
@@ -828,9 +828,10 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             val ok = compileMgr.shouldCompile(List(testFile), kind, logFile)
             NestUI.verbose("compilation of " + testFile + (if (ok) "succeeded" else "failed"))
             if (ok) {
-              execTest(outDir, logFile)
-              NestUI.verbose(this+" finished running "+fileBase)
-              diffCheck(compareOutput(dir, logFile))
+              execTest(outDir, logFile) && {
+                NestUI.verbose(this+" finished running "+fileBase)
+                diffCheck(compareOutput(dir, logFile))
+              }
             }
 
             LogContext(logFile, swr, wr)

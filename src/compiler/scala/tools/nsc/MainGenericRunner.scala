@@ -84,9 +84,11 @@ object MainGenericRunner {
             case "guess"  => ScalaClassLoader.classExists(classpath, thingToRun)
           }
 
-        val result =
+        val result = try {
           if (isObjectName) ObjectRunner.runAndCatch(classpath, thingToRun, command.arguments)
           else ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
+        }
+        catch { case ex => Left(ex) }
 
         result match {
           case Left(ex) => errorFn(ex)

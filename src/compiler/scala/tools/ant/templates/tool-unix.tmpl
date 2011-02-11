@@ -8,25 +8,29 @@
 # PARTICULAR PURPOSE.
 ##############################################################################
 
-function onExit() {
-  if [[ -n "$scaladebug" ]]; then
-    echo "scala script runner trapped exit, running handler."
-  fi
-    
-  local exit_status=${1:-$?}
+# Not sure what the right default is here: trying nonzero.
+SCALA_EXIT_STATUS=127
+REENABLE_ECHO=true
 
+function reenableEcho() {
+  REENABLE_ECHO=false
   # reenable echo
   case "$TERM" in
       rxvt* | xterm* | screen*)
           stty icanon echo
           ;;
   esac
-  
-  exit $exit_status
 }
 
-# install exit handler
-trap onExit EXIT
+function onExit() {
+  if $REENABLE_ECHO; then
+    reenableEcho
+    exit $SCALA_EXIT_STATUS
+  fi
+}
+
+# to reenable echo if we are interrupted before completing.
+trap onExit INT
 
 cygwin=false;
 case "`uname`" in
@@ -138,3 +142,8 @@ fi
   -Denv.emacs="$EMACS" \
   $CYGWIN_JLINE_TERMINAL \
   @properties@ @class@ @toolflags@ "$@@"
+
+# record the exit status lest it be overwritten:
+# then reenable echo and propagate the code.
+SCALA_EXIT_STATUS=$?
+onExit
