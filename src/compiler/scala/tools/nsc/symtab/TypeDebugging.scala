@@ -21,7 +21,7 @@ trait TypeDebugging {
     }
 
     def dump(tp: Type): Unit = {
-      println("** " + tp + " **")
+      println("** " + tp + " / " + tp.getClass + " **")
       import tp._
 
       println("typeSymbol = " + typeSymbol)

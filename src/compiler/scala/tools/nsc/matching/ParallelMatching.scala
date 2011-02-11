@@ -878,7 +878,7 @@ trait ParallelMatching extends ast.TreeDSL
           case ConstantType(Constant(null)) if isRef  => scrutTree OBJ_EQ NULL
           case ConstantType(Constant(value))          => scrutTree MEMBER_== Literal(value)
           case SingleType(NoPrefix, sym)              => genEquals(sym)
-          case SingleType(pre, sym) if sym.isModule   => genEquals(sym)
+          case SingleType(pre, sym) if sym.isStable   => genEquals(sym)
           case ThisType(sym) if sym.isModule          => genEquals(sym)
           case _ if isMatchUnlessNull                 => scrutTree OBJ_NE NULL
           case _                                      => scrutTree IS tpe
