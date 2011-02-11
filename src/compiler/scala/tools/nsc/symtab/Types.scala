@@ -3263,10 +3263,17 @@ A type's typeSymbol should never be inspected directly.
    *  in ClassFileparser.sigToType (where it is usually done)
    */
   object rawToExistential extends TypeMap {
+    private var expanded = immutable.Set[Symbol]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
-        val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        existentialAbstraction(eparams, typeRef(pre, sym, eparams map (_.tpe)))
+        if (expanded contains sym) AnyRefClass.tpe
+        else try {
+          expanded += sym
+          val eparams = typeParamsToExistentials(sym, sym.typeParams)
+          existentialAbstraction(eparams, typeRef(pre, sym, eparams map (_.tpe)))
+        } finally {
+          expanded -= sym
+        }
       case _ =>
         mapOver(tp)
     }
