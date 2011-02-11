@@ -219,7 +219,7 @@ public class ConsoleReader
      *
      * @return false if we failed (e.g., the buffer was empty)
      */
-    final boolean resetLine() throws IOException {
+    protected final boolean resetLine() throws IOException {
         if (buf.cursor == 0) {
             return false;
         }
@@ -378,7 +378,7 @@ public class ConsoleReader
      * @param str
      * @return
      */
-    final String expandEvents(String str) throws IOException {
+    protected String expandEvents(String str) throws IOException {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
@@ -650,7 +650,7 @@ public class ConsoleReader
     /**
      * Move the visual cursor backwards without modifying the buffer cursor.
      */
-    private void back(final int num) throws IOException {
+    protected void back(final int num) throws IOException {
         if (num == 0) return;
         if (terminal.isAnsiSupported()) {
             int width = getTerminal().getWidth();
@@ -736,7 +736,7 @@ public class ConsoleReader
         return backspace(1) == 1;
     }
 
-    private boolean moveToEnd() throws IOException {
+    protected boolean moveToEnd() throws IOException {
         return moveCursor(buf.length() - buf.cursor) > 0;
     }
 
@@ -1502,7 +1502,7 @@ public class ConsoleReader
      *
      * @return true if successful
      */
-    private boolean complete() throws IOException {
+    protected boolean complete() throws IOException {
         // debug ("tab for (" + buf + ")");
         if (completers.size() == 0) {
             return false;

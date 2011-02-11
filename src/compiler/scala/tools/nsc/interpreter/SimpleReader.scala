@@ -22,6 +22,7 @@ extends InteractiveReader
 
   def init() = ()
   def reset() = ()
+  def eraseLine() = ()
   def redrawLine() = ()
   def currentLine = ""
   def readOneLine(prompt: String): String = {
@@ -31,6 +32,7 @@ extends InteractiveReader
     }
     in.readLine()
   }
+  def readOneKey(prompt: String)  = sys.error("No char-based input in SimpleReader")
 }
 
 object SimpleReader {

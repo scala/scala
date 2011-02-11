@@ -196,6 +196,8 @@ public class WindowsTerminal
         if (indicator == SPECIAL_KEY_INDICATOR.code || indicator == NUMPAD_KEY_INDICATOR.code) {
             int c = readCharacter(in);
             WindowsKey key = WindowsKey.valueOf(c);
+            if (key == null)
+                return 0;
 
             switch (key) {
                 case UP_ARROW_KEY:

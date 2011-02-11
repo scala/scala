@@ -249,13 +249,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     import global.Symbol
 
     def p(x: Any) = intp.reporter.printMessage("" + x)
-    def toDefString(sym: Symbol) = {
-      TypeStrings.quieter(
-        intp.afterTyper(sym.defString),
-        sym.owner.name + ".this.",
-        sym.owner.fullName + "."
-      )
-    }
 
     // If an argument is given, only show a source with that
     // in its name somewhere.
@@ -300,7 +293,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
             p("  /* " + members.size + ownerMessage + owner.fullName + " */")
 
             memberGroups foreach { group =>
-              group foreach (s => p("  " + toDefString(s)))
+              group foreach (s => p("  " + intp.symbolDefString(s)))
               p("")
             }
         }
@@ -392,6 +385,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     else powerCommands
   )
 
+  val replayQuestionMessage =
+    """|The repl compiler has crashed spectacularly. Shall I replay your
+       |session? I can re-run all lines except the last one.
+       |[y/n]
+    """.trim.stripMargin
+
   private val crashRecovery: PartialFunction[Throwable, Unit] = {
     case ex: Throwable =>
       if (settings.YrichExes.value) {
@@ -406,9 +405,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       else {
         out.println(util.stackTraceString(ex))
       }
-      out.println("Attempting session recovery...")
-
-      replay()
+      ex match {
+        case _: NoSuchMethodError | _: NoClassDefFoundError =>
+          out.println("Unrecoverable error.")
+          throw ex
+        case _  =>
+          out.print(replayQuestionMessage)
+          out.flush()
+          if (in.readAssumingNo("")) {
+            out.println("\nAttempting session recovery with replay.")
+            replay()
+          }
+          else out.println("\nAbandoning crashed session.")
+      }
   }
 
   /** The main read-eval-print loop for the repl.  It calls

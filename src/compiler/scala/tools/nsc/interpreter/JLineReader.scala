@@ -35,33 +35,41 @@ class JLineReader(val completion: Completion) extends InteractiveReader {
     }
   }
 
-  def argCompletor: ArgumentCompleter = {
-    val c = new ArgumentCompleter(new JLineDelimiter, scalaToJline(completion.completer()))
-    c setStrict false
-    c
-  }
+  class JLineConsoleReader extends ConsoleReader with ConsoleReaderHelper {
+    // working around protected/trait/java insufficiencies.
+    def goBack(num: Int): Unit = back(num)
+    def readOneKey(prompt: String) = {
+      this.print(prompt)
+      this.flush()
+      this.readVirtualKey()
+    }
+    def eraseLine() = consoleReader.resetPromptLine("", "", 0)
+    def redrawLineAndFlush(): Unit = { flush() ; drawLine() ; flush() }
 
-  val consoleReader = {
-    val r = new ConsoleReader()
-    r setBellEnabled false
+    this setBellEnabled false
     if (history ne NoHistory)
-      r setHistory history
+      this setHistory history
 
     if (completion ne NoCompletion) {
-      r addCompleter argCompletor
-      r setAutoprintThreshold 400 // max completion candidates without warning
-    }
+      val argCompletor: ArgumentCompleter =
+        new ArgumentCompleter(new JLineDelimiter, scalaToJline(completion.completer()))
+      argCompletor setStrict false
 
-    r
+      this addCompleter argCompletor
+      this setAutoprintThreshold 400 // max completion candidates without warning
+    }
   }
+
+  val consoleReader: JLineConsoleReader = new JLineConsoleReader()
 
   def currentLine: String = consoleReader.getCursorBuffer.buffer.toString
-  def redrawLine() = {
-    consoleReader.flush()
-    consoleReader.drawLine()
-    consoleReader.flush()
+  def redrawLine() = consoleReader.redrawLineAndFlush()
+  def eraseLine() = {
+    while (consoleReader.delete()) { }
+    // consoleReader.eraseLine()
   }
   def readOneLine(prompt: String) = consoleReader readLine prompt
+  def readOneKey(prompt: String)  = consoleReader readOneKey prompt
 }
 
 object JLineReader {

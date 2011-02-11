@@ -83,6 +83,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   /** reporter */
   lazy val reporter: ConsoleReporter = new IMain.ReplReporter(this)
   import reporter.{ printMessage, withoutTruncating }
+
   // not sure if we have some motivation to print directly to console
   private def echo(msg: String) { Console println msg }
 
@@ -1088,6 +1089,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     finally isettings.unwrapStrings = saved
   }
 
+  def symbolDefString(sym: Symbol) = {
+    TypeStrings.quieter(
+      afterTyper(sym.defString),
+      sym.owner.name + ".this.",
+      sym.owner.fullName + "."
+    )
+  }
+
   def showCodeIfDebugging(code: String) {
     /** Secret bookcase entrance for repl debuggers: end the line
      *  with "// show" and see what's going on.
@@ -1110,6 +1119,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
 /** Utility methods for the Interpreter. */
 object IMain {
+  // The two name forms this is catching are the two sides of this assignment:
+  //
+  // $line3.$read.$iw.$iw.Bippy =
+  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
+  private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
+  private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
+  def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
+
   trait CodeAssembler[T] {
     def preamble: String
     def generate: T => String
@@ -1152,7 +1169,7 @@ object IMain {
     def isTruncating       = reporter.truncationOK
 
     def stripImpl(str: String): String = {
-      val cleaned = removeIWPackages(removeLineWrapper(str))
+      val cleaned = stripString(str)
       var ctrlChars = 0
       cleaned map { ch =>
         if (ch.isControl && !ch.isWhitespace) {
@@ -1163,13 +1180,6 @@ object IMain {
         else ch
       }
     }
-
-    // The two name forms this is catching are the two sides of this assignment:
-    //
-    // $line3.$read.$iw.$iw.Bippy =
-    //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-    private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
-    private def removeIWPackages(s: String) = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
   }
 
   class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, new ReplStrippingWriter(intp)) {

@@ -17,16 +17,25 @@ import Properties.isMac
 trait InteractiveReader {
   val interactive: Boolean
 
-  def history: History
-  def completion: Completion
-  def keyBindings: List[KeyBinding]
-
   def init(): Unit
   def reset(): Unit
 
-  protected def readOneLine(prompt: String): String
+  def history: History
+  def completion: Completion
+  def keyBindings: List[KeyBinding]
+  def eraseLine(): Unit
   def redrawLine(): Unit
   def currentLine: String
+
+  def readYesOrNo(prompt: String) = readOneKey(prompt) match {
+    case 'y'  => true
+    case 'n'  => false
+  }
+  def readAssumingNo(prompt: String)  = try readYesOrNo(prompt) catch { case _: MatchError  => false }
+  def readAssumingYes(prompt: String) = try readYesOrNo(prompt) catch { case _: MatchError  => true }
+
+  protected def readOneLine(prompt: String): String
+  protected def readOneKey(prompt: String): Int
 
   def readLine(prompt: String): String =
     // hack necessary for OSX jvm suspension because read calls are not restarted after SIGTSTP

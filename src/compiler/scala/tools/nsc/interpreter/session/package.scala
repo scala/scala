@@ -12,7 +12,6 @@ package interpreter
 package object session {
   type JIterator[T]       = java.util.Iterator[T]
   type JListIterator[T]   = java.util.ListIterator[T]
-  type JList[T]           = java.util.List[T]
 
   type JEntry             = scala.tools.jline.console.history.History.Entry
   type JHistory           = scala.tools.jline.console.history.History
