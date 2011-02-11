@@ -2050,7 +2050,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       sourceModule = module
     }
     override def sourceModule = module
-    lazy val implicitMembers = info.implicitMembers
+    private var implicitMembersCacheValue: List[Symbol] = List()
+    private var implicitMembersCacheKey: Type = NoType
+    def implicitMembers: List[Symbol] = {
+      val tp = info
+      if (implicitMembersCacheKey ne tp) {
+        implicitMembersCacheKey = tp
+        implicitMembersCacheValue = tp.implicitMembers
+      }
+      implicitMembersCacheValue
+    }
     override def sourceModule_=(module: Symbol) { this.module = module }
   }
 
