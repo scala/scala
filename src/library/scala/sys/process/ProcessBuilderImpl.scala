@@ -30,12 +30,16 @@ private[process] trait ProcessBuilderImpl {
   private[process] class OStreamBuilder(
     stream: => OutputStream,
     label: String
-  ) extends ThreadBuilder(label, _ writeInput protect(stream)) { }
+  ) extends ThreadBuilder(label, _ writeInput protect(stream)) {
+    override def hasExitValue = false
+  }
 
   private[process] class IStreamBuilder(
     stream: => InputStream,
     label: String
-  ) extends ThreadBuilder(label, _ processOutput protect(stream)) { }
+  ) extends ThreadBuilder(label, _ processOutput protect(stream)) {
+    override def hasExitValue = false
+  }
 
   private[process] abstract class ThreadBuilder(
     override val toString: String,
@@ -130,6 +134,7 @@ private[process] trait ProcessBuilderImpl {
       log buffer run(log, connectInput).exitValue()
 
     def canPipeTo = false
+    def hasExitValue = true
   }
 
   private[process] class URLImpl(url: URL) extends URLBuilder with Source {

@@ -35,11 +35,14 @@ object BasicIO {
     }
   }
 
+  private[process] trait Uncloseable extends Closeable {
+    final override def close() { }
+  }
   private[process] object Uncloseable {
-    def apply(in: InputStream): InputStream      = new FilterInputStream(in) { override def close() { } }
-    def apply(out: OutputStream): OutputStream   = new FilterOutputStream(out) { override def close() { } }
-    def protect(in: InputStream): InputStream    = if (in eq System.in) Uncloseable(in) else in
-    def protect(out: OutputStream): OutputStream = if ((out eq System.out) || (out eq System.err)) Uncloseable(out) else out
+    def apply(in: InputStream): InputStream      = new FilterInputStream(in) with Uncloseable { }
+    def apply(out: OutputStream): OutputStream   = new FilterOutputStream(out) with Uncloseable { }
+    def protect(in: InputStream): InputStream    = if (in eq stdin) Uncloseable(in) else in
+    def protect(out: OutputStream): OutputStream = if ((out eq stdout) || (out eq stderr)) Uncloseable(out) else out
   }
 
   def apply(withIn: Boolean, output: String => Unit, log: Option[ProcessLogger]) =
@@ -49,17 +52,15 @@ object BasicIO {
     new ProcessIO(input(withIn), processFully(buffer), getErr(log))
 
   def apply(withIn: Boolean, log: ProcessLogger) =
-    new ProcessIO(input(withIn), processInfoFully(log), processErrFully(log))
+    new ProcessIO(input(withIn), processOutFully(log), processErrFully(log))
 
   def getErr(log: Option[ProcessLogger]) = log match {
     case Some(lg) => processErrFully(lg)
     case None     => toStdErr
   }
 
-  private def processErrFully(log: ProcessLogger)  = processFully(log error _)
-  private def processInfoFully(log: ProcessLogger) = processFully(log info _)
-
-  def ignoreOut = (i: OutputStream) => ()
+  private def processErrFully(log: ProcessLogger) = processFully(log err _)
+  private def processOutFully(log: ProcessLogger) = processFully(log out _)
 
   def close(c: Closeable) = try c.close() catch { case _: IOException => () }
   def processFully(buffer: Appendable): InputStream => Unit = processFully(appendLine(buffer))
@@ -78,13 +79,13 @@ object BasicIO {
     }
     readFully()
   }
-  def connectToIn(o: OutputStream): Unit = transferFully(System.in, o)
-  def input(connect: Boolean): OutputStream => Unit = if (connect) connectToIn else ignoreOut
+  def connectToIn(o: OutputStream): Unit = transferFully(stdin, o)
+  def input(connect: Boolean): OutputStream => Unit = if (connect) connectToIn else _ => ()
   def standard(connectInput: Boolean): ProcessIO = standard(input(connectInput))
   def standard(in: OutputStream => Unit): ProcessIO = new ProcessIO(in, toStdOut, toStdErr)
 
-  def toStdErr = (in: InputStream) => transferFully(in, System.err)
-  def toStdOut = (in: InputStream) => transferFully(in, System.out)
+  def toStdErr = (in: InputStream) => transferFully(in, stderr)
+  def toStdOut = (in: InputStream) => transferFully(in, stdout)
 
   def transferFully(in: InputStream, out: OutputStream): Unit =
     try transferFullyImpl(in, out)

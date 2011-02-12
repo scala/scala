@@ -71,7 +71,16 @@ trait ProcessBuilder extends Source with Sink {
   /** Constructs a command that will run this command and then `other`.  The exit code will be the exit code of `other`.*/
   def ### (other: ProcessBuilder): ProcessBuilder
 
+  /** True if this command can be the target of a pipe.
+   */
   def canPipeTo: Boolean
+
+  /** True if this command has an exit code which should be propagated to the user.
+   *  Given a pipe between A and B, if B.hasExitValue is true then the exit code will
+   *  be the one from B; if it is false, the one from A.  This exists to prevent output
+   *  redirections (implemented as pipes) from masking useful process error codes.
+   */
+  def hasExitValue: Boolean
 }
 
 object ProcessBuilder extends ProcessBuilderImpl {

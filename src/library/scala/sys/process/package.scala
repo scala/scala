@@ -17,6 +17,9 @@ package scala.sys {
 
       java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
     }
+    def stdin  = java.lang.System.in
+    def stdout = java.lang.System.out
+    def stderr = java.lang.System.err
   }
   // private val shell: String => Array[String] =
   //   if (isWin) Array("cmd.exe", "/C", _)
@@ -27,7 +30,6 @@ package scala.sys {
     // due to the issues described in tickets #3160 and #3836.
     private[process] object processInternal {
       final val processDebug = props contains "scala.process.debug"
-      // final val processDebug = true
       dbg("Initializing process package.")
 
       type =?>[-A, +B]     = PartialFunction[A, B]
