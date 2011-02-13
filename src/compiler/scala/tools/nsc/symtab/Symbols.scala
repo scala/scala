@@ -851,12 +851,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * We can't do this on class loading because it would result in infinite cycles.
      */
     final def cookJavaRawInfo() {
-      // println("cookJavaRawInfo: "+(rawname, triedCooking))
       if (hasFlag(TRIEDCOOKING)) return else setFlag(TRIEDCOOKING) // only try once...
       val oldInfo = info
       doCookJavaRawInfo()
-      if ((info ne oldInfo) && settings.verbose.value)
-        println("cooking "+this+": "+oldInfo+" --> "+info) // DEBUG
     }
 
     protected def doCookJavaRawInfo(): Unit

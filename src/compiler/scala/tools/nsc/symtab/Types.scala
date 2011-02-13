@@ -3269,11 +3269,13 @@ A type's typeSymbol should never be inspected directly.
         if (expanded contains sym) AnyRefClass.tpe
         else try {
           expanded += sym
-          val eparams = typeParamsToExistentials(sym, sym.typeParams)
-          existentialAbstraction(eparams, typeRef(pre, sym, eparams map (_.tpe)))
+          val eparams = mapOver(typeParamsToExistentials(sym, sym.typeParams))
+          existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map (_.tpe)))
         } finally {
           expanded -= sym
         }
+      case ExistentialType(_, _) => // stop to avoid infinite expansions
+        tp
       case _ =>
         mapOver(tp)
     }
