@@ -21,6 +21,11 @@ abstract class Changes {
   private lazy val annotationsChecked =
       List(definitions.getClass("scala.specialized")) // Any others that should be checked?
 
+  private val flagsToCheck = IMPLICIT | FINAL | PRIVATE | PROTECTED | SEALED |
+                             OVERRIDE | CASE | ABSTRACT | DEFERRED | METHOD |
+                             MODULE | INTERFACE | PARAM | BYNAMEPARAM | CONTRAVARIANT |
+                             DEFAULTPARAM | ACCESSOR | LAZY | SPECIALIZED
+
   /** Are the new modifiers more restrictive than the old ones? */
   private def moreRestrictive(from: Long, to: Long): Boolean =
     ((((to & PRIVATE) != 0L) && (from & PRIVATE) == 0L)
@@ -46,10 +51,12 @@ abstract class Changes {
 
   private val changedTypeParams = new mutable.HashSet[String]
 
+  private def sameParameterSymbolNames(sym1: Symbol, sym2: Symbol): Boolean =
+  	sameSymbol(sym1, sym2, true) || sym2.encodedName.startsWith(sym1.encodedName + "$") // see #3140
   private def sameSymbol(sym1: Symbol, sym2: Symbol, simple: Boolean = false): Boolean =
     if (simple) sym1.encodedName == sym2.encodedName else sym1.fullName == sym2.fullName
   private def sameFlags(sym1: Symbol, sym2: Symbol): Boolean =
-    sym1.flags == sym2.flags
+    	(sym1.flags & flagsToCheck) == (sym2.flags & flagsToCheck)
   private def sameAnnotations(sym1: Symbol, sym2: Symbol): Boolean =
     annotationsChecked.forall(a =>
       (sym1.hasAnnotation(a) == sym2.hasAnnotation(a)))
@@ -111,7 +118,7 @@ abstract class Changes {
     case (mt1 @ MethodType(params1, res1), mt2 @ MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
       sameTypes(tp1.paramTypes, tp2.paramTypes) &&
-      (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2, true) && sameFlags(t1, t2)) &&
+      (tp1.params corresponds tp2.params)((t1, t2) => sameParameterSymbolNames(t1, t2) && sameFlags(t1, t2)) &&
       sameType(res1, res2) &&
       mt1.isImplicit == mt2.isImplicit
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>

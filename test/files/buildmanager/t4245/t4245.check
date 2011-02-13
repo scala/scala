@@ -1,0 +1,6 @@
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map()
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map(class A -> List(), class A$B -> List())

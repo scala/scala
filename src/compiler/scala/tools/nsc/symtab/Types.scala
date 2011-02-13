@@ -8,7 +8,7 @@ package symtab
 
 import scala.collection.{ mutable, immutable }
 import scala.ref.WeakReference
-import scala.collection.mutable.ListBuffer
+import mutable.ListBuffer
 import ast.TreeGen
 import util.{ Position, NoPosition }
 import util.Statistics._
