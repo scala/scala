@@ -509,6 +509,7 @@ self =>
       result
     case Some(unit) =>
       informIDE("typedTreeAt " + pos)
+      if (unit.status == NotLoaded) parseAndEnter(unit)
       val tree = locateTree(pos)
       debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
       if (stabilizedType(tree) ne null) {
@@ -534,6 +535,7 @@ self =>
     informIDE("typedTree " + source + " forceReload: " + forceReload)
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
+    if (unit.status == NotLoaded) parseAndEnter(unit)
     if (unit.status <= PartiallyChecked) {
       //newTyperRun()   // not deeded for idempotent type checker phase
       typeCheck(unit)
