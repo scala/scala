@@ -480,7 +480,7 @@ self =>
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
     reset(unit)
-    parseAndEnter(unit)
+    //parseAndEnter(unit)
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
