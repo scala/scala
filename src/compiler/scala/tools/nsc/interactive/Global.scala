@@ -348,7 +348,7 @@ self =>
     for (s <- allSources; unit <- getUnit(s)) {
       pollForWork(NoPosition)
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
-      if (unit.status == NotLoaded) parseAndEnter(unit)
+      parseAndEnter(unit)
     }
 
     /** Sleep window */
@@ -393,23 +393,21 @@ self =>
     unit.status = NotLoaded
   }
 
-  /** Parse unit and create a name index. */
-  protected def parseAndEnter(unit: RichCompilationUnit): Unit = {
-    debugLog("parsing: "+unit)
-    currentTyperRun.compileLate(unit)
-    if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
-    if (!unit.isJava) syncTopLevelSyms(unit)
-    unit.status = JustParsed
-  }
-
-  @deprecated("use parseTree(unit.source) instead")
-  private def parse(unit: RichCompilationUnit) = parseAndEnter(unit)
+  /** Parse unit and create a name index, unless this has already been done before */
+  protected def parseAndEnter(unit: RichCompilationUnit): Unit =
+    if (unit.status == NotLoaded) {
+      debugLog("parsing: "+unit)
+      currentTyperRun.compileLate(unit)
+      if (debugIDE && !reporter.hasErrors) validatePositions(unit.body)
+      if (!unit.isJava) syncTopLevelSyms(unit)
+      unit.status = JustParsed
+    }
 
   /** Make sure unit is typechecked
    */
   protected def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
-    if (unit.status == NotLoaded) parseAndEnter(unit)
+    parseAndEnter(unit)
     unit.status = PartiallyChecked
     currentTyperRun.typeCheck(unit)
     unit.lastBody = unit.body
@@ -509,7 +507,7 @@ self =>
       result
     case Some(unit) =>
       informIDE("typedTreeAt " + pos)
-      if (unit.status == NotLoaded) parseAndEnter(unit)
+      parseAndEnter(unit)
       val tree = locateTree(pos)
       debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
       if (stabilizedType(tree) ne null) {
@@ -535,7 +533,7 @@ self =>
     informIDE("typedTree " + source + " forceReload: " + forceReload)
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
-    if (unit.status == NotLoaded) parseAndEnter(unit)
+    parseAndEnter(unit)
     if (unit.status <= PartiallyChecked) {
       //newTyperRun()   // not deeded for idempotent type checker phase
       typeCheck(unit)
@@ -560,6 +558,7 @@ self =>
     respond(response) {
       val preExisting = unitOfFile isDefinedAt source.file
       reloadSources(List(source))
+      parseAndEnter(getUnit(source).get)
       val owner = sym.owner
       if (owner.isClass) {
         val pre = adaptToNewRunMap(ThisType(owner))
@@ -796,7 +795,7 @@ self =>
   protected def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
     respond(response) {
       onUnitOf(source) { unit =>
-        if (unit.status == NotLoaded) parseAndEnter(unit)
+        parseAndEnter(unit)
         unit.body
       }
     }
