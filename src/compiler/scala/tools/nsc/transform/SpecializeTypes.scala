@@ -212,10 +212,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _ => false
   }
 
+  private def str(tp: Type): AnyRef = tp match {
+    case TypeRef(pre, sym, args) => (str(pre), sym, args)
+    case _ => "nontpref sym: " + tp.typeSymbol + ", " + tp.getClass
+  }
+
   // If we replace `isBoundedGeneric` with (tp <:< AnyRefClass.tpe), then pos/spec-List.scala fails - why?
   // Does this kind of check fail for similar reasons? Does `sym.isAbstractType` make a difference?
   private def subtypeOfAnyRef(tp: Type) = {
-    log(tp + " <:< AnyRef " + isBoundedGeneric(tp) + ", " + tp.typeSymbol.isAbstractType)
+    // log(tp + " <:< AnyRef? tp has symbol: " + tp.typeSymbol + ", " + tp.typeSymbol.ownerChain)
     !isValueClass(tp.typeSymbol) && isBoundedGeneric(tp)
   }
 
@@ -225,9 +230,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val pre1 = this(pre)
         // when searching for a specialized class, take care to map all
         // type parameters that are subtypes of AnyRef to AnyRef
-        val args1 = args map {
-          case x if subtypeOfAnyRef(x) => AnyRefClass.tpe // used to be: case x if x <:< AnyRefClass.tpe
-          case x => x
+        // log("Mapping " + args.map(_.typeSymbol) + ", from " + sym + " with params " + sym.typeParams + " with annots " + sym.typeParams.map(_.annotations))
+        val args1 = (args zip sym.typeParams) map {
+          case (x, orig) if isSpecializedOnAnyRef(orig) && subtypeOfAnyRef(x) => AnyRefClass.tpe // used to be: case x if x <:< AnyRefClass.tpe
+          case (x, _) => x
         }
         // log("!!! specializedType " + tp + ", " + pre1 + ", " + args1)
         specializedClass.get((sym, TypeEnv.fromSpecialization(sym, args1))) match {
@@ -514,7 +520,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
          */
         def specializedParents(parents: List[Type]): List[Type] = {
           val res = new mutable.ListBuffer[Type]
+          // log(cls + ": seeking specialized parents of class with parents: " + parents.map(_.typeSymbol))
           for (p <- parents) {
+            // log(p.typeSymbol)
             val stp = atPhase(phase.next)(specializedType(p))
             if (stp != p)
               if (p.typeSymbol.isTrait) res += stp
