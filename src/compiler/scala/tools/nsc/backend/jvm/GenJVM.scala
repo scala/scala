@@ -13,7 +13,8 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, LinkedHashSet }
 import scala.reflect.generic.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.{ AbstractFile, Path }
+import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
@@ -47,7 +48,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
   /** JVM code generation phase
    */
   class JvmPhase(prev: Phase) extends ICodePhase(prev) {
-
     def name = phaseName
     override def erasedTypes = true
 
@@ -139,6 +139,18 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       super.javaName(sym)
     }
 
+    protected def emitJavap(bytes: Array[Byte], javapFile: io.File) {
+      import scala.tools.util.Javap
+      val pw = javapFile.printWriter()
+      try {
+        val javap = new Javap(ScalaClassLoader.getSystemLoader(), pw) {
+          override def findBytes(path: String): Array[Byte] = bytes
+        }
+        javap(Seq("-verbose", "dummy")) foreach (_.show())
+      }
+      finally pw.close()
+    }
+
     /** Write a class to disk, adding the Scala signature (pickled type
      *  information) and inner classes.
      *
@@ -152,6 +164,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       jclass writeTo outstream
       outstream.close()
       informProgress("wrote " + outfile)
+
+      if (!settings.Ygenjavap.isDefault) {
+        val segments  = jclass.getName().split("[./]")
+        val javapFile = segments.foldLeft(Path(settings.Ygenjavap.value))(_ / _) changeExtension "javap" toFile
+
+        javapFile.parent.createDirectory()
+        emitJavap(outfile.toByteArray, javapFile)
+      }
     }
 
     /** Returns the ScalaSignature annotation if it must be added to this class,

@@ -134,7 +134,7 @@ askTypeCompletion at Tester.scala(27,23)
 
 ================================================================================
 [response] aksTypeCompletion at (27,23)
-retreived 196 members
+retreived 197 members
 TypeMember(method !=,(x$1: AnyRef)Boolean,true,true,<none>)
 TypeMember(method !=,(x$1: Any)Boolean,true,true,<none>)
 TypeMember(method ==,(x$1: AnyRef)Boolean,true,true,<none>)
@@ -194,6 +194,7 @@ TypeMember(value Ybuildmanagerdebug,Tester.this.settings.BooleanSetting,false,tr
 TypeMember(value Ycompacttrees,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value Ycompletion,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value YdepMethTpes,Tester.this.settings.BooleanSetting,false,true,<none>)
+TypeMember(value Ygenjavap,Tester.this.settings.StringSetting,false,true,<none>)
 TypeMember(value Yhelp,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value Yidedebug,Tester.this.settings.BooleanSetting,false,true,<none>)
 TypeMember(value Ylogcp,Tester.this.settings.BooleanSetting,false,true,<none>)

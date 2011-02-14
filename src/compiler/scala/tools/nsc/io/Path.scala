@@ -198,7 +198,7 @@ class Path private[io] (val jfile: JFile) {
   // returns the Path with the extension.
   def addExtension(ext: String): Path = Path(path + "." + ext)
   // changes the existing extension out for a new one
-  def changeExtension(ext: String): Path = Path((path stripSuffix extension) + ext)
+  def changeExtension(ext: String): Path = Path(path stripSuffix extension) addExtension ext
 
   // conditionally execute
   def ifFile[T](f: File => T): Option[T] = if (isFile) Some(f(toFile)) else None

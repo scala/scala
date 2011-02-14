@@ -980,6 +980,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             try processSingleFile(testFile)
             catch {
               case t =>
+                succeeded = false
                 try {
                   val logFile = createLogFile(testFile)
                   logStackTrace(logFile, t, "Possible compiler crash during test of: " + testFile + "\n")

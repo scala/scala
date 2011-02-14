@@ -20,9 +20,12 @@ class Javap(
 
   lazy val parser = new JpOptions
 
+  def findBytes(path: String): Array[Byte] =
+    tryFile(path) getOrElse tryClass(path)
+
   def apply(args: Seq[String]): List[JpResult] = {
     args.toList filterNot (_ startsWith "-") map { path =>
-      val bytes = tryFile(path) getOrElse tryClass(path)
+      val bytes = findBytes(path)
       if (bytes.isEmpty) new JpError("Could not find class bytes for '%s'".format(path))
       else new JpSuccess(newPrinter(new ByteArrayInputStream(bytes), newEnv(args)))
     }
