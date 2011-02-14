@@ -77,20 +77,20 @@ x = BitSet(2, 3)
 y = BitSet(2, 3)
 x equals y: true, y equals x: true
 
-x = Map(1 -> A, 2 -> B, 3 -> C)
-y = Map(1 -> A, 2 -> B, 3 -> C)
+x = HashMap(1 -> A, 2 -> B, 3 -> C)
+y = HashMap(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 
-x = Set(1, 2)
-y = Set(1, 2)
+x = HashSet(1, 2)
+y = HashSet(1, 2)
 x equals y: true, y equals x: true
 
 x = List((buffers,20), (layers,2), (title,3))
 y = List((buffers,20), (layers,2), (title,3))
 x equals y: true, y equals x: true
 
-x = Map(buffers -> 20, layers -> 2, title -> 3)
-y = Map(buffers -> 20, layers -> 2, title -> 3)
+x = ListMap(buffers -> 20, layers -> 2, title -> 3)
+y = ListMap(buffers -> 20, layers -> 2, title -> 3)
 x equals y: true, y equals x: true
 
 x = ListSet(5, 3)
@@ -109,8 +109,8 @@ x = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 y = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 x equals y: true, y equals x: true
 
-x = Map(1 -> A, 2 -> B, 3 -> C)
-y = Map(1 -> A, 2 -> B, 3 -> C)
+x = TreeMap(1 -> A, 2 -> B, 3 -> C)
+y = TreeMap(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 
 x = TreeSet(1, 2, 3)
@@ -161,12 +161,12 @@ x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
-x = Map(C -> 3, B -> 2, A -> 1)
-y = Map(C -> 3, A -> 1, B -> 2)
+x = HashMap(C -> 3, B -> 2, A -> 1)
+y = HashMap(C -> 3, A -> 1, B -> 2)
 x equals y: true, y equals x: true
 
-x = Set(layers, title, buffers)
-y = Set(layers, title, buffers)
+x = HashSet(layers, title, buffers)
+y = HashSet(layers, title, buffers)
 x equals y: true, y equals x: true
 
 x = History()
