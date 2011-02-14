@@ -135,6 +135,7 @@ extends Map[A, B]
   private type C = (A, B)
   override def toParMap[D, E](implicit ev: C <:< (D, E)) = par.asInstanceOf[ParHashMap[D, E]]
 
+  override def stringPrefix: String = "HashMap"
 }
 
 /** $factoryInfo

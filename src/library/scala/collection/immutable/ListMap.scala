@@ -123,6 +123,8 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
   protected def value: B = throw new NoSuchElementException("empty map")
   protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map")
 
+  override def stringPrefix: String = "ListMap"
+
   /** This class represents an entry in the `ListMap`.
    */
   @SerialVersionUID(-6453056603889598734L)
