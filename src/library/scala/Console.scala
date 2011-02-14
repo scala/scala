@@ -16,9 +16,9 @@ import java.text.MessageFormat
 import scala.util.DynamicVariable
 
 
-/** The <code>Console</code> object implements functionality for
- *  printing Scala values on the terminal. There are also functions
- *  for reading specific values. <code>Console</code> also defines
+/** Implements functionality for
+ *  printing Scala values on the terminal as well as reading specific values.
+ *  Also defines
  *  constants for marking up text on ANSI terminals.
  *
  *  @author  Matthias Zenger
@@ -26,32 +26,51 @@ import scala.util.DynamicVariable
  */
 object Console {
 
-  // ANSI colors foreground
+  /** Foreground color for ANSI black */
   final val BLACK      = "\033[30m"
+  /** Foreground color for ANSI red */
   final val RED        = "\033[31m"
+  /** Foreground color for ANSI green */
   final val GREEN      = "\033[32m"
+  /** Foreground color for ANSI yellow */
   final val YELLOW     = "\033[33m"
+  /** Foreground color for ANSI blue */
   final val BLUE       = "\033[34m"
+  /** Foreground color for ANSI magenta */
   final val MAGENTA    = "\033[35m"
+  /** Foreground color for ANSI cyan */
   final val CYAN       = "\033[36m"
+  /** Foreground color for ANSI white */
   final val WHITE      = "\033[37m"
 
-  // ANSI colors background
+  /** Background color for ANSI black */
   final val BLACK_B    = "\033[40m"
+  /** Background color for ANSI red */
   final val RED_B      = "\033[41m"
+  /** Background color for ANSI green */
   final val GREEN_B    = "\033[42m"
+  /** Background color for ANSI yellow */
   final val YELLOW_B   = "\033[43m"
+  /** Background color for ANSI blue */
   final val BLUE_B     = "\033[44m"
+  /** Background color for ANSI magenta */
   final val MAGENTA_B  = "\033[45m"
+  /** Background color for ANSI cyan */
   final val CYAN_B     = "\033[46m"
+  /** Background color for ANSI white */
   final val WHITE_B    = "\033[47m"
 
-  // ANSI styles
+  /** Reset ANSI styles */
   final val RESET      = "\033[0m"
+  /** ANSI bold */
   final val BOLD       = "\033[1m"
+  /** ANSI underlines */
   final val UNDERLINED = "\033[4m"
+  /** ANSI blink */
   final val BLINK      = "\033[5m"
+  /** ANSI reversed */
   final val REVERSED   = "\033[7m"
+  /** ANSI invisible */
   final val INVISIBLE  = "\033[8m"
 
   private val outVar = new DynamicVariable[PrintStream](java.lang.System.out)
@@ -59,47 +78,57 @@ object Console {
   private val inVar = new DynamicVariable[BufferedReader](
     new BufferedReader(new InputStreamReader(java.lang.System.in)))
 
+  /** The default output, can be overridden by `setOut` */
   def out = outVar.value
+  /** The default error, can be overridden by `setErr` */
   def err = errVar.value
+  /** The default input, can be overridden by `setIn` */
   def in = inVar.value
 
-  /** Set the default output stream.
+  /** Sets the default output stream.
    *
    *  @param out the new output stream.
    */
   def setOut(out: PrintStream) { outVar.value = out }
 
-  /** Set the default output stream for the duration
+  /** Sets the default output stream for the duration
    *  of execution of one thunk.
+   *
+   *  @example {{{
+   *  withOut(Console.err) { println("This goes to default _error_") }
+   *  }}}
    *
    *  @param out the new output stream.
    *  @param thunk the code to execute with
    *               the new output stream active
-   *  @return ...
+   *  @return the results of `thunk`
+   *  @see `withOut[T](out:OutputStream)(thunk: => T)`
    */
   def withOut[T](out: PrintStream)(thunk: =>T): T =
     outVar.withValue(out)(thunk)
 
-  /** Set the default output stream.
+  /** Sets the default output stream.
    *
    *  @param out the new output stream.
    */
   def setOut(out: OutputStream): Unit =
     setOut(new PrintStream(out))
 
-  /** Set the default output stream for the duration
+  /** Sets the default output stream for the duration
    *  of execution of one thunk.
+   *
    *
    *  @param out the new output stream.
    *  @param thunk the code to execute with
    *               the new output stream active
-   *  @return ...
+   *  @return the results of `thunk`
+   *  @see `withOut[T](out:PrintStream)(thunk: => T)`
    */
   def withOut[T](out: OutputStream)(thunk: =>T): T =
     withOut(new PrintStream(out))(thunk)
 
 
-  /** Set the default error stream.
+  /** Sets the default error stream.
    *
    *  @param err the new error stream.
    */
@@ -107,35 +136,40 @@ object Console {
 
   /** Set the default error stream for the duration
    *  of execution of one thunk.
+   *  @example {{{
+   *  withErr(Console.out) { println("This goes to default _out_") }
+   *  }}}
    *
    *  @param err the new error stream.
    *  @param thunk the code to execute with
    *               the new error stream active
-   *  @return ...
+   *  @return the results of `thunk`
+   *  @see `withErr[T](err:OutputStream)(thunk: =>T)`
    */
   def withErr[T](err: PrintStream)(thunk: =>T): T =
     errVar.withValue(err)(thunk)
 
-  /** Set the default error stream.
+  /** Sets the default error stream.
    *
    *  @param err the new error stream.
    */
   def setErr(err: OutputStream): Unit =
     setErr(new PrintStream(err))
 
-  /** Set the default error stream for the duration
+  /** Sets the default error stream for the duration
    *  of execution of one thunk.
    *
    *  @param err the new error stream.
    *  @param thunk the code to execute with
    *               the new error stream active
-   *  @return ...
+   *  @return the results of `thunk`
+   *  @see `withErr[T](err:PrintStream)(thunk: =>T)`
    */
   def withErr[T](err: OutputStream)(thunk: =>T): T =
     withErr(new PrintStream(err))(thunk)
 
 
-  /** Set the default input stream.
+  /** Sets the default input stream.
    *
    *  @param reader specifies the new input stream.
    */
@@ -143,18 +177,29 @@ object Console {
     inVar.value = new BufferedReader(reader)
   }
 
-  /** Set the default input stream for the duration
+  /** Sets the default input stream for the duration
    *  of execution of one thunk.
+   *
+   *  @example {{{
+   *  val someFile:Reader = openFile("file.txt")
+   *  withIn(someFile) {
+   *    // Reads a line from file.txt instead of default input
+   *    println(readLine)
+   *  }
+   *  }}}
    *
    *  @param in the new input stream.
    *  @param thunk the code to execute with
    *               the new input stream active
+   *
+   * @return the results of `thunk`
+   * @see `withIn[T](in:InputStream)(thunk: =>T)`
    */
   def withIn[T](reader: Reader)(thunk: =>T): T =
     inVar.withValue(new BufferedReader(reader))(thunk)
 
 
-  /** Set the default input stream.
+  /** Sets the default input stream.
    *
    *  @param in the new input stream.
    */
@@ -162,81 +207,80 @@ object Console {
     setIn(new InputStreamReader(in))
   }
 
-  /** Set the default input stream for the duration
+  /** Sets the default input stream for the duration
    *  of execution of one thunk.
    *
    *  @param in the new input stream.
    *  @param thunk the code to execute with
    *               the new input stream active
+   * @return the results of `thunk`
+   * @see `withIn[T](reader:Reader)(thunk: =>T)`
    */
   def withIn[T](in: InputStream)(thunk: =>T): T =
     withIn(new InputStreamReader(in))(thunk)
 
-  /** Print an object on the terminal.
+  /** Prints an object to `out` using its `toString` method.
    *
-   *  @param obj the object to print.
+   *  @param obj the object to print; may be null.
    */
   def print(obj: Any) {
     out.print(if (null == obj) "null" else obj.toString())
   }
 
-  /** Flush the output stream. This function is required when partial
-   *  output (i.e. output not terminated by a new line character) has
+  /** Flushes the output stream. This function is required when partial
+   *  output (i.e. output not terminated by a newline character) has
    *  to be made visible on the terminal.
    */
   def flush() { out.flush() }
 
-  /** Print a new line character on the terminal.
+  /** Prints a newline character on the default output.
    */
   def println() { out.println() }
 
-  /** Print out an object followed by a new line character.
+  /** Prints out an object to the default output, followed by a newline character.
    *
    *  @param x the object to print.
    */
   def println(x: Any) { out.println(x) }
 
-  /** <p>
-   *    Prints its arguments as a formatted string, based on a string
+  /**
+   *    Prints its arguments as a formatted string to the default output, based on a string
    *    pattern (in a fashion similar to printf in C).
-   *  </p>
-   *  <p>
+   *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
    *    <code>java.util.Formatter</code></a>.
-   *  </p>
    *
    *  @param text the pattern for formatting the arguments.
    *  @param args the arguments used to instantiating the pattern.
-   *  @throws java.lang.IllegalArgumentException
+   *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    */
   def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
 
-  /** Read a full line from the terminal.  Returns <code>null</code> if the end of the
+  /** Read a full line from the default input.  Returns <code>null</code> if the end of the
    * input stream has been reached.
    *
-   * @return the string read from the terminal.
+   * @return the string read from the terminal or null if the end of stream was reached.
    */
   def readLine(): String = in.readLine()
 
-  /** Print a formatted text and read a full line from the terminal.
+  /** Print formatted text to the default output and read a full line from the default input.
    * Returns null if the end of the input stream has been reached.
    *
-   *  @param text the format of the text to print out.
-   *  @param args the parameters used to instantiate the format.
-   *  @return the string read from the terminal.
+   *  @param text the format of the text to print out, as in `printf`.
+   *  @param args the parameters used to instantiate the format, as in `printf`.
+   *  @return the string read from the default input
    */
   def readLine(text: String, args: Any*): String = {
     printf(text, args: _*)
     readLine()
   }
 
-  /** Read a boolean value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads a boolean value from an entire line of the default input.
+   * Has a fairly liberal interpretation of the input.
    *
-   *  @return the boolean value read from the terminal.
-   *  @throws java.io.EOFException
+   *  @return the boolean value read, or false if it couldn't be converted to a boolean
+   *  @throws java.io.EOFException if the end of the input stream has been reached.
    */
   def readBoolean(): Boolean = {
     val s = readLine()
@@ -252,11 +296,12 @@ object Console {
       }
   }
 
-  /** Read a byte value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads a byte value from an entire line of the default input.
    *
-   *  @throws java.io.EOFException
+   *  @return the Byte that was read
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
+   *  @throws java.lang.NumberFormatException if the value couldn't be converted to a Byte
    */
   def readByte(): Byte = {
     val s = readLine()
@@ -266,11 +311,12 @@ object Console {
       s.toByte
   }
 
-  /** Read a short value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads a short value from an entire line of the default input.
    *
-   *  @throws java.io.EOFException
+   *  @return the short that was read
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
+   *  @throws java.lang.NumberFormatException if the value couldn't be converted to a Short
    */
   def readShort(): Short = {
     val s = readLine()
@@ -280,11 +326,12 @@ object Console {
       s.toShort
   }
 
-  /** Read a char value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads a char value from an entire line of the default input.
    *
-   *  @throws java.io.EOFException
+   *  @return the Char that was read
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
+   *  @throws java.lang.StringIndexOutOfBoundsException if the line read from default input was empty
    */
   def readChar(): Char = {
     val s = readLine()
@@ -294,11 +341,12 @@ object Console {
       s charAt 0
   }
 
-  /** Read an int value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads an int value from an entire line of the default input.
    *
-   *  @throws java.io.EOFException
+   *  @return the Int that was read
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
+   *  @throws java.lang.NumberFormatException if the value couldn't be converted to an Int
    */
   def readInt(): Int = {
     val s = readLine()
@@ -308,11 +356,12 @@ object Console {
       s.toInt
   }
 
-  /** Read an int value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads an long value from an entire line of the default input.
    *
-   *  @throws java.io.EOFException
+   *  @return the Long that was read
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
+   *  @throws java.lang.NumberFormatException if the value couldn't be converted to a Long
    */
   def readLong(): Long = {
     val s = readLine()
@@ -322,11 +371,12 @@ object Console {
       s.toLong
   }
 
-  /** Read a float value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
+  /** Reads a float value from an entire line of the default input.
+   *  @return the Float that was read.
+   *  @throws java.io.EOFException if the end of the
    *  input stream has been reached.
+   *  @throws java.lang.NumberFormatException if the value couldn't be converted to a Float
    *
-   *  @throws java.io.EOFException
    */
   def readFloat(): Float = {
     val s = readLine()
@@ -336,11 +386,12 @@ object Console {
       s.toFloat
   }
 
-  /** Read a double value from the terminal.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
+  /** Reads a double value from an entire line of the default input.
    *
-   *  @throws java.io.EOFException
+   *  @return the Double that was read.
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
+   *  @throws java.lang.NumberFormatException if the value couldn't be converted to a Float
    */
   def readDouble(): Double = {
     val s = readLine()
@@ -350,15 +401,14 @@ object Console {
       s.toDouble
   }
 
-  /** Read in some structured input, specified by a format specifier.
+  /** Reads in some structured input (from the default input), specified by a format specifier.
    *  See class <code>java.text.MessageFormat</code> for details of
    *  the format specification.
-   *  Throws <code>EOFException</code> if the end of the
-   *  input stream has been reached.
    *
    *  @param format the format of the input.
    *  @return a list of all extracted values.
-   *  @throws java.io.EOFException
+   *  @throws java.io.EOFException if the end of the
+   *  input stream has been reached.
    */
   def readf(format: String): List[Any] = {
     val s = readLine()
@@ -368,36 +418,30 @@ object Console {
       textComponents(new MessageFormat(format).parse(s))
   }
 
-  /** Read in some structured input, specified by a format specifier.
-   *  Opposed to <code>readf</code>, this function only returns the
-   *  first value extracted from the input according to the format
-   *  specification.
+  /** Reads in some structured input (from the default input), specified by a format specifier, returning
+   *  only the first value extracted, according to the format specification.
    *
-   *  @param format ...
-   *  @return ...
+   *  @param format format string, as accepted by `readf`.
+   *  @return The first value that was extracted from the input
    */
   def readf1(format: String): Any = readf(format).head
 
-  /** Read in some structured input, specified by a format specifier.
-   *  Opposed to <code>readf</code>, this function only returns the
-   *  first two values extracted from the input according to the format
-   *  specification.
+  /** Reads in some structured input (from the default input), specified by a format specifier, returning
+   *  only the first two values extracted, according to the format specification.
    *
-   *  @param format ...
-   *  @return ...
+   *  @param format format string, as accepted by `readf`.
+   *  @return A [[scala.Tuple2]] containing the first two values extracted
    */
   def readf2(format: String): (Any, Any) = {
     val res = readf(format)
     (res.head, res.tail.head)
   }
 
-  /** Read in some structured input, specified by a format specifier.
-   *  Opposed to <code>readf</code>, this function only returns the
-   *  first three values extracted from the input according to the format
-   *  specification.
+  /** Reads in some structured input (from the default input), specified by a format specifier, returning
+   *  only the first three values extracted, according to the format specification.
    *
-   *  @param format ...
-   *  @return ...
+   *  @param format format string, as accepted by `readf`.
+   *  @return A [[scala.Tuple3]] containing the first three values extracted
    */
   def readf3(format: String): (Any, Any, Any) = {
     val res = readf(format)
