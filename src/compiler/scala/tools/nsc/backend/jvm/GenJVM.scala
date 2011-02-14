@@ -1268,7 +1268,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
           case CHECK_CAST(tpe) =>
             tpe match {
               case REFERENCE(cls) =>
-                jcode emitCHECKCAST new JObjectType(javaName(cls))
+                // No need to checkcast for Objects
+                if (cls != ObjectClass)
+                  jcode emitCHECKCAST new JObjectType(javaName(cls))
               case ARRAY(elem) =>
                 jcode emitCHECKCAST new JArrayType(javaType(elem))
               case _ =>
