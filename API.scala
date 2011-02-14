@@ -166,7 +166,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				case Nullary(resultType) => // 2.9 and later
 					build(resultType, typeParams, valueParameters)
 				case returnType =>
-					new xsbti.api.Def(valueParameters.reverse.toArray, processType(in, returnType), typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(in,s))
+					val t2 = processType(in, dropConst(returnType))
+					new xsbti.api.Def(valueParameters.reverse.toArray, t2, typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(in,s))
 			}
 		}
 		def parameterS(s: Symbol): xsbti.api.MethodParameter =
@@ -198,10 +199,15 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		class WithDefault { val DEFAULTPARAM = 0x00000000 }
 		s != NoSymbol && s.hasFlag(Flags.DEFAULTPARAM)
 	}
-	private def fieldDef[T](in: Symbol, s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
+	private def fieldDef[T](in: Symbol, s: Symbol, keepConst: Boolean, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
 	{
 		val t = dropNullary(viewer(in).memberType(s))
-		create(processType(in, t), simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
+		val t2 = if(keepConst) t else dropConst(t)
+		create(processType(in, t2), simpleName(s), getAccess(s), getModifiers(s), annotations(in, s))
+	}
+	private def dropConst(t: Type): Type = t match {
+		case ConstantType(constant) => constant.tpe
+		case _ => t
 	}
 	private def dropNullary(t: Type): Type = t match {
 		case Nullary(un) => un
@@ -254,8 +260,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		defs.toArray.flatMap( (d: Symbol) => definition(in, d))
 	private def definition(in: Symbol, sym: Symbol): Option[xsbti.api.Definition] =
 	{
-		def mkVar = Some(fieldDef(in, sym, new xsbti.api.Var(_,_,_,_,_)))
-		def mkVal = Some(fieldDef(in, sym, new xsbti.api.Val(_,_,_,_,_)))
+		def mkVar = Some(fieldDef(in, sym, false, new xsbti.api.Var(_,_,_,_,_)))
+		def mkVal = Some(fieldDef(in, sym, true, new xsbti.api.Val(_,_,_,_,_)))
 		if(sym.isClass || sym.isModule)
 			if(ignoreClass(sym)) None else Some(classLike(in, sym))
 		else if(isNonClassType(sym))
@@ -312,11 +318,11 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			case NoPrefix => Constants.emptyType
 			case ThisType(sym) => new xsbti.api.Singleton(thisPath(sym))
 			case SingleType(pre, sym) => projectionType(in, pre, sym)
-			case ConstantType(value) => error("Constant type (not implemented)")
+			case ConstantType(constant) => new xsbti.api.Constant(processType(in, constant.tpe), constant.stringValue)
 			case TypeRef(pre, sym, args) =>
 				val base = projectionType(in, pre, sym)
 				if(args.isEmpty) base else new xsbti.api.Parameterized(base, types(in, args))
-			case SuperType(thistpe: Type, supertpe: Type) => error("Super type (not implemented)")
+			case SuperType(thistpe: Type, supertpe: Type) => error("Super type (not implemented): this=" + thistpe + ", super=" + supertpe)
 			case at: AnnotatedType => annotatedType(in, at)
 			case rt: CompoundType => structure(rt)
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(in, result), typeParameters(in, tparams))
