@@ -10,7 +10,7 @@
 package scala.actors
 
 /**
- * The ReactorCanReply trait provides message send operations that
+ * Provides message send operations that
  * may result in a response from the receiver.
  *
  * @author Philipp Haller

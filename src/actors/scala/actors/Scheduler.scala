@@ -13,7 +13,7 @@ import java.util.concurrent._
 import scheduler.{DelegatingScheduler, ForkJoinScheduler, ResizableThreadPoolScheduler, ThreadPoolConfig}
 
 /**
- * The <code>Scheduler</code> object is used by <code>Actor</code> to
+ * Used by [[scala.actors.Actor]] instances to
  * execute tasks of an actor execution.
  *
  * @author Philipp Haller

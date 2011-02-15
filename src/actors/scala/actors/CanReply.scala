@@ -12,7 +12,7 @@ package scala.actors
 import scala.annotation.unique.unique
 
 /**
- * The <code>CanReply</code> trait defines result-bearing message send operations.
+ * Defines result-bearing message send operations.
  *
  * @author Philipp Haller
  *

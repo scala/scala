@@ -9,8 +9,8 @@
 
 package scala.actors
 
-/** The <code>SchedulerAdapter</code> trait is used to adapt
- *  the behavior of the standard <code>Scheduler</code> object.
+/** Adapts
+ *  the behavior of the standard [[scala.actors.Scheduler]] object.
  *
  *  Providing an implementation for the
  *  <code>execute(f: => Unit)</code> method is sufficient to

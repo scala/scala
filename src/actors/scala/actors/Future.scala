@@ -12,9 +12,8 @@ package scala.actors
 import scala.actors.scheduler.DaemonScheduler
 import scala.concurrent.SyncVar
 
-/** A `Future[T]` is a function of arity 0 that returns
- *  a value of type `T`.
- *  Applying a future blocks the current actor (`Actor.self`)
+/** A function of arity 0, returing a value of type `T` that,
+ *  when applied, blocks the current actor (`Actor.self`)
  *  until the future's value is available.
  *
  *  A future can be queried to find out whether its value
@@ -110,7 +109,7 @@ private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T]) exten
   }
 }
 
-/** The `Futures` object contains methods that operate on futures.
+/** Methods that operate on futures.
  *
  *  @author Philipp Haller
  */

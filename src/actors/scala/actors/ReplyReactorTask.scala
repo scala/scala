@@ -10,10 +10,7 @@
 
 package scala.actors
 
-/** <p>
- *    The class <code>ReplyReactorTask</code>.
- *  </p>
- *
+/**
  *  @author Philipp Haller
  */
 private[actors] class ReplyReactorTask(reactor: ReplyReactor,

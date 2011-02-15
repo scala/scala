@@ -13,7 +13,7 @@ import scala.util.control.ControlThrowable
 import java.util.{Timer, TimerTask}
 
 /**
- * The <code>Actor</code> object provides functions for the definition of
+ * Provides functions for the definition of
  * actors, as well as actor operations, such as
  * <code>receive</code>, <code>react</code>, <code>reply</code>,
  * etc.
@@ -22,22 +22,22 @@ import java.util.{Timer, TimerTask}
  */
 object Actor extends Combinators {
 
-  /** An actor state. An actor can be in one of the following states:
+  /** State of an actor.
    *  <ul>
-   *    <li>New<br>
-   *      An actor that has not yet started is in this state.</li>
-   *    <li>Runnable<br>
-   *      An actor executing is in this state.</li>
-   *    <li>Suspended<br>
-   *      An actor that is suspended waiting in a react is in this state.</li>
-   *    <li>TimedSuspended<br>
-   *      An actor that is suspended waiting in a reactWithin is in this state.</li>
-   *    <li>Blocked<br>
-   *      An actor that is blocked waiting in a receive is in this state.</li>
-   *    <li>TimedBlocked<br>
-   *      An actor that is blocked waiting in a receiveWithin is in this state.</li>
-   *    <li>Terminated<br>
-   *      An actor that has terminated is in this state.</li>
+   *    <li><b>New</b> -
+   *      Not yet started</li>
+   *    <li><b>Runnable</b> -
+   *      Executing</li>
+   *    <li><b>Suspended</b> -
+   *      Suspended, waiting in a `react`</li>
+   *    <li><b>TimedSuspended</b> -
+   *      Suspended, waiting in a `reactWithin` </li>
+   *    <li><b>Blocked</b> -
+   *      Blocked waiting in a `receive` </li>
+   *    <li><b>TimedBlocked</b> -
+   *      Blocked waiting in a `receiveWithin` </li>
+   *    <li><b>Terminated</b> -
+   *      Actor has terminated </li>
    *  </ul>
    */
   object State extends Enumeration {
@@ -115,11 +115,9 @@ object Actor extends Combinators {
   }
 
   /**
-   * This is a factory method for creating actors.
+   * Factory method for creating and starting an actor.
    *
-   * The following example demonstrates its usage:
-   *
-   * {{{
+   * @example {{{
    * import scala.actors.Actor._
    * ...
    * val a = actor {
@@ -140,12 +138,10 @@ object Actor extends Combinators {
   }
 
   /**
-   * This is a factory method for creating actors whose
+   * Factory method for creating actors whose
    * body is defined using a `Responder`.
    *
-   * The following example demonstrates its usage:
-   *
-   * {{{
+   * @example {{{
    * import scala.actors.Actor._
    * import Responder.exec
    * ...
@@ -182,6 +178,14 @@ object Actor extends Combinators {
    * <code>self</code>. Blocks if no message matching any of the
    * cases of <code>f</code> can be received.
    *
+   * @example {{{
+   * receive {
+   *   case "exit" => println("exiting")
+   *   case 42 => println("got the answer")
+   *   case x:Int => println("got an answer")
+   * }
+   * }}}
+   *
    * @param  f a partial function specifying patterns and actions
    * @return   the result of processing the received message
    */
@@ -209,6 +213,26 @@ object Actor extends Combinators {
    * Actions in <code>f</code> have to contain the rest of the
    * computation of <code>self</code>, as this method will never
    * return.
+   *
+   * A common method of continuting the computation is to send a message
+   * to another actor:
+   * {{{
+   * react {
+   *   case Get(from) =>
+   *     react {
+   *       case Put(x) => from ! x
+   *     }
+   * }
+   * }}}
+   *
+   * Another common method is to use `loop` to continuously `react` to messages:
+   * {{{
+   * loop {
+   *   react {
+   *     case Msg(data) => // process data
+   *   }
+   * }
+   * }}}
    *
    * @param  f a partial function specifying patterns and actions
    * @return   this function never returns
@@ -250,14 +274,14 @@ object Actor extends Combinators {
     rawSelf.sender
 
   /**
-   * Send <code>msg</code> to the actor waiting in a call to
+   * Sends <code>msg</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
   def reply(msg: Any): Unit =
     rawSelf.reply(msg)
 
   /**
-   * Send <code>()</code> to the actor waiting in a call to
+   * Sends <code>()</code> to the actor waiting in a call to
    * <code>!?</code>.
    */
   def reply(): Unit =
@@ -274,9 +298,7 @@ object Actor extends Combinators {
    * Converts a synchronous event-based operation into
    * an asynchronous `Responder`.
    *
-   * The following example demonstrates its usage:
-   *
-   * {{{
+   * @example {{{
    * val adder = reactor {
    *   for {
    *     _ <- respondOn(react) { case Add(a, b) => reply(a+b) }
@@ -357,7 +379,7 @@ object Actor extends Combinators {
 
 /**
  * <p>
- *   This trait provides lightweight, concurrent actors. Actors are
+ *   Provides lightweight, concurrent actors. Actors are
  *   created by extending the `Actor` trait (alternatively, one of the
  *   factory methods in its companion object can be used).  The
  *   behavior of an `Actor` subclass is defined by implementing its
@@ -400,13 +422,13 @@ object Actor extends Combinators {
  *   <li>
  *     <a href="http://lampwww.epfl.ch/~odersky/papers/jmlc06.pdf">
  *     <span style="font-weight:bold; white-space:nowrap;">Event-Based
- *     Programming without Inversion of Control</span></a>,<br/>
+ *     Programming without Inversion of Control</span></a>,
  *     Philipp Haller and Martin Odersky, <i>Proc. JMLC 2006</i>, and
  *   </li>
  *   <li>
  *     <a href="http://lamp.epfl.ch/~phaller/doc/haller07coord.pdf">
  *     <span style="font-weight:bold; white-space:nowrap;">Actors that
- *     Unify Threads and Events</span></a>,<br/>
+ *     Unify Threads and Events</span></a>,
  *     Philipp Haller and Martin Odersky, <i>Proc. COORDINATION 2007</i>.
  *   </li>
  * </ul>
@@ -484,6 +506,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
   private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
     new ActorTask(this, fun, handler, msg)
 
+  /** See the companion object's `receive` method. */
   def receive[R](f: PartialFunction[Any, R]): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
@@ -527,6 +550,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     result
   }
 
+  /** See the companion object's `receiveWithin` method. */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
@@ -599,6 +623,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     result
   }
 
+  /** See the companion object's `react` method. */
   override def react(handler: PartialFunction[Any, Unit]): Nothing = {
     synchronized {
       if (shouldExit) exit()
@@ -606,6 +631,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     super.react(handler)
   }
 
+  /** See the companion object's `reactWithin` method. */
   override def reactWithin(msec: Long)(handler: PartialFunction[Any, Unit]): Nothing = {
     synchronized {
       if (shouldExit) exit()
@@ -613,6 +639,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     super.reactWithin(msec)(handler)
   }
 
+  /** Receives the next message from the mailbox */
   def ? : Any = receive {
     case x => x
   }
@@ -677,6 +704,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     this
   }
 
+  /** State of this actor */
   override def getState: Actor.State.Value = synchronized {
     if (isSuspended) {
       if (onTimeout.isEmpty)
@@ -850,27 +878,26 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
 }
 
 
-/** <p>
- *    This object is used as the timeout pattern in
+/**
+ *    Used as the timeout pattern in
  *    <a href="Actor.html#receiveWithin(Long)" target="contentFrame">
  *    <code>receiveWithin</code></a> and
  *    <a href="Actor.html#reactWithin(Long)" target="contentFrame">
  *    <code>reactWithin</code></a>.
- *  </p>
- *  <p>
- *    The following example demonstrates its usage:
- *  </p><pre>
+ *
+ * @example {{{
  *    receiveWithin(500) {
- *      <b>case</b> (x, y) <b>=&gt;</b> ...
- *      <b>case</b> TIMEOUT <b>=&gt;</b> ...
- *    }</pre>
+ *      case (x, y) => ...
+ *      case TIMEOUT => ...
+ *    }
+ * }}}
  *
  *  @author Philipp Haller
  */
 case object TIMEOUT
 
 
-/** An `Exit` message (an instance of this class) is sent to an actor
+/** Sent to an actor
  *  with `trapExit` set to `true` whenever one of its linked actors
  *  terminates.
  *
@@ -879,10 +906,7 @@ case object TIMEOUT
  */
 case class Exit(from: AbstractActor, reason: AnyRef)
 
-/** <p>
- *    This class is used to manage control flow of actor
- *    executions.
- *  </p>
+/** Manages control flow of actor executions.
  *
  * @author Philipp Haller
  */

@@ -10,10 +10,7 @@
 
 package scala.actors
 
-/** <p>
- *    The class <code>ActorTask</code>.
- *  </p>
- *
+/**
  *  @author Philipp Haller
  */
 private[actors] class ActorTask(actor: Actor,

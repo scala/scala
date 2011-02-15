@@ -46,7 +46,7 @@ private[actors] object Reactor {
 }
 
 /**
- * The Reactor trait provides lightweight actors.
+ * Super trait of all actor traits.
  *
  * @author Philipp Haller
  *

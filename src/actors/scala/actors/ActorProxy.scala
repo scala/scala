@@ -12,7 +12,7 @@ package scala.actors
 import java.lang.Thread
 
 /**
- * The class <code>ActorProxy</code> provides a dynamic actor proxy for normal
+ * Provides a dynamic actor proxy for normal
  * Java threads.
  *
  * @author Philipp Haller

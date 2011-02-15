@@ -10,8 +10,6 @@
 package scala.actors
 
 /**
- * The <code>AbstractActor</code> trait.
- *
  * @author Philipp Haller
  *
  * @define actor actor

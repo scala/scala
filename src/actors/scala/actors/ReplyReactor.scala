@@ -11,12 +11,11 @@ package scala.actors
 
 import java.util.{Timer, TimerTask}
 
-/** <p>
- *    The <code>ReplyReactor</code> trait extends the <code>Reactor</code>
+/**
+ * Extends the [[scala.actors.Reactor]]
  *    trait with methods to reply to the sender of a message.
  *    Sending a message to a <code>ReplyReactor</code> implicitly
  *    passes a reference to the sender together with the message.
- *  </p>
  *
  *  @author Philipp Haller
  *

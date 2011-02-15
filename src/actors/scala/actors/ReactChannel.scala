@@ -10,8 +10,6 @@
 package scala.actors
 
 /**
- * The <code>ReactChannel</code> trait.
- *
  * @author Philipp Haller
  */
 private[actors] class ReactChannel[Msg](receiver: ReplyReactor) extends InputChannel[Msg] {

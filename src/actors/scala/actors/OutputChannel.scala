@@ -12,8 +12,7 @@ package scala.actors
 import scala.annotation.unique.unique
 
 /**
- * The <code>OutputChannel</code> trait provides a common interface
- * for all channels to which values can be sent.
+ * A common interface for all channels to which values can be sent.
  *
  * @author Philipp Haller
  *

@@ -14,10 +14,7 @@ import java.util.concurrent.Callable
 
 import scala.concurrent.forkjoin.RecursiveAction
 
-/** <p>
- *    The class <code>ReactorTask</code>.
- *  </p>
- *
+/**
  *  @author Philipp Haller
  */
 private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
