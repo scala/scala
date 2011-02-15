@@ -12,36 +12,39 @@ import scala.collection.SetLike
 import scala.collection.{ mutable, immutable, generic }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
 
-/** <p>
+/**
  *    Defines a finite set of values specific to the enumeration. Typically
  *    these values enumerate all possible forms something can take and provide a
  *    lightweight alternative to case classes.
- *  </p>
- *  <p>
- *    Each call to a <code>Value</code> method adds a new unique value to the
+ *
+ *    Each call to a `Value` method adds a new unique value to the
  *    enumeration. To be accessible, these values are usually defined as
- *    <code>val</code> members of the evaluation.
- *  </p>
- *  <p>
+ *    `val` members of the evaluation.
+ *
  *    All values in an enumeration share a common, unique type defined as the
- *    <code>Value</code> type member of the enumeration (<code>Value</code>
+ *    `Value` type member of the enumeration (`Value`
  *    selected on the stable identifier path of the enumeration instance).
- *  </p>
- *  <p>
- *    <b>Example use</b>
- *  </p><pre>
- *  <b>object</b> Main <b>extends</b> Application {
  *
- *    <b>object</b> WeekDay <b>extends</b> Enumeration {
- *      <b>type</b> WeekDay</b> = Value
- *      <b>val</b> Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
+ * @example {{{
+ *  object Main extends Application {
+ *
+ *    object WeekDay extends Enumeration {
+ *      type WeekDay = Value
+ *      val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
  *    }
- *    <b>import</b> WeekDay._
+ *    import WeekDay._
  *
- *    <b>def</b> isWorkingDay(d: WeekDay) = ! (d == Sat || d == Sun)
+ *    def isWorkingDay(d: WeekDay) = ! (d == Sat || d == Sun)
  *
  *    WeekDay.values filter isWorkingDay foreach println
- *  }</pre>
+ *  }
+ *  // output:
+ *  // Mon
+ *  // Tue
+ *  // Wed
+ *  // Thu
+ *  // Fri
+ *  }}}
  *
  *  @param initial The initial value from which to count the integers that
  *                 identifies values at run-time.
@@ -128,28 +131,28 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
   protected final def Value: Value = Value(nextId)
 
   /** Creates a fresh value, part of this enumeration, identified by the integer
-   *  <code>i</code>.
+   *  `i`.
    *
    *  @param i An integer that identifies this value at run-time. It must be
    *           unique amongst all values of the enumeration.
-   *  @return  Fresh value identified by <code>i</code>.
+   *  @return  Fresh value identified by `i`.
    */
   protected final def Value(i: Int): Value = Value(i, nextNameOrNull)
 
-  /** Creates a fresh value, part of this enumeration, called <code>name</code>.
+  /** Creates a fresh value, part of this enumeration, called `name`.
    *
    *  @param name A human-readable name for that value.
-   *  @return  Fresh value called <code>name</code>.
+   *  @return  Fresh value called `name`.
    */
   protected final def Value(name: String): Value = Value(nextId, name)
 
-  /** Creates a fresh value, part of this enumeration, called <code>name</code>
-   *  and identified by the integer <code>i</code>.
+  /** Creates a fresh value, part of this enumeration, called `name`
+   *  and identified by the integer `i`.
    *
    * @param i    An integer that identifies this value at run-time. It must be
    *             unique amongst all values of the enumeration.
    * @param name A human-readable name for that value.
-   * @return     Fresh value with the provided identifier <code>i</code> and name <code>name</code>.
+   * @return     Fresh value with the provided identifier `i` and name `name`.
    */
   protected final def Value(i: Int, name: String): Value = new Val(i, name)
 
@@ -192,7 +195,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
   }
 
   /** A class implementing the <a href="Enumeration.Value.html"
-   *  target="contentFrame"><code>Value</code></a> type. This class can be
+   *  target="contentFrame">`Value`</a> type. This class can be
    *  overridden to change the enumeration's naming and integer identification
    *  behaviour.
    */
