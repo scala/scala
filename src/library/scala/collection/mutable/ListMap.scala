@@ -54,7 +54,6 @@ class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Ser
 
   override def clear() = { elems = List(); siz = 0 }
   override def size: Int = siz
-  override def stringPrefix: String = "ListMap"
 }
 
 /** $factoryInfo

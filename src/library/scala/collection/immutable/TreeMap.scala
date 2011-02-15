@@ -152,8 +152,6 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
   override def toStream: Stream[(A, B)] = tree.toStream
 
   override def foreach[U](f : ((A,B)) =>  U) = tree foreach { case (x, y) => f(x, y) }
-
-  override def stringPrefix: String = "TreeMap"
 }
 
 

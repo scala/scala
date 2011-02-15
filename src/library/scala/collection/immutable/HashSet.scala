@@ -81,7 +81,6 @@ class HashSet[A] extends Set[A]
   protected def writeReplace(): AnyRef = new HashSet.SerializationProxy(this)
   override def toParIterable = par
   override def toParSet[B >: A] = par.asInstanceOf[ParHashSet[B]]
-  override def stringPrefix: String = "HashSet"
 }
 
 /** $factoryInfo
