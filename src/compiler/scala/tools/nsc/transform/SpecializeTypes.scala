@@ -960,9 +960,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         if (strict) throw UnifyError else env
     case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
+      log("Unify - both type refs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
       if (strict && args1.length != args2.length) throw UnifyError
       val e = unify(args1, args2, env, strict)
-      log("Unify - both type refs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - " + e)
+      log("unified to: " + e)
       e
     case (TypeRef(_, sym1, _), _) if sym1.isTypeParameterOrSkolem =>
       env
@@ -995,8 +996,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (!strict) unify(args._1, args._2, env, strict)
       else {
         val nenv = unify(args._1, args._2, emptyEnv, strict)
-        if (env.keySet.intersect(nenv.keySet) == emptyEnv) env ++ nenv
-        else throw UnifyError
+        if (env.keySet.intersect(nenv.keySet) == Set()) env ++ nenv
+        else {
+          log("could not unify: u(" + args._1 + ", " + args._2 + ") yields " + nenv + ", env: " + env)
+          throw UnifyError
+        }
       }
     }
 
