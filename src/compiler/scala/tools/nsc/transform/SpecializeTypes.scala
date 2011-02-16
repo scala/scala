@@ -528,7 +528,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               if (p.typeSymbol.isTrait) res += stp
               else if (currentRun.compiles(clazz))
                 reporter.warning(clazz.pos, p.typeSymbol + " must be a trait. Specialized version of "
-                  + clazz + " will inherit generic " + p)
+                  + clazz + " will inherit generic " + p) // TODO change to error
           }
           res.reverse.toList
         }
@@ -960,6 +960,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         if (strict) throw UnifyError else env
     case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
+      if (strict && args1.length != args2.length) throw UnifyError
       val e = unify(args1, args2, env, strict)
       log("Unify - both type refs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - " + e)
       e
@@ -970,6 +971,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       log("Unify - method types: " + tp1 + " and " + tp2)
       unify(res1 :: (params1 map (_.tpe)), res2 :: (params2 map (_.tpe)), env, strict)
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
+      if (strict && tparams1.length != tparams2.length) throw UnifyError
+      log("Unify - poly types: " + tp1 + " and " + tp2)
       unify(res1, res2, env, strict)
     case (PolyType(_, res), other) =>
       unify(res, other, env, strict)
@@ -984,12 +987,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _ =>
       log("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
       env
-  }
+    }
   }
 
   private def unify(tp1: List[Type], tp2: List[Type], env: TypeEnv, strict: Boolean): TypeEnv =
     tp1.zip(tp2).foldLeft(env) { (env, args) =>
-      unify(args._1, args._2, env, strict)
+      if (!strict) unify(args._1, args._2, env, strict)
+      else {
+        val nenv = unify(args._1, args._2, emptyEnv, strict)
+        if (env.keySet.intersect(nenv.keySet) == emptyEnv) env ++ nenv
+        else throw UnifyError
+      }
     }
 
   private def specializedTypes(tps: List[Symbol]) = tps.filter(_.hasAnnotation(SpecializedClass))
@@ -1249,8 +1257,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         log("[specSym] checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
                 .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
-          val specMember = qual.tpe.member(specializedName(symbol, env)) suchThat (s => doesConform(symbol, tree.tpe, s.tpe, env))
-          log("[specSym] found: " + qual.tpe.member(specializedName(symbol, env)).tpe + ", instantiated as: " + tree.tpe)
+          val specCandidates = qual.tpe.member(specializedName(symbol, env))
+          val specMember = specCandidates suchThat (s => doesConform(symbol, tree.tpe, s.tpe, env))
+          log("[specSym] found: " + specCandidates.tpe + ", instantiated as: " + tree.tpe)
           log("[specSym] found specMember: " + specMember)
           if (specMember ne NoSymbol)
             if (TypeEnv.includes(typeEnv(specMember), env)) Some(specMember)
