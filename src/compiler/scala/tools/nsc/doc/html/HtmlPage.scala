@@ -206,10 +206,18 @@ abstract class HtmlPage { thisPage =>
     case tpe :: tpes => typeToHtml(tpe, hasLinks) ++ sep ++ typesToHtml(tpes, hasLinks, sep)
   }
 
+  def hasPage(e: DocTemplateEntity) = {
+    e.isPackage || e.isTrait || e.isClass || e.isObject || e.isCaseClass
+  }
+
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
   def templateToHtml(tpl: TemplateEntity) = tpl match {
     case dTpl: DocTemplateEntity =>
-      <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ dTpl.name }</a>
+      if (hasPage(dTpl)) {
+        <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ dTpl.name }</a>
+      } else {
+        xml.Text(dTpl.name)
+      }
     case ndTpl: NoDocTemplate =>
       xml.Text(ndTpl.name)
   }
