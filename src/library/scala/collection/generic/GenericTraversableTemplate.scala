@@ -12,6 +12,7 @@ package scala.collection
 package generic
 
 import mutable.Builder
+import annotation.migration
 import annotation.unchecked.uncheckedVariance
 
 /** A template class for companion objects of ``regular`` collection classes
@@ -136,18 +137,27 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
    *          element type of this $coll is a `Traversable`.
    *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
    *          the ''n''th column of this $coll.
+   *  @throws `IllegalArgumentException` if all collections in this $coll
+   *          are not of the same size.
    */
+  @migration(2, 9, "As of 2.9, transpose throws an exception if collections are not uniformly sized.")
   def transpose[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[CC[B] @uncheckedVariance] = {
     if (isEmpty)
       return genericBuilder[CC[B]].result
 
-    val bs: IndexedSeq[Builder[B, CC[B]]] = IndexedSeq.fill(asTraversable(head).size)(genericBuilder[B])
+    def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
+
+    val headSize = asTraversable(head).size
+    val bs: IndexedSeq[Builder[B, CC[B]]] = IndexedSeq.fill(headSize)(genericBuilder[B])
     for (xs <- this) {
       var i = 0
       for (x <- asTraversable(xs)) {
+        if (i >= headSize) fail
         bs(i) += x
         i += 1
       }
+      if (i != headSize)
+        fail
     }
     val bb = genericBuilder[CC[B]]
     for (b <- bs) bb += b.result
