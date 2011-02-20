@@ -107,6 +107,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       })
 
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
+    def shortClass: String = tree.getClass.getName split "[.$]" last
   }
 
   private[scala] override def duplicateTree(tree: Tree): Tree = duplicator transform tree

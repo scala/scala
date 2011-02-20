@@ -6,12 +6,17 @@
 package scala.tools.nsc
 package symtab
 
+import scala.collection.{ mutable, immutable }
+
 /** Printing the symbol graph (for those symbols attached to an AST node)
  *  after each phase.
  */
 trait SymbolTrackers {
   val global: Global
   import global._
+
+  private implicit lazy val TreeOrdering: Ordering[Tree] =
+    Ordering by (x => (x.shortClass, x.symbol))
 
   private implicit lazy val SymbolOrdering: Ordering[Symbol] =
     Ordering by (x => (x.kindString, x.name.toString))
@@ -31,28 +36,35 @@ trait SymbolTrackers {
   case class Change(
     added: Set[Symbol],
     removed: Set[Symbol],
-    owners: Map[Symbol, Symbol],  // symbol -> previous owner
-    flags: Map[Symbol, Long]      // symbol -> previous flags
+    trees: Map[Symbol, Set[Tree]],  // symbol -> trees which proudly display it
+    owners: Map[Symbol, Symbol],    // symbol -> previous owner
+    flags: Map[Symbol, Long]        // symbol -> previous flags
   )
 
   object SymbolTracker {
     def containsSymbol(t: Tree) = t.symbol != null && t.symbol != NoSymbol
 
-    def symbolsInUnit(unit: CompilationUnit): Set[Symbol] = {
-      if (unit.body == null) Set.empty[Symbol]
-      else unit.body filter containsSymbol map (_.symbol) toSet
+    // This is noise reduction only.
+    def dropSymbol(sym: Symbol) = sym.ownerChain exists (_ hasFlag Flags.SPECIALIZED)
+
+    def symbolSnapshot(unit: CompilationUnit): Map[Symbol, Set[Tree]] = {
+      if (unit.body == null) Map()
+      else unit.body filter containsSymbol groupBy (_.symbol) mapValues (_.toSet) toMap
     }
     def apply(unit: CompilationUnit) = new SymbolTracker(
-      () => symbolsInUnit(unit) filterNot (_.ownerChain.exists(_ hasFlag Flags.SPECIALIZED))
+      () => symbolSnapshot(unit) filterNot { case (k, _) => dropSymbol(k) }
     )
   }
 
-  class SymbolTracker(sourceFn: () => Set[Symbol]) {
+  class SymbolTracker(snapshotFn: () => Map[Symbol, Set[Tree]]) {
     def flagsMask: Long = Flags.PrintableFlags
 
-    private var current    = Set[Symbol]()
-    private var history    = List[Change](Change(Set(), Set(), Map(), Map()))
-    private var prev       = Set[Symbol]()
+    private var currentMap = Map[Symbol, Set[Tree]]()
+    private var prevMap    = Map[Symbol, Set[Tree]]()
+    private def current    = currentMap.keySet
+    private def prev       = prevMap.keySet
+
+    private var history    = List[Change](Change(Set(), Set(), Map(), Map(), Map()))
     private var prevFlags  = Map[Symbol, Long]()
     private var prevOwners = Map[Symbol, Symbol]()
 
@@ -63,7 +75,6 @@ trait SymbolTrackers {
 
     private implicit def NodeOrdering: Ordering[Node] = Ordering by (_.root)
     private def ownersString(sym: Symbol, num: Int) = sym.ownerChain drop 1 take num mkString " -> "
-    private def allOwnersString(sym: Symbol)        = sym.ownerChain mkString " -> "
 
     object Node {
       def nodes(syms: Set[Symbol]): List[Node] = {
@@ -117,7 +128,7 @@ trait SymbolTrackers {
           " " + strs.filterNot(_ == "").mkString("[", " ", "]")
         case _ =>
           if (masked == 0L) ""
-          else " " + Flags.flagsToString(masked)
+          else " (" + Flags.flagsToString(masked) + ")"
       }
       def symString(sym: Symbol) = (
         sym + changedOwnerString + flagSummaryString
@@ -137,7 +148,7 @@ trait SymbolTrackers {
     }
 
     def snapshot(): Unit = {
-      current = sourceFn()
+      currentMap = snapshotFn()
 
       val added   = current filterNot prev
       val removed = prev filterNot current
@@ -155,22 +166,35 @@ trait SymbolTrackers {
           (sym, old)
       }).toMap
 
-      val change = Change(added, removed, owners, flags)
+      val change = Change(added, removed, prevMap, owners, flags)
 
-      prev       = current
+      prevMap    = currentMap
       prevOwners = current map (s => (s, s.owner)) toMap;
       prevFlags  = current map (s => (s, (s.flags & flagsMask))) toMap;
       history    = change :: history
     }
     def show(): String = {
       val hierarchy = Node(current)
-      val removed   = history.head.removed
+      val Change(added, removed, symMap, owners, flags) = history.head
+      def detailString(sym: Symbol) = {
+        val ownerString = sym.ownerChain splitAt 3 match {
+          case (front, back) =>
+            val xs = if (back.isEmpty) front else front :+ "..."
+            xs mkString " -> "
+        }
+        val treeStrings = symMap(sym) map { t =>
+          "%10s: %s".format(t.shortClass, t)
+        }
+
+        ownerString :: treeStrings mkString "\n"
+      }
+      def removedString = (removed: List[Symbol]).zipWithIndex map {
+        case (t, i) => "(%2s) ".format(i + 1) + detailString(t)
+      } mkString "\n"
 
       "" + hierarchy + (
         if (removed.isEmpty) ""
-        else removed map allOwnersString mkString (
-          "\n\n!!! " + removed.size + " symbols vanished:\n", "\n", ""
-        )
+        else "\n\n!!! %s symbols vanished:\n".format(removed.size) + removedString
       )
     }
   }
