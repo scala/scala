@@ -1,0 +1,5 @@
+noMember2.scala:2: error: object MultiMap is not a member of package scala.collection.mutable
+Note: trait MultiMap exists, but it has no companion object.
+  val m = scala.collection.mutable.MultiMap(1, 2, 3)
+                                   ^
+one error found

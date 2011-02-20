@@ -74,8 +74,12 @@ trait TypeDiagnostics {
 
   def withAddendum(pos: Position) = (_: String) + addendums.getOrElse(pos, () => "")()
 
-  def decodeWithNamespace(name: Name): String = {
-    val prefix = if (name.isTypeName) "type " else "value "
+  def decodeWithKind(name: Name, owner: Symbol): String = {
+    val prefix = (
+      if (name.isTypeName) "type "
+      else if (owner.isPackageClass) "object "
+      else "value "
+    )
     prefix + name.decode
   }
 
@@ -84,21 +88,37 @@ trait TypeDiagnostics {
   def linePrecedes(t1: Tree, t2: Tree) = t1.pos.isDefined && t1.pos.isDefined && t1.pos.line < t2.pos.line
 
   def notAMember(sel: Tree, qual: Tree, name: Name) = {
-    def decoded = decodeWithNamespace(name)
-
-    def msg: String = name match {
-      case nme.CONSTRUCTOR    => qual.tpe.widen+" does not have a constructor"
-      case _                  =>
-        def memberOf = if (qual.tpe.typeSymbol.isTypeParameterOrSkolem) "type parameter " else ""
-        def possibleCause =
-          if (linePrecedes(qual, sel))
-            "\npossible cause: maybe a semicolon is missing before `"+decoded+"'?"
-          else
-            ""
-
-        decoded+" is not a member of "+ memberOf + qual.tpe.widen + possibleCause
+    val owner            = qual.tpe.typeSymbol
+    val target           = qual.tpe.widen
+    def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
+    def nameString       = decodeWithKind(name, owner)
+    /** Illuminating some common situations and errors a bit further. */
+    def addendum         = {
+      val companion = {
+        if (name.isTermName && owner.isPackageClass) {
+          target.member(name.toTypeName) match {
+            case NoSymbol => ""
+            case sym      => "\nNote: %s exists, but it has no companion object.".format(sym)
+          }
+        }
+        else ""
+      }
+      val semicolon = (
+        if (linePrecedes(qual, sel))
+          "\npossible cause: maybe a semicolon is missing before `"+nameString+"'?"
+        else
+          ""
+      )
+      companion + semicolon
     }
-    inferError(sel.pos, withAddendum(qual.pos)(msg))
+
+    inferError(
+      sel.pos,
+      withAddendum(qual.pos)(
+        if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
+        else nameString + " is not a member of " + targetKindString + target + addendum
+      )
+    )
   }
 
   /** Only prints the parameter names if they're not synthetic,

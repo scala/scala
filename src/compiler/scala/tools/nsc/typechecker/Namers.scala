@@ -1239,13 +1239,13 @@ trait Namers { self: Analyzer =>
                     isValidSelector(from) {
                       if (currentRun.compileSourceFor(expr, from))
                         return typeSig(tree)
+
+                      def notMember = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
-                      if (from.endsWith(nme.raw.DOLLAR))
-                        isValidSelector(from.subName(0, from.length -1)) {
-                          context.error(tree.pos, from.decode + " is not a member of " + expr)
-                        }
+                      if (from endsWith nme.raw.DOLLAR)
+                        isValidSelector(from stripEnd "$")(notMember)
                       else
-                        context.error(tree.pos, from.decode + " is not a member of " + expr)
+                        notMember
                     }
 
                     if (checkNotRedundant(tree.pos, from, to))

@@ -3695,7 +3695,7 @@ trait Typers extends Modes {
                 log(context.imports)//debug
               }
               if (inaccessibleSym eq NoSymbol) {
-                error(tree.pos, "not found: "+decodeWithNamespace(name))
+                error(tree.pos, "not found: "+decodeWithKind(name, context.owner))
               }
               else accessError(
                 tree, inaccessibleSym, context.enclClass.owner.thisType,
