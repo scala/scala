@@ -156,16 +156,20 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     override def follow(id: String) = {
       if (completions(0) contains id) {
         intp typeOfExpression id map { tpe =>
-          intp runtimeClassAndTypeOfTerm id match {
+          def default = TypeMemberCompletion(tpe)
+
+          // only rebinding vals in power mode for now.
+          if (!isReplPower) default
+          else intp runtimeClassAndTypeOfTerm id match {
             case Some((clazz, runtimeType)) =>
               val sym = intp.symbolOfTerm(id)
               if (sym.isStable) {
                 val param = new NamedParam.Untyped(id, intp valueOfTerm id getOrElse null)
                 TypeMemberCompletion(tpe, runtimeType, param)
               }
-              else TypeMemberCompletion(tpe)
+              else default
             case _        =>
-              TypeMemberCompletion(tpe)
+              default
           }
         }
       }

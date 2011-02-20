@@ -526,6 +526,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       return "Already in power mode."
 
     power = new Power(this)
+    isReplPower = true
     power.unleash()
     power.banner
   }
@@ -781,7 +782,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       // couple seconds saying "wow, it starts so fast!" and by the time
       // they type a command the compiler is ready to roll.
       intp.initialize()
-      if (sys.props contains PowerProperty) {
+      if (isReplPower) {
         plushln("Starting in power mode, one moment...\n")
         powerCmd()
       }

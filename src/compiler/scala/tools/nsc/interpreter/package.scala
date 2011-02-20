@@ -31,6 +31,7 @@ package object interpreter {
   private[nsc] val TraceProperty = "scala.repl.trace"
   private[nsc] val PowerProperty = "scala.repl.power"
   private[nsc] var isReplDebug   = sys.props contains DebugProperty // Also set by -Yrepl-debug
+  private[nsc] var isReplPower   = sys.props contains PowerProperty
 
   private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
   private[interpreter] implicit def javaCharSeqCollectionToScala(xs: JCollection[_ <: CharSequence]): List[String] = {
