@@ -1253,10 +1253,10 @@ trait Typers extends Modes {
           c.initialize
       val clazz = mdef.symbol.moduleClass
       val maybeAddSerializable = (l: List[Tree]) =>
-        if(linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) l
+        if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) l
         else {
           clazz.makeSerializable()
-          l ::: List(TypeTree(SerializableClass.tpe))
+          l :+ TypeTree(SerializableClass.tpe)
         }
       val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol)
@@ -1264,11 +1264,6 @@ trait Typers extends Modes {
         .typedTemplate(mdef.impl, maybeAddSerializable(parentTypes(mdef.impl)))
       val impl2 = typerAddSyntheticMethods(impl1, clazz, context)
 
-      if (mdef.name == nme.PACKAGEkw)
-        for (m <- mdef.symbol.info.members)
-          if (m.isCaseClass)
-            context.error(if (m.pos.isDefined) m.pos else mdef.pos,
-                          "implementation restriction: "+mdef.symbol+" cannot contain case "+m)
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
     }
 

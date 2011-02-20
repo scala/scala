@@ -1,4 +1,0 @@
-t2130.scala:4: error: implementation restriction: package object foo cannot contain case class X
-    case class X()
-               ^
-one error found
