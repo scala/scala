@@ -1,3 +1,5 @@
+import Function.unlift
+
 object Test {
   def evens1(x: Int) = if (x % 2 == 0) Some(x) else None
   def evens2: PartialFunction[Int, Int] = {
@@ -10,8 +12,8 @@ object Test {
 
     assert(1 to 10 forall (x => f1(x) == f2(x)))
 
-    val f3 = f1.unlift
-    val f4 = f2.unlift
+    val f3 = unlift(f1)
+    val f4 = unlift(f2)
 
     assert(1 to 10 forall { x =>
       if (!f3.isDefinedAt(x)) !f4.isDefinedAt(x)

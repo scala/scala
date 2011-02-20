@@ -59,14 +59,12 @@ trait PartialFunction[-A, +B] extends (A => B) {
   }
 
   /** Turns this partial function into an plain function returning an `Option` result.
-   *  @see     Function1#unlift
+   *  @see     Function.unlift
    *  @return  a function that takes an argument `x` to `Some(this(x))` if `this`
    *           is defined for `x`, and to `None` otherwise.
    */
   def lift: A => Option[B] = new (A => Option[B]) {
     def apply(x: A): Option[B] = if (isDefinedAt(x)) Some(PartialFunction.this.apply(x)) else None
-    override def unlift[R1](implicit ev: Option[B] <:< Option[R1]): PartialFunction[A, R1] =
-      PartialFunction.this.asInstanceOf[PartialFunction[A, R1]]
   }
 }
 

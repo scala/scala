@@ -138,7 +138,7 @@ trait DocComments { self: SymbolTable =>
     allInheritedOverriddenSymbols(sym).iterator map (x => cookedDocComment(x)) find (_ != "")
 
   private def mapFind[A, B](xs: Iterable[A])(f: A => Option[B]): Option[B] =
-    xs collectFirst f.unlift
+    xs collectFirst scala.Function.unlift(f)
 
   private def isMovable(str: String, sec: (Int, Int)): Boolean =
     startsWithTag(str, sec, "@param") ||
