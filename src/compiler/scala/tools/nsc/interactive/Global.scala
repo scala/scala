@@ -45,9 +45,16 @@ self =>
     else NullLogger
 
   import log.logreplay
-  debugLog("interactive compiler from 9 Feb")
+  debugLog("interactive compiler from 20 Feb")
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
   debugLog("classpath: "+classPath)
+
+  private var curTime = System.nanoTime
+  private def timeStep = {
+    val last = curTime
+    curTime = System.nanoTime
+    ", delay = " + (curTime - last) / 1000000 + "ms"
+  }
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
@@ -127,6 +134,12 @@ self =>
 
   // ----------- Overriding hooks in nsc.Global -----------------------
 
+  /** Called from parser, which signals hereby that a method definition has been parsed.
+   */
+  override def signalParseProgress(pos: Position) {
+    checkForMoreWork(pos)
+  }
+
   /** Called from typechecker, which signals hereby that a node has been completely typechecked.
    *  If the node includes unit.targetPos, abandons run and returns newly attributed tree.
    *  Otherwise, if there's some higher priority work to be done, also abandons run with a FreshRunReq.
@@ -135,15 +148,10 @@ self =>
    *  @param  result   The transformed node
    */
   override def signalDone(context: Context, old: Tree, result: Tree) {
-    def integrateNew() {
-      if (context.unit == null)
-        context.unit.body = new TreeReplacer(old, result) transform context.unit.body
-    }
     if (interruptsEnabled && analyzer.lockedCount == 0) {
       if (context.unit != null &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
-        integrateNew()
         var located = new TypedLocator(context.unit.targetPos) locateIn result
         if (located == EmptyTree) {
           println("something's wrong: no "+context.unit+" in "+result+result.pos)
@@ -151,27 +159,15 @@ self =>
         }
         throw new TyperResult(located)
       }
-      val typerRun = currentTyperRun
-
-      while (true)
-        try {
-          try {
-            pollForWork(old.pos)
-          } catch {
-            case ex : Throwable =>
-            if (context.unit != null) integrateNew()
-              log.flush()
-              throw ex
-          }
-          if (typerRun == currentTyperRun)
-            return
-
-          integrateNew()
-          throw FreshRunReq
-        } catch {
-          case ex: ValidateException => // Ignore, this will have been reported elsewhere
-            debugLog("validate exception caught: "+ex)
-        }
+      try {
+        checkForMoreWork(old.pos)
+      } catch {
+        case ex: ValidateException => // Ignore, this will have been reported elsewhere
+          debugLog("validate exception caught: "+ex)
+        case ex: Throwable =>
+          log.flush()
+          throw ex
+      }
     }
   }
 
@@ -216,7 +212,7 @@ self =>
    *  gives the UI thread a chance to get new tasks and interrupt the presentation
    *  compiler with them.
    */
-  private final val yieldPeriod = 8
+  private final val yieldPeriod = 10
 
   /** Called from runner thread and signalDone:
    *  Poll for interrupts and execute them immediately.
@@ -248,8 +244,10 @@ self =>
         case Some(ir) =>
           try {
             interruptsEnabled = false
+            debugLog("ask started"+timeStep)
             ir.execute()
           } finally {
+            debugLog("ask finished"+timeStep)
             interruptsEnabled = true
           }
           pollForWork(pos)
@@ -264,8 +262,7 @@ self =>
         case Some(ex @ FreshRunReq) =>
           newTyperRun()
           minRunId = currentRunId
-          if (outOfDate) throw ex
-          else outOfDate = true
+          demandNewCompilerRun()
         case Some(ex: Throwable) => log.flush(); throw ex
         case _ =>
       }
@@ -275,15 +272,21 @@ self =>
       logreplay("workitem", scheduler.nextWorkItem()) match {
         case Some(action) =>
           try {
-            debugLog("picked up work item at "+pos+": "+action)
+            debugLog("picked up work item at "+pos+": "+action+timeStep)
             action()
             debugLog("done with work item: "+action)
           } finally {
-            debugLog("quitting work item: "+action)
+            debugLog("quitting work item: "+action+timeStep)
           }
         case None =>
       }
     }
+  }
+
+  protected def checkForMoreWork(pos: Position) {
+    val typerRun = currentTyperRun
+    pollForWork(pos)
+    if (typerRun != currentTyperRun) demandNewCompilerRun()
   }
 
   def debugInfo(source : SourceFile, start : Int, length : Int): String = {
@@ -337,6 +340,11 @@ self =>
     compileRunner
   }
 
+  def demandNewCompilerRun() = {
+    if (outOfDate) throw FreshRunReq // cancel background compile
+    else outOfDate = true            // proceed normally and enable new background compile
+  }
+
   /** Compile all loaded source files in the order given by `allSources`.
    */
   protected[interactive] def backgroundCompile() {
@@ -346,9 +354,10 @@ self =>
     allSources = allSources filter (s => unitOfFile contains (s.file))
 
     for (s <- allSources; unit <- getUnit(s)) {
-      pollForWork(NoPosition)
+      checkForMoreWork(NoPosition)
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
       parseAndEnter(unit)
+      serviceParsedEntered()
     }
 
     /** Sleep window */
@@ -356,7 +365,7 @@ self =>
       val limit = System.currentTimeMillis() + afterTypeDelay
       while (System.currentTimeMillis() < limit) {
         Thread.sleep(SleepTime)
-        pollForWork(NoPosition)
+        checkForMoreWork(NoPosition)
       }
     }
 
@@ -365,13 +374,18 @@ self =>
       else debugLog("already up to date: "+unit)
       for (r <- waitLoadedTypeResponses(unit.source))
         r set unit.body
+      serviceParsedEntered()
     }
 
     informIDE("Everything is now up to date")
 
     for ((source, rs) <- waitLoadedTypeResponses; r <- rs) r raise new NoSuchUnitError(source.file)
     waitLoadedTypeResponses.clear()
+  }
 
+  /** Service all pending getParsedEntered requests
+   */
+  def serviceParsedEntered() {
     var atOldRun = true
     for ((source, rs) <- getParsedEnteredResponses; r <- rs) {
       if (atOldRun) { newTyperRun(); atOldRun = false }
@@ -437,7 +451,7 @@ self =>
     allSources = fs ::: (allSources diff fs)
   }
 
-  // ----------------- Implementations of client commands -----------------------
+  // ----------------- Implementations of client commands -----------------------+lknwqdklnwlknqwkldnlkwdn
 
   def respond[T](result: Response[T])(op: => T): Unit =
     respondGradually(result)(Stream(op))
@@ -451,8 +465,10 @@ self =>
         while (!response.isCancelled && results.nonEmpty) {
           val result = results.head
           results = results.tail
-          if (results.isEmpty) response set result
-          else response setProvisionally result
+          if (results.isEmpty) {
+            response set result
+            debugLog("responded"+timeStep)
+          } else response setProvisionally result
         }
       }
     } catch {
@@ -494,8 +510,7 @@ self =>
     informIDE("reload: " + sources)
     lastWasReload = true
     respond(response)(reloadSources(sources))
-    if (outOfDate) throw FreshRunReq // cancel background compile
-    else outOfDate = true            // proceed normally and enable new background compile
+    demandNewCompilerRun()
   }
 
   /** A fully attributed tree located at position `pos` */

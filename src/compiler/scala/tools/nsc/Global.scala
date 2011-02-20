@@ -126,6 +126,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
    */
   def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
 
+  /** Called from parser, which signals hereby that a method definition has been parsed. */
+  def signalParseProgress(pos: Position) {}
+
   /** Register new context; called for every created context
    */
   def registerContext(c: analyzer.Context) {}
