@@ -445,10 +445,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def produceTypeParameters(syms: List[Symbol], nowner: Symbol, env: TypeEnv) = {
     val cloned = for (s <- syms) yield if (!env.contains(s)) s.cloneSymbol(nowner) else env(s).typeSymbol
+    // log("producing type params: " + cloned.map(t => (t, t.tpe.bounds.hi)))
     for ((orig, cln) <- syms zip cloned) {
       cln.removeAnnotation(SpecializedClass)
       if (env.contains(orig)) cln.setInfo(TypeBounds(cln.info.bounds.lo, AnyRefClass.tpe))
     }
+    for (sym <- cloned) sym.setInfo(sym.info.substSym(syms, cloned))
     cloned
   }
 
@@ -506,7 +508,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val survivedParams = survivingParams(clazz.info.typeParams, env)
         oldClassTParams = survivedParams
         newClassTParams = produceTypeParameters(survivedParams, cls, env) map subst(env)
-        log("new tparams " + newClassTParams.zip(newClassTParams map {_.tpe}))
+        // log("new tparams " + newClassTParams.zip(newClassTParams map {s => (s.tpe, s.tpe.bounds.hi)}) + ", in env: " + env)
 
         def applyContext(tpe: Type) =
           subst(env, tpe).subst(survivedParams, newClassTParams map (_.tpe))
@@ -1058,6 +1060,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     decl.setInfo(if (decl.isConstructor) tpe match {
       case MethodType(args, resTpe) => MethodType(args, decl.owner.tpe)
     } else tpe)
+    // log((decl, decl.tpe.bounds.hi))
+    // decl
   }
 
   /** Type transformation. It is applied to all symbols, compiled or loaded.
@@ -1515,7 +1519,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (settings.debug.value) log("now typing: " + meth + " in " + symbol.owner.fullName)
       val d = new Duplicator
       try {
-      d.retyped(localTyper.context1.asInstanceOf[d.Context],
+        // log("duplicating tree: " + tree + "; " + symbol.owner)
+        // log("source: " + source + "; owner: " + source.owner)
+        // log("source encl class: " + source.enclClass)
+        // log("symbol encl class: " + symbol.enclClass)
+        // log(meth)
+        d.retyped(localTyper.context1.asInstanceOf[d.Context],
                 meth,
                 source.enclClass,
                 symbol.enclClass,

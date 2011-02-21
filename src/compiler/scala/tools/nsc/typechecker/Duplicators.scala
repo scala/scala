@@ -170,6 +170,17 @@ abstract class Duplicators extends Analyzer {
       typed(ddef)
     }
 
+    private def inspectTpe(tpe: Type) = {
+      tpe match {
+        case MethodType(_, res) =>
+          res + ", " + res.bounds.hi + ", " + (res.bounds.hi match {
+            case TypeRef(_, _, args) if (args.length > 0) => args(0) + ", " + args(0).bounds.hi
+            case _ => "non-tref: " + res.bounds.hi.getClass
+          })
+        case _ =>
+      }
+    }
+
     /** Special typer method for re-type checking trees. It expects a typed tree.
      *  Returns a typed tree that has fresh symbols for all definitions in the original tree.
      *
@@ -224,11 +235,13 @@ abstract class Duplicators extends Analyzer {
           super.typed(vdef, mode, pt)
 
         case ldef @ LabelDef(name, params, rhs) =>
+          // log("label def: " + ldef)
           ldef.tpe = null
           val params1 = params map { p => Ident(updateSym(p.symbol)) }
           super.typed(treeCopy.LabelDef(tree, name, params1, rhs), mode, pt)
 
         case Bind(name, _) =>
+          // log("bind: " + tree)
           invalidate(tree)
           tree.tpe = null
           super.typed(tree, mode, pt)
@@ -240,21 +253,29 @@ abstract class Duplicators extends Analyzer {
           super.typed(tree, mode, pt)
 
         case Select(th @ This(_), sel) if (oldClassOwner ne null) && (th.symbol == oldClassOwner) =>
-          log("selection on this, no type ascription required")
+          // log("selection on this, no type ascription required")
           // we use the symbol name instead of the tree name because the symbol may have been
           // name mangled, rendering the tree name obsolete
-          super.typed(atPos(tree.pos)(Select(This(newClassOwner), tree.symbol.name)), mode, pt)
+          // log(tree)
+          val t = super.typed(atPos(tree.pos)(Select(This(newClassOwner), tree.symbol.name)), mode, pt)
+          // log("typed to: " + t + "; tpe = " + t.tpe + "; " + inspectTpe(t.tpe))
+          t
 
         case This(_) if (oldClassOwner ne null) && (tree.symbol == oldClassOwner) =>
 //          val tree1 = Typed(This(newClassOwner), TypeTree(fixType(tree.tpe.widen)))
+          // log("selection on this: " + tree)
           val tree1 = This(newClassOwner)
+          // log("tree1: " + tree1)
           if (settings.debug.value) log("mapped " + tree + " to " + tree1)
           super.typed(atPos(tree.pos)(tree1), mode, pt)
 
         case This(_) =>
+          // log("selection on this, plain: " + tree)
           tree.symbol = updateSym(tree.symbol)
           tree.tpe = null
-          super.typed(tree, mode, pt)
+          val tree1 = super.typed(tree, mode, pt)
+          // log("plain this typed to: " + tree1)
+          tree1
 
         case Super(qual, mix) if (oldClassOwner ne null) && (tree.symbol == oldClassOwner) =>
           val tree1 = Super(qual, mix)
@@ -281,6 +302,7 @@ abstract class Duplicators extends Analyzer {
           tree
 
         case _ =>
+          // log("default: " + tree)
           if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
