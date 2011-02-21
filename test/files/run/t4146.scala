@@ -1,4 +1,4 @@
-object bob extends App {
+object bob extends Application {
   var name = "Bob"
 }
 
