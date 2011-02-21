@@ -1,4 +1,4 @@
-object Comp extends Application {
+object Comp extends App {
 
    trait Family {
      type T

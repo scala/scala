@@ -13,7 +13,7 @@ final class Foo(val x: Int) {
     }
 }
 
-object Test extends Application {
+object Test extends App {
   val foo1 = new Foo(42)
   val foo2 = new Foo(-42)
 

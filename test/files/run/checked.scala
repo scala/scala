@@ -90,7 +90,7 @@ class TestInterference extends {
 }
 
 
-object Test extends Application {
+object Test extends App {
 
   def shouldThrow(t: => Unit) = try {
     t

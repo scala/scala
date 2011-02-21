@@ -13,7 +13,7 @@ class B extends A {
 
 
 
-object Test extends Application {
+object Test extends App {
  val a = new A
  print("a.x=")
  println(a.x)

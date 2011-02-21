@@ -1,4 +1,4 @@
-object Main extends Application {
+object Main extends App {
 
     case class Foo (field : Option[String])
 

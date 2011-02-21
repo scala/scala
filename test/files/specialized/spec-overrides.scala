@@ -11,7 +11,7 @@
  }
 
 
-object Test extends Application {
+object Test extends App {
   val d2 = new D2
 
   assert(d2.default == 1.0, d2.default)

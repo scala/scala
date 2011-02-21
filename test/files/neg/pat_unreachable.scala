@@ -1,5 +1,5 @@
 
-object Test extends Application {
+object Test extends App {
   def unreachable1(xs:Seq[Char]) = xs match {
     case Seq(x, y, _*) => x::y::Nil
     case Seq(x, y, z, w) => List(z,w) // redundant!

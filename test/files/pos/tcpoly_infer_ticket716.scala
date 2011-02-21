@@ -18,7 +18,7 @@ object Functor{
   //implicit def liftListtoOO[A](arg:List[A]):OOFunctor[List,A] = new OOFunctor[List,A](arg)
 }
 
-object GeneralLiftingDemo extends Application {
+object GeneralLiftingDemo extends App {
   import Functor._
   val l = List(1,2,3)
   val res = l fmap( 1+) // TODO: should not need explicit call to lifttoOO

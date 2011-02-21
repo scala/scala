@@ -7,7 +7,7 @@ class RichStr extends Sequ[Char] {
   def toArray: Array[Char] = new Array[Char](10)
 }
 
-object Foo extends Application {
+object Foo extends App {
   val x: RichStr = new RichStr
 
   println(x.toArray) // call directly

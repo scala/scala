@@ -1,6 +1,6 @@
 
 /** Test scala.Console functionality. */
-object Test extends Application {
+object Test extends App {
 
   import Console._
   print(true)

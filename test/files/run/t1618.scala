@@ -1,5 +1,5 @@
 
-object Test extends Application {
+object Test extends App {
   import scala.tools.nsc.io._
 
   val dir: VirtualDirectory = new VirtualDirectory("foo", None)

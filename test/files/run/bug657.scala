@@ -44,7 +44,7 @@ class Test1 extends OffsetList with Matcher {
   type Matchable = MatchableImpl;
 }
 
-object Test extends Application {
+object Test extends App {
   val test = new Test1;
   val m = new test.MatchableImpl;
   m.chop;

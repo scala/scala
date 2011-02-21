@@ -153,7 +153,7 @@ class MixedUnitLazy extends UnitLazy with UnitLazyT {
   }
 }
 
-object Test extends Application {
+object Test extends App {
 
   def test(name: String, v: A) {
     println(name + " test:")

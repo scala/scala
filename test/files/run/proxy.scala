@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   val p = new Proxy {
     def self = 2
   }

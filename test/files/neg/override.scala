@@ -10,6 +10,6 @@ trait Y extends X {
   n = "foo"
 }
 
-object Test extends Application {
+object Test extends App {
   new Y {}
 }

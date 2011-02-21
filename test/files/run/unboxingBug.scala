@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   println(identity('a').toInt)
   println('a'.toInt)
   println(identity('a').asInstanceOf[Int])

@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   def test(f: () => Int) = {
     val x = f()
     5

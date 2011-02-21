@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   println(test1)
   println(test2)

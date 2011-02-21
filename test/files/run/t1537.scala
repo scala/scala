@@ -8,7 +8,7 @@ trait Evaluation {
   def equalInTrait = this.syntax.Foo == this.syntax.Foo
 }
 
-object Test extends Evaluation with Application {
+object Test extends Evaluation with App {
   object syntax extends Syntax
 
   def equalInObject = this.syntax.Foo == this.syntax.Foo

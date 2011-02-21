@@ -18,7 +18,7 @@ class Buffer {
 }
 
 
-object unapplyJoins extends Application { // bug #1257
+object unapplyJoins extends App { // bug #1257
 
   class Sync {
     def apply(): Int = 42

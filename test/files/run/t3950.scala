@@ -10,7 +10,7 @@ object NegativeId extends Enumeration {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   println(NegativeId.fromInt(-1))
   println(NegativeId.fromInt(0))
   println(NegativeId.fromInt(1))

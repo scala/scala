@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   object deprNam2 {
     def f(@deprecatedName('s) x: String) = 1
     def f(s: Object) = 2

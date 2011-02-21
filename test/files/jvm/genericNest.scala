@@ -8,6 +8,6 @@ object ForceParse extends OuterTParams[AnyRef] {
   var field: InnerClass = null
 }
 
-object Test extends Application {
+object Test extends App {
   ForceParse
 }

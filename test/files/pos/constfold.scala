@@ -5,7 +5,7 @@ object A {
   val s = "z is " + z;
 }
 
-object Test extends Application {
+object Test extends App {
 
     Console.println(A.x);
     Console.println(A.y);

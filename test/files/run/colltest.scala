@@ -45,7 +45,7 @@ class TestSet(s0: Set[Int], s1: Set[Int]) {
   }
   Console.println("succeeded for "+Iterations+" iterations.")
 }
-object Test extends Application {
+object Test extends App {
   def t3954 {
     import scala.collection.mutable
     import scala.collection.immutable

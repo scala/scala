@@ -5,7 +5,7 @@
 /** found in nest.jar, compiled from nest.java */
 import nestpkg._;
 
-object Test extends Application {
+object Test extends App {
   val x = nest.best.rest.test
   Console.println(x.inc(1))
 

@@ -15,7 +15,7 @@ final class T2(_module: Module) extends T {
   def module = _module
 }
 
-object Test extends Application {
+object Test extends App {
 
   type mType = Module
 

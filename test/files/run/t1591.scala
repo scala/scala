@@ -8,7 +8,7 @@ abstract class A {
 
 }
 
-object Test extends Application {
+object Test extends App {
     val a = new A{}
     println(a.lazyBar.foo)
 }

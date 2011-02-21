@@ -6,7 +6,7 @@
  * Ideally, an option in the bugtracking system would automatically
  * handle "pos" bugs.
  */
-object Test extends Application {
+object Test extends App {
 
   object Twice {
     def apply(x: Int) = x * 2

@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   class Foo {
     override def equals(that: Any) = {
       println("Foo.equals called")

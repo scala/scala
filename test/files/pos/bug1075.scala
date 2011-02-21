@@ -12,6 +12,6 @@ class Directory(var dir_ : String)
   def dir = dir_
 }
 
-object Test extends Directory("/bab/dkkd//dkkdkd//kdkdk") with Application {
+object Test extends Directory("/bab/dkkd//dkkdkd//kdkdk") with App {
   println(dir)
 }

@@ -1,6 +1,6 @@
 import scala.collection.immutable.{ListMap, Map, TreeMap}
 
-object Test extends Application {
+object Test extends App {
   test1()
   test2()
   println("OK")

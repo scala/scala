@@ -62,7 +62,7 @@ class C extends A {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   (new C).run
 }
 

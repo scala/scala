@@ -1,7 +1,7 @@
 // this bug (http://scala-webapps.epfl.ch/bugtracking/bugs/displayItem.do?id=1065)
 // was caused by Uncurry not normalizing all the types
 // (more specifically the argument/return types of an anonymous Function)
-object Test extends Application {
+object Test extends App {
   trait AddRemove {
     type TNode <: NodeImpl;
     trait NodeImpl;

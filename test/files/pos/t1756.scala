@@ -34,7 +34,7 @@ class Poly[C <: Ring[C]](val c: C) extends Ring[Poly[C]] {
   def *(that: Poly[C]) = new Poly(this.c*that.c)
 }
 
-object Test extends Application {
+object Test extends App {
 
   implicit def coef2poly[C <: Ring[C]](c: C): Poly[C] = new Poly(c)
 

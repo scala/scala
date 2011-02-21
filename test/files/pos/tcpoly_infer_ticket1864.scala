@@ -9,7 +9,7 @@ class RichBuffer[T, B[U] <: Buffer[U]](buffer: Buffer[T]) {
   }
 }
 
-object Application {
+object App {
   def mymap2[T, B[U] <: Buffer[U], S](buffer: B[T], f: T => S)(implicit rv: B[S]): B[S] = {
     buffer.foreach{ e =>
       rv += f(e)

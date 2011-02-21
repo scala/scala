@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   println(" 1:" + List(1,2,3,4).indexOfSlice(List(0,1)))        // -1
   println(" 2:" + List(1,2,3,4).indexOfSlice(List(1,2)))        //  0
   println(" 3:" + List(1,2,3,4).indexOfSlice(List(2,3)))        //  1

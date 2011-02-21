@@ -9,6 +9,6 @@ case class B() extends A {
   def toString(sb: StringBuilder): StringBuilder = error("")
 }
 
-object Test extends Application {
+object Test extends App {
   Console.println(B)
 }

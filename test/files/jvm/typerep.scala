@@ -4,7 +4,7 @@
 
 import TypeRep._
 
-object Test extends Application {
+object Test extends App {
   testPrimitives
   testOptions
   testLists

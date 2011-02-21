@@ -193,7 +193,7 @@ object FancyTailCalls {
   val f2 = new FancyTailCalls
 }
 
-object PolyObject extends Application {
+object PolyObject extends App {
   def tramp[A](x: Int): Int =
     if (x > 0)
       tramp[A](x - 1)

@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   def getClause[T](clauses: List[T]): Option[T] = {
     for (c <- clauses) {
       return Some(c)

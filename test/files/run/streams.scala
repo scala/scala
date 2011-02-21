@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   val s0: Stream[Int] = Stream.empty
   println(s0.take(1))
   println(s0.takeWhile(_ > 0))

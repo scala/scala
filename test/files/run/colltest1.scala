@@ -1,6 +1,6 @@
 import collection._
 
-object Test extends Application {
+object Test extends App {
 
   def orderedTraversableTest(empty: Traversable[Int]) {
     println("new test starting with "+empty)

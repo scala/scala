@@ -6,7 +6,7 @@ trait Foo {
   case class Baz(r:bar) extends Bar;
   case object NoBar extends Bar;
 }
-object Test extends Application {
+object Test extends App {
   object ConcreteFooBar extends Foo { // if moved to toplevel, it works
     type bar = Bar;
   }

@@ -16,7 +16,7 @@ object Texts{
   }
 }
 
-object Test extends Application {
+object Test extends App {
 
   implicit def array2list[T](array: Array[T]) = {
     println(array.toList.size)

@@ -10,7 +10,7 @@ object R extends Enumeration {
   val A, B, C = Value
 }
 
-object Test extends Application {
+object Test extends App {
   assert(P(0) == P.withName("A"))
   assert(P.C == P.withName("C"))
 

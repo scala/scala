@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   def f[A](x : => A) = x
 

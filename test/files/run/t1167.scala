@@ -23,7 +23,7 @@ abstract class Foo {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   val foo = new Foo {}
   val bar = new foo.Bar {}
   println(foo)

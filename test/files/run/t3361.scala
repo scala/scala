@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   import scala.collection.mutable.DoubleLinkedList
 
   empty

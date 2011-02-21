@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   def f(a:Array[Int]) = a match {
     case Array(1, _*) => "yes"
     case _ => "no"

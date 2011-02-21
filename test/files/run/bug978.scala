@@ -8,7 +8,7 @@ class Foo(val n: Int) {
   override def toString = "" + n
 }
 
-object Test extends Application {
+object Test extends App {
   val set = new collection.mutable.HashSet[Foo]
 //  val set = new collection.jcl.HashSet[Foo]
 

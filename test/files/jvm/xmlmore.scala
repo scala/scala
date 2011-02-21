@@ -1,6 +1,6 @@
 object myBreak extends scala.xml.Unparsed("<br />")
 
-object Test extends Application {
+object Test extends App {
   val com = <!-- thissa comment -->
   val pi  = <?this is a pi foo bar = && {{ ?>
   val crz = <![CDATA[

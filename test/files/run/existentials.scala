@@ -50,7 +50,7 @@ object Bug1189 {
   println(f(x))
 }
 
-object Test extends Application {
+object Test extends App {
 
   val x = { class I; class J; (new C(new I), new C(new J)) }
   val y: (C[X], C[Y]) forSome { type X; type Y } = x

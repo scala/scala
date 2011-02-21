@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   // lists
   println(List(1, 2, 3, 4).slice(1, 2))

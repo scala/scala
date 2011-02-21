@@ -104,6 +104,6 @@ trait ParserIdioms extends Parsers with Idioms {
   implicit def curry3[r,s,t,u](fun: (r,s, t)=>u)(a: r)(b: s)(c: t) = fun(a, b, c)
 }
 
-object Test extends ParserIdioms with Application {
+object Test extends ParserIdioms with App {
   println(expr("12".toList))
 }

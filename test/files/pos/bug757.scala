@@ -7,7 +7,7 @@ package foo {
 }
 
 package bar {
-  object Main extends Application {
+  object Main extends App {
     foo.C.foo
   }
 }

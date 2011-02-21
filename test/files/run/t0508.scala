@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   case class Foo(s: String, n: Int)
 

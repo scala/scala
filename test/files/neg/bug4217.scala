@@ -1,3 +1,3 @@
-object A extends Application {
+object A extends App {
   42 match { }
 }

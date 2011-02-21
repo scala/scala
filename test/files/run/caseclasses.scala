@@ -15,7 +15,7 @@ object M {
   }
 }
 
-object Test extends Application {
+object Test extends App {
 
   def Abs(x: Int) = new Abs(x * 2){}
   Abs(2) match {

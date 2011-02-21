@@ -5,7 +5,7 @@ object tokens extends Enumeration {
   val NAME    = Value("name");
 }
 
-object test extends AnyRef with Application {
+object test extends AnyRef with App {
   import tokens._;
 
   val reserved = new scala.collection.mutable.HashMap[String, Token]();

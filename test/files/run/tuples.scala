@@ -1,6 +1,6 @@
 import Function._
 
-object Test extends Application {
+object Test extends App {
   var xyz: (Int, String, Boolean) = _
   xyz = (1, "abc", true)
   Console.println(xyz)

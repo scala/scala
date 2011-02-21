@@ -1,7 +1,7 @@
 package test;
-import scala.{Application => Main};
+import scala.{App => Main};
 class Test extends Main {
   import test.{Test => Hello}
-  super[Application].main(Array("test"));
+  super[App].main(Array("test"));
   private[Test] def xxx = 10;
 }

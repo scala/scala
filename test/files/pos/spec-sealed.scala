@@ -18,7 +18,7 @@ case class Cons[@specialized a](private val hd: a, tl: MyList[a]) extends MyList
 
 abstract class IntList extends MyList[Int]
 
-object Main extends Application {
+object Main extends App {
   val xs = 1 :: 2 :: 3 :: MyNil
   println(xs)
 }

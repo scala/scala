@@ -1,5 +1,5 @@
 
-object Test extends Application {
+object Test extends App {
 
   lazy val w = 10
 

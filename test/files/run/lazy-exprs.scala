@@ -89,7 +89,7 @@ object TestExpressions {
 }
 
 
-object Test extends Application {
+object Test extends App {
 
   TestExpressions.test
 }

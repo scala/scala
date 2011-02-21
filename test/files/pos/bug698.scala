@@ -6,7 +6,7 @@ abstract class Foo
 abstract class Bar
 
 object Test
-        extends Foo with Application
+        extends Foo with App
 {
         object x extends Bar
 }

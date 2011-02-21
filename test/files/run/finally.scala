@@ -1,6 +1,6 @@
 
 // test that finally is not covered by any exception handlers.
-object Test extends Application {
+object Test extends App {
   def bar {
     try {
       println("hi")

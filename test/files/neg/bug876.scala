@@ -1,6 +1,6 @@
 import scala.collection.mutable.HashMap
 
-object AssertionError extends AnyRef with Application
+object AssertionError extends AnyRef with App
 {
     abstract class A {}
 

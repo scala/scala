@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   val foo = new {
     def apply(args : String*) = args foreach println
   }

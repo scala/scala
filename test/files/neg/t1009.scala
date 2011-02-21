@@ -1,3 +1,3 @@
-object Foo extends Application{
+object Foo extends App{
   def `` = "fish"
 }

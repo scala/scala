@@ -6,7 +6,7 @@ import scala.util.parsing.syntax._
 
 import scala.collection.mutable.HashMap
 
-object Test extends Application{
+object Test extends App{
   import grammars._
 
   val head = phrase(term)

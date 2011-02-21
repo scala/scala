@@ -1,7 +1,7 @@
 import scala.xml._
 import scala.xml.transform._
 
-object Test extends Application {
+object Test extends App {
   val inputXml : Node =
     <root>
       <subnode>

@@ -6,6 +6,6 @@ object IOvervalueMyPrivacy {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   assert(IOvervalueMyPrivacy.go == 6)
 }

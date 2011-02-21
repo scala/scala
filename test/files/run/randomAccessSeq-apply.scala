@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   val empty = RandomAccessSeq()
   assert(empty.isEmpty)
 

@@ -1,4 +1,4 @@
-object T1027 extends Application {
+object T1027 extends App {
   trait Comparable[T <: Comparable[T]] { this: T =>
     def < (that: T): Boolean
     def <=(that: T): Boolean = this < that || this == that

@@ -13,7 +13,7 @@ trait SB[A] extends Buffer[A] {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   new ArrayBuffer[Int] with SB[Int]
 }
 

@@ -7,7 +7,7 @@ class A(y: Int) {
   detach(bar)
 }
 
-object test extends Application {
+object test extends App {
   val a = new A(1)
   println(a.bar(2))
 }

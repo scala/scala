@@ -1,4 +1,4 @@
-object test extends Application {
+object test extends App {
   // more..
   type T = { def hello() }
   //val x4 = new AnyRef { def hello() { println("4") } } // ok!

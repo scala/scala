@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   def f(x: { type D; def m: D }): Null = null
 

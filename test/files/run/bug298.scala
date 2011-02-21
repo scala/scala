@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   implicit def anyList[T]: List[T] = Nil
 
   implicit def intList: List[Int] = 42::24::Nil

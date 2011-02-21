@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   class X[T: ClassManifest] {
     val a = new Array[Array[T]](3,4)
     val b = Array.ofDim[T](3, 4)

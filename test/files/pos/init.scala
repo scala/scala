@@ -8,7 +8,7 @@ class Foo {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   val foo = new Foo
   Console.println((new foo.Bar).id)
 }

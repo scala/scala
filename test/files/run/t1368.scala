@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   trait Happy { val status = "happy" }
   trait Sad { val status = "sad" }
 

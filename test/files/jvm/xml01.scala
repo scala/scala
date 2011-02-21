@@ -6,7 +6,7 @@ import scala.util.logging._
 import scala.xml._
 
 
-object Test extends Application with Assert {
+object Test extends App with Assert {
   val e:  scala.xml.MetaData         = Null  //Node.NoAttributes
   val sc: scala.xml.NamespaceBinding = TopScope
 

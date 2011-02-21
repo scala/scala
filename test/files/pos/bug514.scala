@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   object Truc {
     override def toString() = "oui"
     def toString(bool: Boolean) = "chaispas"

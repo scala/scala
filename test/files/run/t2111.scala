@@ -1,5 +1,5 @@
 
-object Test extends Application {
+object Test extends App {
 
   object Color extends Enumeration {
     val Red, Green, Blue = Value

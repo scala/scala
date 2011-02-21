@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   def foo[T <% Ordered[T]](x: T){ Console.println(""+(x < x)+" "+(x <= x)) }
   def bar(x: Unit   ): Unit = foo(x);
   def bar(x: Boolean): Unit = foo(x);

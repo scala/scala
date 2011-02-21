@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   def get[T](x: T) = { println("get: "+ x); x }
 
   // TESTS

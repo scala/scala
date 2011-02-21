@@ -6,7 +6,7 @@ case class If[T](c: Term[Boolean],
                  t1: Term[T],
                  t2: Term[T]) extends Term[T]
 
-object Test extends Application {
+object Test extends App {
   def eval[T](t: Term[T]): T = t match {
     case Lit(n)        => n
     case Succ(u)       => eval(u) + 1

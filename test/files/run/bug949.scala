@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
     private def f = new T { val state = State.A }
 

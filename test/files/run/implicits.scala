@@ -15,7 +15,7 @@ class C(x: String) {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   import A.B._
   val c = new C("OK")
   val i = new c.Inner

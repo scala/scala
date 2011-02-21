@@ -1,5 +1,5 @@
 import collection._
-object Test extends Application {
+object Test extends App {
 
   val xs: SeqView[(String, Int), Seq[_]] = List("x").view.zip(Stream.from(0))
   println(xs)

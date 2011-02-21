@@ -1,6 +1,6 @@
 package test;
 
-object Main extends Application {
+object Main extends App {
   class Global {
     case class Template(x : Int, y : Int) {
       Console.println("outer: " + Global.this);

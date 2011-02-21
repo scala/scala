@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   val s: Seq[Int] = Stream.from(1)
   val res0 = s.map(a => 2).head
   val res1 = Stream.from(1).flatMap(a => List(1)).head

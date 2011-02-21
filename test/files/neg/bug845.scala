@@ -1,6 +1,6 @@
 package test;
 
-object Test extends Application {
+object Test extends App {
   type Bar;
   trait FooImpl;
 

@@ -11,7 +11,7 @@ class Bar extends Foo {
   }
 }
 
-object bug extends Application {
+object bug extends App {
   new Bar
   ()
 }

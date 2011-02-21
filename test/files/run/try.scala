@@ -1,4 +1,4 @@
-object Test extends AnyRef with Application {
+object Test extends AnyRef with App {
   val x = 1;
 
   def try1 = {

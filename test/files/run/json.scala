@@ -1,7 +1,7 @@
 import scala.util.parsing.json._
 import scala.collection.immutable.TreeMap
 
-object Test extends Application {
+object Test extends App {
   /* This method converts parsed JSON back into real JSON notation with objects in
    * sorted-key order. Not required by the spec, but it allows us to to a stable
    * toString comparison. */

@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   class QSRichIterable[A](self: Iterable[A]) {
     def filterMap[R](f: PartialFunction[A,R]) =

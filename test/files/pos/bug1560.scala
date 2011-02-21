@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   trait C[T] {
     def t: T
   }

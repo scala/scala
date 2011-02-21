@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   def testSeq(name: String, expected: Seq[Char], got: Seq[Char]) {
     if (expected.toList == got.toList)
       println(name + " ok")

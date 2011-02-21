@@ -6,7 +6,7 @@ class Button extends Component {
 abstract class Origin {
   val delegate: Component }
 
-object main extends Origin with Application {
+object main extends Origin with App {
   val delegate: Component {
     def sayHey: Unit
   } = new Button

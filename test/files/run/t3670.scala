@@ -11,7 +11,7 @@ class C {
   }
 }
 
-class M extends Application {
+class M extends App {
   def foo {
     lazy val a = {
         lazy val b = 1
@@ -25,7 +25,7 @@ class M extends Application {
   }
 }
 
-object Test extends Application {
+object Test extends App {
     new C()
     new M().foo
 }

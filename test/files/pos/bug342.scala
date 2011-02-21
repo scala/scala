@@ -1,4 +1,4 @@
-object Main extends Application {
+object Main extends App {
 
   object Foo extends Enumeration(0, "Bar") {  // 2
     val Bar = Value

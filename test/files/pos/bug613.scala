@@ -1,4 +1,4 @@
-class Outer extends Application {
+class Outer extends App {
   val y: Int = 1
   abstract class C {
     val x: Int
@@ -11,7 +11,7 @@ class Outer extends Application {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   val o = new Outer
   println(o.foo.x)
 }

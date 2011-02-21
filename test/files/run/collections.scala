@@ -1,7 +1,7 @@
 import collection._
 import scala.compat.Platform.currentTime
 
-object Test extends Application {
+object Test extends App {
 
   val printTime = false
 

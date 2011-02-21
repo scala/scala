@@ -41,7 +41,7 @@ object typerep {
 
 }
 
-object test extends Application {
+object test extends App {
  import typerep._
  println(3.getType)
  println(List(3).getType)

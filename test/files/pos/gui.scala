@@ -82,18 +82,18 @@ object GUI {
 
 object GUIClient {
 
-  class Application {
+  class App {
     def quit() { Console.println("application exited") }
   }
 
-  class QuitButton (scr: Screen, p: Geom.Point, name: String, a: Application)
+  class QuitButton (scr: Screen, p: Geom.Point, name: String, a: App)
   extends GUI.Button(scr, p, name) {
     def doit() { a.quit() }
   }
 
   def main(args: Array[String]) {
     val b = new QuitButton(
-      DummyScreen, Geom.Point(1, 1), "quit", new Application);
+      DummyScreen, Geom.Point(1, 1), "quit", new App);
     b.draw();
     b.enable(true).mouseDown(Geom.Point(1, 2));
   }

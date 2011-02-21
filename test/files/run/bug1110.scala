@@ -6,6 +6,6 @@ class Stuff {
   assert(zoop(10) == 2)
 }
 
-object Test extends Application {
+object Test extends App {
   new Stuff
 }

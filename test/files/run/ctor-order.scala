@@ -21,7 +21,7 @@ class Outer {
 
 }
 
-object Test extends AnyRef with Application {
+object Test extends AnyRef with App {
   val o = new Outer;
 
   new o.X;

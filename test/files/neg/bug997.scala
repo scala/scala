@@ -1,7 +1,7 @@
 // An extractor with 2 results
 object Foo { def unapply(x : String)  = Some(Pair(x, x)) }
 
-object Test extends Application {
+object Test extends App {
 
 // Prints 'x'; ought not to compile (or maybe a should be the Pair?).
 "x" match { case Foo(a) => Console.println(a) }

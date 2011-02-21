@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   // #2235
   new A2235 with B2235
 }

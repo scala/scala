@@ -12,7 +12,7 @@ class FX2 extends P {
   override def a[T](t: T): List[T] = Nil
 }
 
-object Test extends Application {
+object Test extends App {
   val fx = new FX
   val p = new P
 

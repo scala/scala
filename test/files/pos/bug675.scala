@@ -10,7 +10,7 @@ trait T {
   }
 }
 
-object Test extends Application {
+object Test extends App {
   val t = new T{}
   val x = new t.X{}
   Console.println(x.foo)

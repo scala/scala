@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 
   def foo(is:Int*) = 1;
   def foo(i:Int) = 2;

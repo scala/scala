@@ -1,4 +1,4 @@
-object ShapeTest extends Application {
+object ShapeTest extends App {
 
   class Point(x: Int, y: Int) {
     override def toString() = "[" + x + "," + y + "]"

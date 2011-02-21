@@ -20,7 +20,7 @@ package scala
  *    <code>anonfun1</code>:
  *  </p>
  *  <pre>
- *  <b>object</b> Main <b>extends</b> Application {
+ *  <b>object</b> Main <b>extends</b> App {
  *
  *    <b>val</b> succ = (x: Int) => x + 1
  *

@@ -1,4 +1,4 @@
-object typerep extends Application {
+object typerep extends App {
   class TypeRep[T] {}
   case object IntRep extends TypeRep[Int] {
     override def toString = "Int"

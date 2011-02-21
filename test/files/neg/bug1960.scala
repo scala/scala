@@ -1,4 +1,4 @@
-object ClassFormatErrorExample extends Application { new Aclass(1) }
+object ClassFormatErrorExample extends App { new Aclass(1) }
 
 trait TBase { var p:Int = 0; def f(p1: Int) {} }
 

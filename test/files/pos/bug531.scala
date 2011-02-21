@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   import scala.reflect._;
   def titi = {
     var truc = 0

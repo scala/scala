@@ -9,7 +9,7 @@ class Foo[@specialized(Int) T](_x: T) extends {
   println(bar)
 }
 
-object Test extends Application {
+object Test extends App {
   new Foo("a")
   new Foo(42)
   println(runtime.BoxesRunTime.integerBoxCount)

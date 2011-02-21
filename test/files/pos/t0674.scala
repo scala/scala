@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
 println(
 for(a <- Some(1);
     b <- Some(2);

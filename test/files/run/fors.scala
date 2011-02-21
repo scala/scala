@@ -4,7 +4,7 @@
 
 //############################################################################
 
-object Test extends Application {
+object Test extends App {
   val xs = List(1, 2, 3)
   val ys = List('a, 'b, 'c)
 

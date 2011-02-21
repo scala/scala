@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   class Truc {
     def getMachin() = "machin"
     def getMachinAsTruc() = this

@@ -1,7 +1,7 @@
 import java.util.LinkedList
 import collection.JavaConversions._
 
-object Test extends Application {
+object Test extends App {
   def assertListEquals[A](expected: List[A], actual: Seq[A]) {
     assert(expected.sameElements(actual),
            "Expected list to contain " + expected.mkString("[", ", ", "]") +

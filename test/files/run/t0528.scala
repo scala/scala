@@ -7,7 +7,7 @@ class RichStr extends Sequ[Char] {
   def toArray: Array[Char] = Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
 }
 
-object Test extends Application {
+object Test extends App {
   val x: RichStr = new RichStr
 
   println((x: Sequ[Char]).toArray.deep) // calling through the bridge misses unboxing

@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   Test1
   Test2
   //Test3  // Java 1.5+ only

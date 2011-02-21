@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   val a = Array(1, 2, 3)
   println(a.deepToString)
 

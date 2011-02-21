@@ -1,4 +1,4 @@
-object Test extends Application {
+object Test extends App {
   import collection.mutable._
   val m = new HashMap[Int, Set[String]] with MultiMap[Int, String]
   m.addBinding(6, "Foo")

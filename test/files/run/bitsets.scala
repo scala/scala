@@ -69,7 +69,7 @@ object TestImmutable {
   Console.println
 }
 
-object Test extends Application {
+object Test extends App {
   TestMutable
   TestImmutable
 }
