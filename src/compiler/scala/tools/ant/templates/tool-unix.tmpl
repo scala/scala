@@ -99,22 +99,31 @@ fi
 declare -a java_args
 declare -a scala_args
 
+# default to the boot classpath for speed.
+CPSELECT="-Xbootclasspath/a:"
+
 while [ $# -gt 0 ]; do
   case "$1" in
     -D*)
+      # pass to scala as well: otherwise we lose it sometimes when we
+      # need it, e.g. communicating with a server compiler.
       java_args=("${java_args[@@]}" "$1")
+      scala_args=("${scala_args[@@]}" "$1")
+      shift
+      ;;
+    -J*)
+      # as with -D, pass to scala even though it will almost
+      # never be used.
+      java_args=("${java_args[@@]}" "${1:2}")
+      scala_args=("${scala_args[@@]}" "$1")
       shift
       ;;
     -toolcp)
       TOOL_CLASSPATH="$TOOL_CLASSPATH:$2"
-      shift
+      shift 2
       ;;
-    -J*)
-      java_args=("${java_args[@@]}" "${1:2}")
-      shift
-      ;;
-    --usebootcp)
-      CPSWITCH="-Xbootclasspath/a:$TOOL_CLASSPATH"
+    -nobootcp)
+      CPSELECT="-classpath "
       shift
       ;;
     *)
@@ -123,8 +132,6 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-
-: ${CPSWITCH:="-cp $TOOL_CLASSPATH"}
 
 # reset "$@@" to the remaining args
 set -- "${scala_args[@@]}"
@@ -136,7 +143,7 @@ fi
 "${JAVACMD:=java}" \
   $JAVA_OPTS \
   "${java_args[@@]}" \
-  $CPSWITCH \
+  ${CPSELECT}${TOOL_CLASSPATH} \
   -Dscala.usejavacp=true \
   -Dscala.home="$SCALA_HOME" \
   -Denv.emacs="$EMACS" \

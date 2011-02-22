@@ -16,6 +16,7 @@ trait AbsScalaSettings {
   type PathSetting        <: AbsSetting { type T = String }
   type PhasesSetting      <: AbsSetting { type T = List[String] }
   type StringSetting      <: AbsSetting { type T = String }
+  type MapSetting         <: AbsSetting { type T = Map[String, String] }
 
   type OutputDirs
   type OutputSetting <: AbsSetting
@@ -28,6 +29,7 @@ trait AbsScalaSettings {
   def PathSetting(name: String, descr: String, default: String): PathSetting
   def PhasesSetting(name: String, descr: String): PhasesSetting
   def StringSetting(name: String, helpArg: String, descr: String, default: String): StringSetting
+  def MapSetting(name: String, prefix: String, descr: String): MapSetting
 
   /** **/
   abstract class SettingGroup(val prefix: String) extends AbsSetting {

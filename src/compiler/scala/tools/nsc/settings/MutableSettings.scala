@@ -231,6 +231,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
     add(new PathSetting(name, descr, default, prepend, append))
   }
+  def MapSetting(name: String, prefix: String, descr: String): MapSetting = add(new MapSetting(name, prefix, descr))
 
   // basically this is a value which remembers if it's been modified
   trait SettingValue extends AbsSettingValue {
@@ -446,8 +447,33 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
-    override def tryToSetFromPropertyValue(s : String) {
-      value = s.equalsIgnoreCase("true")
+  }
+
+  /** A special setting for accumulating arguments like -Dfoo=bar. */
+  class MapSetting private[nsc](
+    name: String,
+    prefix: String,
+    descr: String)
+  extends Setting(name, descr) {
+    type T = Map[String, String]
+    protected var v: Map[String, String] = Map()
+
+    def tryToSet(args: List[String]) = {
+      val (xs, rest) = args partition (_ startsWith prefix)
+      val pairs = xs map (_ stripPrefix prefix) map { x =>
+        (x indexOf '=') match {
+          case -1   => (x, "")
+          case idx  => (x take idx, x drop (idx + 1))
+        }
+      }
+      v = v ++ pairs
+      Some(rest)
+    }
+
+    override def respondsTo(label: String) = label startsWith prefix
+    def unparse: List[String] = v.toList map {
+      case (k, "")  => prefix + k
+      case (k, v)   => prefix + k + "=" + v
     }
   }
 
@@ -518,7 +544,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
-    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(" +").toList)
     def unparse: List[String] = value map { name + ":" + _ }
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -548,7 +573,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
-    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
 
     withHelpSyntax(name + ":<" + helpArg + ">")
   }
