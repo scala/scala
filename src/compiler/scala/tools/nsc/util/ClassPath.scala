@@ -12,7 +12,6 @@ import scala.collection.mutable.ListBuffer
 import io.{ File, Directory, Path, AbstractFile }
 import scala.tools.util.StringOps.splitWhere
 import Path.isJarOrZip
-import scala.tools.util.PathResolver
 import File.pathSeparator
 
 /** <p>

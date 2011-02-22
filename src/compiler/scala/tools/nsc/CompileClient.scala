@@ -7,7 +7,6 @@ package scala.tools.nsc
 
 import java.io.{ BufferedReader, File, InputStreamReader, PrintWriter }
 import Properties.fileEndings
-import scala.tools.util.PathResolver
 import io.Path
 import settings.FscSettings
 
