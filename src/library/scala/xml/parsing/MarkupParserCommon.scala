@@ -14,10 +14,7 @@ import scala.xml.dtd._
 import scala.annotation.switch
 import Utility.Escapes.{ pairs => unescape }
 
-object MarkupParserCommon {
-  final val SU = '\u001A'
-}
-import MarkupParserCommon._
+import Utility.SU
 
 /** This is not a public trait - it contains common code shared
  *  between the library level XML parser and the compiler's.
@@ -158,11 +155,11 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    * see [66]
    */
   def xCharRef(ch: () => Char, nextch: () => Unit): String =
-    Utility.parseCharRef(ch, nextch, reportSyntaxError _)
+    Utility.parseCharRef(ch, nextch, reportSyntaxError _, truncatedError _)
 
   def xCharRef(it: Iterator[Char]): String = {
     var c = it.next
-    Utility.parseCharRef(() => c, () => { c = it.next }, reportSyntaxError _)
+    Utility.parseCharRef(() => c, () => { c = it.next }, reportSyntaxError _, truncatedError _)
   }
 
   def xCharRef: String = xCharRef(() => ch, () => nextch)

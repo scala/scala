@@ -22,6 +22,8 @@ import parsing.XhtmlEntities
  */
 object Utility extends AnyRef with parsing.TokenTests
 {
+  final val SU = '\u001A'
+
   implicit def implicitSbToString(sb: StringBuilder) = sb.toString()
 
   // helper for the extremely oft-repeated sequence of creating a
@@ -360,7 +362,7 @@ object Utility extends AnyRef with parsing.TokenTests
         c = it.next
         if (c == '#') {
           c = it.next
-          val theChar = parseCharRef ({ ()=> c },{ () => c = it.next },{s => throw new RuntimeException(s)})
+          val theChar = parseCharRef ({ ()=> c },{ () => c = it.next },{s => throw new RuntimeException(s)}, {s => throw new RuntimeException(s)})
           sb.append(theChar)
         }
         else {
@@ -410,7 +412,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param reportSyntaxError ...
    * @return                  ...
    */
-  def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError: String => Unit): String = {
+  def parseCharRef(ch: () => Char, nextch: () => Unit, reportSyntaxError: String => Unit, reportTruncatedError: String => Unit): String = {
     val hex  = (ch() == 'x') && { nextch(); true }
     val base = if (hex) 16 else 10
     var i = 0
@@ -425,6 +427,8 @@ object Utility extends AnyRef with parsing.TokenTests
                               "Did you mean to write &#x ?")
           else
             i = i * base + ch().asDigit
+        case SU =>
+          reportTruncatedError("")
         case _ =>
           reportSyntaxError("character '" + ch() + "' not allowed in char ref\n")
       }
