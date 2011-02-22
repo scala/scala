@@ -119,7 +119,8 @@ class StandardCompileServer extends SocketServer {
     }
     def isCompilerReusable: Boolean = {
       if (compiler == null) {
-        logVerbose("[Creating compiler instance for compile server.]")
+        logVerbose("[Creating new instance for compile server.]")
+        logVerbose("[Compiler version: " + Properties.versionString + ".]")
         return false
       }
       val unequal = unequalSettings(command.settings, compiler.settings)
@@ -175,7 +176,6 @@ object CompileServer extends StandardCompileServer {
     redirect(System.setErr, "scala-compile-server-err.log")
     System.err.println("...starting server on socket "+port+"...")
     System.err.flush()
-
     compileSocket.setPort(port)
     run()
 

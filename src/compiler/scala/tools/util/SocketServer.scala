@@ -40,7 +40,7 @@ abstract class SocketServer {
   def fscIdleMillis = fscIdleMinutes * 60 * 1000
 
   def shutdown: Boolean
-  def session()
+  def session(): Unit
 
   var out: PrintWriter = _
   var in: BufferedReader = _

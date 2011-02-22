@@ -19,6 +19,10 @@ class StandardCompileClient extends HasCompileSocket {
   val versionMsg  = "Fast " + Properties.versionMsg
   var verbose = false
 
+  def logVerbose(msg: String) =
+    if (verbose)
+      Console println msg
+
   def main0(argsIn: Array[String]): Int = {
     // TODO: put -J -and -D options back.  Right now they are lost
     // because bash parses them out and they don't arrive.
@@ -32,10 +36,11 @@ class StandardCompileClient extends HasCompileSocket {
       Console println versionMsg
       return 0
     }
-    if (verbose) {
-      Console println fscArgs.mkString("[Given arguments: ", " ", "]")
-      Console println vmArgs.mkString("[VM arguments: ", " ", "]")
-    }
+
+    logVerbose(versionMsg)
+    logVerbose(fscArgs.mkString("[Given arguments: ", " ", "]"))
+    logVerbose(vmArgs.mkString("[VM arguments: ", " ", "]"))
+
     val socket =
       if (settings.server.value == "") compileSocket.getOrCreateSocket(vmArgs mkString " ", !shutdown)
       else Some(compileSocket.getSocket(settings.server.value))

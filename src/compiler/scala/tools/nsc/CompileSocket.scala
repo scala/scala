@@ -110,7 +110,7 @@ class CompileSocket {
   private def startNewServer(vmArgs: String) = {
     val cmd = serverCommand(vmArgs split " " toSeq)
     info("[Executing command: %s]" format cmd)
-    cmd.run()
+    cmd.daemonized().run()
   }
 
   /** The port identification file */
@@ -132,8 +132,10 @@ class CompileSocket {
     var attempts = 0
     var port = pollPort()
 
-    if (port < 0)
+    if (port < 0) {
+      info("No compile server running: starting one with args '" + vmArgs + "'")
       startNewServer(vmArgs)
+    }
 
     while (port < 0 && attempts < MaxAttempts) {
       attempts += 1
