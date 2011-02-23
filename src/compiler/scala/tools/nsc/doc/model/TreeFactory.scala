@@ -2,6 +2,8 @@ package scala.tools.nsc
 package doc
 package model
 
+import scala.collection._
+
 /** The goal of this trait is , using makeTree,
   * to browse a tree to
   * 1- have the String of the complete tree (tree.expression)
@@ -11,32 +13,26 @@ package model
   *
   */
 
-trait TreeFactory {
-  thisTreeFactory: ModelFactory with TreeFactory =>
-  val global: Global
+trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
 
+  val global: Global
   import global._
 
   def makeTree(rhs: Tree): TreeEntity = {
 
-    val printSteps: Boolean = false
-    val tree = new TreeEntity
+    var expr: String = null
+    var refs = new immutable.TreeMap[Int, (Entity, Int)] // start, (Entity to be linked to , end)
 
     try {
 
       val firstIndex = rhs.pos.startOrPoint
 
       /** Gets the full string of the right hand side of a parameter, without links */
-      def makeExpression(rhs: Tree){
-        val start = rhs.pos.startOrPoint
-        val end = rhs.pos.endOrPoint
-        var expr = ""
-        for (i <- start until end) expr += rhs.pos.source.content.apply(i)
-        rhs match {
-          case Block(r,s) => expr += "}"
-          case _ =>
-        }
-        tree.expression += expr
+      for (i <- firstIndex until rhs.pos.endOrPoint)
+        expr += rhs.pos.source.content.apply(i)
+      rhs match {
+        case Block(r,s) => expr += "}"
+        case _ =>
       }
 
       val traverser = new Traverser {
@@ -51,7 +47,7 @@ trait TreeFactory {
             var asym = rhs.symbol
             if (asym.isClass) makeTemplate(asym) match{
               case docTmpl: DocTemplateImpl =>
-                tree.refs += ((start,(docTmpl,end)))
+                refs += ((start, (docTmpl,end)))
               case _ =>
             }
             else if (asym.isTerm && asym.owner.isClass){
@@ -60,7 +56,7 @@ trait TreeFactory {
                 case docTmpl: DocTemplateImpl =>
                   val mbrs: List[MemberImpl] = makeMember(asym,docTmpl)
                   mbrs foreach {mbr =>
-                    tree.refs += ((start,(mbr,end)))
+                    refs += ((start, (mbr,end)))
                   }
                 case _ =>
               }
@@ -87,15 +83,26 @@ trait TreeFactory {
 
       }
 
-      makeExpression(rhs)
       traverser.traverse(rhs)
+
+      assert(expr != null, "No expression constructed for rhs=" + rhs.toString)
+      new TreeEntity {
+        val expression = expr
+        val refEntity = refs
+      }
+
     }
+
     catch {
       case e: Throwable =>
         //println("Bad tree: " + rhs)
+       // TODO: This exception should be rethrown and no dummy tree entity should be created.
+        new TreeEntity {
+          val expression = "?"
+          val refEntity = new immutable.TreeMap[Int, (Entity, Int)]
+        }
+        //throw e
     }
-
-    tree
 
   }
 

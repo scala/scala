@@ -518,16 +518,12 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     val str = defVal.expression
     val length = str.length
     var myXml: NodeSeq = NodeSeq.Empty
-    for( x <- defVal.refs) {
-      val from = x._1
-      val to = x._2._2
+    for( (from, (member, to)) <- defVal.refEntity.toSeq) {
       if (index < from) {
         myXml ++= stringToXml(str.substring(index,from))
         index = from
       }
-
       if (index == from) {
-        val member:Entity = x._2._1
         member match {
           case mbr: DocTemplateEntity =>
             val link = relativeLinkTo(mbr)
