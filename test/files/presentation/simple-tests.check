@@ -3,7 +3,7 @@ askTypeCompletion at Tester.scala(16,25)
 
 ================================================================================
 [response] aksTypeCompletion at (16,25)
-retreived 75 members
+retreived 76 members
 TypeMember(method !=,(x$1: AnyRef)Boolean,true,true,<none>)
 TypeMember(method !=,(x$1: Any)Boolean,true,true,<none>)
 TypeMember(method ==,(x$1: AnyRef)Boolean,true,true,<none>)
@@ -67,6 +67,7 @@ TypeMember(method synchronized,[T0](x$1: T0)T0,true,true,<none>)
 TypeMember(method toString,()String,true,true,<none>)
 TypeMember(method tryToSet,(args: List[String])Some[List[String]],true,false,<none>)
 TypeMember(method tryToSetColon,(args: List[String])Option[Tester.this.settings.ResultOfTryToSet],true,true,<none>)
+TypeMember(method tryToSetFromPropertyValue,(s: String)Unit,true,false,<none>)
 TypeMember(method unparse,=> List[String],true,false,<none>)
 TypeMember(variable v,Boolean,false,false,<none>)
 TypeMember(method value,=> Tester.this.settings.verbose.T,true,true,<none>)
