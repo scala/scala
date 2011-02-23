@@ -419,6 +419,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           else None
         else
           Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
+            override lazy val comment = // The analyser does not duplicate the lazy val's DocDef when it introduces its accessor.
+              thisFactory.comment(bSym.accessed, inTpl) // This hack should be removed after analyser is fixed.
             override def isLazyVal = true
           })
       else if (bSym.isGetter && bSym.accessed.isMutable)
