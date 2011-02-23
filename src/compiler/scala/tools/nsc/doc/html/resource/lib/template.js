@@ -243,8 +243,10 @@ function filter() {
         //var name1 = qualName1.slice(qualName1.indexOf("#") + 1);
         var showByOwned = true;
         if ($(this).parents(".parent").length == 0) {
-           // owner filtering must not happen in "inherited from" member lists
-            var owner1 = qualName1.slice(0, qualName1.indexOf("#"));
+            // owner filtering must not happen in "inherited from" member lists
+            var ownerIndex = qualName1.indexOf("#");
+            if (ownerIndex < 0) { ownerIndex = qualName1.lastIndexOf("."); }
+            var owner1 = qualName1.slice(0, ownerIndex);
             for (out in outOwners) {
                 if (outOwners[out] == owner1) {
                     showByOwned = false;
