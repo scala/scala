@@ -224,7 +224,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isDocTemplate = true
     def companion = sym.companionSymbol match {
       case NoSymbol => None
-      case comSym if !isEmptyJavaObject(comSym) => Some(makeDocTemplate(comSym, inTpl))
+      case comSym if !isEmptyJavaObject(comSym) && (comSym.isClass || comSym.isModule || isNestedObjectLazyVal(comSym)) =>
+        Some(makeDocTemplate(comSym, inTpl))
       case _ => None
     }
   }
