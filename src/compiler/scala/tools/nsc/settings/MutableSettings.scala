@@ -447,6 +447,9 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
+    override def tryToSetFromPropertyValue(s : String) {
+      value = s.equalsIgnoreCase("true")
+    }
   }
 
   /** A special setting for accumulating arguments like -Dfoo=bar. */
@@ -544,6 +547,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(" +").toList)
     def unparse: List[String] = value map { name + ":" + _ }
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -573,6 +577,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     }
     def unparse: List[String] =
       if (value == default) Nil else List(name + ":" + value)
+    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
 
     withHelpSyntax(name + ":<" + helpArg + ">")
   }
