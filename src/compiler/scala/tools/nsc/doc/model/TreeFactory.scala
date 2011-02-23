@@ -3,6 +3,7 @@ package doc
 package model
 
 import scala.collection._
+import util.{RangePosition, SourceFile}
 
 /** The goal of this trait is , using makeTree,
   * to browse a tree to
@@ -18,22 +19,21 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
   val global: Global
   import global._
 
-  def makeTree(rhs: Tree): TreeEntity = {
+  def makeTree(rhs: Tree): Option[TreeEntity] = {
 
-    var expr: String = null
+    var expr = new StringBuilder
     var refs = new immutable.TreeMap[Int, (Entity, Int)] // start, (Entity to be linked to , end)
 
-    try {
+    val pos: Position = rhs.pos
 
-      val firstIndex = rhs.pos.startOrPoint
+    if (pos.isInstanceOf[RangePosition]) {
 
-      /** Gets the full string of the right hand side of a parameter, without links */
-      for (i <- firstIndex until rhs.pos.endOrPoint)
-        expr += rhs.pos.source.content.apply(i)
-      rhs match {
-        case Block(r,s) => expr += "}"
-        case _ =>
-      }
+      val source: SourceFile = pos.source
+      val firstIndex = pos.startOrPoint
+      val lastIndex = pos.endOrPoint
+
+      assert(firstIndex < lastIndex, "Invalid position indices for tree " + rhs + " (" + firstIndex + ", " + lastIndex + ")")
+      expr.appendAll(source.content, firstIndex, lastIndex - firstIndex)
 
       val traverser = new Traverser {
 
@@ -41,8 +41,8 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
           * stores it in tree.refs with its position
           */
         def makeLink(rhs: Tree){
-          var start = rhs.pos.point - firstIndex
-          val end = rhs.pos.endOrPoint - firstIndex
+          var start = pos.startOrPoint - firstIndex
+          val end = pos.endOrPoint - firstIndex
           if(start != end) {
             var asym = rhs.symbol
             if (asym.isClass) makeTemplate(asym) match{
@@ -85,24 +85,16 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
 
       traverser.traverse(rhs)
 
-      assert(expr != null, "No expression constructed for rhs=" + rhs.toString)
-      new TreeEntity {
-        val expression = expr
+      Some(new TreeEntity {
+        val expression = expr.toString
         val refEntity = refs
-      }
+      })
 
     }
 
-    catch {
-      case e: Throwable =>
-        //println("Bad tree: " + rhs)
-       // TODO: This exception should be rethrown and no dummy tree entity should be created.
-        new TreeEntity {
-          val expression = "?"
-          val refEntity = new immutable.TreeMap[Int, (Entity, Int)]
-        }
-        //throw e
-    }
+     // If there is no position for the tree it means it has been obtained through unpickling and cannot be
+     // printed as a tree.
+    else None
 
   }
 

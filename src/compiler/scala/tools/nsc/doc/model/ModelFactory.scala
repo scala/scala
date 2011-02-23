@@ -380,30 +380,30 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def makeAnnotation(annot: AnnotationInfo): Annotation = {
     val aSym = annot.atp.typeSymbol
     new EntityImpl(aSym, makeTemplate(aSym.owner)) with Annotation {
-      def annotationClass =
+      lazy val annotationClass =
         makeTemplate(annot.atp.typeSymbol)
-      def arguments =
-        annotationClass match {
+      val arguments = { // lazy
+        def noParams = annot.args map { _ => None }
+        val params: List[Option[ValueParam]] = annotationClass match {
           case aClass: Class =>
-            aClass.valueParams match {
-              case Nil => Nil
-              case vp :: vps =>
-                (vp zip annot.args) map { case (param, arg) =>
-                  new ValueArgument {
-                    def parameter = Some(param)
-                    def value = makeTree(arg)
-                  }
-                }
+            (aClass.primaryConstructor map { _.valueParams.head }) match {
+              case Some(vps) => vps map { Some(_) }
+              case None => noParams
             }
-          case _ =>
-            annot.args map { arg =>
-              new ValueArgument {
-                def parameter = None
-                def value = makeTree(arg)
-              }
-            }
+          case _ => noParams
         }
-
+        assert(params.length == annot.args.length)
+        (params zip annot.args) flatMap { case (param, arg) =>
+          makeTree(arg) match {
+            case Some(tree) =>
+              Some(new ValueArgument {
+                def parameter = param
+                def value = tree
+              })
+            case None => None
+          }
+        }
+      }
     }
   }
 
@@ -494,7 +494,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
               (unit.body find (_.symbol == aSym)) match {
-                case Some(ValDef(_,_,_,rhs)) => Some(makeTree(rhs))
+                case Some(ValDef(_,_,_,rhs)) => makeTree(rhs)
                 case _ => None
               }
             case _ => None
