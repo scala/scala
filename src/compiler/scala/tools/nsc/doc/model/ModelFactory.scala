@@ -134,7 +134,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         case NullaryMethodType(res) => resultTpe(res)
         case _ => tpe
       }
-      makeType(resultTpe(sym.tpe), inTemplate, sym)
+      makeTypeInTemplateContext(resultTpe(sym.tpe), inTemplate, sym)
     }
     def isDef = false
     def isVal = false
@@ -257,12 +257,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   private trait TypeBoundsImpl extends EntityImpl {
     def lo = sym.info.bounds match {
       case TypeBounds(lo, hi) if lo.typeSymbol != NothingClass =>
-        Some(makeType(appliedType(lo, sym.info.typeParams map {_.tpe}), inTemplate))
+        Some(makeTypeInTemplateContext(appliedType(lo, sym.info.typeParams map {_.tpe}), inTemplate, sym))
       case _ => None
     }
     def hi = sym.info.bounds match {
       case TypeBounds(lo, hi) if hi.typeSymbol != AnyClass =>
-        Some(makeType(appliedType(hi, sym.info.typeParams map {_.tpe}), inTemplate))
+        Some(makeTypeInTemplateContext(appliedType(hi, sym.info.typeParams map {_.tpe}), inTemplate, sym))
       case _ => None
     }
   }
@@ -456,7 +456,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       else if (bSym.isAliasType)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with HigherKindedImpl with AliasType {
           override def isAliasType = true
-          def alias = makeType(sym.tpe.dealias, inTpl, sym)
+          def alias = makeTypeInTemplateContext(sym.tpe.dealias, inTpl, sym)
         })
       else if (bSym.isPackage)
         inTpl match { case inPkg: PackageImpl =>  makePackage(bSym, inPkg) }
@@ -514,12 +514,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         }
         else None
       def resultType =
-        makeType(sym.tpe, inTpl, sym)
+        makeTypeInTemplateContext(sym.tpe, inTpl, sym)
       def isImplicit = aSym.isImplicit
     }
 
   /** */
-  def makeType(aType: Type, inTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
+  def makeTypeInTemplateContext(aType: Type, inTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
     def ownerTpl(sym: Symbol): Symbol =
       if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
     val tpe =
