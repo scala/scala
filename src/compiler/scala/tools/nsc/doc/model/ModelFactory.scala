@@ -424,10 +424,22 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
         })
-      else if (bSym.isMethod && !bSym.hasAccessorFlag && !bSym.isConstructor && !bSym.isModule)
-        Some(new NonTemplateParamMemberImpl(bSym, inTpl) with HigherKindedImpl with Def {
+      else if (bSym.isMethod && !bSym.hasAccessorFlag && !bSym.isConstructor && !bSym.isModule) {
+        val cSym = { // This unsightly hack closes issue #4086.
+          if (bSym == definitions.Object_synchronized) {
+            val cSymInfo = bSym.info match {
+              case PolyType(ts, MethodType(List(bp), mt)) =>
+                val cp = bp.cloneSymbol.setInfo(appliedType(definitions.ByNameParamClass.typeConstructor, List(bp.info)))
+                PolyType(ts, MethodType(List(cp), mt))
+            }
+            bSym.cloneSymbol.setInfo(cSymInfo)
+          }
+          else bSym
+        }
+        Some(new NonTemplateParamMemberImpl(cSym, inTpl) with HigherKindedImpl with Def {
           override def isDef = true
         })
+      }
       else if (bSym.isConstructor)
         Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Constructor {
           override def isConstructor = true
