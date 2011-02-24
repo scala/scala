@@ -225,7 +225,7 @@ abstract class Erasure extends AddInterfaces
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
-  def javaSig(sym0: Symbol, info: Type): Option[String] = if (sym0.hasFlag(BRIDGE | MIXEDIN)) None else atPhase(currentRun.erasurePhase) {
+  def javaSig(sym0: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
     def jsig(tp: Type, mustBox: Boolean) = {
       (boxedClass get tp.typeSymbol) match {
         case Some(boxed) if mustBox   => jsig2(false, true, Nil, boxed.tpe)
