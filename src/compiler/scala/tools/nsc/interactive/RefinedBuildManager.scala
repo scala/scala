@@ -33,8 +33,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       super.computeInternalPhases
       phasesSet += dependencyAnalysis
     }
-
-    override def classPath: ClassPath[_] = new NoSourcePathPathResolver(settings).result
+    lazy val _classpath: ClassPath[_] = new NoSourcePathPathResolver(settings).result
+    override def classPath: ClassPath[_] = _classpath
 
     def newRun() = new Run()
   }
