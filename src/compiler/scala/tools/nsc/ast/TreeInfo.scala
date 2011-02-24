@@ -87,7 +87,7 @@ abstract class TreeInfo {
        * However, before typing, applications of nullary functional values are also
        * Apply(function, Nil) trees. To prevent them from being treated as pure,
        * we check that the callee is a method. */
-      fn.symbol.isMethod && isPureExpr(fn)
+      fn.symbol.isMethod && !fn.symbol.isLazy && isPureExpr(fn)
     case Typed(expr, _) =>
       isPureExpr(expr)
     case Block(stats, expr) =>

@@ -271,7 +271,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
     private def isSideEffecting(sym: Symbol): Boolean = {
-      !((sym.isGetter && !sym.isLazy)
+      !((sym.isGetter && sym.isFinal && !sym.isLazy)
        || (sym.isConstructor
            && !(sym.owner == method.symbol.owner && method.symbol.isConstructor) // a call to another constructor
            && sym.owner.owner == definitions.RuntimePackage.moduleClass)
