@@ -200,8 +200,18 @@ self =>
     buf.result
   }
 
+  // Have to overload all three to work around #4299.  The overload
+  // is because mkString should force a view but toString should not.
+  override def mkString: String = mkString("")
+  override def mkString(sep: String): String = mkString("", sep, "")
+  override def mkString(start: String, sep: String, end: String): String = {
+    thisSeq.addString(new StringBuilder(), start, sep, end).toString
+  }
+
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
     b append start append "..." append end
+
+  override def toString = stringPrefix+"(...)"
 
   override def filter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
   override def withFilter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]

@@ -13,7 +13,6 @@ package scala.collection.parallel
 
 
 import scala.collection.Parallel
-import scala.collection.TraversableViewLike
 import scala.collection.IterableView
 import scala.collection.generic.CanCombineFrom
 
