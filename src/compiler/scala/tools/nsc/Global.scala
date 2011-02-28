@@ -786,6 +786,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
 
     /* An iterator returning all the units being compiled in this run */
+    /* !!! Note: changing this to unitbuf.toList.iterator breaks a bunch
+       of tests in tests/res.  This is bad, it means the resident compiler
+       relies on an iterator of a mutable data structure reflecting changes
+       made to the underlying structure (in whatever accidental way it is
+       currently depending upon.)
+     */
     def units: Iterator[CompilationUnit] = unitbuf.iterator
 
     /** A map from compiled top-level symbols to their source files */

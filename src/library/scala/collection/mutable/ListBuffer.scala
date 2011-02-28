@@ -317,16 +317,20 @@ final class ListBuffer[A]
     // on exhausted iterators (thus creating exceptions) merely because
     // values were changed in-place.
     var cursor: List[A] = null
-    var remaining = ListBuffer.this.length
+    var delivered = 0
 
-    def hasNext: Boolean = remaining > 0
+    // Note: arguably this should not be a "dynamic test" against
+    // the present length of the buffer, but fixed at the size of the
+    // buffer when the iterator is created.  At the moment such a
+    // change breaks tests: see comment on def units in Global.scala.
+    def hasNext: Boolean = delivered < ListBuffer.this.length
     def next(): A =
-      if (remaining <= 0)
+      if (!hasNext)
         throw new NoSuchElementException("next on empty Iterator")
       else {
         if (cursor eq null) cursor = start
         else cursor = cursor.tail
-        remaining -= 1
+        delivered += 1
         cursor.head
       }
   }

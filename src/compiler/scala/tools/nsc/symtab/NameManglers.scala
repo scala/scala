@@ -63,6 +63,7 @@ trait NameManglers {
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
+    /** !!! Foo$class$1 is an implClassName, I think.  */
     def isImplClassName(name: Name)         = name endsWith IMPL_CLASS_SUFFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
     def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
