@@ -174,6 +174,22 @@ self =>
     else super.map(f)(bf)
   }
 
+  override final def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+    if (!isStreamBuilder(bf)) super.collect(pf)(bf)
+    else {
+      // this implementation avoids:
+      // 1) stackoverflows (could be achieved with tailrec, too)
+      // 2) out of memory errors for big streams (`this` reference can be eliminated from the stack)
+      var rest: Stream[A] = this
+      while (rest.nonEmpty && !pf.isDefinedAt(rest.head)) rest = rest.tail
+
+      //  without the call to the companion object, a thunk is created for the tail of the new stream,
+      //  and the closure of the thunk will reference `this`
+      if (rest.isEmpty) Stream.Empty.asInstanceOf[That]
+      else Stream.collectedTail(rest, pf, bf).asInstanceOf[That]
+    }
+  }
+
   /** Applies the given function `f` to each element of
    *  this stream, then concatenates the results.
    *
@@ -671,6 +687,10 @@ object Stream extends SeqFactory[Stream] {
 
   private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {
     new Stream.Cons(stream.head, stream.tail filter p)
+  }
+
+  private[immutable] def collectedTail[A, B, That](stream: Stream[A], pf: PartialFunction[A, B], bf: CanBuildFrom[Stream[A], B, That]) = {
+    new Stream.Cons(stream.head, stream.tail.collect(pf)(bf).asInstanceOf[Stream[B]])
   }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.
