@@ -308,14 +308,25 @@ final class ListBuffer[A]
     this
   }
 
-  override def iterator = new Iterator[A] {
+  override def iterator: Iterator[A] = new Iterator[A] {
+    // Have to be careful iterating over mutable structures.
+    // This used to have "(cursor ne last0)" as part of its hasNext
+    // condition, which means it can return true even when the iterator
+    // is exhausted.  Inconsistent results are acceptable when one mutates
+    // a structure while iterating, but we should never return hasNext == true
+    // on exhausted iterators (thus creating exceptions) merely because
+    // values were changed in-place.
     var cursor: List[A] = null
-    def hasNext: Boolean = !start.isEmpty && (cursor ne last0)
+    var remaining = ListBuffer.this.length
+
+    def hasNext: Boolean = remaining > 0
     def next(): A =
-      if (!hasNext) {
+      if (remaining <= 0)
         throw new NoSuchElementException("next on empty Iterator")
-      } else {
-        if (cursor eq null) cursor = start else cursor = cursor.tail
+      else {
+        if (cursor eq null) cursor = start
+        else cursor = cursor.tail
+        remaining -= 1
         cursor.head
       }
   }
