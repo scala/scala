@@ -1,11 +1,8 @@
 import scala.tools.nsc._
-import java.io.{BufferedReader, StringReader, PrintWriter,
-                Writer, OutputStreamWriter}
+import scala.tools.partest.ReplTest
 
-import interpreter.ILoop
-
-object Test {
-  val testCodeString = <code>
+object Test extends ReplTest {
+  def code = <code>
 // basics
 3+4
 def gcd(x: Int, y: Int): Int = {{
@@ -146,11 +143,7 @@ def f(e: Exp) = e match {{  // non-exhaustive warning here
 
 </code>.text
 
-  def main(args: Array[String]) {
-    // This drops the first line of output because the repl
-    // prints a version number.
-    (ILoop run testCodeString).lines drop 1 foreach println
-
+  def appendix() = {
     val settings = new Settings
     settings.classpath.value = sys.props("java.class.path")
     val interp = new Interpreter(settings)
@@ -160,4 +153,6 @@ def f(e: Exp) = e match {{  // non-exhaustive warning here
     interp.interpret("\"after reset\"")
     interp.interpret("plusOne(5) // should be undefined now")
   }
+
+  appendix()
 }

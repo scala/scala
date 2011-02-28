@@ -1,9 +1,12 @@
-Welcome to Scala version 2.9.0.r24351-b20110228153004 (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_22).
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 56
-x: Array[Int] = Array(2, 4, 6, 8, 10, 12, 14)
-y: scala.collection.mutable.WrappedArray[Int] = WrappedArray(2, 4, 6, 8, 10, 12, 14)
+scala> 
+scala> x: Array[Int] = Array(1, 2, 3, 4, 5, 6, 7)
 
+scala> y: scala.collection.mutable.WrappedArray[Int] = WrappedArray(2, 4, 6, 8, 10, 12, 14)
+
+scala> 56
+
+scala> 
 scala> 
