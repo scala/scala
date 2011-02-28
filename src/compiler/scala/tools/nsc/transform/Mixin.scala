@@ -250,7 +250,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       /** Mix in members of implementation class mixinClass into class clazz */
       def mixinImplClassMembers(impl: Symbol, iface: Symbol) {
-        assert (impl.isImplClass)
+        assert(
+          // XXX this should be impl.isImplClass, except that we get impl classes
+          // coming through under -optimise which do not agree that they are (because
+          // the IMPLCLASS flag is unset, I believe.) See ticket #4285.
+          nme.isImplClassName(impl.name),
+          "%s (%s) is not a an implementation class, it cannot mix in %s".format(
+            impl, impl.defaultFlagString, iface)
+        )
         for (member <- impl.info.decls.toList) {
           if (isForwarded(member)) {
             val imember = member.overriddenSymbol(iface)
