@@ -254,7 +254,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           // XXX this should be impl.isImplClass, except that we get impl classes
           // coming through under -optimise which do not agree that they are (because
           // the IMPLCLASS flag is unset, I believe.) See ticket #4285.
-          nme.isImplClassName(impl.name),
+          nme.isImplClassName(impl.name) || impl.isImplClass,
           "%s (%s) is not a an implementation class, it cannot mix in %s".format(
             impl, impl.defaultFlagString, iface)
         )
