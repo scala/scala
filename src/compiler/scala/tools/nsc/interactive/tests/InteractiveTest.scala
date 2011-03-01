@@ -43,18 +43,46 @@ abstract class InteractiveTest {
   val settings = new Settings
   val reporter= new StoreReporter
 
-  // need this so that the classpath comes from what partest
-  // instead of scala.home
-  settings.usejavacp.value = true
-
   /** The root directory for this test suite, usually the test kind ("test/files/presentation"). */
   val outDir = Path(Option(System.getProperty("partest.cwd")).getOrElse("."))
 
   /** The base directory for this test, usually a subdirectory of "test/files/presentation/" */
   val baseDir = Option(System.getProperty("partest.testname")).map(outDir / _).getOrElse(Path("."))
 
-//  settings.YpresentationDebug.value = true
-  lazy val compiler = new Global(settings, reporter)
+  /** If there's a file ending in .opts, read it and parse it for cmd line arguments. */
+  val argsString = {
+    val optsFile = outDir / "%s.opts".format(System.getProperty("partest.testname"))
+    val str = try File(optsFile).slurp() catch {
+      case e: java.io.IOException => ""
+    }
+    str.lines.filter(!_.startsWith("#")).mkString(" ")
+  }
+
+  def prepareSettings() {
+    // need this so that the classpath comes from what partest
+    // instead of scala.home
+    settings.usejavacp.value = !argsString.contains("-bootclasspath")
+
+    // pass any options coming from outside
+    settings.processArgumentString(argsString) match {
+      case (false, rest) =>
+        println("error processing arguments (unprocessed: %s)".format(rest))
+      case _ => ()
+    }
+  }
+
+  protected def printClassPath {
+    println("\toutDir: %s".format(outDir.path))
+    println("\tbaseDir: %s".format(baseDir.path))
+    println("\targsString: %s".format(argsString))
+    println("\tbootClassPath: %s".format(settings.bootclasspath.value))
+    println("\tverbose: %b".format(settings.verbose.value))
+  }
+
+  lazy val compiler = {
+    prepareSettings()
+    new Global(settings, reporter)
+  }
 
   def sources(filename: String*): Seq[SourceFile] =
     for (f <- filename) yield
