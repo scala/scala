@@ -724,11 +724,15 @@ trait Implicits {
      */
     private def companionImplicits(tp: Type): Infoss = {
       val partMap = new LinkedHashMap[Symbol, Type]
+      val seen = mutable.HashSet[Type]()  // cycle detection
 
       /** Enter all parts of `tp` into `parts` set.
        *  This method is performance critical: about 2-4% of all type checking is spent here
        */
       def getParts(tp: Type) {
+        if (seen(tp))
+          return
+        seen += tp
         tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isClass) {
