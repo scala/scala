@@ -158,9 +158,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   }
 
   def defParamsToString(d: MemberEntity with Def): String = {
-    val namess =
-      for( ps <- d.valueParams; p <- ps ) yield p.resultType.name
-    tparamsToString(d.typeParams) + namess.foldLeft("") { (s,names) => s + (names mkString("(",",",")")) }
+    val paramLists: List[String] =
+      if (d.valueParams.isEmpty) Nil
+      else d.valueParams map (ps => ps map (_.resultType.name) mkString ("(",",",")"))
+
+    tparamsToString(d.typeParams) + paramLists.mkString
   }
 
   def memberToHtml(mbr: MemberEntity): NodeSeq = {
