@@ -690,7 +690,7 @@ object Stream extends SeqFactory[Stream] {
   }
 
   private[immutable] def collectedTail[A, B, That](stream: Stream[A], pf: PartialFunction[A, B], bf: CanBuildFrom[Stream[A], B, That]) = {
-    new Stream.Cons(stream.head, stream.tail.collect(pf)(bf).asInstanceOf[Stream[B]])
+    new Stream.Cons(pf(stream.head), stream.tail.collect(pf)(bf).asInstanceOf[Stream[B]])
   }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.
