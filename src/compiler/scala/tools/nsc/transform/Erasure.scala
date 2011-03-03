@@ -190,8 +190,8 @@ abstract class Erasure extends AddInterfaces
             if (!parents.isEmpty) traverse(parents.head)
           case ClassInfoType(parents, _, _) =>
             parents foreach traverse
-	  case AnnotatedType(_, atp, _) =>
-	    traverse(atp)
+          case AnnotatedType(_, atp, _) =>
+            traverse(atp)
           case _ =>
             mapOver(tp)
         }
@@ -204,9 +204,11 @@ abstract class Erasure extends AddInterfaces
   // only refer to type params that will actually make it into the sig, this excludes:
   // * higher-order type parameters (aka !sym.owner.isTypeParameterOrSkolem)
   // * parameters of methods
-  private def isTypeParameterInSig(sym: Symbol) = (
+  // * type members not visible in the enclosing template
+  private def isTypeParameterInSig(sym: Symbol, nestedIn: Symbol) = (
+    !sym.owner.isTypeParameterOrSkolem &&
     sym.isTypeParameterOrSkolem &&
-    !sym.owner.isTypeParameterOrSkolem
+    (sym isNestedIn nestedIn)
   )
   // Ensure every '.' in the generated signature immediately follows
   // a close angle bracket '>'.  Any which do not are replaced with '$'.
@@ -221,6 +223,8 @@ abstract class Erasure extends AddInterfaces
       case ch                 => last = ch ; ch
     }
   }
+  // for debugging signatures: traces logic given system property
+  private val traceSig = util.Tracer(sys.props contains "scalac.sigs.trace")
 
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
@@ -238,7 +242,7 @@ abstract class Erasure extends AddInterfaces
       case tp                      => tp :: Nil
     }) map squashBoxed
 
-    def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
+    def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = traceSig("jsig2", toplevel, tparams, tp0) {
       val tp = tp0.dealias
       tp match {
         case st: SubType =>
@@ -270,7 +274,7 @@ abstract class Erasure extends AddInterfaces
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
             else ARRAY_TAG.toString+(args map jsig).mkString
           }
-          else if (isTypeParameterInSig(sym))
+          else if (isTypeParameterInSig(sym, sym0.enclClass))
             TVAR_TAG.toString+sym.name+";"
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
@@ -334,11 +338,13 @@ abstract class Erasure extends AddInterfaces
           else jsig(etp)
       }
     }
-    if (needsJavaSig(info)) {
-      try Some(jsig2(true, Nil, info))
-      catch { case ex: UnknownSig => None }
+    traceSig("javaSig", sym0, info) {
+      if (needsJavaSig(info)) {
+        try Some(jsig2(true, Nil, info))
+        catch { case ex: UnknownSig => None }
+      }
+      else None
     }
-    else None
   }
 
   class UnknownSig extends Exception
