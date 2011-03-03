@@ -607,6 +607,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
+    def enclClassChain: List[Symbol] =
+      if (this eq NoSymbol) Nil
+      else if (isClass) this :: owner.enclClassChain
+      else owner.enclClassChain
 
     def ownersIterator: Iterator[Symbol] = new Iterator[Symbol] {
       private var current = Symbol.this
