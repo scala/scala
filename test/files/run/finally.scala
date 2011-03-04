@@ -6,7 +6,7 @@ object Test extends App {
       println("hi")
     }
     catch {
-      case e => println("GOT HERE")
+      case e => println("SHOULD NOT GET HERE")
     }
     finally {
       println("In Finally")
@@ -14,9 +14,21 @@ object Test extends App {
     }
   }
 
+  def m1 {
+    try {
+      throw new Exception
+    } catch {
+      case e =>
+        println(e);
+        return
+    } finally println("in finally")
+  }
+
   try {
     bar
   } catch {
     case e => println(e)
   }
+
+  m1
 }

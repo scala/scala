@@ -19,8 +19,6 @@ import PartialFunction._
  *  @author  Iulian Dragos
  *  @version 1.0
  */
-// TODO:
-// - switches with alternatives
 abstract class GenICode extends SubComponent  {
   import global._
   import icodes._
@@ -2008,7 +2006,7 @@ abstract class GenICode extends SubComponent  {
        * 'covered' by this exception handler (in addition to the
        * previously active handlers).
        */
-      def newHandler(cls: Symbol, resultKind: TypeKind, pos: Position): ExceptionHandler = {
+      private def newExceptionHandler(cls: Symbol, resultKind: TypeKind, pos: Position): ExceptionHandler = {
         handlerCount += 1
         val exh = new ExceptionHandler(method, "" + handlerCount, cls, pos)
         exh.resultKind = resultKind
@@ -2032,7 +2030,7 @@ abstract class GenICode extends SubComponent  {
       /** Return a new context for generating code for the given
        * exception handler.
        */
-      def enterHandler(exh: ExceptionHandler): Context = {
+      private def enterExceptionHandler(exh: ExceptionHandler): Context = {
         currentExceptionHandlers ::= exh
         val ctx = newBlock
         exh.setStartBlock(ctx.bb)
@@ -2044,7 +2042,7 @@ abstract class GenICode extends SubComponent  {
       }
 
       /** Remove the given handler from the list of active exception handlers. */
-      def removeHandler(exh: ExceptionHandler): Unit = {
+      def removeActiveHandler(exh: ExceptionHandler): Unit = {
         assert(handlerCount > 0 && handlers.head == exh,
                "Wrong nesting of exception handlers." + this + " for " + exh)
         handlerCount -= 1
@@ -2118,9 +2116,9 @@ abstract class GenICode extends SubComponent  {
 
 
         val finalizerExh = if (finalizer != EmptyTree) Some({
-          val exh = outerCtx.newHandler(NoSymbol, toTypeKind(finalizer.tpe), finalizer.pos) // finalizer covers exception handlers
+          val exh = outerCtx.newExceptionHandler(NoSymbol, toTypeKind(finalizer.tpe), finalizer.pos) // finalizer covers exception handlers
           this.addActiveHandler(exh)  // .. and body aswell
-          val ctx = finalizerCtx.enterHandler(exh)
+          val ctx = finalizerCtx.enterExceptionHandler(exh)
           val exception = ctx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
           loadException(ctx, exh, finalizer.pos)
           ctx.bb.emit(STORE_LOCAL(exception));
@@ -2134,8 +2132,9 @@ abstract class GenICode extends SubComponent  {
         }) else None
 
         val exhs = handlers.map { handler =>
-            val exh = this.newHandler(handler._1, handler._2, tree.pos)
-            var ctx1 = outerCtx.enterHandler(exh)
+            val exh = this.newExceptionHandler(handler._1, handler._2, tree.pos)
+            var ctx1 = outerCtx.enterExceptionHandler(exh)
+            ctx1.addFinalizer(finalizer)
             loadException(ctx1, exh, tree.pos)
             ctx1 = handler._3(ctx1)
             // emit finalizer
@@ -2187,9 +2186,9 @@ abstract class GenICode extends SubComponent  {
         if (finalizer != EmptyTree) {
           // finalizer is covers try and all catch blocks, i.e.
           //   try { try { .. } catch { ..} } finally { .. }
-          val exh = outerCtx.newHandler(NoSymbol, UNIT, tree.pos)
+          val exh = outerCtx.newExceptionHandler(NoSymbol, UNIT, tree.pos)
           this.addActiveHandler(exh)
-          val ctx = finalizerCtx.enterHandler(exh)
+          val ctx = finalizerCtx.enterExceptionHandler(exh)
           loadException(ctx, exh, tree.pos)
           val ctx1 = genLoad(finalizer, ctx, UNIT)
           // need jump for the ICode to be valid. MSIL backend will emit `Endfinally` instead.
@@ -2198,8 +2197,8 @@ abstract class GenICode extends SubComponent  {
         }
 
         for (handler <- handlers) {
-          val exh = this.newHandler(handler._1, handler._2, tree.pos)
-          var ctx1 = outerCtx.enterHandler(exh)
+          val exh = this.newExceptionHandler(handler._1, handler._2, tree.pos)
+          var ctx1 = outerCtx.enterExceptionHandler(exh)
           loadException(ctx1, exh, tree.pos)
           ctx1 = handler._3(ctx1)
           // msil backend will emit `Leave` to jump out of a handler

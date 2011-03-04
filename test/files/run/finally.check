@@ -1,3 +1,5 @@
 hi
 In Finally
 java.lang.RuntimeException: ouch
+java.lang.Exception
+in finally
