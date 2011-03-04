@@ -205,10 +205,10 @@ abstract class Erasure extends AddInterfaces
   // * higher-order type parameters (aka !sym.owner.isTypeParameterOrSkolem)
   // * parameters of methods
   // * type members not visible in the enclosing template
-  private def isTypeParameterInSig(sym: Symbol, enclosing: List[Symbol]) = (
+  private def isTypeParameterInSig(sym: Symbol, nestedIn: Symbol) = (
     !sym.owner.isTypeParameterOrSkolem &&
     sym.isTypeParameterOrSkolem &&
-    (enclosing exists (sym isNestedIn _))
+    (sym isNestedIn nestedIn)
   )
   // Ensure every '.' in the generated signature immediately follows
   // a close angle bracket '>'.  Any which do not are replaced with '$'.
@@ -242,8 +242,9 @@ abstract class Erasure extends AddInterfaces
       case tp                      => tp :: Nil
     }) map squashBoxed
 
-    def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = traceSig("jsig2", toplevel, tparams, tp0) {
+    def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
       val tp = tp0.dealias
+      traceSig("jsig2", toplevel, tparams, tp0 + " -> " + tp + " / " + tp.getClass) {
       tp match {
         case st: SubType =>
           jsig2(toplevel, tparams, st.supertype)
@@ -274,7 +275,7 @@ abstract class Erasure extends AddInterfaces
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
             else ARRAY_TAG.toString+(args map jsig).mkString
           }
-          else if (isTypeParameterInSig(sym, sym0.enclClassChain))
+          else if (isTypeParameterInSig(sym, sym0.enclClass))
             TVAR_TAG.toString+sym.name+";"
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
@@ -337,8 +338,9 @@ abstract class Erasure extends AddInterfaces
           if (etp eq tp) throw new UnknownSig
           else jsig(etp)
       }
+      }
     }
-    traceSig("javaSig", sym0, info, sym0.enclClassChain) {
+    traceSig("javaSig", sym0, info) {
       if (needsJavaSig(info)) {
         try Some(jsig2(true, Nil, info))
         catch { case ex: UnknownSig => None }
