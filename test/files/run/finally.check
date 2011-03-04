@@ -1,5 +1,35 @@
+Running throwCatchFinally
 hi
 In Finally
 java.lang.RuntimeException: ouch
+----------------------------------------
+Running retCatch
 java.lang.Exception
 in finally
+----------------------------------------
+Running throwCatch
+java.lang.Exception
+in finally
+COUGHT: java.lang.Exception
+----------------------------------------
+Running retBody
+in finally
+----------------------------------------
+Running throwBody
+java.lang.Exception
+in finally
+----------------------------------------
+Running retFinally
+body
+in finally 1
+in finally 2
+----------------------------------------
+Running throwFinally
+body
+in finally
+java.lang.Exception
+----------------------------------------
+Running nestedFinalies
+in finally 1
+in finally 2
+----------------------------------------

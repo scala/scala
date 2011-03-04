@@ -673,21 +673,22 @@ abstract class GenICode extends SubComponent  {
           var ctx1         = genLoad(expr, ctx, returnedKind)
           lazy val tmp     = ctx1.makeLocal(tree.pos, expr.tpe, "tmp")
           val saved        = savingCleanups(ctx1) {
-            ctx1.cleanups exists {
+            var saved = false
+            ctx1.cleanups foreach {
               case MonitorRelease(m) =>
                 if (settings.debug.value)
                   log("removing " + m + " from cleanups: " + ctx1.cleanups)
                 ctx1.bb.emit(Seq(LOAD_LOCAL(m), MONITOR_EXIT()))
                 ctx1.exitSynchronized(m)
-                false
-              case Finalizer(f) =>
+
+              case Finalizer(f, finalizerCtx) =>
                 if (settings.debug.value)
                   log("removing " + f + " from cleanups: " + ctx1.cleanups)
 
-                val saved = returnedKind != UNIT && mayCleanStack(f) && {
+                if (returnedKind != UNIT && mayCleanStack(f)) {
                   log("Emitting STORE_LOCAL for " + tmp + " to save finalizer.")
                   ctx1.bb.emit(STORE_LOCAL(tmp))
-                  true
+                  saved = true
                 }
 
                 // duplicate finalizer (takes care of anchored labels)
@@ -696,9 +697,11 @@ abstract class GenICode extends SubComponent  {
                 // we have to run this without the same finalizer in
                 // the list, otherwise infinite recursion happens for
                 // finalizers that contain 'return'
-                ctx1 = genLoad(f1, ctx1.removeFinalizer(f), UNIT)
-                saved
+                val fctx = finalizerCtx.newBlock
+                ctx1.bb.closeWith(JUMP(fctx.bb))
+                ctx1 = genLoad(f1, fctx, UNIT)
             }
+            saved
           }
 
           if (saved) {
@@ -1838,7 +1841,7 @@ abstract class GenICode extends SubComponent  {
       def contains(x: AnyRef) = value == x
     }
     case class MonitorRelease(m: Local) extends Cleanup(m) { }
-    case class Finalizer(f: Tree) extends Cleanup (f) { }
+    case class Finalizer(f: Tree, ctx: Context) extends Cleanup (f) { }
 
     def duplicateFinalizer(boundLabels: Set[Symbol], targetCtx: Context, finalizer: Tree) =  {
       (new DuplicateLabels(boundLabels))(targetCtx, finalizer)
@@ -1952,8 +1955,8 @@ abstract class GenICode extends SubComponent  {
         this
       }
 
-      def addFinalizer(f: Tree): this.type = {
-        cleanups = Finalizer(f) :: cleanups;
+      def addFinalizer(f: Tree, ctx: Context): this.type = {
+        cleanups = Finalizer(f, ctx) :: cleanups;
         this
       }
 
@@ -2134,7 +2137,7 @@ abstract class GenICode extends SubComponent  {
         val exhs = handlers.map { handler =>
             val exh = this.newExceptionHandler(handler._1, handler._2, tree.pos)
             var ctx1 = outerCtx.enterExceptionHandler(exh)
-            ctx1.addFinalizer(finalizer)
+            ctx1.addFinalizer(finalizer, finalizerCtx)
             loadException(ctx1, exh, tree.pos)
             ctx1 = handler._3(ctx1)
             // emit finalizer
@@ -2145,7 +2148,7 @@ abstract class GenICode extends SubComponent  {
           }
         val bodyCtx = this.newBlock
         if (finalizer != EmptyTree)
-          bodyCtx.addFinalizer(finalizer)
+          bodyCtx.addFinalizer(finalizer, finalizerCtx)
 
         var finalCtx = body(bodyCtx)
         finalCtx = emitFinalizer(finalCtx)
