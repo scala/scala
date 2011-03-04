@@ -244,7 +244,6 @@ abstract class Erasure extends AddInterfaces
 
     def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
       val tp = tp0.dealias
-      traceSig("jsig2", toplevel, tparams, tp0 + " -> " + tp + " / " + tp.getClass) {
       tp match {
         case st: SubType =>
           jsig2(toplevel, tparams, st.supertype)
@@ -338,15 +337,14 @@ abstract class Erasure extends AddInterfaces
           if (etp eq tp) throw new UnknownSig
           else jsig(etp)
       }
-      }
     }
-    traceSig("javaSig", sym0, info) {
+    // traceSig("javaSig", sym0, info) {
       if (needsJavaSig(info)) {
         try Some(jsig2(true, Nil, info))
         catch { case ex: UnknownSig => None }
       }
       else None
-    }
+    // }
   }
 
   class UnknownSig extends Exception
