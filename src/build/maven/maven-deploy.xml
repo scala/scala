@@ -28,7 +28,7 @@
   <target name="init.maven" depends="init.properties">
 
     <!-- Add our maven ant tasks -->
-    <path id="maven-ant-tasks.classpath" path="maven-ant-tasks-2.0.9.jar" />
+    <path id="maven-ant-tasks.classpath" path="maven-ant-tasks-2.1.1.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
     <!-- simplify fixing pom versions -->
     <macrodef name="make-pom">
