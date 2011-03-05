@@ -602,9 +602,10 @@ self =>
           debugLog("link found for "+newsym+": "+newsym.pos)
           newsym.pos
         }
-      } else
+      } else {
         debugLog("link not in class "+sym+" "+source+" "+owner)
         NoPosition
+      }
     }
   }
 
