@@ -34,6 +34,7 @@ trait Map[A, +B] extends Iterable[(A, B)]
     self.asInstanceOf[immutable.Map[T, U]]
 
   /** The same map with a given default function.
+   *  Note: `get`, `contains`, `iterator`, `keys`, etc are not affected by `withDefault`.
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
    *
