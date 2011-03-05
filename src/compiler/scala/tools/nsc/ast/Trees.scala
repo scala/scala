@@ -1093,9 +1093,14 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
 
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
-   *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept and
-   *  (2) if a <code>.symbol</code> field refers to a symbol which is defined
+   *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept, and
+   *  (2) This(pkg) nodes, where pkg refers to a package symbol -- their attributes are kept, and
+   *  (3) if a <code>.symbol</code> field refers to a symbol which is defined
    *  outside the tree, it is also kept.
+   *
+   *  (2) is necessary because some This(pkg) are generated where pkg is not
+   *  an enclosing package.n In that case, resetting the symbol would cause the
+   *  next type checking run to fail. See #3152.
    *
    *  (bq:) This traverser has mutable state and should be discarded after use
    */
@@ -1108,15 +1113,15 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       tree match {
         case _: DefTree | Function(_, _) | Template(_, _, _) =>
           resetDef(tree)
-        case _ =>
-          if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
-      }
-      tree match {
+          tree.tpe = null
         case tpt: TypeTree =>
           if (tpt.wasEmpty) tree.tpe = null
+        case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
+          ;
         case EmptyTree =>
           ;
         case _ =>
+          if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
           tree.tpe = null
       }
       super.traverse(tree)
