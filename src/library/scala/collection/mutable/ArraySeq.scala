@@ -40,7 +40,7 @@ import parallel.mutable.ParArray
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(1530165946227428979L)
-class ArraySeq[A](override val length: Int)
+class ArraySeq[@specialized A](override val length: Int)
 extends IndexedSeq[A]
    with GenericTraversableTemplate[A, ArraySeq]
    with IndexedSeqOptimized[A, ArraySeq[A]]
