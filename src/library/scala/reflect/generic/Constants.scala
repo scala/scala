@@ -233,7 +233,6 @@ trait Constants {
     def typeValue: Type     = value.asInstanceOf[Type]
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
-    override def hashCode: Int =
-      if (value == null) 0 else value.## * 41 + 17
+    override def hashCode: Int = value.## * 41 + 17
   }
 }

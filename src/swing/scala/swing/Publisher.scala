@@ -78,9 +78,9 @@ import scala.ref._
 private[swing] trait SingleRefCollection[+A <: AnyRef] extends Iterable[A] { self =>
 
   trait Ref[+A <: AnyRef] extends Reference[A] {
-    override def hashCode() = {
-      val v = get
-      if (v == None) 0 else v.get.##
+    override def hashCode() = get match {
+      case Some(x)  => x.##
+      case _        => 0
     }
     override def equals(that: Any) = that match {
       case that: ReferenceWrapper[_] =>

@@ -167,7 +167,7 @@ object ScalaRunTime {
     var i = 0
     while (i < arr) {
       val elem = x.productElement(i)
-      h = extendHash(h, if (elem == null) 0 else elem.##, c, k)
+      h = extendHash(h, elem.##, c, k)
       c = nextMagicA(c)
       k = nextMagicB(k)
       i += 1
@@ -195,7 +195,8 @@ object ScalaRunTime {
   // must not call ## themselves.
 
   @inline def hash(x: Any): Int =
-    if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
+    if (x == null) 0
+    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
     else x.hashCode
 
   @inline def hash(dv: Double): Int = {

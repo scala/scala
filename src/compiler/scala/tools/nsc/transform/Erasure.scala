@@ -908,15 +908,14 @@ abstract class Erasure extends AddInterfaces
               SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
               args)
 
-        case Apply(fn @ Select(qual, _), Nil) if (fn.symbol == Any_## || fn.symbol == Object_##) =>
+        case Apply(fn @ Select(qual, _), Nil) if fn.symbol == Any_## || fn.symbol == Object_## =>
           // This is unattractive, but without it we crash here on ().## because after
           // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
           // This must be because some earlier transformation is being skipped on ##, but so
-          // far I don't know what.  We also crash on null.## but unless we want to implement
-          // my good idea that null.## works (like null == "abc" works) we have to NPE.
+          // far I don't know what.  For null we now define null.## == 0.
           val arg = qual.tpe.typeSymbolDirect match {
-            case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))       // ({ expr; UNIT }).##
-            case NullClass  => Typed(qual, TypeTree(ObjectClass.tpe)) // (null: Object).##
+            case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))   // ({ expr; UNIT }).##
+            case NullClass  => LIT(0)                             // (null: Object).##
             case _          => qual
           }
           Apply(gen.mkAttributedRef(scalaRuntimeHash), List(arg))

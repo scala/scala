@@ -59,7 +59,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
   def - (key: A): HashMap[A, B] =
     removed0(key, computeHash(key), 0)
 
-  protected def elemHashCode(key: A) = if (key == null) 0 else key.##
+  protected def elemHashCode(key: A) = key.##
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)

@@ -60,7 +60,7 @@ class HashSet[A] extends Set[A]
 
   def par = ParHashSet.fromTrie(this)
 
-  protected def elemHashCode(key: A) = if (key == null) 0 else key.##
+  protected def elemHashCode(key: A) = key.##
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)

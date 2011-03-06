@@ -363,7 +363,7 @@ private[collection] object HashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected def elemHashCode(key: KeyType) = if (key == null) 0 else key.##
+    protected def elemHashCode(key: KeyType) = key.##
 
     protected final def improve(hcode: Int) = {
       /* Murmur hash

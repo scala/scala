@@ -263,7 +263,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param children
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) = {
-    val h = new util.MurmurHash[Node]( if (pre ne null) pre.## else 0 )
+    val h = new util.MurmurHash[Node](pre.##)
     h.append(label.##)
     h.append(attribHashCode)
     h.append(scpeHash)

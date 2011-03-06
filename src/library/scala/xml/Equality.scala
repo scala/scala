@@ -74,8 +74,6 @@ trait Equality extends scala.Equals {
   def strict_==(other: Equality): Boolean
   def strict_!=(other: Equality) = !strict_==(other)
 
-  private def hashOf(x: Any) = if (x == null) 1 else x.##
-
   /** We insist we're only equal to other xml.Equality implementors,
    *  which heads off a lot of inconsistency up front.
    */
@@ -90,10 +88,7 @@ trait Equality extends scala.Equals {
    *  are final since clearly individual classes cannot be trusted
    *  to maintain a semblance of order.
    */
-  override def hashCode() = basisForHashCode match {
-    case Nil      => 0
-    case x :: xs  => hashOf(x) * 41 + (xs map hashOf).foldLeft(0)(_ * 7 + _)
-  }
+  override def hashCode()         = basisForHashCode.##
   override def equals(other: Any) = doComparison(other, false)
   final def xml_==(other: Any)    = doComparison(other, true)
   final def xml_!=(other: Any)    = !xml_==(other)
