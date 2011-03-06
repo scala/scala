@@ -326,8 +326,13 @@ abstract class Erasure extends AddInterfaces
           val paramString = if (toplevel) tparams map paramSig mkString ("<", "", ">") else ""
           paramString + jsig(restpe)
         case MethodType(params, restpe) =>
-          "("+(params map (_.tpe) map jsig).mkString+")"+
-          (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
+          val ressym = restpe.typeSymbol
+          "(%s)%s".format(
+            params map (x => jsig(x.tpe)) mkString,
+            if (ressym == UnitClass || sym0.isConstructor) VOID_TAG
+            else if (isValueClass(ressym)) abbrvTag(ressym)
+            else jsig(restpe)
+          )
         case RefinedType(parent :: _, decls) =>
           jsig(parent)
         case ClassInfoType(parents, _, _) =>
