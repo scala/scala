@@ -242,16 +242,16 @@ abstract class Erasure extends AddInterfaces
       case tp                      => tp :: Nil
     }) map squashBoxed
 
-    def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
+    def jsig2(toplevel: Boolean, existentiallyBound: List[Symbol], tp0: Type): String = {
       val tp = tp0.dealias
       tp match {
         case st: SubType =>
-          jsig2(toplevel, tparams, st.supertype)
+          jsig2(toplevel, existentiallyBound, st.supertype)
         case ExistentialType(tparams, tpe) =>
           jsig2(toplevel, tparams, tpe)
         case TypeRef(pre, sym, args) =>
           def argSig(tp: Type) =
-            if (tparams contains tp.typeSymbol) {
+            if (existentiallyBound contains tp.typeSymbol) {
               val bounds = tp.typeSymbol.info.bounds
               if (AnyRefClass.tpe <:< bounds.hi) {
                 if (bounds.lo <:< NullClass.tpe) "*"

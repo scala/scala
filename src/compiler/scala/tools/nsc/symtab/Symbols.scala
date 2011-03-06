@@ -355,6 +355,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     override final def isTrait: Boolean = isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
+    final def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
     final def isTypeSkolem            = isSkolem && hasFlag(PARAM)
     // a type symbol bound by an existential type, for instance the T in
     // List[T] forSome { type T }
@@ -607,6 +608,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
+    def enclClassChain: List[Symbol] = {
+      if (this eq NoSymbol) Nil
+      else if (isClass && !isPackageClass) this :: owner.enclClassChain
+      else owner.enclClassChain
+    }
 
     def ownersIterator: Iterator[Symbol] = new Iterator[Symbol] {
       private var current = Symbol.this
