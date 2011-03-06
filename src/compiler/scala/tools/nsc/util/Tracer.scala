@@ -22,7 +22,7 @@ class Tracer(enabled: () => Boolean) {
     p(ind("" + x))
     x
   }
-  def apply[T](name: String, args: Any*)(body: => T): T = {
+  def seq[T](name: String, args: => Seq[Any])(body: => T): T = {
     if (enabled()) {
       p(ind("%s(%s) = {\n".format(name, args mkString ", ")))
       try indented(pin(body))
@@ -30,6 +30,7 @@ class Tracer(enabled: () => Boolean) {
     }
     else body
   }
+  def apply[T](name: String, args: Any*)(body: => T): T = seq(name, args.toSeq)(body)
 }
 
 object Tracer {

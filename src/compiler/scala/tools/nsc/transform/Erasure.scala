@@ -202,14 +202,15 @@ abstract class Erasure extends AddInterfaces
   private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
   // only refer to type params that will actually make it into the sig, this excludes:
-  // * higher-order type parameters (aka !sym.owner.isTypeParameterOrSkolem)
+  // * higher-order type parameters
   // * parameters of methods
-  // * type members not visible in the enclosing template
-  private def isTypeParameterInSig(sym: Symbol, nestedIn: Symbol) = (
-    !sym.owner.isTypeParameterOrSkolem &&
+  // * type members not visible in an enclosing template
+  private def isTypeParameterInSig(sym: Symbol, initialSymbol: Symbol) = (
+    !sym.isHigherOrderTypeParameter &&
     sym.isTypeParameterOrSkolem &&
-    (sym isNestedIn nestedIn)
+    initialSymbol.enclClassChain.exists(sym isNestedIn _)
   )
+
   // Ensure every '.' in the generated signature immediately follows
   // a close angle bracket '>'.  Any which do not are replaced with '$'.
   // This arises due to multiply nested classes in the face of the
@@ -274,8 +275,10 @@ abstract class Erasure extends AddInterfaces
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
             else ARRAY_TAG.toString+(args map jsig).mkString
           }
-          else if (isTypeParameterInSig(sym, sym0.enclClass))
+          else if (isTypeParameterInSig(sym, sym0)) {
+            assert(!sym.isAliasType, "Unexpected alias type: " + sym)
             TVAR_TAG.toString+sym.name+";"
+          }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
           else if (sym == UnitClass)
@@ -288,21 +291,23 @@ abstract class Erasure extends AddInterfaces
             jsig(ObjectClass.tpe)
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
-            dotCleanup(
-              (
-                if (needsJavaSig(preRebound)) {
-                  val s = jsig(preRebound)
-                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
+            traceSig.seq("sym.isClass", Seq(sym.ownerChain, preRebound, sym0.enclClassChain)) {
+              dotCleanup(
+                (
+                  if (needsJavaSig(preRebound)) {
+                    val s = jsig(preRebound)
+                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
+                    else classSig
+                  }
                   else classSig
-                }
-                else classSig
-              ) + (
-                if (args.isEmpty) "" else
-                "<"+(args map argSig).mkString+">"
-              ) + (
-                ";"
+                ) + (
+                  if (args.isEmpty) "" else
+                  "<"+(args map argSig).mkString+">"
+                ) + (
+                  ";"
+                )
               )
-            )
+            }
           }
           else jsig(erasure(tp))
         case PolyType(tparams, restpe) =>
@@ -338,13 +343,13 @@ abstract class Erasure extends AddInterfaces
           else jsig(etp)
       }
     }
-    // traceSig("javaSig", sym0, info) {
+    traceSig.seq("javaSig", Seq(sym0, info)) {
       if (needsJavaSig(info)) {
         try Some(jsig2(true, Nil, info))
         catch { case ex: UnknownSig => None }
       }
       else None
-    // }
+    }
   }
 
   class UnknownSig extends Exception
