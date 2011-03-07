@@ -51,7 +51,7 @@ trait CompilerControl { self: Global =>
    */
   def getUnitOf(s: SourceFile): Option[RichCompilationUnit] = getUnit(s)
 
-  /** Run operation `op` on a compilation unit assocuated with given `source`.
+  /** Run operation `op` on a compilation unit associated with given `source`.
    *  If source has a loaded compilation unit, this one is passed to `op`.
    *  Otherwise a new compilation unit is created, but not added to the set of loaded units.
    */

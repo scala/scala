@@ -68,7 +68,18 @@ class Global(settings: Settings, reporter: Reporter)
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
   val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
-                       SynchronizedMap[AbstractFile, RichCompilationUnit]
+                       SynchronizedMap[AbstractFile, RichCompilationUnit] {
+    override def put(key: AbstractFile, value: RichCompilationUnit) = {
+      val r = super.put(key, value)
+      if (r.isEmpty) debugLog("added uhnit for "+key)
+      r
+    }
+    override def remove(key: AbstractFile) = {
+      val r = super.remove(key)
+      if (r.nonEmpty) debugLog("removed unit for "+key)
+      r
+    }
+  }
 
   /** A list containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
@@ -117,9 +128,18 @@ class Global(settings: Settings, reporter: Reporter)
   /** Is a background compiler run needed?
    *  Note: outOfDate is true as long as there is a background compile scheduled or going on.
    */
-  protected[interactive] var outOfDate = false
+  private var outOfDate = false
 
-  /** Units compiled by a run with id >= minRunId are considered up-to-date  */
+  protected[interactive] def isOutOfDate =
+    outOfDate || waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty
+
+  protected[interactive] def setUpToDate() = outOfDate = false
+
+  def demandNewCompilerRun() = {
+    if (isOutOfDate) throw FreshRunReq // cancel background compile
+    else outOfDate = true            // proceed normally and enable new background compile
+  }
+
   protected[interactive] var minRunId = 1
 
   private var interruptsEnabled = true
@@ -221,6 +241,7 @@ class Global(settings: Settings, reporter: Reporter)
    *
    */
   protected[interactive] def pollForWork(pos: Position) {
+    if (!interruptsEnabled) return
     if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
       Thread.`yield`()
 
@@ -339,11 +360,6 @@ class Global(settings: Settings, reporter: Reporter)
     compileRunner
   }
 
-  def demandNewCompilerRun() = {
-    if (outOfDate) throw FreshRunReq // cancel background compile
-    else outOfDate = true            // proceed normally and enable new background compile
-  }
-
   /** Compile all loaded source files in the order given by `allSources`.
    */
   protected[interactive] def backgroundCompile() {
@@ -450,7 +466,7 @@ class Global(settings: Settings, reporter: Reporter)
     allSources = fs ::: (allSources diff fs)
   }
 
-  // ----------------- Implementations of client commands -----------------------+lknwqdklnwlknqwkldnlkwdn
+  // ----------------- Implementations of client commands -----------------------
 
   def respond[T](result: Response[T])(op: => T): Unit =
     respondGradually(result)(Stream(op))
@@ -530,7 +546,7 @@ class Global(settings: Settings, reporter: Reporter)
         case _ =>
       }
       if (stabilizedType(tree) ne null) {
-        debugLog("already attributed")
+        debugLog("already attributed: "+tree.symbol+" "+tree.tpe)
         tree
       } else {
         unit.targetPos = pos
@@ -786,9 +802,10 @@ class Global(settings: Settings, reporter: Reporter)
   protected def waitLoadedTyped(source: SourceFile, response: Response[Tree]) {
     getUnit(source) match {
       case Some(unit) =>
-        if (unit.isUpToDate) response set unit.body
-        else waitLoadedTypeResponses(source) += response
+        if (unit.isUpToDate) { debugLog("already typed"); response set unit.body }
+        else { debugLog("wait for later"); waitLoadedTypeResponses(source) += response }
       case None =>
+        debugLog("load unit and type")
         reloadSources(List(source))
         waitLoadedTyped(source, response)
     }
@@ -803,7 +820,7 @@ class Global(settings: Settings, reporter: Reporter)
         if (keepLoaded) {
           reloadSources(List(source))
           getParsedEnteredNow(source, response)
-        } else if (outOfDate) {
+        } else if (isOutOfDate) {
           getParsedEnteredResponses(source) += response
         } else {
           getParsedEnteredNow(source, response)
