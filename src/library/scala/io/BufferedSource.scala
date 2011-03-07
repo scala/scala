@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.io
 
 import java.io.{ InputStream, BufferedReader, InputStreamReader }
@@ -27,5 +25,20 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     val reader = bufferedReader()
     Iterator continually (codec wrap reader.read()) takeWhile (_ != -1) map (_.toChar)
   }
+
+  class BufferedLineIterator extends Iterator[String] {
+    val bufReader = BufferedSource.this.bufferedReader()
+    var nextLine = bufReader.readLine
+
+    override def hasNext() = nextLine != null
+
+    override def next(): String = {
+      val result = nextLine
+      nextLine = bufReader.readLine
+      result
+    }
+  }
+
+  override def getLines(): Iterator[String] = new BufferedLineIterator
 }
 
