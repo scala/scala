@@ -1011,12 +1011,13 @@ trait Typers extends Modes {
       // "change your code now!" as there are material bugs (which are very unlikely
       // to be fixed) associated with case class inheritance.
       if (!phase.erasedTypes) {
-        for (ancestor <- clazz.ancestors find (_.isCase))
+        for (ancestor <- clazz.ancestors find (_.isCase)) {
           unit.deprecationWarning(clazz.pos, (
-            "case class `%s' has case class ancestor `%s'.  This has been deprecated " +
-            "for unduly complicating both usage and implementation.  You should instead " +
-            "use extractors for pattern matching on non-leaf nodes." ).format(clazz, ancestor)
-          )
+            "case class `%s' has case ancestor `%s'.  Case inheritance has potentially "+
+            "dangerous bugs which are unlikely to be fixed.  You are strongly encouraged to "+
+            "instead use extractors to pattern match on non-leaf nodes."
+          ).format(clazz, ancestor))
+        }
       }
     }
 
