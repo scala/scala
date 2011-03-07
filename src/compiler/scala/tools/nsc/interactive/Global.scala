@@ -27,7 +27,6 @@ class Global(settings: Settings, reporter: Reporter)
      with ContextTrees
      with RichCompilationUnits
      with Picklers {
-self =>
 
   import definitions._
 
@@ -525,6 +524,11 @@ self =>
       parseAndEnter(unit)
       val tree = locateTree(pos)
       debugLog("at pos "+pos+" was found: "+tree.getClass+" "+tree.pos.show)
+      tree match {
+        case Import(expr, _) =>
+          debugLog("import found"+expr.tpe+" "+expr.tpe.members)
+        case _ =>
+      }
       if (stabilizedType(tree) ne null) {
         debugLog("already attributed")
         tree
