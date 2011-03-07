@@ -58,7 +58,25 @@ abstract class InteractiveTest {
     str.lines.filter(!_.startsWith("#")).mkString(" ")
   }
 
+  /** Prepare the settings object. Load the .opts file and adjust all paths from the
+   *  Unix-like syntax to the platform specific syntax. This is necessary so that a
+   *  single .opts file can be used on all platforms.
+   *
+   *  @note Bootclasspath is treated specially. If there is a -bootclasspath option in
+   *        the file, the 'usejavacp' setting is set to false. This ensures that the
+   *        bootclasspath takes precedence over the scala-library used to run the current
+   *        test.
+   */
   def prepareSettings() {
+    import java.io.File._
+    def adjustPaths(paths: settings.PathSetting*) {
+      for (p <- paths) p.value = p.value.map {
+        case '/' => separatorChar
+        case ':' => pathSeparatorChar
+        case c => c
+      }
+    }
+
     // need this so that the classpath comes from what partest
     // instead of scala.home
     settings.usejavacp.value = !argsString.contains("-bootclasspath")
@@ -69,6 +87,7 @@ abstract class InteractiveTest {
         println("error processing arguments (unprocessed: %s)".format(rest))
       case _ => ()
     }
+    adjustPaths(settings.bootclasspath, settings.classpath, settings.javabootclasspath, settings.sourcepath)
   }
 
   protected def printClassPath {
