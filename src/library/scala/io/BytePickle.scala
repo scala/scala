@@ -271,8 +271,8 @@ object BytePickle {
   }
 
   def string: SPU[String] = share(wrap(
-    (a: Array[Byte]) => Codec toUTF8 a mkString,
-    (s: String) => Codec fromUTF8 s,
+    (a: Array[Byte]) => Codec fromUTF8 a mkString,
+    (s: String) => Codec toUTF8 s,
     bytearray
   ))
 

@@ -37,28 +37,28 @@ object UTF8Codec
       case _: IllegalArgumentException  => UNI_REPLACEMENT_BYTES
     }
 
-  @deprecated("Use Codec.fromUTF8 instead")
+  @deprecated("Use Codec.toUTF8 instead")
   def encode(src: Array[Char], from: Int, dst: Array[Byte], to: Int, len: Int): Int = {
-    val bytes = Codec fromUTF8 src.slice(from, from + len)
+    val bytes = Codec toUTF8 src.slice(from, from + len)
     Array.copy(bytes, 0, dst, to, bytes.length)
     bytes.length
   }
 
-  @deprecated("Use Codec.fromUTF8 instead")
+  @deprecated("Use Codec.toUTF8 instead")
   def encode(s: String, dst: Array[Byte], to: Int): Int =
     encode(s.toArray, 0, dst, to, s.length)
 
-  @deprecated("Use Codec.fromUTF8 instead")
-  def encode(s: String): Array[Byte] = Codec fromUTF8 s
-
   @deprecated("Use Codec.toUTF8 instead")
+  def encode(s: String): Array[Byte] = Codec toUTF8 s
+
+  @deprecated("Use Codec.fromUTF8 instead")
   def decode(src: Array[Byte], from: Int, dst: Array[Char], to: Int, len: Int): Int = {
-    val chars = Codec toUTF8 src.slice(from, from + len)
+    val chars = Codec fromUTF8 src.slice(from, from + len)
     Array.copy(chars, 0, dst, to, chars.length)
     chars.length
   }
 
-  @deprecated("Use Codec.toUTF8 instead")
+  @deprecated("Use Codec.fromUTF8 instead")
   def decode(src: Array[Byte], from: Int, len: Int): String =
-    Codec toUTF8 src.slice(from, from + len) mkString
+    Codec fromUTF8 src.slice(from, from + len) mkString
 }

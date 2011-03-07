@@ -33,7 +33,7 @@ trait NameManglers {
       val marker = "$$$$"
 
       val cs = s.toArray
-      val bytes = Codec fromUTF8 cs
+      val bytes = Codec toUTF8 cs
       md5 update bytes
       val md5chars = md5.digest() map (b => (b & 0xFF).toHexString) mkString
 

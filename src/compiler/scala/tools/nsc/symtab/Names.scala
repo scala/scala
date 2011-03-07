@@ -87,7 +87,7 @@ trait Names extends reflect.generic.Names {
     val marker = "$$$$"
 
     val cs = s.toArray
-    val bytes = Codec fromUTF8 cs
+    val bytes = Codec toUTF8 cs
     md5 update bytes
     val md5chars = md5.digest() map (b => (b & 0xFF).toHexString) mkString
 
@@ -120,7 +120,7 @@ trait Names extends reflect.generic.Names {
   /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
   def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName =
-    newTermName(Codec toUTF8 bs.slice(offset, offset + len) mkString)
+    newTermName(Codec fromUTF8 bs.slice(offset, offset + len) mkString)
 
   /** Create a type name from the characters in cs[offset..offset+len-1].
    */
@@ -193,7 +193,7 @@ trait Names extends reflect.generic.Names {
      *  (i.e. maximally 3*length bytes).
      */
     final def copyUTF8(bs: Array[Byte], offset: Int): Int = {
-      val bytes = Codec fromUTF8 chrs.slice(index, index + len)
+      val bytes = Codec toUTF8 chrs.slice(index, index + len)
       compat.Platform.arraycopy(bytes, 0, bs, offset, bytes.length)
       offset + bytes.length
     }

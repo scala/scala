@@ -72,7 +72,7 @@ class ByteArrayReader(content: Array[Byte]) {
   /** read an UTF8 encoded string
    */
   def nextUTF8(len: Int): String = {
-    val cs = scala.io.Codec.toUTF8(buf.slice(bp, bp + len))
+    val cs = scala.io.Codec.fromUTF8(buf.slice(bp, bp + len))
     bp += len
     new String(cs)
   }

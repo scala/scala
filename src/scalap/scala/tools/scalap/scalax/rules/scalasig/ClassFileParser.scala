@@ -64,9 +64,9 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
    * Transforms array subsequence of the current buffer into the UTF8 String and
    * stores and array of bytes for the decompiler
    */
-  def toUTF8StringAndBytes = {
+  def fromUTF8StringAndBytes = {
     val chunk: Array[Byte] = bytes drop pos take length
-    StringBytesPair(io.Codec.toUTF8(chunk).mkString, chunk)
+    StringBytesPair(io.Codec.fromUTF8(chunk).mkString, chunk)
   }
 
   def byte(i : Int) = bytes(pos) & 0xFF
@@ -102,7 +102,7 @@ object ClassFileParser extends ByteCodeReader {
 
   // NOTE currently most constants just evaluate to a string description
   // TODO evaluate to useful values
-  val utf8String = (u2 >> bytes) ^^ add1 { raw => pool => raw.toUTF8StringAndBytes }
+  val utf8String = (u2 >> bytes) ^^ add1 { raw => pool => raw.fromUTF8StringAndBytes }
   val intConstant = u4 ^^ add1 { x => pool => x }
   val floatConstant = bytes(4) ^^ add1 { raw => pool => "Float: TODO" }
   val longConstant = bytes(8) ^^ add2 { raw => pool => raw.toLong }
