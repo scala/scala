@@ -237,6 +237,13 @@ abstract class Erasure extends AddInterfaces
   def javaSig(sym0: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
     def jsig(tp: Type): String = jsig2(false, Nil, tp)
 
+    // Unit in return position is 'V', but that cannot appear elsewhere.
+    def unboxedSig(tpe: Type, isReturnPosition: Boolean) = {
+      val tsym = tpe.typeSymbol
+      if (isReturnPosition && (tsym == UnitClass || sym0.isConstructor)) VOID_TAG
+      else if (isNonUnitValueClass(tsym)) abbrvTag(tsym)
+      else jsig(tpe)
+    }
     def boxedSig(tp: Type) = jsig(squashBoxed(tp))
     def squashBoxed(tp: Type) =
       if (boxedClass contains tp.typeSymbol) ObjectClass.tpe
@@ -328,15 +335,14 @@ abstract class Erasure extends AddInterfaces
           def paramSig(tsym: Symbol) = tsym.name + boundSig(hiBounds(tsym.info.bounds))
 
           val paramString = if (toplevel) tparams map paramSig mkString ("<", "", ">") else ""
-          paramString + jsig(restpe)
+          traceSig.seq("PolyType", Seq(tparams, restpe))(paramString + jsig(restpe))
         case MethodType(params, restpe) =>
-          val ressym = restpe.typeSymbol
-          "(%s)%s".format(
-            params map (x => jsig(x.tpe)) mkString,
-            if (ressym == UnitClass || sym0.isConstructor) VOID_TAG
-            else if (isValueClass(ressym)) abbrvTag(ressym)
-            else jsig(restpe)
-          )
+          traceSig.seq("MethodType", Seq(params, restpe)) {
+            "(%s)%s".format(
+              params map (p => unboxedSig(p.tpe, false)) mkString,
+              unboxedSig(restpe, true)
+            )
+          }
         case RefinedType(parent :: _, decls) =>
           jsig(parent)
         case ClassInfoType(parents, _, _) =>

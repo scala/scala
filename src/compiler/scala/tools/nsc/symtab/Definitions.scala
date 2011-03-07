@@ -714,6 +714,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
+    def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)
