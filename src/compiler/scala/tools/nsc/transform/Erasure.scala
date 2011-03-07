@@ -203,12 +203,16 @@ abstract class Erasure extends AddInterfaces
 
   // only refer to type params that will actually make it into the sig, this excludes:
   // * higher-order type parameters
-  // * parameters of methods
+  // * type parameters appearing in method parameters
   // * type members not visible in an enclosing template
   private def isTypeParameterInSig(sym: Symbol, initialSymbol: Symbol) = (
     !sym.isHigherOrderTypeParameter &&
-    sym.isTypeParameterOrSkolem &&
-    initialSymbol.enclClassChain.exists(sym isNestedIn _)
+    sym.isTypeParameterOrSkolem && (
+      (initialSymbol.enclClassChain.exists(sym isNestedIn _)) ||
+      traceSig.seq("isMethod", Seq(initialSymbol, initialSymbol.typeParams)) {
+        (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
+      }
+    )
   )
 
   // Ensure every '.' in the generated signature immediately follows

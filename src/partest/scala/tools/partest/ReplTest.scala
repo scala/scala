@@ -17,3 +17,13 @@ abstract class ReplTest extends App {
 
   show()
 }
+
+trait SigTest {
+  def returnType[T: Manifest](methodName: String) = (
+    classManifest[T].erasure.getMethods
+    . filter (x => !x.isBridge && x.getName == methodName)
+    . map (_.getGenericReturnType.toString)
+  )
+  def show[T: Manifest](methodName: String) =
+    println(manifest[T].erasure.getName +: returnType[T](methodName).distinct mkString " ")
+}
