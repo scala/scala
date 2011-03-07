@@ -536,7 +536,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
 
         var parents = List(applyContext(atPhase(currentRun.typerPhase)(clazz.tpe)))
-        log("Parent: " + parents.head + ", sym: " + parents.head.typeSymbol)
+        // log("Parent: " + parents.head + ", sym: " + parents.head.typeSymbol)
         if (parents.head.typeSymbol.isTrait)
           parents = parents.head.parents.head :: parents
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
@@ -545,7 +545,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
 
-      log("specializedClass " + cls + ": " + specializedInfoType)
+      // log("specializedClass " + cls + ": " + specializedInfoType)
       atPhase(phase.next)(cls.setInfo(specializedInfoType))
 
       val fullEnv = outerEnv ++ env
@@ -732,16 +732,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     //log("decls before: " + decls1 + ", overloads: " + overloads.mkString("\n"))
 
     var hasSubclasses = false
-    log("For " + clazz + " - " + specializations(clazz.info.typeParams))
+    // log("For " + clazz + " - " + specializations(clazz.info.typeParams))
     for (env <- specializations(clazz.info.typeParams) if satisfiable(env)) {
       val spc = specializedClass(env, decls1)
-      log("entered " + spc + " in " + clazz.owner)
+      // log("entered " + spc + " in " + clazz.owner)
       hasSubclasses = true
       val existing = clazz.owner.info.decl(spc.name)
       // a symbol for the specialized class already exists if there's a classfile for it.
       // keeping both crashes the compiler on test/files/pos/spec-Function1.scala
       if (existing != NoSymbol) {
-        log("removing existing symbol for "+ existing)
+        // log("removing existing symbol for "+ existing)
         clazz.owner.info.decls.unlink(existing)
       }
 
@@ -1227,7 +1227,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       override def traverse(tree: Tree) = tree match {
         case  DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           if (concreteSpecMethods(tree.symbol) || tree.symbol.isConstructor) {
-            //if (settings.debug.value)
+            if (settings.debug.value)
               log("!!! adding body of a defdef %s, symbol %s: %s".format(tree, tree.symbol, rhs))
             body(tree.symbol) = rhs
             //          body(tree.symbol) = tree // whole method
@@ -1237,7 +1237,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case ValDef(mods, name, tpt, rhs) if concreteSpecMethods(tree.symbol) =>
           body(tree.symbol) = rhs
-          log("!!! adding body of a valdef " + tree.symbol + ": " + rhs)
+          // log("!!! adding body of a valdef " + tree.symbol + ": " + rhs)
           //super.traverse(tree)
         case _ =>
           super.traverse(tree)
@@ -1392,7 +1392,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             atOwner(currentOwner)(transformTrees(body ::: specMembers)))
 
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if info.isDefinedAt(symbol) =>
-          log("--> method: " + ddef + " in " + ddef.symbol.owner + ", " + info(symbol))
+          // log("--> method: " + ddef + " in " + ddef.symbol.owner + ", " + info(symbol))
           if (symbol.isConstructor) {
 
             val t = atOwner(symbol) {

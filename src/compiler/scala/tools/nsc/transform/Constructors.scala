@@ -80,17 +80,18 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           sym.owner == clazz &&
           !(sym.isGetter && sym.accessed.isVariable) &&
           !sym.isSetter
+        private def possiblySpecialized(s: Symbol) = specializeTypes.specializedTypeVars(s).nonEmpty
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List()) =>
             // references to parameter accessor methods of own class become references to parameters
             // outer accessors become references to $outer parameter
-            if (isParamRef(tree.symbol))
+            if (isParamRef(tree.symbol) && !possiblySpecialized(tree.symbol))
               gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
             else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
               gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
             else
               super.transform(tree)
-          case Select(This(_), _) if (isParamRef(tree.symbol)) =>
+          case Select(This(_), _) if (isParamRef(tree.symbol) && !possiblySpecialized(tree.symbol)) =>
             // references to parameter accessor field of own class become references to parameters
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
