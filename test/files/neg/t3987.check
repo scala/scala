@@ -1,0 +1,6 @@
+t3987.scala:11: error: type mismatch;
+ found   : Gox
+ required: Test.GoxZed
+    val y: GoxZed = x
+                    ^
+one error found
