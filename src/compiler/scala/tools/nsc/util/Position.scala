@@ -132,8 +132,8 @@ trait Position {
   def focusEnd = this
 
   /** Does this position include the given position `pos`.
-   *  This holds if this is a range position and its range [start..end]
-   *  is the same or covers the range of the given position.
+   *  This holds if `this` is a range position and its range [start..end]
+   *  is the same or covers the range of the given position, which may or may not be a range position.
    */
   def includes(pos: Position) = false
 
