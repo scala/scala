@@ -107,6 +107,26 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   implicit def mkOrderingOps(lhs: T): Ops = new Ops(lhs)
 }
 
+trait ExtraOrderingImplicits {
+  /** Not in the standard scope due to the potential for divergence:
+   *  For instance implicitly[Ordering[Any]] diverges in its presence.
+   */
+  implicit def SeqDerived[CC[X] <: collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+    new Ordering[CC[T]] {
+      def compare(x: CC[T], y: CC[T]): Int = {
+        val xe = x.iterator
+        val ye = y.iterator
+
+        while (xe.hasNext && ye.hasNext) {
+          val res = ord.compare(xe.next, ye.next)
+          if (res != 0) return res
+        }
+
+        Ordering.Boolean.compare(xe.hasNext, ye.hasNext)
+      }
+    }
+}
+
 trait LowPriorityOrderingImplicits {
   /** This would conflict with all the nice implicit Orderings
    *  available, but thanks to the magic of prioritized implicits
@@ -124,6 +144,13 @@ trait LowPriorityOrderingImplicits {
 
 object Ordering extends LowPriorityOrderingImplicits {
   def apply[T](implicit ord: Ordering[T]) = ord
+
+  /** An object for implicits which for one reason or another we
+   *  aren't ready to put in the default scope.
+   */
+  object Implicits extends ExtraOrderingImplicits {
+
+  }
 
   def fromLessThan[T](cmp: (T, T) => Boolean): Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = if (cmp(x, y)) -1 else if (cmp(y, x)) 1 else 0
@@ -222,21 +249,6 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit def Iterable[T](implicit ord: Ordering[T]): Ordering[Iterable[T]] =
     new Ordering[Iterable[T]] {
       def compare(x: Iterable[T], y: Iterable[T]): Int = {
-        val xe = x.iterator
-        val ye = y.iterator
-
-        while (xe.hasNext && ye.hasNext) {
-          val res = ord.compare(xe.next, ye.next)
-          if (res != 0) return res
-        }
-
-        Boolean.compare(xe.hasNext, ye.hasNext)
-      }
-    }
-
-  implicit def SeqDerived[CC[X] <: collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
-    new Ordering[CC[T]] {
-      def compare(x: CC[T], y: CC[T]): Int = {
         val xe = x.iterator
         val ye = y.iterator
 
