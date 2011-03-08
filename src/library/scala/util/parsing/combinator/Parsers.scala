@@ -12,6 +12,7 @@ package scala.util.parsing.combinator
 import scala.util.parsing.input._
 import scala.collection.mutable.ListBuffer
 import scala.annotation.tailrec
+import annotation.migration
 
 // TODO: better error handling (labelling like parsec's <?>)
 
@@ -204,8 +205,10 @@ trait Parsers {
 
     // no filter yet, dealing with zero is tricky!
 
-    def append[U >: T](p: => Parser[U]): Parser[U]
-      = Parser{ in => this(in) append p(in)}
+    @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+    def append[U >: T](p0: => Parser[U]): Parser[U] = { lazy val p = p0 // lazy argument
+      Parser{ in => this(in) append p(in)}
+    }
 
 
     // the operator formerly known as +++, ++, &, but now, behold the venerable ~
@@ -217,22 +220,28 @@ trait Parsers {
      * <p> `p ~ q' succeeds if `p' succeeds and `q' succeeds on the input
      *          left over by `p'.</p>
      *
-     * @param q a parser that will be executed after `p' (this parser) succeeds
+     * @param q a parser that will be executed after `p' (this parser) succeeds -- evaluated at most once, and only when necessary
      * @return a `Parser' that -- on success -- returns a `~' (like a Pair, but easier to pattern match on)
      *         that contains the result of `p' and that of `q'.
      *         The resulting parser fails if either `p' or `q' fails.
      */
-    def ~ [U](p: => Parser[U]): Parser[~[T, U]] = (for(a <- this; b <- p) yield new ~(a,b)).named("~")
+    @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+    def ~ [U](q: => Parser[U]): Parser[~[T, U]] = { lazy val p = q // lazy argument
+      (for(a <- this; b <- p) yield new ~(a,b)).named("~")
+    }
 
     /** A parser combinator for sequential composition which keeps only the right result
      *
      * <p> `p ~> q' succeeds if `p' succeeds and `q' succeeds on the input
      *           left over by `p'.</p>
      *
-     * @param q a parser that will be executed after `p' (this parser) succeeds
+     * @param q a parser that will be executed after `p' (this parser) succeeds -- evaluated at most once, and only when necessary
      * @return a `Parser' that -- on success -- returns the result of `q'.
      */
-    def ~> [U](p: => Parser[U]): Parser[U] = (for(a <- this; b <- p) yield b).named("~>")
+    @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+    def ~> [U](q: => Parser[U]): Parser[U] = { lazy val p = q // lazy argument
+      (for(a <- this; b <- p) yield b).named("~>")
+    }
 
     /** A parser combinator for sequential composition which keeps only the left result
      *
@@ -241,10 +250,13 @@ trait Parsers {
      *
      * <b>Note:</b> &lt;~ has lower operator precedence than ~ or ~>.
      *
-     * @param q a parser that will be executed after `p' (this parser) succeeds
+     * @param q a parser that will be executed after `p' (this parser) succeeds -- evaluated at most once, and only when necessary
      * @return a `Parser' that -- on success -- returns the result of `p'.
      */
-    def <~ [U](p: => Parser[U]): Parser[T] = (for(a <- this; b <- p) yield a).named("<~")
+    @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+    def <~ [U](q: => Parser[U]): Parser[T] = { lazy val p = q // lazy argument
+      (for(a <- this; b <- p) yield a).named("<~")
+    }
 
      /* not really useful: V cannot be inferred because Parser is covariant in first type parameter (V is always trivially Nothing)
     def ~~ [U, V](q: => Parser[U])(implicit combine: (T, U) => V): Parser[V] = new Parser[V] {
@@ -286,10 +298,12 @@ trait Parsers {
      *          If `p' and `q' both succeed, the parser that consumed the most
      *          characters accepts.</p>
      *
-     * @param q a parser that accepts if p consumes less characters.
+     * @param q0 a parser that accepts if p consumes less characters. -- evaluated at most once, and only when necessary
      * @return a `Parser' that returns the result of the parser consuming the most characters (out of `p' and `q').
      */
-    def ||| [U >: T](q: => Parser[U]): Parser[U] = new Parser[U] {
+    @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+    def ||| [U >: T](q0: => Parser[U]): Parser[U] = new Parser[U] {
+      lazy val q = q0 // lazy argument
       def apply(in: Input) = {
         val res1 = Parser.this(in)
         val res2 = q(in)
@@ -316,7 +330,17 @@ trait Parsers {
     def ^^ [U](f: T => U): Parser[U] = map(f).named(toString+"^^")
 
 
-    def ^^^ [U](r: U): Parser[U] = ^^ (x => r)
+    /** A parser combinator that changes a successful result into the specified value.
+     *
+     * <p>`p ^^^ v' succeeds if `p' succeeds; discards its result, and returns `v` instead.</p>
+     * @param v The new result for the parser, evaluated at most once (if `p` succeeds), not evaluated at all if `p` fails.
+     * @return a parser that has the same behaviour as the current parser, but whose successful result is `v`
+     */
+    @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+    def ^^^ [U](v: => U): Parser[U] =  new Parser[U] {
+      lazy val v0 = v // lazy argument
+      def apply(in: Input) = Parser.this(in) map (x => v0)
+    }.named(toString+"^^^")
 
     /** A parser combinator for partial function application
      *
@@ -556,11 +580,13 @@ trait Parsers {
    *     (the result is a `List' of the consecutive results of `f' and `p')</p>
    *
    * @param first a `Parser' that parses the first piece of input
-   * @param p a `Parser' that is to be applied successively to the rest of the input (if any)
+   * @param p0 a `Parser' that is to be applied successively to the rest of the input (if any) -- evaluated at most once, and only when necessary
    * @return A parser that returns a list of results produced by first applying `f' and then
    *         repeatedly `p' to the input (it only succeeds if `f' matches).
    */
-  def rep1[T](first: => Parser[T], p: => Parser[T]): Parser[List[T]] = Parser { in =>
+  @migration(2, 9, "As of 2.9, the p0 call-by-name arguments is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
+  def rep1[T](first: => Parser[T], p0: => Parser[T]): Parser[List[T]] = Parser { in =>
+    lazy val p = p0 // lazy argument
     val elems = new ListBuffer[T]
 
     def continue(in: Input): ParseResult[List[T]] = {
