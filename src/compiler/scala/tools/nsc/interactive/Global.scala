@@ -128,15 +128,18 @@ class Global(settings: Settings, reporter: Reporter)
   /** Is a background compiler run needed?
    *  Note: outOfDate is true as long as there is a background compile scheduled or going on.
    */
-  private var outOfDate = false
+  var outOfDate = false
 
-  protected[interactive] def isOutOfDate =
-    outOfDate || waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty
-
-  protected[interactive] def setUpToDate() = outOfDate = false
+  protected[interactive] def setUpToDate() = {
+    if (waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty)
+      // need another cycle to treat those
+      newTyperRun()
+    else
+      outOfDate = false
+  }
 
   def demandNewCompilerRun() = {
-    if (isOutOfDate) throw FreshRunReq // cancel background compile
+    if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
 
@@ -353,7 +356,7 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Create a new presentation compiler runner.
    */
-  protected[interactive] def newRunnerThread(): Thread = {
+  private[interactive] def newRunnerThread(): Thread = {
     threadId += 1
     compileRunner = new PresentationCompilerThread(this, threadId)
     compileRunner.start()
@@ -362,7 +365,7 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Compile all loaded source files in the order given by `allSources`.
    */
-  protected[interactive] def backgroundCompile() {
+  private[interactive] def backgroundCompile() {
     informIDE("Starting new presentation compiler type checking pass")
     reporter.reset()
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
@@ -400,7 +403,7 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Service all pending getParsedEntered requests
    */
-  def serviceParsedEntered() {
+  private def serviceParsedEntered() {
     var atOldRun = true
     for ((source, rs) <- getParsedEnteredResponses; r <- rs) {
       if (atOldRun) { newTyperRun(); atOldRun = false }
@@ -410,7 +413,7 @@ class Global(settings: Settings, reporter: Reporter)
   }
 
   /** Reset unit to unloaded state */
-  protected def reset(unit: RichCompilationUnit): Unit = {
+  private def reset(unit: RichCompilationUnit): Unit = {
     unit.depends.clear()
     unit.defined.clear()
     unit.synthetics.clear()
@@ -423,7 +426,7 @@ class Global(settings: Settings, reporter: Reporter)
   }
 
   /** Parse unit and create a name index, unless this has already been done before */
-  protected def parseAndEnter(unit: RichCompilationUnit): Unit =
+  private def parseAndEnter(unit: RichCompilationUnit): Unit =
     if (unit.status == NotLoaded) {
       debugLog("parsing: "+unit)
       currentTyperRun.compileLate(unit)
@@ -434,7 +437,7 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Make sure unit is typechecked
    */
-  protected def typeCheck(unit: RichCompilationUnit) {
+  private def typeCheck(unit: RichCompilationUnit) {
     debugLog("type checking: "+unit)
     parseAndEnter(unit)
     unit.status = PartiallyChecked
@@ -820,7 +823,7 @@ class Global(settings: Settings, reporter: Reporter)
         if (keepLoaded) {
           reloadSources(List(source))
           getParsedEnteredNow(source, response)
-        } else if (isOutOfDate) {
+        } else if (outOfDate) {
           getParsedEnteredResponses(source) += response
         } else {
           getParsedEnteredNow(source, response)
@@ -829,7 +832,7 @@ class Global(settings: Settings, reporter: Reporter)
   }
 
   /** Parses and enteres given source file, stroring parse tree in response */
-  protected def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
+  private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
     respond(response) {
       onUnitOf(source) { unit =>
         parseAndEnter(unit)
