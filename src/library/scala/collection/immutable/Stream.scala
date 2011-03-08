@@ -324,6 +324,22 @@ self =>
     else tail.foldLeft(op(z, head))(op)
   }
 
+  /** Stream specialization of reduceLeft which allows GC to collect
+   *  along the way.
+   */
+  override final def reduceLeft[B >: A](f: (B, A) => B): B = {
+    if (this.isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
+    else {
+      var reducedRes: B = this.head
+      var left = this.tail
+      while (!left.isEmpty) {
+        reducedRes = f(reducedRes, left.head)
+        left = left.tail
+      }
+      reducedRes
+    }
+  }
+
   /** Returns all the elements of this stream that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
    *
