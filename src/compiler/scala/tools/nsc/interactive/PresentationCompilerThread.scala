@@ -17,10 +17,9 @@ class PresentationCompilerThread(var compiler: Global, threadId: Int) extends Th
       while (true) {
         compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true })
         compiler.pollForWork(compiler.NoPosition)
-        while (compiler.outOfDate) {
+        while (compiler.isOutOfDate) {
           try {
             compiler.backgroundCompile()
-            compiler.setUpToDate()
           } catch {
             case FreshRunReq =>
               compiler.debugLog("fresh run req caught, starting new pass")
@@ -37,7 +36,6 @@ class PresentationCompilerThread(var compiler: Global, threadId: Int) extends Th
         compiler = null
       case ex =>
         compiler.log.flush()
-        compiler.outOfDate = false
         compiler.newRunnerThread()
 
         ex match {

@@ -86,15 +86,25 @@ class Global(settings: Settings, reporter: Reporter)
    */
   protected val toBeRemoved = new ArrayBuffer[AbstractFile] with SynchronizedBuffer[AbstractFile]
 
+  type ResponseMap = MultiHashMap[SourceFile, Response[Tree]]
+
   /** A map that associates with each abstract file the set of responses that are waiting
    *  (via waitLoadedTyped) for the unit associated with the abstract file to be loaded and completely typechecked.
    */
-  protected val waitLoadedTypeResponses = new MultiHashMap[SourceFile, Response[Tree]]
+  protected val waitLoadedTypeResponses = new ResponseMap
 
   /** A map that associates with each abstract file the set of responses that ware waiting
    *  (via build) for the unit associated with the abstract file to be parsed and entered
    */
-  protected var getParsedEnteredResponses = new MultiHashMap[SourceFile, Response[Tree]]
+  protected var getParsedEnteredResponses = new ResponseMap
+
+  private def cleanResponses(rmap: ResponseMap): Unit = {
+    val staleSources = rmap.keys.toList filter { getUnit(_).isEmpty }
+    for (source <- staleSources) {
+      for (r <- rmap(source)) r raise new NoSuchUnitError(source.file)
+      rmap -= source
+    }
+  }
 
   /** The compilation unit corresponding to a source file
    *  if it does not yet exist create a new one atomically
@@ -128,15 +138,9 @@ class Global(settings: Settings, reporter: Reporter)
   /** Is a background compiler run needed?
    *  Note: outOfDate is true as long as there is a background compile scheduled or going on.
    */
-  var outOfDate = false
+  private var outOfDate = false
 
-  protected[interactive] def setUpToDate() = {
-    if (waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty)
-      // need another cycle to treat those
-      newTyperRun()
-    else
-      outOfDate = false
-  }
+  def isOutOfDate: Boolean = outOfDate
 
   def demandNewCompilerRun() = {
     if (outOfDate) throw FreshRunReq // cancel background compile
@@ -365,12 +369,14 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Compile all loaded source files in the order given by `allSources`.
    */
-  private[interactive] def backgroundCompile() {
+  private[interactive] final def backgroundCompile() {
     informIDE("Starting new presentation compiler type checking pass")
     reporter.reset()
+
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
     allSources = allSources filter (s => unitOfFile contains (s.file))
 
+    // ensure all loaded units are parsed
     for (s <- allSources; unit <- getUnit(s)) {
       checkForMoreWork(NoPosition)
       if (!unit.isUpToDate && unit.status != JustParsed) reset(unit) // reparse previously typechecked units.
@@ -378,7 +384,7 @@ class Global(settings: Settings, reporter: Reporter)
       serviceParsedEntered()
     }
 
-    /** Sleep window */
+    // sleep window
     if (afterTypeDelay > 0 && lastWasReload) {
       val limit = System.currentTimeMillis() + afterTypeDelay
       while (System.currentTimeMillis() < limit) {
@@ -387,6 +393,7 @@ class Global(settings: Settings, reporter: Reporter)
       }
     }
 
+    // ensure all loaded units are typechecked
     for (s <- allSources; unit <- getUnit(s)) {
       if (!unit.isUpToDate) typeCheck(unit)
       else debugLog("already up to date: "+unit)
@@ -395,10 +402,19 @@ class Global(settings: Settings, reporter: Reporter)
       serviceParsedEntered()
     }
 
-    informIDE("Everything is now up to date")
+    // clean out stale waiting responses
+    cleanResponses(waitLoadedTypeResponses)
+    cleanResponses(getParsedEnteredResponses)
 
-    for ((source, rs) <- waitLoadedTypeResponses; r <- rs) r raise new NoSuchUnitError(source.file)
-    waitLoadedTypeResponses.clear()
+    // wind down
+    if (waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty) {
+      // need another cycle to treat those
+      newTyperRun()
+      backgroundCompile()
+    } else {
+      outOfDate = false
+      informIDE("Everything is now up to date")
+    }
   }
 
   /** Service all pending getParsedEntered requests
@@ -806,7 +822,7 @@ class Global(settings: Settings, reporter: Reporter)
     getUnit(source) match {
       case Some(unit) =>
         if (unit.isUpToDate) { debugLog("already typed"); response set unit.body }
-        else { debugLog("wait for later"); waitLoadedTypeResponses(source) += response }
+        else { debugLog("wait for later"); outOfDate = true; waitLoadedTypeResponses(source) += response }
       case None =>
         debugLog("load unit and type")
         reloadSources(List(source))
