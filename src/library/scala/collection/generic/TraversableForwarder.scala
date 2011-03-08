@@ -12,30 +12,19 @@ import scala.collection._
 import mutable.{ Buffer, StringBuilder }
 import immutable.{ List, Stream }
 
-/** <p>
- *    This trait implements a forwarder for traversable objects. It forwards
- *    all calls to a different iterable object, except for
- *  </p>
- *  <ul>
- *    <li><code>toString</code>, <code>hashCode</code>, <code>equals</code>,
- *      <code>stringPrefix</code>
- *    </li>
- *    <li><code>newBuilder</code>, <code>view</code></li>
- *    <li>all calls creating a new iterable object of the same kind</li>
- *  </ul>
- *  <p>
- *    The above methods are forwarded by subclass
- *    <a href="TraversableProxy.html" target="ContentFrame">
- *    <code>TraversableProxy</code></a>.
- *  </p>
+/** This trait implements a forwarder for traversable objects. It forwards
+ *  all calls to a different traversable, except for:
+ {{{
+  toString, hashCode, equals, stringPrefix, newBuilder, view
+ }}}
+ *  All calls creating a new traversable of the same kind.
  *
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   2.8
  */
 trait TraversableForwarder[+A] extends Traversable[A] {
-
-  /** The iterable object to which calls are forwarded */
+  /** The traversable object to which calls are forwarded. */
   protected def underlying: Traversable[A]
 
   override def foreach[B](f: A => B): Unit = underlying.foreach(f)

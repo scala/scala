@@ -67,6 +67,7 @@ extends SeqView[A, Coll]
   }
   protected override def newPrepended[B >: A](elem: B): Transformed[B] = new Prepended[B] { protected[this] val fst = elem }
 
+  override def stringPrefix = "StreamView"
 }
 
 

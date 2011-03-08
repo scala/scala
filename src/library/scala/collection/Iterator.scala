@@ -284,15 +284,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
   /** Selects first ''n'' values of this iterator.
    *  @param  n    the number of values to take
    *  @return an iterator producing only of the first `n` values of this iterator, or else the
-   *          whole iterator, if it produces less than `n` values.
+   *          whole iterator, if it produces fewer than `n` values.
    */
-  def take(n: Int): Iterator[A] = new Iterator[A] {
-    private var remaining = n
-    def hasNext = remaining > 0 && self.hasNext
-    def next(): A =
-      if (hasNext) { remaining -= 1; self.next() }
-      else empty.next()
-  }
+  def take(n: Int): Iterator[A] = slice(0, n)
 
   /** Advances this iterator past the first ''n'' elements,
    *  or the length of the iterator, whichever is smaller.
@@ -301,14 +295,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @return  an iterator which produces all values of the current iterator, except
    *           it omits the first `n` values.
    */
-  def drop(n: Int): Iterator[A] = {
-    @tailrec
-    def loop(left: Int): Iterator[A] =
-      if (left > 0 && hasNext) { next; loop(left - 1) }
-      else this
-
-    loop(n)
-  }
+  def drop(n: Int): Iterator[A] = slice(n, Int.MaxValue)
 
   /** Creates an iterator returning an interval of the values produced by this iterator.
    *  @param from   the index of the first element in this iterator which forms part of the slice.
@@ -316,7 +303,24 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @return an iterator which advances this iterator past the first `from` elements using `drop`,
    *  and then takes `until - from` elements, using `take`.
    */
-  def slice(from: Int, until: Int): Iterator[A] = drop(from).take(until - from)
+  def slice(from: Int, until: Int): Iterator[A] = {
+    val lo = from max 0
+    var toDrop = lo
+    while (toDrop > 0 && self.hasNext) {
+      self.next
+      toDrop -= 1
+    }
+    new Iterator[A] {
+      private var remaining = until - lo
+      def hasNext = remaining > 0 && self.hasNext
+      def next(): A =
+        if (remaining > 0) {
+          remaining -= 1
+          self.next()
+        }
+        else empty.next()
+    }
+  }
 
   /** Creates a new iterator that maps all produced values of this iterator
    *  to new values using a transformation function.

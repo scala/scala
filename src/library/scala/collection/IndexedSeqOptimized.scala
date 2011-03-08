@@ -102,17 +102,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
   }
 
   override /*IterableLike*/
-  def slice(from: Int, until: Int): Repr = {
-    var i = from max 0
-    val end = until min length
-    val b = newBuilder
-    b.sizeHint(end - i)
-    while (i < end) {
-      b += this(i)
-      i += 1
-    }
-    b.result
-  }
+  def slice(from: Int, until: Int): Repr = sliceWithKnownSize(from max 0, until min length)
 
   override /*IterableLike*/
   def head: A = if (isEmpty) super.head else this(0)

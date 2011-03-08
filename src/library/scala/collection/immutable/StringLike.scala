@@ -57,6 +57,14 @@ self =>
 
   override def mkString = toString
 
+  override def slice(from: Int, until: Int): Repr = {
+    val start = from max 0
+    val end   = until min length
+
+    if (start >= end) newBuilder.result
+    else newBuilder ++= toString.substring(start, end) result
+  }
+
   /** Return the current string concatenated `n` times.
    */
   def * (n: Int): String = {

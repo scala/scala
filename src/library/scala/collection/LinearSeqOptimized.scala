@@ -183,13 +183,21 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
 
   override /*IterableLike*/
   def slice(from: Int, until: Int): Repr = {
+    var these: Repr = repr
+    var count = from max 0
+    if (until <= count)
+      return newBuilder.result
+
     val b = newBuilder
-    var i = from
-    var these = this drop from
-    while (i < until && !these.isEmpty) {
+    var sliceElems = until - count
+    while (these.nonEmpty && count > 0) {
+      these = these.tail
+      count -= 1
+    }
+    while (these.nonEmpty && sliceElems > 0) {
+      sliceElems -= 1
       b += these.head
       these = these.tail
-      i += 1
     }
     b.result
   }

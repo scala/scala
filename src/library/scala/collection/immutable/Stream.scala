@@ -14,8 +14,7 @@ package immutable
 import generic._
 import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
-
-
+import Stream.cons
 
 /** The class `Stream` implements lazy lists where elements
  *  are only evaluated when they are needed. Here is an example:
@@ -78,7 +77,7 @@ self =>
    *  @return       The stream containing elements of this stream and the traversable object.
    */
   def append[B >: A](rest: => TraversableOnce[B]): Stream[B] =
-    if (isEmpty) rest.toStream else new Stream.Cons(head, tail append rest)
+    if (isEmpty) rest.toStream else cons(head, tail append rest)
 
   /** Forces evaluation of the whole stream and returns it. */
   def force: Stream[A] = {
@@ -143,7 +142,7 @@ self =>
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
     if (isStreamBuilder(bf)) asThat(
       if (isEmpty) that.toStream
-      else new Stream.Cons(head, asStream[A](tail ++ that))
+      else cons(head, asStream[A](tail ++ that))
     )
     else super.++(that)(bf)
 
@@ -155,7 +154,7 @@ self =>
   override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     if (isStreamBuilder(bf)) asThat(
       if (isEmpty) Stream(z)
-      else new Stream.Cons(z, asStream[B](tail.scanLeft(op(z, head))(op)))
+      else cons(z, asStream[B](tail.scanLeft(op(z, head))(op)))
     )
     else super.scanLeft(z)(op)(bf)
 
@@ -169,7 +168,7 @@ self =>
   override final def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     if (isStreamBuilder(bf)) asThat(
       if (isEmpty) Stream.Empty
-      else new Stream.Cons(f(head), asStream[B](tail map f))
+      else cons(f(head), asStream[B](tail map f))
     )
     else super.map(f)(bf)
   }
@@ -246,7 +245,7 @@ self =>
       def tailMap = asStream[B](tail withFilter p map f)
       if (isStreamBuilder(bf)) asThat(
         if (isEmpty) Stream.Empty
-        else if (p(head)) new Stream.Cons(f(head), tailMap)
+        else if (p(head)) cons(f(head), tailMap)
         else tailMap
       )
       else super.map(f)(bf)
@@ -362,7 +361,7 @@ self =>
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
     if (isStreamBuilder(bf)) asThat(
       if (this.isEmpty || that.isEmpty) Stream.Empty
-      else new Stream.Cons((this.head, that.head), asStream[(A1, B)](this.tail zip that.tail))
+      else cons((this.head, that.head), asStream[(A1, B)](this.tail zip that.tail))
     )
     else super.zip(that)(bf)
 
@@ -410,6 +409,8 @@ self =>
 
   override def toString = super.mkString(stringPrefix + "(", ", ", ")")
 
+  override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
+
   /** Returns the <code>n</code> first elements of this stream, or else the whole
    *  stream, if it has less than <code>n</code> elements.
    *
@@ -417,27 +418,20 @@ self =>
    *  @return the <code>n</code> first elements of this stream.
    */
   override def take(n: Int): Stream[A] =
-    if (n <= 0 || isEmpty) Stream.Empty
-    else new Stream.Cons(head, if (n == 1) Stream.empty else tail take (n-1))
+    if (n <= 0 || isEmpty) Stream.empty
+    else if (n == 1) cons(head, Stream.empty)
+    else cons(head, tail take n-1)
 
-  override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
-
-  /** A substream starting at index `from`
-   *  and extending up to (but not including) index `until`.
-   *
-   *  @note This is equivalent to (but possibly more efficient than)
-   *  c.drop(from).take(to - from)
+  /** A substream starting at index `from` and extending up to (but not including)
+   *  index `until`.
    *
    *  @param start   The index of the first element of the returned subsequence
    *  @param end     The index of the element following the returned subsequence
-   *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
-   *          or <code>length &lt; from + len<code>
-   *  @note  Might return different results for different runs, unless this iterable is ordered
    */
-  override def slice(start: Int, end: Int): Stream[A] = {
-    var len = end
-    if (start > 0) len -= start
-    drop(start) take len
+  override def slice(from: Int, until: Int): Stream[A] = {
+    val lo = from max 0
+    if (until <= lo || isEmpty) Stream.empty
+    else this drop lo take (until - lo)
   }
 
   /** The stream without its last element.
@@ -446,7 +440,7 @@ self =>
   override def init: Stream[A] =
     if (isEmpty) super.init
     else if (tail.isEmpty) Stream.Empty
-    else new Stream.Cons(head, tail.init)
+    else cons(head, tail.init)
 
   /** Returns the rightmost <code>n</code> elements from this iterable.
    *  @param n the number of elements to take
@@ -469,7 +463,7 @@ self =>
    *  @param p the test predicate.
    */
   override def takeWhile(p: A => Boolean): Stream[A] =
-    if (!isEmpty && p(head)) new Stream.Cons(head, tail takeWhile p)
+    if (!isEmpty && p(head)) cons(head, tail takeWhile p)
     else Stream.Empty
 
   /** Returns the longest suffix of this iterable whose first element
@@ -488,7 +482,7 @@ self =>
    */
   override def distinct: Stream[A] =
     if (isEmpty) this
-    else new Stream.Cons(head, tail.filter(head !=).distinct)
+    else cons(head, tail.filter(head !=).distinct)
 
   /** Returns a new sequence of given length containing the elements of this sequence followed by zero
    *  or more occurrences of given elements.
@@ -496,7 +490,7 @@ self =>
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     def loop(len: Int, these: Stream[A]): Stream[B] =
       if (these.isEmpty) Stream.fill(len)(elem)
-      else new Stream.Cons(these.head, loop(len - 1, these.tail))
+      else cons(these.head, loop(len - 1, these.tail))
 
     if (isStreamBuilder(bf)) asThat(loop(len, this))
     else super.padTo(len, elem)(bf)
@@ -519,7 +513,7 @@ self =>
   override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
       if (!t.isEmpty)
-        new Stream.Cons(t.head, flatten1(t.tail))
+        cons(t.head, flatten1(t.tail))
       else
         tail.flatten
 
@@ -593,7 +587,7 @@ object Stream extends SeqFactory[Stream] {
    *  to streams.
    */
   class ConsWrapper[A](tl: => Stream[A]) {
-    def #::(hd: A): Stream[A] = new Stream.Cons(hd, tl)
+    def #::(hd: A): Stream[A] = cons(hd, tl)
     def #:::(prefix: Stream[A]): Stream[A] = prefix append tl
   }
 
@@ -702,11 +696,11 @@ object Stream extends SeqFactory[Stream] {
   }
 
   private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {
-    new Stream.Cons(stream.head, stream.tail filter p)
+    cons(stream.head, stream.tail filter p)
   }
 
   private[immutable] def collectedTail[A, B, That](stream: Stream[A], pf: PartialFunction[A, B], bf: CanBuildFrom[Stream[A], B, That]) = {
-    new Stream.Cons(pf(stream.head), stream.tail.collect(pf)(bf).asInstanceOf[Stream[B]])
+    cons(pf(stream.head), stream.tail.collect(pf)(bf).asInstanceOf[Stream[B]])
   }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.

@@ -92,33 +92,13 @@ self =>
     iterator.reduceRight(op)
   override /*TraversableLike*/ def toIterable: Iterable[A] =
     thisCollection
-
   override /*TraversableLike*/ def head: A =
-    if (isEmpty) throw new NoSuchElementException
-    else iterator.next
-
-  override /*TraversableLike*/ def take(n: Int): Repr = {
-    val b = newBuilder
-    b.sizeHintBounded(n, this)
-    var i = 0
-    val it = iterator
-    while (i < n && it.hasNext) {
-      b += it.next
-      i += 1
-    }
-    b.result
-  }
+    iterator.next
 
   override /*TraversableLike*/ def slice(from: Int, until: Int): Repr = {
-    val b = newBuilder
-    b.sizeHintBounded(until - from, this)
-    var i = from
-    val it = iterator drop from
-    while (i < until && it.hasNext) {
-      b += it.next
-      i += 1
-    }
-    b.result
+    val lo = from max 0
+    if (until <= lo) newBuilder.result
+    else newBuilder ++= (iterator drop lo take (until - lo)) result
   }
 
   override /*TraversableLike*/ def takeWhile(p: A => Boolean): Repr = {

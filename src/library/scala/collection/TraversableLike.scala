@@ -563,19 +563,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return a $coll consisting only of the first `n` elements of this $coll,
    *          or else the whole $coll, if it has less than `n` elements.
    */
-  def take(n: Int): Repr = {
-    val b = newBuilder
-    b.sizeHintBounded(n, this)
-    var i = 0
-    breakable {
-      for (x <- this) {
-        if (i >= n) break
-        b += x
-        i += 1
-      }
-    }
-    b.result
-  }
+  def take(n: Int): Repr = sliceWithKnownSize(0, n)
 
   /** Selects all elements except first ''n'' ones.
    *  $orderDependent
@@ -583,40 +571,63 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
    *          empty $coll, if this $coll has less than `n` elements.
    */
-  def drop(n: Int): Repr = {
-    val b = newBuilder
-    if (n >= 0) b.sizeHint(this, -n)
-    var i = 0
-    for (x <- this) {
-      if (i >= n) b += x
-      i += 1
-    }
-    b.result
-  }
+  def drop(n: Int): Repr =
+    if (n <= 0) newBuilder ++= thisCollection result
+    else sliceWithKnownDelta(n, Int.MaxValue, -n)
 
-  /** Selects an interval of elements.
-   *
-   *  Note: `c.slice(from, to)`  is equivalent to (but possibly more efficient than)
-   *  `c.drop(from).take(to - from)`
+  /** Selects an interval of elements.  The returned collection is made up
+   *  of all elements `x` which satisfy the invariant:
+   *  {{{
+   *    from <= indexOf(x) < until
+   *  }}}
    *  $orderDependent
    *
-   *  @param from   the index of the first returned element in this $coll.
-   *  @param until  the index one past the last returned element in this $coll.
-   *  @return  a $coll containing the elements starting at index `from`
-   *           and extending up to (but not including) index `until` of this $coll.
+   *  @param from   the lowest index to include from this $coll.
+   *  @param until  the highest index to EXCLUDE from this $coll.
+   *  @return  a $coll containing the elements greater than or equal to
+   *           index `from` extending up to (but not including) index `until`
+   *           of this $coll.
    */
-  def slice(from: Int, until: Int): Repr = {
-    val b = newBuilder
-    b.sizeHintBounded(until - from, this)
+  def slice(from: Int, until: Int): Repr = sliceWithKnownBound(from max 0, until)
+
+  // Precondition: from >= 0, until > 0, builder already configured for building.
+  private[this] def sliceInternal(from: Int, until: Int, b: Builder[A, Repr]): Repr = {
     var i = 0
     breakable {
       for (x <- this) {
         if (i >= from) b += x
         i += 1
-        if (i == until) break
+        if (i >= until) break
       }
     }
     b.result
+  }
+  // Precondition: from >= 0
+  private[scala] def sliceWithKnownDelta(from: Int, until: Int, delta: Int): Repr = {
+    val b = newBuilder
+    if (until <= from) b.result
+    else {
+      b.sizeHint(this, delta)
+      sliceInternal(from, until, b)
+    }
+  }
+  // Precondition: from >= 0
+  private[scala] def sliceWithKnownSize(from: Int, until: Int): Repr = {
+    val b = newBuilder
+    if (until <= from) b.result
+    else {
+      b.sizeHint(until - from)
+      sliceInternal(from, until, b)
+    }
+  }
+  // Precondition: from >= 0
+  private[scala] def sliceWithKnownBound(from: Int, until: Int): Repr = {
+    val b = newBuilder
+    if (until <= from) b.result
+    else {
+      b.sizeHintBounded(until - from, this)
+      sliceInternal(from, until, b)
+    }
   }
 
   /** Takes longest prefix of elements that satisfy a predicate.

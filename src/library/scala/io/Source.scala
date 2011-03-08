@@ -199,7 +199,7 @@ abstract class Source extends Iterator[Char] {
    */
   @deprecated("Use a collections method such as getLines().toIndexedSeq for random access.")
   def getLine(line: Int): String = lineNum(line)
-  private def lineNum(line: Int): String = getLines() drop (line - 1) next
+  private def lineNum(line: Int): String = getLines() drop (line - 1) take 1 mkString
 
   class LineIterator() extends Iterator[String] {
     private[this] val sb = new StringBuilder

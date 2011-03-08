@@ -171,12 +171,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     these
   }
 
-  override def slice(start: Int, end: Int): List[A] = {
-    var len = end
-    if (start > 0) len -= start
-    drop(start) take len
-  }
-
   override def takeRight(n: Int): List[A] = {
     @tailrec
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {

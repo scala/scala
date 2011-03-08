@@ -139,17 +139,6 @@ extends IndexedSeq[Int]
     drop(1)
   }
 
-  /** Creates a new range contained in the specified slice of this range.
-   *
-   *  $doesNotUseBuilders
-   *
-   *  @param from   the start of the slice.
-   *  @param until  the end of the slice.
-   *  @return       a new range consisting of all the elements of this range contained in the specified slice.
-   */
-  final override def slice(from: Int, until: Int): Range =
-    this drop from take (until - from)
-
   // Counts how many elements from the start meet the given test.
   private def skipCount(p: Int => Boolean): Int = {
     var current = start
