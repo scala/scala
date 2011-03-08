@@ -122,6 +122,9 @@ import annotation.unchecked.uncheckedVariance
  *  `newCombiner` and `seq`. Having an implicit combiner factory requires extending this trait in addition, as
  *  well as providing a companion object, as with regular collections.
  *
+ *  Method `size` is implemented as a constant time operation for parallel collections, and parallel collection
+ *  operations rely on this assumption.
+ *
  *  @author Aleksandar Prokopec
  *  @since 2.9
  *
