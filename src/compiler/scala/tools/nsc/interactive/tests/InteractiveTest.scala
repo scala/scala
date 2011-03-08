@@ -70,7 +70,7 @@ abstract class InteractiveTest {
   def prepareSettings() {
     import java.io.File._
     def adjustPaths(paths: settings.PathSetting*) {
-      for (p <- paths) p.value = p.value.map {
+      for (p <- paths if argsString.contains(p.name)) p.value = p.value.map {
         case '/' => separatorChar
         case ':' => pathSeparatorChar
         case c => c
