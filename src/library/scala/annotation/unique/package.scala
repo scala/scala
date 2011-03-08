@@ -26,6 +26,16 @@ package object unique {
     def captured: A = x
   }
 
+  /* Swaps an object stored in a unique field with another unique object.
+   *
+   * The unique object that is the new value of the unique field becomes
+   * unusable by the caller.
+   *
+   * @param  to   the unique field that is the target of the swap
+   * @param  from the unique object that is moved into the unique field
+   * @return      the unique object that was the value of the unique
+   *              field before the swap
+   */
   def swap[A, B <: A](to: A, from: B): A = to
 
 }
