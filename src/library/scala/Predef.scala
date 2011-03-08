@@ -338,7 +338,8 @@ object Predef extends LowPriorityImplicits {
    * @note we need a new type constructor `<:<` and evidence `conforms`, as
    * reusing `Function2` and `identity` leads to ambiguities in case of type errors (any2stringadd is inferred)
    * to constrain any abstract type T that's in scope in a method's argument list (not just the method's own type parameters)
-   * simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `U <: T`)
+   * simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `L <:< T`,
+   * where L is the required lower bound).
    * in part contributed by Jason Zaugg
    */
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
