@@ -433,15 +433,20 @@ self =>
       shortened filter { _.remaining > 0 }
     }
   }
-
-  override def take(n: Int) = new Taken(n)
-
-  override def slice(from1: Int, until1: Int) = {
-    val it = new Taken(until1)
-    var todrop = from1
-    while (todrop > 0 && it.hasNext) it.next
+  /** To lower "virtual class" boilerplate tax, implement creation
+   *  in method and override this method in the subclass.
+   */
+  private[collection] def newTaken(until: Int): Taken = new Taken(until)
+  private[collection] def newSliceInternal[U <: Taken](it: U, from1: Int): U = {
+    var count = from1
+    while (count > 0 && it.hasNext) {
+      it.next
+      count -= 1
+    }
     it
   }
+  override def take(n: Int): ParIterableIterator[T] = newTaken(n)
+  override def slice(from1: Int, until1: Int): ParIterableIterator[T] = newSliceInternal(newTaken(until1), from1)
 
   class Mapped[S](f: T => S) extends ParIterableIterator[S] {
     var signalDelegate = self.signalDelegate
@@ -525,7 +530,6 @@ extends ParIterableIterator[T]
 {
 self =>
   def dup: ParSeqIterator[T]
-
   def split: Seq[ParSeqIterator[T]]
   def psplit(sizes: Int*): Seq[ParSeqIterator[T]]
 
@@ -545,15 +549,9 @@ self =>
     override def split: Seq[ParSeqIterator[T]] = super.split.asInstanceOf[Seq[ParSeqIterator[T]]]
     def psplit(sizes: Int*): Seq[ParSeqIterator[T]] = takeSeq(self.psplit(sizes: _*)) { (p, n) => p.take(n) }
   }
-
-  override def take(n: Int) = new Taken(n)
-
-  override def slice(from1: Int, until1: Int) = {
-    val it = new Taken(until1)
-    var todrop = from1
-    while (todrop > 0 && it.hasNext) it.next
-    it
-  }
+  override private[collection] def newTaken(until: Int): Taken = new Taken(until)
+  override def take(n: Int): ParSeqIterator[T] = newTaken(n)
+  override def slice(from1: Int, until1: Int): ParSeqIterator[T] = newSliceInternal(newTaken(until1), from1)
 
   class Mapped[S](f: T => S) extends super.Mapped[S](f) with ParSeqIterator[S] {
     override def dup = super.dup.asInstanceOf[ParSeqIterator[S]]
