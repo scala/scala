@@ -99,10 +99,15 @@ class Global(settings: Settings, reporter: Reporter)
   protected var getParsedEnteredResponses = new ResponseMap
 
   private def cleanResponses(rmap: ResponseMap): Unit = {
-    val staleSources = rmap.keys.toList filter { getUnit(_).isEmpty }
-    for (source <- staleSources) {
-      for (r <- rmap(source)) r raise new NoSuchUnitError(source.file)
-      rmap -= source
+    for ((source, rs) <- rmap.toList) {
+      for (r <- rs) {
+        if (getUnit(source).isEmpty)
+          r raise new NoSuchUnitError(source.file)
+        if (r.isComplete)
+          rmap(source) -= r
+      }
+      if (rmap(source).isEmpty)
+        rmap -= source
     }
   }
 
