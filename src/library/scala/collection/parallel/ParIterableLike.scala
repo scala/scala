@@ -455,6 +455,18 @@ self =>
     executeAndWaitResult(new Max(ord, parallelIterator) mapResult { _.get }).asInstanceOf[T]
   }
 
+  override def maxBy[S](f: T => S)(implicit cmp: Ordering[S]): T = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.maxBy")
+
+    reduce((x, y) => if (cmp.gteq(f(x), f(y))) x else y)
+  }
+
+  override def minBy[S](f: T => S)(implicit cmp: Ordering[S]): T = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.maxBy")
+
+    reduce((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
+  }
+
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
     executeAndWaitResult(new Map[S, That](f, pbf, parallelIterator) mapResult { _.result })
   } otherwise super.map(f)(bf)
