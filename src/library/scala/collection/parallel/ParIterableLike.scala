@@ -462,7 +462,7 @@ self =>
   }
 
   override def minBy[S](f: T => S)(implicit cmp: Ordering[S]): T = {
-    if (isEmpty) throw new UnsupportedOperationException("empty.maxBy")
+    if (isEmpty) throw new UnsupportedOperationException("empty.minBy")
 
     reduce((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
   }
