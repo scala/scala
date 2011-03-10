@@ -42,7 +42,7 @@ import generic._
 abstract class NumericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
-extends IndexedSeq[T] with Parallelizable[parallel.immutable.ParNumericRange[T]] with Serializable {
+extends IndexedSeq[T] with Serializable {
   /** Note that NumericRange must be invariant so that constructs
    *  such as "1L to 10 by 5" do not infer the range type as AnyVal.
    */
@@ -56,8 +56,6 @@ extends IndexedSeq[T] with Parallelizable[parallel.immutable.ParNumericRange[T]]
   override lazy val last: T =
     if (length == 0) Nil.last
     else locationAfterN(length - 1)
-
-  def par = new parallel.immutable.ParNumericRange(this)
 
   /** Create a new range with the start and end values of this range and
    *  a new `step`.
