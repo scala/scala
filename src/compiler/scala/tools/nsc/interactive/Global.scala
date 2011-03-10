@@ -86,7 +86,12 @@ class Global(settings: Settings, reporter: Reporter)
    */
   protected val toBeRemoved = new ArrayBuffer[AbstractFile] with SynchronizedBuffer[AbstractFile]
 
-  type ResponseMap = MultiHashMap[SourceFile, Response[Tree]]
+  class ResponseMap extends MultiHashMap[SourceFile, Response[Tree]] {
+    override def += (binding: (SourceFile, Set[Response[Tree]])) = {
+      assert(interruptsEnabled, "delayed operation within an ask")
+      super.+=(binding)
+    }
+  }
 
   /** A map that associates with each abstract file the set of responses that are waiting
    *  (via waitLoadedTyped) for the unit associated with the abstract file to be loaded and completely typechecked.
