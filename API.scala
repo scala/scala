@@ -1,5 +1,5 @@
 /* sbt -- Simple Build Tool
- * Copyright 2008, 2009, 2010 Mark Harrah
+ * Copyright 2008, 2009, 2010, 2011 Mark Harrah
  */
 package xsbt
 
@@ -73,7 +73,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	//   we pass a thunk, whose class is loaded by the interface class loader (this class's loader)
 	//   SafeLazy ensures that once the value is forced, the thunk is nulled out and so 
 	//   references to the thunk's classes are not retained.  Specifically, it allows the interface classes
-	//   (those in this subproject) can be garbage collected after compilation. 
+	//   (those in this subproject) to be garbage collected after compilation. 
 	private[this] val safeLazy = Class.forName("xsbti.SafeLazy").getMethod("apply", classOf[xsbti.F0[_]])
 	private def lzy[S <: AnyRef](s: => S): xsbti.api.Lazy[S] =
 	{
@@ -347,8 +347,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			case x => error("Unknown type parameter info: " + x.getClass)
 		}
 	}
-	private def selfType(in: Symbol, s: Symbol): xsbti.api.Type =
-		if(s.thisSym eq s) Constants.normalSelf else processType(in, s.thisSym.typeOfThis)
+	private def selfType(in: Symbol, s: Symbol): xsbti.api.Type  =  processType(in, s.thisSym.typeOfThis)
 
 	private def classLike(in: Symbol, c: Symbol): ClassLike = classLikeCache.getOrElseUpdate( (in,c), mkClassLike(in, c))
 	private def mkClassLike(in: Symbol, c: Symbol): ClassLike =
@@ -393,7 +392,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		val emptyPath = new xsbti.api.Path(Array())
 		val thisPath = new xsbti.api.This
 		val emptyType = new xsbti.api.EmptyType
-		val normalSelf = emptyType
 	}
 	private abstract class TopLevelTraverser extends Traverser
 	{
@@ -435,5 +433,10 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(annots.isEmpty) processType(in, at.underlying) else annotated(in, annots, at.underlying)
 	}
 	private def fullName(s: Symbol): String = nameString(s)
-	private def simpleName(s: Symbol): String = s.simpleName.toString.trim
+	private def simpleName(s: Symbol): String =
+	{
+		val n = s.originalName
+		val n2 = if(n.toString == "<init>") n else n.decode
+		n2.toString.trim
+	}
 }
