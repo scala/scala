@@ -262,9 +262,10 @@ self =>
     } else patch_sequential(from, patch, replaced)
   }
 
-  private def patch_sequential[U >: T, That](from: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+  private def patch_sequential[U >: T, That](fromarg: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
+    val from = 0 max fromarg
     val b = bf(repr)
-    val repl = r min (length - from)
+    val repl = (r min (length - from)) max 0
     val pits = parallelIterator.psplit(from, repl, length - from - repl)
     b ++= pits(0)
     b ++= patch.iterator
