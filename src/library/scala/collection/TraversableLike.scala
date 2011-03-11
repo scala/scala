@@ -563,7 +563,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return a $coll consisting only of the first `n` elements of this $coll,
    *          or else the whole $coll, if it has less than `n` elements.
    */
-  def take(n: Int): Repr = sliceWithKnownSize(0, n)
+  def take(n: Int): Repr = slice(0, n)
 
   /** Selects all elements except first ''n'' ones.
    *  $orderDependent
@@ -608,15 +608,6 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     if (until <= from) b.result
     else {
       b.sizeHint(this, delta)
-      sliceInternal(from, until, b)
-    }
-  }
-  // Precondition: from >= 0
-  private[scala] def sliceWithKnownSize(from: Int, until: Int): Repr = {
-    val b = newBuilder
-    if (until <= from) b.result
-    else {
-      b.sizeHint(until - from)
       sliceInternal(from, until, b)
     }
   }

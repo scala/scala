@@ -6,24 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel
 
-
-
-
-
-import scala.collection.SeqView
-import scala.collection.SeqViewLike
 import scala.collection.Parallel
-import scala.collection.generic.CanBuildFrom
+import scala.collection.{ SeqView, SeqViewLike }
+import scala.collection.generic.{ CanBuildFrom, SliceInterval }
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.immutable.ParRange
-
-
-
-
-
 
 /** A template view of a non-strict view of parallel sequence.
  *
@@ -57,7 +46,7 @@ self =>
   }
 
   trait Sliced extends super[SeqViewLike].Sliced with super[ParIterableViewLike].Sliced with Transformed[T] {
-    override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
+    // override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
     override def parallelIterator = self.parallelIterator.psplit(from, until - from)(1)
   }
 
@@ -107,7 +96,7 @@ self =>
 
   /* wrapper virtual ctors */
 
-  protected override def newSliced(f: Int, u: Int): Transformed[T] = new Sliced { val from = f; val until = u }
+  protected override def newSliced(_endpoints: SliceInterval): Transformed[T] = new { val endpoints = _endpoints } with Sliced
   protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = {
     // we only append if `that` is a parallel sequence, i.e. it has a precise splitter
     if (that.isParSeq) new Appended[U] { val rest = that }
@@ -125,19 +114,19 @@ self =>
     val thatElem = _thatElem
   }
   protected override def newReversed: Transformed[T] = new Reversed { }
-  protected override def newPatched[U >: T](_from: Int, _patch: Seq[U], _replaced: Int): Transformed[U] = new Patched[U] {
+  protected override def newPatched[U >: T](_from: Int, _patch: Seq[U], _replaced: Int): Transformed[U] = new {
     val from = _from;
     val patch = _patch;
     val replaced = _replaced
-  }
+  } with Patched[U]
   protected override def newPrepended[U >: T](elem: U): Transformed[U] = unsupported
 
   /* operation overrides */
 
   /* sliced */
-  override def slice(from: Int, until: Int): This = newSliced(from, until).asInstanceOf[This]
-  override def take(n: Int): This = newSliced(0, n).asInstanceOf[This]
-  override def drop(n: Int): This = newSliced(n, length).asInstanceOf[This]
+  override def slice(from: Int, until: Int): This = newSliced(SliceInterval(from, until)).asInstanceOf[This]
+  override def take(n: Int): This = newSliced(SliceInterval(0, n)).asInstanceOf[This]
+  override def drop(n: Int): This = newSliced(SliceInterval(n, length)).asInstanceOf[This]
   override def splitAt(n: Int): (This, This) = (take(n), drop(n))
 
   /* appended */

@@ -269,33 +269,8 @@ self =>
       new StreamWithFilter(x => p(x) && q(x))
   }
 
-  /** See #3273 and test case run/bug3273 for motivation. */
-  final class StreamIterator extends Iterator[A] {
-    // A call-by-need cell.
-    class LazyCell(st: => Stream[A]) {
-      lazy val v = st
-    }
-
-    private var these = new LazyCell(self)
-    def hasNext: Boolean = these.v.nonEmpty
-    def next: A =
-      if (isEmpty) Iterator.empty.next
-      else {
-        val cur    = these.v
-        val result = cur.head
-        these = new LazyCell(cur.tail)
-        result
-      }
-    override def toStream = {
-      val result = these.v
-      these = new LazyCell(Stream.empty)
-      result
-    }
-    override def toList   = toStream.toList
-  }
-
   /** A lazier Iterator than LinearSeqLike's. */
-  override def iterator: Iterator[A] = new StreamIterator
+  override def iterator: Iterator[A] = new StreamIterator(self)
 
   /** Apply the given function <code>f</code> to each element of this linear sequence
    *  (while respecting the order of the elements).
@@ -392,21 +367,12 @@ self =>
     b
   }
 
+  override def mkString(sep: String): String = mkString("", sep, "")
+  override def mkString: String = mkString("")
   override def mkString(start: String, sep: String, end: String): String = {
     this.force
     super.mkString(start, sep, end)
   }
-
-  override def mkString(sep: String): String = {
-    this.force
-    super.mkString(sep)
-  }
-
-  override def mkString: String = {
-    this.force
-    super.mkString
-  }
-
   override def toString = super.mkString(stringPrefix + "(", ", ", ")")
 
   override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
@@ -421,6 +387,10 @@ self =>
     if (n <= 0 || isEmpty) Stream.empty
     else if (n == 1) cons(head, Stream.empty)
     else cons(head, tail take n-1)
+
+  @tailrec final override def drop(n: Int): Stream[A] =
+    if (n <= 0 || isEmpty) this
+    else tail drop n-1
 
   /** A substream starting at index `from` and extending up to (but not including)
    *  index `until`.
@@ -534,6 +504,31 @@ self =>
 
 }
 
+/** See #3273 and test case run/bug3273 for motivation. */
+final class StreamIterator[+A](self: Stream[A]) extends Iterator[A] {
+  // A call-by-need cell.
+  class LazyCell(st: => Stream[A]) {
+    lazy val v = st
+  }
+
+  private var these = new LazyCell(self)
+  def hasNext: Boolean = these.v.nonEmpty
+  def next: A =
+    if (isEmpty) Iterator.empty.next
+    else {
+      val cur    = these.v
+      val result = cur.head
+      these = new LazyCell(cur.tail)
+      result
+    }
+  override def toStream = {
+    val result = these.v
+    these = new LazyCell(Stream.empty)
+    result
+  }
+  override def toList   = toStream.toList
+}
+
 /**
  * The object <code>Stream</code> provides helper functions
  * to manipulate streams.
@@ -644,7 +639,7 @@ object Stream extends SeqFactory[Stream] {
    *  @param f     the function that's repeatedly applied
    *  @return      the stream returning the infinite sequence of values `start, f(start), f(f(start)), ...`
    */
-  def iterate[A](start: A)(f: A => A): Stream[A] = new Cons(start, iterate(f(start))(f))
+  def iterate[A](start: A)(f: A => A): Stream[A] = cons(start, iterate(f(start))(f))
 
   override def iterate[A](start: A, len: Int)(f: A => A): Stream[A] =
     iterate(start)(f) take len
@@ -658,7 +653,7 @@ object Stream extends SeqFactory[Stream] {
    * @return the stream starting at value <code>start</code>.
    */
   def from(start: Int, step: Int): Stream[Int] =
-    new Cons(start, from(start+step, step))
+    cons(start, from(start+step, step))
 
   /**
    * Create an infinite stream starting at <code>start</code>
@@ -676,14 +671,14 @@ object Stream extends SeqFactory[Stream] {
    * @param elem the element composing the resulting stream
    * @return the stream containing an infinite number of elem
    */
-  def continually[A](elem: => A): Stream[A] = new Cons(elem, continually(elem))
+  def continually[A](elem: => A): Stream[A] = cons(elem, continually(elem))
 
   override def fill[A](n: Int)(elem: => A): Stream[A] =
-    if (n <= 0) Empty else new Cons(elem, fill(n-1)(elem))
+    if (n <= 0) Empty else cons(elem, fill(n-1)(elem))
 
   override def tabulate[A](n: Int)(f: Int => A): Stream[A] = {
     def loop(i: Int): Stream[A] =
-      if (i >= n) Empty else new Cons(f(i), loop(i+1))
+      if (i >= n) Empty else cons(f(i), loop(i+1))
     loop(0)
   }
 
@@ -692,7 +687,7 @@ object Stream extends SeqFactory[Stream] {
     import num._
 
     if (if (step < zero) start <= end else end <= start) Empty
-    else new Cons(start, range(start + step, end, step))
+    else cons(start, range(start + step, end, step))
   }
 
   private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {

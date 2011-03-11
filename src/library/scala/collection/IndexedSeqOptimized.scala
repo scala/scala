@@ -28,7 +28,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
   def isEmpty: Boolean = { length == 0 }
 
   override /*IterableLike*/
-  def foreach[U](f: A =>  U): Unit = {
+  def foreach[U](f: A => U): Unit = {
     var i = 0
     val len = length
     while (i < len) { f(this(i)); i += 1 }
@@ -102,7 +102,20 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
   }
 
   override /*IterableLike*/
-  def slice(from: Int, until: Int): Repr = sliceWithKnownSize(from max 0, until min length)
+  def slice(from: Int, until: Int): Repr = {
+    val lo    = from max 0
+    val hi    = until min length
+    val elems = hi - lo
+    val b     = newBuilder
+    b.sizeHint(elems max 0)
+
+    var i = lo
+    while (i < hi) {
+      b += self(i)
+      i += 1
+    }
+    b.result
+  }
 
   override /*IterableLike*/
   def head: A = if (isEmpty) super.head else this(0)
@@ -164,7 +177,6 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
       j += 1
     }
   }
-
 
   // Overridden methods from Seq
 

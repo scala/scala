@@ -1,0 +1,112 @@
+
+** drop 20 -> take 10 -> slice(1, 5) **
+
+-------------------
+toIndexedSeq -> toIterator -> toStream        Stream(22, ?)                  22 23 24 25
+toIndexedSeq -> toIterator -> view            StreamView(...)                22 23 24 25
+toIndexedSeq -> toStream -> toIterator        non-empty iterator             22 23 24 25
+toIndexedSeq -> toStream -> view              StreamView(...)                22 23 24 25
+toIndexedSeq -> view -> toIterator            non-empty iterator             22 23 24 25
+toIndexedSeq -> view -> toStream              Stream(22, ?)                  22 23 24 25
+toIterator -> toIndexedSeq -> toStream        Stream(22, ?)                  22 23 24 25
+toIterator -> toIndexedSeq -> view            SeqView(...)                   22 23 24 25
+toIterator -> toStream -> toIndexedSeq        Vector(22, 23, 24, 25)         22 23 24 25
+toIterator -> toStream -> view                StreamView(...)                22 23 24 25
+toIterator -> view -> toIndexedSeq            Vector(22, 23, 24, 25)         22 23 24 25
+toIterator -> view -> toStream                Stream(22, ?)                  22 23 24 25
+toStream -> toIndexedSeq -> toIterator        non-empty iterator             22 23 24 25
+toStream -> toIndexedSeq -> view              SeqView(...)                   22 23 24 25
+toStream -> toIterator -> toIndexedSeq        Vector(22, 23, 24, 25)         22 23 24 25
+toStream -> toIterator -> view                StreamView(...)                22 23 24 25
+toStream -> view -> toIndexedSeq              Vector(22, 23, 24, 25)         22 23 24 25
+toStream -> view -> toIterator                non-empty iterator             22 23 24 25
+view -> toIndexedSeq -> toIterator            non-empty iterator             22 23 24 25
+view -> toIndexedSeq -> toStream              Stream(22, ?)                  22 23 24 25
+view -> toIterator -> toIndexedSeq            Vector(22, 23, 24, 25)         22 23 24 25
+view -> toIterator -> toStream                Stream(22, ?)                  22 23 24 25
+view -> toStream -> toIndexedSeq              Vector(22, 23, 24, 25)         22 23 24 25
+view -> toStream -> toIterator                non-empty iterator             22 23 24 25
+
+** take 20 -> drop 10 -> slice(1, 5) **
+
+-------------------
+toIndexedSeq -> toIterator -> toStream        Stream(12, ?)                  12 13 14 15
+toIndexedSeq -> toIterator -> view            StreamView(...)                12 13 14 15
+toIndexedSeq -> toStream -> toIterator        non-empty iterator             12 13 14 15
+toIndexedSeq -> toStream -> view              StreamView(...)                12 13 14 15
+toIndexedSeq -> view -> toIterator            non-empty iterator             12 13 14 15
+toIndexedSeq -> view -> toStream              Stream(12, ?)                  12 13 14 15
+toIterator -> toIndexedSeq -> toStream        Stream(12, ?)                  12 13 14 15
+toIterator -> toIndexedSeq -> view            SeqView(...)                   12 13 14 15
+toIterator -> toStream -> toIndexedSeq        Vector(12, 13, 14, 15)         12 13 14 15
+toIterator -> toStream -> view                StreamView(...)                12 13 14 15
+toIterator -> view -> toIndexedSeq            Vector(12, 13, 14, 15)         12 13 14 15
+toIterator -> view -> toStream                Stream(12, ?)                  12 13 14 15
+toStream -> toIndexedSeq -> toIterator        non-empty iterator             12 13 14 15
+toStream -> toIndexedSeq -> view              SeqView(...)                   12 13 14 15
+toStream -> toIterator -> toIndexedSeq        Vector(12, 13, 14, 15)         12 13 14 15
+toStream -> toIterator -> view                StreamView(...)                12 13 14 15
+toStream -> view -> toIndexedSeq              Vector(12, 13, 14, 15)         12 13 14 15
+toStream -> view -> toIterator                non-empty iterator             12 13 14 15
+view -> toIndexedSeq -> toIterator            non-empty iterator             12 13 14 15
+view -> toIndexedSeq -> toStream              Stream(12, ?)                  12 13 14 15
+view -> toIterator -> toIndexedSeq            Vector(12, 13, 14, 15)         12 13 14 15
+view -> toIterator -> toStream                Stream(12, ?)                  12 13 14 15
+view -> toStream -> toIndexedSeq              Vector(12, 13, 14, 15)         12 13 14 15
+view -> toStream -> toIterator                non-empty iterator             12 13 14 15
+
+** slice(20, 40) -> drop 10 -> take 5 **
+
+-------------------
+toIndexedSeq -> toIterator -> toStream        Stream(31, ?)                  31 32 33 34 35
+toIndexedSeq -> toIterator -> view            StreamView(...)                31 32 33 34 35
+toIndexedSeq -> toStream -> toIterator        non-empty iterator             31 32 33 34 35
+toIndexedSeq -> toStream -> view              StreamView(...)                31 32 33 34 35
+toIndexedSeq -> view -> toIterator            non-empty iterator             31 32 33 34 35
+toIndexedSeq -> view -> toStream              Stream(31, ?)                  31 32 33 34 35
+toIterator -> toIndexedSeq -> toStream        Stream(31, ?)                  31 32 33 34 35
+toIterator -> toIndexedSeq -> view            SeqView(...)                   31 32 33 34 35
+toIterator -> toStream -> toIndexedSeq        Vector(31, 32, 33, 34, 35)     31 32 33 34 35
+toIterator -> toStream -> view                StreamView(...)                31 32 33 34 35
+toIterator -> view -> toIndexedSeq            Vector(31, 32, 33, 34, 35)     31 32 33 34 35
+toIterator -> view -> toStream                Stream(31, ?)                  31 32 33 34 35
+toStream -> toIndexedSeq -> toIterator        non-empty iterator             31 32 33 34 35
+toStream -> toIndexedSeq -> view              SeqView(...)                   31 32 33 34 35
+toStream -> toIterator -> toIndexedSeq        Vector(31, 32, 33, 34, 35)     31 32 33 34 35
+toStream -> toIterator -> view                StreamView(...)                31 32 33 34 35
+toStream -> view -> toIndexedSeq              Vector(31, 32, 33, 34, 35)     31 32 33 34 35
+toStream -> view -> toIterator                non-empty iterator             31 32 33 34 35
+view -> toIndexedSeq -> toIterator            non-empty iterator             31 32 33 34 35
+view -> toIndexedSeq -> toStream              Stream(31, ?)                  31 32 33 34 35
+view -> toIterator -> toIndexedSeq            Vector(31, 32, 33, 34, 35)     31 32 33 34 35
+view -> toIterator -> toStream                Stream(31, ?)                  31 32 33 34 35
+view -> toStream -> toIndexedSeq              Vector(31, 32, 33, 34, 35)     31 32 33 34 35
+view -> toStream -> toIterator                non-empty iterator             31 32 33 34 35
+
+** slice(20, 40) -> take 10 -> drop 5 **
+
+-------------------
+toIndexedSeq -> toIterator -> toStream        Stream(26, ?)                  26 27 28 29 30
+toIndexedSeq -> toIterator -> view            StreamView(...)                26 27 28 29 30
+toIndexedSeq -> toStream -> toIterator        non-empty iterator             26 27 28 29 30
+toIndexedSeq -> toStream -> view              StreamView(...)                26 27 28 29 30
+toIndexedSeq -> view -> toIterator            non-empty iterator             26 27 28 29 30
+toIndexedSeq -> view -> toStream              Stream(26, ?)                  26 27 28 29 30
+toIterator -> toIndexedSeq -> toStream        Stream(26, ?)                  26 27 28 29 30
+toIterator -> toIndexedSeq -> view            SeqView(...)                   26 27 28 29 30
+toIterator -> toStream -> toIndexedSeq        Vector(26, 27, 28, 29, 30)     26 27 28 29 30
+toIterator -> toStream -> view                StreamView(...)                26 27 28 29 30
+toIterator -> view -> toIndexedSeq            Vector(26, 27, 28, 29, 30)     26 27 28 29 30
+toIterator -> view -> toStream                Stream(26, ?)                  26 27 28 29 30
+toStream -> toIndexedSeq -> toIterator        non-empty iterator             26 27 28 29 30
+toStream -> toIndexedSeq -> view              SeqView(...)                   26 27 28 29 30
+toStream -> toIterator -> toIndexedSeq        Vector(26, 27, 28, 29, 30)     26 27 28 29 30
+toStream -> toIterator -> view                StreamView(...)                26 27 28 29 30
+toStream -> view -> toIndexedSeq              Vector(26, 27, 28, 29, 30)     26 27 28 29 30
+toStream -> view -> toIterator                non-empty iterator             26 27 28 29 30
+view -> toIndexedSeq -> toIterator            non-empty iterator             26 27 28 29 30
+view -> toIndexedSeq -> toStream              Stream(26, ?)                  26 27 28 29 30
+view -> toIterator -> toIndexedSeq            Vector(26, 27, 28, 29, 30)     26 27 28 29 30
+view -> toIterator -> toStream                Stream(26, ?)                  26 27 28 29 30
+view -> toStream -> toIndexedSeq              Vector(26, 27, 28, 29, 30)     26 27 28 29 30
+view -> toStream -> toIterator                non-empty iterator             26 27 28 29 30

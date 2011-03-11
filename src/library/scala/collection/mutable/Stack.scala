@@ -16,7 +16,6 @@ import collection.immutable.{List, Nil}
 import collection.Iterator
 import annotation.migration
 
-
 /** Factory object for the `mutable.Stack` class.
  *
  *  $factoryInfo

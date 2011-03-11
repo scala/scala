@@ -39,7 +39,8 @@ import scala.annotation.tailrec
  *  @define willNotTerminateInf
  *  @define mayNotTerminateInf
  */
-trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
+trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] {
+  self =>
 
   override protected[this] def thisCollection: IndexedSeq[A] = this.asInstanceOf[IndexedSeq[A]]
   override protected[this] def toCollection(repr: Repr): IndexedSeq[A] = repr.asInstanceOf[IndexedSeq[A]]
@@ -48,35 +49,41 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
    *  multiple `take`, `drop`, and `slice` operations on this iterator are bunched
    *  together for better efficiency.
    */
+  // pre: start >= 0, end <= self.length
   @SerialVersionUID(1756321872811029277L)
   protected class Elements(start: Int, end: Int) extends BufferedIterator[A] with Serializable {
-    private var i = start
+    private def initialSize = if (end <= start) 0 else end - start
+    private var index = start
+    private def available = (end - index) max 0
 
-    def hasNext: Boolean = i < end
+    def hasNext: Boolean = index < end
 
-    def next: A =
-      if (i < end) {
-        val x = self(i)
-        i += 1
-        x
-      } else Iterator.empty.next
+    def next: A = {
+      if (index >= end)
+        Iterator.empty.next
 
-    def head =
-      if (i < end) self(i) else Iterator.empty.next
+      val x = self(index)
+      index += 1
+      x
+    }
 
-    /** $super
-     *  '''Note:''' `drop` is overridden to enable fast searching in the middle of indexed sequences.
-     */
+    def head = {
+      if (index >= end)
+        Iterator.empty.next
+
+      self(index)
+    }
+
     override def drop(n: Int): Iterator[A] =
-      if (n > 0) new Elements(i + n, end) else this
-
-    /** $super
-     *  '''Note:''' `take` is overridden to be symmetric to `drop`.
-     */
+      if (n <= 0) new Elements(index, end)
+      else if (index + n >= end) new Elements(end, end)
+      else new Elements(index + n, end)
     override def take(n: Int): Iterator[A] =
-      if (n <= 0) Iterator.empty.buffered
-      else if (i + n < end) new Elements(i, i + n)
-      else this
+      if (n <= 0) Iterator.empty
+      else if (n <= available) new Elements(index, index + n)
+      else new Elements(index, end)
+    override def slice(from: Int, until: Int): Iterator[A] =
+      this take until drop from
   }
 
   override /*IterableLike*/
@@ -88,19 +95,5 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
     copyToBuffer(result)
     result
   }
-
-
-/*
-  override /*SeqLike*/
-  def view = new IndexedSeqView[A, Repr] {
-    protected lazy val underlying = self.repr
-    override def iterator = self.iterator
-    override def length = self.length
-    override def apply(idx: Int) = self.apply(idx)
-  }
-
-  override /*SeqLike*/
-  def view(from: Int, until: Int) = view.slice(from, until)
-*/
 }
 

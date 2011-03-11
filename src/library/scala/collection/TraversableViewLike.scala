@@ -6,15 +6,28 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import generic._
-import mutable.{Builder, ArrayBuffer}
+import mutable.{ Builder, ArrayBuffer }
 import TraversableView.NoBuilder
 import annotation.migration
 
+trait ViewMkString[+A] {
+  self: Traversable[A] =>
+
+  protected[this] def thisSeq: Seq[A] = new ArrayBuffer[A] ++= self result
+
+  // Have to overload all three to work around #4299.  The overload
+  // is because mkString should force a view but toString should not.
+  override def mkString: String = mkString("")
+  override def mkString(sep: String): String = mkString("", sep, "")
+  override def mkString(start: String, sep: String, end: String): String = {
+    thisSeq.addString(new StringBuilder(), start, sep, end).toString
+  }
+  override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
+    b append start append "..." append end
+}
 
 /** A template trait for non-strict views of traversable collections.
  *  $traversableviewinfo
@@ -46,13 +59,18 @@ import annotation.migration
 trait TraversableViewLike[+A,
                           +Coll,
                           +This <: TraversableView[A, Coll] with TraversableViewLike[A, Coll, This]]
-  extends Traversable[A] with TraversableLike[A, This] {
-self =>
+  extends Traversable[A] with TraversableLike[A, This] with ViewMkString[A]
+{
+  self =>
 
   override protected[this] def newBuilder: Builder[A, This] =
     throw new UnsupportedOperationException(this+".newBuilder")
 
   protected def underlying: Coll
+  protected[this] def viewIdentifier: String = ""
+  protected[this] def viewIdString: String = ""
+  override def stringPrefix = "TraversableView"
+  def viewToString = stringPrefix + viewIdString + "(...)"
 
   def force[B >: A, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
     val b = bf(underlying)
@@ -65,26 +83,35 @@ self =>
    *  ViewLike class.
    */
   trait Transformed[+B] extends TraversableView[B, Coll] {
+    def foreach[U](f: B => U): Unit
+
     lazy val underlying = self.underlying
-    override def toString = stringPrefix+"(...)"
+    final override protected[this] def viewIdString = self.viewIdString + viewIdentifier
+    override def stringPrefix = self.stringPrefix
+    override def toString = viewToString
+  }
+  trait EmptyView extends Transformed[Nothing] {
+    final override def isEmpty = true
+    final override def foreach[U](f: Nothing => U): Unit = ()
   }
 
   /** A fall back which forces everything into a vector and then applies an operation
    *  on it. Used for those operations which do not naturally lend themselves to a view
    */
   trait Forced[B] extends Transformed[B] {
-    protected[this] def forced: Seq[B]
-    private[this] lazy val forcedCache = forced
-    override def foreach[U](f: B => U) = forcedCache.foreach(f)
-    override def stringPrefix = self.stringPrefix+"C"
+    protected[this] val forced: Seq[B]
+    def foreach[U](f: B => U) = forced foreach f
+    final override protected[this] def viewIdentifier = "C"
   }
 
-  /** pre: from >= 0
-   */
   trait Sliced extends Transformed[A] {
-    protected[this] val from: Int
-    protected[this] val until: Int
-    override def foreach[U](f: A => U) {
+    protected[this] val endpoints: SliceInterval
+    protected[this] def from  = endpoints.from
+    protected[this] def until = endpoints.until
+    // protected def newSliced(_endpoints: SliceInterval): Transformed[A] =
+    //   self.newSliced(endpoints.recalculate(_endpoints))
+
+    def foreach[U](f: A => U) {
       var index = 0
       for (x <- self) {
         if (from <= index) {
@@ -94,82 +121,83 @@ self =>
         index += 1
       }
     }
-    override def stringPrefix = self.stringPrefix+"S"
-    override def slice(from1: Int, until1: Int): This =
-      newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
+    final override protected[this] def viewIdentifier = "S"
   }
 
   trait Mapped[B] extends Transformed[B] {
     protected[this] val mapping: A => B
-    override def foreach[U](f: B => U) {
+    def foreach[U](f: B => U) {
       for (x <- self)
         f(mapping(x))
     }
-    override def stringPrefix = self.stringPrefix+"M"
+    final override protected[this] def viewIdentifier = "M"
   }
 
   trait FlatMapped[B] extends Transformed[B] {
     protected[this] val mapping: A => TraversableOnce[B]
-    override def foreach[U](f: B => U) {
+    def foreach[U](f: B => U) {
       for (x <- self)
         for (y <- mapping(x))
           f(y)
     }
-    override def stringPrefix = self.stringPrefix+"N"
+    final override protected[this] def viewIdentifier = "N"
   }
 
   trait Appended[B >: A] extends Transformed[B] {
     protected[this] val rest: Traversable[B]
-    override def foreach[U](f: B => U) {
-      for (x <- self) f(x)
-      for (x <- rest) f(x)
+    def foreach[U](f: B => U) {
+      self foreach f
+      rest foreach f
     }
-    override def stringPrefix = self.stringPrefix+"A"
+    final override protected[this] def viewIdentifier = "A"
   }
 
   trait Filtered extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    override def foreach[U](f: A => U) {
+    def foreach[U](f: A => U) {
       for (x <- self)
         if (pred(x)) f(x)
     }
-    override def stringPrefix = self.stringPrefix+"F"
+    final override protected[this] def viewIdentifier = "F"
   }
 
   trait TakenWhile extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    override def foreach[U](f: A => U) {
+    def foreach[U](f: A => U) {
       for (x <- self) {
         if (!pred(x)) return
         f(x)
       }
     }
-    override def stringPrefix = self.stringPrefix+"T"
+    final override protected[this] def viewIdentifier = "T"
   }
 
   trait DroppedWhile extends Transformed[A] {
     protected[this] val pred: A => Boolean
-    override def foreach[U](f: A => U) {
+    def foreach[U](f: A => U) {
       var go = false
       for (x <- self) {
         if (!go && !pred(x)) go = true
         if (go) f(x)
       }
     }
-    override def stringPrefix = self.stringPrefix+"D"
+    final override protected[this] def viewIdentifier = "D"
   }
 
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected def newForced[B](xs: => Seq[B]): Transformed[B] = new Forced[B] { val forced = xs }
-  protected def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
-  protected def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected def newFlatMapped[B](f: A => TraversableOnce[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
-  protected def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
-  protected def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
-  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
-  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
+  protected def newForced[B](xs: => Seq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
+  protected def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
+  protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with Mapped[B]
+  protected def newFlatMapped[B](f: A => TraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
+  protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with Filtered
+  protected def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
+  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
+  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
+
+  protected def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
+  protected def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
 
   override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
     newAppended(xs.toTraversable).asInstanceOf[That]
@@ -193,52 +221,34 @@ self =>
 //     if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]
 //    else super.flatMap[B, That](f)(bf)
   }
+  private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
 
-  protected[this] def thisSeq: Seq[A] = {
-    val buf = new ArrayBuffer[A]
-    self foreach (buf +=)
-    buf.result
-  }
-
-  // Have to overload all three to work around #4299.  The overload
-  // is because mkString should force a view but toString should not.
-  override def mkString: String = mkString("")
-  override def mkString(sep: String): String = mkString("", sep, "")
-  override def mkString(start: String, sep: String, end: String): String = {
-    thisSeq.addString(new StringBuilder(), start, sep, end).toString
-  }
-
-  override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
-    b append start append "..." append end
-
-  override def toString = stringPrefix+"(...)"
-
-  override def filter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
-  override def withFilter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
-  override def partition(p: A => Boolean): (This, This) = (filter(p), filter(!p(_)))
-  override def init: This = newSliced(0, size - 1).asInstanceOf[This]
-  override def drop(n: Int): This = newSliced(n max 0, Int.MaxValue).asInstanceOf[This]
-  override def take(n: Int): This = newSliced(0, n).asInstanceOf[This]
-  override def slice(from: Int, until: Int): This = newSliced(from max 0, until).asInstanceOf[This]
-  override def dropWhile(p: A => Boolean): This = newDroppedWhile(p).asInstanceOf[This]
-  override def takeWhile(p: A => Boolean): This = newTakenWhile(p).asInstanceOf[This]
-  override def span(p: A => Boolean): (This, This) = (takeWhile(p), dropWhile(p))
-  override def splitAt(n: Int): (This, This) = (take(n), drop(n))
+  override def filter(p: A => Boolean): This = newFiltered(p)
+  override def withFilter(p: A => Boolean): This = newFiltered(p)
+  override def partition(p: A => Boolean): (This, This) = (newFiltered(p), newFiltered(!p(_)))
+  override def init: This = newSliced(SliceInterval(0, size - 1)) // !!! can't call size here.
+  override def drop(n: Int): This = newDropped(n)
+  override def take(n: Int): This = newTaken(n)
+  override def slice(from: Int, until: Int): This = newSliced(SliceInterval(from, until))
+  override def dropWhile(p: A => Boolean): This = newDroppedWhile(p)
+  override def takeWhile(p: A => Boolean): This = newTakenWhile(p)
+  override def span(p: A => Boolean): (This, This) = (newTakenWhile(p), newDroppedWhile(p))
+  override def splitAt(n: Int): (This, This) = (newTaken(n), newDropped(n))
 
   override def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
-    newForced(thisSeq.scanLeft(z)(op)).asInstanceOf[That]
+    newForced(self.toSeq.scanLeft(z)(op)).asInstanceOf[That]
 
   @migration(2, 9,
     "This scanRight definition has changed in 2.9.\n" +
     "The previous behavior can be reproduced with scanRight.reverse."
   )
   override def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
-    newForced(thisSeq.scanRight(z)(op)).asInstanceOf[That]
+    newForced(self.toSeq.scanRight(z)(op)).asInstanceOf[That]
 
   override def groupBy[K](f: A => K): immutable.Map[K, This] =
-    thisSeq.groupBy(f).mapValues(xs => newForced(xs).asInstanceOf[This])
+    self.toSeq.groupBy(f).mapValues(xs => newForced(xs).asInstanceOf[This])
 
-  override def stringPrefix = "TraversableView"
+  override def toString = viewToString
 }
 
 
