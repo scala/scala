@@ -194,7 +194,11 @@ trait SeqViewLike[+A,
     val thatElem = _thatElem
   } with ZippedAll[A1, B]
   protected def newReversed: Transformed[A] = new Reversed { }
-  protected def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new { val from = _from; val patch = _patch; val replaced = _replaced } with Patched[B]
+  protected def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new {
+    val from = _from
+    val patch = _patch
+    val replaced = _replaced
+  } with Patched[B]
   protected def newPrepended[B >: A](elem: B): Transformed[B] = new { protected[this] val fst = elem } with Prepended[B]
 
   override def reverse: This = newReversed.asInstanceOf[This]
