@@ -20,12 +20,34 @@ import scala.collection.JavaConverters._
  *  @version 2.9
  *  @since   2.9
  */
-class PropertiesMap extends mutable.Map[String, String] {
-  override def empty = new PropertiesMap
+class SystemProperties extends mutable.Map[String, String] {
+  override def empty = new SystemProperties
   override def default(key: String): String = null
   def iterator: Iterator[(String, String)] = System.getProperties().asScala.iterator
   def get(key: String) = Option(System.getProperty(key))
 
   def -= (key: String): this.type = { System.clearProperty(key) ; this }
   def += (kv: (String, String)): this.type = { System.setProperty(kv._1, kv._2) ; this }
+}
+
+/** The values in SystemProperties can be used to access and manipulate
+ *  designated system properties.  See `scala.sys.Prop` for particulars.
+ *  @example {{{
+ *    if (!headless.isSet) headless.enable()
+ *  }}}
+ */
+object SystemProperties {
+  implicit def systemPropertiesToCompanion(p: SystemProperties): SystemProperties.type = this
+  private lazy val propertyHelp = mutable.Map[String, String]()
+  private def bool(key: String, helpText: String) = {
+    try Prop.bool(key)
+    finally propertyHelp(key) = helpText
+  }
+  def help(key: String) = propertyHelp.getOrElse(key, "")
+
+  // Todo: bring some sanity to the intersection of system properties aka "mutable
+  // state shared by everyone and everything" and the reality that there is no other
+  // mechanism for accomplishing some things on the jvm.
+  lazy val headless   = bool("java.awt.headless", "system should not utilize a display device")
+  lazy val preferIPv4 = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
 }
