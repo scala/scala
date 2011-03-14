@@ -674,7 +674,7 @@ abstract class UnPickler {
 
         case SUPERtree =>
           setSym()
-          val qual = readTypeNameRef()
+          val qual = readTreeRef()
           val mix = readTypeNameRef()
           Super(qual, mix)
 

@@ -358,7 +358,7 @@ abstract class Pickler extends SubComponent {
           putTrees(args)
 
         case Super(qual, mix) =>
-          putEntry(qual:Name)
+          putTree(qual)
           putEntry(mix:Name)
 
         case This(qual) =>

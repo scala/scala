@@ -106,14 +106,14 @@ extends Map[A, B]
   override def keysIterator: Iterator[A] = new Iterator[A] {
     val iter = entriesIterator
     def hasNext = iter.hasNext
-    def next = iter.next.key
+    def next() = iter.next.key
   }
 
   /* Override to avoid tuple allocation */
   override def valuesIterator: Iterator[B] = new Iterator[B] {
     val iter = entriesIterator
     def hasNext = iter.hasNext
-    def next = iter.next.value
+    def next() = iter.next.value
   }
 
   /** Toggles whether a size map is used to track hash map statistics.

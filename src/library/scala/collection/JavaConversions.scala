@@ -560,10 +560,10 @@ object JavaConversions {
 
   case class IteratorWrapper[A](underlying : Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] {
     def hasNext = underlying.hasNext
-    def next = underlying.next
+    def next() = underlying.next
     def hasMoreElements = underlying.hasNext
-    def nextElement = underlying.next
-    def remove = throw new UnsupportedOperationException
+    def nextElement() = underlying.next
+    def remove() = throw new UnsupportedOperationException
   }
 
   class ToIteratorWrapper[A](underlying : Iterator[A]) {
@@ -572,12 +572,12 @@ object JavaConversions {
 
   case class JIteratorWrapper[A](underlying : ju.Iterator[A]) extends Iterator[A] {
     def hasNext = underlying.hasNext
-    def next = underlying.next
+    def next() = underlying.next
   }
 
   case class JEnumerationWrapper[A](underlying : ju.Enumeration[A]) extends Iterator[A] {
     def hasNext = underlying.hasMoreElements
-    def next = underlying.nextElement
+    def next() = underlying.nextElement
   }
 
   case class IterableWrapper[A](underlying : Iterable[A])
@@ -696,7 +696,7 @@ object JavaConversions {
 
         def hasNext = ui.hasNext
 
-        def next = {
+        def next() = {
           val (k, v) = ui.next
           prev = Some(k)
           new ju.Map.Entry[A, B] {
@@ -711,7 +711,7 @@ object JavaConversions {
           }
         }
 
-        def remove = prev match {
+        def remove() = prev match {
           case Some(k) =>
             underlying match {
               case mm: mutable.Map[a, _] =>
@@ -781,7 +781,7 @@ object JavaConversions {
     def iterator = new Iterator[(A, B)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
-      def next = { val e = ui.next ; (e.getKey, e.getValue) }
+      def next() = { val e = ui.next ; (e.getKey, e.getValue) }
     }
 
     override def clear() = underlying.clear()
@@ -930,7 +930,7 @@ object JavaConversions {
     def iterator = new Iterator[(String, String)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
-      def next = { val e = ui.next ; (e.getKey.asInstanceOf[String], e.getValue.asInstanceOf[String]) }
+      def next() = { val e = ui.next ; (e.getKey.asInstanceOf[String], e.getValue.asInstanceOf[String]) }
     }
 
     override def clear() = underlying.clear()

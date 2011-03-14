@@ -190,10 +190,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           mayNeedProtectedAccessor(sel, args, false)
 
         case sel @ Select(qual @ This(_), name) =>
+           // direct calls to aliases of param accessors to the superclass in order to avoid
+           // duplicating fields.
            if (sym.isParamAccessor && sym.alias != NoSymbol) {
             val result = localTyper.typed {
                 Select(
-                  Super(qual.symbol, tpnme.EMPTY/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
+                  Super(qual, tpnme.EMPTY/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
                   sym.alias) setPos tree.pos
             }
             if (settings.debug.value)
@@ -202,7 +204,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
           else mayNeedProtectedAccessor(sel, List(EmptyTree), false)
 
-        case Select(sup @ Super(_, mix), name) =>
+        case Select(Super(_, mix), name) =>
           if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
             unit.error(tree.pos, "super may be not be used on "+
                        (if (sym.hasAccessorFlag) sym.accessed else sym))

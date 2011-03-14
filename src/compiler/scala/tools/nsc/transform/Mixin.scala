@@ -548,11 +548,25 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /** Replace a super reference by this or the self parameter, depending
      *  on whether we are in an implementation class or not.
-     *  Leave all other trees unchanged */
-    private def transformSuper(qual: Tree) =
-      if (!qual.isInstanceOf[Super]) qual
-      else if (currentOwner.enclClass.isImplClass) selfRef(qual.pos)
-      else gen.mkAttributedThis(currentOwner.enclClass)
+     *  Leave all other trees unchanged.
+     */
+    private def transformSuper(tree: Tree) = tree match {
+      case Super(qual, _) =>
+        transformThis(qual)
+      case _ =>
+        tree
+    }
+
+    /** Replace a this reference to the current implementation class by the self
+     *  parameter. Leave all other trees unchanged.
+     */
+    private def transformThis(tree: Tree) = tree match {
+      case This(_) if tree.symbol.isImplClass =>
+        assert(tree.symbol == currentOwner.enclClass)
+        selfRef(tree.pos)
+      case _ =>
+        tree
+    }
 
     /** Create a static reference to given symbol <code>sym</code> of the
      *  form <code>M.sym</code> where M is the symbol's implementation module.
@@ -1178,10 +1192,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               tree
           }
 
-        case This(_) if tree.symbol.isImplClass =>
-          // change `this' in implementation modules to references to the self parameter
-          assert(tree.symbol == currentOwner.enclClass)
-          selfRef(tree.pos)
+        case This(_) =>
+          transformThis(tree)
 
         case Select(Super(_, _), name) =>
           tree

@@ -113,7 +113,7 @@ extends Seq[T]
    *
    *  @return the element on top of the stack
    */
-  def pop: T = {
+  def pop(): T = {
     if (index == 0) sys.error("Stack empty")
     index -= 1
     val x = table(index).asInstanceOf[T]
@@ -140,7 +140,7 @@ extends Seq[T]
    *  the top equal to the element that was previously at the top.
    *  If the stack is empty, an exception is thrown.
    */
-  def dup = push(top)
+  def dup() = push(top)
 
   /** Empties the stack. */
   def clear {
@@ -215,7 +215,7 @@ extends Seq[T]
   def iterator: Iterator[T] = new Iterator[T] {
     var currentIndex = index
     def hasNext = currentIndex > 0
-    def next = {
+    def next() = {
       currentIndex -= 1
       table(currentIndex).asInstanceOf[T]
     }
@@ -229,5 +229,5 @@ extends Seq[T]
     }
   }
 
-  override def clone = new ArrayStack[T](ArrayStack.clone(table), index)
+  override def clone() = new ArrayStack[T](ArrayStack.clone(table), index)
 }

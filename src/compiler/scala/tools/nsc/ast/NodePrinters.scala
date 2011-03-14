@@ -196,7 +196,8 @@ abstract class NodePrinters {
             traverse(qualifier, level + 1, true)
             printcln("  \"" + selector + "\")")
           case Super(qual, mix) =>
-            printcln("Super(\"" + qual + "\", \"" + mix + "\")" + nodeinfo2(tree))
+            println("Super(\"" + mix + "\")" + nodeinfo(tree))
+            traverse(qual, level + 1, true)
           case Template(parents, self, body) =>
             println("Template(" + nodeinfo(tree))
             println("  " + parents.map(p =>

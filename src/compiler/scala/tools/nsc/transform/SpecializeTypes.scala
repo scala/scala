@@ -1396,7 +1396,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (symbol.isConstructor) {
 
             val t = atOwner(symbol) {
-              val superRef: Tree = Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR)
+              val superRef: Tree = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
               forwardCtorCall(tree.pos, superRef, vparamss, symbol.owner)
             }
             if (symbol.isPrimaryConstructor) localTyper typed {

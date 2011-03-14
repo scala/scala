@@ -256,7 +256,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = atPos(superPos) {
-          Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR)
+          Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
         }
         val superCall = (superRef /: argss) (Apply)
         List(
@@ -289,7 +289,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     (superRef /: argss) (Apply)
   }
 
-  def Super(sym: Symbol, mix: Name): Tree = Super(sym.name.toTypeName, mix.toTypeName) setSymbol sym
+  def Super(sym: Symbol, mix: TypeName): Tree = Super(This(sym), mix)
 
   def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym
 
@@ -388,7 +388,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]): TypeApply
     def Apply(tree: Tree, fun: Tree, args: List[Tree]): Apply
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
-    def Super(tree: Tree, qual: Name, mix: Name): Super
+    def Super(tree: Tree, qual: Tree, mix: TypeName): Super
     def This(tree: Tree, qual: Name): This
     def Select(tree: Tree, qualifier: Tree, selector: Name): Select
     def Ident(tree: Tree, name: Name): Ident
@@ -470,8 +470,8 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       }).copyAttrs(tree)
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
       new ApplyDynamic(qual, args).copyAttrs(tree)
-    def Super(tree: Tree, qual: Name, mix: Name) =
-      new Super(qual.toTypeName, mix.toTypeName).copyAttrs(tree)
+    def Super(tree: Tree, qual: Tree, mix: TypeName) =
+      new Super(qual, mix).copyAttrs(tree)
     def This(tree: Tree, qual: Name) =
       new This(qual.toTypeName).copyAttrs(tree)
     def Select(tree: Tree, qualifier: Tree, selector: Name) =
@@ -656,7 +656,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       if (qual0 == qual) && (args0 == args) => t
       case _ => treeCopy.ApplyDynamic(tree, qual, args)
     }
-    def Super(tree: Tree, qual: Name, mix: Name) = tree match {
+    def Super(tree: Tree, qual: Tree, mix: TypeName) = tree match {
       case t @ Super(qual0, mix0)
       if (qual0 == qual) && (mix0 == mix) => t
       case _ => treeCopy.Super(tree, qual, mix)
@@ -824,7 +824,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       case ApplyDynamic(qual, args) =>
         treeCopy.ApplyDynamic(tree, transform(qual), transformTrees(args))
       case Super(qual, mix) =>
-        treeCopy.Super(tree, qual, mix)
+        treeCopy.Super(tree, transform(qual), mix)
       case This(qual) =>
         treeCopy.This(tree, qual)
       case Select(qualifier, selector) =>
@@ -901,6 +901,8 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
         traverseTrees(ts)
       case TypeTreeWithDeferredRefCheck() => // TODO: should we traverse the wrapped tree?
       // (and rewrap the result? how to update the deferred check? would need to store wrapped tree instead of returning it from check)
+      case Super(qual, _) =>
+        traverse(qual)  // !!! remove when Super is done
       case _ => super.traverse(tree)
     }
 

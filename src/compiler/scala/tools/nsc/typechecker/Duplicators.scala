@@ -276,12 +276,12 @@ abstract class Duplicators extends Analyzer {
           val tree1 = super.typed(tree, mode, pt)
           // log("plain this typed to: " + tree1)
           tree1
-
+/* no longer needed, because Super now contains a This(...)
         case Super(qual, mix) if (oldClassOwner ne null) && (tree.symbol == oldClassOwner) =>
           val tree1 = Super(qual, mix)
           log("changed " + tree + " to " + tree1)
           super.typed(atPos(tree.pos)(tree1))
-
+*/
         case Match(scrut, cases) =>
           val scrut1 = typed(scrut, EXPRmode | BYVALmode, WildcardType)
           val scrutTpe = scrut1.tpe.widen

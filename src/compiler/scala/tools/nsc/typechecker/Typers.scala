@@ -3378,41 +3378,44 @@ trait Typers extends Modes {
       def qualifyingClassSym(qual: Name): Symbol =
         if (tree.symbol != NoSymbol) tree.symbol else qualifyingClass(tree, qual, false)
 
-      def typedSuper(qual: Name, mix: Name) = {
-        val clazz = qualifyingClassSym(qual)
-        if (clazz == NoSymbol) setError(tree)
-        else {
-          def findMixinSuper(site: Type): Type = {
-            val ps = site.parents filter (_.typeSymbol.name == mix)
-            if (ps.isEmpty) {
-              if (settings.debug.value)
-                Console.println(site.parents map (_.typeSymbol.name))//debug
-              if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
-                // the reference to super class got lost during erasure
-                restrictionError(tree.pos, unit, "traits may not select fields or methods from to super[C] where C is a class")
-              } else {
-                error(tree.pos, mix+" does not name a parent class of "+clazz)
-              }
-              ErrorType
-            } else if (!ps.tail.isEmpty) {
-              error(tree.pos, "ambiguous parent class qualifier")
-              ErrorType
+      def typedSuper(qual: Tree, mix: TypeName) = {
+        val qual1 = typed(qual)
+        val clazz = qual1.symbol
+
+        def findMixinSuper(site: Type): Type = {
+          var ps = site.parents filter (_.typeSymbol.name == mix)
+          if (ps.isEmpty)
+            ps = site.parents filter (_.typeSymbol.toInterface.name == mix)
+          if (ps.isEmpty) {
+            if (settings.debug.value)
+              Console.println(site.parents map (_.typeSymbol.name))//debug
+            if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
+              // the reference to super class got lost during erasure
+              restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
             } else {
-              ps.head
+              error(tree.pos, mix+" does not name a parent class of "+clazz)
             }
+            ErrorType
+          } else if (!ps.tail.isEmpty) {
+            error(tree.pos, "ambiguous parent class qualifier")
+            ErrorType
+          } else {
+            ps.head
           }
-          val owntype =
-            if (mix.isEmpty) {
-              if ((mode & SUPERCONSTRmode) != 0)
-                if (clazz.info.parents.isEmpty) AnyRefClass.tpe // can happen due to cyclic references ==> #1036
-                else clazz.info.parents.head
-              else intersectionType(clazz.info.parents)
-            } else {
-              findMixinSuper(clazz.info)
-            }
-          tree setSymbol clazz setType SuperType(clazz.thisType, owntype)
         }
-      }
+
+        val owntype =
+          if (mix.isEmpty) {
+            if ((mode & SUPERCONSTRmode) != 0)
+              if (clazz.info.parents.isEmpty) AnyRefClass.tpe // can happen due to cyclic references ==> #1036
+              else clazz.info.parents.head
+            else intersectionType(clazz.info.parents)
+          } else {
+            findMixinSuper(clazz.info)
+          }
+
+          treeCopy.Super(tree, qual1, mix) setType SuperType(clazz.thisType, owntype)
+        }
 
       def typedThis(qual: Name) = {
         val clazz = qualifyingClassSym(qual)
@@ -3609,11 +3612,11 @@ trait Typers extends Modes {
             }
             else {
               cx = cx.enclClass
-              defSym = pre.member(name) filter (
-                sym => qualifies(sym) && context.isAccessible(sym, pre, false))
+              val foundSym = pre.member(name) filter qualifies
+              defSym = foundSym filter (context.isAccessible(_, pre, false))
               if (defSym == NoSymbol) {
-                if (inaccessibleSym eq NoSymbol) {
-                  inaccessibleSym = pre.member(name) filter qualifies
+                if ((foundSym ne NoSymbol) && (inaccessibleSym eq NoSymbol)) {
+                  inaccessibleSym = foundSym
                   inaccessibleExplanation = analyzer.lastAccessCheckDetails
                 }
                 cx = cx.outer

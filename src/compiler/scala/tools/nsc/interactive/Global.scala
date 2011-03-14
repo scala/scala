@@ -629,7 +629,7 @@ class Global(settings: Settings, reporter: Reporter)
         val newsym = pre.decl(sym.name) filter { alt =>
           sym.isType || {
             try {
-              val tp1 = pre.memberType(alt) onTypeError NoType
+              val tp1 = adaptToNewRunMap(pre.memberType(alt) onTypeError NoType)
               val tp2 = adaptToNewRunMap(sym.tpe)
               matchesType(tp1, tp2, false)
             } catch {
@@ -645,6 +645,7 @@ class Global(settings: Settings, reporter: Reporter)
           debugLog("link not found "+sym+" "+source+" "+pre)
           NoPosition
         } else if (newsym.isOverloaded) {
+          settings.uniqid.value = true
           debugLog("link ambiguous "+sym+" "+source+" "+pre+" "+newsym.alternatives)
           NoPosition
         } else {

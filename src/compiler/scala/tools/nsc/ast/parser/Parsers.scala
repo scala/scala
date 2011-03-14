@@ -376,7 +376,7 @@ self =>
         Nil,
         List(Nil),
         TypeTree(),
-        Block(List(Apply(Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR), Nil)), Literal(Constant(())))
+        Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), Nil)), Literal(Constant(())))
       )
 
       // def main
@@ -995,7 +995,7 @@ self =>
         }
       } else if (in.token == SUPER) {
         in.nextToken()
-        t = atPos(start) { Super(tpnme.EMPTY, mixinQualifierOpt()) }
+        t = atPos(start) { Super(This(tpnme.EMPTY), mixinQualifierOpt()) }
         accept(DOT)
         t = selector(t)
         if (in.token == DOT) t = selectors(t, typeOK, in.skipToken())
@@ -1015,7 +1015,7 @@ self =>
               t = selectors(t, typeOK, accept(DOT))
           } else if (in.token == SUPER) {
             in.nextToken()
-            t = atPos(start) { Super(name.toTypeName, mixinQualifierOpt()) }
+            t = atPos(start) { Super(This(name.toTypeName), mixinQualifierOpt()) }
             accept(DOT)
             t = selector(t)
             if (in.token == DOT) t = selectors(t, typeOK, in.skipToken())

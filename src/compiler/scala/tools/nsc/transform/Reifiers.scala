@@ -305,7 +305,7 @@ trait Reifiers {
         val rrhs   = reify(rhs)
         reflect.DefDef(rsym, rparss, rret, rrhs)
 
-      case sp @ Super(qual: Name, mix: Name) =>
+      case sp @ Super(qual, mix) =>
         val rsym = reify(sp.symbol)
         reflect.Super(rsym)
 

@@ -270,7 +270,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     println(sizemap.toList)
   }
 
-  protected def sizeMapDisable = sizemap = null
+  protected def sizeMapDisable() = sizemap = null
 
   protected def isSizeMapDefined = sizemap ne null
 

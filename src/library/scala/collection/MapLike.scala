@@ -174,7 +174,7 @@ self =>
   def keysIterator: Iterator[A] = new Iterator[A] {
     val iter = self.iterator
     def hasNext = iter.hasNext
-    def next = iter.next._1
+    def next() = iter.next._1
   }
 
   /** Creates an iterator for all keys.
@@ -205,7 +205,7 @@ self =>
   def valuesIterator: Iterator[B] = new Iterator[B] {
     val iter = self.iterator
     def hasNext = iter.hasNext
-    def next = iter.next._2
+    def next() = iter.next._2
   }
 
   /** Defines the default value computation for the map,

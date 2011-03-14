@@ -409,11 +409,13 @@ trait Trees { self: Universe =>
        extends TermTree with SymTree
     // The symbol of an ApplyDynamic is the function symbol of `qual', or NoSymbol, if there is none.
 
-  /** Super reference */
-  case class Super(qual: TypeName, mix: TypeName)
-       extends TermTree with SymTree
+  /** Super reference, qual = corresponding this reference */
+  case class Super(qual: Tree, mix: TypeName) extends TermTree {
     // The symbol of a Super is the class _from_ which the super reference is made.
     // For instance in C.super(...), it would be C.
+    override def symbol: Symbol = qual.symbol
+    override def symbol_=(sym: Symbol) { qual.symbol = sym }
+  }
 
   /** Self reference */
   case class This(qual: TypeName)

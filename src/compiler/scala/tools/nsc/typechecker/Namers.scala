@@ -757,7 +757,7 @@ trait Namers { self: Analyzer =>
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already; here, "clazz" is the module class
       if (clazz.isModuleClass) {
-        Namers.this.caseClassOfModuleClass get clazz map { cdefRef =>
+        Namers.this.caseClassOfModuleClass get clazz foreach { cdefRef =>
           val cdef = cdefRef()
           addApplyUnapply(cdef, templateNamer)
           caseClassOfModuleClass -= clazz

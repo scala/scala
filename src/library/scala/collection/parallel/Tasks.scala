@@ -164,7 +164,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
     def compute = if (body.shouldSplitFurther) internal else body.tryLeaf(None)
 
     def internal = {
-      var last = spawnSubtasks
+      var last = spawnSubtasks()
 
       last.body.tryLeaf(None)
       body.result = last.body.result
@@ -187,7 +187,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
       }
     }
 
-    def spawnSubtasks = {
+    def spawnSubtasks() = {
       var last: TaskImpl[R, Tp] = null
       var head: TaskImpl[R, Tp] = this
       do {
@@ -203,7 +203,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
       head
     }
 
-    def printChain = {
+    def printChain() = {
       var curr = this
       var chain = "chain: "
       while (curr != null) {
