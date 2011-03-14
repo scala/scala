@@ -3380,7 +3380,7 @@ trait Typers extends Modes {
 
       def typedSuper(qual: Tree, mix: TypeName) = {
         val qual1 = typed(qual)
-        val clazz = qual1.symbol
+        val clazz = qual1.tpe.typeSymbol
 
         def findMixinSuper(site: Type): Type = {
           var ps = site.parents filter (_.typeSymbol.name == mix)
@@ -3390,6 +3390,11 @@ trait Typers extends Modes {
             if (settings.debug.value)
               Console.println(site.parents map (_.typeSymbol.name))//debug
             if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
+              // println(qual1)
+              // println(clazz)
+              // println(site)
+              // println(site.parents)
+              // println(mix)
               // the reference to super class got lost during erasure
               restrictionError(tree.pos, unit, "traits may not select fields or methods from super[C] where C is a class")
             } else {
