@@ -3380,7 +3380,12 @@ trait Typers extends Modes {
 
       def typedSuper(qual: Tree, mix: TypeName) = {
         val qual1 = typed(qual)
-        val clazz = qual1.tpe.typeSymbol
+
+        val clazz = qual1 match {
+          case This(_) => qual1.symbol
+          case _ => qual1.tpe.typeSymbol
+        }
+        //println(clazz+"/"+qual1.tpe.typeSymbol+"/"+qual1)
 
         def findMixinSuper(site: Type): Type = {
           var ps = site.parents filter (_.typeSymbol.name == mix)
@@ -3416,7 +3421,7 @@ trait Typers extends Modes {
               else clazz.info.parents.head
             else intersectionType(clazz.info.parents)
           } else {
-            findMixinSuper(clazz.info)
+            findMixinSuper(clazz.tpe)
           }
 
           treeCopy.Super(tree, qual1, mix) setType SuperType(clazz.thisType, owntype)
