@@ -589,18 +589,21 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
             done = true
             receiveTimeout
           } else {
-            waitingFor = f
-            received = None
-            isSuspended = true
-            val thisActor = this
-            onTimeout = Some(new TimerTask {
-              def run() { thisActor.send(TIMEOUT, thisActor) }
-            })
-            Actor.timer.schedule(onTimeout.get, msec)
-            scheduler.managedBlock(blocker)
-            drainSendBuffer(mailbox)
-            // keep going
-            () => {}
+            if (onTimeout.isEmpty) {
+              waitingFor = f
+              received = None
+              isSuspended = true
+              val thisActor = this
+              onTimeout = Some(new TimerTask {
+                def run() { thisActor.send(TIMEOUT, thisActor) }
+              })
+              Actor.timer.schedule(onTimeout.get, msec)
+              scheduler.managedBlock(blocker)
+              drainSendBuffer(mailbox)
+              // keep going
+              () => {}
+            } else
+              sys.error("unhandled timeout")
           }
         }
         todo()
