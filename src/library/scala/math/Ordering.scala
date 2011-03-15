@@ -6,35 +6,25 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.math
 
 import java.util.Comparator
 
 /** A trait for representing total orderings.  It is important to
  * distinguish between a type that has a total order and a representation
- * of total  ordering on some type.  This trait is for representing the
- * latter.
+ * of total ordering on some type.  This trait is for the latter.
  *
- * A <a href="http://en.wikipedia.org/wiki/Total_order">total ordering</a>
- * is a binary relation on a type <code>T</code> that is also an equivalence relation
- * and partial ordering on values of type <code>T</code>.  This relation is exposed as
- * the <code>compare</code> method of the <code>Ordering</code> trait.
+ * A [[http://en.wikipedia.org/wiki/Total_order|total ordering]]
+ * is a binary relation on a type `T` that is also an equivalence relation
+ * and partial ordering on values of type `T`.  This relation is exposed as
+ * the `compare` method of the `Ordering` trait.
+ *
  * This relation must be:
- * <ul>
- * <li>reflexive: <code>compare(x, x) == 0</code>, for any <code>x</code> of
- * type <code>T</code>.</li>
- * <li>symmetry: <code>compare(x, y) == z</code> and <code>compare(y, x) == w</code>
- * then <code>math.signum(z) == -math.signum(w)</code>, for any <code>x</code> and <code>y</code> of
- * type <code>T</code> and <code>z</code> and <code>w</code> of type <code>Int</code>.</li>
- * <li>transitive: if <code>compare(x, y) == z</code> and <code>compare(y, w) == v</code>
- * and <code>math.signum(z) &gt;= 0</code> and <code>math.signum(v) &gt;= 0</code> then
- * <code>compare(x, w) == u</code> and <code>math.signum(z + v) == math.signum(u)</code>,
- * for any <code>x</code>, <code>y</code>,
- * and <code>w</code> of type <code>T</code> and <code>z</code>, <code>v</code>, and <code>u</code>
- * of type <code>Int</code>.</li>
- * </ul>
+ {{{
+      reflexive:  x == x
+  antisymmetric:  if x <= y && y <= x, then x == y
+     transitive:  if x <= y && y <= z, then x <= z
+ }}}
  *
  * @author Geoffrey Washburn
  * @version 0.9.5, 2008-04-15
@@ -46,36 +36,31 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** An Ordering is defined at all x and y. */
   def tryCompare(x: T, y: T) = Some(compare(x, y))
 
- /** Returns a negative integer iff <code>x</code> comes before
-   * <code>y</code> in the ordering, returns 0 iff <code>x</code>
-   * is the same in the ordering as <code>y</code>, and returns a
-   * positive number iff <code>x</code> comes after
-   * <code>y</code> in the ordering.
+ /** Returns a negative integer iff `x` comes before
+   * `y` in the ordering, returns 0 iff `x`
+   * is the same in the ordering as `y`, and returns a
+   * positive number iff `x` comes after
+   * `y` in the ordering.
    */
   def compare(x: T, y: T): Int
 
- /** Returns <code>true</code> iff <code>x</code> comes before
-   *  <code>y</code> in the ordering.
+  /** @return   true iff `x` comes before `y` in the ordering, or is equal to `y`.
    */
   override def lteq(x: T, y: T): Boolean = compare(x, y) <= 0
 
-  /** Returns <code>true</code> iff <code>y</code> comes before
-   *  <code>x</code> in the ordering.
+  /** @return   true iff `x` comes after `y` in the ordering, or is equal to `y`.
    */
   override def gteq(x: T, y: T): Boolean = compare(x, y) >= 0
 
-  /** Returns <code>true</code> iff <code>x</code> comes before
-   *  <code>y</code> in the ordering and is not the same as <code>y</code>.
+  /** @return   true iff `x` comes before `y` in the ordering, and is not equal to `y`.
    */
   override def lt(x: T, y: T): Boolean = compare(x, y) < 0
 
-  /** Returns <code>true</code> iff <code>y</code> comes before
-   *  <code>x</code> in the ordering and is not the same as <code>x</code>.
+  /** @return   true iff `y` comes before `x` in the ordering, and is not equal to `x`.
    */
   override def gt(x: T, y: T): Boolean = compare(x, y) > 0
 
-  /** Returns <code>true</code> iff <code>x</code> is equivalent to
-   *  <code>y</code> in the ordering.
+  /** @return   true iff `x` is equivalent to `y` in the ordering.
    */
   override def equiv(x: T, y: T): Boolean = compare(x, y) == 0
 
@@ -85,7 +70,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** Returns the argument which comes earlier in the ordering. */
   def min(x: T, y: T): T = if (lteq(x, y)) x else y
 
-  override def reverse: Ordering[T] = new Ordering[T]{
+  override def reverse: Ordering[T] = new Ordering[T] {
     override def reverse = outer
     def compare(x: T, y: T) = outer.compare(y, x)
   }
@@ -107,26 +92,6 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   implicit def mkOrderingOps(lhs: T): Ops = new Ops(lhs)
 }
 
-trait ExtraOrderingImplicits {
-  /** Not in the standard scope due to the potential for divergence:
-   *  For instance implicitly[Ordering[Any]] diverges in its presence.
-   */
-  implicit def SeqDerived[CC[X] <: collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
-    new Ordering[CC[T]] {
-      def compare(x: CC[T], y: CC[T]): Int = {
-        val xe = x.iterator
-        val ye = y.iterator
-
-        while (xe.hasNext && ye.hasNext) {
-          val res = ord.compare(xe.next, ye.next)
-          if (res != 0) return res
-        }
-
-        Ordering.Boolean.compare(xe.hasNext, ye.hasNext)
-      }
-    }
-}
-
 trait LowPriorityOrderingImplicits {
   /** This would conflict with all the nice implicit Orderings
    *  available, but thanks to the magic of prioritized implicits
@@ -145,12 +110,39 @@ trait LowPriorityOrderingImplicits {
 object Ordering extends LowPriorityOrderingImplicits {
   def apply[T](implicit ord: Ordering[T]) = ord
 
+  trait ExtraImplicits {
+    /** Not in the standard scope due to the potential for divergence:
+     *  For instance implicitly[Ordering[Any]] diverges in its presence.
+     */
+    implicit def seqDerivedOrdering[CC[X] <: collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+      new Ordering[CC[T]] {
+        def compare(x: CC[T], y: CC[T]): Int = {
+          val xe = x.iterator
+          val ye = y.iterator
+
+          while (xe.hasNext && ye.hasNext) {
+            val res = ord.compare(xe.next, ye.next)
+            if (res != 0) return res
+          }
+
+          Ordering.Boolean.compare(xe.hasNext, ye.hasNext)
+        }
+      }
+
+    /** This implicit creates a conversion from any value for which an implicit Ordering
+     *  exists to the class which creates infix operations.  With it imported, you can write
+     *  methods as follows:
+     *  {{{
+     *  def lessThen[T: Ordering](x: T, y: T) = x < y
+     *  }}}
+     */
+    implicit def infixOrderingOps[T](x: T)(implicit ord: Ordering[T]): Ordering[T]#Ops = new ord.Ops(x)
+  }
+
   /** An object for implicits which for one reason or another we
    *  aren't ready to put in the default scope.
    */
-  object Implicits extends ExtraOrderingImplicits {
-
-  }
+  object Implicits extends ExtraImplicits { }
 
   def fromLessThan[T](cmp: (T, T) => Boolean): Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = if (cmp(x, y)) -1 else if (cmp(y, x)) 1 else 0

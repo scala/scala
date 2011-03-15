@@ -6,14 +6,24 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.math
 
 /**
  * @since 2.8
  */
 object Numeric {
+  trait ExtraImplicits {
+    /** These implicits create conversions from a value for which an implicit Numeric
+     *  exists to the inner class which creates infix operations.  Once imported, you
+     *  can write methods as follows:
+     *  {{{
+     *  def plus[T: Numeric](x: T, y: T) = x + y
+     *  }}}
+     */
+    implicit def infixNumericOps[T](x: T)(implicit num: Numeric[T]): Numeric[T]#Ops = new num.Ops(x)
+  }
+  object Implicits extends ExtraImplicits { }
+
   trait BigIntIsIntegral extends Integral[BigInt] {
     def plus(x: BigInt, y: BigInt): BigInt = x + y
     def minus(x: BigInt, y: BigInt): BigInt = x - y
