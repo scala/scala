@@ -12,7 +12,7 @@ package scala.dbc
 package value;
 
 
-abstract class Unknown extends Value {
+@deprecated(DbcIsDeprecated) abstract class Unknown extends Value {
 
   val dataType: datatype.Unknown;
 
@@ -20,7 +20,7 @@ abstract class Unknown extends Value {
 
 }
 
-object UnknownType {
+@deprecated(DbcIsDeprecated) object UnknownType {
 
   def view (obj:value.Unknown): AnyRef = obj.nativeValue;
 

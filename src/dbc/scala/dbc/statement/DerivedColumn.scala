@@ -12,7 +12,7 @@ package scala.dbc
 package statement
 
 
-abstract class DerivedColumn {
+@deprecated(DbcIsDeprecated) abstract class DerivedColumn {
 
   /** The value for the column. This value can be of any type but must be
    *  calculated from fields that appear in a relation that takes part

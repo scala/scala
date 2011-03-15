@@ -13,7 +13,7 @@ package statement;
 
 
 /** A statement that changes the status of the database. */
-case class Transaction [ResultType] (
+@deprecated(DbcIsDeprecated) case class Transaction [ResultType] (
   transactionBody: (scala.dbc.Database=>ResultType),
   accessMode: Option[AccessMode],
   isolationLevel: Option[IsolationLevel]

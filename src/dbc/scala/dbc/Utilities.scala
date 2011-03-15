@@ -15,7 +15,7 @@ package scala.dbc;
  *  This object's members must be visible in an expression to use value
  *  auto-conversion.
  */
-object Utilities {
+@deprecated(DbcIsDeprecated) object Utilities {
 
   implicit def constantToValue (obj: statement.expression.Constant): Value =
     obj.constantValue;

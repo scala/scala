@@ -14,7 +14,7 @@ package datatype;
 
 /** A type category for all SQL types that store strings of elements.
  */
-abstract class String extends DataType {
+@deprecated(DbcIsDeprecated) abstract class String extends DataType {
 
   /** The maximal possible length of the string defined in characters.
    *  This is an implementation-specific value.

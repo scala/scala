@@ -14,7 +14,7 @@ package datatype;
 
 /** A SQL type for an unbounded length string of characters with arbitrary
   * character set. */
-class CharacterLargeObject extends CharacterString {
+@deprecated(DbcIsDeprecated) class CharacterLargeObject extends CharacterString {
 
   def isEquivalent (datatype:DataType) = datatype match {
     case dt:CharacterLargeObject => {

@@ -13,7 +13,7 @@ package statement
 
 
 /** A jointure between two relations. */
-abstract class Jointure extends Relation {
+@deprecated(DbcIsDeprecated) abstract class Jointure extends Relation {
 
   /** The relation on the left part of the join. */
   def leftRelation: Relation

@@ -15,7 +15,7 @@ package statement;
 import scala.dbc.statement.expression._;
 
 /** An update of the state of a table. */
-case class Update (
+@deprecated(DbcIsDeprecated) case class Update (
   updateTarget: String,
   setClauses: List[SetClause],
   whereClause: Option[Expression]

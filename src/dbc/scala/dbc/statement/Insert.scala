@@ -15,7 +15,7 @@ package statement
 import scala.dbc.statement.expression._
 
 /** An insertion of values into a table. */
-case class Insert(insertionTarget: String, insertionData: InsertionData)
+@deprecated(DbcIsDeprecated) case class Insert(insertionTarget: String, insertionData: InsertionData)
     extends Status {
 
   /** A SQL-99 compliant string representation of the select statement. */

@@ -14,7 +14,7 @@ package vendor;
 
 import compat.Platform
 
-abstract class PostgreSQL extends Vendor {
+@deprecated(DbcIsDeprecated) abstract class PostgreSQL extends Vendor {
 
   def uri:java.net.URI;
   def user:String;

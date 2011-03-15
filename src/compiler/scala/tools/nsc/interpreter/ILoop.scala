@@ -424,7 +424,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
    */
   def loop() {
     def readOneLine() = {
-      out.flush
+      out.flush()
       in readLine prompt
     }
     // return false if repl should exit
