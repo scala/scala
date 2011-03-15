@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Sun Jan 23 21:13:38 PST 2011
+// DO NOT EDIT, CHANGES WILL BE LOST.
 
 package scala
 
