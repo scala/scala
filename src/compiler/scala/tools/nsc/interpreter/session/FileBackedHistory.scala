@@ -15,38 +15,12 @@ import FileBackedHistory._
 trait FileBackedHistory extends JLineHistory with JPersistentHistory {
   def maxSize: Int
   protected lazy val historyFile: File = defaultFile
-  protected def useShutdownHook = true
-
-  // A tempfile holding only the last few lines of input
-  private val bufferFile = File.makeTemp("scala_history")
-  private var bufferWriter = bufferFile.printWriter()
-
-  // flush to the permanent log every `flushFrequency` lines
-  protected def flushFrequency: Int = if (useShutdownHook) 15 else 5
-  private var flushCounter: Int = flushFrequency
-
-  private def autoflush(): Unit = {
-    flushCounter -= 1
-    if (flushCounter <= 0) {
-      flush()
-      flushCounter = flushFrequency
-    }
-  }
+  private var isPersistent = true
 
   locally {
     load()
-    if (useShutdownHook)
-      sys addShutdownHook flush()
-  }
-  private def drainBufferFile() = {
-    if (bufferWriter != null)
-      bufferWriter.close()
-
-    try     bufferFile.lines().toList map (_ + "\n")
-    finally bufferWriter = bufferFile.printWriter()
   }
 
-  private var isPersistent = true
   def withoutSaving[T](op: => T): T = {
     val saved = isPersistent
     isPersistent = false
@@ -54,35 +28,40 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     finally isPersistent = saved
   }
   def addLineToFile(item: CharSequence): Unit = {
-    if (isPersistent) {
-      bufferWriter println item
-      autoflush()
-    }
+    if (isPersistent)
+      append(item + "\n")
   }
 
+  /** Overwrites the history file with the current memory. */
   protected def sync(): Unit = {
     val lines = asStrings map (_ + "\n")
     historyFile.writeAll(lines: _*)
   }
+  /** Append one or more lines to the history file. */
+  protected def append(lines: String*): Unit = {
+    historyFile.appendAll(lines: _*)
+  }
 
   def load(): Unit = {
-    val lines = historyFile.lines().toIndexedSeq
+    if (!historyFile.canRead)
+      historyFile.createFile()
+
+    val lines: IndexedSeq[String] =
+      try historyFile.lines().toIndexedSeq
+      catch { case _: Exception => Vector() }
+
     repldbg("Loading " + lines.size + " into history.")
 
-    // bypass the tempfile buffer
+    // avoid writing to the history file
     withoutSaving(lines takeRight maxSize foreach add)
-    // truncate the main history file if it's too big.
+    // truncate the history file if it's too big.
     if (lines.size > maxSize) {
       repldbg("File exceeds maximum size: truncating to " + maxSize + " entries.")
       sync()
     }
     moveToEnd()
   }
-  def flush(): Unit = {
-    val toAppend = drainBufferFile()
-    repldbg("Moving " + toAppend.size + " lines from buffer to permanent history.")
-    historyFile.appendAll(toAppend: _*)
-  }
+  def flush(): Unit = ()
   def purge(): Unit = historyFile.truncate()
 }
 

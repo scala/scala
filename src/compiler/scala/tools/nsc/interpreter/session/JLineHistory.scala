@@ -35,7 +35,7 @@ trait JLineHistory extends JHistory with History {
 object JLineHistory {
   class JLineFileHistory extends SimpleHistory with FileBackedHistory {
     override def add(item: CharSequence): Unit = {
-      if (last == item)
+      if (!isEmpty && last == item)
         repldbg("Ignoring duplicate entry '" + item + "'")
       else {
         super.add(item)
