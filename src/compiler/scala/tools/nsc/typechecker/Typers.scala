@@ -1007,13 +1007,10 @@ trait Typers extends Modes {
     }
 
     private def validateNoCaseAncestor(clazz: Symbol) = {
-      // XXX I think this should issue a sharper warning of some kind like
-      // "change your code now!" as there are material bugs (which are very unlikely
-      // to be fixed) associated with case class inheritance.
       if (!phase.erasedTypes) {
         for (ancestor <- clazz.ancestors find (_.isCase)) {
           unit.deprecationWarning(clazz.pos, (
-            "case class `%s' has case ancestor `%s'.  Case inheritance has potentially "+
+            "case class `%s' has case ancestor `%s'.  Case-to-case inheritance has potentially "+
             "dangerous bugs which are unlikely to be fixed.  You are strongly encouraged to "+
             "instead use extractors to pattern match on non-leaf nodes."
           ).format(clazz, ancestor))
