@@ -26,6 +26,7 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   // concrete
   def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
   def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
+  def combinations(n: Int): Iterator[This]
   def contains(elem: Any): Boolean
   def containsSlice[B](that: Seq[B]): Boolean
   def corresponds[B](that: Seq[B])(p: (A,B) => Boolean): Boolean
@@ -50,6 +51,7 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def lengthCompare(len: Int): Int
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
   def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That
+  def permutations: Iterator[This]
   def prefixLength(p: A => Boolean): Int
   def reverse: This
   def reverseIterator: Iterator[A]
@@ -63,6 +65,7 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
 
-  override def view: SeqView[A, This]
-  override def view(from: Int, until: Int): SeqView[A, This]
+  // refinements
+  def view: SeqView[A, This]
+  def view(from: Int, until: Int): SeqView[A, This]
 }

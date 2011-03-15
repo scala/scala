@@ -10,8 +10,6 @@ package scala.collection
 package interfaces
 
 import generic._
-import mutable.Buffer
-import scala.reflect.ClassManifest
 
 /**
  * @since 2.8
@@ -27,7 +25,8 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This]] extends Traversa
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[This, B, That]): That
 
   // new collections
-  def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def ++:[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That
 
   // element retrieval
   def head: A
@@ -40,12 +39,14 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This]] extends Traversa
   def dropWhile(p: A => Boolean): Traversable[A]
   def filter(p: A => Boolean): Traversable[A]
   def filterNot(p: A => Boolean): Traversable[A]
-  def withFilter(p: A => Boolean): FilterMonadic[A, Traversable[A]]
   def init: Traversable[A]
+  def inits: Iterator[This]
   def slice(from: Int, until: Int): Traversable[A]
   def tail: Traversable[A]
+  def tails: Iterator[This]
   def take(n: Int): Traversable[A]
   def takeWhile(p: A => Boolean): Traversable[A]
+  def withFilter(p: A => Boolean): FilterMonadic[A, Traversable[A]]
 
   // subdivisions
   def groupBy[K](f: A => K): Map[K, Traversable[A]]
@@ -54,8 +55,6 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This]] extends Traversa
   def splitAt(n: Int): (Traversable[A], Traversable[A])
 
   // info
-  def count(p: A => Boolean): Int
-  def size: Int
   def stringPrefix: String
 
   // views

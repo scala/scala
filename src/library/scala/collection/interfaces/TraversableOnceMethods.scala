@@ -9,41 +9,41 @@
 package scala.collection
 package interfaces
 
-import mutable.Buffer
-
 trait TraversableOnceMethods[+A] {
   self: TraversableOnce[A] =>
 
   def foreach[U](f: A => U): Unit
+  def size: Int
   protected[this] def reversed: TraversableOnce[A]
 
   // tests
-  def isEmpty: Boolean
-  def nonEmpty: Boolean
   def hasDefiniteSize: Boolean
+  def isEmpty: Boolean
   def isTraversableAgain: Boolean
+  def nonEmpty: Boolean
 
   // applying a predicate
-  def forall(p: A => Boolean): Boolean
+  def collectFirst[B](pf: PartialFunction[A, B]): Option[B]
+  def count(p: A => Boolean): Int
   def exists(p: A => Boolean): Boolean
   def find(p: A => Boolean): Option[A]
-  def count(p: A => Boolean): Int
+  def forall(p: A => Boolean): Boolean
 
   // folds
   def /:[B](z: B)(op: (B, A) => B): B
   def :\[B](z: B)(op: (A, B) => B): B
   def foldLeft[B](z: B)(op: (B, A) => B): B
   def foldRight[B](z: B)(op: (A, B) => B): B
-  def reduceLeft[B >: A](op: (B, A) => B): B
-  def reduceRight[B >: A](op: (A, B) => B): B
   def reduceLeftOption[B >: A](op: (B, A) => B): Option[B]
+  def reduceLeft[B >: A](op: (B, A) => B): B
   def reduceRightOption[B >: A](op: (A, B) => B): Option[B]
+  def reduceRight[B >: A](op: (A, B) => B): B
 
   // copies
-  def copyToBuffer[B >: A](dest: Buffer[B]): Unit
-  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit
-  def copyToArray[B >: A](xs: Array[B], start: Int): Unit
   def copyToArray[B >: A](xs: Array[B]): Unit
+  def copyToArray[B >: A](xs: Array[B], start: Int): Unit
+  def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit
+  def copyToBuffer[B >: A](dest: mutable.Buffer[B]): Unit
 
   // conversions
   def toArray[B >: A : ClassManifest]: Array[B]
@@ -53,16 +53,22 @@ trait TraversableOnceMethods[+A] {
   def toIterator: Iterator[A]
   def toList: List[A]
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U]
+  def toParIterable: parallel.ParIterable[A]
+  def toParMap[T, U](implicit ev: A <:< (T, U)): parallel.ParMap[T, U]
+  def toParSeq: parallel.ParSeq[A]
+  def toParSet[B >: A]: parallel.ParSet[B]
   def toSeq: Seq[A]
   def toSet[B >: A]: immutable.Set[B]
   def toStream: Stream[A]
   def toTraversable: Traversable[A]
 
   // type-constrained folds
-  def sum[B >: A](implicit num: Numeric[B]): B
-  def product[B >: A](implicit num: Numeric[B]): B
-  def min[B >: A](implicit cmp: Ordering[B]): A
+  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A
   def max[B >: A](implicit cmp: Ordering[B]): A
+  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A
+  def min[B >: A](implicit cmp: Ordering[B]): A
+  def product[B >: A](implicit num: Numeric[B]): B
+  def sum[B >: A](implicit num: Numeric[B]): B
 
   // strings
   def mkString(start: String, sep: String, end: String): String
