@@ -71,7 +71,7 @@ class Global(settings: Settings, reporter: Reporter)
                        SynchronizedMap[AbstractFile, RichCompilationUnit] {
     override def put(key: AbstractFile, value: RichCompilationUnit) = {
       val r = super.put(key, value)
-      if (r.isEmpty) debugLog("added uhnit for "+key)
+      if (r.isEmpty) debugLog("added unit for "+key)
       r
     }
     override def remove(key: AbstractFile) = {
@@ -621,6 +621,7 @@ class Global(settings: Settings, reporter: Reporter)
     informIDE("getLinkPos "+sym+" "+source)
     respond(response) {
       val preExisting = unitOfFile isDefinedAt source.file
+      val originalTypeParams = sym.owner.typeParams
       reloadSources(List(source))
       parseAndEnter(getUnit(source).get)
       val owner = sym.owner
@@ -629,8 +630,8 @@ class Global(settings: Settings, reporter: Reporter)
         val newsym = pre.decl(sym.name) filter { alt =>
           sym.isType || {
             try {
-              val tp1 = adaptToNewRunMap(pre.memberType(alt) onTypeError NoType)
-              val tp2 = adaptToNewRunMap(sym.tpe)
+              val tp1 = pre.memberType(alt) onTypeError NoType
+              val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, owner.typeParams)
               matchesType(tp1, tp2, false)
             } catch {
               case ex: Throwable =>
@@ -858,7 +859,7 @@ class Global(settings: Settings, reporter: Reporter)
     }
   }
 
-  /** Parses and enteres given source file, stroring parse tree in response */
+  /** Parses and enters given source file, stroring parse tree in response */
   private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
     respond(response) {
       onUnitOf(source) { unit =>

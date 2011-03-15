@@ -1180,8 +1180,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   assert(args.isEmpty)
                   val sym1 = sym.overridingSymbol(currentOwner.enclClass)
                   typedPos(tree.pos)((transformSuper(qual) DOT sym1)())
-                }
-                else {
+                } else {
                   staticCall(atPhase(phase.prev)(sym.overridingSymbol(implClass(sym.owner))))
                 }
               } else {
