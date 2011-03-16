@@ -92,7 +92,12 @@ abstract class TypeParser {
     val flags = Flags.JAVA | Flags.STATIC | Flags.IMPLICIT; // todo: static? shouldn't be final instead?
     val viewMethodType = (msym: Symbol) => JavaMethodType(msym.newSyntheticValueParams(List(fromTpe)), toTpe)
     val vmsym = createMethod(nme.view_ + viewSuffix, flags, viewMethodType, null, true);
-    if (addToboxMethodMap) definitions.boxMethod(clazz) = vmsym
+    // !!! this used to mutate a mutable map in definitions, but that map became
+    // immutable and this kept "working" with a no-op.  So now it's commented out
+    // since I retired the deprecated code which allowed for that bug.
+    //
+    // if (addToboxMethodMap) definitions.boxMethod(clazz) = vmsym
+
     if (isAddressOf) clrTypes.addressOfViews += vmsym
     vmsym
   }

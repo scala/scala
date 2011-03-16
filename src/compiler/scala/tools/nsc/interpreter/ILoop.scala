@@ -734,10 +734,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
     // if they asked for no help and command is valid, we call the real main
     neededHelp() match {
-      case ""     => if (command.ok) main(command.settings) // else nothing
-      case help   => plush(help)
+      case ""     => command.ok && process(command.settings)
+      case help   => plush(help) ; true
     }
-    true
   }
 
   @deprecated("Use `process` instead")
@@ -763,7 +762,7 @@ object ILoop {
         val settings = new Settings
         settings.classpath.value = sys.props("java.class.path")
 
-        repl main settings
+        repl process settings
       }
     }
   }

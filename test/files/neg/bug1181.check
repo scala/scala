@@ -1,4 +1,4 @@
 bug1181.scala:9: error: missing parameter type
-     _ => buildMap(map.update(keyList.head, valueList.head), keyList.tail, valueList.tail)
+     _ => buildMap(map.updated(keyList.head, valueList.head), keyList.tail, valueList.tail)
      ^
 one error found

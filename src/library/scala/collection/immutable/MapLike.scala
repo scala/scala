@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -124,7 +122,5 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
     for ((key, value) <- this) b += ((key, f(key, value)))
     b.result
   }
-
-  @deprecated("use `updated' instead")
-  def update[B1 >: B](key: A, value: B1): immutable.Map[A, B1] = updated(key, value).asInstanceOf[immutable.Map[A, B1]]
 }
+

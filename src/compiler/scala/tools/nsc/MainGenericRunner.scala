@@ -73,8 +73,7 @@ object MainGenericRunner {
     else command.thingToRun match {
       case None             =>
         // We start the repl when no arguments are given.
-        new ILoop main settings
-        true  // not actually reached in general
+        new ILoop process settings
 
       case Some(thingToRun) =>
         val isObjectName =

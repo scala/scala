@@ -63,13 +63,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
         <div id="mbrsel">
           <div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>
-          { if (tpl.linearization.isEmpty) NodeSeq.Empty else
+          { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
               <div id="order">
                 <span class="filtertype">Ordering</span>
                 <ol><li class="alpha in">Alphabetic</li><li class="inherit out">By inheritance</li></ol>
               </div>
           }
-          { if (tpl.linearization.isEmpty) NodeSeq.Empty else
+          { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
               <div id="ancestors">
                 <span class="filtertype">Inherited</span>
                 <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
@@ -112,7 +112,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
 
         {
-          NodeSeq fromSeq (for ((superTpl, superType) <- tpl.linearization) yield
+          NodeSeq fromSeq (for ((superTpl, superType) <- (tpl.linearizationTemplates zip tpl.linearizationTypes)) yield
             <div class="parent" name={ superTpl.qualifiedName }>
               <h3>Inherited from {
                 if (tpl.universe.settings.useStupidTypes.value)
@@ -292,7 +292,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearization.isEmpty && !isReduced) =>
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearizationTemplates.isEmpty && !isReduced) =>
           <div class="block">
             linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
           </div>

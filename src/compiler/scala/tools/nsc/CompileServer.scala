@@ -180,6 +180,6 @@ object CompileServer extends StandardCompileServer {
     run()
 
     compileSocket.deletePort(port)
-    exit(0)
+    sys.exit(0)
   }
 }
