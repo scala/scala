@@ -39,7 +39,7 @@ class Sources(val path: String) {
     dirs foreach { d => dbg(d) ; catchZip(addSources(d.deepFiles map (x => Fileish(x)))) }
 
   private def calculateJars() =
-    jars foreach { j => dbg(j) ; catchZip(addSources(new SourceJar(j).iterator)) }
+    jars foreach { j => dbg(j) ; catchZip(addSources(new Jar(j).fileishIterator)) }
 
   private def addSources(fs: TraversableOnce[Fileish]) =
     fs foreach { f => if (f.isSourceFile) add(f.name, f) }

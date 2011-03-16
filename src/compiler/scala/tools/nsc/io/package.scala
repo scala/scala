@@ -7,8 +7,27 @@ package scala.tools.nsc
 
 import java.util.concurrent.{ Future, Callable, Executors, ThreadFactory }
 import java.util.{ Timer, TimerTask }
+import java.util.jar.{ Attributes }
 
 package object io {
+  type JManifest = java.util.jar.Manifest
+  private[io] type JFile = java.io.File
+  // grimly bulldozing through #4338
+  private[io] object JFile {
+    import java.io.{ File => JJFile } // the irony of JFile being ambiguous is not overlooked
+    val createTempFile = JJFile.createTempFile(_: String, _: String, _: JFile)
+    def pathSeparator  = JJFile.pathSeparator
+    def separator      = JJFile.separator
+    def separatorChar  = JJFile.separatorChar
+    def listRoots()    = JJFile.listRoots()
+  }
+  private[io] implicit def installManifestOps(m: JManifest) = new ManifestOps(m)
+  class ManifestOps(manifest: JManifest) {
+    def attrs                                       = manifest.getMainAttributes()
+    def apply(name: Attributes.Name)                = "" + attrs.get(name)
+    def update(key: Attributes.Name, value: String) = attrs.put(key, value)
+  }
+
   def runnable(body: => Unit): Runnable       = new Runnable { override def run() = body }
   def callable[T](body: => T): Callable[T]    = new Callable[T] { override def call() = body }
   def spawn[T](body: => T): Future[T]         = Executors.newSingleThreadExecutor() submit callable[T](body)

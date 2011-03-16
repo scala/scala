@@ -9,8 +9,6 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ File => JFile }
-
 object Directory {
   import scala.util.Properties.{ tmpDir, userHome, userDir }
 

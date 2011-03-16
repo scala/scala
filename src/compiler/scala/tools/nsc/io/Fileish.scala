@@ -28,7 +28,6 @@ class Fileish(val path: Path, val input: () => InputStream) extends Streamable.C
 
 object Fileish {
   def apply(f: File): Fileish = new Fileish(f, () => f.inputStream())
-
   def apply(f: JarEntry, in: () => InputStream): Fileish  = new Fileish(Path(f.getName), in)
   def apply(path: String, in: () => InputStream): Fileish = new Fileish(Path(path), in)
 }

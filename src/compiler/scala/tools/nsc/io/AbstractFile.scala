@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ File => JFile, FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
+import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.net.URL
 import PartialFunction._
 

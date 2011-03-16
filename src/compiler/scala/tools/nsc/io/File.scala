@@ -12,7 +12,7 @@ package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, File => JFile, Closeable => JCloseable }
+  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable }
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 
