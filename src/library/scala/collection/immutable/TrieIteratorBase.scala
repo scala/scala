@@ -168,7 +168,7 @@ private[immutable] abstract class TrieIteratorBase[+T, CC >: Null <: Iterable[T]
           val arr: Array[CC] = determineType(m) match {
             case COLLISION_TYPE => collisionToArray(m)
             case TRIE_TYPE      => getElems(m)
-            case _              => error("cannot divide single element")
+            case _              => sys.error("cannot divide single element")
           }
           arrayToIterators(arr)
         }

@@ -267,9 +267,6 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
     case LongMap.Nil => LongMap.Tip(key, value);
   }
 
-  @deprecated("use `updated' instead")
-  override def update[S >: T](key: Long, value: S): LongMap[S] = updated(key, value)
-
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.
    *

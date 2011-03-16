@@ -13,7 +13,7 @@ package scala
  *  operations such as the elementary exponential, logarithm, square root, and
  *  trigonometric functions.
  */
-@deprecated("use scala.math package object instead.\n(Example package object usage: scala.math.Pi )")
+@deprecated("use the scala.math package object instead.\n(Example package object usage: scala.math.Pi )")
 object Math extends MathCommon {
   @deprecated("Use scala.Byte.MinValue instead")
   val MIN_BYTE = java.lang.Byte.MIN_VALUE
@@ -50,7 +50,7 @@ object Math extends MathCommon {
   val MIN_FLOAT  = -java.lang.Float.MAX_VALUE
 
   /** The smallest difference between two values of <a href="Float.html" target="_self">scala.Float</a>. */
-  @deprecated("Use scala.Float.Epsilon instead")
+  @deprecated("Use scala.Float.MinPositiveValue instead")
   val EPS_FLOAT  = java.lang.Float.MIN_VALUE
 
   /** The greatest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
@@ -74,7 +74,7 @@ object Math extends MathCommon {
   val MIN_DOUBLE = -java.lang.Double.MAX_VALUE
 
   /** The smallest difference between two values of <a href="Double.html" target="_self">scala.Double</a>. */
-  @deprecated("Use scala.Double.Epsilon instead")
+  @deprecated("Use scala.Double.MinPositiveValue instead")
   val EPS_DOUBLE = java.lang.Double.MIN_VALUE
 
   /** The greatest possible value for <a href="Double.html" target="_self">scala.Double</a>. */

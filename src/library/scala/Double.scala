@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Sun Jan 23 21:13:38 PST 2011
+// DO NOT EDIT, CHANGES WILL BE LOST.
 
 package scala
 
@@ -119,16 +119,23 @@ final class Double extends AnyVal {
 
 
 object Double extends AnyValCompanion {
+  /** The smallest positive value greater than 0.0d.*/
   final val MinPositiveValue = jl.Double.MIN_VALUE
-  final val MinNegativeValue = -jl.Double.MAX_VALUE
   final val NaN              = jl.Double.NaN
   final val PositiveInfinity = jl.Double.POSITIVE_INFINITY
   final val NegativeInfinity = jl.Double.NEGATIVE_INFINITY
 
   @deprecated("use Double.MinPositiveValue instead")
-  final val Epsilon          = MinPositiveValue
-  @deprecated("use Double.MinNegativeValue instead")
-  final val MinValue = MinNegativeValue
+  final val Epsilon  = MinPositiveValue
+
+  /** The negative number with the greatest (finite) absolute value which is representable
+   *  by a Double.  Note that it differs from [[java.lang.Double.MIN_VALUE]], which
+   *  is the smallest positive value representable by a Double.  In Scala that number
+   *  is called Double.MinPositiveValue.
+   */
+  final val MinValue = -jl.Double.MAX_VALUE
+
+  /** The largest finite positive number representable as a Double. */
   final val MaxValue = jl.Double.MAX_VALUE
 
   def box(x: Double): jl.Double = jl.Double.valueOf(x)

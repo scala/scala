@@ -8,44 +8,6 @@
 package scala.annotation.target
 
 /**
- * For every field of a class, the Scala compiler generates up to four
- * synthetic accessors: getter, setter, bean getter and bean setter.
- * The meta-annotations in package {{{scala.annotation.target}}} are
- * used to control to which of the above members the annotations on
- * the field are copied. By default, field annotations are only added
- * to the actual field, but not to any of the accessors. By annotating
- * the annotation type or the annotation class with one or several of
- * the meta-annotations this behavior can be changed.
- *
- * In the following example, the annotation {{{@Id}}} will be added
- * only to the bean getter {{{getX}}}. In order to annotate the field
- * as well, the meta-annotation {{{@field}}} would need to be added.
- *
- * {{{
- * import javax.persistence.Id
- * class A {
- *   @(Id @beanGetter) @BeanProperty val x = 0
- * }
- * }}}
- *
- * The syntax can be improved using a type alias:
- *
- * {{{
- * object ScalaJPA {
- *   type Id = javax.persistence.Id @beanGetter
- * }
- * import ScalaJPA.Id
- * class A {
- *   @Id @BeanProperty val x = 0
- * }
- * }}}
- *
- * For annotations defined in Scala, a default target can be specified
- * in the annotation class itself, for example
- *
- * {{{
- * @getter
- * class myAnnotation extends Annotation
- * }}}
+ * Consult the documentation in package [[scala.annotation.target]].
  */
 final class setter extends annotation.StaticAnnotation

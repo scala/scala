@@ -1,0 +1,7 @@
+t4163.scala:4: error: '<-' expected but '=' found.
+        x = 3
+          ^
+t4163.scala:5: error: illegal start of simple expression
+        y <- 0 to 100
+^
+two errors found

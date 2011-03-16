@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ File => JFile, FileInputStream, FileOutputStream, IOException }
+import java.io.{ FileInputStream, FileOutputStream, IOException }
 import PartialFunction._
 
 object PlainFile {

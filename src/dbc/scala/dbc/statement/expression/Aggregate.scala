@@ -13,7 +13,7 @@ package statement
 package expression
 
 
-abstract class Aggregate extends Expression {
+@deprecated(DbcIsDeprecated) abstract class Aggregate extends Expression {
 
   def aggregateName: String;
 

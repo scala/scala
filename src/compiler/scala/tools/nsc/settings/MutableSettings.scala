@@ -36,31 +36,30 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
    *  Returns (success, List of unprocessed arguments)
    */
   def processArguments(arguments: List[String], processAll: Boolean): (Boolean, List[String]) = {
-    var args = arguments
-    val residualArgs = new ListBuffer[String]
-
-    while (args.nonEmpty) {
-      if (args.head startsWith "-") {
-        val args0 = args
-        args = this parseParams args
-        if (args eq args0) {
-          errorFn("bad option: '" + args.head + "'")
-          return ((false, args))
+    def loop(args: List[String], residualArgs: List[String]): (Boolean, List[String]) = args match {
+      case Nil        =>
+        (checkDependencies, residualArgs)
+      case "--" :: xs =>
+        (checkDependencies, xs)
+      case x :: xs  =>
+        val isOpt = x startsWith "-"
+        if (isOpt) {
+          val newArgs = parseParams(args)
+          if (args eq newArgs) {
+            errorFn("bad option: '" + x + "'")
+            (false, args)
+          }
+          else lookupSetting(x) match {
+            case Some(s) if s.shouldStopProcessing  => (checkDependencies, newArgs)
+            case _                                  => loop(newArgs, residualArgs)
+          }
         }
-      }
-      else if (args.head == "") {   // discard empties, sometimes they appear because of ant or etc.
-        args = args.tail
-      }
-      else {
-        if (!processAll)
-          return ((checkDependencies, args))
-
-        residualArgs += args.head
-        args = args.tail
-      }
+        else {
+          if (processAll) loop(xs, residualArgs :+ x)
+          else (checkDependencies, args)
+        }
     }
-
-    ((checkDependencies, residualArgs.toList))
+    loop(arguments filterNot (_ == ""), Nil)
   }
   def processArgumentString(params: String) = processArguments(splitParams(params), true)
 
@@ -112,76 +111,34 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     def parseNormalArg(p: String, args: List[String]): Option[List[String]] =
       tryToSetIfExists(p, args, (s: Setting) => s.tryToSet _)
 
-    def getMainClass(jarName: String): Option[String] = {
-      import java.io._, java.util.jar._
-      try {
-        val in = new JarInputStream(new FileInputStream(jarName))
-        val mf = in.getManifest
-        val res = if (mf != null) {
-          val name = mf.getMainAttributes getValue Attributes.Name.MAIN_CLASS
-          if (name != null) Some(name)
-          else {
-            errorFn("Unable to get attribute 'Main-Class' from jarfile "+jarName)
-            None
+    args match {
+      case Nil          => Nil
+      case arg :: rest  =>
+        if (!arg.startsWith("-")) {
+          errorFn("Argument '" + arg + "' does not start with '-'.")
+          args
+        }
+        else if (arg == "-") {
+          errorFn("'-' is not a valid argument.")
+          args
+        }
+        else {
+          // we dispatch differently based on the appearance of p:
+          // 1) If it has a : it is presumed to be -Xfoo:bar,baz
+          // 2) Otherwise, the whole string should be a command name
+          //
+          // Internally we use Option[List[String]] to discover error,
+          // but the outside expects our arguments back unchanged on failure
+          if (arg contains ":") parseColonArg(arg) match {
+            case Some(_)  => rest
+            case None     => args
           }
-        } else {
-          errorFn("Unable to find manifest in jarfile "+jarName)
-          None
-        }
-        in.close()
-        res
-      } catch {
-        case e: FileNotFoundException =>
-          errorFn("Unable to access jarfile "+jarName); None
-        case e: IOException =>
-          errorFn(e.getMessage); None
-      }
-    }
-
-    def doArgs(args: List[String]): List[String] = {
-      if (args.isEmpty) return Nil
-      val arg :: rest = args
-      if (arg == "") {
-        // it looks like Ant passes "" sometimes
-        rest
-      }
-      else if (!arg.startsWith("-")) {
-        errorFn("Argument '" + arg + "' does not start with '-'.")
-        args
-      }
-      else if (arg == "-") {
-        errorFn("'-' is not a valid argument.")
-        args
-      }
-      else if (arg == "-jar") {
-        parseNormalArg("-cp", rest) match {
-          case Some(xs) =>
-            getMainClass(rest.head) match {
-              case Some(mainClass) => mainClass :: xs
-              case None => args
-            }
-          case None     => args
-        }
-      }
-      else
-        // we dispatch differently based on the appearance of p:
-        // 1) If it has a : it is presumed to be -Xfoo:bar,baz
-        // 2) If the first two chars are the name of a command, -Dfoo=bar
-        // 3) Otherwise, the whole string should be a command name
-        //
-        // Internally we use Option[List[String]] to discover error,
-        // but the outside expects our arguments back unchanged on failure
-        if (arg contains ":") parseColonArg(arg) match {
-          case Some(_)  => rest
-          case None     => args
-        }
-        else parseNormalArg(arg, rest) match {
-          case Some(xs) => xs
-          case None     => args
+          else parseNormalArg(arg, rest) match {
+            case Some(xs) => xs
+            case None     => args
+          }
         }
     }
-
-    doArgs(args)
   }
 
   /** Initializes these settings for embedded use by type `T`.

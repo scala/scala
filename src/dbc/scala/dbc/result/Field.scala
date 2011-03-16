@@ -16,7 +16,7 @@ import scala.dbc.datatype._
 import scala.dbc.value._
 
 /** An ISO-9075:2003 (SQL) table field. */
-abstract class Field {
+@deprecated(DbcIsDeprecated) abstract class Field {
 
   /** The content (value) of the field. The type of this value is undefined,
    *  transformation into a useful type will be done by an automatic view
@@ -56,7 +56,7 @@ abstract class Field {
 
 }
 
-object Field {
+@deprecated(DbcIsDeprecated) object Field {
 
   implicit def fieldToValue (field: Field): Value = field.content
 

@@ -1,0 +1,5 @@
+#!/bin/bash
+#
+
+THISDIR=`dirname $0`
+$THISDIR/codegen --anyvals --out $THISDIR/../src/library/scala

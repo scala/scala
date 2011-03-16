@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// generated on Sun Jan 23 21:13:38 PST 2011
+// DO NOT EDIT, CHANGES WILL BE LOST.
 
 package scala
 
@@ -119,16 +119,23 @@ final class Float extends AnyVal {
 
 
 object Float extends AnyValCompanion {
+  /** The smallest positive value greater than 0.0f.*/
   final val MinPositiveValue = jl.Float.MIN_VALUE
-  final val MinNegativeValue = -jl.Float.MAX_VALUE
   final val NaN              = jl.Float.NaN
   final val PositiveInfinity = jl.Float.POSITIVE_INFINITY
   final val NegativeInfinity = jl.Float.NEGATIVE_INFINITY
 
   @deprecated("use Float.MinPositiveValue instead")
-  final val Epsilon          = MinPositiveValue
-  @deprecated("use Float.MinNegativeValue instead")
-  final val MinValue = MinNegativeValue
+  final val Epsilon  = MinPositiveValue
+
+  /** The negative number with the greatest (finite) absolute value which is representable
+   *  by a Float.  Note that it differs from [[java.lang.Float.MIN_VALUE]], which
+   *  is the smallest positive value representable by a Float.  In Scala that number
+   *  is called Float.MinPositiveValue.
+   */
+  final val MinValue = -jl.Float.MAX_VALUE
+
+  /** The largest finite positive number representable as a Float. */
   final val MaxValue = jl.Float.MAX_VALUE
 
   def box(x: Float): jl.Float = jl.Float.valueOf(x)

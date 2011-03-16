@@ -5,7 +5,7 @@
 
 package scala.tools.nsc
 
-import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream, File => JFile }
+import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream }
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //Position
 import scala.tools.util.SocketServer
@@ -180,6 +180,6 @@ object CompileServer extends StandardCompileServer {
     run()
 
     compileSocket.deletePort(port)
-    exit(0)
+    sys.exit(0)
   }
 }

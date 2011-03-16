@@ -15,7 +15,7 @@ package result
 /** The class <code>FieldMetadata</cocde> provides informations attached to
  *  a field about its content and its relationship to the originating database.
  */
-abstract class FieldMetadata {
+@deprecated(DbcIsDeprecated) abstract class FieldMetadata {
 
   /** The name of the field. */
   def name: String

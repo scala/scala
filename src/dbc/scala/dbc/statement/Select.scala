@@ -15,7 +15,7 @@ package statement
 /** A statement that when executed on a database will return a relation.
  * The returned relation will be a subset of a table in the database or
  * a jointure between such subsets. */
-abstract class Select extends Relation {
+@deprecated(DbcIsDeprecated) abstract class Select extends Relation {
 
   /** Defines if duplicated tuples should be removed from the returned
    * relation. <h3>Compatibility notice</h3> Some DBMS (PostgreSQL) allow

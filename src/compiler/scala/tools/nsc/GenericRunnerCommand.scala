@@ -3,7 +3,6 @@
  * @author  Lex Spoon
  */
 
-
 package scala.tools.nsc
 
 /** A command for ScriptRunner */
@@ -28,40 +27,53 @@ extends CompilerCommand(args, settings) {
   /** thingToRun: What to run.  If it is None, then the interpreter should be started
    *  arguments: Arguments to pass to the object or script to run
    */
-  val (thingToRun, arguments) = settings.processArguments(args, false)._2 match {
-    case Nil      => (None, Nil)
-    case hd :: tl => (Some(hd), tl)
+  val (thingToRun, arguments) = {
+    val (_, remaining) = settings.processArguments(args, false)
+    val mainClass =
+      if (settings.jarfile.isDefault) None
+      else new io.Jar(settings.jarfile.value).mainClass
+
+    // If there is a jar with a main class, the remaining args are passed to that.
+    // Otherwise, the first remaining argument is the program to run, and the rest
+    // of the arguments go to it.  If remaining is empty, we'll start the repl.
+    mainClass match {
+      case Some(name) => (Some(name), remaining)
+      case _          => (remaining.headOption, remaining drop 1)
+    }
   }
 
   override def usageMsg ="""
-Usage: %s <options> [<torun> <arguments>]
-   or  %s <options> [-jar <jarfile> <arguments>]
+Usage: @cmd@ <options> [<script|class|object> <arguments>]
+   or  @cmd@ <options> [-jar <jarfile> <arguments>]
 
-All options to %s are allowed.  See %s -help.
+All options to @compileCmd@ are allowed.  See @compileCmd@ -help.
 
-<torun>, if present, is an object or script file to run.
+The first given argument other than options to @cmd@ designates
+what to run.  Runnable targets are:
 
--jar <jarfile>, if present, uses the 'Main-Class' attribute
-in the manifest file to determine the object to run.
+  - a file containing scala source
+  - the name of a compiled class
+  - a runnable jar file with a Main-Class attribute (if -jar is given)
+  - if no argument is given, the repl (interactive shell) is started
 
-If neither <torun> nor -jar <jarfile> are present, run an
-interactive shell.
+Options to the runner which reach the java runtime:
 
-Option -howtorun allows explicitly specifying how to run <torun>:
-    script: it is a script file
-    object: it is an object name
-    guess: (the default) try to guess
+ -Dname=prop  passed directly to java to set system properties
+ -J<arg>      -J is stripped and <arg> passed to java as-is
+ -nobootcp    do not put the scala jars on the boot classpath (slower)
 
-Option -i requests that a file be pre-loaded.  It is only
-meaningful for interactive shells.
+Other scala startup options:
 
-Option -e requests that its argument be executed as Scala code.
+ -howtorun      specify what to run <script|object|guess> (default: guess)
+ -i <file>      preload <file> before starting the repl
+ -e <string>    execute <string> as if entered in the repl
+ -nc            no compilation daemon: do not use the fsc offline compiler
+ -savecompiled  save the compiled script in a jar for future use
 
-Option -savecompiled requests that the compiled script be saved
-for future use.
+A file argument will be run as a scala script unless it contains only top
+level classes and objects, and exactly one runnable main method.  In that
+case the file will be compiled and the main method invoked.  This provides
+a bridge between scripts and standard scala source.
 
-Option -nocompdaemon requests that the fsc offline compiler not be used.
-
-Option -Dproperty=value sets a Java system property.
-""".format(cmdName, cmdName, compCmdName, compCmdName)
+  """.replaceAll("@cmd@", cmdName).replaceAll("@compileCmd@", compCmdName)
 }

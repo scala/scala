@@ -60,27 +60,6 @@ trait Prop[T] {
   protected def zero: T
 }
 
-/** A few additional conveniences for Boolean properties.
- */
-trait BooleanProp extends Prop[Boolean] {
-  /** The default implementation of `value` adheres to java's definition
-   *  of truth, which means it is true only if there is a value in the map and
-   *  that value, once converted to all lower case, is equal to "true".
-   *
-   *  @return   true if the current String is considered true, false otherwise
-   */
-  def value: Boolean
-
-  /** Alter this property so that `value` will be true. */
-  def enable(): Unit
-
-  /** Alter this property so that `value` will be false. */
-  def disable(): Unit
-
-  /** Toggle the property between enabled and disabled states. */
-  def toggle(): Unit
-}
-
 object Prop extends PropCompanion {
   /** A creator of property instances.  For any type `T`, if an implicit
    *  parameter of type Creator[T] is in scope, a Prop[T] can be created

@@ -48,6 +48,8 @@ object SystemProperties {
   // Todo: bring some sanity to the intersection of system properties aka "mutable
   // state shared by everyone and everything" and the reality that there is no other
   // mechanism for accomplishing some things on the jvm.
-  lazy val headless   = bool("java.awt.headless", "system should not utilize a display device")
-  lazy val preferIPv4 = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
+  lazy val headless          = bool("java.awt.headless", "system should not utilize a display device")
+  lazy val preferIPv4        = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
+  lazy val noTraceSupression = bool("scala.control.no-trace-suppression", "scala should not suppress any stack trace creation")
 }
+

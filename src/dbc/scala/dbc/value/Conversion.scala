@@ -11,10 +11,9 @@
 package scala.dbc
 package value;
 
-
 import java.math._;
 
-object Conversion {
+@deprecated(DbcIsDeprecated) object  Conversion {
 
   class Illegal (msg:String) extends Exception(msg);
 

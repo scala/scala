@@ -43,7 +43,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
   var intp: IMain = _
-  var power: Power = _
+
+  lazy val power = new Power(this)
 
   // TODO
   // object opt extends AestheticSettings
@@ -109,7 +110,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     if (intp ne null) {
       intp.close
       intp = null
-      power = null
       Thread.currentThread.setContextClassLoader(originalClassLoader)
     }
   }
@@ -211,6 +211,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
        LineArg("javap", "disassemble a file or class name", javapCommand),
        LineArg("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
        OneArg("load", "load and interpret a Scala file", load),
+       NoArgs("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
        NoArgs("power", "enable power user mode", powerCmd),
        NoArgs("quit", "exit the interpreter", () => Result(false, None)),
        NoArgs("replay", "reset execution and replay all previous commands", replay),
@@ -224,7 +225,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     List(
       LineArg("dump", "displays a view of the interpreter's internal state", dumpCommand),
       LineArg("phase", "set the implicit phase for power commands", phaseCommand),
-      LineArg("symfilter", "change the filter for symbol printing", symfilterCmd),
       LineArg("wrap", "code to wrap around all executions", wrapCommand)
     )
   }
@@ -237,10 +237,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   private val typeTransforms = List(
     "scala.collection.immutable." -> "immutable.",
-    "scala.collection.mutable." -> "mutable.",
-    "scala.collection.generic." -> "generic.",
-    "java.lang." -> "jl.",
-    "scala.runtime." -> "runtime."
+    "scala.collection.mutable."   -> "mutable.",
+    "scala.collection.generic."   -> "generic.",
+    "java.lang."                  -> "jl.",
+    "scala.runtime."              -> "runtime."
   )
 
   private def implicitsCommand(line: String): Result = {
@@ -337,17 +337,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     if (line == "") "Cleared wrapper."
     else "Set wrapper to '" + line + "'"
   }
-
-  private def symfilterCmd(line: String): Result = {
-    if (line == "") {
-      power.vars.symfilter set "_ => true"
-      "Remove symbol filter."
-    }
-    else {
-      power.vars.symfilter set line
-      "Set symbol filter to '" + line + "'."
-    }
-  }
   private def pathToPhased = intp.pathToTerm("power") + ".phased"
   private def phaseCommand(name: String): Result = {
     // This line crashes us in TreeGen:
@@ -391,8 +380,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   /** Available commands */
   def commands: List[LoopCommand] = standardCommands ++ (
-    if (power == null) Nil
-    else powerCommands
+    if (isReplPower) powerCommands else Nil
   )
 
   val replayQuestionMessage =
@@ -436,7 +424,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
    */
   def loop() {
     def readOneLine() = {
-      out.flush
+      out.flush()
       in readLine prompt
     }
     // return false if repl should exit
@@ -522,13 +510,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   def powerCmd(): Result = {
-    if (power != null)
-      return "Already in power mode."
-
-    power = new Power(this)
+    if (isReplPower) return "Already in power mode."
+    else enablePowerMode()
+  }
+  def enablePowerMode() = {
     isReplPower = true
     power.unleash()
-    power.banner
+    out.println(power.banner)
   }
 
   def verbosity() = {
@@ -572,88 +560,33 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
   }
 
-  private val CONTINUATION_STRING = "     | "
-  private val PROMPT_STRING = "scala> "
-
-  /** If it looks like they're pasting in a scala interpreter
-   *  transcript, remove all the formatting we inserted so we
-   *  can make some sense of it.
-   */
-  private var pasteStamp: Long = 0
-
-  /** Returns true if it's long enough to quit. */
-  def updatePasteStamp(): Boolean = {
-    /* Enough milliseconds between readLines to call it a day. */
-    val PASTE_FINISH = 1000
-
-    val prevStamp = pasteStamp
-    pasteStamp = System.currentTimeMillis
-
-    (pasteStamp - prevStamp > PASTE_FINISH)
-
-  }
-  /** TODO - we could look for the usage of resXX variables in the transcript.
-   *  Right now backreferences to auto-named variables will break.
-   */
-
-  /** The trailing lines complication was an attempt to work around the introduction
-   *  of newlines in e.g. email messages of repl sessions.  It doesn't work because
-   *  an unlucky newline can always leave you with a syntactically valid first line,
-   *  which is executed before the next line is considered.  So this doesn't actually
-   *  accomplish anything, but I'm leaving it in case I decide to try harder.
-   */
-  case class PasteCommand(cmd: String, trailing: ListBuffer[String] = ListBuffer[String]())
-
-  /** Commands start on lines beginning with "scala>" and each successive
-   *  line which begins with the continuation string is appended to that command.
-   *  Everything else is discarded.  When the end of the transcript is spotted,
-   *  all the commands are replayed.
-   */
-  @tailrec private def cleanTranscript(lines: List[String], acc: List[PasteCommand]): List[PasteCommand] = lines match {
-    case Nil                                    => acc.reverse
-    case x :: xs if x startsWith PROMPT_STRING  =>
-      val first = x stripPrefix PROMPT_STRING
-      val (xs1, xs2) = xs span (_ startsWith CONTINUATION_STRING)
-      val rest = xs1 map (_ stripPrefix CONTINUATION_STRING)
-      val result = (first :: rest).mkString("", "\n", "\n")
-
-      cleanTranscript(xs2, PasteCommand(result) :: acc)
-
-    case ln :: lns =>
-      val newacc = acc match {
-        case Nil => Nil
-        case PasteCommand(cmd, trailing) :: accrest =>
-          PasteCommand(cmd, trailing :+ ln) :: accrest
-      }
-      cleanTranscript(lns, newacc)
+  private def readWhile(cond: String => Boolean) = {
+    Iterator continually in.readLine("") takeWhile (x => x != null && cond(x))
   }
 
-  /** The timestamp is for safety so it doesn't hang looking for the end
-   *  of a transcript.  Ad hoc parsing can't be too demanding.  You can
-   *  also use ctrl-D to start it parsing.
-   */
-  @tailrec private def interpretAsPastedTranscript(lines: List[String]) {
-    val line = in.readLine("")
-    val finished = updatePasteStamp()
+  def pasteCommand(): Result = {
+    out.println("// Entering paste mode (ctrl-D to finish)\n")
+    out.flush()
+    val code = readWhile(_ => true) mkString "\n"
+    out.println("\n// Exiting paste mode, now interpreting.\n")
+    intp interpret code
+    ()
+  }
 
-    if (line == null || finished || line.trim == PROMPT_STRING.trim) {
-      val xs = cleanTranscript(lines.reverse, Nil)
-      println("Replaying %d commands from interpreter transcript." format xs.size)
-      for (PasteCommand(cmd, trailing) <- xs) {
-        out.flush()
-        def runCode(code: String, extraLines: List[String]) {
-          (intp interpret code) match {
-            case IR.Incomplete if extraLines.nonEmpty =>
-              runCode(code + "\n" + extraLines.head, extraLines.tail)
-            case _ => ()
-          }
-        }
-        runCode(cmd, trailing.toList)
-      }
+  private object paste extends Pasted {
+    val ContinueString = "     | "
+    val PromptString   = "scala> "
+
+    def interpret(line: String): Unit = {
+      out.println(line.trim)
+      intp interpret line
+      out.println("")
     }
-    else
-      interpretAsPastedTranscript(line :: lines)
+
+    def transcript(start: String) =
+      apply(Iterator(start) ++ readWhile(_.trim != PromptString.trim))
   }
+  import paste.{ ContinueString, PromptString }
 
   /** Interpret expressions starting with the first line.
     * Read lines until a complete compilation unit is available
@@ -675,7 +608,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
             out.println("You typed two blank lines.  Starting a new command.")
             None
           }
-          else in.readLine(CONTINUATION_STRING) match {
+          else in.readLine(ContinueString) match {
             case null =>
               // we know compilation is going to fail since we're at EOF and the
               // parser thinks the input is still incomplete, but since this is
@@ -699,9 +632,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
      *     and avoid the interpreter, as it's likely not valid scala code.
      */
     if (code == "") None
-    else if (code startsWith PROMPT_STRING) {
-      updatePasteStamp()
-      interpretAsPastedTranscript(List(code))
+    else if (!paste.running && code.startsWith(PromptString)) {
+      paste.transcript(code)
       None
     }
     else if (Completion.looksLikeInvocation(code) && intp.mostRecentVar != "") {
@@ -784,7 +716,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       intp.initialize()
       if (isReplPower) {
         plushln("Starting in power mode, one moment...\n")
-        powerCmd()
+        enablePowerMode()
       }
       loop()
     }
@@ -802,10 +734,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
     // if they asked for no help and command is valid, we call the real main
     neededHelp() match {
-      case ""     => if (command.ok) main(command.settings) // else nothing
-      case help   => plush(help)
+      case ""     => command.ok && process(command.settings)
+      case help   => plush(help) ; true
     }
-    true
   }
 
   @deprecated("Use `process` instead")
@@ -831,7 +762,7 @@ object ILoop {
         val settings = new Settings
         settings.classpath.value = sys.props("java.class.path")
 
-        repl main settings
+        repl process settings
       }
     }
   }

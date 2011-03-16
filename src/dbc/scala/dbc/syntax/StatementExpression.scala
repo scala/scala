@@ -15,7 +15,7 @@ package syntax;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-abstract class StatementExpression {
+@deprecated(DbcIsDeprecated) abstract class StatementExpression {
 
   def toStatement: statement.Expression;
 
@@ -171,7 +171,7 @@ abstract class StatementExpression {
 
 }
 
-object StatementExpression {
+@deprecated(DbcIsDeprecated) object StatementExpression {
 
   def not (se:StatementExpression): StatementExpression = new StatementExpression {
     val toStatement = new statement.expression.UnaryOperator {

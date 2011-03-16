@@ -13,12 +13,12 @@ package statement
 
 
 /** A join behaviour in a <code>Jointure</code>. */
-abstract class JoinType {
+@deprecated(DbcIsDeprecated) abstract class JoinType {
   /** A SQL-99 string representation of the join behaviour. */
   def sqlString: String
 }
 
-object JoinType {
+@deprecated(DbcIsDeprecated) object JoinType {
 
   /** A join behaviour where a joined tuple is created only when a
    *  corresponding tuple exists in both original relations.

@@ -15,7 +15,7 @@ package value;
 import java.math.BigInteger;
 import java.math.BigDecimal;
 
-abstract class ExactNumeric [Type] extends Value {
+@deprecated(DbcIsDeprecated) abstract class ExactNumeric [Type] extends Value {
 
   val dataType: datatype.ExactNumeric[Type];
 
@@ -23,7 +23,7 @@ abstract class ExactNumeric [Type] extends Value {
 
 }
 
-object ExactNumeric {
+@deprecated(DbcIsDeprecated) object ExactNumeric {
 
   implicit def exactNumericToByte (obj:value.ExactNumeric[Byte]): Byte = obj.nativeValue;
   implicit def exactNumericToShort (obj:value.ExactNumeric[Short]): Short = obj.nativeValue;

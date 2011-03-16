@@ -9,7 +9,7 @@ package io
 
 import java.net.URL
 import java.util.Enumeration
-import java.io.{ File => JFile, IOException, InputStream, BufferedInputStream, ByteArrayInputStream }
+import java.io.{ IOException, InputStream, BufferedInputStream, ByteArrayInputStream }
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import PartialFunction._
 

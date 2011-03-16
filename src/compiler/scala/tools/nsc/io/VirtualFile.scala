@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream, File => JFile }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
 import PartialFunction._
 
 /** This class implements an in-memory file.

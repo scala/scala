@@ -7,7 +7,7 @@ package scala.tools.nsc
 package io
 
 import java.net.{ URI, URL }
-import java.io.{ BufferedInputStream, InputStream, PrintStream, File => JFile }
+import java.io.{ BufferedInputStream, InputStream, PrintStream }
 import java.io.{ BufferedReader, InputStreamReader, Closeable => JCloseable }
 import scala.io.{ Codec, BufferedSource, Source }
 import collection.mutable.ArrayBuffer

@@ -7,9 +7,8 @@ package scala.tools.cmd
 package gen
 
 trait AnyValTemplates {
-  def timestampString = "// generated on " + new java.util.Date + "\n"
-
-  def template = """
+  def timestampString = ""
+  def template = ("""
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
@@ -22,10 +21,10 @@ trait AnyValTemplates {
 package scala
 
 import java.{ lang => jl }
-
   """.trim.format(timestampString) + "\n\n"
+  )
 
-  val booleanBody = """
+  def booleanBody = """
 final class Boolean extends AnyVal {
   def unary_! : Boolean = sys.error("stub")
 
@@ -48,7 +47,7 @@ object Boolean extends AnyValCompanion {
 }
   """.trim
 
-  val unitBody = """
+  def unitBody = """
 import runtime.BoxedUnit
 
 final class Unit extends AnyVal { }
@@ -59,6 +58,40 @@ object Unit extends AnyValCompanion {
   def unbox(x: jl.Object): Unit = ()
 }
   """.trim
+
+  def cardinalCompanion = """
+final val MinValue = @type@.MIN_VALUE
+final val MaxValue = @type@.MAX_VALUE
+
+def box(x: @name@): @type@ = @type@.valueOf(x)
+def unbox(x: jl.Object): @name@ = x.asInstanceOf[@type@].@lcname@Value()
+override def toString = "object scala.@name@"
+  """.trim.lines
+
+  def floatingCompanion = """
+/** The smallest positive value greater than @zero@.*/
+final val MinPositiveValue = @type@.MIN_VALUE
+final val NaN              = @type@.NaN
+final val PositiveInfinity = @type@.POSITIVE_INFINITY
+final val NegativeInfinity = @type@.NEGATIVE_INFINITY
+
+@deprecated("use @name@.MinPositiveValue instead")
+final val Epsilon  = MinPositiveValue
+
+/** The negative number with the greatest (finite) absolute value which is representable
+ *  by a @name@.  Note that it differs from [[java.lang.@name@.MIN_VALUE]], which
+ *  is the smallest positive value representable by a @name@.  In Scala that number
+ *  is called @name@.MinPositiveValue.
+ */
+final val MinValue = -@type@.MAX_VALUE
+
+/** The largest finite positive number representable as a @name@. */
+final val MaxValue = @type@.MAX_VALUE
+
+def box(x: @name@): @type@ = @type@.valueOf(x)
+def unbox(x: jl.Object): @name@ = x.asInstanceOf[@type@].@lcname@Value()
+override def toString = "object scala.@name@"
+  """.trim.lines
 }
 
 class AnyVals extends AnyValTemplates {
@@ -90,11 +123,18 @@ class AnyVals extends AnyValTemplates {
     val isCardinal = cardinal contains name
     val restype    = if ("LFD" contains name.head) name else I
     val tpe        = javaType(name)
+    val zero       = name.head match {
+      case 'L' => "0L"
+      case 'F' => "0.0f"
+      case 'D' => "0.0d"
+      case _   => "0"
+    }
     val interpolations = Map(
       "@restype@"  -> restype,
       "@name@"     -> name,
       "@type@"     -> tpe,
-      "@lcname@"   -> name.toLowerCase
+      "@lcname@"   -> name.toLowerCase,
+      "@zero@"     -> zero
     )
 
     def mkCoercions = numeric map (x => "def to%s: %s".format(x, x))
@@ -131,7 +171,7 @@ class AnyVals extends AnyValTemplates {
       }
       assemble("final class", "AnyVal", lines)
     }
-    def mkObject = assemble("object", "AnyValCompanion", companionLines map interpolate)
+    def mkObject = assemble("object", "AnyValCompanion", companionBody map interpolate toList)
 
     def assemble(what: String, parent: String, lines: List[String]): String = (
       List(what, name, "extends", parent, "{").mkString(" ") +:
@@ -171,35 +211,9 @@ class AnyVals extends AnyValTemplates {
     def boolBinops  = List("==", "!=", "<", "<=", ">", ">=")
     def otherBinops = List("+", "-" ,"*", "/", "%")
 
-    def floatingCompanion = List(
-      "final val MinPositiveValue = @type@.MIN_VALUE",
-      "final val MinNegativeValue = -@type@.MAX_VALUE",
-      "final val NaN              = @type@.NaN",
-      "final val PositiveInfinity = @type@.POSITIVE_INFINITY",
-      "final val NegativeInfinity = @type@.NEGATIVE_INFINITY",
-      "",
-      """@deprecated("use @name@.MinPositiveValue instead")""",
-      "final val Epsilon          = MinPositiveValue",
-      """@deprecated("use @name@.MinNegativeValue instead")""",
-      "final val MinValue = MinNegativeValue"
-    )
-
-    def cardinalCompanion = List(
-      "final val MinValue = @type@.MIN_VALUE"
-    )
-
-    def commonCompanion = List(
-      "final val MaxValue = @type@.MAX_VALUE",
-      "",
-      "def box(x: @name@): @type@ = @type@.valueOf(x)",
-      "def unbox(x: jl.Object): @name@ = x.asInstanceOf[@type@].@lcname@Value()",
-      "override def toString = \"object scala.@name@\""
-    )
-
-    def companionLines = (
+    def companionBody =
       if (isCardinal) cardinalCompanion
       else floatingCompanion
-    ) ++ commonCompanion
   }
 }
 
