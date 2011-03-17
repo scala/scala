@@ -281,7 +281,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       normalizeTemplate(RootPackage)
     case ScalaObjectClass | ObjectClass =>
       normalizeTemplate(AnyRefClass)
-    case _ if aSym.isModuleClass || aSym.isPackageObject =>
+    case _ if aSym.isPackageObject =>
+      aSym
+    case _ if aSym.isModuleClass =>
       normalizeTemplate(aSym.sourceModule)
     case _ =>
       aSym
