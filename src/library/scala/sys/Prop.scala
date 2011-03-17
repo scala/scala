@@ -18,7 +18,7 @@ package scala.sys
  *  @version 2.9
  *  @since   2.9
  */
-trait Prop[T] {
+trait Prop[+T] {
   /** The full name of the property, e.g. "java.awt.headless".
    */
   def key: String
@@ -60,21 +60,19 @@ trait Prop[T] {
   protected def zero: T
 }
 
-object Prop extends PropCompanion {
+object Prop {
   /** A creator of property instances.  For any type `T`, if an implicit
    *  parameter of type Creator[T] is in scope, a Prop[T] can be created
    *  via this object's apply method.
    */
-  trait Creator[T] {
+  trait Creator[+T] {
     /** Creates a Prop[T] of this type based on the given key. */
     def apply(key: String): Prop[T]
   }
 
-  implicit object BooleanProp extends BooleanCreatorImpl
   implicit object StringProp extends CreatorImpl[String](s => s)
   implicit object IntProp extends CreatorImpl[Int](_.toInt)
   implicit object DoubleProp extends CreatorImpl[Double](_.toDouble)
 
-  def bool[T](key: String): BooleanProp = BooleanProp(key)
   def apply[T: Creator](key: String): Prop[T] = implicitly[Creator[T]] apply key
 }
