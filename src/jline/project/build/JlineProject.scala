@@ -10,6 +10,8 @@ class JlineProject(info: ProjectInfo) extends DefaultProject(info) with Proguard
   // val junit = "junit" % "junit" % "4.8.1" % "test"
   // lazy val jansiPath = (managedDependencyPath / "compile" ** "jansi*").get.toList.head.absolutePath
 
+  override def javaCompileOptions = super.javaCompileOptions ++ javaCompileOptions("-target", "1.5")
+
   override def makeInJarFilter(file: String) =  {
     if (!file.startsWith("jansi")) super.makeInJarFilter(file)
     else List(
