@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Scala Distribution
 Bundle-SymbolicName: org.scala-ide.scala.compiler;singleton:=true
-Bundle-Version: 2.9.0.alpha
+Bundle-Version: 2.10.0.alpha
 Eclipse-LazyStart: true
 Bundle-ClassPath: 
  .,
