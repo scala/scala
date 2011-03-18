@@ -43,6 +43,10 @@ trait Prop[+T] {
    */
   def set(newValue: String): String
 
+  /** Sets the property with a value of the represented type.
+   */
+  def setValue[T1 >: T](value: T1): T
+
   /** Gets the current string value if any.  Will not return null: use
    *  `isSet` to test for existence.
    *  @return   the current string value if any, else the empty string

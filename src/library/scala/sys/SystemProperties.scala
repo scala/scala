@@ -48,9 +48,14 @@ class SystemProperties extends mutable.Map[String, String] {
  *  }}}
  */
 object SystemProperties {
+  /** An unenforceable, advisory only place to do some synchronization when
+   *  mutating system properties.
+   */
+  def exclusively[T](body: => T) = this synchronized body
+
   implicit def systemPropertiesToCompanion(p: SystemProperties): SystemProperties.type = this
   private lazy val propertyHelp = mutable.Map[String, String]()
-  private def bool(key: String, helpText: String) = {
+  private def bool(key: String, helpText: String): BooleanProp = {
     val prop = (
       if (key startsWith "java.") BooleanProp.valueIsTrue(key)
       else BooleanProp.keyExists(key)
@@ -63,8 +68,9 @@ object SystemProperties {
   // Todo: bring some sanity to the intersection of system properties aka "mutable
   // state shared by everyone and everything" and the reality that there is no other
   // mechanism for accomplishing some things on the jvm.
-  lazy val headless          = bool("java.awt.headless", "system should not utilize a display device")
-  lazy val preferIPv4        = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
-  lazy val noTraceSupression = bool("scala.control.no-trace-suppression", "scala should not suppress any stack trace creation")
+  lazy val headless            = bool("java.awt.headless", "system should not utilize a display device")
+  lazy val preferIPv4Stack     = bool("java.net.preferIPv4Stack", "system should prefer IPv4 sockets")
+  lazy val preferIPv6Addresses = bool("java.net.preferIPv6Addresses", "system should prefer IPv6 addresses")
+  lazy val noTraceSupression   = bool("scala.control.noTraceSuppression", "scala should not suppress any stack trace creation")
 }
 

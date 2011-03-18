@@ -31,7 +31,11 @@ trait BooleanProp extends Prop[Boolean] {
 object BooleanProp {
   private[sys]
   class BooleanPropImpl(key: String, valueFn: String => Boolean) extends PropImpl(key, valueFn) with BooleanProp {
-    def enable()  = this set "true"
+    override def setValue[T1 >: Boolean](newValue: T1): Boolean = newValue match {
+      case x: Boolean if !x   => val old = value ; clear() ; old
+      case x                  => super.setValue(newValue)
+    }
+    def enable()  = this setValue true
     def disable() = this.clear()
     def toggle()  = if (value) disable() else enable()
   }
@@ -39,6 +43,7 @@ object BooleanProp {
   class ConstantImpl(val key: String, val value: Boolean) extends BooleanProp {
     val isSet = value
     def set(newValue: String) = "" + value
+    def setValue[T1 >: Boolean](newValue: T1): Boolean = value
     def get: String = "" + value
     val clear, enable, disable, toggle = ()
     protected def zero = false

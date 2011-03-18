@@ -10,14 +10,19 @@ import java.io.{ BufferedReader, FileReader }
 import java.util.regex.Pattern
 import java.net._
 import java.security.SecureRandom
-
-import io.{ File, Path, Socket }
+import io.{ File, Path, Directory, Socket }
 import scala.util.control.Exception.catching
+import scala.tools.util.CompileOutputCommon
 import scala.tools.util.StringOps.splitWhere
 import scala.sys.process._
 
 trait HasCompileSocket {
   def compileSocket: CompileSocket
+
+  // This is kind of a suboptimal way to identify error situations.
+  val errorMarkers = Set("error:", "error found", "errors found", "bad option")
+  def isErrorMessage(msg: String) = errorMarkers exists (msg contains _)
+
   def compileOnServer(sock: Socket, args: Seq[String]): Boolean = {
     var noErrors = true
 
@@ -28,10 +33,10 @@ trait HasCompileSocket {
       def loop(): Boolean = in.readLine() match {
         case null => noErrors
         case line =>
-          if (compileSocket.errorPattern matcher line matches)
+          if (isErrorMessage(line))
             noErrors = false
 
-          Console.err println line
+          compileSocket.echo(line)
           loop()
       }
       try loop()
@@ -41,8 +46,9 @@ trait HasCompileSocket {
 }
 
 /** This class manages sockets for the fsc offline compiler.  */
-class CompileSocket {
+class CompileSocket extends CompileOutputCommon {
   protected lazy val compileClient: StandardCompileClient = CompileClient
+  def verbose = compileClient.verbose
 
   /** The prefix of the port identification file, which is followed
    *  by the port number.
@@ -60,23 +66,8 @@ class CompileSocket {
   }
 
   /** The class name of the scala compile server */
-  protected val serverClass = "scala.tools.nsc.CompileServer"
-
-  /** A regular expression for checking compiler output for errors */
-  val errorRegex = ".*(errors? found|don't know|bad option).*"
-
-  /** A Pattern object for checking compiler output for errors */
-  val errorPattern = Pattern compile errorRegex
-
-  protected def fscError(msg: String) = System.err.println(msg)
-
-  protected def fatal(msg: String) = {
-    fscError(msg)
-    sys.error("fsc failure")
-  }
-
-  protected def info(msg: String) =
-    if (compileClient.verbose) System.out.println(msg)
+  protected val serverClass     = "scala.tools.nsc.CompileServer"
+  protected def serverClassArgs = if (verbose) List("-v") else Nil  // debug
 
   /** A temporary directory to use */
   val tmpDir = {
@@ -93,23 +84,17 @@ class CompileSocket {
   /* A directory holding port identification files */
   val portsDir = (tmpDir / dirName).createDirectory()
 
-  /** Maximum number of polls for an available port */
-  private val MaxAttempts = 100
-
-  /** Time (in ms) to sleep between two polls */
-  private val sleepTime = 20
-
   /** The command which starts the compile server, given vm arguments.
     *
     *  @param vmArgs  the argument string to be passed to the java or scala command
     */
   private def serverCommand(vmArgs: Seq[String]): Seq[String] =
-    Seq(vmCommand) ++ vmArgs ++ Seq(serverClass) filterNot (_ == "")
+    Seq(vmCommand) ++ vmArgs ++ Seq(serverClass) ++ serverClassArgs filterNot (_ == "")
 
   /** Start a new server. */
   private def startNewServer(vmArgs: String) = {
     val cmd = serverCommand(vmArgs split " " toSeq)
-    info("[Executing command: %s]" format cmd)
+    info("[Executing command: %s]" format cmd.mkString(" "))
     cmd.daemonized().run()
   }
 
@@ -117,18 +102,18 @@ class CompileSocket {
   def portFile(port: Int) = portsDir / File(port.toString)
 
   /** Poll for a server port number; return -1 if none exists yet */
-  private def pollPort(): Int = portsDir.list match {
-    case it if !it.hasNext  => -1
-    case it                 =>
-      val ret = it.next.name.toInt
-      it foreach (_.delete())
-      ret
+  private def pollPort(): Int = portsDir.list.toList match {
+    case Nil      => -1
+    case x :: xs  => try x.name.toInt finally xs foreach (_.delete())
   }
 
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, then create one.
    */
   def getPort(vmArgs: String): Int = {
+    val maxPolls = 300
+    val sleepTime = 25
+
     var attempts = 0
     var port = pollPort()
 
@@ -136,15 +121,14 @@ class CompileSocket {
       info("No compile server running: starting one with args '" + vmArgs + "'")
       startNewServer(vmArgs)
     }
-
-    while (port < 0 && attempts < MaxAttempts) {
+    while (port < 0 && attempts < maxPolls) {
       attempts += 1
       Thread.sleep(sleepTime)
       port = pollPort()
     }
     info("[Port number: " + port + "]")
     if (port < 0)
-      fatal("Could not connect to compilation daemon.")
+      fatal("Could not connect to compilation daemon after " + attempts + " attempts.")
     port
   }
 
@@ -167,17 +151,17 @@ class CompileSocket {
     * cannot be established.
     */
   def getOrCreateSocket(vmArgs: String, create: Boolean = true): Option[Socket] = {
-    // try for 10 seconds
-    val retryDelay = 100
-    val maxAttempts = (10 * 1000) / retryDelay
+    val maxMillis = 10 * 1000   // try for 10 seconds
+    val retryDelay = 50
+    val maxAttempts = maxMillis / retryDelay
 
     def getsock(attempts: Int): Option[Socket] = attempts match {
-      case 0    => fscError("Unable to establish connection to compilation daemon") ; None
+      case 0    => warn("Unable to establish connection to compilation daemon") ; None
       case num  =>
         val port = if (create) getPort(vmArgs) else pollPort()
         if (port < 0) return None
 
-        Socket(InetAddress.getLocalHost(), port).either match {
+        Socket.localhost(port).either match {
           case Right(socket)  =>
             info("[Connected to compilation daemon at port %d]" format port)
             Some(socket)

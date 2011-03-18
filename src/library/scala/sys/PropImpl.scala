@@ -20,6 +20,12 @@ private[sys] class PropImpl[+T](val key: String, valueFn: String => T) extends P
     underlying(key) = newValue
     old
   }
+  def setValue[T1 >: T](newValue: T1): T = {
+    val old = value
+    if (newValue == null) set(null)
+    else set("" + newValue)
+    old
+  }
   def get: String =
     if (isSet) underlying.getOrElse(key, "")
     else ""
