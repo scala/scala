@@ -7,6 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
+import scala.util.matching.Regex
 import scala.tools.nsc.util.{ BatchSourceFile }
 import session.{ History }
 
@@ -17,29 +18,68 @@ class Power(repl: ILoop, intp: IMain) {
   def this(intp: IMain) = this(null, intp)
 
   val global: intp.global.type = intp.global
-
   import global._
-  import definitions.{ getMember, getModule, getClass => getCompilerClass }
   import intp.{ beQuietDuring, interpret, parse }
 
-  object phased extends Phased {
-    val global: Power.this.global.type = Power.this.global
+  abstract class SymSlurper {
+    def isKeep(sym: Symbol): Boolean
+    def isIgnore(sym: Symbol): Boolean
+    def isRecur(sym: Symbol): Boolean
+    def isFinished(): Boolean
+
+    val keep = mutable.HashSet[Symbol]()
+    val seen = mutable.HashSet[Symbol]()
+    def processed = keep.size + seen.size
+    def discarded = seen.size - keep.size
+
+    def members(x: Symbol): List[Symbol] =
+      if (x.rawInfo.isComplete) x.info.members
+      else Nil
+
+    var lastCount = -1
+    var pass = 0
+    val unseenHistory = new mutable.ListBuffer[Int]
+
+    def loop(todo: Set[Symbol]): Set[Symbol] = {
+      pass += 1
+      val (repeats, unseen) = todo partition seen
+      unseenHistory += unseen.size
+      if (opt.verbose) {
+        println("%3d  %s accumulated, %s discarded.  This pass: %s unseen, %s repeats".format(
+          pass, keep.size, discarded, unseen.size, repeats.size))
+      }
+      if (lastCount == processed || unseen.isEmpty || isFinished())
+        return keep.toSet
+
+      lastCount = processed
+      keep ++= (unseen filter isKeep filterNot isIgnore)
+      seen ++= unseen
+      loop(unseen filter isRecur flatMap members)
+    }
+
+    def apply(sym: Symbol): Set[Symbol] = {
+      keep.clear()
+      seen.clear()
+      loop(Set(sym))
+    }
   }
 
-  class ReplSnippet[T](val path: String, initial: T) {
-    var code: String = ""
-    var value: T = initial
+  class PackageSlurper(pkgName: String) extends SymSlurper {
+    val pkgSymbol = getCompilerModule(pkgName)
+    val modClass  = pkgSymbol.moduleClass
 
-    def set(code: String) = interpret(path + ".value = " + code)
-    def get: T = value
-    override def toString = "intp." + path + ".value = \"" + code + "\""
-  }
+    /** Looking for dwindling returns */
+    def droppedEnough() = unseenHistory.size >= 4 && (
+      unseenHistory.takeRight(4).sliding(2) map (_.toList) forall {
+        case List(a, b) => a > b
+      }
+    )
 
-  object vars {
-    private def create[T](name: String, initial: T): ReplSnippet[T] =
-      new ReplSnippet[T]("power.vars." + name, initial)
-
-    val symfilter = create("symfilter", (s: Symbol) => true)
+    def isRecur(sym: Symbol)  = true
+    def isIgnore(sym: Symbol) = sym.isAnonOrRefinementClass || (sym.name.toString contains "$mc")
+    def isKeep(sym: Symbol)   = sym.hasTransOwner(modClass)
+    def isFinished()          = droppedEnough()
+    def slurp()               = apply(modClass)
   }
 
   def banner = """
@@ -56,7 +96,8 @@ class Power(repl: ILoop, intp: IMain) {
     |val global: intp.global.type = intp.global
     |import global._
     |import definitions._
-    |import power.{ phased, show, clazz, module }
+    |import power.phased
+    |import power.Implicits._
   """.stripMargin
 
   /** Starts up power mode and runs whatever is in init.
@@ -74,62 +115,94 @@ class Power(repl: ILoop, intp: IMain) {
     init split '\n' foreach interpret
   }
 
-  object show {
-    private def defStrings(sym: Symbol, p: Symbol => Boolean) =
-      phased(sym.info.members filter p map (_.defString))
-
-    private def display(sym: Symbol, p: Symbol => Boolean) =
-      defStrings(sym, p) foreach println
-
-    def methods[T: Manifest] = display(clazz[T], _.isMethod)
-    def apply[T: Manifest] = display(clazz[T], vars.symfilter.get)
-  }
-
-  abstract class NameBased[T <: Name] {
-    def mkName(s: String): T
-    def mkSymbol(s: String): Symbol
-
-    def apply[T: Manifest]                 = mkSymbol(manifest[T].erasure.getName)
-    def tpe[T: Manifest]                   = apply[T].tpe
-    def members[T: Manifest]               = tpe[T].members
-    def member[T: Manifest](name: Name)    = getMember(apply[T], name)
-    def vmember[T: Manifest](name: String) = member[T](newTermName(name))
-    def tmember[T: Manifest](name: String) = member[T](newTypeName(name))
-  }
   private def missingWrap(op: => Symbol): Symbol =
     try op
     catch { case _: MissingRequirementError => NoSymbol }
 
-  object clazz extends NameBased[TypeName] {
-    def mkName(s: String) = newTypeName(s)
-    def mkSymbol(s: String): Symbol = missingWrap(getCompilerClass(s))
-  }
-  object module extends NameBased[TermName] {
-    def mkName(s: String) = newTermName(s)
-    def mkSymbol(s: String): Symbol = missingWrap(getModule(s))
-  }
+  private def getCompilerClass(name: String)  = missingWrap(definitions.getClass(name))
+  private def getCompilerModule(name: String) = missingWrap(definitions.getModule(name))
 
-  def mkContext(code: String = "") = analyzer.rootContext(mkUnit(code))
-  def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
-  def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
-  def mkUnit(code: String) = new CompilationUnit(mkSourceFile(code))
+  object InternalInfo {
+    implicit def apply[T: Manifest] : InternalInfo[T] = new InternalInfo[T](None)
+  }
+  /** Todo: translate manifest type arguments into applied types. */
+  class InternalInfo[T: Manifest](value: Option[T] = None) {
+    def companion = symbol.companionSymbol
+    def info      = symbol.info
+    def module    = symbol.moduleClass
+    def owner     = symbol.owner
+    def symDef    = symbol.defString
+    def symName   = symbol.name
+    def tpe       = symbol.tpe
 
-  def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
-  def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
-  def mkTypedTrees(code: String*): List[Tree] = {
-    class TyperRun extends Run {
-      override def stopPhase(name: String) = name == "superaccessors"
+    def declares  = members filter (_.owner == symbol)
+    def inherits  = members filterNot (_.owner == symbol)
+    def types     = members filter (_.name.isTypeName)
+    def methods   = members filter (_.isMethod)
+    def overrides = declares filter (_.isOverride)
+
+    def erasure   = manifest[T].erasure
+    def symbol    = getCompilerClass(erasure.getName)
+    def members   = tpe.members
+    def bts       = info.baseTypeSeq.toList
+    def btsmap    = bts map (x => (x, x.decls.toList)) toMap
+    def pkgName   = erasure.getPackage.getName
+    def pkg       = getCompilerModule(pkgName)
+    def pkgmates  = pkg.tpe.members
+    def pkgslurp  = new PackageSlurper(pkgName) slurp()
+
+    def ?         = this
+
+    def whoHas(name: String) = bts filter (_.decls.toList exists (_.name.toString == name))
+    def <:<[U: Manifest](other: U) = tpe <:< InternalInfo[U].tpe
+    def lub[U: Manifest](other: U) = global.lub(List(tpe, InternalInfo[U].tpe))
+    def glb[U: Manifest](other: U) = global.glb(List(tpe, InternalInfo[U].tpe))
+
+    def shortClass = erasure.getName split "[$.]" last
+    override def toString = value match {
+      case Some(x)  => "%s (%s)".format(x, shortClass)
+      case _        => erasure.getName
     }
-
-    reporter.reset()
-    val run = new TyperRun
-    run compileSources (code.toList.zipWithIndex map {
-      case (s, i) => new BatchSourceFile("<console %d>".format(i), s)
-    })
-    run.units.toList map (_.body)
   }
-  def mkTypedTree(code: String) = mkTypedTrees(code).head
-  def mkType(id: String): Type = intp.typeOfExpression(id) getOrElse NoType
+
+  trait PCFormatter extends (Any => List[String]) {
+    def apply(x: Any): List[String]
+    def show(x: Any): Unit = grep(x, _ => true)
+    def grep(x: Any, p: String => Boolean): Unit = apply(x) filter p foreach println
+  }
+  class PrintingConvenience[T](value: T)(implicit fmt: PCFormatter) {
+    def > : Unit = >(_ => true)
+    def >(s: String): Unit = >(_ contains s)
+    def >(r: Regex): Unit = >(_ matches r.pattern.toString)
+    def >(p: String => Boolean): Unit = fmt.grep(value, p)
+  }
+  object Implicits {
+    implicit lazy val powerNameOrdering: Ordering[Name] = Ordering[String] on (_.toString)
+    implicit object powerSymbolOrdering extends Ordering[Symbol] {
+      def compare(s1: Symbol, s2: Symbol) =
+        if (s1 eq s2) 0
+        else if (s1 isLess s2) -1
+        else 1
+    }
+    implicit def replPrinting[T](x: T)(implicit fmt: PCFormatter) = new PrintingConvenience[T](x)
+    implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
+    implicit object ReplDefaultFormatter extends PCFormatter {
+      def apply(x: Any): List[String] = x match {
+        case Tuple2(k, v)       => apply(k) + " -> " + apply(v)
+        case xs: Traversable[_] => (xs.toList flatMap apply).sorted.distinct
+        case x                  => List("" + x)
+      }
+    }
+  }
+
+  object phased extends Phased {
+    val global: Power.this.global.type = Power.this.global
+  }
+  def context(code: String)           = analyzer.rootContext(unit(code))
+  def source(code: String)            = new BatchSourceFile("<console>", code)
+  def unit(code: String)              = new CompilationUnit(source(code))
+  def trees(code: String): List[Tree] = parse(code) getOrElse Nil
+  def typeOf(id: String): Type        = intp.typeOfExpression(id) getOrElse NoType
 
   override def toString = """
     |** Power mode status **
