@@ -8,21 +8,21 @@ rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 rem # PARTICULAR PURPOSE.
 rem ##########################################################################
 
-rem We adopt the following conventions:
-rem - System/user environment variables start with a letter
-rem - Local batch variables start with an underscore ('_')
-
-if "%OS%"=="Windows_NT" (
-  @@setlocal
-  call :set_home
-  set _ARGS=%*
-) else (
-  set _SCALA_HOME=%SCALA_HOME%
-  rem The following line tests SCALA_HOME instead of _SCALA_HOME, because
-  rem the above change to _SCALA_HOME is not visible within this block.
-  if "%SCALA_HOME%"=="" goto error1
-  call :set_args
+if "%OS%" NEQ "Windows_NT" (
+  echo "Sorry, your version of Windows is too old to run Scala."
+  goto :eof
 )
+
+@@setlocal
+call :set_home
+set _ARGS=
+:loop
+  rem Argument %1 may contain quotes so we use parentheses here
+  if (%1)==() goto :looped
+  set _ARGS=%_ARGS% %1
+  shift
+goto loop
+:looped
 
 rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
@@ -73,21 +73,4 @@ rem set _SCALA_HOME=%~dps0..
   set _SCALA_HOME=%_BIN_DIR%..
 goto :eof
 
-:set_args
-  set _ARGS=
-  :loop
-  rem Argument %1 may contain quotes so we use parentheses here
-  if (%1)==() goto :eof
-  set _ARGS=%_ARGS% %1
-  shift
-  goto loop
-
-rem ##########################################################################
-rem # errors
-
-:error1
-echo ERROR: environment variable SCALA_HOME is undefined. It should point to your installation directory.
-goto end
-
-:end
-if "%OS%"=="Windows_NT" @@endlocal
+@@endlocal
