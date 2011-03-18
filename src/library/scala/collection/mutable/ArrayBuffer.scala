@@ -48,7 +48,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
      with IndexedSeqOptimized[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]]
      with ResizableArray[A]
-     with Parallelizable[ParArray[A]]
+     with CustomParallelizable[A, ParArray[A]]
      with Serializable {
 
   override def companion: GenericCompanion[ArrayBuffer] = ArrayBuffer
@@ -67,7 +67,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     }
   }
 
-  def par = ParArray.handoff[A](array.asInstanceOf[Array[A]], size)
+  override def par = ParArray.handoff[A](array.asInstanceOf[Array[A]], size)
 
   /** Appends a single element to this buffer and returns
    *  the identity of the buffer. It takes constant amortized time.
@@ -176,10 +176,6 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   /** Defines the prefix of the string representation.
    */
   override def stringPrefix: String = "ArrayBuffer"
-
-  override def toParIterable = par
-
-  override def toParSeq = par
 
 }
 

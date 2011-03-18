@@ -42,8 +42,8 @@ self =>
 
   override def stringPrefix = "ParSet"
 
-  override def toParSet[U >: T] = this.asInstanceOf[ParSet[U]]
-
+  // ok, because this could only violate `apply` and we can live with that
+  override def toSet[U >: T]: ParSet[U] = this.asInstanceOf[ParSet[U]]
 }
 
 

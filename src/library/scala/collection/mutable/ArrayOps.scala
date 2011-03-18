@@ -35,7 +35,7 @@ import parallel.mutable.ParArray
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with Parallelizable[ParArray[T]] {
+abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParallelizable[T, ParArray[T]] {
 
   private def rowBuilder[U]: Builder[U, Array[U]] =
     Array.newBuilder(
@@ -55,7 +55,7 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with Parallelizable[Pa
     else
       super.toArray[U]
 
-  def par = ParArray.handoff(repr)
+  override def par = ParArray.handoff(repr)
 
   /** Flattens a two-dimensional array by concatenating all its rows
    *  into a single array.

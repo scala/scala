@@ -39,6 +39,8 @@ trait ParSeq[T] extends collection.mutable.Seq[T]
 
   def update(i: Int, elem: T): Unit
 
+  override def toSeq: ParSeq[T] = this
+
 }
 
 

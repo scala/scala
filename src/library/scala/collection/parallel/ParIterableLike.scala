@@ -16,7 +16,7 @@ import scala.collection.mutable.Builder
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.IterableLike
 import scala.collection.Parallel
-import scala.collection.Parallelizable
+import scala.collection.CustomParallelizable
 import scala.collection.Sequentializable
 import scala.collection.generic._
 import immutable.HashMapCombiner
@@ -82,10 +82,15 @@ import annotation.unchecked.uncheckedVariance
  *     def par: Repr
  *  }}}
  *
- *  produce a view of the collection that has sequential or parallel operations, respectively.
- *  These methods are efficient - they will not copy the elements, but have fixed target
- *  types. The combination of methods `toParMap`, `toParSeq` or `toParSet` is more flexible,
- *  but may copy the elements in some cases.
+ *  produce the sequential or parallel implementation of the collection, respectively.
+ *  Method `par` just returns a reference to this parallel collection.
+ *  Method `seq` is efficient - it will not copy the elements. Instead,
+ *  it will create a sequential version of the collection using the same underlying data structure.
+ *  Note that this is not the case for sequential collections in general - they may copy the elements
+ *  and produce a different underlying data structure.
+ *
+ *  The combination of methods `toMap`, `toSeq` or `toSet` along with `par` and `seq` is a flexible
+ *  way to change between different collection types.
  *
  *  The method:
  *
@@ -152,9 +157,9 @@ import annotation.unchecked.uncheckedVariance
  *  that splitters may set and read the `indexFlag` state.
  *
  */
-trait ParIterableLike[+T, +Repr <: Parallel, +Sequential <: Iterable[T] with IterableLike[T, Sequential]]
+trait ParIterableLike[+T, +Repr <: ParIterable[T], +Sequential <: Iterable[T] with IterableLike[T, Sequential]]
 extends IterableLike[T, Repr]
-   with Parallelizable[Repr]
+   with CustomParallelizable[T, Repr]
    with Sequentializable[T, Sequential]
    with Parallel
    with HasNewCombiner[T, Repr]
@@ -215,7 +220,7 @@ self =>
    */
   def iterator: Splitter[T] = parallelIterator
 
-  def par = repr
+  override def par = repr
 
   /** Denotes whether this parallel collection has strict splitters.
    *
@@ -730,8 +735,6 @@ self =>
     def parallelIterator = self.parallelIterator
   }
 
-  override def toIterable: Iterable[T] = seq.drop(0).asInstanceOf[Iterable[T]]
-
   override def toArray[U >: T: ClassManifest]: Array[U] = {
     val arr = new Array[U](size)
     copyToArray(arr)
@@ -744,25 +747,21 @@ self =>
 
   override def toStream: Stream[T] = seq.toStream
 
-  override def toSet[U >: T]: collection.immutable.Set[U] = seq.toSet
+  override def toIterator: Iterator[T] = parallelIterator
 
-  override def toSeq: Seq[T] = seq.toSeq
+  // the methods below are overridden
 
-  override def toIterator: Iterator[T] = seq.toIterator
+  override def toBuffer[U >: T]: collection.mutable.Buffer[U] = seq.toBuffer // have additional, parallel buffers?
 
-  override def toTraversable: Traversable[T] = seq.toTraversable
+  override def toTraversable: Traversable[T] = this.asInstanceOf[Traversable[T]] // TODO add ParTraversable[T]
 
-  override def toBuffer[U >: T]: collection.mutable.Buffer[U] = seq.toBuffer
+  override def toIterable: ParIterable[T] = this.asInstanceOf[ParIterable[T]]
 
-  override def toMap[K, V](implicit ev: T <:< (K, V)): collection.immutable.Map[K, V] = seq.toMap
+  override def toSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => ParSeq.newCombiner[T])
 
-  override def toParIterable: ParIterable[T] = this.asInstanceOf[ParIterable[T]]
+  override def toSet[U >: T]: immutable.ParSet[U] = toParCollection[U, immutable.ParSet[U]](() => immutable.ParSet.newCombiner[U])
 
-  override def toParSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => mutable.ParArrayCombiner[T]())
-
-  override def toParSet[U >: T]: ParSet[U] = toParCollection[U, ParSet[U]](() => mutable.ParHashSetCombiner[U])
-
-  override def toParMap[K, V](implicit ev: T <:< (K, V)): ParMap[K, V] = toParMap[K, V, mutable.ParHashMap[K, V]](() => mutable.ParHashMapCombiner[K, V])
+  override def toMap[K, V](implicit ev: T <:< (K, V)): immutable.ParMap[K, V] = toParMap[K, V, immutable.ParMap[K, V]](() => immutable.ParMap.newCombiner[K, V])
 
   /* tasks */
 

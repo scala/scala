@@ -49,12 +49,6 @@ import util.Exceptional.unwrap
 class ScriptRunner extends HasCompileSocket {
   lazy val compileSocket = CompileSocket
 
-  /* While I'm chasing down the fsc and script bugs. */
-  def DBG(msg: Any) {
-    System.err.println(msg.toString)
-    System.err.flush()
-  }
-
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
 

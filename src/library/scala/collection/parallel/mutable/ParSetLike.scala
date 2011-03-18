@@ -46,6 +46,7 @@ extends mutable.SetLike[T, Repr]
 
   override def empty: Repr
 
+  // note: should not override toSet
 }
 
 

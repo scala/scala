@@ -10,6 +10,7 @@ package scala.collection
 package mutable
 
 import generic._
+import parallel.mutable.ParSeq
 
 /** A template trait for mutable sequences of type `mutable.Seq[A]`.
  *  @tparam A    the type of the elements of the set
@@ -18,8 +19,11 @@ import generic._
  */
 trait SeqLike[A, +This <: SeqLike[A, This] with Seq[A]]
   extends scala.collection.SeqLike[A, This]
-     with Cloneable[This] {
+     with Cloneable[This]
+     with Parallelizable[A, ParSeq[A]] {
   self =>
+
+  protected[this] override def parCombiner = ParSeq.newCombiner[A]
 
   /** Replaces element at given index with a new value.
    *

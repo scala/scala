@@ -14,6 +14,7 @@ package mutable
 import generic._
 import script._
 import scala.annotation.migration
+import parallel.mutable.ParSet
 
 /** A template trait for mutable sets of type `mutable.Set[A]`.
  *  @tparam A    the type of the elements of the set
@@ -60,6 +61,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
      with Growable[A]
      with Shrinkable[A]
      with Cloneable[mutable.Set[A]]
+     with Parallelizable[A, ParSet[A]]
 { self =>
 
   /** A common implementation of `newBuilder` for all mutable sets
@@ -67,6 +69,8 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  for better efficiency.
    */
   override protected[this] def newBuilder: Builder[A, This] = empty
+
+  protected[this] override def parCombiner = ParSet.newCombiner[A]
 
   /** Adds an element to this $coll.
    *

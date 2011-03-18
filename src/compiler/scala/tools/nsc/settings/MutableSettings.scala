@@ -80,6 +80,11 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
    */
   lazy val outputDirs = new OutputDirs
 
+  /** A list of settings which act based on prefix rather than an exact
+   *  match.  This is basically -D and -J.
+   */
+  lazy val prefixSettings = allSettings collect { case x: PrefixSetting => x }
+
   /** Split the given line into parameters.
    */
   def splitParams(line: String) = cmd.Parser.tokenize(line, errorFn)
@@ -124,12 +129,18 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
         }
         else {
           // we dispatch differently based on the appearance of p:
-          // 1) If it has a : it is presumed to be -Xfoo:bar,baz
-          // 2) Otherwise, the whole string should be a command name
+          // 1) If it matches a prefix setting it is sent there directly.
+          // 2) If it has a : it is presumed to be -Xfoo:bar,baz
+          // 3) Otherwise, the whole string should be a command name
           //
           // Internally we use Option[List[String]] to discover error,
           // but the outside expects our arguments back unchanged on failure
-          if (arg contains ":") parseColonArg(arg) match {
+          val prefix = prefixSettings find (_ respondsTo arg)
+          if (prefix.isDefined) {
+            prefix.get tryToSet args
+            rest
+          }
+          else if (arg contains ":") parseColonArg(arg) match {
             case Some(_)  => rest
             case None     => args
           }
@@ -188,7 +199,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
     add(new PathSetting(name, descr, default, prepend, append))
   }
-  def MapSetting(name: String, prefix: String, descr: String): MapSetting = add(new MapSetting(name, prefix, descr))
+  def PrefixSetting(name: String, prefix: String, descr: String): PrefixSetting = add(new PrefixSetting(name, prefix, descr))
 
   // basically this is a value which remembers if it's been modified
   trait SettingValue extends AbsSettingValue {
@@ -410,31 +421,23 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   }
 
   /** A special setting for accumulating arguments like -Dfoo=bar. */
-  class MapSetting private[nsc](
+  class PrefixSetting private[nsc](
     name: String,
     prefix: String,
     descr: String)
   extends Setting(name, descr) {
-    type T = Map[String, String]
-    protected var v: Map[String, String] = Map()
+    type T = List[String]
+    protected var v: List[String] = Nil
 
-    def tryToSet(args: List[String]) = {
-      val (xs, rest) = args partition (_ startsWith prefix)
-      val pairs = xs map (_ stripPrefix prefix) map { x =>
-        (x indexOf '=') match {
-          case -1   => (x, "")
-          case idx  => (x take idx, x drop (idx + 1))
-        }
-      }
-      v = v ++ pairs
-      Some(rest)
+    def tryToSet(args: List[String]) = args match {
+      case x :: xs if x startsWith prefix =>
+        v = v :+ x
+        Some(xs)
+      case _  =>
+        None
     }
-
-    override def respondsTo(label: String) = label startsWith prefix
-    def unparse: List[String] = v.toList map {
-      case (k, "")  => prefix + k
-      case (k, v)   => prefix + k + "=" + v
-    }
+    override def respondsTo(token: String) = token startsWith prefix
+    def unparse: List[String] = value
   }
 
   /** A setting represented by a string, (`default' unless set) */

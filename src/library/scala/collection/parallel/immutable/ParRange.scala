@@ -49,10 +49,6 @@ self =>
 
   type SCPI = SignalContextPassingIterator[ParRangeIterator]
 
-  override def toParSeq = this
-
-  override def toParSet[U >: Int] = toParCollection[U, ParSet[U]](() => HashSetCombiner[U])
-
   class ParRangeIterator(range: Range = self.range)
   extends ParIterator {
   me: SignalContextPassingIterator[ParRangeIterator] =>

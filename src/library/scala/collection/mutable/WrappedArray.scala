@@ -33,7 +33,7 @@ import scala.collection.parallel.mutable.ParArray
 abstract class WrappedArray[T]
 extends IndexedSeq[T]
     with ArrayLike[T, WrappedArray[T]]
-    with Parallelizable[ParArray[T]]
+    with CustomParallelizable[T, ParArray[T]]
 {
 
   override protected[this] def thisCollection: WrappedArray[T] = this
@@ -54,7 +54,7 @@ extends IndexedSeq[T]
   /** The underlying array */
   def array: Array[T]
 
-  def par = ParArray.handoff(array)
+  override def par = ParArray.handoff(array)
 
   override def toArray[U >: T : ClassManifest]: Array[U] =
     if (implicitly[ClassManifest[U]].erasure eq array.getClass.getComponentType)
@@ -71,10 +71,6 @@ extends IndexedSeq[T]
    */
   override protected[this] def newBuilder: Builder[T, WrappedArray[T]] =
     new WrappedArrayBuilder[T](elemManifest)
-
-  override def toParIterable = par
-
-  override def toParSeq = par
 
 }
 

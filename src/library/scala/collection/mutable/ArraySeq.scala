@@ -44,7 +44,7 @@ class ArraySeq[A](override val length: Int)
 extends IndexedSeq[A]
    with GenericTraversableTemplate[A, ArraySeq]
    with IndexedSeqOptimized[A, ArraySeq[A]]
-   with Parallelizable[ParArray[A]]
+   with CustomParallelizable[A, ParArray[A]]
    with Serializable
 {
 
@@ -52,7 +52,7 @@ extends IndexedSeq[A]
 
   val array: Array[AnyRef] = new Array[AnyRef](length)
 
-  def par = ParArray.handoff(array.asInstanceOf[Array[A]])
+  override def par = ParArray.handoff(array.asInstanceOf[Array[A]])
 
   def apply(idx: Int): A = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)
@@ -85,10 +85,6 @@ extends IndexedSeq[A]
     val len1 = len min (xs.length - start) min length
     Array.copy(array, 0, xs, start, len1)
   }
-
-  override def toParIterable = par
-
-  override def toParSeq = par
 
 }
 

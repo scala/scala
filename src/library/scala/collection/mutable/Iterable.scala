@@ -9,6 +9,7 @@ package scala.collection
 package mutable
 
 import generic._
+import parallel.mutable.ParIterable
 
 /** A base trait for iterable collections that can be mutated.
  *  $iterableInfo
@@ -16,8 +17,10 @@ import generic._
 trait Iterable[A] extends Traversable[A]
                      with scala.collection.Iterable[A]
                      with GenericTraversableTemplate[A, Iterable]
-                     with IterableLike[A, Iterable[A]] {
+                     with IterableLike[A, Iterable[A]]
+                     with Parallelizable[A, ParIterable[A]] {
   override def companion: GenericCompanion[Iterable] = Iterable
+  protected[this] override def parCombiner = ParIterable.newCombiner[A] // if `mutable.IterableLike` gets introduced, please move this there!
 }
 
 /** $factoryInfo

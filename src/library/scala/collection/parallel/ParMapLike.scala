@@ -48,9 +48,7 @@ extends MapLike[K, V, Repr]
 
   override def empty: Repr
 
-  private type T = (K, V)
-  override def toParMap[K, V](implicit ev: T <:< (K, V)) = this.asInstanceOf[ParMap[K, V]]
-
+  // note - should not override toMap (could be mutable)
 }
 
 

@@ -6,40 +6,37 @@
 package scala.tools.nsc
 
 import java.io.{ BufferedReader, File, InputStreamReader, PrintWriter }
-import Properties.fileEndings
-import io.Path
 import settings.FscSettings
+import scala.tools.util.CompileOutputCommon
+import sys.SystemProperties.preferIPv4Stack
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
  */
-class StandardCompileClient extends HasCompileSocket {
+class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
   lazy val compileSocket: CompileSocket = CompileSocket
 
   val versionMsg  = "Fast " + Properties.versionMsg
   var verbose = false
 
-  def logVerbose(msg: String) =
-    if (verbose)
-      Console println msg
-
-  def main0(argsIn: Array[String]): Int = {
-    // TODO: put -J -and -D options back.  Right now they are lost
-    // because bash parses them out and they don't arrive.
-    val (vmArgs, fscArgs) = (Nil, argsIn.toList)
+  def process(args: Array[String]): Int = {
+    val fscArgs = args.toList
     val settings = new FscSettings
     val command  = new CompilerCommand(fscArgs, settings)
     verbose = settings.verbose.value
     val shutdown = settings.shutdown.value
+    val vmArgs = settings.jvmargs.unparse ++ settings.defines.unparse ++ (
+      if (settings.preferIPv4.value) List("-D%s=true".format(preferIPv4Stack.key)) else Nil
+    )
 
     if (settings.version.value) {
       Console println versionMsg
       return 0
     }
 
-    logVerbose(versionMsg)
-    logVerbose(fscArgs.mkString("[Given arguments: ", " ", "]"))
-    logVerbose(vmArgs.mkString("[VM arguments: ", " ", "]"))
+    info(versionMsg)
+    info(fscArgs.mkString("[Given arguments: ", " ", "]"))
+    info(vmArgs.mkString("[VM arguments: ", " ", "]"))
 
     val socket =
       if (settings.server.value == "") compileSocket.getOrCreateSocket(vmArgs mkString " ", !shutdown)
@@ -48,7 +45,7 @@ class StandardCompileClient extends HasCompileSocket {
     val success = socket match {
       case Some(sock) => compileOnServer(sock, fscArgs)
       case _          =>
-        Console.println(
+        echo(
           if (shutdown) "[No compilation server running.]"
           else "Compilation failed."
         )
@@ -60,7 +57,7 @@ class StandardCompileClient extends HasCompileSocket {
 
 object CompileClient extends StandardCompileClient {
   def main(args: Array[String]): Unit = sys exit {
-    try main0(args)
+    try process(args)
     catch { case _: Exception => 1 }
   }
 }

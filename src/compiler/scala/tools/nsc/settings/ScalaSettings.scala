@@ -23,8 +23,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
 
-  val jvmargs  = MapSetting("-J<flag>", "-J", "Pass <flag> directly to the runtime system.")
-  val defines  = MapSetting("-Dproperty=value", "-D", "Pass -Dproperty=value directly to the runtime system.")
+  val jvmargs  = PrefixSetting("-J<flag>", "-J", "Pass <flag> directly to the runtime system.")
+  val defines  = PrefixSetting("-Dproperty=value", "-D", "Pass -Dproperty=value directly to the runtime system.")
   val toolcp   = PathSetting("-toolcp", "Add to the runner classpath.", "")
   val nobootcp = BooleanSetting("-nobootcp", "Do not use the boot classpath for the scala jars.")
 

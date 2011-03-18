@@ -32,12 +32,14 @@ import collection.parallel.immutable.ParHashSet
 class HashSet[A] extends Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
-                    with Parallelizable[ParHashSet[A]]
+                    with CustomParallelizable[A, ParHashSet[A]]
                     with Serializable
 {
   override def companion: GenericCompanion[HashSet] = HashSet
 
   //class HashSet[A] extends Set[A] with SetLike[A, HashSet[A]] {
+
+  override def par = ParHashSet.fromTrie(this)
 
   override def size: Int = 0
 
@@ -58,8 +60,6 @@ class HashSet[A] extends Set[A]
   def - (e: A): HashSet[A] =
     removed0(e, computeHash(e), 0)
 
-  def par = ParHashSet.fromTrie(this)
-
   protected def elemHashCode(key: A) = key.##
 
   protected final def improve(hcode: Int) = {
@@ -79,8 +79,7 @@ class HashSet[A] extends Set[A]
   protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = this
 
   protected def writeReplace(): AnyRef = new HashSet.SerializationProxy(this)
-  override def toParIterable = par
-  override def toParSet[B >: A] = par.asInstanceOf[ParHashSet[B]]
+
 }
 
 /** $factoryInfo
