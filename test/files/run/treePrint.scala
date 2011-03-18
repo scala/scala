@@ -37,6 +37,6 @@ object Test {
     val intp = new IMain(settings, new PrintWriter(new NullOutputStream))
     val power = new Power(intp)
     intp.interpret("""def initialize = "Have to interpret something or we get errors." """)
-    println(power mkTree code)
+    power trees code foreach println
   }
 }
