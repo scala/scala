@@ -5,7 +5,7 @@ object Test {
   val key = "ding.dong.doobie"
 
   def bool() = {
-    val prop = Prop.bool(key)
+    val prop = BooleanProp.valueIsTrue(key)
     assert(prop.key == key)
 
     prop.clear()

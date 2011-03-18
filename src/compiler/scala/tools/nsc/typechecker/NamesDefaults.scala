@@ -469,17 +469,16 @@ trait NamesDefaults { self: Analyzer =>
           val reportAmbiguousErrors = typer.context.reportAmbiguousErrors
           typer.context.reportAmbiguousErrors = false
 
+          var variableNameClash = false
           val typedAssign = try {
             typer.silent(_.typed(arg, subst(paramtpe)))
           } catch {
             // `silent` only catches and returns TypeErrors which are not
             // CyclicReferences.  Fix for #3685
             case cr @ CyclicReference(sym, info) if sym.name == param.name =>
-              // If this condition included sym.isMethod, #4041 issues a sensible
-              // error instead of crashing; but some programs which now compile would
-              // require a return type annotation.
               if (sym.isVariable || sym.isGetter && sym.accessed.isVariable) {
                 // named arg not allowed
+                variableNameClash = true
                 typer.context.error(sym.pos,
                   "%s definition needs %s because '%s' is used as a named argument in its body.".format(
                     "variable",   // "method"
@@ -491,16 +490,25 @@ trait NamesDefaults { self: Analyzer =>
               }
               else cr
           }
+
+          def applyNamedArg = {
+            // if the named argument is on the original parameter
+            // position, positional after named is allowed.
+            if (index != pos)
+              positionalAllowed = false
+            argPos(index) = pos
+            rhs
+          }
+
           val res = typedAssign match {
-            case _: TypeError =>
-              // if the named argument is on the original parameter
-              // position, positional after named is allowed.
-              if (index != pos)
-                positionalAllowed = false
-              argPos(index) = pos
-              rhs
+            case _: TypeError => applyNamedArg
+
             case t: Tree =>
-              if (!t.isErroneous) {
+              if (t.isErroneous && !variableNameClash) {
+                applyNamedArg
+              } else if (t.isErroneous) {
+                t // name clash with variable. error was already reported above.
+              } else {
                 // This throws an exception which is caught in `tryTypedApply` (as it
                 // uses `silent`) - unfortunately, tryTypedApply recovers from the
                 // exception if you use errorTree(arg, ...) and conforms is allowed as
@@ -513,9 +521,10 @@ trait NamesDefaults { self: Analyzer =>
                 // is called, and EmptyTree can only be typed NoType.  Thus we need to
                 // disable conforms as a view...
                 errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
-                             "name of the method and the name of a variable currently in scope.")
-              } else t // error was reported above
+                               "name of the method and the name of a variable currently in scope.")
+              }
           }
+
           typer.context.reportAmbiguousErrors = reportAmbiguousErrors
           //@M note that we don't get here when an ambiguity was detected (during the computation of res),
           // as errorTree throws an exception
