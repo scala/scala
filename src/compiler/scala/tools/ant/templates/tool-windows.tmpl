@@ -42,9 +42,7 @@ if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=@javaflags@
 set _TOOL_CLASSPATH=@classpath@
 if "%_TOOL_CLASSPATH%"=="" (
   for %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
-  if "%OS%"=="Windows_NT" (
-    for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
-  )
+  for /d %%f in ("%_SCALA_HOME%\lib\*") do call :add_cpath "%%f"
 )
 
 set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.emacs="%EMACS%" @properties@
@@ -73,4 +71,5 @@ rem set _SCALA_HOME=%~dps0..
   set _SCALA_HOME=%_BIN_DIR%..
 goto :eof
 
+:end
 @@endlocal
