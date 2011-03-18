@@ -13,6 +13,7 @@ package scala.collection
 import mutable.{ListBuffer, HashMap, ArraySeq}
 import immutable.{List, Range}
 import generic._
+import parallel.ParSeq
 
 /** The companion object for trait `SeqLike`.
  */
@@ -168,7 +169,7 @@ object SeqLike {
  *
  *    Note: will not terminate for infinite-sized collections.
  */
-trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
+trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, ParSeq[A]] { self =>
 
   override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
   override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
@@ -190,6 +191,8 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(idx: Int): A
+
+  protected[this] override def parCombiner = ParSeq.newCombiner[A]
 
   /** Compares the length of this $coll to a test value.
    *

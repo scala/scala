@@ -36,15 +36,13 @@ extends collection.immutable.Iterable[T]
 {
   override def companion: GenericCompanion[ParIterable] with GenericParCompanion[ParIterable] = ParIterable
 
-  override def toParIterable: ParIterable[T] = this
+  // if `immutable.ParIterableLike` is introduced, please move these 4 methods there
+  override def toIterable: ParIterable[T] = this
 
-  // override def toParSeq: ParSeq TODO vector
-
-  override def toParSet[U >: T]: ParSet[U] = toParCollection[U, ParHashSet[U]](() => HashSetCombiner[U])
-
-  override def toParMap[K, V](implicit ev: T <:< (K, V)): ParMap[K, V] = toParMap(() => HashMapCombiner[K, V])
+  override def toSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => ParSeq.newCombiner[T])
 
 }
+
 
 /** $factoryinfo
  */

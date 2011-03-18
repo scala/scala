@@ -13,6 +13,7 @@ package mutable
 
 import generic._
 import annotation.migration
+import parallel.mutable.ParMap
 
 /** A template trait for mutable maps.
  *  $mapNote
@@ -25,6 +26,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
      with Growable[(A, B)]
      with Shrinkable[A]
      with Cloneable[This]
+     with Parallelizable[(A, B), ParMap[A, B]]
 { self =>
 
   import scala.collection.Traversable
@@ -35,6 +37,8 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *    Overrides `MapLike` implementation for better efficiency.
    */
   override protected[this] def newBuilder: Builder[(A, B), This] = empty
+
+  protected[this] override def parCombiner = ParMap.newCombiner[A, B]
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
    *  If the map already contains a

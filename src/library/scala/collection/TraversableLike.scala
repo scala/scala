@@ -15,6 +15,7 @@ import mutable.{ Builder, ListBuffer }
 import annotation.tailrec
 import annotation.migration
 import annotation.unchecked.{ uncheckedVariance => uV }
+import parallel.ParIterable
 
 
 /** A template trait for traversable collections of type `Traversable[A]`.
@@ -90,7 +91,8 @@ import annotation.unchecked.{ uncheckedVariance => uV }
  */
 trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
                                     with FilterMonadic[A, Repr]
-                                    with TraversableOnce[A] {
+                                    with TraversableOnce[A]
+                                    with Parallelizable[A, ParIterable[A]] {
   self =>
 
   import Traversable.breaks._
@@ -118,6 +120,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
   /** Creates a new builder for this collection type.
    */
   protected[this] def newBuilder: Builder[A, Repr]
+
+  protected[this] def parCombiner = ParIterable.newCombiner[A]
 
   /** Applies a function `f` to all elements of this $coll.
    *

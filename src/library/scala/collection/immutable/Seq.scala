@@ -13,6 +13,7 @@ package immutable
 
 import generic._
 import mutable.Builder
+import parallel.immutable.ParSeq
 
 /** A subtrait of `collection.Seq` which represents sequences
  *  that are guaranteed immutable.
@@ -24,9 +25,11 @@ import mutable.Builder
 trait Seq[+A] extends Iterable[A]
                       with scala.collection.Seq[A]
                       with GenericTraversableTemplate[A, Seq]
-                      with SeqLike[A, Seq[A]] {
+                      with SeqLike[A, Seq[A]]
+                      with Parallelizable[A, ParSeq[A]] {
   override def companion: GenericCompanion[Seq] = Seq
   override def toSeq: Seq[A] = this
+  protected[this] override def parCombiner = ParSeq.newCombiner[A] // if `immutable.SeqLike` gets introduced, please move this there!
 }
 
 /** $factoryInfo

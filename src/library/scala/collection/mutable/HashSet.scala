@@ -44,7 +44,7 @@ extends Set[A]
    with GenericSetTemplate[A, HashSet]
    with SetLike[A, HashSet[A]]
    with FlatHashTable[A]
-   with Parallelizable[ParHashSet[A]]
+   with CustomParallelizable[A, ParHashSet[A]]
    with Serializable
 {
   initWithContents(contents)
@@ -60,7 +60,7 @@ extends Set[A]
   def += (elem: A): this.type = { addEntry(elem); this }
   def -= (elem: A): this.type = { removeEntry(elem); this }
 
-  def par = new ParHashSet(hashTableContents)
+  override def par = new ParHashSet(hashTableContents)
 
   override def add(elem: A): Boolean = addEntry(elem)
   override def remove(elem: A): Boolean = removeEntry(elem).isDefined
@@ -92,10 +92,6 @@ extends Set[A]
   def useSizeMap(t: Boolean) = if (t) {
     if (!isSizeMapDefined) sizeMapInitAndRebuild
   } else sizeMapDisable
-
-  override def toParIterable = par
-
-  override def toParSet[B >: A] = par.asInstanceOf[ParHashSet[B]]
 
 }
 

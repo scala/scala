@@ -85,7 +85,7 @@ class ParCoder(words: List[String]) {
   def encode(number: String): ParSet[List[String]] =
     if (number.isEmpty) ParSet(List())
     else {
-      val splits = (1 to number.length).toParSet
+      val splits = (1 to number.length).toSet.par
       // for {
       //   split <- splits
       //   word <- wordsForNum(number take split)

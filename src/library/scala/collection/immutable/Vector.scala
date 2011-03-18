@@ -39,7 +39,7 @@ extends IndexedSeq[A]
    with IndexedSeqLike[A, Vector[A]]
    with VectorPointer[A @uncheckedVariance]
    with Serializable
-   with Parallelizable[ParVector[A]]
+   with CustomParallelizable[A, ParVector[A]]
 { self =>
 
 override def companion: GenericCompanion[Vector] = Vector
@@ -53,7 +53,7 @@ override def companion: GenericCompanion[Vector] = Vector
 
   def length = endIndex - startIndex
 
-  def par = new ParVector(this)
+  override def par = new ParVector(this)
 
   override def lengthCompare(len: Int): Int = length - len
 

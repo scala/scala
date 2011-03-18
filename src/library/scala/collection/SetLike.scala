@@ -12,6 +12,7 @@ package scala.collection
 import generic._
 import mutable.{ Builder, SetBuilder }
 import scala.annotation.migration
+import parallel.ParSet
 
 /** A template trait for sets.
  *
@@ -57,7 +58,8 @@ import scala.annotation.migration
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 extends IterableLike[A, This]
-   with Subtractable[A, This] {
+   with Subtractable[A, This]
+   with Parallelizable[A, ParSet[A]] {
 self =>
 
   /** The empty set of the same type as this set
@@ -71,6 +73,8 @@ self =>
    *  `mutable.SetLike`</a>.
    */
   override protected[this] def newBuilder: Builder[A, This] = new SetBuilder[A, This](empty)
+
+  protected[this] override def parCombiner = ParSet.newCombiner[A]
 
   /** Overridden for efficiency. */
   override def toSeq: Seq[A] = toBuffer[A]
