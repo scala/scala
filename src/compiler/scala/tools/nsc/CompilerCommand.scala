@@ -17,9 +17,11 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   /** file extensions of files that the compiler can process */
   lazy val fileEndings = Properties.fileEndings
 
-  val (ok, files) =
+  private val processArgumentsResult =
     if (shouldProcessArguments) processArguments
     else (true, Nil)
+  def ok    = processArgumentsResult._1
+  def files = processArgumentsResult._2
 
   /** The name of the command */
   def cmdName = "scalac"

@@ -38,7 +38,7 @@ object MainGenericRunner {
     import command.settings
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 
-    if (!command.ok)                      return errorFn("%s\n%s".format(command.usageMsg, sampleCompiler.pluginOptionsHelp))
+    if (!command.ok)                      return errorFn("\n" + command.shortUsageMsg)
     else if (settings.version.value)      return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
     else if (command.shouldStopWithInfo)  return errorFn(command getInfoMessage sampleCompiler)
 
