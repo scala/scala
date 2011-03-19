@@ -46,10 +46,14 @@ extends IndexedSeq[Int]
 {
   override def par = new ParRange(this)
 
-  // Note that this value is calculated eagerly intentionally: it also
-  // serves to enforce conditions (step != 0) && (length <= Int.MaxValue)
-  private val numRangeElements: Int =
-    Range.count(start, end, step, isInclusive)
+  // This member is designed to enforce conditions:
+  //   (step != 0) && (length <= Int.MaxValue),
+  // but cannot be evaluated eagerly because we have a pattern where ranges
+  // are constructed like:    "x to y by z"
+  // The "x to y" piece should not trigger an exception. So the calculation
+  // is delayed, which means it will not fail fast for those cases where failing
+  // was correct.
+  private lazy val numRangeElements: Int = Range.count(start, end, step, isInclusive)
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 

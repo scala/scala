@@ -7,6 +7,17 @@ object Test {
     assert(buffer.toList == range.iterator.toList, buffer.toList+"/"+range.iterator.toList)
   }
 
+  def boundaryTests() = {
+    // #4321
+    assert((Int.MinValue to Int.MaxValue by Int.MaxValue).size == 3)
+    // #4308
+    val caught = (
+      try   { (Long.MinValue to Long.MaxValue).sum ; false }
+      catch { case _: IllegalArgumentException => true }
+    )
+    assert(caught)
+  }
+
   case class GR[T](val x: T)(implicit val num: Integral[T]) {
     import num._
 
@@ -54,5 +65,8 @@ object Test {
     rangeForeach(10 until 1 by -1);
     rangeForeach(10 to 1 by -3);
     rangeForeach(10 until 1 by -3);
+
+    // living on the edges
+    boundaryTests()
   }
 }

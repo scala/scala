@@ -48,7 +48,8 @@ extends IndexedSeq[T] with Serializable {
    */
   import num._
 
-  private val numRangeElements: Int =
+  // See comment in Range for why this must be lazy.
+  private lazy val numRangeElements: Int =
     NumericRange.count(start, end, step, isInclusive)
 
   override def length  = numRangeElements
@@ -191,32 +192,44 @@ extends IndexedSeq[T] with Serializable {
 /** A companion object for numeric ranges.
  */
 object NumericRange {
+  import Ordering.Implicits._
+  import math.Integral.Implicits._
+
   /** Calculates the number of elements in a range given start, end, step, and
    *  whether or not it is inclusive.  Throws an exception if step == 0 or
    *  the number of elements exceeds the maximum Int.
    */
   def count[T: Integral](start: T, end: T, step: T, isInclusive: Boolean): Int = {
-    val num = implicitly[Integral[T]]
-    import num._
+    val zero    = implicitly[Integral[T]].zero
+    val upward  = start < end
+    val posStep = step > zero
 
-    if (step == zero)
-      throw new IllegalArgumentException("step cannot be 0.")
+    if (step == zero) throw new IllegalArgumentException("step cannot be 0.")
+    else if (start == end) if (isInclusive) 1 else 0
+    else if (upward != posStep) 0
+    else {
+      val jumps     = ((end - start) / step).toLong
+      val remainder = ((end - start) % step).toLong
+      val longCount = jumps + (
+        if (!isInclusive && zero == remainder) 0 else 1
+      )
 
-    val longCount: Long =
-      if (start == end) { if (isInclusive) 1 else 0 }
-      else if (end > start != step > zero) 0
-      else {
-        val jumps     = toLong((end - start) / step)
-        val remainder = toLong((end - start) % step)
+      /** The edge cases keep coming.  Since e.g.
+       *    Long.MaxValue + 1 == Long.MinValue
+       *  we do some more improbable seeming checks lest
+       *  overflow turn up as an empty range.
+       */
+      // The second condition contradicts an empty result.
+      val isOverflow = longCount == 0 && (start + step < end) == upward
 
-        if (!isInclusive && zero == remainder) jumps
-        else jumps + 1L
+      if (longCount > scala.Int.MaxValue || longCount < 0L || isOverflow) {
+        val word  = if (isInclusive) "to" else "until"
+        val descr = List(start, word, end, "by", step) mkString " "
+
+        throw new IllegalArgumentException(descr + ": seqs cannot contain more than Int.MaxValue elements.")
       }
-
-    if (longCount > scala.Int.MaxValue || longCount < 0L)
-      throw new IllegalArgumentException("Seqs cannot contain more than Int.MaxValue elements.")
-
-    longCount.toInt
+      longCount.toInt
+    }
   }
 
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
