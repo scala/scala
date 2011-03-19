@@ -602,8 +602,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     def superscript(): Inline = {
       jump("^")
       val i = inline(check("^"))
-      jump("^")
-      Superscript(i)
+      if (jump("^")) {
+        Superscript(i)
+      } else {
+        Chain(Seq(Text("^"), i))
+      }
     }
 
     def subscript(): Inline = {
