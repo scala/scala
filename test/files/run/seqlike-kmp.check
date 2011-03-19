@@ -1,0 +1,90 @@
+indexOfSlice
+  (97) with idx >= -1 = 97
+  (97) with idx >= 0 = 97
+  (97) with idx >= 1 = 97
+  (97) with idx >= 2 = 97
+  (97) with idx >= 97 = 97
+  (97) with idx >= 98 = -1
+  (97) with idx >= 99 = -1
+  (97) with idx >= 100 = -1
+lastIndexOfSlice
+  (97) with idx <= -1 = -1
+  (97) with idx <= 0 = -1
+  (97) with idx <= 1 = -1
+  (97) with idx <= 2 = -1
+  (97) with idx <= 97 = 97
+  (97) with idx <= 98 = 97
+  (97) with idx <= 99 = 97
+  (97) with idx <= 100 = 97
+indexOfSlice
+  (97, 98) with idx >= -1 = 97
+  (97, 98) with idx >= 0 = 97
+  (97, 98) with idx >= 1 = 97
+  (97, 98) with idx >= 2 = 97
+  (97, 98) with idx >= 97 = 97
+  (97, 98) with idx >= 98 = -1
+  (97, 98) with idx >= 99 = -1
+  (97, 98) with idx >= 100 = -1
+lastIndexOfSlice
+  (97, 98) with idx <= -1 = -1
+  (97, 98) with idx <= 0 = -1
+  (97, 98) with idx <= 1 = -1
+  (97, 98) with idx <= 2 = -1
+  (97, 98) with idx <= 97 = 97
+  (97, 98) with idx <= 98 = 97
+  (97, 98) with idx <= 99 = 97
+  (97, 98) with idx <= 100 = 97
+indexOfSlice
+  (97, 98, 99) with idx >= -1 = 97
+  (97, 98, 99) with idx >= 0 = 97
+  (97, 98, 99) with idx >= 1 = 97
+  (97, 98, 99) with idx >= 2 = 97
+  (97, 98, 99) with idx >= 97 = 97
+  (97, 98, 99) with idx >= 98 = -1
+  (97, 98, 99) with idx >= 99 = -1
+  (97, 98, 99) with idx >= 100 = -1
+lastIndexOfSlice
+  (97, 98, 99) with idx <= -1 = -1
+  (97, 98, 99) with idx <= 0 = -1
+  (97, 98, 99) with idx <= 1 = -1
+  (97, 98, 99) with idx <= 2 = -1
+  (97, 98, 99) with idx <= 97 = 97
+  (97, 98, 99) with idx <= 98 = 97
+  (97, 98, 99) with idx <= 99 = 97
+  (97, 98, 99) with idx <= 100 = 97
+indexOfSlice
+  (98, 99) with idx >= -1 = 98
+  (98, 99) with idx >= 0 = 98
+  (98, 99) with idx >= 1 = 98
+  (98, 99) with idx >= 2 = 98
+  (98, 99) with idx >= 97 = 98
+  (98, 99) with idx >= 98 = 98
+  (98, 99) with idx >= 99 = -1
+  (98, 99) with idx >= 100 = -1
+lastIndexOfSlice
+  (98, 99) with idx <= -1 = -1
+  (98, 99) with idx <= 0 = -1
+  (98, 99) with idx <= 1 = -1
+  (98, 99) with idx <= 2 = -1
+  (98, 99) with idx <= 97 = -1
+  (98, 99) with idx <= 98 = 98
+  (98, 99) with idx <= 99 = 98
+  (98, 99) with idx <= 100 = 98
+indexOfSlice
+  (99) with idx >= -1 = 99
+  (99) with idx >= 0 = 99
+  (99) with idx >= 1 = 99
+  (99) with idx >= 2 = 99
+  (99) with idx >= 97 = 99
+  (99) with idx >= 98 = 99
+  (99) with idx >= 99 = 99
+  (99) with idx >= 100 = -1
+lastIndexOfSlice
+  (99) with idx <= -1 = -1
+  (99) with idx <= 0 = -1
+  (99) with idx <= 1 = -1
+  (99) with idx <= 2 = -1
+  (99) with idx <= 97 = -1
+  (99) with idx <= 98 = -1
+  (99) with idx <= 99 = 99
+  (99) with idx <= 100 = 99
