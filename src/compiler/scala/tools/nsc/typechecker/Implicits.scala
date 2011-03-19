@@ -591,7 +591,7 @@ trait Implicits {
      *                    If it is null, no shadowing.
      */
     class ImplicitComputation(iss: Infoss, shadowed: util.HashSet[Name]) {
-      private var _best: SearchResult = SearchFailure
+      private var best: SearchResult = SearchFailure
 
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
@@ -611,6 +611,18 @@ trait Implicits {
       /** Tests for validity and updates invalidImplicits by side effect when false.
        */
       private def checkValid(sym: Symbol) = isValid(sym) || { invalidImplicits += sym ; false }
+
+      /** Preventing a divergent implicit from terminating implicit search,
+       *  so that if there is a best candidate it can still be selected.
+       */
+      private var divergence = false
+      private val MaxDiverges = 1   // not sure if this should be > 1
+      private val divergenceHandler = util.Exceptional.expiringHandler(MaxDiverges) {
+        case x: DivergentImplicit =>
+          divergence = true
+          log("discarding divergent implicit during implicit search")
+          SearchFailure
+      }
 
       /** Sorted list of eligible implicits.
        */
@@ -635,10 +647,14 @@ trait Implicits {
       @tailrec private def rankImplicits(pending: Infos, acc: Infos): Infos = pending match {
         case Nil      => acc
         case i :: is  =>
-          typedImplicit(i, true) match {
+          def tryImplicitInfo(i: ImplicitInfo) =
+            try typedImplicit(i, true)
+            catch divergenceHandler
+
+          tryImplicitInfo(i) match {
             case SearchFailure  => rankImplicits(is, acc)
             case newBest        =>
-              _best = newBest
+              best = newBest
               val newPending = undoLog undo {
                 is filterNot (alt => alt == i || {
                   try improves(i, alt)
@@ -671,13 +687,20 @@ trait Implicits {
             }
         }
 
-        if (_best == SearchFailure && invalidImplicits.nonEmpty) {
-          setAddendum(tree.pos, () =>
-            "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
-            " because it comes after the application point and it lacks an explicit result type")
+        if (best == SearchFailure) {
+          /** If there is no winner, and we witnessed and caught divergence,
+           *  now we can throw it for the error message.
+           */
+          if (divergence)
+            throw DivergentImplicit
+
+          if (invalidImplicits.nonEmpty)
+            setAddendum(tree.pos, () =>
+              "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
+              " because it comes after the application point and it lacks an explicit result type")
         }
 
-        _best
+        best
       }
     }
 
