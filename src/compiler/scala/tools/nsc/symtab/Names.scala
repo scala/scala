@@ -23,9 +23,6 @@ trait Names extends reflect.generic.Names {
   private final val HASH_MASK  = 0x7FFF
   private final val NAME_SIZE  = 0x20000
 
-  private final val MaxFileNameLength = 255
-  private final val MaxClassNameLength = MaxFileNameLength - 6 // leave space for ".class"
-
   final val nameDebug = false
 
   /** memory to store all names sequentially
@@ -77,26 +74,6 @@ trait Names extends reflect.generic.Names {
     if (len == 0) nc += 1
     else nc = nc + len
   }
-
-  private lazy val md5 = MessageDigest.getInstance("MD5")
-
-  /** "COMPACTIFY" */
-  private def toMD5(s: String, edge: Int) = {
-    val prefix = s take edge
-    val suffix = s takeRight edge
-    val marker = "$$$$"
-
-    val cs = s.toArray
-    val bytes = Codec toUTF8 cs
-    md5 update bytes
-    val md5chars = md5.digest() map (b => (b & 0xFF).toHexString) mkString
-
-    prefix + marker + md5chars + marker + suffix
-  }
-
-  def compactify(s: String): String =
-    if (s.length <= MaxClassNameLength) s
-    else toMD5(s, MaxClassNameLength / 4)
 
   /** Create a term name from the characters in cs[offset..offset+len-1].
    */
