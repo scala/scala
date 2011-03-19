@@ -415,7 +415,7 @@ object Array extends FallbackArrayBuilding {
   def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
     if (x == null) None else Some(x.toIndexedSeq)
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
-    // in pattern matcher.
+    // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
 
   /** Creates an array containing several copies of an element.
    *
@@ -483,7 +483,7 @@ object Array extends FallbackArrayBuilding {
  *  @author Martin Odersky
  *  @version 1.0
  */
-final class Array[T](_length: Int) extends java.io.Serializable {
+final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {
 
    /** Multidimensional array creation */
    @deprecated("use `Array.ofDim' instead")
@@ -545,43 +545,28 @@ final class Array[T](_length: Int) extends java.io.Serializable {
   def length: Int = throw new Error()
 
   /** The element at given index.
-   *  <p>
-   *    Indices start a `0`; `xs.apply(0)` is the first
-   *    element of array `xs`.
-   *  </p>
-   *  <p>
-   *    Note the indexing syntax `xs(i)` is a shorthand for
-   *    `xs.apply(i)`.
-   *  </p>
    *
-   *  @param i   the index
-   *  @throws ArrayIndexOutOfBoundsException if `i < 0` or
-   *          `length <= i`
+   *  Indices start at `0`; `xs.apply(0)` is the first element of array `xs`.
+   *  Note the indexing syntax `xs(i)` is a shorthand for `xs.apply(i)`.
+   *
+   *  @param    i   the index
+   *  @return       the element at the given index
+   *  @throws       ArrayIndexOutOfBoundsException if `i < 0` or `length <= i`
    */
   def apply(i: Int): T = throw new Error()
 
-  /** <p>
-   *    Update the element at given index.
-   *  </p>
-   *  <p>
-   *    Indices start a `0`; `xs.apply(0)` is the first
-   *    element of array `xs`.
-   *  </p>
-   *  <p>
-   *    Note the indexing syntax `xs(i) = x` is a shorthand
-   *    for `xs.update(i, x)`.
-   *  </p>
+  /** Update the element at given index.
    *
-   *  @param i   the index
-   *  @param x   the value to be written at index `i`
-   *  @throws ArrayIndexOutOfBoundsException if `i < 0` or
-   *          `length <= i`
+   *  Indices start at `0`; `xs.apply(0)` is the first element of array `xs`.
+   *  Note the indexing syntax `xs(i)` is a shorthand for `xs.apply(i)`.
+   *
+   *  @param    i   the index
+   *  @param    x   the value to be written at index `i`
+   *  @throws       ArrayIndexOutOfBoundsException if `i < 0` or `length <= i`
    */
   def update(i: Int, x: T) { throw new Error() }
 
-  /** <p>
-   *    Clone the Array.
-   *  </p>
+  /** Clone the Array.
    *
    *  @return A clone of the Array.
    */
