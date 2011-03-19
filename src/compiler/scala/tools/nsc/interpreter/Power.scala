@@ -125,12 +125,16 @@ class Power(repl: ILoop, intp: IMain) {
   object InternalInfo {
     implicit def apply[T: Manifest] : InternalInfo[T] = new InternalInfo[T](None)
   }
-  /** Todo: translate manifest type arguments into applied types. */
+  /** Todos...
+   *    translate manifest type arguments into applied types
+   *    customizable symbol filter (had to hardcode no-spec to reduce noise)
+   */
   class InternalInfo[T: Manifest](value: Option[T] = None) {
     def companion = symbol.companionSymbol
     def info      = symbol.info
     def module    = symbol.moduleClass
     def owner     = symbol.owner
+    def owners    = symbol.ownerChain drop 1
     def symDef    = symbol.defString
     def symName   = symbol.name
     def tpe       = symbol.tpe
@@ -140,16 +144,18 @@ class Power(repl: ILoop, intp: IMain) {
     def types     = members filter (_.name.isTypeName)
     def methods   = members filter (_.isMethod)
     def overrides = declares filter (_.isOverride)
+    def inPackage = owners find (x => x.isPackageClass || x.isPackage) getOrElse definitions.RootPackage
 
-    def erasure   = manifest[T].erasure
-    def symbol    = getCompilerClass(erasure.getName)
-    def members   = tpe.members
-    def bts       = info.baseTypeSeq.toList
-    def btsmap    = bts map (x => (x, x.decls.toList)) toMap
-    def pkgName   = erasure.getPackage.getName
-    def pkg       = getCompilerModule(pkgName)
-    def pkgmates  = pkg.tpe.members
-    def pkgslurp  = new PackageSlurper(pkgName) slurp()
+    def erasure    = manifest[T].erasure
+    def symbol     = getCompilerClass(erasure.getName)
+    def members    = tpe.members filterNot (_.name.toString contains "$mc")
+    def allMembers = tpe.members
+    def bts        = info.baseTypeSeq.toList
+    def btsmap     = bts map (x => (x, x.decls.toList)) toMap
+    def pkgName    = erasure.getPackage.getName
+    def pkg        = getCompilerModule(pkgName)
+    def pkgmates   = pkg.tpe.members
+    def pkgslurp   = new PackageSlurper(pkgName) slurp()
 
     def ?         = this
 
@@ -167,28 +173,73 @@ class Power(repl: ILoop, intp: IMain) {
 
   trait PCFormatter extends (Any => List[String]) {
     def apply(x: Any): List[String]
+
+    private var indentLevel = 0
+    private def spaces = "  " * indentLevel
+    def indented[T](body: => T): T = {
+      indentLevel += 1
+      try body
+      finally indentLevel -= 1
+    }
+
     def show(x: Any): Unit = grep(x, _ => true)
-    def grep(x: Any, p: String => Boolean): Unit = apply(x) filter p foreach println
+    def grep(x: Any, p: String => Boolean): Unit =
+      apply(x) filter p foreach (x => println(spaces + x))
   }
+  class MultiPrintingConvenience[T](coll: Traversable[T])(implicit fmt: PCFormatter) {
+    import fmt._
+
+    def freqBy[U](p: T => U) = {
+      val map = coll.toList groupBy p
+      map.toList sortBy (-_._2.size)
+    }
+    def freqByFormatted[U](p: T => U) = {
+      val buf = new mutable.ListBuffer[String]
+
+      freqBy(p) foreach { case (k, vs) =>
+        buf += "%d: %s".format(vs.size, k)
+        vs flatMap fmt foreach (buf += "  " + _)
+      }
+      buf.toList
+    }
+
+    /** It makes sense.
+     *
+     *    #  means how many
+     *    ?  means "I said, HOW MANY?"
+     *    >  means print
+     *
+     *  Now don't you feel silly for what you were thinking.
+     */
+    def #?>[U](p: T => U) = this freqByFormatted p foreach println
+    def #?[U](p: T => U) = this freqByFormatted p
+  }
+
   class PrintingConvenience[T](value: T)(implicit fmt: PCFormatter) {
     def > : Unit = >(_ => true)
     def >(s: String): Unit = >(_ contains s)
     def >(r: Regex): Unit = >(_ matches r.pattern.toString)
     def >(p: String => Boolean): Unit = fmt.grep(value, p)
   }
-  object Implicits {
-    implicit lazy val powerNameOrdering: Ordering[Name] = Ordering[String] on (_.toString)
-    implicit object powerSymbolOrdering extends Ordering[Symbol] {
+  protected trait Implicits1 {
+    implicit def replPrinting[T](x: T)(implicit fmt: PCFormatter) = new PrintingConvenience[T](x)
+  }
+  object Implicits extends Implicits1 {
+    implicit lazy val powerNameOrdering: Ordering[Name]     = Ordering[String] on (_.toString)
+    implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
+    implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
+
+    object symbolSubtypeOrdering extends Ordering[Symbol] {
       def compare(s1: Symbol, s2: Symbol) =
         if (s1 eq s2) 0
         else if (s1 isLess s2) -1
         else 1
     }
-    implicit def replPrinting[T](x: T)(implicit fmt: PCFormatter) = new PrintingConvenience[T](x)
+    implicit def replCollPrinting[T](xs: Traversable[T])(implicit fmt: PCFormatter) = new MultiPrintingConvenience[T](xs)
     implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
     implicit object ReplDefaultFormatter extends PCFormatter {
       def apply(x: Any): List[String] = x match {
-        case Tuple2(k, v)       => apply(k) + " -> " + apply(v)
+        case Tuple2(k, v)       => List(apply(k) ++ Seq("->") ++ apply(v) mkString " ")
         case xs: Traversable[_] => (xs.toList flatMap apply).sorted.distinct
         case x                  => List("" + x)
       }

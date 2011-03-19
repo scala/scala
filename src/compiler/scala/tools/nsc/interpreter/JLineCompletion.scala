@@ -201,7 +201,13 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   }
 
   // top level packages
-  object rootClass extends TypeMemberCompletion(RootClass.tpe) { }
+  object rootClass extends TypeMemberCompletion(RootClass.tpe) {
+    override def completions(verbosity: Int) = super.completions(verbosity) :+ "_root_"
+    override def follow(id: String) = id match {
+      case "_root_" => Some(this)
+      case _        => super.follow(id)
+    }
+  }
   // members of Predef
   object predef extends TypeMemberCompletion(PredefModule.tpe) {
     override def excludeEndsWith    = super.excludeEndsWith ++ List("Wrapper", "ArrayOps")
