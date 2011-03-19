@@ -38,13 +38,11 @@ self =>
 
   trait Transformed[B] extends IndexedSeqView[B, Coll] with super.Transformed[B] {
     def update(idx: Int, elem: B): Unit
-    override def length = self.length
     override def toString = viewToString
   }
 
   // pre: until <= self.length
   trait Sliced extends super.Sliced with Transformed[A] {
-    override def length = endpoints.width
     def update(idx: Int, elem: A) =
       if (idx + from < until) self.update(idx + from, elem)
       else throw new IndexOutOfBoundsException(idx.toString)
