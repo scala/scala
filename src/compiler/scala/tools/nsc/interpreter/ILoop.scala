@@ -216,7 +216,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
        NoArgs("quit", "exit the interpreter", () => Result(false, None)),
        NoArgs("replay", "reset execution and replay all previous commands", replay),
        LineArg("sh", "fork a shell and run a command", shCommand),
-       NoArgs("silent", "disable/enable automatic printing of results", verbosity)
+       NoArgs("silent", "disable/enable automatic printing of results", verbosity),
+       LineArg("type", "display the type of an expression without evaluating it", typeCommand)
     )
   }
 
@@ -312,6 +313,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       val bytes = super.tryClass(className)
       if (bytes.nonEmpty) bytes
       else super.tryClass(moduleName)
+    }
+  }
+
+  private def typeCommand(line: String): Result = {
+    intp.typeOfExpression(line) match {
+      case Some(tp) => tp.toString
+      case _        => "Failed to determine type."
     }
   }
 
