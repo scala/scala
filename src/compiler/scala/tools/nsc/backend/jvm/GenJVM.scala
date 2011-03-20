@@ -237,13 +237,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
       for (annot <- c.symbol.annotations) annot match {
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
-          parents = parents ::: List(SerializableClass.tpe)
+          parents :+= SerializableClass.tpe
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
-          parents = parents ::: List(CloneableClass.tpe)
+          parents :+= CloneableClass.tpe
         case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUIDAttr =>
           serialVUID = Some(const.longValue)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
-          parents = parents ::: List(RemoteInterface.tpe)
+          parents :+= RemoteInterface.tpe
           isRemoteClass = true
         case _ =>
       }

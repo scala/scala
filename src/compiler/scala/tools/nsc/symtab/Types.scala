@@ -3396,7 +3396,8 @@ A type's typeSymbol should never be inspected directly.
                 else instParam(ps.tail, as.tail);
               val symclazz = sym.owner
               if (symclazz == clazz && !pre.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
-                pre.baseType(symclazz) match {
+                // have to deconst because it may be a Class[T].
+                pre.baseType(symclazz).deconst match {
                   case TypeRef(_, basesym, baseargs) =>
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
                     if (sameLength(basesym.typeParams, baseargs)) {

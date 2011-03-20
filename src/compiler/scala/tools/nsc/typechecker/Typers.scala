@@ -4267,7 +4267,7 @@ trait Typers extends Modes {
       val result = typed(tree, forTypeMode(mode) | FUNmode, WildcardType)
 
       val restpe = result.tpe.normalize // normalize to get rid of type aliases for the following check (#1241)
-      if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable) {
+      if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable && !context.unit.isJava) {
         error(tree.pos, restpe.prefix+" is not a legal prefix for a constructor")
       }
 

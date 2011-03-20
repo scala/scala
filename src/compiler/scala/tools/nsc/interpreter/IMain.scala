@@ -993,7 +993,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     def asModule = safeModule(expr) map (_.tpe)
     def asExpr = beSilentDuring {
       val lhs = freshInternalVarName()
-      interpret("val " + lhs + " = { " + expr + " } ") match {
+      interpret("lazy val " + lhs + " = { " + expr + " } ") match {
         case IR.Success => typeOfExpression(lhs)
         case _          => None
       }

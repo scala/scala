@@ -18,6 +18,7 @@ package mutable
  *  @tparam A    Type of the elements contained in the collection, covariant and with reference types as upperbound.
  */
 @cloneable
-trait Cloneable[+A <: AnyRef]  {
+trait Cloneable[+A <: AnyRef] {
+  // !!! why doesn't this extend java.lang.Cloneable?
   override def clone: A = super.clone().asInstanceOf[A]
 }

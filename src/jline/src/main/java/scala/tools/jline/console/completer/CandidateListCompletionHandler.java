@@ -181,12 +181,13 @@ public class CandidateListCompletionHandler
         private static final
         ResourceBundle
             bundle =
-            ResourceBundle.getBundle(CandidateListCompletionHandler.class.getName(),
-                                     Locale.getDefault(),
-                                     CandidateListCompletionHandler.class.getClassLoader());
+            ResourceBundle.getBundle(CandidateListCompletionHandler.class.getName(), Locale.getDefault());
 
         public String format(final Object... args) {
-            return String.format(bundle.getString(name()), args);
+            if (bundle == null)
+                return "";
+            else
+                return String.format(bundle.getString(name()), args);
         }
     }
 }

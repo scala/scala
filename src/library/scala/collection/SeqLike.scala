@@ -15,110 +15,6 @@ import immutable.{List, Range}
 import generic._
 import parallel.ParSeq
 
-/** The companion object for trait `SeqLike`.
- */
-object SeqLike {
-
-  /**  A KMP implementation, based on the undoubtedly reliable wikipedia entry.
-   *
-   *  @author paulp
-   *  @since  2.8
-   */
-  private def KMP[B](S: Seq[B], W: Seq[B]): Option[Int] = {
-    // trivial cases
-    if (W.isEmpty) return Some(0)
-    else if (W drop 1 isEmpty) return (S indexOf W(0)) match {
-      case -1 => None
-      case x  => Some(x)
-    }
-
-    val T: Array[Int] = {
-      val arr = new Array[Int](W.length)
-      var pos = 2
-      var cnd = 0
-      arr(0) = -1
-      arr(1) = 0
-      while (pos < W.length) {
-        if (W(pos - 1) == W(cnd)) {
-          arr(pos) = cnd + 1
-          pos += 1
-          cnd += 1
-        }
-        else if (cnd > 0) {
-          cnd = arr(cnd)
-        }
-        else {
-          arr(pos) = 0
-          pos += 1
-        }
-      }
-      arr
-    }
-
-    var m, i = 0
-    def mi = m + i
-
-    while (mi < S.length) {
-      if (W(i) == S(mi)) {
-        i += 1
-        if (i == W.length)
-          return Some(m)
-      }
-      else {
-        m = mi - T(i)
-        if (i > 0)
-          i = T(i)
-      }
-    }
-    None
-  }
-
-  /** Finds a particular index at which one sequence occurs in another sequence.
-   *  Both the source sequence and the target sequence are expressed in terms
-   *  other sequences S' and T' with offset and length parameters.  This
-   *  function is designed to wrap the KMP machinery in a sufficiently general
-   *  way that all library sequence searches can use it.  It is unlikely you
-   *  have cause to call it directly: prefer functions such as StringBuilder#indexOf
-   *  and Seq#lastIndexOf.
-   *
-   *  @param  source        the sequence to search in
-   *  @param  sourceOffset  the starting offset in source
-   *  @param  sourceCount   the length beyond sourceOffset to search
-   *  @param  target        the sequence being searched for
-   *  @param  targetOffset  the starting offset in target
-   *  @param  targetCount   the length beyond targetOffset which makes up the target string
-   *  @param  fromIndex     the smallest index at which the target sequence may start
-   *
-   *  @return the applicable index in source where target exists, or -1 if not found
-   */
-  def indexOf[B](
-    source: Seq[B], sourceOffset: Int, sourceCount: Int,
-    target: Seq[B], targetOffset: Int, targetCount: Int,
-    fromIndex: Int): Int =
-      KMP(source.slice(sourceOffset, sourceCount) drop fromIndex, target.slice(targetOffset, targetCount)) match {
-        case None    => -1
-        case Some(x) => x + fromIndex
-      }
-
-  /** Finds a particular index at which one sequence occurs in another sequence.
-   *  Like indexOf, but finds the latest occurrence rather than earliest.
-   *
-   *  @see  SeqLike#indexOf
-   */
-  def lastIndexOf[B](
-    source: Seq[B], sourceOffset: Int, sourceCount: Int,
-    target: Seq[B], targetOffset: Int, targetCount: Int,
-    fromIndex: Int): Int = {
-      val src = (source.slice(sourceOffset, sourceCount) take fromIndex).reverse
-      val tgt = target.slice(targetOffset, targetCount).reverse
-
-      KMP(src, tgt) match {
-        case None    => -1
-        case Some(x) => (src.length - tgt.length - x) + sourceOffset
-      }
-    }
-}
-
 /** A template trait for sequences of type `Seq[A]`
  *  $seqInfo
  *
@@ -1038,3 +934,115 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
   override def projection = view
 }
 
+/** The companion object for trait `SeqLike`.
+ */
+object SeqLike {
+  /**  A KMP implementation, based on the undoubtedly reliable wikipedia entry.
+   *
+   *  @author paulp
+   *  @since  2.8
+   */
+  private def KMP[B](S: Seq[B], W: Seq[B]): Option[Int] = {
+    // trivial cases
+    if (W.isEmpty) return Some(0)
+    else if (W drop 1 isEmpty) return (S indexOf W(0)) match {
+      case -1 => None
+      case x  => Some(x)
+    }
+
+    val T: Array[Int] = {
+      val arr = new Array[Int](W.length)
+      var pos = 2
+      var cnd = 0
+      arr(0) = -1
+      arr(1) = 0
+      while (pos < W.length) {
+        if (W(pos - 1) == W(cnd)) {
+          arr(pos) = cnd + 1
+          pos += 1
+          cnd += 1
+        }
+        else if (cnd > 0) {
+          cnd = arr(cnd)
+        }
+        else {
+          arr(pos) = 0
+          pos += 1
+        }
+      }
+      arr
+    }
+
+    var m, i = 0
+    def mi = m + i
+
+    while (mi < S.length) {
+      if (W(i) == S(mi)) {
+        i += 1
+        if (i == W.length)
+          return Some(m)
+      }
+      else {
+        m = mi - T(i)
+        if (i > 0)
+          i = T(i)
+      }
+    }
+    None
+  }
+
+  /** Finds a particular index at which one sequence occurs in another sequence.
+   *  Both the source sequence and the target sequence are expressed in terms
+   *  other sequences S' and T' with offset and length parameters.  This
+   *  function is designed to wrap the KMP machinery in a sufficiently general
+   *  way that all library sequence searches can use it.  It is unlikely you
+   *  have cause to call it directly: prefer functions such as StringBuilder#indexOf
+   *  and Seq#lastIndexOf.
+   *
+   *  @param  source        the sequence to search in
+   *  @param  sourceOffset  the starting offset in source
+   *  @param  sourceCount   the length beyond sourceOffset to search
+   *  @param  target        the sequence being searched for
+   *  @param  targetOffset  the starting offset in target
+   *  @param  targetCount   the length beyond targetOffset which makes up the target string
+   *  @param  fromIndex     the smallest index at which the target sequence may start
+   *
+   *  @return the applicable index in source where target exists, or -1 if not found
+   */
+  def indexOf[B](
+    source: Seq[B], sourceOffset: Int, sourceCount: Int,
+    target: Seq[B], targetOffset: Int, targetCount: Int,
+    fromIndex: Int): Int = {
+      val toDrop = fromIndex max 0
+      val src = source.slice(sourceOffset, sourceCount) drop toDrop
+      val tgt = target.slice(targetOffset, targetCount)
+
+      KMP(src, tgt) match {
+        case None    => -1
+        case Some(x) => x + toDrop
+      }
+  }
+
+  /** Finds a particular index at which one sequence occurs in another sequence.
+   *  Like indexOf, but finds the latest occurrence rather than earliest.
+   *
+   *  @see  SeqLike#indexOf
+   */
+  def lastIndexOf[B](
+    source: Seq[B], sourceOffset: Int, sourceCount: Int,
+    target: Seq[B], targetOffset: Int, targetCount: Int,
+    fromIndex: Int): Int = {
+      if (fromIndex < 0) return -1
+      val toTake = (fromIndex + targetCount) min sourceCount
+      // Given seq 1234567 looking for abc, we need to take an extra
+      // abc.length chars to examine beyond what is dictated by fromIndex.
+      val src = source.slice(sourceOffset, sourceCount) take toTake reverse
+      val tgt = target.slice(targetOffset, targetCount).reverse
+
+      // then we reverse the adjustment here on success.
+      KMP(src, tgt) match {
+        case None    => -1
+        case Some(x) => src.length - x - targetCount
+      }
+    }
+}
