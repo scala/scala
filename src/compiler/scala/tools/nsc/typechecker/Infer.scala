@@ -1312,7 +1312,7 @@ trait Infer {
           ((bound contains sym) ||
            sym.name == tpnme.WILDCARD || {
             val e = context.scope.lookupEntry(sym.name)
-            (e ne null) && e.sym == sym && e.owner == context.scope
+            (e ne null) && e.sym == sym && !e.sym.isTypeParameterOrSkolem && e.owner == context.scope
           })
         tp match {
           case SingleType(pre, _) =>

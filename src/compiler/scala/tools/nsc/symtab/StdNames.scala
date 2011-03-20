@@ -186,7 +186,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val canEqual_ : NameType       = "canEqual"
     val checkInitialized: NameType = "checkInitialized"
     val classOf: NameType          = "classOf"
-    val clone_ : NameType          = "clone"
+    val clone_ : NameType          = sn.OClone
     val conforms: NameType         = "conforms"
     val copy: NameType             = "copy"
     val delayedInit: NameType      = "delayedInit"
@@ -195,19 +195,19 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val drop: NameType             = "drop"
     val elem: NameType             = "elem"
     val eq: NameType               = "eq"
-    val equals_ : NameType         = "equals"
+    val equals_ : NameType         = sn.OEquals
     val error: NameType            = "error"
     val ex: NameType               = "ex"
     val false_ : NameType          = "false"
     val filter: NameType           = "filter"
-    val finalize_ : NameType       = "finalize"
+    val finalize_ : NameType       = sn.OFinalize
     val find_ : NameType           = "find"
     val flatMap: NameType          = "flatMap"
     val foreach: NameType          = "foreach"
     val genericArrayOps: NameType  = "genericArrayOps"
     val get: NameType              = "get"
     val hasNext: NameType          = "hasNext"
-    val hashCode_ : NameType       = "hashCode"
+    val hashCode_ : NameType       = sn.OHashCode
     val hash_ : NameType           = "hash"
     val head: NameType             = "head"
     val identity: NameType         = "identity"
@@ -246,7 +246,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val toArray: NameType          = "toArray"
     val toList: NameType           = "toList"
     val toSeq: NameType            = "toSeq"
-    val toString_ : NameType       = "toString"
+    val toString_ : NameType       = sn.OToString
     val true_ : NameType           = "true"
     val unapply: NameType          = "unapply"
     val unapplySeq: NameType       = "unapplySeq"
@@ -430,6 +430,12 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val Invoke              : TermName
     val JavaLang            : TermName
 
+    val OClone              : String
+    val OEquals             : String
+    val OFinalize           : String
+    val OHashCode           : String
+    val OToString           : String
+
     val Boxed: immutable.Map[TypeName, TypeName]
   }
 
@@ -527,6 +533,12 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val Invoke: TermName    = "invoke"
     final val JavaLang: TermName  = "java.lang"
 
+    final val OClone    = "clone"
+    final val OEquals   = "equals"
+    final val OFinalize = "finalize"
+    final val OHashCode = "hashCode"
+    final val OToString = "toString"
+
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,
       tpnme.Byte    -> BoxedByte,
@@ -565,9 +577,15 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val Invoke: TermName    = "Invoke"
     final val JavaLang: TermName  = "System"
 
+    final val OClone    = "MemberwiseClone"
+    final val OEquals   = "Equals"
+    final val OFinalize = "Finalize"
+    final val OHashCode = "GetHashCode"
+    final val OToString = "ToString"
+
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> "System.Boolean",
-      tpnme.Byte    -> "System.Byte",
+      tpnme.Byte    -> "System.SByte", // a scala.Byte is signed and a System.SByte too (unlike a System.Byte)
       tpnme.Char    -> "System.Char",
       tpnme.Short   -> "System.Int16",
       tpnme.Int     -> "System.Int32",

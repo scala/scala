@@ -843,48 +843,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         setParents(sym, anyvalparam)
       }
 
-      if (forMSIL) {
-        val intType = IntClass.typeConstructor
-        val intParam = List(intType)
-        val longType = LongClass.typeConstructor
-        val charType = CharClass.typeConstructor
-        val unitType = UnitClass.typeConstructor
-        val stringType = StringClass.typeConstructor
-        val stringParam = List(stringType)
-
-        // additional methods of Object
-        newMethod(ObjectClass, "clone", List(), AnyRefClass.typeConstructor)
-        // wait in Java returns void, on .NET Wait returns boolean. by putting
-        //  `booltype` the compiler adds a `drop` after calling wait.
-        newMethod(ObjectClass, "wait", List(), booltype)
-        newMethod(ObjectClass, "wait", List(longType), booltype)
-        newMethod(ObjectClass, "notify", List(), unitType)
-        newMethod(ObjectClass, "notifyAll", List(), unitType)
-
-        // additional methods of String
-        newMethod(StringClass, "length", List(), intType)
-        newMethod(StringClass, "compareTo", stringParam, intType)
-        newMethod(StringClass, "charAt", intParam, charType)
-        newMethod(StringClass, "concat", stringParam, stringType)
-        newMethod(StringClass, "indexOf", intParam, intType)
-        newMethod(StringClass, "indexOf", List(intType, intType), intType)
-        newMethod(StringClass, "indexOf", stringParam, intType)
-        newMethod(StringClass, "indexOf", List(stringType, intType), intType)
-        newMethod(StringClass, "lastIndexOf", intParam, intType)
-        newMethod(StringClass, "lastIndexOf", List(intType, intType), intType)
-        newMethod(StringClass, "lastIndexOf", stringParam, intType)
-        newMethod(StringClass, "lastIndexOf", List(stringType, intType), intType)
-        newMethod(StringClass, "toLowerCase", List(), stringType)
-        newMethod(StringClass, "toUpperCase", List(), stringType)
-        newMethod(StringClass, "startsWith", stringParam, booltype)
-        newMethod(StringClass, "endsWith", stringParam, booltype)
-        newMethod(StringClass, "substring", intParam, stringType)
-        newMethod(StringClass, "substring", List(intType, intType), stringType)
-        newMethod(StringClass, "trim", List(), stringType)
-        newMethod(StringClass, "intern", List(), stringType)
-        newMethod(StringClass, "replace", List(charType, charType), stringType)
-        newMethod(StringClass, "toCharArray", List(), arrayType(charType))
-      }
       isInitialized = true
     } //init
 
