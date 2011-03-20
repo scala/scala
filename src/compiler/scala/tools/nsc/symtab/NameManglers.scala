@@ -38,7 +38,7 @@ trait NameManglers {
     private final val marker = "$$$$"
     private final val MaxNameLength = math.min(
       settings.maxClassfileName.value - 6,
-      2 * (settings.maxClassfileName.value - 6 - 2*marker.length - 32) + 6
+      2 * (settings.maxClassfileName.value - 6 - 2*marker.length - 32)
     )
     private lazy val md5 = MessageDigest.getInstance("MD5")
     private def toMD5(s: String, edge: Int) = {
