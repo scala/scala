@@ -4268,6 +4268,10 @@ trait Typers extends Modes {
 
       val restpe = result.tpe.normalize // normalize to get rid of type aliases for the following check (#1241)
       if (!phase.erasedTypes && restpe.isInstanceOf[TypeRef] && !restpe.prefix.isStable && !context.unit.isJava) {
+        // The isJava exception if OK only because the only type constructors scalac gets
+        // to see are those in the signatures. These do not need a unique object as a prefix.
+        // The situation is different for new's and super's, but scalac does not look deep
+        // enough to see those. See #3938
         error(tree.pos, restpe.prefix+" is not a legal prefix for a constructor")
       }
 
