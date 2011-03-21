@@ -32,7 +32,7 @@ object Test {
     // warmup
     { val r = new Runner(1000000, 10) ; r.straightSlice ; r.iteratorSlice ; r.viewSlice }
 
-    new Runner(10000000, 10) run 50
+    new Runner(10000000, 10) run 100
     new Runner(10000000, 50) run 50
   }
 }
