@@ -73,4 +73,26 @@ object Test extends Properties("CommentFactory") {
       Chain(List(Text("One"), Text("\n"), Monospace("two"), Text(" three")))
   )
 
+  property("Trac #4361 - ^...^") = parse(
+      """
+/**
+ * hello ^world^ */""",
+      Chain(List(Text("hello "), Superscript(Text("world"))))
+  )
+
+  property("Trac #4361 - single ^ symbol") = parse(
+      """
+/**
+ * <pre>
+ * hello ^world
+ * </pre>
+ *
+ */""",
+      Chain(List(Text(""), Text("\n"),
+                 HtmlTag("<pre>"), Text("\n"),
+                 Text("hello "), Chain(List(Text("^"),
+                                            Chain(List(Text("world"),
+                                                       Text("\n"),
+                                                       HtmlTag("</pre>")))))))
+  )
 }
