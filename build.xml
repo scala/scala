@@ -1598,8 +1598,8 @@ BOOTRAPING TEST AND TEST SUITE
       <compilationpath>
         <path refid="pack.classpath"/>
       </compilationpath>
-      <scalachecktests dir="test/scaladoc">
-	<include name="*.scala"/>
+      <scalachecktests dir="test/scaladoc/scala">
+        <include name="*.scala"/>
       </scalachecktests>
     </partest>
   </target>
