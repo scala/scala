@@ -38,7 +38,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
                    with LoopCommands
 {
   def this(in0: BufferedReader, out: PrintWriter) = this(Some(in0), out)
-  def this() = this(None, new PrintWriter(Console.out))
+  def this() = this(None, new PrintWriter(Console.out, true))
 
   var in: InteractiveReader = _   // the input stream from which commands come
   var settings: Settings = _
@@ -162,8 +162,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
         |Type in expressions to have them evaluated.
         |Type :help for more information.""" .
     stripMargin.format(versionString, javaVmName, javaVersion)
+    val addendum = if (isReplDebug) "\n" + new java.util.Date else ""
 
-    plushln(welcomeMsg)
+    plushln(welcomeMsg + addendum)
   }
 
   /** Show the history */
@@ -748,7 +749,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   @deprecated("Use `process` instead")
-  def main(args: Array[String]): Unit = process(args)
+  def main(args: Array[String]): Unit = {
+    if (isReplDebug)
+      System.out.println(new java.util.Date)
+
+    process(args)
+  }
   @deprecated("Use `process` instead")
   def main(settings: Settings): Unit = process(settings)
 }
@@ -765,7 +771,7 @@ object ILoop {
     stringFromStream { ostream =>
       Console.withOut(ostream) {
         val input    = new BufferedReader(new StringReader(code))
-        val output   = new PrintWriter(new OutputStreamWriter(ostream))
+        val output   = new PrintWriter(new OutputStreamWriter(ostream), true)
         val repl     = new ILoop(input, output)
         val settings = new Settings
         settings.classpath.value = sys.props("java.class.path")

@@ -93,13 +93,20 @@ object ScalaClassLoader {
       with ScalaClassLoader {
 
     private var classloaderURLs = urls.toList
+    private def classpathString = ClassPath.fromURLs(urls: _*)
 
     /** Override to widen to public */
     override def addURL(url: URL) = {
       classloaderURLs +:= url
       super.addURL(url)
     }
-
+    override def run(objectName: String, arguments: Seq[String]) {
+      try super.run(objectName, arguments)
+      catch { case x: ClassNotFoundException  =>
+        throw new ClassNotFoundException(objectName +
+          " (args = %s, classpath = %s)".format(arguments mkString ", ", classpathString))
+      }
+    }
     override def toString = urls.mkString("URLClassLoader(\n  ", "\n  ", "\n)\n")
   }
 

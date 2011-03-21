@@ -527,10 +527,14 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     protected var v: String = default
     def indexOfChoice: Int = choices indexOf value
 
-    def tryToSet(args: List[String]) = { value = default ; Some(args) }
+    private def usageErrorMessage = {
+      "Usage: %s:<%s>\n  where <%s> choices are %s (default: %s)\n".format(
+        name, helpArg, helpArg, choices mkString ", ", default)
+    }
+    def tryToSet(args: List[String]) = errorAndValue(usageErrorMessage, None)
 
     override def tryToSetColon(args: List[String]) = args match {
-      case Nil                            => errorAndValue("missing " + helpArg, None)
+      case Nil                            => errorAndValue(usageErrorMessage, None)
       case List(x) if choices contains x  => value = x ; Some(Nil)
       case List(x)                        => errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
       case xs                             => errorAndValue("'" + name + "' does not accept multiple arguments.", None)

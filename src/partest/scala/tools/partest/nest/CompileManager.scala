@@ -10,10 +10,9 @@ package nest
 
 import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.{ ClassPath, FakePos }
 import scala.tools.util.PathResolver
 import io.Path
-
 import java.io.{ File, BufferedReader, PrintWriter, FileReader, Writer, FileWriter, StringWriter }
 import File.pathSeparator
 
@@ -95,7 +94,13 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case "presentation" => PresentationTestFile.apply
     }
     val test: TestFile = testFileFn(files.head, fileManager)
-    test.defineSettings(command.settings, out.isEmpty)
+    if (!test.defineSettings(command.settings, out.isEmpty)) {
+      testRep.error(FakePos("partest"), test.flags match {
+        case Some(flags)  => "bad flags: " + flags
+        case _            => "bad settings: " + command.settings
+      })
+    }
+
     val toCompile = files map (_.getPath)
 
     try {
@@ -106,8 +111,8 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
           testRep.error(null, "fatal error: " + msg)
       }
 
-      testRep.printSummary
-      testRep.writer.close
+      testRep.printSummary()
+      testRep.writer.close()
     }
     finally logWriter.close()
 

@@ -24,13 +24,18 @@ abstract class TestFile(kind: String) {
 
   def setOutDirTo = objectDir
 
-  def defineSettings(settings: Settings, setOutDir: Boolean) = {
+  def defineSettings(settings: Settings, setOutDir: Boolean): Boolean = {
     settings.classpath append dir.path
     if (setOutDir)
       settings.outdir.value = setOutDirTo.path
 
-    flags foreach (settings processArgumentString _)
+    // have to catch bad flags somewhere
+    flags foreach { f =>
+      if (!settings.processArgumentString(f)._1)
+        return false
+    }
     settings.classpath append fileManager.CLASSPATH
+    true
   }
 
   override def toString(): String = "%s %s".format(kind, file)
@@ -49,10 +54,12 @@ case class ScalapTestFile(file: JFile, fileManager: FileManager) extends TestFil
   override def setOutDirTo = file.parent
 }
 case class SpecializedTestFile(file: JFile, fileManager: FileManager) extends TestFile("specialized") {
-  override def defineSettings(settings: Settings, setOutDir: Boolean) = {
-    super.defineSettings(settings, setOutDir)
-    // add the instrumented library version to classpath
-    settings.classpath.value = ClassPath.join(PathSettings.srcSpecLib.toString, settings.classpath.value)
+  override def defineSettings(settings: Settings, setOutDir: Boolean): Boolean = {
+    super.defineSettings(settings, setOutDir) && {
+      // add the instrumented library version to classpath
+      settings.classpath prepend PathSettings.srcSpecLib.toString
+      true
+    }
   }
 }
 case class PresentationTestFile(file: JFile, fileManager: FileManager) extends TestFile("presentation")

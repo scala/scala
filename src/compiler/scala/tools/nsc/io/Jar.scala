@@ -65,8 +65,29 @@ class JarWriter(file: File, val manifest: Manifest = new Manifest()) {
 }
 
 object Jar {
-  // CLASS_PATH
-  // CONTENT_TYPE
+  // See http://download.java.net/jdk7/docs/api/java/nio/file/Path.html
+  // for some ideas.
+  private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
+  private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
+
+  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
+  def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
+    f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
+
+  def locateByClass(clazz: Class[_]): Option[File] = {
+    try Some(File(clazz.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()))
+    catch { case _: Exception => None }
+  }
+  /** Walks upward from wherever the scala library jar is searching for
+   *  the given jar name.  This approach finds the scala library jar in the
+   *  release layout and in trunk builds going up from pack.
+   */
+  def locateByName(name: String): Option[File] = {
+    def toSrc(d: Directory) = d.dirs.toList map (_ / name)
+    def walk(d: Directory)  = d.parents flatMap toSrc find (_.isFile) map (_.toFile)
+
+    locateByClass(classOf[ScalaObject]) flatMap (x => walk(x.parent))
+  }
 
   def create(file: File, sourceDir: Directory, mainClass: String): File = {
     val writer = new Jar(file).jarWriter()

@@ -83,6 +83,7 @@ object ClassPath {
 
   /** Join the paths as a classpath */
   def fromPaths(paths: Path*): String = join(paths map (_.path): _*)
+  def fromURLs(urls: URL*): String = fromPaths(urls map (x => Path(x.getPath)) : _*)
 
   /** Split the classpath and map them into URLs */
   def toURLs(cp: String): List[URL] = toPaths(cp) map (_.toURL)
