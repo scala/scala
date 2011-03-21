@@ -52,22 +52,22 @@ object Test extends Properties("HtmlFactory") {
     (paths ++ morepaths).mkString(java.io.File.pathSeparator)
   }
 
-  val docFactory = {
-    val settings = new Settings({Console.err.println(_)})
-    settings.classpath.value = getClasspath
-
-    val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
-    new DocFactory(reporter, settings)
-  }
-
   def createTemplates(basename: String) = {
     val result = scala.collection.mutable.Map[String, scala.xml.NodeSeq]()
 
-    docFactory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
+    val factory = {
+      val settings = new Settings({Console.err.println(_)})
+      settings.classpath.value = getClasspath
+
+      val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
+      new DocFactory(reporter, settings)
+    }
+
+    factory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         (new HtmlFactory(universe, index)).writeTemplates((page) => {
-          result += (page.path.mkString("") -> page.body)
+          result += (page.absoluteLinkTo(page.path) -> page.body)
         })
       }
       case _ => ;
@@ -94,4 +94,8 @@ object Test extends Properties("HtmlFactory") {
     }
   }
 
+  property("Trac #4306") = {
+    val files = createTemplates("Trac4306.scala")
+    files("com/example/trac4306/foo/package$$Bar.html") != None
+  }
 }
