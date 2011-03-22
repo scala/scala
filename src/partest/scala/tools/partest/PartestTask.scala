@@ -14,7 +14,6 @@ package partest
 import scala.actors.Actor._
 import scala.util.Properties.setProp
 import scala.tools.nsc.io.{ Directory, Path => SPath }
-import nsc.Settings
 import nsc.util.ClassPath
 import util.PathResolver
 import scala.tools.ant.sabbus.CompilationPathProperty

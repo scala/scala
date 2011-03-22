@@ -61,13 +61,10 @@ class ScriptRunner extends HasCompileSocket {
   def isScript(settings: Settings) = settings.script.value != ""
 
   /** Choose a jar filename to hold the compiled version of a script. */
-  private def jarFileFor(scriptFile: String): File = {
-    val name =
-      if (scriptFile endsWith ".jar") scriptFile
-      else scriptFile + ".jar"
-
-    File(name)
-  }
+  private def jarFileFor(scriptFile: String)= File(
+    if (scriptFile endsWith ".jar") scriptFile
+    else scriptFile.stripSuffix(".scala") + ".jar"
+  )
 
   /** Read the entire contents of a file as a String. */
   private def contentsOfFile(filename: String) = File(filename).slurp()
@@ -140,7 +137,7 @@ class ScriptRunner extends HasCompileSocket {
      *  not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
     waitingForThreads {
-      if (settings.savecompiled.value) {
+      if (settings.save.value) {
         val jarFile = jarFileFor(scriptFile)
         def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 
@@ -179,10 +176,8 @@ class ScriptRunner extends HasCompileSocket {
     compiledLocation: String,
     scriptArgs: List[String]): Boolean =
   {
-    val pr = new PathResolver(settings)
-    val classpath = File(compiledLocation).toURL +: pr.asURLs
-
-    ObjectRunner.runAndCatch(classpath, scriptMain(settings), scriptArgs) match {
+    val cp = File(compiledLocation).toURL +: settings.classpathURLs
+    ObjectRunner.runAndCatch(cp, scriptMain(settings), scriptArgs) match {
       case Left(ex) => ex.printStackTrace() ; false
       case _        => true
     }

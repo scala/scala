@@ -688,7 +688,7 @@ abstract class RefChecks extends InfoTransform {
                 !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
                   tvar.owner == sym.owner)) state = -state;
             else if (!sym.owner.isClass ||
-                     sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal) && !(escapedPrivateLocals contains sym))) {
+                     sym.isTerm && ((sym.isPrivateLocal || sym.isProtectedLocal || sym.isSuperAccessor /* super accessors are implicitly local #4345*/) && !(escapedPrivateLocals contains sym))) {
               // return AnyVariance if `sym` is local to a term
               // or is private[this] or protected[this]
               state = AnyVariance

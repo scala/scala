@@ -574,10 +574,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     private def staticRef(sym: Symbol): Tree = {
       sym.owner.info  //todo: needed?
       sym.owner.owner.info //todo: needed?
-      if (sym.owner.sourceModule == NoSymbol) {
+      if (sym.owner.sourceModule == NoSymbol)
         assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner +
                       " " + sym.owner.owner.info.decls.toList)//debug
-      }
       REF(sym.owner.sourceModule) DOT sym
     }
 

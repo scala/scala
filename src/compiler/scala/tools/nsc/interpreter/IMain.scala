@@ -87,6 +87,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   // not sure if we have some motivation to print directly to console
   private def echo(msg: String) { Console println msg }
 
+  // protected def defaultImports: List[String] = List("_root_.scala.sys.exit")
+
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
    *  run into unrecoverable issues, but the perceived repl startup time goes
@@ -114,6 +116,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
         // Can't use printMessage here, it deadlocks
         Console.println("Repl compiler initialized.")
       }
+      // addImports(defaultImports: _*)
       true
     }
     catch {
@@ -609,6 +612,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     quietRun("val %s = %s".format(tempName, name))
     quietRun("val %s = %s.asInstanceOf[%s]".format(name, tempName, newType))
   }
+  def quietImport(ids: String*): IR.Result = beQuietDuring(addImports(ids: _*))
+  def addImports(ids: String*): IR.Result =
+    if (ids.isEmpty) IR.Success
+    else interpret("import " + ids.mkString(", "))
 
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
   def bind(p: NamedParam): IR.Result                       = bind(p.name, p.tpe, p.value)

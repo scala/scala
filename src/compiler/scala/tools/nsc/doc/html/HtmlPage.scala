@@ -34,7 +34,7 @@ abstract class HtmlPage { thisPage =>
   protected def headers: NodeSeq
 
   /** The body of this page. */
-  protected def body: NodeSeq
+  def body: NodeSeq
 
   /** Writes this page as a file. The file's location is relative to the generator's site root, and the encoding is
     * also defined by the generator.

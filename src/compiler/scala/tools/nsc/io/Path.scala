@@ -28,36 +28,11 @@ import scala.util.Random.alphanumeric
  */
 
 object Path {
-  // See http://download.java.net/jdk7/docs/api/java/nio/file/Path.html
-  // for some ideas.
-  private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
-  private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
-
-  /** If examineFile is true, it will look at the first four bytes of the file
-   *  and see if the magic number indicates it may be a jar or zip.
-   */
-  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
-  def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
-    f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
+  def isJarOrZip(f: Path, examineFile: Boolean = true) = Jar.isJarOrZip(f, examineFile)
 
   // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)
   implicit def jfile2path(jfile: JFile): Path = apply(jfile)
-
-  def locateJarByClass(clazz: Class[_]): Option[File] = {
-    try Some(File(clazz.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()))
-    catch { case _: Exception => None }
-  }
-  /** Walks upward from wherever the scala library jar is searching for
-   *  the given jar name.  This approach finds the scala library jar in the
-   *  release layout and in trunk builds going up from pack.
-   */
-  def locateJarByName(name: String): Option[File] = {
-    def toSrc(d: Directory) = d.dirs.toList map (_ / name)
-    def walk(d: Directory)  = d.parents flatMap toSrc find (_.isFile) map (_.toFile)
-
-    locateJarByClass(classOf[ScalaObject]) flatMap (x => walk(x.parent))
-  }
 
   // java 7 style, we don't use it yet
   // object AccessMode extends Enumeration("AccessMode") {

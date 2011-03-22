@@ -172,7 +172,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   /** Safe HTML tags that can be kept. */
   protected val SafeTags =
-    new Regex("""((&\w+;)|(&#\d+;)|(<code( [^>]*)?>.*</code>)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
+    new Regex("""((&\w+;)|(&#\d+;)|(<code( [^>]*)?>.*?</code>)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
   protected val safeTagMarker = '\u000E'
 

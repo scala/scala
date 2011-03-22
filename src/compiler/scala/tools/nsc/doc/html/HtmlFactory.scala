@@ -64,20 +64,24 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
 
     new page.Index(universe, index) writeFor this
 
+    writeTemplates(page => page.writeFor(this))
+
+    for(letter <- index.firstLetterIndex) {
+      new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
+    }
+  }
+
+  def writeTemplates(writeForThis: HtmlPage => Unit): Unit = {
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
     def writeTemplate(tpl: DocTemplateEntity): Unit =
       if (!(written contains tpl)) {
-        new page.Template(tpl) writeFor this
+        writeForThis(new page.Template(tpl))
         written += tpl
         tpl.templates map (writeTemplate(_))
       }
 
     writeTemplate(universe.rootPackage)
-
-    for(letter <- index.firstLetterIndex) {
-      new html.page.ReferenceIndex(letter._1, index, universe) writeFor this
-    }
   }
 
 }

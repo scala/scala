@@ -13,6 +13,7 @@ import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
 import interpreter.{ ILoop }
+import GenericRunnerCommand._
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -35,7 +36,7 @@ object MainGenericRunner {
 
   def process(args: Array[String]): Boolean = {
     val command = new GenericRunnerCommand(args.toList, (x: String) => errorFn(x))
-    import command.settings
+    import command.{ settings, howToRun, thingToRun }
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 
     if (!command.ok)                      return errorFn("\n" + command.shortUsageMsg)
@@ -55,44 +56,35 @@ object MainGenericRunner {
       files ++ str mkString "\n\n"
     }
 
-    val classpath: List[URL] = new PathResolver(settings) asURLs
-
-    /** Was code given in a -e argument? */
-    if (isE) {
-      /** If a -i argument was also given, we want to execute the code after the
-       *  files have been included, so they are read into strings and prepended to
-       *  the code given in -e.  The -i option is documented to only make sense
-       *  interactively so this is a pretty reasonable assumption.
-       *
-       *  This all needs a rewrite though.
-       */
-      val fullArgs = command.thingToRun.toList ::: command.arguments
-
-      return ScriptRunner.runCommand(settings, combinedCode, fullArgs)
-    }
-    else command.thingToRun match {
-      case None             =>
+    def runTarget(): Either[Throwable, Boolean] = howToRun match {
+      case AsObject =>
+        ObjectRunner.runAndCatch(settings.classpathURLs, thingToRun, command.arguments)
+      case AsScript =>
+        ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
+      case AsJar    =>
+        ObjectRunner.runAndCatch(
+          File(thingToRun).toURL +: settings.classpathURLs,
+          new io.Jar(thingToRun).mainClass getOrElse sys.error("Cannot find main class for jar: " + thingToRun),
+          command.arguments
+        )
+      case _  =>
         // We start the repl when no arguments are given.
-        new ILoop process settings
+        Right(new ILoop process settings)
+    }
 
-      case Some(thingToRun) =>
-        val isObjectName =
-          settings.howtorun.value match {
-            case "object" => true
-            case "script" => false
-            case "guess"  => ScalaClassLoader.classExists(classpath, thingToRun)
-          }
-
-        val result = try {
-          if (isObjectName) ObjectRunner.runAndCatch(classpath, thingToRun, command.arguments)
-          else ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
-        }
-        catch { case ex => Left(ex) }
-
-        result match {
-          case Left(ex) => errorFn(ex)
-          case Right(b) => b
-        }
+    /** If -e and -i were both given, we want to execute the -e code after the
+     *  -i files have been included, so they are read into strings and prepended to
+     *  the code given in -e.  The -i option is documented to only make sense
+     *  interactively so this is a pretty reasonable assumption.
+     *
+     *  This all needs a rewrite though.
+     */
+    if (isE) {
+      ScriptRunner.runCommand(settings, combinedCode, thingToRun +: command.arguments)
+    }
+    else runTarget() match {
+      case Left(ex) => errorFn(ex)
+      case Right(b) => b
     }
   }
 }

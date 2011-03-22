@@ -1309,7 +1309,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  class Foo  .  companionModule -->  object Foo
      */
     final def companionModule: Symbol =
-      if (isClass && !isAnonOrRefinementClass) companionModule0
+      if (isClass && !isRefinementClass) companionModule0
       else NoSymbol
 
     /** For a module: its linked class
