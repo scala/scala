@@ -18,6 +18,9 @@ class Factory(val g: Global, val s: doc.Settings)
 
   def parseComment(s: String): Option[Inline] =
     strip(parse(s, "", scala.tools.nsc.util.NoPosition))
+
+  def createBody(s: String) =
+    parse(s, "", scala.tools.nsc.util.NoPosition).body
 }
 
 object Test extends Properties("CommentFactory") {
@@ -95,4 +98,31 @@ object Test extends Properties("CommentFactory") {
                                                        Text("\n"),
                                                        HtmlTag("</pre>")))))))
   )
+
+  property("Trac #4366 - body") = {
+    val body = factory.createBody(
+      """
+ /**
+  * <strong><code>foo</code> has been deprecated and will be removed in a future version. Please call <code>bar</code> instead.</strong>
+  */
+      """
+    )
+
+    body == Body(List(Paragraph(Chain(List(
+      Summary(Chain(List(Chain(List(HtmlTag("<strong>"), HtmlTag("<code>foo</code>"), Text(" has been deprecated and will be removed in a future version"))), Text(".")))),
+      Chain(List(Text(" Please call "), HtmlTag("<code>bar</code>"), Text(" instead."), HtmlTag("</strong>"), Text("\n"), Text("")))
+    )))))
+  }
+
+  property("Trac #4366 - summary") = {
+    val body = factory.createBody(
+      """
+ /**
+  * <strong><code>foo</code> has been deprecated and will be removed in a future version. Please call <code>bar</code> instead.</strong>
+  */
+      """
+    )
+
+    body.summary == Some(Chain(List(Chain(List(HtmlTag("<strong>"), HtmlTag("<code>foo</code>"), Text(" has been deprecated and will be removed in a future version"))), Text("."))))
+  }
 }

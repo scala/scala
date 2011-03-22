@@ -18,8 +18,41 @@ abstract class Comment {
   /** The main body of the comment that describes what the entity does and is.  */
   def body: Body
 
+  private def closeHtmlTags(inline: Inline) = {
+    val stack = mutable.ListBuffer.empty[HtmlTag]
+    def scan(i: Inline): Unit = {
+      i match {
+        case Chain(list) =>
+          list.foreach(scan)
+        case tag: HtmlTag => {
+          if (stack.length > 0 && tag.canClose(stack.last)) {
+            stack.remove(stack.length-1)
+          } else {
+            tag.close match {
+              case Some(t) =>
+                stack += t
+              case None =>
+                ;
+            }
+          }
+        }
+        case _ =>
+          ;
+      }
+    }
+    scan(inline)
+    Chain(List(inline) ++ stack.reverse)
+  }
+
   /** A shorter version of the body. Usually, this is the first sentence of the body. */
-  def short: Inline = body.summary getOrElse Text("")
+  def short: Inline = {
+    body.summary match {
+      case Some(s) =>
+        closeHtmlTags(s)
+      case _ =>
+        Text("")
+    }
+  }
 
   /** A list of authors. The empty list is used when no author is defined. */
   def authors: List[Body]

@@ -98,4 +98,30 @@ object Test extends Properties("HtmlFactory") {
     val files = createTemplates("Trac4306.scala")
     files("com/example/trac4306/foo/package$$Bar.html") != None
   }
+
+  property("Trac #4366") = {
+    val files = createTemplates("Trac4366.scala")
+    files("Trac4366.html") match {
+      case node: scala.xml.Node => {
+        val comments = XMLUtil.stripGroup(node).descendant.flatMap {
+          case e: scala.xml.Elem => {
+            if (e.attribute("class").toString.contains("shortcomment")) {
+              Some(e)
+            } else {
+              None
+            }
+          }
+          case _ => None
+        }
+
+        comments.exists {
+          (e) => {
+            val s = e.toString
+            s.contains("<code>foo</code>") && s.contains("</strong>")
+          }
+        }
+      }
+      case _ => false
+    }
+  }
 }

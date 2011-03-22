@@ -67,7 +67,18 @@ final case class Link(target: String, title: Inline) extends Inline
 final case class EntityLink(target: TemplateEntity) extends Inline
 final case class Monospace(text: String) extends Inline
 final case class Text(text: String) extends Inline
-final case class HtmlTag(data: String) extends Inline
+final case class HtmlTag(data: String) extends Inline {
+  def canClose(open: HtmlTag) = {
+    open.data.stripPrefix("<") == data.stripPrefix("</")
+  }
+
+  def close = {
+    if (data.indexOf("</") == -1)
+      Some(HtmlTag("</" + data.stripPrefix("<")))
+    else
+      None
+  }
+}
 
 /** The summary of a comment, usually its first sentence. There must be exactly one summary per body. */
 final case class Summary(text: Inline) extends Inline
