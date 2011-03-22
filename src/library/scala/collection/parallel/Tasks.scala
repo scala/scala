@@ -244,7 +244,10 @@ trait ThreadPoolTasks extends Tasks {
       // utb: future.get()
       executor.synchronized {
         val coresize = executor.getCorePoolSize
-        if (coresize < totaltasks) executor.setCorePoolSize(coresize + 1)
+        if (coresize < totaltasks) {
+          executor.setCorePoolSize(coresize + 1)
+          //assert(executor.getCorePoolSize == (coresize + 1))
+        }
       }
       if (!completed) this.wait
     }
