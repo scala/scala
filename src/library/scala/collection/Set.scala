@@ -27,6 +27,8 @@ trait Set[A] extends (A => Boolean)
                 with GenericSetTemplate[A, Set]
                 with SetLike[A, Set[A]] {
   override def companion: GenericCompanion[Set] = Set
+
+  override def seq: Set[A] = this
 }
 
 /** $factoryInfo

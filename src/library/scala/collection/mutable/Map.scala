@@ -26,6 +26,8 @@ trait Map[A, B]
 
   override def empty: Map[A, B] = Map.empty
 
+  override def seq: Map[A, B] = this
+
   /** The same map with a given default function.
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.

@@ -17,7 +17,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.IterableLike
 import scala.collection.Parallel
 import scala.collection.CustomParallelizable
-import scala.collection.Sequentializable
 import scala.collection.generic._
 import immutable.HashMapCombiner
 
@@ -160,13 +159,14 @@ import annotation.unchecked.uncheckedVariance
 trait ParIterableLike[+T, +Repr <: ParIterable[T], +Sequential <: Iterable[T] with IterableLike[T, Sequential]]
 extends IterableLike[T, Repr]
    with CustomParallelizable[T, Repr]
-   with Sequentializable[T, Sequential]
    with Parallel
    with HasNewCombiner[T, Repr]
 {
-self =>
+self: ParIterableLike[T, Repr, Sequential] =>
 
   import tasksupport._
+
+  override def seq: Sequential = throw new UnsupportedOperationException("not implemented.")
 
   /** Parallel iterators are split iterators that have additional accessor and
    *  transformer methods defined in terms of methods `next` and `hasNext`.
@@ -421,6 +421,7 @@ self =>
     executeAndWaitResult(new Aggregate(z, seqop, combop, parallelIterator))
   }
 
+  /*
   /** Applies a function `f` to all the elements of $coll. Does so in a nondefined order,
    *  and in parallel.
    *
@@ -432,6 +433,7 @@ self =>
   def pforeach[U](f: T => U): Unit = {
     executeAndWaitResult(new Foreach(f, parallelIterator))
   }
+  */
 
   /** Applies a function `f` to all the elements of $coll in a sequential order.
    *
@@ -731,7 +733,7 @@ self =>
 
   override def view = new ParIterableView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
-    def seq = self.seq.view
+    override def seq = self.seq.view
     def parallelIterator = self.parallelIterator
   }
 

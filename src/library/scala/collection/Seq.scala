@@ -21,6 +21,8 @@ trait Seq[+A] extends PartialFunction[Int, A]
                       with GenericTraversableTemplate[A, Seq]
                       with SeqLike[A, Seq[A]] {
   override def companion: GenericCompanion[Seq] = Seq
+
+  override def seq: Seq[A] = this
 }
 
 /** $factoryInfo
