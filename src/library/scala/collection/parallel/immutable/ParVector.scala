@@ -52,13 +52,16 @@ extends ParSeq[T]
   type SCPI = SignalContextPassingIterator[ParVectorIterator]
 
   def apply(idx: Int) = vector.apply(idx)
+
   def length = vector.length
+
   def parallelIterator: ParSeqIterator[T] = {
     val pit = new ParVectorIterator(vector.startIndex, vector.endIndex) with SCPI
     vector.initIterator(pit)
     pit
   }
-  def seq: Vector[T] = vector
+
+  override def seq: Vector[T] = vector
 
   class ParVectorIterator(_start: Int, _end: Int) extends VectorIterator[T](_start, _end) with ParIterator {
   self: SCPI =>

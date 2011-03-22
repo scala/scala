@@ -65,7 +65,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
     if (xss forall (_.isInstanceOf[IndexedSeq[_]]))
       b.sizeHint(xss map (_.size) sum)
 
-    for (xs <- xss) b ++= xs
+    for (xs <- xss.seq) b ++= xs
     b.result
   }
 

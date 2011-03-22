@@ -15,7 +15,7 @@ import scala.collection.parallel._
 
 
 abstract class ParallelIterableCheck[T](collName: String) extends Properties(collName) with Operators[T] {
-  type CollType <: ParIterable[T] with Sequentializable[T, Iterable[T]]
+  type CollType <: ParIterable[T]
 
   def values: Seq[Gen[T]]
   def ofSize(vals: Seq[Gen[T]], sz: Int): Iterable[T]

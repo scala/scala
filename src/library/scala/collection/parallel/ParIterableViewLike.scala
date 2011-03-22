@@ -54,39 +54,39 @@ self =>
   trait Sliced extends super.Sliced with Transformed[T] {
     // override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
     def parallelIterator: ParIterableIterator[T] = self.parallelIterator.slice(from, until)
-    def seq = self.seq.slice(from, until)
+    override def seq = self.seq.slice(from, until)
   }
 
   trait Mapped[S] extends super.Mapped[S] with Transformed[S]{
     def parallelIterator: ParIterableIterator[S] = self.parallelIterator.map(mapping)
-    def seq = self.seq.map(mapping).asInstanceOf[IterableView[S, CollSeq]]
+    override def seq = self.seq.map(mapping).asInstanceOf[IterableView[S, CollSeq]]
   }
 
   // only use if other is a ParIterable, otherwise force
   trait Appended[U >: T] extends super.Appended[U] with Transformed[U] {
     def restPar: ParIterable[U] = rest.asParIterable
     def parallelIterator: ParIterableIterator[U] = self.parallelIterator.appendParIterable[U, ParIterableIterator[U]](restPar.parallelIterator)
-    def seq = self.seq.++(rest).asInstanceOf[IterableView[U, CollSeq]]
+    override def seq = self.seq.++(rest).asInstanceOf[IterableView[U, CollSeq]]
   }
 
   trait Forced[S] extends super.Forced[S] with Transformed[S] {
     def forcedPar: ParIterable[S] = forced.asParIterable
     def parallelIterator: ParIterableIterator[S] = forcedPar.parallelIterator
-    def seq = forcedPar.seq.view.asInstanceOf[IterableView[S, CollSeq]]
+    override def seq = forcedPar.seq.view.asInstanceOf[IterableView[S, CollSeq]]
   }
 
   // only use if other is a ParSeq, otherwise force
   trait Zipped[S] extends super.Zipped[S] with Transformed[(T, S)] {
     def otherPar: ParSeq[S] = other.asParSeq
     def parallelIterator: ParIterableIterator[(T, S)] = self.parallelIterator zipParSeq otherPar.parallelIterator
-    def seq = (self.seq zip other).asInstanceOf[IterableView[(T, S), CollSeq]]
+    override def seq = (self.seq zip other).asInstanceOf[IterableView[(T, S), CollSeq]]
   }
 
   // only use if other is a ParSeq, otherwise force
   trait ZippedAll[U >: T, S] extends super.ZippedAll[U, S] with Transformed[(U, S)] {
     def otherPar: ParSeq[S] = other.asParSeq
     def parallelIterator: ParIterableIterator[(U, S)] = self.parallelIterator.zipAllParSeq(otherPar.parallelIterator, thisElem, thatElem)
-    def seq = (self.seq.zipAll(other, thisElem, thatElem)).asInstanceOf[IterableView[(U, S), CollSeq]]
+    override def seq = (self.seq.zipAll(other, thisElem, thatElem)).asInstanceOf[IterableView[(U, S), CollSeq]]
   }
 
   protected[this] def thisParSeq: ParSeq[T] = mutable.ParArray.fromTraversables(this.iterator)

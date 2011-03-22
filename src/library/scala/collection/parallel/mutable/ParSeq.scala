@@ -33,7 +33,7 @@ trait ParSeq[T] extends collection.mutable.Seq[T]
                    with ParIterable[T]
                    with collection.parallel.ParSeq[T]
                    with GenericParTemplate[T, ParSeq]
-                   with ParSeqLike[T, ParSeq[T], Seq[T]] {
+                   with ParSeqLike[T, ParSeq[T], collection.mutable.Seq[T]] {
   self =>
   override def companion: GenericCompanion[ParSeq] with GenericParCompanion[ParSeq] = ParSeq
 
@@ -41,6 +41,7 @@ trait ParSeq[T] extends collection.mutable.Seq[T]
 
   override def toSeq: ParSeq[T] = this
 
+  override def transform(f: T => T): this.type = throw new UnsupportedOperationException("Not supported for parallel sequences.")
 }
 
 

@@ -329,6 +329,8 @@ object ThreadPoolTasks {
 
   val numCores = Runtime.getRuntime.availableProcessors
 
+  val tcount = new atomic.AtomicLong(0L)
+
   val defaultThreadPool = new ThreadPoolExecutor(
     numCores,
     Int.MaxValue,
@@ -337,6 +339,7 @@ object ThreadPoolTasks {
     new ThreadFactory {
       def newThread(r: Runnable) = {
         val t = new Thread(r)
+        t.setName("pc-thread-" + tcount.incrementAndGet)
         t.setDaemon(true)
         t
       }

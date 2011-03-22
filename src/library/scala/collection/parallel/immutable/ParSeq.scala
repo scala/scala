@@ -32,7 +32,7 @@ extends collection.immutable.Seq[T]
    with collection.parallel.ParSeq[T]
    with ParIterable[T]
    with GenericParTemplate[T, ParSeq]
-   with ParSeqLike[T, ParSeq[T], Seq[T]]
+   with ParSeqLike[T, ParSeq[T], collection.immutable.Seq[T]]
 {
   override def companion: GenericCompanion[ParSeq] with GenericParCompanion[ParSeq] = ParSeq
   override def toSeq: ParSeq[T] = this

@@ -320,7 +320,7 @@ self =>
     protected lazy val underlying = self.repr
     def length = self.length
     def apply(idx: Int) = self(idx)
-    def seq = self.seq.view
+    override def seq = self.seq.view
     def parallelIterator = self.parallelIterator
   }
 

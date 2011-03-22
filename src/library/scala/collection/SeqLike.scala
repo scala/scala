@@ -434,7 +434,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    */
   def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     var xs: List[A] = List()
-    for (x <- this)
+    for (x <- this.seq)
       xs = x :: xs
     val b = bf(repr)
     for (x <- xs)
@@ -609,7 +609,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
   def diff[B >: A](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
-    for (x <- this)
+    for (x <- this.seq)
       if (occ(x) == 0) b += x
       else occ(x) -= 1
     b.result
@@ -637,7 +637,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
   def intersect[B >: A](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
-    for (x <- this)
+    for (x <- this.seq)
       if (occ(x) > 0) {
         b += x
         occ(x) -= 1
@@ -645,9 +645,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
     b.result
   }
 
-  private def occCounts[B](seq: Seq[B]): mutable.Map[B, Int] = {
+  private def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
-    for (y <- seq) occ(y) += 1
+    for (y <- sq.seq) occ(y) += 1
     occ
   }
 
@@ -659,7 +659,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
   def distinct: Repr = {
     val b = newBuilder
     val seen = mutable.HashSet[A]()
-    for (x <- this) {
+    for (x <- this.seq) {
       if (!seen(x)) {
         b += x
         seen += x
@@ -850,7 +850,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
     val len = this.length
     val arr = new ArraySeq[A](len)
     var i = 0
-    for (x <- this) {
+    for (x <- this.seq) {
       arr(i) = x
       i += 1
     }

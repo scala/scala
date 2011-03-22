@@ -553,7 +553,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     var follow = false
     val b = newBuilder
     b.sizeHint(this, -1)
-    for (x <- this) {
+    for (x <- this.seq) {
       if (follow) b += lst
       else follow = true
       lst = x
@@ -598,7 +598,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
   private[this] def sliceInternal(from: Int, until: Int, b: Builder[A, Repr]): Repr = {
     var i = 0
     breakable {
-      for (x <- this) {
+      for (x <- this.seq) {
         if (i >= from) b += x
         i += 1
         if (i >= until) break

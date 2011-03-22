@@ -251,7 +251,7 @@ import Iterator.empty
  *  @define mayNotTerminateInf
  *  Note: may not terminate for infinite iterators.
  */
-trait Iterator[+A] extends TraversableOnce[A] with Parallelizable[A, ParIterable[A]] {
+trait Iterator[+A] extends TraversableOnce[A] {
   self =>
 
   /** Tests whether this iterator can provide another element.
@@ -275,8 +275,6 @@ trait Iterator[+A] extends TraversableOnce[A] with Parallelizable[A, ParIterable
    *  @return   `false`
    */
   def isTraversableAgain = false
-
-  protected[this] def parCombiner = ParIterable.newCombiner[A]
 
   /** Tests whether this Iterator has a known size.
    *

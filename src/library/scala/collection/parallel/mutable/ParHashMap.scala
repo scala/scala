@@ -54,11 +54,13 @@ self =>
 
   protected[this] override def newCombiner = ParHashMapCombiner[K, V]
 
-  def seq = new collection.mutable.HashMap[K, V](hashTableContents)
+  override def seq = new collection.mutable.HashMap[K, V](hashTableContents)
 
   def parallelIterator = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
 
   override def size = tableSize
+
+  override def clear() = clearTable()
 
   def get(key: K): Option[V] = {
     val e = findEntry(key)

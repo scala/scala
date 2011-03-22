@@ -157,7 +157,7 @@ self =>
     b.sizeHintBounded(n, this)
     val lead = this.iterator drop n
     var go = false
-    for (x <- this) {
+    for (x <- this.seq) {
       if (lead.hasNext) lead.next
       else go = true
       if (go) b += x

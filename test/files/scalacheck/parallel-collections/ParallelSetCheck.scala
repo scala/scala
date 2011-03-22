@@ -15,7 +15,7 @@ import scala.collection.parallel._
 
 
 abstract class ParallelSetCheck[T](collname: String) extends ParallelIterableCheck[T](collname) {
-  type CollType <: ParSet[T] with Sequentializable[T, Set[T]]
+  type CollType <: ParSet[T]
 
   property("gets iterated keys") = forAll(collectionPairs) {
     case (t, coll) =>

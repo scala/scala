@@ -109,7 +109,7 @@ trait TraversableOnce[+A] {
   // for internal use
   protected[this] def reversed = {
     var elems: List[A] = Nil
-    self foreach (elems ::= _)
+    self.seq foreach (elems ::= _)
     elems
   }
 
@@ -156,7 +156,7 @@ trait TraversableOnce[+A] {
    *  @example   `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
    */
   def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
-    for (x <- self.toIterator) {
+    for (x <- self.toIterator) { // make sure to use an iterator or `seq`
       if (pf isDefinedAt x)
         return Some(pf(x))
     }
@@ -221,7 +221,7 @@ trait TraversableOnce[+A] {
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
-    this foreach (x => result = op(result, x))
+    this.seq foreach (x => result = op(result, x))
     result
   }
 

@@ -440,7 +440,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  @tparam U    the result type of the function applied to each element, which is always discarded
    *  @param f     function applied to each element
    */
-  override def foreach[U](f: T => U) = iterator.foreach(f)
+  override def foreach[U](f: T => U) = {
+    executeAndWaitResult(new Foreach(f, parallelIterator))
+  }
 
   override def count(p: T => Boolean): Int = {
     executeAndWaitResult(new Count(p, parallelIterator))

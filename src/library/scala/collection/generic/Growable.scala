@@ -45,7 +45,7 @@ trait Growable[-A] {
    *  @param iter  the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def ++=(xs: TraversableOnce[A]): this.type = { xs foreach += ; this }
+  def ++=(xs: TraversableOnce[A]): this.type = { xs.seq foreach += ; this }
 
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.

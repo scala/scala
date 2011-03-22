@@ -57,7 +57,9 @@ extends ParSet[T]
 
   override def size = tableSize
 
-  def seq = new HashSet(hashTableContents)
+  override def clear() = clearTable()
+
+  override def seq = new HashSet(hashTableContents)
 
   def +=(elem: T) = {
     addEntry(elem)

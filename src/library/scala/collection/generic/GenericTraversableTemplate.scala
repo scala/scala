@@ -67,6 +67,8 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
    */
   def genericBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
 
+  private def sequential: TraversableOnce[A] = this.asInstanceOf[TraversableOnce[A]].seq
+
   /** Converts this $coll of pairs into two collections of the first and second
    *  half of each pair.
    *
@@ -80,7 +82,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
   def unzip[A1, A2](implicit asPair: A => (A1, A2)): (CC[A1], CC[A2]) = {
     val b1 = genericBuilder[A1]
     val b2 = genericBuilder[A2]
-    for (xy <- this) {
+    for (xy <- sequential) {
       val (x, y) = asPair(xy)
       b1 += x
       b2 += y
@@ -104,7 +106,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
     val b2 = genericBuilder[A2]
     val b3 = genericBuilder[A3]
 
-    for (xyz <- this) {
+    for (xyz <- sequential) {
       val (x, y, z) = asTriple(xyz)
       b1 += x
       b2 += y
@@ -124,7 +126,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
    */
   def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[B] = {
     val b = genericBuilder[B]
-    for (xs <- this)
+    for (xs <- sequential)
       b ++= asTraversable(xs)
     b.result
   }
@@ -149,7 +151,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
 
     val headSize = asTraversable(head).size
     val bs: IndexedSeq[Builder[B, CC[B]]] = IndexedSeq.fill(headSize)(genericBuilder[B])
-    for (xs <- this) {
+    for (xs <- sequential) {
       var i = 0
       for (x <- asTraversable(xs)) {
         if (i >= headSize) fail

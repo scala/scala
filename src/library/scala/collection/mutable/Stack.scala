@@ -121,7 +121,7 @@ extends Seq[A]
    *  @param xs the traversable object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll(xs: TraversableOnce[A]): this.type = { xs foreach push ; this }
+  def pushAll(xs: TraversableOnce[A]): this.type = { xs.seq foreach push ; this }
 
   @deprecated("use pushAll")
   @migration(2, 8, "Stack ++= now pushes arguments on the stack from left to right.")

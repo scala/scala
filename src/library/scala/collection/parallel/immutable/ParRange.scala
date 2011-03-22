@@ -39,7 +39,7 @@ extends ParSeq[Int]
 {
 self =>
 
-  def seq = range
+  override def seq = range
 
   @inline final def length = range.length
 
