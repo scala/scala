@@ -254,7 +254,7 @@ abstract class Erasure extends AddInterfaces
           else squashBoxed(tp1)
         }
         if (sym == ArrayClass && args.nonEmpty)
-          if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
+          if (unboundedGenericArrayLevel(tp1) == 1) ObjectClass.tpe
           else mapOver(tp1)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
           ObjectClass.tpe
@@ -353,8 +353,6 @@ abstract class Erasure extends AddInterfaces
             jsig(RuntimeNothingClass.tpe)
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
-          else if (isValueClass(sym))
-            jsig(ObjectClass.tpe)
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
             traceSig.seq("sym.isClass", Seq(sym.ownerChain, preRebound, sym0.enclClassChain)) {
