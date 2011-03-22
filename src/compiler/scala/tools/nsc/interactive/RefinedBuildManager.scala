@@ -1,8 +1,8 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2011 LAMP/EPFL
- * @author  Martin Odersky
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Iulian Dragos
+ * @author Hubert Plocinicak
  */
-
 package scala.tools.nsc
 package interactive
 

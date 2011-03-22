@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ * @author Iulian Dragos
+ */
 package scala.tools.nsc.interactive
 
 /** A presentation compiler thread. This is a lightweight class, delegating most
