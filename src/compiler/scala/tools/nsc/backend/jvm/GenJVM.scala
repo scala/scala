@@ -572,22 +572,29 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
            *  in which case we treat every signature as valid.  Medium term we
            *  should certainly write independent signature validation.
            */
-          if (!SigParser.isParserAvailable || isValidSignature(sym, sig)) {
-            val index = jmember.getConstantPool.addUtf8(sig).toShort
-            if (opt.verboseDebug)
-              atPhase(currentRun.erasurePhase) {
-                println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
-              }
-            val buf = ByteBuffer.allocate(2)
-            buf putShort index
-            addAttribute(jmember, tpnme.SignatureATTR, buf)
-          }
-          else clasz.cunit.warning(sym.pos,
+          if (SigParser.isParserAvailable && isValidSignature(sym, sig)) {
+            val normalizedTpe = erasure.prepareSigMap(memberTpe)
+            val bytecodeTpe = owner.thisType.memberInfo(sym)
+            if (erasure.erasure(normalizedTpe) =:= bytecodeTpe) {
+              val index = jmember.getConstantPool.addUtf8(sig).toShort
+              if (opt.verboseDebug)
+                atPhase(currentRun.erasurePhase) {
+                  println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
+                }
+              val buf = ByteBuffer.allocate(2)
+              buf putShort index
+              addAttribute(jmember, tpnme.SignatureATTR, buf)
+            } else clasz.cunit.warning(sym.pos,
+              """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
+                 |signature: %s
+                 |erasure type: %s
+                 |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, bytecodeTpe))
+          } else clasz.cunit.warning(sym.pos,
             """|compiler bug: created invalid generic signature for %s in %s
                |signature: %s
                |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
-            """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig)
-          )
+            """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
         }
       }
     }
