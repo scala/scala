@@ -26,6 +26,20 @@ trait DirectRunner {
 
   import PartestDefaults.numActors
 
+  def denotesTestFile(arg: String) = Path(arg).hasExtension("scala", "res")
+  def denotesTestDir(arg: String)  = Path(arg).ifDirectory(_.files.nonEmpty) exists (x => x)
+  def denotesTestPath(arg: String) = denotesTestDir(arg) || denotesTestFile(arg)
+
+  /** No duplicate, no empty directories, don't mess with this unless
+   *  you like partest hangs.
+   */
+  def onlyValidTestPaths[T](args: List[T]): List[T] = {
+    args.distinct filter (arg => denotesTestPath("" + arg) || {
+      NestUI.warning("Discarding invalid test path '%s'\n" format arg)
+      false
+    })
+  }
+
   def setProperties() {
     if (isPartestDebug)
       scala.actors.Debug.level = 3
@@ -37,8 +51,7 @@ trait DirectRunner {
   }
 
   def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, Int] = {
-    /** NO DUPLICATES, or partest will blow the count and hang forever. */
-    val kindFiles = _kindFiles.distinct
+    val kindFiles = onlyValidTestPaths(_kindFiles)
     val groupSize = (kindFiles.length / numActors) + 1
 
     val consFM = new ConsoleFileManager

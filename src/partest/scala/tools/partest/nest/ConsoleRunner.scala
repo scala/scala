@@ -21,22 +21,23 @@ class ConsoleRunner extends DirectRunner {
   import PathSettings.{ srcDir, testRoot }
 
   case class TestSet(kind: String, filter: Path => Boolean, msg: String)
+  def stdFilter(p: Path) = p.isDirectory || (p hasExtension "scala")
 
   val testSets = {
-    val pathFilter: Path => Boolean = _ hasExtension "scala"
+    val pathFilter: Path => Boolean = x => x.isDirectory || (x hasExtension "scala")
 
     List(
-      TestSet("pos", pathFilter, "Testing compiler (on files whose compilation should succeed)"),
-      TestSet("neg", pathFilter, "Testing compiler (on files whose compilation should fail)"),
-      TestSet("run", pathFilter, "Testing interpreter and backend"),
-      TestSet("jvm", pathFilter, "Testing JVM backend"),
+      TestSet("pos", stdFilter, "Testing compiler (on files whose compilation should succeed)"),
+      TestSet("neg", stdFilter, "Testing compiler (on files whose compilation should fail)"),
+      TestSet("run", stdFilter, "Testing interpreter and backend"),
+      TestSet("jvm", stdFilter, "Testing JVM backend"),
       TestSet("res", x => x.isFile && (x hasExtension "res"), "Testing resident compiler"),
       TestSet("buildmanager", _.isDirectory, "Testing Build Manager"),
-      TestSet("shootout", pathFilter, "Testing shootout tests"),
-      TestSet("script", pathFilter, "Testing script tests"),
-      TestSet("scalacheck", x => pathFilter(x) || x.isDirectory, "Testing ScalaCheck tests"),
+      TestSet("shootout", stdFilter, "Testing shootout tests"),
+      TestSet("script", stdFilter, "Testing script tests"),
+      TestSet("scalacheck", stdFilter, "Testing ScalaCheck tests"),
       TestSet("scalap", _.isDirectory, "Run scalap decompiler tests"),
-      TestSet("specialized", pathFilter, "Testing specialized tests"),
+      TestSet("specialized", stdFilter, "Testing specialized tests"),
       TestSet("presentation", _.isDirectory, "Testing presentation compiler tests.")
     )
   }
@@ -49,10 +50,7 @@ class ConsoleRunner extends DirectRunner {
   private val testSetArgs   = testSets map ("--" + _.kind)
   private val testSetArgMap = testSetArgs zip testSets toMap
 
-  def denotesTestSet(arg: String) = testSetArgs contains arg
-  def denotesTestFile(arg: String) = (arg endsWith ".scala") || (arg endsWith ".res")
-  def denotesTestDir(arg: String) = Path(arg).isDirectory
-  def denotesTestPath(arg: String) = denotesTestDir(arg) || denotesTestFile(arg)
+  def denotesTestSet(arg: String)  = testSetArgs contains arg
 
   private def printVersion { NestUI outline (versionMsg + "\n") }
 
@@ -72,22 +70,17 @@ class ConsoleRunner extends DirectRunner {
 
     (path.isFile && pred(path)) ||
     (path.isDirectory && srcs.exists(pred)) ||
-    (pred(Path(path.toAbsolute.stripExtension + ".check")))
+    (pred(path changeExtension "check"))
   }
 
   def main(argstr: String) {
     val parsed = CommandLineParser(argstr) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
-    val args = parsed.residualArgs
+    val args   = onlyValidTestPaths(parsed.residualArgs)
 
     /** Early return on no args, version, or invalid args */
     if (argstr == "") return NestUI.usage()
     if (parsed isSet "--version") return printVersion
     if (parsed isSet "--help") return NestUI.usage()
-    if (args exists (x => !denotesTestPath(x))) {
-      val invalid = (args filterNot denotesTestPath).head
-      NestUI.failure("Invalid argument '%s'\n" format invalid)
-      return NestUI.usage()
-    }
 
     parsed get "--srcpath" foreach (x => setProp("partest.srcdir", x))
 
@@ -97,7 +90,7 @@ class ConsoleRunner extends DirectRunner {
       else if (parsed isSet "--pack") new ConsoleFileManager("build/pack")
       else new ConsoleFileManager  // auto detection, see ConsoleFileManager.findLatest
 
-    def argNarrowsTests(x: String) = denotesTestSet(x) || denotesTestFile(x) || denotesTestDir(x)
+    def argNarrowsTests(x: String) = denotesTestSet(x) || denotesTestPath(x)
 
     NestUI._verbose         = parsed isSet "--verbose"
     fileManager.showDiff    = true
@@ -126,7 +119,7 @@ class ConsoleRunner extends DirectRunner {
     val grepOption = parsed get "--grep"
     val grepPaths = grepOption.toList flatMap { expr =>
       val subjectDirs = testSetKinds map (srcDir / _ toDirectory)
-      val testPaths   = subjectDirs flatMap (_.files filter (x => x.hasExtension("scala") || x.isDirectory))
+      val testPaths   = subjectDirs flatMap (_.files filter stdFilter)
       val paths       = testPaths filter (p => pathMatchesExpr(p, expr))
 
       if (paths.isEmpty)
@@ -168,7 +161,7 @@ class ConsoleRunner extends DirectRunner {
       "Java options are:          " + vmOpts,
       "Source directory is:       " + srcDir,
       ""
-    ) foreach (x => NestUI outline (x + "\n"))
+    ) foreach (x => NestUI verbose (x + "\n"))
 
     NestUI.verbose("available processors: " + Runtime.getRuntime().availableProcessors())
 
