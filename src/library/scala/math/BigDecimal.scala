@@ -23,7 +23,7 @@ import annotation.migration
 object BigDecimal {
   private val minCached = -512
   private val maxCached = 512
-  val defaultMathContext = MathContext.UNLIMITED
+  val defaultMathContext = MathContext.DECIMAL128
 
   @deprecated("Use Long.MinValue")
   val MinLong = new BigDecimal(BigDec valueOf Long.MinValue, defaultMathContext)
