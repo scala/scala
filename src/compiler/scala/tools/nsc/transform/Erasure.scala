@@ -231,11 +231,66 @@ abstract class Erasure extends AddInterfaces
   // for debugging signatures: traces logic given system property
   private val traceSig = util.Tracer(sys.props contains "scalac.sigs.trace")
 
+  val prepareSigMap = new TypeMap {
+    def squashBoxed(tp: Type): Type = tp.normalize match {
+      case t @ RefinedType(parents, decls) =>
+        val parents1 = parents mapConserve squashBoxed
+        if (parents1 eq parents) tp
+        else RefinedType(parents1, decls)
+      case t =>
+        if (boxedClass contains t.typeSymbol) ObjectClass.tpe
+        else tp
+    }
+    def apply(tp: Type): Type = tp.normalize match {
+      case tp1 @ TypeBounds(lo, hi) =>
+        val lo1 = squashBoxed(apply(lo))
+        val hi1 = squashBoxed(apply(hi))
+        if ((lo1 eq lo) && (hi1 eq hi)) tp1
+        else TypeBounds(lo1, hi1)
+      case tp1 @ TypeRef(pre, sym, args) =>
+        def argApply(tp: Type) = {
+          val tp1 = apply(tp)
+          if (tp1.typeSymbol == UnitClass) ObjectClass.tpe
+          else squashBoxed(tp1)
+        }
+        if (sym == ArrayClass && args.nonEmpty)
+          if (unboundedGenericArrayLevel(tp1) == 1) ObjectClass.tpe
+          else mapOver(tp1)
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
+          ObjectClass.tpe
+        else if (sym == UnitClass)
+          BoxedUnitClass.tpe
+        else if (sym == NothingClass)
+          RuntimeNothingClass.tpe
+        else if (sym == NullClass)
+          RuntimeNullClass.tpe
+        else {
+          val pre1 = apply(pre)
+          val args1 = args mapConserve argApply
+          if ((pre1 eq pre) && (args1 eq args)) tp1
+          else TypeRef(pre1, sym, args1)
+        }
+      case tp1 @ MethodType(params, restpe) =>
+        val params1 = mapOver(params)
+        val restpe1 = if (restpe.normalize.typeSymbol == UnitClass) UnitClass.tpe else apply(restpe)
+        if ((params1 eq params) && (restpe1 eq restpe)) tp1
+        else MethodType(params1, restpe1)
+      case tp1 @ RefinedType(parents, decls) =>
+        val parents1 = parents mapConserve apply
+        if (parents1 eq parents) tp1
+        else RefinedType(parents1, decls)
+      case tp1: ClassInfoType =>
+        tp1
+      case tp1 =>
+        mapOver(tp1)
+    }
+  }
+
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
   def javaSig(sym0: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
-    def jsig(tp: Type): String = jsig2(false, Nil, tp)
+    def jsig(tp: Type): String = jsig2(toplevel = false, Nil, tp)
 
     // Unit in return position is 'V', but that cannot appear elsewhere.
     def unboxedSig(tpe: Type, isReturnPosition: Boolean) = {
@@ -298,8 +353,6 @@ abstract class Erasure extends AddInterfaces
             jsig(RuntimeNothingClass.tpe)
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
-          else if (isValueClass(sym))
-            jsig(ObjectClass.tpe)
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
             traceSig.seq("sym.isClass", Seq(sym.ownerChain, preRebound, sym0.enclClassChain)) {

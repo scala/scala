@@ -15,7 +15,7 @@ import scala.collection.parallel._
 
 
 abstract class ParallelMapCheck[K, V](collname: String) extends ParallelIterableCheck[(K, V)](collname) {
-  type CollType <: ParMap[K, V] with Sequentializable[(K, V), Map[K, V]]
+  type CollType <: ParMap[K, V]
 
   property("gets iterated keys") = forAll(collectionPairs) {
     case (t, coll) =>

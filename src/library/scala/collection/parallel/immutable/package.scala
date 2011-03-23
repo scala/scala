@@ -37,7 +37,7 @@ package object immutable {
   private[parallel] class Repetition[T](elem: T, val length: Int) extends ParSeq[T] {
   self =>
     def apply(idx: Int) = if (0 <= idx && idx < length) elem else throw new IndexOutOfBoundsException
-    def seq = throw new UnsupportedOperationException
+    override def seq = throw new UnsupportedOperationException
     def update(idx: Int, elem: T) = throw new UnsupportedOperationException
 
     type SCPI = SignalContextPassingIterator[ParIterator]

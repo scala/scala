@@ -186,7 +186,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val canEqual_ : NameType       = "canEqual"
     val checkInitialized: NameType = "checkInitialized"
     val classOf: NameType          = "classOf"
-    val clone_ : NameType          = sn.OClone
+    val clone_ : NameType          = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
     val conforms: NameType         = "conforms"
     val copy: NameType             = "copy"
     val delayedInit: NameType      = "delayedInit"
@@ -195,19 +195,19 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val drop: NameType             = "drop"
     val elem: NameType             = "elem"
     val eq: NameType               = "eq"
-    val equals_ : NameType         = sn.OEquals
+    val equals_ : NameType         = if (forMSIL) "Equals" else "equals"
     val error: NameType            = "error"
     val ex: NameType               = "ex"
     val false_ : NameType          = "false"
     val filter: NameType           = "filter"
-    val finalize_ : NameType       = sn.OFinalize
+    val finalize_ : NameType       = if (forMSIL) "Finalize" else "finalize"
     val find_ : NameType           = "find"
     val flatMap: NameType          = "flatMap"
     val foreach: NameType          = "foreach"
     val genericArrayOps: NameType  = "genericArrayOps"
     val get: NameType              = "get"
     val hasNext: NameType          = "hasNext"
-    val hashCode_ : NameType       = sn.OHashCode
+    val hashCode_ : NameType       = if (forMSIL) "GetHashCode" else "hashCode"
     val hash_ : NameType           = "hash"
     val head: NameType             = "head"
     val identity: NameType         = "identity"
@@ -246,7 +246,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val toArray: NameType          = "toArray"
     val toList: NameType           = "toList"
     val toSeq: NameType            = "toSeq"
-    val toString_ : NameType       = sn.OToString
+    val toString_ : NameType       = if (forMSIL) "ToString" else "toString"
     val true_ : NameType           = "true"
     val unapply: NameType          = "unapply"
     val unapplySeq: NameType       = "unapplySeq"
@@ -430,12 +430,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val Invoke              : TermName
     val JavaLang            : TermName
 
-    val OClone              : String
-    val OEquals             : String
-    val OFinalize           : String
-    val OHashCode           : String
-    val OToString           : String
-
     val Boxed: immutable.Map[TypeName, TypeName]
   }
 
@@ -533,12 +527,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val Invoke: TermName    = "invoke"
     final val JavaLang: TermName  = "java.lang"
 
-    final val OClone    = "clone"
-    final val OEquals   = "equals"
-    final val OFinalize = "finalize"
-    final val OHashCode = "hashCode"
-    final val OToString = "toString"
-
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,
       tpnme.Byte    -> BoxedByte,
@@ -576,12 +564,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val GetMethod: TermName = "GetMethod"
     final val Invoke: TermName    = "Invoke"
     final val JavaLang: TermName  = "System"
-
-    final val OClone    = "MemberwiseClone"
-    final val OEquals   = "Equals"
-    final val OFinalize = "Finalize"
-    final val OHashCode = "GetHashCode"
-    final val OToString = "ToString"
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> "System.Boolean",

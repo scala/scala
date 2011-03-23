@@ -30,6 +30,7 @@ trait Seq[+A] extends Iterable[A]
   override def companion: GenericCompanion[Seq] = Seq
   override def toSeq: Seq[A] = this
   protected[this] override def parCombiner = ParSeq.newCombiner[A] // if `immutable.SeqLike` gets introduced, please move this there!
+  override def seq: Seq[A] = this
 }
 
 /** $factoryInfo

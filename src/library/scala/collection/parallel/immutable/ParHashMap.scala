@@ -66,7 +66,7 @@ self =>
 
   def parallelIterator: ParIterableIterator[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size) with SCPI
 
-  def seq = trie
+  override def seq = trie
 
   def -(k: K) = new ParHashMap(trie - k)
 

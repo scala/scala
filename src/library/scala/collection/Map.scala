@@ -28,6 +28,8 @@ import generic._
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
+
+  override def seq: Map[A, B] = this
 }
 
 /** $factoryInfo

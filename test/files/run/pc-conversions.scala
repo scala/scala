@@ -49,8 +49,6 @@ object Test {
     assertToPar(parallel.immutable.ParHashSet(1 -> 3))
 
     assertToParWoMap(immutable.Range(1, 10, 2))
-
-    assertToParIt(List(1 -> 1, 2 -> 2, 3 -> 3).iterator)
   }
 
   def assertSeq[T](pc: parallel.ParIterable[T]) = assert(pc.seq == pc)
@@ -84,20 +82,6 @@ object Test {
 
     assert(xs.toSet.par == xs.toSet)
     assert(xs.par.toSet == xs.toSet)
-  }
-
-  def assertToParIt[K, V](xs: =>Iterator[(K, V)]) {
-    assert(xs.toIterable.par == xs.toIterable)
-    assert(xs.par.toIterable == xs.toIterable)
-
-    assert(xs.toSeq.par == xs.toSeq)
-    assert(xs.par.toSeq == xs.toSeq)
-
-    assert(xs.toSet.par == xs.toSet)
-    assert(xs.par.toSet == xs.toSet)
-
-    assert(xs.toMap.par == xs.toMap)
-    assert(xs.par.toMap == xs.toMap)
   }
 
 }

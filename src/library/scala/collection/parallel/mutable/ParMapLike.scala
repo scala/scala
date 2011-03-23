@@ -37,5 +37,7 @@ extends collection.mutable.MapLike[K, V, Repr]
 
   // note: should not override toMap
 
+  override def clear(): Unit = throw new UnsupportedOperationException("Must be reimplemented for parallel map implementations.")
+
 }
 

@@ -1,0 +1,10 @@
+package scala.collection
+
+
+
+
+trait Sequentializable[+T, +Repr] {
+  
+  def seq: Repr
+  
+}
