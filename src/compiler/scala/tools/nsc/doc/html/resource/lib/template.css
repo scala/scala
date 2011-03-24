@@ -17,7 +17,7 @@ table, caption, tbody, tfoot, thead, tr, th, td {
 }
 
 body {
-  line-height: 1;
+  line-height: 1.2;
 }
 
 table { border-collapse: separate; border-spacing: 0; }
@@ -169,7 +169,7 @@ div.members > ol > li {
 }
 
 .signature {
-  padding: 3px;
+  padding: 2px;
   font-family: monospace;
   font-size: 10pt;
   clear: both;
@@ -231,8 +231,8 @@ div.members > ol > li {
 .cmt {}
 
 .cmt p {
-	margin-bottom: 0.4em;
-	margin-top: 0.4em;
+	margin-bottom: 0.9em;
+	margin-top: 0.9em;
 }
 
 .cmt h3 {
@@ -359,13 +359,15 @@ div.fullcomment {
 
 #template .shortcomment {
   margin: 0 0 0 8.7em;
-  padding: 0;
+  padding: 2px;
 }
 
 div.fullcomment .block {
   padding: 2px 0 2px 0;
   border-top: 1px solid gray;
   border-bottom: 1px solid gray;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 div.fullcomment div.block ol li p, 
@@ -413,6 +415,10 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
   border-top: none;
 }
 
+div.fullcomment dl.paramcmts dd.cmt p {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
 /* Members filter tool */
 
 #textfilter {
