@@ -57,7 +57,7 @@ object ops
    *
    *  @return    a pair holding the evaluation results
    */
-  def par[A, B](xp: => A, yp: => B): (A, B) = {
+  def par[A, B](xp: => A, yp: => B)(implicit runner: TaskRunner = defaultRunner): (A, B) = {
     val y = new SyncVar[Either[Throwable, B]]
     spawn { y set tryCatch(yp) }
     (xp, getOrThrow(y.get))
@@ -69,7 +69,7 @@ object ops
    *  @param p     ...
    */
   @deprecated("use `collection.parallel.ParIterable.foreach' instead")
-  def replicate(start: Int, end: Int)(p: Int => Unit) {
+  def replicate(start: Int, end: Int)(p: Int => Unit)(implicit runner: TaskRunner = defaultRunner) {
     if (start == end)
       ()
     else if (start + 1 == end)
