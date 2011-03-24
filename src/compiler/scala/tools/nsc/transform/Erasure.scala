@@ -331,7 +331,9 @@ abstract class Erasure extends AddInterfaces
             "L"+atPhase(currentRun.icodePhase)(sym.fullName + global.genJVM.moduleSuffix(sym)).replace('.', '/')
           def classSigSuffix: String =
             "."+sym.name
-          if (sym == ArrayClass) {
+
+          // If args isEmpty, Array is being used as a higher-kinded type
+          if (sym == ArrayClass && args.nonEmpty) {
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
             else ARRAY_TAG.toString+(args map (jsig(_))).mkString
           }
