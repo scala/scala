@@ -39,18 +39,23 @@ object ops
     runner execute runner.functionAsTask(() => p)
   }
 
-  /**
-   *  @param p ...
-   *  @return  ...
+  /** Evaluates an expression asynchronously, and returns a closure for retrieving
+   *  the result.
+   *
+   *  @param  p the expression to evaluate
+   *  @return   a closure which returns the result once it has been computed
    */
   def future[A](p: => A)(implicit runner: FutureTaskRunner = defaultRunner): () => A = {
     runner.futureAsFunction(runner submit runner.functionAsTask(() => p))
   }
 
-  /**
-   *  @param xp ...
-   *  @param yp ...
-   *  @return   ...
+  /** Evaluates two expressions in parallel. Invoking `par' blocks the current
+   *  thread until both expressions have been evaluated.
+   *
+   *  @param  xp the first expression to evaluate
+   *  @param  yp the second expression to evaluate
+   *
+   *  @return    a pair holding the evaluation results
    */
   def par[A, B](xp: => A, yp: => B): (A, B) = {
     val y = new SyncVar[Either[Throwable, B]]
@@ -63,6 +68,7 @@ object ops
    *  @param end   ...
    *  @param p     ...
    */
+  @deprecated("use `collection.parallel.ParIterable.foreach' instead")
   def replicate(start: Int, end: Int)(p: Int => Unit) {
     if (start == end)
       ()
