@@ -20,6 +20,7 @@ class PresentationCompilerThread(var compiler: Global, threadId: Int) extends Th
     compiler.debugLog("starting new runner thread")
     try {
       while (true) {
+        compiler.checkNoResponsesOutstanding()
         compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true })
         compiler.pollForWork(compiler.NoPosition)
         while (compiler.isOutOfDate) {

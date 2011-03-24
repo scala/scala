@@ -1,7 +1,0 @@
-public A Bug.key()
-public Bug<A, B> Bug.foo()
-public Bug<A, B> Bug.next()
-public void Bug.next_$eq(Bug<A, B>)
-public abstract A BugBase.key()
-public abstract E BugBase.next()
-public abstract void BugBase.next_$eq(E)

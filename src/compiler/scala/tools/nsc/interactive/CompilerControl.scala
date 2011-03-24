@@ -103,6 +103,10 @@ trait CompilerControl { self: Global =>
     throw new FatalError("no context found for "+pos)
   }
 
+  private def postWorkItem(item: WorkItem) {
+    scheduler.postWorkItem(item)
+  }
+
   /** Makes sure a set of compilation units is loaded and parsed.
    *  Returns () to syncvar `response` on completions.
    *  Afterwards a new background compiler run is started with
@@ -113,15 +117,15 @@ trait CompilerControl { self: Global =>
       case ri: ReloadItem if ri.sources == sources => Some(ri)
       case _ => None
     }
-    superseeded foreach (_.response.set())
-    scheduler postWorkItem new ReloadItem(sources, response)
+    superseeded.foreach(_.response.set())
+    postWorkItem(new ReloadItem(sources, response))
   }
 
   /** Sets sync var `response` to the smallest fully attributed tree that encloses position `pos`.
    *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be be loaded.
    */
   def askTypeAt(pos: Position, response: Response[Tree]) =
-    scheduler postWorkItem new AskTypeAtItem(pos, response)
+    postWorkItem(new AskTypeAtItem(pos, response))
 
   /** Sets sync var `response` to the fully attributed & typechecked tree contained in `source`.
    *  @pre `source` needs to be loaded.
@@ -131,7 +135,7 @@ trait CompilerControl { self: Global =>
       println("ask type called")
       new Exception().printStackTrace()
     }
-    scheduler postWorkItem new AskTypeItem(source, forceReload, response)
+    postWorkItem(new AskTypeItem(source, forceReload, response))
   }
 
   /** Sets sync var `response` to the position of the definition of the given link in
@@ -146,25 +150,25 @@ trait CompilerControl { self: Global =>
    *  is unloaded, it stays that way.
    */
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
-    scheduler postWorkItem new AskLinkPosItem(sym, source, response)
+    postWorkItem(new AskLinkPosItem(sym, source, response))
 
   /** Sets sync var `response' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    *  @pre  source is loaded
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
-    scheduler postWorkItem new AskTypeCompletionItem(pos, response)
+    postWorkItem(new AskTypeCompletionItem(pos, response))
 
   /** Sets sync var `response' to list of members that are visible
    *  as members of the scope enclosing `pos`.
    *  @pre  source is loaded
    */
   def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
-    scheduler postWorkItem new AskScopeCompletionItem(pos, response)
+    postWorkItem(new AskScopeCompletionItem(pos, response))
 
   /** Asks to do unit corresponding to given source file on present and subsequent type checking passes */
   def askToDoFirst(source: SourceFile) =
-    scheduler postWorkItem new AskToDoFirstItem(source)
+    postWorkItem(new AskToDoFirstItem(source))
 
   /** If source is not yet loaded, loads it, and starts a new run, otherwise
    *  continues with current pass.
@@ -175,7 +179,7 @@ trait CompilerControl { self: Global =>
    *                   the a NoSuchUnitError is raised in the response.
    */
   def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
-    scheduler postWorkItem new AskLoadedTypedItem(source, response)
+    postWorkItem(new AskLoadedTypedItem(source, response))
 
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.
@@ -196,7 +200,7 @@ trait CompilerControl { self: Global =>
    *  @param response     The response.
    */
   def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
-    scheduler postWorkItem new AskParsedEnteredItem(source, keepLoaded, response)
+    postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
 
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
@@ -313,4 +317,6 @@ object FreshRunReq extends ControlThrowable
 object ShutdownReq extends ControlThrowable
 
 class NoSuchUnitError(file: AbstractFile) extends Exception("no unit found for file "+file)
+
+class MissingResponse extends Exception("response missing")
 

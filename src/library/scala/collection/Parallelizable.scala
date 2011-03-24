@@ -6,15 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 
-
-
-import parallel.ParIterableLike
 import parallel.Combiner
-
-
 
 /** This trait describes collections which can be turned into parallel collections
  *  by invoking the method `par`. Parallelizable collections may be parametrized with
@@ -24,7 +18,7 @@ import parallel.Combiner
  *  @tparam ParRepr      the actual type of the collection, which has to be parallel
  */
 trait Parallelizable[+A, +ParRepr <: Parallel] {
-self: TraversableOnce[A] =>
+  self: TraversableOnce[A] =>
 
   /** Returns a parallel implementation of this collection.
    *
@@ -53,29 +47,4 @@ self: TraversableOnce[A] =>
    *  @return  a combiner for the parallel collection of type `ParRepr`
    */
   protected[this] def parCombiner: Combiner[A, ParRepr]
-
 }
-
-
-trait CustomParallelizable[+A, +ParRepr <: Parallel] extends Parallelizable[A, ParRepr] {
-self: TraversableOnce[A] =>
-
-  override def par: ParRepr
-
-  protected override def parCombiner = throw new UnsupportedOperationException("")
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

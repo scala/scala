@@ -6,16 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
+package scala.collection
 
+import parallel.Combiner
 
-package scala.concurrent
+trait CustomParallelizable[+A, +ParRepr <: Parallel] extends Parallelizable[A, ParRepr] {
+  self: TraversableOnce[A] =>
 
-/**
- * The message sent to a message box when the period specified in
- * <code>receiveWithin</code> expires.
- *
- * @author  Martin Odersky
- * @version 1.0, 10/03/2003
- */
-@deprecated("use actors instead")
-case object TIMEOUT
+  override def par: ParRepr
+  override protected[this] def parCombiner: Combiner[A, ParRepr] = throw new UnsupportedOperationException("")
+}

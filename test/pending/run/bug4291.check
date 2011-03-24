@@ -1,0 +1,87 @@
+scala.collection.immutable.List
+  (m) public java.lang.Object scala.collection.immutable.List.apply(java.lang.Object) (bridge)
+  (m) public A scala.collection.immutable.List.apply(int) (bridge)
+scala.Option
+  (m) public abstract A scala.Option.get()
+scala.Function1
+  (m) public abstract R scala.Function1.apply(T1)
+scala.collection.Traversable
+  (m) public abstract <B,That> That scala.collection.TraversableLike.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.Iterable
+  (m) public abstract <B,That> That scala.collection.TraversableLike.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.Seq
+  (m) public abstract <B,That> That scala.collection.TraversableLike.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.immutable.Set
+  (m) public abstract <B,That> That scala.collection.TraversableLike.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+  (m) public abstract <B,That> That scala.collection.SetLike.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<This, B, That>)
+scala.collection.immutable.Map
+  (m) public abstract <B,That> That scala.collection.TraversableLike.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.immutable.Vector
+  (m) public <B,That> That scala.collection.immutable.Vector.map(scala.Function1<A, B>,scala.collection.generic.CanBuildFrom<scala.collection.immutable.Vector<A>, B, That>) (bridge)
+scala.collection.immutable.Range
+  (m) public <B,That> That scala.collection.immutable.Range.map(scala.Function1<java.lang.Object, B>,scala.collection.generic.CanBuildFrom<scala.collection.immutable.IndexedSeq<java.lang.Object>, B, That>) (bridge)
+scala.collection.Traversable
+  (m) public abstract <B,That> That scala.collection.TraversableLike.flatMap(scala.Function1<A, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.Iterable
+  (m) public abstract <B,That> That scala.collection.TraversableLike.flatMap(scala.Function1<A, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.Seq
+  (m) public abstract <B,That> That scala.collection.TraversableLike.flatMap(scala.Function1<A, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.immutable.Set
+  (m) public abstract <B,That> That scala.collection.TraversableLike.flatMap(scala.Function1<A, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.immutable.Map
+  (m) public abstract <B,That> That scala.collection.TraversableLike.flatMap(scala.Function1<A, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<Repr, B, That>)
+scala.collection.immutable.Vector
+  (m) public <B,That> That scala.collection.immutable.Vector.flatMap(scala.Function1<A, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<scala.collection.immutable.Vector<A>, B, That>) (bridge)
+scala.collection.immutable.Range
+  (m) public <B,That> That scala.collection.immutable.Range.flatMap(scala.Function1<java.lang.Object, scala.collection.TraversableOnce<B>>,scala.collection.generic.CanBuildFrom<scala.collection.immutable.IndexedSeq<java.lang.Object>, B, That>) (bridge)
+scala.collection.Traversable
+  (m) public abstract Repr scala.collection.TraversableLike.filter(scala.Function1<A, java.lang.Object>)
+scala.collection.Iterable
+  (m) public abstract Repr scala.collection.TraversableLike.filter(scala.Function1<A, java.lang.Object>)
+scala.collection.Seq
+  (m) public abstract Repr scala.collection.TraversableLike.filter(scala.Function1<A, java.lang.Object>)
+scala.collection.immutable.Set
+  (m) public abstract Repr scala.collection.TraversableLike.filter(scala.Function1<A, java.lang.Object>)
+scala.collection.immutable.Map
+  (m) public abstract Repr scala.collection.TraversableLike.filter(scala.Function1<A, java.lang.Object>)
+scala.collection.immutable.Vector
+  (m) public scala.collection.immutable.Vector<A> scala.collection.immutable.Vector.filter(scala.Function1<A, java.lang.Object>) (bridge)
+scala.collection.immutable.Range
+  (m) public scala.collection.immutable.IndexedSeq<java.lang.Object> scala.collection.immutable.Range.filter(scala.Function1<java.lang.Object, java.lang.Object>) (bridge)
+scala.collection.Traversable
+  (m) public abstract A scala.collection.TraversableLike.head()
+  (m) public abstract A scala.collection.generic.GenericTraversableTemplate.head()
+scala.collection.Iterable
+  (m) public abstract A scala.collection.TraversableLike.head()
+  (m) public abstract A scala.collection.generic.GenericTraversableTemplate.head()
+  (m) public abstract A scala.collection.IterableLike.head()
+scala.collection.Seq
+  (m) public abstract A scala.collection.TraversableLike.head()
+  (m) public abstract A scala.collection.generic.GenericTraversableTemplate.head()
+  (m) public abstract A scala.collection.IterableLike.head()
+scala.collection.immutable.Set
+  (m) public abstract A scala.collection.TraversableLike.head()
+  (m) public abstract A scala.collection.generic.GenericTraversableTemplate.head()
+  (m) public abstract A scala.collection.IterableLike.head()
+scala.collection.immutable.Map
+  (m) public abstract A scala.collection.TraversableLike.head()
+  (m) public abstract A scala.collection.generic.GenericTraversableTemplate.head()
+  (m) public abstract A scala.collection.IterableLike.head()
+scala.collection.immutable.Vector
+  (m) public A scala.collection.immutable.Vector.head()
+scala.collection.immutable.Range
+  (m) public java.lang.Object scala.collection.immutable.Range.head() (bridge)
+scala.collection.Traversable
+  (m) public abstract <K> scala.collection.immutable.Map<K, Repr> scala.collection.TraversableLike.groupBy(scala.Function1<A, K>)
+scala.collection.Iterable
+  (m) public abstract <K> scala.collection.immutable.Map<K, Repr> scala.collection.TraversableLike.groupBy(scala.Function1<A, K>)
+scala.collection.Seq
+  (m) public abstract <K> scala.collection.immutable.Map<K, Repr> scala.collection.TraversableLike.groupBy(scala.Function1<A, K>)
+scala.collection.immutable.Set
+  (m) public abstract <K> scala.collection.immutable.Map<K, Repr> scala.collection.TraversableLike.groupBy(scala.Function1<A, K>)
+scala.collection.immutable.Map
+  (m) public abstract <K> scala.collection.immutable.Map<K, Repr> scala.collection.TraversableLike.groupBy(scala.Function1<A, K>)
+scala.collection.immutable.Vector
+  (m) public <K> scala.collection.immutable.Map<K, scala.collection.immutable.Vector<A>> scala.collection.immutable.Vector.groupBy(scala.Function1<A, K>) (bridge)
+scala.collection.immutable.Range
+  (m) public <K> scala.collection.immutable.Map<K, scala.collection.immutable.IndexedSeq<java.lang.Object>> scala.collection.immutable.Range.groupBy(scala.Function1<java.lang.Object, K>) (bridge)

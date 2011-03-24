@@ -1,0 +1,11 @@
+ScalaGeneric
+  (m) public java.util.Set<java.lang.String> ScalaGeneric.s()
+  (m) public void ScalaGeneric.s_$eq(java.util.Set<java.lang.String>)
+  (f) private java.util.Set<java.lang.String> ScalaGeneric.s
+ScalaGeneric2Trait
+  (m) public abstract java.util.Set<java.lang.String> ScalaGeneric2Trait.s()
+  (m) public abstract void ScalaGeneric2Trait.s_$eq(java.util.Set<java.lang.String>)
+ScalaGeneric2
+  (m) public java.util.Set<java.lang.String> ScalaGeneric2.s() (bridge)
+  (m) public void ScalaGeneric2.s_$eq(java.util.Set<java.lang.String>) (bridge)
+  (f) private java.util.Set<java.lang.String> ScalaGeneric2.s

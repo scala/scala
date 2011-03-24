@@ -134,7 +134,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   def addMember(clazz: Symbol, member: Symbol): Symbol = {
     if (settings.debug.value) log("new member of " + clazz + ":" + member.defString)
     clazz.info.decls enter member
-    member setFlag MIXEDIN
+    member.setFlag(MIXEDIN)
   }
 
   def needsExpandedSetterName(field: Symbol) = !field.isLazy && (
