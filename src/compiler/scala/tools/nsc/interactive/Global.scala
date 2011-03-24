@@ -848,6 +848,14 @@ class Global(settings: Settings, reporter: Reporter)
     }
   }
 
+  /** Synchronous version of askStructure. */
+  def getStructure(source: SourceFile, response: Response[Tree]) {
+    getUnit(source) match {
+      case Some(_) => waitLoadedTyped(source, response)
+      case None => getParsedEntered(source, false, response)
+    }
+  }
+
   /** Implements CompilerControl.askLoadedTyped */
   protected def waitLoadedTyped(source: SourceFile, response: Response[Tree]) {
     getUnit(source) match {
