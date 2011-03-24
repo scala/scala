@@ -1,0 +1,108 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
+
+package scala
+
+
+
+
+/** This package object contains primitives for parallel programming.
+ */
+package object concurrent {
+  
+  /** Performs a call which can potentially block execution.
+   *  
+   *  Example:
+   *  {{{
+   *    val lock = new ReentrantLock
+   *    
+   *    // ... do something ...
+   *    
+   *    blocking {
+   *      if (!lock.hasLock) lock.lock()
+   *    }
+   *  }}}
+   *  
+   *  '''Note:''' calling methods that wait arbitrary amounts of time
+   *  (e.g. for I/O operations or locks) may severely decrease performance
+   *  or even result in deadlocks. This does not include waiting for
+   *  results of futures.
+   *
+   *  @tparam T       the result type of the blocking operation
+   *  @param body     the blocking operation
+   *  @param runner   the runner used for parallel computations
+   *  @return         the result of the potentially blocking operation
+   */
+  def blocking[T](body: =>T)(implicit runner: TaskRunner): T = {
+    null.asInstanceOf[T]
+  }
+  
+  /** Invokes a computation asynchronously. Does not wait for the computation
+   *  to finish.
+   *  
+   *  @tparam U       the result type of the operation
+   *  @param p        the computation to be invoked asynchronously
+   *  @param runner   the runner used for parallel computations
+   */
+  def spawn[U](p: =>U)(implicit runner: TaskRunner): Unit = {
+  }
+  
+  /** Starts 2 parallel computations and returns once they are completed.
+   *  
+   *  $invokingPar
+   *  
+   *  @tparam T1    the type of the result of 1st the parallel computation
+   *  @tparam T2    the type of the result of 2nd the parallel computation
+   *  @param b1     the 1st computation to be invoked in parallel
+   *  @param b2     the 2nd computation to be invoked in parallel
+   *  @param runner   the runner used for parallel computations
+   *  @return       a tuple of results corresponding to parallel computations
+   */
+  def par[T1, T2](b1: =>T1)(b2: =>T2)(implicit runner: TaskRunner): (T1, T2) = {
+    null
+  }
+  
+  /** Starts 3 parallel computations and returns once they are completed.
+   *  
+   *  $invokingPar
+   *
+   *  @tparam T1    the type of the result of 1st the parallel computation
+   *  @tparam T2    the type of the result of 2nd the parallel computation
+   *  @tparam T3    the type of the result of 3rd the parallel computation
+   *  @param b1     the 1st computation to be invoked in parallel
+   *  @param b2     the 2nd computation to be invoked in parallel
+   *  @param b3     the 3rd computation to be invoked in parallel
+   *  @param runner   the runner used for parallel computations
+   *  @return       a tuple of results corresponding to parallel computations
+   */
+  def par[T1, T2, T3](b1: =>T1)(b2: =>T2)(b3: =>T3)(implicit runner: TaskRunner): (T1, T2, T3) = {
+    null
+  }
+  
+  /** Starts 4 parallel computations and returns once they are completed.
+   *  
+   *  $invokingPar
+   *
+   *  @tparam T1    the type of the result of 1st the parallel computation
+   *  @tparam T2    the type of the result of 2nd the parallel computation
+   *  @tparam T3    the type of the result of 3rd the parallel computation
+   *  @tparam T4    the type of the result of 4th the parallel computation
+   *  @param b1     the 1st computation to be invoked in parallel
+   *  @param b2     the 2nd computation to be invoked in parallel
+   *  @param b3     the 3rd computation to be invoked in parallel
+   *  @param b4     the 4th computation to be invoked in parallel
+   *  @param runner   the runner used for parallel computations
+   *  @return       a tuple of results corresponding to parallel computations
+   */
+  def par[T1, T2, T3, T4](b1: =>T1)(b2: =>T2)(b3: =>T3)(b4: =>T4)(implicit runner: TaskRunner): (T1, T2, T3, T4) = {
+    null
+  }
+  
+}

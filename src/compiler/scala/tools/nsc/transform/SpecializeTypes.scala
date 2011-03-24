@@ -40,6 +40,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _ => false
   }
 
+  private def specializedOn(sym: Symbol) = sym.getAnnotation(SpecializedClass) match {
+    case Some(AnnotationInfo(_, args, _)) => args
+    case _ => Nil
+  }
+
   object TypeEnv {
     /** Return a new type environment binding specialized type parameters of sym to
      *  the given args. Expects the lists to have the same length.
@@ -226,7 +231,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   val specializedType = new TypeMap {
     override def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args) if !args.isEmpty =>
+      case TypeRef(pre, sym, args) if args.nonEmpty =>
         val pre1 = this(pre)
         // when searching for a specialized class, take care to map all
         // type parameters that are subtypes of AnyRef to AnyRef
@@ -536,7 +541,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
 
         var parents = List(applyContext(atPhase(currentRun.typerPhase)(clazz.tpe)))
-        // log("Parent: " + parents.head + ", sym: " + parents.head.typeSymbol)
+        // log("!!! Parents: " + parents + ", sym: " + parents.map(_.typeSymbol))
         if (parents.head.typeSymbol.isTrait)
           parents = parents.head.parents.head :: parents
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
@@ -859,7 +864,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  this method will return List('apply$spec$II')
    */
   private def specialOverrides(clazz: Symbol): List[Symbol] = {
-    log("specialOverrides(" + clazz + ")")
+    // log("--> specialOverrides(" + clazz + ")")
 
     /** Return the overridden symbol in syms that needs a specialized overriding symbol,
      *  together with its specialization environment. The overridden symbol may not be
@@ -886,6 +891,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                     "types: " + missing.mkString("", ", ", ""))
       }
 
+      // log("checking: " + overriding + " - isParamAccessor: " + overriding.isParamAccessor)
       if (!overriding.isParamAccessor) for (overridden <- syms) {
         if (settings.debug.value)
           log("Overridden: " + overridden.fullName + ": " + overridden.info
@@ -1068,6 +1074,29 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     // decl
   }
 
+  /** Checks if the type parameter symbol is not specialized
+   *  and is used as type parameters when extending a class with a specialized
+   *  type parameter.
+   *  At some point we may remove this restriction.
+   *
+   *  Example:
+   *
+   *    class Base[@specialized T]
+   *    class Derived[T] extends Base[T] // a non-specialized T is
+   *                                     // used as a type param for Base
+   *                                     // -> returning true
+   */
+  private def notSpecializedIn(tsym: Symbol, supertpe: Type) = supertpe match {
+    case TypeRef(_, supersym, supertargs) =>
+      val tspec = specializedOn(tsym).toSet
+      for (supt <- supersym.typeParams) {
+        val supspec = specializedOn(supt).toSet
+        if (tspec != supspec && tspec.subsetOf(supspec))
+          reporter.error(tsym.pos, "Type parameter has to be specialized at least for the same types as in the superclass. Missing types: " + (supspec.diff(tspec)).mkString(", "))
+      }
+    case _ => //log("nope")
+  }
+
   /** Type transformation. It is applied to all symbols, compiled or loaded.
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.
    */
@@ -1078,6 +1107,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               && clazz != JavaRepeatedParamClass
               && !clazz.isJavaDefined =>
         val parents = base map specializedType
+        // log("!!! %s[%s]) Parents: %s -> %s".format(sym, targs, base, parents))
+        // for (t <- targs; p <- parents) notSpecializedIn(t, p)
         if (settings.debug.value) log("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
 //        if (clazz.name.toString == "$colon$colon")
 //          (new Throwable).printStackTrace

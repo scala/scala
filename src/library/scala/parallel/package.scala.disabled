@@ -15,13 +15,13 @@ import scala.concurrent.forkjoin._
  *  chain obtained by querying results of unfinished futures can have
  *  arbitrary lengths. However, care must be taken not to create a
  *  circular dependency, as this will result in a deadlock.
- *
+ *  
  *  Additionally, if the parallel computation performs a blocking call
  *  (e.g. an I/O operation or waiting for a lock) other than waiting for a future,
  *  it should do so by invoking the `block` method. This is another
  *  form of waiting that could potentially create a circular dependency,
  *  an the user should take care not to do this.
- *
+ *  
  *  Users should be aware that invoking a parallel computation has a
  *  certain overhead. Parallel computations should not be invoked for
  *  small computations, as this can lead to bad performance. A rule of the
@@ -31,36 +31,36 @@ import scala.concurrent.forkjoin._
  *  computationally equivalent to a loop with 10000 arithmetic operations.
  */
 package object parallel {
-
+  
   private[scala] val forkjoinpool = new ForkJoinPool()
-
+  
   private class Task[T](body: =>T) extends RecursiveTask[T] with Future[T] {
     def compute = body
     def apply() = join()
   }
-
+  
   private final def newTask[T](body: =>T) = new Task[T](body)
-
+  
   private final def executeTask[T](task: RecursiveTask[T]) {
     if (Thread.currentThread().isInstanceOf[ForkJoinWorkerThread]) task.fork
     else forkjoinpool.execute(task)
   }
-
+  
   /* public methods */
-
+  
   /** Performs a call which can potentially block execution.
-   *
+   *  
    *  Example:
    *  {{{
    *    val lock = new ReentrantLock
-   *
+   *    
    *    // ... do something ...
-   *
+   *    
    *    blocking {
    *      if (!lock.hasLock) lock.lock()
    *    }
    *  }}}
-   *
+   *  
    *  '''Note:''' calling methods that wait arbitrary amounts of time
    *  (e.g. for I/O operations or locks) may severely decrease performance
    *  or even result in deadlocks. This does not include waiting for
@@ -82,11 +82,11 @@ package object parallel {
       blocker.result.asInstanceOf[T]
     } else body
   }
-
+  
   /** Starts a parallel computation and returns a future.
-   *
+   *  
    *  $invokingPar
-   *
+   *  
    *  @tparam T     the type of the result of the parallel computation
    *  @param body   the computation to be invoked in parallel
    *  @return       a future with the result
@@ -96,9 +96,9 @@ package object parallel {
     executeTask(task)
     task
   }
-
+  
   /** Starts 2 parallel computations and returns a future.
-   *
+   *  
    *  $invokingPar
    *
    *  @tparam T1    the type of the result of 1st the parallel computation
@@ -114,9 +114,9 @@ package object parallel {
     executeTask(t2)
     (t1, t2)
   }
-
+  
   /** Starts 3 parallel computations and returns a future.
-   *
+   *  
    *  $invokingPar
    *
    *  @tparam T1    the type of the result of 1st the parallel computation
@@ -136,9 +136,9 @@ package object parallel {
     executeTask(t3)
     (t1, t2, t3)
   }
-
+  
   /** Starts 4 parallel computations and returns a future.
-   *
+   *  
    *  $invokingPar
    *
    *  @tparam T1    the type of the result of 1st the parallel computation
@@ -162,7 +162,7 @@ package object parallel {
     executeTask(t4)
     (t1, t2, t3, t4)
   }
-
+  
 }
 
 
