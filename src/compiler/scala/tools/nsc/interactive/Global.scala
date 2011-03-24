@@ -120,6 +120,22 @@ class Global(settings: Settings, reporter: Reporter)
     }
   }
 
+  private def cleanAllResponses() {
+    cleanResponses(waitLoadedTypeResponses)
+    cleanResponses(getParsedEnteredResponses)
+  }
+
+  private def checkNoOutstanding(rmap: ResponseMap): Unit =
+    for ((_, rs) <- rmap.toList; r <- rs) {
+      debugLog("ERROR: missing response, request will be discarded")
+      r raise new MissingResponse
+    }
+
+  def checkNoResponsesOutstanding() {
+    checkNoOutstanding(waitLoadedTypeResponses)
+    checkNoOutstanding(getParsedEnteredResponses)
+  }
+
   /** The compilation unit corresponding to a source file
    *  if it does not yet exist create a new one atomically
    *  Note: We want to remove this.
@@ -417,8 +433,7 @@ class Global(settings: Settings, reporter: Reporter)
     }
 
     // clean out stale waiting responses
-    cleanResponses(waitLoadedTypeResponses)
-    cleanResponses(getParsedEnteredResponses)
+    cleanAllResponses()
 
     // wind down
     if (waitLoadedTypeResponses.nonEmpty || getParsedEnteredResponses.nonEmpty) {
@@ -841,8 +856,8 @@ class Global(settings: Settings, reporter: Reporter)
         else { debugLog("wait for later"); outOfDate = true; waitLoadedTypeResponses(source) += response }
       case None =>
         debugLog("load unit and type")
-        reloadSources(List(source))
-        waitLoadedTyped(source, response)
+        try reloadSources(List(source))
+        finally waitLoadedTyped(source, response)
     }
   }
 
@@ -852,14 +867,13 @@ class Global(settings: Settings, reporter: Reporter)
       case Some(unit) =>
         getParsedEnteredNow(source, response)
       case None =>
-        if (keepLoaded) {
-          reloadSources(List(source))
-          getParsedEnteredNow(source, response)
-        } else if (outOfDate) {
+        if (keepLoaded)
+          try reloadSources(List(source))
+          finally getParsedEnteredNow(source, response)
+        else if (outOfDate)
           getParsedEnteredResponses(source) += response
-        } else {
+        else
           getParsedEnteredNow(source, response)
-        }
     }
   }
 
