@@ -144,4 +144,9 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #4180") = {
+    val files = createTemplates("Trac4180.scala")
+    files("Test.html") != None
+  }
 }
