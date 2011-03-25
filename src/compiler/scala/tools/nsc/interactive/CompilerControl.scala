@@ -107,6 +107,8 @@ trait CompilerControl { self: Global =>
     scheduler.postWorkItem(item)
   }
 
+  private def onCompilerThread = Thread.currentThread == compileRunner
+
   /** Makes sure a set of compilation units is loaded and parsed.
    *  Returns () to syncvar `response` on completions.
    *  Afterwards a new background compiler run is started with
