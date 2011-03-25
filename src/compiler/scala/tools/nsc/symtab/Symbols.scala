@@ -59,6 +59,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 // annotations
 
     private var rawannots: List[AnnotationInfoBase] = Nil
+    def rawAnnotations = rawannots
 
     /* Used in namer to check whether annotations were already assigned or not */
     def hasAssignedAnnotations = rawannots.nonEmpty

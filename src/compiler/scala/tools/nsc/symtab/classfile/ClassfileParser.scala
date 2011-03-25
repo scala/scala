@@ -933,7 +933,7 @@ abstract class ClassfileParser {
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
             if (settings.debug.value)
-              log("" + sym + "; annotations = " + sym.annotations)
+              log("" + sym + "; annotations = " + sym.rawAnnotations)
           } else
             in.skip(attrLen)
 
