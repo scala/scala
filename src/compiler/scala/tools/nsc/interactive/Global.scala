@@ -848,40 +848,38 @@ class Global(settings: Settings, reporter: Reporter)
     }
   }
 
-  /** Synchronous version of askStructure. */
-  def getStructure(source: SourceFile, response: Response[Tree]) {
-    getUnit(source) match {
-      case Some(_) => waitLoadedTyped(source, response)
-      case None => getParsedEntered(source, false, response)
-    }
-  }
-
   /** Implements CompilerControl.askLoadedTyped */
-  protected def waitLoadedTyped(source: SourceFile, response: Response[Tree]) {
+  protected def waitLoadedTyped(source: SourceFile, response: Response[Tree], onSameThread: Boolean) {
     getUnit(source) match {
-      case Some(unit) =>
-        if (unit.isUpToDate) { debugLog("already typed"); response set unit.body }
-        else { debugLog("wait for later"); outOfDate = true; waitLoadedTypeResponses(source) += response }
-      case None =>
+      case Some(unit) if unit.isUpToDate =>
+        debugLog("already typed");
+        response set unit.body
+      case Some(_) if !onSameThread =>
+        debugLog("wait for later")
+        outOfDate = true
+        waitLoadedTypeResponses(source) += response
+      case _ =>
         debugLog("load unit and type")
         try reloadSources(List(source))
-        finally waitLoadedTyped(source, response)
+        finally waitLoadedTyped(source, response, onSameThread)
     }
   }
 
   /** Implements CompilerControl.askParsedEntered */
-  protected def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) {
+  protected def getParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree], onSameThread: Boolean) {
     getUnit(source) match {
       case Some(unit) =>
         getParsedEnteredNow(source, response)
       case None =>
-        if (keepLoaded)
-          try reloadSources(List(source))
-          finally getParsedEnteredNow(source, response)
-        else if (outOfDate)
-          getParsedEnteredResponses(source) += response
-        else
-          getParsedEnteredNow(source, response)
+        try {
+          if (keepLoaded || outOfDate && onSameThread)
+            reloadSources(List(source))
+        } finally {
+          if (keepLoaded || !outOfDate || onSameThread)
+            getParsedEnteredNow(source, response)
+          else
+            getParsedEnteredResponses(source) += response
+        }
     }
   }
 

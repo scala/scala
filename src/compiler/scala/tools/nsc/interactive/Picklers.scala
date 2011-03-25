@@ -159,13 +159,13 @@ trait Picklers { self: Global =>
       .asClass (classOf[AskLinkPosItem])
 
   implicit def askLoadedTypedItem: CondPickler[AskLoadedTypedItem] =
-    pkl[SourceFile]
-      .wrapped { new AskLoadedTypedItem(_, new Response) } { _.source }
+    (pkl[SourceFile] ~ pkl[Boolean])
+      .wrapped { case source ~ onSameThread => new AskLoadedTypedItem(source, new Response, onSameThread) } { w => w.source ~ w.onSameThread }
       .asClass (classOf[AskLoadedTypedItem])
 
   implicit def askParsedEnteredItem: CondPickler[AskParsedEnteredItem] =
-    (pkl[SourceFile] ~ pkl[Boolean])
-      .wrapped { case source ~ keepLoaded => new AskParsedEnteredItem(source, keepLoaded, new Response) } { w => w.source ~ w.keepLoaded }
+    (pkl[SourceFile] ~ pkl[Boolean] ~ pkl[Boolean])
+      .wrapped { case source ~ keepLoaded ~ onSameThread => new AskParsedEnteredItem(source, keepLoaded, new Response, onSameThread) } { w => w.source ~ w.keepLoaded ~ w.onSameThread }
       .asClass (classOf[AskParsedEnteredItem])
 
   implicit def emptyAction: CondPickler[EmptyAction] =
