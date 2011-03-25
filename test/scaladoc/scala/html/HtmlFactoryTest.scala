@@ -124,4 +124,24 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #4358") = {
+    val files = createTemplates("Trac4358.scala")
+    files("EasyMockSugar.html") match {
+      case node: scala.xml.Node => {
+        val comments = XMLUtil.stripGroup(node).descendant.flatMap {
+          case e: scala.xml.Elem => {
+            if (e.attribute("class").toString.contains("shortcomment")) {
+              Some(e)
+            } else {
+              None
+            }
+          }
+          case _ => None
+        }
+        ! comments.exists { _.toString.contains("<em>i.</em>") }
+      }
+      case _ => false
+    }
+  }
 }

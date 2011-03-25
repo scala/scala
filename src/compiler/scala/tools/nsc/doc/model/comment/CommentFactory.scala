@@ -172,7 +172,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   /** Safe HTML tags that can be kept. */
   protected val SafeTags =
-    new Regex("""((&\w+;)|(&#\d+;)|(<code( [^>]*)?>.*?</code>)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
+    new Regex("""((&\w+;)|(&#\d+;)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|code|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
   protected val safeTagMarker = '\u000E'
 
@@ -515,10 +515,50 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /* INLINES */
 
+    val OPEN_TAG = "^<([A-Za-z]+)( [^>]*)?(/?)>$".r
+    val CLOSE_TAG = "^</([A-Za-z]+)>$".r
+    private def readHTMLFrom(begin: HtmlTag): String = {
+      val list = mutable.ListBuffer.empty[String]
+      val stack = mutable.ListBuffer.empty[String]
+
+      begin.close match {
+        case Some(HtmlTag(CLOSE_TAG(s))) =>
+          stack += s
+        case _ =>
+          return ""
+      }
+
+      do {
+        readUntil { char == safeTagMarker || char == endOfText }
+        val str = getRead()
+        nextChar()
+
+        list += str
+
+        str match {
+          case OPEN_TAG(s, _, standalone) => {
+            if (standalone != "/") {
+              stack += s
+            }
+          }
+          case CLOSE_TAG(s) => {
+            if (s == stack.last) {
+              stack.remove(stack.length-1)
+            }
+          }
+          case _ => ;
+        }
+      } while (stack.length > 0 && char != endOfText);
+
+      return list.mkString("")
+    }
     def inline(isInlineEnd: => Boolean): Inline = {
 
       def inline0(): Inline = {
-        if (char == safeTagMarker) htmlTag()
+        if (char == safeTagMarker) {
+          val tag = htmlTag()
+          HtmlTag(tag.data + readHTMLFrom(tag))
+        }
         else if (check("'''")) bold()
         else if (check("''")) italic()
         else if (check("`"))  monospace()
@@ -563,7 +603,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     }
 
-    def htmlTag(): Inline = {
+    def htmlTag(): HtmlTag = {
       jump(safeTagMarker)
       readUntil(safeTagMarker)
       if (char != endOfText) jump(safeTagMarker)

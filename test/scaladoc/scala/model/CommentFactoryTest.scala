@@ -92,11 +92,9 @@ object Test extends Properties("CommentFactory") {
  *
  */""",
       Chain(List(Text(""), Text("\n"),
-                 HtmlTag("<pre>"), Text("\n"),
-                 Text("hello "), Chain(List(Text("^"),
-                                            Chain(List(Text("world"),
-                                                       Text("\n"),
-                                                       HtmlTag("</pre>")))))))
+
+
+                 HtmlTag("<pre>\nhello ^world\n</pre>")))
   )
 
   property("Trac #4366 - body") = {
@@ -109,8 +107,7 @@ object Test extends Properties("CommentFactory") {
     )
 
     body == Body(List(Paragraph(Chain(List(
-      Summary(Chain(List(Chain(List(HtmlTag("<strong>"), HtmlTag("<code>foo</code>"), Text(" has been deprecated and will be removed in a future version"))), Text(".")))),
-      Chain(List(Text(" Please call "), HtmlTag("<code>bar</code>"), Text(" instead."), HtmlTag("</strong>"), Text("\n"), Text("")))
+      Summary(Chain(List(HtmlTag("<strong><code>foo</code> has been deprecated and will be removed in a future version. Please call <code>bar</code> instead.</strong>"), Text("\n"), Text(""))))
     )))))
   }
 
@@ -122,7 +119,37 @@ object Test extends Properties("CommentFactory") {
   */
       """
     )
-
-    body.summary == Some(Chain(List(Chain(List(HtmlTag("<strong>"), HtmlTag("<code>foo</code>"), Text(" has been deprecated and will be removed in a future version"))), Text("."))))
+    body.summary == Some(Chain(List(HtmlTag("<strong><code>foo</code> has been deprecated and will be removed in a future version. Please call <code>bar</code> instead.</strong>"), Text("\n"), Text(""))))
   }
+
+  property("Trac #4358 - body") = {
+    factory.createBody(
+      """
+ /**
+   * Implicit conversion that invokes the <code>expect</code> method on the <code>EasyMock</code> companion object (<em>i.e.</em>, the
+   * static <code>expect</code> method in Java class <code>org.easymock.EasyMock</code>).
+  */
+      """
+    ) match {
+      case Body(List(Paragraph(Chain(List(Summary(Chain(List(Chain(List(
+        Text("Implicit conversion that invokes the "),
+        HtmlTag("<code>expect</code>"),
+        Text(" method on the "),
+        HtmlTag("<code>EasyMock</code>"),
+        Text(" companion object ("),
+        HtmlTag("<em>i.e.</em>"),
+        Text(", the\nstatic "),
+        HtmlTag("<code>expect</code>"),
+        Text(" method in Java class "),
+        HtmlTag("<code>org.easymock.EasyMock</code>"),
+        Text(")")
+      )), Text(".")))), Text("\n")))))) =>
+        true
+      case other => {
+        println(other)
+        false
+      }
+    }
+  }
+
 }
