@@ -1425,7 +1425,7 @@ trait Typers extends Modes {
           val tpt1 =
             checkNoEscaping.privates(
               clazz.thisSym,
-              treeCopy.TypeTree(tpt) setType vd.symbol.tpe)
+              treeCopy.TypeTree(tpt).setOriginal(tpt) setType vd.symbol.tpe)
           treeCopy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
       }
 // was:

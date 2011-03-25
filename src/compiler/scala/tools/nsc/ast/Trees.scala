@@ -317,7 +317,15 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     private[Trees] var wasEmpty: Boolean = false
 
     def original: Tree = orig
-    def setOriginal(tree: Tree): this.type = { orig = tree; setPos(tree.pos); this }
+    def setOriginal(tree: Tree): this.type = {
+      def followOriginal(t: Tree): Tree = t match {
+        case tt: TypeTree => followOriginal(tt.original)
+        case t => t
+      }
+
+      orig = followOriginal(tree); setPos(tree.pos);
+      this
+    }
 
     override def defineType(tp: Type): this.type = {
       wasEmpty = isEmpty
