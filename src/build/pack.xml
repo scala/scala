@@ -21,12 +21,21 @@ MAIN DISTRIBUTION PACKAGING
   </target>
   
   <target name="pack-archives.tar" depends="pack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}.tgz"
-         compression="gzip" longfile="gnu">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}"
+         compression="none" longfile="gnu">
       <tarfileset dir="${dist.dir}" prefix="scala-${version.number}" includes="bin/**" mode="755"/>
       <tarfileset dir="${dist.dir}" prefix="scala-${version.number}" excludes="bin/**"/>
     </tar>
-    <checksum file="${dists.dir}/archives/scala-${version.number}.tgz" fileext=".md5"/>
+    <gzip src="${dists.dir}/archives/scala-${version.number}" destfile="${dists.dir}/archives/scala-${version.number}.tgz"/>
+    <exec executable="xz" failifexecutionfails="false">
+      <arg line="-k -9e -S .txz ${dists.dir}/archives/scala-${version.number}"/>
+    </exec> 
+    <delete file="${dists.dir}/archives/scala-${version.number}" />
+    <checksum fileext=".md5">
+      <fileset dir="${dists.dir}/archives">
+        <include name="scala-${version.number}.t?z"/>
+      </fileset>
+    </checksum>
   </target>
   
   <target name="pack-archives.zip" depends="pack-archives.tar">
@@ -37,16 +46,25 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-devel-docs.tar" depends="pack-archives.zip">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz"
-         compression="gzip" longfile="gnu">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-devel-docs"
+         compression="none" longfile="gnu">
       <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="scala-${version.number}-devel-docs"/>
     </tar>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz" fileext=".md5"/>
+    <gzip src="${dists.dir}/archives/scala-${version.number}-devel-docs" destfile="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz"/>
+    <exec executable="xz" failifexecutionfails="false">
+      <arg line="-k -9e -S .txz ${dists.dir}/archives/scala-${version.number}-devel-docs"/>
+    </exec> 
+    <delete file="${dists.dir}/archives/scala-${version.number}-devel-docs" />
+    <checksum fileext=".md5">
+      <fileset dir="${dists.dir}/archives">
+        <include name="scala-${version.number}-devel-docs.t?z"/>
+      </fileset>
+    </checksum>
   </target>
   
   <target name="pack-archives.src" depends="pack-devel-docs.tar">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"
-         compression="gzip" longfile="gnu">
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-sources"
+         compression="none" longfile="gnu">
       <tarfileset dir="${basedir}" prefix="scala-${version.number}-sources">
         <exclude name="bin/**"/>
         <exclude name="build/**"/>
@@ -60,7 +78,16 @@ MAIN DISTRIBUTION PACKAGING
         <include name="test/partest"/>
       </tarfileset>
     </tar>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-sources.tgz" fileext=".md5"/>
+    <gzip src="${dists.dir}/archives/scala-${version.number}-sources" destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"/>
+    <exec executable="xz" failifexecutionfails="false">
+      <arg line="-k -9e -S .txz ${dists.dir}/archives/scala-${version.number}-sources"/>
+    </exec> 
+    <delete file="${dists.dir}/archives/scala-${version.number}-sources" />
+    <checksum fileext=".md5">
+      <fileset dir="${dists.dir}/archives">
+        <include name="scala-${version.number}-sources.t?z"/>
+      </fileset>
+    </checksum>
   </target>
   
   <target name="pack-archives.done" depends="pack-archives.src"/>
@@ -262,40 +289,10 @@ MAIN DISTRIBUTION SBAZ
   <target name="pack-maven.done" depends="pack-maven.scripts"/>
 
 <!-- ===========================================================================
-JAVA FOUR DISTRIBUTION PACKAGING
-============================================================================ -->
-  
-  <target name="fourpack-archives.start">
-    <mkdir dir="${dists.dir}/archives"/>
-  </target>
-  
-  <target name="fourpack-archives.tar" depends="fourpack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-jvm4.tgz"
-         compression="gzip" longfile="gnu">
-      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"
-        includes="bin/**" mode="755"/>
-      <tarfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"
-        excludes="bin/**"/>
-    </tar>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-jvm4.tgz" fileext=".md5"/>
-  </target>
-  
-  <target name="fourpack-archives.zip" depends="fourpack-archives.tar">
-    <zip destfile="${dists.dir}/archives/scala-${version.number}-jvm4.zip">
-      <zipfileset dir="${dists.dir}/scala-jvm4-${version.number}" prefix="scala-${version.number}-jvm4"/>
-    </zip>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-jvm4.zip" fileext=".md5"/>
-  </target>
-  
-  <target name="fourpack-archives.done" depends="fourpack-archives.zip"/>
-
-<!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
 
   <target name="pack-all.done" depends="pack-archives.done, pack-sbaz.done, pack-maven.done"/>
-
-  <target name="fourpack-all.done" depends="fourpack-archives.done"/>
 
 <!-- ===========================================================================
 MISCELLANEOUS
