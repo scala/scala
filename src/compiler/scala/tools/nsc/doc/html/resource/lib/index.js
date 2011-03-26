@@ -381,8 +381,10 @@ function kindFilter(kind) {
 function kindFilterSync() {
     if (kindFilterState == "all" || focusFilterState != null)
         $("#tpl ol.templates").show();
-    else
+    else {
         $("#tpl ol.templates").hide();
+        $("#tpl ol.packages a.packhide").text('show');
+    }
 }
 
 function resizeFilterBlock() {
