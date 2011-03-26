@@ -9,9 +9,9 @@ package util
 
 import java.net.URL
 import scala.collection.mutable.ListBuffer
-import io.{ File, Directory, Path, AbstractFile }
+import io.{ File, Directory, Path, Jar, AbstractFile, ClassAndJarInfo }
 import scala.tools.util.StringOps.splitWhere
-import Path.isJarOrZip
+import Jar.isJarOrZip
 import File.pathSeparator
 
 /** <p>
@@ -22,6 +22,14 @@ import File.pathSeparator
  *  @author Stepan Koltsov
  */
 object ClassPath {
+  def scalaLibrary  = locate[ScalaObject]
+  def scalaCompiler = locate[Global]
+
+  def info[T: ClassManifest]      = new ClassAndJarInfo[T]
+  def locate[T: ClassManifest]    = info[T] rootClasspath
+  def locateJar[T: ClassManifest] = info[T].rootPossibles find (x => isJarOrZip(x)) map (x => File(x))
+  def locateDir[T: ClassManifest] = info[T].rootPossibles find (_.isDirectory) map (_.toDirectory)
+
   /** Expand single path entry */
   private def expandS(pattern: String): List[String] = {
     val wildSuffix = File.separator + "*"

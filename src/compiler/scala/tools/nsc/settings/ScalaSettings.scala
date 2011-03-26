@@ -134,7 +134,9 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
                       ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
-  val YrichExes     = BooleanSetting    ("-Yrich-exceptions", "More revealing exceptions.  Set SOURCEPATH to java/scala source jars.")
+  val YrichExes     = BooleanSetting    ("-Yrich-exceptions",
+                                            "Fancier exceptions.  Set source search path with -D" +
+                                            sys.SystemProperties.traceSourcePath.key)
   val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
   val Ybuilderdebug = ChoiceSetting     ("-Ybuilder-debug", "manager", "Compile using the specified build manager.", List("none", "refined", "simple"), "none")
   val Ybuildmanagerdebug =
