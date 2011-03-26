@@ -52,12 +52,12 @@ abstract class SourcelessComments {
     comment(Any_equals) = new DocComment("""
       /** This method is used to compare the receiver object (`this`) with the argument object (`arg0`) for equivalence.
         *
-        * The default implementations of this method is an [http://en.wikipedia.org/wiki/Equivalence_relation equivalence
-        * relation]:
-        *  * It is reflexive: for any instance `x` of type `Any`, `x.equals(x)` should return `true`.
-        *  * It is symmetric: for any instances `x` and `y` of type `Any`, `x.equals(y)` should return `true` if and
+        * The default implementations of this method is an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence
+        * relation]]:
+        *  - It is reflexive: for any instance `x` of type `Any`, `x.equals(x)` should return `true`.
+        *  - It is symmetric: for any instances `x` and `y` of type `Any`, `x.equals(y)` should return `true` if and
         *    only if `y.equals(x)` returns `true`.
-        *  * It is transitive: for any instances `x`, `y`, and `z` of type `AnyRef` if `x.equals(y)` returns `true` and
+        *  - It is transitive: for any instances `x`, `y`, and `z` of type `AnyRef` if `x.equals(y)` returns `true` and
         *    `y.equals(z)` returns `true`, then `x.equals(z)` should return `true`.
         *
         * If you override this method, you should verify that your implementation remains an equivalence relation.
@@ -186,19 +186,19 @@ abstract class SourcelessComments {
       /** This method is used to test whether the argument (`arg0`) is a reference to the
         * receiver object (`this`).
         *
-        * The `eq` method implements an [http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation] on
+        * The `eq` method implements an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]] on
         * non-null instances of `AnyRef`:
-        *  * It is reflexive: for any non-null instance `x` of type `AnyRef`, `x.eq(x)` returns `true`.
-        *  * It is symmetric: for any non-null instances `x` and `y` of type `AnyRef`, `x.eq(y)` returns `true` if and
+        *  - It is reflexive: for any non-null instance `x` of type `AnyRef`, `x.eq(x)` returns `true`.
+        *  - It is symmetric: for any non-null instances `x` and `y` of type `AnyRef`, `x.eq(y)` returns `true` if and
         *    only if `y.eq(x)` returns `true`.
-        *  * It is transitive: for any non-null instances `x`, `y`, and `z` of type `AnyRef` if `x.eq(y)` returns `true`
+        *  - It is transitive: for any non-null instances `x`, `y`, and `z` of type `AnyRef` if `x.eq(y)` returns `true`
         *    and `y.eq(z)` returns `true`, then `x.eq(z)` returns `true`.
         *
         * Additionally, the `eq` method has three other properties.
-        *  * It is consistent: for any non-null instances `x` and `y` of type `AnyRef`, multiple invocations of
+        *  - It is consistent: for any non-null instances `x` and `y` of type `AnyRef`, multiple invocations of
         *    `x.eq(y)` consistently returns `true` or consistently returns `false`.
-        *  * For any non-null instance `x` of type `AnyRef`, `x.eq(null)` and `null.eq(x)` returns `false`.
-        *  * `null.eq(null)` returns `true`.
+        *  - For any non-null instance `x` of type `AnyRef`, `x.eq(null)` and `null.eq(x)` returns `false`.
+        *  - `null.eq(null)` returns `true`.
         *
         * When overriding the `equals` or `hashCode` methods, it is important to ensure that their behavior is
         * consistent with reference equality.  Therefore, if two objects are references to each other (`o1 eq o2`), they
