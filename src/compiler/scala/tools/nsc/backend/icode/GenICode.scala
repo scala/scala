@@ -1153,7 +1153,7 @@ abstract class GenICode extends SubComponent  {
         ctx.bb.emit(DROP(from))
         ctx.bb.emit(CONSTANT(Constant(null)))
       }
-      else if (from == ThrowableReference) {
+      else if (from == ThrowableReference && !(ThrowableClass.tpe <:< to.toType)) {
         log("Inserted check-cast on throwable to " + to + " at " + pos)
         ctx.bb.emit(CHECK_CAST(to))
       }
