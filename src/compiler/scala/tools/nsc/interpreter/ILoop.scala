@@ -696,7 +696,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       else new JLineCompletion(intp)
     )
     catch {
-      case _: Exception | _: NoClassDefFoundError => SimpleReader()
+      case ex @ (_: Exception | _: NoClassDefFoundError) =>
+        out.println("Failed to created JLineReader: " + ex)
+        out.println("Falling back to SimpleReader.")
+        SimpleReader()
     }
   }
 
