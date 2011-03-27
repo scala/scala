@@ -39,10 +39,8 @@ object Test extends App {
 
   def insert_1 {
     val ten = DoubleLinkedList(1 to 10: _*)
-    ten.insert(DoubleLinkedList(11)) match {
-      case _: Unit => require(true)
-      case _ => require(false)
-    }
+    ten.append(DoubleLinkedList(11))
+
     // Post-insert size test
     require(11 == ten.size)
     // Post-insert data test
