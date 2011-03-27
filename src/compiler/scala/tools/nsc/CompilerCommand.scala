@@ -46,21 +46,29 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     |
   """.stripMargin.trim + "\n\n"
 
+  val shortUsage = "Usage: %s <options> <source files>" format cmdName
+  def createUsagePreface(shouldExplain: Boolean) =
+    if (shouldExplain) shortUsage + "\n" + explainAdvanced else ""
+
   /** Creates a help message for a subset of options based on cond */
-  def createUsageMsg(label: String, shouldExplain: Boolean, cond: Setting => Boolean): String = {
+  def createUsageMsg(cond: Setting => Boolean): String = {
     def helpStr(s: Setting) = format(s.helpSyntax) + "  " + s.helpDescription
-
-    val usage         = "Usage: %s <options> <source files>\n" format cmdName
-    val explain       = if (shouldExplain) explainAdvanced else ""
-    val prefix        = label + " options include:\n  "
-
     // Separating out any debugging options from others for easier reading
     val (debug, rest) = (settings.visibleSettings filter cond).toList sortBy (_.name) partition (_.isForDebug)
 
-    (rest map helpStr).mkString(usage + explain + prefix, "\n  ", "\n") + (
+    (rest map helpStr).mkString("", "\n  ", "\n") + (
       if (debug.isEmpty) ""
       else (debug map helpStr).mkString("\nAdditional debug settings:\n  ", "\n  ", "\n")
     )
+  }
+  def createUsageMsg(label: String, shouldExplain: Boolean, cond: Setting => Boolean): String = {
+    val prefix = List(
+      Some(shortUsage),
+      Some(explainAdvanced) filter (_ => shouldExplain),
+      Some(label + " options include:\n  ")
+    ).flatten mkString "\n"
+
+    prefix + createUsageMsg(cond)
   }
 
   /** Messages explaining usage and options */

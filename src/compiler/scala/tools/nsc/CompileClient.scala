@@ -16,18 +16,21 @@ import sys.SystemProperties.preferIPv4Stack
 class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
   lazy val compileSocket: CompileSocket = CompileSocket
 
-  val versionMsg  = "Fast " + Properties.versionMsg
-  var verbose = false
+  val versionMsg = "Fast " + Properties.versionMsg
+  var verbose    = false
 
   def process(args: Array[String]): Int = {
-    val fscArgs = args.toList
-    val settings = new FscSettings
-    val command  = new CompilerCommand(fscArgs, settings)
-    verbose = settings.verbose.value
-    val shutdown = settings.shutdown.value
-    val vmArgs = settings.jvmargs.unparse ++ settings.defines.unparse ++ (
-      if (settings.preferIPv4.value) List("-D%s=true".format(preferIPv4Stack.key)) else Nil
-    )
+    // Trying to get out in front of the log messages in case we're
+    // going from verbose to not verbose.
+    verbose = (args contains "-verbose")
+
+    val settings     = new FscSettings(Console.println)
+    val command      = new OfflineCompilerCommand(args.toList, settings)
+    val shutdown     = settings.shutdown.value
+    val extraVmArgs  = if (settings.preferIPv4.value) List("-D%s=true".format(preferIPv4Stack.key)) else Nil
+
+    val vmArgs  = settings.jvmargs.unparse ++ settings.defines.unparse ++ extraVmArgs
+    val fscArgs = args.toList ++ command.extraFscArgs
 
     if (settings.version.value) {
       Console println versionMsg
@@ -35,7 +38,8 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
     }
 
     info(versionMsg)
-    info(fscArgs.mkString("[Given arguments: ", " ", "]"))
+    info(args.mkString("[Given arguments: ", " ", "]"))
+    info(fscArgs.mkString("[Transformed arguments: ", " ", "]"))
     info(vmArgs.mkString("[VM arguments: ", " ", "]"))
 
     val socket =

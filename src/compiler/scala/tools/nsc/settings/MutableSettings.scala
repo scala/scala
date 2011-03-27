@@ -479,7 +479,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
   /** Set the output directory. */
   class OutputSetting private[nsc](
-    outputDirs: OutputDirs,
+    private[nsc] val outputDirs: OutputDirs,
     default: String)
     extends StringSetting("-d", "directory", "Specify where to place generated class files", default) {
       value = default
