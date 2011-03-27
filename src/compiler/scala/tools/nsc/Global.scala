@@ -1077,13 +1077,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
      *
      */
     private def coreClassesFirst(files: List[SourceFile]) = {
+      val goLast = 4
       def rank(f: SourceFile) = {
-        if (f.file.container.name != "scala") 3
+        if (f.file.container.name != "scala") goLast
         else f.file.name match {
           case "ScalaObject.scala"            => 1
           case "LowPriorityImplicits.scala"   => 2
           case "StandardEmbeddings.scala"     => 2
-          case _                              => 3
+          case "Predef.scala"                 => 3 /* Predef.scala before Any.scala, etc. */
+          case _                              => goLast
         }
       }
       files sortBy rank
