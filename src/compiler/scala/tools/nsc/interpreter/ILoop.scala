@@ -303,7 +303,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
   }
 
-  private object javap extends Javap(intp.classLoader, new IMain.ReplStrippingWriter(intp)) {
+  protected def newJavap() = new Javap(intp.classLoader, new IMain.ReplStrippingWriter(intp)) {
     override def tryClass(path: String): Array[Byte] = {
       // Look for Foo first, then Foo$, but if Foo$ is given explicitly,
       // we have to drop the $ to find object Foo, then tack it back onto
@@ -316,6 +316,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       else super.tryClass(moduleName)
     }
   }
+  private lazy val javap =
+    try newJavap()
+    catch { case _: Exception => null }
 
   private def typeCommand(line: String): Result = {
     intp.typeOfExpression(line) match {
@@ -325,6 +328,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   private def javapCommand(line: String): Result = {
+    if (javap == null)
+      return ":javap unavailable on this platform."
     if (line == "")
       return ":javap [-lcsvp] [path1 path2 ...]"
 
