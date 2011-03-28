@@ -453,16 +453,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
               def param0(vl: ValueParam): NodeSeq =
                 // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
-                <span name={ vl.name }>
-                  { Text(vl.name) }
-                  { Text(": ") ++ typeToHtml(vl.resultType, hasLinks) }
-                  {
-                    vl.defaultValue match {
-                      case Some(v) => Text(" = ") ++ treeToHtml(v)
-                      case None => NodeSeq.Empty
-                    }
+                <span name={ vl.name }>{
+                  Text(vl.name)
+                }{ Text(": ") ++ typeToHtml(vl.resultType, hasLinks) }{
+                  vl.defaultValue match {
+                    case Some(v) => Text(" = ") ++ treeToHtml(v)
+                    case None => NodeSeq.Empty
                   }
-                </span>
+                }</span>
 
               def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
                 case Nil => NodeSeq.Empty
@@ -482,8 +480,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               case _ => NodeSeq.Empty
             }
           }
-        }
-        { if (isReduced) NodeSeq.Empty else {
+        }{ if (isReduced) NodeSeq.Empty else {
           mbr match {
             case tpl: DocTemplateEntity if (!tpl.isPackage) =>
               tpl.parentType match {
