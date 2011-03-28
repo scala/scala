@@ -848,7 +848,7 @@ abstract class GenMSIL extends SubComponent {
             } else if (typ == clrTypes.FLOAT) {
               mcode.Emit(OpCodes.Ldc_R4, value.asInstanceOf[Float])
             } else if (typ == clrTypes.DOUBLE) {
-              mcode.Emit(OpCodes.Ldc_R4, value.asInstanceOf[Double])
+              mcode.Emit(OpCodes.Ldc_R8, value.asInstanceOf[Double])
             } else {
               /* TODO one more case is described in Partition II, 16.2: bytearray(...) */
               abort("Unknown type for static literal field: " + fieldInfo)
