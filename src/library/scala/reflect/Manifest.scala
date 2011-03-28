@@ -10,17 +10,35 @@ package scala.reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
 
-/** <p>
-  *   A <code>Manifest[T]</code> is an opaque descriptor for type <code>T</code>.
-  *   Currently, its only use is to give access to the erasure of the type as a
-  *   <code>Class</code> instance.
-  * </p>
-  * <p>
-  *   <b>BE AWARE</b>: The different type-relation operators are all forwarded
-  *   to the erased type as an approximation of the final semantics where
-  *   these operators should be on the unerased type.
-  * </p>
-  */
+/** A Manifest[T] is an opaque descriptor for type T.  Its
+ *  supported use is to give access to the erasure of the type
+ *  as a Class instance, as is necessary for the creation of native
+ *  Arrays if the class is not known at compile time.
+ *
+ *  The type-relation operators <:< and =:= should be considered
+ *  approximations only, as there are numerous aspects of type conformance
+ *  which are not yet adequately represented in manifests.
+ *
+ *  Example usages:
+{{{
+  def arr[T] = new Array[T](0)                          // does not compile
+  def arr[T](implicit m: Manifest[T]) = new Array[T](0) // compiles
+  def arr[T: Manifest] = new Array[T](0)                // shorthand for the preceding
+
+  // Methods manifest, classManifest, and optManifest are in [[scala.Predef]].
+  def isApproxSubType[T: Manifest, U: Manifest] = manifest[T] <:< manifest[U]
+  isApproxSubType[List[String], List[AnyRef]] // true
+  isApproxSubType[List[String], List[Int]]    // false
+
+  def methods[T: ClassManifest] = classManifest[T].erasure.getMethods
+  def retType[T: ClassManifest](name: String) =
+    methods[T] find (_.getName == name) map (_.getGenericReturnType)
+
+  retType[Map[_, _]]("values")  // Some(scala.collection.Iterable<B>)
+}}}
+ *
+ */
+@annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
 trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
@@ -52,16 +70,10 @@ trait AnyValManifest[T] extends Manifest[T] with Equals {
   override def hashCode = System.identityHashCode(this)
 }
 
-/** <ps>
-  *   This object is used by the compiler and <b>should not be used in client
-  *   code</b>. The object <code>Manifest</code> defines factory methods for
-  *   manifests.
-  * </p>
-  * <p>
-  *   <b>BE AWARE</b>: The factory for refinement types is missing and
-  *   will be implemented in a later version of this class.
-  * </p>
-  */
+/** The object Manifest defines factory methods for manifests.
+ *  It is intended for use by the compiler and should not be used
+ *  in client code.
+ */
 object Manifest {
   private def ObjectClass = classOf[java.lang.Object]
 

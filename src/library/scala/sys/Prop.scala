@@ -69,6 +69,7 @@ object Prop {
    *  parameter of type Creator[T] is in scope, a Prop[T] can be created
    *  via this object's apply method.
    */
+  @annotation.implicitNotFound("No implicit property creator available for type ${T}.")
   trait Creator[+T] {
     /** Creates a Prop[T] of this type based on the given key. */
     def apply(key: String): Prop[T]

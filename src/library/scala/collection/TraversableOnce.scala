@@ -393,7 +393,7 @@ trait TraversableOnce[+A] {
   }
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
-      throw new UnsupportedOperationException("empty.maxBy")
+      throw new UnsupportedOperationException("empty.minBy")
 
     reduceLeft((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
   }

@@ -12,7 +12,7 @@ import scala.collection.{ mutable, immutable, generic }
 import immutable.StringOps
 import mutable.ArrayOps
 import generic.CanBuildFrom
-import annotation.elidable
+import annotation.{ elidable, implicitNotFound }
 import annotation.elidable.ASSERTION
 
 /** The <code>Predef</code> object provides definitions that are
@@ -342,6 +342,7 @@ object Predef extends LowPriorityImplicits {
    * where L is the required lower bound).
    * in part contributed by Jason Zaugg
    */
+  @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
   implicit def conforms[A]: A <:< A = new (A <:< A) { def apply(x: A) = x }
   // not in the <:< companion object because it is also intended to subsume identity (which is no longer implicit)
@@ -350,6 +351,7 @@ object Predef extends LowPriorityImplicits {
    *
    * @see <:< for expressing subtyping constraints
    */
+  @implicitNotFound(msg = "Cannot prove that ${From} =:= ${To}.")
   sealed abstract class =:=[From, To] extends (From => To) with Serializable
   object =:= {
     implicit def tpEquals[A]: A =:= A = new (A =:= A) {def apply(x: A) = x}

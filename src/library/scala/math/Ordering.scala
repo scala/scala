@@ -30,6 +30,7 @@ import java.util.Comparator
  * @version 0.9.5, 2008-04-15
  * @since 2.7
  */
+@annotation.implicitNotFound(msg = "No implicit Ordering defined for ${T}.")
 trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable {
   outer =>
 
