@@ -18,7 +18,11 @@ trait MemberHandlers {
   import global._
   import naming._
 
-  def string2codeQuoted(str: String) = "\"" + string2code(str) + "\""
+  def string2codeQuoted(str: String) =
+    "\"" + string2code(str) + "\""
+
+  def any2stringOf(x: Any, maxlen: Int) =
+    "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
   /** Convert a string into code that can recreate the string.
    *  This requires replacing all special characters by escape
@@ -32,8 +36,6 @@ trait MemberHandlers {
     }
     res.toString
   }
-  def any2stringOf(x: Any, maxlen: Int) =
-    "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(x, maxlen)
 
   private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
@@ -121,7 +123,6 @@ trait MemberHandlers {
 
   class ValHandler(member: ValDef) extends MemberDefHandler(member) {
     val maxStringElements = 1000  // no need to mkString billions of elements
-    def stringOf(x: Any) = any2stringOf(x, maxStringElements)
     override def definesValue = true
 
     override def resultExtractionCode(req: Request): String = {
@@ -131,7 +132,7 @@ trait MemberHandlers {
         // if this is a lazy val we avoid evaluating it here
         val resultString =
           if (mods.isLazy) codegenln(false, "<lazy>")
-          else stringOf(req fullPath name)
+          else any2stringOf(req fullPath name, maxStringElements)
 
         """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf name), resultString)
       }

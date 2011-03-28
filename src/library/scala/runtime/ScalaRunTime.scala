@@ -252,9 +252,8 @@ object ScalaRunTime {
    * called on null and (b) depending on the apparent type of an
    * array, toString may or may not print it in a human-readable form.
    *
-   * @param arg the value to stringify
-   * @return a string representation of <code>arg</code>
-   *
+   * @param   arg   the value to stringify
+   * @return        a string representation of arg.
    */
   def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
   def stringOf(arg: Any, maxElements: Int): String = {
@@ -304,13 +303,16 @@ object ScalaRunTime {
 
     // The try/catch is defense against iterables which aren't actually designed
     // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
-    val s =
-      try inner(arg)
-      catch {
-        case _: StackOverflowError | _: UnsupportedOperationException => arg.toString
-      }
-
+    try inner(arg)
+    catch {
+      case _: StackOverflowError | _: UnsupportedOperationException | _: AssertionError => "" + arg
+    }
+  }
+  /** stringOf formatted for use in a repl result. */
+  def replStringOf(arg: Any, maxElements: Int): String = {
+    val s  = stringOf(arg, maxElements)
     val nl = if (s contains "\n") "\n" else ""
+
     nl + s + "\n"
   }
 }

@@ -102,11 +102,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
   private def _initialize(): Boolean = {
     val source = """
-      |// this is assembled to force the loading of approximately the
-      |// classes which will be loaded on the first expression anyway.
       |class $repl_$init {
-      |  val x = "abc".reverse.length + (5 max 5)
-      |  scala.runtime.ScalaRunTime.stringOf(x)
+      |  List(1) map (_ + 1)
       |}
       |""".stripMargin
 
@@ -496,7 +493,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    */
   def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
-
 
   /** Build a request from the user. `trees` is `line` after being parsed.
    */
