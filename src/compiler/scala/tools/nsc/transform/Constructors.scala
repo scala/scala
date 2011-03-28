@@ -70,7 +70,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
       }
 
-      var thisRefSeen: Boolean = false
       var usesSpecializedField: Boolean = false
 
       // A transformer for expressions that go into the constructor
@@ -95,15 +94,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             // references to parameter accessor field of own class become references to parameters
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
-            thisRefSeen = true
             if (specializeTypes.specializedTypeVars(tree.symbol).nonEmpty)
               usesSpecializedField = true
-            super.transform(tree)
-          case This(_) =>
-            thisRefSeen = true
-            super.transform(tree)
-          case Super(_, _) =>
-            thisRefSeen = true
             super.transform(tree)
           case _ =>
             super.transform(tree)
@@ -117,16 +109,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Should tree be moved in front of super constructor call?
       def canBeMoved(tree: Tree) = tree match {
-        //todo: eliminate thisRefSeen
-        case ValDef(mods, _, _, _) =>
-          if (settings.Xwarninit.value)
-            if (!(mods hasFlag PRESUPER | PARAMACCESSOR) && !thisRefSeen &&
-                { val g = tree.symbol.getter(tree.symbol.owner);
-                 g != NoSymbol && !g.allOverriddenSymbols.isEmpty
-               })
-              unit.warning(tree.pos, "the semantics of this definition has changed;\nthe initialization is no longer be executed before the superclass is called")
-          (mods hasFlag PRESUPER | PARAMACCESSOR)// || !thisRefSeen && (!settings.future.value && !settings.checkInit.value)
-        case _ => false
+        case ValDef(mods, _, _, _) => (mods hasFlag PRESUPER | PARAMACCESSOR)
+        case _                     => false
       }
 
       // Create an assignment to class field `to' with rhs `from'
