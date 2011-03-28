@@ -176,6 +176,7 @@ trait DependencyAnalysis extends SubComponent with Files {
               && (tree.symbol != NoSymbol)
               && (!tree.symbol.isPackage)
               && (!tree.symbol.isJavaDefined)
+              && (!tree.symbol.tpe.isError)
               && ((tree.symbol.sourceFile eq null)
                   || (tree.symbol.sourceFile.path != file.path))
               && (!tree.symbol.isClassConstructor)) {
