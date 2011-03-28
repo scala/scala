@@ -46,7 +46,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     |
   """.stripMargin.trim + "\n\n"
 
-  val shortUsage = "Usage: %s <options> <source files>" format cmdName
+  def shortUsage = "Usage: %s <options> <source files>" format cmdName
   def createUsagePreface(shouldExplain: Boolean) =
     if (shouldExplain) shortUsage + "\n" + explainAdvanced else ""
 

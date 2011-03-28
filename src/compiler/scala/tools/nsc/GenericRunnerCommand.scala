@@ -20,8 +20,8 @@ extends CompilerCommand(args, settings) {
     this(args, str => Console.println("Error: " + str))
 
   /** name of the associated compiler command */
-  override val cmdName = "scala"
-  val compCmdName = "scalac"
+  override def cmdName = "scala"
+  def compCmdName = "scalac"
 
   // change CompilerCommand behavior
   override def shouldProcessArguments: Boolean = false
