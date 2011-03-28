@@ -58,10 +58,18 @@ public class fromjava {
   public static <T> Object sum(Traversable<T> x) {
     return x.sum(Contra.intNum);
   }
+  // Looks like sum as given below fails under java5, so disabled.
+  //
+  // [partest] testing: [...]/files/pos/javaReadsSigs                                [FAILED]
+  // [partest] files/pos/javaReadsSigs/fromjava.java:62: name clash: sum(scala.collection.Traversable<A>) and <T>sum(scala.collection.Traversable<T>) have the same erasure
+  // [partest]   public static B sum(Traversable<A> x) {
+  // [partest]                   ^
+  //
+  //
   // can't make this work with an actual CanBuildFrom: see #4389.
-  public static B sum(Traversable<A> x) {
-    // have to cast it unfortunately: map in TraversableLike returns
-    // "That" and such types seem to be signature poison.
-    return ((Traversable<B>)x.map(f1, null)).head();
-  }
+  // public static B sum(Traversable<A> x) {
+  //   // have to cast it unfortunately: map in TraversableLike returns
+  //   // "That" and such types seem to be signature poison.
+  //   return ((Traversable<B>)x.map(f1, null)).head();
+  // }
 }
