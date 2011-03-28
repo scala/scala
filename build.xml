@@ -1418,16 +1418,12 @@ DOCUMENTATION
       </src>
       <include name="**/*.scala"/>
       <exclude name="reflect/Code.scala"/>
-      <exclude name="reflect/Manifest.scala"/>
       <exclude name="reflect/Print.scala"/>
       <exclude name="reflect/Symbol.scala"/>
       <exclude name="reflect/Tree.scala"/>
       <exclude name="reflect/Type.scala"/>
-      <exclude name="reflect/TypedCode.scala"/>
-      <exclude name="runtime/*Array.scala"/>
       <exclude name="runtime/*$.scala"/>
       <exclude name="runtime/ScalaRunTime.scala"/>
-      <exclude name="runtime/StreamCons.scala"/>
       <exclude name="runtime/StringAdd.scala"/>
       <exclude name="scala/swing/test/**"/>
     </scaladoc>
