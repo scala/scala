@@ -35,7 +35,7 @@ object Test {
     settings.Ycompacttrees.value = true
 
     val intp = new IMain(settings, new PrintWriter(new NullOutputStream))
-    val power = new Power(intp)
+    val power = Power(intp)
     intp.interpret("""def initialize = "Have to interpret something or we get errors." """)
     power trees code foreach println
   }

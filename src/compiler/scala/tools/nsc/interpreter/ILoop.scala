@@ -44,7 +44,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   var settings: Settings = _
   var intp: IMain = _
 
-  lazy val power = new Power(this)
+  lazy val power = {
+    val g = intp.global
+    Power[g.type](this, g)
+  }
 
   // TODO
   // object opt extends AestheticSettings
