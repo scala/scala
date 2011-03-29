@@ -33,7 +33,7 @@ object Decode {
    */
   def scalaSigBytes(name: String): Option[Array[Byte]] = scalaSigBytes(name, getSystemLoader())
   def scalaSigBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
-    val bytes = classLoader.findBytesForClassName(name)
+    val bytes = classLoader.classBytes(name)
     val reader = new ByteArrayReader(bytes)
     val cf = new Classfile(reader)
     cf.scalaSigAttribute map (_.data)
@@ -43,7 +43,7 @@ object Decode {
    */
   def scalaSigAnnotationBytes(name: String): Option[Array[Byte]] = scalaSigAnnotationBytes(name, getSystemLoader())
   def scalaSigAnnotationBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
-    val bytes     = classLoader.findBytesForClassName(name)
+    val bytes     = classLoader.classBytes(name)
     val byteCode  = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
     import classFile._

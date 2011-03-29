@@ -11,7 +11,7 @@ import java.io.{ PrintWriter }
 import java.lang.reflect
 import java.net.URL
 import util.{ Set => _, _ }
-import io.VirtualDirectory
+import io.{ AbstractFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import scala.tools.nsc.interpreter.{ Results => IR }
@@ -78,7 +78,16 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   import formatting._
 
   /** directory to save .class files to */
-  val virtualDirectory = new VirtualDirectory("(memory)", None)
+  val virtualDirectory = new VirtualDirectory("(memory)", None) {
+    private def pp(root: io.AbstractFile, indentLevel: Int) {
+      val spaces = "    " * indentLevel
+      out.println(spaces + root.name)
+      if (root.isDirectory)
+        root.toList sortBy (_.name) foreach (x => pp(x, indentLevel + 1))
+    }
+    // print the contents hierarchically
+    def show() = pp(this, 0)
+  }
 
   /** reporter */
   lazy val reporter: ConsoleReporter = new IMain.ReplReporter(this)
@@ -265,7 +274,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
       else                            new URLClassLoader(compilerClasspath, parentClassLoader)
 
-    new AbstractFileClassLoader(virtualDirectory, parent)
+    new AbstractFileClassLoader(virtualDirectory, parent) {
+      /** Overridden here to try translating a simple name to the generated
+       *  class name if the original attempt fails.  This method is used by
+       *  getResourceAsStream as well as findClass.
+       */
+      override protected def findAbstractFile(name: String): AbstractFile = {
+        super.findAbstractFile(name) match {
+          // deadlocks on startup if we try to translate names too early
+          case null if isInitializeComplete => generatedName(name) map (x => super.findAbstractFile(x)) orNull
+          case file                         => file
+        }
+      }
+    }
   }
   private def loadByName(s: String): Class[_] =
     (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
@@ -283,12 +304,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *
    *    $line19.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$Bippy
    */
-  def pathToFlatName(id: String): String = {
-    requestForIdent(id) match {
-      case Some(req)    => req fullFlatName id
-      case _            => id
-    }
+  def generatedName(simpleName: String): Option[String] = {
+    if (simpleName endsWith "$") optFlatName(simpleName.init) map (_ + "$")
+    else optFlatName(simpleName)
   }
+  def flatName(id: String)    = optFlatName(id) getOrElse id
+  def optFlatName(id: String) = requestForIdent(id) map (_ fullFlatName id)
 
   def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
   def pathToType(id: String): String = pathToName(newTypeName(id))

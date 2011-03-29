@@ -311,8 +311,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       // Look for Foo first, then Foo$, but if Foo$ is given explicitly,
       // we have to drop the $ to find object Foo, then tack it back onto
       // the end of the flattened name.
-      def className  = intp pathToFlatName path
-      def moduleName = (intp pathToFlatName path.stripSuffix("$")) + "$"
+      def className  = intp flatName path
+      def moduleName = (intp flatName path.stripSuffix("$")) + "$"
 
       val bytes = super.tryClass(className)
       if (bytes.nonEmpty) bytes

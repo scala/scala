@@ -11,6 +11,9 @@ import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
 import scala.tools.nsc.util.{ BatchSourceFile }
 import session.{ History }
+import scala.io.Codec
+import java.net.{ URL, MalformedURLException }
+import io.{ Path }
 
 trait SharesGlobal[G <: Global] {
   val global: G
@@ -130,13 +133,14 @@ abstract class Power[G <: Global](
   def init = """
     |import scala.tools.nsc._
     |import interpreter.Power
+    |import scala.collection.JavaConverters._
     |final val global = repl.power.global
     |final val power = repl.power.asInstanceOf[Power[global.type]]
     |final val intp = repl.intp
     |import global._
     |import definitions._
-    |import power.phased
     |import power.Implicits.{ global => _, _ }
+    |import power.Utilities._
   """.stripMargin
 
   /** Starts up power mode and runs whatever is in init.
@@ -212,10 +216,10 @@ abstract class Power[G <: Global](
   trait LowPriorityPrettifier {
     implicit object AnyPrettifier extends Prettifier[Any] {
       def prettify(x: Any): List[String] = x match {
-        case x: Name            => List(x.decode)
-        case Tuple2(k, v)       => List(prettify(k) ++ Seq("->") ++ prettify(v) mkString " ")
-        case xs: Traversable[_] => (xs.toList flatMap prettify).sorted.distinct
-        case x                  => List("" + x)
+        case x: Name                => List(x.decode)
+        case Tuple2(k, v)           => List(prettify(k) ++ Seq("->") ++ prettify(v) mkString " ")
+        case xs: TraversableOnce[_] => (xs.toList flatMap prettify).sorted.distinct
+        case x                      => List(Utilities.stringOf(x))
       }
     }
   }
@@ -240,7 +244,7 @@ abstract class Power[G <: Global](
     def grep(x: T, p: String => Boolean): Unit =
       prettify(x) filter p foreach (x => println(spaces + x))
   }
-  class MultiPrintingConvenience[T: Prettifier](coll: Traversable[T]) {
+  class MultiPrintingConvenience[T: Prettifier](coll: TraversableOnce[T]) {
     val pretty = implicitly[Prettifier[T]]
     import pretty._
 
@@ -278,36 +282,72 @@ abstract class Power[G <: Global](
     def >(r: Regex): Unit = >(_ matches r.pattern.toString)
     def >(p: String => Boolean): Unit = pretty.grep(value, p)
   }
+  class RichInputStream(in: InputStream)(implicit codec: Codec) {
+    def bytes(): Array[Byte] = io.Streamable.bytes(in)
+    def slurp(): String      = io.Streamable.slurp(in)
+  }
+
   protected trait Implicits1 {
     // fallback
     implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) = new PrintingConvenience[T](x)
   }
-  object Implicits extends Implicits1 with SharesGlobal[G] {
-    val global = Power.this.global
+  trait Implicits2 extends Implicits1 with SharesGlobal[G] {
     import global._
 
-    implicit lazy val powerNameOrdering: Ordering[Name]     = Ordering[String] on (_.toString)
-    implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
-    implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
-
+    class RichSymbol(sym: Symbol) {
+      // convenient type application
+      def apply(targs: Type*): Type = typeRef(NoPrefix, sym, targs.toList)
+    }
     object symbolSubtypeOrdering extends Ordering[Symbol] {
       def compare(s1: Symbol, s2: Symbol) =
         if (s1 eq s2) 0
         else if (s1 isLess s2) -1
         else 1
     }
-    implicit def replCollPrinting[T: Prettifier](xs: Traversable[T]): MultiPrintingConvenience[T] = new MultiPrintingConvenience[T](xs)
+    implicit lazy val powerNameOrdering: Ordering[Name]     = Ordering[String] on (_.toString)
+    implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
+    implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
+
+    implicit def replCollPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrintingConvenience[T] = new MultiPrintingConvenience[T](xs)
     implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
-    implicit def vararsTypeApplication(sym: Symbol) = new {
-      def apply(targs: Type*) = typeRef(NoPrefix, sym, targs.toList)
-    }
+    implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
+    implicit def replInputStream(in: InputStream)(implicit codec: Codec): RichInputStream = new RichInputStream(in)
+    implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = replInputStream(url.openStream())
+  }
+  object Implicits extends Implicits2 {
+    val global = Power.this.global
+  }
+  trait ReplUtilities {
     def ?[T: Manifest] = InternalInfo[T]
-  }
+    def url(s: String) = {
+      try new URL(s)
+      catch { case _: MalformedURLException =>
+        if (Path(s).exists) Path(s).toURL
+        else new URL("http://" + s)
+      }
+    }
+    def sanitize(s: String): String = sanitize(s.getBytes())
+    def sanitize(s: Array[Byte]): String = (s map {
+      case x if x.toChar.isControl  => '?'
+      case x                        => x.toChar
+    }).mkString
 
-  object phased extends Phased with SharesGlobal[G] {
-    val global: G = Power.this.global
+    def strings(s: Seq[Byte]): List[String] = {
+      if (s.length == 0) Nil
+      else s dropWhile (_.toChar.isControl) span (x => !x.toChar.isControl) match {
+        case (next, rest) => next.map(_.toChar).mkString :: strings(rest)
+      }
+    }
+    def stringOf(x: Any): String = scala.runtime.ScalaRunTime.stringOf(x)
   }
+  object Utilities extends ReplUtilities {
+    object phased extends Phased with SharesGlobal[G] {
+      val global: G = Power.this.global
+    }
+  }
+  lazy val phased  = Utilities.phased
+
   def context(code: String)    = analyzer.rootContext(unit(code))
   def source(code: String)     = new BatchSourceFile("<console>", code)
   def unit(code: String)       = new CompilationUnit(source(code))
@@ -320,7 +360,7 @@ abstract class Power[G <: Global](
     |Names: %s
     |Identifiers: %s
   """.stripMargin.format(
-      phased.get,
+      Utilities.phased.get,
       intp.allDefinedNames mkString " ",
       intp.unqualifiedIds mkString " "
     )

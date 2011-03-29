@@ -77,7 +77,7 @@ class Javap(
       if (path endsWith ".class") (path dropRight 6).replace('/', '.')
       else path
     )
-    loader.findBytesForClassName(extName)
+    loader.classBytes(extName)
   }
 }
 

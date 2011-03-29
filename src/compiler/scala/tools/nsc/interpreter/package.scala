@@ -26,6 +26,8 @@ package object interpreter {
   type JClass         = java.lang.Class[_]
   type JList[T]       = java.util.List[T]
   type JCollection[T] = java.util.Collection[T]
+  type InputStream    = java.io.InputStream
+  type OutputStream   = java.io.OutputStream
 
   private[nsc] val DebugProperty = "scala.repl.debug"
   private[nsc] val TraceProperty = "scala.repl.trace"
