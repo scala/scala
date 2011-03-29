@@ -23,7 +23,7 @@ import BitSetLike.{LogWL, updateArray}
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `BitSet[B]` because an implicit of type `CanBuildFrom[BitSet, B, BitSet]`
  *    is defined in object `BitSet`.
- *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `BitSet`.

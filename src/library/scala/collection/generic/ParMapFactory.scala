@@ -1,20 +1,15 @@
 package scala.collection.generic
 
-
-
 import scala.collection.parallel.ParMap
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.mutable.Builder
 
-
-
-
 /** A template class for companion objects of `ParMap` and subclasses thereof.
  *  This class extends `TraversableFactory` and provides a set of operations to create `$Coll` objects.
  *
- *  @define $coll parallel map
- *  @define $Coll ParMap
+ *  @define coll parallel map
+ *  @define Coll ParMap
  */
 abstract class ParMapFactory[CC[X, Y] <: ParMap[X, Y] with ParMapLike[X, Y, CC[X, Y], _]]
 extends MapFactory[CC]

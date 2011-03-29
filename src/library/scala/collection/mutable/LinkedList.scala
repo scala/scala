@@ -28,7 +28,7 @@ import generic._
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `LinkedList[B]` because an implicit of type `CanBuildFrom[LinkedList, B, LinkedList[B]]`
  *    is defined in object `LinkedList`.
- *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `LinkedList`.

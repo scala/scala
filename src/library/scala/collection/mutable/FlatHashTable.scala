@@ -16,13 +16,10 @@ package mutable
  *  This trait is used internally. It can be mixed in with various collections relying on
  *  hash table as an implementation.
  *
- *  @coll flat hash table
- *
+ *  @define coll flat hash table
  *  @define cannotStoreNull '''Note''': A $coll cannot store `null` elements.
- *
  *  @since 2.3
- *
- *  @tparam A   the type of the elements contained in the flat hash table.
+ *  @tparam A   the type of the elements contained in the $coll.
  */
 trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   import FlatHashTable._

@@ -29,6 +29,3 @@ object SortedSet extends SortedSetFactory[SortedSet] {
   def empty[A](implicit ord: Ordering[A]): immutable.SortedSet[A] = immutable.SortedSet.empty[A](ord)
   implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = new SortedSetCanBuildFrom[A]
 }
-
-
-

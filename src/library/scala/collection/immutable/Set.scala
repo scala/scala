@@ -15,13 +15,12 @@ import generic._
 import parallel.immutable.ParSet
 
 /** A generic trait for immutable sets.
+ *  $setNote
+ *  $setTags
  *
- *  $setnote
- *
+ *  @since 1.0
  *  @author Matthias Zenger
  *  @author Martin Odersky
- *  @version 2.8
- *  @since   1
  *  @define Coll immutable.Set
  *  @define coll immutable set
  */
