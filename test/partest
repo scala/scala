@@ -74,8 +74,7 @@ if $cygwin; then
     EXT_CLASSPATH=`cygpath --path --$format "$EXT_CLASSPATH"`
 fi
 
-# Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx512M -Xms16M"
+[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx1024M -Xms16M"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
 partestDebugStr=""

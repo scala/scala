@@ -166,6 +166,7 @@ class ConsoleFileManager extends FileManager {
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _
+  def latestScalapFile: File = (latestLibFile.parent / "scalap.jar").jfile
   var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
