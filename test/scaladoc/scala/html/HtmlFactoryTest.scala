@@ -113,4 +113,16 @@ object Test extends Properties("HtmlFactory") {
   property("Trac #4180") = {
     createTemplates("Trac4180.scala")("Test.html") != None
   }
+
+  property("Trac #4372") = {
+    createTemplates("Trac4372.scala")("Trac4372.html") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains("<span class=\"name\">+:</span>\n") &&
+          html.contains("<span class=\"name\">-:</span>\n") &&
+            html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
+      }
+      case _ => false
+    }
+  }
 }
