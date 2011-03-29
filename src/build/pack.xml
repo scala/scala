@@ -147,7 +147,8 @@ MAIN DISTRIBUTION SBAZ
       <binset dir="${basedir}/test"
         includes="clitest,diff/diff.*,diff/lib*.dll,partest,partest.bat"/>
       <miscset dir="${basedir}/test"
-        includes="files/**/*.args,files/**/*.check,files/**/*.dll,files/**/*.jar,files/**/*.java,files/**/*.scala,files/**/*.flags,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt,files/specialized/*.txt,files/**/*.test"/>
+        includes="files/**/*.args,files/**/*.check,files/**/*.dll,files/**/*.jar,files/**/*.java,files/**/*.scala,files/**/*.flags,files/cli/**/*.check.*,files/jvm/*.so,files/shootout/*.javaopts,files/shootout/*.runner,files/shootout/*.txt,files/specialized/*.txt,files/**/*.test"
+        excludes="files/presentation"/>
         <!-- <srcset dir="${dist.dir}/src" includes="scala-partest-src.jar"/> -->
       <libset dir="${dist.dir}/lib" includes="scala-partest.jar"/>
       <libset dir="${lib.dir}" includes="scalacheck.jar"/>
