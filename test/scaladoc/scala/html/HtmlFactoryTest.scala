@@ -59,6 +59,11 @@ object Test extends Properties("HtmlFactory") {
     result
   }
 
+  def createTemplate(scala: String) = {
+    val html = scala.stripSuffix(".scala") + ".html"
+    createTemplates(scala)(html)
+  }
+
   def shortComments(root: scala.xml.Node) =
     XMLUtil.stripGroup(root).descendant.flatMap {
       case e: scala.xml.Elem => {
@@ -72,7 +77,7 @@ object Test extends Properties("HtmlFactory") {
     }
 
   property("Trac #3790") = {
-    createTemplates("Trac3790.scala")("Trac3790.html") match {
+    createTemplate("Trac3790.scala") match {
       case node: scala.xml.Node => {
         val comments = shortComments(node)
 
@@ -89,7 +94,7 @@ object Test extends Properties("HtmlFactory") {
   }
 
   property("Trac #4366") = {
-    createTemplates("Trac4366.scala")("Trac4366.html") match {
+    createTemplate("Trac4366.scala") match {
       case node: scala.xml.Node => {
         shortComments(node).exists { n => {
           val str = n.toString
@@ -101,7 +106,7 @@ object Test extends Properties("HtmlFactory") {
   }
 
   property("Trac #4358") = {
-    createTemplates("Trac4358.scala")("EasyMockSugar.html") match {
+    createTemplate("Trac4358.scala") match {
       case node: scala.xml.Node =>
         ! shortComments(node).exists {
           _.toString.contains("<em>i.</em>")
@@ -111,11 +116,11 @@ object Test extends Properties("HtmlFactory") {
   }
 
   property("Trac #4180") = {
-    createTemplates("Trac4180.scala")("Test.html") != None
+    createTemplate("Trac4180.scala") != None
   }
 
   property("Trac #4372") = {
-    createTemplates("Trac4372.scala")("Trac4372.html") match {
+    createTemplate("Trac4372.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
         html.contains("<span class=\"name\">+:</span>\n") &&
