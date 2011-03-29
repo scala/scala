@@ -649,7 +649,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
      *     and avoid the interpreter, as it's likely not valid scala code.
      */
     if (code == "") None
-    else if (!paste.running && code.startsWith(PromptString)) {
+    else if (!paste.running && code.trim.startsWith(PromptString)) {
       paste.transcript(code)
       None
     }

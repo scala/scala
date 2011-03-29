@@ -922,7 +922,13 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
         execution.state match {
           case Done       => ("" + execution.get(), true)
-          case Threw      => if (bindLastException) handleException(execution.caught()) else throw execution.caught()
+          case Threw      =>
+            val ex = execution.caught()
+            if (isReplDebug)
+              ex.printStackTrace()
+
+            if (bindLastException) handleException(ex)
+            else throw ex
           case Cancelled  => ("Execution interrupted by signal.\n", false)
           case Running    => ("Execution still running! Seems impossible.", false)
         }

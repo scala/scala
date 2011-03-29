@@ -15,6 +15,18 @@ abstract class Pasted {
   def PromptString: String
   def interpret(line: String): Unit
 
+  private def matchesString(line: String, target: String): Boolean = (
+    (line startsWith target) ||
+    (line.nonEmpty && " \t".toSet(line.head) && matchesString(line.tail, target))
+  )
+  private def stripString(line: String, target: String) = line indexOf target match {
+    case -1   => line
+    case idx  => line drop (idx + target.length)
+  }
+
+  def matchesPrompt(line: String) = matchesString(line, PromptString)
+  def matchesContinue(line: String) = matchesString(line, ContinueString)
+
   private var isRunning = false
   def running = isRunning
 
@@ -32,12 +44,9 @@ abstract class Pasted {
     finally isRunning = false
   }
 
-  private def isPrompted(line: String)     = line startsWith PromptString
-  private def isContinuation(line: String) = line startsWith ContinueString
-
   private def append(code: String, line: String): String =
-    if (isPrompted(line)) code + "\n" + line
-    else if (isContinuation(line)) code + "\n" + line.stripPrefix(ContinueString)
+    if (matchesPrompt(line)) code + "\n" + line
+    else if (matchesContinue(line)) code + "\n" + stripString(line, ContinueString)
     else fixResRefs(code, line)
 
   /** If the line looks like
@@ -49,7 +58,7 @@ abstract class Pasted {
    *
    *  In all other cases, discard the line.
    */
-  private val resRegex = """^(res\d+):.*""".r
+  private val resRegex = """^\s*(res\d+):.*""".r
   private def fixResRefs(code: String, line: String) = line match {
     case resRegex(resName) if code contains PromptString =>
       val (str1, str2) = code splitAt code.lastIndexOf(PromptString) + PromptString.length
