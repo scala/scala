@@ -130,4 +130,28 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #4374 - public") = {
+    val files = createTemplates("Trac4374.scala")
+    files("WithPublic.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""go to: <a href="WithPublic$.html">companion</a>""") &&
+          files.get("WithPublic$.html") != None
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4374 - private") = {
+    val files = createTemplates("Trac4374.scala")
+    files("WithPrivate.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        ! s.contains("""go to: <a href="WithPrivate$.html">companion</a>""") &&
+          files.get("WithPrivate$.html") == None
+      }
+      case _ => false
+    }
+  }
 }

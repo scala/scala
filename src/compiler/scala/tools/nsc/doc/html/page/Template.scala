@@ -277,9 +277,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     } ++
     { tpl.companion match {
         case Some(companion) if (isSelf && !isReduced) =>
-          <div class="block">
+          if (companion.visibility.isPublic) {
+            <div class="block">
             go to: <a href={relativeLinkTo(companion)}>companion</a>
-          </div>
+            </div>
+          } else {
+            NodeSeq.Empty
+          }
         case _ =>
           NodeSeq.Empty
       }
