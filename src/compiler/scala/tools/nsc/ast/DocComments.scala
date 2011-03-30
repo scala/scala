@@ -213,14 +213,17 @@ trait DocComments { self: SymbolTable =>
    *  @param owner The current owner in which variable definitions are searched.
    *  @param site  The class for which doc comments are generated
    */
-  def lookupVariable(vble: String, site: Symbol): Option[String] =
+  def lookupVariable(vble: String, site: Symbol): Option[String] = {
+    val WITH_DOLLER = "^\\$(.*)$".r
     if (site == NoSymbol)
       None
     else {
       def lookInBaseClasses = mapFind(site.info.baseClasses)(defs(_).get(vble)) match {
         case None => lookupVariable(vble, site.owner)
-        case someStr => someStr
+        case Some(WITH_DOLLER(str)) => lookupVariable(str, site)
+        case Some(str) => Some(str)
       }
+
       if (site.isModule)
         defs(site).get(vble) match {
           case Some(str) => return Some(str)
@@ -228,6 +231,7 @@ trait DocComments { self: SymbolTable =>
         }
       else lookInBaseClasses
     }
+  }
 
   /** Expand variable occurrences in string `str', until a fix point is reached or
    *  a expandLimit is exceeded.

@@ -154,4 +154,28 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #3484") = {
+    val files = createTemplates("Trac3484.scala")
+
+    files("Collection.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""<span class="result">: Traversable[B]</span>""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #3484 - SR704") = {
+    val files = createTemplates("Trac3484.scala")
+
+    files("SR704.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("Hello Mister John.")
+      }
+      case _ => false
+    }
+  }
 }
