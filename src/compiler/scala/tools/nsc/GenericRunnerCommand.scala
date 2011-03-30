@@ -53,10 +53,10 @@ extends CompilerCommand(args, settings) {
 Usage: @cmd@ <options> [<script|class|object|jar> <arguments>]
    or  @cmd@ -help
 
-All options to @compileCmd@ are also allowed.  See @compileCmd@ -help.
-  """)
+All options to @compileCmd@ (see @compileCmd@ -help) are also allowed.
+""")
 
-  override def usageMsg = shortUsageMsg + "\n" + interpolate("""
+  override def usageMsg = shortUsageMsg + interpolate("""
 The first given argument other than options to @cmd@ designates
 what to run.  Runnable targets are:
 

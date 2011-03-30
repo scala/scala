@@ -345,6 +345,10 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     private var dependency: Option[(Setting, String)] = None
     override def dependencies = dependency.toList
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
+
+    private var _deprecationMessage: Option[String] = None
+    override def deprecationMessage = _deprecationMessage
+    def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
   }
 
   /** A setting represented by an integer */

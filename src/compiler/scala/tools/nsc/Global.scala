@@ -792,6 +792,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       _unitbufSize += 1 // counting as they're added so size is cheap
       compiledFiles += unit.source.file.path
     }
+    private def checkDeprecatedSettings(unit: CompilationUnit) {
+      // issue warnings for any usage of deprecated settings
+      settings.userSetSettings filter (_.isDeprecated) foreach { s =>
+        unit.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get)
+      }
+    }
 
     /* An iterator returning all the units being compiled in this run */
     /* !!! Note: changing this to unitbuf.toList.iterator breaks a bunch
@@ -868,17 +874,51 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     }
 
+    def reportCompileErrors() {
+      if (reporter.hasErrors) {
+        for ((sym, file) <- symSource.iterator) {
+          sym.reset(new loaders.SourcefileLoader(file))
+          if (sym.isTerm)
+            sym.moduleClass reset loaders.moduleClassLoader
+        }
+      }
+      else {
+        def warn(count: Int, what: String, option: Settings#BooleanSetting) = (
+          if (option.isDefault && count > 0)
+            warning("there were %d %s warnings; re-run with %s for details".format(count, what, option.name))
+        )
+        warn(deprecationWarnings, "deprecation", settings.deprecation)
+        warn(uncheckedWarnings, "unchecked", settings.unchecked)
+        // todo: migrationWarnings
+      }
+    }
+
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
-      val depSources = dependencyAnalysis.calculateFiles(_sources.distinct) // bug #1268, scalac confused by duplicated filenames
+      val depSources = dependencyAnalysis calculateFiles _sources.distinct
       val sources    = coreClassesFirst(depSources)
-      if (reporter.hasErrors) // there is a problem already, e.g. a plugin was passed a bad option
+      // there is a problem already, e.g. a plugin was passed a bad option
+      if (reporter.hasErrors)
         return
 
-      val startTime = currentTime
-      reporter.reset()
-      for (source <- sources) addUnit(new CompilationUnit(source))
+      // nothing to compile, but we should still report use of deprecated options
+      if (sources.isEmpty) {
+        checkDeprecatedSettings(new CompilationUnit(new BatchSourceFile("<no file>", "")))
+        reportCompileErrors()
+        return
+      }
 
+      val startTime = currentTime
+      reporter.reset();
+      {
+        val first :: rest = sources
+        val unit = new CompilationUnit(first)
+        addUnit(unit)
+        checkDeprecatedSettings(unit)
+
+        for (source <- rest)
+          addUnit(new CompilationUnit(source))
+      }
       globalPhase = firstPhase
 
       if (opt.profileAll) {
@@ -947,23 +987,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (opt.noShow)
         showMembers()
 
-      if (reporter.hasErrors) {
-        for ((sym, file) <- symSource.iterator) {
-          sym.reset(new loaders.SourcefileLoader(file))
-          if (sym.isTerm)
-            sym.moduleClass reset loaders.moduleClassLoader
-        }
-      }
-      else {
-        def warn(count: Int, what: String, option: Settings#BooleanSetting) = (
-          if (option.isDefault && count > 0)
-            warning("there were %d %s warnings; re-run with %s for details".format(count, what, option.name))
-        )
-        warn(deprecationWarnings, "deprecation", settings.deprecation)
-        warn(uncheckedWarnings, "unchecked", settings.unchecked)
-        // todo: migrationWarnings
-      }
-
+      reportCompileErrors()
       symSource.keys foreach (x => resetPackageClass(x.owner))
       informTime("total", startTime)
 

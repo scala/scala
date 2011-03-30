@@ -11,7 +11,7 @@ trait DependencyAnalysis extends SubComponent with Files {
 
   val phaseName = "dependencyAnalysis"
 
-  def off                  = settings.make.isDefault
+  def off                  = settings.make.isDefault || settings.make.value == "all"
   def shouldCheckClasspath = settings.make.value != "transitivenocp"
 
   def newPhase(prev: Phase) = new AnalysisPhase(prev)
@@ -35,9 +35,9 @@ trait DependencyAnalysis extends SubComponent with Files {
   }
 
   lazy val maxDepth = settings.make.value match {
-    case "changed" => 0
-    case "transitive" | "transitivenocp" => Int.MaxValue
+    case "changed"   => 0
     case "immediate" => 1
+    case _           => Int.MaxValue
   }
 
   // todo: order insensible checking and, also checking timestamp?

@@ -35,6 +35,7 @@ trait StandardScalaSettings {
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options")
   val make =            ChoiceSetting ("-make", "policy", "Recompilation detection policy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all")
+                        . withDeprecationMessage ("this option is unmaintained.  Use sbt or an IDE for selective recompilation.")
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings")
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")

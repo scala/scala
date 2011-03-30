@@ -75,8 +75,10 @@ trait AbsSettings {
      */
     def withAbbreviation(name: String): this.type
     def withHelpSyntax(help: String): this.type
+    def withDeprecationMessage(msg: String): this.type
 
     def helpSyntax: String = name
+    def deprecationMessage: Option[String] = None
     def abbreviations: List[String] = Nil
     def dependencies: List[(Setting, String)] = Nil
     def respondsTo(label: String) = (name == label) || (abbreviations contains label)
@@ -122,10 +124,11 @@ trait AbsSettings {
     /** These categorizations are so the help output shows -X and -P among
      *  the standard options and -Y among the advanced options.
      */
-    def isAdvanced  = name match { case "-Y" => true ; case "-X" => false ; case _  => name startsWith "-X" }
-    def isPrivate   = name match { case "-Y" => false ; case _  => name startsWith "-Y" }
-    def isStandard  = !isAdvanced && !isPrivate
-    def isForDebug  = isPrivate && (name contains ("-debug")) // by convention, i.e. -Ytyper-debug
+    def isAdvanced   = name match { case "-Y" => true ; case "-X" => false ; case _  => name startsWith "-X" }
+    def isPrivate    = name match { case "-Y" => false ; case _  => name startsWith "-Y" }
+    def isStandard   = !isAdvanced && !isPrivate
+    def isForDebug   = name endsWith "-debug" // by convention, i.e. -Ytyper-debug
+    def isDeprecated = deprecationMessage.isDefined
 
     def compare(that: Setting): Int = name compare that.name
 

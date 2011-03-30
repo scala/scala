@@ -140,7 +140,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ybuilderdebug = ChoiceSetting     ("-Ybuilder-debug", "manager", "Compile using the specified build manager.", List("none", "refined", "simple"), "none")
   val Ybuildmanagerdebug =
                       BooleanSetting    ("-Ybuild-manager-debug", "Generate debug information for the Refined Build Manager compiler.")
-  val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements.")
+  val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignments.")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
                                           withPostSetHook(set => interpreter.isReplDebug = true)
