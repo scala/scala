@@ -21,7 +21,7 @@ import util.{NoPosition, Position}
 trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   val global: Global
-  import global.reporter
+  import global.{ reporter, definitions }
 
   protected val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
 
@@ -674,7 +674,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     }
 
     def link(): Inline = {
-      val SchemeUri = new Regex("""([^:]+:.*)""")
+      val SchemeUri = """([^:]+:.*)""".r
       jump("[[")
       readUntil { check("]]") || check(" ") }
       val target = getRead()
@@ -685,18 +685,20 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         })
         else None
       jump("]]")
+
       (target, title) match {
-        case (SchemeUri(uri), Some(title)) =>
-          Link(uri, title)
-        case (SchemeUri(uri), None) =>
-          Link(uri, Text(uri))
-        case (qualName, None) =>
-          entityLink(qualName)
-        case (qualName, Some(text)) =>
-          reportError(pos, "entity link to " + qualName + " cannot have a custom title'" + text + "'")
+        case (SchemeUri(uri), optTitle) =>
+          Link(uri, optTitle getOrElse Text(uri))
+        case (qualName, optTitle) =>
+          optTitle foreach (text => reportError(pos, "entity link to " + qualName + " cannot have a custom title'" + text + "'"))
+          // XXX rather than warning here we should allow unqualified names
+          // to refer to members of the same package.  The "package exists"
+          // exclusion is because [[scala]] is used in some scaladoc.
+          if (!qualName.contains(".") && !definitions.packageExists(qualName))
+            reportError(pos, "entity link to " + qualName + " should be a fully qualified name")
+
           entityLink(qualName)
       }
-
     }
 
     /* UTILITY */

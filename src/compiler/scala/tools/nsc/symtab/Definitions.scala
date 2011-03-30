@@ -614,6 +614,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         case result   => result
       }
     }
+    def packageExists(packageName: String): Boolean = {
+      try getModuleOrClass(newTermName(packageName)).isPackage
+      catch { case _: MissingRequirementError => false }
+    }
 
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.

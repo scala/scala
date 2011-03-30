@@ -18,7 +18,7 @@ package scala.util.logging
   // The user of the library instantiates:
   val x = new MyClass() with ConsoleLogger
 }}}
- * and the logging is sent to the [[ConsoleLogger]] object.
+ * and the logging is sent to the [[scala.util.logging.ConsoleLogger]] object.
  */
 trait Logged {
   /** This method should log the message given as argument somewhere
