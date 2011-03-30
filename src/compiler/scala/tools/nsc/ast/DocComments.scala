@@ -7,6 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
+import reporters.Reporter
 import util.{Position, NoPosition}
 import util.DocStrings._
 import util.Chars._
@@ -17,6 +18,8 @@ import scala.collection.mutable.{HashMap, ListBuffer, StringBuilder}
  *  @version 1.0
  */
 trait DocComments { self: SymbolTable =>
+
+  def reporter: Reporter
 
   /** The raw doc comment map */
   val docComments = new HashMap[Symbol, DocComment]
@@ -226,9 +229,6 @@ trait DocComments { self: SymbolTable =>
       else lookInBaseClasses
     }
 
-  private var expandCount = 0
-  private final val expandLimit = 10
-
   /** Expand variable occurrences in string `str', until a fix point is reached or
    *  a expandLimit is exceeded.
    *
@@ -237,49 +237,57 @@ trait DocComments { self: SymbolTable =>
    *  @param site  The class for which doc comments are generated
    *  @return      Expanded string
    */
-  protected def expandVariables(str: String, sym: Symbol, site: Symbol): String =
-    if (expandCount < expandLimit) {
-      try {
-        val out = new StringBuilder
-        var copied = 0
-        var idx = 0
-        while (idx < str.length) {
-          if ((str charAt idx) == '$') {
-            val vstart = idx
-            idx = skipVariable(str, idx + 1)
-            def replaceWith(repl: String) {
-              out append str.substring(copied, vstart)
-              out append repl
-              copied = idx
-            }
-            val vname = variableName(str.substring(vstart + 1, idx))
-            if (vname == "super") {
-              superComment(sym) match {
-                case Some(sc) =>
-                  val superSections = tagIndex(sc)
-                  replaceWith(sc.substring(3, startTag(sc, superSections)))
-                  for (sec @ (start, end) <- superSections)
-                    if (!isMovable(sc, sec)) out append sc.substring(start, end)
-                case None =>
+  protected def expandVariables(initialStr: String, sym: Symbol, site: Symbol): String = {
+    val expandLimit = 10
+
+    def expandInternal(str: String, depth: Int): String = {
+      if (depth >= expandLimit)
+        throw new ExpansionLimitExceeded(str)
+
+      val out         = new StringBuilder
+      var copied, idx = 0
+      // excluding variables written as \$foo so we can use them when
+      // necessary to document things like Symbol#decode
+      def isEscaped = idx > 0 && str.charAt(idx - 1) == '\\'
+      while (idx < str.length) {
+        if ((str charAt idx) != '$' || isEscaped)
+          idx += 1
+        else {
+          val vstart = idx
+          idx = skipVariable(str, idx + 1)
+          def replaceWith(repl: String) {
+            out append str.substring(copied, vstart)
+            out append repl
+            copied = idx
+          }
+          variableName(str.substring(vstart + 1, idx)) match {
+            case "super"    =>
+              superComment(sym) foreach { sc =>
+                val superSections = tagIndex(sc)
+                replaceWith(sc.substring(3, startTag(sc, superSections)))
+                for (sec @ (start, end) <- superSections)
+                  if (!isMovable(sc, sec)) out append sc.substring(start, end)
               }
-            } else if (vname.length > 0) {
+            case "" => idx += 1
+            case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None =>  //println("no replacement for "+vname) // DEBUG
+                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym)
               }
-            } else idx += 1
-          } else idx += 1
+            }
         }
-        if (out.length == 0) str
-        else {
-          out append str.substring(copied)
-          expandVariables(out.toString, sym, site)
-        }
-      } finally {
-        expandCount -= 1
       }
-    } else throw new ExpansionLimitExceeded(str)
+      if (out.length == 0) str
+      else {
+        out append str.substring(copied)
+        expandInternal(out.toString, depth + 1)
+      }
+    }
 
+    // We suppressed expanding \$ throughout the recursion, and now we
+    // need to replace \$ with $ so it looks as intended.
+    expandInternal(initialStr, 0).replaceAllLiterally("""\$""", "$")
+  }
 
   // !!! todo: inherit from Comment?
   case class DocComment(raw: String, pos: Position = NoPosition) {
