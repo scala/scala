@@ -39,7 +39,7 @@ trait ParIterable[T] extends collection.mutable.Iterable[T]
   override def toSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => ParSeq.newCombiner[T])
 }
 
-/** $factoryinfo
+/** $factoryInfo
  */
 object ParIterable extends ParFactory[ParIterable] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParIterable[T]] =

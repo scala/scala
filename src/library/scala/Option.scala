@@ -21,7 +21,7 @@ object Option {
    */
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
 
-  /** An Option factory which returns $none in a manner consistent with
+  /** An Option factory which returns `None` in a manner consistent with
    *  the collections hierarchy.
    */
   def empty[A] : Option[A] = None

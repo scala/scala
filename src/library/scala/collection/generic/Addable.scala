@@ -16,10 +16,10 @@ package generic
  *  @tparam   A    the type of the elements of the $coll
  *  @tparam   Repr the type of the $coll itself
  *  @author   Martin Odersky
- *  @version 2.8
- *  @since   2.8
- *  @define  $coll collection
- *  @define  $Coll Addable
+ *  @version  2.8
+ *  @since    2.8
+ *  @define   coll collection
+ *  @define   Coll Addable
  */
 @deprecated("Will be removed after scala 2.9")
 trait Addable[A, +Repr <: Addable[A, Repr]] { self =>

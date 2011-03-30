@@ -35,6 +35,11 @@ private[immutable] object IntMapUtils extends BitOperations.Int {
 import IntMapUtils._
 
 /** A companion object for integer maps.
+ *
+ *  @define Coll  IntMap
+ *  @define mapCanBuildFromInfo
+ *    The standard `CanBuildFrom` instance for `$Coll` objects.
+ *    The created value is an instance of class `MapCanBuildFrom`.
  *  @since 2.7
  */
 object IntMap {

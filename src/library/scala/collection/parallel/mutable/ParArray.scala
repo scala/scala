@@ -682,7 +682,7 @@ self =>
 }
 
 
-/** $factoryinfo
+/** $factoryInfo
  *  @define Coll mutable.ParArray
  *  @define coll parallel array
  */

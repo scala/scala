@@ -44,7 +44,7 @@ extends collection.immutable.Iterable[T]
 }
 
 
-/** $factoryinfo
+/** $factoryInfo
  */
 object ParIterable extends ParFactory[ParIterable] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParIterable[T]] =

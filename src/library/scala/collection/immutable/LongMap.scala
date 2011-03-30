@@ -35,9 +35,14 @@ private[immutable] object LongMapUtils extends BitOperations.Long {
 import LongMapUtils._
 
 /** A companion object for long maps.
+ *
+ *  @define Coll  LongMap
+ *  @define mapCanBuildFromInfo
+ *    The standard `CanBuildFrom` instance for `$Coll` objects.
+ *    The created value is an instance of class `MapCanBuildFrom`.
  *  @since 2.7
  */
-object LongMap{
+object LongMap {
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B] = new CanBuildFrom[LongMap[A], (Long, B), LongMap[B]] {
     def apply(from: LongMap[A]): Builder[(Long, B), LongMap[B]] = apply()
@@ -69,7 +74,6 @@ object LongMap{
       else LongMap.Bin[S](prefix, mask, left, right);
     }
   }
-
 }
 
 import LongMap._

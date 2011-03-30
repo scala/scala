@@ -13,7 +13,7 @@ import generic._
 /**
  *  A map from keys of type `A` to values of type `B`.
  *
- *  $mapnote
+ *  $mapNote
  *
  *  '''Note:''' If you do not have specific implementations for `add` and `-` in mind,
  *        you might consider inheriting from `DefaultMap` instead.

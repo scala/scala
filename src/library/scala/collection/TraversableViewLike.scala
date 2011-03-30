@@ -30,7 +30,7 @@ trait ViewMkString[+A] {
 }
 
 /** A template trait for non-strict views of traversable collections.
- *  $traversableviewinfo
+ *  $traversableViewInfo
  *
  *  Implementation note: Methods such as `map` or `flatMap` on this view will not invoke the implicitly passed
  *  `Builder` factory, but will return a new view directly, to preserve by-name behavior.
@@ -38,14 +38,14 @@ trait ViewMkString[+A] {
  *  that takes a `View` as its `From` type parameter must yield the same view (or a generic
  *  superclass of it) as its result parameter. If that assumption is broken, cast errors might result.
  *
- * @define viewinfo
+ * @define viewInfo
  *  A view is a lazy version of some collection. Collection transformers such as
  *  `map` or `filter` or `++` do not traverse any elements when applied on a view.
  *  Instead they create a new view which simply records that fact that the operation
  *  needs to be applied. The collection elements are accessed, and the view operations are applied,
  *  when a non-view result is needed, or when the `force` method is called on a view.
- * @define traversableviewinfo
- *  $viewinfo
+ * @define traversableViewInfo
+ *  $viewInfo
  *
  *  All views for traversable collections are defined by creating a new `foreach` method.
 

@@ -37,11 +37,17 @@ import annotation.unchecked.{ uncheckedVariance => uV }
  *  @since   2.8
  *
  *  @define coll traversable or iterator
+ *  @define orderDependent
+ *
+ *    Note: might return different results for different runs, unless the underlying collection type is ordered.
  *  @define orderDependentFold
  *
  *    Note: might return different results for different runs, unless the
  *    underlying collection type is ordered or the operator is associative
  *    and commutative.
+ *  @define mayNotTerminateInf
+ *
+ *    Note: may not terminate for infinite-sized collections.
  *  @define willNotTerminateInf
  *
  *    Note: will not terminate for infinite-sized collections.

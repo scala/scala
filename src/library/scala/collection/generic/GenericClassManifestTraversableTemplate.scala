@@ -6,16 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package generic
 
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
-
-
-
 
 /** This trait represents collections classes which require class
  *  manifests for their element types.
@@ -27,4 +22,3 @@ trait GenericClassManifestTraversableTemplate[+A, +CC[X] <: Traversable[X]] exte
   def classManifestCompanion: GenericClassManifestCompanion[CC]
   def genericClassManifestBuilder[B](implicit man: ClassManifest[B]): Builder[B, CC[B]] = classManifestCompanion.newBuilder[B]
 }
-
