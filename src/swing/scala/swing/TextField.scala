@@ -60,15 +60,15 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
     peer.removeActionListener(actionListener)
   }
 
-  def verifier: String => Boolean = s => peer.getInputVerifier.verify(peer)
+  def verifier: String => Boolean = s => Option(peer.getInputVerifier) forall (_ verify peer)
   def verifier_=(v: String => Boolean) {
     peer.setInputVerifier(new InputVerifier {
-      private val old = peer.getInputVerifier
+      private val old = Option(peer.getInputVerifier)
       def verify(c: JComponent) = v(text)
-      override def shouldYieldFocus(c: JComponent) = old.shouldYieldFocus(c)
+      override def shouldYieldFocus(c: JComponent) = old forall (_ shouldYieldFocus c)
     })
   }
-  def shouldYieldFocus: String=>Boolean = s => peer.getInputVerifier.shouldYieldFocus(peer)
+  def shouldYieldFocus: String => Boolean = s => Option(peer.getInputVerifier) forall (_ shouldYieldFocus peer)
   def shouldYieldFocus_=(y: String=>Boolean) {
     peer.setInputVerifier(new InputVerifier {
       private val old = peer.getInputVerifier

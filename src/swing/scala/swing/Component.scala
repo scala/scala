@@ -103,7 +103,7 @@ abstract class Component extends UIElement {
   def tooltip_=(t: String) = peer.setToolTipText(t)
 
   def inputVerifier: Component => Boolean = { a =>
-    peer.getInputVerifier.verify(a.peer)
+    Option(peer.getInputVerifier) forall (_ verify a.peer)
   }
   def inputVerifier_=(v: Component => Boolean) {
     peer.setInputVerifier(new javax.swing.InputVerifier {
