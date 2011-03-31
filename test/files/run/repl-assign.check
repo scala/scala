@@ -1,0 +1,14 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+scala> x: Int = 10
+
+scala> y: Int = 11
+
+scala> x: Int = 12
+
+scala> y: Int = 13
+
+scala> 
+scala> 

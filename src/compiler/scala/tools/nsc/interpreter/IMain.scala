@@ -1164,7 +1164,7 @@ object IMain {
 
     def apply(contributors: List[T]): String = stringFromWriter { code =>
       code println preamble
-      contributors map generate foreach (code print _)
+      contributors map generate foreach (code println _)
       code println postamble
     }
   }
