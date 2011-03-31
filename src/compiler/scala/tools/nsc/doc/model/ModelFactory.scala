@@ -596,8 +596,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         /* Refined types */
         case RefinedType(parents, defs) =>
           appendTypes0((if (parents.length > 1) parents filterNot (_ == ObjectClass.tpe) else parents), " with ")
-          if (!defs.isEmpty) {
-            nameBuffer append " {...}" // TODO: actually print the refinement
+          // XXX Still todo: properly printing refinements.
+          // Since I didn't know how to go about displaying a multi-line type, I went with
+          // printing single method refinements (which should be the most common) and printing
+          // the number of members if there are more.
+          defs.toList match {
+            case Nil      => ()
+            case x :: Nil => nameBuffer append (" { " + x.defString + " }")
+            case xs       => nameBuffer append (" { ... /* %d definitions in type refinement */ }" format xs.size)
           }
         /* Eval-by-name types */
         case NullaryMethodType(result) =>
