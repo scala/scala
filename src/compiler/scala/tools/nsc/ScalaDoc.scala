@@ -8,18 +8,9 @@ package scala.tools.nsc
 
 import java.io.File.pathSeparator
 import scala.tools.nsc.doc.DocFactory
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.tools.nsc.util.FakePos //{Position}
+import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.util.FakePos
 import Properties.msilLibPath
-
-class ScaladocCommand(arguments: List[String], settings: doc.Settings) extends CompilerCommand(arguments, settings) {
-  override def cmdName = "scaladoc"
-  override def usageMsg = (
-    createUsageMsg("where possible scaladoc", false, x => x.isStandard && settings.isScaladocSpecific(x.name)) +
-    "\n\nStandard scalac options also available:" +
-    createUsageMsg(x => x.isStandard && !settings.isScaladocSpecific(x.name))
-  )
-}
 
 /** The main class for scaladoc, a front-end for the Scala compiler
  *  that generates documentation from source files.
@@ -35,12 +26,10 @@ class ScalaDoc {
       // symbols just because there was an error
       override def hasErrors = false
     }
-    val command = new ScaladocCommand(args.toList, docSettings)
+    val command = new ScalaDoc.Command(args.toList, docSettings)
 
     if (docSettings.version.value)
       reporter.info(null, versionMsg, true)
-    else if (docSettings.help.value)
-      reporter.info(null, command.usageMsg, true)
     else if (docSettings.Xhelp.value)
       reporter.info(null, command.xusageMsg, true)
     else if (docSettings.Yhelp.value)
@@ -49,12 +38,13 @@ class ScalaDoc {
       reporter.warning(null, "Plugins are not available when using Scaladoc")
     else if (docSettings.showPhases.value)
       reporter.warning(null, "Phases are restricted when using Scaladoc")
+    else if (docSettings.help.value || command.files.isEmpty)
+      reporter.info(null, command.usageMsg, true)
     else try {
       if (docSettings.target.value == "msil")
         msilLibPath foreach (x => docSettings.assemrefs.value += (pathSeparator + x))
 
-      if (command.files.isEmpty) reporter.info(null, command.usageMsg, true)
-      else new DocFactory(reporter, docSettings) document command.files
+      new DocFactory(reporter, docSettings) document command.files
     }
     catch {
       case ex @ FatalError(msg) =>
@@ -70,6 +60,15 @@ class ScalaDoc {
 }
 
 object ScalaDoc extends ScalaDoc {
+  class Command(arguments: List[String], settings: doc.Settings) extends CompilerCommand(arguments, settings) {
+    override def cmdName = "scaladoc"
+    override def usageMsg = (
+      createUsageMsg("where possible scaladoc", false, x => x.isStandard && settings.isScaladocSpecific(x.name)) +
+      "\n\nStandard scalac options also available:" +
+      createUsageMsg(x => x.isStandard && !settings.isScaladocSpecific(x.name))
+    )
+  }
+
   def main(args: Array[String]): Unit = sys exit {
     if (process(args)) 0 else 1
   }
