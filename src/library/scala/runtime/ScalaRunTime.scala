@@ -287,14 +287,18 @@ object ScalaRunTime {
       case (k, v)   => inner(k) + " -> " + inner(v)
       case _        => inner(arg)
     }
-    // The recursively applied attempt to prettify Array printing
+    // The recursively applied attempt to prettify Array printing.
+    // Note that iterator is used if possible and foreach is used as a
+    // last resort, because the parallel collections "foreach" in a
+    // random order even on sequences.
     def inner(arg: Any): String = arg match {
       case null                         => "null"
       case ""                           => "\"\""
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
-      case x if useOwnToString(x)       => x.toString
+      case x if useOwnToString(x)       => x toString
       case x: AnyRef if isArray(x)      => WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
-      case x: collection.Map[_, _]      => x take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
