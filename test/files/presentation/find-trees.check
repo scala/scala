@@ -3,4 +3,4 @@ asking position at 19:4
 retrieved tree: InteractiveTest.this.settings
 ====================
 asking position at 20:16
-retrieved tree: lazy private[this] var compiler: scala.tools.nsc.interactive.CompilerControl = new Global(InteractiveTest.this.settings, InteractiveTest.this.reporter)
+retrieved tree: lazy private[this] var compiler: scala.tools.nsc.interactive.CompilerControl = new Global(InteractiveTest.this.settings, InteractiveTest.this.reporter, interactive.this.Global.init$default$3)
