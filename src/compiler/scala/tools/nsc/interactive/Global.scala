@@ -24,7 +24,7 @@ import scala.reflect.generic.Flags.{ACCESSOR, PARAMACCESSOR}
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, reporter: Reporter)
+class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   extends scala.tools.nsc.Global(settings, reporter)
      with CompilerControl
      with RangePositions
@@ -61,11 +61,11 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
-    if (debugIDE) println(msg)
+    if (debugIDE) println("[%s] %s".format(projectName, msg))
 
   /** Inform with msg only when verboseIDE is true. */
   @inline final def informIDE(msg: => String) =
-    if (verboseIDE) println("["+msg+"]")
+    if (verboseIDE) println("[%s][%s]".format(projectName, msg))
 
   override def forInteractive = true
 
@@ -390,9 +390,9 @@ class Global(settings: Settings, reporter: Reporter)
 
   /** Create a new presentation compiler runner.
    */
-  private[interactive] def newRunnerThread(): Thread = {
+  private def newRunnerThread(): Thread = {
     threadId += 1
-    compileRunner = new PresentationCompilerThread(this, threadId)
+    compileRunner = new PresentationCompilerThread(this, projectName)
     compileRunner.start()
     compileRunner
   }
