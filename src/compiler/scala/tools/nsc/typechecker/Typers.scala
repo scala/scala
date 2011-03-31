@@ -2523,13 +2523,22 @@ trait Typers extends Modes {
       /** Calling constfold right here is necessary because some trees (negated
        *  floats and literals in particular) are not yet folded.
        */
-      def tryConst(tr: Tree, pt: Type) = typed(constfold(tr), EXPRmode, pt) match {
-        // null cannot be used as constant value for classfile annotations
-        case l @ Literal(c) if !(l.isErroneous || c.value == null) =>
-          Some(LiteralAnnotArg(c))
-        case _ =>
-          error(tr.pos, "annotation argument needs to be a constant; found: "+tr)
-          None
+      def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
+        val const: Constant = typed(constfold(tr), EXPRmode, pt) match {
+          case l @ Literal(c) if !l.isErroneous => c
+          case tree => tree.tpe match {
+            case ConstantType(c)  => c
+            case tpe              => null
+          }
+        }
+        def fail(msg: String) = { error(tr.pos, msg) ; None }
+
+        if (const == null)
+          fail("annotation argument needs to be a constant; found: " + tr)
+        else if (const.value == null)
+          fail("annotation argument cannot be null")
+        else
+          Some(LiteralAnnotArg(const))
       }
 
       /** Converts an untyped tree to a ClassfileAnnotArg. If the conversion fails,
@@ -2575,7 +2584,7 @@ trait Typers extends Modes {
       def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotArg] = {
         val args = trees.map(tree2ConstArg(_, pt))
         if (args.exists(_.isEmpty)) None
-        else Some(ArrayAnnotArg(args.map(_.get).toArray))
+        else Some(ArrayAnnotArg(args.flatten.toArray))
       }
 
       // begin typedAnnotation
