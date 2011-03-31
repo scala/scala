@@ -178,4 +178,37 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #4325 - files") = {
+    val files = createTemplates("Trac4325.scala")
+
+    files.get("WithSynthetic.html") != None &&
+      files.get("WithSynthetic$.html") == None &&
+        files.get("WithObject.html") != None &&
+          files.get("WithObject$.html") != None
+  }
+
+  property("Trac #4325 - Don't link to syntetic companion") = {
+    val files = createTemplates("Trac4325.scala")
+
+    files("WithSynthetic.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        ! s.contains("""go to: <a href="WithSynthetic$.html">companion</a>""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4325 - Link to companion") = {
+    val files = createTemplates("Trac4325.scala")
+
+    files("WithObject.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""go to: <a href="WithObject$.html">companion</a>""")
+      }
+      case _ => false
+    }
+  }
 }

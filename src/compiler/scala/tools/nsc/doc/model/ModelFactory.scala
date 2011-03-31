@@ -163,7 +163,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     templatesCache += (sym -> this)
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
-    def inSource = if (sym.sourceFile != null) Some((sym.sourceFile, sym.pos.line)) else None
+    def inSource =
+      if (sym.sourceFile != null && ! sym.isSynthetic)
+        Some((sym.sourceFile, sym.pos.line))
+      else
+        None
+
     def sourceUrl = {
       def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
       val assumedSourceRoot: String = {
