@@ -12,7 +12,6 @@ package scala.collection
 
 import mutable.ArrayBuffer
 import annotation.{ tailrec, migration }
-import parallel.ParIterable
 
 /** The `Iterator` object provides various functions for
  *  creating specialized iterators.
