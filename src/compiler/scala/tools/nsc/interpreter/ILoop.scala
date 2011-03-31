@@ -354,7 +354,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     if (line == "") "Cleared wrapper."
     else "Set wrapper to '" + line + "'"
   }
-  private def pathToPhased = intp.pathToTerm("power") + ".phased"
   private def phaseCommand(name: String): Result = {
     // This line crashes us in TreeGen:
     //
@@ -385,7 +384,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       if (what.isEmpty || !phased.set(what))
         "'" + name + "' does not appear to represent a valid phase."
       else {
-        intp.setExecutionWrapper(pathToPhased)
+        intp.setExecutionWrapper("phased.atCurrent")
         val activeMessage =
           if (what.toString.length == name.length) "" + what
           else "%s (%s)".format(what, name)
