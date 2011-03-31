@@ -31,6 +31,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val valueMembers =
     tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
 
+  val (absValueMembers, concValueMembers) =
+    valueMembers partition (_.isAbstract)
+
   val typeMembers =
     tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
 
@@ -82,12 +85,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <ol><li class="public in">Public</li><li class="all out">All</li></ol>
             </div>
           }
-          {
-            <div id="impl">
-              <span class="filtertype">Impl.</span>
-              <ol><li class="concrete in">Concrete</li><li class="abstract in">Abstract</li></ol>
-            </div>
-          }
         </div>
 
         { if (constructors.isEmpty) NodeSeq.Empty else
@@ -104,10 +101,17 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             </div>
         }
 
-        { if (valueMembers.isEmpty) NodeSeq.Empty else
-            <div id="values" class="values members">
-              <h3>Value Members</h3>
-              <ol>{ valueMembers map (memberToHtml(_)) }</ol>
+        { if (absValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="abstract values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol>{ absValueMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (concValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="concrete values" class="values members">
+              <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
+              <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
             </div>
         }
 

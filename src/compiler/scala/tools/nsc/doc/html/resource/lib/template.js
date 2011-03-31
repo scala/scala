@@ -69,24 +69,6 @@ $(document).ready(function(){
             filter();
         };
     });
-    $("#impl > ol > li.concrete").click(function() {
-        if ($(this).hasClass("out")) {
-            $(this).removeClass("out").addClass("in");            
-            $("li[data-isabs='false']").show();
-        } else {
-            $(this).removeClass("in").addClass("out");
-            $("li[data-isabs='false']").hide();
-        }
-    });
-    $("#impl > ol > li.abstract").click(function() {
-        if ($(this).hasClass("out")) {
-            $(this).removeClass("out").addClass("in");                        
-            $("li[data-isabs='true']").show();
-        } else {
-            $(this).removeClass("in").addClass("out");
-            $("li[data-isabs='true']").hide();
-        }
-    });
     $("#order > ol > li.alpha").click(function() {
         if ($(this).hasClass("out")) {
             $(this).removeClass("out").addClass("in");
