@@ -6,79 +6,71 @@
 
 package scala.tools.nsc
 
-import java.io.File
-
+import java.io.File.pathSeparator
+import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
 import Properties.msilLibPath
-import File.pathSeparator
+
+class ScaladocCommand(arguments: List[String], settings: doc.Settings) extends CompilerCommand(arguments, settings) {
+  override def cmdName = "scaladoc"
+  override def usageMsg = (
+    createUsageMsg("where possible scaladoc", false, x => x.isStandard && settings.isScaladocSpecific(x.name)) +
+    "\n\nStandard scalac options also available:" +
+    createUsageMsg(x => x.isStandard && !settings.isScaladocSpecific(x.name))
+  )
+}
 
 /** The main class for scaladoc, a front-end for the Scala compiler
  *  that generates documentation from source files.
  */
-object ScalaDoc {
+class ScalaDoc {
+  val versionMsg = "Scaladoc %s -- %s".format(Properties.versionString, Properties.copyrightString)
 
-  val versionMsg: String =
-    "Scaladoc " +
-    Properties.versionString + " -- " +
-    Properties.copyrightString
-
-  var reporter: ConsoleReporter = _
-
-  private def scalacError(msg: String): Unit = {
-    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
-  }
-
-  def process(args: Array[String]): Unit = {
-
-    val docSettings: doc.Settings =
-      new doc.Settings(scalacError)
-
+  def process(args: Array[String]): Boolean = {
+    var reporter: ConsoleReporter = null
+    val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"))
     reporter = new ConsoleReporter(docSettings) {
-      override def hasErrors = false // need to do this so that the Global instance doesn't trash all the symbols just because there was an error
+      // need to do this so that the Global instance doesn't trash all the
+      // symbols just because there was an error
+      override def hasErrors = false
     }
+    val command = new ScaladocCommand(args.toList, docSettings)
 
-    val command =
-      new CompilerCommand(args.toList, docSettings)
+    if (docSettings.version.value)
+      reporter.info(null, versionMsg, true)
+    else if (docSettings.help.value)
+      reporter.info(null, command.usageMsg, true)
+    else if (docSettings.Xhelp.value)
+      reporter.info(null, command.xusageMsg, true)
+    else if (docSettings.Yhelp.value)
+      reporter.info(null, command.yusageMsg, true)
+    else if (docSettings.showPlugins.value)
+      reporter.warning(null, "Plugins are not available when using Scaladoc")
+    else if (docSettings.showPhases.value)
+      reporter.warning(null, "Phases are restricted when using Scaladoc")
+    else try {
+      if (docSettings.target.value == "msil")
+        msilLibPath foreach (x => docSettings.assemrefs.value += (pathSeparator + x))
 
-    if (!reporter.hasErrors) { // No need to continue if reading the command generated errors
-
-      if (docSettings.version.value)
-        reporter.info(null, versionMsg, true)
-      else if (docSettings.help.value) {
-        reporter.info(null, command.usageMsg, true)
-      }
-      else if (docSettings.Xhelp.value)
-        reporter.info(null, command.xusageMsg, true)
-      else if (docSettings.Yhelp.value)
-        reporter.info(null, command.yusageMsg, true)
-      else if (docSettings.showPlugins.value)
-        reporter.warning(null, "Plugins are not available when using Scaladoc")
-      else if (docSettings.showPhases.value)
-        reporter.warning(null, "Phases are restricted when using Scaladoc")
-      else try {
-
-        if (docSettings.target.value == "msil")
-          msilLibPath foreach (x => docSettings.assemrefs.value += (pathSeparator + x))
-
-        val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
-        docProcessor.document(command.files)
-
-      }
-      catch {
-        case ex @ FatalError(msg) =>
-          if (docSettings.debug.value) ex.printStackTrace();
-          reporter.error(null, "fatal error: " + msg)
-      }
-      finally {
-        reporter.printSummary()
-      }
+      if (command.files.isEmpty) reporter.info(null, command.usageMsg, true)
+      else new DocFactory(reporter, docSettings) document command.files
     }
+    catch {
+      case ex @ FatalError(msg) =>
+        if (docSettings.debug.value) ex.printStackTrace()
+        reporter.error(null, "fatal error: " + msg)
+    }
+    finally reporter.printSummary()
 
+    // not much point in returning !reporter.hasErrors when it has
+    // been overridden with constant false.
+    true
   }
+}
 
-  def main(args: Array[String]): Unit = {
-    process(args)
-    sys.exit(if (reporter.hasErrors) 1 else 0)
+object ScalaDoc extends ScalaDoc {
+  def main(args: Array[String]): Unit = sys exit {
+    if (process(args)) 0 else 1
   }
 }

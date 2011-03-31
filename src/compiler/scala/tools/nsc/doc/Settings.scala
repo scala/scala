@@ -69,4 +69,9 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   // suppress-vt-warnings option and renamed it for this purpose.
   noSelfCheck.value = true
 
+  // For improved help output.
+  def scaladocSpecific = Set[Settings#Setting](
+    docformat, doctitle, docversion, docsourceurl, docgenerator
+  )
+  val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 }
