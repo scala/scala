@@ -132,7 +132,6 @@ trait DocComments { self: SymbolTable =>
   def expandWiki(str: String): String =
     (str /: wikiReplacements) { (str1, regexRepl) => regexRepl._1 replaceAllIn(str1, regexRepl._2) }
 
-
   private def getDocComment(sym: Symbol): Option[DocComment] =
     mapFind(sym :: allInheritedOverriddenSymbols(sym))(docComments get _)
 
@@ -158,13 +157,13 @@ trait DocComments { self: SymbolTable =>
   def merge(src: String, dst: String, sym: Symbol, copyFirstPara: Boolean = false): String = {
     val srcSections = tagIndex(src)
     val dstSections = tagIndex(dst)
-    val srcParams = paramDocs(src, "@param", srcSections)
-    val dstParams = paramDocs(dst, "@param", dstSections)
-    val srcTParams = paramDocs(src, "@tparam", srcSections)
-    val dstTParams = paramDocs(dst, "@tparam", dstSections)
-    val out = new StringBuilder
-    var copied = 0
-    var tocopy = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
+    val srcParams   = paramDocs(src, "@param", srcSections)
+    val dstParams   = paramDocs(dst, "@param", dstSections)
+    val srcTParams  = paramDocs(src, "@tparam", srcSections)
+    val dstTParams  = paramDocs(dst, "@tparam", dstSections)
+    val out         = new StringBuilder
+    var copied      = 0
+    var tocopy      = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
 
     if (copyFirstPara) {
       val eop = // end of comment body (first para), which is delimited by blank line, or tag, or end of comment
@@ -213,24 +212,17 @@ trait DocComments { self: SymbolTable =>
    *  @param owner The current owner in which variable definitions are searched.
    *  @param site  The class for which doc comments are generated
    */
-  def lookupVariable(vble: String, site: Symbol): Option[String] = {
-    val WITH_DOLLER = "^\\$(.*)$".r
-    if (site == NoSymbol)
-      None
-    else {
-      def lookInBaseClasses = mapFind(site.info.baseClasses)(defs(_).get(vble)) match {
-        case None => lookupVariable(vble, site.owner)
-        case Some(WITH_DOLLER(str)) => lookupVariable(str, site)
-        case Some(str) => Some(str)
-      }
+  def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
+    case NoSymbol => None
+    case _        =>
+      val searchList =
+        if (site.isModule) site :: site.info.baseClasses
+        else site.info.baseClasses
 
-      if (site.isModule)
-        defs(site).get(vble) match {
-          case Some(str) => return Some(str)
-          case None => lookInBaseClasses
-        }
-      else lookInBaseClasses
-    }
+      searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
+        case Some(str) if str startsWith '$'  => lookupVariable(str.tail, site)
+        case res                              => res orElse lookupVariable(vble, site.owner)
+      }
   }
 
   /** Expand variable occurrences in string `str', until a fix point is reached or
@@ -320,13 +312,14 @@ trait DocComments { self: SymbolTable =>
     }
 
     private def decomposeUseCase(start: Int, end: Int): UseCase = {
-      val codeStart = skipWhitespace(raw, start + "@usecase".length)
-      val codeEnd = skipToEol(raw, codeStart)
-      val code = raw.substring(codeStart, codeEnd)
-      val codePos = subPos(codeStart, codeEnd)
+      val codeStart    = skipWhitespace(raw, start + "@usecase".length)
+      val codeEnd      = skipToEol(raw, codeStart)
+      val code         = raw.substring(codeStart, codeEnd)
+      val codePos      = subPos(codeStart, codeEnd)
       val commentStart = skipLineLead(raw, codeEnd + 1) min end
-      val comment = "/** " + raw.substring(commentStart, end) + "*/"
-      val commentPos = subPos(commentStart, end)
+      val comment      = "/** " + raw.substring(commentStart, end) + "*/"
+      val commentPos   = subPos(commentStart, end)
+
       UseCase(DocComment(comment, commentPos), code, codePos)
     }
 
@@ -341,8 +334,9 @@ trait DocComments { self: SymbolTable =>
     def defineVariables(sym: Symbol) {
       for (str <- defines) {
         val start = skipWhitespace(str, "@define".length)
-        var idx = skipVariable(str, start)
-        val vble = variableName(str.substring(start, idx))
+        var idx   = skipVariable(str, start)
+        val vble  = variableName(str.substring(start, idx))
+
         if (idx < str.length && isWhitespace(str charAt idx)) idx += 1
         var end = str.lastIndexOf('\n')
         if (end == -1) end = str.length
@@ -384,18 +378,18 @@ trait DocComments { self: SymbolTable =>
           }
         }
         val parts = getParts(0)
-        assert(parts.length > 0, "parts is empty '" + str + "' in site " + site)
-        val partnames = (parts.init map newTermName) ::: List(newTypeName(parts.last))
-        val (start, rest) =
-          if (parts.head == "this")
-            (site.thisType, partnames.tail)
-          else if (parts.tail.nonEmpty && parts(1) == "this")
-            site.ownerChain.find(_.name.toString == parts.head) match {
-              case Some(clazz) => (clazz.thisType, partnames.drop(2))
-              case None => (NoType, List())
+        assert(parts.nonEmpty, "parts is empty '" + str + "' in site " + site)
+        val partnames = (parts.init map newTermName) :+ newTypeName(parts.last)
+        val (start, rest) = parts match {
+          case "this" :: _      => (site.thisType, partnames.tail)
+          case _ :: "this" :: _ =>
+            site.ownerChain.find(_.name == partnames.head) match {
+              case Some(clazz)  => (clazz.thisType, partnames drop 2)
+              case _            => (NoType, Nil)
             }
-          else
+          case _ =>
             (getSite(partnames.head), partnames.tail)
+        }
         (start /: rest)(select(_, _, NoType))
       }
 

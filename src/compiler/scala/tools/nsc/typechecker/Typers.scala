@@ -1647,7 +1647,8 @@ trait Typers extends Modes {
       namer.enterSyms(trees)
       typedStats(trees, NoSymbol)
       useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
-//      println("defined use cases: "+(useCase.defined map (sym => sym+":"+sym.tpe)))
+      if (settings.debug.value)
+        useCase.defined foreach (sym => println("defined use cases: %s:%s".format(sym, sym.tpe)))
     }
 
     /**
