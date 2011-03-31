@@ -9,13 +9,14 @@ package scala.tools.nsc.interactive
  *  of its functionality to the compiler instance.
  *
  */
-final class PresentationCompilerThread(var compiler: Global, name: String = "") extends Thread("Scala Presentation Compiler V [" + name + "]") {
+final class PresentationCompilerThread(var compiler: Global, name: String = "")
+  extends Thread("Scala Presentation Compiler [" + name + "]") {
 
   /** The presentation compiler loop.
    */
   override def run() {
     compiler.debugLog("starting new runner thread")
-    while (true) try {
+    while (compiler ne null) try {
       compiler.checkNoResponsesOutstanding()
       compiler.log.logreplay("wait for more work", { compiler.scheduler.waitForMoreWork(); true })
       compiler.pollForWork(compiler.NoPosition)
