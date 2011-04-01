@@ -178,10 +178,12 @@ trait DocComments { self: SymbolTable =>
         if (end > tocopy) tocopy = end
       case None =>
         srcSec match {
-          case Some((start1, end1)) =>
+          case Some((start1, end1)) => {
             out append dst.substring(copied, tocopy).trim
+            out append "\n"
             copied = tocopy
             out append src.substring(start1, end1).trim
+          }
           case None =>
         }
     }

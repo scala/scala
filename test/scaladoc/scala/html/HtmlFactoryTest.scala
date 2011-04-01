@@ -244,4 +244,17 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #4289") = {
+    val files = createTemplates("Trac4289.scala")
+
+    files("Subclass.html") match {
+      case node: scala.xml.Node => {
+        node.toString.contains {
+          """<dt>returns</dt><dd class="cmt"><p>123</p></dd>"""
+        }
+      }
+      case _ => false
+    }
+  }
 }
