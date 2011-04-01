@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Double]] => [[scala.runtime.RichDouble]]
  *  which provides useful non-primitive operations.
  */
-
 final class Double extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -121,9 +120,10 @@ final class Double extends AnyVal {
 
 }
 
-
 object Double extends AnyValCompanion {
-  /** The smallest positive value greater than 0.0d.*/
+  /** The smallest positive value greater than 0.0d which is
+   *  representable as a Double.
+   */
   final val MinPositiveValue = java.lang.Double.MIN_VALUE
   final val NaN              = java.lang.Double.NaN
   final val PositiveInfinity = java.lang.Double.POSITIVE_INFINITY
@@ -153,7 +153,7 @@ object Double extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Double.
    *
-   *  @param  x   the Double to be unboxed.
+   *  @param  x   the java.lang.Double to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Double
    *  @return     the Double resulting from calling doubleValue() on `x`
    */
@@ -163,3 +163,4 @@ object Double extends AnyValCompanion {
    */
   override def toString = "object scala.Double"
 }
+

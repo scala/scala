@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Float]] => [[scala.runtime.RichFloat]]
  *  which provides useful non-primitive operations.
  */
-
 final class Float extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -121,9 +120,10 @@ final class Float extends AnyVal {
 
 }
 
-
 object Float extends AnyValCompanion {
-  /** The smallest positive value greater than 0.0f.*/
+  /** The smallest positive value greater than 0.0f which is
+   *  representable as a Float.
+   */
   final val MinPositiveValue = java.lang.Float.MIN_VALUE
   final val NaN              = java.lang.Float.NaN
   final val PositiveInfinity = java.lang.Float.POSITIVE_INFINITY
@@ -153,7 +153,7 @@ object Float extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Float.
    *
-   *  @param  x   the Float to be unboxed.
+   *  @param  x   the java.lang.Float to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Float
    *  @return     the Float resulting from calling floatValue() on `x`
    */
@@ -163,3 +163,4 @@ object Float extends AnyValCompanion {
    */
   override def toString = "object scala.Float"
 }
+

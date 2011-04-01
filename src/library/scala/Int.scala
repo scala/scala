@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Int]] => [[scala.runtime.RichInt]]
  *  which provides useful non-primitive operations.
  */
-
 final class Int extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -147,7 +146,6 @@ final class Int extends AnyVal {
 
 }
 
-
 object Int extends AnyValCompanion {
   /** The smallest value representable as a Int.
    */
@@ -168,7 +166,7 @@ object Int extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Integer.
    *
-   *  @param  x   the Int to be unboxed.
+   *  @param  x   the java.lang.Integer to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Integer
    *  @return     the Int resulting from calling intValue() on `x`
    */
@@ -178,3 +176,4 @@ object Int extends AnyValCompanion {
    */
   override def toString = "object scala.Int"
 }
+

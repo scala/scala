@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Byte]] => [[scala.runtime.RichByte]]
  *  which provides useful non-primitive operations.
  */
-
 final class Byte extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -147,7 +146,6 @@ final class Byte extends AnyVal {
 
 }
 
-
 object Byte extends AnyValCompanion {
   /** The smallest value representable as a Byte.
    */
@@ -168,7 +166,7 @@ object Byte extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Byte.
    *
-   *  @param  x   the Byte to be unboxed.
+   *  @param  x   the java.lang.Byte to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Byte
    *  @return     the Byte resulting from calling byteValue() on `x`
    */
@@ -178,3 +176,4 @@ object Byte extends AnyValCompanion {
    */
   override def toString = "object scala.Byte"
 }
+

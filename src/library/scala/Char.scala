@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Char]] => [[scala.runtime.RichChar]]
  *  which provides useful non-primitive operations.
  */
-
 final class Char extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -147,7 +146,6 @@ final class Char extends AnyVal {
 
 }
 
-
 object Char extends AnyValCompanion {
   /** The smallest value representable as a Char.
    */
@@ -168,7 +166,7 @@ object Char extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Character.
    *
-   *  @param  x   the Char to be unboxed.
+   *  @param  x   the java.lang.Character to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Character
    *  @return     the Char resulting from calling charValue() on `x`
    */
@@ -178,3 +176,4 @@ object Char extends AnyValCompanion {
    */
   override def toString = "object scala.Char"
 }
+

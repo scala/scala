@@ -32,6 +32,7 @@ final class Boolean extends AnyVal {
 }
 
 object Boolean extends AnyValCompanion {
+
   /** Transform a value type into a boxed reference type.
    *
    *  @param  x   the Boolean to be boxed
@@ -43,7 +44,7 @@ object Boolean extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Boolean.
    *
-   *  @param  x   the Boolean to be unboxed.
+   *  @param  x   the java.lang.Boolean to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Boolean
    *  @return     the Boolean resulting from calling booleanValue() on `x`
    */
@@ -52,5 +53,5 @@ object Boolean extends AnyValCompanion {
   /** The String representation of the scala.Boolean companion object.
    */
   override def toString = "object scala.Boolean"
-
 }
+

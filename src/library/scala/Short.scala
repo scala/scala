@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Short]] => [[scala.runtime.RichShort]]
  *  which provides useful non-primitive operations.
  */
-
 final class Short extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -147,7 +146,6 @@ final class Short extends AnyVal {
 
 }
 
-
 object Short extends AnyValCompanion {
   /** The smallest value representable as a Short.
    */
@@ -168,7 +166,7 @@ object Short extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Short.
    *
-   *  @param  x   the Short to be unboxed.
+   *  @param  x   the java.lang.Short to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Short
    *  @return     the Short resulting from calling shortValue() on `x`
    */
@@ -178,3 +176,4 @@ object Short extends AnyValCompanion {
    */
   override def toString = "object scala.Short"
 }
+

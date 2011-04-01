@@ -16,7 +16,6 @@ package scala
  *  There is an implicit conversion from [[scala.Long]] => [[scala.runtime.RichLong]]
  *  which provides useful non-primitive operations.
  */
-
 final class Long extends AnyVal {
   def toByte: Byte = sys.error("stub")
   def toShort: Short = sys.error("stub")
@@ -147,7 +146,6 @@ final class Long extends AnyVal {
 
 }
 
-
 object Long extends AnyValCompanion {
   /** The smallest value representable as a Long.
    */
@@ -168,7 +166,7 @@ object Long extends AnyValCompanion {
    *  method is not typesafe: it accepts any Object, but will throw
    *  an exception if the argument is not a java.lang.Long.
    *
-   *  @param  x   the Long to be unboxed.
+   *  @param  x   the java.lang.Long to be unboxed.
    *  @throws     ClassCastException  if the argument is not a java.lang.Long
    *  @return     the Long resulting from calling longValue() on `x`
    */
@@ -178,3 +176,4 @@ object Long extends AnyValCompanion {
    */
   override def toString = "object scala.Long"
 }
+
