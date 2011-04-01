@@ -102,7 +102,9 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
     def excludeNames: List[String] = (anyref.methodNames filterNot anyRefMethodsToShow) :+ "_root_"
 
-    def methodSignatureString(sym: Symbol) = afterTyper(new MethodSymbolOutput(sym).methodString())
+    def methodSignatureString(sym: Symbol) = {
+      IMain stripString afterTyper(new MethodSymbolOutput(sym).methodString())
+    }
 
     def exclude(name: String): Boolean = (
       (name contains "$") ||
