@@ -212,6 +212,18 @@ object Test extends Properties("HtmlFactory") {
     }
   }
 
+  property("Trac #4420 - no whitespace at end of line") = {
+    val files = createTemplates("Trac4420.scala")
+
+    files("TestA.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""See YYY for more details""")
+      }
+      case _ => false
+    }
+  }
+
   property("Trac #484 - refinements and existentials") = {
     val files = createTemplates("Trac484.scala")
     val lines = """
