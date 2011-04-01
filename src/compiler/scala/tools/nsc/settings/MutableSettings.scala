@@ -489,7 +489,8 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       value = default
       override def value_=(str: String) {
         super.value_=(str)
-        outputDirs.setSingleOutput(str)
+        try outputDirs.setSingleOutput(str)
+        catch { case FatalError(msg) => errorFn(msg) }
       }
   }
 
