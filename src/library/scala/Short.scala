@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Short` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Short]] => [[scala.runtime.RichShort]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Short extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -145,10 +149,32 @@ final class Short extends AnyVal {
 
 
 object Short extends AnyValCompanion {
-  final val MinValue = jl.Short.MIN_VALUE
-  final val MaxValue = jl.Short.MAX_VALUE
+  /** The smallest value representable as a Short.
+   */
+  final val MinValue = java.lang.Short.MIN_VALUE
 
-  def box(x: Short): jl.Short = jl.Short.valueOf(x)
-  def unbox(x: jl.Object): Short = x.asInstanceOf[jl.Short].shortValue()
+  /** The largest value representable as a Short.
+   */
+  final val MaxValue = java.lang.Short.MAX_VALUE
+
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Short to be boxed
+   *  @return     a java.lang.Short offering `x` as its underlying value.
+   */
+  def box(x: Short): java.lang.Short = java.lang.Short.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Short.
+   *
+   *  @param  x   the Short to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Short
+   *  @return     the Short resulting from calling shortValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Short = x.asInstanceOf[java.lang.Short].shortValue()
+
+  /** The String representation of the scala.Short companion object.
+   */
   override def toString = "object scala.Short"
 }

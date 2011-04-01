@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Char` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Char]] => [[scala.runtime.RichChar]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Char extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -145,10 +149,32 @@ final class Char extends AnyVal {
 
 
 object Char extends AnyValCompanion {
-  final val MinValue = jl.Character.MIN_VALUE
-  final val MaxValue = jl.Character.MAX_VALUE
+  /** The smallest value representable as a Char.
+   */
+  final val MinValue = java.lang.Character.MIN_VALUE
 
-  def box(x: Char): jl.Character = jl.Character.valueOf(x)
-  def unbox(x: jl.Object): Char = x.asInstanceOf[jl.Character].charValue()
+  /** The largest value representable as a Char.
+   */
+  final val MaxValue = java.lang.Character.MAX_VALUE
+
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Char to be boxed
+   *  @return     a java.lang.Character offering `x` as its underlying value.
+   */
+  def box(x: Char): java.lang.Character = java.lang.Character.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Character.
+   *
+   *  @param  x   the Char to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Character
+   *  @return     the Char resulting from calling charValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Char = x.asInstanceOf[java.lang.Character].charValue()
+
+  /** The String representation of the scala.Char companion object.
+   */
   override def toString = "object scala.Char"
 }

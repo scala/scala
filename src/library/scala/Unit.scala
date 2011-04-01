@@ -10,14 +10,16 @@
 
 package scala
 
-import java.{ lang => jl }
-
 import runtime.BoxedUnit
 
+/** Unit is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.  There is
+ *  only one value of type Unit: `()`.
+ */
 final class Unit extends AnyVal { }
 
 object Unit extends AnyValCompanion {
   override def toString = "object scala.Unit"
   def box(x: Unit): BoxedUnit = BoxedUnit.UNIT
-  def unbox(x: jl.Object): Unit = ()
+  def unbox(x: java.lang.Object): Unit = ()
 }

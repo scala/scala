@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Int` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Int]] => [[scala.runtime.RichInt]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Int extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -145,10 +149,32 @@ final class Int extends AnyVal {
 
 
 object Int extends AnyValCompanion {
-  final val MinValue = jl.Integer.MIN_VALUE
-  final val MaxValue = jl.Integer.MAX_VALUE
+  /** The smallest value representable as a Int.
+   */
+  final val MinValue = java.lang.Integer.MIN_VALUE
 
-  def box(x: Int): jl.Integer = jl.Integer.valueOf(x)
-  def unbox(x: jl.Object): Int = x.asInstanceOf[jl.Integer].intValue()
+  /** The largest value representable as a Int.
+   */
+  final val MaxValue = java.lang.Integer.MAX_VALUE
+
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Int to be boxed
+   *  @return     a java.lang.Integer offering `x` as its underlying value.
+   */
+  def box(x: Int): java.lang.Integer = java.lang.Integer.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Integer.
+   *
+   *  @param  x   the Int to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Integer
+   *  @return     the Int resulting from calling intValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Int = x.asInstanceOf[java.lang.Integer].intValue()
+
+  /** The String representation of the scala.Int companion object.
+   */
   override def toString = "object scala.Int"
 }

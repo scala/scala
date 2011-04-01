@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Long` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Long]] => [[scala.runtime.RichLong]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Long extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -145,10 +149,32 @@ final class Long extends AnyVal {
 
 
 object Long extends AnyValCompanion {
-  final val MinValue = jl.Long.MIN_VALUE
-  final val MaxValue = jl.Long.MAX_VALUE
+  /** The smallest value representable as a Long.
+   */
+  final val MinValue = java.lang.Long.MIN_VALUE
 
-  def box(x: Long): jl.Long = jl.Long.valueOf(x)
-  def unbox(x: jl.Object): Long = x.asInstanceOf[jl.Long].longValue()
+  /** The largest value representable as a Long.
+   */
+  final val MaxValue = java.lang.Long.MAX_VALUE
+
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Long to be boxed
+   *  @return     a java.lang.Long offering `x` as its underlying value.
+   */
+  def box(x: Long): java.lang.Long = java.lang.Long.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Long.
+   *
+   *  @param  x   the Long to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Long
+   *  @return     the Long resulting from calling longValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Long = x.asInstanceOf[java.lang.Long].longValue()
+
+  /** The String representation of the scala.Long companion object.
+   */
   override def toString = "object scala.Long"
 }

@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Double` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Double]] => [[scala.runtime.RichDouble]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Double extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -120,10 +124,10 @@ final class Double extends AnyVal {
 
 object Double extends AnyValCompanion {
   /** The smallest positive value greater than 0.0d.*/
-  final val MinPositiveValue = jl.Double.MIN_VALUE
-  final val NaN              = jl.Double.NaN
-  final val PositiveInfinity = jl.Double.POSITIVE_INFINITY
-  final val NegativeInfinity = jl.Double.NEGATIVE_INFINITY
+  final val MinPositiveValue = java.lang.Double.MIN_VALUE
+  final val NaN              = java.lang.Double.NaN
+  final val PositiveInfinity = java.lang.Double.POSITIVE_INFINITY
+  final val NegativeInfinity = java.lang.Double.NEGATIVE_INFINITY
 
   @deprecated("use Double.MinPositiveValue instead")
   final val Epsilon  = MinPositiveValue
@@ -133,12 +137,29 @@ object Double extends AnyValCompanion {
    *  is the smallest positive value representable by a Double.  In Scala that number
    *  is called Double.MinPositiveValue.
    */
-  final val MinValue = -jl.Double.MAX_VALUE
+  final val MinValue = -java.lang.Double.MAX_VALUE
 
   /** The largest finite positive number representable as a Double. */
-  final val MaxValue = jl.Double.MAX_VALUE
+  final val MaxValue = java.lang.Double.MAX_VALUE
 
-  def box(x: Double): jl.Double = jl.Double.valueOf(x)
-  def unbox(x: jl.Object): Double = x.asInstanceOf[jl.Double].doubleValue()
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Double to be boxed
+   *  @return     a java.lang.Double offering `x` as its underlying value.
+   */
+  def box(x: Double): java.lang.Double = java.lang.Double.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Double.
+   *
+   *  @param  x   the Double to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Double
+   *  @return     the Double resulting from calling doubleValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Double = x.asInstanceOf[java.lang.Double].doubleValue()
+
+  /** The String representation of the scala.Double companion object.
+   */
   override def toString = "object scala.Double"
 }

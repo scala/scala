@@ -7,8 +7,20 @@ package scala.tools.cmd
 package gen
 
 trait AnyValTemplates {
+  def indent(s: String) = if (s == "") "" else "  " + s
+  def indentN(s: String) = s.lines map indent mkString "\n"
+
+def classDocTemplate = ("""
+/** `@name@` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.@name@]] => [[scala.runtime.Rich@name@]]
+ *  which provides useful non-primitive operations.
+ */
+""".trim + "\n")
+
   def timestampString = ""
-  def template = ("""
+  def headerTemplate = ("""
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL             **
@@ -20,11 +32,32 @@ trait AnyValTemplates {
 %s
 package scala
 
-import java.{ lang => jl }
-  """.trim.format(timestampString) + "\n\n"
-  )
+""".trim.format(timestampString) + "\n\n")
 
-  def booleanBody = """
+  def nonUnitCompanion = """
+/** Transform a value type into a boxed reference type.
+ *
+ *  @param  x   the @name@ to be boxed
+ *  @return     a @type@ offering `x` as its underlying value.
+ */
+def box(x: @name@): @type@ = @type@.valueOf(x)
+
+/** Transform a boxed type into a value type.  Note that this
+ *  method is not typesafe: it accepts any Object, but will throw
+ *  an exception if the argument is not a @type@.
+ *
+ *  @param  x   the @name@ to be unboxed.
+ *  @throws     ClassCastException  if the argument is not a @type@
+ *  @return     the @name@ resulting from calling @lcname@Value() on `x`
+ */
+def unbox(x: java.lang.Object): @name@ = x.asInstanceOf[@type@].@lcname@Value()
+
+/** The String representation of the scala.@name@ companion object.
+ */
+override def toString = "object scala.@name@"
+  """
+
+  def booleanBody = ("""
 final class Boolean extends AnyVal {
   def unary_! : Boolean = sys.error("stub")
 
@@ -41,34 +74,35 @@ final class Boolean extends AnyVal {
 }
 
 object Boolean extends AnyValCompanion {
-  override def toString = "object scala.Boolean"
-  def box(x: Boolean): jl.Boolean = jl.Boolean.valueOf(x)
-  def unbox(x: jl.Object): Boolean = x.asInstanceOf[jl.Boolean].booleanValue()
-}
-  """.trim
+""".trim + indentN(nonUnitCompanion) + "\n}")
 
   def unitBody = """
 import runtime.BoxedUnit
 
+/** Unit is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.  There is
+ *  only one value of type Unit: `()`.
+ */
 final class Unit extends AnyVal { }
 
 object Unit extends AnyValCompanion {
   override def toString = "object scala.Unit"
   def box(x: Unit): BoxedUnit = BoxedUnit.UNIT
-  def unbox(x: jl.Object): Unit = ()
+  def unbox(x: java.lang.Object): Unit = ()
 }
   """.trim
 
-  def cardinalCompanion = """
+  def cardinalCompanion = ("""
+/** The smallest value representable as a @name@.
+ */
 final val MinValue = @type@.MIN_VALUE
+
+/** The largest value representable as a @name@.
+ */
 final val MaxValue = @type@.MAX_VALUE
+""" + nonUnitCompanion).trim.lines
 
-def box(x: @name@): @type@ = @type@.valueOf(x)
-def unbox(x: jl.Object): @name@ = x.asInstanceOf[@type@].@lcname@Value()
-override def toString = "object scala.@name@"
-  """.trim.lines
-
-  def floatingCompanion = """
+  def floatingCompanion = ("""
 /** The smallest positive value greater than @zero@.*/
 final val MinPositiveValue = @type@.MIN_VALUE
 final val NaN              = @type@.NaN
@@ -87,14 +121,32 @@ final val MinValue = -@type@.MAX_VALUE
 
 /** The largest finite positive number representable as a @name@. */
 final val MaxValue = @type@.MAX_VALUE
-
-def box(x: @name@): @type@ = @type@.valueOf(x)
-def unbox(x: jl.Object): @name@ = x.asInstanceOf[@type@].@lcname@Value()
-override def toString = "object scala.@name@"
-  """.trim.lines
+""" + nonUnitCompanion).trim.lines
 }
 
 class AnyVals extends AnyValTemplates {
+  trait AnyValInterpolation {
+    def name: String
+    def isCardinal: Boolean
+    def restype: String
+    def tpe: String
+    def zero: String
+
+    lazy val interpolations = Map(
+      "@restype@"  -> restype,
+      "@name@"     -> name,
+      "@type@"     -> tpe,
+      "@lcname@"   -> name.toLowerCase,
+      "@zero@"     -> zero
+    )
+    def interpolate(s: String): String = interpolations.foldLeft(s) {
+      case (str, (key, value)) => str.replaceAll(key, value)
+    }
+
+    def classDoc = interpolate(classDocTemplate)
+    def make(): String
+  }
+
   val B = "Byte"
   val S = "Short"
   val C = "Char"
@@ -107,19 +159,38 @@ class AnyVals extends AnyValTemplates {
   lazy val floating = List(F, D)
   lazy val numeric  = cardinal ++ floating
 
-  def javaType(primType: String) = "jl." + (primType match {
+  def javaType(primType: String) = "java.lang." + (primType match {
     case C => "Character"
     case I => "Integer"
     case t => t
   })
 
-  def make() =
-    (numeric zip (numeric map (name => new AnyValOps(name).make()))) ++ List(
-      ("Boolean", template + booleanBody),
-      ("Unit", template + unitBody)
-    )
+  def make() = {
+    val nums = numeric map (name => new AnyValOps(name).make())
+    (numeric zip nums) :+ ("Boolean", makeBoolean()) :+ ("Unit", makeUnit())
+  }
 
-  class AnyValOps(name: String) {
+  def makeBoolean() = (new AnyValInterpolation {
+    def name       = "Boolean"
+    def isCardinal = false
+    def restype    = "Nothing"
+    def tpe        = "java.lang.Boolean"
+    def zero       = "false"
+
+    def make() = headerTemplate + classDoc + interpolate(booleanBody)
+  }).make()
+
+  def makeUnit() = (new AnyValInterpolation {
+    def name       = "Unit"
+    def isCardinal = false
+    def restype    = "Nothing"
+    def tpe        = "scala.runtime.BoxedUnit"
+    def zero       = "()"
+
+    def make() = headerTemplate + unitBody
+  }).make()
+
+  class AnyValOps(val name: String) extends AnyValInterpolation {
     val isCardinal = cardinal contains name
     val restype    = if ("LFD" contains name.head) name else I
     val tpe        = javaType(name)
@@ -129,14 +200,6 @@ class AnyVals extends AnyValTemplates {
       case 'D' => "0.0d"
       case _   => "0"
     }
-    val interpolations = Map(
-      "@restype@"  -> restype,
-      "@name@"     -> name,
-      "@type@"     -> tpe,
-      "@lcname@"   -> name.toLowerCase,
-      "@zero@"     -> zero
-    )
-
     def mkCoercions = numeric map (x => "def to%s: %s".format(x, x))
     def mkUnaryOps  = unaryops map (op => "def unary_%s : @restype@".format(op))
     def mkCommon    = List(
@@ -158,7 +221,6 @@ class AnyVals extends AnyValTemplates {
     }
 
     def defImplementation = "sys.error(\"stub\")"
-    def indent(s: String) = if (s == "") "" else "  " + s
     def mkClass = {
       val lines = clumps.foldLeft(List[String]()) {
         case (res, Nil)   => res
@@ -169,7 +231,7 @@ class AnyVals extends AnyValTemplates {
           }
           res ++ xs
       }
-      assemble("final class", "AnyVal", lines)
+      classDoc + assemble("final class", "AnyVal", lines)
     }
     def mkObject = assemble("object", "AnyValCompanion", companionBody map interpolate toList)
 
@@ -179,11 +241,7 @@ class AnyVals extends AnyValTemplates {
       "}"
     ).mkString("\n", "\n", "\n")
 
-    def make() = template + mkClass + "\n" + mkObject
-
-    def interpolate(s: String): String = interpolations.foldLeft(s) {
-      case (str, (key, value)) => str.replaceAll(key, value)
-    }
+    def make() = headerTemplate + mkClass + "\n" + mkObject
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.
      *

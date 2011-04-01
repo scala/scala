@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Byte` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Byte]] => [[scala.runtime.RichByte]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Byte extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -145,10 +149,32 @@ final class Byte extends AnyVal {
 
 
 object Byte extends AnyValCompanion {
-  final val MinValue = jl.Byte.MIN_VALUE
-  final val MaxValue = jl.Byte.MAX_VALUE
+  /** The smallest value representable as a Byte.
+   */
+  final val MinValue = java.lang.Byte.MIN_VALUE
 
-  def box(x: Byte): jl.Byte = jl.Byte.valueOf(x)
-  def unbox(x: jl.Object): Byte = x.asInstanceOf[jl.Byte].byteValue()
+  /** The largest value representable as a Byte.
+   */
+  final val MaxValue = java.lang.Byte.MAX_VALUE
+
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Byte to be boxed
+   *  @return     a java.lang.Byte offering `x` as its underlying value.
+   */
+  def box(x: Byte): java.lang.Byte = java.lang.Byte.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Byte.
+   *
+   *  @param  x   the Byte to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Byte
+   *  @return     the Byte resulting from calling byteValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Byte = x.asInstanceOf[java.lang.Byte].byteValue()
+
+  /** The String representation of the scala.Byte companion object.
+   */
   override def toString = "object scala.Byte"
 }

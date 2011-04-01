@@ -10,8 +10,12 @@
 
 package scala
 
-import java.{ lang => jl }
-
+/** `Float` is a member of the value classes, those whose instances are
+ *  not represented as objects by the underlying host system.
+ *
+ *  There is an implicit conversion from [[scala.Float]] => [[scala.runtime.RichFloat]]
+ *  which provides useful non-primitive operations.
+ */
 
 final class Float extends AnyVal {
   def toByte: Byte = sys.error("stub")
@@ -120,10 +124,10 @@ final class Float extends AnyVal {
 
 object Float extends AnyValCompanion {
   /** The smallest positive value greater than 0.0f.*/
-  final val MinPositiveValue = jl.Float.MIN_VALUE
-  final val NaN              = jl.Float.NaN
-  final val PositiveInfinity = jl.Float.POSITIVE_INFINITY
-  final val NegativeInfinity = jl.Float.NEGATIVE_INFINITY
+  final val MinPositiveValue = java.lang.Float.MIN_VALUE
+  final val NaN              = java.lang.Float.NaN
+  final val PositiveInfinity = java.lang.Float.POSITIVE_INFINITY
+  final val NegativeInfinity = java.lang.Float.NEGATIVE_INFINITY
 
   @deprecated("use Float.MinPositiveValue instead")
   final val Epsilon  = MinPositiveValue
@@ -133,12 +137,29 @@ object Float extends AnyValCompanion {
    *  is the smallest positive value representable by a Float.  In Scala that number
    *  is called Float.MinPositiveValue.
    */
-  final val MinValue = -jl.Float.MAX_VALUE
+  final val MinValue = -java.lang.Float.MAX_VALUE
 
   /** The largest finite positive number representable as a Float. */
-  final val MaxValue = jl.Float.MAX_VALUE
+  final val MaxValue = java.lang.Float.MAX_VALUE
 
-  def box(x: Float): jl.Float = jl.Float.valueOf(x)
-  def unbox(x: jl.Object): Float = x.asInstanceOf[jl.Float].floatValue()
+  /** Transform a value type into a boxed reference type.
+   *
+   *  @param  x   the Float to be boxed
+   *  @return     a java.lang.Float offering `x` as its underlying value.
+   */
+  def box(x: Float): java.lang.Float = java.lang.Float.valueOf(x)
+
+  /** Transform a boxed type into a value type.  Note that this
+   *  method is not typesafe: it accepts any Object, but will throw
+   *  an exception if the argument is not a java.lang.Float.
+   *
+   *  @param  x   the Float to be unboxed.
+   *  @throws     ClassCastException  if the argument is not a java.lang.Float
+   *  @return     the Float resulting from calling floatValue() on `x`
+   */
+  def unbox(x: java.lang.Object): Float = x.asInstanceOf[java.lang.Float].floatValue()
+
+  /** The String representation of the scala.Float companion object.
+   */
   override def toString = "object scala.Float"
 }

@@ -210,39 +210,6 @@ abstract class SourcelessComments {
 
     /*******************************************************************/
 
-    comment(AnyValClass) = new DocComment("""
-      /** Class `AnyVal` is the root class of all ''value types''.
-        *
-        * `AnyVal` has a fixed number of subclasses, which describe values which are not implemented as objects in the
-        * underlying host system.
-        *
-        * Classes [[scala.Double]], [[scala.Float]], [[scala.Long]], [[scala.Int]], [[scala.Char]], [[scala.Short]],
-        * and [[scala.Byte]] are together called ''numeric value types''. Classes [[scala.Byte]], [[scala.Short]], and
-        * [[scala.Char]] are called ''subrange types''. Subrange types, as well as [[scala.Int]] and [[scala.Long]] are
-        * called ''integer types'', whereas [[scala.Float]] and [[scala.Double]] are called ''floating point types''. */
-      """)
-
-    comment(BooleanClass) = new DocComment("""
-      /** Class `Boolean` has only two values: `true` and `false`. */
-      """)
-
-    comment(UnitClass) = new DocComment("""
-      /** Class `Unit` has only one value: `()`. */
-      """)
-
-    List(ByteClass, CharClass, DoubleClass, LongClass, FloatClass, IntClass, ShortClass) foreach { sym =>
-      val maxValue = "MAX_" + sym.name.toString().toUpperCase()
-      val minValue = "MIN_" + sym.name.toString().toUpperCase()
-      comment(sym) = new DocComment("""
-        /** Class `""" + sym.name + """` belongs to the value classes whose instances are not represented as objects by
-          * the underlying host system.  There is an implicit conversion from instances of `""" + sym.name + """` to
-          * instances of [[scala.runtime.Rich""" + sym.name + """]] which provides useful non-primitive operations.
-          * All value classes inherit from class [[scala.AnyVal]].
-          *
-          * Values `""" + maxValue + """` and `""" + minValue + """` are defined in object [[scala.Math]]. */
-        """)
-    }
-
     comment
   }
 
