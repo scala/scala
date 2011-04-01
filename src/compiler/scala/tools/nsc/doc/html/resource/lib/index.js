@@ -227,6 +227,19 @@ function configureTextFilter() {
     });
 }
 
+function compilePattern(query) {
+    var escaped = query.replace(/([\.\*\+\?\|\(\)\[\]\\])/g, '\\$1');
+
+    if (query.toLowerCase() != query) {
+        // Regexp that matches CamelCase subbits: "BiSe" is
+        // "[a-z]*Bi[a-z]*Se" and matches "BitSet", "ABitSet", ...
+        return new RegExp(escaped.replace(/([A-Z])/g,"[a-z]*$1"));
+    }
+    else { // if query is all lower case make a normal case insensitive search
+        return new RegExp(escaped, "i");
+    }
+}
+
 // Filters all focused templates and packages. This function should be made less-blocking.
 //   @param query The string of the query
 function textFilter() {
@@ -235,17 +248,7 @@ function textFilter() {
     $('#tpl').html('');
 
     var query = $("#textfilter input").attr("value") || '';
-
-    var queryRegExp;
-    if (query.toLowerCase() != query) {
-        // Regexp that matches CamelCase subbits: "BiSe" is
-        // "[a-z]*Bi[a-z]*Se" and matches "BitSet", "ABitSet", ...
-        queryRegExp = new RegExp(query.replace(/([A-Z])/g,"[a-z]*$1"));
-    }
-    else { // if query is all lower case make a normal case insensitive search
-        queryRegExp = new RegExp(query, "i");
-    }
-
+    var queryRegExp = compilePattern(query);
 
     var index = 0;
 
