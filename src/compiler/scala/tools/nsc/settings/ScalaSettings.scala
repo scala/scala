@@ -128,7 +128,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ynosqueeze    = BooleanSetting    ("-Yno-squeeze", "Disable creation of compact code in matching.")
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics.") .
                                           withPostSetHook(set => util.Statistics.enabled = set.value)
-  val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
+  val stopAfter     = PhasesSetting     ("-Ystop-after", "Stop after given phase") withAbbreviation ("-stop") // backward compat
+  val stopBefore    = PhasesSetting     ("-Ystop-before", "Stop before given phase")
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
@@ -153,6 +154,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val YvirtClasses  = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
+
+  def stop = stopAfter
 
   /**
    * Warnings

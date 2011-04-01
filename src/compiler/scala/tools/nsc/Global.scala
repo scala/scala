@@ -661,8 +661,21 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
 
-    /** Whether compilation should stop at or skip the phase with given name. */
-    protected def stopPhase(name: String) = settings.stop contains name
+    // Calculate where to stop based on settings -Ystop-before or -Ystop-after.
+    // Slightly complicated logic due to wanting -Ystop-before:parser to fail rather
+    // than mysteriously running to completion.
+    private lazy val stopPhaseSetting = {
+      val result = phaseDescriptors sliding 2 collectFirst {
+        case xs if xs exists (settings.stopBefore contains _.phaseName) => if (settings.stopBefore contains xs.head.phaseName) xs.head else xs.last
+        case xs if settings.stopAfter contains xs.head.phaseName        => xs.last
+      }
+      if (result exists (_.phaseName == "parser"))
+        globalError("Cannot stop before parser phase.")
+
+      result
+    }
+    // The phase to stop BEFORE running.
+    protected def stopPhase(name: String) = stopPhaseSetting exists (_.phaseName == name)
     protected def skipPhase(name: String) = settings.skip contains name
 
     /** As definitions.init requires phase != NoPhase, and calling phaseDescriptors.head
