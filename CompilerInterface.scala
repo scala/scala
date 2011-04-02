@@ -23,6 +23,7 @@ class CompilerInterface
 		val phasesSet = new scala.collection.mutable.HashSet[Any] // 2.7 compatibility
 		object compiler extends Global(command.settings, reporter)
 		{
+			object dummy // temporary fix for #4426
 			object sbtAnalyzer extends
 			{
 				val global: compiler.type = compiler
