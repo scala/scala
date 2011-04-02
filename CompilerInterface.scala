@@ -75,6 +75,11 @@ class CompilerInterface
 			}
 			trait Compat27 { val runsBefore: List[String] = Nil }
 		}
+		if(command.shouldStopWithInfo)
+		{
+			reporter.info(null, command.getInfoMessage(compiler), true)
+			throw new InterfaceCompileFailed(args, Array(), "Compiler option supplied that disabled actual compilation.")
+		}
 		if(noErrors)
 		{
 			val run = new compiler.Run
