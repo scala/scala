@@ -1011,6 +1011,8 @@ trait Namers { self: Analyzer =>
                 if (!classAndNamerOfModule.contains(module))
                   return // fix #3649 (prevent crash in erroneous source code)
                 val (cdef, nmr) = classAndNamerOfModule(module)
+                if (nmr == null)
+                  return // can happen in IDE; this is really an ugly hack on top[ of an ugly hack but it seems to work!
                 moduleNamer = Some(cdef, nmr)
                 (cdef, nmr)
               }
