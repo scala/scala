@@ -36,7 +36,7 @@ body {
 
 a[href] {
   text-decoration: underline;
-  color: #69481D; /* brown */
+  color: #315479;
 }
 
 a[href]:hover {
@@ -58,7 +58,7 @@ a[href]:hover {
 }
 
 .type #owner {
-  background-color: #669966; /* lighter green */
+  background-color: #699D84; /* lighter green */
 }
 
 #types ol li > p {
@@ -67,7 +67,7 @@ a[href]:hover {
 
 #definition {
   display: block;
-  padding: 5px 6px;
+  padding: 6px 6px 12px 6px;
 }
 
 #definition > img {
@@ -75,17 +75,22 @@ a[href]:hover {
 }
 
 #definition > h1 {
-  padding: 12px 0 12px 6px;
+  padding: 6px 12px 6px 0px;
+  margin-left: 8px;
   color: white;
   font-size: 24pt;
   display: inline-block;
 }
 
+#definition h1 > a {
+  color: white;
+}
+
 #signature {
   background-color: #EBEBEB;
   font-size: 11.5pt;
-  margin: 5px;
-  padding: 5px;
+  margin-bottom: 10px;
+  padding: 8px;
 }
 
 #signature > span.kind {
@@ -111,16 +116,16 @@ a[href]:hover {
 .link {
   text-decoration: underline;
   cursor: pointer;
-  color: #69481D;
+  color: #315479;
 }
 
 
 .value #definition {
-  background-color: #2C475C;
+  background-color: #2C475C; /* blue */
 }
 
 .type #definition {
-  background-color: #006633; /* green */
+  background-color: #316555; /* green */
 }
 
 #template {
@@ -247,7 +252,7 @@ div.members > ol > li:last-child {
 }
 
 #template .values .signature .name {
-  color: mediumblue;
+  color: darkblue;
 }
 
 #template .types .signature .name {
