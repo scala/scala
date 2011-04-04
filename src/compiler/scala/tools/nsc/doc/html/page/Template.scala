@@ -89,7 +89,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
         { if (constructors.isEmpty) NodeSeq.Empty else
             <div id="constructors" class="members">
-              <h3>Instance constructors</h3>
+              <h3>Instance Constructors</h3>
               <ol>{ constructors map (memberToHtml(_)) }</ol>
             </div>
         }
@@ -187,10 +187,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case dte: DocTemplateEntity if isSelf =>
         // comment of class itself
         <xml:group>
-          { if (mbr.comment.isEmpty) NodeSeq.Empty
-            else
-              <div class="shortcomment cmt">{ commentToHtml(mbr.comment) }</div>
-          }
           <div id="comment" class="fullcomment">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
         </xml:group>
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
@@ -300,22 +296,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearizationTemplates.isEmpty && !isReduced) =>
-          <div class="block">
-            linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
-          </div>
-        case _ => NodeSeq.Empty
-      }
-    } ++
-    { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty && !isReduced) =>
-          <div class="block">
-            known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
-          </div>
-        case _ => NodeSeq.Empty
-      }
-    } ++
-    { mbr match {
         case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
           <div class="block">
             self type: { typeToHtml(dtpl.selfType.get, hasLinks = true) }
@@ -386,6 +366,35 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }
           </xml:group>
         case None => NodeSeq.Empty
+      }
+    } ++
+    { mbr match {
+        case dtpl: DocTemplateEntity if (isSelf && !isReduced && (!dtpl.linearizationTemplates.isEmpty || !dtpl.subClasses.isEmpty)) =>
+          <div id="superTypesDiv">
+            <div class="block">
+              <span class="link showElement">Show linear super types and known subclasses</span>
+              <span class="link hideElement">Hide linear super types and known subclasses</span>
+            </div>
+            <div class="hiddenContent">
+              <xml:group>
+                {
+                  if(dtpl.linearizationTemplates.isEmpty) NodeSeq.Empty else {
+                    <div class="block">
+                      linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
+                    </div>
+                  }
+                }
+                {
+                  if(dtpl.subClasses.isEmpty) NodeSeq.Empty else {
+                    <div class="block">
+                      known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
+                    </div>
+                  }
+                }
+              </xml:group>
+            </div>
+          </div>
+        case _ => NodeSeq.Empty
       }
     }
   }

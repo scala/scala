@@ -20,6 +20,10 @@ h1 {
 	display: none;
 }
 
+.letters {
+  padding: 5px;
+}
+
 #library {
     display: none;
 }
@@ -40,7 +44,7 @@ h1 {
 	right: 0;
 	left: 0;
 	top: 0;
-	background-color: #B78E99;
+	background-color: #DADADA;
 }
 
 #textfilter {
@@ -72,7 +76,7 @@ h1 {
 	height: 16px;
 	padding: 2px;
 	font-weight: bold;
-	color: #993300;
+	color: darkblue;
 	background-color: white;
     width: 100%;
 }
@@ -104,12 +108,19 @@ h1 {
 }
 
 #kindfilter {
-	position: relative;
-	display: block;
-	padding: 5px;
-	background-color: #F0F8FF;
+  position: relative;
+  display: block;
+  padding: 5px;
+  background-color: #999;
+  text-align: center;
 }
 
+
+#kindfilter > a {
+ color: white; 
+ text-decoration: underline;
+}
+  
 #tpl {
 	display: block;
 	position: fixed;
@@ -127,7 +138,7 @@ h1 {
 	float: right;
 	font-weight: normal;
 	color: white;
-	padding: 1px 4px 1px 4px;
+	padding: 0 8px;
 }
 
 #tpl .packfocus {
@@ -135,16 +146,26 @@ h1 {
 	float: right;
 	font-weight: normal;
 	color: white;
-	padding: 1px 0.5em 1px 4px;
+}
+
+#tpl .packages > ol {
+  /*margin-bottom: 5px;*/
+}
+
+#tpl .packages > ol > li {
+	margin-bottom: 1px;
 }
 
 #tpl .packages > li > h3 {
 	display: block;
-	background-color: #2C475C;
 	color: white;
-	padding: 1px 4px 1px 0.5em;
 	font-weight: bold;
 	display: block;
+}
+
+#tpl ol > li.pack {
+	background-color: #2C475C;
+	padding: 3px 5px;
 }
 
 #tpl ol > li {
@@ -152,7 +173,7 @@ h1 {
 }
 
 #tpl .templates > li {
-  padding-left: 0.5em;
+  padding-left: 5px;
 }
 
 #tpl ol > li .icon {
@@ -168,7 +189,7 @@ h1 {
 }
 
 #tpl .templates span.tplLink {
-  padding-left: 8px;
+  padding-left: 5px;
 }
 
 #content {

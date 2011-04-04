@@ -16,10 +16,6 @@ table, caption, tbody, tfoot, thead, tr, th, td {
   vertical-align: baseline;
 }
 
-body {
-  line-height: 1.2;
-}
-
 table { border-collapse: separate; border-spacing: 0; }
 caption, th, td { text-align: left; font-weight: normal; }
 table, td, th { vertical-align: middle; }
@@ -48,7 +44,7 @@ a[href]:hover {
 }
 
 #owner {
-  padding: 4px;
+  padding: 2px 10px 5px;
   font-size: 12pt;
   display: block;
 }
@@ -58,16 +54,20 @@ a[href]:hover {
 }
 
 .value #owner {
-  background-color: #7996AC;
+  background-color: #7996AC; /* light steel gray */
 }
 
 .type #owner {
-  background-color: #799F5A;
+  background-color: #669966; /* lighter green */
+}
+
+#types ol li > p {
+  margin-top: 5px;
 }
 
 #definition {
   display: block;
-  padding: 6px;
+  padding: 5px 6px;
 }
 
 #definition > img {
@@ -81,65 +81,76 @@ a[href]:hover {
   display: inline-block;
 }
 
+#signature {
+  background-color: #EBEBEB;
+  font-size: 11.5pt;
+  margin: 5px;
+  padding: 5px;
+}
+
 #signature > span.kind {
-  font-size: 11pt;
   display: inline;
   float: left;
   text-align: left;
   width: auto;
-  padding-left: 6px;
+  position: static;
 }
 
 #signature > span.symbol {
-  font-size: 11pt;
   text-align: left;
+  display: inline;
+  padding-left: 0.7em;
 }
+
+/* Linear super types and known subclasses */
+.hideElement,
+.hiddenContent {
+  display: none;
+}
+
+.link {
+  text-decoration: underline;
+  cursor: pointer;
+  color: #69481D;
+}
+
 
 .value #definition {
   background-color: #2C475C;
 }
 
 .type #definition {
-  background-color: #385E1A;
+  background-color: #006633; /* green */
 }
 
-#comment {
-  display:none;
-  padding-right: 8px;
-  padding-left: 8px;
+#template {
+  margin-bottom: 50px;
+}
+
+h3 {
+  color: white;
+  padding: 5px 10px;
+  font-size: 12pt;
+  font-weight: bold;
 }
 
 #template .values > h3 {
-  color: white;
-  padding: 4px;
-  background-color: #7996AC;
-  font-size: 12pt;
-  font-weight: bold;
+  background-color: #315479; /* grayish blue */
 }
 
 #template .types > h3 {
-  padding: 4px;
-  color: white;
-  font-weight: bold;
-  font-size: 12pt;
-  background-color: #799F5A;
+  background-color: #316555; /* green */
 }
 
 #constructors > h3 {
-  padding: 4px;
-  color: white;
-  font-weight: bold;
-  font-size: 12pt;
   background-color: #333;
 }
 
 #template > div.parent > h3 {
-  color: white;
-  padding: 4px;
+  background-color: #3B3B3B; 
   margin-top: 10px;
-  background-color: #47166D;
+  font-style: italic;
   font-size: 12pt;
-  font-weight: bold;
 }
 
 #template > div.parent > h3 * {
@@ -155,6 +166,15 @@ div.members > ol {
 
 div.members > ol > li {
   display: block;
+  border-bottom: 1px solid gray;
+  padding: 5px 0 6px;
+  margin: 0 10px;
+  position: relative;
+}
+
+div.members > ol > li:last-child {
+  border: 0;
+  padding: 5px 0 5px;
 }
 
 /* Member signatures */
@@ -169,18 +189,16 @@ div.members > ol > li {
 }
 
 .signature {
-  padding: 2px;
   font-family: monospace;
   font-size: 10pt;
+  line-height: 18px;
   clear: both;
   display: block;
-  background-color: #E5E5E5;
 }
 
 .signature .kind {
+  position: absolute;
   text-align: right;
-  float: left;
-  display: inline-block;
   width: 8em;
 }
 
@@ -197,8 +215,8 @@ div.members > ol > li {
 }
 
 .signature .symbol {
-  display: inline;
-  padding-left: 0.7em;
+  display: block;
+  padding-left: 8.7em;
 }
 
 .signature .name {
@@ -218,12 +236,22 @@ div.members > ol > li {
   font-style: italic;
 }
 
+#template .signature.closed {
+  background: url("arrow-right.png") no-repeat 0 5px transparent;
+  cursor: pointer;
+}
+
+#template .signature.opened {
+  background: url("arrow-down.png") no-repeat 0 5px transparent;
+  cursor: pointer;
+}
+
 #template .values .signature .name {
-  color: blue;
+  color: mediumblue;
 }
 
 #template .types .signature .name {
-  color: green;
+  color: darkgreen;
 }
 
 /* Comments text formating */
@@ -231,54 +259,49 @@ div.members > ol > li {
 .cmt {}
 
 .cmt p {
-	margin-bottom: 0.9em;
-	margin-top: 0.9em;
+	margin: 0.7em 0;
+}
+
+.cmt p:first-child {
+	margin-top: 0;
+}
+
+.cmt p:last-child {
+	margin-bottom: 0;
+}
+
+.cmt h3,
+.cmt h4,
+.cmt h5,
+.cmt h6 {
+  margin-bottom: 0.7em;
+  margin-top: 1.4em;
+  display: block;
+  text-align: left;
+  font-weight: bold;
 }
 
 .cmt h3 {
-  margin-bottom: 1em;
-  margin-top: 1em;
-  display: block;
-  text-align: left;
-  font-weight: bold;
-  font-size: x-large;
+  font-size: 14pt;
 }
 
 .cmt h4 {
-  margin-bottom: 0.6em;
-  margin-top: 0.6em;
-  display: block;
-  text-align: left;
-  font-weight: bold;
-  font-size: large;
+  font-size: 13pt;
 }
 
 .cmt h5 {
-  margin-bottom: 0.4em;
-  margin-top: 0.4em;
-  display: block;
-  text-align: left;
-  font-weight: bold;
+  font-size: 12pt;
 }
 
 .cmt h6 {
-  margin-bottom: 0.4em;
-  margin-top: 0.4em;
-  display: block;
-  text-align: left;
-  font-style: italic;
+  font-size: 11pt;
 }
 
 .cmt pre {
-  padding: 0.4em;
-  border-color: #ddd;
-  border-style: solid;
-  border-width: 1px;
-  margin-left: 0;
-  margin-bottom: 0.4em;
-  margin-right: 0;
-  margin-top: 0.4em;
+  padding: 5px;
+  border: 1px solid #ddd;
   background-color: #eee;
+  margin: 5px 0;
   display: block;
   font-family: monospace;
 }
@@ -286,7 +309,7 @@ div.members > ol > li {
 .cmt ul {
   display: block;
   list-style: circle;
-  padding-left:20px;
+  padding-left: 20px;
 }
 
 .cmt ol {
@@ -315,7 +338,7 @@ div.members > ol > li {
 }
 
 .cmt li {
-  display:list-item;
+  display: list-item;
 }
 
 .cmt code {
@@ -339,44 +362,37 @@ div.members > ol > li {
 p.comment {
   display: block;
   margin-left: 8.7em;
+  margin-top: 5px;
 }
 
 .shortcomment {
   display: block;
-  cursor: pointer;
-  margin: 4px 0px;
-  padding: 0 8px;
+  margin: 5px 10px;
 }
 
 div.fullcomment {
-  margin: 10px 0 10px 0;
+  margin: 5px 10px;
 }
 
 #template div.fullcomment {
   display:none;
-  margin: 6px 0 6px 8.7em;
+  margin: 5px 0 0 8.7em;
 }
 
 #template .shortcomment {
-  margin: 0 0 0 8.7em;
-  padding: 2px;
+  margin: 5px 0 0 8.7em;
+  padding: 0;
 }
 
 div.fullcomment .block {
-  padding: 2px 0 2px 0;
-  border-top: 1px solid gray;
-  border-bottom: 1px solid gray;
-  margin-top: 2px;
-  margin-bottom: 2px;
+  padding: 5px 0 0;
+  border-top: 1px dashed silver;
+  margin-top: 5px;
 }
 
 div.fullcomment div.block ol li p, 
 div.fullcomment div.block ol li {
   display:inline
-}
-
-div.fullcomment .block + .block {
-  border-top: none;
 }
 
 div.fullcomment .block > h5 {
@@ -386,39 +402,25 @@ div.fullcomment .block > h5 {
 }
 
 div.fullcomment .comment {
-  margin: 6px 0 6px 0;
+  margin: 5px 0 10px;
+}
+
+div.fullcomment .comment:last-child {
+  margin-bottom: 0;
 }
 
 div.fullcomment dl.paramcmts > dt {
   display: block;
   float: left;
   font-weight: bold;
-  margin: 2px 4px 2px 0;
 }
 
 div.fullcomment dl.paramcmts > dd {
   display: block;
   padding-left: 80px;
-  border-top: 1px dashed gray;
-  border-bottom: 1px dashed gray;
+  margin-bottom: 5px;
 }
 
-div.fullcomment dl.paramcmts > dt:first-child + dd {
-  border-top: none;
-}
-
-div.fullcomment dl.paramcmts > dd:last-child {
-  border-bottom: none;
-}
-
-div.fullcomment dl.paramcmts > dd + dt + dd {
-  border-top: none;
-}
-
-div.fullcomment dl.paramcmts dd.cmt p {
-  margin-top: 2px;
-  margin-bottom: 2px;
-}
 /* Members filter tool */
 
 #textfilter {
@@ -466,31 +468,43 @@ div.fullcomment dl.paramcmts dd.cmt p {
 }
 
 #mbrsel {
-  padding: 4px;
-  background-color: #B78E99; /* grayish pink */
+  padding: 5px 10px;
+  background-color: #DADADA; /* light gray */
+  font-size: 9.5pt;
   display: block;
-  margin-bottom: 10px;
+  margin-top: 1em;
+/*  margin-bottom: 1em; */
+}
+
+#mbrsel > div {
+  margin-bottom: 5px;
+}
+
+#mbrsel > div:last-child {
+  margin-bottom: 0;
 }
 
 #mbrsel > div > span.filtertype {
-  padding: 4px;
+  padding: 3px 0;
   float: left;
   display: inline-block;
-  color: white;
+  color: #404040;
   width: 4.5em;
 }
 
 #mbrsel > div > ol {
   display: inline-block;
-  background-color: white;
+  /*background-color: white;*/
 }
 
 #mbrsel > div > ol#linearization {
-  display: inline;
+  display: block;
+  margin-left: 4.5em;
+  margin-top: 5px;
 }
 
 #mbrsel > div > ol > li {
-  padding: 4px 8px 4px 8px;
+  padding: 3px 10px;
   background-color: white;
   display: inline-block;
   cursor: pointer;
@@ -502,8 +516,8 @@ div.fullcomment dl.paramcmts dd.cmt p {
 }
 
 #mbrsel > div > ol > li.out {
-  color: #80384E;
-  background-color: #9E6A77;
+  color: #4B4B4B;
+  background-color: #999; 
 }
 
 #mbrsel .hideall {

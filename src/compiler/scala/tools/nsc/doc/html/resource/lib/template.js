@@ -101,14 +101,22 @@ $(document).ready(function(){
             $(this.getTip()).html(this.getTrigger().attr("name"))
         }        
     });   
-    var docAllSigs = $(".signature");
-    function commentShowFct(fullComment){
+    var docAllSigs = $("#template .signature");
+
+    // Is this used anywhere?    
+    /*
+    function commentShowFct(signature){
+        var fullComment = $("+ div.fullcomment", $(signature));
         var vis = $(":visible", fullComment);
         if (vis.length > 0) {
             fullComment.slideUp(100);
+            signature.addClass("closed");
+            signature.removeClass("opened");
         }
         else {
             fullComment.slideDown(100);
+            signature.removeClass("closed");
+            signature.addClass("opened");
         }
     };
     var docShowSigs = docAllSigs.filter(function(){
@@ -116,29 +124,58 @@ $(document).ready(function(){
     });
     docShowSigs.css("cursor", "pointer");
     docShowSigs.click(function(){
-        commentShowFct($("+ div.fullcomment", $(this)));
+        commentShowFct($(this));
     });
-    function commentToggleFct(shortComment){
-        var vis = $("~ div.fullcomment:visible", shortComment);
+    */
+    
+    function commentToggleFct(signature){
+        var parent = signature.parent();
+        var shortComment = $(".shortcomment", parent);
+        var fullComment = $(".fullcomment", parent);
+        var vis = $(":visible", fullComment);
         if (vis.length > 0) {
             shortComment.slideDown(100);
-            vis.slideUp(100);
+            fullComment.slideUp(100);
+            signature.addClass("closed");
+            signature.removeClass("opened");
         }
         else {
-            var hid = $("~ div.fullcomment:hidden", shortComment);
-            hid.slideDown(100);
             shortComment.slideUp(100);
+            fullComment.slideDown(100);
+            signature.removeClass("closed");
+            signature.addClass("opened");
         }
     };
     var docToggleSigs = docAllSigs.filter(function(){
         return $("+ .shortcomment", $(this)).length > 0;
     });
-    docToggleSigs.css("cursor", "pointer");
+    docToggleSigs.addClass("closed");
     docToggleSigs.click(function(){
-        commentToggleFct($("+ .shortcomment", $(this)));
+        commentToggleFct($(this));
     });
+    /*
     $(".shortcomment").click(function(){
         commentToggleFct($(this));
+    });
+    */
+    
+    /* Linear super types and known subclasses */
+    function toggleShowContentFct(outerElement){
+      var content = $(".hiddenContent", outerElement);
+      var vis = $(":visible", content);
+      if (vis.length > 0) {
+        content.slideUp(100);
+        $(".showElement", outerElement).show();
+        $(".hideElement", outerElement).hide();
+      }
+      else {
+        content.slideDown(100);
+        $(".showElement", outerElement).hide();
+        $(".hideElement", outerElement).show();
+      }
+    };
+    $("#superTypesDiv").click(function() {
+      toggleShowContentFct($(this));
     });
 });
 

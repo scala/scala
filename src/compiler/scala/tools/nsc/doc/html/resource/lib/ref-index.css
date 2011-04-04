@@ -16,13 +16,15 @@ a {
 }
 
 .entry {
-
+  border-bottom: 1px solid lightgray;
+  padding: 5px 0 8px;
 }
 
 .name {
-	background-color:#E5E5E5;
+	/* background-color:#E5E5E5; */
 }
 
 .occurrences {
-  margin-left:0.7em	
+  margin-left: 1em;
+  margin-top: 5px;	
 }

@@ -50,6 +50,8 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/index.css")
     copyResource("lib/ref-index.css")
     copyResource("lib/template.css")
+    copyResource("lib/arrow-down.png")
+    copyResource("lib/arrow-right.png")
     copyResource("lib/class.png")
     copyResource("lib/class_big.png")
     copyResource("lib/object.png")
