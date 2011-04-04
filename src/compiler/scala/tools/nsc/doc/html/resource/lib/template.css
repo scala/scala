@@ -67,7 +67,7 @@ a[href]:hover {
 
 #definition {
   display: block;
-  padding: 6px 6px 12px 6px;
+  padding: 5px 6px;
 }
 
 #definition > img {
@@ -75,8 +75,7 @@ a[href]:hover {
 }
 
 #definition > h1 {
-  padding: 6px 12px 6px 0px;
-  margin-left: 8px;
+  padding: 12px 0 12px 6px;
   color: white;
   font-size: 24pt;
   display: inline-block;
