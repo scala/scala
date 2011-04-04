@@ -54,10 +54,20 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
       }
 
-      <div id="definition">
-        <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
-        <h1>{ if (tpl.isRootPackage) "root package" else tpl.name }</h1>
-      </div>
+      { val templateName = if (tpl.isRootPackage) "root package" else tpl.name
+        val displayName = tpl.companion match {
+          case Some(companion) =>
+            if (companion.visibility.isPublic && companion.inSource != None)
+              <a href={relativeLinkTo(companion)} title="go to companion">{ templateName }</a>
+            else templateName
+          case _ =>
+            templateName
+        }
+        <div id="definition">
+          <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
+          <h1>{ displayName }</h1>
+        </div>
+      }
 
       { signature(tpl, true) }
       { memberToCommentHtml(tpl, true) }
@@ -274,19 +284,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <div class="block">
           attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
         </div>
-    } ++
-    { tpl.companion match {
-        case Some(companion) if (isSelf && !isReduced) =>
-          if (companion.visibility.isPublic && companion.inSource != None) {
-            <div class="block">
-            go to: <a href={relativeLinkTo(companion)}>companion</a>
-            </div>
-          } else {
-            NodeSeq.Empty
-          }
-        case _ =>
-          NodeSeq.Empty
-      }
     } ++
     { val inDefTpls = mbr.inDefinitionTemplates
       if ((inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) || isReduced) NodeSeq.Empty else {
