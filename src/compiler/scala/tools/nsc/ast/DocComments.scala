@@ -296,18 +296,13 @@ trait DocComments { self: SymbolTable =>
      *   useCases: all usecase sections (as instances of class UseCase)
      */
     lazy val (template, defines, useCases) = {
-      val sections = tagIndex(raw, idx =>
-        startsWithTag(raw, idx, "@define") || startsWithTag(raw, idx, "@usecase"))
-      val (defines, usecases) = sections partition (startsWithTag(raw, _, "@define"))
-      val end = startTag(raw, sections)
-      /*
-      println("processing doc comment:")
-      println(raw)
-      println("===========>")
-      println(raw.substring(0, end))
-      println("++++++++++++++++")
-      println(sections map { case (s, e) => raw.substring(s, e) })
-      */
+      val sections = tagIndex(raw)
+
+      val defines = sections filter { startsWithTag(raw, _, "@define") }
+      val usecases = sections filter { startsWithTag(raw, _, "@usecase") }
+
+      val end = startTag(raw, (defines ::: usecases).sort(_._1 < _._1))
+
       (if (end == raw.length - 2) raw else raw.substring(0, end) + "*/",
        defines map { case (start, end) => raw.substring(start, end) },
        usecases map { case (start, end) => decomposeUseCase(start, end) })
