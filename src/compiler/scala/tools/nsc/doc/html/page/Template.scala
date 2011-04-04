@@ -102,14 +102,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
 
         { if (absValueMembers.isEmpty) NodeSeq.Empty else
-            <div id="abstract values" class="values members">
+            <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol>{ absValueMembers map (memberToHtml(_)) }</ol>
             </div>
         }
 
         { if (concValueMembers.isEmpty) NodeSeq.Empty else
-            <div id="concrete values" class="values members">
+            <div id="values" class="values members">
               <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
               <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
             </div>
