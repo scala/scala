@@ -44,6 +44,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   var settings: Settings = _
   var intp: IMain = _
 
+  def codeQuoted(s: String) = intp.memberHandlers.string2codeQuoted(s)
+
   lazy val power = {
     val g = intp.global
     Power[g.type](this, g)
@@ -65,7 +67,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   // Install a signal handler so we can be prodded.
   private val signallable =
-    if (isReplDebug) Signallable("Dump repl state.")(dumpCommand(""))
+    if (isReplDebug) Signallable("Dump repl state.")(dumpCommand())
     else null
 
   // classpath entries added via :cp
@@ -149,12 +151,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   /** print a friendly help message */
-  def printHelp() = {
+  def helpCommand() = {
+    val usageWidth = commands map (_.usageMsg.length) max
+    val cmds       = commands map (x => (x.usageMsg, x.help))
+    val formatStr  = "%-" + usageWidth + "s %s"
+
     out println "All commands can be abbreviated - for example :he instead of :help.\n"
-    val cmds = commands map (x => (x.usage, x.help))
-    val width: Int = cmds map { case (x, _) => x.length } max
-    val formatStr = "%-" + width + "s %s"
-    cmds foreach { case (usage, help) => out println formatStr.format(usage, help) }
+    for ((use, help) <- cmds)
+      out println formatStr.format(use, help)
   }
 
   /** Print a welcome message */
@@ -171,18 +175,23 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   /** Show the history */
-  def printHistory(xs: List[String]): Result = {
-    if (history eq NoHistory)
-      return "No history available."
+  lazy val historyCommand = new LoopCommand("history", "show the history (optional num is commands to show)") {
+    override def usage = "[num]"
+    def defaultLines = 20
 
-    val defaultLines = 20
-    val current = history.index
-    val count   = try xs.head.toInt catch { case _: Exception => defaultLines }
-    val lines   = history.asStrings takeRight count
-    val offset  = current - lines.size + 1
+    def apply(line: String): Result = {
+      if (history eq NoHistory)
+        return "No history available."
 
-    for ((line, index) <- lines.zipWithIndex)
-      println("%3d  %s".format(index + offset, line))
+      val xs      = words(line)
+      val current = history.index
+      val count   = try xs.head.toInt catch { case _: Exception => defaultLines }
+      val lines   = history.asStrings takeRight count
+      val offset  = current - lines.size + 1
+
+      for ((line, index) <- lines.zipWithIndex)
+        println("%3d  %s".format(index + offset, line))
+    }
   }
 
   /** Some print conveniences */
@@ -204,37 +213,35 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   /** Prompt to print when awaiting input */
   def prompt = currentPrompt
 
+  import LoopCommand.{ cmd, nullary }
+
   /** Standard commands **/
-  val standardCommands: List[LoopCommand] = {
-    List(
-       LineArg("cp", "add an entry (jar or directory) to the classpath", addClasspath),
-       NoArgs("help", "print this help message", printHelp),
-       VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
-       LineArg("h?", "search the history", searchHistory),
-       LineArg("implicits", "show the implicits in scope (-v to include Predef)", implicitsCommand),
-       LineArg("javap", "disassemble a file or class name", javapCommand),
-       LineArg("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
-       OneArg("load", "load and interpret a Scala file", load),
-       NoArgs("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
-       NoArgs("power", "enable power user mode", powerCmd),
-       NoArgs("quit", "exit the interpreter", () => Result(false, None)),
-       NoArgs("replay", "reset execution and replay all previous commands", replay),
-       LineArg("sh", "fork a shell and run a command", shCommand),
-       NoArgs("silent", "disable/enable automatic printing of results", verbosity),
-       LineArg("type", "display the type of an expression without evaluating it", typeCommand)
-    )
-  }
+  val standardCommands = List(
+    cmd("cp", "<path>", "add an entry (jar or directory) to the classpath", addClasspath),
+    nullary("help", "print this help message", helpCommand),
+    historyCommand,
+    cmd("h?", "<string>", "search the history", searchHistory),
+    cmd("implicits", "[-v]", "show the implicits in scope", implicitsCommand),
+    cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
+    nullary("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
+    cmd("load", "<path>", "load and interpret a Scala file", loadCommand),
+    nullary("paste", "enter paste mode: all input up to ctrl-D compiled together", pasteCommand),
+    nullary("power", "enable power user mode", powerCmd),
+    nullary("quit", "exit the interpreter", () => Result(false, None)),
+    nullary("replay", "reset execution and replay all previous commands", replay),
+    shCommand,
+    nullary("silent", "disable/enable automatic printing of results", verbosity),
+    cmd("type", "<expr>", "display the type of an expression without evaluating it", typeCommand)
+  )
 
   /** Power user commands */
-  val powerCommands: List[LoopCommand] = {
-    List(
-      LineArg("dump", "displays a view of the interpreter's internal state", dumpCommand),
-      LineArg("phase", "set the implicit phase for power commands", phaseCommand),
-      LineArg("wrap", "code to wrap around all executions", wrapCommand)
-    )
-  }
+  val powerCommands: List[LoopCommand] = List(
+    nullary("dump", "displays a view of the interpreter's internal state", dumpCommand),
+    cmd("phase", "<phase>", "set the implicit phase for power commands", phaseCommand),
+    cmd("wrap", "<code>", "code to wrap around all executions", wrapCommand)
+  )
 
-  private def dumpCommand(line: String): Result = {
+  private def dumpCommand(): Result = {
     println(power)
     history.asStrings takeRight 30 foreach println
     in.redrawLine()
@@ -341,7 +348,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       else res.show()
     }
   }
-  private def keybindingsCommand(line: String): Result = {
+  private def keybindingsCommand(): Result = {
     if (in.keyBindings.isEmpty) "Key bindings unavailable."
     else {
       println("Reading jline properties for default key bindings.")
@@ -486,16 +493,15 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   /** fork a shell and run a command */
-  def shCommand(cmd: String): Result = {
-    if (cmd == "")
-      return "Usage: sh <command line>"
-
-    intp quietRun "import _root_.scala.sys.process._"
-    val pb = Process(cmd)
-    intp.bind("builder", pb)
-    val stdout = Process(cmd).lines
-    intp.bind("stdout", stdout)
-    ()
+  lazy val shCommand = new LoopCommand("sh", "run a shell command (result is implicitly => List[String])") {
+    override def usage = "<command line>"
+    def apply(line: String): Result = line match {
+      case ""   => showUsage()
+      case _    =>
+        val toRun = classOf[ProcessResult].getName + "(" + codeQuoted(line) + ")"
+        intp interpret toRun
+        ()
+    }
   }
 
   def withFile(filename: String)(action: File => Unit) {
@@ -505,7 +511,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     else out.println("That file does not exist")
   }
 
-  def load(arg: String) = {
+  def loadCommand(arg: String) = {
     var shouldReplay: Option[String] = None
     withFile(arg)(f => {
       interpretAllFrom(f)
@@ -558,20 +564,20 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       else return Result(true, interpretStartingWith(line))
     }
 
-    val tokens = (line drop 1 split """\s+""").toList
-    if (tokens.isEmpty)
-      return withError(ambiguous(commands))
-
-    val (cmd :: args) = tokens
+    val line2 = line.tail
+    val (cmd, rest) = line2 indexWhere (_.isWhitespace) match {
+      case -1   => (line2, "")
+      case idx  => (line2 take idx, line2 drop idx dropWhile (_.isWhitespace))
+    }
 
     // this lets us add commands willy-nilly and only requires enough command to disambiguate
     commands.filter(_.name startsWith cmd) match {
-      case List(x)  => x(args)
+      case List(f)  => f(rest)
       case Nil      => withError("Unknown command.  Type :help for help.")
-      case xs       =>
-        xs find (_.name == cmd) match {
-          case Some(exact)  => exact(args)
-          case _            => withError(ambiguous(xs))
+      case fs       =>
+        fs find (_.name == cmd) match {
+          case Some(exact)  => exact(rest)
+          case _            => withError(ambiguous(fs))
         }
     }
   }

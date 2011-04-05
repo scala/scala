@@ -29,6 +29,9 @@ package object interpreter {
   type InputStream    = java.io.InputStream
   type OutputStream   = java.io.OutputStream
 
+  private[nsc] val JLineDebug = "scala.tools.jline.internal.Log.debug"
+  private[nsc] val JLineTrace = "scala.tools.jline.internal.Log.trace"
+
   private[nsc] val DebugProperty = "scala.repl.debug"
   private[nsc] val TraceProperty = "scala.repl.trace"
   private[nsc] val PowerProperty = "scala.repl.power"
