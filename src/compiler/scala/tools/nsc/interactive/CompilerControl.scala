@@ -316,4 +316,3 @@ object ShutdownReq extends ControlThrowable
 class NoSuchUnitError(file: AbstractFile) extends Exception("no unit found for file "+file)
 
 class MissingResponse extends Exception("response missing")
-

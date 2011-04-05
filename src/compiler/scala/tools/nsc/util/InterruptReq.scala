@@ -1,6 +1,8 @@
 package scala.tools.nsc
 package util
 
+import interactive.AskException
+
 /** A class of work items to be used in interrupt requests.
  */
 abstract class InterruptReq {
@@ -24,7 +26,7 @@ abstract class InterruptReq {
     notify()
   }
 
-  /** To be called from interrupting client to get result fo interrupt */
+  /** To be called from interrupting client to get result for interrupt */
   def getResult(): R = synchronized {
     while (result.isEmpty) {
       try {
@@ -34,7 +36,9 @@ abstract class InterruptReq {
 
     result.get match {
       case Left(res) => res
-      case Right(t) => throw t
+      case Right(t) => throw new FailedInterrupt(t)
     }
   }
 }
+
+class FailedInterrupt(cause: Throwable) extends Exception("Compiler exception during call to 'ask'", cause)
