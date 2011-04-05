@@ -354,6 +354,22 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     prevRequests += req
     req.referencedNames foreach (x => referencedNameMap(x) = req)
 
+    // warning about serially defining companions.  It'd be easy
+    // enough to just redefine them together but that may not always
+    // be what people want so I'm waiting until I can do it better.
+    if (!settings.nowarnings.value) {
+      for {
+        name   <- req.definedNames filterNot (x => req.definedNames contains x.companionName)
+        oldReq <- definedNameMap get name.companionName
+        newSym <- req.definedSymbols get name
+        oldSym <- oldReq.definedSymbols get name.companionName
+      } {
+        printMessage("warning: previously defined %s is not a companion to %s.".format(oldSym, newSym))
+        printMessage("Companions must be defined together; you may wish to use :paste mode for this.")
+      }
+    }
+
+    // Updating the defined name map
     req.definedNames foreach { name =>
       if (definedNameMap contains name) {
         if (name.isTypeName) handleTypeRedefinition(name.toTypeName, definedNameMap(name), req)
@@ -879,8 +895,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     // lazy val definedTypes: Map[Name, Type] = {
     //   typeNames map (x => x -> afterTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
     // }
-    lazy val definedSymbols: Map[Name, Symbol] =
-      termNames map (x => x -> applyToResultMember(x, x => x)) toMap
+    lazy val definedSymbols: Map[Name, Symbol] = (
+      termNames.map(x => x -> applyToResultMember(x, x => x)) ++
+      typeNames.map(x => x -> compilerTypeOf.get(x).map(_.typeSymbol).getOrElse(NoSymbol))
+    ).toMap
 
     lazy val typesOfDefinedTerms: Map[Name, Type] =
       termNames map (x => x -> applyToResultMember(x, _.tpe)) toMap
@@ -1045,6 +1063,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def importHandlers = allHandlers collect { case x: ImportHandler => x }
   def definedTerms   = onlyTerms(allDefinedNames) filterNot isInternalVarName
   def definedTypes   = onlyTypes(allDefinedNames)
+  def definedSymbols = prevRequests.toSet flatMap ((x: Request) => x.definedSymbols.values)
   def importedTerms  = onlyTerms(importHandlers flatMap (_.importedNames))
   def importedTypes  = onlyTypes(importHandlers flatMap (_.importedNames))
 
@@ -1083,10 +1102,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   }
   def wildcardTypes = languageWildcards ++ sessionWildcards
 
-  def languageSymbols = languageWildcardSyms flatMap membersAtPickler
-  def sessionSymbols  = importHandlers flatMap (_.importedSymbols)
-  def importedSymbols = languageSymbols ++ sessionSymbols
-  def implicitSymbols = importedSymbols filter (_.isImplicit)
+  def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
+  def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
+  def importedSymbols        = languageSymbols ++ sessionImportedSymbols
+  def implicitSymbols        = importedSymbols filter (_.isImplicit)
 
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
