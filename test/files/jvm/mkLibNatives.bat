@@ -4,6 +4,9 @@ rem ##########################################################################
 rem # Author  : Stephane Micheloud
 rem ##########################################################################
 
+rem # For building the -64.dll, you need: Visual C++ Express, Microsoft SDK (to
+rem # get the 64bit compiler / libraries), adapt this script.
+
 rem ##########################################################################
 rem # variables
 
