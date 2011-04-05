@@ -136,7 +136,7 @@ object Test extends Properties("HtmlFactory") {
     files("WithPublic.html") match {
       case node: scala.xml.Node => {
         val s = node.toString
-        s.contains("""go to: <a href="WithPublic$.html">companion</a>""") &&
+        s.contains("""href="WithPublic$.html"""") &&
           files.get("WithPublic$.html") != None
       }
       case _ => false
@@ -148,7 +148,7 @@ object Test extends Properties("HtmlFactory") {
     files("WithPrivate.html") match {
       case node: scala.xml.Node => {
         val s = node.toString
-        ! s.contains("""go to: <a href="WithPrivate$.html">companion</a>""") &&
+        ! s.contains("""href="WithPrivate$.html"""") &&
           files.get("WithPrivate$.html") == None
       }
       case _ => false
@@ -194,7 +194,7 @@ object Test extends Properties("HtmlFactory") {
     files("WithSynthetic.html") match {
       case node: scala.xml.Node => {
         val s = node.toString
-        ! s.contains("""go to: <a href="WithSynthetic$.html">companion</a>""")
+        ! s.contains("""href="WithSynthetic$.html"""")
       }
       case _ => false
     }
@@ -206,7 +206,7 @@ object Test extends Properties("HtmlFactory") {
     files("WithObject.html") match {
       case node: scala.xml.Node => {
         val s = node.toString
-        s.contains("""go to: <a href="WithObject$.html">companion</a>""")
+        s.contains("""href="WithObject$.html"""")
       }
       case _ => false
     }
