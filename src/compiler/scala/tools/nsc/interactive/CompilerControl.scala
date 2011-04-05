@@ -176,7 +176,8 @@ trait CompilerControl { self: Global =>
    *                   the a NoSuchUnitError is raised in the response.
    */
   def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
-    postWorkItem(new AskLoadedTypedItem(source, response, onCompilerThread))
+    if (onCompilerThread) waitLoadedTyped(source, response, onSameThread = true)
+    else postWorkItem(new AskLoadedTypedItem(source, response))
 
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.
@@ -197,7 +198,8 @@ trait CompilerControl { self: Global =>
    *  @param response     The response.
    */
   def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
-    postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response, onCompilerThread))
+    if (onCompilerThread) getParsedEntered(source, keepLoaded, response, onSameThread = true)
+    else postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
 
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
@@ -290,13 +292,13 @@ trait CompilerControl { self: Global =>
     override def toString = "linkpos "+sym+" in "+source
   }
 
-  class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree], val onSameThread: Boolean) extends WorkItem {
-    def apply() = self.waitLoadedTyped(source, response, onSameThread)
+  class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
+    def apply() = self.waitLoadedTyped(source, response, onSameThread = false)
     override def toString = "wait loaded & typed "+source
   }
 
-  class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree], val onSameThread: Boolean) extends WorkItem {
-    def apply() = self.getParsedEntered(source, keepLoaded, response, onSameThread)
+  class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
+    def apply() = self.getParsedEntered(source, keepLoaded, response, onSameThread = false)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
   }
 }
