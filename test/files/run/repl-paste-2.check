@@ -2,7 +2,31 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> 
-scala> // Replaying 7 commands from transcript.
+
+scala> scala> 123
+res0: Int = 123
+
+scala> 567
+res1: Int = 567
+
+scala> res0 + res1
+res2: Int = 690
+
+scala> val x = dingus
+<console>:7: error: not found: value dingus
+       val x = dingus
+               ^
+
+scala> val x = "dingus"
+x: java.lang.String = dingus
+
+scala> x.length
+res3: Int = 6
+
+scala> x.length + res3
+res4: Int = 12
+
+// Replaying 7 commands from transcript.
 
 val res0 = { 123 }
 res0: Int = 123

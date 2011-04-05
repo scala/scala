@@ -772,10 +772,45 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 object ILoop {
   implicit def loopToInterpreter(repl: ILoop): IMain = repl.intp
 
+  // Designed primarily for use by test code: take a String with a
+  // bunch of code, and prints out a transcript of what it would look
+  // like if you'd just typed it into the repl.
+  def runForTranscript(code: String, settings: Settings): String = {
+    import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
+
+    stringFromStream { ostream =>
+      Console.withOut(ostream) {
+        val output = new PrintWriter(new OutputStreamWriter(ostream), true) {
+          override def write(str: String) = {
+            // completely skip continuation lines
+            if (str forall (ch => ch.isWhitespace || ch == '|')) ()
+            // print a newline on empty scala prompts
+            else if ((str contains '\n') && (str.trim == "scala> ")) super.write("\n")
+            else super.write(str)
+          }
+        }
+        val input = new BufferedReader(new StringReader(code)) {
+          override def readLine(): String = {
+            val s = super.readLine()
+            // helping out by printing the line being interpreted.
+            if (s != null)
+              output.println(s)
+            s
+          }
+        }
+        val repl = new ILoop(input, output)
+        if (settings.classpath.isDefault)
+          settings.classpath.value = sys.props("java.class.path")
+
+        repl process settings
+      }
+    }
+  }
+
   /** Creates an interpreter loop with default settings and feeds
    *  the given code to it as input.
    */
-  def run(code: String): String = {
+  def run(code: String, sets: Settings = new Settings): String = {
     import java.io.{ BufferedReader, StringReader, OutputStreamWriter }
 
     stringFromStream { ostream =>
@@ -783,10 +818,11 @@ object ILoop {
         val input    = new BufferedReader(new StringReader(code))
         val output   = new PrintWriter(new OutputStreamWriter(ostream), true)
         val repl     = new ILoop(input, output)
-        val settings = new Settings
-        settings.classpath.value = sys.props("java.class.path")
 
-        repl process settings
+        if (sets.classpath.isDefault)
+          sets.classpath.value = sys.props("java.class.path")
+
+        repl process sets
       }
     }
   }

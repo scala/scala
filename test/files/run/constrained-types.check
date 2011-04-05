@@ -1,102 +1,110 @@
-class Annot(obj: Any) extends annotation.Annotation with annotation.TypeConstraint
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> 
+
+scala> class Annot(obj: Any) extends annotation.Annotation with annotation.TypeConstraint
 defined class Annot
 
------
-class A {
+scala> 
+
+scala> class A {
   val x = "hello"
   val y: Int @Annot(x) = 10
   override def toString = "an A"
 } 
 defined class A
 
------
-val a = new A
+scala> 
+
+scala> val a = new A
 a: A = an A
 
------
-val y = a.y   // should rewrite "this.x" to "a.x" 
+scala> val y = a.y   // should rewrite "this.x" to "a.x" 
 y: Int @Annot(a.x) = 10
 
------
-var a2 = new A
+scala> var a2 = new A
 a2: A = an A
 
------
-val y2 = a2.y   // should drop the annotation
+scala> val y2 = a2.y   // should drop the annotation
 y2: Int = 10
 
------
-object Stuff {
+scala> 
+
+scala> object Stuff {
   val x = "hello"
   val y : Int @Annot(x) = 10
 }
 defined module Stuff
 
------
-val y = Stuff.y // should rewrite the annotation
+scala> 
+
+scala> val y = Stuff.y // should rewrite the annotation
 y: Int @Annot(Stuff.x) = 10
 
------
-class B {
+scala> 
+
+scala> class B {
   val y: Int @Annot(Stuff.x) = 10
   override def toString = "a B"
 }
 defined class B
 
------
-val b = new B
+scala> 
+
+scala> val b = new B
 b: B = a B
 
------
-val y = b.y  // should keep the annotation
+scala> val y = b.y  // should keep the annotation
 y: Int @Annot(Stuff.x) = 10
 
------
-def m(x: String): String @Annot(x) = x
+scala> def m(x: String): String @Annot(x) = x
 m: (x: String)String @Annot(x)
 
------
-val three = "three"
+scala> 
+
+scala> val three = "three"
 three: java.lang.String = three
 
------
-val three2 = m(three:three.type)  // should change x to three
+scala> val three2 = m(three:three.type)  // should change x to three
 three2: String @Annot(three) = three
 
------
-var four = "four"
+scala> var four = "four"
 four: java.lang.String = four
 
------
-val four2 = m(four) // should have an existential bound
+scala> val four2 = m(four) // should have an existential bound
 four2: java.lang.String @Annot(x) forSome { val x: java.lang.String } = four
 
------
-val four3 = four2   // should have the same type as four2
+scala> val four3 = four2   // should have the same type as four2
 four3: java.lang.String @Annot(x) forSome { val x: java.lang.String } = four
 
------
-val stuff = m("stuff") // should not crash
+scala> val stuff = m("stuff") // should not crash
 stuff: String @Annot("stuff") = stuff
 
------
-class peer extends annotation.Annotation // should not crash
+scala> 
+
+scala> class peer extends annotation.Annotation // should not crash
 defined class peer
 
------
-class NPE[T <: NPE[T] @peer] // should not crash
+scala> 
+
+scala> class NPE[T <: NPE[T] @peer] // should not crash
 defined class NPE
 
------
-def m = {
+scala> 
+
+scala> def m = {
   val x = "three"
   val y : String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
 m: String @Annot("three")
 
------
-def n(y: String) = {
+scala> 
+
+scala> def n(y: String) = {
   def m(x: String) : String @Annot(x) = {
     (if (x == "")
       m("default")
@@ -107,30 +115,40 @@ def n(y: String) = {
 } // x should be existentially bound
 n: (y: String)java.lang.String @Annot(x) forSome { val x: String }
 
------
-class rep extends annotation.Annotation
+scala> 
+
+scala> class rep extends annotation.Annotation { }
 defined class rep
 
------
-object A { val x = "hello" : String @ rep }
-defined module A
+scala> 
 
------
-val y = a.x // should drop the annotation
+scala> object A { val x = "hello" : String @ rep }
+defined module A
+warning: previously defined class A is not a companion to object A.
+Companions must be defined together; you may wish to use :paste mode for this.
+
+scala> 
+
+scala> val y = a.x // should drop the annotation
 y: java.lang.String = hello
 
------
-val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message
+scala> 
+
+scala> val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
 <console>:8: error: not found: value e
-       val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message
+       val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
                               ^
 
------
-class Where(condition: Boolean) extends annotation.Annotation
+scala> 
+
+scala> class Where(condition: Boolean) extends annotation.Annotation
 defined class Where
 
------
-val x : Int @Where(self > 0 && self < 100) = 3
+scala> 
+
+scala> val x : Int @Where(self > 0 && self < 100) = 3
 x: Int @Where(self.>(0).&&(self.<(100))) = 3
 
------
+scala> 
+
+scala> 

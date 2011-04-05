@@ -2,11 +2,16 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> 
-scala> x: Array[Int] = Array(1, 2, 3, 4, 5, 6, 7)
 
-scala> y: scala.collection.mutable.WrappedArray[Int] = WrappedArray(2, 4, 6, 8, 10, 12, 14)
+scala> val x = Array(1,2,3,4,5,6,7)
+x: Array[Int] = Array(1, 2, 3, 4, 5, 6, 7)
 
-scala> 56
+scala> val y = x transform (_ * 2)
+y: scala.collection.mutable.WrappedArray[Int] = WrappedArray(2, 4, 6, 8, 10, 12, 14)
+
+scala> println(y.sum)
+56
 
 scala> 
+
 scala> 
