@@ -564,7 +564,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     protected var v: List[String] = Nil
     override def value = if (v contains "all") List("all") else super.value
     private lazy val (numericValues, stringValues) =
-      value partition (_ forall (ch => ch.isDigit || ch == '-'))
+      value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))
 
     /** A little ad-hoc parsing.  If a string is not the name of a phase, it can also be:
      *    a phase id: 5
