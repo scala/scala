@@ -103,11 +103,8 @@ trait CompilerControl { self: Global =>
     throw new FatalError("no context found for "+pos)
   }
 
-  private def postWorkItem(item: WorkItem) {
-    scheduler.postWorkItem(item)
-  }
-
-  private def onCompilerThread = Thread.currentThread == compileRunner
+  private def postWorkItem(item: WorkItem) =
+    if (item.onCompilerThread) item() else scheduler.postWorkItem(item)
 
   /** Makes sure a set of compilation units is loaded and parsed.
    *  Returns () to syncvar `response` on completions.
@@ -176,8 +173,7 @@ trait CompilerControl { self: Global =>
    *                   the a NoSuchUnitError is raised in the response.
    */
   def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
-    if (onCompilerThread) waitLoadedTyped(source, response, onSameThread = true)
-    else postWorkItem(new AskLoadedTypedItem(source, response))
+    postWorkItem(new AskLoadedTypedItem(source, response))
 
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.
@@ -198,8 +194,7 @@ trait CompilerControl { self: Global =>
    *  @param response     The response.
    */
   def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
-    if (onCompilerThread) getParsedEntered(source, keepLoaded, response, onSameThread = true)
-    else postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
+    postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
 
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
@@ -227,7 +222,9 @@ trait CompilerControl { self: Global =>
   }
 
   /** Asks for a computation to be done quickly on the presentation compiler thread */
-  def ask[A](op: () => A): A = if (onCompilerThread) op() else scheduler doQuickly op
+  def ask[A](op: () => A): A = if (self.onCompilerThread) op() else scheduler doQuickly op
+
+  def onCompilerThread = Thread.currentThread == compileRunner
 
   /** Info given for every member found by completion
    */
@@ -255,7 +252,9 @@ trait CompilerControl { self: Global =>
 
   // items that get sent to scheduler
 
-  abstract class WorkItem extends (() => Unit)
+  abstract class WorkItem extends (() => Unit) {
+    def onCompilerThread = self.onCompilerThread
+  }
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = reload(sources, response)
@@ -293,12 +292,12 @@ trait CompilerControl { self: Global =>
   }
 
   class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
-    def apply() = self.waitLoadedTyped(source, response, onSameThread = false)
+    def apply() = self.waitLoadedTyped(source, response, this.onCompilerThread)
     override def toString = "wait loaded & typed "+source
   }
 
   class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
-    def apply() = self.getParsedEntered(source, keepLoaded, response, onSameThread = false)
+    def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
   }
 }

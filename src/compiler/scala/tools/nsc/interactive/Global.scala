@@ -617,10 +617,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
     parseAndEnter(unit)
-    if (unit.status <= PartiallyChecked) {
-      //newTyperRun()   // not deeded for idempotent type checker phase
-      typeCheck(unit)
-    }
+    if (unit.status <= PartiallyChecked) typeCheck(unit)
     unit.body
   }
 
@@ -851,14 +848,18 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   /** Implements CompilerControl.askLoadedTyped */
   protected def waitLoadedTyped(source: SourceFile, response: Response[Tree], onSameThread: Boolean = true) {
     getUnit(source) match {
-      case Some(unit) if unit.isUpToDate =>
-        debugLog("already typed");
-        response set unit.body
-      case Some(_) if !onSameThread =>
-        debugLog("wait for later")
-        outOfDate = true
-        waitLoadedTypeResponses(source) += response
-      case _ =>
+      case Some(unit) =>
+        if (unit.isUpToDate) {
+          debugLog("already typed");
+          response set unit.body
+        } else if (onSameThread) {
+          getTypedTree(source, forceReload = false, response)
+        } else {
+          debugLog("wait for later")
+          outOfDate = true
+          waitLoadedTypeResponses(source) += response
+        }
+      case None =>
         debugLog("load unit and type")
         try reloadSources(List(source))
         finally waitLoadedTyped(source, response, onSameThread)
