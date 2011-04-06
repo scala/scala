@@ -83,6 +83,7 @@ a[href]:hover {
 
 #definition h1 > a {
   color: white;
+  font-size: 24pt;
 }
 
 #signature {
@@ -112,10 +113,16 @@ a[href]:hover {
   display: none;
 }
 
+div.superTypes > h1 {
+  font-style: italic;
+  padding-top: 0.5em;
+}
+
 .link {
   text-decoration: underline;
   cursor: pointer;
   color: #315479;
+  font-size: 11pt;
 }
 
 
@@ -136,6 +143,18 @@ h3 {
   padding: 5px 10px;
   font-size: 12pt;
   font-weight: bold;
+}
+
+dl.attributes > dt {
+  display: block;
+  float: left;
+  font-style: italic;
+}
+
+dl.attributes > dd {
+  display: block;
+  padding-left: 10em;
+  margin-bottom: 5px;
 }
 
 #template .values > h3 {
@@ -390,7 +409,7 @@ div.fullcomment {
 
 div.fullcomment .block {
   padding: 5px 0 0;
-  border-top: 1px dashed silver;
+  border-top: 1px solid #EBEBEB;
   margin-top: 5px;
 }
 
