@@ -285,25 +285,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
    */
   def runCommand(command: String, outFile: File): Boolean = {
     NestUI.verbose("running command:\n"+command)
-
-    // This is laboriously avoiding #> since it swallows exit failure code.
-    // To be revisited. XXX.
-    val out = new StringBuilder
-    val err = new StringBuilder
-    val errorLogger = ProcessLogger(x => err append (x + "\n"))
-    val pio = BasicIO(
-      false,
-      x => out append (x + "\n"),
-      Some(errorLogger)
-    )
-    val process = Process(command) run pio
-    val code    = process.exitValue()
-    SFile(outFile) writeAll out.toString
-
-    (code == 0) || {
-      SFile(outFile).appendAll(command + " failed with code: " + code + "\n", err.toString)
-      false
-    }
+    (command #> outFile !) == 0
   }
 
   def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
@@ -947,10 +929,12 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         wr.flush()
         swr.flush()
         NestUI.normal(swr.toString)
-        if (isFail && (fileManager.showDiff || isPartestDebug) && diff != "")
-          NestUI.normal(diff)
-        if (isFail && fileManager.showLog)
-          showLog(logFile)
+        if (isFail) {
+          if ((fileManager.showDiff || isPartestDebug) && diff != "")
+            NestUI.normal(diff)
+          else if (fileManager.showLog)
+            showLog(logFile)
+        }
       }
       cleanup()
     }
