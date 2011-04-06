@@ -3,14 +3,17 @@ Type :help for more information.
 
 scala> 
 
-scala> scala> 123
-res0: Int = 123
+scala> scala> 0123
+res4: Int = 0123
+
+scala> 123
+res5: Int = 123
 
 scala> 567
-res1: Int = 567
+res6: Int = 567
 
-scala> res0 + res1
-res2: Int = 690
+scala> res5 + res6
+res7: Int = 690
 
 scala> val x = dingus
 <console>:7: error: not found: value dingus
@@ -21,35 +24,38 @@ scala> val x = "dingus"
 x: java.lang.String = dingus
 
 scala> x.length
-res3: Int = 6
+res9: Int = 6
 
-scala> x.length + res3
-res4: Int = 12
+scala> x.length + res5
+res10: Int = 12
 
-// Replaying 7 commands from transcript.
+// Replaying 8 commands from transcript.
 
-val res0 = { 123 }
-res0: Int = 123
+scala> 0123
+res0: Int = 83
 
-val res1 = { 567 }
-res1: Int = 567
+scala> val res5 = { 123 }
+res5: Int = 123
 
-val res2 = { res0 + res1 }
-res2: Int = 690
+scala> val res6 = { 567 }
+res6: Int = 567
 
-val x = dingus
+scala> res5 + res6
+res1: Int = 690
+
+scala> val x = dingus
 <console>:7: error: not found: value dingus
        val x = dingus
                ^
 
-val x = "dingus"
+scala> val x = "dingus"
 x: java.lang.String = dingus
 
-val res3 = { x.length }
-res3: Int = 6
+scala> x.length
+res2: Int = 6
 
-val res4 = { x.length + res3 }
-res4: Int = 12
+scala> x.length + res5
+res3: Int = 129
 
 
 scala> 

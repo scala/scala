@@ -605,8 +605,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       out.println("")
     }
 
-    def transcript(start: String) =
+    def transcript(start: String) = {
+      // Printing this message doesn't work very well becaues it's buried in the
+      // transcript they just pasted.  Todo: a short timer goes off when
+      // lines stop coming which tells them to hit ctrl-D.
+      //
+      // out.println("// Detected repl transcript paste: ctrl-D to finish.")
       apply(Iterator(start) ++ readWhile(_.trim != PromptString.trim))
+    }
   }
   import paste.{ ContinueString, PromptString }
 
