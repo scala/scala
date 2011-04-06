@@ -539,10 +539,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     var Object_synchronized: Symbol = _
     lazy val Object_isInstanceOf = newPolyMethod(
       ObjectClass, "$isInstanceOf",
-      tparam => MethodType(List(), booltype)) setFlag FINAL
+      tparam => MethodType(List(), booltype)) setFlag (FINAL | SYNTHETIC)
     lazy val Object_asInstanceOf = newPolyMethod(
       ObjectClass, "$asInstanceOf",
-      tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL
+      tparam => MethodType(List(), tparam.typeConstructor)) setFlag (FINAL | SYNTHETIC)
 
     def Object_getClass  = getMember(ObjectClass, nme.getClass_)
     def Object_clone     = getMember(ObjectClass, nme.clone_)
