@@ -14,14 +14,11 @@ import scala.xml.include._
 import java.io.InputStream
 import scala.util.matching.Regex
 
-/**
- * <p>
- * <code>EncodingHeuristics</code> reads from a stream
+/** `EncodingHeuristics` reads from a stream
  * (which should be buffered) and attempts to guess
  * what the encoding of the text in the stream is.
  * If it fails to determine the type of the encoding,
  * it returns the default UTF-8.
- * </p>
  *
  * @author Burak Emir
  * @author Paul Phillips
@@ -40,16 +37,13 @@ object EncodingHeuristics
   }
   import EncodingNames._
 
-  /**
-    * <p>
-    * This utility method attempts to determine the XML character encoding
-    * by examining the input stream, as specified here:
-    *    http://www.w3.org/TR/xml/#sec-guessing
-    * </p>
+  /** This utility method attempts to determine the XML character encoding
+    * by examining the input stream, as specified at
+    * [[http://www.w3.org/TR/xml/#sec-guessing w3]].
     *
-    * @param in   <code>InputStream</code> to read from.
-    * @return String  The name of the encoding.
+    * @param    in   `InputStream` to read from.
     * @throws IOException if the stream cannot be reset
+    * @return         the name of the encoding.
     */
   def readEncodingFromStream(in: InputStream): String = {
     var ret: String = null
