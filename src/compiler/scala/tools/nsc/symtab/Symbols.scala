@@ -1401,7 +1401,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def overridingSymbol(ofclazz: Symbol): Symbol =
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
 
+    /** Returns all symbols overriden by this symbol
+     */
     final def allOverriddenSymbols: List[Symbol] =
+      if (!owner.isClass) Nil
+      else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
+
+    /** Returns all symbols overridden by this symbol, plus all matching symbols
+     *  defined in parents of the selftype
+     */
+    final def extendedOverriddenSymbols: List[Symbol] =
       if (!owner.isClass) Nil
       else owner.thisSym.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
