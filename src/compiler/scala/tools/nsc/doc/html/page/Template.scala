@@ -468,11 +468,16 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
-    def inside(hasLinks: Boolean): NodeSeq =
+    def inside(hasLinks: Boolean, nameLink: String = ""): NodeSeq =
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
-        <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
+        {
+          val nameHtml = <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
+          if (!nameLink.isEmpty)
+            <a href={nameLink}>{nameHtml}</a>
+          else nameHtml
+        }
         {
           def tparamsToHtml(mbr: Entity): NodeSeq = mbr match {
             case hk: HigherKinded =>
@@ -544,7 +549,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <h4 class="signature"><a href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a></h4>
+        <h4 class="signature">{ inside(hasLinks = false, nameLink = relativeLinkTo(dte)) }</h4>
       case _ if isSelf =>
         <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>
