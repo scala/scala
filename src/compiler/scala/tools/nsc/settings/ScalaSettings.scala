@@ -146,6 +146,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
                                           withPostSetHook(set => interpreter.isReplDebug = true)
   val Ycompletion   = BooleanSetting    ("-Ycompletion-debug", "Trace all tab completion activity.")
+  val Ydocdebug     = BooleanSetting    ("-Ydoc-debug", "Trace all scaladoc activity.")
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible.")
   val Ynotnull      = BooleanSetting    ("-Ynotnull", "Enable (experimental and incomplete) scala.NotNull.")
   val YdepMethTpes  = BooleanSetting    ("-Ydependent-method-types", "Allow dependent method types.")

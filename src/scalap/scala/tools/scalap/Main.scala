@@ -117,34 +117,8 @@ class Main {
       }
       // if the class corresponds to the artificial class scala.Any.
       // (see member list in class scala.tool.nsc.symtab.Definitions)
-    } else if (classname == "scala.Any") {
-      Console.println("package scala")
-      Console.println("class Any {")
-      Console.println("  final def ==(scala.Any): scala.Boolean")
-      Console.println("  final def !=(scala.Any): Boolean")
-      Console.println("  def equals(scala.Any): scala.Boolean")
-      Console.println("  def hashCode(): scala.Int")
-      Console.println("  def toString(): java.lang.String")
-      Console.println("  final def isInstanceOf[a]: scala.Boolean")
-      Console.println("  final def asInstanceOf[a]: a")
-      Console.println("}")
-      // if the class corresponds to the artificial class scala.AnyRef.
-    } else if (classname == "scala.AnyRef") {
-      Console.println("package scala")
-      Console.println("class AnyRef extends Any {")
-      Console.println("  def equals(scala.Any): scala.Boolean")
-      Console.println("  def hashCode(): scala.Int")
-      Console.println("  def toString(): java.lang.String")
-      Console.println("}")
-      // if the class corresponds to the artificial class scala.AnyVal.
-    } else if (classname == "scala.Nothing") {
-      Console.println("package scala")
-      Console.println("sealed abstract class Nothing")
-      // if the class corresponds to the artificial class scala.Null.
-    } else if (classname == "scala.Null") {
-      Console.println("package scala")
-      Console.println("sealed abstract class Null")
-    } else
+    }
+    else
       Console.println("class/object " + classname + " not found.")
   }
 

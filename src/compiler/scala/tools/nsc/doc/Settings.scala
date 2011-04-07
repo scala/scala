@@ -41,6 +41,17 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     ""
   )
 
+  val docUncompilable = StringSetting (
+    "-doc-no-compile",
+    "path",
+    "A directory containing sources which should be parsed, no more (e.g. AnyRef.scala)",
+    ""
+  )
+  lazy val uncompilableFiles = docUncompilable.value match {
+    case ""     => Nil
+    case path   => io.Directory(path).deepFiles filter (_ hasExtension "scala") toList
+  }
+
   /** A setting that defines a URL to be concatenated with source locations and show a link to source files.
    * If needed the sourcepath option can be used to exclude undesired initial part of the link to sources */
   val docsourceurl = StringSetting (
@@ -62,8 +73,6 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "scala.tools.nsc.doc.html.Doclet"
   )
 
-  // TODO: add a new setting for whether or not to document sourceless entities (e.g., Any, Unit, etc)
-
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -71,7 +80,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
-    docformat, doctitle, docversion, docsourceurl, docgenerator
+    docformat, doctitle, docversion, docUncompilable, docsourceurl, docgenerator
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 }

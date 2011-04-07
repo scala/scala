@@ -27,6 +27,7 @@ class ScalaDoc {
       override def hasErrors = false
     }
     val command = new ScalaDoc.Command(args.toList, docSettings)
+    def hasFiles = command.files.nonEmpty || docSettings.uncompilableFiles.nonEmpty
 
     if (docSettings.version.value)
       reporter.info(null, versionMsg, true)
@@ -38,7 +39,7 @@ class ScalaDoc {
       reporter.warning(null, "Plugins are not available when using Scaladoc")
     else if (docSettings.showPhases.value)
       reporter.warning(null, "Phases are restricted when using Scaladoc")
-    else if (docSettings.help.value || command.files.isEmpty)
+    else if (docSettings.help.value || !hasFiles)
       reporter.info(null, command.usageMsg, true)
     else try {
       if (docSettings.target.value == "msil")
