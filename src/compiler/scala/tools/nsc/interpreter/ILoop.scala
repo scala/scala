@@ -8,7 +8,6 @@ package interpreter
 
 import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader, PrintWriter }
-
 import scala.sys.process.Process
 import session._
 import scala.tools.nsc.interpreter.{ Results => IR }
@@ -361,6 +360,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     if (line == "") "Cleared wrapper."
     else "Set wrapper to '" + line + "'"
   }
+  private def pathToPhaseWrapper = intp.pathToTerm("$r") + ".phased.atCurrent"
   private def phaseCommand(name: String): Result = {
     // This line crashes us in TreeGen:
     //
@@ -391,7 +391,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       if (what.isEmpty || !phased.set(what))
         "'" + name + "' does not appear to represent a valid phase."
       else {
-        intp.setExecutionWrapper("phased.atCurrent")
+        intp.setExecutionWrapper(pathToPhaseWrapper)
         val activeMessage =
           if (what.toString.length == name.length) "" + what
           else "%s (%s)".format(what, name)

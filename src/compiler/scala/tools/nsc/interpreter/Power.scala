@@ -43,19 +43,17 @@ trait SharesGlobal[G <: Global] {
 
 object Power {
   def apply[G <: Global](repl: ILoop, g: G) =
-    new { final val global: G = g }
-      with Power[G](repl, repl.intp) // .asInstanceOf[IMain { val global: G }])
+    new { final val global: G = g } with Power[G](repl, repl.intp)
 
   def apply(intp: IMain) =
-    new { final val global = intp.global }
-      with Power[Global](null, intp)
+    new { final val global = intp.global } with Power[Global](null, intp)
 }
 
 /** A class for methods to be injected into the intp in power mode.
  */
 abstract class Power[G <: Global](
   val repl: ILoop,
-  val intp: IMain   // { val global: G }
+  val intp: IMain
 ) extends SharesGlobal[G] {
   import intp.{ beQuietDuring, interpret, parse }
   import global.{ opt, definitions, stringToTermName, NoSymbol, NoType, analyzer, CompilationUnit }
@@ -132,24 +130,25 @@ abstract class Power[G <: Global](
 
   def init = """
     |import scala.tools.nsc._
-    |import interpreter.Power
     |import scala.collection.JavaConverters._
-    |final val global = repl.power.global
-    |final val power = repl.power.asInstanceOf[Power[global.type]]
-    |final val intp = repl.intp
     |import global._
-    |import definitions._
-    |import power.Implicits.{ global => _, _ }
-    |import power.Utilities._
   """.stripMargin
 
   /** Starts up power mode and runs whatever is in init.
    */
   def unleash(): Unit = beQuietDuring {
+    val r  = new ReplVals(repl)
     intp.bind[ILoop]("repl", repl)
-    intp.bind[History]("history", repl.in.history)
-    intp.bind("completion", repl.in.completion)
-    intp.bind[ISettings]("isettings", intp.isettings)
+    intp.bind[ReplVals]("$r", r)
+
+    intp.bind("intp", r.intp)
+    intp.bind("global", r.global)
+    intp.bind("power", r.power)
+    intp.bind("phased", r.phased)
+    intp.bind("isettings", r.isettings)
+    intp.bind("completion", r.completion)
+    intp.bind("history", r.history)
+
     init split '\n' foreach interpret
   }
 
@@ -218,8 +217,8 @@ abstract class Power[G <: Global](
       def prettify(x: Any): List[String] = x match {
         case x: Name                => List(x.decode)
         case Tuple2(k, v)           => List(prettify(k) ++ Seq("->") ++ prettify(v) mkString " ")
-        case xs: TraversableOnce[_] => (xs.toList flatMap prettify).sorted.distinct
-        case x                      => List(Utilities.stringOf(x))
+        case xs: TraversableOnce[_] => (xs.toList flatMap prettify).sorted
+        case x                      => List(rutil.stringOf(x))
       }
     }
   }
@@ -318,6 +317,7 @@ abstract class Power[G <: Global](
   object Implicits extends Implicits2 {
     val global = Power.this.global
   }
+
   trait ReplUtilities {
     def ?[T: Manifest] = InternalInfo[T]
     def url(s: String) = {
@@ -341,12 +341,11 @@ abstract class Power[G <: Global](
     }
     def stringOf(x: Any): String = scala.runtime.ScalaRunTime.stringOf(x)
   }
-  object Utilities extends ReplUtilities {
-    object phased extends Phased with SharesGlobal[G] {
-      val global: G = Power.this.global
-    }
+
+  lazy val rutil: ReplUtilities = new ReplUtilities { }
+  lazy val phased: Phased = new Phased with SharesGlobal[G] {
+    val global: G = Power.this.global
   }
-  lazy val phased  = Utilities.phased
 
   def context(code: String)    = analyzer.rootContext(unit(code))
   def source(code: String)     = new BatchSourceFile("<console>", code)
@@ -360,7 +359,7 @@ abstract class Power[G <: Global](
     |Names: %s
     |Identifiers: %s
   """.stripMargin.format(
-      Utilities.phased.get,
+      phased.get,
       intp.allDefinedNames mkString " ",
       intp.unqualifiedIds mkString " "
     )
