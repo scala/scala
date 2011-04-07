@@ -52,7 +52,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
   // TODO
   // object opt extends AestheticSettings
-
+  //
   @deprecated("Use `intp` instead.")
   def interpreter = intp
 
@@ -532,11 +532,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   }
 
   def powerCmd(): Result = {
-    if (isReplPower) return "Already in power mode."
+    if (isReplPower) "Already in power mode."
     else enablePowerMode()
   }
   def enablePowerMode() = {
-    isReplPower = true
+    replProps.power setValue true
     power.unleash()
     out.println(power.banner)
   }

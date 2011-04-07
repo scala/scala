@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package interpreter
 
-import java.io.File
 import scala.tools.jline.console.ConsoleReader
 import scala.tools.jline.console.completer._
 import session._

@@ -53,6 +53,10 @@ trait Prop[+T] {
    */
   def get: String
 
+  /** Some(value) if the property is set, None otherwise.
+   */
+  def option: Option[T]
+
   /** Removes the property from the underlying map.
    */
   def clear(): Unit
@@ -75,6 +79,7 @@ object Prop {
     def apply(key: String): Prop[T]
   }
 
+  implicit object FileProp extends CreatorImpl[java.io.File](s => new java.io.File(s))
   implicit object StringProp extends CreatorImpl[String](s => s)
   implicit object IntProp extends CreatorImpl[Int](_.toInt)
   implicit object DoubleProp extends CreatorImpl[Double](_.toDouble)

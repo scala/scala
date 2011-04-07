@@ -46,6 +46,8 @@ object BooleanProp {
     def setValue[T1 >: Boolean](newValue: T1): Boolean = value
     def get: String = "" + value
     val clear, enable, disable, toggle = ()
+    def option = if (isSet) Some(value) else None
+
     protected def zero = false
   }
 

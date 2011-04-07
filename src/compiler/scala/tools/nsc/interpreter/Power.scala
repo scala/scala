@@ -119,7 +119,10 @@ abstract class Power[G <: Global](
     def slurp()               = apply(modClass)
   }
 
-  def banner = """
+  private def customBanner = replProps.powerBanner.option flatMap (f => io.File(f).safeSlurp())
+  private def customInit   = replProps.powerInitCode.option flatMap (f => io.File(f).safeSlurp())
+
+  def banner = customBanner getOrElse """
     |** Power User mode enabled - BEEP BOOP WHIR **
     |** scala.tools.nsc._ has been imported      **
     |** global._ and definitions._ also imported **
@@ -128,7 +131,7 @@ abstract class Power[G <: Global](
     |** New defs! Type power.<tab> to reveal     **
   """.stripMargin.trim
 
-  def init = """
+  def init = customInit getOrElse """
     |import scala.tools.nsc._
     |import scala.collection.JavaConverters._
     |import global._

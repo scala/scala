@@ -63,7 +63,7 @@ trait TypeStrings {
 
   private def tvarString(tvar: TypeVariable[_]): String = tvarString(tvar.getBounds.toList)
   private def tvarString(bounds: List[AnyRef]): String = {
-    val xs = bounds filterNot (_ == ObjectClass) collect { case x: Class[_] => x }
+    val xs = bounds filterNot (_ == ObjectClass) collect { case x: JClass => x }
     if (xs.isEmpty) "_"
     else scalaName(xs.head)
   }

@@ -288,7 +288,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
     }
   }
-  private def loadByName(s: String): Class[_] =
+  private def loadByName(s: String): JClass =
     (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
 
   protected def parentClassLoader: ClassLoader =
@@ -994,7 +994,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def valueOfTerm(id: String): Option[AnyRef] =
     requestForIdent(id) flatMap (_.getEval)
 
-  def classOfTerm(id: String): Option[Class[_]] =
+  def classOfTerm(id: String): Option[JClass] =
     valueOfTerm(id) map (_.getClass)
 
   def typeOfTerm(id: String): Option[Type] = newTermName(id) match {
@@ -1004,7 +1004,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   def symbolOfTerm(id: String): Symbol =
     requestForIdent(id) flatMap (_.definedSymbols get newTermName(id)) getOrElse NoSymbol
 
-  def runtimeClassAndTypeOfTerm(id: String): Option[(Class[_], Type)] = {
+  def runtimeClassAndTypeOfTerm(id: String): Option[(JClass, Type)] = {
     for {
       clazz <- classOfTerm(id)
       tpe <- runtimeTypeOfTerm(id)
