@@ -122,9 +122,21 @@ div.superTypes > h1 {
   text-decoration: underline;
   cursor: pointer;
   color: #315479;
-  font-size: 11pt;
 }
 
+.toggleContainer p {
+  margin-top: 5px;
+}
+
+.toggleContainer .showElement {
+  padding-left: 15px;
+  background: url("arrow-right.png") no-repeat 0 5px transparent;
+}
+
+.toggleContainer .hideElement {
+  padding-left: 15px;
+  background: url("arrow-down.png") no-repeat 0 5px transparent;
+}
 
 .value #definition {
   background-color: #2C475C; /* blue */

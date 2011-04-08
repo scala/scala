@@ -101,63 +101,29 @@ $(document).ready(function(){
             $(this.getTip()).html(this.getTrigger().attr("name"))
         }        
     });   
-    var docAllSigs = $("#template .signature");
 
-    // Is this used anywhere?    
-    /*
-    function commentShowFct(signature){
-        var fullComment = $("+ div.fullcomment", $(signature));
-        var vis = $(":visible", fullComment);
-        if (vis.length > 0) {
-            fullComment.slideUp(100);
-            signature.addClass("closed");
-            signature.removeClass("opened");
-        }
-        else {
-            fullComment.slideDown(100);
-            signature.removeClass("closed");
-            signature.addClass("opened");
-        }
-    };
-    var docShowSigs = docAllSigs.filter(function(){
-        return $("+ div.fullcomment", $(this)).length > 0;
-    });
-    docShowSigs.css("cursor", "pointer");
-    docShowSigs.click(function(){
-        commentShowFct($(this));
-    });
-    */
+    /* Add toggle arrows */
+    var docAllSigs = $("#template li").has(".fullcomment").find(".signature");
     
     function commentToggleFct(signature){
         var parent = signature.parent();
         var shortComment = $(".shortcomment", parent);
         var fullComment = $(".fullcomment", parent);
         var vis = $(":visible", fullComment);
+        signature.toggleClass("closed").toggleClass("opened");
         if (vis.length > 0) {
             shortComment.slideDown(100);
             fullComment.slideUp(100);
-            signature.addClass("closed");
-            signature.removeClass("opened");
         }
         else {
             shortComment.slideUp(100);
             fullComment.slideDown(100);
-            signature.removeClass("closed");
-            signature.addClass("opened");
         }
     };
-    var docToggleSigs = docAllSigs.filter(function(){
-        return $("+ .shortcomment", $(this)).length > 0;
-    });
-    docToggleSigs.addClass("closed");
-    docToggleSigs.click(function(){
+    docAllSigs.addClass("closed");
+    docAllSigs.click(function() {
         commentToggleFct($(this));
     });
-    /*
-    $(".shortcomment").click(function(){
-        commentToggleFct($(this));
-    });
-    */
     
     /* Linear super types and known subclasses */
     function toggleShowContentFct(outerElement){
@@ -174,7 +140,7 @@ $(document).ready(function(){
         $(".hideElement", outerElement).show();
       }
     };
-    $("#superTypesDiv").click(function() {
+    $(".toggleContainer").click(function() {
       toggleShowContentFct($(this));
     });
 });

@@ -375,9 +375,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }</dd>
           } else NodeSeq.Empty
 
-        <xml:group> {
-          example ++ version ++ sinceVersion ++ seeAlso
-        } </xml:group>
+        example ++ version ++ sinceVersion ++ seeAlso
 
       case None => NodeSeq.Empty
     }
@@ -390,39 +388,35 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       else
         <dl class="attributes block"> { attributesInfo }</dl>
 
-    val linearization =
-      mbr match {
-        case dtpl: DocTemplateEntity if isSelf && !isReduced && (dtpl.linearizationTemplates.nonEmpty || dtpl.subClasses.nonEmpty) =>
-          val linearSupertypes: Seq[scala.xml.Node] =
-            if (dtpl.linearizationTemplates.isEmpty) NodeSeq.Empty
-            else {
-              <h1>Linear Supertypes</h1>
-              <p>{ typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }</p>
-            }
-
-          val knownSubclasses: Seq[scala.xml.Node] =
-            if (dtpl.subClasses.isEmpty) NodeSeq.Empty
-            else {
-              <h1>Known Subclasses</h1>
-              <p>{ templatesToHtml(dtpl.subClasses, xml.Text(", ")) }</p>
-            }
-
-          <div id="superTypesDiv">
-            <div class="attributes block">
-              <span class="link showElement">Show linear super types and known subclasses</span>
-              <span class="link hideElement">Hide linear super types and known subclasses</span>
-            </div>
-            <div class="superTypes hiddenContent">
-              <xml:group> {
-                linearSupertypes ++ knownSubclasses
-              } </xml:group>
-            </div>
+    val linearization = mbr match {
+      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
+        <div class="toggleContainer">
+          <div class="attributes block">
+            <span class="link showElement">Linear Supertypes</span>
+            <span class="link hideElement">Linear Supertypes</span>
           </div>
-        case _ => NodeSeq.Empty
-      }
+          <div class="superTypes hiddenContent">
+            <p>{ typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }</p>
+          </div>
+        </div>
+      case _ => NodeSeq.Empty
+    }
 
-    NodeSeq.Empty ++ memberComment ++ paramComments ++ attributesBlock ++ linearization
+    val subclasses = mbr match {
+      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.subClasses.nonEmpty =>
+        <div class="toggleContainer">
+          <div class="attributes block">
+            <span class="link showElement">Known Subclasses</span>
+            <span class="link hideElement">Known Subclasses</span>
+          </div>
+          <div class="subClasses hiddenContent">
+            <p>{ templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", ")) }</p>
+          </div>
+        </div>
+      case _ => NodeSeq.Empty
+    }
 
+    memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses
   }
 
   def kindToString(mbr: MemberEntity): String = {
