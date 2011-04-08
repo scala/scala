@@ -15,6 +15,7 @@ import scala.tools.nsc.symtab._
 
 import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
 import ch.epfl.lamp.compiler.msil.emit._
+import ch.epfl.lamp.compiler.msil.util.PECustomMod
 
 abstract class GenMSIL extends SubComponent {
   import global._
@@ -250,10 +251,33 @@ abstract class GenMSIL extends SubComponent {
       }
     }
 
+    /**
+     * Mutates `member` adding CLR attributes (if any) based on sym.annotations.
+     * Please notice that CLR custom modifiers are a different beast (see customModifiers below)
+     * and thus shouldn't be added by this method.
+     */
     def addAttributes(member: ICustomAttributeSetter, annotations: List[AnnotationInfo]) {
+      val attributes = annotations.map(_.atp.typeSymbol).collect {
+        case definitions.TransientAttr => null // TODO this is just an example
+      }
       return // TODO: implement at some point
     }
-/*
+
+    /**
+     * What's a CLR custom modifier? Intro available as source comments in compiler.msil.CustomModifier.
+     * It's basically a marker associated with a location (think of FieldInfo, ParameterInfo, and PropertyInfo)
+     * and thus that marker (be it optional or required) becomes part of the signature of that location.
+     * Some annotations will become CLR attributes (see addAttributes above), others custom modifiers (this method).
+     */
+    def customModifiers(annotations: List[AnnotationInfo]): Array[CustomModifier] = {
+      annotations.map(_.atp.typeSymbol).collect {
+        case definitions.VolatileAttr  => new CustomModifier(true, CustomModifier.VolatileMarker)
+      } toArray
+    }
+
+
+
+    /*
       if (settings.debug.value)
         log("creating annotations: " + annotations + " for member : " + member)
       for (annot@ AnnotationInfo(typ, annArgs, nvPairs) <- annotations ;
@@ -809,6 +833,9 @@ abstract class GenMSIL extends SubComponent {
             val fInfo = getType(field.owner).GetField(msilName(field))
             fields(field) = fInfo
             fInfo
+        }
+        if (fieldInfo.IsVolatile) {
+          mcode.Emit(OpCodes.Volatile)
         }
         if (!fieldInfo.IsLiteral) {
           if (loadAddr) {
@@ -1864,7 +1891,12 @@ abstract class GenMSIL extends SubComponent {
           log("Adding field: " + sym.fullName)
 
         var attributes = msilFieldFlags(sym)
-        val fBuilder = mtype.DefineField(msilName(sym), msilType(sym.tpe), attributes)
+        val fieldTypeWithCustomMods =
+          new PECustomMod(msilType(sym.tpe),
+                          customModifiers(sym.annotations))
+        val fBuilder = mtype.DefineField(msilName(sym),
+                                         fieldTypeWithCustomMods,
+                                         attributes)
         fields(sym) = fBuilder
         addAttributes(fBuilder, sym.annotations)
       } // all iclass.fields iterated over

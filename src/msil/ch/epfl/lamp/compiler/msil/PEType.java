@@ -10,6 +10,7 @@ import ch.epfl.lamp.compiler.msil.PEFile.Sig;
 import ch.epfl.lamp.compiler.msil.util.Table;
 import ch.epfl.lamp.compiler.msil.util.Table.*;
 import ch.epfl.lamp.compiler.msil.util.Signature;
+import ch.epfl.lamp.compiler.msil.util.PECustomMod;
 
 import java.util.ArrayList;
 
@@ -83,7 +84,7 @@ final class PEType extends Type implements Signature {
 	    String name = file.FieldDef.getName();
 	    //System.out.println("\t-->Loading field: " + name);
 	    Sig sig = file.FieldDef.getSignature();
-	    Type fieldType = sig.decodeFieldType();
+	    PECustomMod pecmod = sig.decodeFieldType();
 	    Object val = null;
 	    Table.Constant consts = file.Constant;
 	    for (int i = 1; i <= consts.rows; i++) {
@@ -93,10 +94,8 @@ final class PEType extends Type implements Signature {
 		if (tableId == Table.FieldDef.ID && refRow == frow)
 		    val = consts.getValue();
 	    }
-	    FieldInfo field =
-		new PEFieldInfo(row, name, attrs, fieldType, val);
-	    if (field.Name.equals("value__") && field.IsSpecialName())
-		{
+	    FieldInfo field = new PEFieldInfo(row, name, attrs, pecmod, val);
+	    if (field.Name.equals("value__") && field.IsSpecialName()) {
 		    assert underlyingType == null : underlyingType.toString();
 		    underlyingType = field.FieldType;
 		}
@@ -158,8 +157,7 @@ final class PEType extends Type implements Signature {
 		    //System.out.println("Retval attributes 0x" +
 		    //		       PEFile.short2hex(pattr));
 		} else {
-		    params[seq - 1] = new ParameterInfo
-			(paramName, paramType[seq - 1], pattr, seq - 1);
+		    params[seq - 1] = new ParameterInfo(paramName, paramType[seq - 1], pattr, seq - 1);
 		}
 	    }
 	    for (int i = 0; i < params.length; i++) {
@@ -351,9 +349,9 @@ final class PEType extends Type implements Signature {
     private class PEFieldInfo extends FieldInfo {
 	private final int definingRow;
 	public PEFieldInfo(int definingRow, String name,
-                           int attrs, Type fieldType, Object value)
+                       int attrs, PECustomMod pecmod, Object value)
 	{
-	    super(name, PEType.this, attrs, fieldType, value);
+	    super(name, PEType.this, attrs, pecmod, value);
 	    this.definingRow = definingRow;
 	}
 	protected void loadCustomAttributes(Type attributeType) {

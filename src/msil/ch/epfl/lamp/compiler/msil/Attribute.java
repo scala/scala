@@ -372,10 +372,8 @@ public class Attribute {
     private Type getTypeFromSerString() {
         String typename = parseString();
         int i = typename.indexOf(',');
-        // fully qualified assembly name follows
-        // just strip it on the assumtion theat the
-        // assembly is referenced in the externs and the
-        // type will be found
+        /* fully qualified assembly name follows. Just strip it on the assumption that
+           the assembly is referenced in the externs and the type will be found. */
         String name = (i < 0) ? typename : typename.substring(0, i);
         Type t = Type.GetType(name);
         if (t == null && i > 0) {
