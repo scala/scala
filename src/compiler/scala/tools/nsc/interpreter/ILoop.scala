@@ -220,6 +220,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     nullary("help", "print this help message", helpCommand),
     historyCommand,
     cmd("h?", "<string>", "search the history", searchHistory),
+    cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
     cmd("implicits", "[-v]", "show the implicits in scope", implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
     nullary("keybindings", "show how ctrl-[A-Z] and other keys are bound", keybindingsCommand),
@@ -253,6 +254,31 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     "java.lang."                  -> "jl.",
     "scala.runtime."              -> "runtime."
   )
+
+  private def importsCommand(line: String): Result = {
+    val tokens    = words(line)
+    val handlers  = intp.languageWildcardHandlers ++ intp.importHandlers
+    val isVerbose = tokens contains "-v"
+
+    handlers.filterNot(_.importedSymbols.isEmpty).zipWithIndex foreach {
+      case (handler, idx) =>
+        val (types, terms) = handler.importedSymbols partition (_.name.isTypeName)
+        val imps           = handler.implicitSymbols
+        val found          = tokens filter (handler importsSymbolNamed _)
+        val typeMsg        = if (types.isEmpty) "" else types.size + " types"
+        val termMsg        = if (terms.isEmpty) "" else terms.size + " terms"
+        val implicitMsg    = if (imps.isEmpty) "" else imps.size + " are implicit"
+        val foundMsg       = if (found.isEmpty) "" else found.mkString(" // imports: ", ", ", "")
+        val statsMsg       = List(typeMsg, termMsg, implicitMsg) filterNot (_ == "") mkString ("(", ", ", ")")
+
+        intp.reporter.printMessage("%2d) %-30s %s%s".format(
+          idx + 1,
+          handler.importString,
+          statsMsg,
+          foundMsg
+        ))
+    }
+  }
 
   private def implicitsCommand(line: String): Result = {
     val intp = ILoop.this.intp

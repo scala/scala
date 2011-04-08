@@ -860,8 +860,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       case _                        => naming.mostRecentVar
     })
 
-  private def requestForName(name: Name): Option[Request] =
+  private def requestForName(name: Name): Option[Request] = {
+    assert(definedNameMap != null, "definedNameMap is null")
     definedNameMap get name
+  }
 
   private def requestForIdent(line: String): Option[Request] =
     requestForName(newTermName(line)) orElse requestForName(newTypeName(line))
@@ -927,17 +929,23 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       return None
     }
 
+    def asQualifiedImport = {
+      val name = expr.takeWhile(_ != '.')
+      importedTermNamed(name) flatMap { sym =>
+        typeOfExpression(sym.fullName + expr.drop(name.length))
+      }
+    }
     def asModule = safeModule(expr) map (_.tpe)
     def asExpr = beSilentDuring {
       val lhs = freshInternalVarName()
-      interpret("lazy val " + lhs + " = { " + expr + " } ") match {
+      interpret("lazy val " + lhs + " = { " + expr + " } ", true) match {
         case IR.Success => typeOfExpression(lhs)
         case _          => None
       }
     }
 
     typeOfExpressionDepth += 1
-    try typeOfTerm(expr) orElse asModule orElse asExpr
+    try typeOfTerm(expr) orElse asModule orElse asExpr orElse asQualifiedImport
     finally typeOfExpressionDepth -= 1
   }
   // def compileAndTypeExpr(expr: String): Option[Typer] = {

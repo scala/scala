@@ -15,9 +15,21 @@ trait Imports {
   import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
+  /** Synthetic import handlers for the language defined imports. */
+  private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
+    val hd :: tl = sym.fullName.split('.').toList map newTermName
+    val tree = Import(
+      tl.foldLeft(Ident(hd): Tree)((x, y) => Select(x, y)),
+      List(ImportSelector(nme.WILDCARD, -1, null, -1))
+    )
+    tree setSymbol sym
+    new ImportHandler(tree)
+  }
+
   /** Symbols whose contents are language-defined to be imported. */
   def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
   def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
+  def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
   def importedTerms  = onlyTerms(importHandlers flatMap (_.importedNames))
   def importedTypes  = onlyTypes(importHandlers flatMap (_.importedNames))
@@ -44,7 +56,11 @@ trait Imports {
   def languageSymbols        = languageWildcardSyms flatMap membersAtPickler
   def sessionImportedSymbols = importHandlers flatMap (_.importedSymbols)
   def importedSymbols        = languageSymbols ++ sessionImportedSymbols
+  def importedTermSymbols    = importedSymbols collect { case x: TermSymbol => x }
+  def importedTypeSymbols    = importedSymbols collect { case x: TypeSymbol => x }
   def implicitSymbols        = importedSymbols filter (_.isImplicit)
+
+  def importedTermNamed(name: String) = importedTermSymbols find (_.name.toString == name)
 
   /** Tuples of (source, imported symbols) in the order they were imported.
    */
