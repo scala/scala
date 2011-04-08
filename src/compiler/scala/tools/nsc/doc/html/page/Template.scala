@@ -208,10 +208,15 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         if (commentBody.isEmpty)
           NodeSeq.Empty
         else {
-          <xml:group>
-            { memberToShortCommentHtml(mbr, isSelf) }
-            <div class="fullcomment">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ memberToCommentBodyHtml(mbr, isSelf) }</div>
-          </xml:group>
+          val shortComment = memberToShortCommentHtml(mbr, isSelf)
+          val longComment = memberToUseCaseCommentHtml(mbr, isSelf) ++ memberToCommentBodyHtml(mbr, isSelf)
+
+          val includedLongComment = if (shortComment.text.trim == longComment.text.trim)
+            NodeSeq.Empty
+          else
+            <div class="fullcomment">{ longComment }</div>
+
+          shortComment ++ includedLongComment
         }
     }
   }
