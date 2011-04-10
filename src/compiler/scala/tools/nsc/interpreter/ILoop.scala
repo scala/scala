@@ -198,6 +198,15 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   def plush(x: Any)   = { out print x ; out.flush() }
   def plushln(x: Any) = { out println x ; out.flush() }
 
+  private def echo(msg: String) = {
+    out println msg
+    out.flush()
+  }
+  private def echoNoNL(msg: String) = {
+    out print msg
+    out.flush()
+  }
+
   /** Search the history */
   def searchHistory(_cmdline: String) {
     val cmdline = _cmdline.toLowerCase
@@ -454,16 +463,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       }
       ex match {
         case _: NoSuchMethodError | _: NoClassDefFoundError =>
-          out.println("Unrecoverable error.")
+          echo("Unrecoverable error.")
           throw ex
         case _  =>
-          out.print(replayQuestionMessage)
-          out.flush()
-          if (in.readAssumingNo("")) {
-            out.println("\nAttempting session recovery with replay.")
-            replay()
-          }
-          else out.println("\nAbandoning crashed session.")
+          def fn(): Boolean = in.readYesOrNo(replayQuestionMessage, { echo("\nYou must enter y or n.") ; fn() })
+
+          if (fn()) replay()
+          else echo("\nAbandoning crashed session.")
       }
   }
 
