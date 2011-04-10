@@ -186,7 +186,6 @@ abstract class Source extends Iterator[Char] {
 
   /** description of this source, default empty */
   var descr: String = ""
-
   var nerrors = 0
   var nwarnings = 0
 
@@ -242,7 +241,8 @@ abstract class Source extends Iterator[Char] {
    */
   def next: Char = positioner.next
 
-  class Positioner {
+  class Positioner(encoder: Position) {
+    def this() = this(RelaxedPosition)
     /** the last character returned by next. */
     var ch: Char = _
 
@@ -258,7 +258,7 @@ abstract class Source extends Iterator[Char] {
 
     def next: Char = {
       ch = iter.next
-      pos = Position.encode(cline, ccol)
+      pos = encoder.encode(cline, ccol)
       ch match {
         case '\n' =>
           ccol = 1
@@ -271,7 +271,14 @@ abstract class Source extends Iterator[Char] {
       ch
     }
   }
-  object NoPositioner extends Positioner {
+  /** A Position implementation which ignores errors in
+   *  the positions.
+   */
+  object RelaxedPosition extends Position {
+    def checkInput(line: Int, column: Int): Unit = ()
+  }
+  object RelaxedPositioner extends Positioner(RelaxedPosition) { }
+  object NoPositioner extends Positioner(Position) {
     override def next: Char = iter.next
   }
   def ch = positioner.ch
@@ -321,7 +328,7 @@ abstract class Source extends Iterator[Char] {
 
   private[this] var resetFunction: () => Source = null
   private[this] var closeFunction: () => Unit = null
-  private[this] var positioner: Positioner = new Positioner
+  private[this] var positioner: Positioner = RelaxedPositioner
 
   def withReset(f: () => Source): this.type = {
     resetFunction = f
@@ -335,10 +342,13 @@ abstract class Source extends Iterator[Char] {
     descr = text
     this
   }
-  // we'd like to default to no positioning, but for now we break
-  // less by defaulting to status quo.
+  /** Change or disable the positioner. */
   def withPositioning(on: Boolean): this.type = {
-    positioner = if (on) new Positioner else NoPositioner
+    positioner = if (on) RelaxedPositioner else NoPositioner
+    this
+  }
+  def withPositioning(pos: Positioner): this.type = {
+    positioner = pos
     this
   }
 
