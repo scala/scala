@@ -64,16 +64,6 @@ abstract trait Attribute extends MetaData {
     (next(arg, scope, key) == null) && (next wellformed scope)
   }
 
-  override def canEqual(other: Any) = other match {
-    case _: Attribute   => true
-    case _              => false
-  }
-  override def strict_==(other: Equality) = other match {
-    case x: Attribute   => (pre == x.pre) && (key == x.key) && (value sameElements x.value) && (next == x.next)
-    case _              => false
-  }
-  override def basisForHashCode = List(pre, key, value)
-
   /** Appends string representation of only this attribute to stringbuffer.
    */
   def toString1(sb: StringBuilder) {
