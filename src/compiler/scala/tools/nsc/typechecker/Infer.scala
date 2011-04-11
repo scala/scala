@@ -236,10 +236,9 @@ trait Infer {
 
     def accessError(tree: Tree, sym: Symbol, pre: Type, explanation: String): Tree = {
       val realsym = underlying(sym)
-
       errorTree(tree, realsym + realsym.locationString + " cannot be accessed in " +
-                (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
-                explanation)
+          (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
+          explanation)
     }
 
     /* -- Tests & Checks---------------------------------------------------- */
@@ -258,8 +257,11 @@ trait Infer {
         if (context.unit != null)
           context.unit.depends += sym.toplevelClass
 
-        val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
+        var sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
         // Console.println("check acc " + (sym, sym1) + ":" + (sym.tpe, sym1.tpe) + " from " + pre);//DEBUG
+
+        if (sym1 == NoSymbol && sym.isJavaDefined && context.unit.isJava) // don't try to second guess Java; see #4402
+          sym1 = sym
 
         if (sym1 == NoSymbol) {
           if (settings.debug.value) {
