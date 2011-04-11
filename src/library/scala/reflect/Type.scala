@@ -6,11 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
-
-import collection.immutable.List
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 abstract class Type
@@ -55,13 +51,6 @@ case class NullaryMethodType(resultType: Type) extends Type
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 case class PolyType(typeParams: List[Symbol], typeBounds: List[(Type, Type)], resultType: Type) extends Type
 
-
-/** This type is required by the compiler and <b>should not be used in client code</b>. */
-class ImplicitMethodType(formals: List[Symbol], restpe: Type)
-extends MethodType(formals, restpe)
-
-
-
 /* Standard pattern match:
 
   case reflect.NoPrefix =>
@@ -72,7 +61,7 @@ extends MethodType(formals, restpe)
   case reflect.ThisType(clazz) =>
   case reflect.AppliedType(tpe, args) =>
   case reflect.TypeBounds(lo, hi) =>
-  case reflect.MethodType(formals, restpe) => //can also be ImplicitMethodType
+  case reflect.MethodType(formals, restpe) =>
   case reflect.NullaryMethodType(restpe) =>
   case reflect.PolyType(typeParams, typeBounds, resultType) =>
 */

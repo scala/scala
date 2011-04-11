@@ -582,12 +582,12 @@ abstract class Pickler extends SubComponent {
         case ClassInfoType(parents, decls, clazz) =>
           writeRef(clazz); writeRefs(parents); CLASSINFOtpe
         case mt @ MethodType(formals, restpe) =>
-          writeRef(restpe); writeRefs(formals)
-          if (mt.isImplicit) IMPLICITMETHODtpe
-          else METHODtpe
-        case mt @ NullaryMethodType(restpe) => // reuse POLYtpe since those can never have an empty list of tparams -- TODO: is there any way this can come back and bite us in the bottom?
-        // ugliness and thrift aside, this should make this somewhat more backward compatible
-        // (I'm not sure how old scalac's would deal with nested PolyTypes, as these used to be folded into one)
+          writeRef(restpe); writeRefs(formals) ; METHODtpe
+        case mt @ NullaryMethodType(restpe) =>
+          // reuse POLYtpe since those can never have an empty list of tparams.
+          // TODO: is there any way this can come back and bite us in the bottom?
+          // ugliness and thrift aside, this should make this somewhat more backward compatible
+          // (I'm not sure how old scalac's would deal with nested PolyTypes, as these used to be folded into one)
           writeRef(restpe); writeRefs(Nil); POLYtpe
         case PolyType(tparams, restpe) => // invar: tparams nonEmpty
           writeRef(restpe); writeRefs(tparams); POLYtpe
@@ -1037,8 +1037,7 @@ abstract class Pickler extends SubComponent {
         case ClassInfoType(parents, decls, clazz) =>
           print("CLASSINFOtpe "); printRef(clazz); printRefs(parents);
         case mt @ MethodType(formals, restpe) =>
-          print(if (mt.isImplicit) "IMPLICITMETHODtpe " else "METHODtpe ");
-          printRef(restpe); printRefs(formals)
+          print("METHODtpe"); printRef(restpe); printRefs(formals)
         case PolyType(tparams, restpe) =>
           print("POLYtpe "); printRef(restpe); printRefs(tparams);
         case ExistentialType(tparams, restpe) =>

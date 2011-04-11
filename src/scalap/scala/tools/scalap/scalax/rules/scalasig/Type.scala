@@ -20,7 +20,6 @@ case class MethodType(resultType : Type, paramSymbols : Seq[Symbol]) extends Typ
 case class NullaryMethodType(resultType : Type) extends Type
 case class PolyType(typeRef : Type, symbols : Seq[TypeSymbol]) extends Type
 case class PolyTypeWithCons(typeRef : Type, symbols : Seq[TypeSymbol], cons: String) extends Type
-case class ImplicitMethodType(resultType : Type, paramSymbols : Seq[Symbol]) extends Type
 case class AnnotatedType(typeRef : Type, attribTreeRefs : List[Int]) extends Type
 case class AnnotatedWithSelfType(typeRef : Type, symbol : Symbol, attribTreeRefs : List[Int]) extends Type
 case class DeBruijnIndexType(typeLevel : Int, typeIndex : Int) extends Type
