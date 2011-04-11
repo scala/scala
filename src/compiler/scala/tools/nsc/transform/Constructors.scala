@@ -215,12 +215,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
       def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
         sym.isParamAccessor && sym.isPrivateLocal ||
-        sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty
+        sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty &&
+        !(clazz isSubClass DelayedInitClass)
       )
 
       // Is symbol known to be accessed outside of the primary constructor,
       // or is it a symbol whose definition cannot be omitted anyway?
-      def mustbeKept(sym: Symbol) = !maybeOmittable(sym) || accessedSyms(sym)
+      def mustbeKept(sym: Symbol) = !maybeOmittable(sym) || (accessedSyms contains sym)
 
       // A traverser to set accessedSyms and outerAccessors
       val accessTraverser = new Traverser {
@@ -497,10 +498,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                         val getter = ensureGetter(tree.symbol)
                         if (getter != NoSymbol)
                           applyMethodTyper.typed {
-                            atPos(tree.pos) {
-                              Apply(Select(qual, getter), List())
-                            }
+                          atPos(tree.pos) {
+                            Apply(Select(qual, getter), List())
                           }
+                        }
                         else tree
                       case Assign(lhs @ Select(qual, _), rhs) =>
                         val setter = ensureSetter(lhs.symbol)
@@ -578,7 +579,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Unlink all fields that can be dropped from class scope
       for (sym <- clazz.info.decls.toList)
-        if (!mustbeKept(sym)) clazz.info.decls unlink sym
+        if (!mustbeKept(sym)) {
+          println("dropping "+sym+sym.locationString)
+          clazz.info.decls unlink sym
+        }
 
       // Eliminate all field definitions that can be dropped from template
       treeCopy.Template(impl, impl.parents, impl.self,
