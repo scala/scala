@@ -81,12 +81,6 @@ trait ProcessBuilder extends Source with Sink {
    *  redirections (implemented as pipes) from masking useful process error codes.
    */
   def hasExitValue: Boolean
-
-  /** Constructs a new builder which runs this command with all input/output threads marked
-   *  as daemon threads.  This allows the creation of a long running process while still
-   *  allowing the JVM to exit normally.
-   */
-  def daemonized(): ProcessBuilder
 }
 
 object ProcessBuilder extends ProcessBuilderImpl {
