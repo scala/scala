@@ -22,7 +22,7 @@ package scala.tools.nsc
  *  InteractiveReader contains { history: History, completion: Completion }
  *  IMain contains { global: Global }
  */
-package object interpreter extends ReplConfig {
+package object interpreter extends ReplConfig with ReplStrings {
   type JFile          = java.io.File
   type JClass         = java.lang.Class[_]
   type JList[T]       = java.util.List[T]
@@ -35,23 +35,4 @@ package object interpreter extends ReplConfig {
     import collection.JavaConverters._
     xs.asScala.toList map ("" + _)
   }
-
-  // Longest common prefix
-  def longestCommonPrefix(xs: List[String]): String = {
-    if (xs.isEmpty || xs.contains("")) ""
-    else xs.head.head match {
-      case ch =>
-        if (xs.tail forall (_.head == ch)) "" + ch + longestCommonPrefix(xs map (_.tail))
-        else ""
-    }
-  }
-
-  private[nsc] def words(s: String) = s.trim split "\\s+" toList
-  private[nsc] def isQuoted(s: String) =
-    (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
-
-  /** Class objects */
-  private[nsc] def classForName(name: String): Option[JClass] =
-    try Some(Class forName name)
-    catch { case _: ClassNotFoundException | _: SecurityException => None }
 }

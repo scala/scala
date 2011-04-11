@@ -31,12 +31,19 @@ trait LoopCommands {
 
   // a single interpreter command
   abstract class LoopCommand(val name: String, val help: String) extends (String => Result) {
+    private var _longHelp: String = null
+    final def defaultHelp = usageMsg + " (no extended help available.)"
+    def hasLongHelp = _longHelp != null || longHelp != defaultHelp
+    def withLongHelp(text: String): this.type = { _longHelp = text ; this }
+    def longHelp = _longHelp match {
+      case null   => defaultHelp
+      case text   => text
+    }
     def usage: String = ""
     def usageMsg: String = ":" + name + (
       if (usage == "") "" else " " + usage
     )
     def apply(line: String): Result
-    protected def words(line: String): List[String] = line split "\\s+" toList
 
     // called if no args are given
     def showUsage(): Result = {

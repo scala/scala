@@ -135,6 +135,7 @@ abstract class Power[G <: Global](
     |import scala.tools.nsc._
     |import scala.collection.JavaConverters._
     |import global._
+    |import power.Implicits._
   """.stripMargin
 
   /** Starts up power mode and runs whatever is in init.
@@ -318,7 +319,7 @@ abstract class Power[G <: Global](
     implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = replInputStream(url.openStream())
   }
   object Implicits extends Implicits2 {
-    val global = Power.this.global
+    val global: G = Power.this.global
   }
 
   trait ReplUtilities {
