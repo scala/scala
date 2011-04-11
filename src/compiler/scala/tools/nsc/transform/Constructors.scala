@@ -77,6 +77,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         def isParamRef(sym: Symbol) =
           sym.isParamAccessor &&
           sym.owner == clazz &&
+          !(clazz isSubClass DelayedInitClass) &&
           !(sym.isGetter && sym.accessed.isVariable) &&
           !sym.isSetter
         private def possiblySpecialized(s: Symbol) = specializeTypes.specializedTypeVars(s).nonEmpty
