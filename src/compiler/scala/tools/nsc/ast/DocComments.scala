@@ -304,7 +304,11 @@ trait DocComments { self: SymbolTable =>
       val end = startTag(raw, (defines ::: usecases).sort(_._1 < _._1))
 
       (if (end == raw.length - 2) raw else raw.substring(0, end) + "*/",
-       defines map { case (start, end) => raw.substring(start, end) },
+       defines map {
+         case (start, end) => raw.substring(start, end)
+       } map {
+         _.replaceAll("(?m)^\\s+\\*", "")
+       },
        usecases map { case (start, end) => decomposeUseCase(start, end) })
     }
 

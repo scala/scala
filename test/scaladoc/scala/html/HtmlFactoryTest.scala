@@ -266,4 +266,12 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("Trac #4452") = {
+    createTemplate("Trac4452.scala") match {
+      case node: scala.xml.Node =>
+        ! node.toString.contains("* blah blah blah")
+      case _ => false
+    }
+  }
 }
