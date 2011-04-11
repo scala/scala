@@ -498,10 +498,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                         val getter = ensureGetter(tree.symbol)
                         if (getter != NoSymbol)
                           applyMethodTyper.typed {
-                          atPos(tree.pos) {
-                            Apply(Select(qual, getter), List())
+                            atPos(tree.pos) {
+                              Apply(Select(qual, getter), List())
+                            }
                           }
-                        }
                         else tree
                       case Assign(lhs @ Select(qual, _), rhs) =>
                         val setter = ensureSetter(lhs.symbol)
@@ -580,7 +580,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // Unlink all fields that can be dropped from class scope
       for (sym <- clazz.info.decls.toList)
         if (!mustbeKept(sym)) {
-          println("dropping "+sym+sym.locationString)
+          // println("dropping "+sym+sym.locationString)
           clazz.info.decls unlink sym
         }
 
