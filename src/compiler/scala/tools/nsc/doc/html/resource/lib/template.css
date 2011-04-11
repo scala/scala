@@ -30,7 +30,7 @@ input { border-width: 0px; }
 /* Page */
 
 body {
-  font-family: sans-serif;
+  font-family: Arial;
   font-size: 10pt;
 }
 
@@ -45,12 +45,23 @@ a[href]:hover {
 
 #owner {
   padding: 2px 10px 5px;
+  height: 17px;
   font-size: 12pt;
   display: block;
 }
 
 #owner a {
   color: black;
+/*  text-decoration: none;*/
+/*  font-weight: bold;*/
+/*  text-shadow: white 0px 1px 0px;*/
+}
+
+#owner a:hover {
+  color: black;
+  text-decoration: none;
+/*  font-weight: bold;*/
+/*  text-shadow: white 0px 1px 0px;*/
 }
 
 .value #owner {
@@ -58,16 +69,23 @@ a[href]:hover {
 }
 
 .type #owner {
-  background-color: #699D84; /* lighter green */
+  background-color: #95b8a1; /* lighter green */  
+/*  background-image:url('ownerbg2.gif');
+  background-repeat:repeat-x;*/
 }
 
 #types ol li > p {
   margin-top: 5px;
 }
 
+#types ol li:last-child {
+  margin-bottom: 5px;
+}
+
 #definition {
   display: block;
   padding: 5px 6px;
+  height: 61px;
 }
 
 #definition > img {
@@ -77,19 +95,33 @@ a[href]:hover {
 #definition > h1 {
   padding: 12px 0 12px 6px;
   color: white;
+  text-shadow: 3px black;
+  text-shadow: black 0px 2px 0px;
   font-size: 24pt;
   display: inline-block;
 }
 
 #definition h1 > a {
-  color: white;
+  color: #ffffff;
+/*  text-decoration: none; */
   font-size: 24pt;
+  text-shadow: black 0px 0px 0px;
+}
+
+#definition h1 > a:hover {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 24pt;
+  text-shadow: black 0px 2px 0px;
 }
 
 #signature {
-  background-color: #EBEBEB;
+  background-image:url('signaturebg2.gif');
+  background-color: #d7d7d7;
+  min-height: 18px;
+  background-repeat:repeat-x;
   font-size: 11.5pt;
-  margin-bottom: 10px;
+/*  margin-bottom: 10px;*/
   padding: 8px;
 }
 
@@ -99,12 +131,16 @@ a[href]:hover {
   text-align: left;
   width: auto;
   position: static;
+  text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px;
 }
 
 #signature > span.symbol {
   text-align: left;
   display: inline;
   padding-left: 0.7em;
+  text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px;
 }
 
 /* Linear super types and known subclasses */
@@ -140,10 +176,14 @@ div.superTypes > h1 {
 
 .value #definition {
   background-color: #2C475C; /* blue */
+  background-image:url('defbg-blue.gif');
+  background-repeat:repeat-x;
 }
 
 .type #definition {
   background-color: #316555; /* green */
+  background-image:url('defbg-green.gif');
+  background-repeat:repeat-x;
 }
 
 #template {
@@ -155,6 +195,7 @@ h3 {
   padding: 5px 10px;
   font-size: 12pt;
   font-weight: bold;
+  text-shadow: black 1px 1px 0px;
 }
 
 dl.attributes > dt {
@@ -171,19 +212,41 @@ dl.attributes > dd {
 
 #template .values > h3 {
   background-color: #315479; /* grayish blue */
+  background: url("valuemembersbg.gif");
+  background-repeat:repeat-x;
+  height: 28px;
+}
+
+#values ol li:last-child {
+  margin-bottom: 5px;
 }
 
 #template .types > h3 {
   background-color: #316555; /* green */
+  background: url("typebg.gif");
+  background-repeat:repeat-x;
+  height: 28px;
 }
 
 #constructors > h3 {
   background-color: #333;
+  background: url("constructorsbg.gif");
+  background-repeat:repeat-x;
+  height: 28px;
 }
 
 #template > div.parent > h3 {
-  background-color: #3B3B3B; 
+  background-color: #dadada;
+/*  border:1px solid #6f6f6f;
+  border-left:0;
+  border-right:0;*/
+  background: url("constructorsbg.gif");
+  background-repeat:repeat-x;
+  height: 17px;
   margin-top: 10px;
+/*  color: black;
+  text-shadow: white 0px 1px 0px;
+  font-weight: normal;8*/
   font-style: italic;
   font-size: 12pt;
 }
@@ -229,6 +292,8 @@ div.members > ol > li:last-child {
   line-height: 18px;
   clear: both;
   display: block;
+  text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px;
 }
 
 .signature .kind {
@@ -405,10 +470,17 @@ p.comment {
   margin: 5px 10px;
 }
 
+div.fullcommenttop {
+  padding: 10px 10px;
+  background-image:url('fullcommenttopbg.gif');
+  background-repeat:repeat-x;
+}
+
 div.fullcomment {
   margin: 5px 10px;
 }
 
+#template div.fullcommenttop,
 #template div.fullcomment {
   display:none;
   margin: 5px 0 0 8.7em;
@@ -423,6 +495,13 @@ div.fullcomment .block {
   padding: 5px 0 0;
   border-top: 1px solid #EBEBEB;
   margin-top: 5px;
+}
+
+div.fullcommenttop .block {
+  padding: 5px 0 0;
+  border-top: 1px solid #EBEBEB;
+  margin-top: 5px;
+  margin-bottom: 5px
 }
 
 div.fullcomment div.block ol li p, 
@@ -440,16 +519,20 @@ div.fullcomment .comment {
   margin: 5px 0 10px;
 }
 
+div.fullcommenttop .comment:last-child,
 div.fullcomment .comment:last-child {
   margin-bottom: 0;
 }
 
+
+div.fullcommenttop dl.paramcmts > dt,
 div.fullcomment dl.paramcmts > dt {
   display: block;
   float: left;
   font-weight: bold;
 }
 
+div.fullcommenttop dl.paramcmts > dd,
 div.fullcomment dl.paramcmts > dd {
   display: block;
   padding-left: 80px;
@@ -470,8 +553,8 @@ div.fullcomment dl.paramcmts > dd {
     position: absolute;
     top: 0;
     left: 0;
-    height: 20px;
-    width: 20px;
+    height: 23px;
+    width: 21px;
     background: url("filter_box_left.png");
 }
 
@@ -484,12 +567,14 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #textfilter > .input > input {
-	height: 16px;
-	padding: 2px;
-	font-weight: bold;
-	color: #993300;
+	height: 21px;
+	padding: 1px;
+ 	font-weight: bold;
+	color: #000000;
 	background-color: white;
-    width: 100%;
+        background: url("filterboxbarbg.png");
+        background-repeat:repeat-x;
+        width: 100%;
 }
 
 #textfilter > .post {
@@ -497,14 +582,16 @@ div.fullcomment dl.paramcmts > dd {
     position: absolute;
     top: 0;
     right: 0;
-    height: 20px;
-    width: 20px;
+    height: 23px;
+    width: 21px;
     background: url("filter_box_right.png");
 }
 
 #mbrsel {
   padding: 5px 10px;
-  background-color: #DADADA; /* light gray */
+  background-color: #ededee; /* light gray */
+  background-image:url('filterboxbg.gif');
+  background-repeat:repeat-x;
   font-size: 9.5pt;
   display: block;
   margin-top: 1em;
@@ -520,47 +607,103 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel > div > span.filtertype {
-  padding: 3px 0;
+  padding: 4px;
+  margin-right: 5px;
   float: left;
   display: inline-block;
-  color: #404040;
+  color: #000000;
+  font-weight: bold;
+  text-shadow: white 0px 1px 0px;
   width: 4.5em;
 }
 
 #mbrsel > div > ol {
   display: inline-block;
-  /*background-color: white;*/
 }
 
 #mbrsel > div > ol#linearization {
-  display: block;
-  margin-left: 4.5em;
-  margin-top: 5px;
+  display: table;
+  margin-left: 70px;
+}
+
+#mbrsel > div > ol#linearization > li.in {
+  text-decoration: none;
+  float: left;
+  padding-right: 10px;
+  margin-right: 5px;
+  background: url(selected-right.png) no-repeat;
+  background-position: right 0px;
+}
+
+#mbrsel > div > ol#linearization > li.in > span{
+  color: #4C4C4C;
+  float: left;
+  padding: 1px 0 1px 10px;
+  background: url(selected.png) no-repeat;
+  background-position: 0px 0px;
+  text-shadow: #ffffff 0 1px 0;
 }
 
 #mbrsel > div > ol > li {
-  padding: 3px 10px;
-  background-color: white;
+/*  padding: 3px 10px;*/
+  line-height: 16pt; 
   display: inline-block;
   cursor: pointer;
 }
 
 #mbrsel > div > ol > li.in {
-  background-color: white;
+  text-decoration: none;
+  float: left;
+  padding-right: 10px;
+  margin-right: 5px;
+  background: url(selected-right.png) no-repeat;
+  background-position: right 0px;
+}
+
+#mbrsel > div > ol > li.in > span{
   color: #4C4C4C;
+  float: left;
+  padding: 1px 0 1px 10px;
+  background: url(selected.png) no-repeat;
+  background-position: 0px 0px;
+  text-shadow: #ffffff 0 1px 0;
 }
 
 #mbrsel > div > ol > li.out {
-  color: #4B4B4B;
-  background-color: #999; 
+	text-decoration: none;
+	float: left;
+	padding-right: 10px;
+	margin-right: 5px;
 }
 
+#mbrsel > div > ol > li.out > span{
+  color: #4B4B4B;
+/*  background-color: #999; */
+  float: left;
+  padding: 1px 0 1px 10px;
+/*  background: url(unselected.png) no-repeat;*/
+  background-position: 0px -1px;
+  text-shadow: #ffffff 0 1px 0;
+}
+/*
 #mbrsel .hideall {
+  color: #4C4C4C;
+  line-height: 16px;
+  font-weight: bold;
+}
+
+#mbrsel .hideall span {
   color: #4C4C4C;
   font-weight: bold;
 }
 
 #mbrsel .showall {
   color: #4C4C4C;
+  line-height: 16px;
   font-weight: bold;  
 }
+
+#mbrsel .showall span {
+  color: #4C4C4C;
+  font-weight: bold;  
+}*/

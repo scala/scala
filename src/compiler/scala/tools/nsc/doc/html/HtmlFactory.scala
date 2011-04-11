@@ -45,11 +45,11 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/scheduler.js")
     copyResource("lib/index.js")
     copyResource("lib/template.js")
+
     copyResource("lib/index.css")
     copyResource("lib/ref-index.css")
     copyResource("lib/template.css")
-    copyResource("lib/arrow-down.png")
-    copyResource("lib/arrow-right.png")
+
     copyResource("lib/class.png")
     copyResource("lib/class_big.png")
     copyResource("lib/object.png")
@@ -58,9 +58,38 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/trait_big.png")
     copyResource("lib/package.png")
     copyResource("lib/package_big.png")
+
+    copyResource("lib/arrow-down.png")
+    copyResource("lib/arrow-right.png")
     copyResource("lib/filter_box_left.png")
     copyResource("lib/filter_box_right.png")
+    copyResource("lib/filter_box_left2.gif")
+    copyResource("lib/filterbg.gif")
+    copyResource("lib/filterboxbarbg.gif")
+    copyResource("lib/filterboxbg.gif")
+
+    copyResource("lib/constructorsbg.gif")
+    copyResource("lib/defbg-blue.gif")
+    copyResource("lib/defbg-green.gif")
+    copyResource("lib/fullcommenttopbg.gif")
+    copyResource("lib/ownderbg2.gif")
+    copyResource("lib/ownerbg.gif")
+    copyResource("lib/ownerbg2.gif")
+    copyResource("lib/signaturebg.gif")
+    copyResource("lib/signaturebg2.gif")
+    copyResource("lib/packagesbg.gif")
+    copyResource("lib/typebg.gif")
+    copyResource("lib/valuemembersbg.gif")
+    copyResource("lib/filterboxbarbg.png")
+
     copyResource("lib/remove.png")
+    copyResource("lib/navigation-li-a.png")
+    copyResource("lib/navigation-li.png")
+    copyResource("lib/selected-right.png")
+    copyResource("lib/selected.png")
+    copyResource("lib/selected2-right.png")
+    copyResource("lib/selected2.png")
+    copyResource("lib/unselected.png")
 
     new page.Index(universe, index) writeFor this
 
