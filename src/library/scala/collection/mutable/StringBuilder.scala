@@ -445,10 +445,9 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    */
   override def mkString = toString
 
-  /** Returns the result of this Builder, which in the case
-   *  of StringBuilders is a StringBuilder (not a String.)
+  /** Returns the result of this Builder (a String)
    *
-   *  @return  this StringBuilder
+   *  @return  the string assembled by this StringBuilder
    */
   def result(): String = toString
 }

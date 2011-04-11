@@ -1,0 +1,20 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> var x = 10
+x: Int = 10
+
+scala> var y = 11
+y: Int = 11
+
+scala> x = 12
+x: Int = 12
+
+scala> y = 13
+y: Int = 13
+
+scala> 
+
+scala> 

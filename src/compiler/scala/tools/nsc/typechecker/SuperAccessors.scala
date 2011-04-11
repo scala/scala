@@ -125,7 +125,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     // otherwise lead to either a compiler crash or runtime failure.
     private lazy val isDisallowed = {
       import definitions._
-      Set(Any_isInstanceOf, Object_isInstanceOf, Object_==, Object_!=, Object_##)
+      Set(Any_isInstanceOf, Object_isInstanceOf, Any_asInstanceOf, Object_asInstanceOf, Object_==, Object_!=, Object_##)
     }
 
     override def transform(tree: Tree): Tree = {

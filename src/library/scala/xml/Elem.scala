@@ -17,8 +17,7 @@ package scala.xml
  * Copyright 2008 Google Inc. All Rights Reserved.
  * @author Burak Emir <bqe@google.com>
  */
-object Elem
-{
+object Elem {
   def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
     new Elem(prefix,label,attributes,scope,child:_*)
 

@@ -76,7 +76,7 @@ object ShowPickled extends Names {
     case CLASSINFOtpe   => "CLASSINFOtpe"
     case METHODtpe      => "METHODtpe"
     case POLYtpe        => "POLYtpe"
-    case IMPLICITMETHODtpe => "IMPLICITMETHODtpe"
+    case IMPLICITMETHODtpe => "METHODtpe" // IMPLICITMETHODtpe no longer used.
     case SUPERtpe       => "SUPERtpe"
     case LITERALunit    => "LITERALunit"
     case LITERALboolean => "LITERALboolean"

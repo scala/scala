@@ -50,6 +50,15 @@ trait Entity {
 
 }
 
+object Entity {
+  private def isDeprecated(x: Entity) = x match {
+    case x: MemberEntity  => x.deprecation.isDefined
+    case _                => false
+  }
+  /** Ordering deprecated things last. */
+  implicit lazy val EntityOrdering: Ordering[Entity] =
+    Ordering[(Boolean, String)] on (x => (isDeprecated(x), x.name))
+}
 
 /** A template, which is either a class, trait, object or package. Depending on whether documentation is available
   * or not, the template will be modeled as a [scala.tools.nsc.doc.model.NoDocTemplate] or a
@@ -156,7 +165,11 @@ trait MemberEntity extends Entity {
   def isAbstract: Boolean
 
 }
-
+object MemberEntity {
+  // Oh contravariance, contravariance, wherefore art thou contravariance?
+  // Note: the above works for both the commonly misunderstood meaning of the line and the real one.
+  implicit lazy val MemberEntityOrdering: Ordering[MemberEntity] = Entity.EntityOrdering on (x => x)
+}
 
 /** An entity that is parameterized by types */
 trait HigherKinded extends Entity {

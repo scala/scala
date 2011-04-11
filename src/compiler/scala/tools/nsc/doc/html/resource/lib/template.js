@@ -69,24 +69,6 @@ $(document).ready(function(){
             filter();
         };
     });
-    $("#impl > ol > li.concrete").click(function() {
-        if ($(this).hasClass("out")) {
-            $(this).removeClass("out").addClass("in");            
-            $("li[data-isabs='false']").show();
-        } else {
-            $(this).removeClass("in").addClass("out");
-            $("li[data-isabs='false']").hide();
-        }
-    });
-    $("#impl > ol > li.abstract").click(function() {
-        if ($(this).hasClass("out")) {
-            $(this).removeClass("out").addClass("in");                        
-            $("li[data-isabs='true']").show();
-        } else {
-            $(this).removeClass("in").addClass("out");
-            $("li[data-isabs='true']").hide();
-        }
-    });
     $("#order > ol > li.alpha").click(function() {
         if ($(this).hasClass("out")) {
             $(this).removeClass("out").addClass("in");
@@ -119,44 +101,47 @@ $(document).ready(function(){
             $(this.getTip()).html(this.getTrigger().attr("name"))
         }        
     });   
-    var docAllSigs = $(".signature");
-    function commentShowFct(fullComment){
+
+    /* Add toggle arrows */
+    var docAllSigs = $("#template li").has(".fullcomment").find(".signature");
+    
+    function commentToggleFct(signature){
+        var parent = signature.parent();
+        var shortComment = $(".shortcomment", parent);
+        var fullComment = $(".fullcomment", parent);
         var vis = $(":visible", fullComment);
+        signature.toggleClass("closed").toggleClass("opened");
         if (vis.length > 0) {
+            shortComment.slideDown(100);
             fullComment.slideUp(100);
         }
         else {
+            shortComment.slideUp(100);
             fullComment.slideDown(100);
         }
     };
-    var docShowSigs = docAllSigs.filter(function(){
-        return $("+ div.fullcomment", $(this)).length > 0;
-    });
-    docShowSigs.css("cursor", "pointer");
-    docShowSigs.click(function(){
-        commentShowFct($("+ div.fullcomment", $(this)));
-    });
-    function commentToggleFct(shortComment){
-        var vis = $("~ div.fullcomment:visible", shortComment);
-        if (vis.length > 0) {
-            shortComment.slideDown(100);
-            vis.slideUp(100);
-        }
-        else {
-            var hid = $("~ div.fullcomment:hidden", shortComment);
-            hid.slideDown(100);
-            shortComment.slideUp(100);
-        }
-    };
-    var docToggleSigs = docAllSigs.filter(function(){
-        return $("+ .shortcomment", $(this)).length > 0;
-    });
-    docToggleSigs.css("cursor", "pointer");
-    docToggleSigs.click(function(){
-        commentToggleFct($("+ .shortcomment", $(this)));
-    });
-    $(".shortcomment").click(function(){
+    docAllSigs.addClass("closed");
+    docAllSigs.click(function() {
         commentToggleFct($(this));
+    });
+    
+    /* Linear super types and known subclasses */
+    function toggleShowContentFct(outerElement){
+      var content = $(".hiddenContent", outerElement);
+      var vis = $(":visible", content);
+      if (vis.length > 0) {
+        content.slideUp(100);
+        $(".showElement", outerElement).show();
+        $(".hideElement", outerElement).hide();
+      }
+      else {
+        content.slideDown(100);
+        $(".showElement", outerElement).hide();
+        $(".hideElement", outerElement).show();
+      }
+    };
+    $(".toggleContainer").click(function() {
+      toggleShowContentFct($(this));
     });
 });
 

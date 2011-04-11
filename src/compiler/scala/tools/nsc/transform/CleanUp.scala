@@ -512,17 +512,31 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * constructor. */
       case Template(parents, self, body) =>
         localTyper = typer.atOwner(tree, currentClass)
+        var savedNewStaticMembers : mutable.Buffer[Tree] = null
+        var savedNewStaticInits   : mutable.Buffer[Tree] = null
+        var savedSymbolsStoredAsStatic : mutable.Map[String, Symbol] = null
+        if(forMSIL) {
+          savedNewStaticMembers = newStaticMembers.clone
+          savedNewStaticInits = newStaticInits.clone
+          savedSymbolsStoredAsStatic = symbolsStoredAsStatic.clone
+        }
         newStaticMembers.clear
         newStaticInits.clear
         symbolsStoredAsStatic.clear
-        val transformedTemplate: Template =
-          if (!forMSIL || forMSIL) {
-            var newBody =
-              transformTrees(body)
-            treeCopy.Template(tree, parents, self, transformTrees(newStaticMembers.toList) ::: newBody)
-          }
-          else super.transform(tree).asInstanceOf[Template]
-        addStaticInits(transformedTemplate) // postprocess to include static ctors
+        val transformedTemplate: Template = {
+          var newBody = transformTrees(body)
+          treeCopy.Template(tree, parents, self, transformTrees(newStaticMembers.toList) ::: newBody)
+        }
+        val res = addStaticInits(transformedTemplate) // postprocess to include static ctors
+        newStaticMembers.clear
+        newStaticInits.clear
+        symbolsStoredAsStatic.clear
+        if(forMSIL) {
+          newStaticMembers      ++= savedNewStaticMembers
+          newStaticInits        ++= savedNewStaticInits
+          symbolsStoredAsStatic ++= savedSymbolsStoredAsStatic
+        }
+        res
 
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue

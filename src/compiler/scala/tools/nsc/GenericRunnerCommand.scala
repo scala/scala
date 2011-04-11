@@ -20,8 +20,8 @@ extends CompilerCommand(args, settings) {
     this(args, str => Console.println("Error: " + str))
 
   /** name of the associated compiler command */
-  override val cmdName = "scala"
-  val compCmdName = "scalac"
+  override def cmdName = "scala"
+  def compCmdName = "scalac"
 
   // change CompilerCommand behavior
   override def shouldProcessArguments: Boolean = false
@@ -53,10 +53,10 @@ extends CompilerCommand(args, settings) {
 Usage: @cmd@ <options> [<script|class|object|jar> <arguments>]
    or  @cmd@ -help
 
-All options to @compileCmd@ are also allowed.  See @compileCmd@ -help.
-  """)
+All options to @compileCmd@ (see @compileCmd@ -help) are also allowed.
+""")
 
-  override def usageMsg = shortUsageMsg + "\n" + interpolate("""
+  override def usageMsg = shortUsageMsg + interpolate("""
 The first given argument other than options to @cmd@ designates
 what to run.  Runnable targets are:
 

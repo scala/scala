@@ -70,7 +70,6 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
       }
 
-      var thisRefSeen: Boolean = false
       var usesSpecializedField: Boolean = false
 
       // A transformer for expressions that go into the constructor
@@ -78,6 +77,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         def isParamRef(sym: Symbol) =
           sym.isParamAccessor &&
           sym.owner == clazz &&
+          !(clazz isSubClass DelayedInitClass) &&
           !(sym.isGetter && sym.accessed.isVariable) &&
           !sym.isSetter
         private def possiblySpecialized(s: Symbol) = specializeTypes.specializedTypeVars(s).nonEmpty
@@ -95,15 +95,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             // references to parameter accessor field of own class become references to parameters
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
-            thisRefSeen = true
             if (specializeTypes.specializedTypeVars(tree.symbol).nonEmpty)
               usesSpecializedField = true
-            super.transform(tree)
-          case This(_) =>
-            thisRefSeen = true
-            super.transform(tree)
-          case Super(_, _) =>
-            thisRefSeen = true
             super.transform(tree)
           case _ =>
             super.transform(tree)
@@ -117,16 +110,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Should tree be moved in front of super constructor call?
       def canBeMoved(tree: Tree) = tree match {
-        //todo: eliminate thisRefSeen
-        case ValDef(mods, _, _, _) =>
-          if (settings.Xwarninit.value)
-            if (!(mods hasFlag PRESUPER | PARAMACCESSOR) && !thisRefSeen &&
-                { val g = tree.symbol.getter(tree.symbol.owner);
-                 g != NoSymbol && !g.allOverriddenSymbols.isEmpty
-               })
-              unit.warning(tree.pos, "the semantics of this definition has changed;\nthe initialization is no longer be executed before the superclass is called")
-          (mods hasFlag PRESUPER | PARAMACCESSOR)// || !thisRefSeen && (!settings.future.value && !settings.checkInit.value)
-        case _ => false
+        case ValDef(mods, _, _, _) => (mods hasFlag PRESUPER | PARAMACCESSOR)
+        case _                     => false
       }
 
       // Create an assignment to class field `to' with rhs `from'
@@ -230,12 +215,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
       def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
         sym.isParamAccessor && sym.isPrivateLocal ||
-        sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty
+        sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty &&
+        !(clazz isSubClass DelayedInitClass)
       )
 
       // Is symbol known to be accessed outside of the primary constructor,
       // or is it a symbol whose definition cannot be omitted anyway?
-      def mustbeKept(sym: Symbol) = !maybeOmittable(sym) || accessedSyms(sym)
+      def mustbeKept(sym: Symbol) = !maybeOmittable(sym) || (accessedSyms contains sym)
 
       // A traverser to set accessedSyms and outerAccessors
       val accessTraverser = new Traverser {
@@ -593,7 +579,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Unlink all fields that can be dropped from class scope
       for (sym <- clazz.info.decls.toList)
-        if (!mustbeKept(sym)) clazz.info.decls unlink sym
+        if (!mustbeKept(sym)) {
+          // println("dropping "+sym+sym.locationString)
+          clazz.info.decls unlink sym
+        }
 
       // Eliminate all field definitions that can be dropped from template
       treeCopy.Template(impl, impl.parents, impl.self,

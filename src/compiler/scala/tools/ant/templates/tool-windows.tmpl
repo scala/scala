@@ -15,14 +15,6 @@ if "%OS%" NEQ "Windows_NT" (
 
 @@setlocal
 call :set_home
-set _ARGS=
-:loop
-  rem Argument %1 may contain quotes so we use parentheses here
-  if (%1)==() goto :looped
-  set _ARGS=%_ARGS% %1
-  shift
-goto loop
-:looped
 
 rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
@@ -47,8 +39,8 @@ if "%_TOOL_CLASSPATH%"=="" (
 
 set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.emacs="%EMACS%" @properties@
 
-rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
-"%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
+rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
+"%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
 goto end
 
 rem ##########################################################################

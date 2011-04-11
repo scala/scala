@@ -1,4 +1,4 @@
-t3399.scala:23: error: could not find implicit value for parameter e: =:=[Nats.Add[Nats._1,Nats._1],Nats._1]
+t3399.scala:23: error: Cannot prove that Nats.Add[Nats._1,Nats._1] =:= Nats._1.
     implicitly[ Add[_1, _1] =:= _1]
               ^
 one error found

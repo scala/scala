@@ -873,10 +873,11 @@ public class PEFile {
 	    return type;
     } // decodeType0()
 
-	public Type decodeFieldType() {
-	    skipByte(FIELD);
-	    skipCustomMods();
-	    return decodeType();
+	public PECustomMod decodeFieldType() {
+	    skipByte(FIELD); // 0x06
+	    CustomModifier[] cmods = getCustomMods();
+        Type fieldType = decodeType();
+	    return new PECustomMod(fieldType, cmods);
 	}
 
 	/** decodes the return type of a method signature (22.2.11). */
@@ -908,10 +909,10 @@ public class PEFile {
 	}
 
 	public void skipCustomMods() {
-	    while (getByte() == ELEMENT_TYPE_CMOD_OPT
-		   || getByte() == ELEMENT_TYPE_CMOD_REQD)
+	    while (getByte() == ELEMENT_TYPE_CMOD_OPT /* 0x20 */
+		   || getByte() == ELEMENT_TYPE_CMOD_REQD /* 0x1f */ )
 		{
-            boolean isREQD = (getByte() == ELEMENT_TYPE_CMOD_REQD);
+            boolean isREQD = (getByte() == ELEMENT_TYPE_CMOD_REQD); // 0x1f
                     // skip the tag 23.2.7
                     readByte();
                     // skip the TypeDefOrRefEncoded (23.2.8)
@@ -923,7 +924,22 @@ public class PEFile {
 	}
 	}
 
-	//######################################################################
+    /**
+     * @see CustomModifier
+     */
+	public CustomModifier[] getCustomMods() {
+      java.util.List/*<CustomModifier>*/ cmods = new java.util.LinkedList();
+      while (getByte() == ELEMENT_TYPE_CMOD_OPT || getByte() == ELEMENT_TYPE_CMOD_REQD) {
+        boolean isReqd = (getByte() == ELEMENT_TYPE_CMOD_REQD);
+        readByte(); // tag 23.2.7
+        Type t = pemodule.getTypeDefOrRef(decodeInt()); // TypeDefOrRefEncoded (23.2.8)
+        cmods.add(new CustomModifier(isReqd, t));
+      }
+      CustomModifier[] res = (CustomModifier[])cmods.toArray(new CustomModifier[0]);
+      return res;
+	}
+
+    //######################################################################
 
     }  // class Sig
 

@@ -18,23 +18,6 @@ trait MemberHandlers {
   import global._
   import naming._
 
-  def string2codeQuoted(str: String) = "\"" + string2code(str) + "\""
-
-  /** Convert a string into code that can recreate the string.
-   *  This requires replacing all special characters by escape
-   *  codes. It does not add the surrounding " marks.  */
-  def string2code(str: String): String = {
-    val res = new StringBuilder
-    for (c <- str) c match {
-      case '"' | '\'' | '\\'  => res += '\\' ; res += c
-      case _ if c.isControl   => res ++= Chars.char2uescape(c)
-      case _                  => res += c
-    }
-    res.toString
-  }
-  def any2stringOf(x: Any, maxlen: Int) =
-    "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(x, maxlen)
-
   private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
 
@@ -121,7 +104,6 @@ trait MemberHandlers {
 
   class ValHandler(member: ValDef) extends MemberDefHandler(member) {
     val maxStringElements = 1000  // no need to mkString billions of elements
-    def stringOf(x: Any) = any2stringOf(x, maxStringElements)
     override def definesValue = true
 
     override def resultExtractionCode(req: Request): String = {
@@ -131,7 +113,7 @@ trait MemberHandlers {
         // if this is a lazy val we avoid evaluating it here
         val resultString =
           if (mods.isLazy) codegenln(false, "<lazy>")
-          else stringOf(req fullPath name)
+          else any2stringOf(req fullPath name, maxStringElements)
 
         """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf name), resultString)
       }
@@ -215,7 +197,9 @@ trait MemberHandlers {
 
     /** The names imported by this statement */
     override lazy val importedNames: List[Name] = wildcardNames ++ individualNames
+    lazy val importsSymbolNamed: Set[String] = importedNames map (_.toString) toSet
 
-    override def resultExtractionCode(req: Request) = codegenln(imp.toString) + "\n"
+    def importString = imp.toString
+    override def resultExtractionCode(req: Request) = codegenln(importString) + "\n"
   }
 }

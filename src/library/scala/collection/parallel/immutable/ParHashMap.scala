@@ -146,7 +146,7 @@ self =>
 }
 
 
-/** $factoryinfo
+/** $factoryInfo
  *  @define Coll immutable.ParHashMap
  *  @define coll immutable parallel hash map
  */

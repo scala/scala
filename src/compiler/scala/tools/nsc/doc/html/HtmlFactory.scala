@@ -8,7 +8,6 @@ package doc
 package html
 
 import model._
-
 import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
 import scala.collection._
@@ -17,7 +16,6 @@ import scala.collection._
   * @author David Bernard
   * @author Gilles Dubochet */
 class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
-
   /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
   def encoding: String = "UTF-8"
 
@@ -50,6 +48,8 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/index.css")
     copyResource("lib/ref-index.css")
     copyResource("lib/template.css")
+    copyResource("lib/arrow-down.png")
+    copyResource("lib/arrow-right.png")
     copyResource("lib/class.png")
     copyResource("lib/class_big.png")
     copyResource("lib/object.png")

@@ -15,7 +15,7 @@
  *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
  *  @version 1.1
  */
-object genprod extends Application {
+object genprod extends App {
   val MAX_ARITY = 22
   def arities = (1 to MAX_ARITY).toList
 
@@ -38,6 +38,7 @@ object genprod extends Application {
     def to              = (1 to i).toList
     def s               = if (i == 1) "" else "s"
     def className       = name + i
+    def classAnnotation = ""
     def fileName        = className + ".scala"
     def targs           = to map ("T" + _)
     def vdefs           = to map ("v" + _)
@@ -72,7 +73,6 @@ package %s
 """.trim.format(genprodString, packageDef, imports)
   }
 
-  def args = arguments
   if (args.length != 1) {
     println("please give path of output directory")
     exit(-1)
@@ -110,8 +110,9 @@ object FunctionZero extends Function(0) {
 }
 
 object FunctionOne extends Function(1) {
+  override def classAnnotation    = "@annotation.implicitNotFound(msg = \"No implicit view available from ${T1} => ${R}.\")\n"
   override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double) "
-  override def covariantSpecs = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
+  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
 
   override def descriptiveComment = functionNTemplate.format("succ", "anonfun1",
 """
@@ -183,7 +184,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
 /** A function of {i} parameter{s}.
  *  {descriptiveComment}
  */
-trait {className}{contraCoArgs} extends AnyRef {{ self =>
+{classAnnotation}trait {className}{contraCoArgs} extends AnyRef {{ self =>
   /** Apply the body of this function to the argument{s}.
    *  @return   the result of function application.
    */
@@ -298,7 +299,7 @@ object TupleTwo extends Tuple(2)
    * }}}
    *
    * @see Zipped
-   * $willNotTerminateInf
+   * Note: will not terminate for infinite-sized collections.
    */
   def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 => TLike[El1, Repr1], w2: T2 => ILike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
     = new Zipped[Repr1, El1, Repr2, El2](_1, _2)
@@ -406,7 +407,7 @@ object TupleThree extends Tuple(3) {
    * }}}
    *
    * @see Zipped
-   * $willNotTerminateInf
+   * Note: will not terminate for infinite-sized collections.
    */
   def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TLike[El1, Repr1],
                                                           w2: T2 => ILike[El2, Repr2],

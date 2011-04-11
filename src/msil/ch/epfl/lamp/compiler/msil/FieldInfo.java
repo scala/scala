@@ -5,13 +5,15 @@
 
 package ch.epfl.lamp.compiler.msil;
 
+import ch.epfl.lamp.compiler.msil.util.PECustomMod;
+
 /**
  * Discovers the attributes of a field and provides access to field metadata.
  *
  * @author Nikolay Mihaylov
  * @version 1.0
  */
-public class FieldInfo extends MemberInfo {
+public class FieldInfo extends MemberInfo implements HasCustomModifiers {
 
     //##########################################################################
     // public interface
@@ -23,6 +25,9 @@ public class FieldInfo extends MemberInfo {
 
     /** Type of the field represented by this FieldInfo object. */
     public final Type FieldType;
+
+    /** can be null */
+    public final CustomModifier[] cmods;
 
     protected final Object value;
 
@@ -80,6 +85,33 @@ public class FieldInfo extends MemberInfo {
  	return (Attributes & FieldAttributes.NotSerialized) != 0;
     }
 
+    private boolean knownVolatile  = false;
+    private boolean cachedVolatile = false;
+    public final boolean IsVolatile() {
+        if(knownVolatile) return cachedVolatile;
+        knownVolatile  = true;
+        if(cmods == null) {
+            cachedVolatile = false;
+            return cachedVolatile;
+        }
+        for (int idx = 0; idx < cmods.length; idx++) {
+            if(cmods[idx].marker == CustomModifier.VolatileMarker()) {
+                cachedVolatile = true;
+                return cachedVolatile;
+            }
+        }
+        cachedVolatile = false;
+        return cachedVolatile;
+    }
+
+    public final Type[] GetOptionalCustomModifiers () {
+        return CustomModifier.helperCustomMods(false, cmods);
+    }
+
+    public final Type[] GetRequiredCustomModifiers() {
+        return CustomModifier.helperCustomMods(true, cmods);
+    }
+
     public String toString() {
 	return FieldAttributes.toString(Attributes) + " " +
 	    FieldType + " " + DeclaringType.FullName + "::" +  Name;
@@ -90,17 +122,14 @@ public class FieldInfo extends MemberInfo {
     protected static final FieldInfo[] EMPTY_ARRAY = new FieldInfo[0];
 
     /** Initializes a new instance of the FieldInfo class. */
-    protected FieldInfo(String name, Type declType, int attrs, Type fieldType) {
-	this(name, declType, attrs, fieldType, null);
-    }
-
     protected FieldInfo(String name, Type declType,
-			int attrs, Type fieldType, Object value)
+			int attrs, PECustomMod fieldTypeWithMods, Object value)
     {
-	super(name, declType);
-	FieldType = fieldType;
-	Attributes = (short) attrs;
-	this.value = value;
+        super(name, declType);
+        FieldType = fieldTypeWithMods.marked;
+        cmods = fieldTypeWithMods.cmods;
+        Attributes = (short) attrs;
+        this.value = value;
     }
 
     /**

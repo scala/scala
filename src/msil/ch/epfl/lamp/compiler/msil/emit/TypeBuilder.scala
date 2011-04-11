@@ -6,6 +6,9 @@
 package ch.epfl.lamp.compiler.msil.emit
 
 import ch.epfl.lamp.compiler.msil._
+
+import ch.epfl.lamp.compiler.msil.util.PECustomMod
+
 import java.io.IOException
 
 /**
@@ -38,14 +41,21 @@ class TypeBuilder (module: Module, attributes: Int, fullName: String, baseType: 
     }
 
     /**
-     * Adds a new field to the class, with the given name,
-     * attributes and field type.
+     * Adds a new field to the class, with the given name, attributes and field type. The location has no custom mods.
      */
-    def DefineField(name: String, `type`: Type, attrs: Short): FieldBuilder = {
-	val field: FieldBuilder = new FieldBuilder(name, this, attrs, `type`)
-	fieldBuilders += field
-	return field
+    def DefineField(name: String, fieldType: Type, attrs: Short): FieldBuilder = {
+      val fieldTypeWithCustomMods = new PECustomMod(fieldType, null)
+      DefineField(name, fieldTypeWithCustomMods, attrs)
     }
+
+  /**
+   * Adds a new field to the class, with the given name, attributes and (field type , custom mods) combination.
+   */
+  def DefineField(name: String, fieldTypeWithMods: PECustomMod, attrs: Short): FieldBuilder = {
+    val field: FieldBuilder = new FieldBuilder(name, this, attrs, fieldTypeWithMods)
+    fieldBuilders += field
+    return field
+  }
 
     /**
      * Adds a new method to the class, with the given name and

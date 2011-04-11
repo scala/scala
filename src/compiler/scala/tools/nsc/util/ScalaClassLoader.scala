@@ -37,12 +37,8 @@ trait ScalaClassLoader extends JavaClassLoader {
       Class.forName(path, initialize, this).asInstanceOf[Class[T]]
 
   /** Create an instance of a class with this classloader */
-  def create(path: String): AnyRef = {
-    tryToInitializeClass(path) match {
-      case Some(clazz)    => clazz.newInstance()
-      case None           => null
-    }
-  }
+  def create(path: String): AnyRef =
+    tryToInitializeClass[AnyRef](path) map (_.newInstance()) orNull
 
   override def findClass(name: String) = {
     val result = super.findClass(name)
@@ -60,13 +56,14 @@ trait ScalaClassLoader extends JavaClassLoader {
     manifest[T].erasure.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
 
   /** The actual bytes for a class file, or an empty array if it can't be found. */
-  def findBytesForClassName(s: String): Array[Byte] = {
-    val name = s.replaceAll("""\.""", "/") + ".class"
-    val url = this.getResource(name)
-
-    if (url == null) Array()
-    else io.Streamable.bytes(url.openStream)
+  def classBytes(className: String): Array[Byte] = classAsStream(className) match {
+    case null   => Array()
+    case stream => io.Streamable.bytes(stream)
   }
+
+  /** An InputStream representing the given class name, or null if not found. */
+  def classAsStream(className: String) =
+    getResourceAsStream(className.replaceAll("""\.""", "/") + ".class")
 
   /** Run the main method of a class to be loaded by this classloader */
   def run(objectName: String, arguments: Seq[String]) {

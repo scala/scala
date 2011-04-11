@@ -783,9 +783,9 @@ trait Namers { self: Analyzer =>
       // if default getters (for constructor defaults) need to be added to that module, here's the namer
       // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
       val module = clazz.sourceModule
-      if (classAndNamerOfModule contains module) {
-        val (cdef, _) = classAndNamerOfModule(module)
-        classAndNamerOfModule(module) = (cdef, templateNamer)
+      classAndNamerOfModule get module match {
+        case Some((cdef, _)) => classAndNamerOfModule(module) = (cdef, templateNamer)
+        case None =>
       }
 
       if (opt.verbose) {
@@ -1008,11 +1008,14 @@ trait Namers { self: Analyzer =>
                 val module = companionModuleOf(meth.owner, context)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
-                if (!classAndNamerOfModule.contains(module))
-                  return // fix #3649 (prevent crash in erroneous source code)
-                val (cdef, nmr) = classAndNamerOfModule(module)
-                moduleNamer = Some(cdef, nmr)
-                (cdef, nmr)
+                classAndNamerOfModule get module match {
+                  case s @ Some((cdef, nmr)) if nmr != null =>
+                    moduleNamer = s
+                    (cdef, nmr)
+                  case _ =>
+                    return // fix #3649 (prevent crash in erroneous source code)
+                           // nmr == null can happen in IDE; this is really an ugly hack on top[ of an ugly hack but it seems to work
+                }
               }
               deftParams = cdef.tparams map copyUntypedInvariant
               nmr

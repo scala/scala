@@ -25,11 +25,11 @@ trait Symbols { self: Universe =>
      */
     def name: Name
 
-    /** The name of the symbol before decoding, e.g. `$eq$eq` instead of `==`.
+    /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
     def encodedName: String
 
-    /** The decoded name of the symbol, e.g. `==` instead of `$eq$eq`.
+    /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */
     def decodedName: String = stripLocalSuffix(NameTransformer.decode(encodedName))
 

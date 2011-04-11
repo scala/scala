@@ -90,8 +90,6 @@ abstract class ScalaPrimitives {
   // Any operations
   final val IS = 80                            // x.is[y]
   final val AS = 81                            // x.as[y]
-  final val ISERASED = 85                      // x.is$erased[y]
-  final val ASERASED = 86                      // x.as$erased[y]
   final val HASH = 87                          // x.##
 
   // AnyRef operations

@@ -103,11 +103,8 @@ trait CompilerControl { self: Global =>
     throw new FatalError("no context found for "+pos)
   }
 
-  private def postWorkItem(item: WorkItem) {
-    scheduler.postWorkItem(item)
-  }
-
-  private def onCompilerThread = Thread.currentThread == compileRunner
+  private def postWorkItem(item: WorkItem) =
+    if (item.onCompilerThread) item() else scheduler.postWorkItem(item)
 
   /** Makes sure a set of compilation units is loaded and parsed.
    *  Returns () to syncvar `response` on completions.
@@ -132,13 +129,8 @@ trait CompilerControl { self: Global =>
   /** Sets sync var `response` to the fully attributed & typechecked tree contained in `source`.
    *  @pre `source` needs to be loaded.
    */
-  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) = {
-    if (debugIDE) {
-      println("ask type called")
-      new Exception().printStackTrace()
-    }
+  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =
     postWorkItem(new AskTypeItem(source, forceReload, response))
-  }
 
   /** Sets sync var `response` to the position of the definition of the given link in
    *  the given sourcefile.
@@ -230,7 +222,9 @@ trait CompilerControl { self: Global =>
   }
 
   /** Asks for a computation to be done quickly on the presentation compiler thread */
-  def ask[A](op: () => A): A = scheduler doQuickly op
+  def ask[A](op: () => A): A = if (self.onCompilerThread) op() else scheduler doQuickly op
+
+  def onCompilerThread = Thread.currentThread == compileRunner
 
   /** Info given for every member found by completion
    */
@@ -258,7 +252,9 @@ trait CompilerControl { self: Global =>
 
   // items that get sent to scheduler
 
-  abstract class WorkItem extends (() => Unit)
+  abstract class WorkItem extends (() => Unit) {
+    def onCompilerThread = self.onCompilerThread
+  }
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = reload(sources, response)
@@ -296,12 +292,12 @@ trait CompilerControl { self: Global =>
   }
 
   class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
-    def apply() = self.waitLoadedTyped(source, response)
+    def apply() = self.waitLoadedTyped(source, response, this.onCompilerThread)
     override def toString = "wait loaded & typed "+source
   }
 
   class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
-    def apply() = self.getParsedEntered(source, keepLoaded, response)
+    def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
   }
 }
@@ -321,4 +317,3 @@ object ShutdownReq extends ControlThrowable
 class NoSuchUnitError(file: AbstractFile) extends Exception("no unit found for file "+file)
 
 class MissingResponse extends Exception("response missing")
-

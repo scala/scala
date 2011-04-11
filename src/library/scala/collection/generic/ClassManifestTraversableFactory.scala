@@ -6,20 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package generic
 
-
-
-
-
 abstract class ClassManifestTraversableFactory[CC[X] <: Traversable[X] with GenericClassManifestTraversableTemplate[X, CC]]
-extends GenericClassManifestCompanion[CC] {
+              extends GenericClassManifestCompanion[CC] {
 
   class GenericCanBuildFrom[A](implicit manif: ClassManifest[A]) extends CanBuildFrom[CC[_], A, CC[A]] {
     def apply(from: CC[_]) = from.genericClassManifestBuilder[A]
     def apply = newBuilder[A]
   }
-
 }

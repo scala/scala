@@ -1,4 +1,4 @@
-t3507.scala:13: error: could not find implicit value for evidence parameter of type Manifest[object _1.b.c]
+t3507.scala:13: error: No Manifest available for object _1.b.c.
   mani/*[object _1.b.c]*/(c) // kaboom in manifestOfType / TreeGen.mkAttributedQualifier
                          ^
 one error found

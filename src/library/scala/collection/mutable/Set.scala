@@ -13,11 +13,14 @@ package mutable
 
 import generic._
 
-/** A base trait for sets that can be mutated.
+/** A generic trait for mutable sets.
  *  $setNote
  *  $setTags
+ *
  *  @since 1.0
  *  @author Matthias Zenger
+ *  @define Coll mutable.Set
+ *  @define coll mutable set
  */
 trait Set[A] extends Iterable[A]
                 with scala.collection.Set[A]

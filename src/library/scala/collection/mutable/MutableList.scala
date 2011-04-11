@@ -17,8 +17,7 @@ import immutable.{List, Nil}
 // !!! todo: convert to LinkedListBuffer?
 /**
  *  This class is used internally to represent mutable lists. It is the
- *  basis for the implementation of the classes
- *  `Stack`, and `Queue`.
+ *  basis for the implementation of the class `Queue`.
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky

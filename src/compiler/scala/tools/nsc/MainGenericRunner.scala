@@ -19,7 +19,7 @@ import GenericRunnerCommand._
   * sources for the code to run: pre-compiled code, a script file,
   * or interactive entry.
   */
-object MainGenericRunner {
+class MainGenericRunner {
   def errorFn(ex: Throwable): Boolean = {
     ex.printStackTrace()
     false
@@ -27,11 +27,6 @@ object MainGenericRunner {
   def errorFn(str: String): Boolean = {
     Console println str
     false
-  }
-
-  def main(args: Array[String]) {
-    if (!process(args))
-      sys.exit(1)
   }
 
   def process(args: Array[String]): Boolean = {
@@ -86,5 +81,12 @@ object MainGenericRunner {
       case Left(ex) => errorFn(ex)
       case Right(b) => b
     }
+  }
+}
+
+object MainGenericRunner extends MainGenericRunner {
+  def main(args: Array[String]) {
+    if (!process(args))
+      sys.exit(1)
   }
 }

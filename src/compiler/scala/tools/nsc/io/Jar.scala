@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2011 LAMP/EPFL
+ * @author  Paul Phillips
+ */
+
 package scala.tools.nsc
 package io
 
@@ -5,6 +10,27 @@ import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, 
 import java.util.jar._
 import collection.JavaConverters._
 import Attributes.Name
+import util.ClassPath
+
+// Attributes.Name instances:
+//
+// static Attributes.Name   CLASS_PATH
+// static Attributes.Name   CONTENT_TYPE
+// static Attributes.Name   EXTENSION_INSTALLATION
+// static Attributes.Name   EXTENSION_LIST
+// static Attributes.Name   EXTENSION_NAME
+// static Attributes.Name   IMPLEMENTATION_TITLE
+// static Attributes.Name   IMPLEMENTATION_URL
+// static Attributes.Name   IMPLEMENTATION_VENDOR
+// static Attributes.Name   IMPLEMENTATION_VENDOR_ID
+// static Attributes.Name   IMPLEMENTATION_VERSION
+// static Attributes.Name   MAIN_CLASS
+// static Attributes.Name   MANIFEST_VERSION
+// static Attributes.Name   SEALED
+// static Attributes.Name   SIGNATURE_VERSION
+// static Attributes.Name   SPECIFICATION_TITLE
+// static Attributes.Name   SPECIFICATION_VENDOR
+// static Attributes.Name   SPECIFICATION_VERSION
 
 class Jar(file: File) extends Iterable[JarEntry] {
   def this(path: String) = this(File(path))
@@ -73,21 +99,6 @@ object Jar {
   def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
-
-  def locateByClass(clazz: Class[_]): Option[File] = {
-    try Some(File(clazz.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()))
-    catch { case _: Exception => None }
-  }
-  /** Walks upward from wherever the scala library jar is searching for
-   *  the given jar name.  This approach finds the scala library jar in the
-   *  release layout and in trunk builds going up from pack.
-   */
-  def locateByName(name: String): Option[File] = {
-    def toSrc(d: Directory) = d.dirs.toList map (_ / name)
-    def walk(d: Directory)  = d.parents flatMap toSrc find (_.isFile) map (_.toFile)
-
-    locateByClass(classOf[ScalaObject]) flatMap (x => walk(x.parent))
-  }
 
   def create(file: File, sourceDir: Directory, mainClass: String): File = {
     val writer = new Jar(file).jarWriter()

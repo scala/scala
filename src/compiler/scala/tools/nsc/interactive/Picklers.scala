@@ -160,7 +160,7 @@ trait Picklers { self: Global =>
 
   implicit def askLoadedTypedItem: CondPickler[AskLoadedTypedItem] =
     pkl[SourceFile]
-      .wrapped { new AskLoadedTypedItem(_, new Response) } { _.source }
+      .wrapped { source => new AskLoadedTypedItem(source, new Response) } { _.source }
       .asClass (classOf[AskLoadedTypedItem])
 
   implicit def askParsedEnteredItem: CondPickler[AskParsedEnteredItem] =

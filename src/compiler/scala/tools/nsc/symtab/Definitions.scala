@@ -539,10 +539,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     var Object_synchronized: Symbol = _
     lazy val Object_isInstanceOf = newPolyMethod(
       ObjectClass, "$isInstanceOf",
-      tparam => MethodType(List(), booltype)) setFlag FINAL
+      tparam => MethodType(List(), booltype)) setFlag (FINAL | SYNTHETIC)
     lazy val Object_asInstanceOf = newPolyMethod(
       ObjectClass, "$asInstanceOf",
-      tparam => MethodType(List(), tparam.typeConstructor)) setFlag FINAL
+      tparam => MethodType(List(), tparam.typeConstructor)) setFlag (FINAL | SYNTHETIC)
 
     def Object_getClass  = getMember(ObjectClass, nme.getClass_)
     def Object_clone     = getMember(ObjectClass, nme.clone_)
@@ -613,6 +613,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         case NoSymbol => throw new FatalError(owner + " does not have a member " + name)
         case result   => result
       }
+    }
+    def packageExists(packageName: String): Boolean = {
+      try getModuleOrClass(newTermName(packageName)).isPackage
+      catch { case _: MissingRequirementError => false }
     }
 
     /** If you're looking for a class, pass a type name.
@@ -741,7 +745,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         case _ => tp
       }
       def flatNameString(sym: Symbol, separator: Char): String =
-        if (sym.owner.isPackageClass) sym.fullName('.') + (if (sym.isModuleClass) "$" else "")
+        if (sym == NoSymbol) ""   // be more resistant to error conditions, e.g. neg/t3222.scala
+        else if (sym.owner.isPackageClass) sym.fullName('.') + (if (sym.isModuleClass) "$" else "")
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {
         if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))

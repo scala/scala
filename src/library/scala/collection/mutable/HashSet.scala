@@ -23,15 +23,12 @@ import collection.parallel.mutable.ParHashSet
  *  @version 2.0, 31/12/2006
  *  @since   1
  *
- *  @tparam A     the type of the elements contained in this set.
- *
- *
  *  @define Coll mutable.HashSet
  *  @define coll mutable hash set
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `HashSet[B]` because an implicit of type `CanBuildFrom[HashSet, B, HashSet[B]]`
  *    is defined in object `HashSet`.
- *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `HashSet`.

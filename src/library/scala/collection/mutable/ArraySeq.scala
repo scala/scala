@@ -30,7 +30,7 @@ import parallel.mutable.ParArray
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ArraySeq[B]` because an implicit of type `CanBuildFrom[ArraySeq, B, ArraySeq[B]]`
  *    is defined in object `ArraySeq`.
- *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `ArraySeq`.

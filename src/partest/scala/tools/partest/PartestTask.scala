@@ -19,7 +19,6 @@ import util.PathResolver
 import scala.tools.ant.sabbus.CompilationPathProperty
 
 import java.io.File
-import java.net.URLClassLoader
 import java.lang.reflect.Method
 
 import org.apache.tools.ant.Task

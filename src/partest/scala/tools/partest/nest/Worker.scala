@@ -9,7 +9,7 @@ package scala.tools.partest
 package nest
 
 import java.io._
-import java.net.{ URLClassLoader, URL }
+import java.net.URL
 import java.util.{ Timer, TimerTask }
 
 import scala.util.Properties.{ isWin }
@@ -285,25 +285,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
    */
   def runCommand(command: String, outFile: File): Boolean = {
     NestUI.verbose("running command:\n"+command)
-
-    // This is laboriously avoiding #> since it swallows exit failure code.
-    // To be revisited. XXX.
-    val out = new StringBuilder
-    val err = new StringBuilder
-    val errorLogger = ProcessLogger(x => err append (x + "\n"))
-    val pio = BasicIO(
-      false,
-      x => out append (x + "\n"),
-      Some(errorLogger)
-    )
-    val process = Process(command) run pio
-    val code    = process.exitValue()
-    SFile(outFile) writeAll out.toString
-
-    (code == 0) || {
-      SFile(outFile).appendAll(command + " failed with code: " + code + "\n", err.toString)
-      false
-    }
+    (command #> outFile !) == 0
   }
 
   def execTest(outDir: File, logFile: File, classpathPrefix: String = ""): Boolean = {
@@ -842,35 +824,31 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       case "scalap" =>
         runInContext(file, (logFile: File, outDir: File) => {
-          val sourceDir = file.getParentFile
-          val sourceDirName = sourceDir.getName
+          val sourceDir = Directory(if (file.isFile) file.getParent else file)
+          val sources   = sourceDir.files filter (_ hasExtension "scala") map (_.jfile) toList
+          val results   = sourceDir.files filter (_.name == "result.test") map (_.jfile) toList
 
-          // 1. Find file with result text
-          val results = sourceDir.listFiles(new FilenameFilter {
-            def accept(dir: File, name: String) = name == "result.test"
-          })
-
-          if (results.length != 1) {
-            NestUI.verbose("Result file not found in directory " + sourceDirName + " \n")
+          if (sources.length != 1 || results.length != 1) {
+            NestUI.warning("Misconfigured scalap test directory: " + sourceDir + " \n")
             false
           }
           else {
-            val resFile = results(0)
+            val resFile = results.head
             // 2. Compile source file
-            if (!compileMgr.shouldCompile(outDir, List(file), kind, logFile)) {
-              NestUI.verbose("compilerMgr failed to compile %s to %s".format(file, outDir))
+            if (!compileMgr.shouldCompile(outDir, sources, kind, logFile)) {
+              NestUI.normal("compilerMgr failed to compile %s to %s".format(sources mkString ", ", outDir))
               false
             }
             else {
               // 3. Decompile file and compare results
-              val isPackageObject = sourceDir.getName.startsWith("package")
-              val className = sourceDirName.capitalize + (if (!isPackageObject) "" else ".package")
-              val url = outDir.toURI.toURL
-              val loader = new URLClassLoader(Array(url), getClass.getClassLoader)
-              val clazz = loader.loadClass(className)
+              val isPackageObject = sourceDir.name startsWith "package"
+              val className       = sourceDir.name.capitalize + (if (!isPackageObject) "" else ".package")
+              val url             = outDir.toURI.toURL
+              val loader          = ScalaClassLoader.fromURLs(List(url), this.getClass.getClassLoader)
+              val clazz           = loader.loadClass(className)
 
               val byteCode = ByteCode.forClass(clazz)
-              val result = scala.tools.scalap.Main.decompileScala(byteCode.bytes, isPackageObject)
+              val result   = scala.tools.scalap.Main.decompileScala(byteCode.bytes, isPackageObject)
 
               SFile(logFile) writeAll result
               diffCheck(compareFiles(logFile, resFile))
@@ -951,10 +929,12 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         wr.flush()
         swr.flush()
         NestUI.normal(swr.toString)
-        if (isFail && (fileManager.showDiff || isPartestDebug) && diff != "")
-          NestUI.normal(diff)
-        if (isFail && fileManager.showLog)
-          showLog(logFile)
+        if (isFail) {
+          if ((fileManager.showDiff || isPartestDebug) && diff != "")
+            NestUI.normal(diff)
+          else if (fileManager.showLog)
+            showLog(logFile)
+        }
       }
       cleanup()
     }

@@ -1,14 +1,7 @@
 package scala.collection.mutable
 
-
-
 import collection.generic._
-
 import annotation.tailrec
-
-
-
-
 
 /** A buffer that stores elements in an unrolled linked list.
  *
@@ -32,10 +25,10 @@ import annotation.tailrec
  *  Better than singly linked lists for random access, but
  *  should still be avoided for such a purpose.
  *
+ *  @define coll unrolled buffer
+ *  @define Coll UnrolledBuffer
  *  @author Aleksandar Prokopec
  *
- *  @coll unrolled buffer
- *  @Coll UnrolledBuffer
  */
 @SerialVersionUID(1L)
 class UnrolledBuffer[T](implicit val manifest: ClassManifest[T])

@@ -5,8 +5,9 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.{ File, AbstractFile }
 import util.ScalaClassLoader
+import java.net.URL
 
 /**
  * A class loader that loads files from a {@link scala.tools.nsc.io.AbstractFile}.
@@ -17,28 +18,42 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     extends ClassLoader(parent)
     with ScalaClassLoader
 {
-  private def findBytes(name: String, onError: => Array[Byte]): Array[Byte] = {
+  protected def classNameToPath(name: String): String =
+    if (name endsWith ".class") name
+    else name.replace('.', '/') + ".class"
+
+  protected def findAbstractFile(name: String): AbstractFile = {
     var file: AbstractFile = root
-    val pathParts          = name.split("[./]").toList
+    val pathParts          = classNameToPath(name) split '/'
 
     for (dirPart <- pathParts.init) {
       file = file.lookupName(dirPart, true)
       if (file == null)
-        return onError
+        return null
     }
 
-    file.lookupName(pathParts.last+".class", false) match {
-      case null   => onError
-      case file   => file.toByteArray
+    file.lookupName(pathParts.last, false) match {
+      case null   => null
+      case file   => file
     }
   }
 
-  override def findBytesForClassName(name: String): Array[Byte] =
-    findBytes(name, super.findBytesForClassName(name))
-
+  override def getResourceAsStream(name: String) = findAbstractFile(name) match {
+    case null => super.getResourceAsStream(name)
+    case file => file.input
+  }
+  override def classBytes(name: String): Array[Byte] = findAbstractFile(name) match {
+    case null => super.classBytes(name)
+    case file => file.toByteArray
+  }
   override def findClass(name: String): JClass = {
-    val bytes = findBytes(name, throw new ClassNotFoundException(name))
-    defineClass(name, bytes, 0, bytes.length)
+    val bytes = classBytes(name)
+    if (bytes.isEmpty) throw new ClassNotFoundException(name)
+    else defineClass(name, bytes, 0, bytes.length)
   }
+  // Don't know how to construct an URL for something which exists only in memory
+  // override def getResource(name: String): URL = findAbstractFile(name) match {
+  //   case null   => super.getResource(name)
+  //   case file   => new URL(...)
+  // }
 }
-

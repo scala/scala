@@ -22,50 +22,17 @@ package scala.tools.nsc
  *  InteractiveReader contains { history: History, completion: Completion }
  *  IMain contains { global: Global }
  */
-package object interpreter {
+package object interpreter extends ReplConfig with ReplStrings {
+  type JFile          = java.io.File
   type JClass         = java.lang.Class[_]
   type JList[T]       = java.util.List[T]
   type JCollection[T] = java.util.Collection[T]
-
-  private[nsc] val DebugProperty = "scala.repl.debug"
-  private[nsc] val TraceProperty = "scala.repl.trace"
-  private[nsc] val PowerProperty = "scala.repl.power"
-  private[nsc] var isReplDebug   = sys.props contains DebugProperty // Also set by -Yrepl-debug
-  private[nsc] var isReplPower   = sys.props contains PowerProperty
+  type InputStream    = java.io.InputStream
+  type OutputStream   = java.io.OutputStream
 
   private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
   private[interpreter] implicit def javaCharSeqCollectionToScala(xs: JCollection[_ <: CharSequence]): List[String] = {
     import collection.JavaConverters._
     xs.asScala.toList map ("" + _)
   }
-
-  /** Debug output */
-  private[nsc] def repldbg(msg: String) = if (isReplDebug) Console println msg
-
-  /** Tracing */
-  private[nsc] def tracing[T](msg: String)(x: T): T = {
-    if (isReplDebug)
-      println("(" + msg + ") " + x)
-
-    x
-  }
-
-  // Longest common prefix
-  def longestCommonPrefix(xs: List[String]): String = {
-    if (xs.isEmpty || xs.contains("")) ""
-    else xs.head.head match {
-      case ch =>
-        if (xs.tail forall (_.head == ch)) "" + ch + longestCommonPrefix(xs map (_.tail))
-        else ""
-    }
-  }
-
-  private[nsc] def words(s: String) = s.trim split "\\s+" toList
-  private[nsc] def isQuoted(s: String) =
-    (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
-
-  /** Class objects */
-  private[nsc] def classForName(name: String): Option[JClass] =
-    try Some(Class forName name)
-    catch { case _: ClassNotFoundException | _: SecurityException => None }
 }

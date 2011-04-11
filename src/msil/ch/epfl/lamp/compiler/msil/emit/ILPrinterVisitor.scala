@@ -271,7 +271,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	// [[int32]] <fieldAttr>* <type> <id> [= <fieldInit> | at <dataLabel>]
 	print(".field ")
 	print(FieldAttributes.toString(field.Attributes))
-	print(" "); printSignature(field.FieldType)
+	print(" "); printSignature(field.FieldType, field.cmods)
 	print(" \'"); print(field.Name); print("\'")
 	if (field.IsLiteral()) {
 	    print(" = ")
@@ -608,16 +608,16 @@ abstract class ILPrinterVisitor extends Visitor {
     }
 
 
-    def printSignature(field: FieldInfo) {
-	printSignature(field.FieldType)
-	//print(' ') print(owner)
-	print(' ')
-	//if (field.IsStatic && field.DeclaringType != currentType) {
-	    printReference(field.DeclaringType)
-	    print("::")
-	    //}
-	printName(field.Name)
-    }
+  def printSignature(field: FieldInfo) {
+    printSignature(field.FieldType, field.cmods)
+    //print(' ') print(owner)
+    print(' ')
+    //if (field.IsStatic && field.DeclaringType != currentType) {
+    printReference(field.DeclaringType)
+    print("::")
+    //}
+    printName(field.Name)
+  }
 
     // print method head
     @throws(classOf[IOException])
@@ -670,7 +670,19 @@ abstract class ILPrinterVisitor extends Visitor {
 	print(")")
     }
 
-    def printSignature(`type`: Type) {
+  def printSignature(marked: Type, cmods: Array[CustomModifier]) {
+    printSignature(marked)
+    if( (cmods != null) && !cmods.isEmpty ) {
+      print(" ")
+      for(cm <- cmods) {
+        print(if (cm.isReqd) "modreq( " else "modopt( ")
+        printReference(cm.marker)
+        print(" ) ")
+      }
+    }
+  }
+
+  def printSignature(`type`: Type) {
       val sigOpt = primitive.get(`type`)
       if (sigOpt.isDefined) {
           print(sigOpt.get)

@@ -137,6 +137,10 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
     finally out close
   }
 
+  def safeSlurp(): Option[String] =
+    try Some(slurp())
+    catch { case _: IOException => None }
+
   def copyTo(destPath: Path, preserveFileDate: Boolean = false): Boolean = {
     val CHUNK = 1024 * 1024 * 16  // 16 MB
     val dest = destPath.toFile

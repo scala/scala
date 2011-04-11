@@ -86,7 +86,7 @@ if $cygwin; then
     case "$TERM" in
         rxvt* | xterm*)
             stty -icanon min 1 -echo
-            CYGWIN_JLINE_TERMINAL="-Djline.terminal=jline.UnixTerminal"
+            CYGWIN_JLINE_TERMINAL="-Djline.terminal=scala.tools.jline.UnixTerminal"
         ;;
     esac
 fi

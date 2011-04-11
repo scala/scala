@@ -28,7 +28,7 @@ import generic._
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `LinkedList[B]` because an implicit of type `CanBuildFrom[LinkedList, B, LinkedList[B]]`
  *    is defined in object `LinkedList`.
- *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `LinkedList`.
@@ -60,10 +60,9 @@ class LinkedList[A]() extends LinearSeq[A]
  *  @define coll linked list
  */
 object LinkedList extends SeqFactory[LinkedList] {
-
   override def empty[A]: LinkedList[A] = new LinkedList[A]
-
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = new GenericCanBuildFrom[A]
+
   def newBuilder[A]: Builder[A, LinkedList[A]] =
     (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)
 }

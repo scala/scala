@@ -5,6 +5,7 @@
 
 package scala.tools.partest
 
+import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.ILoop
 import java.lang.reflect.{ Method => JMethod, Field => JField }
 
@@ -13,7 +14,8 @@ import java.lang.reflect.{ Method => JMethod, Field => JField }
  */
 abstract class ReplTest extends App {
   def code: String
-  def eval() = (ILoop run code).lines drop 1
+  def settings: Settings = new Settings // override for custom settings
+  def eval() = ILoop.runForTranscript(code, settings).lines drop 1
   def show() = eval() foreach println
 
   show()

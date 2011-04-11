@@ -17,13 +17,15 @@ import model.{ RootPackage => RootPackageEntity }
 class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory: ModelFactory with CommentFactory with TreeFactory =>
 
   import global._
-  import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyRefClass }
+  import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyValClass, AnyRefClass }
 
   private var droppedPackages = 0
   def templatesCount = templatesCache.size - droppedPackages
 
   private var modelFinished = false
   private var universe: Universe = null
+
+  private lazy val noSubclassCache = Set(AnyClass, AnyRefClass, ObjectClass, ScalaObjectClass)
 
   /**  */
   def makeModel: Option[Universe] = {
@@ -160,10 +162,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     * * All non-package members (including other templates, as full templates). */
   abstract class DocTemplateImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with HigherKindedImpl with DocTemplateEntity {
     //if (inTpl != null) println("mbr " + sym + " in " + (inTpl.toRoot map (_.sym)).mkString(" > "))
+    if (settings.verbose.value)
+      inform("Creating doc template for " + sym)
+
     templatesCache += (sym -> this)
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
-    def inSource = if (sym.sourceFile != null) Some((sym.sourceFile, sym.pos.line)) else None
+    def inSource =
+      if (sym.sourceFile != null && ! sym.isSynthetic)
+        Some((sym.sourceFile, sym.pos.line))
+      else
+        None
+
     def sourceUrl = {
       def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
       val assumedSourceRoot: String = {
@@ -187,33 +197,40 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       else None
     }
     def parentType = {
-      if (sym.isPackage) None else {
+      if (sym.isPackage || sym == AnyClass) None else {
         val tps =
           (sym.tpe.parents filter (_ != ScalaObjectClass.tpe)) map { _.asSeenFrom(sym.thisType, sym) }
         Some(makeType(RefinedType(tps, EmptyScope), inTpl))
       }
     }
     val linearization: List[(TemplateEntity, TypeEntity)] = {
-      val acs = sym.ancestors filter { _ != ScalaObjectClass }
-      val tps = acs map { cls => makeType(sym.info.baseType(cls), this) }
-      val tpls = acs map { makeTemplate(_) }
-      tpls map {
-          case dtpl: DocTemplateImpl => dtpl.registerSubClass(this)
-          case _ =>
+      val acs  = sym.ancestors filterNot (_ == ScalaObjectClass)
+      val tps  = acs map (cls => makeType(sym.info.baseType(cls), this))
+      val tpls = acs map makeTemplate
+
+      tpls foreach {
+        case dtpl: DocTemplateImpl => dtpl.registerSubClass(this)
+        case _                     =>
       }
       tpls zip tps
     }
     def linearizationTemplates = linearization map { _._1 }
     def linearizationTypes = linearization map { _._2 }
-    private lazy val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
+
+    private lazy val subClassesCache = (
+      if (noSubclassCache(sym)) null
+      else mutable.ListBuffer[DocTemplateEntity]()
+    )
     def registerSubClass(sc: DocTemplateEntity): Unit = {
-      assert(subClassesCache != null)
-      subClassesCache += sc
+      if (subClassesCache != null)
+        subClassesCache += sc
     }
-    def subClasses = subClassesCache.toList
+    def subClasses = if (subClassesCache == null) Nil else subClassesCache.toList
+
     protected lazy val memberSyms =
        // Only this class's constructors are part of its members, inherited constructors are not.
       sym.info.members.filter(s => localShouldDocument(s) && (!s.isConstructor || s.owner == sym))
+
     val members       = memberSyms flatMap (makeMember(_, this))
     val templates     = members collect { case c: DocTemplateEntity => c }
     val methods       = members collect { case d: Def => d }
@@ -591,8 +608,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         /* Refined types */
         case RefinedType(parents, defs) =>
           appendTypes0((if (parents.length > 1) parents filterNot (_ == ObjectClass.tpe) else parents), " with ")
-          if (!defs.isEmpty) {
-            nameBuffer append " {...}" // TODO: actually print the refinement
+          // XXX Still todo: properly printing refinements.
+          // Since I didn't know how to go about displaying a multi-line type, I went with
+          // printing single method refinements (which should be the most common) and printing
+          // the number of members if there are more.
+          defs.toList match {
+            case Nil      => ()
+            case x :: Nil => nameBuffer append (" { " + x.defString + " }")
+            case xs       => nameBuffer append (" { ... /* %d definitions in type refinement */ }" format xs.size)
           }
         /* Eval-by-name types */
         case NullaryMethodType(result) =>

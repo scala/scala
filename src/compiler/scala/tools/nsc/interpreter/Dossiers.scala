@@ -33,7 +33,7 @@ trait Dossiers {
   }
 
   class TermDossier(val symbol: TermSymbol, val staticType: Type, val value: AnyRef) extends Dossier {
-    def runtimeClass: Class[_] = value.getClass
+    def runtimeClass: JClass = value.getClass
     def runtimeSymbol: Symbol  = safeClass(runtimeClass.getName) getOrElse NoSymbol
     def runtimeType: Type      = runtimeSymbol.tpe
     def runtimeTypeString      = TypeStrings.fromClazz(runtimeClass)

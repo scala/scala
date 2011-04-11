@@ -112,6 +112,9 @@ class Scaladoc extends ScalaMatchingTask {
   /** Instruct the compiler to generate links to sources */
   private var docsourceurl: Option[String] = None
 
+  /** Point scaladoc at uncompilable sources. */
+  private var docUncompilable: Option[String] = None
+
   /** Instruct the compiler to use additional parameters */
   private var addParams: String = ""
 
@@ -331,6 +334,10 @@ class Scaladoc extends ScalaMatchingTask {
       buildError("Unknown unchecked flag '" + input + "'")
   }
 
+  def setDocUncompilable(input: String) {
+    docUncompilable = Some(input)
+  }
+
 /*============================================================================*\
 **                             Properties getters                             **
 \*============================================================================*/
@@ -518,6 +525,8 @@ class Scaladoc extends ScalaMatchingTask {
     if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
     if (!docversion.isEmpty) docSettings.docversion.value = decodeEscapes(docversion.get)
     if (!docsourceurl.isEmpty) docSettings.docsourceurl.value =decodeEscapes(docsourceurl.get)
+    if (!docUncompilable.isEmpty) docSettings.docUncompilable.value = decodeEscapes(docUncompilable.get)
+
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get

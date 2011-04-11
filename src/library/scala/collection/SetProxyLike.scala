@@ -19,10 +19,8 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  */
-trait SetProxyLike[A, +This <: SetLike[A, This] with Set[A]] extends SetLike[A, This] with IterableProxyLike[A, This]
-{
+trait SetProxyLike[A, +This <: SetLike[A, This] with Set[A]] extends SetLike[A, This] with IterableProxyLike[A, This] {
   def empty: This
-  // def empty: This
   override def contains(elem: A): Boolean = self.contains(elem)
   override def + (elem: A) = self.+(elem)
   override def - (elem: A) = self.-(elem)

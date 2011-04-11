@@ -2,12 +2,17 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> 
-scala> defined class M
 
-scala> m1: M[Int] = mmm
+scala> class M[@specialized T] { override def toString = "mmm" }
+defined class M
 
-scala> m2: M[Float] = mmm
+scala> val m1 = new M[Int]()
+m1: M[Int] = mmm
 
-scala> m3: M[String] = mmm
+scala> val m2 = new M[Float]()
+m2: M[Float] = mmm
+
+scala> val m3 = new M[String]()
+m3: M[String] = mmm
 
 scala> 

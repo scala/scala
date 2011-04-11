@@ -108,20 +108,20 @@ public class Attribute {
     private static final Map id2type = new HashMap();
     static {
         map("Boolean", Signature.ELEMENT_TYPE_BOOLEAN);
-        map("Char", Signature.ELEMENT_TYPE_CHAR);
-        map("SByte", Signature.ELEMENT_TYPE_I1);
-        map("Byte", Signature.ELEMENT_TYPE_U1);
-        map("Int16", Signature.ELEMENT_TYPE_I2);
-        map("UInt16", Signature.ELEMENT_TYPE_U2);
-        map("Int32", Signature.ELEMENT_TYPE_I4);
-        map("UInt32", Signature.ELEMENT_TYPE_U4);
-        map("Int64", Signature.ELEMENT_TYPE_I8);
-        map("UInt64", Signature.ELEMENT_TYPE_U8);
-        map("Single", Signature.ELEMENT_TYPE_R4);
-        map("Double", Signature.ELEMENT_TYPE_R8);
-        map("String", Signature.ELEMENT_TYPE_STRING);
-        map("Type", Signature.X_ELEMENT_TYPE_TYPE);
-        map("Object", Signature.ELEMENT_TYPE_OBJECT);
+        map("Char",    Signature.ELEMENT_TYPE_CHAR);
+        map("SByte",   Signature.ELEMENT_TYPE_I1);
+        map("Byte",    Signature.ELEMENT_TYPE_U1);
+        map("Int16",   Signature.ELEMENT_TYPE_I2);
+        map("UInt16",  Signature.ELEMENT_TYPE_U2);
+        map("Int32",   Signature.ELEMENT_TYPE_I4);
+        map("UInt32",  Signature.ELEMENT_TYPE_U4);
+        map("Int64",   Signature.ELEMENT_TYPE_I8);
+        map("UInt64",  Signature.ELEMENT_TYPE_U8);
+        map("Single",  Signature.ELEMENT_TYPE_R4);
+        map("Double",  Signature.ELEMENT_TYPE_R8);
+        map("String",  Signature.ELEMENT_TYPE_STRING);
+        map("Type",    Signature.X_ELEMENT_TYPE_TYPE);
+        map("Object",  Signature.ELEMENT_TYPE_OBJECT);
     }
     private static void map(String type, int id) {
         Type t = Type.GetType("System." + type);
@@ -150,42 +150,102 @@ public class Attribute {
     private void parseBlob0() {
         if (buf != null)
             return;
-        buf = ByteBuffer.wrap(value);
+        buf = ByteBuffer.wrap(value);                                   // Sec. 23.3 in Partition II of CLR Spec.
         buf.order(ByteOrder.LITTLE_ENDIAN);
 
-        short sig = buf.getShort();
+        short sig = buf.getShort();                                     // Prolog
         assert sig == 1 : PEFile.bytes2hex(value);
         ParameterInfo[] params = constr.GetParameters();
         constrArgs = new Object[params.length];
         for (int i = 0; i < params.length; i++) {
-            constrArgs[i] = parseElement(params[i].ParameterType);
+            constrArgs[i] = parseFixedArg(params[i].ParameterType);     // FixedArg
         }
 
-        int ncount = buf.getShort();
+        int ncount = buf.getShort();                                   // NumNamed
         namedArgs = new LinkedHashMap();
         for (int i = 0; i < ncount; i++) {
-            int designator = buf.get();
+            int designator = buf.get();                                // designator one of 0x53 (FIELD) or 0x54 (PROPERTY)
             assert designator == Signature.X_ELEMENT_KIND_FIELD
                 || designator == Signature.X_ELEMENT_KIND_PROPERTY
                 : "0x" + PEFile.byte2hex(designator);
-            Type type = parseType();
-            String name = parseString();
-            Object value = parseElement(type);
+            Type type = parseFieldOrPropTypeInNamedArg();              // FieldOrPropType
+            String name = parseString();                               // FieldOrPropName
+            Object value = parseFixedArg(type);                        // FixedArg
             NamedArgument narg =
                 new NamedArgument(designator, name, type, value);
             namedArgs.put(name, narg);
         }
     }
 
-    private Object parseElement(Type type) {
-        if (type.IsArray())
+    private Object parseFixedArg(Type type) {
+      if (type.IsArray())
 	    return parseArray(type.GetElementType());
-	if (type.IsEnum())
-	    return parseElement(type.getUnderlyingType());
-	return parseElement(getTypeId(type));
+	  else
+        return parseElem(type);
     }
 
-    private Object parseElement(int id) {
+    /* indicates whether the "simple" case (the other is "enum") of the first row
+       in the Elem production should be taken. */
+    private boolean isSimpleElem(Type type) {
+        if(!type2id.containsKey(type)) return false;
+        int id = getTypeId(type);
+        switch(id){
+            case Signature.ELEMENT_TYPE_STRING:
+            case Signature.X_ELEMENT_TYPE_TYPE:
+            case Signature.ELEMENT_TYPE_OBJECT:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    /* indicates whether the second row in the Elem production
+       should be taken (and more specifically, "string" case within that row). */
+    private boolean isStringElem(Type type) {
+        if(!type2id.containsKey(type)) return false;
+        int id = getTypeId(type);
+        return id == Signature.ELEMENT_TYPE_STRING;
+    }
+
+    /* indicates whether the second row in the Elem production
+       should be taken (and more specifically, "type" case within that row). */
+    private boolean isTypeElem(Type type) {
+        if(!type2id.containsKey(type)) return false;
+        int id = getTypeId(type);
+        return id == Signature.X_ELEMENT_TYPE_TYPE;
+    }
+
+    /* indicates whether the third row in the Elem production
+       should be taken (and more specifically, "boxed" case within that row). */
+    private boolean isSystemObject(Type type) {
+        if(!type2id.containsKey(type)) return false;
+        int id = getTypeId(type);
+        return id == Signature.ELEMENT_TYPE_OBJECT;
+    }
+
+    private Object parseElem(Type type) {
+       // simple or enum
+       if (isSimpleElem(type)) return parseVal(getTypeId(type));
+       if (type.IsEnum())      return parseVal(getTypeId(type.getUnderlyingType()));
+       // string or type
+       if (isStringElem(type)) return parseString();
+       if (isTypeElem(type))   return getTypeFromSerString();
+       // boxed valuetype, please notice that a "simple" boxed valuetype is preceded by 0x51
+       if (isSystemObject(type)) {
+           Type boxedT = parse0x51();
+           if(boxedT.IsEnum()) {
+               return new BoxedArgument(boxedT, parseVal(getTypeId(boxedT.getUnderlyingType())));
+           } else {
+               return new BoxedArgument(boxedT, parseVal(getTypeId(boxedT))); // TODO dead code?
+           }
+       } else {
+           Type boxedT = parseType();
+           return parseVal(getTypeId(boxedT));
+       }
+    }
+
+    /* this does not parse an Elem, but a made-up production (Element). Don't read too much into this method name! */
+    private Object parseVal(int id) {
         switch (id) {
         case Signature.ELEMENT_TYPE_BOOLEAN:
             return new Boolean(buf.get() == 0 ? false : true);
@@ -193,29 +253,26 @@ public class Attribute {
             return new Character(buf.getChar());
         case Signature.ELEMENT_TYPE_I1:
         case Signature.ELEMENT_TYPE_U1:
-            return new Byte(buf.get());
+            return new Byte(buf.get());       // TODO U1 not the same as I1
         case Signature.ELEMENT_TYPE_I2:
         case Signature.ELEMENT_TYPE_U2:
-            return new Short(buf.getShort());
+            return new Short(buf.getShort()); // TODO U2 not the same as I2
         case Signature.ELEMENT_TYPE_I4:
         case Signature.ELEMENT_TYPE_U4:
-            return new Integer(buf.getInt());
+            return new Integer(buf.getInt()); // TODO U4 not the same as I4
         case Signature.ELEMENT_TYPE_I8:
         case Signature.ELEMENT_TYPE_U8:
-            return new Long(buf.getLong());
+            return new Long(buf.getLong());   // TODO U8 not the same as I8
         case Signature.ELEMENT_TYPE_R4:
             return new Float(buf.getFloat());
         case Signature.ELEMENT_TYPE_R8:
             return new Double(buf.getDouble());
+        case Signature.X_ELEMENT_TYPE_TYPE:
+            return getTypeFromSerString();
         case Signature.ELEMENT_TYPE_STRING:
             return parseString();
-        case Signature.X_ELEMENT_TYPE_TYPE:
-                return getType();
-        case Signature.ELEMENT_TYPE_OBJECT:
-            Type type = parseType();
-            return new BoxedArgument(type, parseElement(type));
         default:
-            throw new RuntimeException("Unknown type id: " + id);
+            throw new RuntimeException("Shouldn't have called parseVal with: " + id);
         }
     }
 
@@ -232,7 +289,7 @@ public class Attribute {
         case Signature.ELEMENT_TYPE_CHAR:
             return parseCharArray();
         case Signature.ELEMENT_TYPE_I1:
-        case Signature.ELEMENT_TYPE_U1:
+        case Signature.ELEMENT_TYPE_U1:    // TODO U1 not the same as I1
             return parseByteArray();
         case Signature.ELEMENT_TYPE_I2:
         case Signature.ELEMENT_TYPE_U2:
@@ -250,19 +307,22 @@ public class Attribute {
         case Signature.ELEMENT_TYPE_STRING:
             return parseStringArray();
         case Signature.X_ELEMENT_TYPE_ENUM:
-	    return parseArray(getType());
+	    return parseArray(getTypeFromSerString());
         default:
             throw new RuntimeException("Unknown type id: " + id);
         }
     }
 
-    private Type parseType() {
+    private Type parseType() { // FieldOrPropType, Sec. 23.3 in Partition II of CLR Spec.
         int id = buf.get();
         switch (id) {
         case Signature.ELEMENT_TYPE_SZARRAY:
-            return Type.mkArray(parseType(), 1);
+            Type arrT = Type.mkArray(parseType(), 1);
+            return arrT;
         case Signature.X_ELEMENT_TYPE_ENUM:
-            return getType();
+            String enumName = parseString();
+            Type enumT = Type.getType(enumName);
+            return enumT;
         default:
             Type t = (Type)id2type.get(new Integer(id));
             assert t != null : PEFile.byte2hex(id);
@@ -270,13 +330,50 @@ public class Attribute {
         }
     }
 
-    private Type getType() {
+    private Type parse0x51() {
+        int id = buf.get();
+        switch (id) {
+        case 0x51:
+            return parse0x51();
+        case Signature.ELEMENT_TYPE_SZARRAY:
+            Type arrT = Type.mkArray(parseType(), 1);
+            return arrT;
+        case Signature.X_ELEMENT_TYPE_ENUM:
+            String enumName = parseString();
+            Type enumT = Type.getType(enumName);
+            return enumT;
+        default:
+            Type t = (Type)id2type.get(new Integer(id));
+            assert t != null : PEFile.byte2hex(id);
+            return t;
+        }
+    }
+
+
+    private Type parseFieldOrPropTypeInNamedArg() { // FieldOrPropType, Sec. 23.3 in Partition II of CLR Spec.
+        int id = buf.get();
+        switch (id) {
+        case 0x51:
+            return (Type)(id2type.get(new Integer(Signature.ELEMENT_TYPE_OBJECT)));
+        // TODO remove case Signature.ELEMENT_TYPE_SZARRAY:
+            // Type arrT = Type.mkArray(parseType(), 1);
+            // return arrT;
+        case Signature.X_ELEMENT_TYPE_ENUM:
+            String enumName = parseString();
+            Type enumT = Type.getType(enumName); // TODO this "lookup" only covers already-loaded assemblies.
+            return enumT; // TODO null as return value (due to the above) spells trouble later.
+        default:
+            Type t = (Type)id2type.get(new Integer(id));
+            assert t != null : PEFile.byte2hex(id);
+            return t;
+        }
+    }
+
+    private Type getTypeFromSerString() {
         String typename = parseString();
         int i = typename.indexOf(',');
-        // fully qualified assembly name follows
-        // just strip it on the assumtion theat the
-        // assembly is referenced in the externs and the
-        // type will be found
+        /* fully qualified assembly name follows. Just strip it on the assumption that
+           the assembly is referenced in the externs and the type will be found. */
         String name = (i < 0) ? typename : typename.substring(0, i);
         Type t = Type.GetType(name);
         if (t == null && i > 0) {
@@ -358,7 +455,7 @@ public class Attribute {
         return arr;
     }
 
-    private String parseString() {
+    private String parseString() { // SerString convention
         String str = null;
         int length = parseLength();
         if (length < 0)
@@ -541,7 +638,7 @@ public class Attribute {
 
     //##########################################################################
 
-    protected static final class BoxedArgument {
+    public static class BoxedArgument {
         public final Type type;
         public final Object value;
         public BoxedArgument(Type type, Object value) {

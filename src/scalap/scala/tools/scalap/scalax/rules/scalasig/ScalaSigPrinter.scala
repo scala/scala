@@ -205,16 +205,17 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case ms: MethodSymbol => ms.name + " : " + toString(ms.infoType)(TypeFlags(true))
         case _ => "^___^"
       })
+      val implicitWord = mt.paramSymbols.headOption match {
+        case Some(p) if p.isImplicit  => "implicit "
+        case _                        => ""
+      }
 
       // Print parameter clauses
-      print(paramEntries.mkString(
-        "(" + (mt match {case _: ImplicitMethodType => "implicit "; case _ => ""})
-        , ", ", ")"))
+      print(paramEntries.mkString("(" + implicitWord, ", ", ")"))
 
       // Print result type
       mt.resultType match {
         case mt: MethodType => printMethodType(mt, printResult)({})
-        case imt: ImplicitMethodType => printMethodType(imt, printResult)({})
         case x => if (printResult) {
           print(" : ");
           printType(x)
@@ -225,7 +226,6 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     t match {
       case NullaryMethodType(resType) => if (printResult) { print(" : "); printType(resType) }
       case mt@MethodType(resType, paramSymbols) => _pmt(mt)
-      case mt@ImplicitMethodType(resType, paramSymbols) => _pmt(mt)
       case pt@PolyType(mt, typeParams) => {
         print(typeParamString(typeParams))
         printMethodType(mt, printResult)({})
@@ -373,7 +373,6 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       case ClassInfoTypeWithCons(symbol, typeRefs, cons) => sep + typeRefs.map(toString).
               mkString(cons + " extends ", " with ", "")
 
-      case ImplicitMethodType(resultType, _) => toString(resultType, sep)
       case MethodType(resultType, _) => toString(resultType, sep)
       case NullaryMethodType(resultType) => toString(resultType, sep)
 

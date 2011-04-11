@@ -29,15 +29,18 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     </xml:group>
 
   val valueMembers =
-    (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortBy (_.name)
+    tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
+
+  val (absValueMembers, concValueMembers) =
+    valueMembers partition (_.isAbstract)
 
   val typeMembers =
-    (tpl.abstractTypes ::: tpl.aliasTypes ::: (tpl.templates filter { tpl => tpl.isTrait || tpl.isClass })) sortBy (_.name)
+    tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
 
   val constructors = (tpl match {
-    case cls: Class => cls.constructors
+    case cls: Class => (cls.constructors: List[MemberEntity]).sorted
     case _ => Nil
-  }) sortBy (_.name)
+  })
 
   /* for body, there is a special case for AnyRef, otherwise AnyRef appears like a package/object
    * this problem should be fixed, this implementation is just a patch
@@ -51,10 +54,20 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
       }
 
-      <div id="definition">
-        <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
-        <h1>{ if (tpl.isRootPackage) "root package" else tpl.name }</h1>
-      </div>
+      { val templateName = if (tpl.isRootPackage) "root package" else tpl.name
+        val displayName = tpl.companion match {
+          case Some(companion) =>
+            if (companion.visibility.isPublic && companion.inSource != None)
+              <a href={relativeLinkTo(companion)} title="go to companion">{ templateName }</a>
+            else templateName
+          case _ =>
+            templateName
+        }
+        <div id="definition">
+          <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
+          <h1>{ displayName }</h1>
+        </div>
+      }
 
       { signature(tpl, true) }
       { memberToCommentHtml(tpl, true) }
@@ -82,17 +95,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <ol><li class="public in">Public</li><li class="all out">All</li></ol>
             </div>
           }
-          {
-            <div id="impl">
-              <span class="filtertype">Impl.</span>
-              <ol><li class="concrete in">Concrete</li><li class="abstract in">Abstract</li></ol>
-            </div>
-          }
         </div>
 
         { if (constructors.isEmpty) NodeSeq.Empty else
             <div id="constructors" class="members">
-              <h3>Instance constructors</h3>
+              <h3>Instance Constructors</h3>
               <ol>{ constructors map (memberToHtml(_)) }</ol>
             </div>
         }
@@ -104,10 +111,17 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             </div>
         }
 
-        { if (valueMembers.isEmpty) NodeSeq.Empty else
+        { if (absValueMembers.isEmpty) NodeSeq.Empty else
             <div id="values" class="values members">
-              <h3>Value Members</h3>
-              <ol>{ valueMembers map (memberToHtml(_)) }</ol>
+              <h3>Abstract Value Members</h3>
+              <ol>{ absValueMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (concValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="values" class="values members">
+              <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
+              <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
             </div>
         }
 
@@ -183,10 +197,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case dte: DocTemplateEntity if isSelf =>
         // comment of class itself
         <xml:group>
-          { if (mbr.comment.isEmpty) NodeSeq.Empty
-            else
-              <div class="shortcomment cmt">{ commentToHtml(mbr.comment) }</div>
-          }
           <div id="comment" class="fullcomment">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
         </xml:group>
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
@@ -198,10 +208,15 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         if (commentBody.isEmpty)
           NodeSeq.Empty
         else {
-          <xml:group>
-            { memberToShortCommentHtml(mbr, isSelf) }
-            <div class="fullcomment">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ memberToCommentBodyHtml(mbr, isSelf) }</div>
-          </xml:group>
+          val shortComment = memberToShortCommentHtml(mbr, isSelf)
+          val longComment = memberToUseCaseCommentHtml(mbr, isSelf) ++ memberToCommentBodyHtml(mbr, isSelf)
+
+          val includedLongComment = if (shortComment.text.trim == longComment.text.trim)
+            NodeSeq.Empty
+          else
+            <div class="fullcomment">{ longComment }</div>
+
+          shortComment ++ includedLongComment
         }
     }
   }
@@ -225,32 +240,37 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
 
   def memberToCommentBodyHtml(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
-    NodeSeq.Empty ++
-    { if (mbr.comment.isEmpty) NodeSeq.Empty else
-        <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
-    } ++
-    { val prs: List[ParameterEntity] = mbr match {
+    val memberComment =
+      if (mbr.comment.isEmpty) NodeSeq.Empty
+      else <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
+
+    val paramComments = {
+      val prs: List[ParameterEntity] = mbr match {
         case cls: Class => cls.typeParams ::: cls.valueParams.flatten
         case trt: Trait => trt.typeParams
         case dfe: Def => dfe.typeParams ::: dfe.valueParams.flatten
         case ctr: Constructor => ctr.valueParams.flatten
         case _ => Nil
       }
+
       def mbrCmt = mbr.comment.get
+
       def paramCommentToHtml(prs: List[ParameterEntity]): NodeSeq = prs match {
-        case Nil =>
-          NodeSeq.Empty
+        case Nil => NodeSeq.Empty
+
         case (tp: TypeParam) :: rest =>
           val paramEntry: NodeSeq = {
             <dt class="tparam">{ tp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.typeParams(tp.name)) }</dd>
           }
           paramEntry ++ paramCommentToHtml(rest)
+
         case (vp: ValueParam) :: rest  =>
           val paramEntry: NodeSeq = {
             <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.valueParams(vp.name)) }</dd>
           }
           paramEntry ++ paramCommentToHtml(rest)
       }
+
       if (mbr.comment.isEmpty) NodeSeq.Empty
       else {
         val cmtedPrs = prs filter {
@@ -258,7 +278,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
         }
         if (cmtedPrs.isEmpty && mbrCmt.result.isEmpty) NodeSeq.Empty
-        else
+        else {
           <dl class="paramcmts block">{
             paramCommentToHtml(cmtedPrs) ++ (
             mbrCmt.result match {
@@ -267,119 +287,141 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
                 <dt>returns</dt><dd class="cmt">{ bodyToHtml(cmt) }</dd>
             })
           }</dl>
+        }
       }
-    } ++
-    { val fvs: List[comment.Paragraph] = visibility(mbr).toList ::: mbr.flags
-      if (fvs.isEmpty || isReduced) NodeSeq.Empty else
-        <div class="block">
-          attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
-        </div>
-    } ++
-    { tpl.companion match {
-        case Some(companion) if (isSelf && !isReduced) =>
-          <div class="block">
-            go to: <a href={relativeLinkTo(companion)}>companion</a>
-          </div>
-        case _ =>
-          NodeSeq.Empty
+    }
+
+    // --- start attributes block vals
+    val attributes: Seq[scala.xml.Node] = {
+      val fvs: List[comment.Paragraph] = visibility(mbr).toList ::: mbr.flags
+      if (fvs.isEmpty || isReduced) NodeSeq.Empty
+      else {
+        <dt>Attributes</dt>
+        <dd>{ fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }</dd>
       }
-    } ++
-    { val inDefTpls = mbr.inDefinitionTemplates
-      if ((inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) || isReduced) NodeSeq.Empty else {
-        <div class="block">
-          definition classes: { templatesToHtml(inDefTpls, xml.Text(" → ")) }
-        </div>
+    }
+
+    val definitionClasses: Seq[scala.xml.Node] = {
+      val inDefTpls = mbr.inDefinitionTemplates
+      if ((inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) || isReduced) NodeSeq.Empty
+      else {
+        <dt>Definition Classes</dt>
+        <dd>{ templatesToHtml(inDefTpls, xml.Text(" → ")) }</dd>
       }
-    } ++
-    { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearizationTemplates.isEmpty && !isReduced) =>
-          <div class="block">
-            linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
-          </div>
-        case _ => NodeSeq.Empty
-      }
-    } ++
-    { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty && !isReduced) =>
-          <div class="block">
-            known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
-          </div>
-        case _ => NodeSeq.Empty
-      }
-    } ++
-    { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
-          <div class="block">
-            self type: { typeToHtml(dtpl.selfType.get, hasLinks = true) }
-          </div>
-        case _ => NodeSeq.Empty
-      }
-    } ++
-    { if (!mbr.annotations.isEmpty) {
-        <div class="block">
-          annotations: {
+    }
+
+    val selfType: Seq[scala.xml.Node] = mbr match {
+      case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
+        <dt>Self Type</dt>
+        <dd>{ typeToHtml(dtpl.selfType.get, hasLinks = true) }</dd>
+      case _ => NodeSeq.Empty
+    }
+
+    val annotations: Seq[scala.xml.Node] =
+      if (!mbr.annotations.isEmpty) {
+        <dt>Annotations</dt>
+        <dd>{
             mbr.annotations.map { annot =>
               <xml:group>
                 <span class="name">@{ templateToHtml(annot.annotationClass) }</span>{ argumentsToHtml(annot.arguments) }
               </xml:group>
             }
           }
-        </div>
-      }
-      else NodeSeq.Empty
-    } ++
-    { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined && !isReduced) =>
-          val (absFile, line) = dtpl.inSource.get
-          <div class="block">
-            source: { <a href={ dtpl.sourceUrl.get.toString }>{ Text(absFile.file.getName) }</a> }
-          </div>
-        case _ => NodeSeq.Empty
-      }
-    } ++
-    { if (mbr.deprecation.isEmpty || isReduced) NodeSeq.Empty else
-        <div class="block"><ol>deprecated:
-          { <li class="cmt">{ bodyToHtml(mbr.deprecation.get) }</li> }
-        </ol></div>
-    } ++
-    { mbr.comment match {
-        case Some(comment) =>
-          <xml:group>
-            { if(!comment.example.isEmpty && !isReduced)
-              <div class="block">Example{ if (comment.example.length > 1) "s" else ""} :
-                <ol>{
-                  val exampleXml: List[scala.xml.NodeSeq] =
-                    for(example <- comment.example ) yield
-                      <li class="cmt">{ bodyToHtml(example) }</li>
-                  exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
-                }</ol>
-              </div>
-              else NodeSeq.Empty
-            }
-            { if(!comment.version.isEmpty && !isReduced)
-                <div class="block"><ol>version
-                  { for(body <- comment.version.toList) yield <li class="cmt">{bodyToHtml(body)}</li> }
-                </ol></div>
-              else NodeSeq.Empty
-            }
-            { if(!comment.since.isEmpty && !isReduced)
-                <div class="block"><ol>since
-                  { for(body <- comment.since.toList) yield <li class="cmt">{bodyToHtml(body)}</li> }
-                </ol></div>
-              else NodeSeq.Empty
-            }
-            { if(!comment.see.isEmpty && !isReduced)
-                <div class="block"><ol>see also:
-                  { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li class="cmt">{bodyToHtml(see)}</li> )
-                    seeXml.reduceLeft(_ ++ Text(", ") ++ _)
-                  }
-                </ol></div>
-              else NodeSeq.Empty
-            }
-          </xml:group>
-        case None => NodeSeq.Empty
-      }
+        </dd>
+      } else NodeSeq.Empty
+
+    val sourceLink: Seq[scala.xml.Node] = mbr match {
+      case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined && !isReduced) =>
+        val (absFile, line) = dtpl.inSource.get
+        <dt>Source</dt>
+        <dd>{ <a href={ dtpl.sourceUrl.get.toString }>{ Text(absFile.file.getName) }</a> }</dd>
+      case _ => NodeSeq.Empty
     }
+
+    val deprecation: Seq[scala.xml.Node] =
+      if (mbr.deprecation.isEmpty || isReduced) NodeSeq.Empty
+      else {
+        <dt>Deprecated</dt>
+        <dd class="cmt">{ bodyToHtml(mbr.deprecation.get) }</dd>
+      }
+
+    val mainComment: Seq[scala.xml.Node] = mbr.comment match {
+      case Some(comment) =>
+        val example =
+          if(!comment.example.isEmpty && !isReduced)
+            <div class="block">Example{ if (comment.example.length > 1) "s" else ""} :
+                <ol>{
+                val exampleXml: List[scala.xml.NodeSeq] =
+                  for(example <- comment.example ) yield
+                    <li class="cmt">{ bodyToHtml(example) }</li>
+                exampleXml.reduceLeft(_ ++ Text(", ") ++ _)
+              }</ol>
+              </div>
+          else NodeSeq.Empty
+
+        val version: Seq[scala.xml.Node] =
+          if(!comment.version.isEmpty && !isReduced) {
+            <dt>Version</dt>
+            <dd>{ for(body <- comment.version.toList) yield {bodyToHtml(body)} }</dd>
+          } else NodeSeq.Empty
+
+        val sinceVersion: Seq[scala.xml.Node] =
+          if(!comment.since.isEmpty && !isReduced) {
+            <dt>Since</dt>
+            <dd>{ for(body <- comment.since.toList) yield {bodyToHtml(body)} }</dd>
+          } else NodeSeq.Empty
+
+        val seeAlso: Seq[scala.xml.Node] =
+          if(!comment.see.isEmpty && !isReduced) {
+            <dt>See also</dt>
+            <dd>{
+              val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <span class="cmt">{bodyToHtml(see)}</span> )
+              seeXml.reduceLeft(_ ++ Text(", ") ++ _)
+            }</dd>
+          } else NodeSeq.Empty
+
+        example ++ version ++ sinceVersion ++ seeAlso
+
+      case None => NodeSeq.Empty
+    }
+    // end attributes block vals ---
+
+    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ sourceLink ++ deprecation ++ mainComment
+    val attributesBlock =
+      if (attributesInfo.isEmpty)
+        NodeSeq.Empty
+      else
+        <dl class="attributes block"> { attributesInfo }</dl>
+
+    val linearization = mbr match {
+      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
+        <div class="toggleContainer">
+          <div class="attributes block">
+            <span class="link showElement">Linear Supertypes</span>
+            <span class="link hideElement">Linear Supertypes</span>
+          </div>
+          <div class="superTypes hiddenContent">
+            <p>{ typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }</p>
+          </div>
+        </div>
+      case _ => NodeSeq.Empty
+    }
+
+    val subclasses = mbr match {
+      case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.subClasses.nonEmpty =>
+        <div class="toggleContainer">
+          <div class="attributes block">
+            <span class="link showElement">Known Subclasses</span>
+            <span class="link hideElement">Known Subclasses</span>
+          </div>
+          <div class="subClasses hiddenContent">
+            <p>{ templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", ")) }</p>
+          </div>
+        </div>
+      case _ => NodeSeq.Empty
+    }
+
+    memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses
   }
 
   def kindToString(mbr: MemberEntity): String = {
@@ -427,11 +469,16 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
-    def inside(hasLinks: Boolean): NodeSeq =
+    def inside(hasLinks: Boolean, nameLink: String = ""): NodeSeq =
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
-        <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
+        {
+          val nameHtml = <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
+          if (!nameLink.isEmpty)
+            <a href={nameLink}>{nameHtml}</a>
+          else nameHtml
+        }
         {
           def tparamsToHtml(mbr: Entity): NodeSeq = mbr match {
             case hk: HigherKinded =>
@@ -453,16 +500,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
               def param0(vl: ValueParam): NodeSeq =
                 // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
-                <span name={ vl.name }>
-                  { Text(vl.name) }
-                  { Text(": ") ++ typeToHtml(vl.resultType, hasLinks) }
-                  {
-                    vl.defaultValue match {
-                      case Some(v) => Text(" = ") ++ treeToHtml(v)
-                      case None => NodeSeq.Empty
-                    }
+                <span name={ vl.name }>{
+                  Text(vl.name)
+                }{ Text(": ") ++ typeToHtml(vl.resultType, hasLinks) }{
+                  vl.defaultValue match {
+                    case Some(v) => Text(" = ") ++ treeToHtml(v)
+                    case None => NodeSeq.Empty
                   }
-                </span>
+                }</span>
 
               def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
                 case Nil => NodeSeq.Empty
@@ -482,21 +527,20 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               case _ => NodeSeq.Empty
             }
           }
-        }
-        { if (isReduced) NodeSeq.Empty else {
+        }{ if (isReduced) NodeSeq.Empty else {
           mbr match {
-            case tpl: DocTemplateEntity if (!tpl.isPackage) =>
-              tpl.parentType match {
-                case Some(st) => <span class="result"> extends { typeToHtml(st, hasLinks) }</span>
-                case None =>NodeSeq.Empty
-              }
+            case tpl: DocTemplateEntity if tpl.parentType.isDefined =>
+              <span class="result"> extends { typeToHtml(tpl.parentType.get, hasLinks) }</span>
+
             case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isLazyVal || tme.isVar) =>
               <span class="result">: { typeToHtml(tme.resultType, hasLinks) }</span>
+
             case abt: AbstractType =>
               val b2s = boundsToHtml(abt.hi, abt.lo, hasLinks)
               if (b2s != NodeSeq.Empty)
                 <span class="result">{ b2s }</span>
               else NodeSeq.Empty
+
             case alt: AliasType =>
               <span class="result"> = { typeToHtml(alt.alias, hasLinks) }</span>
             case _ => NodeSeq.Empty
@@ -506,7 +550,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <h4 class="signature"><a href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a></h4>
+        <h4 class="signature">{ inside(hasLinks = false, nameLink = relativeLinkTo(dte)) }</h4>
       case _ if isSelf =>
         <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>

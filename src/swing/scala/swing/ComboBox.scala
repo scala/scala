@@ -122,7 +122,7 @@ object ComboBox {
 
   def newConstantModel[A](items: Seq[A]): ComboBoxModel = {
     new AbstractListModel with ComboBoxModel {
-      private var selected = items(0)
+      private var selected: A = if (items.isEmpty) null.asInstanceOf[A] else items(0)
       def getSelectedItem: AnyRef = selected.asInstanceOf[AnyRef]
       def setSelectedItem(a: Any) {
         if ((selected != null && selected != a) ||

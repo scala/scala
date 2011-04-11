@@ -18,23 +18,6 @@ object XMLUtil {
       case _ => seq
     }
   }
-
-  def attributeIs(key: String, value: String) = {
-    (element: Node) => {
-      element.attribute(key) match {
-        case Some(v) =>
-          v.toString == value
-        case _ =>
-          false
-      }
-    }
-  }
-
-  def textIs(value: String) = {
-    (node: Node) => {
-      node.descendant.exists((n) => n.toString.trim == value)
-    }
-  }
 }
 
 object Test extends Properties("HtmlFactory") {
@@ -52,18 +35,18 @@ object Test extends Properties("HtmlFactory") {
     (paths ++ morepaths).mkString(java.io.File.pathSeparator)
   }
 
+  def createFactory = {
+    val settings = new Settings({Console.err.println(_)})
+    settings.classpath.value = getClasspath
+
+    val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
+    new DocFactory(reporter, settings)
+  }
+
   def createTemplates(basename: String) = {
     val result = scala.collection.mutable.Map[String, scala.xml.NodeSeq]()
 
-    val factory = {
-      val settings = new Settings({Console.err.println(_)})
-      settings.classpath.value = getClasspath
-
-      val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
-      new DocFactory(reporter, settings)
-    }
-
-    factory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
+    createFactory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         (new HtmlFactory(universe, index)).writeTemplates((page) => {
@@ -76,19 +59,30 @@ object Test extends Properties("HtmlFactory") {
     result
   }
 
+  def createTemplate(scala: String) = {
+    val html = scala.stripSuffix(".scala") + ".html"
+    createTemplates(scala)(html)
+  }
+
+  def shortComments(root: scala.xml.Node) =
+    XMLUtil.stripGroup(root).descendant.flatMap {
+      case e: scala.xml.Elem => {
+        if (e.attribute("class").toString.contains("shortcomment")) {
+          Some(e)
+        } else {
+          None
+        }
+      }
+      case _ => None
+    }
+
   property("Trac #3790") = {
-    import XMLUtil._
-
-    val files = createTemplates("Trac3790.scala")
-    files("Trac3790.html") match {
+    createTemplate("Trac3790.scala") match {
       case node: scala.xml.Node => {
-        val comments = (stripGroup(node) \\ "div").flatMap {
-          case e: scala.xml.Elem => Some(e)
-          case _ => None
-        }.filter { attributeIs("class", "fullcomment")(_) }
+        val comments = shortComments(node)
 
-        comments.filter(textIs("A lazy String")(_)).length == 1 &&
-          comments.filter(textIs("A non-lazy String")(_)).length == 1
+        comments.exists { _.toString.contains(">A lazy String\n</p>") } &&
+          comments.exists { _.toString.contains(">A non-lazy String\n</p>") }
       }
       case _ => false
     }
@@ -100,26 +94,174 @@ object Test extends Properties("HtmlFactory") {
   }
 
   property("Trac #4366") = {
-    val files = createTemplates("Trac4366.scala")
-    files("Trac4366.html") match {
+    createTemplate("Trac4366.scala") match {
       case node: scala.xml.Node => {
-        val comments = XMLUtil.stripGroup(node).descendant.flatMap {
-          case e: scala.xml.Elem => {
-            if (e.attribute("class").toString.contains("shortcomment")) {
-              Some(e)
-            } else {
-              None
-            }
-          }
-          case _ => None
-        }
+        shortComments(node).exists { n => {
+          val str = n.toString
+          str.contains("<code>foo</code>") && str.contains("</strong>")
+        } }
+      }
+      case _ => false
+    }
+  }
 
-        comments.exists {
-          (e) => {
-            val s = e.toString
-            s.contains("<code>foo</code>") && s.contains("</strong>")
-          }
+  property("Trac #4358") = {
+    createTemplate("Trac4358.scala") match {
+      case node: scala.xml.Node =>
+        ! shortComments(node).exists {
+          _.toString.contains("<em>i.</em>")
         }
+      case _ => false
+    }
+  }
+
+  property("Trac #4180") = {
+    createTemplate("Trac4180.scala") != None
+  }
+
+  property("Trac #4372") = {
+    createTemplate("Trac4372.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains("<span class=\"name\">+:</span>\n") &&
+          html.contains("<span class=\"name\">-:</span>\n") &&
+            html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4374 - public") = {
+    val files = createTemplates("Trac4374.scala")
+    files("WithPublic.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""href="WithPublic$.html"""") &&
+          files.get("WithPublic$.html") != None
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4374 - private") = {
+    val files = createTemplates("Trac4374.scala")
+    files("WithPrivate.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        ! s.contains("""href="WithPrivate$.html"""") &&
+          files.get("WithPrivate$.html") == None
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #3484") = {
+    val files = createTemplates("Trac3484.scala")
+
+    files("Collection.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""<span class="result">: Traversable[B]</span>""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #3484 - SR704") = {
+    val files = createTemplates("Trac3484.scala")
+
+    files("SR704.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("Hello Mister John.")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4325 - files") = {
+    val files = createTemplates("Trac4325.scala")
+
+    files.get("WithSynthetic.html") != None &&
+      files.get("WithSynthetic$.html") == None &&
+        files.get("WithObject.html") != None &&
+          files.get("WithObject$.html") != None
+  }
+
+  property("Trac #4325 - Don't link to syntetic companion") = {
+    val files = createTemplates("Trac4325.scala")
+
+    files("WithSynthetic.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        ! s.contains("""href="WithSynthetic$.html"""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4325 - Link to companion") = {
+    val files = createTemplates("Trac4325.scala")
+
+    files("WithObject.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""href="WithObject$.html"""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4420 - no whitespace at end of line") = {
+    val files = createTemplates("Trac4420.scala")
+
+    files("TestA.html") match {
+      case node: scala.xml.Node => {
+        val s = node.toString
+        s.contains("""See YYY for more details""")
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #484 - refinements and existentials") = {
+    val files = createTemplates("Trac484.scala")
+    val lines = """
+        |type Bar = AnyRef { type Dingus <: T forSome { type T <: String } }
+        |type Foo = AnyRef { ... /* 3 definitions in type refinement */ }
+        |def g (x: T forSome { type T <: String }): String
+        |def h (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+        |def hh (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+        |def j (x: Int): Bar
+        |def k (): AnyRef { type Dingus <: T forSome { type T <: String } }
+      """.stripMargin.trim.lines map (_.trim)
+
+    files("RefinementAndExistentials.html") match {
+      case node: scala.xml.Node => {
+        val s = node.text.replaceAll("\\s+", " ")
+        lines forall (s contains _)
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4289") = {
+    val files = createTemplates("Trac4289.scala")
+
+    files("Subclass.html") match {
+      case node: scala.xml.Node => {
+        node.toString.contains {
+          """<dt>returns</dt><dd class="cmt"><p>123</p></dd>"""
+        }
+      }
+      case _ => false
+    }
+  }
+
+  property("Trac #4409") = {
+    createTemplate("Trac4409.scala") match {
+      case node: scala.xml.Node => {
+        ! node.toString.contains("""<div class="block"><ol>since""")
       }
       case _ => false
     }

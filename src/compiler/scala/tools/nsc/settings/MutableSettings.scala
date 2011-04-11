@@ -345,6 +345,10 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     private var dependency: Option[(Setting, String)] = None
     override def dependencies = dependency.toList
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
+
+    private var _deprecationMessage: Option[String] = None
+    override def deprecationMessage = _deprecationMessage
+    def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
   }
 
   /** A setting represented by an integer */
@@ -479,13 +483,14 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
   /** Set the output directory. */
   class OutputSetting private[nsc](
-    outputDirs: OutputDirs,
+    private[nsc] val outputDirs: OutputDirs,
     default: String)
     extends StringSetting("-d", "directory", "Specify where to place generated class files", default) {
       value = default
       override def value_=(str: String) {
         super.value_=(str)
-        outputDirs.setSingleOutput(str)
+        try outputDirs.setSingleOutput(str)
+        catch { case FatalError(msg) => errorFn(msg) }
       }
   }
 
@@ -559,7 +564,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     protected var v: List[String] = Nil
     override def value = if (v contains "all") List("all") else super.value
     private lazy val (numericValues, stringValues) =
-      value partition (_ forall (ch => ch.isDigit || ch == '-'))
+      value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))
 
     /** A little ad-hoc parsing.  If a string is not the name of a phase, it can also be:
      *    a phase id: 5

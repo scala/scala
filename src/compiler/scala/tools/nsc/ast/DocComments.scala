@@ -7,6 +7,7 @@ package scala.tools.nsc
 package ast
 
 import symtab._
+import reporters.Reporter
 import util.{Position, NoPosition}
 import util.DocStrings._
 import util.Chars._
@@ -17,6 +18,8 @@ import scala.collection.mutable.{HashMap, ListBuffer, StringBuilder}
  *  @version 1.0
  */
 trait DocComments { self: SymbolTable =>
+
+  def reporter: Reporter
 
   /** The raw doc comment map */
   val docComments = new HashMap[Symbol, DocComment]
@@ -129,7 +132,6 @@ trait DocComments { self: SymbolTable =>
   def expandWiki(str: String): String =
     (str /: wikiReplacements) { (str1, regexRepl) => regexRepl._1 replaceAllIn(str1, regexRepl._2) }
 
-
   private def getDocComment(sym: Symbol): Option[DocComment] =
     mapFind(sym :: allInheritedOverriddenSymbols(sym))(docComments get _)
 
@@ -155,13 +157,13 @@ trait DocComments { self: SymbolTable =>
   def merge(src: String, dst: String, sym: Symbol, copyFirstPara: Boolean = false): String = {
     val srcSections = tagIndex(src)
     val dstSections = tagIndex(dst)
-    val srcParams = paramDocs(src, "@param", srcSections)
-    val dstParams = paramDocs(dst, "@param", dstSections)
-    val srcTParams = paramDocs(src, "@tparam", srcSections)
-    val dstTParams = paramDocs(dst, "@tparam", dstSections)
-    val out = new StringBuilder
-    var copied = 0
-    var tocopy = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
+    val srcParams   = paramDocs(src, "@param", srcSections)
+    val dstParams   = paramDocs(dst, "@param", dstSections)
+    val srcTParams  = paramDocs(src, "@tparam", srcSections)
+    val dstTParams  = paramDocs(dst, "@tparam", dstSections)
+    val out         = new StringBuilder
+    var copied      = 0
+    var tocopy      = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
 
     if (copyFirstPara) {
       val eop = // end of comment body (first para), which is delimited by blank line, or tag, or end of comment
@@ -176,10 +178,12 @@ trait DocComments { self: SymbolTable =>
         if (end > tocopy) tocopy = end
       case None =>
         srcSec match {
-          case Some((start1, end1)) =>
+          case Some((start1, end1)) => {
             out append dst.substring(copied, tocopy).trim
+            out append "\n"
             copied = tocopy
             out append src.substring(start1, end1).trim
+          }
           case None =>
         }
     }
@@ -210,24 +214,18 @@ trait DocComments { self: SymbolTable =>
    *  @param owner The current owner in which variable definitions are searched.
    *  @param site  The class for which doc comments are generated
    */
-  def lookupVariable(vble: String, site: Symbol): Option[String] =
-    if (site == NoSymbol)
-      None
-    else {
-      def lookInBaseClasses = mapFind(site.info.baseClasses)(defs(_).get(vble)) match {
-        case None => lookupVariable(vble, site.owner)
-        case someStr => someStr
-      }
-      if (site.isModule)
-        defs(site).get(vble) match {
-          case Some(str) => return Some(str)
-          case None => lookInBaseClasses
-        }
-      else lookInBaseClasses
-    }
+  def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
+    case NoSymbol => None
+    case _        =>
+      val searchList =
+        if (site.isModule) site :: site.info.baseClasses
+        else site.info.baseClasses
 
-  private var expandCount = 0
-  private final val expandLimit = 10
+      searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
+        case Some(str) if str startsWith '$'  => lookupVariable(str.tail, site)
+        case res                              => res orElse lookupVariable(vble, site.owner)
+      }
+  }
 
   /** Expand variable occurrences in string `str', until a fix point is reached or
    *  a expandLimit is exceeded.
@@ -237,49 +235,57 @@ trait DocComments { self: SymbolTable =>
    *  @param site  The class for which doc comments are generated
    *  @return      Expanded string
    */
-  protected def expandVariables(str: String, sym: Symbol, site: Symbol): String =
-    if (expandCount < expandLimit) {
-      try {
-        val out = new StringBuilder
-        var copied = 0
-        var idx = 0
-        while (idx < str.length) {
-          if ((str charAt idx) == '$') {
-            val vstart = idx
-            idx = skipVariable(str, idx + 1)
-            def replaceWith(repl: String) {
-              out append str.substring(copied, vstart)
-              out append repl
-              copied = idx
-            }
-            val vname = variableName(str.substring(vstart + 1, idx))
-            if (vname == "super") {
-              superComment(sym) match {
-                case Some(sc) =>
-                  val superSections = tagIndex(sc)
-                  replaceWith(sc.substring(3, startTag(sc, superSections)))
-                  for (sec @ (start, end) <- superSections)
-                    if (!isMovable(sc, sec)) out append sc.substring(start, end)
-                case None =>
+  protected def expandVariables(initialStr: String, sym: Symbol, site: Symbol): String = {
+    val expandLimit = 10
+
+    def expandInternal(str: String, depth: Int): String = {
+      if (depth >= expandLimit)
+        throw new ExpansionLimitExceeded(str)
+
+      val out         = new StringBuilder
+      var copied, idx = 0
+      // excluding variables written as \$foo so we can use them when
+      // necessary to document things like Symbol#decode
+      def isEscaped = idx > 0 && str.charAt(idx - 1) == '\\'
+      while (idx < str.length) {
+        if ((str charAt idx) != '$' || isEscaped)
+          idx += 1
+        else {
+          val vstart = idx
+          idx = skipVariable(str, idx + 1)
+          def replaceWith(repl: String) {
+            out append str.substring(copied, vstart)
+            out append repl
+            copied = idx
+          }
+          variableName(str.substring(vstart + 1, idx)) match {
+            case "super"    =>
+              superComment(sym) foreach { sc =>
+                val superSections = tagIndex(sc)
+                replaceWith(sc.substring(3, startTag(sc, superSections)))
+                for (sec @ (start, end) <- superSections)
+                  if (!isMovable(sc, sec)) out append sc.substring(start, end)
               }
-            } else if (vname.length > 0) {
+            case "" => idx += 1
+            case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None =>  //println("no replacement for "+vname) // DEBUG
+                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym)
               }
-            } else idx += 1
-          } else idx += 1
+            }
         }
-        if (out.length == 0) str
-        else {
-          out append str.substring(copied)
-          expandVariables(out.toString, sym, site)
-        }
-      } finally {
-        expandCount -= 1
       }
-    } else throw new ExpansionLimitExceeded(str)
+      if (out.length == 0) str
+      else {
+        out append str.substring(copied)
+        expandInternal(out.toString, depth + 1)
+      }
+    }
 
+    // We suppressed expanding \$ throughout the recursion, and now we
+    // need to replace \$ with $ so it looks as intended.
+    expandInternal(initialStr, 0).replaceAllLiterally("""\$""", "$")
+  }
 
   // !!! todo: inherit from Comment?
   case class DocComment(raw: String, pos: Position = NoPosition) {
@@ -290,31 +296,27 @@ trait DocComments { self: SymbolTable =>
      *   useCases: all usecase sections (as instances of class UseCase)
      */
     lazy val (template, defines, useCases) = {
-      val sections = tagIndex(raw, idx =>
-        startsWithTag(raw, idx, "@define") || startsWithTag(raw, idx, "@usecase"))
-      val (defines, usecases) = sections partition (startsWithTag(raw, _, "@define"))
-      val end = startTag(raw, sections)
-      /*
-      println("processing doc comment:")
-      println(raw)
-      println("===========>")
-      println(raw.substring(0, end))
-      println("++++++++++++++++")
-      println(sections map { case (s, e) => raw.substring(s, e) })
-      */
+      val sections = tagIndex(raw)
+
+      val defines = sections filter { startsWithTag(raw, _, "@define") }
+      val usecases = sections filter { startsWithTag(raw, _, "@usecase") }
+
+      val end = startTag(raw, (defines ::: usecases).sort(_._1 < _._1))
+
       (if (end == raw.length - 2) raw else raw.substring(0, end) + "*/",
        defines map { case (start, end) => raw.substring(start, end) },
        usecases map { case (start, end) => decomposeUseCase(start, end) })
     }
 
     private def decomposeUseCase(start: Int, end: Int): UseCase = {
-      val codeStart = skipWhitespace(raw, start + "@usecase".length)
-      val codeEnd = skipToEol(raw, codeStart)
-      val code = raw.substring(codeStart, codeEnd)
-      val codePos = subPos(codeStart, codeEnd)
+      val codeStart    = skipWhitespace(raw, start + "@usecase".length)
+      val codeEnd      = skipToEol(raw, codeStart)
+      val code         = raw.substring(codeStart, codeEnd)
+      val codePos      = subPos(codeStart, codeEnd)
       val commentStart = skipLineLead(raw, codeEnd + 1) min end
-      val comment = "/** " + raw.substring(commentStart, end) + "*/"
-      val commentPos = subPos(commentStart, end)
+      val comment      = "/** " + raw.substring(commentStart, end) + "*/"
+      val commentPos   = subPos(commentStart, end)
+
       UseCase(DocComment(comment, commentPos), code, codePos)
     }
 
@@ -329,14 +331,11 @@ trait DocComments { self: SymbolTable =>
     def defineVariables(sym: Symbol) {
       for (str <- defines) {
         val start = skipWhitespace(str, "@define".length)
-        var idx = skipVariable(str, start)
-        val vble = variableName(str.substring(start, idx))
-        if (idx < str.length && isWhitespace(str charAt idx)) idx += 1
-        var end = str.lastIndexOf('\n')
-        if (end == -1) end = str.length
-        defs(sym) += vble -> str.substring(idx, end)
+        var idx   = skipVariable(str, start)
+        val vble  = variableName(str.substring(start, idx))
+
+        defs(sym) += vble -> (str drop idx).trim.replaceAll("""\s+\*+$""", "")
       }
-      //if (defs(sym).nonEmpty) println("vars of "+sym+" = "+defs(sym))  // !!!
     }
   }
 
@@ -372,18 +371,18 @@ trait DocComments { self: SymbolTable =>
           }
         }
         val parts = getParts(0)
-        assert(parts.length > 0, "parts is empty '" + str + "' in site " + site)
-        val partnames = (parts.init map newTermName) ::: List(newTypeName(parts.last))
-        val (start, rest) =
-          if (parts.head == "this")
-            (site.thisType, partnames.tail)
-          else if (parts.tail.nonEmpty && parts(1) == "this")
-            site.ownerChain.find(_.name.toString == parts.head) match {
-              case Some(clazz) => (clazz.thisType, partnames.drop(2))
-              case None => (NoType, List())
+        assert(parts.nonEmpty, "parts is empty '" + str + "' in site " + site)
+        val partnames = (parts.init map newTermName) :+ newTypeName(parts.last)
+        val (start, rest) = parts match {
+          case "this" :: _      => (site.thisType, partnames.tail)
+          case _ :: "this" :: _ =>
+            site.ownerChain.find(_.name == partnames.head) match {
+              case Some(clazz)  => (clazz.thisType, partnames drop 2)
+              case _            => (NoType, Nil)
             }
-          else
+          case _ =>
             (getSite(partnames.head), partnames.tail)
+        }
         (start /: rest)(select(_, _, NoType))
       }
 

@@ -54,7 +54,7 @@ class CompileSocket extends CompileOutputCommon {
    *  by the port number.
    */
   protected lazy val dirName = "scalac-compile-server-port"
-  protected lazy val cmdName = Properties.scalaCmd
+  protected def cmdName = Properties.scalaCmd
 
   /** The vm part of the command to start a new scala compile server */
   protected val vmCommand = Properties.scalaHome match {

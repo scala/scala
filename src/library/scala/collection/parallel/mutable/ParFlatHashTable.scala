@@ -6,21 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package parallel.mutable
 
-
-
-
 import collection.parallel.ParIterableIterator
-
-
-
 
 /** Parallel flat hash table.
  *
- *  @tparam T        type of the elements in the table
+ *  @tparam T      type of the elements in the $coll.
+ *  @define coll   table
+ *  @define Coll   flat hash table
  *
  *  @author Aleksandar Prokopec
  */

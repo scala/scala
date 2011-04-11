@@ -53,6 +53,10 @@ trait Prop[+T] {
    */
   def get: String
 
+  /** Some(value) if the property is set, None otherwise.
+   */
+  def option: Option[T]
+
   /** Removes the property from the underlying map.
    */
   def clear(): Unit
@@ -69,11 +73,13 @@ object Prop {
    *  parameter of type Creator[T] is in scope, a Prop[T] can be created
    *  via this object's apply method.
    */
+  @annotation.implicitNotFound("No implicit property creator available for type ${T}.")
   trait Creator[+T] {
     /** Creates a Prop[T] of this type based on the given key. */
     def apply(key: String): Prop[T]
   }
 
+  implicit object FileProp extends CreatorImpl[java.io.File](s => new java.io.File(s))
   implicit object StringProp extends CreatorImpl[String](s => s)
   implicit object IntProp extends CreatorImpl[Int](_.toInt)
   implicit object DoubleProp extends CreatorImpl[Double](_.toDouble)

@@ -6,13 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
-
-
-
-
-
 
 /** A marker trait for objects with parallelised operations.
  *
@@ -20,7 +14,3 @@ package scala.collection
  *  @author prokopec
  */
 trait Parallel
-
-
-
-

@@ -33,7 +33,7 @@ import annotation.tailrec
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `List[B]` because an implicit of type `CanBuildFrom[List, B, That]`
  *    is defined in object `List`.
- *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `List`.

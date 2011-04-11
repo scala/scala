@@ -1615,7 +1615,7 @@ public abstract class Table {
 
         public int Number;
         public int Flags;
-        public int Owner;  // a TypeOrMethodDef (§24.2.6) coded index
+        public int Owner;  // a TypeOrMethodDef (Sec 24.2.6) coded index
         public int Name; // a non-null index into the String heap
 
         private java.util.Map /*<Integer, java.util.Set<Integer>>*/ GenericParamIdxesForMethodDefIdx =
@@ -1760,7 +1760,7 @@ public abstract class Table {
         public static final int ID = 0x2c;
 
         public int Owner; // an index into the GenericParam table
-        public int Constraint; // a TypeDefOrRef (§24.2.6) coded index
+        public int Constraint; // a TypeDefOrRef (Sec 24.2.6) coded index
 
         public GenericParamConstraint(PEFile file, int rows) {
             super(file, ID, rows);

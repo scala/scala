@@ -252,9 +252,8 @@ object ScalaRunTime {
    * called on null and (b) depending on the apparent type of an
    * array, toString may or may not print it in a human-readable form.
    *
-   * @param arg the value to stringify
-   * @return a string representation of <code>arg</code>
-   *
+   * @param   arg   the value to stringify
+   * @return        a string representation of arg.
    */
   def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
   def stringOf(arg: Any, maxElements: Int): String = {
@@ -288,14 +287,18 @@ object ScalaRunTime {
       case (k, v)   => inner(k) + " -> " + inner(v)
       case _        => inner(arg)
     }
-    // The recursively applied attempt to prettify Array printing
+    // The recursively applied attempt to prettify Array printing.
+    // Note that iterator is used if possible and foreach is used as a
+    // last resort, because the parallel collections "foreach" in a
+    // random order even on sequences.
     def inner(arg: Any): String = arg match {
       case null                         => "null"
       case ""                           => "\"\""
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
-      case x if useOwnToString(x)       => x.toString
+      case x if useOwnToString(x)       => x toString
       case x: AnyRef if isArray(x)      => WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
-      case x: collection.Map[_, _]      => x take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
@@ -304,13 +307,16 @@ object ScalaRunTime {
 
     // The try/catch is defense against iterables which aren't actually designed
     // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
-    val s =
-      try inner(arg)
-      catch {
-        case _: StackOverflowError | _: UnsupportedOperationException => arg.toString
-      }
-
+    try inner(arg)
+    catch {
+      case _: StackOverflowError | _: UnsupportedOperationException | _: AssertionError => "" + arg
+    }
+  }
+  /** stringOf formatted for use in a repl result. */
+  def replStringOf(arg: Any, maxElements: Int): String = {
+    val s  = stringOf(arg, maxElements)
     val nl = if (s contains "\n") "\n" else ""
+
     nl + s + "\n"
   }
 }

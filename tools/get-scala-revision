@@ -16,7 +16,8 @@ fi
 cd $DIR
 
 if [ -d .svn ]; then
-  svn info . | grep ^Revision | sed 's/Revision: //'
+  # 2>&1 to catch also error output (e.g. svn warnings)
+  svn info . 2>&1 | grep ^Revision | sed 's/Revision: //'
 elif [ -d .git ]; then
   GIT_PAGER=cat
   # this grabs more than one line because otherwise if you have local

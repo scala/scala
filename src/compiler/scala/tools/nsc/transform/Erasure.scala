@@ -209,7 +209,7 @@ abstract class Erasure extends AddInterfaces
     !sym.isHigherOrderTypeParameter &&
     sym.isTypeParameterOrSkolem && (
       (initialSymbol.enclClassChain.exists(sym isNestedIn _)) ||
-      traceSig.seq("isMethod", Seq(initialSymbol, initialSymbol.typeParams)) {
+      traceSig("isMethod", (initialSymbol, initialSymbol.typeParams)) {
         (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
       }
     )
@@ -229,7 +229,8 @@ abstract class Erasure extends AddInterfaces
     }
   }
   // for debugging signatures: traces logic given system property
-  private val traceSig = util.Tracer(sys.props contains "scalac.sigs.trace")
+  private val traceProp = sys.BooleanProp keyExists "scalac.sigs.trace"
+  private val traceSig  = util.Tracer(traceProp)
 
   /** This object is only used for sanity testing when -check:genjvm is set.
    *  In that case we make sure that the erasure of the `normalized' type
@@ -356,7 +357,7 @@ abstract class Erasure extends AddInterfaces
           }
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
-            traceSig.seq("sym.isClass", Seq(sym.ownerChain, preRebound, sym0.enclClassChain)) {
+            traceSig("sym.isClass", (sym.ownerChain, preRebound, sym0.enclClassChain)) {
               dotCleanup(
                 (
                   if (needsJavaSig(preRebound)) {
@@ -389,7 +390,7 @@ abstract class Erasure extends AddInterfaces
           def paramSig(tsym: Symbol) = tsym.name + boundSig(hiBounds(tsym.info.bounds))
 
           val paramString = if (toplevel) tparams map paramSig mkString ("<", "", ">") else ""
-          traceSig.seq("PolyType", Seq(tparams, restpe))(paramString + jsig(restpe))
+          traceSig("PolyType", (tparams, restpe))(paramString + jsig(restpe))
         case MethodType(params, restpe) =>
           "("+(params map (_.tpe) map (jsig(_))).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
@@ -408,7 +409,7 @@ abstract class Erasure extends AddInterfaces
           else jsig(etp)
       }
     }
-    traceSig.seq("javaSig", Seq(sym0, info)) {
+    traceSig("javaSig", (sym0, info)) {
       if (needsJavaSig(info)) {
         try Some(jsig(info, toplevel = true))
         catch { case ex: UnknownSig => None }

@@ -1,5 +1,7 @@
 package ch.epfl.lamp.compiler.msil;
 
+import ch.epfl.lamp.compiler.msil.util.PECustomMod;
+
 public final class PrimitiveType extends Type {
     public PrimitiveType(Module module,
                          int attributes,
@@ -31,7 +33,8 @@ public final class PrimitiveType extends Type {
     }
 
     public FieldInfo addField(String name, int attrs, Type fieldType) {
-        FieldInfo res = new FieldInfo(name, this, attrs, fieldType);
+        PECustomMod fieldTypeWithMods = new PECustomMod(fieldType, null);
+        FieldInfo res = new FieldInfo(name, this, attrs, fieldTypeWithMods, null);
         FieldInfo[] ms = new FieldInfo[fields.length + 1];
         System.arraycopy(fields, 0, ms, 0, fields.length);
         ms[ms.length - 1] = res;

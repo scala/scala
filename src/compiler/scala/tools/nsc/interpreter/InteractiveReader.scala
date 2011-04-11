@@ -27,12 +27,13 @@ trait InteractiveReader {
   def redrawLine(): Unit
   def currentLine: String
 
-  def readYesOrNo(prompt: String) = readOneKey(prompt) match {
+  def readYesOrNo(prompt: String, alt: => Boolean): Boolean = readOneKey(prompt) match {
     case 'y'  => true
     case 'n'  => false
+    case _    => alt
   }
-  def readAssumingNo(prompt: String)  = try readYesOrNo(prompt) catch { case _: MatchError  => false }
-  def readAssumingYes(prompt: String) = try readYesOrNo(prompt) catch { case _: MatchError  => true }
+  def readAssumingNo(prompt: String)  = readYesOrNo(prompt, false)
+  def readAssumingYes(prompt: String) = readYesOrNo(prompt, true)
 
   protected def readOneLine(prompt: String): String
   protected def readOneKey(prompt: String): Int

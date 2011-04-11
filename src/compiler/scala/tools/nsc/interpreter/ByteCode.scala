@@ -6,9 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import java.io.File
 import java.lang.reflect
-import java.util.jar.{ JarEntry, JarFile }
 import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader
 import ScalaClassLoader.getSystemLoader

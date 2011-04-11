@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
 
 /**
@@ -21,7 +19,6 @@ object NameTransformer {
 
   private val op2code = new Array[String](nops)
   private val code2op = new Array[OpCodes](ncodes)
-
   private def enterOp(op: Char, code: String) = {
     op2code(op) = code
     val c = (code.charAt(1) - 'a') * 26 + code.charAt(2) - 'a'
@@ -48,10 +45,10 @@ object NameTransformer {
   enterOp('?', "$qmark")
   enterOp('@', "$at")
 
-  /** Replace operator symbols by corresponding "<code>$op_name</code>".
+  /** Replace operator symbols by corresponding `\$opname`.
    *
-   *  @param name ...
-   *  @return     ...
+   *  @param name the string to encode
+   *  @return     the string with all recognized opchars replaced with their encoding
    */
   def encode(name: String): String = {
     var buf: StringBuilder = null
@@ -82,10 +79,10 @@ object NameTransformer {
     if (buf eq null) name else buf.toString()
   }
 
-  /** Replace <code>$op_name</code> by corresponding operator symbol.
+  /** Replace `\$opname` by corresponding operator symbol.
    *
-   *  @param name0 ...
-   *  @return      ...
+   *  @param name0 the string to decode
+   *  @return      the string with all recognized operator symbol encodings replaced with their name
    */
   def decode(name0: String): String = {
     //System.out.println("decode: " + name);//DEBUG

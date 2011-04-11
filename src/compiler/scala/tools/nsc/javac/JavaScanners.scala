@@ -305,14 +305,14 @@ trait JavaScanners extends ast.parser.ScannersCommon {
      */
     private def fetchToken() {
       if (token == EOF) return
-      lastPos = in.cpos - 1 // Position.encode(in.cline, in.ccol)
+      lastPos = in.cpos - 1
       //var index = bp
       while (true) {
         in.ch match {
           case ' ' | '\t' | CR | LF | FF =>
             in.next
           case _ =>
-            pos = in.cpos // Position.encode(in.cline, in.ccol)
+            pos = in.cpos
             (in.ch: @switch) match {
               case 'A' | 'B' | 'C' | 'D' | 'E' |
                    'F' | 'G' | 'H' | 'I' | 'J' |

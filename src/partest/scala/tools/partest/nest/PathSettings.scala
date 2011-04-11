@@ -10,7 +10,6 @@ import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io
 import io.{ Path, File, Directory }
 import RunnerUtils._
-import java.net.URLClassLoader
 
 object PathSettings {
   import PartestDefaults.{ testRootDir, srcDirName }

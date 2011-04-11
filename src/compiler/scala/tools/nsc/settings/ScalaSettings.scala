@@ -79,7 +79,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
 
   val Xwarnfatal    = BooleanSetting    ("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
-  val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics.")
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference.")
 
   // Experimental Extensions
@@ -129,21 +128,25 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ynosqueeze    = BooleanSetting    ("-Yno-squeeze", "Disable creation of compact code in matching.")
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics.") .
                                           withPostSetHook(set => util.Statistics.enabled = set.value)
-  val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
+  val stopAfter     = PhasesSetting     ("-Ystop-after", "Stop after given phase") withAbbreviation ("-stop") // backward compat
+  val stopBefore    = PhasesSetting     ("-Ystop-before", "Stop before given phase")
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
-  val YrichExes     = BooleanSetting    ("-Yrich-exceptions", "More revealing exceptions.  Set SOURCEPATH to java/scala source jars.")
+  val YrichExes     = BooleanSetting    ("-Yrich-exceptions",
+                                            "Fancier exceptions.  Set source search path with -D" +
+                                            sys.SystemProperties.traceSourcePath.key)
   val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
   val Ybuilderdebug = ChoiceSetting     ("-Ybuilder-debug", "manager", "Compile using the specified build manager.", List("none", "refined", "simple"), "none")
   val Ybuildmanagerdebug =
                       BooleanSetting    ("-Ybuild-manager-debug", "Generate debug information for the Refined Build Manager compiler.")
-  val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements.")
+  val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignments.")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
-                                          withPostSetHook(set => interpreter.isReplDebug = true)
+                                          withPostSetHook(_ => interpreter.replProps.debug setValue true)
   val Ycompletion   = BooleanSetting    ("-Ycompletion-debug", "Trace all tab completion activity.")
+  val Ydocdebug     = BooleanSetting    ("-Ydoc-debug", "Trace all scaladoc activity.")
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible.")
   val Ynotnull      = BooleanSetting    ("-Ynotnull", "Enable (experimental and incomplete) scala.NotNull.")
   val YdepMethTpes  = BooleanSetting    ("-Ydependent-method-types", "Allow dependent method types.")
@@ -152,6 +155,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val YvirtClasses  = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
+
+  def stop = stopAfter
 
   /**
    * Warnings

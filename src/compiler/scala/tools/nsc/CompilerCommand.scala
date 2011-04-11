@@ -26,13 +26,6 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   /** The name of the command */
   def cmdName = "scalac"
 
-  private def helpSyntaxColumnWidth: Int =
-    (settings.visibleSettings map (_.helpSyntax.length)) max
-
-  private def format(s: String): String =
-    if (s.length >= helpSyntaxColumnWidth) s
-    else s + (" " * (helpSyntaxColumnWidth - s.length))
-
   private def explainAdvanced = "\n" + """
     |-- Notes on option parsing --
     |Boolean settings are always false unless set.
@@ -44,23 +37,47 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     |  example: -Xprint:expl,24-26 prints phases explicitouter, closelim, dce, jvm.
     |  example: -Xprint:-4 prints only the phases up to typer.
     |
-  """.stripMargin.trim + "\n\n"
+  """.stripMargin.trim + "\n"
+
+  def shortUsage = "Usage: %s <options> <source files>" format cmdName
+  def createUsagePreface(shouldExplain: Boolean) =
+    if (shouldExplain) shortUsage + "\n" + explainAdvanced else ""
 
   /** Creates a help message for a subset of options based on cond */
+  def createUsageMsg(cond: Setting => Boolean): String = {
+    val baseList            = (settings.visibleSettings filter cond).toList sortBy (_.name)
+    val width               = baseList map (_.helpSyntax.length) max
+    def format(s: String)   = ("%-" + width + "s") format s
+    def helpStr(s: Setting) = {
+      val str    = format(s.helpSyntax) + "  " + s.helpDescription
+      val suffix = s.deprecationMessage match {
+        case Some(msg) => "\n" + format("") + "      deprecated: " + msg
+        case _         => ""
+      }
+      str + suffix
+    }
+    val debugs      = baseList filter (_.isForDebug)
+    val deprecateds = baseList filter (_.isDeprecated)
+    val theRest     = baseList filterNot (debugs.toSet ++ deprecateds)
+
+    def sstring(msg: String, xs: List[Setting]) =
+      if (xs.isEmpty) None else Some(msg :: xs.map(helpStr) mkString "\n  ")
+
+    List(
+      sstring("", theRest),
+      sstring("\nAdditional debug settings:", debugs),
+      sstring("\nDeprecated settings:", deprecateds)
+    ).flatten mkString "\n"
+  }
+
   def createUsageMsg(label: String, shouldExplain: Boolean, cond: Setting => Boolean): String = {
-    def helpStr(s: Setting) = format(s.helpSyntax) + "  " + s.helpDescription
+    val prefix = List(
+      Some(shortUsage),
+      Some(explainAdvanced) filter (_ => shouldExplain),
+      Some(label + " options include:")
+    ).flatten mkString "\n"
 
-    val usage         = "Usage: %s <options> <source files>\n" format cmdName
-    val explain       = if (shouldExplain) explainAdvanced else ""
-    val prefix        = label + " options include:\n  "
-
-    // Separating out any debugging options from others for easier reading
-    val (debug, rest) = (settings.visibleSettings filter cond).toList sortBy (_.name) partition (_.isForDebug)
-
-    (rest map helpStr).mkString(usage + explain + prefix, "\n  ", "\n") + (
-      if (debug.isEmpty) ""
-      else (debug map helpStr).mkString("\nAdditional debug settings:\n  ", "\n  ", "\n")
-    )
+    prefix + createUsageMsg(cond)
   }
 
   /** Messages explaining usage and options */

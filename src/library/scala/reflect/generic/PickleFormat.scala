@@ -137,7 +137,7 @@ object PickleFormat {
   final val CLASSINFOtpe = 19
   final val METHODtpe = 20
   final val POLYtpe = 21
-  final val IMPLICITMETHODtpe = 22
+  final val IMPLICITMETHODtpe = 22    // no longer generated
 
   final val LITERAL = 23   // base line for literals
   final val LITERALunit = 24

@@ -144,16 +144,10 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
     else ""
 }
 
-/** <p>
-  *   This object is used by the compiler and <b>should not be used in client
-  *   code</b>. The object Manifest defines factory methods for
-  *   manifests.
-  * </p>
-  * <p>
-  *   <b>BE AWARE</b>: The factory for refinement types is missing and
-  *   will be implemented in a later version of this class.
-  * </p>
-  */
+/** The object ClassManifest defines factory methods for manifests.
+ *  It is intended for use by the compiler and should not be used
+ *  in client code.
+ */
 object ClassManifest {
   val Byte    = Manifest.Byte
   val Short   = Manifest.Short

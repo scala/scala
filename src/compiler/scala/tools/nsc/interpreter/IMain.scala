@@ -11,7 +11,7 @@ import java.io.{ PrintWriter }
 import java.lang.reflect
 import java.net.URL
 import util.{ Set => _, _ }
-import io.VirtualDirectory
+import io.{ AbstractFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import scala.tools.nsc.interpreter.{ Results => IR }
@@ -57,7 +57,7 @@ import IMain._
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(val settings: Settings, protected val out: PrintWriter) {
+class IMain(val settings: Settings, protected val out: PrintWriter) extends Imports {
   imain =>
 
   /** construct an interpreter that reports to Console */
@@ -78,7 +78,16 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   import formatting._
 
   /** directory to save .class files to */
-  val virtualDirectory = new VirtualDirectory("(memory)", None)
+  val virtualDirectory = new VirtualDirectory("(memory)", None) {
+    private def pp(root: io.AbstractFile, indentLevel: Int) {
+      val spaces = "    " * indentLevel
+      out.println(spaces + root.name)
+      if (root.isDirectory)
+        root.toList sortBy (_.name) foreach (x => pp(x, indentLevel + 1))
+    }
+    // print the contents hierarchically
+    def show() = pp(this, 0)
+  }
 
   /** reporter */
   lazy val reporter: ConsoleReporter = new IMain.ReplReporter(this)
@@ -102,11 +111,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
   private def _initialize(): Boolean = {
     val source = """
-      |// this is assembled to force the loading of approximately the
-      |// classes which will be loaded on the first expression anyway.
       |class $repl_$init {
-      |  val x = "abc".reverse.length + (5 max 5)
-      |  scala.runtime.ScalaRunTime.stringOf(x)
+      |  List(1) map (_ + 1)
       |}
       |""".stripMargin
 
@@ -157,11 +163,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     else null
   }
   @deprecated("Use `global` for access to the compiler instance.")
-  lazy val compiler = global
+  lazy val compiler: global.type = global
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule, RootClass }
-  import nme.{ INTERPRETER_IMPORT_WRAPPER }
 
   object naming extends {
     val global: imain.global.type = imain.global
@@ -268,9 +272,21 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
       else                            new URLClassLoader(compilerClasspath, parentClassLoader)
 
-    new AbstractFileClassLoader(virtualDirectory, parent)
+    new AbstractFileClassLoader(virtualDirectory, parent) {
+      /** Overridden here to try translating a simple name to the generated
+       *  class name if the original attempt fails.  This method is used by
+       *  getResourceAsStream as well as findClass.
+       */
+      override protected def findAbstractFile(name: String): AbstractFile = {
+        super.findAbstractFile(name) match {
+          // deadlocks on startup if we try to translate names too early
+          case null if isInitializeComplete => generatedName(name) map (x => super.findAbstractFile(x)) orNull
+          case file                         => file
+        }
+      }
+    }
   }
-  private def loadByName(s: String): Class[_] =
+  private def loadByName(s: String): JClass =
     (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
 
   protected def parentClassLoader: ClassLoader =
@@ -286,12 +302,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    *
    *    $line19.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$Bippy
    */
-  def pathToFlatName(id: String): String = {
-    requestForIdent(id) match {
-      case Some(req)    => req fullFlatName id
-      case _            => id
-    }
+  def generatedName(simpleName: String): Option[String] = {
+    if (simpleName endsWith "$") optFlatName(simpleName.init) map (_ + "$")
+    else optFlatName(simpleName)
   }
+  def flatName(id: String)    = optFlatName(id) getOrElse id
+  def optFlatName(id: String) = requestForIdent(id) map (_ fullFlatName id)
 
   def allDefinedNames = definedNameMap.keys.toList sortBy (_.toString)
   def pathToType(id: String): String = pathToName(newTypeName(id))
@@ -336,6 +352,22 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     prevRequests += req
     req.referencedNames foreach (x => referencedNameMap(x) = req)
 
+    // warning about serially defining companions.  It'd be easy
+    // enough to just redefine them together but that may not always
+    // be what people want so I'm waiting until I can do it better.
+    if (!settings.nowarnings.value) {
+      for {
+        name   <- req.definedNames filterNot (x => req.definedNames contains x.companionName)
+        oldReq <- definedNameMap get name.companionName
+        newSym <- req.definedSymbols get name
+        oldSym <- oldReq.definedSymbols get name.companionName
+      } {
+        printMessage("warning: previously defined %s is not a companion to %s.".format(oldSym, newSym))
+        printMessage("Companions must be defined together; you may wish to use :paste mode for this.")
+      }
+    }
+
+    // Updating the defined name map
     req.definedNames foreach { name =>
       if (definedNameMap contains name) {
         if (name.isTypeName) handleTypeRedefinition(name.toTypeName, definedNameMap(name), req)
@@ -343,114 +375,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       }
       definedNameMap(name) = req
     }
-  }
-
-  /** Compute imports that allow definitions from previous
-   *  requests to be visible in a new request.  Returns
-   *  three pieces of related code:
-   *
-   *  1. An initial code fragment that should go before
-   *  the code of the new request.
-   *
-   *  2. A code fragment that should go after the code
-   *  of the new request.
-   *
-   *  3. An access path which can be traverested to access
-   *  any bindings inside code wrapped by #1 and #2 .
-   *
-   * The argument is a set of Names that need to be imported.
-   *
-   * Limitations: This method is not as precise as it could be.
-   * (1) It does not process wildcard imports to see what exactly
-   * they import.
-   * (2) If it imports any names from a request, it imports all
-   * of them, which is not really necessary.
-   * (3) It imports multiple same-named implicits, but only the
-   * last one imported is actually usable.
-   */
-  private case class ComputedImports(prepend: String, append: String, access: String)
-  private def importsCode(wanted: Set[Name]): ComputedImports = {
-    /** Narrow down the list of requests from which imports
-     *  should be taken.  Removes requests which cannot contribute
-     *  useful imports for the specified set of wanted names.
-     */
-    case class ReqAndHandler(req: Request, handler: MemberHandler) { }
-
-    def reqsToUse: List[ReqAndHandler] = {
-      /** Loop through a list of MemberHandlers and select which ones to keep.
-        * 'wanted' is the set of names that need to be imported.
-       */
-      def select(reqs: List[ReqAndHandler], wanted: Set[Name]): List[ReqAndHandler] = {
-        val isWanted = wanted contains _
-        // Single symbol imports might be implicits! See bug #1752.  Rather than
-        // try to finesse this, we will mimic all imports for now.
-        def keepHandler(handler: MemberHandler) = handler match {
-          case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.definedNames exists isWanted)
-        }
-
-        reqs match {
-          case Nil                                    => Nil
-          case rh :: rest if !keepHandler(rh.handler) => select(rest, wanted)
-          case rh :: rest                             =>
-            import rh.handler._
-            val newWanted = wanted ++ referencedNames -- definedNames -- importedNames
-            rh :: select(rest, newWanted)
-        }
-      }
-
-      /** Flatten the handlers out and pair each with the original request */
-      select(allReqAndHandlers reverseMap { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
-    }
-
-    val code, trailingBraces, accessPath = new StringBuilder
-    val currentImps = mutable.HashSet[Name]()
-
-    // add code for a new object to hold some imports
-    def addWrapper() {
-      val impname = INTERPRETER_IMPORT_WRAPPER
-      code append "object %s {\n".format(impname)
-      trailingBraces append "}\n"
-      accessPath append ("." + impname)
-
-      currentImps.clear
-    }
-
-    addWrapper()
-
-    // loop through previous requests, adding imports for each one
-    for (ReqAndHandler(req, handler) <- reqsToUse) {
-      handler match {
-        // If the user entered an import, then just use it; add an import wrapping
-        // level if the import might conflict with some other import
-        case x: ImportHandler =>
-          if (x.importsWildcard || (currentImps exists (x.importedNames contains _)))
-            addWrapper()
-
-          code append (x.member + "\n")
-
-          // give wildcard imports a import wrapper all to their own
-          if (x.importsWildcard) addWrapper()
-          else currentImps ++= x.importedNames
-
-        // For other requests, import each defined name.
-        // import them explicitly instead of with _, so that
-        // ambiguity errors will not be generated. Also, quote
-        // the name of the variable, so that we don't need to
-        // handle quoting keywords separately.
-        case x =>
-          for (imv <- x.definedNames) {
-            if (currentImps contains imv) addWrapper()
-
-            code append ("import %s\n" format (req fullPath imv))
-            currentImps += imv
-          }
-      }
-    }
-    // add one extra wrapper, to prevent warnings in the common case of
-    // redefining the value bound in the last interpreter request.
-    addWrapper()
-    ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
   }
 
   /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
@@ -496,7 +420,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
    */
   def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
-
 
   /** Build a request from the user. `trees` is `line` after being parsed.
    */
@@ -627,14 +550,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     virtualDirectory.clear()
     resetClassLoader()
     resetAllCreators()
-    prevRequests.clear
+    prevRequests.clear()
   }
 
   /** This instance is no longer needed, so release any resources
    *  it is using.  The reporter's output gets flushed.
    */
   def close() {
-    reporter.flush
+    reporter.flush()
   }
 
   /** Here is where we:
@@ -862,8 +785,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     // lazy val definedTypes: Map[Name, Type] = {
     //   typeNames map (x => x -> afterTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
     // }
-    lazy val definedSymbols: Map[Name, Symbol] =
-      termNames map (x => x -> applyToResultMember(x, x => x)) toMap
+    lazy val definedSymbols: Map[Name, Symbol] = (
+      termNames.map(x => x -> applyToResultMember(x, x => x)) ++
+      typeNames.map(x => x -> compilerTypeOf.get(x).map(_.typeSymbol).getOrElse(NoSymbol))
+    ).toMap
 
     lazy val typesOfDefinedTerms: Map[Name, Type] =
       termNames map (x => x -> applyToResultMember(x, _.tpe)) toMap
@@ -905,7 +830,13 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
 
         execution.state match {
           case Done       => ("" + execution.get(), true)
-          case Threw      => if (bindLastException) handleException(execution.caught()) else throw execution.caught()
+          case Threw      =>
+            val ex = execution.caught()
+            if (isReplDebug)
+              ex.printStackTrace()
+
+            if (bindLastException) handleException(ex)
+            else throw ex
           case Cancelled  => ("Execution interrupted by signal.\n", false)
           case Running    => ("Execution still running! Seems impossible.", false)
         }
@@ -929,8 +860,10 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       case _                        => naming.mostRecentVar
     })
 
-  private def requestForName(name: Name): Option[Request] =
+  private def requestForName(name: Name): Option[Request] = {
+    assert(definedNameMap != null, "definedNameMap is null")
     definedNameMap get name
+  }
 
   private def requestForIdent(line: String): Option[Request] =
     requestForName(newTermName(line)) orElse requestForName(newTypeName(line))
@@ -948,22 +881,21 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
     requestForName(name) flatMap { req =>
       req.handlers find (_.definedNames contains name)
     }
-  //
 
   def valueOfTerm(id: String): Option[AnyRef] =
     requestForIdent(id) flatMap (_.getEval)
 
-  def classOfTerm(id: String): Option[Class[_]] =
+  def classOfTerm(id: String): Option[JClass] =
     valueOfTerm(id) map (_.getClass)
 
   def typeOfTerm(id: String): Option[Type] = newTermName(id) match {
-    case nme.ROOTPKG  => Some(RootClass.tpe)
+    case nme.ROOTPKG  => Some(definitions.RootClass.tpe)
     case name         => requestForName(name) flatMap (_.compilerTypeOf get name)
   }
   def symbolOfTerm(id: String): Symbol =
     requestForIdent(id) flatMap (_.definedSymbols get newTermName(id)) getOrElse NoSymbol
 
-  def runtimeClassAndTypeOfTerm(id: String): Option[(Class[_], Type)] = {
+  def runtimeClassAndTypeOfTerm(id: String): Option[(JClass, Type)] = {
     for {
       clazz <- classOfTerm(id)
       tpe <- runtimeTypeOfTerm(id)
@@ -997,17 +929,23 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
       return None
     }
 
+    def asQualifiedImport = {
+      val name = expr.takeWhile(_ != '.')
+      importedTermNamed(name) flatMap { sym =>
+        typeOfExpression(sym.fullName + expr.drop(name.length))
+      }
+    }
     def asModule = safeModule(expr) map (_.tpe)
     def asExpr = beSilentDuring {
       val lhs = freshInternalVarName()
-      interpret("lazy val " + lhs + " = { " + expr + " } ") match {
+      interpret("lazy val " + lhs + " = { " + expr + " } ", true) match {
         case IR.Success => typeOfExpression(lhs)
         case _          => None
       }
     }
 
     typeOfExpressionDepth += 1
-    try typeOfTerm(expr) orElse asModule orElse asExpr
+    try typeOfTerm(expr) orElse asModule orElse asExpr orElse asQualifiedImport
     finally typeOfExpressionDepth -= 1
   }
   // def compileAndTypeExpr(expr: String): Option[Typer] = {
@@ -1016,70 +954,22 @@ class IMain(val settings: Settings, protected val out: PrintWriter) {
   //   }
   // }
 
-  private def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
-  private def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
+  protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
+  protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
 
-  def importHandlers = allHandlers collect { case x: ImportHandler => x }
   def definedTerms   = onlyTerms(allDefinedNames) filterNot isInternalVarName
   def definedTypes   = onlyTypes(allDefinedNames)
-  def importedTerms  = onlyTerms(importHandlers flatMap (_.importedNames))
-  def importedTypes  = onlyTypes(importHandlers flatMap (_.importedNames))
+  def definedSymbols = prevRequests.toSet flatMap ((x: Request) => x.definedSymbols.values)
 
   /** the previous requests this interpreter has processed */
-  private lazy val prevRequests      = mutable.ArrayBuffer[Request]()
+  private lazy val prevRequests      = mutable.ListBuffer[Request]()
   private lazy val referencedNameMap = mutable.Map[Name, Request]()
   private lazy val definedNameMap    = mutable.Map[Name, Request]()
-  private def allHandlers            = prevRequests.toList flatMap (_.handlers)
-  private def allReqAndHandlers      = prevRequests.toList flatMap (req => req.handlers map (req -> _))
-  def allSeenTypes                   = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
+  protected def prevRequestList      = prevRequests.toList
+  private def allHandlers            = prevRequestList flatMap (_.handlers)
+  def allSeenTypes                   = prevRequestList flatMap (_.typeOf.values.toList) distinct
   def allImplicits                   = allHandlers filter (_.definesImplicit) flatMap (_.definedNames)
-
-  private def membersAtPickler(sym: Symbol): List[Symbol] =
-    atPickler(sym.info.nonPrivateMembers)
-
-  /** Symbols whose contents are language-defined to be imported. */
-  def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
-  def languageWildcards: List[Type] = languageWildcardSyms map (_.tpe)
-
-  /** Types which have been wildcard imported, such as:
-   *    val x = "abc" ; import x._  // type java.lang.String
-   *    import java.lang.String._   // object java.lang.String
-   *
-   *  Used by tab completion.
-   *
-   *  XXX right now this gets import x._ and import java.lang.String._,
-   *  but doesn't figure out import String._.  There's a lot of ad hoc
-   *  scope twiddling which should be swept away in favor of digging
-   *  into the compiler scopes.
-   */
-  def sessionWildcards: List[Type] = {
-    importHandlers flatMap {
-      case x if x.importsWildcard => x.targetType
-      case _                      => None
-    } distinct
-  }
-  def wildcardTypes = languageWildcards ++ sessionWildcards
-
-  def languageSymbols = languageWildcardSyms flatMap membersAtPickler
-  def sessionSymbols  = importHandlers flatMap (_.importedSymbols)
-  def importedSymbols = languageSymbols ++ sessionSymbols
-  def implicitSymbols = importedSymbols filter (_.isImplicit)
-
-  /** Tuples of (source, imported symbols) in the order they were imported.
-   */
-  def importedSymbolsBySource: List[(Symbol, List[Symbol])] = {
-    val lang    = languageWildcardSyms map (sym => (sym, membersAtPickler(sym)))
-    val session = importHandlers filter (_.targetType.isDefined) map { mh =>
-      (mh.targetType.get.typeSymbol, mh.importedSymbols)
-    }
-
-    lang ++ session
-  }
-  def implicitSymbolsBySource: List[(Symbol, List[Symbol])] = {
-    importedSymbolsBySource map {
-      case (k, vs) => (k, vs filter (_.isImplicit))
-    } filterNot (_._2.isEmpty)
-  }
+  def importHandlers                 = allHandlers collect { case x: ImportHandler => x }
 
   def visibleTermNames: List[Name] = definedTerms ++ importedTerms distinct
 
@@ -1141,7 +1031,7 @@ object IMain {
 
     def apply(contributors: List[T]): String = stringFromWriter { code =>
       code println preamble
-      contributors map generate foreach (code print _)
+      contributors map generate foreach (code println _)
       code println postamble
     }
   }

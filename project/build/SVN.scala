@@ -6,7 +6,7 @@ import sbt._
  */
 class SVN(root: Path) {
   /** Location of tool which parses svn revision in git-svn repository. */
-  val GitSvnRevTool = root / "tools" / "get-git-svn-rev"
+  val GitSvnRevTool = root / "tools" / "get-scala-revision"
   val GitSvnRegex   = """^Revision:\s*(\d+).*""".r
 
   /**

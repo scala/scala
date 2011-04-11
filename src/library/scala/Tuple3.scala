@@ -46,7 +46,7 @@ case class Tuple3[+T1, +T2, +T3](_1: T1, _2: T2, _3: T3)
    * }}}
    *
    * @see Zipped
-   * $willNotTerminateInf
+   * Note: will not terminate for infinite-sized collections.
    */
   def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TLike[El1, Repr1],
                                                           w2: T2 => ILike[El2, Repr2],

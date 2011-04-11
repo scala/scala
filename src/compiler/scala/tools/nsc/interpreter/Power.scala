@@ -6,20 +6,57 @@
 package scala.tools.nsc
 package interpreter
 
+import scala.reflect.NameTransformer
 import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
 import scala.tools.nsc.util.{ BatchSourceFile }
 import session.{ History }
+import scala.io.Codec
+import java.net.{ URL, MalformedURLException }
+import io.{ Path }
+
+trait SharesGlobal[G <: Global] {
+  val global: G
+
+  // This business gets really old:
+  //
+  // found   : power.intp.global.Symbol
+  // required: global.Symbol
+  //
+  // Have tried many ways to cast it aside, this is the current winner.
+  // Todo: figure out a way to abstract over all the type members.
+  type AnySymbol   = Global#Symbol
+  type AnyType     = Global#Type
+  type AnyName     = Global#Name
+  type AnyTree     = Global#Tree
+
+  type Symbol   = global.Symbol
+  type Type     = global.Type
+  type Name     = global.Name
+  type Tree     = global.Tree
+
+  implicit def upDependentSymbol(x: AnySymbol): Symbol = x.asInstanceOf[Symbol]
+  implicit def upDependentType(x: AnyType): Type = x.asInstanceOf[Type]
+  implicit def upDependentName(x: AnyName): Name = x.asInstanceOf[Name]
+  implicit def upDependentTree(x: AnyTree): Tree = x.asInstanceOf[Tree]
+}
+
+object Power {
+  def apply[G <: Global](repl: ILoop, g: G) =
+    new { final val global: G = g } with Power[G](repl, repl.intp)
+
+  def apply(intp: IMain) =
+    new { final val global = intp.global } with Power[Global](null, intp)
+}
 
 /** A class for methods to be injected into the intp in power mode.
  */
-class Power(repl: ILoop, intp: IMain) {
-  def this(repl: ILoop) = this(repl, repl.intp)
-  def this(intp: IMain) = this(null, intp)
-
-  val global: intp.global.type = intp.global
-  import global._
+abstract class Power[G <: Global](
+  val repl: ILoop,
+  val intp: IMain
+) extends SharesGlobal[G] {
   import intp.{ beQuietDuring, interpret, parse }
+  import global.{ opt, definitions, stringToTermName, NoSymbol, NoType, analyzer, CompilationUnit }
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -82,7 +119,10 @@ class Power(repl: ILoop, intp: IMain) {
     def slurp()               = apply(modClass)
   }
 
-  def banner = """
+  private def customBanner = replProps.powerBanner.option flatMap (f => io.File(f).safeSlurp())
+  private def customInit   = replProps.powerInitCode.option flatMap (f => io.File(f).safeSlurp())
+
+  def banner = customBanner getOrElse """
     |** Power User mode enabled - BEEP BOOP WHIR **
     |** scala.tools.nsc._ has been imported      **
     |** global._ and definitions._ also imported **
@@ -91,27 +131,28 @@ class Power(repl: ILoop, intp: IMain) {
     |** New defs! Type power.<tab> to reveal     **
   """.stripMargin.trim
 
-  def init = """
+  def init = customInit getOrElse """
     |import scala.tools.nsc._
-    |val global: intp.global.type = intp.global
+    |import scala.collection.JavaConverters._
     |import global._
-    |import definitions._
-    |import power.phased
     |import power.Implicits._
   """.stripMargin
 
   /** Starts up power mode and runs whatever is in init.
    */
   def unleash(): Unit = beQuietDuring {
-    if (repl != null) {
-      intp.bind[ILoop]("repl", repl)
-      intp.bind[History]("history", repl.in.history)
-      intp.bind("completion", repl.in.completion)
-    }
+    val r  = new ReplVals(repl)
+    intp.bind[ILoop]("repl", repl)
+    intp.bind[ReplVals]("$r", r)
 
-    intp.bind[IMain]("intp", intp)
-    intp.bind[Power]("power", this)
-    intp.bind[ISettings]("isettings", intp.isettings)
+    intp.bind("intp", r.intp)
+    intp.bind("global", r.global)
+    intp.bind("power", r.power)
+    intp.bind("phased", r.phased)
+    intp.bind("isettings", r.isettings)
+    intp.bind("completion", r.completion)
+    intp.bind("history", r.history)
+
     init split '\n' foreach interpret
   }
 
@@ -122,9 +163,11 @@ class Power(repl: ILoop, intp: IMain) {
   private def getCompilerClass(name: String)  = missingWrap(definitions.getClass(name))
   private def getCompilerModule(name: String) = missingWrap(definitions.getModule(name))
 
-  object InternalInfo {
+  trait LowPriorityInternalInfo {
     implicit def apply[T: Manifest] : InternalInfo[T] = new InternalInfo[T](None)
   }
+  object InternalInfo extends LowPriorityInternalInfo { }
+
   /** Todos...
    *    translate manifest type arguments into applied types
    *    customizable symbol filter (had to hardcode no-spec to reduce noise)
@@ -152,11 +195,13 @@ class Power(repl: ILoop, intp: IMain) {
     def allMembers = tpe.members
     def bts        = info.baseTypeSeq.toList
     def btsmap     = bts map (x => (x, x.decls.toList)) toMap
-    def pkgName    = erasure.getPackage.getName
-    def pkg        = getCompilerModule(pkgName)
+    def pkgName    = Option(erasure.getPackage) map (_.getName)
+    def pkg        = pkgName map getCompilerModule getOrElse NoSymbol
     def pkgmates   = pkg.tpe.members
-    def pkgslurp   = new PackageSlurper(pkgName) slurp()
-
+    def pkgslurp   = pkgName match {
+      case Some(name) => new PackageSlurper(name) slurp()
+      case _          => Set()
+    }
     def ?         = this
 
     def whoHas(name: String) = bts filter (_.decls.toList exists (_.name.toString == name))
@@ -171,8 +216,24 @@ class Power(repl: ILoop, intp: IMain) {
     }
   }
 
-  trait PCFormatter extends (Any => List[String]) {
-    def apply(x: Any): List[String]
+  trait LowPriorityPrettifier {
+    implicit object AnyPrettifier extends Prettifier[Any] {
+      def prettify(x: Any): List[String] = x match {
+        case x: Name                => List(x.decode)
+        case Tuple2(k, v)           => List(prettify(k) ++ Seq("->") ++ prettify(v) mkString " ")
+        case xs: TraversableOnce[_] => (xs.toList flatMap prettify).sorted
+        case x                      => List(rutil.stringOf(x))
+      }
+    }
+  }
+  object Prettifier extends LowPriorityPrettifier {
+    def prettify[T](value: T): List[String] = default[T] prettify value
+    def default[T] = new Prettifier[T] {
+      def prettify(x: T): List[String] = AnyPrettifier prettify x
+    }
+  }
+  trait Prettifier[T] {
+    def prettify(x: T): List[String]
 
     private var indentLevel = 0
     private def spaces = "  " * indentLevel
@@ -182,12 +243,13 @@ class Power(repl: ILoop, intp: IMain) {
       finally indentLevel -= 1
     }
 
-    def show(x: Any): Unit = grep(x, _ => true)
-    def grep(x: Any, p: String => Boolean): Unit =
-      apply(x) filter p foreach (x => println(spaces + x))
+    def show(x: T): Unit = grep(x, _ => true)
+    def grep(x: T, p: String => Boolean): Unit =
+      prettify(x) filter p foreach (x => println(spaces + x))
   }
-  class MultiPrintingConvenience[T](coll: Traversable[T])(implicit fmt: PCFormatter) {
-    import fmt._
+  class MultiPrintingConvenience[T: Prettifier](coll: TraversableOnce[T]) {
+    val pretty = implicitly[Prettifier[T]]
+    import pretty._
 
     def freqBy[U](p: T => U) = {
       val map = coll.toList groupBy p
@@ -197,8 +259,8 @@ class Power(repl: ILoop, intp: IMain) {
       val buf = new mutable.ListBuffer[String]
 
       freqBy(p) foreach { case (k, vs) =>
-        buf += "%d: %s".format(vs.size, k)
-        vs flatMap fmt foreach (buf += "  " + _)
+        buf += "%d: %s".format(vs.size, Prettifier.prettify(k))
+        vs flatMap prettify foreach (buf += "  " + _)
       }
       buf.toList
     }
@@ -215,45 +277,85 @@ class Power(repl: ILoop, intp: IMain) {
     def #?[U](p: T => U) = this freqByFormatted p
   }
 
-  class PrintingConvenience[T](value: T)(implicit fmt: PCFormatter) {
-    def > : Unit = >(_ => true)
+  class PrintingConvenience[T: Prettifier](value: T) {
+    val pretty = implicitly[Prettifier[T]]
+
+    def > { >(_ => true) }
     def >(s: String): Unit = >(_ contains s)
     def >(r: Regex): Unit = >(_ matches r.pattern.toString)
-    def >(p: String => Boolean): Unit = fmt.grep(value, p)
+    def >(p: String => Boolean): Unit = pretty.grep(value, p)
   }
-  protected trait Implicits1 {
-    implicit def replPrinting[T](x: T)(implicit fmt: PCFormatter) = new PrintingConvenience[T](x)
+  class RichInputStream(in: InputStream)(implicit codec: Codec) {
+    def bytes(): Array[Byte] = io.Streamable.bytes(in)
+    def slurp(): String      = io.Streamable.slurp(in)
   }
-  object Implicits extends Implicits1 {
-    implicit lazy val powerNameOrdering: Ordering[Name]     = Ordering[String] on (_.toString)
-    implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
-    implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
 
+  protected trait Implicits1 {
+    // fallback
+    implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) = new PrintingConvenience[T](x)
+  }
+  trait Implicits2 extends Implicits1 with SharesGlobal[G] {
+    import global._
+
+    class RichSymbol(sym: Symbol) {
+      // convenient type application
+      def apply(targs: Type*): Type = typeRef(NoPrefix, sym, targs.toList)
+    }
     object symbolSubtypeOrdering extends Ordering[Symbol] {
       def compare(s1: Symbol, s2: Symbol) =
         if (s1 eq s2) 0
         else if (s1 isLess s2) -1
         else 1
     }
-    implicit def replCollPrinting[T](xs: Traversable[T])(implicit fmt: PCFormatter) = new MultiPrintingConvenience[T](xs)
+    implicit lazy val powerNameOrdering: Ordering[Name]     = Ordering[String] on (_.toString)
+    implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
+    implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
+
+    implicit def replCollPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrintingConvenience[T] = new MultiPrintingConvenience[T](xs)
     implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
-    implicit object ReplDefaultFormatter extends PCFormatter {
-      def apply(x: Any): List[String] = x match {
-        case Tuple2(k, v)       => List(apply(k) ++ Seq("->") ++ apply(v) mkString " ")
-        case xs: Traversable[_] => (xs.toList flatMap apply).sorted.distinct
-        case x                  => List("" + x)
-      }
-    }
+    implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
+    implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
+    implicit def replInputStream(in: InputStream)(implicit codec: Codec): RichInputStream = new RichInputStream(in)
+    implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = replInputStream(url.openStream())
+  }
+  object Implicits extends Implicits2 {
+    val global: G = Power.this.global
   }
 
-  object phased extends Phased {
-    val global: Power.this.global.type = Power.this.global
+  trait ReplUtilities {
+    def ?[T: Manifest] = InternalInfo[T]
+    def url(s: String) = {
+      try new URL(s)
+      catch { case _: MalformedURLException =>
+        if (Path(s).exists) Path(s).toURL
+        else new URL("http://" + s)
+      }
+    }
+    def sanitize(s: String): String = sanitize(s.getBytes())
+    def sanitize(s: Array[Byte]): String = (s map {
+      case x if x.toChar.isControl  => '?'
+      case x                        => x.toChar
+    }).mkString
+
+    def strings(s: Seq[Byte]): List[String] = {
+      if (s.length == 0) Nil
+      else s dropWhile (_.toChar.isControl) span (x => !x.toChar.isControl) match {
+        case (next, rest) => next.map(_.toChar).mkString :: strings(rest)
+      }
+    }
+    def stringOf(x: Any): String = scala.runtime.ScalaRunTime.stringOf(x)
   }
-  def context(code: String)           = analyzer.rootContext(unit(code))
-  def source(code: String)            = new BatchSourceFile("<console>", code)
-  def unit(code: String)              = new CompilationUnit(source(code))
-  def trees(code: String): List[Tree] = parse(code) getOrElse Nil
-  def typeOf(id: String): Type        = intp.typeOfExpression(id) getOrElse NoType
+
+  lazy val rutil: ReplUtilities = new ReplUtilities { }
+  lazy val phased: Phased = new Phased with SharesGlobal[G] {
+    val global: G = Power.this.global
+  }
+
+  def context(code: String)    = analyzer.rootContext(unit(code))
+  def source(code: String)     = new BatchSourceFile("<console>", code)
+  def unit(code: String)       = new CompilationUnit(source(code))
+  def trees(code: String)      = parse(code) getOrElse Nil
+  def typeOf(id: String): Type = intp.typeOfExpression(id) getOrElse NoType
 
   override def toString = """
     |** Power mode status **

@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel
-
 
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArrayCombiner
 import scala.collection.parallel.mutable.ParArray
-
 
 /** A template trait for parallel iterable collections.
  *
@@ -35,7 +32,7 @@ trait ParIterable[+T] extends Iterable[T]
   override def companion: GenericCompanion[ParIterable] with GenericParCompanion[ParIterable] = ParIterable
 }
 
-/** $factoryinfo
+/** $factoryInfo
  */
 object ParIterable extends ParFactory[ParIterable] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParIterable[T]] = new GenericCanCombineFrom[T]
@@ -44,17 +41,3 @@ object ParIterable extends ParFactory[ParIterable] {
 
   def newCombiner[T]: Combiner[T, ParIterable[T]] = ParArrayCombiner[T]
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
