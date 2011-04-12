@@ -270,7 +270,7 @@ object Test extends Properties("HtmlFactory") {
   property("Trac #4452") = {
     createTemplate("Trac4452.scala") match {
       case node: scala.xml.Node =>
-        ! node.toString.contains("* blah blah blah")
+        ! node.toString.contains(">*")
       case _ => false
     }
   }
