@@ -991,6 +991,7 @@ abstract class GenICode extends SubComponent  {
         case Select(qualifier, selector) =>
           val sym = tree.symbol
           generatedType = toTypeKind(sym.info)
+          val hostClass = qualifier.tpe.typeSymbol
 
           if (sym.isModule) {
             if (settings.debug.value)
@@ -999,11 +1000,11 @@ abstract class GenICode extends SubComponent  {
             genLoadModule(ctx, sym, tree.pos)
             ctx
           } else if (sym.isStaticMember) {
-            ctx.bb.emit(LOAD_FIELD(sym, true), tree.pos)
+            ctx.bb.emit(LOAD_FIELD(sym, true)  setHostClass hostClass, tree.pos)
             ctx
           } else {
             val ctx1 = genLoadQualifier(tree, ctx)
-            ctx1.bb.emit(LOAD_FIELD(sym, false), tree.pos)
+            ctx1.bb.emit(LOAD_FIELD(sym, false) setHostClass hostClass, tree.pos)
             ctx1
           }
 
