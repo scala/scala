@@ -183,7 +183,7 @@ trait Typers extends Modes {
       namerCache
     }
 
-    private[typechecker] var context = context0
+    var context = context0
     def context1 = context
 
     /** Check that <code>tree</code> is a stable expression.
