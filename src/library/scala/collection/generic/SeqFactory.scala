@@ -15,7 +15,7 @@ package generic
  *
  *  @since 2.8
  */
-abstract class SeqFactory[CC[X] <: Seq[X] with GenericTraversableTemplate[X, CC]] extends TraversableFactory[CC] {
+abstract class SeqFactory[CC[X] <: GenSeq[X] with GenericTraversableTemplate[X, CC]] extends TraversableFactory[CC] {
 
   /** This method is called in a pattern match { case Seq(...) => }.
    *

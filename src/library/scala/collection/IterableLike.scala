@@ -55,7 +55,7 @@ import annotation.unchecked.uncheckedVariance
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `(A1, B)`.
  */
-trait IterableLike[+A, +Repr] extends Equals with TraversableLike[A, Repr] {
+trait IterableLike[+A, +Repr] extends Equals with TraversableLike[A, Repr] with GenIterableLike[A, Repr] {
 self =>
 
   override protected[this] def thisCollection: Iterable[A] = this.asInstanceOf[Iterable[A]]
@@ -218,7 +218,7 @@ self =>
    *                 corresponding elements of this $coll and `that`. The length
    *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
    */
-  def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
+  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
     val those = that.iterator
@@ -255,7 +255,7 @@ self =>
    *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
    *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
    */
-  def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
+  def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
     val those = that.iterator
@@ -317,7 +317,7 @@ self =>
    *  @param that  the collection to compare with.
    *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
    */
-  def sameElements[B >: A](that: Iterable[B]): Boolean = {
+  def sameElements[B >: A](that: GenIterable[B]): Boolean = {
     val these = this.iterator
     val those = that.iterator
     while (these.hasNext && those.hasNext)

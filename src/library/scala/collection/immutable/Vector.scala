@@ -195,8 +195,8 @@ override def companion: GenericCompanion[Vector] = Vector
 
   // concat (stub)
 
-  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
-    super.++(that)
+  override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
+    super.++(that.seq)
   }
 
 

@@ -41,5 +41,5 @@ trait MapMethods[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   def mapValues[C](f: B => C): Map[A, C]
   def updated [B1 >: B](key: A, value: B1): Map[A, B1]
   def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): Map[A, B1]
-  def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1]
+  def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1]
 }

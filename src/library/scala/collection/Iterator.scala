@@ -340,7 +340,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  iterator followed by the values produced by iterator `that`.
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
    */
-  def ++[B >: A](that: => TraversableOnce[B]): Iterator[B] = new Iterator[B] {
+  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator[B] {
     // optimize a little bit to prevent n log n behavior.
     private var cur : Iterator[B] = self
     // since that is by-name, make sure it's only referenced once -
@@ -364,7 +364,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @return   the iterator resulting from applying the given iterator-valued function
    *                `f` to each value produced by this iterator and concatenating the results.
    */
-  def flatMap[B](f: A => TraversableOnce[B]): Iterator[B] = new Iterator[B] {
+  def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new Iterator[B] {
     private var cur: Iterator[B] = empty
     def hasNext: Boolean =
       cur.hasNext || self.hasNext && { cur = f(self.next).toIterator; hasNext }

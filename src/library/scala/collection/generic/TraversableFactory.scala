@@ -33,7 +33,7 @@ package generic
  *    @see CanBuildFrom
  *    @see GenericCanBuildFrom
  */
-abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
+abstract class TraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {
 
   /** A generic implementation of the `CanBuildFrom` trait, which forwards

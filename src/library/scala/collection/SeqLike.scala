@@ -65,7 +65,7 @@ import parallel.ParSeq
  *
  *    Note: will not terminate for infinite-sized collections.
  */
-trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, ParSeq[A]] { self =>
+trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] with Parallelizable[A, ParSeq[A]] { self =>
 
   override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
   override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
@@ -467,7 +467,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    * @return `true` if the sequence `that` is contained in this $coll at index `offset`,
    *         otherwise `false`.
    */
-  def startsWith[B](that: Seq[B], offset: Int): Boolean = {
+  def startsWith[B](that: GenSeq[B], offset: Int): Boolean = {
     val i = this.iterator drop offset
     val j = that.iterator
     while (j.hasNext && i.hasNext)
@@ -482,14 +482,14 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    * @param  that    the sequence to test
    * @return `true` if this collection has `that` as a prefix, `false` otherwise.
    */
-  def startsWith[B](that: Seq[B]): Boolean = startsWith(that, 0)
+  def startsWith[B](that: GenSeq[B]): Boolean = startsWith(that, 0)
 
   /** Tests whether this $coll ends with the given sequence.
    *  $willNotTerminateInf
    *  @param  that    the sequence to test
    *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
    */
-  def endsWith[B](that: Seq[B]): Boolean = {
+  def endsWith[B](that: GenSeq[B]): Boolean = {
     val i = this.iterator.drop(length - that.length)
     val j = that.iterator
     while (i.hasNext && j.hasNext)
@@ -505,7 +505,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *  @return  the first index such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
+  def indexOfSlice[B >: A](that: GenSeq[B]): Int = indexOfSlice(that, 0)
 
   /** Finds first index after or at a start index where this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
@@ -514,9 +514,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *  @return  the first index `>= from` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def indexOfSlice[B >: A](that: Seq[B], from: Int): Int =
+  def indexOfSlice[B >: A](that: GenSeq[B], from: Int): Int =
     if (this.hasDefiniteSize && that.hasDefiniteSize)
-      SeqLike.indexOf(thisCollection, 0, length, that, 0, that.length, from)
+      SeqLike.indexOf(thisCollection, 0, length, that.seq, 0, that.length, from)
     else {
       var i = from
       var s: Seq[A] = thisCollection drop i
@@ -536,7 +536,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *  @return  the last index such that the elements of this $coll starting a this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, length)
+  def lastIndexOfSlice[B >: A](that: GenSeq[B]): Int = lastIndexOfSlice(that, length)
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
@@ -544,8 +544,8 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int =
-    SeqLike.lastIndexOf(thisCollection, 0, length, that, 0, that.length, end)
+  def lastIndexOfSlice[B >: A](that: GenSeq[B], end: Int): Int =
+    SeqLike.lastIndexOf(thisCollection, 0, length, that.seq, 0, that.length, end)
 
   /** Tests whether this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
@@ -553,7 +553,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *  @return  `true` if this $coll contains a slice with the same elements
    *           as `that`, otherwise `false`.
    */
-  def containsSlice[B](that: Seq[B]): Boolean = indexOfSlice(that) != -1
+  def containsSlice[B](that: GenSeq[B]): Boolean = indexOfSlice(that) != -1
 
   /** Tests whether this $coll contains a given value as an element.
    *  $mayNotTerminateInf
@@ -584,7 +584,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
-  def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
+  override def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
     this ++ that
 
   /** Computes the multiset difference between this $coll and another sequence.
@@ -606,10 +606,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
    */
-  def diff[B >: A](that: Seq[B]): Repr = {
-    val occ = occCounts(that)
+  def diff[B >: A](that: GenSeq[B]): Repr = {
+    val occ = occCounts(that.seq)
     val b = newBuilder
-    for (x <- this.seq)
+    for (x <- this)
       if (occ(x) == 0) b += x
       else occ(x) -= 1
     b.result
@@ -634,10 +634,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
    */
-  def intersect[B >: A](that: Seq[B]): Repr = {
-    val occ = occCounts(that)
+  def intersect[B >: A](that: GenSeq[B]): Repr = {
+    val occ = occCounts(that.seq)
     val b = newBuilder
-    for (x <- this.seq)
+    for (x <- this)
       if (occ(x) > 0) {
         b += x
         occ(x) -= 1
@@ -659,7 +659,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
   def distinct: Repr = {
     val b = newBuilder
     val seen = mutable.HashSet[A]()
-    for (x <- this.seq) {
+    for (x <- this) {
       if (!seen(x)) {
         b += x
         seen += x
@@ -684,11 +684,11 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *                   except that `replaced` elements starting from `from` are replaced
    *                   by `patch`.
    */
-  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     val (prefix, rest) = this.splitAt(from)
     b ++= toCollection(prefix)
-    b ++= patch
+    b ++= patch.seq
     b ++= toCollection(rest).view drop replaced
     b.result
   }
@@ -785,7 +785,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
    *                  `p(x, y)` is `true` for all corresponding elements `x` of this $coll
    *                  and `y` of `that`, otherwise `false`.
    */
-  def corresponds[B](that: Seq[B])(p: (A,B) => Boolean): Boolean = {
+  def corresponds[B](that: GenSeq[B])(p: (A,B) => Boolean): Boolean = {
     val i = this.iterator
     val j = that.iterator
     while (i.hasNext && j.hasNext)
@@ -882,26 +882,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with Parallelizable[A, Pa
   }
 
   override def view(from: Int, until: Int) = view.slice(from, until)
-
-  /** Hashcodes for $Coll produce a value from the hashcodes of all the
-   *  elements of the $coll.
-   */
-  override def hashCode() = {
-    val h = new util.MurmurHash[A](Seq.hashSeed)
-    this.foreach(h)
-    h.hash
-  }
-
-  /** The equals method for arbitrary sequences. Compares this sequence to
-   *  some other object.
-   *  @param    that  The object to compare the sequence to
-   *  @return   `true` if `that` is a sequence that has the same elements as
-   *            this sequence in the same order, `false` otherwise
-   */
-  override def equals(that: Any): Boolean = that match {
-    case that: Seq[_] => (that canEqual this) && (this sameElements that)
-    case _            => false
-  }
 
   /* Need to override string, so that it's not the Function1's string that gets mixed in.
    */

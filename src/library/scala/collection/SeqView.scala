@@ -16,7 +16,7 @@ import TraversableView.NoBuilder
 /** A base trait for non-strict views of sequences.
  *  $seqViewInfo
  */
-trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
+trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]] with GenSeqView[A, Coll]
 
 /** An object containing the necessary implicit definitions to make
  *  `SeqView`s work. Its definitions are generally not accessed directly by clients.

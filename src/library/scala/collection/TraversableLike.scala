@@ -19,6 +19,7 @@ import parallel.ParIterable
 
 
 /** A template trait for traversable collections of type `Traversable[A]`.
+ *
  *  $traversableInfo
  *  @define mutability
  *  @define traversableInfo
@@ -91,8 +92,10 @@ import parallel.ParIterable
  */
 trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
                                     with FilterMonadic[A, Repr]
-                                    with TraversableOnce[A]
-                                    with Parallelizable[A, ParIterable[A]] {
+                                    with TraversableOnceLike[A]
+                                    with GenTraversableLike[A, Repr]
+                                    with Parallelizable[A, ParIterable[A]]
+{
   self =>
 
   import Traversable.breaks._
@@ -185,11 +188,11 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
-  def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.size)
+    if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.seq.size)
     b ++= thisCollection
-    b ++= that
+    b ++= that.seq
     b.result
   }
 
@@ -223,7 +226,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  but Traversable and down can use the overload.
    */
   def ++:[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
-    (that ++ this)(breakOut)
+    (that ++ seq)(breakOut)
 
   /** Builds a new collection by applying a function to all elements of this $coll.
    *
@@ -261,9 +264,9 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return       a new $coll resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    */
-  def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    for (x <- this) b ++= f(x)
+    for (x <- this) b ++= f(x).seq
     b.result
   }
 
@@ -435,6 +438,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     result
   }
 
+  def scan[B >: A, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]): That = scanLeft(z)(op)
+
   /** Produces a collection containing cummulative results of applying the
    *  operator going left to right.
    *
@@ -518,7 +523,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *           except the first one.
    *  @throws `UnsupportedOperationException` if the $coll is empty.
    */
-  def tail: Repr = {
+  override def tail: Repr = {
     if (isEmpty) throw new UnsupportedOperationException("empty.tail")
     drop(1)
   }
@@ -860,10 +865,10 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
      *  @return       a new $coll resulting from applying the given collection-valued function
      *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
      */
-    def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
       val b = bf(repr)
       for (x <- self)
-        if (p(x)) b ++= f(x)
+        if (p(x)) b ++= f(x).seq
       b.result
     }
 

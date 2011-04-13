@@ -17,8 +17,7 @@ package scala.collection.parallel.immutable
 
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.ParIterableIterator
-import scala.collection.parallel.EnvironmentPassingCombiner
+import scala.collection.parallel.IterableSplitter
 import scala.collection.mutable.UnrolledBuffer.Unrolled
 import scala.collection.mutable.UnrolledBuffer
 import scala.collection.generic.ParSetFactory
@@ -62,7 +61,7 @@ self =>
 
   override def empty: ParHashSet[T] = new ParHashSet[T]
 
-  def parallelIterator: ParIterableIterator[T] = new ParHashSetIterator(trie.iterator, trie.size) with SCPI
+  def splitter: IterableSplitter[T] = new ParHashSetIterator(trie.iterator, trie.size) with SCPI
 
   override def seq = trie
 
@@ -143,9 +142,9 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 
 private[immutable] abstract class HashSetCombiner[T]
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
-self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
+//self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   import HashSetCombiner._
-  import tasksupport._
+  import collection.parallel.tasksupport._
   val emptyTrie = HashSet.empty[T]
 
   def +=(elem: T) = {
@@ -227,26 +226,11 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
 
 
 object HashSetCombiner {
-  def apply[T] = new HashSetCombiner[T] with EnvironmentPassingCombiner[T, ParHashSet[T]] {}
+  def apply[T] = new HashSetCombiner[T] {} // was: with EnvironmentPassingCombiner[T, ParHashSet[T]] {}
 
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

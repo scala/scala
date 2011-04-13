@@ -58,8 +58,10 @@ import parallel.ParSet
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 extends IterableLike[A, This]
+   with GenSetLike[A, This]
    with Subtractable[A, This]
-   with Parallelizable[A, ParSet[A]] {
+   with Parallelizable[A, ParSet[A]]
+{
 self =>
 
   /** The empty set of the same type as this set
@@ -123,7 +125,7 @@ self =>
    *  @param elems     the collection containing the added elements.
    *  @return a new $coll with the given elements added.
    */
-  def ++ (elems: TraversableOnce[A]): This = newBuilder ++= this ++= elems result
+  def ++ (elems: GenTraversableOnce[A]): This = newBuilder ++= seq ++= elems.seq result
 
   /** Creates a new set with a given element removed from this set.
    *
@@ -139,39 +141,14 @@ self =>
    */
   override def isEmpty: Boolean = size == 0
 
-  /** Tests if some element is contained in this set.
-   *
-   *  This method is equivalent to `contains`. It allows sets to be interpreted as predicates.
-   *  @param elem the element to test for membership.
-   *  @return  `true` if `elem` is contained in this set, `false` otherwise.
-   */
-  def apply(elem: A): Boolean = this contains elem
-
-  /** Computes the intersection between this set and another set.
-   *
-   *  @param   that  the set to intersect with.
-   *  @return  a new set consisting of all elements that are both in this
-   *  set and in the given set `that`.
-   */
-  def intersect(that: Set[A]): This = this filter that
-
-  /** Computes the intersection between this set and another set.
-   *
-   *  '''Note:'''  Same as `intersect`.
-   *  @param   that  the set to intersect with.
-   *  @return  a new set consisting of all elements that are both in this
-   *  set and in the given set `that`.
-   */
-  def &(that: Set[A]): This = this intersect that
-
- /**  This method is an alias for `intersect`.
+  /**  This method is an alias for `intersect`.
    *  It computes an intersection with set `that`.
    *  It removes all the elements that are not present in `that`.
    *
    *  @param that the set to intersect with
    */
   @deprecated("use & instead")
-  def ** (that: Set[A]): This = &(that)
+  def ** (that: GenSet[A]): This = &(that)
 
   /** Computes the union between of set and another set.
    *
@@ -179,16 +156,7 @@ self =>
    *  @return  a new set consisting of all elements that are in this
    *  set or in the given set `that`.
    */
-  def union(that: Set[A]): This = this ++ that
-
-  /** Computes the union between this set and another set.
-   *
-   *  '''Note:'''  Same as `union`.
-   *  @param   that  the set to form the union with.
-   *  @return  a new set consisting of all elements that are in this
-   *  set or in the given set `that`.
-   */
-  def | (that: Set[A]): This = this union that
+  def union(that: GenSet[A]): This = this ++ that
 
   /** Computes the difference of this set and another set.
    *
@@ -196,24 +164,7 @@ self =>
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set `that`.
    */
-  def diff(that: Set[A]): This = this -- that
-
-  /** The difference of this set and another set.
-   *
-   *  '''Note:'''  Same as `diff`.
-   *  @param that the set of elements to exclude.
-   *  @return     a set containing those elements of this
-   *              set that are not also contained in the given set `that`.
-   */
-  def &~(that: Set[A]): This = this diff that
-
-  /** Tests whether this set is a subset of another set.
-   *
-   *  @param that  the set to test.
-   *  @return     `true` if this set is a subset of `that`, i.e. if
-   *              every element of this set is also an element of `that`.
-   */
-  def subsetOf(that: Set[A]) = this forall that
+  def diff(that: GenSet[A]): This = this -- that
 
   /** An iterator over all subsets of this set of the given size.
    *  If the requested size is impossible, an empty iterator is returned.
@@ -290,31 +241,4 @@ self =>
   override def stringPrefix: String = "Set"
   override def toString = super[IterableLike].toString
 
-  // Careful! Don't write a Set's hashCode like:
-  //    override def hashCode() = this map (_.hashCode) sum
-  // Calling map on a set drops duplicates: any hashcode collisions would
-  // then be dropped before they can be added.
-  // Hash should be symmetric in set entries, but without trivial collisions.
-  override def hashCode() = util.MurmurHash.symmetricHash(this,Set.hashSeed)
-
-  /** Compares this set with another object for equality.
-   *
-   *  '''Note:''' This operation contains an unchecked cast: if `that`
-   *        is a set, it will assume with an unchecked cast
-   *        that it has the same element type as this set.
-   *        Any subsequent ClassCastException is treated as a `false` result.
-   *  @param that the other object
-   *  @return     `true` if `that` is a set which contains the same elements
-   *              as this set.
-   */
-  override def equals(that: Any): Boolean = that match {
-    case that: Set[_] =>
-      (this eq that) ||
-      (that canEqual this) &&
-      (this.size == that.size) &&
-      (try this subsetOf that.asInstanceOf[Set[A]]
-       catch { case ex: ClassCastException => false })
-    case _ =>
-      false
-  }
 }

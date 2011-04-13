@@ -26,11 +26,11 @@ trait SetProxyLike[A, +This <: SetLike[A, This] with Set[A]] extends SetLike[A, 
   override def - (elem: A) = self.-(elem)
   override def isEmpty: Boolean = self.isEmpty
   override def apply(elem: A): Boolean = self.apply(elem)
-  override def intersect(that: Set[A]) = self.intersect(that)
-  override def &(that: Set[A]): This = self.&(that)
-  override def union(that: Set[A]): This = self.union(that)
-  override def | (that: Set[A]): This = self.|(that)
-  override def diff(that: Set[A]): This = self.diff(that)
-  override def &~(that: Set[A]): This = self.&~(that)
-  override def subsetOf(that: Set[A]): Boolean = self.subsetOf(that)
+  override def intersect(that: GenSet[A]) = self.intersect(that)
+  override def &(that: GenSet[A]): This = self.&(that)
+  override def union(that: GenSet[A]): This = self.union(that)
+  override def | (that: GenSet[A]): This = self.|(that)
+  override def diff(that: GenSet[A]): This = self.diff(that)
+  override def &~(that: GenSet[A]): This = self.&~(that)
+  override def subsetOf(that: GenSet[A]): Boolean = self.subsetOf(that)
 }

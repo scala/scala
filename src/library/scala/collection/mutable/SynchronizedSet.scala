@@ -66,7 +66,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.remove(elem)
   }
 
-  override def intersect(that: scala.collection.Set[A]) = synchronized {
+  override def intersect(that: scala.collection.GenSet[A]) = synchronized {
     super.intersect(that)
   }
 
@@ -74,7 +74,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.clear
   }
 
-  override def subsetOf(that: scala.collection.Set[A]) = synchronized {
+  override def subsetOf(that: scala.collection.GenSet[A]) = synchronized {
     super.subsetOf(that)
   }
 

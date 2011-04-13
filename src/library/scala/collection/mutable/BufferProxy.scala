@@ -65,7 +65,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
               "Use `clone() ++=` if you intend to create a new collection.")
-  override def ++(xs: TraversableOnce[A]): Buffer[A] = self.++(xs)
+  override def ++(xs: GenTraversableOnce[A]): Buffer[A] = self.++(xs)
 
   /** Appends a number of elements provided by a traversable object.
    *

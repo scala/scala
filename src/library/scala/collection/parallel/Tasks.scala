@@ -44,7 +44,7 @@ trait Tasks {
     def leaf(result: Option[R])
 
     /** A result that can be accessed once the task is completed. */
-    @volatile var result: R
+    var result: R
 
     /** Decides whether or not this task should be split further. */
     def shouldSplitFurther: Boolean

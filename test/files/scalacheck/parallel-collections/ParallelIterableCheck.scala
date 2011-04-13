@@ -71,11 +71,11 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     (inst, fromTraversable(inst), modif)
   }
 
-  def areEqual(t1: Traversable[T], t2: Traversable[T]) = if (hasStrictOrder) {
+  def areEqual(t1: AnyTraversable[T], t2: AnyTraversable[T]) = if (hasStrictOrder) {
     t1 == t2 && t2 == t1
   } else (t1, t2) match { // it is slightly delicate what `equal` means if the order is not strict
-    case (m1: Map[_, _], m2: Map[_, _]) => m1 == m2 && m2 == m1
-    case (i1: Iterable[_], i2: Iterable[_]) =>
+    case (m1: AnyMap[_, _], m2: AnyMap[_, _]) => m1 == m2 && m2 == m1
+    case (i1: AnyIterable[_], i2: AnyIterable[_]) =>
       val i1s = i1.toSet
       val i2s = i2.toSet
       i1s == i2s && i2s == i1s

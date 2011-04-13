@@ -24,6 +24,7 @@ import generic._
  */
 trait Set[A] extends (A => Boolean)
                 with Iterable[A]
+                with GenSet[A]
                 with GenericSetTemplate[A, Set]
                 with SetLike[A, Set[A]] {
   override def companion: GenericCompanion[Set] = Set

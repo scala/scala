@@ -14,6 +14,7 @@ package scala.collection.parallel
 
 
 import scala.collection.Map
+import scala.collection.GenMap
 import scala.collection.mutable.Builder
 import scala.collection.generic.ParMapFactory
 import scala.collection.generic.GenericParMapTemplate
@@ -35,7 +36,7 @@ import scala.collection.generic.CanCombineFrom
  *  @since 2.9
  */
 trait ParMap[K, +V]
-extends Map[K, V]
+extends GenMap[K, V]
    with GenericParMapTemplate[K, V, ParMap]
    with ParIterable[(K, V)]
    with ParMapLike[K, V, ParMap[K, V], Map[K, V]]
@@ -44,7 +45,9 @@ self =>
 
   def mapCompanion: GenericParMapCompanion[ParMap] = ParMap
 
-  override def empty: ParMap[K, V] = new mutable.ParHashMap[K, V]
+  //protected[this] override def newCombiner: Combiner[(K, V), ParMap[K, V]] = ParMap.newCombiner[K, V]
+
+  def empty: ParMap[K, V] = new mutable.ParHashMap[K, V]
 
   override def stringPrefix = "ParMap"
 }

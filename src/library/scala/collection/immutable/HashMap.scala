@@ -33,7 +33,7 @@ import parallel.immutable.ParHashMap
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(2L)
-class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with CustomParallelizable[(A, B), ParHashMap[A, B]] with Serializable {
+class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Serializable with CustomParallelizable[(A, B), ParHashMap[A, B]] {
 
   override def size: Int = 0
 

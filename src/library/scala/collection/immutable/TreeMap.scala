@@ -110,8 +110,8 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
    *
    *  @param xs     the traversable object.
    */
-  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): TreeMap[A, B1] =
-    ((repr: TreeMap[A, B1]) /: xs) (_ + _)
+  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): TreeMap[A, B1] =
+    ((repr: TreeMap[A, B1]) /: xs.seq) (_ + _)
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.

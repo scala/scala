@@ -232,7 +232,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   override /*IterableLike*/
-  def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
+  def sameElements[B >: A](that: GenIterable[B]): Boolean = that match {
     case that1: LinearSeq[_] =>
       var these = this
       var those = that1
