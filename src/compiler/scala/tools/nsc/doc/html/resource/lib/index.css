@@ -2,7 +2,7 @@
 	color: inherit;
 	font-size: 10pt;
 	text-decoration: none;
-	font-family: sans-serif;
+	font-family: Arial;
 	border-width: 0px;
 	padding: 0px;
 	margin: 0px;
@@ -20,9 +20,13 @@ h1 {
 	display: none;
 }
 
-.letters {
+/*.letters {
+  font-family: monospace;
+  font-size: 2pt;
   padding: 5px;
-}
+  background-color: #DADADA;
+  text-shadow: #ffffff 0 1px 0;
+}*/
 
 #library {
     display: none;
@@ -40,14 +44,68 @@ h1 {
 #filter {
 	position: absolute;
 	display: block;
-	padding: 5px;
+/*	padding: 5px;*/
 	right: 0;
 	left: 0;
 	top: 0;
-	background-color: #DADADA;
+        background-image:url('filterbg.gif');
+        background-repeat:repeat-x;
+        background-color: #ededee; /* light gray */
+	/*background-color: #DADADA;*/
+        border:1px solid #bbbbbb;
+        border-top:0;
+        border-left:0;
+        border-right:0;
 }
 
 #textfilter {
+	position: relative;
+	display: block;
+        height: 20px;
+	margin-top: 5px;
+        margin-bottom: 5px;
+}
+
+#textfilter > .pre {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 23px;
+    width: 21px;
+    background: url("filter_box_left.png");
+}
+
+#textfilter > .input {
+	display: block;
+    position: absolute;
+    top: 0;
+    right: 20px;
+    left: 20px;
+}
+
+#textfilter > .input > input {
+	height: 21px;
+	padding: 1px;
+ 	font-weight: bold;
+	color: #000000;
+	background-color: white;
+        background: url("filterboxbarbg.png");
+        background-repeat:repeat-x;
+        width: 100%;
+}
+
+#textfilter > .post {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 23px;
+    width: 21px;
+    background: url("filter_box_right.png");
+}
+
+/*#textfilter {
 	position: relative;
 	display: block;
     height: 20px;
@@ -89,17 +147,20 @@ h1 {
     height: 20px;
     width: 20px;
     background: url("filter_box_right.png");
-}
+}*/
 
 #focusfilter {
 	position: relative;
+        text-align: center;
 	display: block;
 	padding: 5px;
-	background-color: pink;
+	background-color: #fffebd; /* light yellow*/
+        text-shadow: #ffffff 0 1px 0;
 }
 
 #focusfilter .focuscoll {
 	font-weight: bold;
+        text-shadow: #ffffff 0 1px 0;
 }
 
 #focusfilter img {
@@ -111,14 +172,41 @@ h1 {
   position: relative;
   display: block;
   padding: 5px;
-  background-color: #999;
+/*  background-color: #999;*/
   text-align: center;
 }
 
-
 #kindfilter > a {
- color: white; 
- text-decoration: underline;
+ color: black; 
+/* text-decoration: underline;*/
+ text-shadow: #ffffff 0 1px 0;
+
+}
+
+#kindfilter > a:hover {
+ color: #4C4C4C; 
+ text-decoration: none;
+ text-shadow: #ffffff 0 1px 0;
+
+}
+
+#letters {
+  position: relative;
+  text-align: center;
+  padding-bottom: 5px;
+  border:1px solid #bbbbbb;
+  border-top:0;
+  border-left:0;
+  border-right:0;
+}
+
+#letters > a {
+/*  font-family: monospace;*/
+  color: #858484;
+  font-weight: bold;
+  font-size: 8pt;
+  text-shadow: #ffffff 0 1px 0;
+  padding-right: 2px;
 }
   
 #tpl {
@@ -149,23 +237,28 @@ h1 {
 }
 
 #tpl .packages > ol {
+  background-color: #dadfe6;
   /*margin-bottom: 5px;*/
 }
 
-#tpl .packages > ol > li {
+/*#tpl .packages > ol > li {
 	margin-bottom: 1px;
-}
+}*/
 
 #tpl .packages > li > h3 {
 	display: block;
 	color: white;
 	font-weight: bold;
 	display: block;
+        text-shadow: #000000 0 1px 0;
 }
 
 #tpl ol > li.pack {
-	background-color: #2C475C;
 	padding: 3px 5px;
+        background: url("packagesbg.gif");
+        background-repeat:repeat-x;
+        min-height: 14px;
+	background-color: #6e808e;
 }
 
 #tpl ol > li {
@@ -174,6 +267,7 @@ h1 {
 
 #tpl .templates > li {
   padding-left: 5px;
+  min-height: 18px;
 }
 
 #tpl ol > li .icon {
@@ -217,7 +311,13 @@ h1 {
 }
 
 .ui-layout-resizer {
-    background: #DDD;
+        background-image:url('filterbg.gif');
+        background-repeat:repeat-x;
+        background-color: #ededee; /* light gray */
+    border:1px solid #bbbbbb;
+    border-top:0;
+    border-bottom:0;
+    border-left: 0;
 }
 
 .ui-layout-toggler {

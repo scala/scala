@@ -375,7 +375,7 @@ LOCAL REFERENCE BUILD (LOCKER)
         <include name="**/*.properties"/>
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
-
+        <include name="**/*.gif"/>
       </fileset>
     </copy>
     <touch file="${build-locker.dir}/compiler.complete" verbose="no"/>
@@ -590,6 +590,7 @@ QUICK BUILD (QUICK)
         <include name="**/*.properties"/>
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
+        <include name="**/*.gif"/>        
       </fileset>
     </copy>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
@@ -1101,6 +1102,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <include name="**/*.properties"/>
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
+        <include name="**/*.gif"/>        
        </fileset>
     </copy>
     <touch file="${build-strap.dir}/compiler.complete" verbose="no"/>

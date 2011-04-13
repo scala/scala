@@ -991,6 +991,32 @@ trait Typers extends Modes {
         doAdapt(pt)
     }
 
+    /** Try o apply an implicit conversion to `qual' to that it contains
+     *  a method `name`. If that's ambiguous try taking arguments into account using `adaptToArguments`.
+     */
+    def adaptToMemberWithArgs(tree: Tree, qual: Tree, name: Name, mode: Int): Tree = {
+      try {
+        adaptToMember(qual, HasMember(name))
+      } catch {
+        case ex: TypeError =>
+        // this happens if implicits are ambiguous; try again with more context info.
+        // println("last ditch effort: "+qual+" . "+name)
+        context.tree match {
+          case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty => // try handling the arguments
+            // println("typing args: "+args)
+            silent(_.typedArgs(args, mode)) match {
+              case args: List[_] =>
+                adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
+              case _ =>
+                throw ex
+            }
+          case _ =>
+            // println("not in an apply: "+context.tree+"/"+tree)
+            throw ex
+        }
+      }
+    }
+
     /** Try to apply an implicit conversion to `qual' to that it contains a
      *  member `name` of arbitrary type.
      *  If no conversion is found, return `qual' unchanged.
@@ -3452,8 +3478,6 @@ trait Typers extends Modes {
        *  @return     ...
        */
       def typedSelect(qual: Tree, name: Name): Tree = {
-
-
         val sym =
           if (tree.symbol != NoSymbol) {
             if (phase.erasedTypes && qual.isInstanceOf[Super])
@@ -3472,26 +3496,9 @@ trait Typers extends Modes {
             member(qual, name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
-          val qual1 = try {
-            adaptToName(qual, name)
-          } catch {
-            case ex: TypeError =>
-              // this happens if implicits are ambiguous; try again with more context info.
-              // println("last ditch effort: "+qual+" . "+name)
-              context.tree match {
-                case Apply(tree1, args) if tree1 eq tree => // try handling the arguments
-                  // println("typing args: "+args)
-                  silent(_.typedArgs(args, mode)) match {
-                    case args: List[_] =>
-                      adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
-                    case _ =>
-                      throw ex
-                  }
-                case _ =>
-                  // println("not in an apply: "+context.tree+"/"+tree)
-                  throw ex
-              }
-          }
+          val qual1 =
+            if (member(qual, name) != NoSymbol) qual
+            else adaptToMemberWithArgs(tree, qual, name, mode)
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
 
@@ -3567,6 +3574,12 @@ trait Typers extends Modes {
                   qual // you only get to see the wrapped tree after running this check :-p
                 }) setType qual.tpe,
                 name)
+            case accErr: Inferencer#AccessError =>
+              val qual1 =
+                try adaptToMemberWithArgs(tree, qual, name, mode)
+                catch { case _: TypeError => qual }
+              if (qual1 ne qual) typed(Select(qual1, name) setPos tree.pos, mode, pt)
+              else accErr.emit()
             case _ =>
               result
           }
@@ -3713,10 +3726,10 @@ trait Typers extends Modes {
               if (inaccessibleSym eq NoSymbol) {
                 error(tree.pos, "not found: "+decodeWithKind(name, context.owner))
               }
-              else accessError(
+              else new AccessError(
                 tree, inaccessibleSym, context.enclClass.owner.thisType,
                 inaccessibleExplanation
-              )
+              ).emit()
               defSym = context.owner.newErrorSymbol(name)
             }
           }

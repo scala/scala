@@ -81,7 +81,7 @@ private[process] trait ProcessBuilderImpl {
     override def canPipeTo = true
   }
 
-  private[process] abstract class AbstractBuilder extends ProcessBuilder with Sink with Source {
+  private[scala] abstract class AbstractBuilder extends ProcessBuilder with Sink with Source {
     protected def toSource = this
     protected def toSink = this
 
@@ -114,6 +114,13 @@ private[process] trait ProcessBuilderImpl {
     def !<                     = run(true).exitValue()
     def !<(log: ProcessLogger) = runBuffered(log, true)
 
+    /** Constructs a new builder which runs this command with all input/output threads marked
+     *  as daemon threads.  This allows the creation of a long running process while still
+     *  allowing the JVM to exit normally.
+     *
+     *  Note: not in the public API because it's not fully baked, but I need the capability
+     *  for fsc.
+     */
     def daemonized(): ProcessBuilder = new DaemonBuilder(this)
 
     private[this] def slurp(log: Option[ProcessLogger], withIn: Boolean): String = {

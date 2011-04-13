@@ -72,11 +72,21 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, rhs) => atOwner(tree.symbol) {
           val res = if (!sym.owner.isClass && sym.isLazy) {
-            val enclosingDummyOrMethod =
-              if (sym.enclMethod == NoSymbol) sym.owner else sym.enclMethod
-            val idx = lazyVals(enclosingDummyOrMethod)
-            lazyVals(enclosingDummyOrMethod) = idx + 1
-            val rhs1 = mkLazyDef(enclosingDummyOrMethod, super.transform(rhs), idx, sym)
+            val enclosingClassOrDummyOrMethod = {
+              val enclMethod = sym.enclMethod
+
+              if (enclMethod != NoSymbol ) {
+                val enclClass = sym.enclClass
+                if (enclClass != NoSymbol && enclMethod == enclClass.enclMethod)
+                  enclClass
+                else
+                  enclMethod
+              } else
+                sym.owner
+            }
+            val idx = lazyVals(enclosingClassOrDummyOrMethod)
+            lazyVals(enclosingClassOrDummyOrMethod) = idx + 1
+            val rhs1 = mkLazyDef(enclosingClassOrDummyOrMethod, super.transform(rhs), idx, sym)
             sym.resetFlag((if (lazyUnit(sym)) 0 else LAZY) | ACCESSOR)
             rhs1
           } else
@@ -103,7 +113,18 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
               case _ =>
                 stat
             }
-          treeCopy.Template(tree, parents, self, stats)
+          val innerClassBitmaps = if (!added && currentOwner.isClass && bitmaps.contains(currentOwner)) {
+              // add bitmap to inner class if necessary
+                val toAdd0 = bitmaps(currentOwner).map(s => typed(ValDef(s, ZERO)))
+                toAdd0.foreach(t => {
+                    if (currentOwner.info.decl(t.symbol.name) == NoSymbol) {
+                      t.symbol.setFlag(PROTECTED)
+                      currentOwner.info.decls.enter(t.symbol)
+                    }
+                })
+                toAdd0
+            } else List()
+          treeCopy.Template(tree, parents, self, innerClassBitmaps ++ stats)
         }
 
         case ValDef(mods, name, tpt, rhs0) if (!sym.owner.isModule && !sym.owner.isClass) =>
@@ -186,10 +207,13 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *    ()
      *  }
      */
-    private def mkLazyDef(meth: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): Tree = {
-      val bitmapSym           = getBitmapFor(meth, offset)
+    private def mkLazyDef(methOrClass: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): Tree = {
+      val bitmapSym           = getBitmapFor(methOrClass, offset)
       val mask                = LIT(1 << (offset % FLAGS_PER_WORD))
-      def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask), UNIT)
+      val bitmapRef = if (methOrClass.isClass) Select(This(methOrClass), bitmapSym) else Ident(bitmapSym)
+
+      def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask, bitmapRef), UNIT)
+
 
       val (block, res) = tree match {
         case Block(List(assignment), res) if !lazyUnit(lazyVal) =>
@@ -198,16 +222,16 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           (mkBlock(rhs),         UNIT)
       }
 
-      val cond = (Ident(bitmapSym) INT_& mask) INT_== ZERO
+      val cond = (bitmapRef INT_& mask) INT_== ZERO
 
       atPos(tree.pos)(localTyper.typed {
-        def body = gen.mkDoubleCheckedLocking(meth.enclClass, cond, List(block), Nil)
+        def body = gen.mkDoubleCheckedLocking(methOrClass.enclClass, cond, List(block), Nil)
         BLOCK(body, res)
       })
     }
 
-    private def mkSetFlag(bmp: Symbol, mask: Tree): Tree =
-      Ident(bmp) === (Ident(bmp) INT_| mask)
+    private def mkSetFlag(bmp: Symbol, mask: Tree, bmpRef: Tree): Tree =
+      bmpRef === (bmpRef INT_| mask)
 
     val bitmaps = new mutable.HashMap[Symbol, List[Symbol]] {
       override def default(meth: Symbol) = Nil
