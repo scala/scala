@@ -3575,7 +3575,9 @@ trait Typers extends Modes {
                 }) setType qual.tpe,
                 name)
             case accErr: Inferencer#AccessError =>
-              val qual1 = adaptToMemberWithArgs(tree, qual, name, mode)
+              val qual1 =
+                try adaptToMemberWithArgs(tree, qual, name, mode)
+                catch { case _: TypeError => qual }
               if (qual1 ne qual) typed(Select(qual1, name) setPos tree.pos, mode, pt)
               else accErr.emit()
             case _ =>
