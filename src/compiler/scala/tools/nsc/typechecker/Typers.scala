@@ -1002,7 +1002,7 @@ trait Typers extends Modes {
         // this happens if implicits are ambiguous; try again with more context info.
         // println("last ditch effort: "+qual+" . "+name)
         context.tree match {
-          case Apply(tree1, args) if tree1 eq tree => // try handling the arguments
+          case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty => // try handling the arguments
             // println("typing args: "+args)
             silent(_.typedArgs(args, mode)) match {
               case args: List[_] =>
