@@ -1172,8 +1172,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
           case LOAD_LOCAL(local) =>
             jcode.emitLOAD(indexOf(local), javaType(local.kind))
 
-          case lf @ LOAD_FIELD(field, isStatic) =>
-            var owner = javaName(lf.hostClass)
+          case LOAD_FIELD(field, isStatic) =>
+            var owner = javaName(field.owner)
             if (settings.debug.value)
               log("LOAD_FIELD with owner: " + owner +
                   " flags: " + Flags.flagsToString(field.owner.flags))
