@@ -1,7 +1,6 @@
 import collection._
 
-
-object Foo {
+object Test {
   def main(args: Array[String]) {
     for (i <- 0 until 2000) {
       foo((0 until 10000).toSeq.par)
