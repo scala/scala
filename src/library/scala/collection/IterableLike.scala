@@ -247,20 +247,20 @@ self =>
 
   override /*TraversableLike*/ def view(from: Int, until: Int) = view.slice(from, until)
 
-  @deprecated("use `iterator' instead")
+  @deprecated("use `iterator' instead", "2.8.0")
   def elements = iterator
 
-  @deprecated("use `head' instead") def first: A = head
+  @deprecated("use `head' instead", "2.8.0") def first: A = head
 
   /** `None` if iterable is empty.
    */
-  @deprecated("use `headOption' instead") def firstOption: Option[A] = headOption
+  @deprecated("use `headOption' instead", "2.8.0") def firstOption: Option[A] = headOption
 
   /**
    * returns a projection that can be used to call non-strict `filter`,
    * `map`, and `flatMap` methods that build projections
    * of the collection.
    */
-  @deprecated("use `view' instead")
+  @deprecated("use `view' instead", "2.8.0")
   def projection = view
 }

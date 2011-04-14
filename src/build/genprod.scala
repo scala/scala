@@ -238,7 +238,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
     curryComment +
     "  def curried: %s => R = {\n    %s\n  }\n".format(
       targs mkString " => ", body
-    ) + """  @deprecated("Use 'curried' instead")""" + "\n  def curry = curried\n"
+    ) + """  @deprecated("Use 'curried' instead", "2.8.0")""" + "\n  def curry = curried\n"
   }
 
   override def moreMethods = curryMethod + tupleMethod
@@ -280,7 +280,7 @@ object TupleTwo extends Tuple(2)
    */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
-  @deprecated("Use `zipped` instead.")
+  @deprecated("Use `zipped` instead.", "2.9")
   def zip[Repr1, El1, El2, To](implicit w1:   T1 => TLike[El1, Repr1],
                                         w2:   T2 => Iterable[El2],
                                         cbf1: CBF[Repr1, (El1, El2), To]): To = {

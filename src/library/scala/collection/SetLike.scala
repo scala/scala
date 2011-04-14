@@ -147,7 +147,7 @@ self =>
    *
    *  @param that the set to intersect with
    */
-  @deprecated("use & instead")
+  @deprecated("use & instead", "2.8.0")
   def ** (that: GenSet[A]): This = &(that)
 
   /** Computes the union between of set and another set.

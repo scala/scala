@@ -13,5 +13,5 @@ package scala
 /**
  * @since 2.0
  */
-@deprecated("Use a custom Error class instead")
+@deprecated("Use a custom Error class instead", "2.8.0")
 final class NotDefinedError(msg: String) extends Error("not defined: " + msg)

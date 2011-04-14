@@ -14,7 +14,7 @@ package scala
  *
  *  @since 2.0
  */
-@deprecated("use iterator.zipWithIndex instead")
+@deprecated("use iterator.zipWithIndex instead", "2.8.0")
 trait CountedIterator[+A] extends Iterator[A] {
   /** counts the elements in this iterator; counts start at 0
    */

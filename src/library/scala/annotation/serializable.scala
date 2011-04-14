@@ -11,5 +11,5 @@ package scala.annotation
 /**
  * An annotation that designates the class to which it is applied as serializable
  */
-@deprecated("instead of `@serializable class C`, use `class C extends Serializable`")
+@deprecated("instead of `@serializable class C`, use `class C extends Serializable`", "2.9")
 class serializable extends annotation.StaticAnnotation

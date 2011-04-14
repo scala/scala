@@ -93,7 +93,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
 
   @deprecated(
     "Use += instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() +=' if you intend to create a new collection."
+    "Use `clone() +=' if you intend to create a new collection.", "2.8.0"
   )
   def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
 
@@ -104,7 +104,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    */
   @deprecated(
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() ++=' if you intend to create a new collection."
+    "Use `clone() ++=' if you intend to create a new collection.", "2.8.0"
   )
   def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
 
@@ -163,7 +163,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return   the element with the highest priority.
    */
-  @deprecated("Use `head` instead.")
+  @deprecated("Use `head` instead.", "2.9.0")
   def max: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Returns the element with the highest priority in the queue,

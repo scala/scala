@@ -59,16 +59,16 @@ object Predef extends LowPriorityImplicits {
 
   // Deprecated
 
-  @deprecated("Use sys.error(message) instead")
+  @deprecated("Use sys.error(message) instead", "2.9")
   def error(message: String): Nothing = sys.error(message)
 
-  @deprecated("Use sys.exit() instead")
+  @deprecated("Use sys.exit() instead", "2.9")
   def exit(): Nothing = sys.exit()
 
-  @deprecated("Use sys.exit(status) instead")
+  @deprecated("Use sys.exit(status) instead", "2.9")
   def exit(status: Int): Nothing = sys.exit(status)
 
-  @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead")
+  @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead", "2.9")
   def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
 
   // errors and asserts -------------------------------------------------
@@ -358,7 +358,7 @@ object Predef extends LowPriorityImplicits {
   }
 
   // less useful due to #2781
-  @deprecated("Use From => To instead")
+  @deprecated("Use From => To instead", "2.9")
   sealed abstract class <%<[-From, +To] extends (From => To) with Serializable
   object <%< {
     implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}

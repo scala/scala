@@ -40,10 +40,10 @@ object Seq extends SeqFactory[Seq] {
 
   def newBuilder[A]: Builder[A, Seq[A]] = immutable.Seq.newBuilder[A]
 
-  @deprecated("use View instead")
+  @deprecated("use View instead", "2.8.0")
   type Projection[A] = SeqView[A, Coll]
 
-  @deprecated("use Seq(value) instead")
+  @deprecated("use Seq(value) instead", "2.8.0")
   def singleton[A](value: A) = Seq(value)
 }
 

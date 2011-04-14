@@ -50,13 +50,13 @@ object Iterable extends TraversableFactory[Iterable] {
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
   /** The minimum element of a non-empty sequence of ordered elements */
-  @deprecated("use <seq>.min instead, where <seq> is the sequence for which you want to compute the minimum")
+  @deprecated("use <seq>.min instead, where <seq> is the sequence for which you want to compute the minimum", "2.8.0")
   def min[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.min
 
   /** The maximum element of a non-empty sequence of ordered elements */
-  @deprecated("use <seq>.max instead, where <seq> is the sequence for which you want to compute the maximum")
+  @deprecated("use <seq>.max instead, where <seq> is the sequence for which you want to compute the maximum", "2.8.0")
   def max[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.max
 
-  @deprecated("use View instead")
+  @deprecated("use View instead", "2.8.0")
   type Projection[A] = IterableView[A, Coll]
 }

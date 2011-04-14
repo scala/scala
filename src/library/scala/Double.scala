@@ -129,7 +129,7 @@ object Double extends AnyValCompanion {
   final val PositiveInfinity = java.lang.Double.POSITIVE_INFINITY
   final val NegativeInfinity = java.lang.Double.NEGATIVE_INFINITY
 
-  @deprecated("use Double.MinPositiveValue instead")
+  @deprecated("use Double.MinPositiveValue instead", "2.9")
   final val Epsilon  = MinPositiveValue
 
   /** The negative number with the greatest (finite) absolute value which is representable

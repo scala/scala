@@ -220,7 +220,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param start  the first element to append
    *  @param len    the number of elements to append
    */
-  @deprecated("replace by: `buf ++= src.view(start, end)`")
+  @deprecated("replace by: `buf ++= src.view(start, end)`", "2.8.0")
   def ++=(src: Array[A], start: Int, len: Int) {
     var i = start
     val end = i + len
@@ -239,7 +239,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elem  the element to add.
    */
   @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() +=' if you intend to create a new collection.")
+              "Use `clone() +=' if you intend to create a new collection.", "2.8.0")
   def + (elem: A): This = { +=(elem); repr }
 
   /** Adds two or more elements to this collection and returns
@@ -253,7 +253,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elems the remaining elements to add.
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=' if you intend to create a new collection.")
+              "Use `clone() ++=' if you intend to create a new collection.", "2.8.0")
   def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
     repr

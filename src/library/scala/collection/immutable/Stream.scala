@@ -600,7 +600,8 @@ object Stream extends SeqFactory[Stream] {
       else Some((xs.head, xs.tail))
   }
 
-  @deprecated("use #:: instead") lazy val lazy_:: = #::
+  @deprecated("use #:: instead", "2.8.0")
+  lazy val lazy_:: = #::
 
   /** An alternative way of building and matching Streams using Stream.cons(hd, tl).
    */
@@ -701,17 +702,17 @@ object Stream extends SeqFactory[Stream] {
   /** A stream containing all elements of a given iterator, in the order they are produced.
    *  @param it   The iterator producing the stream's elements
    */
-  @deprecated("use it.toStream instead")
+  @deprecated("use it.toStream instead", "2.8.0")
   def fromIterator[A](it: Iterator[A]): Stream[A] = it.toStream
 
   /** The concatenation of a sequence of streams
    */
-  @deprecated("use xs.flatten instead")
+  @deprecated("use xs.flatten instead", "2.8.0")
   def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.iterator)
 
   /** The concatenation of all streams returned by an iterator
    */
-  @deprecated("use xs.toStream.flatten instead")
+  @deprecated("use xs.toStream.flatten instead", "2.8.0")
   def concat[A](xs: Iterator[Stream[A]]): Stream[A] = xs.toStream.flatten //(conforms[Stream[A], scala.collection.Traversable[A]])
 
   /**
@@ -725,7 +726,7 @@ object Stream extends SeqFactory[Stream] {
    * @param step the increment function of the stream, must be monotonically increasing or decreasing
    * @return the stream starting at value <code>start</code>.
    */
-  @deprecated("use `iterate' instead.")
+  @deprecated("use `iterate' instead.", "2.8.0")
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] =
     iterate(start, end - start)(step)
 
@@ -735,7 +736,7 @@ object Stream extends SeqFactory[Stream] {
    * @param elem the element composing the resulting stream
    * @return the stream containing an infinite number of elem
    */
-  @deprecated("use `continually' instead")
+  @deprecated("use `continually' instead", "2.8.0")
   def const[A](elem: A): Stream[A] = cons(elem, const(elem))
 
   /** Create a stream containing several copies of an element.
@@ -744,7 +745,7 @@ object Stream extends SeqFactory[Stream] {
    *  @param elem the element composing the resulting stream
    *  @return     the stream composed of n elements all equal to elem
    */
-  @deprecated("use fill(n, elem) instead")
+  @deprecated("use fill(n, elem) instead", "2.8.0")
   def make[A](n: Int, elem: A): Stream[A] = fill(n)(elem)
 }
 

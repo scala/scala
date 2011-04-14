@@ -17,5 +17,5 @@ package scala
  *  @author  Martin Odersky
  *  @version 1.0, 08/08/2003
  */
-@deprecated("use `scala.Option` or `scala.Some` instead")
+@deprecated("use `scala.Option` or `scala.Some` instead", "2.9")
 case class Cell[+T](elem: T)

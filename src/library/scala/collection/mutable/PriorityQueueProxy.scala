@@ -80,7 +80,7 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    *
    *  @return   the element with the highest priority.
    */
-  @deprecated("Use `head` instead.")
+  @deprecated("Use `head` instead.", "2.9.0")
   override def max: A = self.max
 
   /** Removes all elements from the queue. After this operation is completed,
