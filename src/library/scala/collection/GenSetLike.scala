@@ -6,11 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
-
-
-
 
 /** A template trait for sets which may possibly
  *  have their operations implemented in parallel.
@@ -19,11 +15,18 @@ package scala.collection
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait GenSetLike[A, +Repr] extends GenIterableLike[A, Repr] with (A => Boolean) with Equals with Parallelizable[A, parallel.ParSet[A]] {
-  def seq: Set[A]
+trait GenSetLike[A, +Repr]
+       extends GenIterableLike[A, Repr]
+          with (A => Boolean)
+          with Equals
+          with Parallelizable[A, parallel.ParSet[A]] {
+
+  def iterator: Iterator[A]
   def contains(elem: A): Boolean
   def +(elem: A): Repr
   def -(elem: A): Repr
+
+  def seq: Set[A]
 
   /** Tests if some element is contained in this set.
    *

@@ -143,9 +143,6 @@ import annotation.unchecked.uncheckedVariance
  *  produce data-races, deadlocks or invalidation of state if care is not taken. It is up to the programmer
  *  to either avoid using side-effects or to use some form of synchronization when accessing mutable data.
  *
- *  @define undefinedorder
- *  The order in which the operations on elements are performed is unspecified and may be nondeterministic.
- *
  *  @define pbfinfo
  *  An implicit value of class `CanCombineFrom` which determines the
  *  result class `That` from the current representation type `Repr` and

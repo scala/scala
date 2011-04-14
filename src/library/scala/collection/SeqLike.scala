@@ -58,12 +58,6 @@ import parallel.ParSeq
  *    and the new element type `B`.
  *  @define orderDependent
  *  @define orderDependentFold
- *  @define mayNotTerminateInf
- *
- *    Note: may not terminate for infinite-sized collections.
- *  @define willNotTerminateInf
- *
- *    Note: will not terminate for infinite-sized collections.
  */
 trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] with Parallelizable[A, ParSeq[A]] { self =>
 

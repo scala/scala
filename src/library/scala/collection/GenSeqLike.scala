@@ -8,14 +8,17 @@
 
 package scala.collection
 
-
-
 import generic._
 
-
-
-/** A template trait for all sequences which may possibly
- *  have their operations implemented in parallel.
+/** A template trait for all sequences which may be traversed
+ *  in parallel.
+ *
+ *  @define mayNotTerminateInf
+ *
+ *    Note: may not terminate for infinite-sized collections.
+ *  @define willNotTerminateInf
+ *
+ *    Note: will not terminate for infinite-sized collections.
  *
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec

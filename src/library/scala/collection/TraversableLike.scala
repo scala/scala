@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import generic._
@@ -16,7 +14,6 @@ import annotation.tailrec
 import annotation.migration
 import annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
-
 
 /** A template trait for traversable collections of type `Traversable[A]`.
  *
@@ -68,27 +65,6 @@ import parallel.ParIterable
  *
  *  @define Coll Traversable
  *  @define coll traversable collection
- *  @define thatinfo the class of the returned collection. Where possible, `That` is
- *    the same class as the current collection class `Repr`, but this
- *    depends on the element type `B` being admissible for that class,
- *    which means that an implicit instance of type `CanBuildFrom[Repr, B, That]`
- *    is found.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines
- *    the result class `That` from the current representation type `Repr` and
- *    and the new element type `B`.
- *  @define orderDependent
- *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
- *  @define orderDependentFold
- *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
- *    or the operator is associative and commutative.
- *  @define mayNotTerminateInf
- *
- *    Note: may not terminate for infinite-sized collections.
- *  @define willNotTerminateInf
- *
- *    Note: will not terminate for infinite-sized collections.
  */
 trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
                                     with FilterMonadic[A, Repr]

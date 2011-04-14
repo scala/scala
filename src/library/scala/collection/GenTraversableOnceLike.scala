@@ -8,21 +8,22 @@
 
 package scala.collection
 
-
-
-
-/** A template trait for all objects traversable once or more which may possibly
- *  have their traversal occur in parallel.
+/** A template trait for all traversable-once objects which may be
+ *  traversed in parallel.
  *
  *  Methods in this trait are either abstract or can be implemented in terms
  *  of other methods.
  *
+ *  @define Coll GenTraversableOnce
+ *  @define coll collection or iterator
+ *  @define possiblyparinfo
+ *  This trait may possibly have operations implemented in parallel.
+ *  @define undefinedorder
+ *  The order in which operations are performed on elements is unspecified and may be nondeterministic.
+ *
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec
  *  @since 2.9
- *
- *  @define possiblyparinfo
- *  This trait may possibly have operations implemented in parallel.
  */
 trait GenTraversableOnceLike[+A] {
 

@@ -8,11 +8,7 @@
 
 package scala.collection
 
-
-
-import generic._
-
-
+import generic.{ CanBuildFrom => CBF, _ }
 
 /** A template trait for all iterable collections which may possibly
  *  have their operations implemented in parallel.
@@ -30,14 +26,13 @@ trait GenIterableLike[+A, +Repr] extends GenTraversableLike[A, Repr] {
 
   def sameElements[A1 >: A](that: GenIterable[A1]): Boolean
 
-  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That
+  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CBF[Repr, (A1, B), That]): That
 
-  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That
+  def zipWithIndex[A1 >: A, That](implicit bf: CBF[Repr, (A1, Int), That]): That
 
-  def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That
+  def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CBF[Repr, (A1, B), That]): That
 
   def isEmpty = iterator.isEmpty
 
   def head = iterator.next
-
 }

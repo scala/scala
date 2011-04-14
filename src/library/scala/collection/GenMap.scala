@@ -8,9 +8,7 @@
 
 package scala.collection
 
-
 import generic._
-import mutable.Builder
 
 
 /** A trait for all traversable collections which may possibly

@@ -7,7 +7,6 @@
 \*                                                                      */
 
 
-
 package scala.collection
 package mutable
 

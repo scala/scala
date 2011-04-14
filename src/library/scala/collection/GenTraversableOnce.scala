@@ -8,11 +8,8 @@
 
 package scala.collection
 
-
-
-
-/** A trait for all objects traversable once or more which may possibly
- *  have their traversal occur in parallel.
+/** A trait for all traversable-once objects which may be
+ *  traversed in parallel.
  *
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec

@@ -8,11 +8,8 @@
 
 package scala.collection
 
-
-
-
-/** A trait for all traversable collections which may possibly
- *  have their operations implemented in parallel.
+/** A trait for all maps upon which operations may be
+ *  implemented in parallel.
  *
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec

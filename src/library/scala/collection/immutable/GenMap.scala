@@ -6,14 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
-
 import generic._
-import mutable.Builder
 
 
 /** A base trait for maps that can be mutated.
