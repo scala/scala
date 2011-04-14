@@ -67,7 +67,7 @@ import scala.compat.Platform.currentTime
  *  @author  Matthias Zenger
  *  @version 1.0, 10/09/2003
  */
-@deprecated("use App instead", "2.9")
+@deprecated("use App instead", "2.9.0")
 trait Application {
 
   /** The time when the execution of this program started, in milliseconds since 1

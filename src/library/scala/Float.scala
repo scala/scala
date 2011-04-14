@@ -129,7 +129,7 @@ object Float extends AnyValCompanion {
   final val PositiveInfinity = java.lang.Float.POSITIVE_INFINITY
   final val NegativeInfinity = java.lang.Float.NEGATIVE_INFINITY
 
-  @deprecated("use Float.MinPositiveValue instead", "2.9")
+  @deprecated("use Float.MinPositiveValue instead", "2.9.0")
   final val Epsilon  = MinPositiveValue
 
   /** The negative number with the greatest (finite) absolute value which is representable

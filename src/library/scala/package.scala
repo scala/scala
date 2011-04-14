@@ -28,7 +28,7 @@ package object scala {
   type NumberFormatException           = java.lang.NumberFormatException
   type AbstractMethodError             = java.lang.AbstractMethodError
 
-  @deprecated("instead of `@serializable class C`, use `class C extends Serializable`", "2.9")
+  @deprecated("instead of `@serializable class C`, use `class C extends Serializable`", "2.9.0")
   type serializable = annotation.serializable
 
   type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
@@ -75,7 +75,7 @@ package object scala {
 
   val $scope = scala.xml.TopScope
 
-  @deprecated("Use Thread.currentThread instead", "2.9")
+  @deprecated("Use Thread.currentThread instead", "2.9.0")
   def currentThread = java.lang.Thread.currentThread()
 
   // Numeric types which were moved into scala.math.*
@@ -186,12 +186,12 @@ package object scala {
   @deprecated("use IndexedSeq instead", "2.8.0")
   val RandomAccessSeq = scala.collection.IndexedSeq
 
-  @deprecated("use scala.annotation.Annotation instead", "2.9")
+  @deprecated("use scala.annotation.Annotation instead", "2.9.0")
   type Annotation = scala.annotation.Annotation
-  @deprecated("use scala.annotation.ClassfileAnnotation instead", "2.9")
+  @deprecated("use scala.annotation.ClassfileAnnotation instead", "2.9.0")
   type ClassfileAnnotation = scala.annotation.ClassfileAnnotation
-  @deprecated("use scala.annotation.StaticAnnotation instead", "2.9")
+  @deprecated("use scala.annotation.StaticAnnotation instead", "2.9.0")
   type StaticAnnotation = scala.annotation.StaticAnnotation
-  @deprecated("use scala.annotation.TypeConstraint instead", "2.9")
+  @deprecated("use scala.annotation.TypeConstraint instead", "2.9.0")
   type TypeConstraint = scala.annotation.TypeConstraint
 }

@@ -210,11 +210,11 @@ object JavaConverters {
   implicit def seqAsJavaListConverter[A](b : Seq[A]): AsJava[ju.List[A]] =
     new AsJava(seqAsJavaList(b))
 
-  @deprecated("Use bufferAsJavaListConverter instead", "2.9")
+  @deprecated("Use bufferAsJavaListConverter instead", "2.9.0")
   def asJavaListConverter[A](b : mutable.Buffer[A]): AsJava[ju.List[A]] = bufferAsJavaListConverter(b)
-  @deprecated("Use mutableSeqAsJavaListConverter instead", "2.9")
+  @deprecated("Use mutableSeqAsJavaListConverter instead", "2.9.0")
   def asJavaListConverter[A](b : mutable.Seq[A]): AsJava[ju.List[A]] = mutableSeqAsJavaListConverter(b)
-  @deprecated("Use seqAsJavaListConverter instead", "2.9")
+  @deprecated("Use seqAsJavaListConverter instead", "2.9.0")
   def asJavaListConverter[A](b : Seq[A]): AsJava[ju.List[A]] = seqAsJavaListConverter(b)
 
   /**
@@ -233,7 +233,7 @@ object JavaConverters {
   implicit def mutableSetAsJavaSetConverter[A](s : mutable.Set[A]): AsJava[ju.Set[A]] =
     new AsJava(mutableSetAsJavaSet(s))
 
-  @deprecated("Use mutableSetAsJavaSetConverter instead", "2.9")
+  @deprecated("Use mutableSetAsJavaSetConverter instead", "2.9.0")
   def asJavaSetConverter[A](s : mutable.Set[A]): AsJava[ju.Set[A]] = mutableSetAsJavaSetConverter(s)
 
   /**
@@ -252,7 +252,7 @@ object JavaConverters {
   implicit def setAsJavaSetConverter[A](s : Set[A]): AsJava[ju.Set[A]] =
     new AsJava(setAsJavaSet(s))
 
-  @deprecated("Use setAsJavaSetConverter instead", "2.9")
+  @deprecated("Use setAsJavaSetConverter instead", "2.9.0")
   def asJavaSetConverter[A](s : Set[A]): AsJava[ju.Set[A]] = setAsJavaSetConverter(s)
 
   /**
@@ -271,7 +271,7 @@ object JavaConverters {
   implicit def mutableMapAsJavaMapConverter[A, B](m : mutable.Map[A, B]): AsJava[ju.Map[A, B]] =
     new AsJava(mutableMapAsJavaMap(m))
 
-  @deprecated("use mutableMapAsJavaMapConverter instead", "2.9")
+  @deprecated("use mutableMapAsJavaMapConverter instead", "2.9.0")
   def asJavaMapConverter[A, B](m : mutable.Map[A, B]): AsJava[ju.Map[A, B]] = mutableMapAsJavaMapConverter(m)
 
   /**
@@ -306,7 +306,7 @@ object JavaConverters {
   implicit def mapAsJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] =
     new AsJava(mapAsJavaMap(m))
 
-  @deprecated("Use mapAsJavaMapConverter instead", "2.9")
+  @deprecated("Use mapAsJavaMapConverter instead", "2.9.0")
   def asJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] = mapAsJavaMapConverter(m)
 
   /**
@@ -373,7 +373,7 @@ object JavaConverters {
   implicit def iterableAsScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] =
     new AsScala(iterableAsScalaIterable(i))
 
-  @deprecated("Use iterableAsScalaIterableConverter instead", "2.9")
+  @deprecated("Use iterableAsScalaIterableConverter instead", "2.9.0")
   def asScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] = iterableAsScalaIterableConverter(i)
 
   /**
@@ -389,7 +389,7 @@ object JavaConverters {
   implicit def collectionAsScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] =
     new AsScala(collectionAsScalaIterable(i))
 
-  @deprecated("Use collectionAsScalaIterableConverter instead", "2.9")
+  @deprecated("Use collectionAsScalaIterableConverter instead", "2.9.0")
   def asScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] = collectionAsScalaIterableConverter(i)
 
   /**
@@ -440,7 +440,7 @@ object JavaConverters {
   implicit def mapAsScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] =
     new AsScala(mapAsScalaMap(m))
 
-  @deprecated("Use mapAsScalaMapConverter instead", "2.9")
+  @deprecated("Use mapAsScalaMapConverter instead", "2.9.0")
   def asScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] = mapAsScalaMapConverter(m)
 
   /**
@@ -483,7 +483,7 @@ object JavaConverters {
   implicit def propertiesAsScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
     new AsScala(propertiesAsScalaMap(p))
 
-  @deprecated("Use propertiesAsScalaMapConverter instead", "2.9")
+  @deprecated("Use propertiesAsScalaMapConverter instead", "2.9.0")
   def asScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
     propertiesAsScalaMapConverter(p)
 

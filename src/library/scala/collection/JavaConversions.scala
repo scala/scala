@@ -154,7 +154,7 @@ object JavaConversions {
     case JListWrapper(wrapped) => wrapped
     case _ => new MutableBufferWrapper(b)
   }
-  @deprecated("use bufferAsJavaList instead", "2.9")
+  @deprecated("use bufferAsJavaList instead", "2.9.0")
   def asJavaList[A](b : mutable.Buffer[A]): ju.List[A] = bufferAsJavaList[A](b)
   @deprecated("use bufferAsJavaList instead", "2.8.1")
   def asList[A](b : mutable.Buffer[A]): ju.List[A] = bufferAsJavaList[A](b)
@@ -176,7 +176,7 @@ object JavaConversions {
     case JListWrapper(wrapped) => wrapped
     case _ => new MutableSeqWrapper(b)
   }
-  @deprecated("use mutableSeqAsJavaList instead", "2.9")
+  @deprecated("use mutableSeqAsJavaList instead", "2.9.0")
   def asJavaList[A](b : mutable.Seq[A]): ju.List[A] = mutableSeqAsJavaList[A](b)
   @deprecated("use mutableSeqAsJavaList instead", "2.8.1")
   def asList[A](b : mutable.Seq[A]): ju.List[A] = mutableSeqAsJavaList[A](b)
@@ -199,7 +199,7 @@ object JavaConversions {
     case _ => new SeqWrapper(b)
   }
 
-  @deprecated("use seqAsJavaList instead", "2.9")
+  @deprecated("use seqAsJavaList instead", "2.9.0")
   def asJavaList[A](b : Seq[A]): ju.List[A] = seqAsJavaList[A](b)
   @deprecated("use seqAsJavaList instead", "2.8.1")
   def asList[A](b : Seq[A]): ju.List[A] = seqAsJavaList[A](b)
@@ -222,7 +222,7 @@ object JavaConversions {
     case _ => new MutableSetWrapper(s)
   }
 
-  @deprecated("use mutableSetAsJavaSet instead", "2.9")
+  @deprecated("use mutableSetAsJavaSet instead", "2.9.0")
   def asJavaSet[A](s : mutable.Set[A]): ju.Set[A] = mutableSetAsJavaSet[A](s)
   @deprecated("use mutableSetAsJavaSet instead", "2.8.1")
   def asSet[A](s : mutable.Set[A]): ju.Set[A] = mutableSetAsJavaSet[A](s)
@@ -245,7 +245,7 @@ object JavaConversions {
     case _ => new SetWrapper(s)
   }
 
-  @deprecated("use setAsJavaSet instead", "2.9")
+  @deprecated("use setAsJavaSet instead", "2.9.0")
   def asJavaSet[A](s: Set[A]): ju.Set[A] = setAsJavaSet[A](s)
   @deprecated("use setAsJavaSet instead", "2.8.1")
   def asSet[A](s : Set[A]): ju.Set[A] = setAsJavaSet[A](s)
@@ -269,7 +269,7 @@ object JavaConversions {
     case _ => new MutableMapWrapper(m)
   }
 
-  @deprecated("use mutableMapAsJavaMap instead", "2.9")
+  @deprecated("use mutableMapAsJavaMap instead", "2.9.0")
   def asJavaMap[A, B](m : mutable.Map[A, B]): ju.Map[A, B] = mutableMapAsJavaMap[A, B](m)
   @deprecated("use mutableMapAsJavaMap instead", "2.8.1")
   def asMap[A, B](m : mutable.Map[A, B]): ju.Map[A, B] = mutableMapAsJavaMap[A, B](m)
@@ -315,7 +315,7 @@ object JavaConversions {
     case _ => new MapWrapper(m)
   }
 
-  @deprecated("use mapAsJavaMap instead", "2.9")
+  @deprecated("use mapAsJavaMap instead", "2.9.0")
   def asJavaMap[A, B](m : Map[A, B]): ju.Map[A, B] = mapAsJavaMap[A, B](m)
   @deprecated("use mapAsJavaMap instead", "2.8.1")
   def asMap[A, B](m : Map[A, B]): ju.Map[A, B] = mapAsJavaMap[A, B](m)
@@ -403,7 +403,7 @@ object JavaConversions {
     case _ => JIterableWrapper(i)
   }
 
-  @deprecated("use iterableAsScalaIterable instead", "2.9")
+  @deprecated("use iterableAsScalaIterable instead", "2.9.0")
   def asScalaIterable[A](i : jl.Iterable[A]): Iterable[A] = iterableAsScalaIterable[A](i)
   @deprecated("use iterableAsScalaIterable instead", "2.8.1")
   def asIterable[A](i : jl.Iterable[A]): Iterable[A] = iterableAsScalaIterable[A](i)
@@ -422,7 +422,7 @@ object JavaConversions {
     case IterableWrapper(wrapped) => wrapped
     case _ => JCollectionWrapper(i)
   }
-  @deprecated("use collectionAsScalaIterable instead", "2.9")
+  @deprecated("use collectionAsScalaIterable instead", "2.9.0")
   def asScalaIterable[A](i : ju.Collection[A]): Iterable[A] = collectionAsScalaIterable[A](i)
   @deprecated("use collectionAsScalaIterable instead", "2.8.1")
   def asIterable[A](i : ju.Collection[A]): Iterable[A] = collectionAsScalaIterable[A](i)
@@ -488,7 +488,7 @@ object JavaConversions {
     case _ => new JMapWrapper(m)
   }
 
-  @deprecated("use mapAsScalaMap instead", "2.9")
+  @deprecated("use mapAsScalaMap instead", "2.9.0")
   def asScalaMap[A, B](m : ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap[A, B](m)
   @deprecated("use mapAsScalaMap instead", "2.8.1")
   def asMap[A, B](m : ju.Map[A, B]): mutable.Map[A, B] = mapAsScalaMap[A, B](m)
@@ -544,7 +544,7 @@ object JavaConversions {
     case _ => new JPropertiesWrapper(p)
   }
 
-  @deprecated("use propertiesAsScalaMap instead", "2.9")
+  @deprecated("use propertiesAsScalaMap instead", "2.9.0")
   def asScalaMap(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)
   @deprecated("use propertiesAsScalaMap instead", "2.8.1")
   def asMap(p: ju.Properties): mutable.Map[String, String] = propertiesAsScalaMap(p)

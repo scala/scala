@@ -45,7 +45,7 @@ object Scheduler extends DelegatingScheduler {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].snapshot()
     } else
-      sys.error("scheduler does not implement snapshot", "2.8.0")
+      sys.error("scheduler does not implement snapshot")
   }
 
   /* Only <code>ForkJoinScheduler</code> implements this method.

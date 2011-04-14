@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
 import annotation.target._
@@ -19,4 +17,4 @@ import annotation.target._
  * @since 2.3
  */
 @getter @setter @beanGetter @beanSetter
-class deprecated(message: String = "", since: String = null) extends annotation.StaticAnnotation
+class deprecated(message: String = "", since: String = "") extends annotation.StaticAnnotation

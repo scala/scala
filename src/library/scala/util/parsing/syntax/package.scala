@@ -14,8 +14,8 @@ import scala.util.parsing.combinator.token
  *  be done, but it doesn't (yet) so it isn't.
  */
 package object syntax {
-  @deprecated("Moved to scala.util.parsing.combinator.token")
+  @deprecated("Moved to scala.util.parsing.combinator.token", "2.8.0")
   type Tokens = token.Tokens
-  @deprecated("Moved to scala.util.parsing.combinator.token")
+  @deprecated("Moved to scala.util.parsing.combinator.token", "2.8.0")
   type StdTokens = token.StdTokens
 }

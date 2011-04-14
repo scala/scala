@@ -280,7 +280,7 @@ object TupleTwo extends Tuple(2)
    */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
-  @deprecated("Use `zipped` instead.", "2.9")
+  @deprecated("Use `zipped` instead.", "2.9.0")
   def zip[Repr1, El1, El2, To](implicit w1:   T1 => TLike[El1, Repr1],
                                         w2:   T2 => Iterable[El2],
                                         cbf1: CBF[Repr1, (El1, El2), To]): To = {
@@ -387,7 +387,7 @@ object TupleThree extends Tuple(3) {
   override def imports = Tuple.zipImports
   override def moreMethods = """
 
-  @deprecated("Use `zipped` instead.")
+  @deprecated("Use `zipped` instead.", "2.9.0")
   def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TLike[El1, Repr1],
                                              w2:   T2 => Iterable[El2],
                                              w3:   T3 => Iterable[El3],
