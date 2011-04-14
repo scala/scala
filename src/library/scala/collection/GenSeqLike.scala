@@ -13,6 +13,8 @@ import generic._
 /** A template trait for all sequences which may be traversed
  *  in parallel.
  *
+ *  @define Coll GenSeq
+ *  @define coll general sequence
  *  @define mayNotTerminateInf
  *
  *    Note: may not terminate for infinite-sized collections.
@@ -23,53 +25,296 @@ import generic._
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec
  *  @since 2.9
+ *  @define seqInfo
+ *  Sequences are special cases of iterable collections of class `Iterable`.
+ *  Unlike iterables, sequences always have a defined order of elements.
  */
-trait GenSeqLike[+T, +Repr] extends GenIterableLike[T, Repr] with Equals with Parallelizable[T, parallel.ParSeq[T]] {
+private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Parallelizable[A, parallel.ParSeq[A]] {
 
-  def apply(idx: Int): T
+  /** Selects an element by its index in the $coll.
+   *
+   *  @param  idx  The index to select.
+   *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
+   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
+   */
+  def apply(idx: Int): A
 
+  /** The length of the $coll.
+   *
+   *  $willNotTerminateInf
+   *
+   *  Note: `xs.length` and `xs.size` yield the same result.
+   *
+   *  @return     the number of elements in this $coll.
+   */
   def length: Int
 
-  def segmentLength(p: T => Boolean, from: Int): Int
+  /** Tests whether this $coll contains given index.
+   *
+   *  The implementations of methods `apply` and `isDefinedAt` turn a `Seq[A]` into
+   *  a `PartialFunction[Int, A]`.
+   *
+   * @param    idx     the index to test
+   * @return   `true` if this $coll contains an element at position `idx`, `false` otherwise.
+   */
+  def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
 
-  def prefixLength(p: T => Boolean): Int
+  /** Computes length of longest segment whose elements all satisfy some predicate.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @param   from  the index where the search starts.
+   *  @return  the length of the longest segment of this $coll starting from index `from`
+   *           such that every element of the segment satisfies the predicate `p`.
+   */
+  def segmentLength(p: A => Boolean, from: Int): Int
 
-  def indexWhere(p: T => Boolean, from: Int): Int
+  /** Returns the length of the longest prefix whose elements all satisfy some predicate.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the length of the longest prefix of this $coll
+   *           such that every element of the segment satisfies the predicate `p`.
+   */
+  def prefixLength(p: A => Boolean): Int = segmentLength(p, 0)
 
-  def indexWhere(p: T => Boolean): Int
+  /** Finds index of the first element satisfying some predicate after or at some start index.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @param   from   the start index
+   *  @return  the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
+   */
+  def indexWhere(p: A => Boolean, from: Int): Int
 
-  def findIndexOf(p: T => Boolean): Int
+  /** Finds index of first element satisfying some predicate.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index of the first element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
+   */
+  def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
 
-  def indexOf[U >: T](elem: U): Int
+  /** Finds index of first occurrence of some value in this $coll.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index of the first element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def indexOf(elem: A): Int
+   */
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
-  def indexOf[U >: T](elem: U, from: Int): Int
+  /** Finds index of first occurrence of some value in this $coll after or at some start index.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @tparam  B      the type of the element `elem`.
+   *  @param   from   the start index
+   *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def indexOf(elem: A, from: Int): Int
+   */
+  def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem ==, from)
 
-  def lastIndexWhere(p: T => Boolean, end: Int): Int
+  /** Finds index of last occurrence of some value in this $coll.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index of the last element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def lastIndexOf(elem: A): Int
+   */
+  def lastIndexOf[B >: A](elem: B): Int = lastIndexWhere(elem ==)
 
+  /** Finds index of last occurrence of some value in this $coll before or at a given end index.
+   *
+   *  @param   elem   the element value to search for.
+   *  @param   end    the end index.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def lastIndexOf(elem: A, end: Int): Int
+   */
+  def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
+
+  /** Finds index of last element satisfying some predicate.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index of the last element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
+   */
+  def lastIndexWhere(p: A => Boolean): Int = lastIndexWhere(p, length - 1)
+
+  /** Finds index of last element satisfying some predicate before or at given end index.
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
+   */
+  def lastIndexWhere(p: A => Boolean, end: Int): Int
+
+  /** Returns new $coll wih elements in reversed order.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @return A new $coll with all elements of this $coll in reversed order.
+   */
   def reverse: Repr
 
-  def reverseMap[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That
+  /**
+   *  Builds a new collection by applying a function to all elements of this $coll and
+   *  collecting the results in reversed order.
+   *
+   *  $willNotTerminateInf
+   *
+   *  Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results in reversed order.
+   *
+   *  @usecase def reverseMap[B](f: A => B): $Coll[B]
+   *
+   *  Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
+   *  @return       a new $coll resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results in reversed order.
+   */
+  def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def startsWith[S](that: GenSeq[S]): Boolean
+  /** Tests whether this $coll starts with the given sequence.
+   *
+   * @param  that    the sequence to test
+   * @return `true` if this collection has `that` as a prefix, `false` otherwise.
+   */
+  def startsWith[B](that: GenSeq[B]): Boolean = startsWith(that, 0)
 
-  def startsWith[S](that: GenSeq[S], offset: Int): Boolean
+  /** Tests whether this $coll contains the given sequence at a given index.
+   *
+   * If the both the receiver object, <code>this</code> and
+   * the argument, <code>that</code> are infinite sequences
+   * this method may not terminate.
+   *
+   * @param  that    the sequence to test
+   * @param  offset  the index where the sequence is searched.
+   * @return `true` if the sequence `that` is contained in this $coll at index `offset`,
+   *         otherwise `false`.
+   */
+  def startsWith[B](that: GenSeq[B], offset: Int): Boolean
 
-  def endsWith[S](that: GenSeq[S]): Boolean
+  /** Tests whether this $coll ends with the given sequence.
+   *  $willNotTerminateInf
+   *  @param  that    the sequence to test
+   *  @return `true` if this $coll has `that` as a suffix, `false` otherwise.
+   */
+  def endsWith[B](that: GenSeq[B]): Boolean
 
-  def patch[U >: T, That](from: Int, patch: GenSeq[U], replaced: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That
+  /** Produces a new $coll where a slice of elements in this $coll is replaced by another sequence.
+   *
+   *  @param  from     the index of the first replaced element
+   *  @param  patch    the replacement sequence
+   *  @param  replaced the number of elements to drop in the original $coll
+   *  @tparam B        the element type of the returned $coll.
+   *  @tparam That     $thatinfo
+   *  @param bf        $bfinfo
+   *  @return          a new $coll consisting of all elements of this $coll
+   *                   except that `replaced` elements starting from `from` are replaced
+   *                   by `patch`.
+   *  @usecase def patch(from: Int, that: Seq[A], replaced: Int): $Coll[A]
+   *  @return          a new $coll consisting of all elements of this $coll
+   *                   except that `replaced` elements starting from `from` are replaced
+   *                   by `patch`.
+   */
+  def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def updated[U >: T, That](index: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That
+  /** A copy of this $coll with one single replaced element.
+   *  @param  index  the position of the replacement
+   *  @param  elem   the replacing element
+   *  @tparam B        the element type of the returned $coll.
+   *  @tparam That     $thatinfo
+   *  @param bf        $bfinfo
+   *  @return a new $coll` which is a copy of this $coll with the element at position `index` replaced by `elem`.
+   *  @usecase def updated(index: Int, elem: A): $Coll[A]
+   *  @return a copy of this $coll with the element at position `index` replaced by `elem`.
+   */
+  def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def +:[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That
+  /** Prepends an element to this $coll
+   *  @param  elem   the prepended element
+   *  @tparam B      the element type of the returned $coll.
+   *  @tparam That   $thatinfo
+   *  @param bf      $bfinfo
+   *  @return a new collection of type `That` consisting of `elem` followed
+   *          by all elements of this $coll.
+   *  @usecase def +:(elem: A): $Coll[A]
+   *  @return a new $coll consisting of `elem` followed
+   *          by all elements of this $coll.
+   */
+  def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def :+[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That
+  /** Appends an element to this $coll
+   *  $willNotTerminateInf
+   *  @param  elem   the appended element
+   *  @tparam B      the element type of the returned $coll.
+   *  @tparam That   $thatinfo
+   *  @param bf      $bfinfo
+   *  @return a new collection of type `That` consisting of
+   *          all elements of this $coll followed by `elem`.
+   *  @usecase def :+(elem: A): $Coll[A]
+   *  @return a new $coll consisting of
+   *          all elements of this $coll followed by `elem`.
+   */
+  def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def padTo[U >: T, That](len: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That
+  /** Appends an element value to this $coll until a given target length is reached.
+   *  @param   len   the target length
+   *  @param   elem  the padding value
+   *  @tparam B      the element type of the returned $coll.
+   *  @tparam That   $thatinfo
+   *  @param bf      $bfinfo
+   *  @return a new collection of type `That` consisting of
+   *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
+   *          that the resulting collection has a length of at least `len`.
+   *  @usecase def padTo(len: Int, elem: A): $Coll[A]
+   *  @return a new $coll consisting of
+   *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
+   *          that the resulting $coll has a length of at least `len`.
+   */
+  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def corresponds[S](that: GenSeq[S])(p: (T, S) => Boolean): Boolean
+  /** Tests whether every element of this $coll relates to the
+   *  corresponding element of another sequence by satisfying a test predicate.
+   *
+   *  @param   that  the other sequence
+   *  @param   p     the test predicate, which relates elements from both sequences
+   *  @tparam  B     the type of the elements of `that`
+   *  @return  `true` if both sequences have the same length and
+   *                  `p(x, y)` is `true` for all corresponding elements `x` of this $coll
+   *                  and `y` of `that`, otherwise `false`.
+   */
+  def corresponds[B](that: GenSeq[B])(p: (A, B) => Boolean): Boolean
 
-  def toSeq: GenSeq[T]
-
+  def toSeq: GenSeq[A]
 
   /** Produces a new sequence which contains all elements of this $coll and also all elements of
    *  a given sequence. `xs union ys`  is equivalent to `xs ++ ys`.
@@ -91,7 +336,7 @@ trait GenSeqLike[+T, +Repr] extends GenIterableLike[T, Repr] with Equals with Pa
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
-  def union[U >: T, That](that: GenSeq[U])(implicit bf: CanBuildFrom[Repr, U, That]): That = this ++ that
+  def union[B >: A, That](that: GenSeq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = this ++ that
 
   /** Computes the multiset difference between this $coll and another sequence.
    *  $willNotTerminateInf
@@ -112,7 +357,7 @@ trait GenSeqLike[+T, +Repr] extends GenIterableLike[T, Repr] with Equals with Pa
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
    */
-  def diff[U >: T](that: GenSeq[U]): Repr
+  def diff[B >: A](that: GenSeq[B]): Repr
 
   /** Computes the multiset intersection between this $coll and another sequence.
    *  $mayNotTerminateInf
@@ -133,7 +378,7 @@ trait GenSeqLike[+T, +Repr] extends GenIterableLike[T, Repr] with Equals with Pa
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
    */
-  def intersect[U >: T](that: GenSeq[U]): Repr
+  def intersect[B >: A](that: GenSeq[B]): Repr
 
   /** Builds a new $coll from this $coll without any duplicate elements.
    *  $willNotTerminateInf
@@ -146,7 +391,7 @@ trait GenSeqLike[+T, +Repr] extends GenIterableLike[T, Repr] with Equals with Pa
    *  elements of the $coll.
    */
   override def hashCode() = {
-    val h = new util.MurmurHash[T](Seq.hashSeed)
+    val h = new util.MurmurHash[A](Seq.hashSeed)
     seq.foreach(h)
     h.hash
   }

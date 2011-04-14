@@ -210,6 +210,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   def hasDefiniteSize = true
 
+  def nonEmpty = size != 0
+
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented
    *  with additional accessor and transformer methods.
@@ -427,6 +429,22 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = {
     executeAndWaitResult(new Aggregate(z, seqop, combop, splitter))
   }
+
+  def /:[S](z: S)(op: (S, T) => S): S = foldLeft(z)(op)
+
+  def :\[S](z: S)(op: (T, S) => S): S = foldRight(z)(op)
+
+  def foldLeft[S](z: S)(op: (S, T) => S): S = seq.foldLeft(z)(op)
+
+  def foldRight[S](z: S)(op: (T, S) => S): S = seq.foldRight(z)(op)
+
+  def reduceLeft[U >: T](op: (U, T) => U): U = seq.reduceLeft(op)
+
+  def reduceRight[U >: T](op: (T, U) => U): U = seq.reduceRight(op)
+
+  def reduceLeftOption[U >: T](op: (U, T) => U): Option[U] = seq.reduceLeftOption(op)
+
+  def reduceRightOption[U >: T](op: (T, U) => U): Option[U] = seq.reduceRightOption(op)
 
   /*
   /** Applies a function `f` to all the elements of $coll. Does so in a nondefined order,

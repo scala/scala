@@ -146,8 +146,6 @@ self =>
     executeAndWaitResult(new SegmentLength(p, 0, splitter.psplit(realfrom, length - realfrom)(1) assign ctx))._1
   }
 
-  def prefixLength(p: T => Boolean) = segmentLength(p, 0)
-
   /** Finds the first element satisfying some predicate.
    *
    *  $indexsignalling
@@ -165,14 +163,6 @@ self =>
     ctx.setIndexFlag(Int.MaxValue)
     executeAndWaitResult(new IndexWhere(p, realfrom, splitter.psplit(realfrom, length - realfrom)(1) assign ctx))
   }
-
-  def indexWhere(p: T => Boolean): Int = indexWhere(p, 0)
-
-  def findIndexOf(p: T => Boolean): Int = indexWhere(p, 0)
-
-  def indexOf[U >: T](elem: U): Int = indexOf(elem, 0)
-
-  def indexOf[U >: T](elem: U, from: Int): Int = indexWhere(elem ==, from)
 
   /** Finds the last element satisfying some predicate.
    *
@@ -200,8 +190,6 @@ self =>
     executeAndWaitResult(new ReverseMap[S, That](f, pbf, splitter) mapResult { _.result })
   } otherwise seq.reverseMap(f)(bf2seq(bf))
 
-  def startsWith[S](that: GenSeq[S]): Boolean = startsWith(that, 0)
-
   /** Tests whether this $coll contains the given sequence at a given index.
    *
    *  $abortsignalling
@@ -226,7 +214,7 @@ self =>
     length == pthat.length && executeAndWaitResult(new SameElements(splitter assign ctx, pthat.splitter))
   } otherwise seq.sameElements(that)
 
-  /** Tests whether this $coll ends with the given parallel sequence
+  /** Tests whether this $coll ends with the given parallel sequence.
    *
    *  $abortsignalling
    *
@@ -328,7 +316,7 @@ self =>
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
-   *  @usecase def intersect(that: Seq[A]): $Coll[A]
+   *  @usecase def intersect(that: Seq[T]): $Coll[T]
    *  @return       a new $coll which contains all elements of this $coll
    *                which also appear in `that`.
    *                If an element value `x` appears

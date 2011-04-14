@@ -15,9 +15,9 @@ import TraversableView.NoBuilder
 
 
 
-trait GenIterableViewLike[+A,
-                          +Coll,
-                          +This <: GenIterableView[A, Coll] with GenIterableViewLike[A, Coll, This]]
+private[collection] trait GenIterableViewLike[+A,
+                                              +Coll,
+                                              +This <: GenIterableView[A, Coll] with GenIterableViewLike[A, Coll, This]]
 extends GenIterable[A] with GenIterableLike[A, This] with GenTraversableView[A, Coll] with GenTraversableViewLike[A, Coll, This] {
 self =>
 

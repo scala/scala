@@ -49,7 +49,12 @@ object Test {
     assertToPar(parallel.immutable.ParHashSet(1 -> 3))
 
     assertToParWoMap(immutable.Range(1, 10, 2))
+
+    // seq and par again conversions)
+    assertSeqPar(parallel.mutable.ParArray(1, 2, 3))
   }
+
+  def assertSeqPar[T](pc: parallel.ParIterable[T]) = pc.seq.par == pc
 
   def assertSeq[T](pc: parallel.ParIterable[T]) = assert(pc.seq == pc)
 

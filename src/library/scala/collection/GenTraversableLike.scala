@@ -8,7 +8,10 @@
 
 package scala.collection
 
+
 import generic._
+import annotation.migration
+
 
 /** A template trait for all traversable collections upon which operations
  *  may be implemented in parallel.
@@ -36,21 +39,26 @@ import generic._
  *    Note: will not terminate for infinite-sized collections.
  *
  *  @define Coll GenTraversable
- *  @define coll collection
- *  @tparam T    the collection element type.
+ *  @define coll general collection
+ *  @tparam A    the collection element type.
  *  @tparam Repr the actual type of the element container.
  *
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait GenTraversableLike[+T, +Repr] extends GenTraversableOnceLike[T] with Parallelizable[T, parallel.ParIterable[T]] {
+private[collection] trait GenTraversableLike[+A, +Repr] extends GenTraversableOnceLike[A] with Parallelizable[A, parallel.ParIterable[A]] {
 
   def repr: Repr
 
   def size: Int
 
-  def head: T
+  def head: A
+
+  /** Tests whether this $coll can be repeatedly traversed.
+   *  @return   `true`
+   */
+  final def isTraversableAgain = true
 
   /** Selects all elements except the first.
    *  $orderDependent
@@ -67,57 +75,259 @@ trait GenTraversableLike[+T, +Repr] extends GenTraversableOnceLike[T] with Paral
    *
    *  Note: The neutral element `z` may be applied more than once.
    *
-   *  @tparam U         element type of the resulting collection
+   *  @tparam B         element type of the resulting collection
    *  @tparam That      type of the resulting collection
    *  @param z          neutral element for the operator `op`
    *  @param op         the associative operator for the scan
    *  @param cbf        combiner factory which provides a combiner
    *  @return           a collection containing the prefix scan of the elements in the original collection
    *
-   *  @usecase def scan(z: T)(op: (T, T) => T): $Coll[T]
+   *  @usecase def scan(z: B)(op: (B, B) => B): $Coll[B]
    *
    *  @return           a new $coll containing the prefix scan of the elements in this $coll
    */
-  def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[Repr, U, That]): That
+  def scan[B >: A, That](z: B)(op: (B, B) => B)(implicit cbf: CanBuildFrom[Repr, B, That]): That
 
-  def scanLeft[S, That](z: S)(op: (S, T) => S)(implicit bf: CanBuildFrom[Repr, S, That]): That
+  /** Produces a collection containing cummulative results of applying the
+   *  operator going left to right.
+   *
+   *  $willNotTerminateInf
+   *  $orderDependent
+   *
+   *  @tparam B      the type of the elements in the resulting collection
+   *  @tparam That   the actual type of the resulting collection
+   *  @param z       the initial value
+   *  @param op      the binary operator applied to the intermediate result and the element
+   *  @param bf      $bfinfo
+   *  @return        collection with intermediate results
+   */
+  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def scanRight[S, That](z: S)(op: (T, S) => S)(implicit bf: CanBuildFrom[Repr, S, That]): That
+  /** Produces a collection containing cummulative results of applying the operator going right to left.
+   *  The head of the collection is the last cummulative result.
+   *  $willNotTerminateInf
+   *  $orderDependent
+   *
+   *  Example:
+   *  {{{
+   *    List(1, 2, 3, 4).scanRight(0)(_ + _) == List(10, 9, 7, 4, 0)
+   *  }}}
+   *
+   *  @tparam B      the type of the elements in the resulting collection
+   *  @tparam That   the actual type of the resulting collection
+   *  @param z       the initial value
+   *  @param op      the binary operator applied to the intermediate result and the element
+   *  @param bf      $bfinfo
+   *  @return        collection with intermediate results
+   */
+  @migration(2, 9,
+    "This scanRight definition has changed in 2.9.\n" +
+    "The previous behavior can be reproduced with scanRight.reverse."
+  )
+  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def foreach[U](f: T => U): Unit
+  /** Applies a function `f` to all elements of this $coll.
+   *
+   *  @param  f   the function that is applied for its side-effect to every element.
+   *              The result of function `f` is discarded.
+   *
+   *  @tparam  U  the type parameter describing the result of function `f`.
+   *              This result will always be ignored. Typically `U` is `Unit`,
+   *              but this is not necessary.
+   *
+   *  @usecase def foreach(f: A => Unit): Unit
+   */
+  def foreach[U](f: A => U): Unit
 
-  def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That
+  /** Builds a new collection by applying a function to all elements of this $coll.
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results.
+   *
+   *  @usecase def map[B](f: A => B): $Coll[B]
+   *
+   *  @return       a new $coll resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results.
+   */
+  def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def collect[S, That](pf: PartialFunction[T, S])(implicit bf: CanBuildFrom[Repr, S, That]): That
+  /** Builds a new collection by applying a partial function to all elements of this $coll
+   *  on which the function is defined.
+   *
+   *  @param pf     the partial function which filters and maps the $coll.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the partial function
+   *                `pf` to each element on which it is defined and collecting the results.
+   *                The order of the elements is preserved.
+   *
+   *  @usecase def collect[B](pf: PartialFunction[A, B]): $Coll[B]
+   *
+   *  @return       a new $coll resulting from applying the given partial function
+   *                `pf` to each element on which it is defined and collecting the results.
+   *                The order of the elements is preserved.
+   */
+  def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def flatMap[S, That](f: T => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That
+  /** Builds a new collection by applying a function to all elements of this $coll
+   *  and concatenating the results.
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the given collection-valued function
+   *                `f` to each element of this $coll and concatenating the results.
+   *
+   *  @usecase def flatMap[B](f: A => TraversableOnce[B]): $Coll[B]
+   *
+   *  @return       a new $coll resulting from applying the given collection-valued function
+   *                `f` to each element of this $coll and concatenating the results.
+   */
+  def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def ++[U >: T, That](that: GenTraversableOnce[U])(implicit bf: CanBuildFrom[Repr, U, That]): That
+  /** Concatenates this $coll with the elements of a traversable collection.
+   *
+   *  @param that   the traversable to append.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` which contains all elements
+   *                of this $coll followed by all elements of `that`.
+   *
+   *  @usecase def ++[B](that: TraversableOnce[B]): $Coll[B]
+   *
+   *  @return       a new $coll which contains all elements of this $coll
+   *                followed by all elements of `that`.
+   */
+  def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  def filter(pred: T => Boolean): Repr
+  /** Selects all elements of this $coll which satisfy a predicate.
+   *
+   *  @param p     the predicate used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
+   *               predicate `p`. Their order may not be preserved.
+   */
+  def filter(pred: A => Boolean): Repr
 
-  def filterNot(pred: T => Boolean): Repr
+  /** Selects all elements of this $coll which do not satisfy a predicate.
+   *
+   *  @param p     the predicate used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
+   *               predicate `p`. Their order may not be preserved.
+   */
+  def filterNot(pred: A => Boolean): Repr
 
-  def partition(pred: T => Boolean): (Repr, Repr)
+  /** Partitions this $coll in two ${coll}s according to a predicate.
+   *
+   *  @param p the predicate on which to partition.
+   *  @return  a pair of ${coll}s: the first $coll consists of all elements that
+   *           satisfy the predicate `p` and the second $coll consists of all elements
+   *           that don't. The relative order of the elements in the resulting ${coll}s
+   *           may not be preserved.
+   */
+  def partition(pred: A => Boolean): (Repr, Repr)
 
-  def groupBy[K](f: T => K): GenMap[K, Repr]
+  /** Partitions this $coll into a map of ${coll}s according to some discriminator function.
+   *
+   *  Note: this method is not re-implemented by views. This means
+   *        when applied to a view it will always force the view and
+   *        return a new $coll.
+   *
+   *  @param f     the discriminator function.
+   *  @tparam K    the type of keys returned by the discriminator function.
+   *  @return      A map from keys to ${coll}s such that the following invariant holds:
+   *               {{{
+   *                 (xs partition f)(k) = xs filter (x => f(x) == k)
+   *               }}}
+   *               That is, every key `k` is bound to a $coll of those elements `x`
+   *               for which `f(x)` equals `k`.
+   *
+   */
+  def groupBy[K](f: A => K): GenMap[K, Repr]
 
+  /** Selects first ''n'' elements.
+   *  $orderDependent
+   *  @param  n    Tt number of elements to take from this $coll.
+   *  @return a $coll consisting only of the first `n` elements of this $coll,
+   *          or else the whole $coll, if it has less than `n` elements.
+   */
   def take(n: Int): Repr
 
+  /** Selects all elements except first ''n'' ones.
+   *  $orderDependent
+   *  @param  n    the number of elements to drop from this $coll.
+   *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+   *          empty $coll, if this $coll has less than `n` elements.
+   */
   def drop(n: Int): Repr
 
+  /** Selects an interval of elements.  The returned collection is made up
+   *  of all elements `x` which satisfy the invariant:
+   *  {{{
+   *    from <= indexOf(x) < until
+   *  }}}
+   *  $orderDependent
+   *
+   *  @param from   the lowest index to include from this $coll.
+   *  @param until  the highest index to EXCLUDE from this $coll.
+   *  @return  a $coll containing the elements greater than or equal to
+   *           index `from` extending up to (but not including) index `until`
+   *           of this $coll.
+   */
   def slice(unc_from: Int, unc_until: Int): Repr
 
+  /** Splits this $coll into two at a given position.
+   *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
+   *         `(c take n, c drop n)`.
+   *  $orderDependent
+   *
+   *  @param n the position at which to split.
+   *  @return  a pair of ${coll}s consisting of the first `n`
+   *           elements of this $coll, and the other elements.
+   */
   def splitAt(n: Int): (Repr, Repr)
 
-  def takeWhile(pred: T => Boolean): Repr
+  /** Takes longest prefix of elements that satisfy a predicate.
+   *  $orderDependent
+   *  @param   p  The predicate used to test elements.
+   *  @return  the longest prefix of this $coll whose elements all satisfy
+   *           the predicate `p`.
+   */
+  def takeWhile(pred: A => Boolean): Repr
 
-  def span(pred: T => Boolean): (Repr, Repr)
+  /** Splits this $coll into a prefix/suffix pair according to a predicate.
+   *
+   *  Note: `c span p`  is equivalent to (but possibly more efficient than)
+   *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the
+   *  predicate `p` does not cause any side-effects.
+   *  $orderDependent
+   *
+   *  @param p the test predicate
+   *  @return  a pair consisting of the longest prefix of this $coll whose
+   *           elements all satisfy `p`, and the rest of this $coll.
+   */
+  def span(pred: A => Boolean): (Repr, Repr)
 
-  def dropWhile(pred: T => Boolean): Repr
+  /** Drops longest prefix of elements that satisfy a predicate.
+   *  $orderDependent
+   *  @param   p  The predicate used to test elements.
+   *  @return  the longest suffix of this $coll whose first element
+   *           does not satisfy the predicate `p`.
+   */
+  def dropWhile(pred: A => Boolean): Repr
 
-  def copyToArray[U >: T](xs: Array[U], start: Int, len: Int)
-
+  /** Defines the prefix of this object's `toString` representation.
+   *
+   *  @return  a string representation which starts the result of `toString`
+   *           applied to this $coll. By default the string prefix is the
+   *           simple name of the collection class $coll.
+   */
   def stringPrefix: String
 
 }

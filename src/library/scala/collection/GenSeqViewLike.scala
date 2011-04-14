@@ -11,9 +11,9 @@ package scala.collection
 
 
 
-trait GenSeqViewLike[+A,
-                     +Coll,
-                     +This <: GenSeqView[A, Coll] with GenSeqViewLike[A, Coll, This]]
+private[collection] trait GenSeqViewLike[+A,
+                                         +Coll,
+                                         +This <: GenSeqView[A, Coll] with GenSeqViewLike[A, Coll, This]]
 extends GenSeq[A] with GenSeqLike[A, This] with GenIterableView[A, Coll] with GenIterableViewLike[A, Coll, This] {
 self =>
 

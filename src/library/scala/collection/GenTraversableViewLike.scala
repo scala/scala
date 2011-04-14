@@ -16,9 +16,9 @@ import annotation.migration
 
 
 
-trait GenTraversableViewLike[+A,
-                            +Coll,
-                            +This <: GenTraversableView[A, Coll] with GenTraversableViewLike[A, Coll, This]]
+private[collection] trait GenTraversableViewLike[+A,
+                                                 +Coll,
+                                                 +This <: GenTraversableView[A, Coll] with GenTraversableViewLike[A, Coll, This]]
 extends GenTraversable[A] with GenTraversableLike[A, This] {
 self =>
 

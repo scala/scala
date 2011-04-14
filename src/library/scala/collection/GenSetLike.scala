@@ -11,11 +11,16 @@ package scala.collection
 /** A template trait for sets which may possibly
  *  have their operations implemented in parallel.
  *
+ *  @define Coll GenSet
+ *  @define coll general set
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec
  *  @since 2.9
+ *  @define setNote
+ *
+ *  A set is a collection that contains no duplicate elements.
  */
-trait GenSetLike[A, +Repr]
+private[collection] trait GenSetLike[A, +Repr]
        extends GenIterableLike[A, Repr]
           with (A => Boolean)
           with Equals

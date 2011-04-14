@@ -11,11 +11,17 @@ package scala.collection
 /** A trait for all maps upon which operations may be
  *  implemented in parallel.
  *
+ *  @define Coll GenMap
+ *  @define coll general map
  *  @author Martin Odersky
  *  @author Aleksandar Prokopec
  *  @since 2.9
+ *  @define mapNote
+ *
+ *  A map is a collection of bindings from keys to values, where there are
+ *  no duplicate keys.
  */
-trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals with Parallelizable[(A, B), parallel.ParMap[A, B]] {
+private[collection] trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals with Parallelizable[(A, B), parallel.ParMap[A, B]] {
   def default(key: A): B
   def get(key: A): Option[B]
   def apply(key: A): B
