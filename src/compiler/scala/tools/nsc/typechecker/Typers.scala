@@ -2738,10 +2738,13 @@ trait Typers extends Modes {
               error(t.pos, "unexpected tree after typing annotation: "+ typedAnn)
           }
 
-          if (annType.typeSymbol == DeprecatedAttr && (argss.isEmpty || argss.head.isEmpty))
-            unit.deprecationWarning(ann.pos,
-              "the `deprecated' annotation now takes a (message: String) as parameter\n"+
-              "indicating the reason for deprecation. That message is printed to the console and included in scaladoc.")
+          if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
+            unit.deprecationWarning(ann.pos, """
+              |The `deprecated` annotation now takes two String parameters: the first is
+              |an explanation and/or recommended alternative, which will be printed to the
+              |console and also appear in the scaladoc.  The second is the first released
+              |version in which the member was deprecated.""".trim.stripMargin
+            )
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) annotationError
           else annInfo(typedAnn)
