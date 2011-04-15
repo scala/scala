@@ -6,14 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel.immutable
-
-
-
-
-
-
 
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
@@ -24,12 +17,8 @@ import scala.collection.generic.ParMapFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParMapTemplate
 import scala.collection.generic.GenericParMapCompanion
-import scala.collection.immutable.HashMap
-
-
+import scala.collection.immutable.{ HashMap, TrieIterator }
 import annotation.unchecked.uncheckedVariance
-
-
 
 /** Immutable parallel hash map, based on hash tries.
  *
@@ -87,9 +76,8 @@ self =>
   self: SignalContextPassingIterator[ParHashMapIterator] =>
     var i = 0
     def dup = triter match {
-      case t: HashMap.TrieIterator[_, _] =>
-        val dupt = t.dupIterator.asInstanceOf[Iterator[(K, V)]]
-        dupFromIterator(dupt)
+      case t: TrieIterator[_] =>
+        dupFromIterator(t.dupIterator)
       case _ =>
         val buff = triter.toBuffer
         triter = buff.iterator
@@ -101,9 +89,9 @@ self =>
       phit
     }
     def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
-      case t: HashMap.TrieIterator[_, _] =>
+      case t: TrieIterator[_] =>
         val previousRemaining = remaining
-        val ((fst, fstlength), snd) = t.asInstanceOf[HashMap.TrieIterator[K, V]].split
+        val ((fst, fstlength), snd) = t.split
         val sndlength = previousRemaining - fstlength
         Seq(
           new ParHashMapIterator(fst, fstlength) with SCPI,

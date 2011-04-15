@@ -6,14 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel.immutable
-
-
-
-
-
-
 
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
@@ -25,12 +18,7 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.GenericCompanion
-import scala.collection.immutable.HashSet
-
-
-
-
-
+import scala.collection.immutable.{ HashSet, TrieIterator }
 
 /** Immutable parallel hash set, based on hash tries.
  *
@@ -85,9 +73,8 @@ self =>
   self: SignalContextPassingIterator[ParHashSetIterator] =>
     var i = 0
     def dup = triter match {
-      case t: HashSet.TrieIterator[_] =>
-        val dupt = t.dupIterator.asInstanceOf[Iterator[T]]
-        dupFromIterator(dupt)
+      case t: TrieIterator[_] =>
+        dupFromIterator(t.dupIterator)
       case _ =>
         val buff = triter.toBuffer
         triter = buff.iterator
@@ -99,9 +86,9 @@ self =>
       phit
     }
     def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
-      case t: HashSet.TrieIterator[_] =>
+      case t: TrieIterator[_] =>
         val previousRemaining = remaining
-        val ((fst, fstlength), snd) = t.asInstanceOf[HashSet.TrieIterator[T]].split
+        val ((fst, fstlength), snd) = t.split
         val sndlength = previousRemaining - fstlength
         Seq(
           new ParHashSetIterator(fst, fstlength) with SCPI,
