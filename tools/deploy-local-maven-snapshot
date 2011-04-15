@@ -1,0 +1,11 @@
+#!/bin/bash
+#
+# Install the -SNAPSHOT artifacts in the local maven cache.
+
+set -e
+
+cd $(dirname $0)/..
+
+ant fastdist distpack
+cd dists/maven/latest
+ant deploy.snapshot.local
