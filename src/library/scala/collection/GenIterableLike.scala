@@ -47,7 +47,7 @@ private[collection] trait GenIterableLike[+A, +Repr] extends GenTraversableLike[
    *  @tparam B    the type of the elements of collection `that`.
    *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
    *
-   *  @usecase  def sameElements(that: Iterable[A]): Boolean
+   *  @usecase  def sameElements(that: GenIterable[A]): Boolean
    *
    *  @param that  the collection to compare with.
    *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
@@ -70,7 +70,7 @@ private[collection] trait GenIterableLike[+A, +Repr] extends GenTraversableLike[
    *                 corresponding elements of this $coll and `that`. The length
    *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
    *
-   *  @usecase def zip[B](that: Iterable[B]): $Coll[(A, B)]
+   *  @usecase def zip[B](that: GenIterable[B]): $Coll[(A, B)]
    *
    *  @param   that  The iterable providing the second half of each result pair
    *  @tparam  B     the type of the second half of the returned pairs

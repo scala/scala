@@ -38,6 +38,9 @@ import annotation.migration
  *
  *    Note: will not terminate for infinite-sized collections.
  *
+ *  @define traversableInfo
+ *  This is a base trait of all kinds of Scala collections.
+ *
  *  @define Coll GenTraversable
  *  @define coll general collection
  *  @tparam A    the collection element type.
@@ -80,9 +83,6 @@ private[collection] trait GenTraversableLike[+A, +Repr] extends GenTraversableOn
    *  @param z          neutral element for the operator `op`
    *  @param op         the associative operator for the scan
    *  @param cbf        combiner factory which provides a combiner
-   *  @return           a collection containing the prefix scan of the elements in the original collection
-   *
-   *  @usecase def scan(z: B)(op: (B, B) => B): $Coll[B]
    *
    *  @return           a new $coll containing the prefix scan of the elements in this $coll
    */
@@ -184,7 +184,7 @@ private[collection] trait GenTraversableLike[+A, +Repr] extends GenTraversableOn
    *  @return       a new collection of type `That` resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    *
-   *  @usecase def flatMap[B](f: A => TraversableOnce[B]): $Coll[B]
+   *  @usecase def flatMap[B](f: A => GenTraversableOnce[B]): $Coll[B]
    *
    *  @return       a new $coll resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
@@ -200,7 +200,7 @@ private[collection] trait GenTraversableLike[+A, +Repr] extends GenTraversableOn
    *  @return       a new collection of type `That` which contains all elements
    *                of this $coll followed by all elements of `that`.
    *
-   *  @usecase def ++[B](that: TraversableOnce[B]): $Coll[B]
+   *  @usecase def ++[B](that: GenTraversableOnce[B]): $Coll[B]
    *
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.

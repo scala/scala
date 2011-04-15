@@ -240,7 +240,7 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *  @return          a new $coll consisting of all elements of this $coll
    *                   except that `replaced` elements starting from `from` are replaced
    *                   by `patch`.
-   *  @usecase def patch(from: Int, that: Seq[A], replaced: Int): $Coll[A]
+   *  @usecase def patch(from: Int, that: GenSeq[A], replaced: Int): $Coll[A]
    *  @return          a new $coll consisting of all elements of this $coll
    *                   except that `replaced` elements starting from `from` are replaced
    *                   by `patch`.
@@ -332,7 +332,7 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *  @param bf     $bfinfo
    *  @return       a new collection of type `That` which contains all elements of this $coll
    *                followed by all elements of `that`.
-   *  @usecase def union(that: Seq[A]): $Coll[A]
+   *  @usecase def union(that: GenSeq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
@@ -350,7 +350,7 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
-   *  @usecase def diff(that: Seq[A]): $Coll[A]
+   *  @usecase def diff(that: GenSeq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                except some of occurrences of elements that also appear in `that`.
    *                If an element value `x` appears
@@ -371,7 +371,7 @@ private[collection] trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr]
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
-   *  @usecase def intersect(that: Seq[A]): $Coll[A]
+   *  @usecase def intersect(that: GenSeq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                which also appear in `that`.
    *                If an element value `x` appears
