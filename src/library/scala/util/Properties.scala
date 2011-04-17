@@ -17,8 +17,7 @@ object Properties extends PropertiesTrait {
   protected def pickJarBasedOn  = classOf[ScalaObject]
 }
 
-private[scala] trait PropertiesTrait
-{
+private[scala] trait PropertiesTrait {
   protected def propCategory: String      // specializes the remainder of the values
   protected def pickJarBasedOn: Class[_]  // props file comes from jar containing this
 
@@ -56,8 +55,28 @@ private[scala] trait PropertiesTrait
   def envOrNone(name: String)                   = Option(System getenv name)
 
   // for values based on propFilename
-  def scalaPropOrElse(name: String, alt: String): String  = scalaProps.getProperty(name, alt)
-  def scalaPropOrEmpty(name: String): String              = scalaPropOrElse(name, "")
+  def scalaPropOrElse(name: String, alt: String): String = scalaProps.getProperty(name, alt)
+  def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
+  def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name))
+
+  /** The runtime scala version, if it has only three dotted segments.
+   *
+   *  @return Some(version) if this is not a development build, None if
+   *  a development build or if the version cannot be read.
+   */
+  val releaseVersion = scalaPropOrNone("version.number") filter (_.split('.').size == 3)
+
+  /** The development scala version.  This is derived from the fourth dotted segment
+   *  in the version string, which should only be present if built from source.
+   *  At present it corresponds to the svn revision, but this is not guaranteed
+   *  to remain the case.
+   *
+   *  @return Some(version) if this is a development build, None if it has fewer
+   *    than four segments or cannot be read.
+   */
+  val developmentVersion = scalaPropOrNone("version.number") flatMap { s =>
+    (s split '.' drop 3).headOption map (_ takeWhile (ch => ch != '-'))
+  }
 
   /** The version number of the jar this was loaded from plus "version " prefix,
    *  or "version (unknown)" if it cannot be determined.
