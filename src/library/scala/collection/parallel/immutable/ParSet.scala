@@ -15,6 +15,7 @@ package parallel.immutable
 
 
 
+import scala.collection.GenSet
 import scala.collection.immutable.Set
 import scala.collection.generic._
 import scala.collection.parallel.ParSetLike
@@ -29,7 +30,7 @@ import scala.collection.parallel.Combiner
  *  @define coll mutable parallel set
  */
 trait ParSet[T]
-extends Set[T]
+extends collection.immutable.GenSet[T]
    with GenericParTemplate[T, ParSet]
    with parallel.ParSet[T]
    with ParIterable[T]

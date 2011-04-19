@@ -24,6 +24,7 @@ object Test extends Properties("HtmlFactory") {
   import scala.tools.nsc.doc.{DocFactory, Settings}
   import scala.tools.nsc.doc.model.IndexModelFactory
   import scala.tools.nsc.doc.html.HtmlFactory
+  import scala.tools.nsc.doc.html.page.ReferenceIndex
 
   def getClasspath = {
     // these things can be tricky
@@ -57,6 +58,23 @@ object Test extends Properties("HtmlFactory") {
     }
 
     result
+  }
+
+  def createReferenceIndex(basename: String) = {
+    createFactory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
+      case Some(universe) => {
+        val index = IndexModelFactory.makeIndex(universe)
+        val pages = index.firstLetterIndex.map({
+          case (key, value) => {
+            val page = new ReferenceIndex(key, index, universe)
+            page.absoluteLinkTo(page.path) -> page.body
+          }
+        })
+        Some(pages)
+      }
+      case _ =>
+        None
+    }
   }
 
   def createTemplate(scala: String) = {
@@ -271,6 +289,20 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4452.scala") match {
       case node: scala.xml.Node =>
         ! node.toString.contains(">*")
+      case _ => false
+    }
+  }
+
+  property("Trac #4471") = {
+    createReferenceIndex("Trac4471.scala") match {
+      case Some(pages) =>
+        (pages.get("index/index-f.html") match {
+          case Some(node) => node.toString.contains(">A</a></strike>")
+          case _ => false
+        }) && (pages.get("index/index-b.html") match {
+          case Some(node) => node.toString.contains(">bar</strike>")
+          case _ => false
+        })
       case _ => false
     }
   }

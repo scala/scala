@@ -166,6 +166,16 @@ public class UnixTerminal
                     return DELETE.code;
                 }
             }
+            else if (c == 'b') { // alt-b: go back a word
+                return CTRL_O.code; // PREV_WORD
+            }
+            else if (c == 'f') { // alt-f: go forward a word
+                return CTRL_T.code; // NEXT_WORD
+            }
+            else if (key == DEL) { // alt-backspace: delete previous word
+                return CTRL_W.code; // DELETE_PREV_WORD
+            }
+
         }
 
         // handle unicode characters, thanks for a patch from amyi@inf.ed.ac.uk
@@ -205,7 +215,10 @@ public class UnixTerminal
 
         DEL_THIRD(51),
 
-        DEL_SECOND(126),;
+        DEL_SECOND(126),
+
+        DEL(127);
+
 
         public final short code;
 

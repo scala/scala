@@ -28,16 +28,20 @@ import collection.parallel.Combiner
  *  @since 2.9
  */
 trait ParMap[K, V]
-extends collection.mutable.Map[K, V]
+extends collection.mutable.GenMap[K, V]
    with collection.parallel.ParMap[K, V]
    with /* mutable */ ParIterable[(K, V)]
    with GenericParMapTemplate[K, V, ParMap]
    with /* mutable */ ParMapLike[K, V, ParMap[K, V], collection.mutable.Map[K, V]]
 {
 
+  protected[this] override def newCombiner: Combiner[(K, V), ParMap[K, V]] = ParMap.newCombiner[K, V]
+
   override def mapCompanion: GenericParMapCompanion[ParMap] = ParMap
 
   override def empty: ParMap[K, V] = new ParHashMap[K, V]
+
+  def seq: collection.mutable.Map[K, V]
 
 }
 

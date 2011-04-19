@@ -18,7 +18,7 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.ParFactory
 import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.Combiner
-
+import scala.collection.GenSeq
 
 
 
@@ -28,7 +28,7 @@ import scala.collection.parallel.Combiner
  *  @define coll mutable parallel sequence
  */
 trait ParSeq[+T]
-extends collection.immutable.Seq[T]
+extends collection.immutable.GenSeq[T]
    with collection.parallel.ParSeq[T]
    with ParIterable[T]
    with GenericParTemplate[T, ParSeq]
@@ -44,11 +44,11 @@ extends collection.immutable.Seq[T]
  *  @define coll mutable parallel sequence
  */
 object ParSeq extends ParFactory[ParSeq] {
- implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParSeq[T]] = new GenericCanCombineFrom[T]
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParSeq[T]] = new GenericCanCombineFrom[T]
 
- def newBuilder[T]: Combiner[T, ParSeq[T]] = ParVector.newBuilder[T]
+  def newBuilder[T]: Combiner[T, ParSeq[T]] = ParVector.newBuilder[T]
 
- def newCombiner[T]: Combiner[T, ParSeq[T]] = ParVector.newCombiner[T]
+  def newCombiner[T]: Combiner[T, ParSeq[T]] = ParVector.newCombiner[T]
 }
 
 

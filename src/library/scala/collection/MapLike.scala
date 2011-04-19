@@ -57,8 +57,10 @@ import parallel.ParMap
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends PartialFunction[A, B]
      with IterableLike[(A, B), This]
+     with GenMapLike[A, B, This]
      with Subtractable[A, This]
-     with Parallelizable[(A, B), ParMap[A, B]] {
+     with Parallelizable[(A, B), ParMap[A, B]]
+{
 self =>
 
   /** The empty map of the same type as this map
@@ -246,7 +248,8 @@ self =>
     def get(key: A) = self.get(key).map(f)
   }
 
-  @deprecated("use `mapValues' instead") def mapElements[C](f: B => C) = mapValues(f)
+  @deprecated("use `mapValues' instead", "2.8.0")
+  def mapElements[C](f: B => C) = mapValues(f)
 
   // The following 5 operations (updated, two times +, two times ++) should really be
   // generic, returning This[B]. We need better covariance support to express that though.
@@ -284,8 +287,8 @@ self =>
    *  @return   a new map with the given bindings added to this map
    *  @usecase  def ++ (xs: Traversable[(A, B)]): Map[A, B]
    */
-  def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =
-    ((repr: Map[A, B1]) /: xs) (_ + _)
+  def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
+    ((repr: Map[A, B1]) /: xs.seq) (_ + _)
 
   /** Returns a new map with all key/value pairs for which the predicate
    *  `p` returns `true`.
@@ -338,36 +341,4 @@ self =>
   override /*PartialFunction*/
   def toString = super[IterableLike].toString
 
-  // This hash code must be symmetric in the contents but ought not
-  // collide trivially.
-  override def hashCode() = util.MurmurHash.symmetricHash(this,Map.hashSeed)
-
-  /** Compares two maps structurally; i.e. checks if all mappings
-   *  contained in this map are also contained in the other map,
-   *  and vice versa.
-   *
-   *  @param that the other map
-   *  @return     `true` if both maps contain exactly the
-   *              same mappings, `false` otherwise.
-   */
-  override def equals(that: Any): Boolean = that match {
-    case that: Map[b, _] =>
-      (this eq that) ||
-      (that canEqual this) &&
-      (this.size == that.size) && {
-      try {
-        this forall {
-          case (k, v) => that.get(k.asInstanceOf[b]) match {
-            case Some(`v`) =>
-              true
-            case _ => false
-          }
-        }
-      } catch {
-        case ex: ClassCastException =>
-          println("class cast "); false
-      }}
-    case _ =>
-      false
-  }
 }

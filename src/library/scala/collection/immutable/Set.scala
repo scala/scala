@@ -25,14 +25,16 @@ import parallel.immutable.ParSet
  *  @define coll immutable set
  */
 trait Set[A] extends Iterable[A]
+                with GenSet[A]
                 with scala.collection.Set[A]
                 with GenericSetTemplate[A, Set]
                 with SetLike[A, Set[A]]
-                with Parallelizable[A, ParSet[A]] {
+                with Parallelizable[A, ParSet[A]]
+{
   override def companion: GenericCompanion[Set] = Set
   override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
-  protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
   override def seq: Set[A] = this
+  protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
 }
 
 /** $factoryInfo
@@ -56,7 +58,7 @@ object Set extends ImmutableSetFactory[Set] {
     override def foreach[U](f: Any =>  U): Unit = {}
   }
 
-  @deprecated("use `Set.empty' instead")
+  @deprecated("use `Set.empty' instead", "2.8.0")
   class EmptySet[A] extends Set[A] with Serializable {
     override def size: Int = 0
     def contains(elem: A): Boolean = false

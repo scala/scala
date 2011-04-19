@@ -14,6 +14,7 @@ package scala.collection.parallel
 
 import scala.collection.Parallel
 import scala.collection.IterableView
+import scala.collection.GenIterableView
 import scala.collection.generic.CanCombineFrom
 
 
@@ -29,13 +30,14 @@ import scala.collection.generic.CanCombineFrom
  */
 trait ParIterableView[+T, +Coll <: Parallel, +CollSeq]
 extends ParIterableViewLike[T, Coll, CollSeq, ParIterableView[T, Coll, CollSeq], IterableView[T, CollSeq]]
+   with GenIterableView[T, Coll]
 
 
 
 
 object ParIterableView {
   abstract class NoCombiner[T] extends Combiner[T, Nothing] {
-    self: EnvironmentPassingCombiner[T, Nothing] =>
+//    self: EnvironmentPassingCombiner[T, Nothing] =>
     def +=(elem: T): this.type = this
     def iterator: Iterator[T] = Iterator.empty
     def result() = throw new UnsupportedOperationException("ParIterableView.Combiner.result")
@@ -49,10 +51,11 @@ object ParIterableView {
 
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParIterableView[T, ParIterable[T], Iterable[T]]] =
     new CanCombineFrom[Coll, T, ParIterableView[T, ParIterable[T], Iterable[T]]] {
-      def apply(from: Coll) = new NoCombiner[T] with EnvironmentPassingCombiner[T, Nothing]
-      def apply() = new NoCombiner[T] with EnvironmentPassingCombiner[T, Nothing]
+      def apply(from: Coll) = new NoCombiner[T] {} // was: with EnvironmentPassingCombiner[T, Nothing]
+      def apply() = new NoCombiner[T] {} // was: with EnvironmentPassingCombiner[T, Nothing]
     }
 }
+
 
 
 

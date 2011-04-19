@@ -10,5 +10,5 @@ package scala.runtime
 
 /** See scala.AnyValCompanion.
  */
-@deprecated("Use scala.AnyValCompanion instead")
+@deprecated("Use scala.AnyValCompanion instead", "2.8.0")
 private[scala] trait AnyValCompanion extends scala.AnyValCompanion { }

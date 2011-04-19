@@ -88,7 +88,7 @@ package object parallel {
     def toParArray: ParArray[T]
   }
 
-  implicit def traversable2ops[T](t: TraversableOnce[T]) = new TraversableOps[T] {
+  implicit def traversable2ops[T](t: collection.GenTraversableOnce[T]) = new TraversableOps[T] {
     def isParallel = t.isInstanceOf[Parallel]
     def isParIterable = t.isInstanceOf[ParIterable[_]]
     def asParIterable = t.asInstanceOf[ParIterable[T]]
@@ -128,9 +128,9 @@ package object parallel {
   /** A helper iterator for iterating very small array buffers.
    *  Automatically forwards the signal delegate when splitting.
    */
-  private[parallel] class BufferIterator[T]
+  private[parallel] class BufferSplitter[T]
     (private val buffer: collection.mutable.ArrayBuffer[T], private var index: Int, private val until: Int, var signalDelegate: collection.generic.Signalling)
-  extends ParIterableIterator[T] {
+  extends IterableSplitter[T] {
     def hasNext = index < until
     def next = {
       val r = buffer(index)
@@ -138,12 +138,12 @@ package object parallel {
       r
     }
     def remaining = until - index
-    def dup = new BufferIterator(buffer, index, until, signalDelegate)
-    def split: Seq[ParIterableIterator[T]] = if (remaining > 1) {
+    def dup = new BufferSplitter(buffer, index, until, signalDelegate)
+    def split: Seq[IterableSplitter[T]] = if (remaining > 1) {
       val divsz = (until - index) / 2
       Seq(
-        new BufferIterator(buffer, index, index + divsz, signalDelegate),
-        new BufferIterator(buffer, index + divsz, until, signalDelegate)
+        new BufferSplitter(buffer, index, index + divsz, signalDelegate),
+        new BufferSplitter(buffer, index + divsz, until, signalDelegate)
       )
     } else Seq(this)
     private[parallel] override def debugInformation = {
@@ -186,7 +186,7 @@ package object parallel {
   private[parallel] abstract class BucketCombiner[-Elem, +To, Buck, +CombinerType <: BucketCombiner[Elem, To, Buck, CombinerType]]
     (private val bucketnumber: Int)
   extends Combiner[Elem, To] {
-  self: EnvironmentPassingCombiner[Elem, To] =>
+  //self: EnvironmentPassingCombiner[Elem, To] =>
     protected var buckets: Array[UnrolledBuffer[Buck]] @uncheckedVariance = new Array[UnrolledBuffer[Buck]](bucketnumber)
     protected var sz: Int = 0
 

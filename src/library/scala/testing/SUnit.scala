@@ -47,7 +47,8 @@ import xml.{ Node, NodeSeq }
  * @author Burak Emir
  */
 @deprecated("SUnit will be removed in 2.8.0. There are several free and sophisticated testing\n"+
-            "frameworks for Scala available, examples are \"ScalaTest\", \"ScalaCheck\" or \"Specs\".")
+            """frameworks for Scala available, examples are "ScalaTest", "ScalaCheck" or "Specs".""",
+            "2.7.2")
 object SUnit {
 
   /** <p>

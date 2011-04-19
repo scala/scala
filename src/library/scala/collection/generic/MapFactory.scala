@@ -6,12 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package generic
 
+
 import mutable.{Builder, MapBuilder}
+
 
 /** A template for companion objects of `Map` and subclasses thereof.
  *
@@ -31,7 +31,7 @@ import mutable.{Builder, MapBuilder}
  *    @see CanBuildFrom
  *    @see GenericCanBuildFrom
  */
-abstract class MapFactory[CC[A, B] <: Map[A, B] with MapLike[A, B, CC[A, B]]] {
+abstract class MapFactory[CC[A, B] <: GenMap[A, B] with GenMapLike[A, B, CC[A, B]]] {
 
   /** The type constructor of the collection that can be built by this factory */
   type Coll = CC[_, _]

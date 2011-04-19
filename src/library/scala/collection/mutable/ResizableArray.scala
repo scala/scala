@@ -16,7 +16,7 @@ import generic._
 /** This class is used internally to implement data structures that
  *  are based on resizable arrays.
  *
- *  @tparam A    type of the elements contained in this resizeable array.
+ *  @tparam A    type of the elements contained in this resizable array.
  *
  *  @author  Matthias Zenger, Burak Emir
  *  @author Martin Odersky

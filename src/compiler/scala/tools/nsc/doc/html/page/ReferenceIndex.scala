@@ -7,7 +7,7 @@ package scala.tools.nsc
 package doc
 package html
 package page
-
+import doc.model._
 
 class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends HtmlPage {
 
@@ -25,18 +25,34 @@ class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
     </xml:group>
 
+
+  private def entry(name: String, methods: Iterable[MemberEntity]) = {
+    val occurrences = methods.map(method => {
+      val html = templateToHtml(method.inDefinitionTemplates.head)
+      if (method.deprecation.isDefined) {
+        <strike>{ html }</strike>
+      } else {
+        html
+      }
+    })
+
+    <div class="entry">
+      <div class="name">{
+        if (methods.find { ! _.deprecation.isDefined } != None)
+          name
+        else
+          <strike>{ name }</strike>
+      }</div>
+      <div class="occurrences">{
+        for (owner <- occurrences) yield owner ++ xml.Text(" ")
+      }</div>
+    </div>
+  }
+
   def body =
-    <body>
-      { for(groups <- index.firstLetterIndex(letter)) yield {
-      <div class="entry">
-        <div class="name">{ groups._1 }</div>
-        <div class="occurrences">
-          { for(owner <- groups._2.view) yield {
-            templateToHtml(owner) ++ xml.Text(" ")
-          } }
-        </div>
-      </div>
-       } }
-    </body>
+    <body>{
+      for(groups <- index.firstLetterIndex(letter)) yield
+        entry(groups._1, groups._2.view)
+    }</body>
 
 }

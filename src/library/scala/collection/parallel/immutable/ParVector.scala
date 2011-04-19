@@ -16,8 +16,7 @@ package parallel.immutable
 import scala.collection.generic.{GenericParTemplate, CanCombineFrom, ParFactory}
 import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.ParSeqIterator
-import scala.collection.parallel.EnvironmentPassingCombiner
+import scala.collection.parallel.SeqSplitter
 import mutable.ArrayBuffer
 import immutable.Vector
 import immutable.VectorBuilder
@@ -55,7 +54,7 @@ extends ParSeq[T]
 
   def length = vector.length
 
-  def parallelIterator: ParSeqIterator[T] = {
+  def splitter: SeqSplitter[T] = {
     val pit = new ParVectorIterator(vector.startIndex, vector.endIndex) with SCPI
     vector.initIterator(pit)
     pit
@@ -66,7 +65,7 @@ extends ParSeq[T]
   class ParVectorIterator(_start: Int, _end: Int) extends VectorIterator[T](_start, _end) with ParIterator {
   self: SCPI =>
     def remaining: Int = remainingElementCount
-    def dup: ParSeqIterator[T] = (new ParVector(remainingVector)).parallelIterator
+    def dup: SeqSplitter[T] = (new ParVector(remainingVector)).splitter
     def split: Seq[ParVectorIterator] = {
       val rem = remaining
       if (rem >= 2) psplit(rem / 2, rem - rem / 2)
@@ -79,7 +78,7 @@ extends ParSeq[T]
         splitted += remvector.take(sz)
         remvector = remvector.drop(sz)
       }
-      splitted.map(v => new ParVector(v).parallelIterator.asInstanceOf[ParVectorIterator])
+      splitted.map(v => new ParVector(v).splitter.asInstanceOf[ParVectorIterator])
     }
   }
 
@@ -95,15 +94,15 @@ object ParVector extends ParFactory[ParVector] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParVector[T]] =
     new GenericCanCombineFrom[T]
 
-  def newBuilder[T]: Combiner[T, ParVector[T]] = new LazyParVectorCombiner[T] with EPC[T, ParVector[T]]
+  def newBuilder[T]: Combiner[T, ParVector[T]] = newCombiner[T]
 
-  def newCombiner[T]: Combiner[T, ParVector[T]] = new LazyParVectorCombiner[T] with EPC[T, ParVector[T]]
+  def newCombiner[T]: Combiner[T, ParVector[T]] = new LazyParVectorCombiner[T] // was: with EPC[T, ParVector[T]]
 }
 
 
 
 private[immutable] class LazyParVectorCombiner[T] extends Combiner[T, ParVector[T]] {
-self: EnvironmentPassingCombiner[T, ParVector[T]] =>
+//self: EnvironmentPassingCombiner[T, ParVector[T]] =>
   var sz = 0
   val vectors = new ArrayBuffer[VectorBuilder[T]] += new VectorBuilder[T]
 

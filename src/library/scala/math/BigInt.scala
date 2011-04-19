@@ -23,10 +23,10 @@ object BigInt {
   private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
 
-  @deprecated("Use Long.MinValue")
+  @deprecated("Use Long.MinValue", "2.9.0")
   val MinLong = BigInt(Long.MinValue)
 
-  @deprecated("Use Long.MaxValue")
+  @deprecated("Use Long.MaxValue", "2.9.0")
   val MaxLong = BigInt(Long.MaxValue)
 
   /** Constructs a <code>BigInt</code> whose value is equal to that of the

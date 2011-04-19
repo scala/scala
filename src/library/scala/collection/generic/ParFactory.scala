@@ -1,3 +1,11 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
 package scala.collection.generic
 
 
@@ -16,7 +24,7 @@ abstract class ParFactory[CC[X] <: ParIterable[X] with GenericParTemplate[X, CC]
 extends TraversableFactory[CC]
    with GenericParCompanion[CC] {
 
-  type EPC[T, C] = collection.parallel.EnvironmentPassingCombiner[T, C]
+  //type EPC[T, C] = collection.parallel.EnvironmentPassingCombiner[T, C]
 
   /**
    * A generic implementation of the `CanCombineFrom` trait, which forwards all calls to
@@ -28,7 +36,6 @@ extends TraversableFactory[CC]
     override def apply() = newBuilder[A]
   }
 }
-
 
 
 

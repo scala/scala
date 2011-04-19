@@ -24,6 +24,10 @@ public abstract class TerminalSupport
     implements Terminal
 {
     public static String DEFAULT_KEYBINDINGS_PROPERTIES = "keybindings.properties";
+    public static String DEFAULT_KEYBINDINGS_PROPERTIES_MAC = "macbindings.properties";
+    public static boolean isMac() {
+      return System.getProperty("os.name").toLowerCase().startsWith("mac");
+    }
 
     public static final String JLINE_SHUTDOWNHOOK = "jline.shutdownhook";
 
@@ -157,7 +161,11 @@ public abstract class TerminalSupport
     }
 
     public InputStream getDefaultBindings() {
-        return TerminalSupport.class.getResourceAsStream(DEFAULT_KEYBINDINGS_PROPERTIES);
+      // Mac bindings are slightly different from Unix/Linux.
+      // For instance, the Delete key behavior is different between them.
+      return TerminalSupport.class.getResourceAsStream(
+        isMac() ? DEFAULT_KEYBINDINGS_PROPERTIES_MAC : DEFAULT_KEYBINDINGS_PROPERTIES
+      );
     }
 
     //

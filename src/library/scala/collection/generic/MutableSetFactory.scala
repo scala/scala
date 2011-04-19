@@ -11,7 +11,7 @@ package generic
 
 import mutable.{ Builder, GrowingBuilder }
 
-abstract class MutableSetFactory[CC[X] <: mutable.Set[X] with mutable.SetLike[X, CC[X]]]
+abstract class MutableSetFactory[CC[X] <: mutable.GenSet[X] with GenSetLike[X, CC[X]]]
   extends SetFactory[CC] {
 
   def newBuilder[A]: Builder[A, CC[A]] = new GrowingBuilder[A, CC[A]](empty[A])

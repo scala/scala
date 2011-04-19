@@ -33,7 +33,7 @@ import parallel.immutable.ParHashMap
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(2L)
-class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with CustomParallelizable[(A, B), ParHashMap[A, B]] with Serializable {
+class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Serializable with CustomParallelizable[(A, B), ParHashMap[A, B]] {
 
   override def size: Int = 0
 
@@ -180,7 +180,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
   }
 
-  private[collection] class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uV]) extends HashMap[A,B] {
+  private[collection] class HashMapCollision1[A, +B](private[HashMap] var hash: Int, var kvs: ListMap[A, B @uV])
+          extends HashMap[A, B @uV] {
+
     override def size = kvs.size
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
@@ -222,8 +224,12 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
   }
 
-  class HashTrieMap[A,+B](private[HashMap] var bitmap: Int, private[collection] var elems: Array[HashMap[A,B @uV]],
-      private[HashMap] var size0: Int) extends HashMap[A,B] {
+  class HashTrieMap[A, +B](
+    private[HashMap] var bitmap: Int,
+    private[collection] var elems: Array[HashMap[A, B @uV]],
+    private[HashMap] var size0: Int
+  ) extends HashMap[A, B @uV] {
+
 /*
     def this (level: Int, m1: HashMap1[A,B], m2: HashMap1[A,B]) = {
       this(((m1.hash >>> level) & 0x1f) | ((m2.hash >>> level) & 0x1f), {
@@ -308,7 +314,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       }
     }
 
-    override def iterator: Iterator[(A, B)] = new CovariantTrieIterator[A, B](elems)
+    override def iterator: Iterator[(A, B)] = new TrieIterator[(A, B)](elems.asInstanceOf[Array[Iterable[(A, B)]]]) {
+      final override def getElem(cc: AnyRef): (A, B) = cc.asInstanceOf[HashMap1[A, B]].ensurePair
+    }
 
 /*
 
@@ -450,35 +458,6 @@ time { mNew.iterator.foreach( p => ()) }
       case hm: HashMap[_, _] => this
       case _ => sys.error("section supposed to be unreachable.")
     }
-  }
-
-  class CovariantTrieIterator[A, +B](elems: Array[HashMap[A, B]]) extends Iterator[(A, B)] {
-    private[this] val it = new TrieIterator[A, B](elems)
-    def next = it.next
-    def hasNext = it.hasNext
-  }
-
-  class TrieIterator[A, B](elems: Array[HashMap[A, B]]) extends TrieIteratorBase[(A, B), HashMap[A, B]](elems) {
-    import TrieIteratorBase._
-
-    type This = TrieIterator[A, B]
-    private[immutable] def recreateIterator() = new TrieIterator(elems)
-    private[immutable] type ContainerType = HashMap1[A, B]
-    private[immutable] type TrieType      = HashTrieMap[A, B]
-    private[immutable] type CollisionType = HashMapCollision1[A, B]
-
-    private[immutable] def determineType(x: HashMap[A, B]) = x match {
-      case _: HashMap1[_, _]          => CONTAINER_TYPE
-      case _: HashTrieMap[_, _]       => TRIE_TYPE
-      case _: HashMapCollision1[_, _] => COLLISION_TYPE
-    }
-
-    private[immutable] def getElem(cc: ContainerType)            = cc.ensurePair
-    private[immutable] def getElems(t: TrieType)                 = t.elems
-    private[immutable] def collisionToArray(c: CollisionType)    = c.kvs map (x => HashMap(x)) toArray
-    private[immutable] def newThisType(xs: Array[HashMap[A, B]]) = new TrieIterator(xs)
-    private[immutable] def newDeepArray(size: Int)               = new Array[Array[HashMap[A, B]]](size)
-    private[immutable] def newSingleArray(el: HashMap[A, B])     = Array(el)
   }
 
   private def check[K](x: HashMap[K, _], y: HashMap[K, _], xy: HashMap[K, _]) = { // TODO remove this debugging helper

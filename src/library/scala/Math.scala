@@ -13,83 +13,83 @@ package scala
  *  operations such as the elementary exponential, logarithm, square root, and
  *  trigonometric functions.
  */
-@deprecated("use the scala.math package object instead.\n(Example package object usage: scala.math.Pi )")
+@deprecated("use the scala.math package object instead.\n(Example package object usage: scala.math.Pi )", "2.8.0")
 object Math extends MathCommon {
-  @deprecated("Use scala.Byte.MinValue instead")
+  @deprecated("Use scala.Byte.MinValue instead", "2.8.0")
   val MIN_BYTE = java.lang.Byte.MIN_VALUE
 
-  @deprecated("Use scala.Byte.MaxValue instead")
+  @deprecated("Use scala.Byte.MaxValue instead", "2.8.0")
   val MAX_BYTE = java.lang.Byte.MAX_VALUE
 
-  @deprecated("Use scala.Short.MinValue instead")
+  @deprecated("Use scala.Short.MinValue instead", "2.8.0")
   val MIN_SHORT = java.lang.Short.MIN_VALUE
 
-  @deprecated("Use scala.Short.MaxValue instead")
+  @deprecated("Use scala.Short.MaxValue instead", "2.8.0")
   val MAX_SHORT = java.lang.Short.MAX_VALUE
 
-  @deprecated("Use scala.Char.MinValue instead")
+  @deprecated("Use scala.Char.MinValue instead", "2.8.0")
   val MIN_CHAR = java.lang.Character.MIN_VALUE
 
-  @deprecated("Use scala.Char.MaxValue instead")
+  @deprecated("Use scala.Char.MaxValue instead", "2.8.0")
   val MAX_CHAR = java.lang.Character.MAX_VALUE
 
-  @deprecated("Use scala.Int.MinValue instead")
+  @deprecated("Use scala.Int.MinValue instead", "2.8.0")
   val MIN_INT = java.lang.Integer.MIN_VALUE
 
-  @deprecated("Use scala.Int.MaxValue instead")
+  @deprecated("Use scala.Int.MaxValue instead", "2.8.0")
   val MAX_INT = java.lang.Integer.MAX_VALUE
 
-  @deprecated("Use scala.Long.MinValue instead")
+  @deprecated("Use scala.Long.MinValue instead", "2.8.0")
   val MIN_LONG = java.lang.Long.MIN_VALUE
 
-  @deprecated("Use scala.Long.MaxValue instead")
+  @deprecated("Use scala.Long.MaxValue instead", "2.8.0")
   val MAX_LONG = java.lang.Long.MAX_VALUE
 
   /** The smallest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
-  @deprecated("Use scala.Float.MinValue instead")
+  @deprecated("Use scala.Float.MinValue instead", "2.8.0")
   val MIN_FLOAT  = -java.lang.Float.MAX_VALUE
 
   /** The smallest difference between two values of <a href="Float.html" target="_self">scala.Float</a>. */
-  @deprecated("Use scala.Float.MinPositiveValue instead")
+  @deprecated("Use scala.Float.MinPositiveValue instead", "2.8.0")
   val EPS_FLOAT  = java.lang.Float.MIN_VALUE
 
   /** The greatest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
-  @deprecated("Use scala.Float.MaxValue instead")
+  @deprecated("Use scala.Float.MaxValue instead", "2.8.0")
   val MAX_FLOAT  = java.lang.Float.MAX_VALUE
 
   /** A value of type <a href="Float.html" target="_self">scala.Float</a> that represents no number. */
-  @deprecated("Use scala.Float.NaN instead")
+  @deprecated("Use scala.Float.NaN instead", "2.8.0")
   val NaN_FLOAT  = java.lang.Float.NaN
 
   /** Negative infinity of type <a href="Float.html" target="_self">scala.Float</a>. */
-  @deprecated("Use scala.Float.NegativeInfinity instead")
+  @deprecated("Use scala.Float.NegativeInfinity instead", "2.8.0")
   val NEG_INF_FLOAT = java.lang.Float.NEGATIVE_INFINITY
 
   /** Positive infinity of type <a href="Float.html" target="_self">scala.Float</a>. */
-  @deprecated("Use scala.Float.PositiveInfinity instead")
+  @deprecated("Use scala.Float.PositiveInfinity instead", "2.8.0")
   val POS_INF_FLOAT = java.lang.Float.POSITIVE_INFINITY
 
   /** The smallest possible value for <a href="Double.html" target="_self">scala.Double</a>. */
-  @deprecated("Use scala.Double.MinValue instead")
+  @deprecated("Use scala.Double.MinValue instead", "2.8.0")
   val MIN_DOUBLE = -java.lang.Double.MAX_VALUE
 
   /** The smallest difference between two values of <a href="Double.html" target="_self">scala.Double</a>. */
-  @deprecated("Use scala.Double.MinPositiveValue instead")
+  @deprecated("Use scala.Double.MinPositiveValue instead", "2.8.0")
   val EPS_DOUBLE = java.lang.Double.MIN_VALUE
 
   /** The greatest possible value for <a href="Double.html" target="_self">scala.Double</a>. */
-  @deprecated("Use scala.Double.MaxValue instead")
+  @deprecated("Use scala.Double.MaxValue instead", "2.8.0")
   val MAX_DOUBLE = java.lang.Double.MAX_VALUE
 
   /** A value of type <a href="Double.html" target="_self">scala.Double</a> that represents no number. */
-  @deprecated("Use scala.Double.NaN instead")
+  @deprecated("Use scala.Double.NaN instead", "2.8.0")
   val NaN_DOUBLE = java.lang.Double.NaN
 
   /** Negative infinity of type <a href="Double.html" target="_self">scala.Double</a>. */
-  @deprecated("Use scala.Double.NegativeInfinity instead")
+  @deprecated("Use scala.Double.NegativeInfinity instead", "2.8.0")
   val NEG_INF_DOUBLE = java.lang.Double.NEGATIVE_INFINITY
 
   /** Positive infinity of type <a href="Double.html" target="_self">scala.Double</a>. */
-  @deprecated("Use scala.Double.PositiveInfinity instead")
+  @deprecated("Use scala.Double.PositiveInfinity instead", "2.8.0")
   val POS_INF_DOUBLE = java.lang.Double.POSITIVE_INFINITY
 }

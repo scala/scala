@@ -9,7 +9,7 @@
 package scala.collection
 package parallel.mutable
 
-import collection.parallel.ParIterableIterator
+import collection.parallel.IterableSplitter
 
 /** Parallel flat hash table.
  *
@@ -24,7 +24,7 @@ trait ParFlatHashTable[T] extends collection.mutable.FlatHashTable[T] {
   override def alwaysInitSizeMap = true
 
   abstract class ParFlatHashTableIterator(var idx: Int, val until: Int, val totalsize: Int)
-  extends ParIterableIterator[T] with SizeMapUtils {
+  extends IterableSplitter[T] with SizeMapUtils {
     import collection.DebugUtils._
 
     private var traversed = 0
@@ -42,7 +42,7 @@ trait ParFlatHashTable[T] extends collection.mutable.FlatHashTable[T] {
       throw new IndexOutOfBoundsException(idx.toString)
     }
 
-    def newIterator(index: Int, until: Int, totalsize: Int): ParIterableIterator[T]
+    def newIterator(index: Int, until: Int, totalsize: Int): IterableSplitter[T]
 
     def remaining = totalsize - traversed
     def hasNext = traversed < totalsize

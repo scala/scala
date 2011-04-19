@@ -1,0 +1,43 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
+
+package scala.collection
+package immutable
+
+
+import generic._
+import mutable.Builder
+
+
+/** A generic trait for mutable sets.
+ *
+ *  $possiblyparinfo
+ *  $setNote
+ *  $setTags
+ *
+ *  @since 1.0
+ *  @author Matthias Zenger
+ *  @define Coll mutable.Set
+ *  @define coll mutable set
+ */
+trait GenSet[A] extends GenIterable[A]
+                   with scala.collection.GenSet[A]
+                   with scala.collection.GenSetLike[A, GenSet[A]]
+                   with GenericSetTemplate[A, GenSet]
+{
+  override def companion: GenericCompanion[GenSet] = GenSet
+  def seq: Set[A]
+}
+
+
+object GenSet extends TraversableFactory[GenSet] {
+  implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
+  def newBuilder[A] = Set.newBuilder
+}

@@ -51,11 +51,11 @@ object XML extends XMLLoader[Elem]
   def withSAXParser(p: SAXParser): XMLLoader[Elem] =
     new XMLLoader[Elem] { override val parser: SAXParser = p }
 
-  @deprecated("Use save() instead")
+  @deprecated("Use save() instead", "2.8.0")
   final def saveFull(filename: String, node: Node, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
     save(filename, node, encoding, xmlDecl, doctype)
 
-  @deprecated("Use save() instead")
+  @deprecated("Use save() instead", "2.8.0")
   final def saveFull(filename: String, node: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
     save(filename, node, enc, xmlDecl, doctype)
 
