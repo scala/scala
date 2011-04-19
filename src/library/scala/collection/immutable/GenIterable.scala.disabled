@@ -17,21 +17,21 @@ import mutable.Builder
 /** A base trait for iterable collections that can be mutated.
  *
  *  $possiblyparinfo
- *
+ *  
  *  $iterableInfo
  */
-trait GenIterable[+A] extends GenTraversable[A]
-                      with scala.collection.GenIterable[A]
+trait GenIterable[+A] extends GenTraversable[A] 
+                      with scala.collection.GenIterable[A] 
                       with scala.collection.GenIterableLike[A, GenIterable[A]]
-                      with GenericTraversableTemplate[A, GenIterable]
+//                      with GenericTraversableTemplate[A, GenIterable]
 {
   def seq: Iterable[A]
-  override def companion: GenericCompanion[GenIterable] = GenIterable
+  //override def companion: GenericCompanion[GenIterable] = GenIterable
 }
 
 
-object GenIterable extends TraversableFactory[GenIterable] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenIterable[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, GenIterable[A]] = Iterable.newBuilder
-}
+// object GenIterable extends TraversableFactory[GenIterable] {
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenIterable[A]] = new GenericCanBuildFrom[A]
+//   def newBuilder[A]: Builder[A, GenIterable[A]] = Iterable.newBuilder
+// }
 

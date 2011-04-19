@@ -29,7 +29,7 @@ import scala.collection.GenSeq
  *  @define Coll mutable.ParSeq
  *  @define coll mutable parallel sequence
  */
-trait ParSeq[T] extends collection.mutable.GenSeq[T] // was: collection.mutable.Seq[T]
+trait ParSeq[T] extends collection/*.mutable*/.GenSeq[T] // was: collection.mutable.Seq[T]
                    with ParIterable[T]
                    with collection.parallel.ParSeq[T]
                    with GenericParTemplate[T, ParSeq]

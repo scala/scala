@@ -6,11 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
-package mutable
-
+package immutable
 
 import generic._
 
@@ -22,19 +19,18 @@ import generic._
  *  @since 1.0
  *  @author  Matthias Zenger
  */
-trait GenMap[A, B]
+trait GenMap[A, +B] 
 extends GenIterable[(A, B)]
-   with scala.collection.GenMap[A, B]
+   with scala.collection.GenMap[A, B] 
    with scala.collection.GenMapLike[A, B, GenMap[A, B]]
 {
   def seq: Map[A, B]
 }
 
 
-object GenMap extends MapFactory[GenMap] {
-  def empty[A, B]: Map[A, B] = Map.empty
-
-  /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
-}
-
+// object GenMap extends MapFactory[GenMap] {
+//   def empty[A, B]: Map[A, B] = Map.empty
+  
+//   /** $mapCanBuildFromInfo */
+//   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
+// }

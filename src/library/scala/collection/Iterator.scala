@@ -253,6 +253,8 @@ import Iterator.empty
 trait Iterator[+A] extends TraversableOnce[A] {
   self =>
 
+  def seq: Iterator[A] = this
+
   /** Tests whether this iterator can provide another element.
    *  @return  `true` if a subsequent call to `next` will yield an element,
    *           `false` otherwise.

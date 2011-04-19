@@ -28,7 +28,7 @@ import collection.parallel.Combiner
  *  @since 2.9
  */
 trait ParMap[K, V]
-extends collection.mutable.GenMap[K, V]
+extends collection/*.mutable*/.GenMap[K, V]
    with collection.parallel.ParMap[K, V]
    with /* mutable */ ParIterable[(K, V)]
    with GenericParMapTemplate[K, V, ParMap]

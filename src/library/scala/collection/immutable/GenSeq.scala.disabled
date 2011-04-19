@@ -9,36 +9,41 @@
 
 
 package scala.collection
-package mutable
+package immutable
 
 
 import generic._
+import mutable.Builder
 
 
 /** A subtrait of `collection.GenSeq` which represents sequences
  *  that can be mutated.
  *
  *  $possiblyparinfo
- *
+ *   
  *  $seqInfo
- *
+ * 
  *  The class adds an `update` method to `collection.Seq`.
- *
+ *  
  *  @define Coll mutable.Seq
  *  @define coll mutable sequence
  */
-trait GenSeq[A] extends GenIterable[A]
-                        with scala.collection.GenSeq[A]
-                        with scala.collection.GenSeqLike[A, GenSeq[A]]
-                        with GenericTraversableTemplate[A, GenSeq]
+trait GenSeq[+A] extends GenIterable[A] 
+                         with scala.collection.GenSeq[A] 
+                         with scala.collection.GenSeqLike[A, GenSeq[A]]
+//                         with GenericTraversableTemplate[A, GenSeq]
 {
-  override def companion: GenericCompanion[GenSeq] = GenSeq
   def seq: Seq[A]
+  //override def companion: GenericCompanion[GenSeq] = GenSeq
 }
 
 
-object GenSeq extends SeqFactory[GenSeq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenSeq[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, GenSeq[A]] = Seq.newBuilder
-}
+// object GenSeq extends SeqFactory[GenSeq] {
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenSeq[A]] = new GenericCanBuildFrom[A]
+//   def newBuilder[A]: Builder[A, GenSeq[A]] = Seq.newBuilder
+// }
+
+
+
+
 
