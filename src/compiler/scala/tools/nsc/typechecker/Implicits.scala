@@ -13,7 +13,7 @@ package typechecker
 
 import annotation.tailrec
 import scala.collection.{ mutable, immutable }
-import mutable.{ LinkedHashMap, ListBuffer }
+import mutable.{ HashMap, LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
 import util.Statistics._
@@ -71,10 +71,12 @@ trait Implicits {
   private type InfoMap = LinkedHashMap[Symbol, List[ImplicitInfo]]
   private val implicitsCache = new LinkedHashMap[Type, Infoss]
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
+  private val improvesCache = new HashMap[(ImplicitInfo, ImplicitInfo), Boolean]
 
   def resetImplicits() {
     implicitsCache.clear()
     infoMapCache.clear()
+    improvesCache.clear()
   }
 
   private val ManifestSymbols = Set(PartialManifestClass, FullManifestClass, OptManifestClass)
@@ -229,8 +231,17 @@ trait Implicits {
     def improves(info1: ImplicitInfo, info2: ImplicitInfo) = {
       incCounter(improvesCount)
       (info2 == NoImplicitInfo) ||
-      (info1 != NoImplicitInfo) &&
-      isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
+      (info1 != NoImplicitInfo) && {
+        if (info1.sym.isStatic && info2.sym.isStatic) {
+          improvesCache get (info1, info2) match {
+            case Some(b) => incCounter(improvesCachedCount); b
+            case None =>
+              val result = isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
+              improvesCache((info1, info2)) = result
+              result
+          }
+        } else isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
+      }
     }
 
     /** Map all type params in given list to WildcardType
