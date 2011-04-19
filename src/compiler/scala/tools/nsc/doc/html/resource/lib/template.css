@@ -30,7 +30,7 @@ input { border-width: 0px; }
 /* Page */
 
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   font-size: 10pt;
 }
 
@@ -144,34 +144,26 @@ a[href]:hover {
 }
 
 /* Linear super types and known subclasses */
-.hideElement,
 .hiddenContent {
   display: none;
 }
 
-div.superTypes > h1 {
-  font-style: italic;
-  padding-top: 0.5em;
-}
-
-.link {
-  text-decoration: underline;
+.toggleContainer .toggle {
   cursor: pointer;
-  color: #315479;
+  padding-left: 15px;
+  background: url("arrow-right.png") no-repeat 0 3px transparent;
+}
+  
+.toggleContainer.open .toggle {
+  background: url("arrow-down.png") no-repeat 0 3px transparent;
 }
 
-.toggleContainer p {
+.toggleContainer .hiddenContent {
   margin-top: 5px;
 }
 
 .toggleContainer .showElement {
   padding-left: 15px;
-  background: url("arrow-right.png") no-repeat 0 5px transparent;
-}
-
-.toggleContainer .hideElement {
-  padding-left: 15px;
-  background: url("arrow-down.png") no-repeat 0 5px transparent;
 }
 
 .value #definition {
@@ -214,7 +206,7 @@ dl.attributes > dd {
   background-color: #315479; /* grayish blue */
   background: url("valuemembersbg.gif");
   background-repeat:repeat-x;
-  height: 28px;
+  height: 18px;
 }
 
 #values ol li:last-child {
@@ -225,14 +217,14 @@ dl.attributes > dd {
   background-color: #316555; /* green */
   background: url("typebg.gif");
   background-repeat:repeat-x;
-  height: 28px;
+  height: 18px;
 }
 
 #constructors > h3 {
   background-color: #333;
   background: url("constructorsbg.gif");
   background-repeat:repeat-x;
-  height: 28px;
+  height: 18px;
 }
 
 #template > div.parent > h3 {
@@ -243,7 +235,7 @@ dl.attributes > dd {
   background: url("constructorsbg.gif");
   background-repeat:repeat-x;
   height: 17px;
-  margin-top: 10px;
+/*  margin-top: 10px;*/
 /*  color: black;
   text-shadow: white 0px 1px 0px;
   font-weight: normal;8*/

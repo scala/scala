@@ -398,28 +398,22 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
     val linearization = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
-        <div class="toggleContainer">
-          <div class="attributes block">
-            <span class="link showElement">Linear Supertypes</span>
-            <span class="link hideElement">Linear Supertypes</span>
-          </div>
-          <div class="superTypes hiddenContent">
-            <p>{ typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }</p>
-          </div>
+        <div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent">{
+            typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", "))
+          }</div>
         </div>
       case _ => NodeSeq.Empty
     }
 
     val subclasses = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.subClasses.nonEmpty =>
-        <div class="toggleContainer">
-          <div class="attributes block">
-            <span class="link showElement">Known Subclasses</span>
-            <span class="link hideElement">Known Subclasses</span>
-          </div>
-          <div class="subClasses hiddenContent">
-            <p>{ templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", ")) }</p>
-          </div>
+        <div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent">{
+            templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", "))
+          }</div>
         </div>
       case _ => NodeSeq.Empty
     }
