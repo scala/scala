@@ -95,8 +95,9 @@ a[href]:hover {
 #definition > h1 {
   padding: 12px 0 12px 6px;
   color: white;
-  text-shadow: 3px black;
+/*   text-shadow: 3px black;
   text-shadow: black 0px 2px 0px;
+ */
   font-size: 24pt;
   display: inline-block;
 }
@@ -104,16 +105,18 @@ a[href]:hover {
 #definition h1 > a {
   color: #ffffff;
 /*  text-decoration: none; */
-  font-size: 24pt;
+/*   font-size: 24pt;
   text-shadow: black 0px 0px 0px;
-}
+ */
+ }
 
 #definition h1 > a:hover {
   color: #ffffff;
   text-decoration: none;
   font-size: 24pt;
-  text-shadow: black 0px 2px 0px;
-}
+/*   text-shadow: black 0px 2px 0px;
+ */
+ }
 
 #signature {
   background-image:url('signaturebg2.gif');
@@ -131,16 +134,17 @@ a[href]:hover {
   text-align: left;
   width: auto;
   position: static;
-  text-shadow: 2px white;
+/*   text-shadow: 2px white;
   text-shadow: white 0px 1px 0px;
+ */
 }
 
 #signature > span.symbol {
   text-align: left;
   display: inline;
   padding-left: 0.7em;
-  text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px;
+/*   text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px; */
 }
 
 /* Linear super types and known subclasses */
@@ -284,8 +288,8 @@ div.members > ol > li:last-child {
   line-height: 18px;
   clear: both;
   display: block;
-  text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px;
+/*   text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px; */
 }
 
 .signature .kind {
