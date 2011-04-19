@@ -65,12 +65,18 @@ trait Implicits {
     result
   }
 
-  final val sizeLimit = 50000
+  private final val sizeLimit = 50000
   private type Infos = List[ImplicitInfo]
   private type Infoss = List[List[ImplicitInfo]]
-  val implicitsCache = new LinkedHashMap[Type, Infoss]
+  private type InfoMap = LinkedHashMap[Symbol, List[ImplicitInfo]]
+  private val implicitsCache = new LinkedHashMap[Type, Infoss]
+  private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
 
-  def resetImplicits() { implicitsCache.clear() }
+  def resetImplicits() {
+    implicitsCache.clear()
+    infoMapCache.clear()
+  }
+
   private val ManifestSymbols = Set(PartialManifestClass, FullManifestClass, OptManifestClass)
 
   /** The result of an implicit search
@@ -745,6 +751,106 @@ trait Implicits {
      *  can be accessed with unambiguous stable prefixes, the implicits infos
      *  which are members of these companion objects.
      */
+    private def companionImplicitMap(tp: Type): InfoMap = {
+      val infoMap = new InfoMap
+      val seen = mutable.HashSet[Type]()  // cycle detection
+
+      def getClassParts(tp: Type, infoMap: InfoMap, seen: mutable.Set[Type]) = tp match {
+        case TypeRef(pre, sym, args) =>
+          infoMap get sym match {
+            case Some(infos1) =>
+              if (infos1.nonEmpty && !(pre =:= infos1.head.pre.prefix)) {
+                println("amb prefix: "+pre+"#"+sym+" "+infos1.head.pre.prefix+"#"+sym)
+                infoMap(sym) = List() // ambiguous prefix - ignore implicit members
+              }
+            case None =>
+              if (pre.isStable) {
+                val companion = sym.companionModule
+                companion.moduleClass match {
+                  case mc: ModuleClassSymbol =>
+                    val infos =
+                      for (im <- mc.implicitMembers) yield new ImplicitInfo(im.name, singleType(pre, companion), im)
+                    if (infos.nonEmpty)
+                      infoMap += (sym -> infos)
+                  case _ =>
+                }
+              }
+              val bts = tp.baseTypeSeq
+              var i = 1
+              while (i < bts.length) {
+                getParts(bts(i), infoMap, seen)
+                i += 1
+              }
+              getParts(pre, infoMap, seen)
+            }
+      }
+
+      /** Enter all parts of `tp` into `parts` set.
+       *  This method is performance critical: about 2-4% of all type checking is spent here
+       */
+      def getParts(tp: Type, infoMap: InfoMap, seen: mutable.Set[Type]) {
+        if (seen(tp))
+          return
+        seen += tp
+        tp match {
+          case TypeRef(pre, sym, args) =>
+            if (sym.isClass) {
+              if (!((sym.name == tpnme.REFINE_CLASS_NAME) ||
+                    (sym.name startsWith tpnme.ANON_CLASS_NAME) ||
+                    (sym.name == tpnme.ROOT))) {
+                if (sym.isStatic)
+                  infoMap ++= {
+                    infoMapCache get sym match {
+                      case Some(imap) => imap
+                      case None =>
+                        infoMapCache(sym) = LinkedHashMap.empty // to break cycles
+                        val result = new InfoMap
+                        getClassParts(sym.tpe, result, new mutable.HashSet[Type]())
+                        infoMapCache(sym) = result
+                        result
+                    }
+                  }
+                else
+                  getClassParts(tp, infoMap, seen)
+                args foreach (getParts(_, infoMap, seen))
+              }
+            } else if (sym.isAliasType) {
+              getParts(tp.normalize, infoMap, seen)
+            } else if (sym.isAbstractType) {
+              getParts(tp.bounds.hi, infoMap, seen)
+            }
+          case ThisType(_) =>
+            getParts(tp.widen, infoMap, seen)
+          case _: SingletonType =>
+            getParts(tp.widen, infoMap, seen)
+          case RefinedType(ps, _) =>
+            for (p <- ps) getParts(p, infoMap, seen)
+          case AnnotatedType(_, t, _) =>
+            getParts(t, infoMap, seen)
+          case ExistentialType(_, t) =>
+            getParts(t, infoMap, seen)
+          case PolyType(_, t) =>
+            getParts(t, infoMap, seen)
+          case _ =>
+        }
+      }
+
+      getParts(tp, infoMap, seen)
+      if (settings.verbose.value)
+        println("companion implicits of "+tp+" = "+infoMap) // DEBUG
+      infoMap
+    }
+
+    /** The parts of a type is the smallest set of types that contains
+     *    - the type itself
+     *    - the parts of its immediate components (prefix and argument)
+     *    - the parts of its base types
+     *    - for alias types and abstract types, we take instead the parts
+     *    - of their upper bounds.
+     *  @return For those parts that refer to classes with companion objects that
+     *  can be accessed with unambiguous stable prefixes, the implicits infos
+     *  which are members of these companion objects.
+
     private def companionImplicits(tp: Type): Infoss = {
       val partMap = new LinkedHashMap[Symbol, Type]
       val seen = mutable.HashSet[Type]()  // cycle detection
@@ -815,6 +921,8 @@ trait Implicits {
       buf.toList
     }
 
+*/
+
     /** The implicits made available by type `pt`.
      *  These are all implicits found in companion objects of classes C
      *  such that some part of `tp` has C as one of its superclasses.
@@ -826,12 +934,19 @@ trait Implicits {
       case None                 =>
         incCounter(implicitCacheMisses)
         val start = startTimer(subtypeETNanos)
-        val implicitInfoss = companionImplicits(pt)
+//        val implicitInfoss = companionImplicits(pt)
+        val implicitInfoss1 = companionImplicitMap(pt).valuesIterator.toList
+//        val is1 = implicitInfoss.flatten.toSet
+//        val is2 = implicitInfoss1.flatten.toSet
+//        for (i <- is1)
+//          if (!(is2 contains i)) println("!!! implicit infos of "+pt+" differ, new does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
+//        for (i <- is2)
+//          if (!(is1 contains i)) println("!!! implicit infos of "+pt+" differ, old does not contain "+i+",\nold: "+implicitInfoss+",\nnew: "+implicitInfoss1)
         stopTimer(subtypeETNanos, start)
-        implicitsCache(pt) = implicitInfoss
+        implicitsCache(pt) = implicitInfoss1
         if (implicitsCache.size >= sizeLimit)
           implicitsCache -= implicitsCache.keysIterator.next
-        implicitInfoss
+        implicitInfoss1
     }
 
     /** Creates a tree that calls the relevant factory method in object
