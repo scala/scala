@@ -402,16 +402,20 @@ import ILGenerator._
      * sets the line of the source file corresponding to the next instruction
      */
     def setPosition(line: Int) {
-	if (line != 0)
-	    lineNums.put(lastLabel, Integer.toString(line))
+	    if (line != 0) lineNums.put(lastLabel, Integer.toString(line))
     }
 
     def setPosition(line: Int, filename: String) {
-	if (line != 0)
-	    lineNums.put(lastLabel, line + "  '" + filename + "'")
+	    if (line != 0) lineNums.put(lastLabel, line + "  '" + filename + "'")
     }
 
-    def getLocals(): Array[LocalBuilder] = localList.toArray
+    def setPosition(startLine: Int, endLine: Int, startCol: Int, endCol: Int, filename: String) {
+      val lineRange = startLine + "," + endLine
+      val colRange  = startCol  + "," + endCol
+	  lineNums.put(lastLabel, lineRange + ":" + colRange + "  '" + filename + "'")
+    }
+
+   def getLocals(): Array[LocalBuilder] = localList.toArray
 
     def getLabelIterator() = labelList.iterator
 
