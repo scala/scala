@@ -13,6 +13,7 @@ package scala.collection.parallel
 
 
 import scala.collection.MapLike
+import scala.collection.GenMapLike
 import scala.collection.Map
 import scala.collection.mutable.Builder
 
@@ -38,15 +39,19 @@ trait ParMapLike[K,
                  +V,
                  +Repr <: ParMapLike[K, V, Repr, Sequential] with ParMap[K, V],
                  +Sequential <: Map[K, V] with MapLike[K, V, Sequential]]
-extends MapLike[K, V, Repr]
+extends GenMapLike[K, V, Repr]
    with ParIterableLike[(K, V), Repr, Sequential]
-{ self =>
+{
+self =>
 
-  protected[this] override def newBuilder: Builder[(K, V), Repr] = newCombiner
+  def default(key: K): V = throw new NoSuchElementException("key not found: " + key)
 
-  protected[this] override def newCombiner: Combiner[(K, V), Repr] = unsupportedop("Must implement `newCombiner` in concrete collections.")
+  def empty: Repr
 
-  override def empty: Repr
+  def apply(key: K) = get(key) match {
+    case Some(v) => v
+    case None => default(key)
+  }
 
   // note - should not override toMap (could be mutable)
 }

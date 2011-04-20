@@ -123,7 +123,7 @@ extends Seq[A]
    */
   def pushAll(xs: TraversableOnce[A]): this.type = { xs.seq foreach push ; this }
 
-  @deprecated("use pushAll")
+  @deprecated("use pushAll", "2.8.0")
   @migration(2, 8, "Stack ++= now pushes arguments on the stack from left to right.")
   def ++=(xs: TraversableOnce[A]): this.type = pushAll(xs)
 

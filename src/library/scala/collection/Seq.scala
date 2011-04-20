@@ -18,6 +18,7 @@ import mutable.Builder
  */
 trait Seq[+A] extends PartialFunction[Int, A]
                       with Iterable[A]
+                      with GenSeq[A]
                       with GenericTraversableTemplate[A, Seq]
                       with SeqLike[A, Seq[A]] {
   override def companion: GenericCompanion[Seq] = Seq
@@ -39,10 +40,10 @@ object Seq extends SeqFactory[Seq] {
 
   def newBuilder[A]: Builder[A, Seq[A]] = immutable.Seq.newBuilder[A]
 
-  @deprecated("use View instead")
+  @deprecated("use View instead", "2.8.0")
   type Projection[A] = SeqView[A, Coll]
 
-  @deprecated("use Seq(value) instead")
+  @deprecated("use Seq(value) instead", "2.8.0")
   def singleton[A](value: A) = Seq(value)
 }
 

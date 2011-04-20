@@ -58,7 +58,8 @@ trait StackProxy[A] extends Stack[A] with Proxy {
    *
    *  @param  iter        an iterable object
    */
-  @deprecated("use pushAll") override def ++=(xs: TraversableOnce[A]): this.type = { self ++= xs ; this }
+  @deprecated("use pushAll", "2.8.0")
+  override def ++=(xs: TraversableOnce[A]): this.type = { self ++= xs ; this }
 
 
   override def push(elem1: A, elem2: A, elems: A*): this.type = {

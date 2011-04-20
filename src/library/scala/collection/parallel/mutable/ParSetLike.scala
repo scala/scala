@@ -14,8 +14,8 @@ package parallel.mutable
 
 import scala.collection.mutable.Set
 import scala.collection.mutable.Builder
-
-
+import scala.collection.mutable.Cloneable
+import scala.collection.GenSetLike
 
 
 
@@ -35,16 +35,21 @@ import scala.collection.mutable.Builder
 trait ParSetLike[T,
                  +Repr <: ParSetLike[T, Repr, Sequential] with ParSet[T],
                  +Sequential <: mutable.Set[T] with mutable.SetLike[T, Sequential]]
-extends mutable.SetLike[T, Repr]
+extends GenSetLike[T, Repr]
    with collection.parallel.ParIterableLike[T, Repr, Sequential]
    with collection.parallel.ParSetLike[T, Repr, Sequential]
-{ self =>
-
-  protected[this] override def newBuilder: Builder[T, Repr] = newCombiner
-
-  protected[this] override def newCombiner: parallel.Combiner[T, Repr]
-
+   with Cloneable[Repr]
+{
+self =>
   override def empty: Repr
+
+  def +=(elem: T): this.type
+
+  def -=(elem: T): this.type
+
+  def +(elem: T) = this.clone() += elem
+
+  def -(elem: T) = this.clone() -= elem
 
   // note: should not override toSet
 }

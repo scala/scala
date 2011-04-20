@@ -23,8 +23,8 @@ object Test {
     // println("created trie")
     for (n <- 0 until (sz - 1)) {
       // println("---------> n = " + n)
-      val pit = ht.parallelIterator
-      val pit2 = ht.parallelIterator
+      val pit = ht.splitter
+      val pit2 = ht.splitter
       var i = 0
       while (i < n) {
         pit.next

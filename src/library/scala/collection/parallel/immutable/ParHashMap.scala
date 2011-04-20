@@ -6,31 +6,19 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel.immutable
-
-
-
-
-
-
 
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.ParIterableIterator
-import scala.collection.parallel.EnvironmentPassingCombiner
+import scala.collection.parallel.IterableSplitter
 import scala.collection.mutable.UnrolledBuffer.Unrolled
 import scala.collection.mutable.UnrolledBuffer
 import scala.collection.generic.ParMapFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParMapTemplate
 import scala.collection.generic.GenericParMapCompanion
-import scala.collection.immutable.HashMap
-
-
+import scala.collection.immutable.{ HashMap, TrieIterator }
 import annotation.unchecked.uncheckedVariance
-
-
 
 /** Immutable parallel hash map, based on hash tries.
  *
@@ -64,7 +52,7 @@ self =>
 
   protected[this] override def newCombiner = HashMapCombiner[K, V]
 
-  def parallelIterator: ParIterableIterator[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size) with SCPI
+  def splitter: IterableSplitter[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size) with SCPI
 
   override def seq = trie
 
@@ -88,9 +76,8 @@ self =>
   self: SignalContextPassingIterator[ParHashMapIterator] =>
     var i = 0
     def dup = triter match {
-      case t: HashMap.TrieIterator[_, _] =>
-        val dupt = t.dupIterator.asInstanceOf[Iterator[(K, V)]]
-        dupFromIterator(dupt)
+      case t: TrieIterator[_] =>
+        dupFromIterator(t.dupIterator)
       case _ =>
         val buff = triter.toBuffer
         triter = buff.iterator
@@ -102,9 +89,9 @@ self =>
       phit
     }
     def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
-      case t: HashMap.TrieIterator[_, _] =>
+      case t: TrieIterator[_] =>
         val previousRemaining = remaining
-        val ((fst, fstlength), snd) = t.asInstanceOf[HashMap.TrieIterator[K, V]].split
+        val ((fst, fstlength), snd) = t.split
         val sndlength = previousRemaining - fstlength
         Seq(
           new ParHashMapIterator(fst, fstlength) with SCPI,
@@ -167,9 +154,9 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 
 private[parallel] abstract class HashMapCombiner[K, V]
 extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), HashMapCombiner[K, V]](HashMapCombiner.rootsize) {
-self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
+//self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   import HashMapCombiner._
-  import tasksupport._
+  import collection.parallel.tasksupport._
   val emptyTrie = HashMap.empty[K, V]
 
   def +=(elem: (K, V)) = {
@@ -337,7 +324,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
 
 
 private[parallel] object HashMapCombiner {
-  def apply[K, V] = new HashMapCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
+  def apply[K, V] = new HashMapCombiner[K, V] {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
 
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5

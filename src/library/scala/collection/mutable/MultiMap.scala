@@ -36,7 +36,7 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
    */
   protected def makeSet: Set[B] = new HashSet[B]
 
-  @deprecated("use addBinding instead")
+  @deprecated("use addBinding instead", "2.8.0")
   def add(key: A, value: B): this.type = addBinding(key, value)
 
   /** Assigns the specified `value` to a specified `key`, replacing

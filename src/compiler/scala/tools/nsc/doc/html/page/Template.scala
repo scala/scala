@@ -79,20 +79,23 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
               <div id="order">
                 <span class="filtertype">Ordering</span>
-                <ol><li class="alpha in">Alphabetic</li><li class="inherit out">By inheritance</li></ol>
+                <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
               </div>
           }
           { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
               <div id="ancestors">
                 <span class="filtertype">Inherited</span>
-                <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
-                <ol id="linearization">{ (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
+                <ol><li class="hideall out"><span>Hide All</span></li>
+                <li class="showall in"><span>Show all</span></li></ol>
+                <ol id="linearization">{
+                  (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li> }
+                }</ol>
               </div>
           }
           {
             <div id="visbl">
               <span class="filtertype">Visibility</span>
-              <ol><li class="public in">Public</li><li class="all out">All</li></ol>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
             </div>
           }
         </div>
@@ -197,7 +200,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case dte: DocTemplateEntity if isSelf =>
         // comment of class itself
         <xml:group>
-          <div id="comment" class="fullcomment">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
+          <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
         </xml:group>
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
         // comment of inner, documented class (only short comment, full comment is on the class' own page)
@@ -317,18 +320,28 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case _ => NodeSeq.Empty
     }
 
-    val annotations: Seq[scala.xml.Node] =
+    val annotations: Seq[scala.xml.Node] = {
+      // A list of annotations which don't show their arguments, e. g. because they are shown separately.
+      val annotationsWithHiddenArguments = List("deprecated", "Deprecated")
+
+      def showArguments(annotation: Annotation) = {
+        if (annotationsWithHiddenArguments.contains(annotation.qualifiedName)) false else true
+      }
+
       if (!mbr.annotations.isEmpty) {
         <dt>Annotations</dt>
         <dd>{
             mbr.annotations.map { annot =>
               <xml:group>
-                <span class="name">@{ templateToHtml(annot.annotationClass) }</span>{ argumentsToHtml(annot.arguments) }
+                <span class="name">@{ templateToHtml(annot.annotationClass) }</span>{
+                  if (showArguments(annot)) argumentsToHtml(annot.arguments) else NodeSeq.Empty
+                }
               </xml:group>
             }
           }
         </dd>
       } else NodeSeq.Empty
+    }
 
     val sourceLink: Seq[scala.xml.Node] = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined && !isReduced) =>
@@ -395,28 +408,22 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
     val linearization = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.linearizationTemplates.nonEmpty =>
-        <div class="toggleContainer">
-          <div class="attributes block">
-            <span class="link showElement">Linear Supertypes</span>
-            <span class="link hideElement">Linear Supertypes</span>
-          </div>
-          <div class="superTypes hiddenContent">
-            <p>{ typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }</p>
-          </div>
+        <div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent">{
+            typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", "))
+          }</div>
         </div>
       case _ => NodeSeq.Empty
     }
 
     val subclasses = mbr match {
       case dtpl: DocTemplateEntity if isSelf && !isReduced && dtpl.subClasses.nonEmpty =>
-        <div class="toggleContainer">
-          <div class="attributes block">
-            <span class="link showElement">Known Subclasses</span>
-            <span class="link hideElement">Known Subclasses</span>
-          </div>
-          <div class="subClasses hiddenContent">
-            <p>{ templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", ")) }</p>
-          </div>
+        <div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent">{
+            templatesToHtml(dtpl.subClasses.sortBy(_.name), xml.Text(", "))
+          }</div>
         </div>
       case _ => NodeSeq.Empty
     }

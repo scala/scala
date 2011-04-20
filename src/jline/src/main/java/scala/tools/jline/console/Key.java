@@ -40,7 +40,13 @@ public enum Key
 
     CTRL_N(14),
 
+    CTRL_O(15),
+
     CTRL_P(16),
+
+    CTRL_T(20),
+
+    CTRL_W(23),
 
     CTRL_OB(27),
 

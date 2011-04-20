@@ -253,7 +253,7 @@ trait CompilerControl { self: Global =>
   // items that get sent to scheduler
 
   abstract class WorkItem extends (() => Unit) {
-    def onCompilerThread = self.onCompilerThread
+    val onCompilerThread = self.onCompilerThread
   }
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {

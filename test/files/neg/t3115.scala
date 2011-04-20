@@ -1,5 +1,5 @@
 object sc {
-  @deprecated("") object Math
+  @deprecated("", "2.8.0") object Math
 }
 
 object Test {

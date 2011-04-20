@@ -16,7 +16,7 @@ import TraversableView.NoBuilder
 /** A base trait for non-strict views of `Iterable`s.
  *  $iterableViewInfo
  */
-trait IterableView[+A, +Coll] extends IterableViewLike[A, Coll, IterableView[A, Coll]]
+trait IterableView[+A, +Coll] extends IterableViewLike[A, Coll, IterableView[A, Coll]] with GenIterableView[A, Coll]
 
 /** An object containing the necessary implicit definitions to make
  *  `IterableView`s work. Its definitions are generally not accessed directly by clients.

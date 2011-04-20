@@ -12,7 +12,6 @@ import collection.generic._
 import collection.mutable.HashSet
 import collection.mutable.FlatHashTable
 import collection.parallel.Combiner
-import collection.parallel.EnvironmentPassingCombiner
 import collection.mutable.UnrolledBuffer
 
 /** A parallel hash set.
@@ -46,11 +45,11 @@ extends ParSet[T]
 
   override def empty = new ParHashSet
 
-  override def iterator = parallelIterator
+  override def iterator = splitter
 
   override def size = tableSize
 
-  override def clear() = clearTable()
+  def clear() = clearTable()
 
   override def seq = new HashSet(hashTableContents)
 
@@ -68,7 +67,7 @@ extends ParSet[T]
 
   def contains(elem: T) = containsEntry(elem)
 
-  def parallelIterator = new ParHashSetIterator(0, table.length, size) with SCPI
+  def splitter = new ParHashSetIterator(0, table.length, size) with SCPI
 
   type SCPI = SignalContextPassingIterator[ParHashSetIterator]
 
@@ -117,8 +116,8 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFactor: Int)
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
 with collection.mutable.FlatHashTable.HashUtils[T] {
-self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
-  import tasksupport._
+//self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
+  import collection.parallel.tasksupport._
   private var mask = ParHashSetCombiner.discriminantmask
   private var nonmasklen = ParHashSetCombiner.nonmasklength
 
@@ -316,6 +315,6 @@ private[parallel] object ParHashSetCombiner {
   private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);
   private[mutable] val nonmasklength = 32 - discriminantbits
 
-  def apply[T] = new ParHashSetCombiner[T](FlatHashTable.defaultLoadFactor) with EnvironmentPassingCombiner[T, ParHashSet[T]]
+  def apply[T] = new ParHashSetCombiner[T](FlatHashTable.defaultLoadFactor) {} //with EnvironmentPassingCombiner[T, ParHashSet[T]]
 }
 

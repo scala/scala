@@ -1,0 +1,37 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala.collection
+package immutable
+
+
+import generic._
+import mutable.Builder
+
+
+/** A base trait for iterable collections that can be mutated.
+ *
+ *  $possiblyparinfo
+ *  
+ *  $iterableInfo
+ */
+trait GenIterable[+A] extends GenTraversable[A] 
+                      with scala.collection.GenIterable[A] 
+                      with scala.collection.GenIterableLike[A, GenIterable[A]]
+//                      with GenericTraversableTemplate[A, GenIterable]
+{
+  def seq: Iterable[A]
+  //override def companion: GenericCompanion[GenIterable] = GenIterable
+}
+
+
+// object GenIterable extends TraversableFactory[GenIterable] {
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenIterable[A]] = new GenericCanBuildFrom[A]
+//   def newBuilder[A]: Builder[A, GenIterable[A]] = Iterable.newBuilder
+// }
+

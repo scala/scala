@@ -8,9 +8,9 @@
 
 package scala.collection
 
-/** A marker trait for objects with parallelised operations.
+/** A marker trait for collections which have their operations parallelised.
  *
  *  @since 2.9
- *  @author prokopec
+ *  @author Aleksandar Prokopec
  */
 trait Parallel

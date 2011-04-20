@@ -40,7 +40,7 @@ object Scheduler extends DelegatingScheduler {
 
   /* Only <code>ForkJoinScheduler</code> implements this method.
    */
-  @deprecated("snapshot will be removed")
+  @deprecated("snapshot will be removed", "2.8.0")
   def snapshot() {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].snapshot()

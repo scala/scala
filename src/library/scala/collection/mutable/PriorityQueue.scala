@@ -93,7 +93,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
 
   @deprecated(
     "Use += instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() +=' if you intend to create a new collection."
+    "Use `clone() +=' if you intend to create a new collection.", "2.8.0"
   )
   def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
 
@@ -104,7 +104,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    */
   @deprecated(
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() ++=' if you intend to create a new collection."
+    "Use `clone() ++=' if you intend to create a new collection.", "2.8.0"
   )
   def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
 
@@ -127,7 +127,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @param  xs    a traversable object.
    *  @return       a new priority queue containing elements of both `xs` and `this`.
    */
-  def ++(xs: TraversableOnce[A]) = { this.clone() ++= xs }
+  def ++(xs: GenTraversableOnce[A]) = { this.clone() ++= xs.seq }
 
   /** Adds all elements to the queue.
    *
@@ -163,7 +163,15 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return   the element with the highest priority.
    */
+  @deprecated("Use `head` instead.", "2.9.0")
   def max: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
+
+  /** Returns the element with the highest priority in the queue,
+   *  or throws an error if there is no element contained in the queue.
+   *
+   *  @return   the element with the highest priority.
+   */
+  override def head: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.

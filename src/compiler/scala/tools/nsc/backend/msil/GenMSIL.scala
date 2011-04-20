@@ -108,14 +108,14 @@ abstract class GenMSIL extends SubComponent {
 
     val objParam = Array(MOBJECT)
 
-//     val toBool:   MethodInfo = SystemConvert.GetMethod("ToBoolean", objParam)
-    val toSByte:  MethodInfo = SystemConvert.GetMethod("ToSByte",  objParam)
-    val toShort:  MethodInfo = SystemConvert.GetMethod("ToInt16",  objParam)
-    val toChar:   MethodInfo = SystemConvert.GetMethod("ToChar",   objParam)
-    val toInt:    MethodInfo = SystemConvert.GetMethod("ToInt32",  objParam)
-    val toLong:   MethodInfo = SystemConvert.GetMethod("ToInt64",  objParam)
-    val toFloat:  MethodInfo = SystemConvert.GetMethod("ToSingle", objParam)
-    val toDouble: MethodInfo = SystemConvert.GetMethod("ToDouble", objParam)
+    val toBool:   MethodInfo = SystemConvert.GetMethod("ToBoolean", objParam) // see comment in emitUnbox
+    val toSByte:  MethodInfo = SystemConvert.GetMethod("ToSByte",   objParam)
+    val toShort:  MethodInfo = SystemConvert.GetMethod("ToInt16",   objParam)
+    val toChar:   MethodInfo = SystemConvert.GetMethod("ToChar",    objParam)
+    val toInt:    MethodInfo = SystemConvert.GetMethod("ToInt32",   objParam)
+    val toLong:   MethodInfo = SystemConvert.GetMethod("ToInt64",   objParam)
+    val toFloat:  MethodInfo = SystemConvert.GetMethod("ToSingle",  objParam)
+    val toDouble: MethodInfo = SystemConvert.GetMethod("ToDouble",  objParam)
 
     //val boxedUnit: FieldInfo = msilType(definitions.BoxedUnitModule.info).GetField("UNIT")
     val boxedUnit: FieldInfo = fields(definitions.BoxedUnit_UNIT)
@@ -460,9 +460,8 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private[GenMSIL] def ilasmFileName(iclass: IClass) : String = {
-      val singleBackslashed = iclass.cunit.source.file.toString
-      val doubleBackslashed = singleBackslashed.replace("\\", "\\\\")
-      doubleBackslashed
+      // method.sourceFile contains just the filename
+      iclass.cunit.source.file.toString.replace("\\", "\\\\")
     }
 
     private[GenMSIL] def genClass(iclass: IClass) {
@@ -564,6 +563,10 @@ abstract class GenMSIL extends SubComponent {
 
     val labels: HashMap[BasicBlock, Label] = new HashMap()
 
+    /* when emitting .line, it's enough to include the full filename just once per method, thus reducing filesize.
+     * this scheme relies on the fact that the entry block is emitted first. */
+    var dbFilenameSeen = false
+
     def genCode(m: IMethod) {
 
       def makeLabels(blocks: List[BasicBlock]) = {
@@ -587,6 +590,7 @@ abstract class GenMSIL extends SubComponent {
       // debug val MButNotL  = (blocksInM.toSet) diff (blocksInL.toSet) // if non-empty, a jump to B fails to find a label for B (case CJUMP, case CZJUMP)
       // debug if(!MButNotL.isEmpty) { }
 
+      dbFilenameSeen = false
       genBlocks(linearization)
 
       // RETURN inside exception blocks are replaced by Leave. The target of the
@@ -897,6 +901,7 @@ abstract class GenMSIL extends SubComponent {
       var previousWasNEW = false
 
       var lastLineNr: Int = 0
+      var lastPos: Position = NoPosition
 
 
       // EndExceptionBlock must happen before MarkLabel because it adds the
@@ -932,18 +937,24 @@ abstract class GenMSIL extends SubComponent {
       }
 
       for (instr <- block) {
-        val currentLineNr = try {
-          instr.pos.line
-        } catch {
-          case _: UnsupportedOperationException =>
-            log("Warning: wrong position in: " + method)
-            lastLineNr
-        }
-
-        if (currentLineNr != lastLineNr) {
-          mcode.setPosition(currentLineNr, ilasmFileName(clasz)) // method.sourceFile contains just the filename
-          lastLineNr = currentLineNr
-        }
+        try {
+          val currentLineNr = instr.pos.line
+          val skip = if(instr.pos.isRange) instr.pos.sameRange(lastPos) else (currentLineNr == lastLineNr);
+          if(!skip || !dbFilenameSeen) {
+            val fileName = if(dbFilenameSeen) "" else {dbFilenameSeen = true; ilasmFileName(clasz)};
+            if(instr.pos.isRange) {
+              val startLine = instr.pos.focusStart.line
+              val endLine   = instr.pos.focusEnd.line
+              val startCol  = instr.pos.focusStart.column
+              val endCol    = instr.pos.focusEnd.column
+              mcode.setPosition(startLine, endLine, startCol, endCol, fileName)
+            } else {
+              mcode.setPosition(instr.pos.line, fileName)
+            }
+            lastLineNr = currentLineNr
+            lastPos = instr.pos
+          }
+        } catch { case _: UnsupportedOperationException => () }
 
         if (previousWasNEW)
           assert(instr.isInstanceOf[DUP], block)
@@ -2194,7 +2205,12 @@ abstract class GenMSIL extends SubComponent {
 
     def emitUnbox(code: ILGenerator, boxType: TypeKind) = (boxType: @unchecked) match {
       case UNIT   => code.Emit(OpCodes.Pop)
-      case BOOL   => code.Emit(OpCodes.Unbox, MBOOL); code.Emit(OpCodes.Ldind_I1)
+      /* (1) it's essential to keep the code emitted here (as of now plain calls to System.Convert.ToBlaBla methods)
+             behaviorally.equiv.wrt. BoxesRunTime.unboxToBlaBla methods
+             (case null: that's easy, case boxed: track changes to unboxBlaBla)
+         (2) See also: asInstanceOf to cast from Any to number,
+             tracked in http://lampsvn.epfl.ch/trac/scala/ticket/4437  */
+      case BOOL   => code.Emit(OpCodes.Call, toBool)
       case BYTE   => code.Emit(OpCodes.Call, toSByte)
       case SHORT  => code.Emit(OpCodes.Call, toShort)
       case CHAR   => code.Emit(OpCodes.Call, toChar)

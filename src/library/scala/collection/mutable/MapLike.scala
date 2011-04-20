@@ -7,7 +7,6 @@
 \*                                                                      */
 
 
-
 package scala.collection
 package mutable
 
@@ -126,8 +125,8 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
     "As of 2.8, this operation creates a new map.  To add the elements as a\n"+
     "side effect to an existing map and return that map itself, use ++=."
   )
-  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =
-    clone().asInstanceOf[Map[A, B1]] ++= xs
+  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
+    clone().asInstanceOf[Map[A, B1]] ++= xs.seq
 
   /** Removes a key from this map, returning the value associated previously
    *  with that key as an option.
@@ -163,7 +162,8 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  If key is not present return None.
    *  @param    key the key to be removed
    */
-  @deprecated("Use `remove' instead") def removeKey(key: A): Option[B] = remove(key)
+  @deprecated("Use `remove' instead", "2.8.0")
+  def removeKey(key: A): Option[B] = remove(key)
 
   /** Removes all bindings from the map. After this operation has completed,
    *  the map will be empty.
@@ -246,5 +246,5 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
     "As of 2.8, this operation creates a new map.  To remove the elements as a\n"+
     "side effect to an existing map and return that map itself, use --=."
   )
-  override def --(xs: TraversableOnce[A]): This = clone() --= xs
+  override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
 }

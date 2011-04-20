@@ -1,1 +1,1 @@
-@deprecated("hi mom") case class Bob ()
+@deprecated("hi mom", "") case class Bob ()

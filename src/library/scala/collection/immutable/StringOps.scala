@@ -37,4 +37,6 @@ final class StringOps(override val repr: String) extends StringLike[String] {
   override protected[this] def newBuilder = StringBuilder.newBuilder
 
   override def toString = repr
+
+  def seq = this.iterator
 }

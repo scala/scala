@@ -25,7 +25,7 @@ import annotation.unchecked.uncheckedVariance
  *  @define coll  collection
  *  @define Coll  CC
  */
-trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
+trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
 
   /** Applies a function `f` to all elements of this $coll.
    *

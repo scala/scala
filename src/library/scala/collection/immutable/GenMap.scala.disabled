@@ -1,0 +1,36 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala.collection
+package immutable
+
+import generic._
+
+
+/** A base trait for maps that can be mutated.
+ *  $possiblyparinfo
+ *  $mapNote
+ *  $mapTags
+ *  @since 1.0
+ *  @author  Matthias Zenger
+ */
+trait GenMap[A, +B] 
+extends GenIterable[(A, B)]
+   with scala.collection.GenMap[A, B] 
+   with scala.collection.GenMapLike[A, B, GenMap[A, B]]
+{
+  def seq: Map[A, B]
+}
+
+
+// object GenMap extends MapFactory[GenMap] {
+//   def empty[A, B]: Map[A, B] = Map.empty
+  
+//   /** $mapCanBuildFromInfo */
+//   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
+// }

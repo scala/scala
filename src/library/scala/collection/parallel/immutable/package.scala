@@ -43,7 +43,7 @@ package object immutable {
     type SCPI = SignalContextPassingIterator[ParIterator]
 
     class ParIterator(var i: Int = 0, val until: Int = length, elem: T = self.elem) extends super.ParIterator {
-      me: SignalContextPassingIterator[ParIterator] =>
+    me: SignalContextPassingIterator[ParIterator] =>
       def remaining = until - i
       def hasNext = i < until
       def next = { i += 1; elem }
@@ -55,7 +55,7 @@ package object immutable {
       def split = psplit(remaining / 2, remaining - remaining / 2)
     }
 
-    def parallelIterator = new ParIterator with SCPI
+    def splitter = new ParIterator with SCPI
 
   }
 
