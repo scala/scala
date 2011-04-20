@@ -27,7 +27,7 @@ import scala.collection.GenSet
  *  @author Aleksandar Prokopec
  */
 trait ParSet[T]
-extends collection.mutable.GenSet[T]
+extends collection/*.mutable*/.GenSet[T]
    with ParIterable[T]
    with collection.parallel.ParSet[T]
    with GenericParTemplate[T, ParSet]

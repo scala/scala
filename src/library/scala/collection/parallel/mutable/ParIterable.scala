@@ -26,7 +26,7 @@ import scala.collection.GenIterable
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-trait ParIterable[T] extends collection.mutable.GenIterable[T]
+trait ParIterable[T] extends collection/*.mutable*/.GenIterable[T]
                         with collection.parallel.ParIterable[T]
                         with GenericParTemplate[T, ParIterable]
                         with ParIterableLike[T, ParIterable[T], Iterable[T]] {

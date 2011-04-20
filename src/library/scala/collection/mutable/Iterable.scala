@@ -15,7 +15,7 @@ import parallel.mutable.ParIterable
  *  $iterableInfo
  */
 trait Iterable[A] extends Traversable[A]
-                     with GenIterable[A]
+//                     with GenIterable[A]
                      with scala.collection.Iterable[A]
                      with GenericTraversableTemplate[A, Iterable]
                      with IterableLike[A, Iterable[A]]

@@ -31,16 +31,16 @@ trait GenSet[A] extends GenIterable[A]
                    with Growable[A]
                    with scala.collection.GenSet[A]
                    with scala.collection.GenSetLike[A, GenSet[A]]
-                   with GenericSetTemplate[A, GenSet]
+//                   with GenericSetTemplate[A, GenSet]
 {
-  override def companion: GenericCompanion[GenSet] = GenSet
+  //override def companion: GenericCompanion[GenSet] = GenSet
   def seq: Set[A]
 }
 
 
-object GenSet extends TraversableFactory[GenSet] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenSet[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, GenSet[A]] = Set.newBuilder
-}
+// object GenSet extends TraversableFactory[GenSet] {
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenSet[A]] = new GenericCanBuildFrom[A]
+//   def newBuilder[A]: Builder[A, GenSet[A]] = Set.newBuilder
+// }
 
 

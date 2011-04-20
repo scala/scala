@@ -68,7 +68,7 @@ import parallel.ParIterable
  */
 trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
                                     with FilterMonadic[A, Repr]
-                                    with TraversableOnceLike[A]
+                                    with TraversableOnce[A]
                                     with GenTraversableLike[A, Repr]
                                     with Parallelizable[A, ParIterable[A]]
 {

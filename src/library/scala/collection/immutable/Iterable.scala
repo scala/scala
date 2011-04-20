@@ -22,7 +22,7 @@ import parallel.immutable.ParIterable
  *  @define coll immutable iterable collection
  */
 trait Iterable[+A] extends Traversable[A]
-                      with GenIterable[A]
+//                      with GenIterable[A]
                       with scala.collection.Iterable[A]
                       with GenericTraversableTemplate[A, Iterable]
                       with IterableLike[A, Iterable[A]]

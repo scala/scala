@@ -25,7 +25,7 @@ import parallel.immutable.ParSet
  *  @define coll immutable set
  */
 trait Set[A] extends Iterable[A]
-                with GenSet[A]
+//                with GenSet[A]
                 with scala.collection.Set[A]
                 with GenericSetTemplate[A, Set]
                 with SetLike[A, Set[A]]

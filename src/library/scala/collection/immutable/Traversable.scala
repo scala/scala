@@ -19,7 +19,7 @@ import mutable.Builder
  *  @define mutability immutable
  */
 trait Traversable[+A] extends scala.collection.Traversable[A]
-                         with GenTraversable[A]
+//                         with GenTraversable[A]
                          with GenericTraversableTemplate[A, Traversable]
                          with TraversableLike[A, Traversable[A]]
                          with Immutable {

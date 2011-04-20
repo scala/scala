@@ -9,7 +9,9 @@ var scheduler = undefined;
 var kindFilterState = undefined;
 var focusFilterState = undefined;
 
-var title = $(document).attr('title')
+var title = $(document).attr('title');
+
+var lastHash = "";
 
 $(document).ready(function() {
     $('body').layout({ west__size: '20%' });
@@ -17,10 +19,12 @@ $(document).ready(function() {
     	center__paneSelector: ".ui-west-center"
         //,center__initClosed:true
     	,north__paneSelector: ".ui-west-north"
-	}); 
+    }); 
     $('iframe').bind("load", function(){
         var subtitle = $(this).contents().find('title').text();
         $(document).attr('title', (title ? title + " - " : "") + subtitle);
+        
+        setUrlFragmentFromFrameSrc();
     });
 
     // workaround for IE's iframe sizing lack of smartness
@@ -43,7 +47,59 @@ $(document).ready(function() {
     configureKindFilter();
     configureEntityList();
 
+    setFrameSrcFromUrlFragment();
+
+    // If the url fragment changes, adjust the src of iframe "template".
+    $(window).bind('hashchange', function() {
+      if(lastFragment != window.location.hash) {
+        lastFragment = window.location.hash;
+        setFrameSrcFromUrlFragment();
+      }
+    });
 });
+
+// Set the iframe's src according to the fragment of the current url.
+// fragment = "#scala.Either" => iframe url = "scala/Either.html"
+// fragment = "#scala.Either@isRight:Boolean" => iframe url = "scala/Either.html#isRight:Boolean"
+function setFrameSrcFromUrlFragment() {
+  var fragment = location.hash.slice(1);
+  if(fragment) {
+    var loc = fragment.split("@")[0].replace(/\./g, "/");
+    if(loc.indexOf(".html") < 0) loc += ".html";
+    if(fragment.indexOf('@') > 0) loc += ("#" + fragment.split("@", 2)[1]);
+    frames["template"].location.replace(loc);
+  }
+  else
+    frames["template"].location.replace("package.html");
+}
+
+// Set the url fragment according to the src of the iframe "template".
+// iframe url = "scala/Either.html"  =>  url fragment = "#scala.Either"
+// iframe url = "scala/Either.html#isRight:Boolean"  =>  url fragment = "#scala.Either@isRight:Boolean"
+function setUrlFragmentFromFrameSrc() {
+  try {
+    var commonLength = location.pathname.lastIndexOf("/");
+    var frameLocation = frames["template"].location;
+    var relativePath = frameLocation.pathname.slice(commonLength + 1);
+    
+    if(!relativePath || frameLocation.pathname.indexOf("/") < 0)
+      return;
+    
+    // Add #, remove ".html" and replace "/" with "."
+    fragment = "#" + relativePath.replace(/\.html$/, "").replace(/\//g, ".");
+    
+    // Add the frame's hash after an @
+    if(frameLocation.hash) fragment += ("@" + frameLocation.hash.slice(1));
+  
+    // Use replace to not add history items
+    lastFragment = fragment;
+    location.replace(fragment);
+  }
+  catch(e) {
+    // Chrome doesn't allow reading the iframe's location when
+    // used on the local file system.
+  }
+}
 
 var Index = {};
 
@@ -70,12 +126,11 @@ var Index = {};
         return [
             '<li class="pack">',
             '<a class="packfocus">focus</a><a class="packhide">hide</a>',
-            '<h3>',
             '<a class="tplshow" target="template" href="',
             pack.replace(/\./g, '/'),
             '/package.html">',
             pack,
-            '</a></h3></li>'
+            '</a></li>'
         ].join('');
     };
 
@@ -139,13 +194,13 @@ var Index = {};
 
     function subPackages(pack) {
         return $.grep($('#tpl ol.packages'), function (element, index) {
-            var pack = $('h3', element).text();
+            var pack = $('li.pack > .tplshow', element).text();
             return pack.indexOf(pack + '.') == 0;
         });
     }
 
     ns.hidePackage = function (ol) {
-        var selected = $('h3', ol).text();
+        var selected = $('li.pack > .tplshow', ol).text();
         hiddenPackages[selected] = true;
 
         $('ol.templates', ol).hide();
@@ -156,7 +211,7 @@ var Index = {};
     }
 
     ns.showPackage = function (ol, state) {
-        var selected = $('h3', ol).text();
+        var selected = $('li.pack > .tplshow', ol).text();
         hiddenPackages[selected] = false;
 
         $('ol.templates', ol).show();
@@ -166,7 +221,7 @@ var Index = {};
 
             // When the filter is in "packs" state,
             // we don't want to show the `.templates`
-            var key = $('h3', element).text();
+            var key = $('li.pack > .tplshow', element).text();
             if (hiddenPackages[key] || state == 'packs') {
                 $('ol.templates', element).hide();
             }
@@ -344,7 +399,7 @@ function configureFocusFilter() {
 function focusFilter(package) {
     scheduler.clear("filter");
 
-    var currentFocus = $('h3', package).text();
+    var currentFocus = $('li.pack > .tplshow', package).text();
     $("#focusfilter > .focuscoll").empty();
     $("#focusfilter > .focuscoll").append(currentFocus);
 

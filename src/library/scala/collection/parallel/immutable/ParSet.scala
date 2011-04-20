@@ -30,7 +30,7 @@ import scala.collection.parallel.Combiner
  *  @define coll mutable parallel set
  */
 trait ParSet[T]
-extends collection.immutable.GenSet[T]
+extends collection/*.immutable*/.GenSet[T]
    with GenericParTemplate[T, ParSet]
    with parallel.ParSet[T]
    with ParIterable[T]
