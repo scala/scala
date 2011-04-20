@@ -168,7 +168,9 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     // since we are in collection.*, not immutable.*.
     // However making that change will pessimize all the
     // immutable linear seqs (like list) which surely expect
-    // drop to share.
+    // drop to share.  (Or at least it would penalize List if
+    // it didn't override drop.  It would be a lot better if
+    // the leaf collections didn't override so many methods.)
     //
     // Upshot: MutableList is broken and passes part of the
     // original list as the result of drop.

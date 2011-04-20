@@ -63,6 +63,8 @@ trait IterableViewLike[+A,
 
   trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] with super[GenIterableViewLike].ZippedAll[A1, B]
 
+  private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
+
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
@@ -80,6 +82,16 @@ trait IterableViewLike[+A,
   protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
+
+  // After adding take and drop overrides to IterableLike, these overrides (which do nothing
+  // but duplicate the implementation in TraversableViewLike) had to be added to prevent the
+  // overrides in IterableLike from besting the overrides in TraversableViewLike when mixed
+  // together in e.g. SeqViewLike.  This is a suboptimal situation.  Examples of failing tests
+  // are run/bug2876 and run/viewtest.
+  protected override def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
+  protected override def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
+  override def drop(n: Int): This = newDropped(n)
+  override def take(n: Int): This = newTaken(n)
 
   override def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[This, (A1, B), That]): That = {
     newZipped(that).asInstanceOf[That]
