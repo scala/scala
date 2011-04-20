@@ -438,10 +438,13 @@ function kindFilter(kind) {
 
 /* Applies the kind filter. */
 function kindFilterSync() {
-    if (kindFilterState == "all" || focusFilterState != null)
+    if (kindFilterState == "all" || focusFilterState != null) {
+        $("#tpl a.packhide").text('hide');
         $("#tpl ol.templates").show();
-    else
+    } else {
+        $("#tpl a.packhide").text('show');
         $("#tpl ol.templates").hide();
+    }
 }
 
 function resizeFilterBlock() {
