@@ -159,7 +159,6 @@ object Statistics {
   val implicitCacheHits = new Counter
   val implicitCacheMisses = new Counter
   val improvesCount = new Counter
-  val improvesCachedCount = new Counter
   val subtypeAppInfos = new SubCounter(subtypeCount)
   val subtypeImprovCount = new SubCounter(subtypeCount)
   val subtypeETNanos = new Timer
@@ -261,7 +260,6 @@ abstract class Statistics {
         inform("#implicit searches       : " + implicitSearchCount)
         inform("#tried, plausible, matching, typed, found implicits: "+triedImplicits+", "+plausiblyCompatibleImplicits+", "+matchingImplicits+", "+typedImplicits+", "+foundImplicits)
         inform("#implicit improves tests : " + improvesCount)
-        inform("#implicit improves cached: " + improvesCachedCount)
         inform("#implicit inscope hits   : " + inscopeImplicitHits)
         inform("#implicit oftype hits    : " + oftypeImplicitHits)
       }

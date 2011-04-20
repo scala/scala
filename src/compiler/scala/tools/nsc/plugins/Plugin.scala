@@ -111,9 +111,7 @@ object Plugin {
    */
   def loadFrom(jarfile: Path, loader: ClassLoader): Option[AnyClass] =
     loadDescription(jarfile) match {
-      case None =>
-        println("Warning: could not load descriptor for plugin %s".format(jarfile))
-        None
+      case None => None
       case Some(pdesc) =>
         try Some(loader loadClass pdesc.classname) catch {
         case _: Exception =>

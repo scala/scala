@@ -13,7 +13,6 @@ import Flags._
 
 abstract class Erasure extends AddInterfaces
                           with typechecker.Analyzer
-                          with TypingTransformers
                           with ast.TreeDSL
 {
   import global._
@@ -923,12 +922,9 @@ abstract class Erasure extends AddInterfaces
      *   - Add bridge definitions to a template.
      *   - Replace all types in type nodes and the EmptyTree object by their erasure.
      *     Type nodes of type Unit representing result types of methods are left alone.
-     *   - Given a selection q.s, where the owner of `s` is not accessible but the
-     *     type symbol of q's type qT is accessible, insert a cast (q.asInstanceOf[qT]).s
-     *     This prevents illegal access errors (see #4283).
      *   - Reset all other type attributes to null, thus enforcing a retyping.
      */
-    private val preTransformer = new TypingTransformer(unit) {
+    private val preTransformer = new Transformer {
       def preErase(tree: Tree): Tree = tree match {
         case ClassDef(mods, name, tparams, impl) =>
           if (settings.debug.value)
@@ -1046,25 +1042,14 @@ abstract class Erasure extends AddInterfaces
             }
           }
 
-        case Select(qual, name) =>
-          val owner = tree.symbol.owner
+        case Select(_, _) =>
           // println("preXform: "+ (tree, tree.symbol, tree.symbol.owner, tree.symbol.owner.isRefinementClass))
-          if (owner.isRefinementClass) {
+          if (tree.symbol.owner.isRefinementClass) {
             val overridden = tree.symbol.allOverriddenSymbols
             assert(!overridden.isEmpty, tree.symbol)
             tree.symbol = overridden.head
           }
-          def isAccessible(sym: Symbol) = localTyper.context.isAccessible(sym, sym.owner.thisType)
-          if (!isAccessible(owner) && qual.tpe != null) {
-            // Todo: Figure out how qual.tpe could be null in the check above (it does appear in build where SwingWorker.this
-            // has a null type).
-            val qualSym = qual.tpe.widen.typeSymbol
-            if (isAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
-              // insert cast to prevent illegal access error (see #4283)
-              // util.trace("insert erasure cast ") (*/
-              treeCopy.Select(tree, qual AS_ATTR qual.tpe.widen, name) //)
-            } else tree
-          } else tree
+          tree
 
         case Template(parents, self, body) =>
           assert(!currentOwner.isImplClass)

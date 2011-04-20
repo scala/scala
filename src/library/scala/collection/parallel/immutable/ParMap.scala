@@ -21,8 +21,6 @@ import scala.collection.generic.GenericParMapCompanion
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
-import scala.collection.GenMapLike
-
 
 
 
@@ -38,7 +36,7 @@ import scala.collection.GenMapLike
  *  @since 2.9
  */
 trait ParMap[K, +V]
-extends collection/*.immutable*/.GenMap[K, V]
+extends Map[K, V]
    with GenericParMapTemplate[K, V, ParMap]
    with parallel.ParMap[K, V]
    with ParIterable[(K, V)]

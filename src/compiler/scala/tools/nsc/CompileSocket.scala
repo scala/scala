@@ -95,12 +95,7 @@ class CompileSocket extends CompileOutputCommon {
   private def startNewServer(vmArgs: String) = {
     val cmd = serverCommand(vmArgs split " " toSeq)
     info("[Executing command: %s]" format cmd.mkString(" "))
-
-    // Hiding inadequate daemonized implementation from public API for now
-    Process(cmd) match {
-      case x: ProcessBuilder.AbstractBuilder => x.daemonized().run()
-      case x                                 => x.run()
-    }
+    cmd.daemonized().run()
   }
 
   /** The port identification file */

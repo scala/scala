@@ -17,7 +17,8 @@ object Properties extends PropertiesTrait {
   protected def pickJarBasedOn  = classOf[ScalaObject]
 }
 
-private[scala] trait PropertiesTrait {
+private[scala] trait PropertiesTrait
+{
   protected def propCategory: String      // specializes the remainder of the values
   protected def pickJarBasedOn: Class[_]  // props file comes from jar containing this
 
@@ -55,40 +56,8 @@ private[scala] trait PropertiesTrait {
   def envOrNone(name: String)                   = Option(System getenv name)
 
   // for values based on propFilename
-  def scalaPropOrElse(name: String, alt: String): String = scalaProps.getProperty(name, alt)
-  def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
-  def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name))
-
-  /** The numeric portion of the runtime scala version, if this is a final
-   *  release.  If for instance the versionString says "version 2.9.0.final",
-   *  this would return Some("2.9.0").
-   *
-   *  @return Some(version) if this is a final release build, None if
-   *  it is an RC, Beta, etc. or was built from source, or if the version
-   *  cannot be read.
-   */
-  val releaseVersion = scalaPropOrNone("version.number") flatMap { s =>
-    val segments = s split '.'
-    if (segments.size == 4 && segments.last == "final") Some(segments take 3 mkString ".") else None
-  }
-
-  /** The development scala version, if this is not a final release.
-   *  The precise contents are not guaranteed, but it aims to provide a
-   *  unique repository identifier (currently the svn revision) in the
-   *  fourth dotted segment if the running version was built from source.
-   *
-   *  @return Some(version) if this is a non-final version, None if this
-   *  is a final release or the version cannot be read.
-   */
-  val developmentVersion = scalaPropOrNone("version.number") flatMap { s =>
-    val segments = s split '.'
-    if (segments.isEmpty || segments.last == "final")
-      None
-    else if (segments.last startsWith "r")
-      Some(s takeWhile (ch => ch != '-'))    // Cutting e.g. 2.10.0.r24774-b20110417125606 to 2.10.0.r24774
-    else
-      Some(s)
-  }
+  def scalaPropOrElse(name: String, alt: String): String  = scalaProps.getProperty(name, alt)
+  def scalaPropOrEmpty(name: String): String              = scalaPropOrElse(name, "")
 
   /** The version number of the jar this was loaded from plus "version " prefix,
    *  or "version (unknown)" if it cannot be determined.

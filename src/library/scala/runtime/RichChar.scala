@@ -46,13 +46,13 @@ final class RichChar(val self: Char) extends IntegralProxy[Char] {
   // public static boolean isJavaIdentifierStart(char ch)
   // public static boolean isJavaIdentifierPart(char ch)
 
-  @deprecated("Use ch.toLower instead", "2.8.0")
+  @deprecated("Use ch.toLower instead")
   def toLowerCase: Char = toLower
-  @deprecated("Use ch.toUpper instead", "2.8.0")
+  @deprecated("Use ch.toUpper instead")
   def toUpperCase: Char = toUpper
 
-  @deprecated("Use ch.isLower instead", "2.8.0")
+  @deprecated("Use ch.isLower instead")
   def isLowerCase: Boolean = isLower
-  @deprecated("Use ch.isUpper instead", "2.8.0")
+  @deprecated("Use ch.isUpper instead")
   def isUpperCase: Boolean = isUpper
 }

@@ -68,7 +68,7 @@ object ops
    *  @param end   ...
    *  @param p     ...
    */
-  @deprecated("use `collection.parallel.ParIterable.foreach' instead", "2.9.0")
+  @deprecated("use `collection.parallel.ParIterable.foreach' instead")
   def replicate(start: Int, end: Int)(p: Int => Unit)(implicit runner: TaskRunner = defaultRunner) {
     if (start == end)
       ()

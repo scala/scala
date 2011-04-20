@@ -47,19 +47,19 @@ trait ArrayLike[A, +Repr] extends IndexedSeqOptimized[A, Repr] { self =>
     override def stringPrefix = "Array"
   }
 
-  @deprecated("use deep.toString instead", "2.8.0")
+  @deprecated("use deep.toString instead")
   final def deepToString() =
     deep.toString
 
-  @deprecated("use deep.mkString instead", "2.8.0")
+  @deprecated("use deep.mkString instead")
   final def deepMkString(start: String, sep: String, end: String): String =
     deep.mkString(start, sep, end)
 
-  @deprecated("use deep.mkString instead", "2.8.0")
+  @deprecated("use deep.mkString instead")
   final def deepMkString(sep: String): String =
     deepMkString("", sep, "")
 
-  @deprecated("use array1.deep.equals(array2.deep) instead", "2.8.0")
+  @deprecated("use array1.deep.equals(array2.deep) instead")
   final def deepEquals(that: Any): Boolean = that match {
     case x: AnyRef if x.getClass.isArray => deep.equals(WrappedArray.make(x).deep)
     case _ => false

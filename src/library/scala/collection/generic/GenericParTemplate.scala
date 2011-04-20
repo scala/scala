@@ -1,11 +1,3 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
 package scala.collection.generic
 
 
@@ -53,13 +45,8 @@ extends GenericTraversableTemplate[A, CC]
 }
 
 
-trait GenericParMapTemplate[K, +V, +CC[X, Y] <: ParMap[X, Y]] extends GenericParTemplate[(K, V), ParIterable]
+trait GenericParMapTemplate[K, +V, +CC[X, Y] <: ParMap[X, Y]]
 {
-  protected[this] override def newCombiner: Combiner[(K, V), CC[K, V]] = {
-    val cb = mapCompanion.newCombiner[K, V]
-    cb
-  }
-
   def mapCompanion: GenericParMapCompanion[CC]
 
   def genericMapCombiner[P, Q]: Combiner[(P, Q), CC[P, Q]] = {
@@ -67,7 +54,6 @@ trait GenericParMapTemplate[K, +V, +CC[X, Y] <: ParMap[X, Y]] extends GenericPar
     cb
   }
 }
-
 
 
 

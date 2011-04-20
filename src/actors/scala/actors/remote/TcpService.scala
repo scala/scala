@@ -99,17 +99,16 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
         // we are not connected, yet
         try {
           val newWorker = connect(node)
+          newWorker transmit data
 
           // any pending sends?
           pendingSends.get(node) match {
             case None =>
               // do nothing
             case Some(msgs) =>
-              msgs.reverse foreach {newWorker transmit _}
+              msgs foreach {newWorker transmit _}
               pendingSends -= node
           }
-
-          newWorker transmit data
         } catch {
           case uhe: UnknownHostException =>
             bufferMsg(uhe)

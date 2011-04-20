@@ -33,7 +33,7 @@ self =>
   override def until(until: A): This = rangeImpl(None, Some(until))
   override def range(from: A, until: A): This = rangeImpl(Some(from), Some(until))
 
-  override def subsetOf(that: GenSet[A]): Boolean = that match {
+  override def subsetOf(that: Set[A]): Boolean = that match {
     // TODO: It may actually be pretty rare that the guard here ever
     // passes. Is this really worth keeping? If it is, we should add
     // more sensible implementations of == to Ordering.

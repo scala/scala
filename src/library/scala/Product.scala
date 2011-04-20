@@ -42,7 +42,7 @@ trait Product extends Equals {
     def next() = { val result = productElement(c); c += 1; result }
   }
 
-  @deprecated("use productIterator instead", "2.8.0")
+  @deprecated("use productIterator instead")
   def productElements: Iterator[Any] = productIterator
 
   /** A string used in the `toString` methods of derived classes.

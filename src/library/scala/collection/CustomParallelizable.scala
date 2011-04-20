@@ -11,7 +11,8 @@ package scala.collection
 import parallel.Combiner
 
 trait CustomParallelizable[+A, +ParRepr <: Parallel] extends Parallelizable[A, ParRepr] {
+  self: TraversableOnce[A] =>
+
   override def par: ParRepr
   override protected[this] def parCombiner: Combiner[A, ParRepr] = throw new UnsupportedOperationException("")
 }
-

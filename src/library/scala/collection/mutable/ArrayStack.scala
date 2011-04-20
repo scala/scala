@@ -122,7 +122,7 @@ extends Seq[T]
   }
 
   /** View the top element of the stack. */
-  @deprecated("use top instead", "2.8.0")
+  @deprecated("use top instead")
   def peek = top
 
   /** View the top element of the stack.

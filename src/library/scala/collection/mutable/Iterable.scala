@@ -15,15 +15,12 @@ import parallel.mutable.ParIterable
  *  $iterableInfo
  */
 trait Iterable[A] extends Traversable[A]
-//                     with GenIterable[A]
                      with scala.collection.Iterable[A]
                      with GenericTraversableTemplate[A, Iterable]
                      with IterableLike[A, Iterable[A]]
-                     with Parallelizable[A, ParIterable[A]]
-{
+                     with Parallelizable[A, ParIterable[A]] {
   override def companion: GenericCompanion[Iterable] = Iterable
   protected[this] override def parCombiner = ParIterable.newCombiner[A] // if `mutable.IterableLike` gets introduced, please move this there!
-  override def seq: Iterable[A] = this
 }
 
 /** $factoryInfo

@@ -67,16 +67,16 @@ trait IScheduler {
 
   def managedBlock(blocker: scala.concurrent.ManagedBlocker): Unit
 
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
+  @deprecated("this member is going to be removed in a future release")
   def tick(a: Actor) {}
 
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
+  @deprecated("this member is going to be removed in a future release")
   def onLockup(handler: () => Unit) {}
 
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
+  @deprecated("this member is going to be removed in a future release")
   def onLockup(millis: Int)(handler: () => Unit) {}
 
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
+  @deprecated("this member is going to be removed in a future release")
   def printActorDump {}
 
 }

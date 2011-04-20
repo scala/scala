@@ -18,19 +18,16 @@ import mutable.Builder
  *  $iterableInfo
  */
 trait Iterable[+A] extends Traversable[A]
-                      with GenIterable[A]
                       with GenericTraversableTemplate[A, Iterable]
                       with IterableLike[A, Iterable[A]] {
-  override def companion: GenericCompanion[Iterable] = Iterable
-
-  override def seq = this
+   override def companion: GenericCompanion[Iterable] = Iterable
 
   /* The following methods are inherited from trait IterableLike
    *
   override def iterator: Iterator[A]
   override def takeRight(n: Int): Iterable[A]
   override def dropRight(n: Int): Iterable[A]
-  override def sameElements[B >: A](that: GenIterable[B]): Boolean
+  override def sameElements[B >: A](that: Iterable[B]): Boolean
   override def view
   override def view(from: Int, until: Int)
   */
@@ -50,13 +47,13 @@ object Iterable extends TraversableFactory[Iterable] {
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
   /** The minimum element of a non-empty sequence of ordered elements */
-  @deprecated("use <seq>.min instead, where <seq> is the sequence for which you want to compute the minimum", "2.8.0")
+  @deprecated("use <seq>.min instead, where <seq> is the sequence for which you want to compute the minimum")
   def min[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.min
 
   /** The maximum element of a non-empty sequence of ordered elements */
-  @deprecated("use <seq>.max instead, where <seq> is the sequence for which you want to compute the maximum", "2.8.0")
+  @deprecated("use <seq>.max instead, where <seq> is the sequence for which you want to compute the maximum")
   def max[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.max
 
-  @deprecated("use View instead", "2.8.0")
+  @deprecated("use View instead")
   type Projection[A] = IterableView[A, Coll]
 }

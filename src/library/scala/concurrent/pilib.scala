@@ -29,7 +29,7 @@ package scala.concurrent
  *  @author  Vincent Cremet, Martin Odersky
  *  @version 1.0
  */
-@deprecated("use actors instead", "2.8.0")
+@deprecated("use actors instead")
 object pilib {
 
   import TaskRunners.threadRunner

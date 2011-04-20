@@ -6,6 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
+
 package scala.collection.parallel
 package mutable
 
@@ -13,7 +14,6 @@ package mutable
 
 import collection.generic._
 import collection.mutable.Builder
-import collection.mutable.Cloneable
 
 
 
@@ -32,23 +32,12 @@ trait ParMapLike[K,
                  V,
                  +Repr <: ParMapLike[K, V, Repr, Sequential] with ParMap[K, V],
                  +Sequential <: collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Sequential]]
-extends collection.GenMapLike[K, V, Repr]
-   with collection.parallel.ParMapLike[K, V, Repr, Sequential]
-   with Cloneable[Repr] {
+extends collection.mutable.MapLike[K, V, Repr]
+   with collection.parallel.ParMapLike[K, V, Repr, Sequential] {
 
   // note: should not override toMap
 
-  def put(key: K, value: V): Option[V]
-
-  def +=(kv: (K, V)): this.type
-
-  def -=(key: K): this.type
-
-  def +[U >: V](kv: (K, U)) = this.clone().asInstanceOf[ParMap[K, U]] += kv
-
-  def -(key: K) = this.clone() -= key
-
-  def clear(): Unit
+  override def clear(): Unit = throw new UnsupportedOperationException("Must be reimplemented for parallel map implementations.")
 
 }
 

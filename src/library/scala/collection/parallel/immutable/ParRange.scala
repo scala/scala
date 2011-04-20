@@ -14,7 +14,7 @@ package scala.collection.parallel.immutable
 import scala.collection.immutable.Range
 import scala.collection.parallel.Combiner
 import scala.collection.generic.CanCombineFrom
-import scala.collection.parallel.IterableSplitter
+import scala.collection.parallel.ParIterableIterator
 
 
 
@@ -45,7 +45,7 @@ self =>
 
   @inline final def apply(idx: Int) = range.apply(idx);
 
-  def splitter = new ParRangeIterator with SCPI
+  def parallelIterator = new ParRangeIterator with SCPI
 
   type SCPI = SignalContextPassingIterator[ParRangeIterator]
 

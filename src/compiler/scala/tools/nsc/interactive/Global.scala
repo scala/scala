@@ -537,12 +537,11 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     } catch {
       case CancelException =>
         debugLog("cancelled")
+/* Commented out. Typing should always cancel requests
       case ex @ FreshRunReq =>
-        if (debugIDE) {
-          println("FreshRunReq thrown during response")
-        }
-        response raise ex
+        scheduler.postWorkItem(() => respondGradually(response)(op))
         throw ex
+*/
       case ex =>
         if (debugIDE) {
           println("exception thrown during response: "+ex)

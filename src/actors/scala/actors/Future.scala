@@ -27,12 +27,12 @@ abstract class Future[+T] extends Responder[T] with Function0[T] {
   private[actors] var fvalue: Option[Any] = None
   private[actors] def fvalueTyped = fvalue.get.asInstanceOf[T]
 
-  @deprecated("this member is going to be removed in a future release", "2.8.0")
+  @deprecated("this member is going to be removed in a future release")
   def ch: InputChannel[Any] = inputChannel
 
-  @deprecated("this member is going to be removed in a future release", "2.8.0")
+  @deprecated("this member is going to be removed in a future release")
   protected def value: Option[Any] = fvalue
-  @deprecated("this member is going to be removed in a future release", "2.8.0")
+  @deprecated("this member is going to be removed in a future release")
   protected def value_=(x: Option[Any]) { fvalue = x }
 
   /** Tests whether the future's result is available.

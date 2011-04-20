@@ -81,7 +81,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *
    *  @param  elem        the element to insert
    */
-  @deprecated("Use `enqueue` instead", "2.7.2")
+  @deprecated("Use the method <code>enqueue</code> from now on.")
   def +[B >: A](elem: B) = enqueue(elem)
 
   /** Creates a new queue with element added at the end
@@ -99,7 +99,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *
    *  @param  iter        an iterable object
    */
-  @deprecated("Use `enqueue` instead", "2.7.2")
+  @deprecated("Use the method <code>enqueue</code> from now on.")
   def +[B >: A](iter: Iterable[B]) = enqueue(iter)
 
   /** Returns a new queue with all elements provided by
@@ -151,6 +151,6 @@ object Queue extends SeqFactory[Queue] {
 
   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
 
-  @deprecated("Use Queue.empty instead", "2.8.0")
+  @deprecated("Use Queue.empty instead")
   val Empty: Queue[Nothing] = Queue()
 }

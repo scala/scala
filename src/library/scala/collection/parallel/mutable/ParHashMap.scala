@@ -56,7 +56,7 @@ self =>
 
   override def seq = new collection.mutable.HashMap[K, V](hashTableContents)
 
-  def splitter = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
+  def parallelIterator = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
 
   override def size = tableSize
 
@@ -68,15 +68,15 @@ self =>
     else Some(e.value)
   }
 
-  def put(key: K, value: V): Option[V] = {
+  override def put(key: K, value: V): Option[V] = {
     val e = findEntry(key)
     if (e == null) { addEntry(new Entry(key, value)); None }
     else { val v = e.value; e.value = value; Some(v) }
   }
 
-  def update(key: K, value: V): Unit = put(key, value)
+  override def update(key: K, value: V): Unit = put(key, value)
 
-  def remove(key: K): Option[V] = {
+  override def remove(key: K): Option[V] = {
     val e = removeEntry(key)
     if (e ne null) Some(e.value)
     else None
@@ -160,8 +160,8 @@ private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFa
 extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
    with collection.mutable.HashTable.HashUtils[K]
 {
-//self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
-  import collection.parallel.tasksupport._
+self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
+  import tasksupport._
   private var mask = ParHashMapCombiner.discriminantmask
   private var nonmasklen = ParHashMapCombiner.nonmasklength
 
@@ -315,7 +315,7 @@ private[parallel] object ParHashMapCombiner {
   private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);
   private[mutable] val nonmasklength = 32 - discriminantbits
 
-  def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
+  def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
 }
 
 

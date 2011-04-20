@@ -30,7 +30,7 @@ import mutable.Builder
  *    @see CanBuildFrom
  *    @see GenericCanBuildFrom
  */
-abstract class SetFactory[CC[X] <: GenSet[X] with GenSetLike[X, CC[X]]]
+abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
   extends GenericCompanion[CC] {
 
   def newBuilder[A]: Builder[A, CC[A]]

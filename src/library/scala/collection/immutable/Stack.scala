@@ -23,7 +23,7 @@ object Stack extends SeqFactory[Stack] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
 
-  @deprecated("Use Stack.empty instead", "2.8.0")
+  @deprecated("Use Stack.empty instead")
   val Empty: Stack[Nothing] = Stack()
 }
 

@@ -12,8 +12,6 @@ package scala.collection.parallel
 
 
 import scala.collection.SetLike
-import scala.collection.GenSetLike
-import scala.collection.GenSet
 import scala.collection.Set
 import scala.collection.mutable.Builder
 
@@ -37,23 +35,49 @@ import scala.collection.mutable.Builder
 trait ParSetLike[T,
                  +Repr <: ParSetLike[T, Repr, Sequential] with ParSet[T],
                  +Sequential <: Set[T] with SetLike[T, Sequential]]
-extends GenSetLike[T, Repr]
+extends SetLike[T, Repr]
    with ParIterableLike[T, Repr, Sequential]
 { self =>
 
-  def empty: Repr
+  protected[this] override def newBuilder: Builder[T, Repr] = newCombiner
+
+  protected[this] override def newCombiner: Combiner[T, Repr]
+
+  override def empty: Repr
 
   // note: should not override toSet (could be mutable)
-
-  def union(that: GenSet[T]): Repr = sequentially {
-    _ union that
-  }
-
-  def diff(that: GenSet[T]): Repr = sequentially {
-    _ diff that
-  }
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -220,7 +220,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param start  the first element to append
    *  @param len    the number of elements to append
    */
-  @deprecated("replace by: `buf ++= src.view(start, end)`", "2.8.0")
+  @deprecated("replace by: `buf ++= src.view(start, end)`")
   def ++=(src: Array[A], start: Int, len: Int) {
     var i = start
     val end = i + len
@@ -239,7 +239,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elem  the element to add.
    */
   @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() +=' if you intend to create a new collection.", "2.8.0")
+              "Use `clone() +=' if you intend to create a new collection.")
   def + (elem: A): This = { +=(elem); repr }
 
   /** Adds two or more elements to this collection and returns
@@ -253,7 +253,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elems the remaining elements to add.
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=' if you intend to create a new collection.", "2.8.0")
+              "Use `clone() ++=' if you intend to create a new collection.")
   def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
     repr
@@ -269,7 +269,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
-  def ++(xs: GenTraversableOnce[A]): This = clone() ++= xs.seq
+  def ++(xs: TraversableOnce[A]): This = clone() ++= xs
 
   /** Creates a new collection with all the elements of this collection except `elem`.
    *
@@ -308,5 +308,5 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
     "Use --= instead if you intend to remove by side effect from an existing collection.\n"
   )
-  override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
+  override def --(xs: TraversableOnce[A]): This = clone() --= xs
 }

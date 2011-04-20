@@ -8,11 +8,9 @@
 
 package scala.collection
 
-
 import generic._
 import immutable.{ List, Stream }
 import annotation.unchecked.uncheckedVariance
-
 
 /** A template trait for iterable collections of type `Iterable[A]`.
  *  $iterableInfo
@@ -48,8 +46,16 @@ import annotation.unchecked.uncheckedVariance
  *
  *  @define Coll Iterable
  *  @define coll iterable collection
+ *  @define zipthatinfo the class of the returned collection. Where possible, `That` is
+ *    the same class as the current collection class `Repr`, but this
+ *    depends on the element type `(A1, B)` being admissible for that class,
+ *    which means that an implicit instance of type `CanBuildFrom[Repr, (A1, B), That]`.
+ *    is found.
+ *  @define zipbfinfo  an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `(A1, B)`.
  */
-trait IterableLike[+A, +Repr] extends Equals with TraversableLike[A, Repr] with GenIterableLike[A, Repr] {
+trait IterableLike[+A, +Repr] extends Equals with TraversableLike[A, Repr] {
 self =>
 
   override protected[this] def thisCollection: Iterable[A] = this.asInstanceOf[Iterable[A]]
@@ -188,7 +194,31 @@ self =>
     }
   }
 
-  def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
+  /** Returns a $coll formed from this $coll and another iterable collection
+   *  by combining corresponding elements in pairs.
+   *  If one of the two collections is longer than the other, its remaining elements are ignored.
+   *
+   *  $orderDependent
+   *
+   *  @param   that  The iterable providing the second half of each result pair
+   *  @tparam  A1    the type of the first half of the returned pairs (this is always a supertype
+   *                 of the collection's element type `A`).
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @tparam  That  $zipthatinfo
+   *  @param   bf    $zipbfinfo
+   *  @return        a new collection of type `That` containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
+   *
+   *  @usecase def zip[B](that: Iterable[B]): $Coll[(A, B)]
+   *
+   *  @param   that  The iterable providing the second half of each result pair
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @return        a new $coll containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
+   */
+  def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
     val those = that.iterator
@@ -197,7 +227,35 @@ self =>
     b.result
   }
 
-  def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
+  /** Returns a $coll formed from this $coll and another iterable collection
+   *  by combining corresponding elements in pairs.
+   *  If one of the two collections is shorter than the other,
+   *  placeholder elements are used to extend the shorter collection to the length of the longer.
+   *
+   *  $orderDependent
+   *
+   *  @param that     the iterable providing the second half of each result pair
+   *  @param thisElem the element to be used to fill up the result if this $coll is shorter than `that`.
+   *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
+   *  @return        a new collection of type `That` containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the maximum of the lengths of this $coll and `that`.
+   *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
+   *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
+   *
+   *  @usecase def zipAll[B](that: Iterable[B], thisElem: A, thatElem: B): $Coll[(A, B)]
+   *
+   *  @param   that  The iterable providing the second half of each result pair
+   *  @param thisElem the element to be used to fill up the result if this $coll is shorter than `that`.
+   *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @return        a new $coll containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the maximum of the lengths of this $coll and `that`.
+   *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
+   *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
+   */
+  def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
     val those = that.iterator
@@ -210,6 +268,31 @@ self =>
     b.result
   }
 
+  /** Zips this $coll with its indices.
+   *
+   *  $orderDependent
+   *
+   *  @tparam  A1    the type of the first half of the returned pairs (this is always a supertype
+   *                 of the collection's element type `A`).
+   *  @tparam  That  the class of the returned collection. Where possible, `That` is
+   *    the same class as the current collection class `Repr`, but this
+   *    depends on the element type `(A1, Int)` being admissible for that class,
+   *    which means that an implicit instance of type `CanBuildFrom[Repr, (A1, Int), That]`.
+   *    is found.
+   *  @tparam  bf    an implicit value of class `CanBuildFrom` which determines the
+   *    result class `That` from the current representation type `Repr`
+   *    and the new element type `(A1, Int)`.
+   *  @return        A new collection of type `That` containing pairs consisting of all elements of this
+   *                 $coll paired with their index. Indices start at `0`.
+   *
+   *  @usecase def zipWithIndex: $Coll[(A, Int)]
+   *
+   *  @return        A new $coll containing pairs consisting of all elements of this
+   *                 $coll paired with their index. Indices start at `0`.
+   *  @example
+   *    `List("a", "b", "c").zipWithIndex = List(("a", 0), ("b", 1), ("c", 2))`
+   *
+   */
   def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
     var i = 0
@@ -220,7 +303,21 @@ self =>
     b.result
   }
 
-  def sameElements[B >: A](that: GenIterable[B]): Boolean = {
+  /** Checks if the other iterable collection contains the same elements in the same order as this $coll.
+   *
+   *  $orderDependent
+   *  $willNotTerminateInf
+   *
+   *  @param that  the collection to compare with.
+   *  @tparam B    the type of the elements of collection `that`.
+   *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
+   *
+   *  @usecase  def sameElements(that: Iterable[A]): Boolean
+   *
+   *  @param that  the collection to compare with.
+   *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
+   */
+  def sameElements[B >: A](that: Iterable[B]): Boolean = {
     val these = this.iterator
     val those = that.iterator
     while (these.hasNext && those.hasNext)
@@ -247,20 +344,20 @@ self =>
 
   override /*TraversableLike*/ def view(from: Int, until: Int) = view.slice(from, until)
 
-  @deprecated("use `iterator' instead", "2.8.0")
+  @deprecated("use `iterator' instead")
   def elements = iterator
 
-  @deprecated("use `head' instead", "2.8.0") def first: A = head
+  @deprecated("use `head' instead") def first: A = head
 
   /** `None` if iterable is empty.
    */
-  @deprecated("use `headOption' instead", "2.8.0") def firstOption: Option[A] = headOption
+  @deprecated("use `headOption' instead") def firstOption: Option[A] = headOption
 
   /**
    * returns a projection that can be used to call non-strict `filter`,
    * `map`, and `flatMap` methods that build projections
    * of the collection.
    */
-  @deprecated("use `view' instead", "2.8.0")
+  @deprecated("use `view' instead")
   def projection = view
 }

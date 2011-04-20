@@ -263,11 +263,5 @@ function filter() {
 
 function windowTitle()
 {
-    try {
-        parent.document.title=document.title;
-    }
-    catch(e) {
-      // Chrome doesn't allow settings the parent's title when
-      // used on the local file system.
-    }
+    parent.document.title=document.title;
 };

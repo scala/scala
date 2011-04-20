@@ -7,7 +7,7 @@ import collection._
 object Test {
 
   def main(args: Array[String]) {
-    testConversions
+    // disabled
   }
 
   def testConversions {
@@ -49,18 +49,13 @@ object Test {
     assertToPar(parallel.immutable.ParHashSet(1 -> 3))
 
     assertToParWoMap(immutable.Range(1, 10, 2))
-
-    // seq and par again conversions)
-    assertSeqPar(parallel.mutable.ParArray(1, 2, 3))
   }
-
-  def assertSeqPar[T](pc: parallel.ParIterable[T]) = pc.seq.par == pc
 
   def assertSeq[T](pc: parallel.ParIterable[T]) = assert(pc.seq == pc)
 
-  def assertPar[T, P <: Parallel](xs: GenIterable[T]) = assert(xs == xs.par)
+  def assertPar[T, P <: Parallel](xs: Iterable[T]) = assert(xs == xs.par)
 
-  def assertToPar[K, V](xs: GenTraversable[(K, V)]) {
+  def assertToPar[K, V](xs: Traversable[(K, V)]) {
     xs match {
       case _: Seq[_] =>
         assert(xs.toIterable.par == xs)
@@ -78,7 +73,7 @@ object Test {
     assert(xs.par.toMap == xs.toMap)
   }
 
-  def assertToParWoMap[T](xs: GenSeq[T]) {
+  def assertToParWoMap[T](xs: Seq[T]) {
     assert(xs.toIterable.par == xs.toIterable)
     assert(xs.par.toIterable == xs.toIterable)
 

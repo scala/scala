@@ -183,7 +183,7 @@ trait Typers extends Modes {
       namerCache
     }
 
-    var context = context0
+    private[typechecker] var context = context0
     def context1 = context
 
     /** Check that <code>tree</code> is a stable expression.
@@ -989,32 +989,6 @@ trait Typers extends Modes {
         }
       } else
         doAdapt(pt)
-    }
-
-    /** Try o apply an implicit conversion to `qual' to that it contains
-     *  a method `name`. If that's ambiguous try taking arguments into account using `adaptToArguments`.
-     */
-    def adaptToMemberWithArgs(tree: Tree, qual: Tree, name: Name, mode: Int): Tree = {
-      try {
-        adaptToMember(qual, HasMember(name))
-      } catch {
-        case ex: TypeError =>
-        // this happens if implicits are ambiguous; try again with more context info.
-        // println("last ditch effort: "+qual+" . "+name)
-        context.tree match {
-          case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty => // try handling the arguments
-            // println("typing args: "+args)
-            silent(_.typedArgs(args, mode)) match {
-              case args: List[_] =>
-                adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
-              case _ =>
-                throw ex
-            }
-          case _ =>
-            // println("not in an apply: "+context.tree+"/"+tree)
-            throw ex
-        }
-      }
     }
 
     /** Try to apply an implicit conversion to `qual' to that it contains a
@@ -2738,13 +2712,10 @@ trait Typers extends Modes {
               error(t.pos, "unexpected tree after typing annotation: "+ typedAnn)
           }
 
-          if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
-            unit.deprecationWarning(ann.pos, """
-              |The `deprecated` annotation now takes two String parameters: the first is
-              |an explanation and/or recommended alternative, which will be printed to the
-              |console and also appear in the scaladoc.  The second is the first released
-              |version in which the member was deprecated.""".trim.stripMargin
-            )
+          if (annType.typeSymbol == DeprecatedAttr && (argss.isEmpty || argss.head.isEmpty))
+            unit.deprecationWarning(ann.pos,
+              "the `deprecated' annotation now takes a (message: String) as parameter\n"+
+              "indicating the reason for deprecation. That message is printed to the console and included in scaladoc.")
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) annotationError
           else annInfo(typedAnn)
@@ -3481,6 +3452,8 @@ trait Typers extends Modes {
        *  @return     ...
        */
       def typedSelect(qual: Tree, name: Name): Tree = {
+
+
         val sym =
           if (tree.symbol != NoSymbol) {
             if (phase.erasedTypes && qual.isInstanceOf[Super])
@@ -3499,9 +3472,26 @@ trait Typers extends Modes {
             member(qual, name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
-          val qual1 =
-            if (member(qual, name) != NoSymbol) qual
-            else adaptToMemberWithArgs(tree, qual, name, mode)
+          val qual1 = try {
+            adaptToName(qual, name)
+          } catch {
+            case ex: TypeError =>
+              // this happens if implicits are ambiguous; try again with more context info.
+              // println("last ditch effort: "+qual+" . "+name)
+              context.tree match {
+                case Apply(tree1, args) if tree1 eq tree => // try handling the arguments
+                  // println("typing args: "+args)
+                  silent(_.typedArgs(args, mode)) match {
+                    case args: List[_] =>
+                      adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
+                    case _ =>
+                      throw ex
+                  }
+                case _ =>
+                  // println("not in an apply: "+context.tree+"/"+tree)
+                  throw ex
+              }
+          }
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
 
@@ -3577,12 +3567,6 @@ trait Typers extends Modes {
                   qual // you only get to see the wrapped tree after running this check :-p
                 }) setType qual.tpe,
                 name)
-            case accErr: Inferencer#AccessError =>
-              val qual1 =
-                try adaptToMemberWithArgs(tree, qual, name, mode)
-                catch { case _: TypeError => qual }
-              if (qual1 ne qual) typed(Select(qual1, name) setPos tree.pos, mode, pt)
-              else accErr.emit()
             case _ =>
               result
           }
@@ -3729,10 +3713,10 @@ trait Typers extends Modes {
               if (inaccessibleSym eq NoSymbol) {
                 error(tree.pos, "not found: "+decodeWithKind(name, context.owner))
               }
-              else new AccessError(
+              else accessError(
                 tree, inaccessibleSym, context.enclClass.owner.thisType,
                 inaccessibleExplanation
-              ).emit()
+              )
               defSym = context.owner.newErrorSymbol(name)
             }
           }

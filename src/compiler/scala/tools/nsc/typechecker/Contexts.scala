@@ -383,7 +383,7 @@ trait Contexts { self: Analyzer =>
      *  @param superAccess ...
      *  @return            ...
      */
-    def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean = false): Boolean = {
+    def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean): Boolean = {
       lastAccessCheckDetails = ""
       // Console.println("isAccessible(%s, %s, %s)".format(sym, pre, superAccess))
 
@@ -507,7 +507,7 @@ trait Contexts { self: Analyzer =>
      */
     private def isQualifyingImplicit(sym: Symbol, pre: Type, imported: Boolean) =
       sym.isImplicit &&
-      isAccessible(sym, pre) &&
+      isAccessible(sym, pre, false) &&
       !(imported && {
         val e = scope.lookupEntry(sym.name)
         (e ne null) && (e.owner == scope)

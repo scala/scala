@@ -23,7 +23,6 @@ import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
-import scala.collection.GenTraversableOnce
 
 
 
@@ -76,7 +75,7 @@ self =>
 
   type SCPI = SignalContextPassingIterator[ParArrayIterator]
 
-  protected[parallel] def splitter: ParArrayIterator = {
+  def parallelIterator: ParArrayIterator = {
     val pit = new ParArrayIterator with SCPI
     pit
   }
@@ -179,7 +178,7 @@ self =>
 
     override def fold[U >: T](z: U)(op: (U, U) => U): U = foldLeft[U](z)(op)
 
-    override def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
+    def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
 
     override def sum[U >: T](implicit num: Numeric[U]): U = {
       var s = sum_quick(num, arr, until, i, num.zero)
@@ -410,12 +409,12 @@ self =>
       }
     }
 
-    override def flatmap2combiner[S, That](f: T => GenTraversableOnce[S], cb: Combiner[S, That]): Combiner[S, That] = {
+    override def flatmap2combiner[S, That](f: T => TraversableOnce[S], cb: Combiner[S, That]): Combiner[S, That] = {
       //val cb = pbf(self.repr)
       while (i < until) {
         val traversable = f(arr(i).asInstanceOf[T])
         if (traversable.isInstanceOf[Iterable[_]]) cb ++= traversable.asInstanceOf[Iterable[S]].iterator
-        else cb ++= traversable.seq
+        else cb ++= traversable
         i += 1
       }
       cb
@@ -593,7 +592,7 @@ self =>
     (new ParArray[S](targarrseq)).asInstanceOf[That]
   } else super.map(f)(bf)
 
-  override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[ParArray[T], U, That]): That =
+  override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanCombineFrom[ParArray[T], U, That]): That =
     if (parallelismLevel > 1 && buildsArray(cbf(repr))) {
       // reserve an array
       val targarrseq = new ArraySeq[U](length + 1)
@@ -601,7 +600,7 @@ self =>
       targetarr(0) = z
 
       // do a parallel prefix scan
-      if (length > 0) executeAndWaitResult(new CreateScanTree[U](0, size, z, op, splitter) mapResult {
+      if (length > 0) executeAndWaitResult(new CreateScanTree[U](0, size, z, op, parallelIterator) mapResult {
         tree => executeAndWaitResult(new ScanToArray(tree, z, op, targetarr))
       })
 
@@ -711,10 +710,11 @@ object ParArray extends ParFactory[ParArray] {
     handoff(newarr)
   }
 
-  def fromTraversables[T](xss: GenTraversableOnce[T]*) = {
+  def fromTraversables[T](xss: TraversableOnce[T]*) = {
     val cb = ParArrayCombiner[T]()
     for (xs <- xss) {
-      cb ++= xs.seq
+      val it = xs.toIterator
+      while (it.hasNext) cb += it.next
     }
     cb.result
   }

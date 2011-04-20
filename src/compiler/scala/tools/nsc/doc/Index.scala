@@ -5,7 +5,7 @@ import scala.collection._
 
 trait Index {
 
-  type SymbolMap = SortedMap[String, SortedSet[model.MemberEntity]]
+  type SymbolMap = SortedMap[String, SortedSet[model.TemplateEntity]]
 
   def firstLetterIndex: Map[Char, SymbolMap]
 

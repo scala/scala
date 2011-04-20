@@ -1,11 +1,3 @@
-/*                     __                                               *\
-**     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
-** /____/\___/_/ |_/____/_/ | |                                         **
-**                          |/                                          **
-\*                                                                      */
-
 package scala.collection
 package generic
 
@@ -22,7 +14,6 @@ trait CanCombineFrom[-From, -Elem, +To] extends CanBuildFrom[From, Elem, To] wit
   def apply(from: From): Combiner[Elem, To]
   def apply(): Combiner[Elem, To]
 }
-
 
 
 

@@ -20,6 +20,5 @@ package mutable
 @cloneable
 trait Cloneable[+A <: AnyRef] {
   // !!! why doesn't this extend java.lang.Cloneable?
-  //     because neither did @serializable, then we changed it to Serializable
   override def clone: A = super.clone().asInstanceOf[A]
 }

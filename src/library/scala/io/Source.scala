@@ -196,7 +196,7 @@ abstract class Source extends Iterator[Char] {
    *  @return     the specified line.
    *
    */
-  @deprecated("Use a collections method such as getLines().toIndexedSeq for random access.", "2.8.0")
+  @deprecated("Use a collections method such as getLines().toIndexedSeq for random access.")
   def getLine(line: Int): String = lineNum(line)
   private def lineNum(line: Int): String = getLines() drop (line - 1) take 1 mkString
 

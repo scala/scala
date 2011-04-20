@@ -13,7 +13,7 @@ package scala.collection.parallel.mutable
 
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
-import scala.collection.GenSet
+
 
 
 
@@ -23,20 +23,17 @@ import scala.collection.GenSet
  *
  *  @define Coll mutable.ParSet
  *  @define coll mutable parallel set
- *
- *  @author Aleksandar Prokopec
  */
 trait ParSet[T]
-extends collection/*.mutable*/.GenSet[T]
+extends collection.mutable.Set[T]
    with ParIterable[T]
    with collection.parallel.ParSet[T]
    with GenericParTemplate[T, ParSet]
    with ParSetLike[T, ParSet[T], collection.mutable.Set[T]]
 {
 self =>
-  override def companion: GenericCompanion[ParSet] with GenericParCompanion[ParSet] = ParSet
+  override def companion: GenericCompanion[ParSet] with GenericParCompanion[ParSet] = ParSet;
   override def empty: ParSet[T] = ParHashSet()
-  def seq: collection.mutable.Set[T]
 }
 
 

@@ -37,10 +37,10 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
   val body =
     <body>
       <div id="library">
-        <img class='class icon' src={ relativeLinkTo{List("class.png", "lib")} }/>
-        <img class='trait icon' src={ relativeLinkTo{List("trait.png", "lib")} }/>
-        <img class='object icon' src={ relativeLinkTo{List("object.png", "lib")} }/>
-        <img class='package icon' src={ relativeLinkTo{List("package.png", "lib")} }/>
+        <img class='class icon' width="13" height="13" src={ relativeLinkTo{List("class.png", "lib")} }/>
+        <img class='trait icon' width="13" height="13" src={ relativeLinkTo{List("trait.png", "lib")} }/>
+        <img class='object icon' width="13" height="13" src={ relativeLinkTo{List("object.png", "lib")} }/>
+        <img class='package icon' width="13" height="13" src={ relativeLinkTo{List("package.png", "lib")} }/>
       </div>
       { browser }
       <div id="content" class="ui-layout-center">
@@ -66,13 +66,21 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
   def browser =
 	<xml:group>
     <div id="browser" class="ui-layout-west">
+      <div class="ui-west-north">{
+        <div class="letters">
+	      { for(l <- index.firstLetterIndex.keySet.toList.sortBy( _.toString )) yield { // TODO there should be a better way to do that
+	          val ch = if(l=='#') "%23" else l // url encoding if needed
+              <a target="template" href={"index/index-"+ch+".html"}>{l.toUpper}</a> ++ xml.Text(" ")
+          } }
+	    </div>
+      }</div>
       <div class="ui-west-center">
       <div id="filter"></div>
       <div class="pack" id="tpl">{
         def packageElem(pack: model.Package): NodeSeq = {
           <xml:group>
             { if (!pack.isRootPackage)
-                <a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a>
+                <h3><a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a></h3>
               else NodeSeq.Empty
             }
             <ol class="templates">{

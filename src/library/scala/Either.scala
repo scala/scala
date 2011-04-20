@@ -311,11 +311,11 @@ object Either {
     }
   }
 
-  @deprecated("use `x.joinLeft'", "2.8.0")
+  @deprecated("use `x.joinLeft'")
   def joinLeft[A, B](es: Either[Either[A, B], B]) =
     es.left.flatMap(x => x)
 
-  @deprecated("use `x.joinRight'", "2.8.0")
+  @deprecated("use `x.joinRight'")
   def joinRight[A, B](es: Either[A, Either[A, B]]) =
     es.right.flatMap(x => x)
 
@@ -323,7 +323,7 @@ object Either {
    * Takes an `Either` to its contained value within `Left` or
    * `Right`.
    */
-  @deprecated("use `x.merge'", "2.8.0")
+  @deprecated("use `x.merge'")
   def merge[T](e: Either[T, T]) = e match {
     case Left(t) => t
     case Right(t) => t

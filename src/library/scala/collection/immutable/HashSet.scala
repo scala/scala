@@ -11,7 +11,6 @@
 package scala.collection
 package immutable
 
-import annotation.unchecked.{ uncheckedVariance => uV }
 import generic._
 import collection.parallel.immutable.ParHashSet
 
@@ -96,11 +95,34 @@ class HashSet[A] extends Set[A]
  */
 object HashSet extends ImmutableSetFactory[HashSet] {
 
+  class TrieIterator[A](elems: Array[HashSet[A]]) extends TrieIteratorBase[A, HashSet[A]](elems) {
+    import TrieIteratorBase._
+
+    type This = TrieIterator[A]
+
+    private[immutable] def recreateIterator() = new TrieIterator(elems)
+    private[immutable] type ContainerType = HashSet1[A]
+    private[immutable] type TrieType      = HashTrieSet[A]
+    private[immutable] type CollisionType = HashSetCollision1[A]
+    private[immutable] def determineType(x: HashSet[A]) = x match {
+      case _: HashSet1[_]          => CONTAINER_TYPE
+      case _: HashTrieSet[_]       => TRIE_TYPE
+      case _: HashSetCollision1[_] => COLLISION_TYPE
+    }
+    private[immutable] def getElem(cc: ContainerType): A      = cc.key
+    private[immutable] def getElems(t: TrieType)     = t.elems
+    private[immutable] def collisionToArray(c: CollisionType) = c.ks map (x => HashSet(x)) toArray
+    private[immutable] def newThisType(xs: Array[HashSet[A]]) = new TrieIterator(xs)
+    private[immutable] def newDeepArray(size: Int)            = new Array[Array[HashSet[A]]](size)
+    private[immutable] def newSingleArray(el: HashSet[A])     = Array(el)
+  }
+
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
-  private object EmptyHashSet extends HashSet[Any] { }
+  private object EmptyHashSet extends HashSet[Any] {
+  }
 
   // TODO: add HashSet2, HashSet3, ...
 
@@ -130,9 +152,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def foreach[U](f: A => U): Unit = f(key)
   }
 
-  private[immutable] class HashSetCollision1[A](private[HashSet] var hash: Int, var ks: ListSet[A])
-            extends HashSet[A] {
-
+  private[immutable] class HashSetCollision1[A](private[HashSet] var hash: Int, var ks: ListSet[A]) extends HashSet[A] {
     override def size = ks.size
 
     override def get0(key: A, hash: Int, level: Int): Boolean =
@@ -177,8 +197,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   }
 
-  class HashTrieSet[A](private var bitmap: Int, private[collection] var elems: Array[HashSet[A]], private var size0: Int)
-        extends HashSet[A] {
+
+  class HashTrieSet[A](private var bitmap: Int, private[HashSet] var elems: Array[HashSet[A]],
+      private var size0: Int) extends HashSet[A] {
 
     override def size = size0
 
@@ -247,9 +268,8 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    override def iterator = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
-      final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
-    }
+    override def iterator = new TrieIterator[A](elems)
+
 /*
 
 def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }

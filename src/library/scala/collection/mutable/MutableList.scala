@@ -104,7 +104,7 @@ extends LinearSeq[A]
       len = len + 1
     }
 
-  @deprecated("use clear() instead", "2.8.0")
+  @deprecated("use clear instead")
   def reset() { clear() }
 
   /** Returns an iterator over all elements of this list.

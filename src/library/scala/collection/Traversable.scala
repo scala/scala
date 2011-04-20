@@ -15,26 +15,20 @@ import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
 import scala.util.control.Breaks
 
 /** A trait for traversable collections.
- *  All operations are guaranteed to be performed in a single-threaded manner.
- *
  *  $traversableInfo
  */
 trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
-                         with GenTraversable[A]
-                         with TraversableOnce[A]
                          with GenericTraversableTemplate[A, Traversable] {
-  override def companion: GenericCompanion[Traversable] = Traversable
-
-  override def seq: Traversable[A] = this
+  def companion: GenericCompanion[Traversable] = Traversable
 
   /* The following methods are inherited from TraversableLike
    *
   override def isEmpty: Boolean
   override def size: Int
   override def hasDefiniteSize
-  override def ++[B >: A, That](xs: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
-  override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
+  override def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
   override def filter(p: A => Boolean): Traversable[A]
   override def remove(p: A => Boolean): Traversable[A]
   override def partition(p: A => Boolean): (Traversable[A], Traversable[A])

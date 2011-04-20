@@ -138,7 +138,7 @@ self =>
    *  then StreamBuilder will be chosen for the implicit.
    *  we recognize that fact and optimize to get more laziness.
    */
-  override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
     if (isStreamBuilder(bf)) asThat(
       if (isEmpty) that.toStream
@@ -197,7 +197,7 @@ self =>
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override final def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+  override final def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[B]
     // optimisations are not for speed, but for functionality
     // see tickets #153, #498, #2147, and corresponding tests in run/ (as well as run/stream_flatmap_odds.scala)
@@ -251,7 +251,7 @@ self =>
       else super.map(f)(bf)
     }
 
-    override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+    override def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
       def tailFlatMap = asStream[B](tail withFilter p flatMap f)
       if (isStreamBuilder(bf)) asThat(
         if (isEmpty) Stream.Empty
@@ -332,7 +332,7 @@ self =>
    *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  override final def zip[A1 >: A, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
+  override final def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
     if (isStreamBuilder(bf)) asThat(
       if (this.isEmpty || that.isEmpty) Stream.Empty
@@ -600,8 +600,7 @@ object Stream extends SeqFactory[Stream] {
       else Some((xs.head, xs.tail))
   }
 
-  @deprecated("use #:: instead", "2.8.0")
-  lazy val lazy_:: = #::
+  @deprecated("use #:: instead") lazy val lazy_:: = #::
 
   /** An alternative way of building and matching Streams using Stream.cons(hd, tl).
    */
@@ -702,17 +701,17 @@ object Stream extends SeqFactory[Stream] {
   /** A stream containing all elements of a given iterator, in the order they are produced.
    *  @param it   The iterator producing the stream's elements
    */
-  @deprecated("use it.toStream instead", "2.8.0")
+  @deprecated("use it.toStream instead")
   def fromIterator[A](it: Iterator[A]): Stream[A] = it.toStream
 
   /** The concatenation of a sequence of streams
    */
-  @deprecated("use xs.flatten instead", "2.8.0")
+  @deprecated("use xs.flatten instead")
   def concat[A](xs: Iterable[Stream[A]]): Stream[A] = concat(xs.iterator)
 
   /** The concatenation of all streams returned by an iterator
    */
-  @deprecated("use xs.toStream.flatten instead", "2.8.0")
+  @deprecated("use xs.toStream.flatten instead")
   def concat[A](xs: Iterator[Stream[A]]): Stream[A] = xs.toStream.flatten //(conforms[Stream[A], scala.collection.Traversable[A]])
 
   /**
@@ -726,7 +725,7 @@ object Stream extends SeqFactory[Stream] {
    * @param step the increment function of the stream, must be monotonically increasing or decreasing
    * @return the stream starting at value <code>start</code>.
    */
-  @deprecated("use `iterate' instead.", "2.8.0")
+  @deprecated("use `iterate' instead.")
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] =
     iterate(start, end - start)(step)
 
@@ -736,7 +735,7 @@ object Stream extends SeqFactory[Stream] {
    * @param elem the element composing the resulting stream
    * @return the stream containing an infinite number of elem
    */
-  @deprecated("use `continually' instead", "2.8.0")
+  @deprecated("use `continually' instead")
   def const[A](elem: A): Stream[A] = cons(elem, const(elem))
 
   /** Create a stream containing several copies of an element.
@@ -745,7 +744,7 @@ object Stream extends SeqFactory[Stream] {
    *  @param elem the element composing the resulting stream
    *  @return     the stream composed of n elements all equal to elem
    */
-  @deprecated("use fill(n, elem) instead", "2.8.0")
+  @deprecated("use fill(n, elem) instead")
   def make[A](n: Int, elem: A): Stream[A] = fill(n)(elem)
 }
 

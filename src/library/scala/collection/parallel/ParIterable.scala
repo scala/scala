@@ -8,7 +8,6 @@
 
 package scala.collection.parallel
 
-import scala.collection.GenIterable
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArrayCombiner
 import scala.collection.parallel.mutable.ParArray
@@ -27,14 +26,10 @@ import scala.collection.parallel.mutable.ParArray
  *  @define Coll ParIterable
  *  @define coll parallel iterable
  */
-trait ParIterable[+T]
-extends GenIterable[T]
-   with GenericParTemplate[T, ParIterable]
-   with ParIterableLike[T, ParIterable[T], Iterable[T]] {
+trait ParIterable[+T] extends Iterable[T]
+                         with GenericParTemplate[T, ParIterable]
+                         with ParIterableLike[T, ParIterable[T], Iterable[T]] {
   override def companion: GenericCompanion[ParIterable] with GenericParCompanion[ParIterable] = ParIterable
-  //protected[this] override def newBuilder = ParIterable.newBuilder[T]
-
-  def stringPrefix = "ParIterable"
 }
 
 /** $factoryInfo
@@ -46,4 +41,3 @@ object ParIterable extends ParFactory[ParIterable] {
 
   def newCombiner[T]: Combiner[T, ParIterable[T]] = ParArrayCombiner[T]
 }
-

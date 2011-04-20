@@ -557,7 +557,7 @@ trait Namers { self: Analyzer =>
           }
         case _ =>
       }
-      sym.setInfo(if (sym.isJavaDefined) RestrictJavaArraysMap(tp) else tp)
+      sym.setInfo(tp)
       if ((sym.isAliasType || sym.isAbstractType) && !sym.isParameter &&
           !typer.checkNonCyclic(tree.pos, tp))
         sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
@@ -1276,20 +1276,6 @@ trait Namers { self: Analyzer =>
           new DeSkolemizeMap(tparams) mapOver result
         case _ =>
           result
-      }
-    }
-
-    /** Convert Java generic array type T[] to (T with Object)[]
-     *  (this is necessary because such arrays have a representation which is incompatible
-     *   with arrays of primitive types.)
-     */
-    private object RestrictJavaArraysMap extends TypeMap {
-      def apply(tp: Type): Type = tp match {
-        case TypeRef(pre, ArrayClass, List(elemtp))
-        if elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe) =>
-          TypeRef(pre, ArrayClass, List(intersectionType(List(elemtp, definitions.ObjectClass.tpe))))
-        case _ =>
-          mapOver(tp)
       }
     }
 

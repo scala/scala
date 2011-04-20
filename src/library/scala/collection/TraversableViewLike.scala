@@ -59,7 +59,7 @@ trait ViewMkString[+A] {
 trait TraversableViewLike[+A,
                           +Coll,
                           +This <: TraversableView[A, Coll] with TraversableViewLike[A, Coll, This]]
-  extends Traversable[A] with TraversableLike[A, This] with ViewMkString[A] with GenTraversableViewLike[A, Coll, This]
+  extends Traversable[A] with TraversableLike[A, This] with ViewMkString[A]
 {
   self =>
 
@@ -70,6 +70,7 @@ trait TraversableViewLike[+A,
   protected[this] def viewIdentifier: String = ""
   protected[this] def viewIdString: String = ""
   override def stringPrefix = "TraversableView"
+  def viewToString = stringPrefix + viewIdString + "(...)"
 
   def force[B >: A, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
     val b = bf(underlying)
@@ -77,36 +78,129 @@ trait TraversableViewLike[+A,
     b.result()
   }
 
-  trait Transformed[+B] extends TraversableView[B, Coll] with super.Transformed[B] {
+  /** The implementation base trait of this view.
+   *  This trait and all its subtraits has to be re-implemented for each
+   *  ViewLike class.
+   */
+  trait Transformed[+B] extends TraversableView[B, Coll] {
     def foreach[U](f: B => U): Unit
 
+    lazy val underlying = self.underlying
+    final override protected[this] def viewIdString = self.viewIdString + viewIdentifier
     override def stringPrefix = self.stringPrefix
     override def toString = viewToString
   }
-
-  trait EmptyView extends Transformed[Nothing] with super.EmptyView
+  trait EmptyView extends Transformed[Nothing] {
+    final override def isEmpty = true
+    final override def foreach[U](f: Nothing => U): Unit = ()
+  }
 
   /** A fall back which forces everything into a vector and then applies an operation
    *  on it. Used for those operations which do not naturally lend themselves to a view
    */
-  trait Forced[B] extends Transformed[B] with super.Forced[B]
+  trait Forced[B] extends Transformed[B] {
+    protected[this] val forced: Seq[B]
+    def foreach[U](f: B => U) = forced foreach f
+    final override protected[this] def viewIdentifier = "C"
+  }
 
-  trait Sliced extends Transformed[A] with super.Sliced
+  trait Sliced extends Transformed[A] {
+    protected[this] val endpoints: SliceInterval
+    protected[this] def from  = endpoints.from
+    protected[this] def until = endpoints.until
+    // protected def newSliced(_endpoints: SliceInterval): Transformed[A] =
+    //   self.newSliced(endpoints.recalculate(_endpoints))
 
-  trait Mapped[B] extends Transformed[B] with super.Mapped[B]
+    def foreach[U](f: A => U) {
+      var index = 0
+      for (x <- self) {
+        if (from <= index) {
+          if (until <= index) return
+          f(x)
+        }
+        index += 1
+      }
+    }
+    final override protected[this] def viewIdentifier = "S"
+  }
 
-  trait FlatMapped[B] extends Transformed[B] with super.FlatMapped[B]
+  trait Mapped[B] extends Transformed[B] {
+    protected[this] val mapping: A => B
+    def foreach[U](f: B => U) {
+      for (x <- self)
+        f(mapping(x))
+    }
+    final override protected[this] def viewIdentifier = "M"
+  }
 
-  trait Appended[B >: A] extends Transformed[B] with super.Appended[B]
+  trait FlatMapped[B] extends Transformed[B] {
+    protected[this] val mapping: A => TraversableOnce[B]
+    def foreach[U](f: B => U) {
+      for (x <- self)
+        for (y <- mapping(x))
+          f(y)
+    }
+    final override protected[this] def viewIdentifier = "N"
+  }
 
-  trait Filtered extends Transformed[A] with super.Filtered
+  trait Appended[B >: A] extends Transformed[B] {
+    protected[this] val rest: Traversable[B]
+    def foreach[U](f: B => U) {
+      self foreach f
+      rest foreach f
+    }
+    final override protected[this] def viewIdentifier = "A"
+  }
 
-  trait TakenWhile extends Transformed[A] with super.TakenWhile
+  trait Filtered extends Transformed[A] {
+    protected[this] val pred: A => Boolean
+    def foreach[U](f: A => U) {
+      for (x <- self)
+        if (pred(x)) f(x)
+    }
+    final override protected[this] def viewIdentifier = "F"
+  }
 
-  trait DroppedWhile extends Transformed[A] with super.DroppedWhile
+  trait TakenWhile extends Transformed[A] {
+    protected[this] val pred: A => Boolean
+    def foreach[U](f: A => U) {
+      for (x <- self) {
+        if (!pred(x)) return
+        f(x)
+      }
+    }
+    final override protected[this] def viewIdentifier = "T"
+  }
 
-  override def ++[B >: A, That](xs: GenTraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
-    newAppended(xs.seq.toTraversable).asInstanceOf[That]
+  trait DroppedWhile extends Transformed[A] {
+    protected[this] val pred: A => Boolean
+    def foreach[U](f: A => U) {
+      var go = false
+      for (x <- self) {
+        if (!go && !pred(x)) go = true
+        if (go) f(x)
+      }
+    }
+    final override protected[this] def viewIdentifier = "D"
+  }
+
+  /** Boilerplate method, to override in each subclass
+   *  This method could be eliminated if Scala had virtual classes
+   */
+  protected def newForced[B](xs: => Seq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
+  protected def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
+  protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with Mapped[B]
+  protected def newFlatMapped[B](f: A => TraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
+  protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with Filtered
+  protected def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
+  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
+  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
+
+  protected def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
+  protected def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
+
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
+    newAppended(xs.toTraversable).asInstanceOf[That]
 // was:    if (bf.isInstanceOf[ByPassCanBuildFrom]) newAppended(that).asInstanceOf[That]
 //         else super.++[B, That](that)(bf)
   }
@@ -121,28 +215,13 @@ trait TraversableViewLike[+A,
   override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That =
     filter(pf.isDefinedAt).map(pf)(bf)
 
-  override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
+  override def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
     newFlatMapped(f).asInstanceOf[That]
 // was:    val b = bf(repr)
 //     if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]
 //    else super.flatMap[B, That](f)(bf)
   }
   private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
-
-  /** Boilerplate method, to override in each subclass
-   *  This method could be eliminated if Scala had virtual classes
-   */
-  protected def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
-  protected def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
-  protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with Mapped[B]
-  protected def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
-  protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with Filtered
-  protected def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
-  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
-  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
-
-  protected def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
-  protected def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))
 
   override def filter(p: A => Boolean): This = newFiltered(p)
   override def withFilter(p: A => Boolean): This = newFiltered(p)

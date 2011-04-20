@@ -171,11 +171,6 @@ trait Opcodes { self: ICodes =>
 
       override def consumedTypes = if (isStatic) Nil else List(REFERENCE(field.owner));
       override def producedTypes = List(toTypeKind(field.tpe));
-
-      // more precise information about how to load this field
-      // see #4283
-      var hostClass: Symbol = field.owner
-      def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }
     }
 
     case class LOAD_MODULE(module: Symbol) extends Instruction {

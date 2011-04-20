@@ -61,8 +61,8 @@ trait SortedMap[A, +B] extends Map[A, B]
    *
    *  @param xs     the traversable object.
    */
-  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: xs.seq) (_ + _)
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): SortedMap[A, B1] =
+    ((repr: SortedMap[A, B1]) /: xs) (_ + _)
 }
 
 /** $factoryInfo

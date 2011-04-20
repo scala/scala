@@ -99,9 +99,9 @@ class ListSet[A] extends Set[A]
    *  so we take the easy way out and add ourselves and the argument to
    *  a new builder.
    */
-  override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
+  override def ++(xs: TraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
-    else new ListSet.ListSetBuilder(this) ++= xs.seq result
+    else new ListSet.ListSetBuilder(this) ++= xs result
 
   private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
   private[ListSet] def unchecked_outer: ListSet[A] =

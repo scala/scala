@@ -543,7 +543,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         typedWithPos(tree.pos) {
           if (isValueClass(tpe.typeSymbol)) {
             if (tpe.typeSymbol == UnitClass)
-              REF(BoxedUnit_TYPE)
+              Select(REF(BoxedUnit_TYPE), BoxedUnit_TYPE)
             else
               Select(REF(boxedModule(tpe.typeSymbol)), nme.TYPE_)
           }

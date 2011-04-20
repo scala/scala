@@ -18,8 +18,7 @@ import parallel.Combiner
  *  @tparam ParRepr      the actual type of the collection, which has to be parallel
  */
 trait Parallelizable[+A, +ParRepr <: Parallel] {
-
-  def seq: TraversableOnce[A]
+  self: TraversableOnce[A] =>
 
   /** Returns a parallel implementation of this collection.
    *
@@ -38,7 +37,7 @@ trait Parallelizable[+A, +ParRepr <: Parallel] {
    */
   def par: ParRepr = {
     val cb = parCombiner
-    for (x <- seq) cb += x
+    for (x <- this) cb += x
     cb.result
   }
 
@@ -49,4 +48,3 @@ trait Parallelizable[+A, +ParRepr <: Parallel] {
    */
   protected[this] def parCombiner: Combiner[A, ParRepr]
 }
-

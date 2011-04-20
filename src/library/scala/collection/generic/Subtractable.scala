@@ -55,5 +55,5 @@ trait Subtractable[A, +Repr <: Subtractable[A, Repr]] { self =>
    *  @return a new $coll that contains all elements of the current $coll
    *  except one less occurrence of each of the elements of `elems`.
    */
-  def --(xs: GenTraversableOnce[A]): Repr = (repr /: xs.seq) (_ - _)
+  def --(xs: TraversableOnce[A]): Repr = (repr /: xs) (_ - _)
 }

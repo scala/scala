@@ -6,11 +6,19 @@
 **                          |/                                          **
 \*                                                                      */
 
+
 package scala.collection.parallel.immutable
+
+
+
+
+
+
 
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.IterableSplitter
+import scala.collection.parallel.ParIterableIterator
+import scala.collection.parallel.EnvironmentPassingCombiner
 import scala.collection.mutable.UnrolledBuffer.Unrolled
 import scala.collection.mutable.UnrolledBuffer
 import scala.collection.generic.ParSetFactory
@@ -18,7 +26,12 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.GenericCompanion
-import scala.collection.immutable.{ HashSet, TrieIterator }
+import scala.collection.immutable.HashSet
+
+
+
+
+
 
 /** Immutable parallel hash set, based on hash tries.
  *
@@ -49,7 +62,7 @@ self =>
 
   override def empty: ParHashSet[T] = new ParHashSet[T]
 
-  def splitter: IterableSplitter[T] = new ParHashSetIterator(trie.iterator, trie.size) with SCPI
+  def parallelIterator: ParIterableIterator[T] = new ParHashSetIterator(trie.iterator, trie.size) with SCPI
 
   override def seq = trie
 
@@ -73,8 +86,9 @@ self =>
   self: SignalContextPassingIterator[ParHashSetIterator] =>
     var i = 0
     def dup = triter match {
-      case t: TrieIterator[_] =>
-        dupFromIterator(t.dupIterator)
+      case t: HashSet.TrieIterator[_] =>
+        val dupt = t.dupIterator.asInstanceOf[Iterator[T]]
+        dupFromIterator(dupt)
       case _ =>
         val buff = triter.toBuffer
         triter = buff.iterator
@@ -86,9 +100,9 @@ self =>
       phit
     }
     def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
-      case t: TrieIterator[_] =>
+      case t: HashSet.TrieIterator[_] =>
         val previousRemaining = remaining
-        val ((fst, fstlength), snd) = t.split
+        val ((fst, fstlength), snd) = t.asInstanceOf[HashSet.TrieIterator[T]].split
         val sndlength = previousRemaining - fstlength
         Seq(
           new ParHashSetIterator(fst, fstlength) with SCPI,
@@ -129,9 +143,9 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 
 private[immutable] abstract class HashSetCombiner[T]
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
-//self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
+self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   import HashSetCombiner._
-  import collection.parallel.tasksupport._
+  import tasksupport._
   val emptyTrie = HashSet.empty[T]
 
   def +=(elem: T) = {
@@ -213,11 +227,26 @@ extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombine
 
 
 object HashSetCombiner {
-  def apply[T] = new HashSetCombiner[T] {} // was: with EnvironmentPassingCombiner[T, ParHashSet[T]] {}
+  def apply[T] = new HashSetCombiner[T] with EnvironmentPassingCombiner[T, ParHashSet[T]] {}
 
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

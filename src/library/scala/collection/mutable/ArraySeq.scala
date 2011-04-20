@@ -52,7 +52,7 @@ extends IndexedSeq[A]
 
   val array: Array[AnyRef] = new Array[AnyRef](length)
 
-  override def par = ParArray.handoff(array.asInstanceOf[Array[A]], length)
+  override def par = ParArray.handoff(array.asInstanceOf[Array[A]])
 
   def apply(idx: Int): A = {
     if (idx >= length) throw new IndexOutOfBoundsException(idx.toString)

@@ -47,20 +47,20 @@ extends SeqView[A, Coll]
   trait Prepended[B >: A] extends super.Prepended[B] with Transformed[B]
 
   /** boilerplate */
-  protected override def newForced[B](xs: => collection.GenSeq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
-  protected override def newAppended[B >: A](that: collection.GenTraversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
+  protected override def newForced[B](xs: => collection.Seq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
+  protected override def newAppended[B >: A](that: collection.Traversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
   protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with Mapped[B]
-  protected override def newFlatMapped[B](f: A => collection.GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
+  protected override def newFlatMapped[B](f: A => collection.TraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with Filtered
   protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
-  protected override def newZipped[B](that: collection.GenIterable[B]): Transformed[(A, B)] = new { val other = that } with Zipped[B]
-  protected override def newZippedAll[A1 >: A, B](that: collection.GenIterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = {
+  protected override def newZipped[B](that: collection.Iterable[B]): Transformed[(A, B)] = new { val other = that } with Zipped[B]
+  protected override def newZippedAll[A1 >: A, B](that: collection.Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = {
     new { val other = that; val thisElem = _thisElem; val thatElem = _thatElem } with ZippedAll[A1, B]
   }
   protected override def newReversed: Transformed[A] = new Reversed { }
-  protected override def newPatched[B >: A](_from: Int, _patch: collection.GenSeq[B], _replaced: Int): Transformed[B] = {
+  protected override def newPatched[B >: A](_from: Int, _patch: collection.Seq[B], _replaced: Int): Transformed[B] = {
     new { val from = _from; val patch = _patch; val replaced = _replaced } with Patched[B]
   }
   protected override def newPrepended[B >: A](elem: B): Transformed[B] = new { protected[this] val fst = elem } with Prepended[B]
