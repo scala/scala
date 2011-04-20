@@ -72,7 +72,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
         def packageElem(pack: model.Package): NodeSeq = {
           <xml:group>
             { if (!pack.isRootPackage)
-                <h3><a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a></h3>
+                <a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a>
               else NodeSeq.Empty
             }
             <ol class="templates">{

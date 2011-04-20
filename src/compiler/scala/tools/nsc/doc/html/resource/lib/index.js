@@ -126,12 +126,11 @@ var Index = {};
         return [
             '<li class="pack">',
             '<a class="packfocus">focus</a><a class="packhide">hide</a>',
-            '<h3>',
             '<a class="tplshow" target="template" href="',
             pack.replace(/\./g, '/'),
             '/package.html">',
             pack,
-            '</a></h3></li>'
+            '</a></li>'
         ].join('');
     };
 
@@ -195,13 +194,13 @@ var Index = {};
 
     function subPackages(pack) {
         return $.grep($('#tpl ol.packages'), function (element, index) {
-            var pack = $('h3', element).text();
+            var pack = $('li.pack > .tplshow', element).text();
             return pack.indexOf(pack + '.') == 0;
         });
     }
 
     ns.hidePackage = function (ol) {
-        var selected = $('h3', ol).text();
+        var selected = $('li.pack > .tplshow', ol).text();
         hiddenPackages[selected] = true;
 
         $('ol.templates', ol).hide();
@@ -212,7 +211,7 @@ var Index = {};
     }
 
     ns.showPackage = function (ol, state) {
-        var selected = $('h3', ol).text();
+        var selected = $('li.pack > .tplshow', ol).text();
         hiddenPackages[selected] = false;
 
         $('ol.templates', ol).show();
@@ -222,7 +221,7 @@ var Index = {};
 
             // When the filter is in "packs" state,
             // we don't want to show the `.templates`
-            var key = $('h3', element).text();
+            var key = $('li.pack > .tplshow', element).text();
             if (hiddenPackages[key] || state == 'packs') {
                 $('ol.templates', element).hide();
             }
@@ -400,7 +399,7 @@ function configureFocusFilter() {
 function focusFilter(package) {
     scheduler.clear("filter");
 
-    var currentFocus = $('h3', package).text();
+    var currentFocus = $('li.pack > .tplshow', package).text();
     $("#focusfilter > .focuscoll").empty();
     $("#focusfilter > .focuscoll").append(currentFocus);
 

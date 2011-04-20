@@ -226,7 +226,6 @@ h1 {
 	float: right;
 	font-weight: normal;
 	color: white;
-	padding: 0 8px;
 }
 
 #tpl .packfocus {
@@ -237,27 +236,31 @@ h1 {
 }
 
 #tpl .packages > ol {
-  background-color: #dadfe6;
-  /*margin-bottom: 5px;*/
+	background-color: #dadfe6;
+	/*margin-bottom: 5px;*/
 }
 
 /*#tpl .packages > ol > li {
 	margin-bottom: 1px;
 }*/
 
-#tpl .packages > li > h3 {
+#tpl .packages > li > a {
+	padding: 0px 5px;
+}
+
+#tpl .packages > li > a.tplshow {
 	display: block;
 	color: white;
 	font-weight: bold;
 	display: block;
-        text-shadow: #000000 0 1px 0;
+	text-shadow: #000000 0 1px 0;
 }
 
 #tpl ol > li.pack {
 	padding: 3px 5px;
-        background: url("packagesbg.gif");
-        background-repeat:repeat-x;
-        min-height: 14px;
+	background: url("packagesbg.gif");
+	background-repeat:repeat-x;
+	min-height: 14px;
 	background-color: #6e808e;
 }
 
@@ -266,24 +269,24 @@ h1 {
 }
 
 #tpl .templates > li {
-  padding-left: 5px;
-  min-height: 18px;
+	padding-left: 5px;
+	min-height: 18px;
 }
 
 #tpl ol > li .icon {
-  padding-right: 5px;
+	padding-right: 5px;
 	bottom: -2px;
 	position: relative;
 }
 
 #tpl .templates div.placeholder {
-  padding-right: 5px;
-  width: 13px;
-  display: inline-block;
+	padding-right: 5px;
+	width: 13px;
+	display: inline-block;
 }
 
 #tpl .templates span.tplLink {
-  padding-left: 5px;
+	padding-left: 5px;
 }
 
 #content {
@@ -306,18 +309,18 @@ h1 {
 }
 
 .ui-layout-pane {
-    background: #FFF;
-    overflow: auto;
+	background: #FFF;
+	overflow: auto;
 }
 
 .ui-layout-resizer {
-        background-image:url('filterbg.gif');
-        background-repeat:repeat-x;
-        background-color: #ededee; /* light gray */
-    border:1px solid #bbbbbb;
-    border-top:0;
-    border-bottom:0;
-    border-left: 0;
+	background-image:url('filterbg.gif');
+	background-repeat:repeat-x;
+	background-color: #ededee; /* light gray */
+	border:1px solid #bbbbbb;
+	border-top:0;
+	border-bottom:0;
+	border-left: 0;
 }
 
 .ui-layout-toggler {
