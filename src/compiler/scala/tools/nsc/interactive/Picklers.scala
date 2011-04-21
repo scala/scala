@@ -16,8 +16,13 @@ import mutable.ListBuffer
 
 trait Picklers { self: Global =>
 
-  lazy val freshRunReq = singletonPickler(FreshRunReq)
-  lazy val shutdownReq = singletonPickler(ShutdownReq)
+  lazy val freshRunReq =
+    unitPickler
+      .wrapped { _ => new FreshRunReq } { x => () }
+      .labelled ("FreshRunReq")
+      .cond (_.isInstanceOf[FreshRunReq])
+
+      lazy val shutdownReq = singletonPickler(ShutdownReq)
 
   def defaultThrowable[T <: Throwable]: CondPickler[T] = javaInstancePickler[T] cond { _ => true }
 

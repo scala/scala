@@ -173,7 +173,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   def isOutOfDate: Boolean = outOfDate
 
   def demandNewCompilerRun() = {
-    if (outOfDate) throw FreshRunReq // cancel background compile
+    if (outOfDate) throw new FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
 
@@ -316,7 +316,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       }
 
       logreplay("exception thrown", scheduler.pollThrowable()) match {
-        case Some(ex @ FreshRunReq) =>
+        case Some(ex: FreshRunReq) =>
           newTyperRun()
           minRunId = currentRunId
           demandNewCompilerRun()
@@ -537,9 +537,10 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     } catch {
       case CancelException =>
         debugLog("cancelled")
-      case ex @ FreshRunReq =>
+      case ex: FreshRunReq =>
         if (debugIDE) {
           println("FreshRunReq thrown during response")
+          ex.printStackTrace()
         }
         response raise ex
         throw ex

@@ -199,7 +199,7 @@ trait CompilerControl { self: Global =>
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
-  def askReset() = scheduler raise FreshRunReq
+  def askReset() = scheduler raise (new FreshRunReq)
 
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
@@ -307,7 +307,7 @@ trait CompilerControl { self: Global =>
 /** Signals a request for a fresh background compiler run.
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
  */
-object FreshRunReq extends ControlThrowable
+class FreshRunReq extends ControlThrowable
 
 /** Signals a request for a shutdown of the presentation compiler.
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
