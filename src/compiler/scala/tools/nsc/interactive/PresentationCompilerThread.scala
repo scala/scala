@@ -24,7 +24,7 @@ final class PresentationCompilerThread(var compiler: Global, name: String = "")
         try {
           compiler.backgroundCompile()
         } catch {
-          case FreshRunReq =>
+          case ex: FreshRunReq =>
             compiler.debugLog("fresh run req caught, starting new pass")
         }
         compiler.log.flush()
@@ -40,7 +40,7 @@ final class PresentationCompilerThread(var compiler: Global, name: String = "")
         compiler.log.flush()
 
         ex match {
-          case FreshRunReq =>
+          case ex: FreshRunReq =>
             compiler.debugLog("fresh run req caught outside presentation compiler loop; ignored") // This shouldn't be reported
           case _ : Global#ValidateException => // This will have been reported elsewhere
             compiler.debugLog("validate exception caught outside presentation compiler loop; ignored")

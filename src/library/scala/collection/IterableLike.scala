@@ -90,9 +90,49 @@ self =>
     iterator.next
 
   override /*TraversableLike*/ def slice(from: Int, until: Int): Repr = {
-    val lo = from max 0
-    if (until <= lo) newBuilder.result
-    else newBuilder ++= (iterator drop lo take (until - lo)) result
+    val lo = math.max(from, 0)
+    val elems = until - lo
+    val b = newBuilder
+    if (elems <= 0) b.result
+    else {
+      b.sizeHintBounded(elems, this)
+      var i = 0
+      val it = iterator drop lo
+      while (i < elems && it.hasNext) {
+        b += it.next
+        i += 1
+      }
+      b.result
+    }
+  }
+
+  override /*TraversableLike*/ def take(n: Int): Repr = {
+    val b = newBuilder
+
+    if (n <= 0) b.result
+    else {
+      b.sizeHintBounded(n, this)
+      var i = 0
+      val it = iterator
+      while (i < n && it.hasNext) {
+        b += it.next
+        i += 1
+      }
+      b.result
+    }
+  }
+
+  override /*TraversableLike*/ def drop(n: Int): Repr = {
+    val b = newBuilder
+    val lo = math.max(0, n)
+    b.sizeHint(this, -lo)
+    var i = 0
+    val it = iterator
+    while (i < n && it.hasNext) {
+      it.next
+      i += 1
+    }
+    b ++= it result
   }
 
   override /*TraversableLike*/ def takeWhile(p: A => Boolean): Repr = {

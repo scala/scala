@@ -103,11 +103,11 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
 
   override /*IterableLike*/
   def slice(from: Int, until: Int): Repr = {
-    val lo    = from max 0
-    val hi    = until min length
-    val elems = hi - lo
+    val lo    = math.max(from, 0)
+    val hi    = math.min(until, length)
+    val elems = math.max(hi - lo, 0)
     val b     = newBuilder
-    b.sizeHint(elems max 0)
+    b.sizeHint(elems)
 
     var i = lo
     while (i < hi) {
@@ -185,11 +185,10 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
 
   override /*SeqLike*/
   def segmentLength(p: A => Boolean, from: Int): Int = {
-    val start = from
     val len = length
-    var i = start
+    var i = from
     while (i < len && p(this(i))) i += 1
-    i - start
+    i - from
   }
 
   private def negLength(n: Int) = if (n >= length) -1 else n

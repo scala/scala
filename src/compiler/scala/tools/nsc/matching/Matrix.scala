@@ -88,21 +88,17 @@ trait Matrix extends MatrixAdditions {
     context: MatrixContext): Tree =
   {
     import context._
-    // log("handlePattern: selector.tpe = " + selector.tpe)
 
-    // sets up top level match
     val matrixInit: MatrixInit = {
       val v = copyVar(selector, isChecked, selector.tpe, "temp")
       MatrixInit(List(v), cases, atPos(selector.pos)(MATCHERROR(v.ident)))
     }
-
-    val matrix  = new MatchMatrix(context) { lazy val data = matrixInit }
-    val rep     = matrix.expansion                            // expands casedefs and assigns name
-    val mch     = typer typed rep.toTree                      // executes algorithm, converts tree to DFA
-    val dfatree = typer typed Block(matrixInit.valDefs, mch)  // packages into a code block
+    val matrix = new MatchMatrix(context) { lazy val data = matrixInit }
+    val mch     = typer typed matrix.expansion.toTree
+    val dfatree = typer typed Block(matrix.data.valDefs, mch)
 
     // redundancy check
-    matrix.targets filter (_.isNotReached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
+    matrix.targets filter (_.unreached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
     // optimize performs squeezing and resets any remaining NO_EXHAUSTIVE
     tracing("handlePattern")(matrix optimize dfatree)
   }
@@ -168,9 +164,9 @@ trait Matrix extends MatrixAdditions {
 
     val emptyPatternVarGroup = PatternVarGroup()
     class PatternVarGroup(val pvs: List[PatternVar]) {
-      def syms = pvs map (_.sym)
+      def syms    = pvs map (_.sym)
       def valDefs = pvs map (_.valDef)
-      def idents = pvs map (_.ident)
+      def idents  = pvs map (_.ident)
 
       def extractIndex(index: Int): (PatternVar, PatternVarGroup) = {
         val (t, ts) = self.extractIndex(pvs, index)

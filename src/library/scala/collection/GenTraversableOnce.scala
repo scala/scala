@@ -367,7 +367,7 @@ private[collection] trait GenTraversableOnce[+A] {
   def copyToArray[B >: A](xs: Array[B]): Unit
 
   /** Copies values of this $coll to an array.
-   *  Fills the given array `xs` with values of this $coll, after skipping `start` values.
+   *  Fills the given array `xs` with values of this $coll, beginning at index `start`.
    *  Copying will stop once either the end of the current $coll is reached,
    *  or the end of the array is reached.
    *
