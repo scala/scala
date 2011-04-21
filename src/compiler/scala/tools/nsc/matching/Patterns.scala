@@ -98,7 +98,15 @@ trait Patterns extends ast.TreeDSL {
     require (args.isEmpty)
     val Apply(select: Select, _) = tree
 
-    override def sufficientType = mkSingletonFromQualifier
+    override lazy val sufficientType = qualifier.tpe match {
+      case t: ThisType  => singleType(t, sym)   // this.X
+      case _            =>
+        qualifier match {
+          case _: Apply => PseudoType(tree)
+          case _        => singleType(Pattern(qualifier).necessaryType, sym)
+        }
+    }
+
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
     override def description = backticked match {
       case Some(s)  => "this." + s
@@ -381,16 +389,6 @@ trait Patterns extends ast.TreeDSL {
       case Select(q, name)  => name :: getPathSegments(q)
       case Apply(f, Nil)    => getPathSegments(f)
       case _                => Nil
-    }
-    protected def mkSingletonFromQualifier = {
-      def pType = qualifier match {
-        case _: Apply => PseudoType(tree)
-        case _        => singleType(Pattern(qualifier).necessaryType, sym)
-      }
-      qualifier.tpe match {
-        case t: ThisType  => singleType(t, sym) // this.X
-        case _            => pType
-      }
     }
   }
 

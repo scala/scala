@@ -12,8 +12,7 @@ import PartialFunction._
 /** Traits which are mixed into MatchMatrix, but separated out as
  *  (somewhat) independent components to keep them on the sidelines.
  */
-trait MatrixAdditions extends ast.TreeDSL
-{
+trait MatrixAdditions extends ast.TreeDSL {
   self: ExplicitOuter with ParallelMatching =>
 
   import global.{ typer => _, _ }
@@ -30,50 +29,52 @@ trait MatrixAdditions extends ast.TreeDSL
 
     private val settings_squeeze = !settings.Ynosqueeze.value
 
-    def squeezedBlockPVs(pvs: List[PatternVar], exp: Tree): Tree =
-      squeezedBlock(pvs map (_.valDef), exp)
+    class RefTraverser(vd: ValDef) extends Traverser {
+      private val targetSymbol = vd.symbol
+      private var safeRefs     = 0
+      private var isSafe       = true
 
-    /** Compresses multiple Blocks. */
-    def mkBlock(stats: List[Tree], expr: Tree): Tree = expr match {
-      case Block(stats1, expr1) if stats.isEmpty  => mkBlock(stats1, expr1)
-      case _                                      => Block(stats, expr)
+      def canDrop   = isSafe && safeRefs == 0
+      def canInline = isSafe && safeRefs == 1
+
+      override def traverse(tree: Tree): Unit = tree match {
+        case t: Ident if t.symbol eq targetSymbol =>
+          // target symbol's owner should match currentOwner
+          if (targetSymbol.owner == currentOwner) safeRefs += 1
+          else isSafe = false
+
+        case LabelDef(_, params, rhs) =>
+          if (params exists (_.symbol eq targetSymbol))  // cannot substitute this one
+            isSafe = false
+
+          traverse(rhs)
+        case _ if safeRefs > 1 => ()
+        case _ =>
+          super.traverse(tree)
+      }
+    }
+    class Subst(vd: ValDef) extends Transformer {
+      private var stop = false
+      override def transform(tree: Tree): Tree = tree match {
+        case t: Ident if t.symbol == vd.symbol =>
+          stop = true
+          vd.rhs
+        case _ =>
+          if (stop) tree
+          else super.transform(tree)
+      }
     }
 
+    /** Compresses multiple Blocks. */
+    private def combineBlocks(stats: List[Tree], expr: Tree): Tree = expr match {
+      case Block(stats1, expr1) if stats.isEmpty => combineBlocks(stats1, expr1)
+      case _                                     => Block(stats, expr)
+    }
     def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
-      if (settings_squeeze) mkBlock(Nil, squeezedBlock1(vds, exp))
-      else                  mkBlock(vds, exp)
+      if (settings_squeeze) combineBlocks(Nil, squeezedBlock1(vds, exp))
+      else                  combineBlocks(vds, exp)
 
     private def squeezedBlock1(vds: List[Tree], exp: Tree): Tree = {
-      class RefTraverser(sym: Symbol) extends Traverser {
-        var nref, nsafeRef = 0
-        override def traverse(tree: Tree) = tree match {
-          case t: Ident if t.symbol eq sym =>
-            nref += 1
-            if (sym.owner == currentOwner) // oldOwner should match currentOwner
-              nsafeRef += 1
-
-          case LabelDef(_, args, rhs) =>
-            (args dropWhile(_.symbol ne sym)) match {
-              case Nil  =>
-              case _    => nref += 2  // cannot substitute this one
-            }
-            traverse(rhs)
-          case t if nref > 1 =>       // abort, no story to tell
-          case t =>
-            super.traverse(t)
-        }
-      }
-
-      class Subst(sym: Symbol, rhs: Tree) extends Transformer {
-        var stop = false
-        override def transform(tree: Tree) = tree match {
-          case t: Ident if t.symbol == sym =>
-            stop = true
-            rhs
-          case _ => if (stop) tree else super.transform(tree)
-        }
-      }
-
       lazy val squeezedTail = squeezedBlock(vds.tail, exp)
       def default = squeezedTail match {
         case Block(vds2, exp2) => Block(vds.head :: vds2, exp2)
@@ -83,17 +84,13 @@ trait MatrixAdditions extends ast.TreeDSL
       if (vds.isEmpty) exp
       else vds.head match {
         case vd: ValDef =>
-          val sym = vd.symbol
-          val rt = new RefTraverser(sym)
-          rt.atOwner (owner) (rt traverse squeezedTail)
+          val rt = new RefTraverser(vd)
+          rt.atOwner(owner)(rt traverse squeezedTail)
 
-          rt.nref match {
-            case 0                      => squeezedTail
-            case 1 if rt.nsafeRef == 1  => new Subst(sym, vd.rhs) transform squeezedTail
-            case _                      => default
-          }
-        case _          =>
-          default
+          if (rt.canDrop) squeezedTail
+          else if (rt.canInline) new Subst(vd) transform squeezedTail
+          else default
+        case _ => default
       }
     }
   }
@@ -109,9 +106,7 @@ trait MatrixAdditions extends ast.TreeDSL
       object lxtt extends Transformer {
         override def transform(tree: Tree): Tree = tree match {
           case blck @ Block(vdefs, ld @ LabelDef(name, params, body)) =>
-            def shouldInline(t: FinalState) = t.isReachedOnce && (t.labelSym eq ld.symbol)
-
-            if (targets exists shouldInline) squeezedBlock(vdefs, body)
+            if (targets exists (_ shouldInline ld.symbol)) squeezedBlock(vdefs, body)
             else blck
 
           case t =>
@@ -166,7 +161,7 @@ trait MatrixAdditions extends ast.TreeDSL
 
       private def requiresExhaustive(sym: Symbol) = {
          (sym.isMutable) &&                 // indicates that have not yet checked exhaustivity
-        !(sym hasFlag NO_EXHAUSTIVE) &&        // indicates @unchecked
+        !(sym hasFlag NO_EXHAUSTIVE) &&     // indicates @unchecked
          (sym.tpe.typeSymbol.isSealed) &&
         !isValueClass(sym.tpe.typeSymbol)   // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
       }
