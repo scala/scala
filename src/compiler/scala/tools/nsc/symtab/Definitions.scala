@@ -217,6 +217,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ScalaInlineClass           = getClass("scala.inline")
     lazy val ScalaNoInlineClass         = getClass("scala.noinline")
     lazy val SpecializedClass           = getClass("scala.specialized")
+    lazy val BridgeClass                = getClass("scala.annotation.bridge")
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
@@ -606,6 +607,13 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       while (result.isAliasType) result = result.info.typeSymbol
       result
     }
+
+    def getClassIfDefined(fullname: Name): Symbol =
+      try {
+        getClass(fullname)
+      } catch {
+        case ex: MissingRequirementError => NoSymbol
+      }
 
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol

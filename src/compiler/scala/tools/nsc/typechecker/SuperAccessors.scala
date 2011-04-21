@@ -184,7 +184,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           curTree = tree
           val body1 = atOwner(currentOwner) { transformTrees(body) }
           accDefs = accDefs.tail;
-          treeCopy.Template(tree, parents, self, ownAccDefs.toList ::: body1);
+          treeCopy.Template(tree, parents, self, ownAccDefs.toList ::: body1)
+
+        case DefDef(_, _, _, _, _, _) if sym.hasAnnotation(definitions.BridgeClass) =>
+          sym.setFlag(BRIDGE)
+          sym.removeAnnotation(definitions.BridgeClass)
+          super.transform(tree)
 
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)

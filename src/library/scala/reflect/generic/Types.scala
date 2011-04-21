@@ -36,20 +36,21 @@ trait Types { self: Universe =>
   }
 
   type Type >: Null <: AbsType
+  type SingletonType >: Null <: Type
 
   val NoType: Type
   val NoPrefix: Type
 
-  type ThisType <: Type
+  type ThisType <: SingletonType
   val ThisType: ThisTypeExtractor
 
   type TypeRef <: Type
   val TypeRef: TypeRefExtractor
 
-  type SingleType <: Type
+  type SingleType <: SingletonType
   val SingleType: SingleTypeExtractor
 
-  type SuperType <: Type
+  type SuperType <: SingletonType
   val SuperType: SuperTypeExtractor
 
   type TypeBounds <: Type
