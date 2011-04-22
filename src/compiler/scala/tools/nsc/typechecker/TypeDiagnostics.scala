@@ -195,8 +195,9 @@ trait TypeDiagnostics {
 
     def resType   = if (pt isWildcard) "" else " with expected result type " + pt
     def allTypes  = (alternatives(tree) flatMap (_.paramTypes)) ++ argtpes :+ pt
+    def locals    = alternatives(tree) flatMap (_.typeParams)
 
-    withDisambiguation(allTypes: _*) {
+    withDisambiguation(locals, allTypes: _*) {
       treeSymTypeMsg(tree) + msg + asParams(argtpes) + resType
     }
   }
@@ -292,7 +293,7 @@ trait TypeDiagnostics {
   }
 
   def foundReqMsg(found: Type, req: Type): String = {
-    (withDisambiguation(found, req) {
+    (withDisambiguation(List(), found, req) {
       ";\n found   : " + found.toLongString + existentialContext(found) +
        "\n required: " + req + existentialContext(req)
     }) + explainVariance(found, req)
@@ -344,17 +345,16 @@ trait TypeDiagnostics {
       )
     }
   }
-  private def typeDiags(types: Type*): List[TypeDiag] = {
+  private def typeDiags(locals: List[Symbol], types: Type*): List[TypeDiag] = {
     object SymExtractor {
       def unapply(x: Any) = x match {
         case t @ ConstantType(_)    => Some(t -> t.underlying.typeSymbol)
-        case t @ TypeRef(_, sym, _) => Some(t -> sym)
+        case t @ TypeRef(_, sym, _) => if (locals contains sym) None else Some(t -> sym)
         case _                      => None
       }
     }
 
-    for (tp <- types.toList ; SymExtractor(t, sym) <- tp) yield
-      TypeDiag(t, sym)
+    for (tp <- types.toList; SymExtractor(t, sym) <- tp) yield TypeDiag(t, sym)
   }
 
   /** The distinct pairs from an ordered list. */
@@ -367,8 +367,8 @@ trait TypeDiagnostics {
    *  until they can be distinguished from one another: then executes the given
    *  code.  The names are restored and the result is returned.
    */
-  def withDisambiguation[T](types: Type*)(op: => T): T = {
-    val typeRefs = typeDiags(types: _*)
+  def withDisambiguation[T](locals: List[Symbol], types: Type*)(op: => T): T = {
+    val typeRefs = typeDiags(locals, types: _*)
     val toCheck  = pairs(typeRefs) filterNot { case (td1, td2) => td1 sym_== td2 }
 
     ultimately(typeRefs foreach (_.restoreName())) {

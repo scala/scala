@@ -232,7 +232,7 @@ trait Infer {
     }
 
     def explainTypes(tp1: Type, tp2: Type) =
-      withDisambiguation(tp1, tp2)(global.explainTypes(tp1, tp2))
+      withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))
 
     /* -- Tests & Checks---------------------------------------------------- */
 
