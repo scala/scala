@@ -392,7 +392,7 @@ abstract class ExplicitOuter extends InfoTransform
             if (guard == EmptyTree) EmptyTree
             else {
               val guardDef = makeGuardDef(used, guard)
-              nguard       += transform(guardDef) // building up list of guards
+              nguard += transform(guardDef) // building up list of guards
 
               localTyper typed (Ident(guardDef.symbol) APPLY (used map Ident))
             }

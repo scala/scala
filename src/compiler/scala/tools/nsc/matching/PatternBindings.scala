@@ -89,8 +89,8 @@ trait PatternBindings extends ast.TreeDSL
     }
 
     // Wrap this pattern's bindings around (_: Type)
-    def rebindToType(tpe: Type, annotatedType: Type = null): Pattern = {
-      val aType = if (annotatedType == null) tpe else annotatedType
+    def rebindToType(tpe: Type, ascription: Type = null): Pattern = {
+      val aType = if (ascription == null) tpe else ascription
       rebindTo(Typed(WILD(tpe), TypeTree(aType)) setType tpe)
     }
 
@@ -104,10 +104,8 @@ trait PatternBindings extends ast.TreeDSL
 
     // Like rebindToEqualsCheck, but subtly different.  Not trying to be
     // mysterious -- I haven't sorted it all out yet.
-    def rebindToObjectCheck(): Pattern = {
-      val sType = sufficientType
-      rebindToType(mkEqualsRef(sType), sType)
-    }
+    def rebindToObjectCheck(): Pattern =
+      rebindToType(mkEqualsRef(sufficientType), sufficientType)
 
     /** Helpers **/
     private def wrapBindings(vs: List[Symbol], pat: Tree): Tree = vs match {
