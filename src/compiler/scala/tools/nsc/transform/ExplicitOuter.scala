@@ -68,6 +68,13 @@ abstract class ExplicitOuter extends InfoTransform
     result
   }
 
+  class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
+    override def transform(tree: Tree) = tree match {
+      case Bind(_, body) if toRemove(tree.symbol) => super.transform(body)
+      case _                                      => super.transform(tree)
+    }
+  }
+
   /** Issue a migration warning for instance checks which might be on an Array and
    *  for which the type parameter conforms to Seq, because these answers changed in 2.8.
    */
@@ -374,18 +381,23 @@ abstract class ExplicitOuter extends InfoTransform
 
       val nguard = new ListBuffer[Tree]
       val ncases =
-        for (CaseDef(p, guard, b) <- cases) yield {
+        for (CaseDef(pat, guard, body) <- cases) yield {
+          // Strip out any unused pattern bindings up front
+          val patternIdents = for (b @ Bind(_, _) <- pat) yield b.symbol
+          val references: Set[Symbol] = Set(guard, body) flatMap { t => for (id @ Ident(name) <- t) yield id.symbol }
+          val (used, unused) = patternIdents partition references
+          val strippedPat = if (unused.isEmpty) pat else new RemoveBindingsTransformer(unused.toSet) transform pat
+
           val gdcall =
             if (guard == EmptyTree) EmptyTree
             else {
-              val vs       = Pattern(p).deepBoundVariables
-              val guardDef = makeGuardDef(vs, guard)
+              val guardDef = makeGuardDef(used, guard)
               nguard       += transform(guardDef) // building up list of guards
 
-              localTyper typed (Ident(guardDef.symbol) APPLY (vs map Ident))
+              localTyper typed (Ident(guardDef.symbol) APPLY (used map Ident))
             }
 
-          (CASE(transform(p)) IF gdcall) ==> transform(b)
+          (CASE(transform(strippedPat)) IF gdcall) ==> transform(body)
         }
 
       def isUncheckedAnnotation(tpe: Type) = tpe hasAnnotation UncheckedClass
