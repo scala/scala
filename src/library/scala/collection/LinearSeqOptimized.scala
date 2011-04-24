@@ -48,7 +48,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
    */
   def apply(n: Int): A = {
     val rest = drop(n)
-    if (n < 0 || rest.isEmpty) throw new IndexOutOfBoundsException
+    if (n < 0 || rest.isEmpty) throw new IndexOutOfBoundsException("" + n)
     rest.head
   }
 
