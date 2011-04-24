@@ -402,8 +402,6 @@ abstract class LambdaLift extends InfoTransform {
           val tree1 = addFreeParams(tree, sym)
           if (sym.isLocal) liftDef(tree1) else tree1
         case DefDef(_, _, _, _, _, _) =>
-          if (sym.hasAnnotation(definitions.BridgeClass))
-            sym.setFlag(BRIDGE)
           val tree1 = addFreeParams(tree, sym)
           if (sym.isLocal) liftDef(tree1) else tree1
         case ValDef(mods, name, tpt, rhs) =>
