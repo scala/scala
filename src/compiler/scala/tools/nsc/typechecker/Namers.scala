@@ -1125,13 +1125,9 @@ trait Namers { self: Analyzer =>
      * @param namer is the namer of the module class (the comp. obj)
      */
     def addApplyUnapply(cdef: ClassDef, namer: Namer) {
-      if (!(cdef.symbol hasFlag ABSTRACT)) {
-        val applyMethod = caseModuleApplyMeth(cdef)
-        if (applyMethod.vparamss.size > 2)
-          context.error(cdef.symbol.pos, "case classes limited by implementation: maximum of 2 constructor parameter lists.")
+      if (!cdef.symbol.hasAbstractFlag)
+        namer.enterSyntheticSym(caseModuleApplyMeth(cdef))
 
-        namer.enterSyntheticSym(applyMethod)
-      }
       namer.enterSyntheticSym(caseModuleUnapplyMeth(cdef))
     }
 

@@ -1,4 +1,0 @@
-bug1333.scala:1: error: case classes limited by implementation: maximum of 2 constructor parameter lists.
-case class A(a: Int)(b: Int)(c: Int)
-           ^
-one error found

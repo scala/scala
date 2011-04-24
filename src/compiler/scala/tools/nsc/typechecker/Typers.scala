@@ -1908,6 +1908,12 @@ trait Typers extends Modes {
         error(x.pos, "_* may only come last")
 
       val pat1: Tree = typedPattern(cdef.pat, pattpe)
+      // When case classes have more than two parameter lists, the pattern ends
+      // up typed as a method.  We only pattern match on the first parameter
+      // list, so substitute the final result type of the method, i.e. the type
+      // of the case class.
+      if (pat1.tpe.paramSectionCount > 0)
+        pat1 setType pat1.tpe.finalResultType
 
       if (forInteractive) {
         for (bind @ Bind(name, _) <- cdef.pat)
