@@ -13,7 +13,7 @@ package mutable
 
 import generic._
 import script._
-import annotation.migration
+import annotation.{migration, bridge}
 
 /** A template trait for buffers of type `Buffer[A]`.
  *
@@ -270,6 +270,9 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
   def ++(xs: GenTraversableOnce[A]): This = clone() ++= xs.seq
+
+  @bridge
+  def ++(xs: TraversableOnce[A]): This = ++(xs: GenTraversableOnce[A])
 
   /** Creates a new collection with all the elements of this collection except `elem`.
    *

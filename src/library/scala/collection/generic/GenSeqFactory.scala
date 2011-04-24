@@ -11,15 +11,16 @@
 package scala.collection
 package generic
 
-import mutable.Builder
-import annotation.bridge
+/** A template for companion objects of Seq and subclasses thereof.
+ *
+ *  @since 2.8
+ */
+abstract class GenSeqFactory[CC[X] <: GenSeq[X] with GenericTraversableTemplate[X, CC]] extends GenTraversableFactory[CC] {
 
-abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
-  extends GenSetFactory[CC] with GenericSeqCompanion[CC] {
-
-  @bridge
-  override def empty[A]: CC[A] = super.empty[A]
-
-  @bridge
-  override def apply[A](elems: A*): CC[A] = super.apply(elems: _*)
+  /** This method is called in a pattern match { case Seq(...) => }.
+   *
+   *  @param x the selector value
+   *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
+   */
+  def unapplySeq[A](x: CC[A]): Some[CC[A]] = Some(x)
 }

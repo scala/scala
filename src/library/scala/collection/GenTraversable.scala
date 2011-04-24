@@ -31,7 +31,7 @@ extends GenTraversableLike[A, GenTraversable[A]]
 }
 
 
-object GenTraversable extends TraversableFactory[GenTraversable] {
+object GenTraversable extends GenTraversableFactory[GenTraversable] {
   implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
   def newBuilder[A] = Traversable.newBuilder
 }

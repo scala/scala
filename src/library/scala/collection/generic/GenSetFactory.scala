@@ -6,17 +6,17 @@
 **                          |/                                          **
 \*                                                                      */
 
+
+
 package scala.collection
 package generic
 
+import mutable.Builder
 
-import mutable.{Builder, MapBuilder}
-import annotation.bridge
-
-/** A template for companion objects of `Map` and subclasses thereof.
+/** A template for companion objects of `Set` and subclasses thereof.
  *
- *  @define coll map
- *  @define Coll Map
+ *  @define coll set
+ *  @define Coll Set
  *  @define factoryInfo
  *    This object provides a set of operations needed to create `$Coll` values.
  *    @author Martin Odersky
@@ -25,16 +25,20 @@ import annotation.bridge
  *  @define canBuildFromInfo
  *    The standard `CanBuildFrom` instance for `$Coll` objects.
  *    @see CanBuildFrom
- *  @define mapCanBuildFromInfo
+ *  @define setCanBuildFromInfo
  *    The standard `CanBuildFrom` instance for `$Coll` objects.
- *    The created value is an instance of class `MapCanBuildFrom`.
  *    @see CanBuildFrom
  *    @see GenericCanBuildFrom
  */
-abstract class MapFactory[CC[A, B] <: Map[A, B] with MapLike[A, B, CC[A, B]]] extends GenMapFactory[CC] {
+abstract class GenSetFactory[CC[X] <: GenSet[X] with GenSetLike[X, CC[X]]]
+  extends GenericCompanion[CC] {
 
-  def empty[A, B]: CC[A, B]
+  def newBuilder[A]: Builder[A, CC[A]]
 
-  @bridge
-  override def apply[A, B](elems: (A, B)*): CC[A, B] = super.apply(elems: _*)
+  /** $setCanBuildFromInfo
+   */
+  def setCanBuildFrom[A] = new CanBuildFrom[CC[_], A, CC[A]] {
+    def apply(from: CC[_]) = newBuilder[A]
+    def apply() = newBuilder[A]
+  }
 }

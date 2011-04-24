@@ -12,7 +12,7 @@ package scala.collection
 import generic._
 import immutable.{ List, Stream }
 import annotation.unchecked.uncheckedVariance
-
+import annotation.bridge
 
 /** A template trait for iterable collections of type `Iterable[A]`.
  *  $iterableInfo
@@ -237,6 +237,10 @@ self =>
     b.result
   }
 
+  @bridge
+  def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That =
+    zip(that: GenIterable[B])(bf)
+
   def zipAll[B, A1 >: A, That](that: GenIterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
@@ -249,6 +253,10 @@ self =>
       b += ((thisElem, those.next))
     b.result
   }
+
+  @bridge
+  def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That =
+    zipAll(that: GenIterable[B], thisElem, thatElem)(bf)
 
   def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
@@ -269,6 +277,9 @@ self =>
 
     !these.hasNext && !those.hasNext
   }
+
+  @bridge
+  def sameElements[B >: A](that: Iterable[B]): Boolean = sameElements(that: GenIterable[B])
 
   override /*TraversableLike*/ def toStream: Stream[A] = iterator.toStream
 

@@ -10,8 +10,7 @@ package scala.collection
 
 import generic._
 import mutable.{ Builder, ListBuffer }
-import annotation.tailrec
-import annotation.migration
+import annotation.{tailrec, migration, bridge}
 import annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
 
@@ -152,6 +151,10 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b ++= that.seq
     b.result
   }
+
+  @bridge
+  def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
+    ++(that: GenTraversableOnce[B])(bf)
 
   /** Concatenates this $coll with the elements of a traversable collection.
    *  It differs from ++ in that the right operand determines the type of the

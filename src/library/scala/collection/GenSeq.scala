@@ -30,7 +30,7 @@ extends GenSeqLike[A, GenSeq[A]]
 }
 
 
-object GenSeq extends TraversableFactory[GenSeq] {
+object GenSeq extends GenTraversableFactory[GenSeq] {
   implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
   def newBuilder[A] = Seq.newBuilder
 }

@@ -21,7 +21,7 @@ import scala.collection.parallel.Combiner
  *  @define Coll ParIterable
  */
 abstract class ParFactory[CC[X] <: ParIterable[X] with GenericParTemplate[X, CC]]
-extends TraversableFactory[CC]
+extends GenTraversableFactory[CC]
    with GenericParCompanion[CC] {
 
   //type EPC[T, C] = collection.parallel.EnvironmentPassingCombiner[T, C]

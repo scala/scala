@@ -20,7 +20,7 @@ import scala.collection.mutable.Builder
  *  @define Coll ParMap
  */
 abstract class ParMapFactory[CC[X, Y] <: ParMap[X, Y] with ParMapLike[X, Y, CC[X, Y], _]]
-extends MapFactory[CC]
+extends GenMapFactory[CC]
    with GenericParMapCompanion[CC] {
 
   type MapColl = CC[_, _]

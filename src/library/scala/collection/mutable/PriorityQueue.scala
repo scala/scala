@@ -12,7 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
-import annotation.migration
+import annotation.{migration, bridge}
 
 /** This class implements priority queues using a heap.
  *  To prioritize elements of type A there must be an implicit
@@ -127,7 +127,10 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @param  xs    a traversable object.
    *  @return       a new priority queue containing elements of both `xs` and `this`.
    */
-  def ++(xs: GenTraversableOnce[A]) = { this.clone() ++= xs.seq }
+  def ++(xs: GenTraversableOnce[A]): PriorityQueue[A] = { this.clone() ++= xs.seq }
+
+  @bridge
+  def ++(xs: TraversableOnce[A]): PriorityQueue[A] = ++ (xs: GenTraversableOnce[A])
 
   /** Adds all elements to the queue.
    *

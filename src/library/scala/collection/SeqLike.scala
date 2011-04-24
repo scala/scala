@@ -14,6 +14,7 @@ import mutable.{ListBuffer, HashMap, ArraySeq}
 import immutable.{List, Range}
 import generic._
 import parallel.ParSeq
+import annotation.bridge
 
 /** A template trait for sequences of type `Seq[A]`
  *  $seqInfo
@@ -303,6 +304,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     !j.hasNext
   }
 
+  @bridge
+  def startsWith[B](that: Seq[B], offset: Int): Boolean = startsWith(that: GenSeq[B], offset)
+
   def endsWith[B](that: GenSeq[B]): Boolean = {
     val i = this.iterator.drop(length - that.length)
     val j = that.iterator
@@ -313,6 +317,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     !j.hasNext
   }
 
+  @bridge
+  def endsWith[B](that: Seq[B]): Boolean = endsWith(that: GenSeq[B])
+
+
   /** Finds first index where this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
    *  @param  that    the sequence to test
@@ -320,6 +328,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
   def indexOfSlice[B >: A](that: GenSeq[B]): Int = indexOfSlice(that, 0)
+
+  @bridge
+  def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that: GenSeq[B])
 
   /** Finds first index after or at a start index where this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
@@ -344,6 +355,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
       -1
     }
 
+  @bridge
+  def indexOfSlice[B >: A](that: Seq[B], from: Int): Int = indexOfSlice(that: GenSeq[B], from)
+
   /** Finds last index where this $coll contains a given sequence as a slice.
    *  $willNotTerminateInf
    *  @param  that    the sequence to test
@@ -351,6 +365,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
   def lastIndexOfSlice[B >: A](that: GenSeq[B]): Int = lastIndexOfSlice(that, length)
+
+  @bridge
+  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that: GenSeq[B])
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
@@ -361,6 +378,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
   def lastIndexOfSlice[B >: A](that: GenSeq[B], end: Int): Int =
     SeqLike.lastIndexOf(thisCollection, 0, length, that.seq, 0, that.length, end)
 
+  @bridge
+  def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = lastIndexOfSlice(that: GenSeq[B], end)
+
   /** Tests whether this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
    *  @param  that    the sequence to test
@@ -368,6 +388,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    *           as `that`, otherwise `false`.
    */
   def containsSlice[B](that: GenSeq[B]): Boolean = indexOfSlice(that) != -1
+
+  @bridge
+  def containsSlice[B](that: Seq[B]): Boolean = containsSlice(that: GenSeq[B])
 
   /** Tests whether this $coll contains a given value as an element.
    *  $mayNotTerminateInf
@@ -429,6 +452,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     b.result
   }
 
+  @bridge
+  def diff[B >: A](that: Seq[B]): Repr = diff(that: GenSeq[B])
+
   /** Computes the multiset intersection between this $coll and another sequence.
    *  $mayNotTerminateInf
    *
@@ -458,6 +484,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
       }
     b.result
   }
+
+  @bridge
+  def intersect[B >: A](that: Seq[B]): Repr = intersect(that: GenSeq[B])
 
   private def occCounts[B](sq: Seq[B]): mutable.Map[B, Int] = {
     val occ = new mutable.HashMap[B, Int] { override def default(k: B) = 0 }
@@ -490,6 +519,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     b ++= toCollection(rest).view drop replaced
     b.result
   }
+
+  @bridge
+  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That =
+    this.patch(from, patch: GenSeq[B], replaced)(bf)
 
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
@@ -535,6 +568,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
 
     !i.hasNext && !j.hasNext
   }
+
+  @bridge
+  def corresponds[B](that: Seq[B])(p: (A,B) => Boolean): Boolean =
+    corresponds(that: GenSeq[B])(p)
 
   /** Sorts this $coll according to a comparison function.
    *  $willNotTerminateInf
