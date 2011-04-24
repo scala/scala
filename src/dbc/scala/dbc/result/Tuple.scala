@@ -13,7 +13,7 @@ package result;
 
 
 /** An ISO-9075:2003 (SQL) table row. This is equivalent to a tuple in the relational model. */
-@deprecated(DbcIsDeprecated) abstract class Tuple {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Tuple {
 
   /** All the fields contained in the tuple. */
   def fields: List[Field];

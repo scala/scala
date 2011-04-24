@@ -16,7 +16,7 @@ import java.sql.Types._;
 import java.math.BigInteger;
 import java.math.BigDecimal;
 
-@deprecated(DbcIsDeprecated) object Factory {
+@deprecated(DbcIsDeprecated, "2.9.0") object Factory {
 
   final val java_lang_Integer_SIZE = 32;
   final val java_lang_Long_SIZE    = 64;

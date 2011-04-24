@@ -13,7 +13,7 @@ package statement
 package expression;
 
 
-@deprecated(DbcIsDeprecated) case class TypeCast (
+@deprecated(DbcIsDeprecated, "2.9.0") case class TypeCast (
   expression: Expression,
   castType: DataType
 ) extends Expression {

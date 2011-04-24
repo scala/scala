@@ -13,7 +13,7 @@ package value;
 
 
 /** A SQL-99 value of type character string. */
-@deprecated(DbcIsDeprecated) abstract class Character extends Value {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Character extends Value {
 
   override val dataType: datatype.Character;
 
@@ -27,7 +27,7 @@ package value;
 /** An object offering transformation methods (views) on the value.
   * This object must be visible in an expression to use value auto-
   * conversion. */
-@deprecated(DbcIsDeprecated) object Character {
+@deprecated(DbcIsDeprecated, "2.9.0") object Character {
 
   /** A character string value as a native string. */
   implicit def characterToString (obj:value.Character): String = obj.nativeValue;

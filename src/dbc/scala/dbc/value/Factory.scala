@@ -15,7 +15,7 @@ package value;
 import java.math.BigInteger;
 import java.math.BigDecimal;
 
-@deprecated(DbcIsDeprecated) object Factory {
+@deprecated(DbcIsDeprecated, "2.9.0") object Factory {
 
   def create (result: java.sql.ResultSet, index: Int, expectedDataType: DataType): Value = {
     expectedDataType.nativeTypeId match {

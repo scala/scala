@@ -13,7 +13,7 @@ package value;
 
 
 /** A SQL-99 value of type character varying string. */
-@deprecated(DbcIsDeprecated) abstract class CharacterVarying extends Value {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class CharacterVarying extends Value {
 
   override val dataType: datatype.CharacterVarying;
 
@@ -27,7 +27,7 @@ package value;
 /** An object offering transformation methods (views) on the value.
   * This object must be visible in an expression to use value auto-
   * conversion. */
-@deprecated(DbcIsDeprecated) object CharacterVarying {
+@deprecated(DbcIsDeprecated, "2.9.0") object CharacterVarying {
 
   /** A character varying string value as a native string. */
   implicit def characterVaryingToString (obj:value.CharacterVarying): String = obj.nativeValue;

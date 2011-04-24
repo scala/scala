@@ -15,7 +15,7 @@ package statement
 /** A reference to a table in the database.
   * @author Gilles Dubochet
   * @version 1.0 */
-@deprecated(DbcIsDeprecated) abstract class Table extends Relation {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Table extends Relation {
 
   /** The name of the table in the database. */
   def tableName: String

@@ -13,7 +13,7 @@ package datatype;
 
 
 /** The SQL type for a truth value. */
-@deprecated(DbcIsDeprecated) class Boolean extends DataType {
+@deprecated(DbcIsDeprecated, "2.9.0") class Boolean extends DataType {
 
   def isEquivalent (datatype:DataType) = datatype match {
     case dt:Boolean => true

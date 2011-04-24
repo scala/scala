@@ -13,7 +13,7 @@ package statement
 package expression;
 
 
-@deprecated(DbcIsDeprecated) case class FunctionCall (
+@deprecated(DbcIsDeprecated, "2.9.0") case class FunctionCall (
   functionName: String,
   arguments: List[Expression]
 ) extends Expression {

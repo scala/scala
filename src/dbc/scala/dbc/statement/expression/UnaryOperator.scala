@@ -13,7 +13,7 @@ package statement
 package expression;
 
 
-@deprecated(DbcIsDeprecated) abstract class UnaryOperator extends Expression {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class UnaryOperator extends Expression {
 
   /** The name of the operator */
   def operator: String;

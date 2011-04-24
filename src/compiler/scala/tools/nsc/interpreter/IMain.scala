@@ -162,7 +162,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     if (_isInitialized()) _compiler
     else null
   }
-  @deprecated("Use `global` for access to the compiler instance.")
+  @deprecated("Use `global` for access to the compiler instance.", "2.9.0")
   lazy val compiler: global.type = global
 
   import global._

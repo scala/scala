@@ -16,7 +16,7 @@ import javax.swing._
 /**
  * Convenience class with utility methods for GUI applications.
  */
-@deprecated("Use SwingApplication instead") class GUIApplication {
+@deprecated("Use SwingApplication instead", "2.8.0") class GUIApplication {
 
   /**
    * Called before the GUI is created. Override to customize.

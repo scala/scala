@@ -13,7 +13,7 @@ package statement;
 
 
 /** A statement that returns a relation. */
-@deprecated(DbcIsDeprecated) abstract class Relation extends Statement {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Relation extends Statement {
 
   def isCompatibleType: (DataType,DataType)=>Boolean =
     ((dt,wdt)=>dt.isSubtypeOf(wdt));

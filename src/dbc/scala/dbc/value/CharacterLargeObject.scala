@@ -13,7 +13,7 @@ package value;
 
 
 /** A SQL-99 value of type character large object. */
-@deprecated(DbcIsDeprecated) abstract class CharacterLargeObject extends Value {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class CharacterLargeObject extends Value {
 
   override val dataType: datatype.CharacterLargeObject;
 
@@ -27,7 +27,7 @@ package value;
 /** An object offering transformation methods (views) on the value.
   * This object must be visible in an expression to use value auto-
   * conversion. */
-@deprecated(DbcIsDeprecated) object CharacterLargeObject {
+@deprecated(DbcIsDeprecated, "2.9.0") object CharacterLargeObject {
 
   /** A character large object value as a native string. */
   implicit def characterLargeObjectToString (obj:value.CharacterLargeObject): String = obj.nativeValue;

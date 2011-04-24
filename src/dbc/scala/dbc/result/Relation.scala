@@ -14,7 +14,7 @@ package result
 
 /** An ISO-9075:2003 (SQL) table. This is equivalent to a relation in the
  * relational model. */
-@deprecated(DbcIsDeprecated) abstract class Relation extends AnyRef with Iterable[Tuple] {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Relation extends AnyRef with Iterable[Tuple] {
 
   /** The statement that generated this relation. */
   def statement: scala.dbc.statement.Relation
