@@ -236,6 +236,12 @@ trait Matrix extends MatrixAdditions {
 
       tracing("create")(new PatternVar(lhs, rhs, checked))
     }
+    def createLazy(tpe: Type, f: Symbol => Tree, checked: Boolean) = {
+      val lhs = newVar(owner.pos, tpe, Flags.LAZY :: flags(checked))
+      val rhs = f(lhs)
+
+      tracing("createLazy")(new PatternVar(lhs, rhs, checked))
+    }
 
     private def newVar(
       pos: Position,

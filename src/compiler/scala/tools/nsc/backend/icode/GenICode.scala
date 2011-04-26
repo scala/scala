@@ -1142,10 +1142,14 @@ abstract class GenICode extends SubComponent  {
               log("Dropped an " + from);
 
           case _ =>
-          if (settings.debug.value)
-            assert(from != UNIT, "Can't convert from UNIT to " + to + " at: " + pos)
-            assert(!from.isReferenceType && !to.isReferenceType, "type error: can't convert from " + from + " to " + to +" in unit "+this.unit)
-            ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos);
+            if (settings.debug.value) {
+              assert(from != UNIT,
+                  "Can't convert from UNIT to " + to + " at: " + pos)
+            }
+            assert(!from.isReferenceType && !to.isReferenceType,
+              "type error: can't convert from " + from + " to " + to +" in unit " + unit.source)
+
+            ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos)
         }
       } else if (from == NothingReference) {
         ctx.bb.emit(THROW(ThrowableClass))

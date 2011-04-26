@@ -20,9 +20,13 @@ trait PatternBindings extends ast.TreeDSL
   import Debug._
 
   /** EqualsPattern **/
-  def isEquals(tpe: Type)           = cond(tpe) { case TypeRef(_, EqualsPatternClass, _) => true }
-  def mkEqualsRef(tpe: Type)        = typeRef(NoPrefix, EqualsPatternClass, List(tpe))
-  def decodedEqualsType(tpe: Type)  = condOpt(tpe) { case TypeRef(_, EqualsPatternClass, List(arg)) => arg } getOrElse (tpe)
+  def isEquals(tpe: Type)             = cond(tpe) { case TypeRef(_, EqualsPatternClass, _) => true }
+  def mkEqualsRef(tpe: Type)          = typeRef(NoPrefix, EqualsPatternClass, List(tpe))
+  def decodedEqualsType(tpe: Type)    = condOpt(tpe) { case TypeRef(_, EqualsPatternClass, List(arg)) => arg } getOrElse (tpe)
+
+  // A subtype test which creates fresh existentials for type
+  // parameters on the right hand side.
+  def matches(arg1: Type, arg2: Type) = decodedEqualsType(arg1) matchesPattern decodedEqualsType(arg2)
 
   // used as argument to `EqualsPatternClass'
   case class PseudoType(o: Tree) extends SimpleTypeProxy {
@@ -121,7 +125,7 @@ trait PatternBindings extends ast.TreeDSL
   }
 
   case class Binding(pvar: Symbol, tvar: Symbol) {
-    override def toString() = pp(pvar -> tvar)
+    override def toString() = pvar.name + " -> " + tvar.name
   }
 
   class Bindings(private val vlist: List[Binding]) {
@@ -129,6 +133,7 @@ trait PatternBindings extends ast.TreeDSL
     //   traceCategory("Bindings", this.toString)
 
     def get() = vlist
+    def toMap = vlist map (x => (x.pvar, x.tvar)) toMap
 
     def add(vs: Iterable[Symbol], tvar: Symbol): Bindings = {
       val newBindings = vs.toList map (v => Binding(v, tvar))
@@ -136,8 +141,8 @@ trait PatternBindings extends ast.TreeDSL
     }
 
     override def toString() =
-      if (vlist.isEmpty) "No Bindings"
-      else "%d Bindings(%s)".format(vlist.size, pp(vlist))
+      if (vlist.isEmpty) "<none>"
+      else vlist.mkString(", ")
   }
 
   val NoBinding: Bindings = new Bindings(Nil)
