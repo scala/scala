@@ -14,7 +14,7 @@ package scala.dbc;
 /** An ISO-9075:2003 (SQL) data type. Mappings between SQL types and
  *  database specific types should be provided by the database driver.
  */
-@deprecated(DbcIsDeprecated) abstract class DataType {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class DataType {
 
   /** Tests whether this datatype is equivalent to another. Usually, two
    *  types are defined as equivalent if they are equal. Two types can be
@@ -50,7 +50,7 @@ package scala.dbc;
 
 }
 
-@deprecated(DbcIsDeprecated) object DataType {
+@deprecated(DbcIsDeprecated, "2.9.0") object DataType {
 
   type Id = Int;
 

@@ -13,7 +13,7 @@ package exception
 
 
 /** A type category for all SQL types that store constant-precision numbers. */
-@deprecated(DbcIsDeprecated) case class IncompatibleSchema (
+@deprecated(DbcIsDeprecated, "2.9.0") case class IncompatibleSchema (
   expectedSchema: List[DataType],
   foundSchema: List[DataType]
 ) extends Exception;

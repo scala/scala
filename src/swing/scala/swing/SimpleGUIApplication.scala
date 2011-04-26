@@ -21,7 +21,7 @@ import javax.swing._
  * the EDT (see Swing.onEDT and Swing.onEDTWait). Lazy values are okay for the same reason
  * if they are initialized on the EDT always.
  */
-@deprecated("Use SimpleSwingApplication instead") abstract class SimpleGUIApplication extends GUIApplication {
+@deprecated("Use SimpleSwingApplication instead", "2.8.0") abstract class SimpleGUIApplication extends GUIApplication {
 
   /**
    * A GUI application's version of the main method. Called by the default

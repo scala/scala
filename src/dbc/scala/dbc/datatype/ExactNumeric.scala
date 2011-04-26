@@ -15,7 +15,7 @@ package datatype;
 /** A type category for all SQL types that store constant-precision
   * numbers.
   */
-@deprecated(DbcIsDeprecated) abstract class ExactNumeric[Type](
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class ExactNumeric[Type](
   override val nativeTypeId: DataType.Id
 ) extends datatype.Numeric[Type](nativeTypeId) {
 

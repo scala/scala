@@ -13,7 +13,7 @@ package datatype;
 
 
 /** A type category for all SQL types that store strings of characters. */
-@deprecated(DbcIsDeprecated) abstract class CharacterString extends String {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class CharacterString extends String {
 
   type NativeType = java.lang.String;
   val nativeTypeId = DataType.STRING;

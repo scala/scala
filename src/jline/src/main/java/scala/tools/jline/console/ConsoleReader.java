@@ -1283,7 +1283,7 @@ public class ConsoleReader
                             if (buf.buffer.length() == 0) {
                                 return null;
                             } else {
-                                success = deleteCurrentCharacter();
+                                deleteCurrentCharacter();
                             }
                             break;
 

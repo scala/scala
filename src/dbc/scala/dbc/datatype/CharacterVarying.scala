@@ -15,7 +15,7 @@ package datatype;
 /** A SQL type for a varying length string of characters with arbitrary
  *  maximal length and arbitrary character set.
  */
-@deprecated(DbcIsDeprecated) abstract class CharacterVarying extends CharacterString {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class CharacterVarying extends CharacterString {
 
   def isEquivalent(datatype: DataType) = datatype match {
     case dt: CharacterVarying =>

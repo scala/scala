@@ -120,7 +120,7 @@ trait Names extends reflect.generic.Names {
   def isTypeName(name: Name): Boolean = name.isTypeName
 
   def nameChars: Array[Char] = chrs
-  @deprecated("") def view(s: String): TermName = newTermName(s)
+  @deprecated("", "2.9.0") def view(s: String): TermName = newTermName(s)
 
 // Classes ----------------------------------------------------------------------
 

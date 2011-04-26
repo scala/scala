@@ -15,7 +15,7 @@ import scala.dbc.Database
 import scala.dbc.result
 
 /** A statement that changes the status of the database. */
-@deprecated(DbcIsDeprecated) abstract class Status extends Statement {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Status extends Statement {
 
   /** A SQL-99 compliant string representation of the statement. */
   def sqlString: String

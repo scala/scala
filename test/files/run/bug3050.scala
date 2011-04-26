@@ -4,6 +4,6 @@ object Test {
       try { ("": Any) match { case List(_*) => true } }
       catch { case _ => false }
 
-    assert(x == false)
+    assert(!x)
   }
 }

@@ -13,7 +13,7 @@ package statement
 package expression;
 
 
-@deprecated(DbcIsDeprecated) abstract class Field extends Expression {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Field extends Expression {
 
   /** The name of the schema in the database where the field is located. */
   def schemaName: Option[String] = None;

@@ -31,7 +31,7 @@ FIXED:
 
 */
 
-@deprecated(DbcIsDeprecated) object Statement {
+@deprecated(DbcIsDeprecated, "2.9.0") object Statement {
 
   // SELECT ZYGOTE ...
 

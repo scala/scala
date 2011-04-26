@@ -11,7 +11,7 @@ package generic
 
 
 import mutable.{Builder, MapBuilder}
-
+import annotation.bridge
 
 /** A template for companion objects of `Map` and subclasses thereof.
  *
@@ -31,32 +31,10 @@ import mutable.{Builder, MapBuilder}
  *    @see CanBuildFrom
  *    @see GenericCanBuildFrom
  */
-abstract class MapFactory[CC[A, B] <: GenMap[A, B] with GenMapLike[A, B, CC[A, B]]] {
+abstract class MapFactory[CC[A, B] <: Map[A, B] with MapLike[A, B, CC[A, B]]] extends GenMapFactory[CC] {
 
-  /** The type constructor of the collection that can be built by this factory */
-  type Coll = CC[_, _]
-
-  /** An empty $Coll */
   def empty[A, B]: CC[A, B]
 
-  /** A collection of type $Coll that contains given key/value bindings.
-   *  @param elems   the key/value pairs that make up the $coll
-   *  @tparam A      the type of the keys
-   *  @tparam B      the type of the associated values
-   *  @return        a new $coll consisting key/value pairs given by `elems`.
-   */
-  def apply[A, B](elems: (A, B)*): CC[A, B] = (newBuilder[A, B] ++= elems).result
-
-  /** The default builder for $Coll objects.
-   *  @tparam A      the type of the keys
-   *  @tparam B      the type of the associated values
-   */
-  def newBuilder[A, B]: Builder[(A, B), CC[A, B]] = new MapBuilder[A, B, CC[A, B]](empty[A, B])
-
-  /** The standard `CanBuildFrom` class for maps.
-   */
-  class MapCanBuildFrom[A, B] extends CanBuildFrom[Coll, (A, B), CC[A, B]] {
-    def apply(from: Coll) = newBuilder[A, B]
-    def apply() = newBuilder
-  }
+  @bridge
+  override def apply[A, B](elems: (A, B)*): CC[A, B] = super.apply(elems: _*)
 }

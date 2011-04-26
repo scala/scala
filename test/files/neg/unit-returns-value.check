@@ -1,0 +1,4 @@
+unit-returns-value.scala:4: error: enclosing method f has result type Unit: return value discarded
+    if (b) return 5
+           ^
+one error found

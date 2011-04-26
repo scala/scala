@@ -17,7 +17,7 @@ import java.math.{BigDecimal, BigInteger};
 /** This class ..
  *
  */
-@deprecated(DbcIsDeprecated) object Syntax {
+@deprecated(DbcIsDeprecated, "2.9.0") object Syntax {
 
   import syntax.DataTypeUtil;
 

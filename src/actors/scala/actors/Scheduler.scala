@@ -50,7 +50,7 @@ object Scheduler extends DelegatingScheduler {
 
   /* Only <code>ForkJoinScheduler</code> implements this method.
    */
-  @deprecated("restart will be removed")
+  @deprecated("restart will be removed", "2.8.0")
   def restart() {
     if (sched.isInstanceOf[ForkJoinScheduler]) {
       sched.asInstanceOf[ForkJoinScheduler].restart()

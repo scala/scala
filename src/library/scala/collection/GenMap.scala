@@ -26,7 +26,7 @@ extends GenMapLike[A, B, GenMap[A, B]]
 }
 
 
-object GenMap extends MapFactory[GenMap] {
+object GenMap extends GenMapFactory[GenMap] {
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */

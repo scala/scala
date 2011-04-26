@@ -13,12 +13,12 @@ package statement
 
 
 /** A set quantifier that defines the collection type of a relation. */
-@deprecated(DbcIsDeprecated) abstract class SetQuantifier {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class SetQuantifier {
   /** A SQL-99 compliant string representation of the set quantifier. */
   def sqlString: String
 }
 
-@deprecated(DbcIsDeprecated) object SetQuantifier {
+@deprecated(DbcIsDeprecated, "2.9.0") object SetQuantifier {
 
   /** A set quantifier that defines a relation as being a bag. That means
    *  that duplicates are allowed.

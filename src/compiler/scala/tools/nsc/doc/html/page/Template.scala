@@ -322,11 +322,10 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
     val annotations: Seq[scala.xml.Node] = {
       // A list of annotations which don't show their arguments, e. g. because they are shown separately.
-      val annotationsWithHiddenArguments = List("deprecated", "Deprecated")
+      val annotationsWithHiddenArguments = List("deprecated", "Deprecated", "migration")
 
-      def showArguments(annotation: Annotation) = {
+      def showArguments(annotation: Annotation) =
         if (annotationsWithHiddenArguments.contains(annotation.qualifiedName)) false else true
-      }
 
       if (!mbr.annotations.isEmpty) {
         <dt>Annotations</dt>
@@ -358,11 +357,21 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <dd class="cmt">{ bodyToHtml(mbr.deprecation.get) }</dd>
       }
 
+    val migration: Seq[scala.xml.Node] = {
+      mbr.annotations.find(_.qualifiedName == "migration") match {
+        case None => NodeSeq.Empty
+        case Some(mig) => {
+          <dt>Migration</dt>
+          <dd class="cmt"><p>{mig.arguments.view.map(_.value).drop(2).mkString(" ")}</p></dd>
+        }
+      }
+    }
+
     val mainComment: Seq[scala.xml.Node] = mbr.comment match {
       case Some(comment) =>
         val example =
           if(!comment.example.isEmpty && !isReduced)
-            <div class="block">Example{ if (comment.example.length > 1) "s" else ""} :
+            <div class="block">Example{ if (comment.example.length > 1) "s" else ""}:
                 <ol>{
                 val exampleXml: List[scala.xml.NodeSeq] =
                   for(example <- comment.example ) yield
@@ -399,7 +408,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     }
     // end attributes block vals ---
 
-    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ sourceLink ++ deprecation ++ mainComment
+    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
     val attributesBlock =
       if (attributesInfo.isEmpty)
         NodeSeq.Empty

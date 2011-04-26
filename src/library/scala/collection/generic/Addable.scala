@@ -10,6 +10,8 @@
 package scala.collection
 package generic
 
+import annotation.bridge
+
 /** This trait represents collection-like objects that can be added to
  *  using a '+' operator. It defines variants of `+` and `++`
  *  as convenience methods in terms of single-element addition `+`.
@@ -53,4 +55,7 @@ trait Addable[A, +Repr <: Addable[A, Repr]] { self =>
    *  @return a new $coll with the given elements added.
    */
   def ++ (xs: GenTraversableOnce[A]): Repr = (repr /: xs.seq) (_ + _)
+
+  @bridge
+  def ++ (xs: TraversableOnce[A]): Repr = ++ (xs: GenTraversableOnce[A])
 }

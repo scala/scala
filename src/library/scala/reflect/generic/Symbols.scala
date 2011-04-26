@@ -27,7 +27,7 @@ trait Symbols { self: Universe =>
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
-    def encodedName: String
+    def encodedName: String = name.toString
 
     /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */

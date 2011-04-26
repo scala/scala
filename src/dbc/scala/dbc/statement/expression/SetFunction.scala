@@ -13,12 +13,12 @@ package statement
 package expression;
 
 
-@deprecated(DbcIsDeprecated) abstract class SetFunction {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class SetFunction {
   /** A SQL-99 compliant string representation of the set quantifier. */
   def sqlString: String;
 }
 
-@deprecated(DbcIsDeprecated) object SetFunction {
+@deprecated(DbcIsDeprecated, "2.9.0") object SetFunction {
   abstract class Asterisk extends SetFunction {
     def sqlString = "(*)";
   }

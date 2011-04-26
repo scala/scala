@@ -1579,10 +1579,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      */
     def nameString: String = decodedName + idString
 
-    /** The name of the symbol before decoding, e.g. `$eq$eq` instead of `==`.
-     */
-    def encodedName: String = name.toString
-
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString: String =
       if (settings.uniqid.value) "#"+id // +" in "+owner.name+"#"+owner.id // DEBUG

@@ -15,7 +15,7 @@ package syntax;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-@deprecated(DbcIsDeprecated) object DataTypeUtil {
+@deprecated(DbcIsDeprecated, "2.9.0") object DataTypeUtil {
 
   final val java_lang_Integer_SIZE = 32;
   final val java_lang_Long_SIZE    = 64;

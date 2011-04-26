@@ -85,14 +85,12 @@ abstract class BaseBerrySethi {
     case x: Meta    => compFollow1(fol1, x.r)
     case x: Star    => compFollow1(fol1 ++ compFirst(x.r), x.r)
     case x: Sequ    =>
-      var first = emptySet
       x.rs.foldRight(fol1) { (p, fol) =>
         val first = compFollow1(fol, p)
 
         if (p.isNullable) fol ++ first
         else first
       }
-      first
     case _          => throw new IllegalArgumentException("unexpected pattern: " + r.getClass())
   }
 

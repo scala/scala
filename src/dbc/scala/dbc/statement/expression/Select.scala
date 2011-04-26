@@ -13,7 +13,7 @@ package statement
 package expression;
 
 
-@deprecated(DbcIsDeprecated) abstract class Select extends Expression {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Select extends Expression {
 
   /** The actual select statement */
   def selectStatement: statement.Select;

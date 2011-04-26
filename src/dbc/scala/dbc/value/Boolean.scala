@@ -12,7 +12,7 @@ package scala.dbc
 package value;
 
 
-@deprecated(DbcIsDeprecated) abstract class Boolean extends Value {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Boolean extends Value {
 
   val dataType: datatype.Boolean;
 
@@ -20,7 +20,7 @@ package value;
 
 }
 
-@deprecated(DbcIsDeprecated) object Boolean {
+@deprecated(DbcIsDeprecated, "2.9.0") object Boolean {
 
   implicit def booleanToBoolean (obj:value.Boolean): scala.Boolean = obj.nativeValue;
 

@@ -88,6 +88,7 @@ trait Matrix extends MatrixAdditions {
     context: MatrixContext): Tree =
   {
     import context._
+    TRACE("handlePattern", "(%s: %s) match { %s cases }", selector, selector.tpe, cases.size)
 
     val matrixInit: MatrixInit = {
       val v = copyVar(selector, isChecked, selector.tpe, "temp")

@@ -12,11 +12,11 @@ package scala.dbc
 package statement
 
 
-@deprecated(DbcIsDeprecated) abstract class IsolationLevel {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class IsolationLevel {
   def sqlString: String
 }
 
-@deprecated(DbcIsDeprecated) object IsolationLevel {
+@deprecated(DbcIsDeprecated, "2.9.0") object IsolationLevel {
   case object ReadUncommitted extends IsolationLevel {
     def sqlString = "ISOLATION LEVEL READ UNCOMMITTED"
   }

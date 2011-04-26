@@ -15,17 +15,17 @@ package statement
 import scala.dbc.statement.expression._
 
 /** Data to be inserted into a table in an <code>Insert</code>. */
-@deprecated(DbcIsDeprecated) abstract class InsertionData {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class InsertionData {
   def sqlString: String
 }
 
-@deprecated(DbcIsDeprecated) object InsertionData {
+@deprecated(DbcIsDeprecated, "2.9.0") object InsertionData {
   /** Insertion of data resulting from a query on the database. */
-  @deprecated(DbcIsDeprecated) case class Subquery(query: Relation) extends InsertionData {
+  @deprecated(DbcIsDeprecated, "2.9.0") case class Subquery(query: Relation) extends InsertionData {
     def sqlString = query.sqlString
   }
   /** Insertion of data as explicitly defined values. */
-  @deprecated(DbcIsDeprecated) case class Constructor(
+  @deprecated(DbcIsDeprecated, "2.9.0") case class Constructor(
     columnNames: Option[List[String]],
     columnValues: List[Expression]
   ) extends InsertionData {

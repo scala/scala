@@ -51,10 +51,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
   // TODO
   // object opt extends AestheticSettings
   //
-  @deprecated("Use `intp` instead.")
+  @deprecated("Use `intp` instead.", "2.9.0")
   def interpreter = intp
 
-  @deprecated("Use `intp` instead.")
+  @deprecated("Use `intp` instead.", "2.9.0")
   def interpreter_= (i: Interpreter): Unit = intp = i
 
   def history = in.history
@@ -835,14 +835,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
   }
 
-  @deprecated("Use `process` instead")
+  @deprecated("Use `process` instead", "2.9.0")
   def main(args: Array[String]): Unit = {
     if (isReplDebug)
       System.out.println(new java.util.Date)
 
     process(args)
   }
-  @deprecated("Use `process` instead")
+  @deprecated("Use `process` instead", "2.9.0")
   def main(settings: Settings): Unit = process(settings)
 }
 

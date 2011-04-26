@@ -13,7 +13,7 @@ package datatype;
 
 
 /** A type category for all SQL types that store numbers. */
-@deprecated(DbcIsDeprecated) abstract class Numeric[Type](_nativeTypeId: DataType.Id) extends DataType {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Numeric[Type](_nativeTypeId: DataType.Id) extends DataType {
 
   type NativeType = Type;
   val nativeTypeId = _nativeTypeId;
