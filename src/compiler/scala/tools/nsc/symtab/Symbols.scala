@@ -385,6 +385,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      */
     final def skipPackageObject: Symbol = if (isPackageObjectClass) owner else this
 
+    /** If this is a constructor, its owner: otherwise this.
+     */
+    final def skipConstructor: Symbol = if (isConstructor) owner else this
+
     /** Conditions where we omit the prefix when printing a symbol, to avoid
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
@@ -1223,6 +1227,35 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       }
     }
 
+    /** The method or class which logically encloses the current symbol.
+     *  If the symbol is defined in the initialization part of a template
+     *  this is the template's primary constructor, otherwise it is
+     *  the physically enclosing method or class.
+     *
+     *  Example 1:
+     *
+     *  def f() { val x = { def g() = ...; g() } }
+     *
+     *  In this case the owner chain of `g' is `x', followed by `f' and
+     *  `g.logicallyEnclosingMember == f`.
+     *
+     *  Example 2:
+     *
+     *  class C {
+     *    def <init> = { ... }
+     *    val x = { def g() = ...; g() } }
+     *  }
+     *
+     *  In this case the owner chain of `g' is `x', followed by `C' but
+     *  g.logicallyEnclosingMember is the primary constructor symbol `<init>'
+     *  (or, for traits: `$init') of `C'.
+     *
+     */
+    def logicallyEnclosingMember: Symbol =
+      if (isLocalDummy) enclClass.primaryConstructor
+      else if (isMethod || isClass) this
+      else owner.logicallyEnclosingMember
+
     /** The top-level class containing this symbol */
     def toplevelClass: Symbol =
       if (owner.isPackageClass) {
@@ -1602,6 +1635,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (!owns.isClass || (owns.printWithoutPrefix && owns != ScalaPackageClass)) ""
       else " in " + owns
     }
+    def fullLocationString = toString + locationString
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
