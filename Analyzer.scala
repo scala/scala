@@ -30,7 +30,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		{
 			val outputDirectory = new File(global.settings.outdir.value)
 
-			for(unit <- currentRun.units)
+			for(unit <- currentRun.units if !unit.isJava)
 			{
 				// build dependencies structure
 				val sourceFile = unit.source.file.file

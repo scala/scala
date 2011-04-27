@@ -37,7 +37,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			val stop = System.currentTimeMillis
 			println("API phase took : " + ((stop - start)/1000.0) + " s")
 		}
-		def processUnit(unit: CompilationUnit)
+		def processUnit(unit: CompilationUnit) = if(!unit.isJava) processScalaUnit(unit)
+		def processScalaUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
 			println("Traversing " + sourceFile)
