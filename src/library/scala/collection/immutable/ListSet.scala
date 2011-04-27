@@ -12,7 +12,7 @@ package scala.collection
 package immutable
 
 import generic._
-import annotation.tailrec
+import annotation.{tailrec, bridge}
 import mutable.{ ListBuffer, Builder }
 
 /** $factoryInfo
@@ -102,6 +102,8 @@ class ListSet[A] extends Set[A]
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
     else new ListSet.ListSetBuilder(this) ++= xs.seq result
+
+  @bridge def ++(xs: TraversableOnce[A]): ListSet[A] = ++(xs: GenTraversableOnce[A]): ListSet[A]
 
   private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
   private[ListSet] def unchecked_outer: ListSet[A] =

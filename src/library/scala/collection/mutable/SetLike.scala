@@ -13,7 +13,7 @@ package mutable
 
 import generic._
 import script._
-import scala.annotation.migration
+import annotation.{migration, bridge}
 import parallel.mutable.ParSet
 
 /** A template trait for mutable sets of type `mutable.Set[A]`.
@@ -181,6 +181,8 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   )
   override def ++(xs: GenTraversableOnce[A]): This = clone() ++= xs.seq
 
+  @bridge def ++(xs: TraversableOnce[A]): This = ++(xs: GenTraversableOnce[A])
+
   /** Creates a new set consisting of all the elements of this set except `elem`.
    *
    *  @param elem  the element to remove.
@@ -220,6 +222,8 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
     "side effect to an existing set and return that set itself, use --=."
   )
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
+
+  @bridge def --(xs: TraversableOnce[A]): This = --(xs: GenTraversableOnce[A])
 
   /** Send a message to this scriptable object.
    *

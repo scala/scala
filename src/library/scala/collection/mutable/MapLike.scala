@@ -11,7 +11,7 @@ package scala.collection
 package mutable
 
 import generic._
-import annotation.migration
+import annotation.{migration, bridge}
 import parallel.mutable.ParMap
 
 /** A template trait for mutable maps.
@@ -127,6 +127,8 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   )
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
     clone().asInstanceOf[Map[A, B1]] ++= xs.seq
+
+  @bridge def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] = ++(xs: GenTraversableOnce[(A, B1)])
 
   /** Removes a key from this map, returning the value associated previously
    *  with that key as an option.
@@ -247,4 +249,6 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
     "side effect to an existing map and return that map itself, use --=."
   )
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
+
+  @bridge def --(xs: TraversableOnce[A]): This =  --(xs: GenTraversableOnce[A])
 }
