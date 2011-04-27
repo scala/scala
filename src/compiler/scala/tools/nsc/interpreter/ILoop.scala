@@ -268,6 +268,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     cmd("phase", "<phase>", "set the implicit phase for power commands", phaseCommand),
     cmd("wrap", "<method>", "name of method to wrap around each repl line", wrapCommand) withLongHelp ("""
       |:wrap
+      |:wrap clear
       |:wrap <method>
       |
       |Installs a wrapper around each line entered into the repl.
@@ -281,7 +282,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
       |}
       |:wrap timed
       |
-      |If given no argument, :wrap removes any wrapper present.
+      |If given no argument, :wrap names the wrapper installed.
+      |An argument of clear will remove the wrapper if any is active.
       |Note that wrappers do not compose (a new one replaces the old
       |one) and also that the :phase command uses the same machinery,
       |so setting :wrap will clear any :phase setting.
@@ -436,8 +438,15 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
 
     words(line) match {
       case Nil            =>
-        intp setExecutionWrapper ""
-        "Cleared wrapper."
+        intp.executionWrapper match {
+          case ""   => "No execution wrapper is set."
+          case s    => "Current execution wrapper: " + s
+        }
+      case "clear" :: Nil =>
+        intp.executionWrapper match {
+          case ""   => "No execution wrapper is set."
+          case s    => intp.clearExecutionWrapper() ; "Cleared execution wrapper."
+        }
       case wrapper :: Nil =>
         intp.typeOfExpression(wrapper) match {
           case Some(PolyType(List(targ), MethodType(List(arg), restpe))) =>
