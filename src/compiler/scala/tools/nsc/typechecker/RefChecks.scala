@@ -507,6 +507,48 @@ abstract class RefChecks extends InfoTransform {
                 else analyzer.varNotice(member)
               )
             }
+            else if (underlying.isMethod) {
+              // If there is a concrete method whose name matches the unimplemented
+              // abstract method, and a cursory examination of the difference reveals
+              // something obvious to us, let's make it more obvious to them.
+              val abstractParams   = underlying.tpe.paramTypes
+              val matchingName     = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
+              val matchingArity    = matchingName filter { m =>
+                !m.isDeferred &&
+                (m.name == underlying.name) &&
+                (m.tpe.paramTypes.size == underlying.tpe.paramTypes.size) &&
+                (m.tpe.typeParams.size == underlying.tpe.typeParams.size)
+              }
+
+              matchingArity match {
+                // So far so good: only one candidate method
+                case concrete :: Nil   =>
+                  val mismatches  = abstractParams zip concrete.tpe.paramTypes filterNot { case (x, y) => x =:= y }
+                  mismatches match {
+                    // Only one mismatched parameter: say something useful.
+                    case (pa, pc) :: Nil  =>
+                      val addendum =
+                        if (pa.typeSymbol == pc.typeSymbol) {
+                          // TODO: what is the optimal way to test for a raw type at this point?
+                          // Compilation has already failed so we shouldn't have to worry overmuch
+                          // about forcing types.
+                          if (underlying.isJavaDefined && pa.typeArgs.isEmpty && pa.typeSymbol.typeParams.nonEmpty)
+                            ". To implement a raw type, use %s[_]".format(pa)
+                          else if (pa.prefix =:= pc.prefix)
+                            ": their type parameters differ"
+                          else
+                            ": their prefixes (i.e. enclosing instances) differ"
+                        }
+                        else ""
+
+                      undefined("\n(Note that %s does not match %s%s)".format(pa, pc, addendum))
+                    case xs =>
+                      undefined("")
+                  }
+                case _ =>
+                  undefined("")
+              }
+            }
             else undefined("")
           }
 
