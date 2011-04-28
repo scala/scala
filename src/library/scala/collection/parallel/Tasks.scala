@@ -57,7 +57,7 @@ trait Tasks {
 
     // exception handling mechanism
     @volatile var throwable: Throwable = null
-    def forwardThrowable = if (throwable != null) throw throwable
+    def forwardThrowable() = if (throwable != null) throw throwable
 
     // tries to do the leaf computation, storing the possible exception
     private[parallel] def tryLeaf(lastres: Option[R]) {
@@ -101,7 +101,7 @@ trait Tasks {
     }
 
     // override in concrete task implementations to signal abort to other tasks
-    private[parallel] def signalAbort {}
+    private[parallel] def signalAbort() {}
   }
 
   trait TaskImpl[R, +Tp] {
@@ -110,11 +110,11 @@ trait Tasks {
 
     def split: Seq[TaskImpl[R, Tp]]
     /** Code that gets called after the task gets started - it may spawn other tasks instead of calling `leaf`. */
-    def compute
+    def compute()
     /** Start task. */
-    def start
+    def start()
     /** Wait for task to finish. */
-    def sync
+    def sync()
     /** Try to cancel the task.
      *  @return     `true` if cancellation is successful.
      */
@@ -126,7 +126,7 @@ trait Tasks {
      *
      *  This method may be overridden.
      */
-    def release {}
+    def release() {}
   }
 
   protected def newTaskImpl[R, Tp](b: Task[R, Tp]): TaskImpl[R, Tp]
@@ -161,9 +161,9 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
     def split: Seq[TaskImpl[R, Tp]]
 
-    def compute = if (body.shouldSplitFurther) internal else body.tryLeaf(None)
+    def compute() = if (body.shouldSplitFurther) internal else body.tryLeaf(None)
 
-    def internal = {
+    def internal() = {
       var last = spawnSubtasks()
 
       last.body.tryLeaf(None)
@@ -231,7 +231,7 @@ trait ThreadPoolTasks extends Tasks {
     @volatile var owned = false
     @volatile var completed = false
 
-    def start = synchronized {
+    def start() = synchronized {
       // debuglog("Starting " + body)
       // utb: future = executor.submit(this)
       executor.synchronized {
@@ -239,7 +239,7 @@ trait ThreadPoolTasks extends Tasks {
         executor.submit(this)
       }
     }
-    def sync = synchronized {
+    def sync() = synchronized {
       // debuglog("Syncing on " + body)
       // utb: future.get()
       executor.synchronized {
@@ -293,11 +293,11 @@ trait ThreadPoolTasks extends Tasks {
   def queue = executor.getQueue.asInstanceOf[LinkedBlockingQueue[Runnable]]
   @volatile var totaltasks = 0
 
-  private def incrTasks = synchronized {
+  private def incrTasks() = synchronized {
     totaltasks += 1
   }
 
-  private def decrTasks = synchronized {
+  private def decrTasks() = synchronized {
     totaltasks -= 1
   }
 
@@ -361,12 +361,12 @@ trait FutureThreadPoolTasks extends Tasks {
   trait TaskImpl[R, +Tp] extends Runnable with super.TaskImpl[R, Tp] {
     @volatile var future: Future[_] = null
 
-    def start = {
+    def start() = {
       executor.synchronized {
         future = executor.submit(this)
       }
     }
-    def sync = future.get
+    def sync() = future.get
     def tryCancel = false
     def run = {
       compute
@@ -435,8 +435,8 @@ trait HavingForkJoinPool {
 trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
 
   trait TaskImpl[R, +Tp] extends RecursiveAction with super.TaskImpl[R, Tp] {
-    def start = fork
-    def sync = join
+    def start() = fork
+    def sync() = join
     def tryCancel = tryUnfork
   }
 

@@ -39,7 +39,7 @@ trait Prop {
   /** Convenience method that checks this property and reports the
    *  result on the console. If you need to get the results from the test use
    *  the <code>check</code> methods in <code>Test</code> instead. */
-  def check: Unit = check(Test.Params())
+  def check(): Unit = check(Test.Params())
 
   /** Convenience method that makes it possible to use a this property
    *  as an application that checks itself on execution */

@@ -828,7 +828,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
     }
 
-    def addModuleInstanceField {
+    def addModuleInstanceField() {
       jclass.addNewField(PublicStaticFinal,
                         nme.MODULE_INSTANCE_FIELD.toString,
                         jclass.getType())
@@ -1077,7 +1077,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
 
     /** Generate exception handlers for the current method. */
-    def genExceptionHandlers {
+    def genExceptionHandlers() {
 
       /** Return a list of pairs of intervals where the handler is active.
        *  The intervals in the list have to be inclusive in the beginning and

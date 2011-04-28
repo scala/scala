@@ -33,7 +33,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   }
 
   /** scans the next token */
-  final def nextToken {
+  final def nextToken() {
     if (token != END) token = readToken
   }
 
@@ -41,7 +41,7 @@ class Scanner extends Tokens with parsing.TokenTests {
   final def isIdentChar = ( ('a' <= c && c <= 'z')
                            || ('A' <= c && c <= 'Z'));
 
-  final def next = if (it.hasNext) c = it.next else c = ENDCH
+  final def next() = if (it.hasNext) c = it.next else c = ENDCH
 
   final def acc(d: Char) {
     if (c == d) next else sys.error("expected '"+d+"' found '"+c+"' !");

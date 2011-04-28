@@ -73,7 +73,7 @@ class CodeWriter(writer: Writer) {
     this
   }
 
-  def * : Unit = {}
+  def *() = {}
 
   def println: CodeWriter = newline
 

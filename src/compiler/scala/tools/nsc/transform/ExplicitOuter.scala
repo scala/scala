@@ -532,7 +532,7 @@ abstract class ExplicitOuter extends InfoTransform
 
   class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
     override val checkable = false
-    override def run {
+    override def run() {
       super.run
       Pattern.clear()    // clear the cache
     }

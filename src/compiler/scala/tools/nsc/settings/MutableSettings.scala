@@ -400,7 +400,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       }
     }
 
-    def errorMsg = errorFn("invalid setting for -"+name+" "+getValidText)
+    def errorMsg() = errorFn("invalid setting for -"+name+" "+getValidText)
 
     def tryToSet(args: List[String]) =
       if (args.isEmpty) errorAndValue("missing argument", None)

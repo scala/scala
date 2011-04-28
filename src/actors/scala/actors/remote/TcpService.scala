@@ -222,7 +222,7 @@ private[actors] class TcpServiceWorker(parent: TcpService, so: Socket) extends T
     parent.serializer.writeObject(dataout, parent.node)
   }
 
-  def readNode {
+  def readNode() {
     val node = parent.serializer.readObject(datain)
     node match {
       case n: Node =>
@@ -240,7 +240,7 @@ private[actors] class TcpServiceWorker(parent: TcpService, so: Socket) extends T
 
   var running = true
 
-  def halt = synchronized {
+  def halt() = synchronized {
     so.close()
     running = false
   }

@@ -241,7 +241,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   // discards the previous sizemap and populates the new one
-  protected def sizeMapInitAndRebuild {
+  protected def sizeMapInitAndRebuild() {
     // first allocate
     sizeMapInit(table.length)
 
@@ -263,7 +263,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     }
   }
 
-  private[collection] def printSizeMap {
+  private[collection] def printSizeMap() {
     println(sizemap.toList)
   }
 

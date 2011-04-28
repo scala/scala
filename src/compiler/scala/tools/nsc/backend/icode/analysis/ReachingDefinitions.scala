@@ -142,7 +142,7 @@ abstract class ReachingDefinitions {
       (drops, stackOut)
     }
 
-    override def run {
+    override def run() {
       forwardAnalysis(blockTransfer)
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)

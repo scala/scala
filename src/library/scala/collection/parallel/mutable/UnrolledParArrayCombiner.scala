@@ -56,7 +56,7 @@ extends Combiner[T, ParArray[T]] {
     new ParArray(arrayseq)
   }
 
-  def clear {
+  def clear() {
     buff.clear
   }
 

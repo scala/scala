@@ -143,7 +143,7 @@ extends Seq[T]
   def dup() = push(top)
 
   /** Empties the stack. */
-  def clear {
+  def clear() {
     index = 0
     table = new Array(1)
   }

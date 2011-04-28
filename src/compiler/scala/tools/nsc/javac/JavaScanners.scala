@@ -63,7 +63,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     var errpos: ScanPosition
     var lastPos: ScanPosition
     def skipToken: ScanPosition
-    def nextToken: Unit
+    def nextToken(): Unit
     def next: AbstractJavaTokenData
     def intVal(negated: Boolean): Long
     def floatVal(negated: Boolean): Double
@@ -282,7 +282,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       p - 1
     }
 
-    def nextToken {
+    def nextToken() {
       if (next.token == EMPTY) {
         fetchToken()
       }
@@ -648,7 +648,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
 // Identifiers ---------------------------------------------------------------
 
-    private def getIdentRest {
+    private def getIdentRest() {
       while (true) {
         (in.ch: @switch) match {
           case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -734,7 +734,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** read fractional part and exponent of floating point number
      *  if one is present.
      */
-    protected def getFraction {
+    protected def getFraction() {
       token = DOUBLELIT
       while ('0' <= in.ch && in.ch <= '9') {
         putChar(in.ch)
@@ -823,7 +823,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     }
     /** read a number into name and set base
     */
-    protected def getNumber {
+    protected def getNumber() {
       while (digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
         putChar(in.ch)
         in.next
@@ -905,7 +905,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** INIT: read lookahead character and token.
      */
-    def init {
+    def init() {
       in.next
       nextToken
     }

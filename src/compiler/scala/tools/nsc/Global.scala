@@ -289,7 +289,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
 
-    def run {
+    def run() {
       echoPhaseSummary(this)
       currentRun.units foreach applyPhase
     }
@@ -738,7 +738,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** take note that phase is completed
      *  (for progress reporting)
      */
-    def advancePhase {
+    def advancePhase() {
       unitc = 0
       phasec += 1
       refreshProgress
@@ -746,18 +746,18 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** take note that a phase on a unit is completed
      *  (for progress reporting)
      */
-    def advanceUnit {
+    def advanceUnit() {
       unitc += 1
       refreshProgress
     }
 
-    def cancel { reporter.cancelled = true }
+    def cancel() { reporter.cancelled = true }
 
-    private var phasec: Int     = 0   // phases completed
-    private var unitc: Int      = 0   // units completed this phase
-    private def currentProgress = (phasec * size) + unitc
-    private def totalProgress   = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
-    private def refreshProgress = if (size > 0) progress(currentProgress, totalProgress)
+    private var phasec: Int       = 0   // phases completed
+    private var unitc: Int        = 0   // units completed this phase
+    private def currentProgress   = (phasec * size) + unitc
+    private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
+    private def refreshProgress() = if (size > 0) progress(currentProgress, totalProgress)
 
     // ----- finding phases --------------------------------------------
 

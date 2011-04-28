@@ -7,5 +7,5 @@ package scala.tools.nsc
 
 object NoPhase extends Phase(null) {
   def name = "<no phase>"
-  def run { throw new Error("NoPhase.run") }
+  def run() { throw new Error("NoPhase.run") }
 }

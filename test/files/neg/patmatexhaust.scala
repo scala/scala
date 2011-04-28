@@ -56,12 +56,12 @@ class TestSealedExhaustive { // compile only
       case Ga =>
     }
 
-  def ma6  = List(1,2) match { // give up
+  def ma6()  = List(1,2) match { // give up
     case List(1,2) =>
     case x :: xs =>
   }
 
-  def ma7 = List(1,2) match { //exhaustive
+  def ma7() = List(1,2) match { //exhaustive
     case 1::2::Nil =>
       case _ =>
   }
@@ -87,7 +87,7 @@ class TestSealedExhaustive { // compile only
     case C2 | C6  => true
   }
 
-  def redundant = 1 match { // include this otherwise script won't test this in files/neg
+  def redundant() = 1 match { // include this otherwise script won't test this in files/neg
     case 1 =>
       case 1 =>
   }

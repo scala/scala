@@ -110,7 +110,7 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
     ch
   }
 
-  def rewind {
+  def rewind() {
     if (oldBp == -1) throw new IllegalArgumentException
     bp = oldBp
     ch = oldCh

@@ -67,7 +67,7 @@ object Platform {
   def currentTime: Long = System.currentTimeMillis()
 
   @inline
-  def collectGarbage: Unit = System.gc()
+  def collectGarbage(): Unit = System.gc()
 
   /** The name of the default character set encoding as a string */
   @inline

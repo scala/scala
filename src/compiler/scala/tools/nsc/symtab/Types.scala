@@ -2263,7 +2263,7 @@ A type's typeSymbol should never be inspected directly.
         tv.suspended = true
         suspended += tv
       }
-      def resumeAll: Unit = {
+      def resumeAll(): Unit = {
         for(tv <- suspended) {
           tv.suspended = false
         }
@@ -3788,7 +3788,7 @@ A type's typeSymbol should never be inspected directly.
    */
   object commonOwnerMap extends TypeMap {
     var result: Symbol = _
-    def init = { result = NoSymbol }
+    def init() = { result = NoSymbol }
     def apply(tp: Type): Type = {
       assert(tp ne null)
       tp.normalize match {

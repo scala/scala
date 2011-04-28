@@ -94,7 +94,7 @@ abstract class InteractiveTest {
     adjustPaths(settings.bootclasspath, settings.classpath, settings.javabootclasspath, settings.sourcepath)
   }
 
-  protected def printClassPath {
+  protected def printClassPath() {
     println("\toutDir: %s".format(outDir.path))
     println("\tbaseDir: %s".format(baseDir.path))
     println("\targsString: %s".format(argsString))
@@ -229,7 +229,7 @@ abstract class InteractiveTest {
     reload.get
   }
 
-  def runTest: Unit = {
+  def runTest(): Unit = {
     if (runRandomTests) randomTests(20, sourceFiles)
     completionTests()
     typeAtTests()

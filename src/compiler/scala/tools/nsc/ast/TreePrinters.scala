@@ -41,8 +41,8 @@ trait TreePrinters { trees: SymbolTable =>
 
     def flush() = out.flush()
 
-    def indent = indentMargin += indentStep
-    def undent = indentMargin -= indentStep
+    def indent() = indentMargin += indentStep
+    def undent() = indentMargin -= indentStep
 
     protected def doPrintPositions = settings.Xprintpos.value
     def printPosition(tree: Tree) = if (doPrintPositions) print(tree.pos.show)

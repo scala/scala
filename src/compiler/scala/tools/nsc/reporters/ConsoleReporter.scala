@@ -94,7 +94,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
       print(pos, msg, severity)
   }
 
-  def displayPrompt: Unit = try {
+  def displayPrompt(): Unit = try {
     var continue = true
     while (continue) {
       writer.print("r)esume, a)bort: ")

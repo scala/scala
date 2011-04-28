@@ -239,7 +239,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def printMethod(level: Int, m: MethodSymbol, indent: () => Unit) {
-    def cont = print(" = { /* compiled code */ }")
+    def cont() = print(" = { /* compiled code */ }")
 
     val n = m.name
     if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return

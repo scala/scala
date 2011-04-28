@@ -114,10 +114,10 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def isClassContainer = isDirectory || (sfile exists (Path isJarOrZip _))
 
   /** Create a file on disk, if one does not exist already. */
-  def create: Unit
+  def create(): Unit
 
   /** Delete the underlying file or directory (recursively). */
-  def delete: Unit
+  def delete(): Unit
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean

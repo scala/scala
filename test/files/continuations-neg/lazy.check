@@ -1,6 +1,6 @@
 lazy.scala:5: error: type mismatch;
  found   : Unit @scala.util.continuations.cpsParam[Unit,Unit]
  required: Unit
-  def foo = {
-            ^
+  def foo() = {
+              ^
 one error found

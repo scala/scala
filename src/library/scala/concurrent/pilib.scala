@@ -43,13 +43,13 @@ object pilib {
   abstract class Spawn {
     def <(p: => Unit): Spawn
     def |(p: => Unit): Spawn
-    def > : Unit
+    def > (): Unit
   }
   val spawn = new Spawn {
   //object spawn extends Spawn { // BUG !
     def <(p: => Unit): Spawn = { scala.concurrent.ops.spawn(p); this }
     def |(p: => Unit): Spawn = { scala.concurrent.ops.spawn(p); this }
-    def > : Unit = ()
+    def > (): Unit = ()
   }
 
   /////////////////////////// GUARDED PROCESSES //////////////////////////

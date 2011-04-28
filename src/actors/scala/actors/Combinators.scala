@@ -41,6 +41,6 @@ private[actors] trait Combinators {
    * of the next loop iteration when invoked inside the body of `loop`
    * or `loopWhile`.
    */
-  def continue: Unit = throw new KillActorControl
+  def continue(): Unit = throw new KillActorControl
 
 }

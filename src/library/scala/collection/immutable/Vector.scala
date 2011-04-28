@@ -704,7 +704,7 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
     s
   }
 
-  def clear: Unit = {
+  def clear(): Unit = {
     display0 = new Array[AnyRef](32)
     depth = 1
     blockIndex = 0

@@ -43,7 +43,7 @@ trait DataFlowAnalysis[L <: SemiLattice] {
     f
   }
 
-  def run: Unit
+  def run(): Unit
 
   /** Implements forward dataflow analysis: the transfer function is
    *  applied when inputs to a Program point change, to obtain the new

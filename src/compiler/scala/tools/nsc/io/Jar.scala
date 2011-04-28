@@ -82,7 +82,7 @@ class JarWriter(file: File, val manifest: Manifest = new Manifest()) {
   }
   private def transfer(in: InputStream, out: OutputStream) = {
     val buf = new Array[Byte](10240)
-    def loop: Unit = in.read(buf, 0, buf.length) match {
+    def loop(): Unit = in.read(buf, 0, buf.length) match {
       case -1 => in.close()
       case n  => out.write(buf, 0, n) ; loop
     }

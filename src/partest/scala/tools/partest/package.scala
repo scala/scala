@@ -39,7 +39,7 @@ package object partest {
     System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString
   }
 
-  def showAllJVMInfo {
+  def showAllJVMInfo() {
     NestUI.verbose(vmArgString)
     NestUI.verbose(allPropertiesString)
   }

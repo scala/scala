@@ -665,7 +665,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def setFlag(mask: Long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: Long): Long = flags & mask
-    final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
+    final def resetFlags() { rawflags = rawflags & TopLevelCreationFlags }
 
     /** The class or term up to which this symbol is accessible,
      *  or RootClass if it is public.

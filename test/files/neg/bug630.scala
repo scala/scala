@@ -1,7 +1,7 @@
 trait Req1
 
 trait Req2 {
-        def test = Console.println("Test")
+        def test() = Console.println("Test")
 }
 
 trait Foo {
@@ -10,7 +10,7 @@ trait Foo {
 
 trait Bar {
         val foo : Req2
-        def test = foo.test
+        def test() = foo.test
 }
 
 object Test

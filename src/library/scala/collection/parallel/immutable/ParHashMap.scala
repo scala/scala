@@ -115,7 +115,7 @@ self =>
     override def toString = "HashTrieIterator(" + sz + ")"
   }
 
-  private[parallel] def printDebugInfo {
+  private[parallel] def printDebugInfo() {
     println("Parallel hash trie")
     println("Top level inner trie type: " + trie.getClass)
     trie match {

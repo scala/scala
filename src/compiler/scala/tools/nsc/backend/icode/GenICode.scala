@@ -48,7 +48,7 @@ abstract class GenICode extends SubComponent  {
 
     var unit: CompilationUnit = _
 
-    override def run {
+    override def run() {
       scalaPrimitives.init
       classes.clear
       super.run
@@ -1489,7 +1489,7 @@ abstract class GenICode extends SubComponent  {
         log("Entering genCond with tree: " + tree);
 
       // the default emission
-      def default = {
+      def default() = {
         val ctx1 = genLoad(tree, ctx, BOOL)
         ctx1.bb.closeWith(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL) setPos tree.pos)
       }
@@ -1998,11 +1998,11 @@ abstract class GenICode extends SubComponent  {
         new Context(this) setBasicBlock block
       }
 
-      def enterScope = {
+      def enterScope() {
         scope = new Scope(scope)
       }
 
-      def exitScope = {
+      def exitScope() {
         if (bb.nonEmpty) {
           scope.locals foreach { lv => bb.emit(SCOPE_EXIT(lv)) }
         }

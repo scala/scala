@@ -108,7 +108,7 @@ abstract class ClassfileParser {
 
   protected def statics: Symbol = staticModule.moduleClass
 
-  private def parseHeader {
+  private def parseHeader() {
     val magic = in.nextInt
     if (magic != JAVA_MAGIC)
       throw new IOException("class file '" + in.file + "' "
@@ -1095,7 +1095,7 @@ abstract class ClassfileParser {
   /** Enter own inner classes in the right scope. It needs the scopes to be set up,
    *  and implicitly current class' superclasses.
    */
-  private def enterOwnInnerClasses {
+  private def enterOwnInnerClasses() {
     def className(name: Name): Name = {
       name.subName(name.lastPos('.') + 1, name.length)
     }

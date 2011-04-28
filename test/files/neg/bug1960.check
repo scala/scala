@@ -1,4 +1,4 @@
 bug1960.scala:5: error: parameter 'p' requires field but conflicts with p in 'TBase'
-class Aclass (p: Int) extends TBase { def g{ f(p) } }
+class Aclass (p: Int) extends TBase { def g() { f(p) } }
               ^
 one error found

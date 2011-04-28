@@ -131,7 +131,7 @@ abstract class DeadCodeElimination extends SubComponent {
     /** Mark useful instructions. Instructions in the worklist are each inspected and their
      *  dependencies are marked useful too, and added to the worklist.
      */
-    def mark {
+    def mark() {
 //      log("Starting with worklist: " + worklist)
       while (!worklist.isEmpty) {
         val (bb, idx) = worklist.iterator.next

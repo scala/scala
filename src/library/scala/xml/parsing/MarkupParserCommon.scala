@@ -201,13 +201,13 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   def xToken(that: Seq[Char]) { that foreach xToken }
 
   /** scan [S] '=' [S]*/
-  def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
+  def xEQ() = { xSpaceOpt; xToken('='); xSpaceOpt }
 
   /** skip optional space S? */
-  def xSpaceOpt = while (isSpace(ch) && !eof) nextch
+  def xSpaceOpt() = while (isSpace(ch) && !eof) nextch
 
   /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
-  def xSpace =
+  def xSpace() =
     if (isSpace(ch)) { nextch; xSpaceOpt }
     else xHandleError(ch, "whitespace expected")
 

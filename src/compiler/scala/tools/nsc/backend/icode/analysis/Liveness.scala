@@ -74,7 +74,7 @@ abstract class Liveness {
       Pair(genSet, killSet)
     }
 
-    override def run {
+    override def run() {
       backwardAnalysis(blockTransfer)
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)

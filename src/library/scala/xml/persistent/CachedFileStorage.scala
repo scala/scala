@@ -33,7 +33,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
    */
   private var theFile: File = null
 
-  private def switch = { theFile = if (theFile == file1) file2 else file1; }
+  private def switch() = { theFile = if (theFile == file1) file2 else file1; }
 
   /** this storage modified since last modification check */
   protected var dirty = false
@@ -82,7 +82,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
   }
 
   /** saves the XML to file */
-  private def save = if (this.dirty) {
+  private def save() = if (this.dirty) {
     log("[save]\ndeleting "+theFile);
     theFile.delete();
     log("creating new "+theFile);
@@ -115,7 +115,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
   }
 
   /** forces writing of contents to the file, even if there has not been any update. */
-  def flush = {
+  def flush() = {
     this.dirty = true;
     save
   }

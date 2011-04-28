@@ -75,7 +75,7 @@ trait Benchmark {
    *  should not be measured. This method is run before each call to the
    *  benchmark payload, 'run'.
    */
-  def setUp {
+  def setUp() {
   }
 
   /** Perform cleanup operations after each 'run'. For micro benchmarks,
@@ -84,7 +84,7 @@ trait Benchmark {
    *  write the results to a file. The execution time of this method is not
    *  measured.
    */
-  def tearDown {
+  def tearDown() {
   }
 
   /** a string that is written at the beginning of the output line

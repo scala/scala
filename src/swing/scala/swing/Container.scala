@@ -25,7 +25,7 @@ object Container {
     def contents: Seq[Component] = _contents
 
     protected class Content extends BufferWrapper[Component] {
-      override def clear { peer.removeAll() }
+      override def clear() { peer.removeAll() }
       override def remove(n: Int): Component = {
         val c = peer.getComponent(n)
         peer.remove(n)

@@ -495,7 +495,7 @@ trait Contexts { self: Analyzer =>
     private var implicitsCache: List[List[ImplicitInfo]] = null
     private var implicitsRunId = NoRunId
 
-    def resetCache : Unit = {
+    def resetCache() {
       implicitsRunId = NoRunId
       implicitsCache = null
       if (outer != null && outer != this) outer.resetCache

@@ -184,7 +184,7 @@ abstract class LambdaLift extends InfoTransform {
      *  value/variable/let that are free in some function or class, and to
      *  all class/function symbols that are owned by some function.
      */
-    private def computeFreeVars {
+    private def computeFreeVars() {
       freeVarTraverser.traverse(unit.body)
 
       do {

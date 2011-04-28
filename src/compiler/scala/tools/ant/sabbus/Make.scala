@@ -13,7 +13,7 @@ import java.io.File
 import org.apache.tools.ant.Task
 
 class Make extends Task with TaskArgs {
-  override def execute {
+  override def execute() {
     if (id.isEmpty) sys.error("Mandatory attribute 'id' is not set.")
     if (compilerPath.isEmpty) sys.error("Mandatory attribute 'compilerpath' is not set.")
     val settings = new Settings

@@ -49,7 +49,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
   // fails for whatever reason the iterator correctness is not impacted,
   // only performance (because it will finish the entire XML document,
   // or at least as much as it can fit in the queue.)
-  def stop = {
+  def stop() = {
     produce(POISON)
     parserThread.interrupt()
   }

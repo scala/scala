@@ -627,11 +627,11 @@ abstract class TypeFlowAnalysis {
 
     private var lastStart = 0L
 
-    def reset {
+    def reset() {
       millis = 0L
     }
 
-    def start {
+    def start() {
       lastStart = System.currentTimeMillis
     }
 

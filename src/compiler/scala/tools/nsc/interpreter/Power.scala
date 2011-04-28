@@ -280,7 +280,7 @@ abstract class Power[G <: Global](
   class PrintingConvenience[T: Prettifier](value: T) {
     val pretty = implicitly[Prettifier[T]]
 
-    def > { >(_ => true) }
+    def >() { >(_ => true) }
     def >(s: String): Unit = >(_ contains s)
     def >(r: Regex): Unit = >(_ matches r.pattern.toString)
     def >(p: String => Boolean): Unit = pretty.grep(value, p)

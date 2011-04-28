@@ -174,7 +174,7 @@ abstract class OverridingPairs {
     def hasNext: Boolean = curEntry ne null
 
     @tailrec
-    final def next {
+    final def next() {
       if (curEntry ne null) {
         overriding = curEntry.sym
         if (nextEntry ne null) {

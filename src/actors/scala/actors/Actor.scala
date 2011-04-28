@@ -95,7 +95,7 @@ object Actor extends Combinators {
    * This permits to re-use the current thread as an actor
    * even if its <code>ActorProxy</code> has died for some reason.
    */
-  def resetProxy {
+  def resetProxy() {
     val a = tl.get
     if ((null ne a) && a.isInstanceOf[ActorProxy])
       tl.set(new ActorProxy(Thread.currentThread, parentScheduler))
@@ -110,7 +110,7 @@ object Actor extends Combinators {
    * a thread pool). Permanent references in thread-local storage
    * are a potential memory leak.
    */
-  def clearSelf {
+  def clearSelf() {
     tl.set(null)
   }
 

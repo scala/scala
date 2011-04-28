@@ -285,8 +285,8 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer {
 
   /** Methods we don't support but have to implement because of the design */
   def file: JFile = null
-  def create: Unit = unsupported
-  def delete: Unit = unsupported
+  def create(): Unit = unsupported
+  def delete(): Unit = unsupported
   def output = unsupported
   def container = unsupported
 

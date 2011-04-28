@@ -347,7 +347,7 @@ trait Namers { self: Analyzer =>
 
     def enterSym(tree: Tree): Context = {
       def finishWith(tparams: List[TypeDef]) { enterSymFinishWith(tree, tparams) }
-      def finish = finishWith(Nil)
+      def finish() = finishWith(Nil)
       def sym = tree.symbol
       if (sym != NoSymbol) {
         if (forInteractive && sym != null && sym.owner.isTerm) {

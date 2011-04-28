@@ -28,7 +28,7 @@ private[process] trait ProcessImpl {
   private[process] object Future {
     def apply[T](f: => T): () => T = {
       val result = new SyncVar[Either[Throwable, T]]
-      def run: Unit =
+      def run(): Unit =
         try result set Right(f)
         catch { case e: Exception => result set Left(e) }
 
