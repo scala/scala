@@ -128,6 +128,10 @@ trait Matrix extends MatrixAdditions {
     }
     def recordSyntheticSym(sym: Symbol): Symbol = {
       _syntheticSyms += sym
+      if (_syntheticSyms.size > 25000) {
+        cunit.error(owner.pos, "Sanity check failed: over 25000 symbols created for pattern match.")
+        abort("This is a bug in the pattern matcher.")
+      }
       sym
     }
 

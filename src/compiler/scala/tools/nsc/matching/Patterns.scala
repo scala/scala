@@ -180,38 +180,35 @@ trait Patterns extends ast.TreeDSL {
     override def description = "Unapply(%s => %s)".format(necessaryType, resTypesString)
   }
 
-  case class SequenceExtractorPattern(tree: UnApply, elems: List[Tree]) extends UnapplyPattern with SequenceLikePattern {
-    override def simplify(pv: PatternVar) = {
-      pv.sym setFlag NO_EXHAUSTIVE
-
-      if (pv.tpe <:< arg.tpe) this
-      else this rebindTo uaTyped
-    }
-
-    override def description = "UnapplySeq(%s => %s)".format(necessaryType, resTypesString)
-  }
-
   // Special List handling.  It was like that when I got here.
   case class ListExtractorPattern(tree: UnApply, tpt: Tree, elems: List[Tree]) extends UnapplyPattern with SequenceLikePattern {
     private val cons    = ConsClass.primaryConstructor.tpe.resultType
     private val consRef = typeRef(cons.prefix, ConsClass, List(tpt.tpe))
     private val listRef = typeRef(cons.prefix, ListClass, List(tpt.tpe))
+    private val seqRef  = typeRef(cons.prefix, SeqClass, List(tpt.tpe))
+    private def thisSeqRef = {
+      val tc = (tree.tpe baseType SeqClass).typeConstructor
+      if (tc.typeParams.size == 1) appliedType(tc, List(tpt.tpe))
+      else seqRef
+    }
 
     // Fold a list into a well-typed x :: y :: etc :: tree.
-    private def listFolder(x: Tree, xs: Tree) = unbind(x) match {
-      case _: Star  => Pattern(x) rebindTo WILD(x.tpe) boundTree
+    private def listFolder(x: Pattern, xs: Pattern): Pattern = x match {
+      case Pattern(Star(_), _) => x rebindTo WILD(x.tpe)
       case _        =>
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
         val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpt.tpe, listRef), consRef)
 
-        Apply(TypeTree(consType), List(x, xs)) setType consRef
+        Pattern(Apply(TypeTree(consType), List(x.boundTree, xs.boundTree)) setType consRef)
     }
+    private def foldedPatterns = elems.foldRight(NilPattern)((x, y) => listFolder(Pattern(x), y))
     override def necessaryType = if (nonStarPatterns.nonEmpty) consRef else listRef
+
     override def simplify(pv: PatternVar) = {
       pv.sym setFlag NO_EXHAUSTIVE
 
       if (pv.tpe <:< necessaryType)
-        this rebindTo elems.foldRight(gen.mkNil)(listFolder)
+        foldedPatterns
       else
         this rebindTo (Typed(tree, TypeTree(necessaryType)) setType necessaryType)
     }
@@ -318,9 +315,8 @@ trait Patterns extends ast.TreeDSL {
     }
 
     def apply(x: UnApply): Pattern = x match {
-      case UnapplySeq(container, tpt, elems) =>
-        if (container == ListModule) ListExtractorPattern(x, tpt, elems)
-        else SequenceExtractorPattern(x, elems)
+      case UnapplySeq(ListModule, tpt, elems) =>
+        ListExtractorPattern(x, tpt, elems)
       case _ =>
         ExtractorPattern(x)
     }
