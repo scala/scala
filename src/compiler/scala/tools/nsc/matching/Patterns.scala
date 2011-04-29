@@ -194,7 +194,7 @@ trait Patterns extends ast.TreeDSL {
 
     // Fold a list into a well-typed x :: y :: etc :: tree.
     private def listFolder(x: Pattern, xs: Pattern): Pattern = x match {
-      case Pattern(Star(_), _) => x rebindTo WILD(x.tpe)
+      case Pattern(Star(_)) => x rebindTo WILD(x.tpe)
       case _        =>
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
         val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpt.tpe, listRef), consRef)
@@ -295,9 +295,10 @@ trait Patterns extends ast.TreeDSL {
         case _                  => tracing("Pattern")(p)
       }
     }
-    def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
+    // matching on Pattern(...) always skips the bindings.
+    def unapply(other: Any): Option[Tree] = other match {
       case x: Tree    => unapply(Pattern(x))
-      case x: Pattern => Some((x.tree, x.boundVariables))
+      case x: Pattern => Some(x.tree)
       case _          => None
     }
   }
@@ -399,13 +400,6 @@ trait Patterns extends ast.TreeDSL {
       case Nil  => "Boolean"
       case xs   => xs.mkString(", ")
     }
-
-    private def isSameFunction(f1: Tree, f2: Tree) =
-      (f1.symbol == f2.symbol) && (f1 equalsStructure f2)
-
-    // XXX args
-    def isSameUnapply(other: UnapplyPattern) =
-      isSameFunction(unfn, other.unfn)
   }
 
   sealed trait ApplyPattern extends Pattern {

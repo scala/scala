@@ -28,6 +28,9 @@ trait PatternBindings extends ast.TreeDSL
   // parameters on the right hand side.
   def matches(arg1: Type, arg2: Type) = decodedEqualsType(arg1) matchesPattern decodedEqualsType(arg2)
 
+  // For spotting duplicate unapplies
+  def isEquivalentTree(t1: Tree, t2: Tree) = (t1.symbol == t2.symbol) && (t1 equalsStructure t2)
+
   // used as argument to `EqualsPatternClass'
   case class PseudoType(o: Tree) extends SimpleTypeProxy {
     override def underlying: Type = o.tpe
