@@ -2188,12 +2188,12 @@ self =>
     }
 
     /** Def    ::= val PatDef
-     *           | var VarDef
+     *           | var PatDef
      *           | def FunDef
      *           | type [nl] TypeDef
      *           | TmplDef
-     *  Dcl    ::= val ValDcl
-     *           | var ValDcl
+     *  Dcl    ::= val PatDcl
+     *           | var PatDcl
      *           | def FunDcl
      *           | type [nl] TypeDcl
      */
