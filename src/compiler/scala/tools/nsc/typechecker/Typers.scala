@@ -930,10 +930,25 @@ trait Typers extends Modes {
             } catch {
               case ex: TypeError =>
                 if (phase.id > currentRun.typerPhase.id &&
-                    pt.existentialSkolems.nonEmpty)
+                    pt.existentialSkolems.nonEmpty) {
+                  // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
+                  // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
+                  // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
+                  //
+                  //   val x: T = expr
+                  //
+                  // where T is the type of expr, but T contains existential skolems ts.
+                  // In that case, this value definition does not typecheck.
+                  // The value definition
+                  //
+                  //   val x: T forSome { ts } = expr
+                  //
+                  // would typechek. Or one can simply leave out the type of the `val':
+                  //
+                  //   val x = expr
+                  context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n"+tree+"\nwith type "+tree.tpe+"\n expected type = "+pt+"\n context = "+context.tree)
                   adapt(tree, mode, pt.subst(pt.existentialSkolems, pt.existentialSkolems map (_ => WildcardType)))
-                  // ignore type errors raised in later phases that are due to mismatching types with existential skolems
-                else
+                } else
                   throw ex
             }
           }
