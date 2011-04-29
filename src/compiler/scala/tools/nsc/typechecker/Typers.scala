@@ -930,10 +930,9 @@ trait Typers extends Modes {
             } catch {
               case ex: TypeError =>
                 if (phase.id > currentRun.typerPhase.id &&
-                    tree.tpe.isInstanceOf[ExistentialType] &&
-                    pt.isInstanceOf[ExistentialType])
-                  // ignore type errors raised in later phases that are due to mismatching existentials
-                  tree
+                    pt.existentialSkolems.nonEmpty)
+                  adapt(tree, mode, pt.subst(pt.existentialSkolems, pt.existentialSkolems map (_ => WildcardType)))
+                  // ignore type errors raised in later phases that are due to mismatching types with existential skolems
                 else
                   throw ex
             }
