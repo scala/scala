@@ -925,7 +925,18 @@ trait Typers extends Modes {
               log("error tree = "+tree)
               if (settings.explaintypes.value) explainTypes(tree.tpe, pt)
             }
-            typeErrorTree(tree, tree.tpe, pt)
+            try {
+              typeErrorTree(tree, tree.tpe, pt)
+            } catch {
+              case ex: TypeError =>
+                if (phase.id > currentRun.typerPhase.id &&
+                    tree.tpe.isInstanceOf[ExistentialType] &&
+                    pt.isInstanceOf[ExistentialType])
+                  // ignore type errors raised in later phases that are due to mismatching existentials
+                  tree
+                else
+                  throw ex
+            }
           }
         }
     }
