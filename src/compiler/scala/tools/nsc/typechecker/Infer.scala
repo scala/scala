@@ -1568,7 +1568,9 @@ trait Infer {
                 (alts map pre.memberType) +", argtpes = "+ argtpes +", pt = "+ pt)
 
           var allApplicable = alts filter (alt =>
-            isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
+            // TODO: this will need to be re-written once we substitute throwing exceptions
+            // with generating error trees. We wrap this applicability in try/catch because of #4457.
+            try {isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt)} catch {case _: TypeError => false})
 
           //log("applicable: "+ (allApplicable map pre.memberType))
 

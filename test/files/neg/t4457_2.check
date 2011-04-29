@@ -1,0 +1,13 @@
+t4457_2.scala:27: error: ambiguous reference to overloaded definition,
+both method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAmbiguity2.NZ[A])ImplicitConvAmbiguity2.AA[A]
+and  method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAmbiguity2.NE[A])ImplicitConvAmbiguity2.AA[A]
+match argument types (Float)
+    val x = aFunc(4F)
+            ^
+t4457_2.scala:31: error: ambiguous reference to overloaded definition,
+both method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAmbiguity2.NZ[A])ImplicitConvAmbiguity2.AA[A]
+and  method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAmbiguity2.NE[A])ImplicitConvAmbiguity2.AA[A]
+match argument types (Float)
+    bFunc(aFunc(4F))
+          ^
+two errors found
