@@ -105,12 +105,8 @@ trait Plugins {
    * Extract all phases supplied by plugins and add them to the phasesSet.
    * @see phasesSet
    */
-  protected def computePluginPhases(): Unit = {
-    // For reasons not yet apparent to me, plugins started appearing
-    // as null when I added phaseTimings to global.
-    if (plugins != null)
-      phasesSet ++= (plugins flatMap (_.components))
-  }
+  protected def computePluginPhases(): Unit =
+    phasesSet ++= (plugins flatMap (_.components))
 
   /** Summary of the options for all loaded plugins */
   def pluginOptionsHelp: String =
