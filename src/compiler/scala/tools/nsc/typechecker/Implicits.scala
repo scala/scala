@@ -68,7 +68,7 @@ trait Implicits {
   private final val sizeLimit = 50000
   private type Infos = List[ImplicitInfo]
   private type Infoss = List[List[ImplicitInfo]]
-  private type InfoMap = LinkedHashMap[Symbol, List[ImplicitInfo]]
+  private type InfoMap = LinkedHashMap[Symbol, List[ImplicitInfo]] // A map from class symbols to their associated implicits
   private val implicitsCache = new LinkedHashMap[Type, Infoss]
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
   private val improvesCache = new HashMap[(ImplicitInfo, ImplicitInfo), Boolean]
@@ -752,7 +752,9 @@ trait Implicits {
       if (implicitInfoss.forall(_.isEmpty)) SearchFailure
       else new ImplicitComputation(implicitInfoss, if (isLocal) util.HashSet[Name](128) else null) findBest()
 
-    /** The parts of a type is the smallest set of types that contains
+    /** Produce an implicict info map, i.e. a map from the class symbols C of all parts of this type to
+     *  the implicit infos in the companion objects of these class symbols C.
+     * The parts of a type is the smallest set of types that contains
      *    - the type itself
      *    - the parts of its immediate components (prefix and argument)
      *    - the parts of its base types
@@ -763,10 +765,11 @@ trait Implicits {
      *  which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
-      val infoMap = new InfoMap
-      val seen = mutable.HashSet[Type]()  // cycle detection
 
-      def getClassParts(tp: Type, infoMap: InfoMap, seen: mutable.Set[Type]) = tp match {
+      /** Populate implicit info map by traversing all parts of type `tp`.
+       *  Parameters as for `getParts`.
+       */
+      def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) = tp match {
         case TypeRef(pre, sym, args) =>
           infoMap get sym match {
             case Some(infos1) =>
@@ -789,17 +792,22 @@ trait Implicits {
               val bts = tp.baseTypeSeq
               var i = 1
               while (i < bts.length) {
-                getParts(bts(i), infoMap, seen)
+                getParts(bts(i))
                 i += 1
               }
-              getParts(pre, infoMap, seen)
+              getParts(pre)
             }
       }
 
-      /** Enter all parts of `tp` into `parts` set.
-       *  This method is performance critical: about 2-4% of all type checking is spent here
+      /** Populate implicit info map by traversing all parts of type `tp`.
+       *  This method is performance critical.
+       *  @param tp   The type for which we want to traverse parts
+       *  @param infoMap  The infoMap in which implicit infos corresponding to parts are stored
+       *  @param seen     The types that were already visited previously when collecting parts for the given infoMap
+       *  @param pending  The set of static symbols for which we are currently trying to collect their parts
+       *                  in order to cache them in infoMapCache
        */
-      def getParts(tp: Type, infoMap: InfoMap, seen: mutable.Set[Type]) {
+      def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.Set[Type], pending: Set[Symbol]) {
         if (seen(tp))
           return
         seen += tp
@@ -809,46 +817,45 @@ trait Implicits {
               if (!((sym.name == tpnme.REFINE_CLASS_NAME) ||
                     (sym.name startsWith tpnme.ANON_CLASS_NAME) ||
                     (sym.name == tpnme.ROOT))) {
-                if (sym.isStatic)
+                if (sym.isStatic && !(pending contains sym))
                   infoMap ++= {
                     infoMapCache get sym match {
                       case Some(imap) => imap
                       case None =>
-                        infoMapCache(sym) = LinkedHashMap.empty // to break cycles
                         val result = new InfoMap
-                        getClassParts(sym.tpe, result, new mutable.HashSet[Type]())
+                        getClassParts(sym.tpe)(result, new mutable.HashSet(), pending + sym)
                         infoMapCache(sym) = result
                         result
                     }
                   }
                 else
-                  getClassParts(tp, infoMap, seen)
-                args foreach (getParts(_, infoMap, seen))
+                  getClassParts(tp)
+                args foreach (getParts(_))
               }
             } else if (sym.isAliasType) {
-              getParts(tp.normalize, infoMap, seen)
+              getParts(tp.normalize)
             } else if (sym.isAbstractType) {
-              getParts(tp.bounds.hi, infoMap, seen)
+              getParts(tp.bounds.hi)
             }
           case ThisType(_) =>
-            getParts(tp.widen, infoMap, seen)
+            getParts(tp.widen)
           case _: SingletonType =>
-            getParts(tp.widen, infoMap, seen)
+            getParts(tp.widen)
           case RefinedType(ps, _) =>
-            for (p <- ps) getParts(p, infoMap, seen)
+            for (p <- ps) getParts(p)
           case AnnotatedType(_, t, _) =>
-            getParts(t, infoMap, seen)
+            getParts(t)
           case ExistentialType(_, t) =>
-            getParts(t, infoMap, seen)
+            getParts(t)
           case PolyType(_, t) =>
-            getParts(t, infoMap, seen)
+            getParts(t)
           case _ =>
         }
       }
 
-      getParts(tp, infoMap, seen)
-      if (settings.verbose.value)
-        println("companion implicits of "+tp+" = "+infoMap) // DEBUG
+      val infoMap = new InfoMap
+      getParts(tp)(infoMap, new mutable.HashSet(), Set())
+      if (traceImplicits) println("companion implicits of "+tp+" = "+infoMap)
       infoMap
     }
 
