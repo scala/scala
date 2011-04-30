@@ -5,7 +5,7 @@ import Lexer._
 import java.io.Writer
 
 /** An abstract class for writing and reading Scala objects to and
- *  from a legible representation. The presesentation follows the folloing grammar:
+ *  from a legible representation. The presesentation follows the following grammar:
  *  {{{
  *  Pickled = `true' | `false' | `null' | NumericLit | StringLit |
  *            Labelled | Pickled `,' Pickled

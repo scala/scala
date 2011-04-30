@@ -682,7 +682,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     }
 
     def transcript(start: String) = {
-      // Printing this message doesn't work very well becaues it's buried in the
+      // Printing this message doesn't work very well because it's buried in the
       // transcript they just pasted.  Todo: a short timer goes off when
       // lines stop coming which tells them to hit ctrl-D.
       //

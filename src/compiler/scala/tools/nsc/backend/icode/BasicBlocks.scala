@@ -351,7 +351,7 @@ trait BasicBlocks {
     def exceptionSuccessorsForBlock(block: BasicBlock): List[BasicBlock] =
       method.exh collect { case x if x covers block => x.startBlock }
 
-    /** Cached value of successors. Must be recomputed whenver a block in the current method is changed. */
+    /** Cached value of successors. Must be recomputed whenever a block in the current method is changed. */
     private var succs: List[BasicBlock] = Nil
     private def updateSuccs() {
       resetFlag(DIRTYSUCCS)

@@ -262,10 +262,10 @@ trait Members { self: ICodes =>
   class Local(val sym: Symbol, val kind: TypeKind, val arg: Boolean) {
     var index: Int = -1
 
-    /** Starting PC for this local's visbility range. */
+    /** Starting PC for this local's visibility range. */
     var start: Int = _
 
-    /** Ending PC for this local's visbility range. */
+    /** Ending PC for this local's visibility range. */
     var end: Int = _
 
     /** PC-based ranges for this local variable's visibility */

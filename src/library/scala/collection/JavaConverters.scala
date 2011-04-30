@@ -454,7 +454,7 @@ object JavaConverters {
    * Scala <code>ConcurrentMap</code> will be returned.
    *
    * @param m The <code>ConcurrentMap</code> to be converted.
-   * @return An object with an `asScala` method that returns a Scala mutable <code>ConcurrrentMap</code> view of the argument.
+   * @return An object with an `asScala` method that returns a Scala mutable <code>ConcurrentMap</code> view of the argument.
    */
   implicit def asScalaConcurrentMapConverter[A, B](m: juc.ConcurrentMap[A, B]): AsScala[mutable.ConcurrentMap[A, B]] =
     new AsScala(asScalaConcurrentMap(m))

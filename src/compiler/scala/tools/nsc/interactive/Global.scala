@@ -144,7 +144,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     unitOfFile.getOrElse(source.file, { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) })
 
   /** Work through toBeRemoved list to remove any units.
-   *  Then return optionlly unit associated with given source.
+   *  Then return optionally unit associated with given source.
    */
   protected[interactive] def getUnit(s: SourceFile): Option[RichCompilationUnit] = {
     toBeRemoved.synchronized {

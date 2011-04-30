@@ -10,7 +10,7 @@
 
 package scala.collection
 
-// Methods could be printed by  cat TraverableLike.scala | egrep '^  (override )?def'
+// Methods could be printed by  cat TraversableLike.scala | egrep '^  (override )?def'
 
 
 /** This trait implements a proxy for traversable objects. It forwards

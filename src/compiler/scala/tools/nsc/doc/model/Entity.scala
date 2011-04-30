@@ -161,7 +161,7 @@ trait MemberEntity extends Entity {
   /** Whether this member is implicit.  */
   def isImplicit: Boolean
 
-  /** Whether this member is abtract. */
+  /** Whether this member is abstract. */
   def isAbstract: Boolean
 
 }
@@ -260,7 +260,7 @@ trait Class extends Trait with HigherKinded {
   def constructors: List[Constructor]
 
   /** The value parameters of this case class, or an empty list if this class is not a case class. As case class value
-    * paramters cannot be curried, the outer list has exactly one element. */
+    * parameters cannot be curried, the outer list has exactly one element. */
   def valueParams: List[List[ValueParam]]
 
 }

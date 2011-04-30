@@ -26,7 +26,7 @@ class FallbackArrayBuilding {
    *  does not have a class manifest. Note that fallbackBuilder factory
    *  needs an implicit parameter (otherwise it would not be dominated in implicit search
    *  by Array.canBuildFrom). We make sure that that implicit search is always
-   *  successfull.
+   *  successful.
    */
   implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] =
     new CanBuildFrom[Array[_], T, ArraySeq[T]] {

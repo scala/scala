@@ -173,7 +173,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  $addDuplicates
    *
    *  @param xs        the traversable object.
-   *  @return          a new set cconsisting of elements of this set and those in `xs`.
+   *  @return          a new set consisting of elements of this set and those in `xs`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To add the elements as a\n"+

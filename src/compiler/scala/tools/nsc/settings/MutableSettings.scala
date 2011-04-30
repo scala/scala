@@ -382,7 +382,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     // Helper to validate an input
     private def isInputValid(k: Int): Boolean = (min <= k) && (k <= max)
 
-    // Helper to generate a textual explaination of valid inputs
+    // Helper to generate a textual explanation of valid inputs
     private def getValidText: String = (min, max) match {
       case (IntMin, IntMax)   => "can be any integer"
       case (IntMin, x)        => "must be less than or equal to "+x

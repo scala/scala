@@ -1179,7 +1179,7 @@ abstract class Detach extends PluginComponent
      *      closures;</li>
      *    <li>it then adds proxies for free objects;</li>
      *    <li>finally, if transforms detached closures (both definition and
-     *       instantation).</li>
+     *       instantiation).</li>
      *  </ol>
      */
     override def transformUnit(unit: CompilationUnit) {

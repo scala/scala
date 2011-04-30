@@ -1066,7 +1066,7 @@ trait Infer {
       }
       errorMessages.toList
     }
-    /** Substitite free type variables `undetparams' of polymorphic argument
+    /** Substitute free type variables `undetparams' of polymorphic argument
      *  expression `tree', given two prototypes `strictPt', and `lenientPt'.
      *  `strictPt' is the first attempt prototype where type parameters
      *  are left unchanged. `lenientPt' is the fall-back prototype where type
@@ -1113,7 +1113,7 @@ trait Infer {
       }
     }
 
-    /** Substitite free type variables `undetparams' of polymorphic argument
+    /** Substitute free type variables `undetparams' of polymorphic argument
      *  expression <code>tree</code> to `targs', Error if `targs' is null
      *
      *  @param tree ...
@@ -1195,7 +1195,7 @@ trait Infer {
         tp
     }
 
-    /** Substitite free type variables <code>undetparams</code> of type constructor
+    /** Substitute free type variables <code>undetparams</code> of type constructor
      *  <code>tree</code> in pattern, given prototype <code>pt</code>.
      *
      *  @param tree        ...

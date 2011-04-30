@@ -752,7 +752,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (!jmethod.isAbstract() && !method.native) {
         val jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
 
-        // add a fake local for debugging purpuses
+        // add a fake local for debugging purposes
         if (emitVars && isClosureApply(method.symbol)) {
           val outerField = clasz.symbol.info.decl(nme.OUTER_LOCAL)
           if (outerField != NoSymbol) {

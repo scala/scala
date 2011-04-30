@@ -30,10 +30,10 @@ object Lexer {
   /** A subclass of token representing integer literals */
   case class IntLit(override val str: String) extends Token(str)
 
-  /** A subclass of token representaing floating point literals */
+  /** A subclass of token representing floating point literals */
   case class FloatLit(override val str: String) extends Token(str)
 
-  /** A subclass of token represenating string literals */
+  /** A subclass of token representing string literals */
   case class StringLit(override val str: String) extends Token(str) {
     override def toString = quoted(str)
   }

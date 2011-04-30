@@ -99,7 +99,7 @@ trait UIElement extends Proxy with LazyPublisher {
   def location = peer.getLocation
   def bounds = peer.getBounds
   def size = peer.getSize
-  @deprecated("Explicit size assignement for UIElements is not supported anymore. " +
+  @deprecated("Explicit size assignment for UIElements is not supported anymore. " +
   		"Use a layout manager or subclass Window.", "2.8.0")
   def size_=(dim: Dimension) = peer.setSize(dim)
 

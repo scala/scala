@@ -1117,7 +1117,7 @@ trait Implicits {
 
   object ImplicitNotFoundMsg {
     def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg map (m => (new Message(sym, m)))
-    // check the message's syntax: should be a string literal that may contain occurences of the string "${X}",
+    // check the message's syntax: should be a string literal that may contain occurrences of the string "${X}",
     // where `X` refers to a type parameter of `sym`
     def check(sym: Symbol): Option[String] =
       sym.getAnnotation(ImplicitNotFoundClass).flatMap(_.stringArg(0) match {
