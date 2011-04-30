@@ -173,9 +173,16 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.7 / 8.1.8 (unapply and unapplySeq calls)
   case class ExtractorPattern(tree: UnApply) extends UnapplyPattern {
-    override def simplify(pv: PatternVar) =
+    override def simplify(pv: PatternVar) = {
+      if (pv.sym hasFlag NO_EXHAUSTIVE) ()
+      else {
+        TRACE("Setting NO_EXHAUSTIVE on " + pv.sym + " due to extractor " + tree)
+        pv.sym setFlag NO_EXHAUSTIVE
+      }
+
       if (pv.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
+    }
 
     override def description = "Unapply(%s => %s)".format(necessaryType, resTypesString)
   }
@@ -205,8 +212,6 @@ trait Patterns extends ast.TreeDSL {
     override def necessaryType = if (nonStarPatterns.nonEmpty) consRef else listRef
 
     override def simplify(pv: PatternVar) = {
-      pv.sym setFlag NO_EXHAUSTIVE
-
       if (pv.tpe <:< necessaryType)
         foldedPatterns
       else

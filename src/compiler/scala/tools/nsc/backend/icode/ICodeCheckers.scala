@@ -321,9 +321,9 @@ abstract class ICodeCheckers {
         }
       }
 
-      def popStack     = { checkStack(1) ; popStackN(1) match { case List(x) => x } }
-      def popStack2    = { checkStack(2) ; popStackN(2) match { case List(x, y) => (x, y) } }
-      def popStack3    = { checkStack(3) ; popStackN(3) match { case List(x, y, z) => (x, y, z) } }
+      def popStack     = { checkStack(1) ; (popStackN(1): @unchecked) match { case List(x) => x } }
+      def popStack2    = { checkStack(2) ; (popStackN(2): @unchecked) match { case List(x, y) => (x, y) } }
+      def popStack3    = { checkStack(3) ; (popStackN(3): @unchecked) match { case List(x, y, z) => (x, y, z) } }
 
       /** Called by faux instruction LOAD_EXCEPTION to wipe out the stack. */
       def clearStack() = {

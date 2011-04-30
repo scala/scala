@@ -70,7 +70,11 @@ trait ParallelMatching extends ast.TreeDSL
 
       val newRows = rows1 flatMap (_ expandAlternatives classifyPat)
       if (rows1.length != newRows.length) make(roots1, newRows)  // recursive call if any change
-      else Rep(roots1, newRows).checkExhaustive
+      else {
+        val rep = Rep(roots1, newRows)
+        new ExhaustivenessChecker(rep, roots.head.sym.pos).check
+        rep
+      }
     }
 
     override def toString() = "MatchMatrix(%s) { %s }".format(matchResultType, indentAll(targets))
@@ -721,9 +725,6 @@ trait ParallelMatching extends ast.TreeDSL
       lazy val Row(pats, subst, guard, index) = rows.head
       lazy val guardedRest        = if (guard.isEmpty) Rep(Nil, Nil) else make(tvars, rows.tail)
       lazy val (defaults, others) = pats span (_.isDefault)
-
-      /** Sealed classes. */
-      def checkExhaustive = new ExhaustivenessChecker(this).check
 
       /** Cut out the column containing the non-default pattern. */
       class Cut(index: Int) {

@@ -2740,7 +2740,7 @@ trait Typers extends Modes {
                                    fun1clazz,
                                    List(selfsym.info, annClass.tpe))
 
-            typed(func, mode, funcType) match {
+            (typed(func, mode, funcType): @unchecked) match {
               case t @ Function(List(arg), rhs) =>
                 val subs =
                   new TreeSymSubstituter(List(arg.symbol),List(selfsym))

@@ -2,7 +2,7 @@ exhausting.scala:20: error: match is not exhaustive!
 missing combination              *           Nil
 
   def fail1[T](xs: List[T]) = xs match {
-      ^
+                              ^
 exhausting.scala:24: error: match is not exhaustive!
 missing combination            Nil
 
@@ -17,7 +17,7 @@ exhausting.scala:31: error: match is not exhaustive!
 missing combination           Bar2          Bar2
 
   def fail4[T <: AnyRef](xx: (Foo[T], Foo[T])) = xx match {
-      ^
+                                                 ^
 exhausting.scala:36: error: match is not exhaustive!
 missing combination           Bar1          Bar2
 missing combination           Bar1          Bar3
@@ -25,5 +25,5 @@ missing combination           Bar2          Bar1
 missing combination           Bar2          Bar2
 
   def fail5[T](xx: (Foo[T], Foo[T])) = xx match {
-      ^
+                                       ^
 5 errors found

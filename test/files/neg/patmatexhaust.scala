@@ -86,10 +86,4 @@ class TestSealedExhaustive { // compile only
     case C4()     => true
     case C2 | C6  => true
   }
-
-  def redundant() = 1 match { // include this otherwise script won't test this in files/neg
-    case 1 =>
-      case 1 =>
-  }
-
 }
