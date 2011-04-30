@@ -171,8 +171,7 @@ trait ParallelMatching extends ast.TreeDSL
       def size = ps.length
 
       def headType = head.necessaryType
-      def isCaseHead = head.isCaseClass
-      private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
+      private val dummyCount = if (head.isCaseClass) headType.typeSymbol.caseFieldAccessors.length else 0
       def dummies = emptyPatterns(dummyCount)
 
       def apply(i: Int): Pattern = ps(i)
@@ -416,9 +415,6 @@ trait ParallelMatching extends ast.TreeDSL
       private def pivotLen    = pivot.nonStarLength
       private def seqDummies  = emptyPatterns(pivot.elems.length + 1)
 
-      // one pattern var per sequence element up to elemCount, and one more for the rest of the sequence
-      lazy val pvs = scrut createSequenceVars pivotLen
-
       // Should the given pattern join the expanded pivot in the success matrix? If so,
       // this partial function will be defined for the pattern, and the result of the apply
       // is the expanded sequence of new patterns.
@@ -496,7 +492,12 @@ trait ParallelMatching extends ast.TreeDSL
         nullSafe(compareFn, FALSE)(scrut.id)
         // condition(head.tpe, scrut.id, head.boundVariables.nonEmpty)
       }
-      lazy val success  = squeezedBlock(pvs map (_.valDef), remake(successRows, pvs, hasStar).toTree)
+      lazy val success = {
+        // one pattern var per sequence element up to elemCount, and one more for the rest of the sequence
+        lazy val pvs = scrut createSequenceVars pivotLen
+
+        squeezedBlock(pvs map (_.valDef), remake(successRows, pvs, hasStar).toTree)
+      }
       lazy val failure  = remake(failRows).toTree
 
       final def tree(): Tree = codegen

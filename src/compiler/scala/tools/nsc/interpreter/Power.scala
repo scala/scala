@@ -134,7 +134,7 @@ abstract class Power[G <: Global](
   def init = customInit getOrElse """
     |import scala.tools.nsc._
     |import scala.collection.JavaConverters._
-    |import global._
+    |import global.{ error => _, _ }
     |import power.Implicits._
   """.stripMargin
 

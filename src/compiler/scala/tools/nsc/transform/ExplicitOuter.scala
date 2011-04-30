@@ -25,6 +25,7 @@ abstract class ExplicitOuter extends InfoTransform
   import global._
   import definitions._
   import CODE._
+  import Debug.TRACE
 
   /** The following flags may be set by this phase: */
   override def phaseNewFlags: Long = notPRIVATE | notPROTECTED | lateFINAL
@@ -70,7 +71,9 @@ abstract class ExplicitOuter extends InfoTransform
 
   class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
     override def transform(tree: Tree) = tree match {
-      case Bind(_, body) if toRemove(tree.symbol) => super.transform(body)
+      case Bind(_, body) if toRemove(tree.symbol) =>
+        TRACE("Dropping unused binding: " + tree.symbol)
+        super.transform(body)
       case _                                      => super.transform(tree)
     }
   }

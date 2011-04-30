@@ -1226,6 +1226,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def forScaladoc      = onlyPresentation
   def createJavadoc    = false
 
-  @deprecated("Use forInteractive or forScaladoc, depending on what you're after")
+  @deprecated("Use forInteractive or forScaladoc, depending on what you're after", "2.9.0")
   def onlyPresentation = false
 }

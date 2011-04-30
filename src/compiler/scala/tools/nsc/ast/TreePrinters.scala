@@ -546,7 +546,7 @@ trait TreePrinters { trees: SymbolTable =>
           }
 
           val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
-          print("if ("); print(cond); print(")")
+          print("if ("); print(cond); print(") ")
 
           thenStmts match {
             case List(x: If)  => ifIndented(x)
@@ -555,7 +555,7 @@ trait TreePrinters { trees: SymbolTable =>
           }
 
           if (elseStmts.nonEmpty) {
-            print("else")
+            print(" else")
             indent ; println()
             elseStmts match {
               case List(x)  => printRaw(x)

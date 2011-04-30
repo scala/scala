@@ -1239,8 +1239,14 @@ trait Namers { self: Analyzer =>
                 case ImportSelector(from, _, to, _) :: rest =>
                   if (from != nme.WILDCARD && base != ErrorType) {
                     isValidSelector(from) {
-                      if (currentRun.compileSourceFor(expr, from))
-                        return typeSig(tree)
+                      if (currentRun.compileSourceFor(expr, from)) {
+                        // XXX This used to be "return typeSig(tree)" but since this method
+                        // returns Unit, that is deceptive at best.  Just in case it is side-effecting
+                        // somehow, I left the call in before the return; if you know it is
+                        // not side effecting, please delete the call.
+                        typeSig(tree)
+                        return
+                      }
 
                       def notMember = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
