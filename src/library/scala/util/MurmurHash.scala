@@ -20,6 +20,7 @@ package scala.util
  */
 
 import java.lang.Integer.{ rotateLeft => rotl }
+import scala.collection.Iterator
 
 /** A class designed to generate well-distributed non-cryptographic
  *  hashes.  It is designed to be passed to a collection's foreach method,

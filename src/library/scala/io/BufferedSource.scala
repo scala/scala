@@ -10,6 +10,7 @@ package scala.io
 
 import java.io.{ InputStream, BufferedReader, InputStreamReader }
 import Source.DefaultBufSize
+import scala.collection.Iterator
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.

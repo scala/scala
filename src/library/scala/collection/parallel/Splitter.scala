@@ -8,9 +8,7 @@
 
 package scala.collection.parallel
 
-
-import scala.collection.Seq
-
+import scala.collection.{ Seq, Iterator }
 
 /** A splitter (or a split iterator) can be split into more splitters that traverse over
  *  disjoint subsets of elements.
@@ -49,9 +47,7 @@ trait Splitter[+T] extends Iterator[T] {
    *  The rationale behind this is best given by the following example:
    *  try splitting an iterator over a linear hash table.
    */
-
 }
-
 
 object Splitter {
   def empty[T]: Splitter[T] = new Splitter[T] {
@@ -60,5 +56,3 @@ object Splitter {
     def split = Seq(this)
   }
 }
-
-

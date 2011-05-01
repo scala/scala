@@ -9,6 +9,7 @@
 package scala.util
 
 import scala.reflect.ClassManifest
+import scala.math.Ordering
 
 /** The Sorting object provides functions that can sort various kinds of
   * objects. You can provide a comparison function, or you can request a sort

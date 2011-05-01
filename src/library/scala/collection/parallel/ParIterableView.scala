@@ -6,19 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection.parallel
 
-
-
-
-import scala.collection.Parallel
-import scala.collection.IterableView
-import scala.collection.GenIterableView
+import scala.collection.{ Parallel, IterableView, GenIterableView, Iterator }
 import scala.collection.generic.CanCombineFrom
-
-
-
 
 /** A template view of a non-strict view of a parallel iterable collection.
  *
@@ -31,8 +22,6 @@ import scala.collection.generic.CanCombineFrom
 trait ParIterableView[+T, +Coll <: Parallel, +CollSeq]
 extends ParIterableViewLike[T, Coll, CollSeq, ParIterableView[T, Coll, CollSeq], IterableView[T, CollSeq]]
    with GenIterableView[T, Coll]
-
-
 
 
 object ParIterableView {
@@ -55,14 +44,3 @@ object ParIterableView {
       def apply() = new NoCombiner[T] {} // was: with EnvironmentPassingCombiner[T, Nothing]
     }
 }
-
-
-
-
-
-
-
-
-
-
-

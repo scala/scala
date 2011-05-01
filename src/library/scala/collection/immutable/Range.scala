@@ -287,7 +287,7 @@ object Range {
   // imprecision or surprises might result from anything, although this may
   // not yet be fully implemented.
   object BigDecimal {
-    implicit val bigDecAsIntegral = scala.Numeric.BigDecimalAsIfIntegral
+    implicit val bigDecAsIntegral = scala.math.Numeric.BigDecimalAsIfIntegral
 
     def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
       NumericRange(start, end, step)
@@ -302,9 +302,9 @@ object Range {
   // is necessary to keep 0.3d at 0.3 as opposed to
   // 0.299999999999999988897769753748434595763683319091796875 or so.
   object Double {
-    implicit val bigDecAsIntegral = scala.Numeric.BigDecimalAsIfIntegral
-    implicit val doubleAsIntegral = scala.Numeric.DoubleAsIfIntegral
-    def toBD(x: Double): BigDecimal = scala.BigDecimal valueOf x
+    implicit val bigDecAsIntegral = scala.math.Numeric.BigDecimalAsIfIntegral
+    implicit val doubleAsIntegral = scala.math.Numeric.DoubleAsIfIntegral
+    def toBD(x: Double): BigDecimal = scala.math.BigDecimal valueOf x
 
     def apply(start: Double, end: Double, step: Double) =
       BigDecimal(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)

@@ -72,9 +72,6 @@ package object scala {
   val Range = scala.collection.immutable.Range
 
   // Migrated from Predef
-
-  val $scope = scala.xml.TopScope
-
   @deprecated("Use Thread.currentThread instead", "2.9.0")
   def currentThread = java.lang.Thread.currentThread()
 

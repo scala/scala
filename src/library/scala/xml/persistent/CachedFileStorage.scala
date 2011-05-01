@@ -10,9 +10,12 @@
 package scala.xml
 package persistent
 
-import java.io.{File, FileOutputStream}
+import java.io.{ File, FileOutputStream }
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
+import java.lang.Thread
+import scala.util.logging.Logged
+import scala.collection.Iterator
 
 /** <p>
  *    Mutable storage of immutable xml trees. Everything is kept in memory,
@@ -24,8 +27,7 @@ import java.nio.channels.Channels
  *
  *  @author Burak Emir
  */
-abstract class CachedFileStorage(private val file1: File)
-extends java.lang.Thread with scala.util.logging.Logged {
+abstract class CachedFileStorage(private val file1: File) extends Thread with Logged {
 
   private val file2 = new File(file1.getParent, file1.getName+"$")
 

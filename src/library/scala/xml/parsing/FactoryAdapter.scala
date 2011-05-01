@@ -6,20 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 package parsing
 
 import java.io.{ InputStream, Reader, File, FileDescriptor, FileInputStream }
-import collection.mutable.Stack
-
+import scala.collection.{ mutable, Iterator }
 import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 
 // can be mixed into FactoryAdapter if desired
-trait ConsoleErrorHandler extends DefaultHandler
-{
+trait ConsoleErrorHandler extends DefaultHandler {
   // ignore warning, crimson warns even for entity resolution!
   override def warning(ex: SAXParseException): Unit = { }
   override def error(ex: SAXParseException): Unit = printError("Error", ex)
@@ -38,15 +34,14 @@ trait ConsoleErrorHandler extends DefaultHandler
  *  namespace bindings, without relying on namespace handling of the
  *  underlying SAX parser.
  */
-abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node]
-{
+abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node] {
   var rootElem: Node = null
 
   val buffer      = new StringBuilder()
-  val attribStack = new Stack[MetaData]
-  val hStack      = new Stack[Node]   // [ element ] contains siblings
-  val tagStack    = new Stack[String]
-  var scopeStack  = new Stack[NamespaceBinding]
+  val attribStack = new mutable.Stack[MetaData]
+  val hStack      = new mutable.Stack[Node]   // [ element ] contains siblings
+  val tagStack    = new mutable.Stack[String]
+  var scopeStack  = new mutable.Stack[NamespaceBinding]
 
   var curTag : String = null
   var capture: Boolean = false
