@@ -60,8 +60,8 @@ abstract class AddInterfaces extends InfoTransform {
     { sym.info; // to set lateMETHOD flag if necessary
       sym.isMethod &&
       !sym.isLabel &&
-      !(sym hasFlag PRIVATE) &&
-      (!(sym hasFlag BRIDGE) || (sym hasAnnotation BridgeClass)) && // count @_$bridge$_ annotated classes as interface members
+      !sym.isPrivate &&
+      (!(sym hasFlag BRIDGE) || sym.hasBridgeAnnotation) && // count @_$bridge$_ annotated classes as interface members
       !sym.isConstructor &&
       !sym.isImplOnly
     }

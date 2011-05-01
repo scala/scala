@@ -1189,15 +1189,14 @@ abstract class RefChecks extends InfoTransform {
       //Console.println("is irefutable? " + pat + ":" + pat.tpe + " against " + seltpe + ": " + result);//DEBUG
       result
     }
-    /** If symbol is deprecated and is not contained in a deprecated definition,
-     *  issue a deprecated warning
+    /** If symbol is deprecated, and the point of reference is not enclosed
+     *  in either a deprecated member or a scala bridge method, issue a warning.
      */
     private def checkDeprecated(sym: Symbol, pos: Position) {
-      if (sym.isDeprecated && !currentOwner.ownerChain.exists(_.isDeprecated)) {
-        val dmsg = sym.deprecationMessage
-        val msg = sym.toString + sym.locationString +" is deprecated"+
-                  (if (dmsg.isDefined) ": "+ dmsg.get else "")
-        unit.deprecationWarning(pos, msg)
+      if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
+        val dmsg = sym.deprecationMessage map (": " + _) getOrElse ""
+
+        unit.deprecationWarning(pos, sym.fullLocationString + " is deprecated" + dmsg)
       }
     }
     /** Similar to deprecation: check if the symbol is marked with @migration
@@ -1205,7 +1204,7 @@ abstract class RefChecks extends InfoTransform {
      */
     private def checkMigration(sym: Symbol, pos: Position) = {
       for (msg <- sym.migrationMessage)
-        unit.warning(pos, "%s%s has changed semantics:\n%s".format(sym, sym.locationString, msg))
+        unit.warning(pos, sym.fullLocationString + " has changed semantics:\n" + msg)
     }
 
     /** Check that a deprecated val or def does not override a
