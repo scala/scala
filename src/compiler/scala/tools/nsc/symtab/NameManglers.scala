@@ -66,6 +66,7 @@ trait NameManglers {
     self: nme.type =>
 
     val IMPL_CLASS_SUFFIX             = "$class"
+    val SINGLETON_SUFFIX              = ".type"
     val LOCALDUMMY_PREFIX             = "<local "   // owner of local blocks
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
@@ -84,6 +85,7 @@ trait NameManglers {
     def isProtectedAccessorName(name: Name) = name startsWith PROTECTED_PREFIX
     def isSetterName(name: Name)            = name endsWith SETTER_SUFFIX
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
+    def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
 
     def isOpAssignmentName(name: Name) = name match {
       case raw.NE | raw.LE | raw.GE | EMPTY => false
@@ -152,6 +154,8 @@ trait NameManglers {
       else name
     }
 
+    def dropSingletonName(name: Name): TypeName = name stripEnd SINGLETON_SUFFIX toTypeName
+    def singletonName(name: Name): TypeName     = name append SINGLETON_SUFFIX toTypeName
     def implClassName(name: Name): TypeName     = name append IMPL_CLASS_SUFFIX toTypeName
     def interfaceName(implname: Name): TypeName = implname stripEnd IMPL_CLASS_SUFFIX toTypeName
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")

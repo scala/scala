@@ -328,7 +328,7 @@ object Range {
     def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
   }
 
-  @deprecated("use Range instead")
+  @deprecated("use Range instead", "2.9.0")
   trait ByOne extends Range {
     @bridge override def foreach[@specialized(Unit) U](f: Int => U) =
       super.foreach(f)

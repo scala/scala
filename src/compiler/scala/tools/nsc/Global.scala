@@ -881,7 +881,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         atPhase(phase.next) {
           trackers foreach { t =>
             t.snapshot()
-            inform(t.show())
+            inform(t.show("Heading from " + phase.prev.name + " to " + phase.name))
           }
         }
       }

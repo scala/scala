@@ -3,8 +3,8 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(object A -> List(Added(Definition(A.x)), Changed(Definition(A.x))[value x changed from (f: java.lang.String,g: Int)Int to (f: java.lang.String,g: Int)Int <and> (f: Int,g: Int)Int flags: <method>]))
-invalidate B.scala because it references changed definition [Changed(Definition(A.x))[value x changed from (f: java.lang.String,g: Int)Int to (f: java.lang.String,g: Int)Int <and> (f: Int,g: Int)Int flags: <method>]]
+Changes: Map(object A -> List(Added(Definition(A.x)), Changed(Definition(A.x))[value x changed from (f: java.lang.String, g: Int)Int to (f: java.lang.String, g: Int)Int <and> (f: Int, g: Int)Int flags: <method>]))
+invalidate B.scala because it references changed definition [Changed(Definition(A.x))[value x changed from (f: java.lang.String, g: Int)Int to (f: java.lang.String, g: Int)Int <and> (f: Int, g: Int)Int flags: <method>]]
 compiling Set(B.scala)
 B.scala:2: error: type mismatch;
  found   : Int(5)

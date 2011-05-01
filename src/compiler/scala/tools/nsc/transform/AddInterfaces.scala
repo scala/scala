@@ -48,8 +48,8 @@ abstract class AddInterfaces extends InfoTransform {
   private val implMethodMap = new mutable.HashMap[Symbol, Symbol]
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-    implClassMap.clear
-    implMethodMap.clear
+    implClassMap.clear()
+    implMethodMap.clear()
     super.newPhase(prev)
   }
 

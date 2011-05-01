@@ -106,11 +106,12 @@ abstract class Power[G <: Global](
     val modClass  = pkgSymbol.moduleClass
 
     /** Looking for dwindling returns */
-    def droppedEnough() = unseenHistory.size >= 4 && (
-      unseenHistory.takeRight(4).sliding(2) map (_.toList) forall {
-        case List(a, b) => a > b
+    def droppedEnough() = unseenHistory.size >= 4 && {
+      unseenHistory takeRight 4 sliding 2 forall { it =>
+        val List(a, b) = it.toList
+        a > b
       }
-    )
+    }
 
     def isRecur(sym: Symbol)  = true
     def isIgnore(sym: Symbol) = sym.isAnonOrRefinementClass || (sym.name.toString contains "$mc")
