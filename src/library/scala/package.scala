@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
+import annotation.bridge
 
 /**
  * Core Scala types. They are always available without an explicit import.
@@ -74,6 +74,11 @@ package object scala {
   // Migrated from Predef
   @deprecated("Use Thread.currentThread instead", "2.9.0")
   def currentThread = java.lang.Thread.currentThread()
+
+  // Moved back into Predef to avoid unnecessary indirection by
+  // way of the scala package object within the standard library,
+  // but bridged for compatibility.
+  @bridge def $scope = scala.xml.TopScope
 
   // Numeric types which were moved into scala.math.*
 
