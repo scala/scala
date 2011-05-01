@@ -2769,12 +2769,7 @@ trait Typers extends Modes {
           }
 
           if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
-            unit.deprecationWarning(ann.pos, """
-              |The `deprecated` annotation now takes two String parameters: the first is
-              |an explanation and/or recommended alternative, which will be printed to the
-              |console and also appear in the scaladoc.  The second is the first released
-              |version in which the member was deprecated.""".trim.stripMargin
-            )
+            unit.deprecationWarning(ann.pos, "@deprecated now takes two arguments; see the scaladoc.")
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) annotationError
           else annInfo(typedAnn)
