@@ -842,11 +842,11 @@ self: ParIterableLike[T, Repr, Sequential] =>
   extends NonDivisibleTask[R, Composite[FR, SR, R, First, Second]] {
     def combineResults(fr: FR, sr: SR): R
     @volatile var result: R = null.asInstanceOf[R]
-    private[parallel] override def signalAbort {
+    private[parallel] override def signalAbort() {
       ft.signalAbort
       st.signalAbort
     }
-    protected def mergeSubtasks {
+    protected def mergeSubtasks() {
       ft mergeThrowables st
       if (throwable eq null) result = combineResults(ft.result, st.result)
     }
@@ -883,7 +883,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prevr: Option[R1]) = {
       result = map(executeAndWaitResult(inner))
     }
-    private[parallel] override def signalAbort {
+    private[parallel] override def signalAbort() {
       inner.signalAbort
     }
     override def requiresStrictSplitters = inner.requiresStrictSplitters
@@ -1395,7 +1395,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   }
 
   import collection.DebugUtils._
-  private[parallel] def printDebugBuffer = println(buildString {
+  private[parallel] def printDebugBuffer() = println(buildString {
     append =>
     for (s <- debugBuffer) {
       append(s)

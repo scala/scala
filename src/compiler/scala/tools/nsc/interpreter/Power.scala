@@ -106,11 +106,12 @@ abstract class Power[G <: Global](
     val modClass  = pkgSymbol.moduleClass
 
     /** Looking for dwindling returns */
-    def droppedEnough() = unseenHistory.size >= 4 && (
-      unseenHistory.takeRight(4).sliding(2) map (_.toList) forall {
-        case List(a, b) => a > b
+    def droppedEnough() = unseenHistory.size >= 4 && {
+      unseenHistory takeRight 4 sliding 2 forall { it =>
+        val List(a, b) = it.toList
+        a > b
       }
-    )
+    }
 
     def isRecur(sym: Symbol)  = true
     def isIgnore(sym: Symbol) = sym.isAnonOrRefinementClass || (sym.name.toString contains "$mc")
@@ -134,7 +135,7 @@ abstract class Power[G <: Global](
   def init = customInit getOrElse """
     |import scala.tools.nsc._
     |import scala.collection.JavaConverters._
-    |import global._
+    |import global.{ error => _, _ }
     |import power.Implicits._
   """.stripMargin
 
@@ -280,7 +281,7 @@ abstract class Power[G <: Global](
   class PrintingConvenience[T: Prettifier](value: T) {
     val pretty = implicitly[Prettifier[T]]
 
-    def > { >(_ => true) }
+    def >() { >(_ => true) }
     def >(s: String): Unit = >(_ contains s)
     def >(r: Regex): Unit = >(_ matches r.pattern.toString)
     def >(p: String => Boolean): Unit = pretty.grep(value, p)

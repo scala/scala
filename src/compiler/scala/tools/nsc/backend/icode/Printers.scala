@@ -26,8 +26,8 @@ trait Printers { self: ICodes =>
 
     def setWriter(w: PrintWriter) { out = w }
 
-    def indent { margin += TAB }
-    def undent { margin -= TAB }
+    def indent() { margin += TAB }
+    def undent() { margin -= TAB }
 
     def print(s: String) { out.print(s) }
     def print(o: Any) { print(o.toString()) }
@@ -37,7 +37,7 @@ trait Printers { self: ICodes =>
       println
     }
 
-    def println {
+    def println() {
       out.println()
       var i = 0
       while (i < margin) {

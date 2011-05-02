@@ -6,14 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package pull
 
+import scala.io.Source
+import java.lang.Thread
 import java.util.concurrent.LinkedBlockingQueue
 import java.nio.channels.ClosedChannelException
-
-import scala.io.Source
 import scala.xml.parsing.{ ExternalSources, MarkupHandler, MarkupParser }
 
 /**
@@ -49,7 +48,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
   // fails for whatever reason the iterator correctness is not impacted,
   // only performance (because it will finish the entire XML document,
   // or at least as much as it can fit in the queue.)
-  def stop = {
+  def stop() = {
     produce(POISON)
     parserThread.interrupt()
   }
@@ -104,8 +103,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
 // the next call hasNext is guaranteed not to block.
 //
 // This is not thread-safe for multiple consumers!
-trait ProducerConsumerIterator[T >: Null] extends Iterator[T]
-{
+trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   // abstract - iterator-specific distinguished object for marking eos
   val EndOfStream: T
 

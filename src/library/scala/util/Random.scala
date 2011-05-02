@@ -6,20 +6,17 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util
 
-import collection.immutable.List
+import collection.mutable.ArrayBuffer
+import collection.generic.CanBuildFrom
+import scala.collection.immutable.{ List, Stream }
 
 /**
  *  @author Stephane Micheloud
  *
  */
 class Random(val self: java.util.Random) {
-  import collection.mutable.ArrayBuffer
-  import collection.generic.CanBuildFrom
-
   /** Creates a new random number generator using a single long seed. */
   def this(seed: Long) = this(new java.util.Random(seed))
 

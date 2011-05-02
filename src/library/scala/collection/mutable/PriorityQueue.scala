@@ -253,7 +253,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    */
   override def clone(): PriorityQueue[A] = new PriorityQueue[A] ++= this.iterator
 
-  // def printstate {
+  // def printstate() {
   //   println("-----------------------")
   //   println("Size: " + resarr.p_size0)
   //   println("Internal array: " + resarr.p_array.toList)

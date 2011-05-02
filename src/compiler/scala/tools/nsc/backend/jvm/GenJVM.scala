@@ -7,20 +7,19 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.DataOutputStream
+import java.io.{ DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
-import mutable.{ ListBuffer, LinkedHashSet }
 import scala.reflect.generic.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
 import scala.tools.nsc.io.{ AbstractFile, Path }
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
-
 import ch.epfl.lamp.fjbg._
 import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
+import java.util.jar.{ JarEntry, JarOutputStream }
 
 /** This class ...
  *
@@ -28,7 +27,7 @@ import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
  *  @version 1.0
  *
  */
-abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
+abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with BytecodeWriters {
   import global._
   import icodes._
   import icodes.opcodes._
@@ -45,27 +44,48 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
   /** Create a new phase */
   override def newPhase(p: Phase): Phase = new JvmPhase(p)
 
+  private def outputDirectory(sym: Symbol): AbstractFile = (
+    settings.outputDirs.outputDirFor {
+      atPhase(currentRun.flattenPhase.prev)(sym.sourceFile)
+    }
+  )
+  private def getFile(base: AbstractFile, cls: JClass, suffix: String): AbstractFile = {
+    var dir = base
+    val pathParts = cls.getName().split("[./]").toList
+    for (part <- pathParts.init) {
+      dir = dir.subdirectoryNamed(part)
+    }
+    dir.fileNamed(pathParts.last + suffix)
+  }
+  private def getFile(sym: Symbol, cls: JClass, suffix: String): AbstractFile =
+    getFile(outputDirectory(sym), cls, suffix)
+
   /** JVM code generation phase
    */
   class JvmPhase(prev: Phase) extends ICodePhase(prev) {
     def name = phaseName
     override def erasedTypes = true
+    def apply(cls: IClass) = sys.error("no implementation")
 
-    override def run {
+    override def run() {
       // we reinstantiate the bytecode generator at each run, to allow the GC
       // to collect everything
-      val codeGenerator = new BytecodeGenerator
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
           icodes.classes -= sym
 
-      classes.values foreach codeGenerator.genClass
-      classes.clear
-    }
-
-    def apply(cls: IClass) {
-      error("no implementation")
+      val bytecodeWriter = settings.outputDirs.getSingleOutput match {
+        case Some(f) if f hasExtension "jar"    =>
+          new DirectToJarfileWriter(f)
+        case _                                  =>
+          if (settings.Ygenjavap.isDefault) new ClassBytecodeWriter { }
+          else new ClassBytecodeWriter with JavapBytecodeWriter { }
+      }
+      val codeGenerator = new BytecodeGenerator(bytecodeWriter)
+      classes.values foreach (codeGenerator genClass _)
+      bytecodeWriter.close()
+      classes.clear()
     }
   }
 
@@ -81,8 +101,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
    * Java bytecode generator.
    *
    */
-  class BytecodeGenerator extends BytecodeUtil {
+  class BytecodeGenerator(bytecodeWriter: BytecodeWriter) extends BytecodeUtil {
+    def this() = this(new ClassBytecodeWriter { })
     def debugLevel = settings.debuginfo.indexOfChoice
+    import bytecodeWriter.writeClass
 
     val MIN_SWITCH_DENSITY = 0.7
     val INNER_CLASSES_FLAGS =
@@ -139,18 +161,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       super.javaName(sym)
     }
 
-    protected def emitJavap(bytes: Array[Byte], javapFile: io.File) {
-      import scala.tools.util.Javap
-      val pw = javapFile.printWriter()
-      try {
-        val javap = new Javap(ScalaClassLoader.getSystemLoader(), pw) {
-          override def findBytes(path: String): Array[Byte] = bytes
-        }
-        javap(Seq("-verbose", "dummy")) foreach (_.show())
-      }
-      finally pw.close()
-    }
-
     /** Write a class to disk, adding the Scala signature (pickled type
      *  information) and inner classes.
      *
@@ -159,19 +169,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
      */
     def emitClass(jclass: JClass, sym: Symbol) {
       addInnerClasses(jclass)
-      val outfile = getFile(sym, jclass, ".class")
-      val outstream = new DataOutputStream(outfile.bufferedOutput)
-      jclass writeTo outstream
-      outstream.close()
-      informProgress("wrote " + outfile)
-
-      if (!settings.Ygenjavap.isDefault) {
-        val segments  = jclass.getName().split("[./]")
-        val javapFile = segments.foldLeft(Path(settings.Ygenjavap.value))(_ / _) changeExtension "javap" toFile
-
-        javapFile.parent.createDirectory()
-        emitJavap(outfile.toByteArray, javapFile)
-      }
+      writeClass("" + sym.name, jclass, sym)
     }
 
     /** Returns the ScalaSignature annotation if it must be added to this class,
@@ -219,7 +217,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     var isRemoteClass: Boolean = false
     var isParcelableClass = false
 
-    private val innerClassBuffer = new ListBuffer[Symbol]
+    private val innerClassBuffer = new mutable.ListBuffer[Symbol]
 
     def genClass(c: IClass) {
       clasz = c
@@ -301,6 +299,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
       addAnnotations(jclass, c.symbol.annotations ++ ssa)
+
       addEnclosingMethodAttribute(jclass, c.symbol)
       emitClass(jclass, c.symbol)
 
@@ -407,11 +406,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       jcode.emitRETURN()
 
       // write the bean information class file.
-      val outfile = getFile(c.symbol, beanInfoClass, ".class")
-      val outstream = new DataOutputStream(outfile.bufferedOutput)
-      beanInfoClass writeTo outstream
-      outstream.close()
-      informProgress("wrote BeanInfo " + outfile)
+      writeClass("BeanInfo ", beanInfoClass, c.symbol)
     }
 
     /** Add the given 'throws' attributes to jmethod */
@@ -757,7 +752,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       if (!jmethod.isAbstract() && !method.native) {
         val jcode = jmethod.getCode().asInstanceOf[JExtendedCode]
 
-        // add a fake local for debugging purpuses
+        // add a fake local for debugging purposes
         if (emitVars && isClosureApply(method.symbol)) {
           val outerField = clasz.symbol.info.decl(nme.OUTER_LOCAL)
           if (outerField != NoSymbol) {
@@ -833,7 +828,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       }
     }
 
-    def addModuleInstanceField {
+    def addModuleInstanceField() {
       jclass.addNewField(PublicStaticFinal,
                         nme.MODULE_INSTANCE_FIELD.toString,
                         jclass.getType())
@@ -981,6 +976,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
      */
     def addForwarders(jclass: JClass, moduleClass: Symbol) {
       assert(moduleClass.isModuleClass)
+      if (settings.debug.value)
+        log("Dumping mirror class for object: " + moduleClass)
+
       val className    = jclass.getName
       val linkedClass  = moduleClass.companionClass
       val linkedModule = linkedClass.companionSymbol
@@ -1031,7 +1029,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
      *  instead be made to add the forwarder methods to the companion class.
      */
     def dumpMirrorClass(clasz: Symbol, sourceFile: String) {
-      val mirrorName = javaName(clasz).init   // drops "$"
+      import JAccessFlags._
+      val moduleName = javaName(clasz) // + "$"
+      val mirrorName = moduleName.substring(0, moduleName.length() - 1)
       val mirrorClass = fjbgContext.JClass(ACC_SUPER | ACC_PUBLIC | ACC_FINAL,
                                            mirrorName,
                                            JAVA_LANG_OBJECT.getName,
@@ -1077,7 +1077,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       }
 
     /** Generate exception handlers for the current method. */
-    def genExceptionHandlers {
+    def genExceptionHandlers() {
 
       /** Return a list of pairs of intervals where the handler is active.
        *  The intervals in the list have to be inclusive in the beginning and
@@ -1801,19 +1801,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
       sym.isInterface ||
       (sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass))
-    }
-
-    /** Return an abstract file for the given class symbol, with the desired suffix.
-     *  Create all necessary subdirectories on the way.
-     */
-    def getFile(sym: Symbol, cls: JClass, suffix: String): AbstractFile = {
-      val sourceFile = atPhase(currentRun.flattenPhase.prev)(sym.sourceFile)
-      var dir: AbstractFile = settings.outputDirs.outputDirFor(sourceFile)
-      val pathParts = cls.getName().split("[./]").toList
-      for (part <- pathParts.init) {
-        dir = dir.subdirectoryNamed(part)
-      }
-      dir.fileNamed(pathParts.last + suffix)
     }
 
     /** Merge adjacent ranges. */

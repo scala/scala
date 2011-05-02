@@ -8,12 +8,7 @@
 
 package scala.collection.parallel
 
-
-import scala.collection.Parallel
-import scala.collection.SeqLike
-import scala.collection.GenSeqLike
-import scala.collection.GenSeq
-import scala.collection.GenIterable
+import scala.collection.{ Parallel, SeqLike, GenSeqLike, GenSeq, GenIterable, Iterator }
 import scala.collection.generic.DefaultSignalling
 import scala.collection.generic.AtomicIndexFlag
 import scala.collection.generic.CanBuildFrom
@@ -500,41 +495,4 @@ self =>
     override def merge(that: Corresponds[S]) = result = result && that.result
     override def requiresStrictSplitters = true
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

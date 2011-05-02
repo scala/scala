@@ -6,15 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
 import scala.collection.generic._
-import scala.collection.mutable.{ArrayBuilder, ArraySeq}
+import scala.collection.{ mutable, immutable }
+import mutable.{ ArrayBuilder, ArraySeq }
 import compat.Platform.arraycopy
 import scala.reflect.ClassManifest
-import scala.runtime.ScalaRunTime.{array_apply, array_update}
+import scala.runtime.ScalaRunTime.{ array_apply, array_update }
 
 /** Contains a fallback builder for arrays when the element type
  *  does not have a class manifest. In that case a generic array is built.
@@ -26,7 +25,7 @@ class FallbackArrayBuilding {
    *  does not have a class manifest. Note that fallbackBuilder factory
    *  needs an implicit parameter (otherwise it would not be dominated in implicit search
    *  by Array.canBuildFrom). We make sure that that implicit search is always
-   *  successfull.
+   *  successful.
    */
   implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] =
     new CanBuildFrom[Array[_], T, ArraySeq[T]] {
@@ -372,7 +371,7 @@ object Array extends FallbackArrayBuilding {
   def range(start: Int, end: Int, step: Int): Array[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
     val b = newBuilder[Int]
-    b.sizeHint(Range.count(start, end, step, false))
+    b.sizeHint(immutable.Range.count(start, end, step, false))
 
     var i = start
     while (if (step < 0) end < i else i < end) {

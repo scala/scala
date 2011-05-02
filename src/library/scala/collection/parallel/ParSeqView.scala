@@ -9,17 +9,8 @@
 
 package scala.collection.parallel
 
-
-
-
-import scala.collection.TraversableView
-import scala.collection.SeqView
-import scala.collection.Parallel
+import scala.collection.{ TraversableView, SeqView, Parallel, Iterator }
 import scala.collection.generic.CanCombineFrom
-
-
-
-
 
 /** A template view of a non-strict view of a parallel sequence.
  *
@@ -31,7 +22,6 @@ import scala.collection.generic.CanCombineFrom
  */
 trait ParSeqView[+T, +Coll <: Parallel, +CollSeq]
 extends ParSeqViewLike[T, Coll, CollSeq, ParSeqView[T, Coll, CollSeq], SeqView[T, CollSeq]]
-
 
 
 object ParSeqView {
@@ -54,21 +44,3 @@ object ParSeqView {
       def apply() = new NoCombiner[T] {} // was: with EnvironmentPassingCombiner[T, Nothing]
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

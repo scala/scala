@@ -5,7 +5,7 @@ package scala
  *
  * == Guide ==
  *
- * A detailed guide for the collections library is avaialble
+ * A detailed guide for the collections library is available
  * at [[http://www.scala-lang.org/docu/files/collections-api]].
  *
  * == Using Collections ==

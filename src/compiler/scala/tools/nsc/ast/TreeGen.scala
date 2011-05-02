@@ -111,6 +111,11 @@ abstract class TreeGen {
     if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
     else mkAttributedIdent(sym)
 
+  /** Builds an untyped reference to given symbol. */
+  def mkUnattributedRef(sym: Symbol): Tree =
+    if (sym.owner.isClass) Select(This(sym.owner), sym)
+    else Ident(sym)
+
   /** Replaces tree type with a stable type if possible */
   def stabilize(tree: Tree): Tree = {
     for(tp <- stableTypeFor(tree)) tree.tpe = tp
@@ -255,7 +260,7 @@ abstract class TreeGen {
   def mkSoftRef(expr: Tree): Tree = New(TypeTree(SoftReferenceClass.tpe), List(List(expr)))
 
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
-    val cvarRef = if (cvar.owner.isClass) Select(This(cvar.owner), cvar) else Ident(cvar)
+    val cvarRef = mkUnattributedRef(cvar)
     Block(
       List(
         If(Apply(Select(cvarRef, nme.eq), List(Literal(Constant(null)))),
@@ -265,17 +270,24 @@ abstract class TreeGen {
     )
   }
 
+  // Builds a tree of the form "{ lhs = rhs ; lhs  }"
+  def mkAssignAndReturn(lhs: Symbol, rhs: Tree): Tree = {
+    val lhsRef = mkAttributedRef(lhs)
+    Block(Assign(lhsRef, rhs) :: Nil, lhsRef)
+  }
+
   def mkModuleVarDef(accessor: Symbol) = {
-    val mval = accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
-      .setInfo(accessor.tpe.finalResultType)
-      .setFlag(LAZY)
-      .setFlag(MODULEVAR)
-    mval.setLazyAccessor(accessor)
+    val mval = (
+      accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
+      setInfo accessor.tpe.finalResultType
+      setFlag (LAZY | MODULEVAR)
+      setLazyAccessor accessor
+    )
     if (mval.owner.isClass) {
       mval setFlag (PRIVATE | LOCAL | SYNTHETIC)
       mval.owner.info.decls.enter(mval)
     }
-    ValDef(mval, EmptyTree)
+    ValDef(mval)
   }
 
   // def m: T = { if (m$ eq null) m$ = new m$class(...) m$ }

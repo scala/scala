@@ -1,5 +1,6 @@
 package scala.collection.mutable
 
+import collection.Iterator
 import collection.generic._
 import annotation.tailrec
 

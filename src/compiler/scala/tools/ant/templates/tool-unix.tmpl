@@ -9,28 +9,38 @@
 ##############################################################################
 
 # Not sure what the right default is here: trying nonzero.
-SCALA_EXIT_STATUS=127
-REENABLE_ECHO=true
+scala_exit_status=127
+saved_stty=""
 
-function reenableEcho() {
-  REENABLE_ECHO=false
-  # reenable echo
-  case "$TERM" in
-      rxvt* | xterm* | screen*)
-          stty icanon echo
-          ;;
-  esac
+# restore stty settings (echo in particular)
+function restoreSttySettings() {
+  if [[ -n $SCALA_RUNNER_DEBUG ]]; then
+    echo "restoring stty: $saved_stty"
+  fi
+    
+  stty $saved_stty
+  saved_stty=""
 }
 
 function onExit() {
-  if $REENABLE_ECHO; then
-    reenableEcho
-    exit $SCALA_EXIT_STATUS
+  if [[ "$saved_stty" != "" ]]; then
+    restoreSttySettings
+    exit $scala_exit_status
   fi
 }
 
 # to reenable echo if we are interrupted before completing.
 trap onExit INT
+
+# save terminal settings
+saved_stty=$(stty -g 2>/dev/null)
+# clear on error so we don't later try to restore them
+if [[ ! $? ]]; then  
+  saved_stty=""
+fi
+if [[ -n $SCALA_RUNNER_DEBUG ]]; then
+  echo "saved stty: $saved_stty"
+fi
 
 cygwin=false;
 case "`uname`" in
@@ -152,5 +162,5 @@ fi
 
 # record the exit status lest it be overwritten:
 # then reenable echo and propagate the code.
-SCALA_EXIT_STATUS=$?
+scala_exit_status=$?
 onExit

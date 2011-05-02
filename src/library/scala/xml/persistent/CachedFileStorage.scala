@@ -10,9 +10,12 @@
 package scala.xml
 package persistent
 
-import java.io.{File, FileOutputStream}
+import java.io.{ File, FileOutputStream }
 import java.nio.ByteBuffer
 import java.nio.channels.Channels
+import java.lang.Thread
+import scala.util.logging.Logged
+import scala.collection.Iterator
 
 /** <p>
  *    Mutable storage of immutable xml trees. Everything is kept in memory,
@@ -24,8 +27,7 @@ import java.nio.channels.Channels
  *
  *  @author Burak Emir
  */
-abstract class CachedFileStorage(private val file1: File)
-extends java.lang.Thread with scala.util.logging.Logged {
+abstract class CachedFileStorage(private val file1: File) extends Thread with Logged {
 
   private val file2 = new File(file1.getParent, file1.getName+"$")
 
@@ -33,7 +35,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
    */
   private var theFile: File = null
 
-  private def switch = { theFile = if (theFile == file1) file2 else file1; }
+  private def switch() = { theFile = if (theFile == file1) file2 else file1; }
 
   /** this storage modified since last modification check */
   protected var dirty = false
@@ -82,7 +84,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
   }
 
   /** saves the XML to file */
-  private def save = if (this.dirty) {
+  private def save() = if (this.dirty) {
     log("[save]\ndeleting "+theFile);
     theFile.delete();
     log("creating new "+theFile);
@@ -115,7 +117,7 @@ extends java.lang.Thread with scala.util.logging.Logged {
   }
 
   /** forces writing of contents to the file, even if there has not been any update. */
-  def flush = {
+  def flush() = {
     this.dirty = true;
     save
   }

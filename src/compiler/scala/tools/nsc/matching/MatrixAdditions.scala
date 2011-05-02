@@ -136,7 +136,7 @@ trait MatrixAdditions extends ast.TreeDSL {
     /** Exhaustiveness checking requires looking for sealed classes
      *  and if found, making sure all children are covered by a pattern.
      */
-    class ExhaustivenessChecker(rep: Rep) {
+    class ExhaustivenessChecker(rep: Rep, matchPos: Position) {
       val Rep(tvars, rows) = rep
 
       import Flags.{ MUTABLE, ABSTRACT, SEALED }
@@ -201,7 +201,7 @@ trait MatrixAdditions extends ast.TreeDSL {
       def check = {
         def errMsg = (inexhaustives map mkMissingStr).mkString
         if (inexhaustives.nonEmpty)
-          cunit.warning(tvars.head.lhs.pos, "match is not exhaustive!\n" + errMsg)
+          cunit.warning(matchPos, "match is not exhaustive!\n" + errMsg)
 
         rep
       }

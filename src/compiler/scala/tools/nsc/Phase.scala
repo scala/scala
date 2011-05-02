@@ -39,7 +39,7 @@ abstract class Phase(val prev: Phase) {
   def flatClasses: Boolean = false
   def refChecked: Boolean = false
   def keepsTypeParams = true
-  def run: Unit
+  def run(): Unit
 
   override def toString() = name
   override def hashCode = id.## + name.##

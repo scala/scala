@@ -62,7 +62,7 @@ trait ObservableMap[A, B] extends Map[A, B] with Publisher[Message[(A, B)] with 
   abstract override def clear(): Unit = {
     super.clear
     publish(new Reset with Undoable {
-      def undo: Unit = throw new UnsupportedOperationException("cannot undo")
+      def undo(): Unit = throw new UnsupportedOperationException("cannot undo")
     })
   }
 }

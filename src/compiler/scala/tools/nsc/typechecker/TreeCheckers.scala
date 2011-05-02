@@ -122,7 +122,7 @@ abstract class TreeCheckers extends Analyzer {
   def assertFn(cond: Boolean, msg: => Any) =
     if (!cond) errorFn(msg)
 
-  def checkTrees {
+  def checkTrees() {
     if (settings.verbose.value)
       Console.println("[consistency check at the beginning of phase " + phase + "]")
 

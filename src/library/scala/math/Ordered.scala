@@ -20,14 +20,14 @@ package scala.math
  * there is no reasonable way to provide a default implementation
  * of equality for instances of Ordered[A].  Therefore, if you need
  * to be able to use equality on an instance of Ordered[A] you must
- * provide it yourself either when inheiriting or instantiating.
+ * provide it yourself either when inheriting or instantiating.
  *
  * It is important that the hashCode method for an instance of
  * Ordered[A] be consistent with the compare method. However,
  * it is not possible to provide a sensible default implementation.
  * Therefore, if you need to be able compute the hash of an
  * instance of Ordered[A] you must provide it yourself either when
- * inheiriting or instantiating.
+ * inheriting or instantiating.
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2006-07-24

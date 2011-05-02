@@ -111,7 +111,7 @@ private[swing] trait SingleRefCollection[+A <: AnyRef] extends Iterable[A] { sel
     private val elems = self.underlying.iterator
     private var hd: A = _
     private var ahead: Boolean = false
-    private def skip: Unit =
+    private def skip(): Unit =
       while (!ahead && elems.hasNext) {
         // make sure we have a reference to the next element,
         // otherwise it might be garbage collected

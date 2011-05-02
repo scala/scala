@@ -131,7 +131,11 @@ trait SymbolTrackers {
           else " (" + Flags.flagsToString(masked) + ")"
       }
       def symString(sym: Symbol) = (
-        sym + changedOwnerString + flagSummaryString
+        if (settings.debug.value && sym.hasRawInfo && sym.rawInfo.isComplete) {
+          val s = sym.defString take 240
+          if (s.length == 240) s + "..." else s
+        }
+        else sym + changedOwnerString + flagSummaryString
       )
 
       def flatten = children.foldLeft(Set(root))(_ ++ _.flatten)
@@ -173,7 +177,7 @@ trait SymbolTrackers {
       prevFlags  = current map (s => (s, (s.flags & flagsMask))) toMap;
       history    = change :: history
     }
-    def show(): String = {
+    def show(label: String): String = {
       val hierarchy = Node(current)
       val Change(added, removed, symMap, owners, flags) = history.head
       def detailString(sym: Symbol) = {
@@ -194,7 +198,7 @@ trait SymbolTrackers {
 
       "" + hierarchy + (
         if (removed.isEmpty) ""
-        else "\n\n!!! %s symbols vanished:\n".format(removed.size) + removedString
+        else "\n\n!!! " + label + ", " + removed.size + " symbols vanished:\n" + removedString
       )
     }
   }

@@ -68,13 +68,14 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.2
   case class TypedPattern(tree: Typed) extends Pattern {
     private val Typed(expr, tpt) = tree
+    private lazy val exprPat = Pattern(expr)
 
     override def subpatternsForVars: List[Pattern] = List(Pattern(expr))
     override def simplify(pv: PatternVar) = Pattern(expr) match {
       case ExtractorPattern(ua) if pv.sym.tpe <:< tpt.tpe => this rebindTo expr
       case _                                              => this
     }
-    override def description = "Typ(%s: %s)".format(Pattern(expr), tpt)
+    override def description = "%s: %s".format(exprPat.boundNameString, tpt)
   }
 
   // 8.1.3
@@ -143,7 +144,7 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.5
   case class ConstructorPattern(tree: Apply) extends ApplyPattern with NamePattern {
-    require(fn.isType && this.isCaseClass)
+    require(fn.isType && this.isCaseClass, "tree: " + tree + " fn: " + fn)
     def name = tpe.typeSymbol.name
     def cleanName = tpe.typeSymbol.decodedName
     def hasPrefix = tpe.prefix.prefixString != ""
@@ -173,22 +174,18 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.7 / 8.1.8 (unapply and unapplySeq calls)
   case class ExtractorPattern(tree: UnApply) extends UnapplyPattern {
-    override def simplify(pv: PatternVar) =
-      if (pv.tpe <:< arg.tpe) this
-      else this rebindTo uaTyped
-
-    override def description = "Unapply(%s => %s)".format(necessaryType, resTypesString)
-  }
-
-  case class SequenceExtractorPattern(tree: UnApply, elems: List[Tree]) extends UnapplyPattern with SequenceLikePattern {
     override def simplify(pv: PatternVar) = {
-      pv.sym setFlag NO_EXHAUSTIVE
+      if (pv.sym hasFlag NO_EXHAUSTIVE) ()
+      else {
+        TRACE("Setting NO_EXHAUSTIVE on " + pv.sym + " due to extractor " + tree)
+        pv.sym setFlag NO_EXHAUSTIVE
+      }
 
       if (pv.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
     }
 
-    override def description = "UnapplySeq(%s => %s)".format(necessaryType, resTypesString)
+    override def description = "Unapply(%s => %s)".format(necessaryType, resTypesString)
   }
 
   // Special List handling.  It was like that when I got here.
@@ -196,22 +193,28 @@ trait Patterns extends ast.TreeDSL {
     private val cons    = ConsClass.primaryConstructor.tpe.resultType
     private val consRef = typeRef(cons.prefix, ConsClass, List(tpt.tpe))
     private val listRef = typeRef(cons.prefix, ListClass, List(tpt.tpe))
+    private val seqRef  = typeRef(cons.prefix, SeqClass, List(tpt.tpe))
+    private def thisSeqRef = {
+      val tc = (tree.tpe baseType SeqClass).typeConstructor
+      if (tc.typeParams.size == 1) appliedType(tc, List(tpt.tpe))
+      else seqRef
+    }
 
     // Fold a list into a well-typed x :: y :: etc :: tree.
-    private def listFolder(x: Tree, xs: Tree) = unbind(x) match {
-      case _: Star  => Pattern(x) rebindTo WILD(x.tpe) boundTree
+    private def listFolder(x: Pattern, xs: Pattern): Pattern = x match {
+      case Pattern(Star(_)) => x rebindTo WILD(x.tpe)
       case _        =>
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
         val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpt.tpe, listRef), consRef)
 
-        Apply(TypeTree(consType), List(x, xs)) setType consRef
+        Pattern(Apply(TypeTree(consType), List(x.boundTree, xs.boundTree)) setType consRef)
     }
+    private def foldedPatterns = elems.foldRight(NilPattern)((x, y) => listFolder(Pattern(x), y))
     override def necessaryType = if (nonStarPatterns.nonEmpty) consRef else listRef
-    override def simplify(pv: PatternVar) = {
-      pv.sym setFlag NO_EXHAUSTIVE
 
+    override def simplify(pv: PatternVar) = {
       if (pv.tpe <:< necessaryType)
-        this rebindTo elems.foldRight(gen.mkNil)(listFolder)
+        foldedPatterns
       else
         this rebindTo (Typed(tree, TypeTree(necessaryType)) setType necessaryType)
     }
@@ -298,9 +301,10 @@ trait Patterns extends ast.TreeDSL {
         case _                  => tracing("Pattern")(p)
       }
     }
-    def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
+    // matching on Pattern(...) always skips the bindings.
+    def unapply(other: Any): Option[Tree] = other match {
       case x: Tree    => unapply(Pattern(x))
-      case x: Pattern => Some((x.tree, x.boundVariables))
+      case x: Pattern => Some(x.tree)
       case _          => None
     }
   }
@@ -318,9 +322,8 @@ trait Patterns extends ast.TreeDSL {
     }
 
     def apply(x: UnApply): Pattern = x match {
-      case UnapplySeq(container, tpt, elems) =>
-        if (container == ListModule) ListExtractorPattern(x, tpt, elems)
-        else SequenceExtractorPattern(x, elems)
+      case UnapplySeq(ListModule, tpt, elems) =>
+        ListExtractorPattern(x, tpt, elems)
       case _ =>
         ExtractorPattern(x)
     }
@@ -403,13 +406,6 @@ trait Patterns extends ast.TreeDSL {
       case Nil  => "Boolean"
       case xs   => xs.mkString(", ")
     }
-
-    private def isSameFunction(f1: Tree, f2: Tree) =
-      (f1.symbol == f2.symbol) && (f1 equalsStructure f2)
-
-    // XXX args
-    def isSameUnapply(other: UnapplyPattern) =
-      isSameFunction(unfn, other.unfn)
   }
 
   sealed trait ApplyPattern extends Pattern {
@@ -459,6 +455,11 @@ trait Patterns extends ast.TreeDSL {
       tree setType tpe
       this
     }
+    def boundName: Option[Name] = boundTree match {
+      case Bind(name, _)  => Some(name)
+      case _              => None
+    }
+    def boundNameString = "" + (boundName getOrElse "_")
 
     def equalsCheck =
       tracing("equalsCheck")(

@@ -414,11 +414,11 @@ extends ClassPath[T] {
       })
   }
 
-  def show {
+  def show() {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
     asClasspathString split ':' foreach (x => println("  " + x))
   }
-  def showDuplicates =
+  def showDuplicates() =
     ClassPath findDuplicates this foreach {
       case (name, xs) => println(xs.mkString(name + ":\n  ", "\n  ", "\n"))
     }

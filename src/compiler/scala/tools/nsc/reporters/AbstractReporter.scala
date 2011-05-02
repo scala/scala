@@ -16,7 +16,7 @@ import scala.tools.nsc.util.Position
 abstract class AbstractReporter extends Reporter {
   private val positions = new HashMap[Position, Severity]
 
-  override def reset {
+  override def reset() {
     super.reset
     positions.clear
   }
@@ -27,7 +27,7 @@ abstract class AbstractReporter extends Reporter {
   private def isPromptSet = settings.prompt.value
 
   def display(pos: Position, msg: String, severity: Severity): Unit
-  def displayPrompt: Unit
+  def displayPrompt(): Unit
 
   protected def info0(pos: Position, msg: String, _severity: Severity, force: Boolean) {
     val severity =

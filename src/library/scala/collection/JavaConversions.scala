@@ -504,7 +504,7 @@ object JavaConversions {
    * Scala ConcurrentMap will be returned.
    *
    * @param m The ConcurrentMap to be converted.
-   * @return A Scala mutable ConcurrrentMap view of the argument.
+   * @return A Scala mutable ConcurrentMap view of the argument.
    */
   implicit def asScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
     case cmw: ConcurrentMapWrapper[a, b] => cmw.underlying

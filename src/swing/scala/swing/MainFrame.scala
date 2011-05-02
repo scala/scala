@@ -17,5 +17,5 @@ import event._
  * framework and quits the application when closed.
  */
 class MainFrame extends Frame {
-  override def closeOperation { sys.exit(0) }
+  override def closeOperation() { sys.exit(0) }
 }

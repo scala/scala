@@ -6,12 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import mutable.ArrayBuffer
 import annotation.{ tailrec, migration }
+import immutable.Stream
 
 /** The `Iterator` object provides various functions for
  *  creating specialized iterators.

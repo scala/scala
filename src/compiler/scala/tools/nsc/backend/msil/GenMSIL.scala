@@ -36,7 +36,7 @@ abstract class GenMSIL extends SubComponent {
 
     override def erasedTypes = true
 
-    override def run {
+    override def run() {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
 
       val codeGenerator = new BytecodeGenerator
@@ -784,7 +784,7 @@ abstract class GenMSIL extends SubComponent {
 
       /** There might be open handlers, but no more blocks. happens when try/catch end
        *  with `throw` or `return`
-       *     def foo { try { .. throw } catch { _ => .. throw } }
+       *     def foo() { try { .. throw } catch { _ => .. throw } }
        *
        *  In this case we need some code after the catch block for the auto-generated
        *  `leave` instruction. So we're adding a (dead) `throw new Exception`.
@@ -1091,7 +1091,7 @@ abstract class GenMSIL extends SubComponent {
                     // we're generating a constructor (method: IMethod is a constructor), and we're
                     // calling another constructor of the same class.
 
-                    // @LUC TODO: this can probably break, namely when having: class A { def this { new A() } }
+                    // @LUC TODO: this can probably break, namely when having: class A { def this() { new A() } }
                     // instead, we should instruct the CALL_METHOD with additional information, know whether it's
                     // an instance creation constructor call or not.
                     mcode.Emit(OpCodes.Call, constructorInfo)
@@ -1114,7 +1114,7 @@ abstract class GenMSIL extends SubComponent {
               var doEmit = true
               getTypeOpt(msym.owner) match {
                 case Some(typ) if (typ.IsEnum) => {
-                  def negBool = {
+                  def negBool() = {
                     mcode.Emit(OpCodes.Ldc_I4_0)
                     mcode.Emit(OpCodes.Ceq)
                   }

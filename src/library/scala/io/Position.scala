@@ -51,7 +51,7 @@ abstract class Position {
     if (line >= LINE_MASK)
       LINE_MASK << COLUMN_BITS
     else
-      (line << COLUMN_BITS) | math.min(LINE_MASK, line)
+      (line << COLUMN_BITS) | math.min(COLUMN_MASK, column)
   }
 
   /** Returns the line number of the encoded position. */

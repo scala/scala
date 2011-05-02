@@ -18,12 +18,12 @@ package scala.concurrent
 class Lock {
   var available = true
 
-  def acquire = synchronized {
+  def acquire() = synchronized {
     while (!available) wait()
     available = false
   }
 
-  def release = synchronized {
+  def release() = synchronized {
     available = true
     notify()
   }

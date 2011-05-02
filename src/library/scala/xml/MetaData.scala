@@ -11,7 +11,7 @@ package scala.xml
 
 import Utility.sbToString
 import annotation.tailrec
-
+import scala.collection.Iterator
 
 /**
  * Copyright 2008 Google Inc. All Rights Reserved.

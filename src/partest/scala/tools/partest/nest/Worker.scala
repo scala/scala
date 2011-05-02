@@ -57,7 +57,7 @@ class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
 }
 
 object Output {
-  def init {
+  def init() {
     System.setOut(outRedirect)
     System.setErr(errRedirect)
   }

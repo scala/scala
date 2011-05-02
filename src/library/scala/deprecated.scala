@@ -10,11 +10,12 @@ package scala
 
 import annotation.target._
 
-/**
- * An annotation that designates the definition to which it is applied as deprecated.
- * Access to the member then generates a deprecated warning.
+/** An annotation that designates that a definition is deprecated.
+ *  Access to the member then generates a deprecated warning.
  *
- * @since 2.3
+ *  @param  message the message to print during compilation if the definition is accessed
+ *  @param  since   a string identifying the first version in which the definition was deprecated
+ *  @since  2.3
  */
 @getter @setter @beanGetter @beanSetter
 class deprecated(message: String = "", since: String = "") extends annotation.StaticAnnotation

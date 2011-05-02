@@ -31,10 +31,10 @@ extends AbstractFile {
   override def output = sys.error("directories cannot be written")
 
   /** Does this abstract file denote an existing file? */
-  def create { unsupported }
+  def create() { unsupported }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete { unsupported }
+  def delete() { unsupported }
 
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.

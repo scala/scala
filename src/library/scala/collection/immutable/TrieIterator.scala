@@ -37,8 +37,8 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
   private[this] var subIter                                   = initSubIter
 
   private[this] def getElems(x: Iterable[T]): Array[Iterable[T]] = (x match {
-    case x: HashTrieMap[a, b] => x.elems
-    case x: HashTrieSet[T]    => x.elems
+    case x: HashTrieMap[_, _] => x.elems
+    case x: HashTrieSet[_]    => x.elems
   }).asInstanceOf[Array[Iterable[T]]]
 
   private[this] def collisionToArray(x: Iterable[T]): Array[Iterable[T]] = (x match {

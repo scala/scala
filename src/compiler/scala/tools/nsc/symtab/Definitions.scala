@@ -798,7 +798,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         sym
     }
 
-    def init {
+    def init() {
       if (isInitialized) return
 
       EmptyPackageClass setInfo ClassInfoType(Nil, new Scope, EmptyPackageClass)

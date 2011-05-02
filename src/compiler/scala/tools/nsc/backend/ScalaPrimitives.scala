@@ -203,7 +203,7 @@ abstract class ScalaPrimitives {
   private val primitives: mutable.Map[Symbol, Int] = new mutable.HashMap()
 
   /** Initialize the primitive map */
-  def init {
+  def init() {
     primitives.clear()
     // scala.Any
     addPrimitive(Any_==, EQ)

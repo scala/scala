@@ -1,37 +1,38 @@
-patmatexhaust.scala:7: warning: match is not exhaustive!
+patmatexhaust.scala:7: error: match is not exhaustive!
 missing combination            Baz
 
     def ma1(x:Foo) = x match {
                      ^
-patmatexhaust.scala:11: warning: match is not exhaustive!
+patmatexhaust.scala:11: error: match is not exhaustive!
 missing combination            Bar
 
     def ma2(x:Foo) = x match {
                      ^
-patmatexhaust.scala:23: warning: match is not exhaustive!
+patmatexhaust.scala:23: error: match is not exhaustive!
 missing combination           Kult          Kult
 missing combination           Qult          Qult
 
     def ma3(x:Mult) = (x,x) match { // not exhaustive
-        ^
-patmatexhaust.scala:49: warning: match is not exhaustive!
+                      ^
+patmatexhaust.scala:49: error: match is not exhaustive!
 missing combination             Gp
 missing combination             Gu
 
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
-patmatexhaust.scala:53: warning: match is not exhaustive!
+patmatexhaust.scala:53: error: match is not exhaustive!
 missing combination             Gp
 
     def ma5(x:Deep) = x match { // Gp
                       ^
-patmatexhaust.scala:75: warning: match is not exhaustive!
+patmatexhaust.scala:59: error: match is not exhaustive!
+missing combination            Nil
+
+  def ma6()  = List(1,2) match { // give up
+                   ^
+patmatexhaust.scala:75: error: match is not exhaustive!
 missing combination              B
 
   def ma9(x: B) = x match {
                   ^
-patmatexhaust.scala:92: error: unreachable code
-      case 1 => 
-             ^
-6 warnings found
-one error found
+7 errors found

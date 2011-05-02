@@ -61,7 +61,7 @@ abstract class ICodes extends AnyRef
 
   /** Print all classes and basic blocks. Used for debugging. */
 
-  def dump {
+  def dump() {
     if (alreadyDumping) return
     else alreadyDumping = true
 

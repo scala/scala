@@ -73,7 +73,7 @@ object ContentModelParser extends Scanner { // a bit too permissive concerning #
       sys.error("unexpected token:" + token2string(token) );
     }
   //                                  sopt ::= S?
-  def sOpt = if( token == S ) nextToken;
+  def sOpt() = if( token == S ) nextToken;
 
   //                      (' S? mixed ::= '#PCDATA' S? ')'
   //                                    | '#PCDATA' (S? '|' S? atom)* S? ')*'

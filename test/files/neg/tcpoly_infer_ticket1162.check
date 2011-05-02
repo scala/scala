@@ -1,4 +1,4 @@
-tcpoly_infer_ticket1162.scala:6: error: wrong number of type parameters for method apply: [A,B,F[_]]()Test.Lift[A,B,F] in object Lift
+tcpoly_infer_ticket1162.scala:6: error: wrong number of type parameters for method apply: [A, B, F[_]]()Test.Lift[A,B,F] in object Lift
   def simplify[A,B]: Expression[A,B] = Lift[A,B]()
                                            ^
 one error found

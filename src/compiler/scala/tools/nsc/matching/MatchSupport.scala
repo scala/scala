@@ -31,10 +31,7 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
     import definitions._
     implicit def enrichType(x: Type): RichType = new RichType(x)
 
-    // A subtype test which creates fresh existentials for type
-    // parameters on the right hand side.
-    private[matching] def matches(arg1: Type, arg2: Type) =
-      decodedEqualsType(arg1) matchesPattern decodedEqualsType(arg2)
+    val subrangeTypes = Set(ByteClass, ShortClass, CharClass, IntClass)
 
     class RichType(undecodedTpe: Type) {
       def tpe = decodedEqualsType(undecodedTpe)

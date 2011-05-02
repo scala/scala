@@ -11,6 +11,7 @@
 package scala.xml
 
 import Utility.{ isNameStart }
+import scala.collection.Iterator
 
 /** Essentially, every method in here is a dummy, returning Zero[T].
  *  It provides a backstop for the unusual collection defined by MetaData,

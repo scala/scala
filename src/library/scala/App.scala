@@ -51,7 +51,7 @@ trait App extends DelayedInit {
 
   /** The main method.
    *  This stores all argument so that they can be retrieved with `args`
-   *  and the executes all initialization code segements in the order they were
+   *  and the executes all initialization code segments in the order they were
    *  passed to `delayedInit`
    *  @param args the arguments passed to the main method
    */

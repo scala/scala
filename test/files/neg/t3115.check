@@ -1,11 +1,11 @@
 t3115.scala:6: error: object Math in object sc is deprecated: 
   println(sc.Math)
              ^
-t3115.scala:7: error: object Math in package scala is deprecated: use the scala.math package object instead.
+t3115.scala:7: error: object Math is deprecated: use the scala.math package object instead.
 (Example package object usage: scala.math.Pi )
   println(scala.Math)
                 ^
-t3115.scala:8: error: object Math in package scala is deprecated: use the scala.math package object instead.
+t3115.scala:8: error: object Math is deprecated: use the scala.math package object instead.
 (Example package object usage: scala.math.Pi )
   scala.Math.Pi
         ^

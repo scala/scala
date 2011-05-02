@@ -1,0 +1,5 @@
+S.scala:1: error: class S needs to be abstract, since method g in class J of type (y: Int, z: java.util.List)Int is not defined
+(Note that java.util.List does not match java.util.List[String]. To implement a raw type, use java.util.List[_])
+class S extends J {
+      ^
+one error found

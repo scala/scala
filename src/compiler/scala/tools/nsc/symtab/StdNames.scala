@@ -191,7 +191,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val copy: NameType             = "copy"
     val delayedInit: NameType      = "delayedInit"
     val delayedInitArg: NameType   = "delayedInit$body"
-    val dottype: NameType          = ".type"
     val drop: NameType             = "drop"
     val elem: NameType             = "elem"
     val eq: NameType               = "eq"

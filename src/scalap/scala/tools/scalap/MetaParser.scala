@@ -27,7 +27,7 @@ class MetaParser(meta: String) {
     token
   }
 
-  protected def parseType: Unit = {
+  protected def parseType(): Unit = {
     if (token startsWith "?")
       res.append(token.substring(1))
     else

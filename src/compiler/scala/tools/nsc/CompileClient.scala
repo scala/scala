@@ -19,7 +19,7 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
   val versionMsg = "Fast " + Properties.versionMsg
   var verbose    = false
 
-  def process(args: Array[String]): Int = {
+  def process(args: Array[String]): Boolean = {
     // Trying to get out in front of the log messages in case we're
     // going from verbose to not verbose.
     verbose = (args contains "-verbose")
@@ -34,7 +34,7 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
 
     if (settings.version.value) {
       Console println versionMsg
-      return 0
+      return true
     }
 
     info(versionMsg)
@@ -46,7 +46,7 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
       if (settings.server.value == "") compileSocket.getOrCreateSocket(vmArgs mkString " ", !shutdown)
       else Some(compileSocket.getSocket(settings.server.value))
 
-    val success = socket match {
+    socket match {
       case Some(sock) => compileOnServer(sock, fscArgs)
       case _          =>
         echo(
@@ -55,13 +55,12 @@ class StandardCompileClient extends HasCompileSocket with CompileOutputCommon {
         )
         shutdown
     }
-    if (success) 1 else 0
   }
 }
 
 object CompileClient extends StandardCompileClient {
   def main(args: Array[String]): Unit = sys exit {
-    try process(args)
+    try   { if (process(args)) 0 else 1 }
     catch { case _: Exception => 1 }
   }
 }

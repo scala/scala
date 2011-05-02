@@ -41,8 +41,8 @@ trait TreePrinters { trees: SymbolTable =>
 
     def flush() = out.flush()
 
-    def indent = indentMargin += indentStep
-    def undent = indentMargin -= indentStep
+    def indent() = indentMargin += indentStep
+    def undent() = indentMargin -= indentStep
 
     protected def doPrintPositions = settings.Xprintpos.value
     def printPosition(tree: Tree) = if (doPrintPositions) print(tree.pos.show)
@@ -546,7 +546,7 @@ trait TreePrinters { trees: SymbolTable =>
           }
 
           val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
-          print("if ("); print(cond); print(")")
+          print("if ("); print(cond); print(") ")
 
           thenStmts match {
             case List(x: If)  => ifIndented(x)
@@ -555,7 +555,7 @@ trait TreePrinters { trees: SymbolTable =>
           }
 
           if (elseStmts.nonEmpty) {
-            print("else")
+            print(" else")
             indent ; println()
             elseStmts match {
               case List(x)  => printRaw(x)

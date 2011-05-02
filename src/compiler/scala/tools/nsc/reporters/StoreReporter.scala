@@ -27,7 +27,7 @@ class StoreReporter extends Reporter {
     }
   }
 
-  override def reset {
+  override def reset() {
     super.reset
     infos.clear
   }

@@ -292,22 +292,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
   @deprecated("use `distinct' instead", "2.8.0")
   def removeDuplicates: List[A] = distinct
 
-  /** <p>
-   *    Sort the list according to the comparison function
-   *    `lt(e1: a, e2: a) =&gt; Boolean`,
-   *    which should be true iff `e1` precedes
-   *    `e2` in the desired ordering.
-   *  !!! todo: move sorting to IterableLike
-   *  </p>
-   *
-   *  @param lt the comparison function
-   *  @return   a list sorted according to the comparison function
-   *            `lt(e1: a, e2: a) =&gt; Boolean`.
-   *  @example <pre>
-   *    List("Steve", "Tom", "John", "Bob")
-   *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
-   *    List("Bob", "John", "Steve", "Tom")</pre>
-   */
   @deprecated("use `sortWith' instead", "2.8.0")
   def sort(lt : (A,A) => Boolean): List[A] = {
     /** Merge two already-sorted lists */

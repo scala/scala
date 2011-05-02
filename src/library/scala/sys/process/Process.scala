@@ -38,7 +38,7 @@ trait ProcessCreation {
   def apply(command: Seq[String], cwd: File, extraEnv: (String, String)*): ProcessBuilder =
     apply(command, Some(cwd), extraEnv: _*)
 
-  /** create ProcessBuilder with working dir optionaly set to File and extra environment variables */
+  /** create ProcessBuilder with working dir optionally set to File and extra environment variables */
   def apply(command: String, cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
     apply(command.split("""\s+"""), cwd, extraEnv : _*)
     // not smart to use this on windows, because CommandParser uses \ to escape ".
@@ -48,7 +48,7 @@ trait ProcessCreation {
     }*/
   }
 
-  /** create ProcessBuilder with working dir optionaly set to File and extra environment variables */
+  /** create ProcessBuilder with working dir optionally set to File and extra environment variables */
   def apply(command: Seq[String], cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
     val jpb = new JProcessBuilder(command.toArray: _*)
     cwd foreach (jpb directory _)

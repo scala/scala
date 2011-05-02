@@ -19,12 +19,12 @@ abstract class Generator {
     mutable.Set.empty[()=>Boolean]
 
   /** Outputs documentation (as a side effect). */
-  def generate: Unit = {
+  def generate(): Unit = {
     assert(checks forall { check => check() })
     generateImpl
   }
 
   /** Outputs documentation (as a side effect). This method is called only if all `checks` are true. */
-  protected def generateImpl: Unit
+  protected def generateImpl(): Unit
 
 }

@@ -52,7 +52,7 @@ class ConsoleRunner extends DirectRunner {
 
   def denotesTestSet(arg: String)  = testSetArgs contains arg
 
-  private def printVersion { NestUI outline (versionMsg + "\n") }
+  private def printVersion() { NestUI outline (versionMsg + "\n") }
 
   private val unaryArgs = List(
     "--pack", "--all", "--verbose", "--show-diff", "--show-log",

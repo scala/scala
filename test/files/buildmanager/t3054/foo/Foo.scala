@@ -1,5 +1,5 @@
 package foo
 
 class Foo {
-  def foo = println("foo")
+  def foo() = println("foo")
 }

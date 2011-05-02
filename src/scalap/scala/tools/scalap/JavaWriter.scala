@@ -172,7 +172,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     }
   }
 
-  def printClassHeader {
+  def printClassHeader() {
     if (isInterface(cf.flags)) {
       print("trait " + getSimpleClassName(cf.classname))
     } else {
@@ -185,7 +185,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     }
   }
 
-  def printClass {
+  def printClass() {
     val pck = getPackage(cf.classname);
     if (pck.length() > 0)
       println("package " + pck + ";")

@@ -1,0 +1,5 @@
+abstract-class-2.scala:11: error: object creation impossible, since method f in trait S2 of type (x: P2.this.p.S1)Int is not defined
+(Note that P.this.p.S1 does not match P2.this.S1: their prefixes (i.e. enclosing instances) differ)
+  object O2 extends S2 {
+         ^
+one error found

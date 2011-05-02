@@ -8,7 +8,7 @@
 
 package scala.sys
 
-import scala.collection.mutable
+import scala.collection.{ mutable, Iterator }
 import scala.collection.JavaConverters._
 import java.security.AccessControlException
 

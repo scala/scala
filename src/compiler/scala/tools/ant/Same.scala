@@ -89,7 +89,7 @@ class Same extends ScalaMatchingTask {
   private var allEqualNow = true
 
   /** Tests if all mandatory attributes are set and valid. */
-  private def validateAttributes = {
+  private def validateAttributes() = {
     if (origin.isEmpty) sys.error("Mandatory attribute 'dir' is not set.")
     if (destination.isEmpty) sys.error("Mandatory attribute 'todir' is not set.")
   }

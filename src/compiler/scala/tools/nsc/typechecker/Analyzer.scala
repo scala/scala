@@ -80,7 +80,7 @@ trait Analyzer extends AnyRef
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
       // compiler run). This is good enough for the resident compiler, which was the most affected.
       undoLog.clear()
-      override def run {
+      override def run() {
         val start = startTimer(typerNanos)
         global.echoPhaseSummary(this)
         currentRun.units foreach applyPhase

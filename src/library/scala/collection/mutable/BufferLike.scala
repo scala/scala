@@ -312,4 +312,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "Use --= instead if you intend to remove by side effect from an existing collection.\n"
   )
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
+
+  @bridge def --(xs: TraversableOnce[A]): This = --(xs: GenTraversableOnce[A])
 }

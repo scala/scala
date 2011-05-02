@@ -172,8 +172,8 @@ trait Binders extends AbstractSyntax with Mappable {
       * the binding in the returned scope also does, and thus the check that all variables are bound is deferred until this scope is left  **/
     def nested: Scope[binderType] = this // TODO
 
-    def onEnter {}
-    def onLeft {}
+    def onEnter() {}
+    def onLeft() {}
   }
 
 

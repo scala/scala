@@ -8,7 +8,7 @@ package scala.tools
 package nsc
 package settings
 
-import io.{ AbstractFile, VirtualDirectory }
+import io.{ AbstractFile, Path, PlainFile, VirtualDirectory }
 import scala.tools.util.StringOps
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -239,19 +239,24 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
           checkDir(AbstractFile.getDirectory(outDir), outDir))
 
     /** Check that dir is exists and is a directory. */
-    private def checkDir(dir: AbstractFile, name: String): AbstractFile = {
-      if ((dir eq null) || !dir.isDirectory)
+    private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
+      if (dir != null && dir.isDirectory)
+        dir
+      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
+        new PlainFile(Path(name))
+      else
         throw new FatalError(name + " does not exist or is not a directory")
-      dir
-    }
+    )
 
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
      */
     def setSingleOutput(outDir: String) {
       val dst = AbstractFile.getDirectory(outDir)
-      setSingleOutput(checkDir(dst, outDir))
+      setSingleOutput(checkDir(dst, outDir, true))
     }
+
+    def getSingleOutput: Option[AbstractFile] = singleOutDir
 
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
@@ -310,7 +315,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       singleOutDir match {
         case Some(d) =>
           d match {
-              case _: VirtualDirectory => Nil
+              case _: VirtualDirectory | _: io.ZipArchive => Nil
               case _                   => List(d.lookupPathUnchecked(srcPath, false))
           }
         case None =>
@@ -377,7 +382,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     // Helper to validate an input
     private def isInputValid(k: Int): Boolean = (min <= k) && (k <= max)
 
-    // Helper to generate a textual explaination of valid inputs
+    // Helper to generate a textual explanation of valid inputs
     private def getValidText: String = (min, max) match {
       case (IntMin, IntMax)   => "can be any integer"
       case (IntMin, x)        => "must be less than or equal to "+x
@@ -395,7 +400,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       }
     }
 
-    def errorMsg = errorFn("invalid setting for -"+name+" "+getValidText)
+    def errorMsg() = errorFn("invalid setting for -"+name+" "+getValidText)
 
     def tryToSet(args: List[String]) =
       if (args.isEmpty) errorAndValue("missing argument", None)
@@ -485,7 +490,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   class OutputSetting private[nsc](
     private[nsc] val outputDirs: OutputDirs,
     default: String)
-    extends StringSetting("-d", "directory", "Specify where to place generated class files", default) {
+    extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default) {
       value = default
       override def value_=(str: String) {
         super.value_=(str)

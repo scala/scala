@@ -12,6 +12,7 @@ package process
 import processInternal._
 import java.io.{ BufferedReader, InputStreamReader, FilterInputStream, FilterOutputStream }
 import java.util.concurrent.LinkedBlockingQueue
+import scala.collection.immutable.Stream
 
 object BasicIO {
   final val BufferSize = 8192

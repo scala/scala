@@ -80,7 +80,7 @@ extends Map[Key, Value]
     h ^ (h >>> 7) ^ (h >>> 4);
   }
 
-  private[this] def growTable = {
+  private[this] def growTable() = {
     val oldSize = mask + 1;
     val newSize = 4 * oldSize;
     val oldTable = table;
@@ -179,7 +179,7 @@ extends Map[Key, Value]
     var index = 0;
     val initialModCount = modCount;
 
-    private[this] def advance {
+    private[this] def advance() {
       if (initialModCount != modCount) sys.error("Concurrent modification");
       while((index <= mask) && (table(index) == null || table(index).value == None)) index+=1;
     }

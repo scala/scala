@@ -128,6 +128,10 @@ trait Matrix extends MatrixAdditions {
     }
     def recordSyntheticSym(sym: Symbol): Symbol = {
       _syntheticSyms += sym
+      if (_syntheticSyms.size > 25000) {
+        cunit.error(owner.pos, "Sanity check failed: over 25000 symbols created for pattern match.")
+        abort("This is a bug in the pattern matcher.")
+      }
       sym
     }
 
@@ -235,6 +239,12 @@ trait Matrix extends MatrixAdditions {
       val rhs = f(lhs)
 
       tracing("create")(new PatternVar(lhs, rhs, checked))
+    }
+    def createLazy(tpe: Type, f: Symbol => Tree, checked: Boolean) = {
+      val lhs = newVar(owner.pos, tpe, Flags.LAZY :: flags(checked))
+      val rhs = f(lhs)
+
+      tracing("createLazy")(new PatternVar(lhs, rhs, checked))
     }
 
     private def newVar(

@@ -1,5 +1,5 @@
 class A {
-  def B {
+  def B() {
     object C
   }
 }

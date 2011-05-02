@@ -39,7 +39,7 @@ abstract class Duplicators extends Analyzer {
   override def newTyper(context: Context): Typer =
     new BodyDuplicator(context)
 
-  private def resetClassOwners {
+  private def resetClassOwners() {
     oldClassOwner = null
     newClassOwner = null
   }
