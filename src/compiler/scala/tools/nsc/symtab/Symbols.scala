@@ -1177,6 +1177,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** For a lazy value, its lazy accessor. NoSymbol for all others */
     def lazyAccessor: Symbol = NoSymbol
 
+    /** If this is a lazy value, the lazy accessor; otherwise this symbol. */
+    def lazyAccessorOrSelf: Symbol = if (isLazy) lazyAccessor else this
+
     /** For an outer accessor: The class from which the outer originates.
      *  For all other symbols: NoSymbol
      */

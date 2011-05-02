@@ -85,6 +85,12 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       ft.result
     }
 
+    def changeOwner(pairs: (Symbol, Symbol)*): Tree = {
+      pairs.foldLeft(tree) { case (t, (oldOwner, newOwner)) =>
+        new ChangeOwnerTraverser(oldOwner, newOwner) apply t
+      }
+    }
+
     /** Is there part of this tree which satisfies predicate `p'? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
@@ -1032,13 +1038,6 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       changeOwner(tree)
       super.traverse(tree)
     }
-  }
-
-  final class TreeList {
-    private var trees = List[Tree]()
-    def append(t: Tree): TreeList = { trees = t :: trees; this }
-    def append(ts: List[Tree]): TreeList = { trees = ts reverse_::: trees; this }
-    def toList: List[Tree] = trees.reverse
   }
 
   object posAssigner extends Traverser {
