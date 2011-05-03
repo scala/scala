@@ -399,6 +399,7 @@ abstract class LambdaLift extends InfoTransform {
         case Block(stats, expr0) =>
           val (lzyVals, rest) = stats.partition {
                       case stat@ValDef(_, _, _, _) if stat.symbol.isLazy => true
+                      case stat@ValDef(_, _, _, _) if stat.symbol.hasFlag(MODULEVAR) => true
                       case _                                             => false
                   }
           treeCopy.Block(tree, lzyVals:::rest, expr0)

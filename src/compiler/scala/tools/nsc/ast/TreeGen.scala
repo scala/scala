@@ -272,7 +272,7 @@ abstract class TreeGen {
 
   // Builds a tree of the form "{ lhs = rhs ; lhs  }"
   def mkAssignAndReturn(lhs: Symbol, rhs: Tree): Tree = {
-    val lhsRef = mkAttributedRef(lhs)
+    val lhsRef = mkUnattributedRef(lhs)
     Block(Assign(lhsRef, rhs) :: Nil, lhsRef)
   }
 
@@ -280,9 +280,10 @@ abstract class TreeGen {
     val mval = (
       accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
       setInfo accessor.tpe.finalResultType
-      setFlag (LAZY | MODULEVAR)
-      setLazyAccessor accessor
+      setFlag (MODULEVAR)
     )
+
+    mval.addAnnotation(AnnotationInfo(VolatileAttr.tpe, Nil, Nil))
     if (mval.owner.isClass) {
       mval setFlag (PRIVATE | LOCAL | SYNTHETIC)
       mval.owner.info.decls.enter(mval)
