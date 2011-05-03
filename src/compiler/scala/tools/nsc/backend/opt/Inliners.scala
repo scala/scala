@@ -236,9 +236,12 @@ abstract class Inliners extends SubComponent {
       }
     }
 
-    private def isMonadicMethod(sym: Symbol) = sym.name match {
-      case nme.foreach | nme.filter | nme.withFilter | nme.map | nme.flatMap => true
-      case _                                                                 => false
+    private def isMonadicMethod(sym: Symbol) = {
+      val (origName, _, _) = nme.splitSpecializedName(sym.name)
+      origName match {
+        case nme.foreach | nme.filter | nme.withFilter | nme.map | nme.flatMap => true
+        case _ => false
+      }
     }
 
     private def isHigherOrderMethod(sym: Symbol) =

@@ -101,9 +101,9 @@ abstract class ICodeReader extends ClassfileParser {
         (jflags, NoSymbol)
       else {
         val owner = getOwner(jflags)
-        var sym = owner.info.member(name).suchThat(old => sameType(old.tpe, tpe));
+        var sym = owner.info.findMember(name, 0, 0, false).suchThat(old => sameType(old.tpe, tpe));
         if (sym == NoSymbol)
-          sym = owner.info.member(newTermName(name + nme.LOCAL_SUFFIX_STRING)).suchThat(old => old.tpe =:= tpe);
+          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(old => old.tpe =:= tpe);
         if (sym == NoSymbol) {
           log("Could not find symbol for " + name + ": " + tpe)
           log(owner.info.member(name).tpe + " : " + tpe)
