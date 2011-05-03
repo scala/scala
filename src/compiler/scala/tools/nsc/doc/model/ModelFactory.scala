@@ -241,7 +241,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isDocTemplate = true
     def companion = sym.companionSymbol match {
       case NoSymbol => None
-      case comSym if !isEmptyJavaObject(comSym) && (comSym.isClass || comSym.isModule || isNestedObjectLazyVal(comSym)) =>
+      case comSym if !isEmptyJavaObject(comSym) && (comSym.isClass || comSym.isModule) =>
         Some(makeDocTemplate(comSym, inTpl))
       case _ => None
     }
@@ -387,12 +387,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           members collect { case d: Constructor => d }
         def primaryConstructor = constructors find { _.isPrimary }
       }
-    else if (isNestedObjectLazyVal(bSym)) {
-      new DocTemplateImpl(bSym, minimumInTpl) with Object {
-        override def isObject = true
-        override def isLazyVal = false
-      }
-    } else
+    else
       throw new Error("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")
   }
 
@@ -432,11 +427,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
       if (bSym.isGetter && bSym.isLazy)
-        if (isNestedObjectLazyVal(bSym))
-          if (templateShouldDocument(bSym))
-            Some(makeDocTemplate(bSym, inTpl))
-          else None
-        else
           Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
             override lazy val comment = // The analyser does not duplicate the lazy val's DocDef when it introduces its accessor.
               thisFactory.comment(bSym.accessed, inTpl) // This hack should be removed after analyser is fixed.
@@ -644,16 +634,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) ) && !isEmptyJavaObject(aSym)
   }
 
-  def isNestedObjectLazyVal(aSym: Symbol): Boolean = {
-    aSym.isLazyAccessor && !aSym.isRootPackage && !aSym.owner.isPackageClass
-  }
-
   def isEmptyJavaObject(aSym: Symbol): Boolean = {
     def hasMembers = aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
     aSym.isModule && aSym.isJavaDefined && !hasMembers
   }
 
   def localShouldDocument(aSym: Symbol): Boolean = {
-    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && (!aSym.isSynthetic || isNestedObjectLazyVal(aSym))
+    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
   }
 }

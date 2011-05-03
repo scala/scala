@@ -1323,26 +1323,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  companion module of a class. If a companion module exists, its symbol is
      *  returned, otherwise, `NoSymbol` is returned. The method assumes that
      *  `this` symbol has already been checked to be a class (using `isClass`).
-     *
-     *  After refchecks nested objects get transformed to lazy vals so we
-     *  filter on LAZY flag as well.
-     * @note The resident compiler may run many times over, and symbols may be
-     *       reused. Therefore, a module symbol that has been translated to a
-     *       lazy val by refchecks is not guaranteed to have MODULE set on the
-     *       next run (even before refcheck). Flags are not part of symbol
-     *       history. Instead we rely on the fact that a synthetic lazy value
-     *       must have been a  module.
      */
-    private final def companionModule0: Symbol = {
-      def isSyntheticLazy(sym: Symbol) =
-        (sym.hasAllFlags(LAZY | SYNTHETIC))
-
+    private final def companionModule0: Symbol =
       flatOwnerInfo.decl(name.toTermName).suchThat(
-        sym => (sym isCoDefinedWith this)
-                && (sym.hasFlag(MODULE) || isSyntheticLazy(sym)))
-    }
+        sym => sym.hasFlag(MODULE) && (sym isCoDefinedWith this) && !sym.isMethod)
 
-    /** For a class: the module or case class factory wiht the same name in the same package.
+    /** For a class: the module or case class factory with the same name in the same package.
      *  For all others: NoSymbol
      *  Note: does not work for modules owned by methods, see Namers.companionModuleOf
      *
