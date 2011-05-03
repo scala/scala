@@ -481,9 +481,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       if (succeeded) {
         if (printResults)
           show()
-        if (!synthetic)  // book-keeping
-          recordRequest(req)
-
+        // Book-keeping.  Have to record synthetic requests too,
+        // as they may have been issued for information, e.g. :type
+        recordRequest(req)
         IR.Success
       }
       else {
@@ -924,6 +924,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   // 3) Try interpreting it as an expression.
   private var typeOfExpressionDepth = 0
   def typeOfExpression(expr: String): Option[Type] = {
+    DBG("typeOfExpression(" + expr + ")")
     if (typeOfExpressionDepth > 2) {
       DBG("Terminating typeOfExpression recursion for expression: " + expr)
       return None
@@ -938,7 +939,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     def asModule = safeModule(expr) map (_.tpe)
     def asExpr = beSilentDuring {
       val lhs = freshInternalVarName()
-      interpret("lazy val " + lhs + " = { " + expr + " } ", true) match {
+      val line = "lazy val " + lhs + " = { " + expr + " } "
+
+      interpret(line, true) match {
         case IR.Success => typeOfExpression(lhs)
         case _          => None
       }
