@@ -1,4 +1,4 @@
-bug4533.scala:6: error: erroneous or inaccessible type
+bug4533.scala:6: error: trait GenTraversableOnce in package collection cannot be accessed in package collection
   def statusByAlarms(alarms: GenTraversableOnce[FooAlarm]) = println("hello")
                              ^
 one error found
