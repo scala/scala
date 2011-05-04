@@ -34,6 +34,11 @@ trait ObservableBuffer[A] extends Buffer[A] with Publisher[Message[A] with Undoa
     this
   }
 
+  abstract override def ++=(xs: TraversableOnce[A]): this.type = {
+    for (x <- xs) this += x
+    this
+  }
+
   abstract override def +=:(element: A): this.type = {
     super.+=:(element)
     publish(new Include(Start, element) with Undoable {
