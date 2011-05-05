@@ -1,0 +1,22 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> @deprecated("foooo", "ReplTest version 1.0-FINAL") class Foo() {
+  override def toString = "Bippy"
+}
+defined class Foo
+
+scala> val f = new Foo
+<console>:8: warning: class Foo is deprecated: foooo
+       val f = new Foo
+           ^
+<console>:8: warning: class Foo is deprecated: foooo
+       val f = new Foo
+                   ^
+f: Foo = Bippy
+
+scala> 
+
+scala> 

@@ -751,7 +751,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
         typesOfDefinedTerms
 
         // compile the result-extraction object
-        lineRep compile ResultObjectSourceCode(handlers)
+        beSilentDuring {
+          lineRep compile ResultObjectSourceCode(handlers)
+        }
       }
     }
 

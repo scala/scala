@@ -426,12 +426,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
-    /** Does this symbol denote a wrapper object of the interpreter or its class? */
-    final def isInterpreterWrapper =
-      (isModule || isModuleClass) &&
-      owner.isEmptyPackageClass &&
-      (name startsWith nme.INTERPRETER_LINE_PREFIX) &&
-      (name endsWith nme.INTERPRETER_WRAPPER_SUFFIX)
+    /** Does this symbol denote a wrapper created by the repl? */
+    final def isInterpreterWrapper = (isModule || isModuleClass) && nme.isReplWrapperName(name)
 
     override def isEffectiveRoot = super.isEffectiveRoot || isInterpreterWrapper
 

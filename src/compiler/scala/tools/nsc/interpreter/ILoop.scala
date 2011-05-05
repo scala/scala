@@ -532,7 +532,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
           echo("Unrecoverable error.")
           throw ex
         case _  =>
-          def fn(): Boolean = in.readYesOrNo(replayQuestionMessage, { echo("\nYou must enter y or n.") ; fn() })
+          def fn(): Boolean =
+            try in.readYesOrNo(replayQuestionMessage, { echo("\nYou must enter y or n.") ; fn() })
+            catch { case _: RuntimeException => false }
+
           if (fn()) replay()
           else echo("\nAbandoning crashed session.")
       }
