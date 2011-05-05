@@ -271,16 +271,21 @@ trait NamesDefaults { self: Analyzer =>
       })
       (symPs, args).zipped map {
         case ((sym, byName, repeated), arg) =>
-          // resetAttrs required for #2290. given a block { val x = 1; x }, when wrapping into a function
-          // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
-          val body = if (byName) blockTyper.typed(Function(List(), resetLocalAttrs(arg)))
-                     else if (repeated) arg match {
-                       case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
-                         expr
-                       case _ =>
-                         val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
-                         blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
-                     } else arg
+          val body =
+            if (byName) {
+              val res = blockTyper.typed(Function(List(), arg))
+              new ChangeOwnerTraverser(context.owner, res.symbol) traverse arg // fixes #2290
+              res
+            } else {
+              new ChangeOwnerTraverser(context.owner, sym) traverse arg // fixes #4502
+              if (repeated) arg match {
+                case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
+                  expr
+                case _ =>
+                  val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
+                  blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
+              } else arg
+            }
           atPos(body.pos)(ValDef(sym, body).setType(NoType))
       }
     }
