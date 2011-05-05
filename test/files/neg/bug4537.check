@@ -1,0 +1,4 @@
+c.scala:7: error: object Settings in package a cannot be accessed in package a
+ println(Settings.Y)
+         ^
+one error found
