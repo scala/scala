@@ -46,28 +46,32 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
    * this problem should be fixed, this implementation is just a patch
    */
   val body = {
-    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" } onload="windowTitle();">
+    val templateName = if (tpl.isRootPackage) "root package" else tpl.name
+    val displayName = tpl.companion match {
+      case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
+        <a href={relativeLinkTo(companion)} title="Go to companion">{ templateName }</a>
+      case _ =>
+        templateName
+    }
+    val owner = {
+      if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
+        NodeSeq.Empty
+      else
+        <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
+    }
 
-      { if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
-          NodeSeq.Empty
-        else
-          <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
-      }
-
-      { val templateName = if (tpl.isRootPackage) "root package" else tpl.name
-        val displayName = tpl.companion match {
-          case Some(companion) =>
-            if (companion.visibility.isPublic && companion.inSource != None)
-              <a href={relativeLinkTo(companion)} title="go to companion">{ templateName }</a>
-            else templateName
-          case _ =>
-            templateName
-        }
-        <div id="definition">
-          <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
-          <h1>{ displayName }</h1>
-        </div>
-      }
+    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }>
+      <div id="definition">
+        {
+          tpl.companion match {
+            case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
+              <a href={relativeLinkTo(companion)} title="Go to companion"><img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/></a>
+            case _ =>
+              <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
+        }}
+        { owner }
+        <h1>{ displayName }</h1>
+      </div>
 
       { signature(tpl, true) }
       { memberToCommentHtml(tpl, true) }

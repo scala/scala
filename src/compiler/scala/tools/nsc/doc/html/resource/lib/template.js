@@ -84,8 +84,9 @@ $(document).ready(function(){
         };
     });
     initInherit();
-    //http://flowplayer.org/tools/tooltip.html
-    $(".extype").tooltip({
+
+    // Create tooltips
+    $(".extype").add(".defval").tooltip({
         tip: "#tooltip",
         position:"top center",
         predelay: 500,
@@ -93,14 +94,6 @@ $(document).ready(function(){
             $(this.getTip()).text(this.getTrigger().attr("name"));
         }
     });
-    $(".defval").tooltip({
-        tip: "#tooltip",
-        position:"top center",
-        predelay: 500,        
-        onBeforeShow: function(ev) {
-            $(this.getTip()).html(this.getTrigger().attr("name"))
-        }        
-    });   
 
     /* Add toggle arrows */
     var docAllSigs = $("#template li").has(".fullcomment").find(".signature");
@@ -143,6 +136,9 @@ $(document).ready(function(){
     $(".toggleContainer").click(function() {
       toggleShowContentFct($(this));
     });
+    
+    // Set parent window title
+    windowTitle();
 });
 
 function orderAlpha() {

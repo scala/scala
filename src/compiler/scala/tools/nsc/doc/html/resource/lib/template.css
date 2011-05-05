@@ -43,37 +43,6 @@ a[href]:hover {
   text-decoration: none;
 }
 
-#owner {
-  padding: 2px 10px 5px;
-  height: 17px;
-  font-size: 12pt;
-  display: block;
-}
-
-#owner a {
-  color: black;
-/*  text-decoration: none;*/
-/*  font-weight: bold;*/
-/*  text-shadow: white 0px 1px 0px;*/
-}
-
-#owner a:hover {
-  color: black;
-  text-decoration: none;
-/*  font-weight: bold;*/
-/*  text-shadow: white 0px 1px 0px;*/
-}
-
-.value #owner {
-  background-color: #7996AC; /* light steel gray */
-}
-
-.type #owner {
-  background-color: #95b8a1; /* lighter green */  
-/*  background-image:url('ownerbg2.gif');
-  background-repeat:repeat-x;*/
-}
-
 #types ol li > p {
   margin-top: 5px;
 }
@@ -82,41 +51,69 @@ a[href]:hover {
   margin-bottom: 5px;
 }
 
+/*
 #definition {
-  display: block;
-  padding: 5px 6px;
-  height: 61px;
+  padding: 6px 0 6px 6px;
+  min-height: 59px;
+  color: white;
+}
+*/
+
+#definition {
+  display: block-inline;
+  padding: 5px 0px;
+  min-height: 61px;
 }
 
 #definition > img {
   float: left;
+  padding-right: 6px;
+  padding-left: 5px;
+}
+
+#definition > a > img {
+  float: left;
+  padding-right: 6px;
+  padding-left: 5px;
+}
+
+#definition p + h1 {
+  margin-top: 3px;
 }
 
 #definition > h1 {
-  padding: 12px 0 12px 6px;
+/*  padding: 12px 0 12px 6px;*/
   color: white;
-/*   text-shadow: 3px black;
+  text-shadow: 3px black;
   text-shadow: black 0px 2px 0px;
- */
   font-size: 24pt;
   display: inline-block;
+  overflow: hidden;
+  margin-top: 10px;
 }
 
 #definition h1 > a {
   color: #ffffff;
-/*  text-decoration: none; */
-/*   font-size: 24pt;
-  text-shadow: black 0px 0px 0px;
- */
- }
-
-#definition h1 > a:hover {
-  color: #ffffff;
-  text-decoration: none;
   font-size: 24pt;
-/*   text-shadow: black 0px 2px 0px;
- */
- }
+  text-shadow: black 0px 2px 0px;
+/*  text-shadow: black 0px 0px 0px;*/
+text-decoration: none; 
+}
+
+#definition #owner {
+  color: #ffffff;
+  margin-top: 4px;
+  font-size: 10pt;
+  overflow: hidden;
+}
+
+#definition #owner > a {
+  color: #ffffff;
+}
+
+#definition #owner > a:hover {
+  text-decoration: none;
+}
 
 #signature {
   background-image:url('signaturebg2.gif');
@@ -134,17 +131,16 @@ a[href]:hover {
   text-align: left;
   width: auto;
   position: static;
-/*   text-shadow: 2px white;
+  text-shadow: 2px white;
   text-shadow: white 0px 1px 0px;
- */
 }
 
 #signature > span.symbol {
   text-align: left;
   display: inline;
   padding-left: 0.7em;
-/*   text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px; */
+  text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px;
 }
 
 /* Linear super types and known subclasses */
@@ -288,8 +284,8 @@ div.members > ol > li:last-child {
   line-height: 18px;
   clear: both;
   display: block;
-/*   text-shadow: 2px white;
-  text-shadow: white 0px 1px 0px; */
+  text-shadow: 2px white;
+  text-shadow: white 0px 1px 0px;
 }
 
 .signature .kind {
