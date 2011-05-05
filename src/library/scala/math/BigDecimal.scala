@@ -183,9 +183,18 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     case that: BigDecimal     => this equals that
     case that: BigInt         => this.toBigIntExact exists (that equals _)
     case _: Float | _: Double => unifiedPrimitiveEquals(that)
-    case _                    => fitsInLong && unifiedPrimitiveEquals(that)
+    case _                    => isValidLong && unifiedPrimitiveEquals(that)
   }
-  private def fitsInLong = isWhole && this <= Long.MaxValue && this >= Long.MinValue
+  override def isValidByte  = noArithmeticException(toByteExact)
+  override def isValidShort = noArithmeticException(toShortExact)
+  override def isValidChar  = isValidInt && toIntExact >= Char.MinValue && toIntExact <= Char.MaxValue
+  override def isValidInt   = noArithmeticException(toIntExact)
+  def isValidLong  = noArithmeticException(toLongExact)
+
+  private def noArithmeticException(body: => Unit): Boolean = {
+    try   { body ; true }
+    catch { case _: ArithmeticException => false }
+  }
 
   protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
   def underlying = bigDecimal
