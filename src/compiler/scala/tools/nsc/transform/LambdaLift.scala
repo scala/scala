@@ -227,12 +227,12 @@ abstract class LambdaLift extends InfoTransform {
     }
 
     private def proxy(sym: Symbol) = {
-      def searchIn(searchee: Symbol): Symbol = {
+      def searchIn(enclosure: Symbol): Symbol = {
         if (settings.debug.value)
-          log("searching for " + sym + "(" + sym.owner + ") in " + searchee + " " + searchee.logicallyEnclosingMember)
+          log("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
 
-        val ps = (proxies get searchee.logicallyEnclosingMember).toList.flatten filter (_.name == sym.name)
-        if (ps.isEmpty) searchIn(searchee.skipConstructor.owner)
+        val ps = (proxies get enclosure.logicallyEnclosingMember).toList.flatten filter (_.name == sym.name)
+        if (ps.isEmpty) searchIn(enclosure.skipConstructor.owner)
         else ps.head
       }
       if (settings.debug.value)
