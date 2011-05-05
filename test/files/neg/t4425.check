@@ -1,0 +1,4 @@
+t4425.scala:3: error: erroneous or inaccessible type
+  42 match { case _ X _ => () }
+                    ^
+one error found

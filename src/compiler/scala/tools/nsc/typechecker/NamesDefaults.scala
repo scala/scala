@@ -189,7 +189,12 @@ trait NamesDefaults { self: Analyzer =>
         } else {
           val module = companionModuleOf(baseFun.symbol.owner, context)
           if (module == NoSymbol) None
-          else Some(atPos(pos.focus)(gen.mkAttributedRef(pre, module)))
+          else {
+            val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
+            if (module.isStable && pre.isStable)    // fixes #4524. the type checker does the same for
+              ref.setType(singleType(pre, module))  // typedSelect, it calls "stabilize" on the result.
+            Some(ref)
+          }
         }
       }
 
