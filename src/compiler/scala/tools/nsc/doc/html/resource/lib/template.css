@@ -62,7 +62,7 @@ a[href]:hover {
 #definition {
   display: block-inline;
   padding: 5px 0px;
-  min-height: 61px;
+  height: 61px;
 }
 
 #definition > img {
