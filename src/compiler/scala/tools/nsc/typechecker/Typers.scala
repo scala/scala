@@ -3652,6 +3652,7 @@ trait Typers extends Modes {
         // case x :: xs in class List would return the :: method)
         // unless they are stable or are accessors (the latter exception is for better error messages).
         def qualifies(sym: Symbol): Boolean = {
+          sym.hasRawInfo &&       // this condition avoids crashing on self-referential pattern variables
           reallyExists(sym) &&
           ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod || sym.hasFlag(ACCESSOR))
         }
