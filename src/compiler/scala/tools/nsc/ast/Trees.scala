@@ -295,6 +295,9 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     (superRef /: argss) (Apply)
   }
 
+  def Apply(sym: Symbol, args: Tree*): Tree =
+    Apply(Ident(sym), args.toList)
+
   def Super(sym: Symbol, mix: TypeName): Tree = Super(This(sym), mix)
 
   def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym

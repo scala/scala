@@ -287,6 +287,15 @@ object ScalaRunTime {
       case (k, v)   => inner(k) + " -> " + inner(v)
       case _        => inner(arg)
     }
+
+    // Special casing Unit arrays, the value class which uses a reference array type.
+    def arrayToString(x: AnyRef) = {
+      if (x.getClass.getComponentType == classOf[BoxedUnit])
+        0 until (array_length(x) min maxElements) map (_ => "()") mkString ("Array(", ", ", ")")
+      else
+        WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
+    }
+
     // The recursively applied attempt to prettify Array printing.
     // Note that iterator is used if possible and foreach is used as a
     // last resort, because the parallel collections "foreach" in a
@@ -296,7 +305,7 @@ object ScalaRunTime {
       case ""                           => "\"\""
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x toString
-      case x: AnyRef if isArray(x)      => WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
+      case x: AnyRef if isArray(x)      => arrayToString(x)
       case x: collection.Map[_, _]      => x.iterator take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
