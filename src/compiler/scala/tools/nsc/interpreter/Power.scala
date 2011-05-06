@@ -132,12 +132,13 @@ abstract class Power[G <: Global](
     |** New defs! Type power.<tab> to reveal     **
   """.stripMargin.trim
 
-  def init = customInit getOrElse """
-    |import scala.tools.nsc._
-    |import scala.collection.JavaConverters._
-    |import global.{ error => _, _ }
-    |import power.Implicits._
-  """.stripMargin
+  private def initImports = List(
+    "scala.tools.nsc._",
+    "scala.collection.JavaConverters._",
+    "global.{ error => _, _ }",
+    "power.Implicits._"
+  )
+  def init = customInit getOrElse "import " + initImports.mkString(", ")
 
   /** Starts up power mode and runs whatever is in init.
    */
