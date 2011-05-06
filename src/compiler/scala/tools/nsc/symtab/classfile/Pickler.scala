@@ -144,15 +144,15 @@ abstract class Pickler extends SubComponent {
             putType(sym.typeOfThis);
           putSymbol(sym.alias)
           if (!sym.children.isEmpty) {
-            val (locals, globals) = sym.children.toList.partition(_.isLocalClass)
+            val (locals, globals) = sym.children partition (_.isLocalClass)
             val children =
               if (locals.isEmpty) globals
               else {
                 val localChildDummy = sym.newClass(sym.pos, tpnme.LOCAL_CHILD)
                 localChildDummy.setInfo(ClassInfoType(List(sym.tpe), EmptyScope, localChildDummy))
-                localChildDummy :: globals
+                globals + localChildDummy
               }
-            putChildren(sym, children sortBy (_.sealedSortName))
+            putChildren(sym, children.toList sortBy (_.sealedSortName))
           }
           for (annot <- staticAnnotations(sym.annotations.reverse))
             putAnnotation(sym, annot)

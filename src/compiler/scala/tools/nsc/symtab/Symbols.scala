@@ -1530,19 +1530,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       abort("sourceFile_= inapplicable for " + this)
     }
 
-    /** If this is a sealed class, its known direct subclasses. Otherwise Set.empty */
-    def children: List[Symbol] = Nil
-
-    /** Recursively finds all sealed descendants and returns a sorted list.
-     *  Includes this symbol unless it is abstract, but as value classes are
-     *  marked abstract so they can't be instantiated, they are special cased.
+    /** If this is a sealed class, its known direct subclasses.
+     *  Otherwise, the empty set.
      */
-    def sealedDescendants: List[Symbol] = {
-      val kids = children flatMap (_.sealedDescendants)
-      val all = if (isAbstractClass && !isValueClass(this)) kids else this :: kids
+    def children: Set[Symbol] = Set()
 
-      all.distinct sortBy (_.sealedSortName)
-    }
+    /** Recursively assemble all children of this symbol.
+     */
+    def sealedDescendants: Set[Symbol] = children.flatMap(_.sealedDescendants) + this
 
 // ToString -------------------------------------------------------------------
 
@@ -2093,7 +2088,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (isModuleClass) companionModule else NoSymbol
 
     private var childSet: Set[Symbol] = Set()
-    override def children: List[Symbol] = childSet.toList sortBy (_.sealedSortName)
+    override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
     incCounter(classSymbolCount)

@@ -172,10 +172,15 @@ trait MatrixAdditions extends ast.TreeDSL {
         val collected = toCollect map { case (pv, i) =>
           // okay, now reset the flag
           pv.sym resetFlag MUTABLE
-          // have to filter out children which cannot match: see ticket #3683 for an example
-          val kids = pv.tpe.typeSymbol.sealedDescendants filter (_.tpe matchesPattern pv.tpe)
 
-          i -> kids
+          i -> (
+            pv.tpe.typeSymbol.sealedDescendants.toList sortBy (_.sealedSortName)
+            // symbols which are both sealed and abstract need not be covered themselves, because
+            // all of their children must be and they cannot otherwise be created.
+            filterNot (x => x.isSealed && x.isAbstractClass && !isValueClass(x))
+            // have to filter out children which cannot match: see ticket #3683 for an example
+            filter (_.tpe matchesPattern pv.tpe)
+          )
         }
 
         val folded =

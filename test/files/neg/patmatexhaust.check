@@ -35,4 +35,20 @@ missing combination              B
 
   def ma9(x: B) = x match {
                   ^
-7 errors found
+patmatexhaust.scala:100: error: match is not exhaustive!
+missing combination             C1
+
+    def ma10(x: C) = x match { // not exhaustive: C1 is not sealed.
+                     ^
+patmatexhaust.scala:114: error: match is not exhaustive!
+missing combination             D1
+missing combination             D2
+
+    def ma10(x: C) = x match {  // not exhaustive: C1 has subclasses.
+                     ^
+patmatexhaust.scala:126: error: match is not exhaustive!
+missing combination             C1
+
+    def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
+                     ^
+10 errors found

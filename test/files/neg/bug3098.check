@@ -1,0 +1,6 @@
+b.scala:3: error: match is not exhaustive!
+missing combination              C
+
+  def f = (null: T) match {
+               ^
+one error found
