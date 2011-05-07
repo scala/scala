@@ -39,7 +39,7 @@ package scala.collection
  *  @author Aleksandar Prokopec
  *  @since 2.9
  */
-private[collection] trait GenTraversableOnce[+A] {
+trait GenTraversableOnce[+A] {
 
   def foreach[U](f: A => U): Unit
 
