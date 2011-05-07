@@ -7,6 +7,7 @@ package scala.tools.nsc
 
 import settings.FscSettings
 import io.Directory
+import Properties.isWin
 
 /** A compiler command for the offline compiler.
  *
@@ -21,9 +22,12 @@ class OfflineCompilerCommand(arguments: List[String], settings: FscSettings) ext
     if (currentDir.isDefault) {
       // Prefer env variable PWD to system property user.dir because the former
       // deals better with paths not rooted at / (filesystem mounts.)
-      val baseDirectory = System.getenv("PWD") match {
-        case null   => Directory.Current getOrElse Directory("/")
-        case dir    => Directory(dir)
+      // ... except on windows, because under cygwin PWD involves "/cygdrive"
+      // instead of whatever it's supposed to be doing.
+      val baseDirectory = {
+        val pwd = System.getenv("PWD")
+        if (pwd != null && !isWin) Directory(pwd)
+        else Directory.Current getOrElse Directory("/")
       }
       currentDir.value = baseDirectory.path
     }
