@@ -5,8 +5,7 @@ object Test extends ReplTest {
 
   // ugh, windows
   def expectedOutput =
-"""
-Type in expressions to have them evaluated.
+"""Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala>
