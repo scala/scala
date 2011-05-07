@@ -318,37 +318,44 @@ abstract class TreeInfo {
       EmptyTree
   }
 
-  /** Top-level definition sequence contains a leading import of
-   *  <code>Predef</code> or <code>scala.Predef</code>.
+  /** Is the tree Predef, scala.Predef, or _root_.scala.Predef?
    */
-  def containsLeadingPredefImport(defs: List[Tree]): Boolean = defs match {
-    case List(PackageDef(_, defs1)) =>
-      containsLeadingPredefImport(defs1)
-    case Import(Ident(nme.Predef), _) :: _ =>
-      true
-    case Import(Select(Ident(nme.scala_), nme.Predef), _) :: _ =>
-      true
-    case Import(_, _) :: defs1 =>
-      containsLeadingPredefImport(defs1)
-    case _ =>
-      false
+  def isPredefExpr(t: Tree) = t match {
+    case Ident(nme.Predef)                                          => true
+    case Select(Ident(nme.scala_), nme.Predef)                      => true
+    case Select(Select(Ident(nme.ROOTPKG), nme.scala_), nme.Predef) => true
+    case _                                                          => false
   }
 
-  /** Compilation unit is class or object 'name' in package 'scala'
+  /** Is this file the body of a compilation unit which should not
+   *  have Predef imported?
    */
-  def isUnitInScala(tree: Tree, name: Name) = tree match {
-    case PackageDef(Ident(nme.scala_), defs) => isImplDef(defs, name)
-    case _ => false
+  def noPredefImportForUnit(body: Tree) = {
+    // Top-level definition whose leading imports include Predef.
+    def containsLeadingPredefImport(defs: List[Tree]): Boolean = defs match {
+      case PackageDef(_, defs1) :: _ => containsLeadingPredefImport(defs1)
+      case Import(expr, _) :: rest   => isPredefExpr(expr) || containsLeadingPredefImport(rest)
+      case _                         => false
+    }
+    def isImplDef(trees: List[Tree], name: Name): Boolean = trees match {
+      case Import(_, _) :: xs               => isImplDef(xs, name)
+      case DocDef(_, tree1) :: Nil          => isImplDef(List(tree1), name)
+      case Annotated(_, tree1) :: Nil       => isImplDef(List(tree1), name)
+      case ModuleDef(_, `name`, _) :: Nil   => true
+      case ClassDef(_, `name`, _, _) :: Nil => true
+      case _                                => false
+    }
+    // Compilation unit is class or object 'name' in package 'scala'
+    def isUnitInScala(tree: Tree, name: Name) = tree match {
+      case PackageDef(Ident(nme.scala_), defs) => isImplDef(defs, name)
+      case _                                   => false
+    }
+
+    (  isUnitInScala(body, nme.Predef)
+    || isUnitInScala(body, tpnme.ScalaObject)
+    || containsLeadingPredefImport(List(body)))
   }
 
-  private def isImplDef(trees: List[Tree], name: Name): Boolean = trees match {
-    case Import(_, _) :: xs => isImplDef(xs, name)
-    case DocDef(_, tree1) :: Nil => isImplDef(List(tree1), name)
-    case Annotated(_, tree1) :: Nil => isImplDef(List(tree1), name)
-    case ModuleDef(_, `name`, _) :: Nil => true
-    case ClassDef(_, `name`, _, _) :: Nil => true
-    case _ => false
-  }
 
   def isAbsTypeDef(tree: Tree) = tree match {
     case TypeDef(_, _, _, TypeBoundsTree(_, _)) => true

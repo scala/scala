@@ -112,7 +112,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   private def _initialize(): Boolean = {
     val source = """
       |class $repl_$init {
-      |  List(1) map (_ + 1)
+      |  scala.collection.immutable.List(1) map (_ + 1)
       |}
       |""".stripMargin
 

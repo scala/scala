@@ -34,26 +34,23 @@ trait Contexts { self: Analyzer =>
 
   var lastAccessCheckDetails: String = ""
 
-  /** List of objects and packages to import from in
-   *  a root context.  This list is sensitive to the
-   *  compiler settings.
+  /** List of symbols to import from in a root context.  Typically that
+   *  is java.lang, scala, and scala.Predef, in that order.  Exceptions:
+   *
+   *  -- if -Yno-imports is given, nothing is imported
+   *  -- if the unit is java defined, only java.lang is imported
+   *  -- if -Yno-predef is given, if the unit has an import of Predef
+   *     among its leading imports, or if the unit is scala.ScalaObject
+   *     or scala.Predef, Predef is not imported.
    */
   protected def rootImports(unit: CompilationUnit, tree: Tree): List[Symbol] = {
     import definitions._
-    val imps = new ListBuffer[Symbol]
-    if (!settings.noimports.value) {
-      assert(isDefinitionsInitialized)
-      imps += JavaLangPackage
-      if (!unit.isJava) {
-        assert(ScalaPackage ne null, "Scala package is null")
-        imps += ScalaPackage
-        if (!(treeInfo.isUnitInScala(unit.body, nme.Predef) ||
-              treeInfo.isUnitInScala(unit.body, tpnme.ScalaObject) ||
-              treeInfo.containsLeadingPredefImport(List(unit.body))))
-          imps += PredefModule
-      }
-    }
-    imps.toList
+    assert(isDefinitionsInitialized, "definitions uninitialized")
+
+    if (settings.noimports.value) Nil
+    else if (unit.isJava) List(JavaLangPackage)
+    else if (settings.nopredef.value || treeInfo.noPredefImportForUnit(unit.body)) List(JavaLangPackage, ScalaPackage)
+    else List(JavaLangPackage, ScalaPackage, PredefModule)
   }
 
   def rootContext(unit: CompilationUnit): Context =

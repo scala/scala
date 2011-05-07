@@ -113,9 +113,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val log           = PhasesSetting     ("-Ylog", "Log operations during")
   val Ylogcp        = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
   val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java.")
-  val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports.")
-  // Not actually doing anything, so disabled.
-  // val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values.")
+  val noimports     = BooleanSetting    ("-Yno-imports", "Compile without importing scala.*, java.lang.*, or Predef.")
+  val nopredef      = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
   val Yprofile      = PhasesSetting     ("-Yprofile", "(Requires jvm -agentpath to contain yjgpagent) Profile CPU usage of given phases.")
   val YprofileMem   = BooleanSetting    ("-Yprofile-memory", "Profile memory, get heap snapshot after each compiler run (requires yjpagent, see above).")
   val YprofileClass = StringSetting     ("-Yprofile-class", "class", "Name of profiler class.", "scala.tools.util.YourkitProfiling")

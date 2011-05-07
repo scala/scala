@@ -15,6 +15,9 @@ trait Imports {
   import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
+  def isNoImports = settings.noimports.value
+  def isNoPredef  = settings.nopredef.value
+
   /** Synthetic import handlers for the language defined imports. */
   private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
     val hd :: tl = sym.fullName.split('.').toList map newTermName
@@ -88,7 +91,7 @@ trait Imports {
    *  2. A code fragment that should go after the code
    *  of the new request.
    *
-   *  3. An access path which can be traverested to access
+   *  3. An access path which can be traversed to access
    *  any bindings inside code wrapped by #1 and #2 .
    *
    * The argument is a set of Names that need to be imported.

@@ -172,6 +172,10 @@ trait MemberHandlers {
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
     def targetType = intp.typeOfExpression("" + expr)
+    // TODO: Need to track these specially to honor Predef masking attempts,
+    // because they must be the leading imports in the code generated for each
+    // line.  We can use the same machinery as Contexts now, anyway.
+    def isPredefImport = treeInfo.isPredefExpr(expr)
 
     // wildcard imports, e.g. import foo._
     private def selectorWild    = selectors filter (_.name == nme.USCOREkw)
