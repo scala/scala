@@ -20,6 +20,12 @@ class Javap(
 
   lazy val parser = new JpOptions
 
+  val EnvClass = loader.tryToInitializeClass[FakeEnvironment](Env).orNull
+  val EnvCtr   = EnvClass.getConstructor(List[Class[_]](): _*)
+
+  val PrinterClass = loader.tryToInitializeClass[FakePrinter](Printer).orNull
+  val PrinterCtr   = PrinterClass.getConstructor(classOf[InputStream], classOf[PrintWriter], EnvClass)
+
   def findBytes(path: String): Array[Byte] =
     tryFile(path) getOrElse tryClass(path)
 
@@ -30,18 +36,6 @@ class Javap(
       else new JpSuccess(newPrinter(new ByteArrayInputStream(bytes), newEnv(args)))
     }
   }
-
-  // "documentation"
-  type FakeEnvironment = AnyRef
-  type FakePrinter = AnyRef
-
-  val Env      = "sun.tools.javap.JavapEnvironment"
-  val EnvClass = loader.tryToInitializeClass[FakeEnvironment](Env).orNull
-  val EnvCtr   = EnvClass.getConstructor(List[Class[_]](): _*)
-
-  val Printer      = "sun.tools.javap.JavapPrinter"
-  val PrinterClass = loader.tryToInitializeClass[FakePrinter](Printer).orNull
-  val PrinterCtr   = PrinterClass.getConstructor(classOf[InputStream], classOf[PrintWriter], EnvClass)
 
   def newPrinter(in: InputStream, env: FakeEnvironment): FakePrinter =
     PrinterCtr.newInstance(in, printWriter, env)
@@ -82,6 +76,16 @@ class Javap(
 }
 
 object Javap {
+  val Env     = "sun.tools.javap.JavapEnvironment"
+  val Printer = "sun.tools.javap.JavapPrinter"
+
+  def isAvailable(cl: ScalaClassLoader = ScalaClassLoader.getSystemLoader()) =
+    cl.tryToInitializeClass[AnyRef](Env).isDefined
+
+  // "documentation"
+  type FakeEnvironment = AnyRef
+  type FakePrinter = AnyRef
+
   def apply(path: String): Unit      = apply(Seq(path))
   def apply(args: Seq[String]): Unit = new Javap() apply args foreach (_.show())
 
