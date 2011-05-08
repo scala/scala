@@ -159,10 +159,18 @@ class Path private[io] (val jfile: JFile) {
     if (p isSame this) Nil else p :: p.parents
   }
   // if name ends with an extension (e.g. "foo.jpg") returns the extension ("jpg"), otherwise ""
-  def extension: String = (name lastIndexOf '.') match {
-    case -1   => ""
-    case idx  => name drop (idx + 1)
+  def extension: String = {
+    var i = name.length - 1
+    while (i >= 0 && name.charAt(i) != '.')
+      i -= 1
+
+    if (i < 0) ""
+    else name.substring(i + 1)
   }
+  // def extension: String = (name lastIndexOf '.') match {
+  //   case -1   => ""
+  //   case idx  => name drop (idx + 1)
+  // }
   // compares against extensions in a CASE INSENSITIVE way.
   def hasExtension(ext: String, exts: String*) = {
     val xs = (ext +: exts) map (_.toLowerCase)

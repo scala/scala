@@ -138,8 +138,8 @@ private[io] trait ZipContainer extends AbstractFile {
         if (dir.entry == null) dir.entry = entry
       }
       else {
-        val (home, name) = splitPath(path)
-        _parent = getDir(dirs, home)
+        _parent = getDir(dirs, pathFront(path))
+        val name = pathRear(path)
         _parent.entries(name) = FileEntryConstructor(f(this), name, path, entry)
       }
     }
@@ -149,13 +149,28 @@ private[io] trait ZipContainer extends AbstractFile {
       root
     }
   }
+  // Uglified for performance.
+  // protected def splitPath(path: String): (String, String) = {
+  //   (path lastIndexOf '/') match {
+  //     case -1   => ("/", path)
+  //     case idx  => path splitAt (idx + 1)
+  //   }
+  // }
+  protected def splitPath(path: String, front: Boolean): String = {
+    var i = path.length - 1
+    while (i >= 0 && path.charAt(i) != '/')
+      i -= 1
 
-  protected def splitPath(path: String): (String, String) = {
-    (path lastIndexOf '/') match {
-      case -1   => ("/", path)
-      case idx  => path splitAt (idx + 1)
-    }
+    if (i < 0)
+      if (front) "/"
+      else path
+    else
+      if (front) path.substring(0, i + 1)
+      else path.substring(i + 1)
   }
+  private def pathFront(path: String) = splitPath(path, true)
+  private def pathRear(path: String) = splitPath(path, false)
+  // End uglify.
 
   /**
    * Returns the abstract file in this abstract directory with the
@@ -181,9 +196,12 @@ private[io] trait ZipContainer extends AbstractFile {
    */
   protected def getDir(dirs: Map[String, DirEntryInterface], path: String): DirEntryInterface =
     dirs.getOrElseUpdate(path, {
-      val (home, name) = splitPath(path init)
-      val parent = getDir(dirs, home)
-      val dir = DirEntryConstructor(parent, name, path)
+      val pathTail = path.substring(0, path.length - 1)
+      val home     = pathFront(pathTail)
+      val name     = pathRear(pathTail)
+      val parent   = getDir(dirs, home)
+      val dir      = DirEntryConstructor(parent, name, path)
+
       parent.entries(name + path.last) = dir
       dir
     })
@@ -218,7 +236,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   ) extends VirtualFile(name, path)
   {
     override def underlyingSource = Some(self)
-    final override def path = "%s(%s)".format(self, super.path)
+    final override def path = self + "(" + super.path + ")"
     final def archive = self.archive
 
     override def hashCode = super.hashCode + container.hashCode
@@ -291,7 +309,7 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer {
   def container = unsupported
 
   abstract class Entry(name: String, path: String) extends VirtualFile(name, path) {
-    final override def path = "%s(%s)".format(URLZipArchive.this, super.path)
+    final override def path = URLZipArchive.this + "(" + super.path + ")"
     override def container = URLZipArchive.this
   }
   final class DirEntry(name: String, path: String) extends Entry(name, path) with DirEntryInterface {

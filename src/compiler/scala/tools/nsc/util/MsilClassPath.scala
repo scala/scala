@@ -135,7 +135,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
         cls += ClassRep(Some(types(i)), None)
       i += 1
     }
-    cls.toList
+    cls.toIndexedSeq
   }
 
   lazy val packages = {
@@ -152,11 +152,13 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
       }
       i += 1
     }
-    for (ns <- nsSet.toList)
+    val xs = for (ns <- nsSet.toList)
       yield new AssemblyClassPath(types, ns, context)
+
+    xs.toIndexedSeq
   }
 
-  val sourcepaths: List[AbstractFile] = Nil
+  val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 
   override def toString() = "assembly classpath "+ namespace
 }

@@ -10,7 +10,7 @@ import java.net.{ URL, MalformedURLException }
 import scala.util.Properties._
 import nsc.{ Settings, GenericRunnerSettings }
 import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
-import nsc.io.{ File, Directory, Path }
+import nsc.io.{ File, Directory, Path, AbstractFile }
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 
@@ -193,7 +193,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     import context._
 
     // Assemble the elements!
-    def basis = List(
+    def basis = List[Traversable[ClassPath[AbstractFile]]](
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
@@ -228,7 +228,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers, context)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context)
     if (settings.Ylogcp.value) {
       Console.println("Classpath built from " + settings.toConciseString)
       Console.println("Defaults: " + PathResolver.Defaults)

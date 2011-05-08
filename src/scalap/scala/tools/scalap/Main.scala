@@ -126,13 +126,14 @@ class Main {
     /**
      * The short name of the package (without prefix)
      */
-    def name: String = ""
-    def asURLs = Nil
+    def name              = ""
+    def asURLs            = Nil
     def asClasspathString = ""
-    val context = DefaultJavaContext
-    val classes: List[ClassRep] = Nil
-    val packages: List[ClassPath[AbstractFile]] = Nil
-    val sourcepaths: List[AbstractFile] = Nil
+
+    val context     = DefaultJavaContext
+    val classes     = IndexedSeq[ClassRep]()
+    val packages    = IndexedSeq[ClassPath[AbstractFile]]()
+    val sourcepaths = IndexedSeq[AbstractFile]()
   }
 }
 
