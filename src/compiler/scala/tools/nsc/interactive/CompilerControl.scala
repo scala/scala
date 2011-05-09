@@ -1,3 +1,7 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ */
 package scala.tools.nsc
 package interactive
 
@@ -51,7 +55,7 @@ trait CompilerControl { self: Global =>
    */
   def getUnitOf(s: SourceFile): Option[RichCompilationUnit] = getUnit(s)
 
-  /** Run operation `op` on a compilation unit assocuated with given `source`.
+  /** Run operation `op` on a compilation unit associated with given `source`.
    *  If source has a loaded compilation unit, this one is passed to `op`.
    *  Otherwise a new compilation unit is created, but not added to the set of loaded units.
    */
@@ -99,8 +103,11 @@ trait CompilerControl { self: Global =>
     throw new FatalError("no context found for "+pos)
   }
 
+  private def postWorkItem(item: WorkItem) =
+    if (item.onCompilerThread) item() else scheduler.postWorkItem(item)
+
   /** Makes sure a set of compilation units is loaded and parsed.
-   *  Returns () to syncvar `response` on completions.
+   *  Returns () to syncvar `response` on completion.
    *  Afterwards a new background compiler run is started with
    *  the given sources at the head of the list of to-be-compiled sources.
    */
@@ -109,26 +116,28 @@ trait CompilerControl { self: Global =>
       case ri: ReloadItem if ri.sources == sources => Some(ri)
       case _ => None
     }
-    superseeded foreach (_.response.set())
-    scheduler postWorkItem new ReloadItem(sources, response)
+    superseeded.foreach(_.response.set())
+    postWorkItem(new ReloadItem(sources, response))
+  }
+
+  /** Removes source files and toplevel symbols, and issues a new typer run.
+   *  Returns () to syncvar `response` on completion.
+   */
+  def askFilesDeleted(sources: List[SourceFile], response: Response[Unit]) = {
+    postWorkItem(new FilesDeletedItem(sources, response))
   }
 
   /** Sets sync var `response` to the smallest fully attributed tree that encloses position `pos`.
    *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be be loaded.
    */
   def askTypeAt(pos: Position, response: Response[Tree]) =
-    scheduler postWorkItem new AskTypeAtItem(pos, response)
+    postWorkItem(new AskTypeAtItem(pos, response))
 
   /** Sets sync var `response` to the fully attributed & typechecked tree contained in `source`.
    *  @pre `source` needs to be loaded.
    */
-  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) = {
-    if (debugIDE) {
-      println("ask type called")
-      new Exception().printStackTrace()
-    }
-    scheduler postWorkItem new AskTypeItem(source, forceReload, response)
-  }
+  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =
+    postWorkItem(new AskTypeItem(source, forceReload, response))
 
   /** Sets sync var `response` to the position of the definition of the given link in
    *  the given sourcefile.
@@ -142,25 +151,25 @@ trait CompilerControl { self: Global =>
    *  is unloaded, it stays that way.
    */
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
-    scheduler postWorkItem new AskLinkPosItem(sym, source, response)
+    postWorkItem(new AskLinkPosItem(sym, source, response))
 
   /** Sets sync var `response' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    *  @pre  source is loaded
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
-    scheduler postWorkItem new AskTypeCompletionItem(pos, response)
+    postWorkItem(new AskTypeCompletionItem(pos, response))
 
   /** Sets sync var `response' to list of members that are visible
    *  as members of the scope enclosing `pos`.
    *  @pre  source is loaded
    */
   def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
-    scheduler postWorkItem new AskScopeCompletionItem(pos, response)
+    postWorkItem(new AskScopeCompletionItem(pos, response))
 
   /** Asks to do unit corresponding to given source file on present and subsequent type checking passes */
   def askToDoFirst(source: SourceFile) =
-    scheduler postWorkItem new AskToDoFirstItem(source)
+    postWorkItem(new AskToDoFirstItem(source))
 
   /** If source is not yet loaded, loads it, and starts a new run, otherwise
    *  continues with current pass.
@@ -171,7 +180,18 @@ trait CompilerControl { self: Global =>
    *                   the a NoSuchUnitError is raised in the response.
    */
   def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
-    scheduler postWorkItem new AskLoadedTypedItem(source, response)
+    postWorkItem(new AskLoadedTypedItem(source, response))
+
+  /** If source if not yet loaded, get an outline view with askParseEntered.
+   *  If source is loaded, wait for it to be typechecked.
+   *  In both cases, set response to parsed (and possibly typechecked) tree.
+   */
+  def askStructure(source: SourceFile, response: Response[Tree]) = {
+    getUnit(source) match {
+      case Some(_) => askLoadedTyped(source, response)
+      case None => askParsedEntered(source, false, response)
+    }
+  }
 
   /** Set sync var `response` to the parse tree of `source` with all top-level symbols entered.
    *  @param source       The source file to be analyzed
@@ -181,17 +201,17 @@ trait CompilerControl { self: Global =>
    *  @param response     The response.
    */
   def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
-    scheduler postWorkItem new AskParsedEnteredItem(source, keepLoaded, response)
+    postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
 
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
-  def askReset() = scheduler raise FreshRunReq
+  def askReset() = scheduler raise (new FreshRunReq)
 
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
 
-  @deprecated("use parseTree(source) instead")
+  @deprecated("use parseTree(source) instead") // deleted 2nd parameter, as thius has to run on 2.8 also.
   def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
     parseTree(source)
   }
@@ -209,7 +229,9 @@ trait CompilerControl { self: Global =>
   }
 
   /** Asks for a computation to be done quickly on the presentation compiler thread */
-  def ask[A](op: () => A): A = scheduler doQuickly op
+  def ask[A](op: () => A): A = if (self.onCompilerThread) op() else scheduler doQuickly op
+
+  def onCompilerThread = Thread.currentThread == compileRunner
 
   /** Info given for every member found by completion
    */
@@ -237,11 +259,18 @@ trait CompilerControl { self: Global =>
 
   // items that get sent to scheduler
 
-  abstract class WorkItem extends (() => Unit)
+  abstract class WorkItem extends (() => Unit) {
+    val onCompilerThread = self.onCompilerThread
+  }
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = reload(sources, response)
     override def toString = "reload "+sources
+  }
+
+  case class FilesDeletedItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
+    def apply() = filesDeleted(sources, response)
+    override def toString = "files deleted "+sources
   }
 
   class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
@@ -275,12 +304,12 @@ trait CompilerControl { self: Global =>
   }
 
   class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
-    def apply() = self.waitLoadedTyped(source, response)
+    def apply() = self.waitLoadedTyped(source, response, this.onCompilerThread)
     override def toString = "wait loaded & typed "+source
   }
 
   class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
-    def apply() = self.getParsedEntered(source, keepLoaded, response)
+    def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
   }
 }
@@ -290,7 +319,7 @@ trait CompilerControl { self: Global =>
 /** Signals a request for a fresh background compiler run.
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
  */
-object FreshRunReq extends ControlThrowable
+class FreshRunReq extends ControlThrowable
 
 /** Signals a request for a shutdown of the presentation compiler.
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
@@ -299,3 +328,4 @@ object ShutdownReq extends ControlThrowable
 
 class NoSuchUnitError(file: AbstractFile) extends Exception("no unit found for file "+file)
 
+class MissingResponse extends Exception("response missing")

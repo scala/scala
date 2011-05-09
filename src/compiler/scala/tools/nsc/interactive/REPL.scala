@@ -1,3 +1,7 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ */
 package scala.tools.nsc
 package interactive
 
@@ -130,7 +134,8 @@ object REPL {
           doComplete(makePos(file, off1, off1))
         case List("quit") =>
           comp.askShutdown()
-          System.exit(1)
+          // deleted sys. as this has to run on 2.8 also
+          exit(1)
         case List("structure", file) =>
           doStructure(file)
         case _ =>

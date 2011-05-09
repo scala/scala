@@ -1,4 +1,4 @@
-names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int,b: String)(c: Int*)Fact in object Fact.
+names-defaults-neg.scala:65: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
 Unspecified value parameter b.
   val fac = Fact(1)(2, 3)
                 ^
@@ -40,8 +40,8 @@ names-defaults-neg.scala:26: error: Int does not take parameters
   test3(b = 3, a = 1)(3)
                      ^
 names-defaults-neg.scala:35: error: ambiguous reference to overloaded definition,
-both method f in object t1 of type (b: String,a: Int)java.lang.String
-and  method f in object t1 of type (a: Int,b: String)java.lang.String
+both method f in object t1 of type (b: String, a: Int)java.lang.String
+and  method f in object t1 of type (a: Int, b: String)java.lang.String
 match argument types (b: java.lang.String,a: Int)
   t1.f(b = "dkljf", a = 1)
      ^
@@ -59,7 +59,7 @@ match argument types (Int)
      ^
 names-defaults-neg.scala:49: error: ambiguous reference to overloaded definition,
 both method g in object t7 of type (a: B)java.lang.String
-and  method g in object t7 of type (a: C,b: Int*)java.lang.String
+and  method g in object t7 of type (a: C, b: Int*)java.lang.String
 match argument types (C)
   t7.g(new C()) // ambigous reference
      ^
@@ -73,19 +73,19 @@ names-defaults-neg.scala:55: error: when using named arguments, the vararg param
   test5(b = "dlkj")
        ^
 names-defaults-neg.scala:61: error: ambiguous reference to overloaded definition,
-both method f in object t8 of type (b: String,a: Int)java.lang.String
-and  method f in object t8 of type (a: Int,b: java.lang.Object)java.lang.String
+both method f in object t8 of type (b: String, a: Int)java.lang.String
+and  method f in object t8 of type (a: Int, b: java.lang.Object)java.lang.String
 match argument types (a: Int,b: java.lang.String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambigous reference
              ^
-names-defaults-neg.scala:69: error: wrong number of arguments for <none>: (x: Int,y: String)A1
+names-defaults-neg.scala:69: error: wrong number of arguments for <none>: (x: Int, y: String)A1
   A1() match { case A1(_) => () }
                       ^
 names-defaults-neg.scala:76: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]])T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[Int]
- required: ?T[ ?T[ List[?T[ X forSome { type X } ]] ] ]
+ required: ?T[?T[List[?T[X forSome { type X }]]]]
 Error occurred in an application involving default arguments.
   test4()
   ^

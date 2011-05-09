@@ -1,3 +1,7 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ */
 package scala.tools.nsc
 package interactive
 
@@ -12,8 +16,13 @@ import mutable.ListBuffer
 
 trait Picklers { self: Global =>
 
-  lazy val freshRunReq = singletonPickler(FreshRunReq)
-  lazy val shutdownReq = singletonPickler(ShutdownReq)
+  lazy val freshRunReq =
+    unitPickler
+      .wrapped { _ => new FreshRunReq } { x => () }
+      .labelled ("FreshRunReq")
+      .cond (_.isInstanceOf[FreshRunReq])
+
+      lazy val shutdownReq = singletonPickler(ShutdownReq)
 
   def defaultThrowable[T <: Throwable]: CondPickler[T] = javaInstancePickler[T] cond { _ => true }
 
@@ -156,7 +165,7 @@ trait Picklers { self: Global =>
 
   implicit def askLoadedTypedItem: CondPickler[AskLoadedTypedItem] =
     pkl[SourceFile]
-      .wrapped { new AskLoadedTypedItem(_, new Response) } { _.source }
+      .wrapped { source => new AskLoadedTypedItem(source, new Response) } { _.source }
       .asClass (classOf[AskLoadedTypedItem])
 
   implicit def askParsedEnteredItem: CondPickler[AskParsedEnteredItem] =
