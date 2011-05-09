@@ -58,7 +58,9 @@ trait Scanners {
 
     def resume(lastCode: Int) = {
       token = lastCode
-      assert(next.token == EMPTY || reporter.hasErrors)
+      if (next.token != EMPTY && !reporter.hasErrors)
+        syntaxError("unexpected end of input: possible missing '}' in XML block")
+
       nextToken()
     }
 
@@ -242,7 +244,8 @@ trait Scanners {
 //              println("blank line found at "+lastOffset+":"+(lastOffset to idx).map(buf(_)).toList)
               return true
             }
-          } while (idx < end && ch <= ' ')
+	    if (idx == end) return false
+          } while (ch <= ' ')
         }
         idx += 1; ch = buf(idx)
       }
@@ -783,7 +786,7 @@ trait Scanners {
 
             /** Backquoted idents like 22.`foo`. */
             case '`' =>
-              return setStrVal()  /** Note the early return **/
+              return setStrVal()  /** Note the early return */
 
             /** These letters may be part of a literal, or a method invocation on an Int */
             case 'd' | 'D' | 'f' | 'F' =>
@@ -1011,17 +1014,31 @@ trait Scanners {
       else "'<" + token + ">'"
   }
 
-  /** A scanner over a given compilation unit
+  class MalformedInput(val offset: Int, val msg: String) extends Exception
+
+  /** A scanner for a given source file not necessarily attached to a compilation unit.
+   *  Useful for looking inside source files that aren not currently compiled to see what's there
    */
-  class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends Scanner {
-    def this(unit: CompilationUnit) = this(unit, List())
-    val buf = unit.source.asInstanceOf[BatchSourceFile].content
+  class SourceFileScanner(val source: SourceFile) extends Scanner {
+    val buf = source.content
     override val decodeUni: Boolean = !settings.nouescape.value
 
-    def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
-    def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)
-    def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
-    def deprecationWarning(off: Offset, msg: String) = unit.deprecationWarning(unit.position(off), msg)
+    // suppress warnings, throw exception on errors
+    def warning(off: Offset, msg: String): Unit = {}
+    def deprecationWarning(off: Offset, msg: String) = {}
+    def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
+    def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
+  }
+
+  /** A scanner over a given compilation unit
+   */
+  class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
+    def this(unit: CompilationUnit) = this(unit, List())
+
+    override def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
+    override def deprecationWarning(off: Offset, msg: String) = unit.deprecationWarning(unit.position(off), msg)
+    override def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)
+    override def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
 

@@ -124,6 +124,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   // ------------ Hooks for interactive mode-------------------------
 
+  /** Called from parser, which signals hereby that a method definition has been parsed.
+   */
+  def signalParseProgress(pos: Position) {}
+
   /** Called every time an AST node is successfully typechecked in typerPhase.
    */
   def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
@@ -573,6 +577,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   // ----------- Runs ---------------------------------------
 
+  /** Remove the current run when not needed anymore. Used by the build
+   *  manager to save on the memory foot print. The current run holds on
+   *  to all compilation units, which in turn hold on to trees.
+   */
+  private [nsc] def dropRun() {
+    curRun = null
+  }
+
   private var curRun: Run = null
   private var curRunId = 0
 
@@ -982,6 +994,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def forJVM : Boolean = settings.target.value startsWith "jvm"
   def forMSIL: Boolean = settings.target.value == "msil"
+  def forInteractive   = onlyPresentation
+  def forScaladoc      = onlyPresentation
+  @deprecated("Use forInteractive or forScaladoc, depending on what you're after")
   def onlyPresentation = false
   def createJavadoc = false
 }

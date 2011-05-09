@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2010 LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -90,8 +90,8 @@ trait Contexts { self: Analyzer =>
   }
   class Context private[typechecker] {
     var unit: CompilationUnit = _
-    var tree: Tree = _ // Tree associated with this context
-    var owner: Symbol = NoSymbol// The current owner
+    var tree: Tree = _                      // Tree associated with this context
+    var owner: Symbol = NoSymbol            // The current owner
     var scope: Scope = _                    // The current scope
     var outer: Context = _                  // The next outer context
     var enclClass: Context = _              // The next outer context whose tree is a
@@ -110,7 +110,10 @@ trait Contexts { self: Analyzer =>
     var inConstructorSuffix = false         // are we in a secondary constructor
                                             // after the this constructor call?
     var returnsSeen = false                 // for method context: were returns encountered?
-    var inSelfSuperCall = false             // is this a context for a constructor self or super call?
+    var inSelfSuperCall = false             // is this context (enclosed in) a constructor call?
+    // (the call to the super or self constructor in the first line of a constructor)
+    // in this context the object's fields should not be in scope
+
     var reportAmbiguousErrors = false
     var reportGeneralErrors = false
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
@@ -120,6 +123,8 @@ trait Contexts { self: Analyzer =>
 
     var savedTypeBounds: List[(Symbol, Type)] = List() // saved type bounds
        // for type parameters which are narrowed in a GADT
+
+    var typingIndent: String = ""
 
     def undetparams = _undetparams
     def undetparams_=(ps: List[Symbol]) = {
@@ -131,6 +136,13 @@ trait Contexts { self: Analyzer =>
       val tparams = undetparams
       undetparams = List()
       tparams
+    }
+
+    def withImplicitsDisabled[T](op: => T): T = {
+      val saved = implicitsEnabled
+      implicitsEnabled = false
+      try op
+      finally implicitsEnabled = saved
     }
 
     /**
@@ -145,7 +157,7 @@ trait Contexts { self: Analyzer =>
              scope: Scope, imports: List[ImportInfo]): Context = {
       val c = new Context
       c.unit = unit
-      c.tree = /*sanitize*/(tree) // used to be for IDE
+      c.tree = tree
       c.owner = owner
       c.scope = scope
 
@@ -172,9 +184,11 @@ trait Contexts { self: Analyzer =>
       c.variance = this.variance
       c.depth = if (scope == this.scope) this.depth else this.depth + 1
       c.imports = imports
+      c.inSelfSuperCall = inSelfSuperCall
       c.reportAmbiguousErrors = this.reportAmbiguousErrors
       c.reportGeneralErrors = this.reportGeneralErrors
       c.diagnostic = this.diagnostic
+      c.typingIndent = typingIndent
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
       c.retyping = this.retyping
@@ -262,7 +276,7 @@ trait Contexts { self: Analyzer =>
     }
 
     private def unitError(pos: Position, msg: String) =
-      unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+      unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     def error(pos: Position, err: Throwable) =
       if (reportGeneralErrors) unitError(pos, addDiagString(err.getMessage()))
@@ -321,6 +335,12 @@ trait Contexts { self: Analyzer =>
            " " + scope.toList + "\n:: " + outer.toString()
     }
 
+    /** Is `sub' a subclass of `base' or a companion object of such a subclass?
+     */
+    def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
+      sub.isNonBottomSubClass(base) ||
+      sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
+
     /** Return closest enclosing context that defines a superclass of `clazz', or a
      *  companion module of a superclass of `clazz', or NoContext if none exists */
     def enclosingSuperClassContext(clazz: Symbol): Context = {
@@ -332,11 +352,12 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Return closest enclosing context that defines a subclass of `clazz', or NoContext
-     *  if none exists */
+    /** Return closest enclosing context that defines a subclass of `clazz' or a companion
+     * object thereof, or NoContext if no such context exists
+     */
     def enclosingSubClassContext(clazz: Symbol): Context = {
       var c = this.enclClass
-      while (c != NoContext && !c.owner.isNonBottomSubClass(clazz))
+      while (c != NoContext && !isSubClassOrCompanion(c.owner, clazz))
         c = c.outer.enclClass
       c
     }

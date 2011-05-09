@@ -151,9 +151,14 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ywarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
 
   /**
-   * "fsc-specific" settings.
+   * IDE-specific settings
    */
-  val fscShutdown   = BooleanSetting    ("-shutdown", "Shutdown the fsc daemon")
+  val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
+  val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
+
+  val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
+  val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
+  val YpresentationDelay   = IntSetting("-Ypresentation-delay", "Wait number of ms after typing before starting typechecking", 0, Some(0, 999), str => Some(str.toInt))
 
   /**
    * -P "Plugin" settings

@@ -6,7 +6,8 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, WeakHashMap}
+import scala.ref.WeakReference
 import symtab.Flags
 import symtab.Flags._
 
@@ -47,8 +48,10 @@ trait Namers { self: Analyzer =>
   // synthetic `copy' (reps `apply', `unapply') methods are added. To compute
   // their signatures, the corresponding ClassDef is needed.
   // During naming, for each case class module symbol, the corresponding ClassDef
-  // is stored in this map.
-  private[typechecker] val caseClassOfModuleClass = new HashMap[Symbol, ClassDef]
+  // is stored in this map. The map is cleared lazily, i.e. when the new symbol
+  // is created with the same name, the old one (if present) is wiped out, or the
+  // entry is deleted when it is used and no longer needed.
+  private val caseClassOfModuleClass = new WeakHashMap[Symbol, WeakReference[ClassDef]]
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -59,7 +62,6 @@ trait Namers { self: Analyzer =>
   private[typechecker] val classAndNamerOfModule = new HashMap[Symbol, (ClassDef, Namer)]
 
   def resetNamer() {
-    caseClassOfModuleClass.clear
     classAndNamerOfModule.clear
   }
 
@@ -332,13 +334,32 @@ trait Namers { self: Analyzer =>
       } else setInfo(sym)(ltype)
     }
 
+    def enterIfNotThere(sym: Symbol) {
+      val scope = context.scope
+      var e = scope.lookupEntry(sym.name)
+      while ((e ne null) && (e.owner eq scope) && (e.sym ne sym)) e = e.tail
+      if (!((e ne null) && (e.owner eq scope))) context.scope.enter(sym)
+    }
+
     def enterSym(tree: Tree): Context = {
       def finishWith(tparams: List[TypeDef]) { enterSymFinishWith(tree, tparams) }
       def finish = finishWith(Nil)
       def sym = tree.symbol
-      if (sym != NoSymbol)
+      if (sym != NoSymbol) {
+        if (forInteractive && sym != null && sym.owner.isTerm) {
+          // this logic is needed in case typer was interrupted half way through and then comes
+          // back to do the tree again. In that case the definitions that were already
+          // attributed as well as any default parameters of such methods need to be
+          // re-entered in the current scope.
+          enterIfNotThere(sym)
+          if (sym.isLazy) {
+            val acc = sym.lazyAccessor
+            if (acc != NoSymbol) enterIfNotThere(acc)
+          }
+          defaultParametersOfMethod(sym) foreach enterIfNotThere
+        }
         return this.context
-
+      }
       try {
         val owner = context.owner
         tree match {
@@ -356,7 +377,7 @@ trait Namers { self: Analyzer =>
                 context.error(tree.pos, "Implementation restriction: case classes cannot have more than " + MaxFunctionArity + " parameters.")
 
               val m = ensureCompanionObject(tree, caseModuleDef(tree))
-              caseClassOfModuleClass(m.moduleClass) = tree
+              caseClassOfModuleClass(m.moduleClass) = new WeakReference(tree)
             }
             val hasDefault = impl.body flatMap {
               case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => vparamss.flatten
@@ -406,7 +427,7 @@ trait Namers { self: Analyzer =>
                   val vsym =
                     if (!context.owner.isClass) {
                       assert(mods1.isLazy)   // if not a field, it has to be a lazy val
-                      owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods1.flags | MUTABLE)
+                      owner.newValue(tree.pos, name + "$lzy" ).setFlag((mods1.flags | MUTABLE) & ~IMPLICIT)
                     } else {
                       val mFlag = if (mods1.isLazy) MUTABLE else 0
                       val lFlag = if (mods.hasFlag(PRIVATE) && mods.hasFlag(LOCAL)) 0 else LOCAL
@@ -442,7 +463,7 @@ trait Namers { self: Analyzer =>
           case imp @ Import(_, _) =>
             tree.symbol = NoSymbol.newImport(tree.pos)
             setInfo(sym)(namerOf(sym).typeCompleter(tree))
-            return (context.makeNewImport(imp))
+            return context.makeNewImport(imp)
           case _ =>
         }
       }
@@ -719,7 +740,8 @@ trait Namers { self: Analyzer =>
       // unless they exist already; here, "clazz" is the module class
       if (clazz.isModuleClass) {
         Namers.this.caseClassOfModuleClass get clazz match {
-          case Some(cdef) =>
+          case Some(cdefRef) =>
+            val cdef = cdefRef()
             addApplyUnapply(cdef, templateNamer)
             caseClassOfModuleClass -= clazz
           case None =>
@@ -733,7 +755,8 @@ trait Namers { self: Analyzer =>
       // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasFlag(MODULE)) {
         Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass match {
-          case Some(cdef) =>
+          case Some(cdefRef) =>
+            val cdef = cdefRef()
             def hasCopy(decls: Scope) = {
               decls.iterator exists (_.name == nme.copy)
             }
@@ -833,7 +856,7 @@ trait Namers { self: Analyzer =>
       var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
       val site = meth.owner.thisType
 
-      def overriddenSymbol = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym => {
+      def overriddenSymbol = intersectionType(meth.owner.info.parents).nonPrivateMember(meth.name).filter(sym => {
         // luc: added .substSym from skolemized to deSkolemized
         // site.memberType(sym): PolyType(tparams, MethodType(..., ...)) ==> all references to tparams are deSkolemized
         // thisMethodType: tparams in PolyType are deSkolemized, the references in the MethodTypes are skolemized. ==> the two didn't match
@@ -1017,6 +1040,13 @@ trait Namers { self: Analyzer =>
             if (!isConstr)
               meth.owner.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
+            if (forInteractive && default.owner.isTerm) {
+              // enter into map from method symbols to default arguments.
+              // if compiling the same local block several times (which can happen in interactive mode)
+              // we might otherwise not find the default symbol, because the second time it the
+              // method symbol will be re-entered in the scope but the default parameter will not.
+              defaultParametersOfMethod(meth) += default
+            }
           } else if (baseHasDefault) {
             // the parameter does not have a default itself, but the corresponding parameter
             // in the base class does.
@@ -1209,6 +1239,7 @@ trait Namers { self: Analyzer =>
               }
 
               checkSelectors(selectors)
+              transformed(tree) = treeCopy.Import(tree, expr1, selectors)
               ImportType(expr1)
           }
         } catch {
@@ -1304,9 +1335,16 @@ trait Namers { self: Analyzer =>
     val tree: Tree
   }
 
+  var lockedCount = 0
+
   def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleter {
     val tree = t
-    override def complete(sym: Symbol) = c(sym)
+    override def complete(sym: Symbol) = try {
+      lockedCount += 1
+      c(sym)
+    } finally {
+      lockedCount -= 1
+    }
   }
 
   /** A class representing a lazy type with known type parameters.
@@ -1314,10 +1352,13 @@ trait Namers { self: Analyzer =>
   class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends TypeCompleter {
     override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
     override val tree = restp.tree
-    override def complete(sym: Symbol) {
+    override def complete(sym: Symbol) = try {
+      lockedCount += 1
       if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
         newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
       restp.complete(sym)
+    } finally {
+      lockedCount -= 1
     }
   }
 
@@ -1341,20 +1382,37 @@ trait Namers { self: Analyzer =>
    * Finds the companion module of a class symbol. Calling .companionModule
    * does not work for classes defined inside methods.
    */
-  def companionModuleOf(clazz: Symbol, context: Context) = {
-    var res = clazz.companionModule
-    if (res == NoSymbol)
-      res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
-        sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
-    res
+  def companionModuleOf(clazz: Symbol, context: Context): Symbol = {
+    try {
+      var res = clazz.companionModule
+      if (res == NoSymbol)
+        res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
+          sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
+        res
+    } catch {
+      case e: InvalidCompanions =>
+        context.error(clazz.pos, e.getMessage)
+        NoSymbol
+    }
   }
 
-  def companionClassOf(module: Symbol, context: Context) = {
-    var res = module.companionClass
-    if (res == NoSymbol)
-      res = context.lookup(module.name.toTypeName, module.owner).suchThat(_.isCoDefinedWith(module))
-    res
+  def companionClassOf(module: Symbol, context: Context): Symbol = {
+    try {
+      var res = module.companionClass
+      if (res == NoSymbol)
+        res = context.lookup(module.name.toTypeName, module.owner).suchThat(_.isCoDefinedWith(module))
+      res
+    } catch {
+      case e: InvalidCompanions =>
+        context.error(module.pos, e.getMessage)
+        NoSymbol
+    }
   }
+
+  def companionSymbolOf(sym: Symbol, context: Context) =
+    if (sym.isTerm) companionClassOf(sym, context)
+    else if (sym.isClass) companionModuleOf(sym, context)
+    else NoSymbol
 
   /** An explanatory note to be added to error messages
    *  when there's a problem with abstract var defs */

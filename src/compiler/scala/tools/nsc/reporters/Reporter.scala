@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2002-2010 LAMP/EPFL
+ * Copyright 2002-2011 LAMP/EPFL
  * @author Martin Odersky
  */
 
@@ -22,7 +22,7 @@ abstract class Reporter {
   val WARNING = new Severity(1)
   val ERROR = new Severity(2)
 
-  def reset {
+  def reset() {
     INFO.count = 0
     ERROR.count   = 0
     WARNING.count = 0
@@ -49,6 +49,19 @@ abstract class Reporter {
     } finally {
       source = oldSource
     }
+  }
+
+  /** Whether very long lines can be truncated.  This exists so important
+   *  debugging information (like printing the classpath) is not rendered
+   *  invisible due to the max message length.
+   */
+  private var _truncationOK: Boolean = true
+  def truncationOK = _truncationOK
+  def withoutTruncating[T](body: => T): T = {
+    val saved = _truncationOK
+    _truncationOK = false
+    try body
+    finally _truncationOK = saved
   }
 
   def    info(pos: Position, msg: String, force: Boolean) { info0(pos, msg,    INFO, force) }

@@ -25,7 +25,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   val emptySymbolArray = new Array[Symbol](0)
 
   /** Used for deciding in the IDE whether we can interrupt the compiler */
-  protected var activeLocks = 0
+  //protected var activeLocks = 0
+
+  /** Used for debugging only */
+  //protected var lockedSyms = collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
   private var recursionTable = Map.empty[Symbol, Int]
@@ -312,7 +315,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     final def newAnonymousClass(pos: Position) =
       newClass(pos, nme.ANON_CLASS_NAME.toTypeName)
-
     final def newAnonymousFunctionClass(pos: Position) =
       newClass(pos, nme.ANON_FUN_NAME.toTypeName)
 
@@ -369,14 +371,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         } else { handler }
       } else {
         rawflags |= LOCKED
-        activeLocks += 1
+//        activeLocks += 1
+//        lockedSyms += this
       }
     }
 
     // Unlock a symbol
     def unlock() = {
       if ((rawflags & LOCKED) != 0L) {
-        activeLocks -= 1
+//        activeLocks -= 1
+//        lockedSyms -= this
         rawflags = rawflags & ~LOCKED
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
@@ -511,7 +515,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Is this symbol a synthetic apply or unapply method in a companion object of a case class? */
     final def isCaseApplyOrUnapply =
       isMethod && hasFlag(CASE) && hasFlag(SYNTHETIC)
-
 
     /** Is this symbol a trait which needs an implementation class? */
     final def needsImplClass: Boolean =
@@ -727,7 +730,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
           }
         } else {
           rawflags |= LOCKED
-          activeLocks += 1
+//          activeLocks += 1
+ //         lockedSyms += this
         }
         val current = phase
         try {
@@ -1214,23 +1218,19 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Is this symbol defined in the same scope and compilation unit as `that' symbol?
      */
     def isCoDefinedWith(that: Symbol) =
-      (this.rawInfo ne NoType) && {
-        val res =
-          !this.owner.isPackageClass ||
-          (this.sourceFile eq null) ||
-          (that.sourceFile eq null) ||
-          (this.sourceFile eq that.sourceFile) ||
-          (this.sourceFile == that.sourceFile)
+      (this.rawInfo ne NoType) &&
+      (this.owner == that.owner) && {
+        !this.owner.isPackageClass ||
+        (this.sourceFile eq null) ||
+        (that.sourceFile eq null) ||
+        (this.sourceFile == that.sourceFile) || {
+          // recognize companion object in separate file and fail, else compilation
+          // appears to succeed but highly opaque errors come later: see bug #1286
+          if (this.sourceFile.path != that.sourceFile.path)
+            throw InvalidCompanions(this, that)
 
-        // recognize companion object in separate file and fail, else compilation
-        // appears to succeed but highly opaque errors come later: see bug #1286
-        if (res == false) {
-          val (f1, f2) = (this.sourceFile, that.sourceFile)
-          if (f1 != null && f2 != null && f1.path != f2.path)
-            throw FatalError("Companions '" + this + "' and '" + that + "' must be defined in same file.")
+          false
         }
-
-        res
       }
 
     /** @PP: Added diagram because every time I come through here I end up
@@ -2033,7 +2033,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       sourceModule = module
     }
     override def sourceModule = module
-    lazy val implicitMembers = info.implicitMembers
+    private var implicitMembersCacheValue: List[Symbol] = List()
+    private var implicitMembersCacheKey: Type = NoType
+    def implicitMembers: List[Symbol] = {
+      val tp = info
+      if (implicitMembersCacheKey ne tp) {
+        implicitMembersCacheKey = tp
+        implicitMembersCacheValue = tp.implicitMembers
+      }
+      implicitMembersCacheValue
+    }
     override def sourceModule_=(module: Symbol) { this.module = module }
   }
 
@@ -2081,6 +2090,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   case class CyclicReference(sym: Symbol, info: Type)
   extends TypeError("illegal cyclic reference involving " + sym) {
     // printStackTrace() // debug
+  }
+
+  case class InvalidCompanions(sym1: Symbol, sym2: Symbol)
+  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file") {
+      override def toString = getMessage
   }
 
   /** A class for type histories */

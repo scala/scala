@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2010 LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author  Martin Odersky
  */
 //todo: allow infix type patterns
@@ -9,7 +9,7 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable.ListBuffer
-import util.{ OffsetPosition, BatchSourceFile }
+import util.{ SourceFile, OffsetPosition, FreshNameCreator }
 import symtab.Flags
 import Tokens._
 
@@ -59,80 +59,121 @@ self =>
 
   case class OpInfo(operand: Tree, operator: Name, offset: Offset)
 
-  class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends Parser {
-
-    def this(unit: global.CompilationUnit) = this(unit, List())
+  class SourceFileParser(val source: SourceFile) extends Parser {
 
     /** The parse starting point depends on whether the source file is self-contained:
      *  if not, the AST will be supplemented.
      */
     def parseStartRule =
-      if (unit.source.isSelfContained) () => compilationUnit()
+      if (source.isSelfContained) () => compilationUnit()
       else () => scriptBody()
 
-    val in = new UnitScanner(unit, patches)
+    def newScanner = new SourceFileScanner(source)
+
+    val in = newScanner
     in.init()
 
-    def freshName(pos: Position, prefix: String): Name =
-      unit.fresh.newName(pos, prefix)
+    private val globalFresh = new FreshNameCreator.Default
 
-    def o2p(offset: Int): Position = new OffsetPosition(unit.source,offset)
-    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(unit.source, start, mid, end)
+    override def freshName(pos: Position, prefix: String): Name = newTermName(globalFresh.newName(prefix))
 
-    def warning(offset: Int, msg: String) { unit.warning(o2p(offset), msg) }
+    def o2p(offset: Int): Position = new OffsetPosition(source, offset)
+    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(source, start, mid, end)
 
-    def deprecationWarning(offset: Int,
-                           msg: String) {
-      unit.deprecationWarning(o2p(offset), msg)
-    }
+    // suppress warnings; silent abort on errors
+    def warning(offset: Int, msg: String) {}
+    def deprecationWarning(offset: Int, msg: String) {}
 
-    var smartParsing = false
-
-    val syntaxErrors = new ListBuffer[(Int, String)]
-
-    def incompleteInputError(msg: String) {
-      val offset = unit.source.asInstanceOf[BatchSourceFile].content.length - 1
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else unit.incompleteInputError(o2p(offset), msg)
-    }
-
-    def syntaxError(offset: Int, msg: String) {
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else unit.error(o2p(offset), msg)
-    }
-
-    /** parse unit. If there are inbalanced braces,
-     *  try to correct them and reparse.
-     */
-    def smartParse(): Tree = try {
-      smartParsing = true
-      val firstTry = parse()
-      if (syntaxErrors.isEmpty) firstTry
-      else {
-        val patches = in.healBraces()
-        if (patches.isEmpty) {
-          for ((offset, msg) <- syntaxErrors) unit.error(o2p(offset), msg)
-          firstTry
-        } else {
-//          println(patches)
-          new UnitParser(unit, patches).parse()
-        }
-      }
-    } finally {
-      smartParsing = false
-    }
+    def syntaxError(offset: Int, msg: String): Unit = throw new MalformedInput(offset, msg)
+    def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
 
     /** the markup parser */
     lazy val xmlp = new MarkupParser(this, true)
 
     object symbXMLBuilder extends SymbolicXMLBuilder(this, true) { // DEBUG choices
       val global: self.global.type = self.global
-      def freshName(prefix: String): Name = UnitParser.this.freshName(prefix)
+      def freshName(prefix: String): Name = SourceFileParser.this.freshName(prefix)
     }
 
     def xmlLiteral : Tree = xmlp.xLiteral
-
     def xmlLiteralPattern : Tree = xmlp.xLiteralPattern
+  }
+
+  class OutlineParser(source: SourceFile) extends SourceFileParser(source) {
+
+    def skipBraces[T](body: T): T = {
+      accept(LBRACE)
+      var openBraces = 1
+      while (in.token != EOF && openBraces > 0) {
+        if (in.token == XMLSTART) xmlLiteral()
+        else {
+          if (in.token == LBRACE) openBraces += 1
+          else if (in.token == RBRACE) openBraces -= 1
+          in.nextToken()
+        }
+      }
+      body
+    }
+
+    override def blockExpr(): Tree = skipBraces(EmptyTree)
+
+    override def templateBody(isPre: Boolean) = skipBraces(emptyValDef, List(EmptyTree))
+  }
+
+  class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
+
+    def this(unit: global.CompilationUnit) = this(unit, List())
+
+    override def newScanner = new UnitScanner(unit, patches)
+
+
+
+
+    override def warning(offset: Int, msg: String) {
+      unit.warning(o2p(offset), msg)
+    }
+
+    override def deprecationWarning(offset: Int, msg: String) {
+      unit.deprecationWarning(o2p(offset), msg)
+    }
+
+    private var smartParsing = false
+    private def withSmartParsing[T](body: => T): T = {
+      val saved = smartParsing
+      try {
+        smartParsing = true
+        body
+      }
+      finally smartParsing = saved  // false
+    }
+
+    val syntaxErrors = new ListBuffer[(Int, String)]
+    def showSyntaxErrors() =
+      for ((offset, msg) <- syntaxErrors)
+        unit.error(o2p(offset), msg)
+
+    override def syntaxError(offset: Int, msg: String) {
+      if (smartParsing) syntaxErrors += ((offset, msg))
+      else unit.error(o2p(offset), msg)
+    }
+
+    override def incompleteInputError(msg: String) {
+      val offset = source.content.length - 1
+      if (smartParsing) syntaxErrors += ((offset, msg))
+      else unit.incompleteInputError(o2p(offset), msg)
+    }
+
+    /** parse unit. If there are inbalanced braces,
+     *  try to correct them and reparse.
+     */
+    def smartParse(): Tree = withSmartParsing {
+      val firstTry = parse()
+      if (syntaxErrors.isEmpty) firstTry
+      else in.healBraces() match {
+        case Nil      => showSyntaxErrors() ; firstTry
+        case patches  => new UnitParser(unit, patches).parse()
+      }
+    }
   }
 
   final val Local = 0
@@ -1456,7 +1497,9 @@ self =>
       if (tok == EQUALS && eqOK) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
-      enums += makeGenerator(r2p(start, point, in.lastOffset), pat, tok == EQUALS, rhs)
+      enums += makeGenerator(r2p(start, point, in.lastOffset max start), pat, tok == EQUALS, rhs)
+      // why max above? IDE stress tests have shown that lastOffset could be less than start,
+      // I guess this happens if instead if a for-expression we sit on a closing paren.
       while (in.token == IF) enums += makeFilter(in.offset, guard())
     }
 
@@ -2201,7 +2244,7 @@ self =>
         var newmods = mods
         val nameOffset = in.offset
         val name = ident()
-        atPos(start, if (name == nme.ERROR) start else nameOffset) {
+        val result = atPos(start, if (name == nme.ERROR) start else nameOffset) {
           // contextBoundBuf is for context bounded type parameters of the form
           // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
           // i.e. (B[T] or T => B)
@@ -2229,6 +2272,8 @@ self =>
             }
           DefDef(newmods, name, tparams, vparamss, restype, rhs)
         }
+        signalParseProgress(result.pos)
+        result
       }
     }
 

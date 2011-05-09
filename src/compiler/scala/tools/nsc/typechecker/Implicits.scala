@@ -975,6 +975,6 @@ self: Analyzer =>
       }
     }
   }
-
-  private val DivergentImplicit = new Exception()
 }
+class DivergentImplicit extends Exception
+object DivergentImplicit extends DivergentImplicit

@@ -8,7 +8,9 @@ package scala.tools.nsc
 package symtab
 
 import scala.collection.immutable
-import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}
+import scala.ref.WeakReference
+import scala.collection.mutable
+import scala.collection.mutable.{ListBuffer, HashMap}
 import ast.TreeGen
 import util.{HashSet, Position, NoPosition}
 import util.Statistics._
@@ -106,7 +108,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     }
 
     private[Types] def record(tv: TypeVar) = {log = (tv, tv.constr.cloneInternal) :: log}
-    private[Types] def clear {log = List()}
+    private[nsc] def clear() {log = List()}
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
@@ -137,7 +139,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = new WeakHashMap[List[Type], Type]
+  val intersectionWitness = new mutable.WeakHashMap[List[Type], WeakReference[Type]]
 
   private object gen extends {
     val global : Types.this.type = Types.this
@@ -1293,12 +1295,21 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       baseClassesCache
     }
 
-    def memo[A](op1: => A)(op2: Type => A) = intersectionWitness get parents match {
-      case Some(w) =>
-        if (w eq this) op1 else op2(w)
-      case none =>
-        intersectionWitness(parents) = this
+    def memo[A](op1: => A)(op2: Type => A): A = {
+      def updateCache(): A = {
+        intersectionWitness(parents) = new WeakReference(this)
         op1
+      }
+
+      intersectionWitness get parents match {
+        case Some(ref) =>
+          ref.get match {
+            case Some(w) => if (w eq this) op1 else op2(w)
+            case None => updateCache()
+          }
+        case None => updateCache()
+      }
+
     }
 
     override def baseType(sym: Symbol): Type = {
@@ -3172,10 +3183,19 @@ A type's typeSymbol should never be inspected directly.
    *  in ClassFileparser.sigToType (where it is usually done)
    */
   object rawToExistential extends TypeMap {
+    private var expanded = immutable.Set[Symbol]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
-        val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        if (expanded contains sym) AnyRefClass.tpe
+        else try {
+          expanded += sym
+          val eparams = mapOver(typeParamsToExistentials(sym, sym.typeParams))
+          existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map (_.tpe)))
+        } finally {
+          expanded -= sym
+        }
+      case ExistentialType(_, _) => // stop to avoid infinite expansions
+        tp
       case _ =>
         mapOver(tp)
     }
@@ -3704,41 +3724,71 @@ A type's typeSymbol should never be inspected directly.
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (sym.isModuleClass && !phase.flatClasses) {
-        adaptToNewRun(pre, sym.sourceModule).moduleClass
-      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
+      if (phase.flatClasses) {
+        sym
+      } else if (sym.isModuleClass) {
+        val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
+        // Handle nested objects properly
+        val result0 = if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
+        val result = if (result0 == NoSymbol)
+          // The only possible way we got here is when
+          // object is defined inside the method and unfortunately
+          // we have no way of retrieving that information (and using it)
+          // at this point, so just use the old symbol.
+          // This also means that sym.sourceModule == adaptedSym since
+          // pre == NoPrefix. see #4215
+          sym
+        else result0
+
+        result
+      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
-          throw new MissingTypeControl // For build manager purposes
+          if (settings.debug.value) println(pre+"."+sym+" does no longer exist, phase = "+phase)
+          throw new MissingTypeControl // For build manager and presentation compiler purposes
           //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          if (settings.debug.value)
+            log("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
           else
             rebind0 = pre.baseType(bcs.head).member(sym.name)
-          if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", bcs.head = "+bcs.head+", sym = "+sym+sym.locationString+", rebind = "+rebind0+(if (rebind0 == NoSymbol) "" else rebind0.locationString))
+          if (settings.debug.value) log(
+            "ADAPT2 pre = " + pre +
+            ", bcs.head = " + bcs.head +
+            ", sym = " + sym+sym.locationString +
+            ", rebind = " + rebind0 + (
+              if (rebind0 == NoSymbol) ""
+              else rebind0.locationString
+            )
+          )
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          if (settings.debug.value) Console.println("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
+          if (settings.debug.value) log("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
         }
         rebind
       }
     }
     def apply(tp: Type): Type = tp match {
-      case ThisType(sym) if (sym.isModuleClass) =>
-        val sym1 = adaptToNewRun(sym.owner.thisType, sym)
-        if (sym1 == sym) tp else ThisType(sym1)
+      case ThisType(sym) =>
+        try {
+          val sym1 = adaptToNewRun(sym.owner.thisType, sym)
+          if (sym1 == sym) tp else ThisType(sym1)
+        } catch {
+        	case ex: MissingTypeControl =>
+            tp
+        }
       case SingleType(pre, sym) =>
         if (sym.isPackage) tp
         else {
@@ -3760,7 +3810,7 @@ A type's typeSymbol should never be inspected directly.
             case ex: MissingAliasControl =>
               apply(tp.dealias)
             case _: MissingTypeControl =>
-              NoType
+              tp
           }
         }
       case MethodType(params, restp) =>

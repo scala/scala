@@ -17,13 +17,17 @@ class WorkScheduler {
   }
 
   /** called from Server: test whether one of todo list, throwables, or InterruptReqs is nonempty */
-  def moreWork(): Boolean = synchronized {
+  def moreWork: Boolean = synchronized {
     todo.nonEmpty || throwables.nonEmpty || interruptReqs.nonEmpty
   }
 
   /** Called from server: get first action in todo list, and pop it off */
   def nextWorkItem(): Option[Action] = synchronized {
     if (todo.isEmpty) None else Some(todo.dequeue())
+  }
+
+  def dequeueAll[T](f: Action => Option[T]): Seq[T] = synchronized {
+    todo.dequeueAll(a => f(a).isDefined).map(a => f(a).get)
   }
 
   /** Called from server: return optional exception posted by client
@@ -73,7 +77,11 @@ class WorkScheduler {
    */
   def raise(exc: Throwable) = synchronized {
     throwables enqueue exc
-    postWorkItem { () => }
+    postWorkItem { new EmptyAction }
   }
+}
+
+class EmptyAction extends (() => Unit) {
+  def apply() {}
 }
 

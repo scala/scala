@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2010 LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -8,7 +8,8 @@ package typechecker
 
 import symtab.Flags._
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, WeakHashMap}
+import scala.collection.immutable.Set
 
 /**
  *  @author Lukas Rytz
@@ -18,6 +19,10 @@ trait NamesDefaults { self: Analyzer =>
 
   import global._
   import definitions._
+
+  val defaultParametersOfMethod = new WeakHashMap[Symbol, Set[Symbol]] {
+    override def default(key: Symbol) = Set()
+  }
 
   case class NamedApplyInfo(qual: Option[Tree], targs: List[Tree],
                             vargss: List[List[Tree]], blockTyper: Typer)
