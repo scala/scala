@@ -392,6 +392,11 @@ object Test extends App {
   }
   println(""+ t4041._1 +", "+ t4041._2)
 
+  // #4441
+  case class C4441a()
+  case class C4441b()()
+  C4441a().copy()
+  C4441b()().copy()()
 
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)

@@ -192,7 +192,7 @@ trait Unapplies extends ast.TreeDSL
     val cparamss  = constrParamss(cdef)
     val flat      = cparamss flatten
 
-    if (flat.isEmpty || cdef.symbol.hasAbstractFlag || (flat exists isDisallowed)) None
+    if (cdef.symbol.hasAbstractFlag || (flat exists isDisallowed)) None
     else {
       val tparams = cdef.tparams map copyUntypedInvariant
       // the parameter types have to be exactly the same as the constructor's parameter types; so it's
