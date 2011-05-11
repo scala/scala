@@ -892,11 +892,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.hasFlag(BRIDGE) =>
               val attrThis =
-                if (clazz.isImplClass && !isImplementedStatically(sym))
-                  gen.mkAttributedIdent(vp.head.head.symbol)
-                  //!!! I think this can be replaced by selfRef(tree.pos)
-                else
-                  gen.mkAttributedThis(clazz)
+                if (clazz.isImplClass) gen.mkAttributedIdent(vp.head.head.symbol)
+                else gen.mkAttributedThis(clazz)
               val rhs1 = mkInnerClassAccessorDoubleChecked(attrThis, rhs)
               treeCopy.DefDef(stat, mods, name, tp, vp, tpt, typedPos(stat.pos)(rhs1))
           case _ => stat
