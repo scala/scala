@@ -426,11 +426,14 @@ abstract class TreeGen {
    *  The idiom works only if the condition is using a volatile field.
    *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
    */
-  def mkDoubleCheckedLocking(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
+  def mkDoubleCheckedLocking(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree =
+    mkDoubleCheckedLocking(mkAttributedThis(clazz), cond, syncBody, stats)
+
+  def mkDoubleCheckedLocking(attrThis: Tree, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
     If(cond,
        Block(
          mkSynchronized(
-           mkAttributedThis(clazz),
+           attrThis,
            If(cond, Block(syncBody: _*), EmptyTree)) ::
          stats: _*),
        EmptyTree)
