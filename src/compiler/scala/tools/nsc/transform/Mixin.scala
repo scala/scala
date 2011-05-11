@@ -828,12 +828,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         typedPos(init.head.pos)(BLOCK(result, retVal))
       }
 
-      def mkInnerClassAccessorDoubleChecked(clazz: Symbol, rhs: Tree): Tree =
+      def mkInnerClassAccessorDoubleChecked(attrThis: Tree, rhs: Tree): Tree =
         rhs match {
           case Block(List(assign), returnTree) =>
             val Assign(moduleVarRef, _) = assign
             val cond = Apply(Select(moduleVarRef, nme.eq),List(Literal(Constant(null))))
-            val doubleSynchrTree = gen.mkDoubleCheckedLocking(clazz, cond, List(assign), Nil)
+            val doubleSynchrTree = gen.mkDoubleCheckedLocking(attrThis, cond, List(assign), Nil)
             Block(List(doubleSynchrTree), returnTree)
           case _ =>
             assert(false, "Invalid getter " + rhs + " for module in class " + clazz)
@@ -890,8 +890,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               else
                 stat
           case DefDef(mods, name, tp, vp, tpt, rhs)
-            if sym.isModule && !clazz.isTrait && !sym.hasFlag(BRIDGE) =>
-              val rhs1 = mkInnerClassAccessorDoubleChecked(clazz, rhs)
+            if sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.hasFlag(BRIDGE) =>
+              val attrThis =
+                if (clazz.isImplClass) gen.mkAttributedIdent(vp.head.head.symbol)
+                else gen.mkAttributedThis(clazz)
+              val rhs1 = mkInnerClassAccessorDoubleChecked(attrThis, rhs)
               treeCopy.DefDef(stat, mods, name, tp, vp, tpt, typedPos(stat.pos)(rhs1))
           case _ => stat
         }
@@ -1090,7 +1093,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
               val rhs  = gen.newModule(sym, vdef.symbol.tpe)
               val assignAndRet = gen.mkAssignAndReturn(vdef.symbol, rhs)
-              val rhs1 = mkInnerClassAccessorDoubleChecked(clazz, assignAndRet)
+              val attrThis = gen.mkAttributedThis(clazz)
+              val rhs1 = mkInnerClassAccessorDoubleChecked(attrThis, assignAndRet)
               addDef(position(sym), DefDef(sym, rhs1))
             } else if (!sym.isMethod) {
               // add fields
