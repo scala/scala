@@ -3,12 +3,8 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package io
-
-import java.io.{ FileInputStream, FileOutputStream, IOException }
-import PartialFunction._
 
 object PlainFile {
   /**
@@ -24,28 +20,22 @@ object PlainFile {
 class PlainFile(val givenPath: Path) extends AbstractFile {
   assert(path ne null)
 
-  val file = givenPath.jfile
+  def name     = givenPath.name
+  def path     = givenPath.path
+  def file     = givenPath.jfile
+  def absolute = new PlainFile(givenPath.toAbsolute)
+
   override def underlyingSource = Some(this)
-
-  private val fpath = try givenPath.normalize catch { case _: IOException => givenPath.toAbsolute }
-
-  /** Returns the name of this abstract file. */
-  def name = givenPath.name
-
-  /** Returns the path of this abstract file. */
-  def path = givenPath.path
-
-  /** The absolute file. */
-  def absolute = new PlainFile(givenPath.normalize)
-
   override def container: AbstractFile = new PlainFile(givenPath.parent)
   override def input = givenPath.toFile.inputStream()
   override def output = givenPath.toFile.outputStream()
   override def sizeOption = Some(givenPath.length.toInt)
 
-  override def hashCode(): Int = fpath.hashCode
-  override def equals(that: Any): Boolean =
-    cond(that) { case other: PlainFile  => fpath == other.fpath }
+  override def hashCode(): Int = path.hashCode
+  override def equals(that: Any): Boolean = that match {
+    case other: PlainFile => path == other.path
+    case _                => false
+  }
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = givenPath.isDirectory

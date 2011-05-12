@@ -12,7 +12,7 @@ package io
 object Directory {
   import scala.util.Properties.{ tmpDir, userHome, userDir }
 
-  private def normalizePath(s: String) = Some(apply(Path(s).normalize))
+  private def normalizePath(s: String) = Some(Directory(s).toAbsolute)
   def Current: Option[Directory]  = if (userDir == "") None else normalizePath(userDir)
   def Home: Option[Directory]     = if (userHome == "") None else normalizePath(userHome)
   def TmpDir: Option[Directory]   = if (tmpDir == "") None else normalizePath(tmpDir)

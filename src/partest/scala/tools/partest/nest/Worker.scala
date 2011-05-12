@@ -976,7 +976,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       react {
         case Timeout(file) =>
-          updateStatus(file.getCanonicalPath, TestState.Timeout)
+          updateStatus(file.getAbsolutePath, TestState.Timeout)
           val swr = new StringWriter
           val wr = new PrintWriter(swr, true)
           printInfoStart(file, wr)
@@ -988,7 +988,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
         case Result(file, logs) =>
           val state = if (succeeded) TestState.Ok else TestState.Fail
-          updateStatus(file.getCanonicalPath, state)
+          updateStatus(file.getAbsolutePath, state)
           reportResult(
             state,
             logs.file,

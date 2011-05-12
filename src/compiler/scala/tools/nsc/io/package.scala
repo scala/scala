@@ -12,15 +12,6 @@ import java.util.jar.{ Attributes }
 package object io {
   type JManifest = java.util.jar.Manifest
   private[io] type JFile = java.io.File
-  // grimly bulldozing through #4338
-  private[io] object JFile {
-    import java.io.{ File => JJFile } // the irony of JFile being ambiguous is not overlooked
-    val createTempFile = JJFile.createTempFile(_: String, _: String, _: JFile)
-    def pathSeparator  = JJFile.pathSeparator
-    def separator      = JJFile.separator
-    def separatorChar  = JJFile.separatorChar
-    def listRoots()    = JJFile.listRoots()
-  }
   private[io] implicit def installManifestOps(m: JManifest) = new ManifestOps(m)
   class ManifestOps(manifest: JManifest) {
     def attrs                                       = manifest.getMainAttributes()
