@@ -17,14 +17,14 @@ import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 
 object File {
-  def pathSeparator = java.io.File.pathSeparator
-  def separator     = java.io.File.separator
+  def pathSeparator = JFile.pathSeparator
+  def separator = JFile.separator
 
   def apply(path: Path)(implicit codec: Codec) = new File(path.jfile)(codec)
 
   // Create a temporary file, which will be deleted upon jvm exit.
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) = {
-    val jfile = java.io.File.createTempFile(prefix, suffix, dir)
+    val jfile = JFile.createTempFile(prefix, suffix, dir)
     jfile.deleteOnExit()
     apply(jfile)
   }
@@ -43,20 +43,20 @@ object File {
   // trigger java.lang.InternalErrors later when using it concurrently.  We ignore all
   // the exceptions so as not to cause spurious failures when no write access is available,
   // e.g. google app engine.
-  // try {
-  //   import Streamable.closing
-  //   val tmp = java.io.File.createTempFile("bug6503430", null, null)
-  //   try closing(new FileInputStream(tmp)) { in =>
-  //     val inc = in.getChannel()
-  //     closing(new FileOutputStream(tmp, true)) { out =>
-  //       out.getChannel().transferFrom(inc, 0, 0)
-  //     }
-  //   }
-  //   finally tmp.delete()
-  // }
-  // catch {
-  //   case _: IllegalArgumentException | _: IllegalStateException | _: IOException | _: SecurityException => ()
-  // }
+  try {
+    import Streamable.closing
+    val tmp = JFile.createTempFile("bug6503430", null, null)
+    try closing(new FileInputStream(tmp)) { in =>
+      val inc = in.getChannel()
+      closing(new FileOutputStream(tmp, true)) { out =>
+        out.getChannel().transferFrom(inc, 0, 0)
+      }
+    }
+    finally tmp.delete()
+  }
+  catch {
+    case _: IllegalArgumentException | _: IllegalStateException | _: IOException | _: SecurityException => ()
+  }
 }
 import File._
 import Path._
@@ -145,7 +145,7 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
     val CHUNK = 1024 * 1024 * 16  // 16 MB
     val dest = destPath.toFile
     if (!isValid) fail("Source %s is not a valid file." format name)
-    if (this isSame dest) fail("Source and destination are the same.")
+    if (this.normalize == dest.normalize) fail("Source and destination are the same.")
     if (!dest.parent.exists) fail("Destination cannot be created.")
     if (dest.exists && !dest.canWrite) fail("Destination exists but is not writable.")
     if (dest.isDirectory) fail("Destination exists but is a directory.")

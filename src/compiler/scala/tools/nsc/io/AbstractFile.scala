@@ -10,7 +10,7 @@ package io
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.net.URL
 import PartialFunction._
-import java.io.File.{ separatorChar => separator }
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -84,6 +84,7 @@ object AbstractFile {
  * </p>
  */
 abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
+
   /** Returns the name of this abstract file. */
   def name: String
 
@@ -136,8 +137,6 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** size of this file if it is a concrete file. */
   def sizeOption: Option[Int] = None
 
-  def toURL: URL = if (file == null) null else file.toURI.toURL
-
   /** Returns contents of file (if applicable) in a Char array.
    *  warning: use <code>Global.getSourceFile()</code> to use the proper
    *  encoding when converting to the char array.
@@ -187,47 +186,43 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    *  @return          ...
    */
   def lookupPath(path: String, directory: Boolean): AbstractFile = {
-    lookupPathInternal(path, directory, false)
+    lookup((f, p, dir) => f.lookupName(p, dir), path, directory)
   }
 
   /** Return an abstract file that does not check that `path' denotes
    *  an existing file.
    */
   def lookupPathUnchecked(path: String, directory: Boolean): AbstractFile = {
-    lookupPathInternal(path, directory, true)
+    lookup((f, p, dir) => f.lookupNameUnchecked(p, dir), path, directory)
   }
 
-  private def lookupPathInternal(path0: String, directory: Boolean, unchecked: Boolean): AbstractFile = {
+  private def lookup(getFile: (AbstractFile, String, Boolean) => AbstractFile,
+                     path0: String,
+                     directory: Boolean): AbstractFile = {
+    val separator = JFile.separatorChar
     // trim trailing '/'s
-    val path = (
-      if (path0.charAt(path0.length - 1) != separator) path0
-      else path0.substring(0, path0.length - 1)
-    )
-    def loop(file: AbstractFile, start: Int): AbstractFile = {
+    val path: String = if (path0.last == separator) path0 dropRight 1 else path0
+    val length = path.length()
+    assert(length > 0 && !(path.last == separator), path)
+    var file = this
+    var start = 0
+    while (true) {
       val index = path.indexOf(separator, start)
-      if (index < 0) {
-        if (unchecked) file.lookupNameUnchecked(path, directory)
-        else file.lookupName(path, directory)
-      }
-      else {
-        val name = path.substring(start, index)
-        val next = (
-          if (unchecked) file.lookupNameUnchecked(name, true)
-          else file.lookupName(name, true)
-        )
-        if (next == null) null
-        else loop(next, index + 1)
-      }
+      assert(index < 0 || start < index)
+      val name = path.substring(start, if (index < 0) length else index)
+      file = getFile(file, name, if (index < 0) directory else true)
+      if ((file eq null) || index < 0) return file
+      start = index + 1
     }
-    loop(this, 0)
+    file
   }
 
-  private def fileOrSubdirectoryNamed(name: String, directory: Boolean): AbstractFile = {
-    val lookup = lookupName(name, directory)
+  private def fileOrSubdirectoryNamed(name: String, isDir: Boolean): AbstractFile = {
+    val lookup = lookupName(name, isDir)
     if (lookup != null) lookup
     else {
       val jfile = new JFile(file, name)
-      if (directory) jfile.mkdirs() else jfile.createNewFile()
+      if (isDir) jfile.mkdirs() else jfile.createNewFile()
       new PlainFile(jfile)
     }
   }
@@ -254,5 +249,6 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   protected def unsupported(msg: String): Nothing = throw new UnsupportedOperationException(msg)
 
   /** Returns the path of this abstract file. */
-  override def toString = path
+  override def toString() = path
+
 }

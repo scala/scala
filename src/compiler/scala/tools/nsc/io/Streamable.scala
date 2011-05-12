@@ -20,60 +20,14 @@ import Path.fail
  */
 
 object Streamable {
-  /** For reading a stream of unknown length.  Doesn't buffer the
-   *  input stream: call the two argument version.
-   */
-  def toByteArray(in: InputStream): Array[Byte] = {
-    val bytes   = new ArrayBuffer[Byte]()
-    val buf     = new Array[Byte](4096)
-
-    def loop(): Array[Byte] = {
-      val bytesRead = in.read(buf)
-      if (bytesRead < 0) sys.error("read error")
-      else if (bytesRead == 0) bytes.toArray
-      else {
-        bytes ++= buf.slice(0, bytesRead)
-        loop()
-      }
-    }
-    try loop()
-    finally in.close()
-  }
-  /** This method aspires to be the fastest way to read
-   *  a stream of known length into memory.
-   */
-  def toByteArray(input: InputStream, len: Int): Array[Byte] = {
-    val in = new BufferedInputStream(input)
-    if (len < 0)
-      return toByteArray(in)
-
-    val arr = new Array[Byte](len)
-    var offset = 0
-
-    def loop() {
-      if (offset < len) {
-        val read = in.read(arr, offset, len - offset)
-        if (read >= 0) {
-          offset += read
-          loop()
-        }
-      }
-    }
-    try loop()
-    finally in.close()
-
-    if (offset == arr.length) arr
-    else sys.error("Could not read entire source (%d of %d bytes)".format(offset, len))
-  }
-
   /** Traits which can be viewed as a sequence of bytes.  Source types
    *  which know their length should override def length: Long for more
    *  efficient method implementations.
    */
   trait Bytes {
     def inputStream(): InputStream
-
     def length: Long = -1
+
     def bufferedInput() = new BufferedInputStream(inputStream())
     def bytes(): Iterator[Byte] = bytesAsInts() map (_.toByte)
     def bytesAsInts(): Iterator[Int] = {
@@ -81,9 +35,33 @@ object Streamable {
       Iterator continually in.read() takeWhile (_ != -1)
     }
 
-    def toByteArray() = {
-      require(length <= Int.MaxValue, length + " larger than Int.MaxValue")
-      Streamable.toByteArray(inputStream(), length.toInt)
+    /** This method aspires to be the fastest way to read
+     *  a stream of known length into memory.
+     */
+    def toByteArray(): Array[Byte] = {
+      // if we don't know the length, fall back on relative inefficiency
+      if (length == -1L)
+        return (new ArrayBuffer[Byte]() ++= bytes()).toArray
+
+      val arr = new Array[Byte](length.toInt)
+      val len = arr.length
+      lazy val in = bufferedInput()
+      var offset = 0
+
+      def loop() {
+        if (offset < len) {
+          val read = in.read(arr, offset, len - offset)
+          if (read >= 0) {
+            offset += read
+            loop()
+          }
+        }
+      }
+      try loop()
+      finally in.close()
+
+      if (offset == arr.length) arr
+      else fail("Could not read entire source (%d of %d bytes)".format(offset, len))
     }
   }
 
