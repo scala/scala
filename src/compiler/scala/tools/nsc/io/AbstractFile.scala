@@ -148,7 +148,19 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** Returns contents of file (if applicable) in a byte array.
    */
   @throws(classOf[IOException])
-  def toByteArray: Array[Byte] = Streamable.toByteArray(input, sizeOption getOrElse -1)
+  def toByteArray: Array[Byte] = {
+    val in = input
+    var rest = sizeOption.get
+    val arr = new Array[Byte](rest)
+    while (rest > 0) {
+      val res = in.read(arr, arr.length - rest, rest)
+      if (res == -1)
+        throw new IOException("read error")
+      rest -= res
+    }
+    in.close()
+    arr
+  }
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile]
