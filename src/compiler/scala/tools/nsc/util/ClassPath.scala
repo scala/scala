@@ -286,12 +286,12 @@ abstract class ClassPath[T] {
       case _                                        => None
     }
 
-  def sortString = asURLs map (_.toString) sorted
+  def sortString = join(split(asClasspathString).sorted: _*)
   override def equals(that: Any) = that match {
     case x: ClassPath[_]  => this.sortString == x.sortString
     case _                => false
   }
-  override def hashCode = sortString.hashCode
+  override def hashCode = sortString.##
 }
 
 /**

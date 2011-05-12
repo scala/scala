@@ -244,7 +244,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   }
 
   /** the compiler's classpath, as URL's */
-  lazy val compilerClasspath: List[URL] = new PathResolver(settings) asURLs
+  lazy val compilerClasspath = global.classPath.asURLs
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command

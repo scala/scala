@@ -33,58 +33,38 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
                    "Please try specifying another one using the -encoding option")
   }
 
-  //########################################################################
-  // Public Methods
-
   /** Reads the file with the specified name. */
   def read(filename: String): Array[Char]= read(new JFile(filename))
 
   /** Reads the specified file. */
   def read(file: JFile): Array[Char] = {
     val c = new FileInputStream(file).getChannel
-    try {
-      read(c)
-    } catch {
-      case e:Exception =>
-        if (true) e.printStackTrace
-        reportEncodingError(file.toString())
-        new Array[Char](0)
-    } finally {
-      c.close()
-    }
+
+    try read(c)
+    catch { case e: Exception => reportEncodingError("" + file) ; Array() }
+    finally c.close()
   }
 
   /** Reads the specified file.
-   *
-   *  @param file ...
-   *  @return     ...
    */
   def read(file: AbstractFile): Array[Char] = {
-    file match {
-      case p:PlainFile =>
-        read(p.file)                                                     // bq: (!!!)
-      case z:ZipArchive#FileEntry =>
-        val c = Channels.newChannel(z.archive.getInputStream(z.entry))
-        read(c)
-      case _ =>
-        val b = ByteBuffer.wrap(file.toByteArray)
-        try {
-          read(b)
-        } catch {
-          case e:Exception =>
-            if (true) e.printStackTrace
-            reportEncodingError(file.toString())
-            new Array[Char](0)
-        }
+    try file match {
+      case p: PlainFile             => read(p.file)
+      case z: ZipArchive#FileEntry  => read(Channels.newChannel(z.input))
+      case _                        => read(ByteBuffer.wrap(file.toByteArray))
+    }
+    catch {
+      case e: Exception => reportEncodingError("" + file) ; Array()
     }
   }
 
   /** Reads the specified byte channel. */
   protected def read(input: ReadableByteChannel): Array[Char] = {
     val decoder: CharsetDecoder = this.decoder.reset()
-    val bytes: ByteBuffer = this.bytes; bytes.clear()
-    var chars: CharBuffer = this.chars; chars.clear()
-    var endOfInput: Boolean = false
+    val bytes: ByteBuffer       = this.bytes; bytes.clear()
+    var chars: CharBuffer       = this.chars; chars.clear()
+    var endOfInput              = false
+
     while (!endOfInput ) {
       endOfInput = input.read(bytes) < 0
       bytes.flip()
