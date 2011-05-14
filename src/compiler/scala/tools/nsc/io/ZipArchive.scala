@@ -66,6 +66,8 @@ trait ZipArchive extends AbstractFile {
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
     def zipEntry: ZipEntry
     def parent: DirEntry
+    // have to keep this apparently for compat with sbt's compiler-interface
+    def getArchive: ZipFile = null
 
     override def container: DirEntry = parent
     override def underlyingSource = Some(self)
@@ -89,6 +91,7 @@ trait ZipArchive extends AbstractFile {
   }
   class FileEntry(path: String, archive: ZipFile, val zipEntry: ZipEntry) extends Entry(path) {
     def parent = getDir(path)
+    override def getArchive: ZipFile = archive
     override def input        = archive getInputStream zipEntry
     override def lastModified = zipEntry.getTime()
     override def sizeOption   = Some(zipEntry.getSize().toInt)
