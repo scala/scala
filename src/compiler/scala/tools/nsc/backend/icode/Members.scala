@@ -40,6 +40,9 @@ trait Members { self: ICodes =>
     private var currentLabel: Int = 0
     private var _touched = false
 
+    def blockCount       = blocks.size
+    def instructionCount = blocks map (_.length) sum
+
     def touched = _touched
     def touched_=(b: Boolean): Unit = {
       if (b)

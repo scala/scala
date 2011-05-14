@@ -75,7 +75,7 @@ abstract class Inliners extends SubComponent {
    */
   class Inliner {
     object NonPublicRefs extends Enumeration {
-      val Public, Protected, Private = Value
+      val Private, Protected, Public = Value
 
       /** Cache whether a method calls private members. */
       val usesNonPublics: mutable.Map[IMethod, Value] = new mutable.HashMap
@@ -113,9 +113,9 @@ abstract class Inliners extends SubComponent {
     	override def default(k: Symbol) = 0
     }
 
-    def analyzeMethod(m: IMethod) {
-      var sizeBeforeInlining = if (m.code ne null) m.code.blocks.length else 0
-      var instrBeforeInlining = if (m.code ne null) m.code.blocks.foldLeft(0)(_ + _.length)  else 0
+    def analyzeMethod(m: IMethod): Unit = {
+      var sizeBeforeInlining  = if (m.code ne null) m.code.blockCount else 0
+      var instrBeforeInlining = if (m.code ne null) m.code.instructionCount else 0
       var retry = false
       var count = 0
       fresh.clear()
@@ -229,10 +229,10 @@ abstract class Inliners extends SubComponent {
 
       m.normalize
       if (sizeBeforeInlining > 0) {
-        val instrAfterInlining = m.code.blocks.foldLeft(0)(_ + _.length)
+        val instrAfterInlining = m.code.instructionCount
         val prefix = if ((instrAfterInlining > 2 * instrBeforeInlining) && (instrAfterInlining > 200)) " !! " else ""
         log(prefix + " %s blocks before inlining: %d (%d) after: %d (%d)".format(
-          m.symbol.fullName, sizeBeforeInlining, instrBeforeInlining, m.code.blocks.length, instrAfterInlining))
+          m.symbol.fullName, sizeBeforeInlining, instrBeforeInlining, m.code.blockCount, instrAfterInlining))
       }
     }
 
@@ -521,6 +521,7 @@ abstract class Inliners extends SubComponent {
         case Public     => true
       }
       private def sameSymbols = caller.sym == inc.sym
+      private def sameOwner   = caller.owner == inc.owner
 
       /** A method is safe to inline when:
        *    - it does not contain calls to private methods when
@@ -570,17 +571,11 @@ abstract class Inliners extends SubComponent {
             case _                            => Public
           }
 
-          def iterate(): NonPublicRefs.Value = {
-            var seenProtected = false
-            inc.instructions foreach { i =>
-              getAccess(i) match {
-                case Private    => return Private
-                case Protected  => seenProtected = true
-                case _          => ()
-              }
-            }
-            if (seenProtected) Protected else Public
-          }
+          def iterate(): NonPublicRefs.Value = inc.instructions.foldLeft(Public)((res, inc) => getAccess(inc) match {
+            case Private    => return Private
+            case Protected  => Protected
+            case Public     => res
+          })
           iterate()
         })
 
