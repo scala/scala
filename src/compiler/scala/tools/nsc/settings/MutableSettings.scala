@@ -195,7 +195,11 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   }
 
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
-  def ChoiceSetting(name: String, descr: String, choices: List[String], default: String) =
+  /** Compatibility layer, so that the IDE can call the 2.9 method. */
+  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String): ChoiceSetting =
+    ChoiceSetting(name, descr, choices, default) // helpArg is ignored
+
+  def ChoiceSetting(name: String, descr: String, choices: List[String], default: String): ChoiceSetting =
     add(new ChoiceSetting(name, descr, choices, default))
   def DefinesSetting() = add(new DefinesSetting())
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))

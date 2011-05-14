@@ -143,7 +143,6 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
         (name, "", "")
 
     def localToGetter(name: Name): Name = {
-      assert(isLocalName(name))//debug
       name.subName(0, name.length - LOCAL_SUFFIX.length)
     }
 
@@ -165,6 +164,9 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
 
     def getterName(name: Name): Name =
       if (isLocalName(name)) localToGetter(name) else name;
+
+    def isConstructorName(name: Name) =
+      name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
 
     def isImplClassName(name: Name): Boolean =
       name endsWith IMPL_CLASS_SUFFIX;

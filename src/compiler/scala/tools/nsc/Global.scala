@@ -653,6 +653,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private var phasec: Int = 0
     private var unitc: Int = 0
 
+    /**
+     * For subclasses to override. Called when `phase` is about to be run on `unit`.
+     * Variables are passed explicitly to indicate that `globalPhase` and `currentUnit` have been set.
+     */
+    def informUnitStarting(phase: Phase, unit: CompilationUnit) { }
+
     /** take note that phase is completed
      *  (for progress reporting)
      */

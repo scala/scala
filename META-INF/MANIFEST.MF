@@ -41,5 +41,4 @@ Export-Package:
  ch.epfl.lamp.fjbg,
  ch.epfl.lamp.util
 Require-Bundle: 
- org.apache.ant,
- scala.library
+ org.apache.ant

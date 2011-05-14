@@ -437,6 +437,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
     final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
     final def definedInPackage  = owner.isPackageClass || owner.isPackageObjectClass
+    final def isJavaInterface = hasFlag(JAVA) && isTrait
+
     final def isPredefModule = isModule && name == nme.Predef && owner.isScalaPackageClass // not printed as a prefix
     final def isScalaPackage = isPackage && name == nme.scala_ && owner.isRoot || // not printed as a prefix
                                isPackageObject && owner.isScalaPackageClass
@@ -1616,6 +1618,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
 
     def infosString = infos.toString()
+
+    def hasFlagsToString(mask: Long): String = flagsToString(
+      flags & mask,
+      if (hasAccessBoundary) privateWithin.toString else ""
+    )
 
     /** String representation of symbol's variance */
     def varianceString: String =

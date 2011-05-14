@@ -14,9 +14,8 @@ import scala.tools.nsc.util._
  */
 abstract class Reporter {
   object severity extends Enumeration
-  class Severity(_id: Int) extends severity.Value {
+  class Severity(val id: Int) extends severity.Value {
     var count: Int = 0
-    def id = _id
   }
   val INFO = new Severity(0)
   val WARNING = new Severity(1)
