@@ -79,8 +79,6 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   private var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
-  private final val alternativeNarrow = false
-
   private final val LogPendingSubTypesThreshold = 50
   private final val LogPendingBaseTypesThreshold = 50
   private final val LogVolatileThreshold = 50
@@ -317,21 +315,12 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
     /** Map to a singleton type which is a subtype of this type.
      *  The fallback implemented here gives
-     *    T.narrow  =  (T {}).this.type
+     *    T.narrow  = T' forSome { type T' <: T with Singleton }
      *  Overridden where we know more about where types come from.
-     *
-     *  todo: change to singleton type of an existentially defined variable
-     *  of the right type instead of making this a `this` of a refined type.
      */
     def narrow: Type =
       if (phase.erasedTypes) this
-      else if (alternativeNarrow) { // investigate why this does not work!
-        val tparam = commonOwner(this) freshExistential ".type" setInfo singletonBounds(this)
-        tparam.tpe
-      } else {
-        val cowner = commonOwner(this)
-        refinedType(List(this), cowner, EmptyScope, cowner.pos).narrow
-      }
+      else commonOwner(this) freshExistential ".type" setInfo singletonBounds(this) tpe
 
     /** For a TypeBounds type, itself;
      *  for a reference denoting an abstract type, its bounds,
