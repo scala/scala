@@ -42,7 +42,16 @@ object ZipArchive {
    * @return  A ZipArchive backed by the given url.
    */
   def fromURL(url: URL): ZipArchive = new URLZipArchive(url)
+
+  class ZipFileIterable(z: ZipFile) extends Iterable[ZipEntry] {
+    def iterator = new Iterator[ZipEntry] {
+      val enum    = z.entries()
+      def hasNext = enum.hasMoreElements
+      def next    = enum.nextElement
+    }
+  }
 }
+import ZipArchive._
 
 trait ZipArchive extends AbstractFile {
   self =>
@@ -56,32 +65,26 @@ trait ZipArchive extends AbstractFile {
   override def iterator = root.iterator
   override def isDirectory = true
 
-  // Will be the root dir entry node after being populated.
-  protected val rootDirEntry = new DirEntry("/")
   // Collected Paths -> DirEntries
-  private val dirs = newHashMap[DirEntry]() += ("/" -> rootDirEntry)
+  private val dirs = newHashMap[DirEntry]()
+  dirs("/") = new RootEntry
+  protected def rootDir = dirs("/")
+
   // Override if there's one available
   def zipFile: ZipFile = null
 
-  sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
-    def zipEntry: ZipEntry
-    def parent: DirEntry
+  sealed abstract class Entry(override val container: DirEntry, path: String) extends VirtualFile(baseName(path), path) {
     // have to keep this apparently for compat with sbt's compiler-interface
-    def getArchive: ZipFile = null
-
-    override def container: DirEntry = parent
+    final def getArchive: ZipFile = self.zipFile
     override def underlyingSource = Some(self)
     final override def path = self + "(" + super.path + ")"
-    final override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
-    final override def hashCode = super.path.##
   }
-  class DirEntry(path: String) extends Entry(path) {
-    var zipEntry: ZipEntry = _
+  class RootEntry extends DirEntry(rootDir, "/") { }
+  class DirEntry(container: DirEntry, path: String) extends Entry(container, path) {
+    def this(path: String) = this(getDir(dirName(path)), path)
+
     val entries = newHashMap[Entry]()
 
-    def parent = getDir(dirName(path))
-    override def lastModified: Long =
-      if (zipEntry ne null) zipEntry.getTime() else super.lastModified
     override def isDirectory = true
     override def iterator = entries.valuesIterator
     override def lookupName(name: String, directory: Boolean): Entry = {
@@ -89,10 +92,8 @@ trait ZipArchive extends AbstractFile {
       else entries(name)
     }
   }
-  class FileEntry(path: String, archive: ZipFile, val zipEntry: ZipEntry) extends Entry(path) {
-    def parent = getDir(path)
-    override def getArchive: ZipFile = archive
-    override def input        = archive getInputStream zipEntry
+  class FileEntry(path: String, val zipEntry: ZipEntry) extends Entry(getDir(path), path) {
+    override def input        = getArchive getInputStream zipEntry
     override def lastModified = zipEntry.getTime()
     override def sizeOption   = Some(zipEntry.getSize().toInt)
   }
@@ -126,9 +127,8 @@ trait ZipArchive extends AbstractFile {
   private def getDir(path: String): DirEntry = {
     if (dirs contains path) dirs(path)
     else {
-      val parent   = getDir(dirName(path))
       val newEntry = new DirEntry(path)
-      parent.entries(newEntry.name) = newEntry
+      newEntry.container.entries(newEntry.name) = newEntry
       dirs(path) = newEntry
       newEntry
     }
@@ -137,13 +137,11 @@ trait ZipArchive extends AbstractFile {
   protected final def addZipEntry(entry: ZipEntry) {
     val path = entry.getName
     if (entry.isDirectory) {
-      val dir = getDir(path)
-      if (dir.zipEntry == null)
-        dir.zipEntry = entry
+      getDir(path)
     }
     else {
       val parent   = getDir(dirName(path))
-      val newEntry = new FileEntry(path, zipFile, entry)
+      val newEntry = new FileEntry(path, entry)
 
       parent.entries(newEntry.name) = newEntry
     }
@@ -152,11 +150,8 @@ trait ZipArchive extends AbstractFile {
 
 final class FileZipArchive(file: File, override val zipFile: ZipFile) extends PlainFile(file) with ZipArchive {
   lazy val root: DirEntry = {
-    val enum = zipFile.entries()
-    while (enum.hasMoreElements)
-      addZipEntry(enum.nextElement)
-
-    rootDirEntry
+    new ZipFileIterable(zipFile) foreach addZipEntry
+    rootDir
   }
 }
 
@@ -177,7 +172,7 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipArchive {
     try loop()
     finally in.close()
 
-    rootDirEntry
+    rootDir
   }
 
   def name: String = url.getFile()
