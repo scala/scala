@@ -8,7 +8,7 @@ package backend.jvm
 
 import ch.epfl.lamp.fjbg._
 import java.io.{ DataOutputStream, OutputStream }
-import scala.tools.nsc.io.{ AbstractFile, Path }
+import scala.tools.nsc.io.Path
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.util.Javap
 import java.util.jar.{ JarEntry, JarOutputStream }

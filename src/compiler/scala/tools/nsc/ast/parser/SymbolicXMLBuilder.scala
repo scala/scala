@@ -28,7 +28,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
 
   var isPattern: Boolean = _
 
-  trait XMLTypeNames extends LibraryTypeNames {
+  trait XMLTypeNames extends TypeNames {
     val _Comment: NameType             = "Comment"
     val _Elem: NameType                = "Elem"
     val _EntityRef: NameType           = "EntityRef"
@@ -43,7 +43,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     val _UnprefixedAttribute: NameType = "UnprefixedAttribute"
   }
 
-  trait XMLTermNames extends LibraryTermNames {
+  trait XMLTermNames extends TermNames {
     val _Null: NameType     = "Null"
     val __Elem: NameType    = "Elem"
     val __Text: NameType    = "Text"
@@ -63,8 +63,11 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     type NameType = TermName
     implicit def createNameType(name: String): TermName = newTermName(name)
   }
-  import xmltypes._
-  import xmlterms._
+
+  import xmltypes.{_Comment, _Elem, _EntityRef, _Group, _MetaData, _NamespaceBinding, _NodeBuffer,
+    _PrefixedAttribute, _ProcInstr, _Text, _Unparsed, _UnprefixedAttribute}
+
+  import xmlterms.{_Null, __Elem, __Text, _buf, _md, _plus, _scope, _tmpscope, _xml}
 
   // convenience methods
   private def LL[A](x: A*): List[List[A]] = List(List(x:_*))

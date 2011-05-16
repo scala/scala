@@ -10,10 +10,11 @@ import Predef.{ println => _, _ }
 import java.io.{ PrintWriter }
 import java.lang.reflect
 import java.net.URL
-import util.{ Set => _, _ }
-import io.{ AbstractFile, VirtualDirectory }
+import util._
+import io.VirtualDirectory
 import reporters.{ ConsoleReporter, Reporter }
-import symtab.{ Flags, Names }
+import symtab.Flags
+import scala.reflect.common.Names
 import scala.tools.nsc.interpreter.{ Results => IR }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }

@@ -12,7 +12,7 @@ import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.{SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
-import util.Chars.{ SU, LF }
+import scala.reflect.Chars.{ SU, LF }
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
 // from another file - scala.xml.parsing.MarkupParser, it looks like.

@@ -17,7 +17,7 @@ import scala.collection.mutable.{HashMap, ListBuffer, StringBuilder}
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait DocComments { self: SymbolTable =>
+trait DocComments { self: Global =>
 
   def reporter: Reporter
 

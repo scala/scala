@@ -10,7 +10,6 @@ package classfile
 import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
 import backend.icode._
-import io.AbstractFile
 import ClassfileConstants._
 import Flags._
 

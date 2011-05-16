@@ -3,11 +3,10 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
-package ast
+package scala.reflect
+package common
 
-import symtab.Flags._
-import symtab.SymbolTable
+import Flags._
 import util.HashSet
 
 /** This class ...
@@ -355,7 +354,6 @@ abstract class TreeInfo {
     || isUnitInScala(body, tpnme.ScalaObject)
     || containsLeadingPredefImport(List(body)))
   }
-
 
   def isAbsTypeDef(tree: Tree) = tree match {
     case TypeDef(_, _, _, TypeBoundsTree(_, _)) => true

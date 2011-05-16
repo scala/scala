@@ -12,9 +12,8 @@ import java.lang.Integer.toHexString
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
-import scala.tools.nsc.io.AbstractFile
 import scala.annotation.switch
-import reflect.generic.PickleBuffer
+import scala.reflect.common.pickling.{PickleBuffer, ByteCodecs}
 
 /** This abstract class implements a class file parser.
  *
@@ -49,7 +48,7 @@ abstract class ClassfileParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
-  private object unpickler extends UnPickler {
+  private object unpickler extends scala.reflect.common.pickling.UnPickler {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
@@ -376,7 +375,7 @@ abstract class ClassfileParser {
         val len = in.getChar(start + 1)
         val bytes = new Array[Byte](len)
         Array.copy(in.buf, start + 3, bytes, 0, len)
-        val decodedLength = reflect.generic.ByteCodecs.decode(bytes)
+        val decodedLength = ByteCodecs.decode(bytes)
         value = bytes.take(decodedLength)
         values(index) = value
       }
@@ -396,7 +395,7 @@ abstract class ClassfileParser {
           bytesBuffer ++= in.buf.view(start + 3, start + 3 + len)
         }
         val bytes = bytesBuffer.toArray
-        val decodedLength = reflect.generic.ByteCodecs.decode(bytes)
+        val decodedLength = ByteCodecs.decode(bytes)
         value = bytes.take(decodedLength)
         values(indices.head) = value
       }

@@ -250,6 +250,8 @@ class Flags extends ModifierFlags {
 
   private final val PKL_MASK       = 0x00000FFF
 
+  final val PickledFlags: Long  = 0xFFFFFFFFL
+
   private def rawPickledCorrespondence = Array(
     (IMPLICIT, IMPLICIT_PKL),
     (FINAL, FINAL_PKL),

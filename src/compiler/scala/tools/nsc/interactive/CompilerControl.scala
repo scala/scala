@@ -66,11 +66,11 @@ trait CompilerControl { self: Global =>
    *  if it does not yet exist create a new one atomically
    *  Note: We want to get roid of this operation as it messes compiler invariants.
    */
-  @deprecated("use getUnitOf(s) or onUnitOf(s) instead", "2.9.0")
+  @deprecated("use getUnitOf(s) or onUnitOf(s) instead")
   def unitOf(s: SourceFile): RichCompilationUnit = getOrCreateUnitOf(s)
 
   /** The compilation unit corresponding to a position */
-  @deprecated("use getUnitOf(pos.source) or onUnitOf(pos.source) instead", "2.9.0")
+  @deprecated("use getUnitOf(pos.source) or onUnitOf(pos.source) instead")
   def unitOf(pos: Position): RichCompilationUnit = getOrCreateUnitOf(pos.source)
 
   /** Removes the CompilationUnit corresponding to the given SourceFile
@@ -211,7 +211,7 @@ trait CompilerControl { self: Global =>
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
 
-  @deprecated("use parseTree(source) instead", "2.9.0")
+  @deprecated("use parseTree(source) instead") // deleted 2nd parameter, as thius has to run on 2.8 also.
   def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
     parseTree(source)
   }

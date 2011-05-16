@@ -13,8 +13,8 @@ import scala.tools.util.Profiling
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ Exceptional, ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
-import reflect.generic.{ PickleBuffer, PickleFormat }
+import util.{ Exceptional, ClassPath, SourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
+import scala.reflect.common.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
@@ -32,11 +32,17 @@ import backend.jvm.GenJVM
 import backend.opt.{ Inliners, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 
-class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
-                                                             with CompilationUnits
-                                                             with Plugins
-                                                             with PhaseAssembly
-{
+class Global(var currentSettings: Settings, var reporter: Reporter) extends SymbolTable
+                                                                      with CompilationUnits
+                                                                      with Plugins
+                                                                      with PhaseAssembly
+                                                                      with Trees
+                                                                      with TreePrinters
+                                                                      with DocComments
+                                                                      with symtab.Positions {
+
+  override def settings = currentSettings
+
   // alternate constructors ------------------------------------------
 
   def this(reporter: Reporter) =
@@ -44,6 +50,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
+
+  // fulfilling requirements
+
+  type AbstractFile = scala.tools.nsc.io.AbstractFile
+  val AbstractFile = scala.tools.nsc.io.AbstractFile
+
+  def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
+
+  def picklerPhase: Phase = currentRun.picklerPhase
 
   // platform specific elements
 
@@ -103,7 +118,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** Some statistics (normally disabled) set with -Ystatistics */
   object statistics extends {
     val global: Global.this.type = Global.this
-  } with Statistics
+  } with StatisticsInfo
 
   /** Print tree in detailed form */
   object nodePrinters extends {
@@ -602,7 +617,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
   protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
-  private lazy val phaseTimings = new Phase.TimingModel   // tracking phase stats
+  private lazy val phaseTimings = new Phases.TimingModel   // tracking phase stats
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
     phasesDescMap(sub) = descr
@@ -1221,7 +1236,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   // to false except in old code.  The downside is that this leaves us calling a
   // deprecated method: but I see no simple way out, so I leave it for now.
   def forJVM           = opt.jvm
-  def forMSIL          = opt.msil
+  override def forMSIL = opt.msil
   def forInteractive   = onlyPresentation
   def forScaladoc      = onlyPresentation
   def createJavadoc    = false

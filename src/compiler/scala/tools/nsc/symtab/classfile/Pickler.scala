@@ -10,7 +10,7 @@ package classfile
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
 import scala.io.Codec
-import reflect.generic.{ PickleBuffer, PickleFormat }
+import scala.reflect.common.pickling.{ PickleBuffer, PickleFormat }
 import scala.collection.mutable.LinkedHashMap
 import PickleFormat._
 import Flags._
@@ -29,6 +29,8 @@ abstract class Pickler extends SubComponent {
   private final val showSig = false
 
   val phaseName = "pickler"
+
+  currentRun
 
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 

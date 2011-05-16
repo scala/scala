@@ -12,7 +12,7 @@ import collection.mutable.HashMap
  *  @author Gilles Dubochet, Lex Spoon
  */
 trait Reifiers {
-  val symbols: SymbolTable
+  val symbols: Global
   import symbols._
 
   private def mkGlobalSymbol(fullname: String, sym: Symbol): reflect.Symbol =

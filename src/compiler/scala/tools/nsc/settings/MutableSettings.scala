@@ -15,7 +15,8 @@ import scala.io.Source
 
 /** A mutable Settings object.
  */
-class MutableSettings(val errorFn: String => Unit) extends AbsSettings with ScalaSettings with Mutable {
+class MutableSettings(val errorFn: String => Unit) extends scala.reflect.common.settings.MutableSettings
+                                                      with AbsSettings with ScalaSettings with Mutable {
   type ResultOfTryToSet = List[String]
 
   /** Iterates over the arguments applying them to settings where applicable.
@@ -200,21 +201,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     add(new PathSetting(name, descr, default, prepend, append))
   }
   def PrefixSetting(name: String, prefix: String, descr: String): PrefixSetting = add(new PrefixSetting(name, prefix, descr))
-
-  // basically this is a value which remembers if it's been modified
-  trait SettingValue extends AbsSettingValue {
-    protected var v: T
-    protected var setByUser: Boolean = false
-    def postSetHook(): Unit
-
-    def isDefault: Boolean = !setByUser
-    def value: T = v
-    def value_=(arg: T) = {
-      setByUser = true
-      v = arg
-      postSetHook()
-    }
-  }
 
   /** A class for holding mappings from source directories to
    *  their output location. This functionality can be accessed

@@ -11,9 +11,9 @@ package ast.parser
 
 import scala.collection.mutable.ListBuffer
 import util.{ SourceFile, OffsetPosition, FreshNameCreator }
-import scala.reflect.generic.{ ModifierFlags => Flags }
+import scala.reflect.common.{ ModifierFlags => Flags }
 import Tokens._
-import util.Chars.{ isScalaLetter }
+import scala.reflect.Chars.{ isScalaLetter }
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.

@@ -2,7 +2,7 @@ package scala.tools.nsc
 package dependencies
 
 import util.SourceFile
-import io.{ AbstractFile, Path }
+import io.Path
 import collection._
 import symtab.Flags
 

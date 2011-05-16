@@ -145,7 +145,7 @@ class StandardCompileServer extends SocketServer {
     else {
       if (isCompilerReusable) {
         info("[Reusing existing Global instance.]")
-        compiler.settings = newSettings
+        compiler.currentSettings = newSettings
         compiler.reporter = reporter
       }
       else {

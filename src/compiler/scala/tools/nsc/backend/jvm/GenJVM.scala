@@ -10,9 +10,8 @@ package backend.jvm
 import java.io.{ DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
-import scala.reflect.generic.{ PickleFormat, PickleBuffer }
+import scala.reflect.common.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
-import scala.tools.nsc.io.{ AbstractFile, Path }
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._

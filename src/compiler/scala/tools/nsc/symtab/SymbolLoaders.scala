@@ -10,10 +10,9 @@ import java.io.IOException
 import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Attribute => MSILAttribute }
 
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
-import Flags._
+import reflect.common.Flags._
 import util.Statistics._
 
 /** This class ...
@@ -285,7 +284,7 @@ abstract class SymbolLoaders {
       classfileParser.parse(classfile, root)
       stopTimer(classReadNanos, start)
     }
-    override def sourcefile = classfileParser.srcfile
+    override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
   }
 
   class MSILTypeLoader(typ: MSILType) extends SymbolLoader {

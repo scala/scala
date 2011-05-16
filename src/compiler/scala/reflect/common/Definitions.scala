@@ -3,17 +3,15 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
-package symtab
+package scala.reflect
+package common
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ HashMap }
-import scala.tools.nsc.util.NoPosition
 import Flags._
 import PartialFunction._
-import classfile.ClassfileConstants
 
-trait Definitions extends reflect.generic.StandardDefinitions {
+trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
   self: SymbolTable =>
 
   // the scala value classes
@@ -117,7 +115,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     )
   }
 
-  object definitions extends AbsDefinitions with ValueClassDefinitions {
+  object definitions extends ValueClassDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 
