@@ -8,6 +8,11 @@ package scala.tools.nsc
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
 
 package object util {
+
+  type Set[T <: AnyRef] = scala.reflect.common.util.Set[T]
+  type HashSet[T >: Null <: AnyRef] = scala.reflect.common.util.HashSet[T]
+  val HashSet = scala.reflect.common.util.HashSet
+
   def onull[T](value: T, orElse: => T): T = if (value == null) orElse else value
 
   /** Apply a function and return the passed value */

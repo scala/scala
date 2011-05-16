@@ -213,7 +213,7 @@ class FlagsUtil(flagsObject: AnyRef) {
 }
 
 object FlagsUtil {
-  import reflect.generic.ModifierFlags
+  import reflect.common.ModifierFlags
 
   trait MarkModifiers extends FlagsUtil {
     lazy val isModifiersFlag = classOf[ModifierFlags].getMethods map (_.getName) filter isFlagName toSet
@@ -230,7 +230,7 @@ object FlagsUtilCompiler extends FlagsUtil(symtab.Flags) with FlagsUtil.MarkModi
   def main(args: Array[String]): Unit = reflectiveAnalyzeFlags()
 }
 
-object FlagsUtilLibrary extends FlagsUtil(reflect.generic.Flags) with FlagsUtil.MarkModifiers {
+object FlagsUtilLibrary extends FlagsUtil(reflect.common.Flags) with FlagsUtil.MarkModifiers {
   def main(args: Array[String]): Unit = reflectiveAnalyzeFlags()
 }
 
