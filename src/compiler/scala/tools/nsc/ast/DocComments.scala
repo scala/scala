@@ -10,7 +10,7 @@ import symtab._
 import reporters.Reporter
 import util.{Position, NoPosition}
 import util.DocStrings._
-import util.Chars._
+import scala.reflect.Chars._
 import scala.collection.mutable.{HashMap, ListBuffer, StringBuilder}
 
 /*

@@ -13,7 +13,7 @@ import annotation.switch
  *  identical token sets.
  */
 abstract class Tokens {
-  import util.Chars._
+  import scala.reflect.Chars._
 
   /** special tokens */
   final val EMPTY = -3
