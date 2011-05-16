@@ -34,14 +34,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
      *  the enclosing implementation class instead.
      */
     def safeREF(sym: Symbol) = {
-      def fix(tree: Tree): Tree = tree match {
-        case Select(qual, name) => treeCopy.Select(tree, fix(qual), name)
-        case This(_) if tree.symbol.isInterface && tree.symbol.name + "$class" == currentClass.name.toString =>
-          tree.setSymbol(currentClass).setType(currentClass.tpe)
-        case _ => tree
+      def fix(tree: Tree): Unit = tree match {
+        case Select(qual @ This(_), name) if qual.symbol != currentClass =>
+          qual.setSymbol(currentClass).setType(currentClass.tpe)
+        case _ =>
       }
       val tree = REF(sym)
-      if (currentClass.isImplClass) fix(tree) else tree
+      if (currentClass.isImplClass && sym.owner == currentClass) fix(tree)
+      tree
     }
 
     //private val classConstantMeth = new HashMap[String, Symbol]
