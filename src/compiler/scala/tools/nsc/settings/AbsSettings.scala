@@ -13,7 +13,7 @@ import io.AbstractFile
  *  interchangeably.   Except of course without the mutants.
  */
 
-trait AbsSettings extends scala.reflect.common.settings.AbsSettings {
+trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
   type Setting <: AbsSetting      // Fix to the concrete Setting type
   type ResultOfTryToSet           // List[String] in mutable, (Settings, List[String]) in immutable
   def errorFn: String => Unit

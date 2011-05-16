@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package util
 
-class Statistics extends scala.reflect.common.util.Statistics {
+class Statistics extends scala.reflect.internal.util.Statistics {
 
  var nodeByType = new ClassCounts
 

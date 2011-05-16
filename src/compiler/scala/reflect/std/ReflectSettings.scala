@@ -1,7 +1,7 @@
 package scala.reflect
 package std
 
-class ReflectSettings extends common.settings.MutableSettings {
+class ReflectSettings extends internal.settings.MutableSettings {
 
   def newSetting[TT](init: TT) = new SettingValue {
     type T = TT

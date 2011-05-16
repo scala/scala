@@ -3,7 +3,7 @@ package symtab
 
 import scala.tools.nsc.util.{ SourceFile, Position, OffsetPosition, NoPosition }
 
-trait Positions extends scala.reflect.common.Positions {
+trait Positions extends scala.reflect.internal.Positions {
 self: scala.tools.nsc.symtab.SymbolTable =>
 
   def rangePos(source: SourceFile, start: Int, point: Int, end: Int) =

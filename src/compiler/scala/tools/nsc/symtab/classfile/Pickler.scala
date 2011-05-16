@@ -10,7 +10,7 @@ package classfile
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
 import scala.io.Codec
-import scala.reflect.common.pickling.{ PickleBuffer, PickleFormat }
+import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.collection.mutable.LinkedHashMap
 import PickleFormat._
 import Flags._

@@ -12,7 +12,7 @@ import java.io.IOException
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _}
 
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.reflect.common.pickling.UnPickler
+import scala.reflect.internal.pickling.UnPickler
 import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
 
 /**

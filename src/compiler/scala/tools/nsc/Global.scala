@@ -14,7 +14,7 @@ import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ Exceptional, ClassPath, SourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
-import scala.reflect.common.pickling.{ PickleBuffer, PickleFormat }
+import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 
 import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }

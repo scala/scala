@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package ast
 
-trait Trees extends reflect.common.Trees { self: Global =>
+trait Trees extends reflect.internal.Trees { self: Global =>
 
   lazy val treePrinter = newTreePrinter()
 

@@ -10,4 +10,4 @@ import ast.{Trees, TreePrinters, DocComments}
 
 import util._
 
-abstract class SymbolTable extends reflect.common.SymbolTable
+abstract class SymbolTable extends reflect.internal.SymbolTable

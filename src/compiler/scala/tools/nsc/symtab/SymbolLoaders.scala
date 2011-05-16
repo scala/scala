@@ -12,7 +12,7 @@ import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Attribute => MSILAttribute
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
-import reflect.common.Flags._
+import reflect.internal.Flags._
 import util.Statistics._
 
 /** This class ...

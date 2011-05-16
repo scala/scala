@@ -13,8 +13,8 @@ import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
 
 import cmd.program.Simple
-import scala.reflect.common.{Flags, Names}
-import scala.reflect.common.pickling.{ PickleBuffer, PickleFormat }
+import scala.reflect.internal.{Flags, Names}
+import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import interpreter.ByteCode.scalaSigBytesForPath
 
 object ShowPickled extends Names {

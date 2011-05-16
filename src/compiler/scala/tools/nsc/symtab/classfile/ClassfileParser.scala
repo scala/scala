@@ -13,7 +13,7 @@ import java.lang.Integer.toHexString
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
 import scala.annotation.switch
-import scala.reflect.common.pickling.{PickleBuffer, ByteCodecs}
+import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
 
 /** This abstract class implements a class file parser.
  *
@@ -48,7 +48,7 @@ abstract class ClassfileParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 
-  private object unpickler extends scala.reflect.common.pickling.UnPickler {
+  private object unpickler extends scala.reflect.internal.pickling.UnPickler {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
   }
 

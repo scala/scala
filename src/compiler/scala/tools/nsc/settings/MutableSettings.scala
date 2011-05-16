@@ -15,7 +15,7 @@ import scala.io.Source
 
 /** A mutable Settings object.
  */
-class MutableSettings(val errorFn: String => Unit) extends scala.reflect.common.settings.MutableSettings
+class MutableSettings(val errorFn: String => Unit) extends scala.reflect.internal.settings.MutableSettings
                                                       with AbsSettings with ScalaSettings with Mutable {
   type ResultOfTryToSet = List[String]
 

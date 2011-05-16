@@ -1,7 +1,7 @@
 package scala.reflect
 package std
 
-import common._
+import internal._
 import collection.mutable.ListBuffer
 
 trait JavaMappings { self: Mirror =>

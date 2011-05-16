@@ -14,7 +14,7 @@ import util._
 import io.VirtualDirectory
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.Flags
-import scala.reflect.common.Names
+import scala.reflect.internal.Names
 import scala.tools.nsc.interpreter.{ Results => IR }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }

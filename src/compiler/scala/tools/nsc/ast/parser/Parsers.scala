@@ -11,7 +11,7 @@ package ast.parser
 
 import scala.collection.mutable.ListBuffer
 import util.{ SourceFile, OffsetPosition, FreshNameCreator }
-import scala.reflect.common.{ ModifierFlags => Flags }
+import scala.reflect.internal.{ ModifierFlags => Flags }
 import Tokens._
 import scala.reflect.Chars.{ isScalaLetter }
 

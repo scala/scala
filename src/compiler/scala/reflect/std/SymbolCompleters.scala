@@ -2,7 +2,7 @@ package scala.reflect
 package std
 
 import java.io.File
-import common._
+import internal._
 
 trait SymbolCompleters { self: Mirror =>
 

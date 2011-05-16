@@ -13,7 +13,7 @@ import symtab.SymbolTable
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
  */
-abstract class TreeGen extends reflect.common.TreeGen {
+abstract class TreeGen extends reflect.internal.TreeGen {
   val global: Global
 
   import global._
