@@ -330,7 +330,7 @@ object Range {
 
   @deprecated("use Range instead", "2.9.0")
   trait ByOne extends Range {
-    @bridge override def foreach[@specialized(Unit) U](f: Int => U) =
-      super.foreach(f)
+//    @bridge override def foreach[@specialized(Unit) U](f: Int => U) =
+//      super.foreach(f)
   }
 }
