@@ -21,15 +21,15 @@ final class RichInt(val self: Int) extends ScalaNumberProxy[Int] with RangedProx
   def until(end: Int): Range = Range(self, end)
   def until(end: Int, step: Int): Range = Range(self, end, step)
 
-  @bridge
-  def until(end: Int): Range with Range.ByOne = new Range(self, end, 1) with Range.ByOne
+//  @bridge
+//  def until(end: Int): Range with Range.ByOne = new Range(self, end, 1) with Range.ByOne
 
   /** like `until`, but includes the last index */
   def to(end: Int): Range.Inclusive = Range.inclusive(self, end)
   def to(end: Int, step: Int): Range.Inclusive = Range.inclusive(self, end, step)
 
-  @bridge
-  def to(end: Int): Range with Range.ByOne = new Range.Inclusive(self, end, 1) with Range.ByOne
+//  @bridge
+//  def to(end: Int): Range with Range.ByOne = new Range.Inclusive(self, end, 1) with Range.ByOne
 
   override def min(that: Int): Int = if (self < that) self else that
   override def max(that: Int): Int = if (self > that) self else that
