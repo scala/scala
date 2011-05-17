@@ -529,6 +529,7 @@ abstract class Erasure extends AddInterfaces
           case UnitClass  =>
             if (treeInfo isPureExpr tree) REF(BoxedUnit_UNIT)
             else BLOCK(tree, REF(BoxedUnit_UNIT))
+          case NothingClass => tree // a non-terminating expression doesn't need boxing
           case x          =>
             assert(x != ArrayClass)
             tree match {
