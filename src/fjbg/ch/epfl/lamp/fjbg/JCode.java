@@ -22,6 +22,8 @@ import ch.epfl.lamp.util.ByteArray;
 public class JCode {
     protected boolean frozen = false;
 
+    public static int MAX_CODE_SIZE = 65535;
+
     protected final FJBGContext context;
     protected final JMethod owner;
 
@@ -57,8 +59,8 @@ public class JCode {
         this.owner = owner;
         owner.setCode(this);
         int size = stream.readInt();
-        if (size >= 65536) // section 4.10
-            throw new Error("code size must be less than 65536: " + size);
+        if (size > MAX_CODE_SIZE) // section 4.10
+            throw new Error("code size must be less than " + MAX_CODE_SIZE + ": " + size);
         this.codeArray = new ByteArray(stream, size);
     }
 
@@ -97,8 +99,19 @@ public class JCode {
     // Freezing
     //////////////////////////////////////////////////////////////////////
 
+    public static class CodeSizeTooBigException extends OffsetTooBigException {
+        public int codeSize;
+
+        public CodeSizeTooBigException(int size) {
+          codeSize = size;
+        }
+    }
+
     public void freeze() throws OffsetTooBigException {
         assert !frozen;
+
+        if (getSize() > MAX_CODE_SIZE) throw new CodeSizeTooBigException(getSize());
+
         patchAllOffset();
         codeArray.freeze();
         frozen = true;
