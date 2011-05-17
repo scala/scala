@@ -307,16 +307,19 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq(dir)
 
-  lazy val classes: IndexedSeq[ClassRep] = dir flatMap { f =>
-    if (f.isDirectory || !validSourceFile(f.name)) Nil
-    else List(ClassRep(None, Some(f)))
-  } toIndexedSeq
+  private def traverse() = {
+    val classBuf   = immutable.Vector.newBuilder[ClassRep]
+    val packageBuf = immutable.Vector.newBuilder[SourcePath[T]]
+    dir foreach { f =>
+      if (!f.isDirectory && validSourceFile(f.name))
+        classBuf += ClassRep(None, Some(f))
+      else if (f.isDirectory && validPackage(f.name))
+        packageBuf += new SourcePath[T](f, context)
+    }
+    (packageBuf.result, classBuf.result)
+  }
 
-  lazy val packages: IndexedSeq[SourcePath[T]] = dir flatMap { f =>
-    if (f.isDirectory && validPackage(f.name)) List(new SourcePath[T](f, context))
-    else Nil
-  } toIndexedSeq
-
+  lazy val (packages, classes) = traverse()
   override def toString() = "sourcepath: "+ dir.toString()
 }
 
@@ -333,25 +336,21 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 
-  lazy val classes: IndexedSeq[ClassRep] = {
-    val buf = immutable.Vector.newBuilder[ClassRep]
+  // calculates (packages, classes) in one traversal.
+  private def traverse() = {
+    val classBuf   = immutable.Vector.newBuilder[ClassRep]
+    val packageBuf = immutable.Vector.newBuilder[DirectoryClassPath]
     dir foreach { f =>
       if (!f.isDirectory && validClassFile(f.name))
-        buf += ClassRep(Some(f), None)
+        classBuf += ClassRep(Some(f), None)
+      else if (f.isDirectory && validPackage(f.name))
+        packageBuf += new DirectoryClassPath(f, context)
     }
-    buf.result
+    (packageBuf.result, classBuf.result)
   }
 
-  lazy val packages: IndexedSeq[DirectoryClassPath] = {
-    val buf = immutable.Vector.newBuilder[DirectoryClassPath]
-    dir foreach { f =>
-      if (f.isDirectory && validPackage(f.name))
-        buf += new DirectoryClassPath(f, context)
-    }
-    buf.result
-  }
-
-  override def toString() = "directory classpath: "+ dir
+  lazy val (packages, classes) = traverse()
+  override def toString() = "directory classpath: "+ origin.getOrElse("?")
 }
 
 /**
