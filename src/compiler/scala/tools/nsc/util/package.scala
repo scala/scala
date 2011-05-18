@@ -9,6 +9,9 @@ import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, 
 
 package object util {
 
+  // forwarder for old code that builds against 2.9 and 2.10
+  val Chars = scala.reflect.Chars
+
   type Set[T <: AnyRef] = scala.reflect.internal.util.Set[T]
   type HashSet[T >: Null <: AnyRef] = scala.reflect.internal.util.HashSet[T]
   val HashSet = scala.reflect.internal.util.HashSet
