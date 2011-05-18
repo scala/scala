@@ -21,12 +21,13 @@ MAIN DISTRIBUTION PACKAGING
   </target>
   
   <target name="pack-archives.tar" depends="pack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}"
+    <tar destfile="${dists.dir}/archives/scala-${version.number}.tar"
          compression="none" longfile="gnu">
       <tarfileset dir="${dist.dir}" prefix="scala-${version.number}" includes="bin/**" mode="755"/>
       <tarfileset dir="${dist.dir}" prefix="scala-${version.number}" excludes="bin/**"/>
     </tar>
-    <gzip src="${dists.dir}/archives/scala-${version.number}" destfile="${dists.dir}/archives/scala-${version.number}.tgz"/>
+    <gzip src="${dists.dir}/archives/scala-${version.number}.tar" destfile="${dists.dir}/archives/scala-${version.number}.tgz"/>
+    <move file="${dists.dir}/archives/scala-${version.number}.tar" tofile="${dists.dir}/archives/scala-${version.number}"/>
     <exec executable="xz" failifexecutionfails="false">
       <arg line="-k -9e -S .txz ${dists.dir}/archives/scala-${version.number}"/>
     </exec> 
@@ -46,11 +47,12 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-devel-docs.tar" depends="pack-archives.zip">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-devel-docs"
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-devel-docs.tar"
          compression="none" longfile="gnu">
       <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="scala-${version.number}-devel-docs"/>
     </tar>
-    <gzip src="${dists.dir}/archives/scala-${version.number}-devel-docs" destfile="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz"/>
+    <gzip src="${dists.dir}/archives/scala-${version.number}-devel-docs.tar" destfile="${dists.dir}/archives/scala-${version.number}-devel-docs.tgz"/>
+    <move file="${dists.dir}/archives/scala-${version.number}-devel-docs.tar" tofile="${dists.dir}/archives/scala-${version.number}-devel-docs"/>
     <exec executable="xz" failifexecutionfails="false">
       <arg line="-k -9e -S .txz ${dists.dir}/archives/scala-${version.number}-devel-docs"/>
     </exec> 
@@ -63,7 +65,7 @@ MAIN DISTRIBUTION PACKAGING
   </target>
   
   <target name="pack-archives.src" depends="pack-devel-docs.tar">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-sources"
+    <tar destfile="${dists.dir}/archives/scala-${version.number}-sources.tar"
          compression="none" longfile="gnu">
       <tarfileset dir="${basedir}" prefix="scala-${version.number}-sources">
         <exclude name="bin/**"/>
@@ -78,10 +80,11 @@ MAIN DISTRIBUTION PACKAGING
         <include name="test/partest"/>
       </tarfileset>
     </tar>
-    <gzip src="${dists.dir}/archives/scala-${version.number}-sources" destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"/>
+    <gzip src="${dists.dir}/archives/scala-${version.number}-sources.tar" destfile="${dists.dir}/archives/scala-${version.number}-sources.tgz"/>
+    <move file="${dists.dir}/archives/scala-${version.number}-sources.tar" tofile="${dists.dir}/archives/scala-${version.number}-sources"/>
     <exec executable="xz" failifexecutionfails="false">
       <arg line="-k -9e -S .txz ${dists.dir}/archives/scala-${version.number}-sources"/>
-    </exec> 
+    </exec>
     <delete file="${dists.dir}/archives/scala-${version.number}-sources" />
     <checksum fileext=".md5">
       <fileset dir="${dists.dir}/archives">
