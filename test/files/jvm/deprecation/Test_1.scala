@@ -8,9 +8,9 @@ class Test {
     val w = i.buz()
   }
 
-  @deprecated("no longer!") class Inner {
-    @deprecated("uncool") def f: Int = 1
-    @deprecated("this one as well!") var g = -1
+  @deprecated("no longer!", "") class Inner {
+    @deprecated("uncool", "") def f: Int = 1
+    @deprecated("this one as well!", "") var g = -1
   }
 }
 
