@@ -68,11 +68,13 @@ abstract class Any {
    */
   final def != (that: Any): Boolean = !(this == that)
 
-  /** Equivalent to `x.hashCode` except for boxed numeric types.
+  /** Equivalent to `x.hashCode` except for boxed numeric types and `null`.
    *  For numerics, it returns a hash value which is consistent
    *  with value equality: if two value type instances compare
    *  as true, then ## will produce the same hash value for each
    *  of them.
+   *  For `null` returns a hashcode where `null.hashCode` throws a
+   *  `NullPointerException`.
    *
    *  @return   a hash value consistent with ==
    */
