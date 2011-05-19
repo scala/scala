@@ -1,12 +1,11 @@
-import scala.testing.SUnit._
-
-object Test extends TestConsoleMain {
-  def suite = new TestSuite(
-    Foo,
-    Mas,
-    LisSeqArr,
-    StreamFoo
-  )
+object Test {
+  def main(args: Array[String]) {
+    Foo.run()
+    Mas.run()
+    LisSeqArr.run()
+    StreamFoo.run()
+    Test1256.run()
+  }
 }
 
 // this class is used for representation
@@ -31,7 +30,8 @@ object FaaPreciseSome {
 object VarFoo {
   def unapply(a : Int)(implicit b : Int) : Option[Int] = Some(a + b)
 }
-object Foo extends TestCase("Foo") with Assert {
+
+object Foo {
   def unapply(x: Any): Option[Product2[Int, String]] = x match {
     case y: Bar => Some(Tuple(y.size, y.name))
     case _ => None
@@ -51,22 +51,22 @@ object Foo extends TestCase("Foo") with Assert {
   def doMatch5(b:Bar) = (b:Any) match {
     case FaaPreciseSome(n:String) => n
   }
-  override def runTest {
+  def run() {
     val b = new Bar
-    assertEquals(doMatch1(b),(50,"medium"))
-    assertEquals(doMatch2(b),null)
-    assertEquals(doMatch3(b),"medium")
-    assertEquals(doMatch4(b),"medium")
-    assertEquals(doMatch5(b),"medium")
+    assert(doMatch1(b) == (50,"medium"))
+    assert(doMatch2(b) == null)
+    assert(doMatch3(b) == "medium")
+    assert(doMatch4(b) == "medium")
+    assert(doMatch5(b) == "medium")
     implicit val bc: Int = 3
-    assertEquals(4 match {
+    assert(7 == (4 match {
       case VarFoo(x) => x
-    }, 7)
+    }))
   }
 }
 
 // same, but now object is not top-level
-object Mas extends TestCase("Mas") with Assert {
+object Mas {
   object Gaz {
     def unapply(x: Any): Option[Product2[Int, String]] = x match {
       case y: Baz => Some(Tuple(y.size, y.name))
@@ -77,57 +77,46 @@ object Mas extends TestCase("Mas") with Assert {
     var size: Int    = 60
     var name: String = "too large"
   }
-  def runTest {
+  def run() {
     val b = new Baz
-    assertEquals(b match {
+    assert((60,"too large") == (b match {
       case Gaz(s:Int, n:String) => (s,n)
-    }, (60,"too large"))
+    }))
   }
 }
 
-object LisSeqArr extends TestCase("LisSeqArr") with Assert {
-//  def foo[A](x:List[A]) {}
-  def runTest {
-    assertEquals((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}, (1,2))
-    assertEquals((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}, (1,2))
-    //assertEquals((Array(1,2,3): Any) match { case   Seq(x,y,_*) => (x,y)}, (1,2))
-    //assertEquals((Array(1,2,3): Any) match { case Array(x,y,_*) => {x,y}}, {1,2})
-
-    // just compile, feature request #1196
-//    (List(1,2,3): Any) match {
-//      case a @ List(x,y,_*) => foo(a)
-//    }
-
+object LisSeqArr {
+  def run() {
+    assert((1,2) == ((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}))
+    assert((1,2) == ((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}))
   }
 }
 
-
-object StreamFoo extends TestCase("unapply for Streams") with Assert {
-  //val x:Stream[Int] = Stream.cons(1,x)
-
+object StreamFoo {
   def sum(stream: Stream[Int]): Int =
     stream match {
       case Stream.Empty => 0
       case Stream.cons(hd, tl) => hd + sum(tl)
     }
-  override def runTest {
+  def run() {
     val str: Stream[Int] = List(1,2,3).toStream
-    assertEquals(sum(str), 6)
+    assert(6 == sum(str))
   }
 }
 
-object Test1256 extends TestCase("1256") {
+object Test1256 {
   class Sync {
     def unapply(scrut: Any): Boolean = false
   }
 
   class Buffer {
     val Get = new Sync
-
     val jp: PartialFunction[Any, Any] = {
       case Get() =>
     }
   }
 
-  override def runTest { assertFalse((new Buffer).jp.isDefinedAt(42)) }
+  def run() {
+    assert(!(new Buffer).jp.isDefinedAt(42))
+  }
 }

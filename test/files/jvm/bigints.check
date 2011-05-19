@@ -1,0 +1,9 @@
+int_add_bigint = (3,3)
+int_sub_bigint = (-1,-1)
+int_mul_bigint = (4,4)
+z <= 3 = true
+3 < z = false
+z <= 3 = true
+3 < z = false
+c > MAX_LONG = false
+c <= MAX_LONG = true

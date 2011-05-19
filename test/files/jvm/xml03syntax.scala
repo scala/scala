@@ -1,7 +1,6 @@
-import scala.testing.SUnit._
 import scala.xml._
 
-object Test extends AnyRef with Assert {
+object Test {
 
   private def handle[A](x: Node): A = {
     println(x)
@@ -9,15 +8,15 @@ object Test extends AnyRef with Assert {
   }
 
   def main(args: Array[String]) {
-    test1
-    test2
-    test3
+    test1()
+    test2()
+    test3()
   }
 
-  private def test1 {
+  private def test1() {
     val xNull = <hello>{null}</hello> // these used to be Atom(unit), changed to empty children
 
-    assertSameElements(xNull.child, Nil)
+    println(xNull.child sameElements Nil)
 
     val x0 = <hello>{}</hello> // these used to be Atom(unit), changed to empty children
     val x00 = <hello>{ }</hello> //  dto.
@@ -25,29 +24,29 @@ object Test extends AnyRef with Assert {
     val xa = <hello>{ "world" }</hello>
 
 
-    assertSameElements(x0.child,  Nil)
-    assertSameElements(x00.child, Nil)
-    assertEquals(handle[String](xa), "world")
+    println(x0.child sameElements Nil)
+    println(x00.child sameElements Nil)
+    println(handle[String](xa) == "world")
 
     val xb = <hello>{ 1.5 }</hello>
 
-    assertEquals(handle[Double](xb), 1.5)
+    println(handle[Double](xb) == 1.5)
 
     val xc = <hello>{ 5 }</hello>
 
-    assertEquals(handle[Int](xc), 5)
+    println(handle[Int](xc) == 5)
 
     val xd = <hello>{ true }</hello>
 
-    assertEquals(handle[Boolean](xd), true)
+    println(handle[Boolean](xd) == true)
 
     val xe = <hello>{ 5:Short }</hello>
 
-    assertEquals(handle[Short](xe), 5:Short)
+    println(handle[Short](xe) == (5:Short))
 
     val xf = <hello>{ val x = 27; x }</hello>
 
-    assertEquals(handle[Int](xf), 27)
+    println(handle[Int](xf) == 27)
 
     val xg = <hello>{ List(1,2,3,4) }</hello>
 
@@ -68,7 +67,7 @@ object Test extends AnyRef with Assert {
   /** see SVN r13821 (emir): support for <elem key={x:Option[Seq[Node]]} />,
    *  so that Options can be used for optional attributes.
    */
-  private def test2 {
+  private def test2() {
     val x1: Option[Seq[Node]] = Some(<b>hello</b>)
     val n1 = <elem key={x1} />;
     println("node="+n1+", key="+n1.attribute("key"))
@@ -78,7 +77,7 @@ object Test extends AnyRef with Assert {
     println("node="+n2+", key="+n2.attribute("key"))
   }
 
-  private def test3 {
+  private def test3() {
     // this demonstrates how to handle entities
     val s = io.Source.fromString("<a>&nbsp;</a>")
     object parser extends xml.parsing.ConstructingParser(s, false /*ignore ws*/) {

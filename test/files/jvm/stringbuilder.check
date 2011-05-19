@@ -1,0 +1,17 @@
+s0 equals j0 = false
+s0.toString equals j0.toString = true
+s1.toString equals j1.toString = true
+j2=cba, s2=cba
+s2.toString equals j2.toString = true
+j3=aba, s3=aba
+s3.toString equals j3.toString = true
+s0.toString equals j0.toString = true
+s1.toString equals j1.toString = true
+j0=-1988a1trueabc, s0=-1988a1trueabc
+s0.toString equals j0.toString = true
+j1=xyz012###, s1=xyz012###
+s1.toString equals j1.toString = true
+j1=2, s1=2
+s1 == j1 = true
+j2=8, s2=8
+s2 == j2 = true

@@ -1,10 +1,6 @@
-import scala.testing.SUnit._
+// bug 1183 from in the old tracker, not in Trac
 
-object Test extends TestConsoleMain {
-
-  def suite = new TestSuite(
-      new Test717
-    )
+object Test {
 
   class Foo(j:Int) {
     object Baz
@@ -14,14 +10,14 @@ object Test extends TestConsoleMain {
   }
 
 
-  class Test717 extends TestCase("#717 test path of case classes") {
+  class Test717 {
     val foo1 = new Foo(1)
 
-    override def runTest() = {
+    def runTest() = {
       val res = (foo1.Bar(2):Any) match {
         case foo1.Bar(2) => true   // (1)
       }
-      assertTrue("ok", res);
+      require(res)
     }
   }
 

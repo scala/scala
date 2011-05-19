@@ -1,16 +1,16 @@
-bug1183.scala:10: error: name clash: class Foo defines object Baz
+bug1183.scala:6: error: name clash: class Foo defines object Baz
 and its companion object Foo also defines class Baz
     object Baz
            ^
-bug1183.scala:11: error: name clash: class Foo defines class Bam
+bug1183.scala:7: error: name clash: class Foo defines class Bam
 and its companion object Foo also defines object Bam
     class Bam
           ^
-bug1183.scala:12: error: name clash: class Foo defines object Bar
+bug1183.scala:8: error: name clash: class Foo defines object Bar
 and its companion object Foo also defines class Bar
     object Bar
            ^
-bug1183.scala:13: error: name clash: class Foo defines class Bar
+bug1183.scala:9: error: name clash: class Foo defines class Bar
 and its companion object Foo also defines class Bar
     case class Bar(i:Int)
                ^
