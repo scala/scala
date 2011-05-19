@@ -116,7 +116,16 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   /** Collects all keys of this map in a set.
    *  @return  a set containing all keys of this map.
    */
-  override def keySet: immutable.Set[A] = immutable.Set.empty ++ (this map (_._1))
+  override def keySet: immutable.Set[A] = new ImmutableDefaultKeySet
+
+  protected class ImmutableDefaultKeySet extends super.DefaultKeySet with immutable.Set[A] {
+    override def + (elem: A): immutable.Set[A] =
+      if (this(elem)) this
+      else immutable.Set[A]() ++ this + elem
+    override def - (elem: A): immutable.Set[A] =
+      if (this(elem)) immutable.Set[A]() ++ this - elem
+      else this
+  }
 
   /** This function transforms all the values of mappings contained
    *  in this map with function `f`.
