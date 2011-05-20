@@ -8,7 +8,7 @@ package cmd
 package program
 
 import nsc._
-import scala.reflect.Chars.char2uescape
+import scala.reflect.internal.Chars.char2uescape
 import io._
 import ast.parser.Tokens._
 

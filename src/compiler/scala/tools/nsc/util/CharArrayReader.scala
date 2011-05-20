@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package util
 
-import scala.reflect.Chars._
+import scala.reflect.internal.Chars._
 
 abstract class CharArrayReader { self =>
 

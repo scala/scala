@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package util
 
-import scala.reflect.Chars._
+import scala.reflect.internal.Chars._
 
 class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, startcol: int, */
                       decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {

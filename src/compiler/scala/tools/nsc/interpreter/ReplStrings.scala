@@ -9,7 +9,7 @@ package interpreter
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
 import scala.reflect.NameTransformer
-import scala.reflect.Chars
+import scala.reflect.internal.Chars
 
 trait ReplStrings {
   // Longest common prefix

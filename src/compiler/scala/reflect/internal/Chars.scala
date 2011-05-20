@@ -2,7 +2,7 @@
  * Copyright 2006-2011 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect
+package scala.reflect.internal
 
 import annotation.{ tailrec, switch }
 import java.lang.{ Character => JCharacter }

@@ -13,7 +13,7 @@ import scala.collection.mutable.ListBuffer
 import util.{ SourceFile, OffsetPosition, FreshNameCreator }
 import scala.reflect.internal.{ ModifierFlags => Flags }
 import Tokens._
-import scala.reflect.Chars.{ isScalaLetter }
+import scala.reflect.internal.Chars.{ isScalaLetter }
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.

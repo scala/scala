@@ -12,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
 import annotation.tailrec
 import java.util.regex.Pattern
 import java.io.IOException
-import scala.reflect.Chars._
+import scala.reflect.internal.Chars._
 
 /** abstract base class of a source file used in the compiler */
 abstract class SourceFile {

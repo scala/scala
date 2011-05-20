@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package util
 
-import scala.reflect.Chars._
+import scala.reflect.internal.Chars._
 import scala.collection.mutable.{HashMap, ListBuffer, StringBuilder}
 
 /** Utilitity methods for doc comment strings
