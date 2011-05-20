@@ -96,7 +96,29 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   var tmppos: Int = _
 
   /** holds the next character */
-  var ch: Char = _
+  var nextChNeeded: Boolean = false
+  var reachedEof: Boolean = false
+  var lastChRead: Char = _
+  def ch: Char = {
+    if (nextChNeeded) {
+      if (curInput.hasNext) {
+        lastChRead = curInput.next
+        pos = curInput.pos
+      } else {
+        val ilen = inpStack.length;
+        //Console.println("  ilen = "+ilen+ " extIndex = "+extIndex);
+        if ((ilen != extIndex) && (ilen > 0)) {
+          /** for external source, inpStack == Nil ! need notify of eof! */
+          pop()
+        } else {
+          reachedEof = true
+          lastChRead = 0.asInstanceOf[Char]
+        }
+      }
+      nextChNeeded = false
+    }
+    lastChRead
+  }
 
   /** character buffer, for names */
   protected val cbuf = new StringBuilder()
@@ -105,7 +127,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
 
   protected var doc: Document = null
 
-  var eof: Boolean = false
+  def eof: Boolean = { ch; reachedEof }
 
   //
   // methods
@@ -261,23 +283,13 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     if (isNameStart (ch)) xAttributes(pscope)
     else (Null, pscope)
 
-  /** this method assign the next character to ch and advances in input */
-  def nextch = {
-    if (curInput.hasNext) {
-      ch = curInput.next
-      pos = curInput.pos
-    } else {
-      val ilen = inpStack.length;
-      //Console.println("  ilen = "+ilen+ " extIndex = "+extIndex);
-      if ((ilen != extIndex) && (ilen > 0)) {
-        /** for external source, inpStack == Nil ! need notify of eof! */
-        pop()
-      } else {
-        eof = true
-        ch = 0.asInstanceOf[Char]
-      }
-    }
+  /** this method tells ch to get the next character when next called */
+  def nextch() {
+    // Read current ch if needed
     ch
+
+    // Mark next ch to be required
+    nextChNeeded = true
   }
 
   /** parse attribute and create namespace scope, metadata
@@ -412,14 +424,14 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
 
       ch match {
         case '<' => // another tag
-          nextch match {
+          nextch; ch match {
             case '/'    => exit = true  // end tag
             case _      => content1(pscope, ts)
           }
 
         // postcond: xEmbeddedBlock == false!
         case '&' => // EntityRef or CharRef
-          nextch match {
+          nextch; ch match {
             case '#'  =>  // CharacterRef
               nextch
               val theChar = handle.text(tmppos, xCharRef(() => ch, () => nextch))
@@ -627,7 +639,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       xToken('['); while(']' != ch) markupDecl(); nextch // ']'
     }
     def doIgnore() = {
-      xToken('['); while(']' != ch) nextch; nextch; // ']'
+      xToken('['); while(']' != ch) nextch; nextch // ']'
     }
     if ('?' == ch) {
       nextch
@@ -881,6 +893,9 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     if (!eof)
       inpStack = curInput :: inpStack
 
+    // can't push before getting next character if needed
+    ch
+
     curInput = replacementText(entityName)
     nextch
   }
@@ -889,6 +904,9 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     if (!eof)
       inpStack = curInput :: inpStack
 
+    // can't push before getting next character if needed
+    ch
+
     curInput = externalSource(systemId)
     nextch
   }
@@ -896,8 +914,9 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   def pop() {
     curInput = inpStack.head
     inpStack = inpStack.tail
-    ch = curInput.ch
+    lastChRead = curInput.ch
+    nextChNeeded = false
     pos = curInput.pos
-    eof = false // must be false, because of places where entity refs occur
+    reachedEof = false // must be false, because of places where entity refs occur
   }
 }

@@ -175,7 +175,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    *  temporarily abstract over the nextchs.
    */
   def ch: Char
-  def nextch: Char
+  def nextch(): Unit
   def ch_returning_nextch: Char
   def eof: Boolean
 

@@ -76,8 +76,8 @@ trait MarkupParsers {
     var tmppos : Position = NoPosition
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
-    def nextch = { val result = input.ch; input.nextChar(); result }
-    def ch_returning_nextch = nextch
+    def nextch() { input.nextChar() }
+    def ch_returning_nextch = { val result = ch; input.nextChar(); result }
 
     def mkProcInstr(position: Position, name: String, text: String): Tree =
       parser.symbXMLBuilder.procInstr(position, name, text)
@@ -398,7 +398,9 @@ trait MarkupParsers {
     def reportSyntaxError(pos: Int, str: String) = parser.syntaxError(pos, str)
     def reportSyntaxError(str: String) = {
       reportSyntaxError(curOffset, "in XML literal: " + str)
+      val result = ch
       nextch
+      result
     }
 
     /** '<' xPattern  ::= Name [S] { xmlPattern | '{' pattern3 '}' } ETag
