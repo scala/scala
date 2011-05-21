@@ -102,8 +102,6 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
       else newDir(dirs, parentPath, null)
     }
     val dir = new DirEntry(path)
-    if (zipEntry != null)
-      dir.lastModified = zipEntry.getTime()
     parent.entries(baseName(path)) = dir
     dirs(path) = dir
     dir
@@ -111,12 +109,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
   protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
     val name = entry.getName
     if (entry.isDirectory) {
-      if (dirs contains name) {
-        val existing = dirs(name)
-        if (existing.lastModified <= 0)
-          existing.lastModified = entry.getTime()
-        existing
-      }
+      if (dirs contains name) dirs(name)
       else newDir(dirs, name, entry)
     }
     else {
@@ -140,12 +133,12 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
       if (zipEntry.isDirectory) dir
       else {
         class FileEntry() extends Entry(zipEntry.getName) {
-          override def getArchive = zipFile
-          override def input      = getArchive getInputStream zipEntry
-          override def sizeOption = Some(zipEntry.getSize().toInt)
+          override def getArchive   = zipFile
+          override def lastModified = zipEntry.getTime()
+          override def input        = getArchive getInputStream zipEntry
+          override def sizeOption   = Some(zipEntry.getSize().toInt)
         }
         val f = new FileEntry()
-        f.lastModified = zipEntry.getTime()
         dir.entries(f.name) = f
       }
     }
