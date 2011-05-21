@@ -43,20 +43,23 @@ object File {
   // trigger java.lang.InternalErrors later when using it concurrently.  We ignore all
   // the exceptions so as not to cause spurious failures when no write access is available,
   // e.g. google app engine.
-  try {
-    import Streamable.closing
-    val tmp = JFile.createTempFile("bug6503430", null, null)
-    try closing(new FileInputStream(tmp)) { in =>
-      val inc = in.getChannel()
-      closing(new FileOutputStream(tmp, true)) { out =>
-        out.getChannel().transferFrom(inc, 0, 0)
-      }
-    }
-    finally tmp.delete()
-  }
-  catch {
-    case _: IllegalArgumentException | _: IllegalStateException | _: IOException | _: SecurityException => ()
-  }
+  //
+  // XXX need to put this behind a setting.
+  //
+  // try {
+  //   import Streamable.closing
+  //   val tmp = JFile.createTempFile("bug6503430", null, null)
+  //   try closing(new FileInputStream(tmp)) { in =>
+  //     val inc = in.getChannel()
+  //     closing(new FileOutputStream(tmp, true)) { out =>
+  //       out.getChannel().transferFrom(inc, 0, 0)
+  //     }
+  //   }
+  //   finally tmp.delete()
+  // }
+  // catch {
+  //   case _: IllegalArgumentException | _: IllegalStateException | _: IOException | _: SecurityException => ()
+  // }
 }
 import File._
 import Path._
