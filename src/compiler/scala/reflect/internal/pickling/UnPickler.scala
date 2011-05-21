@@ -61,24 +61,37 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
+    // Laboriously unrolled for performance.
     def run() {
+      var i = 0
+      while (i < index.length) {
+        if (entries(i) == null && isSymbolEntry(i)) {
+          val savedIndex = readIndex
+          readIndex = index(i)
+          entries(i) = readSymbol()
+          readIndex = savedIndex
+        }
+        i += 1
+      }
       // read children last, fix for #3951
-      val queue = new collection.mutable.ListBuffer[() => Unit]()
-      def delay(i: Int, action: => Unit) {
-        queue += (() => at(i, {() => action; null}))
+      i = 0
+      while (i < index.length) {
+        if (entries(i) == null) {
+          if (isSymbolAnnotationEntry(i)) {
+            val savedIndex = readIndex
+            readIndex = index(i)
+            readSymbolAnnotation()
+            readIndex = savedIndex
+          }
+          else if (isChildrenEntry(i)) {
+            val savedIndex = readIndex
+            readIndex = index(i)
+            readChildren()
+            readIndex = savedIndex
+          }
+        }
+        i += 1
       }
-
-      for (i <- 0 until index.length) {
-        if (isSymbolEntry(i))
-          at(i, readSymbol)
-        else if (isSymbolAnnotationEntry(i))
-          delay(i, readSymbolAnnotation())
-        else if (isChildrenEntry(i))
-          delay(i, readChildren())
-      }
-
-      for (action <- queue)
-        action()
     }
 
     private def checkVersion() {
