@@ -16,7 +16,15 @@ object PlainFile {
    * by it. Otherwise, returns null.
    */
   def fromPath(file: Path): PlainFile =
-    if (file.exists) new PlainFile(file) else null
+    if (file.isDirectory) new PlainDirectory(file.toDirectory)
+    else if (file.isFile) new PlainFile(file)
+    else null
+}
+
+class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
+  override def isDirectory = true
+  override def iterator = givenPath.list filter (_.exists) map (x => new PlainFile(x))
+  override def delete(): Unit = givenPath.deleteRecursively()
 }
 
 /** This class implements an abstract file backed by a File.

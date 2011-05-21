@@ -396,7 +396,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     case ExistentialType(_, res) => specializedTypeVars(res)
     case AnnotatedType(_, tp, _) => specializedTypeVars(tp)
-    case TypeBounds(hi, lo) => specializedTypeVars(hi) ++ specializedTypeVars(lo) // @I: it's (lo, hi) - swap them?
+    case TypeBounds(lo, hi) => specializedTypeVars(lo) ++ specializedTypeVars(hi)
     case _ => immutable.ListSet.empty[Symbol]
   }
 
