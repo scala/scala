@@ -243,8 +243,13 @@ object Range {
   def count(start: Int, end: Int, step: Int): Int =
     count(start, end, step, false)
 
-  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int =
-    NumericRange.count[Long](start, end, step, isInclusive)
+  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int = {
+    // faster path for the common counting range
+    if (start >= 0 && end > start && end < scala.Int.MaxValue && step == 1)
+      (end - start) + ( if (isInclusive) 1 else 0 )
+    else
+      NumericRange.count[Long](start, end, step, isInclusive)
+  }
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)
