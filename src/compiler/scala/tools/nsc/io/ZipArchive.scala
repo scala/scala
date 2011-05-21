@@ -95,28 +95,17 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     }
   }
 
-  private def newDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
-    val parent = {
-      val parentPath = dirName(path)
-      if (dirs contains parentPath) dirs(parentPath)
-      else newDir(dirs, parentPath, null)
-    }
-    val dir = new DirEntry(path)
-    parent.entries(baseName(path)) = dir
-    dirs(path) = dir
-    dir
+  private def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
+    dirs.getOrElseUpdate(path, {
+      val parent = ensureDir(dirs, dirName(path), null)
+      val dir    = new DirEntry(path)
+      parent.entries(baseName(path)) = dir
+      dir
+    })
   }
   protected def getDir(dirs: mutable.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
-    val name = entry.getName
-    if (entry.isDirectory) {
-      if (dirs contains name) dirs(name)
-      else newDir(dirs, name, entry)
-    }
-    else {
-      val path = dirName(name)
-      if (dirs contains path) dirs(path)
-      else newDir(dirs, path, null)
-    }
+    if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
+    else ensureDir(dirs, dirName(entry.getName), null)
   }
 }
 
