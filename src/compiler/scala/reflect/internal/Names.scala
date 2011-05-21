@@ -96,8 +96,10 @@ trait Names /*extends reflect.generic.Names*/ {
 
   /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
-  def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName =
-    newTermName(Codec fromUTF8 bs.slice(offset, offset + len) mkString)
+  def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
+    val chars = Codec fromUTF8 bs.slice(offset, offset + len)
+    newTermName(chars, 0, chars.length)
+  }
 
   /** Create a type name from the characters in cs[offset..offset+len-1].
    */
