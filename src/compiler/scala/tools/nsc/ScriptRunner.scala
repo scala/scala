@@ -5,18 +5,9 @@
 
 package scala.tools.nsc
 
-import java.io.{
-  InputStream, OutputStream,
-  BufferedReader, FileInputStream, FileOutputStream,
-  FileReader, InputStreamReader, PrintWriter, FileWriter,
-  IOException
-}
-import io.{ Directory, File, Path, PlainFile }
+import io.{ Directory, File, Path }
+import java.io.IOException
 import java.net.URL
-import java.util.jar.{ JarEntry, JarOutputStream }
-
-import util.{ waitingForThreads }
-import scala.tools.util.PathResolver
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import util.Exceptional.unwrap
 
@@ -136,7 +127,7 @@ class ScriptRunner extends HasCompileSocket {
     /** The script runner calls sys.exit to communicate a return value, but this must
      *  not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
-    waitingForThreads {
+    util.waitingForThreads {
       if (settings.save.value) {
         val jarFile = jarFileFor(scriptFile)
         def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
