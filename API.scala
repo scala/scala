@@ -132,7 +132,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 
 	private def annotations(in: Symbol, as: List[AnnotationInfo]): Array[xsbti.api.Annotation] = as.toArray[AnnotationInfo].map(annotation(in,_))
 	private def annotation(in: Symbol, a: AnnotationInfo) =
-		new xsbti.api.Annotation(simpleType(in, a.atp),
+		new xsbti.api.Annotation(processType(in, a.atp),
 			if(a.assocs.isEmpty) Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
 			else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument]
 		)
