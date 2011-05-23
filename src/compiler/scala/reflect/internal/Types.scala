@@ -1148,18 +1148,20 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "ThisType"
   }
 
+  final class UniqueThisType(sym: Symbol) extends ThisType(sym) with UniqueType { }
   object ThisType {
-    def apply(sym: Symbol): Type =
-      if (!phase.erasedTypes) unique(new ThisType(sym) with UniqueType)
+    def apply(sym: Symbol): Type = {
+      if (!phase.erasedTypes) unique(new UniqueThisType(sym))
       else if (sym.isImplClass) sym.typeOfThis
       else sym.tpe
+    }
   }
 
   /** A class for singleton types of the form <prefix>.<sym.name>.type.
    *  Cannot be created directly; one should always use
    *  `singleType' for creation.
    */
-  case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
+  abstract case class SingleType(pre: Type, sym: Symbol) extends SingletonType {
     override val isTrivial: Boolean = pre.isTrivial
     // override def isNullable = underlying.isNullable
     override def isNotNull = underlying.isNotNull
@@ -1204,6 +1206,13 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "SingleType"
   }
 
+  final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym) with UniqueType { }
+  object SingleType {
+    def apply(pre: Type, sym: Symbol): Type = {
+      unique(new UniqueSingleType(pre, sym))
+    }
+  }
+
   abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType {
     override val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
     override def isNotNull = true;
@@ -1215,10 +1224,12 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "SuperType"
   }
 
+  final class UniqueSuperType(thistp: Type, supertp: Type) extends SuperType(thistp, supertp) with UniqueType { }
   object SuperType {
-    def apply(thistp: Type, supertp: Type): Type =
+    def apply(thistp: Type, supertp: Type): Type = {
       if (phase.erasedTypes) supertp
-      else unique(new SuperType(thistp, supertp) with UniqueType)
+      else unique(new UniqueSuperType(thistp, supertp))
+    }
   }
 
   /** A class for the bounds of abstract types and type parameters
@@ -1236,13 +1247,14 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "TypeBoundsType"
   }
 
+  final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi) with UniqueType { }
   object TypeBounds {
     def empty: TypeBounds           = apply(NothingClass.tpe, AnyClass.tpe)
     def upper(hi: Type): TypeBounds = apply(NothingClass.tpe, hi)
     def lower(lo: Type): TypeBounds = apply(lo, AnyClass.tpe)
-
-    def apply(lo: Type, hi: Type): TypeBounds =
-      unique(new TypeBounds(lo, hi) with UniqueType)
+    def apply(lo: Type, hi: Type): TypeBounds = {
+      unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
+    }
   }
 
   /** A common base class for intersection types and class types
@@ -1467,9 +1479,12 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "RefinedType"
   }
 
+  final class RefinedType0(parents: List[Type], decls: Scope, clazz: Symbol) extends RefinedType(parents, decls) {
+    override def typeSymbol = clazz
+  }
   object RefinedType {
-    def apply(parents: List[Type], decls: Scope, clazz: Symbol) =
-      new RefinedType(parents, decls) { override def typeSymbol = clazz }
+    def apply(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType =
+      new RefinedType0(parents, decls, clazz)
   }
 
   /** A class representing a class info
@@ -1632,15 +1647,15 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "ConstantType"
   }
 
+  final class UniqueConstantType(value: Constant) extends ConstantType(value) with UniqueType {
+    /** Save the type of 'value'. For Java enums, it depends on finding the linked class,
+     *  which might not be found after 'flatten'. */
+    private lazy val _tpe: Type = value.tpe
+    override def underlying: Type = _tpe
+  }
   object ConstantType {
     def apply(value: Constant): ConstantType = {
-      class UniqueConstantType extends ConstantType(value) with UniqueType {
-        /** Save the type of 'value'. For Java enums, it depends on finding the linked class,
-         *  which might not be found after 'flatten'. */
-        private lazy val _tpe: Type = value.tpe
-        override def underlying: Type = _tpe
-      }
-      unique(new UniqueConstantType)
+      unique(new UniqueConstantType(value)).asInstanceOf[ConstantType]
     }
   }
 
@@ -1664,9 +1679,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 //    assert(args.isEmpty || !sym.info.typeParams.isEmpty, this)
 //    assert(args.isEmpty || ((sym ne AnyClass) && (sym ne NothingClass))
 
-    private val parentsCache = new ListOfTypesCache {
-      @inline final def calculate() = thisInfo.parents map transform
-    }
+    private val parentsCache = new ListOfTypesCache(thisInfo.parents map transform)
     private var baseTypeSeqCache: BaseTypeSeq = _
     private var baseTypeSeqPeriod = NoPeriod
 
@@ -1958,9 +1971,10 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "TypeRef"
   }
 
+  final class UniqueTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends TypeRef(pre, sym, args) with UniqueType { }
   object TypeRef {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = {
-      unique(new TypeRef(pre, sym, args) with UniqueType)
+      unique(new UniqueTypeRef(pre, sym, args))
     }
   }
 
@@ -2611,9 +2625,7 @@ A type's typeSymbol should never be inspected directly.
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
-      // why not do the hash-consing in the SingleType.apply()
-      //  factory, like the other UniqueTypes?
-      unique(new SingleType(pre1, sym1) with UniqueType)
+      SingleType(pre1, sym1)
     }
   }
 
