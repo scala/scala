@@ -230,14 +230,20 @@ abstract class TreeGen {
    *  which is appropriate to the given Type.
    */
   def mkZero(tp: Type): Tree = {
-    val sym = tp.typeSymbol
-    val tree =
-      if (sym == UnitClass) Literal(())
-      else if (sym == BooleanClass) Literal(false)
-      else if (isValueClass(sym)) Literal(0)
-      else if (NullClass.tpe <:< tp) Literal(null: Any)
-      else abort("Cannot determine zero for " + tp)
-
+    val tree = tp.typeSymbol match {
+      case UnitClass    => Literal(())
+      case BooleanClass => Literal(false)
+      case FloatClass   => Literal(0.0f)
+      case DoubleClass  => Literal(0.0d)
+      case ByteClass    => Literal(0.toByte)
+      case ShortClass   => Literal(0.toShort)
+      case IntClass     => Literal(0)
+      case LongClass    => Literal(0L)
+      case CharClass    => Literal(0.toChar)
+      case _            =>
+        if (NullClass.tpe <:< tp) Literal(null: Any)
+        else abort("Cannot determine zero for " + tp)
+    }
     tree setType tp
   }
 
