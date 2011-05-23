@@ -614,7 +614,7 @@ trait Namers { self: Analyzer =>
      *  modifier is the present means of signaling that a constant
      *  value should not be widened, so it has a use even in situations
      *  whether it is otherwise redundant (such as in a singleton.)
-     *  Locally defined symbols are also excluded from widening.
+     *  Method-defined locals are also excluded from widening.
      */
     private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
@@ -636,7 +636,7 @@ trait Namers { self: Analyzer =>
       if ((sym.isVariable || sym.isMethod && !sym.hasAccessorFlag))
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
-      else if (sym.isFinal || sym.isLocal) tpe
+      else if (sym.isFinal || sym.owner.isMethod) tpe
       else tpe1
     }
 
