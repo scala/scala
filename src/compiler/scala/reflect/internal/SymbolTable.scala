@@ -13,7 +13,6 @@ abstract class SymbolTable extends /*reflect.generic.Universe
                               with Symbols
                               with Types
                               with Scopes
-                              with Caches
                               with Definitions
                               with Constants
                               with BaseTypeSeqs
@@ -94,6 +93,25 @@ abstract class SymbolTable extends /*reflect.generic.Universe
   }
   final def afterPhase[T](ph: Phase)(op: => T): T =
     atPhase(ph.next)(op)
+
+  final def isValid(period: Period): Boolean =
+    period != 0 && runId(period) == currentRunId && {
+      val pid = phaseId(period)
+      if (phase.id > pid) infoTransformers.nextFrom(pid).pid >= phase.id
+      else infoTransformers.nextFrom(phase.id).pid >= pid
+    }
+
+  final def isValidForBaseClasses(period: Period): Boolean = {
+    def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
+      it.pid >= limit ||
+      !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
+    );
+    period != 0 && runId(period) == currentRunId && {
+      val pid = phaseId(period)
+      if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
+      else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), pid)
+    }
+  }
 
   /** Break into repl debugger if assertion is true */
   // def breakIf(assertion: => Boolean, args: Any*): Unit =

@@ -1679,7 +1679,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 //    assert(args.isEmpty || !sym.info.typeParams.isEmpty, this)
 //    assert(args.isEmpty || ((sym ne AnyClass) && (sym ne NothingClass))
 
-    private val parentsCache = new ListOfTypesCache(thisInfo.parents map transform)
+    private var parentsCache: List[Type] = _
+    private var parentsPeriod = NoPeriod
     private var baseTypeSeqCache: BaseTypeSeq = _
     private var baseTypeSeqPeriod = NoPeriod
 
@@ -1759,7 +1760,18 @@ A type's typeSymbol should never be inspected directly.
       if (sym.isAbstractType) thisInfo.bounds // transform(thisInfo.bounds).asInstanceOf[TypeBounds] // ??? seems to be doing asSeenFrom twice
       else super.bounds
 
-    override def parents: List[Type] = parentsCache.get()
+    override def parents: List[Type] = {
+      val period = parentsPeriod
+      if (period != currentPeriod) {
+        parentsPeriod = currentPeriod
+        if (!isValidForBaseClasses(period)) {
+          parentsCache = thisInfo.parents map transform
+        } else if (parentsCache == null) { // seems this can happen if things are currupted enough, see #2641
+          parentsCache = List(AnyClass.tpe)
+        }
+      }
+      parentsCache
+    }
     override def typeOfThis = transform(sym.typeOfThis)
 
 /*
