@@ -943,7 +943,7 @@ trait Typers extends Modes {
                   //
                   //   val x: T forSome { ts } = expr
                   //
-                  // would typechek. Or one can simply leave out the type of the `val':
+                  // would typecheck. Or one can simply leave out the type of the `val':
                   //
                   //   val x = expr
                   context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n"+tree+"\nwith type "+tree.tpe+"\n expected type = "+pt+"\n context = "+context.tree)
@@ -3776,7 +3776,10 @@ trait Typers extends Modes {
                     // atPos necessary because qualifier might come from startContext
           val (tree2, pre2) = makeAccessible(tree1, defSym, pre, qual)
           // assert(pre.typeArgs isEmpty) // no need to add #2416-style check here, right?
-          stabilize(tree2, pre2, mode, pt)
+          stabilize(tree2, pre2, mode, pt) match {
+            case accErr: Inferencer#AccessError => accErr.emit()
+            case result => result
+          }
         }
       }
 

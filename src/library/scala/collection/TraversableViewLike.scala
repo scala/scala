@@ -16,6 +16,8 @@ import annotation.migration
 trait ViewMkString[+A] {
   self: Traversable[A] =>
 
+  // It is necessary to use thisSeq rather than toSeq to avoid cycles in the
+  // eager evaluation of vals in transformed view subclasses, see #4558.
   protected[this] def thisSeq: Seq[A] = new ArrayBuffer[A] ++= self result
 
   // Have to overload all three to work around #4299.  The overload
@@ -157,17 +159,17 @@ trait TraversableViewLike[+A,
   override def splitAt(n: Int): (This, This) = (newTaken(n), newDropped(n))
 
   override def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
-    newForced(self.toSeq.scanLeft(z)(op)).asInstanceOf[That]
+    newForced(thisSeq.scanLeft(z)(op)).asInstanceOf[That]
 
   @migration(2, 9,
     "This scanRight definition has changed in 2.9.\n" +
     "The previous behavior can be reproduced with scanRight.reverse."
   )
   override def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
-    newForced(self.toSeq.scanRight(z)(op)).asInstanceOf[That]
+    newForced(thisSeq.scanRight(z)(op)).asInstanceOf[That]
 
   override def groupBy[K](f: A => K): immutable.Map[K, This] =
-    self.toSeq.groupBy(f).mapValues(xs => newForced(xs).asInstanceOf[This])
+    thisSeq.groupBy(f).mapValues(xs => newForced(thisSeq))
 
   override def toString = viewToString
 }

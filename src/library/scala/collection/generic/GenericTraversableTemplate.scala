@@ -67,7 +67,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
    */
   def genericBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
 
-  private def sequential: TraversableOnce[A] = this.asInstanceOf[TraversableOnce[A]].seq
+  private def sequential: TraversableOnce[A] = this.asInstanceOf[GenTraversableOnce[A]].seq
 
   /** Converts this $coll of pairs into two collections of the first and second
    *  half of each pair.

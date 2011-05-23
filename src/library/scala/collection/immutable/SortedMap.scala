@@ -31,14 +31,27 @@ import annotation.bridge
 trait SortedMap[A, +B] extends Map[A, B]
                          with scala.collection.SortedMap[A, B]
                          with MapLike[A, B, SortedMap[A, B]]
-                         with SortedMapLike[A, B, SortedMap[A, B]] {
+                         with SortedMapLike[A, B, SortedMap[A, B]] { self =>
 
   override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
     SortedMap.newBuilder[A, B]
 
   override def empty: SortedMap[A, B] = SortedMap.empty
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
-  override def keySet: immutable.SortedSet[A] = SortedSet.empty ++ (this map (_._1))
+  override def keySet: immutable.SortedSet[A] = new DefaultKeySortedSet
+
+  protected class DefaultKeySortedSet extends super.DefaultKeySortedSet with immutable.SortedSet[A] {
+    override def + (elem: A): SortedSet[A] =
+      if (this(elem)) this
+      else SortedSet[A]() ++ this + elem
+    override def - (elem: A): SortedSet[A] =
+      if (this(elem)) SortedSet[A]() ++ this - elem
+      else this
+    override def rangeImpl(from : Option[A], until : Option[A]) : SortedSet[A] = {
+      val map = self.rangeImpl(from, until)
+      new map.DefaultKeySortedSet
+    }
+  }
 
   /** Add a key/value pair to this map.
    *  @param    kv the key/value pair
