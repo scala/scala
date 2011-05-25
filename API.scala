@@ -107,7 +107,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		processType(in, t) match
 		{
 			case s: SimpleType => s
-			case x => error("Not a simple type:\n\tType: " + t + " (class " + t.getClass + ")\n\tTransformed: " + x.getClass)
+			case x => warning("Not a simple type:\n\tType: " + t + " (class " + t.getClass + ")\n\tTransformed: " + x.getClass); Constants.emptyType
 		}
 	private def types(in: Symbol, t: List[Type]): Array[xsbti.api.Type] = t.toArray[Type].map(processType(in, _))
 	private def projectionType(in: Symbol, pre: Type, sym: Symbol) =
@@ -323,14 +323,14 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			case TypeRef(pre, sym, args) =>
 				val base = projectionType(in, pre, sym)
 				if(args.isEmpty) base else new xsbti.api.Parameterized(base, types(in, args))
-			case SuperType(thistpe: Type, supertpe: Type) => error("Super type (not implemented): this=" + thistpe + ", super=" + supertpe)
+			case SuperType(thistpe: Type, supertpe: Type) => warning("sbt-api: Super type (not implemented): this=" + thistpe + ", super=" + supertpe); Constants.emptyType
 			case at: AnnotatedType => annotatedType(in, at)
 			case rt: CompoundType => structure(rt)
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(in, result), typeParameters(in, tparams))
 			case NoType => Constants.emptyType // this can happen when there is an error that will be reported by a later phase
 			case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
-			case Nullary(resultType) => error("Unexpected nullary method type " + in + " in " + in.owner)
-			case _ => error("Unhandled type " + t.getClass + " : " + t)
+			case Nullary(resultType) => warning("sbt-api: Unexpected nullary method type " + in + " in " + in.owner); Constants.emptyType
+			case _ => warning("sbt-api: Unhandled type " + t.getClass + " : " + t); Constants.emptyType
 		}
 	}
 	private def typeParameters(in: Symbol, s: Symbol): Array[xsbti.api.TypeParameter] = typeParameters(in, s.typeParams)
