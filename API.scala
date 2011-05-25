@@ -327,7 +327,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			case at: AnnotatedType => annotatedType(in, at)
 			case rt: CompoundType => structure(rt)
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(in, result), typeParameters(in, tparams))
-			case NoType => error("NoType")
+			case NoType => Constants.emptyType // this can happen when there is an error that will be reported by a later phase
 			case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(in, resultType), typeParameters(in, typeParams))
 			case Nullary(resultType) => error("Unexpected nullary method type " + in + " in " + in.owner)
 			case _ => error("Unhandled type " + t.getClass + " : " + t)
