@@ -125,7 +125,7 @@ self =>
    *  @param elems     the collection containing the added elements.
    *  @return a new $coll with the given elements added.
    */
-  def ++ (elems: GenTraversableOnce[A]): This = newBuilder ++= seq ++= elems.seq result
+  def ++ (elems: GenTraversableOnce[A]): This = (repr /: elems.seq)(_ + _)
 
   @bridge
   def ++ (elems: TraversableOnce[A]): This = ++ (elems: GenTraversableOnce[A])
