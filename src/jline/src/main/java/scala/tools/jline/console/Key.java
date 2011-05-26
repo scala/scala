@@ -48,6 +48,8 @@ public enum Key
 
     CTRL_W(23),
 
+    CTRL_X(24),
+
     CTRL_OB(27),
 
     CTRL_QM(127),

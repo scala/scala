@@ -175,6 +175,9 @@ public class UnixTerminal
             else if (key == DEL) { // alt-backspace: delete previous word
                 return CTRL_W.code; // DELETE_PREV_WORD
             }
+            else if (c == 'd') { // alt-d: delete next word
+                return CTRL_X.code; // DELETE_NEXT_WORD
+            }
 
         }
 
