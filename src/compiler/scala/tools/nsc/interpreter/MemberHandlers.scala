@@ -52,15 +52,15 @@ trait MemberHandlers {
   }
 
   def chooseHandler(member: Tree): MemberHandler = member match {
-    case member: DefDef               => new DefHandler(member)
-    case member: ValDef               => new ValHandler(member)
-    case member@Assign(Ident(_), _)   => new AssignHandler(member)
-    case member: ModuleDef            => new ModuleHandler(member)
-    case member: ClassDef             => new ClassHandler(member)
-    case member: TypeDef              => new TypeAliasHandler(member)
-    case member: Import               => new ImportHandler(member)
-    case DocDef(_, documented)        => chooseHandler(documented)
-    case member                       => new GenericHandler(member)
+    case member: DefDef        => new DefHandler(member)
+    case member: ValDef        => new ValHandler(member)
+    case member: Assign        => new AssignHandler(member)
+    case member: ModuleDef     => new ModuleHandler(member)
+    case member: ClassDef      => new ClassHandler(member)
+    case member: TypeDef       => new TypeAliasHandler(member)
+    case member: Import        => new ImportHandler(member)
+    case DocDef(_, documented) => chooseHandler(documented)
+    case member                => new GenericHandler(member)
   }
 
   sealed abstract class MemberDefHandler(override val member: MemberDef) extends MemberHandler(member) {
@@ -129,7 +129,7 @@ trait MemberHandlers {
   }
 
   class AssignHandler(member: Assign) extends MemberHandler(member) {
-    val lhs = member.lhs.asInstanceOf[Ident] // an unfortunate limitation
+    val Assign(lhs, rhs) = member
     val name = newTermName(freshInternalVarName())
 
     override def definesTerm = Some(name)

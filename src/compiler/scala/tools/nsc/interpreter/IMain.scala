@@ -426,45 +426,70 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
    */
   private def buildRequest(line: String, trees: List[Tree]): Request = new Request(line, trees)
 
+  // rewriting "5 // foo" to "val x = { 5 // foo }" creates broken code because
+  // the close brace is commented out.  Strip single-line comments.
+  private def removeComments(line: String): String = {
+    line.lines map (s => s indexOf "//" match {
+      case -1   => s
+      case idx  => s take idx
+    }) mkString "\n"
+  }
+  // Given an expression like 10 * 10 * 10 we receive the parent tree positioned
+  // at a '*'.  So look at each subtree and find the earliest of all positions.
+  private def earliestPosition(tree: Tree): Int = {
+    var pos = Int.MaxValue
+    tree foreach (t => pos = math.min(pos, t.pos.startOrPoint))
+    pos
+  }
+
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
-    val trees = parse(indentCode(line)) match {
+    val content = indentCode(line)
+    val trees = parse(content) match {
       case None         => return Left(IR.Incomplete)
       case Some(Nil)    => return Left(IR.Error) // parse error or empty input
       case Some(trees)  => trees
     }
+    // If the last tree is a bare expression, pinpoint where it begins using the
+    // AST node position and snap the line off there.  Rewrite the code embodied
+    // by the last tree as a ValDef instead, so we can access the value.
+    trees.last match {
+      case _:Assign                        => // we don't want to include assignments
+      case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
+        // The position of the last tree, and the source code split there.
+        val lastpos  = earliestPosition(trees.last)
+        val (l1, l2) = content splitAt lastpos
+        val l2body   = removeComments(l2).trim
+        val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
+        val valDef   = "val " + varName + " = { " + l2body + " }"
 
-    // use synthetic vars to avoid filling up the resXX slots
-    def varName = if (synthetic) freshInternalVarName() else freshUserVarName()
+        DBG(List(
+          "   line" -> line,
+          "content" -> content,
+          "    was" -> l2,
+          " l2body" -> l2body,
+          "    now" -> valDef) map {
+            case (label, s) => label + ": '" + s + "'"
+          } mkString "\n"
+        )
 
-    // Treat a single bare expression specially. This is necessary due to it being hard to
-    // modify code at a textual level, and it being hard to submit an AST to the compiler.
-    if (trees.size == 1) trees.head match {
-      case _:Assign                         => // we don't want to include assignments
-      case _:TermTree | _:Ident | _:Select  => // ... but do want these as valdefs.
-        requestFromLine("val %s =\n%s".format(varName, line), synthetic) match {
+        // Rewriting    "foo ; bar ; 123"
+        // to           "foo ; bar ; val resXX = 123"
+        requestFromLine(l1 + " ;\n" + valDef + " ;\n", synthetic) match {
           case Right(req) => return Right(req withOriginalLine line)
           case x          => return x
         }
-      case _                                =>
+      case _ =>
     }
-
-    // figure out what kind of request
     Right(buildRequest(line, trees))
   }
 
   /**
-   *    Interpret one line of input.  All feedback, including parse errors
-   *    and evaluation results, are printed via the supplied compiler's
-   *    reporter.  Values defined are available for future interpreted
-   *    strings.
+   *  Interpret one line of input. All feedback, including parse errors
+   *  and evaluation results, are printed via the supplied compiler's
+   *  reporter. Values defined are available for future interpreted strings.
    *
-   *
-   *    The return value is whether the line was interpreter successfully,
-   *    e.g. that there were no parse errors.
-   *
-   *
-   *  @param line ...
-   *  @return     ...
+   *  The return value is whether the line was interpreter successfully,
+   *  e.g. that there were no parse errors.
    */
   def interpret(line: String): IR.Result = interpret(line, false)
   def interpret(line: String, synthetic: Boolean): IR.Result = {
