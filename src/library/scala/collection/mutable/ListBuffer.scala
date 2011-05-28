@@ -245,9 +245,14 @@ final class ListBuffer[A]
    *
    *  @param xs   the list to which elements are prepended
    */
-  def prependToList(xs: List[A]): List[A] =
+  def prependToList(xs: List[A]): List[A] = {
     if (start.isEmpty) xs
-    else { last0.tl = xs; toList }
+    else {
+      if (exported) copy()
+      last0.tl = xs
+      toList
+    }
+  }
 
 // Overrides of methods in Buffer
 
