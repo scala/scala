@@ -24,6 +24,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 {
 	import global._
 	def error(msg: String) = throw new RuntimeException(msg)
+	def debug(msg: String) = if(settings.verbose.value) inform(msg)
 
 	def newPhase(prev: Phase) = new ApiPhase(prev)
 	class ApiPhase(prev: Phase) extends Phase(prev)
@@ -35,13 +36,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			val start = System.currentTimeMillis
 			currentRun.units.foreach(processUnit)
 			val stop = System.currentTimeMillis
-			println("API phase took : " + ((stop - start)/1000.0) + " s")
+			debug("API phase took : " + ((stop - start)/1000.0) + " s")
 		}
 		def processUnit(unit: CompilationUnit) = if(!unit.isJava) processScalaUnit(unit)
 		def processScalaUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
-			println("Traversing " + sourceFile)
+			debug("Traversing " + sourceFile)
 			val traverser = new TopLevelHandler(sourceFile)
 			traverser.apply(unit.body)
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
