@@ -13,7 +13,7 @@ scala> def gcd(x: Int, y: Int): Int = {
           else if (y == 0) x
           else gcd(y%x, x)
 }
-gcd: (x: Int,y: Int)Int
+gcd: (x: Int, y: Int)Int
 
 scala> val five = gcd(15,35)
 five: Int = 5

@@ -168,6 +168,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
 
   import global._
 
+  private implicit def privateTreeOps(t: Tree): List[Tree] = {
+    (new Traversable[Tree] {
+      def foreach[U](f: Tree => U): Unit = t foreach { x => f(x) ; () }
+    }).toList
+  }
+
   object naming extends {
     val global: imain.global.type = imain.global
   } with Naming {
@@ -333,7 +339,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   /** Stubs for work in progress. */
   def handleTypeRedefinition(name: TypeName, old: Request, req: Request) = {
     for (t1 <- old.simpleNameOfType(name) ; t2 <- req.simpleNameOfType(name)) {
-      DBG("Redefining type '%s'\n  %s -> %s".format(name, t1, t2))
+      repldbg("Redefining type '%s'\n  %s -> %s".format(name, t1, t2))
     }
   }
 
@@ -343,7 +349,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       //   assertion failed: fatal: <refinement> has owner value x, but a class owner is required
       // so DBG is by-name now to keep it in the family.  (It also traps the assertion error,
       // but we don't want to unnecessarily risk hosing the compiler's internal state.)
-      DBG("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
+      repldbg("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
     }
   }
   def recordRequest(req: Request) {
@@ -428,17 +434,26 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
 
   // rewriting "5 // foo" to "val x = { 5 // foo }" creates broken code because
   // the close brace is commented out.  Strip single-line comments.
+  // ... but for error message output reasons this is not used, and rather than
+  // enclosing in braces it is constructed like "val x =\n5 // foo".
   private def removeComments(line: String): String = {
+    showCodeIfDebugging(line) // as we're about to lose our // show
     line.lines map (s => s indexOf "//" match {
       case -1   => s
       case idx  => s take idx
     }) mkString "\n"
   }
+  private def safePos(t: Tree, alt: Int): Int =
+    try t.pos.startOrPoint
+    catch { case _: UnsupportedOperationException => alt }
+
   // Given an expression like 10 * 10 * 10 we receive the parent tree positioned
   // at a '*'.  So look at each subtree and find the earliest of all positions.
   private def earliestPosition(tree: Tree): Int = {
     var pos = Int.MaxValue
-    tree foreach (t => pos = math.min(pos, t.pos.startOrPoint))
+    tree foreach { t =>
+      pos = math.min(pos, safePos(t, Int.MaxValue))
+    }
     pos
   }
 
@@ -449,6 +464,11 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       case Some(Nil)    => return Left(IR.Error) // parse error or empty input
       case Some(trees)  => trees
     }
+    repltrace(
+      trees map { t =>
+        t map { t0 => t0.getClass + " at " + safePos(t0, -1) + "\n" }
+      } mkString
+    )
     // If the last tree is a bare expression, pinpoint where it begins using the
     // AST node position and snap the line off there.  Rewrite the code embodied
     // by the last tree as a ValDef instead, so we can access the value.
@@ -458,23 +478,24 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
         // The position of the last tree, and the source code split there.
         val lastpos  = earliestPosition(trees.last)
         val (l1, l2) = content splitAt lastpos
-        val l2body   = removeComments(l2).trim
+        val prefix   = if (l1.trim == "") "" else l1 + ";\n"
         val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
-        val valDef   = "val " + varName + " = { " + l2body + " }"
+        // Note to self: val source needs to have this precise structure so that
+        // error messages print the user-submitted part without the "val res0 = " part.
+        val combined   = prefix + "val " + varName + " =\n" + l2
 
-        DBG(List(
-          "   line" -> line,
-          "content" -> content,
-          "    was" -> l2,
-          " l2body" -> l2body,
-          "    now" -> valDef) map {
+        repldbg(List(
+          "    line" -> line,
+          " content" -> content,
+          "     was" -> l2,
+          "combined" -> combined) map {
             case (label, s) => label + ": '" + s + "'"
           } mkString "\n"
         )
 
         // Rewriting    "foo ; bar ; 123"
         // to           "foo ; bar ; val resXX = 123"
-        requestFromLine(l1 + " ;\n" + valDef + " ;\n", synthetic) match {
+        requestFromLine(combined, synthetic) match {
           case Right(req) => return Right(req withOriginalLine line)
           case x          => return x
         }
@@ -549,7 +570,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       )
     bindRep.callOpt("set", value) match {
       case Some(_)  => interpret("val %s = %s.value".format(name, bindRep.evalPath))
-      case _        => DBG("Set failed in bind(%s, %s, %s)".format(name, boundType, value)) ; IR.Error
+      case _        => repldbg("Set failed in bind(%s, %s, %s)".format(name, boundType, value)) ; IR.Error
     }
   }
   def rebind(p: NamedParam): IR.Result = {
@@ -952,9 +973,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   // 3) Try interpreting it as an expression.
   private var typeOfExpressionDepth = 0
   def typeOfExpression(expr: String): Option[Type] = {
-    DBG("typeOfExpression(" + expr + ")")
+    repldbg("typeOfExpression(" + expr + ")")
     if (typeOfExpressionDepth > 2) {
-      DBG("Terminating typeOfExpression recursion for expression: " + expr)
+      repldbg("Terminating typeOfExpression recursion for expression: " + expr)
       return None
     }
 
@@ -1031,17 +1052,13 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
      */
     if (code.lines exists (_.trim endsWith "// show")) {
       echo(code)
-      parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(DBG(asCompactString(t)))))
+      parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(repldbg(asCompactString(t)))))
     }
   }
   // debugging
   def debugging[T](msg: String)(res: T) = {
-    DBG(msg + " " + res)
+    repldbg(msg + " " + res)
     res
-  }
-  def DBG(s: => String) = if (isReplDebug) {
-    try repldbg(s)
-    catch { case x: AssertionError => repldbg("Assertion error printing debug string:\n  " + x) }
   }
 }
 

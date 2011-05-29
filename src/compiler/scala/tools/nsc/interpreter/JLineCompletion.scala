@@ -18,7 +18,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   import global._
   import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
   type ExecResult = Any
-  import intp.{ DBG, debugging, afterTyper }
+  import intp.{ debugging, afterTyper }
 
   // verbosity goes up with consecutive tabs
   private var verbosity: Int = 0
@@ -325,7 +325,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     // This is jline's entry point for completion.
     override def complete(buf: String, cursor: Int): Candidates = {
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
-      DBG("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
+      repldbg("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
 
       // we don't try lower priority completions unless higher ones return no results.
       def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Candidates] = {
@@ -338,7 +338,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
             val advance = commonPrefix(winners)
             lastCursor = p.position + advance.length
             lastBuf = (buf take p.position) + advance
-            DBG("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(
+            repldbg("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(
               p, lastBuf, lastCursor, p.position))
             p.position
           }
@@ -369,7 +369,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
       }
       catch {
         case ex: Exception =>
-          DBG("Error: complete(%s, %s) provoked %s".format(buf, cursor, ex))
+          repldbg("Error: complete(%s, %s) provoked %s".format(buf, cursor, ex))
           Candidates(cursor, List(" ", "<completion error: " + ex.getMessage +  ">"))
       }
     }
