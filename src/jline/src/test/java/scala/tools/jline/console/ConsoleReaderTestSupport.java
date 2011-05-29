@@ -65,6 +65,7 @@ public abstract class ConsoleReaderTestSupport
         int action = console.getKeyForAction(logicalAction);
 
         if (action == -1) {
+            console.printBindings();
             fail("Keystroke for logical action " + logicalAction + " was not bound in the console");
         }
 

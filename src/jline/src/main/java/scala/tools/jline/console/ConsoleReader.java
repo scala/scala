@@ -1120,6 +1120,15 @@ public class ConsoleReader
         return getKeyForAction(op.code);
     }
 
+    public void printBindings() {
+        System.out.println("printBindings(): keyBindings.length = " + keyBindings.length);
+        for (int i = 0; i < keyBindings.length; i++) {
+            if (keyBindings[i] != Operation.UNKNOWN.code) {
+                System.out.println("keyBindings[" + i + "] = " + keyBindings[i]);
+            }
+        }
+    }
+
     /**
      * Reads the console input and returns an array of the form [raw, key binding].
      */
