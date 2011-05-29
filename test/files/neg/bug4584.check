@@ -1,0 +1,4 @@
+bug4584.scala:1: error: incomplete unicode escape
+class A { val \u2
+                ^
+one error found

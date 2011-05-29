@@ -362,16 +362,14 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     // warning about serially defining companions.  It'd be easy
     // enough to just redefine them together but that may not always
     // be what people want so I'm waiting until I can do it better.
-    if (!settings.nowarnings.value) {
-      for {
-        name   <- req.definedNames filterNot (x => req.definedNames contains x.companionName)
-        oldReq <- definedNameMap get name.companionName
-        newSym <- req.definedSymbols get name
-        oldSym <- oldReq.definedSymbols get name.companionName
-      } {
-        printMessage("warning: previously defined %s is not a companion to %s.".format(oldSym, newSym))
-        printMessage("Companions must be defined together; you may wish to use :paste mode for this.")
-      }
+    for {
+      name   <- req.definedNames filterNot (x => req.definedNames contains x.companionName)
+      oldReq <- definedNameMap get name.companionName
+      newSym <- req.definedSymbols get name
+      oldSym <- oldReq.definedSymbols get name.companionName
+    } {
+      replwarn("warning: previously defined %s is not a companion to %s.".format(oldSym, newSym))
+      replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
     }
 
     // Updating the defined name map
@@ -404,11 +402,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     }
   }
 
+  private[nsc] def replwarn(msg: => String): Unit =
+    if (!settings.nowarnings.value)
+      printMessage(msg)
+
   def isParseable(line: String): Boolean = {
     beSilentDuring {
-      parse(line) match {
+      try parse(line) match {
         case Some(xs) => xs.nonEmpty  // parses as-is
         case None     => true         // incomplete
+      }
+      catch { case x: Exception =>    // crashed the compiler
+        replwarn("Exception in isParseable(\"" + line + "\"): " + x)
+        false
       }
     }
   }

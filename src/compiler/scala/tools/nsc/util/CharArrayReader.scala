@@ -15,7 +15,7 @@ abstract class CharArrayReader { self =>
   def decodeUni: Boolean = true
 
   /** An error routine to call on bad unicode escapes \\uxxxx. */
-  protected def error(offset: Int, msg: String)
+  protected def error(offset: Int, msg: String): Unit
 
   /** the last read character */
   var ch: Char = _
@@ -68,10 +68,19 @@ abstract class CharArrayReader { self =>
       (charOffset - p) % 2 == 0
     }
     def udigit: Int = {
-      val d = digit2int(buf(charOffset), 16)
-      if (d >= 0) charOffset += 1
-      else error(charOffset, "error in unicode escape")
-      d
+      if (charOffset >= buf.length) {
+        // Since the positioning code is very insistent about throwing exceptions,
+        // we have to decrement the position so our error message can be seen, since
+        // we are one past EOF.  This happens with e.g. val x = \ u 1 <EOF>
+        error(charOffset - 1, "incomplete unicode escape")
+        SU
+      }
+      else {
+        val d = digit2int(buf(charOffset), 16)
+        if (d >= 0) charOffset += 1
+        else error(charOffset, "error in unicode escape")
+        d
+      }
     }
     if (charOffset < buf.length && buf(charOffset) == 'u' && decodeUni && evenSlashPrefix) {
       do charOffset += 1
