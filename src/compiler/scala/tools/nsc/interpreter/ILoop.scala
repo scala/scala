@@ -419,10 +419,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     try newJavap()
     catch { case _: Exception => null }
 
+  // TODO: unsolved types shouldn't make it out of this alive.
+  //
+  // scala> :t Some(Set(1)) getOrElse Set("abc")
+  // scala.collection.immutable.Set[_ >: ? <: ?]
   private def typeCommand(line: String): Result = {
-    intp.typeOfExpression(line) match {
+    intp.typeOfExpression(line, false) match {
       case Some(tp) => tp.toString
-      case _        => "Failed to determine type."
+      case _        => "" // the error message was already printed
     }
   }
 
