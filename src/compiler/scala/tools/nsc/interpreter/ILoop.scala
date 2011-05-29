@@ -419,13 +419,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: PrintWriter)
     try newJavap()
     catch { case _: Exception => null }
 
-  // TODO: unsolved types shouldn't make it out of this alive.
-  //
-  // scala> :t Some(Set(1)) getOrElse Set("abc")
-  // scala.collection.immutable.Set[_ >: ? <: ?]
+  // Still todo: modules.
   private def typeCommand(line: String): Result = {
-    intp.typeOfExpression(line, false) match {
-      case Some(tp) => tp.toString
+    if (line.trim == "") ":type <expression>"
+    else intp.typeOfExpression(line, false) match {
+      case Some(tp) => intp.afterTyper(tp.toString)
       case _        => "" // the error message was already printed
     }
   }

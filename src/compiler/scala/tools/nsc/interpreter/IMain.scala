@@ -510,6 +510,19 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     Right(buildRequest(line, trees))
   }
 
+  def typeCleanser(sym: Symbol, memberName: Name): Type = {
+    // the types are all =>T; remove the =>
+    val tp1 = afterTyper(sym.info.nonPrivateDecl(memberName).tpe match {
+      case NullaryMethodType(tp) => tp
+      case tp                    => tp
+    })
+    // normalize non-public types so we don't see protected aliases like Self
+    afterTyper(tp1 match {
+      case TypeRef(_, sym, _) if !sym.isPublic  => tp1.normalize
+      case tp                                   => tp
+    })
+  }
+
   /**
    *  Interpret one line of input. All feedback, including parse errors
    *  and evaluation results, are printed via the supplied compiler's
@@ -817,25 +830,13 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(global.encode(name.toString)))
     def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbol.simpleName)
 
-    private def typeMap[T](f: Type => T): Map[Name, T] = {
-      def toType(name: Name): T = {
-        // the types are all =>T; remove the =>
-        val tp1 = lineAfterTyper(resultSymbol.info.nonPrivateDecl(name).tpe match {
-          case NullaryMethodType(tp)  => tp
-          case tp                 => tp
-        })
-        // normalize non-public types so we don't see protected aliases like Self
-        lineAfterTyper(tp1 match {
-          case TypeRef(_, sym, _) if !sym.isPublic  => f(tp1.normalize)
-          case tp                                   => f(tp)
-        })
-      }
-      termNames ++ typeNames map (x => x -> toType(x)) toMap
-    }
+    private def typeMap[T](f: Type => T): Map[Name, T] =
+      termNames ++ typeNames map (x => x -> f(typeCleanser(resultSymbol, x))) toMap
+
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x)
     /** String representations of same. */
-    lazy val typeOf         = typeMap[String](_.toString)
+    lazy val typeOf         = typeMap[String](tp => afterTyper(tp.toString))
 
     // lazy val definedTypes: Map[Name, Type] = {
     //   typeNames map (x => x -> afterTyper(resultSymbol.info.nonPrivateDecl(x).tpe)) toMap
@@ -973,6 +974,26 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     }
   }
 
+  // Since people will be giving us ":t def foo = 5" even though that is not an
+  // expression, we have a means of typing declarations too.
+  private def typeOfDeclaration(code: String): Option[Type] = {
+    repldbg("typeOfDeclaration(" + code + ")")
+    val obname = freshInternalVarName()
+
+    interpret("object " + obname + " {\n" + code + "\n}\n", true) match {
+      case IR.Success =>
+        val sym = symbolOfTerm(obname)
+        if (sym == NoSymbol) None else {
+          // TODO: bitmap$n is not marked synthetic.
+          val decls = sym.tpe.decls.toList filterNot (x => x.isConstructor || x.isPrivate || (x.name.toString contains "$"))
+          repldbg("decls: " + decls)
+          decls.lastOption map (decl => typeCleanser(sym, decl.name))
+        }
+      case _          =>
+        None
+    }
+  }
+
   // XXX literals.
   // 1) Identifiers defined in the repl.
   // 2) A path loadable via getModule.
@@ -1011,7 +1032,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     // while letting errors through, so it is first trying it silently: if there
     // is an error, and errors are desired, then it re-evaluates non-silently
     // to induce the error message.
-    beSilentDuring(evaluate()) orElse {
+    beSilentDuring(evaluate()) orElse beSilentDuring(typeOfDeclaration(expr)) orElse {
       if (!silent)
         evaluate()
 
