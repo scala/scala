@@ -1429,11 +1429,17 @@ self =>
      */
     def simpleExpr(): Tree = {
       var canApply = true
+      val start = in.offset
       val t =
-        if (isLiteral) atPos(in.offset)(literal(false))
+        if (isLiteral) atPos(start)(literal(false))
         else in.token match {
           case XMLSTART =>
-            xmlLiteral()
+            // Using setPos here because the generated tree has its position
+            // off by one and I'm not sure where to fix it.
+            //   <a></a>
+            //    ^--- This was positioned at the a, not the <
+            val lit = xmlLiteral()
+            lit setPos r2p(start, start, in.offset)
           case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER =>
             path(true, false)
           case USCORE =>
