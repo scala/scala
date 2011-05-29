@@ -318,8 +318,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isRootPackage = isPackage && owner == NoSymbol
 
     /** Does this symbol denote a wrapper created by the repl? */
-    final def isInterpreterWrapper = (isModule || isModuleClass) && nme.isReplWrapperName(name)
-
+    final def isInterpreterWrapper = (
+      (isModule || isModuleClass)
+      && owner.isPackageClass
+      && nme.isReplWrapperName(name)
+    )
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass || isInterpreterWrapper
@@ -388,7 +391,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
      */
     final def printWithoutPrefix = !settings.debug.value && (
-      isScalaPackageClass || isPredefModule || isEffectiveRoot || isAnonOrRefinementClass || isInterpreterWrapper
+      isScalaPackageClass || isPredefModule || isEffectiveRoot || isAnonOrRefinementClass ||
+      nme.isReplWrapperName(name) // not isInterpreterWrapper due to nesting
     )
 
     /** Is symbol a monomorphic type?
