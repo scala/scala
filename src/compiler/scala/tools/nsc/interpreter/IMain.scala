@@ -440,8 +440,15 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     trees.last match {
       case _:Assign                        => // we don't want to include assignments
       case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
-        // The position of the last tree, and the source code split there.
-        val lastpos  = earliestPosition(trees.last)
+        // The position of the last tree
+        val lastpos0 = earliestPosition(trees.last)
+        // Oh boy, the parser throws away parens so "(2+2)" is mispositioned.
+        // So until we can fix the parser we'll have to go trawling.
+        val lastpos = {
+          val adjustment = (content take lastpos0).reverse takeWhile (ch => ch.isWhitespace || ch == '(') length;
+          lastpos0 - adjustment
+        }
+        // the source code split at the laboriously determined position.
         val (l1, l2) = content splitAt lastpos
         val prefix   = if (l1.trim == "") "" else l1 + ";\n"
         val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
