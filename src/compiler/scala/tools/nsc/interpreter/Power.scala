@@ -56,7 +56,12 @@ abstract class Power[G <: Global](
   val intp: IMain
 ) extends SharesGlobal[G] {
   import intp.{ beQuietDuring, interpret, parse }
-  import global.{ opt, definitions, stringToTermName, NoSymbol, NoType, analyzer, CompilationUnit }
+  import global.{
+    opt, definitions, analyzer,
+    stringToTermName, typeRef,
+    CompilationUnit,
+    NoSymbol, NoPrefix, NoType
+  }
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -296,9 +301,7 @@ abstract class Power[G <: Global](
     // fallback
     implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) = new PrintingConvenience[T](x)
   }
-  trait Implicits2 extends Implicits1 with SharesGlobal[G] {
-    import global._
-
+  trait Implicits2 extends Implicits1 {
     class RichSymbol(sym: Symbol) {
       // convenient type application
       def apply(targs: Type*): Type = typeRef(NoPrefix, sym, targs.toList)
@@ -320,9 +323,7 @@ abstract class Power[G <: Global](
     implicit def replInputStream(in: InputStream)(implicit codec: Codec): RichInputStream = new RichInputStream(in)
     implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = replInputStream(url.openStream())
   }
-  object Implicits extends Implicits2 {
-    val global: G = Power.this.global
-  }
+  object Implicits extends Implicits2 { }
 
   trait ReplUtilities {
     def ?[T: Manifest] = InternalInfo[T]
