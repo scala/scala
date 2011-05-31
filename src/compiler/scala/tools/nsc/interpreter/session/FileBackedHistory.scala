@@ -46,9 +46,17 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     if (!historyFile.canRead)
       historyFile.createFile()
 
-    val lines: IndexedSeq[String] =
+    val lines: IndexedSeq[String] = {
       try historyFile.lines().toIndexedSeq
-      catch { case _: Exception => Vector() }
+      catch {
+        // It seems that control characters in the history file combined
+        // with the default codec can lead to nio spewing exceptions.  Rather
+        // than abandon hope we'll try to read it as ISO-8859-1
+        case _: Exception =>
+          try historyFile.lines("ISO-8859-1").toIndexedSeq
+          catch { case _: Exception => Vector() }
+      }
+    }
 
     repldbg("Loading " + lines.size + " into history.")
 
