@@ -12,10 +12,9 @@ import java.lang.reflect
 import java.net.URL
 import util._
 import io.VirtualDirectory
-import reporters.{ ConsoleReporter, Reporter }
+import reporters._
 import symtab.Flags
 import scala.reflect.internal.Names
-import scala.tools.nsc.interpreter.{ Results => IR }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
@@ -91,7 +90,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   }
 
   /** reporter */
-  lazy val reporter: ConsoleReporter = new IMain.ReplReporter(this)
+  lazy val reporter: ReplReporter = new ReplReporter(this)
   import reporter.{ printMessage, withoutTruncating }
 
   // not sure if we have some motivation to print directly to console
@@ -110,55 +109,35 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   private var _initializeComplete = false
   def isInitializeComplete = _initializeComplete
 
-  private def _initialize(): Boolean = {
-    val source = """
-      |class $repl_$init {
-      |  scala.collection.immutable.List(1) map (_ + 1)
-      |}
-      |""".stripMargin
-
-    val result = try {
-      new _compiler.Run() compileSources List(new BatchSourceFile("<init>", source))
-      if (isReplDebug || settings.debug.value) {
-        // Can't use printMessage here, it deadlocks
-        Console.println("Repl compiler initialized.")
-      }
-      // addImports(defaultImports: _*)
+  private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
+  private def _initialize() = {
+    try {
+      new _compiler.Run() compileSources _initSources
+      _initializeComplete = true
       true
     }
-    catch {
-      case x: AbstractMethodError =>
-        printMessage("""
-          |Failed to initialize compiler: abstract method error.
-          |This is most often remedied by a full clean and recompile.
-          |""".stripMargin
-        )
-        x.printStackTrace()
-        false
-      case x: MissingRequirementError => printMessage("""
-        |Failed to initialize compiler: %s not found.
-        |** Note that as of 2.8 scala does not assume use of the java classpath.
-        |** For the old behavior pass -usejavacp to scala, or if using a Settings
-        |** object programatically, settings.usejavacp.value = true.""".stripMargin.format(x.req)
-      )
-      false
-    }
-
-    try result
-    finally _initializeComplete = result
+    catch AbstractOrMissingHandler()
   }
 
   // set up initialization future
   private var _isInitialized: () => Boolean = null
-  def initialize() = synchronized {
+  // argument is a thunk to execute after init is done
+  def initialize(postInitSignal: => Unit): Unit = synchronized {
     if (_isInitialized == null)
-      _isInitialized = scala.concurrent.ops future _initialize()
+      _isInitialized = scala.concurrent.ops future {
+        val result = _initialize()
+        postInitSignal
+        result
+      }
   }
 
   /** the public, go through the future compiler */
   lazy val global: Global = {
-    initialize()
-
+    // If init hasn't been called yet you're on your own.
+    if (_isInitialized == null) {
+      repldbg("Warning: compiler accessed before init set up.  Assuming no postInit code.")
+      initialize(())
+    }
     // blocks until it is ; false means catastrophic failure
     if (_isInitialized()) _compiler
     else null
@@ -379,26 +358,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
         else handleTermRedefinition(name.toTermName, definedNameMap(name), req)
       }
       definedNameMap(name) = req
-    }
-  }
-
-  /** Parse a line into a sequence of trees. Returns None if the input is incomplete. */
-  def parse(line: String): Option[List[Tree]] = {
-    var justNeedsMore = false
-    reporter.withIncompleteHandler((pos,msg) => {justNeedsMore = true}) {
-      // simple parse: just parse it, nothing else
-      def simpleParse(code: String): List[Tree] = {
-        reporter.reset()
-        val unit = new CompilationUnit(new BatchSourceFile("<console>", code))
-        val scanner = new syntaxAnalyzer.UnitParser(unit)
-
-        scanner.templateStatSeq(false)._2
-      }
-      val trees = simpleParse(line)
-
-      if (reporter.hasErrors)   Some(Nil)  // the result did not parse, so stop
-      else if (justNeedsMore)   None
-      else                      Some(trees)
     }
   }
 
@@ -683,12 +642,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
         lineAfterTyper(sym.info member newTermName(name))
       }
     }
-
-    // def compileAndTypeExpr(expr: String): Option[Typer] = {
-    //   class TyperRun extends Run {
-    //     override def stopPhase(name: String) = name == "superaccessors"
-    //   }
-    // }
     private var lastRun: Run = _
     private def evalMethod(name: String) = {
       val methods = evalClass.getMethods filter (_.getName == name)
@@ -974,76 +927,11 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     }
   }
 
-  // Since people will be giving us ":t def foo = 5" even though that is not an
-  // expression, we have a means of typing declarations too.
-  private def typeOfDeclaration(code: String): Option[Type] = {
-    repldbg("typeOfDeclaration(" + code + ")")
-    val obname = freshInternalVarName()
-
-    interpret("object " + obname + " {\n" + code + "\n}\n", true) match {
-      case IR.Success =>
-        val sym = symbolOfTerm(obname)
-        if (sym == NoSymbol) None else {
-          // TODO: bitmap$n is not marked synthetic.
-          val decls = sym.tpe.decls.toList filterNot (x => x.isConstructor || x.isPrivate || (x.name.toString contains "$"))
-          repldbg("decls: " + decls)
-          decls.lastOption map (decl => typeCleanser(sym, decl.name))
-        }
-      case _          =>
-        None
-    }
-  }
-
-  // XXX literals.
-  // 1) Identifiers defined in the repl.
-  // 2) A path loadable via getModule.
-  // 3) Try interpreting it as an expression.
-  private var typeOfExpressionDepth = 0
+  private object exprTyper extends { val repl: IMain.this.type = imain } with ExprTyper { }
+  def parse(line: String): Option[List[Tree]] = exprTyper.parse(line)
   def typeOfExpression(expr: String, silent: Boolean = true): Option[Type] = {
-    repldbg("typeOfExpression(" + expr + ")")
-    if (typeOfExpressionDepth > 2) {
-      repldbg("Terminating typeOfExpression recursion for expression: " + expr)
-      return None
-    }
-
-    def asQualifiedImport = {
-      val name = expr.takeWhile(_ != '.')
-      importedTermNamed(name) flatMap { sym =>
-        typeOfExpression(sym.fullName + expr.drop(name.length), true)
-      }
-    }
-    def asModule = safeModule(expr) map (_.tpe)
-    def asExpr = {
-      val lhs = freshInternalVarName()
-      val line = "lazy val " + lhs + " =\n" + expr
-
-      interpret(line, true) match {
-        case IR.Success => typeOfExpression(lhs, true)
-        case _          => None
-      }
-    }
-    def evaluate() = {
-      typeOfExpressionDepth += 1
-      try typeOfTerm(expr) orElse asModule orElse asExpr orElse asQualifiedImport
-      finally typeOfExpressionDepth -= 1
-    }
-
-    // Don't presently have a good way to suppress undesirable success output
-    // while letting errors through, so it is first trying it silently: if there
-    // is an error, and errors are desired, then it re-evaluates non-silently
-    // to induce the error message.
-    beSilentDuring(evaluate()) orElse beSilentDuring(typeOfDeclaration(expr)) orElse {
-      if (!silent)
-        evaluate()
-
-      None
-    }
+    exprTyper.typeOfExpression(expr, silent)
   }
-  // def compileAndTypeExpr(expr: String): Option[Typer] = {
-  //   class TyperRun extends Run {
-  //     override def stopPhase(name: String) = name == "superaccessors"
-  //   }
-  // }
 
   protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
@@ -1163,18 +1051,6 @@ object IMain {
         }
         else ch
       }
-    }
-  }
-
-  class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, new ReplStrippingWriter(intp)) {
-    override def printMessage(msg: String) {
-      // Avoiding deadlock when the compiler starts logging before
-      // the lazy val is done.
-      if (intp.isInitializeComplete) {
-        if (intp.totalSilence) ()
-        else super.printMessage(msg)
-      }
-      else Console.println(msg)
     }
   }
 }

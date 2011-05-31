@@ -30,6 +30,8 @@ package object interpreter extends ReplConfig with ReplStrings {
   type InputStream    = java.io.InputStream
   type OutputStream   = java.io.OutputStream
 
+  val IR = Results
+
   private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
   private[interpreter] implicit def javaCharSeqCollectionToScala(xs: JCollection[_ <: CharSequence]): List[String] = {
     import collection.JavaConverters._
