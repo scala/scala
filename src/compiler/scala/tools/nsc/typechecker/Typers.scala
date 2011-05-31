@@ -16,9 +16,9 @@ import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.util.BatchSourceFile
 import mutable.ListBuffer
 import symtab.Flags._
-
 import util.Statistics
 import util.Statistics._
+import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -825,8 +825,8 @@ trait Typers extends Modes {
               // Note that we treat Any and Nothing as kind-polymorphic.
               // We can't perform this check when typing type arguments to an overloaded method before the overload is resolved
               // (or in the case of an error type) -- this is indicated by pt == WildcardType (see case TypeApply in typed1).
-              errorTree(tree, tree.tpe+" takes "+reporter.countElementsAsString(tree.tpe.typeParams.length, "type parameter")+
-                              ", expected: "+reporter.countAsString(pt.typeParams.length))
+              errorTree(tree, tree.tpe+" takes "+countElementsAsString(tree.tpe.typeParams.length, "type parameter")+
+                              ", expected: "+countAsString(pt.typeParams.length))
               tree setType tree.tpe
           } else tree match { // (6)
             case TypeTree() => tree

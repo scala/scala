@@ -338,7 +338,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         currentRun.currentUnit = unit
         if (!cancelled(unit)) {
           currentRun.informUnitStarting(this, unit)
-          reporter.withSource(unit.source) { apply(unit) }
+          apply(unit)
         }
         currentRun.advanceUnit
       } finally {
@@ -1066,9 +1066,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       def loop(ph: Phase) {
         if (stop(ph)) refreshProgress
         else {
-          reporter.withSource(unit.source) {
-            atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
-          }
+          atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
           loop(ph.next match {
             case `ph`   => null   // ph == ph.next implies terminal, and null ends processing
             case x      => x

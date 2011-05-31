@@ -6,10 +6,8 @@
 package scala.tools.nsc
 package reporters
 
-import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
-
-import scala.collection.mutable.HashSet
-import scala.tools.nsc.util.{Position, SourceFile}
+import scala.collection.mutable
+import scala.tools.nsc.util.Position
 
 /**
  * This class implements a Reporter that displays messages on a text
@@ -19,7 +17,7 @@ class StoreReporter extends Reporter {
   class Info(val pos: Position, val msg: String, val severity: Severity) {
     override def toString() = "pos: " + pos + " " + msg + " " + severity
   }
-  val infos = new HashSet[Info]
+  val infos = new mutable.HashSet[Info]
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     if (!force) {
       infos += new Info(pos, msg, severity)
@@ -28,7 +26,7 @@ class StoreReporter extends Reporter {
   }
 
   override def reset() {
-    super.reset
-    infos.clear
+    super.reset()
+    infos.clear()
   }
 }

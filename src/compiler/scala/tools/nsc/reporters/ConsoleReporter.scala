@@ -6,14 +6,17 @@
 package scala.tools.nsc
 package reporters
 
-import java.io.{BufferedReader, InputStreamReader, IOException, PrintWriter}
+import java.io.{ BufferedReader, IOException, PrintWriter }
 import util._
+import scala.tools.util.StringOps.countElementsAsString
 
 /**
  * This class implements a Reporter that displays messages on a text
  * console.
  */
 class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: PrintWriter) extends AbstractReporter {
+  def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true))
+
   /** Whether a short file name should be displayed before errors */
   var shortname: Boolean = false
 
@@ -31,9 +34,6 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     if (label0 eq null) "" else label0 + ": "
   }
 
-  def this(settings: Settings) =
-    this(settings, Console.in, new PrintWriter(Console.err, true))
-
   /** Returns the number of errors issued totally as a string.
    *
    *  @param severity ...
@@ -43,7 +43,6 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     countElementsAsString((severity).count, label(severity))
 
   /** Prints the message. */
-  //def printMessage(msg: String) { writer.println(msg) }  // platform-dependent!
   def printMessage(msg: String) { writer.print(msg + "\n"); writer.flush() }
 
   /** Prints the message with the given position indication. */
