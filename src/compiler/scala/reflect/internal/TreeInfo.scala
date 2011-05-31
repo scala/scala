@@ -95,10 +95,11 @@ abstract class TreeInfo {
       false
   }
 
-  def mayBeVarGetter(sym: Symbol) = sym.info match {
-    case NullaryMethodType(_)  => sym.owner.isClass && !sym.isStable
-    case mt @ MethodType(_, _) => mt.isImplicit && sym.owner.isClass && !sym.isStable
-    case _                     => false
+  def mayBeVarGetter(sym: Symbol): Boolean = sym.info match {
+    case NullaryMethodType(_)              => sym.owner.isClass && !sym.isStable
+    case PolyType(_, NullaryMethodType(_)) => sym.owner.isClass && !sym.isStable
+    case mt @ MethodType(_, _)             => mt.isImplicit && sym.owner.isClass && !sym.isStable
+    case _                                 => false
   }
 
   def isVariableOrGetter(tree: Tree) = {

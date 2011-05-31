@@ -3120,7 +3120,7 @@ trait Typers extends Modes {
           return fail
 
         if (treeInfo.mayBeVarGetter(varsym)) {
-          lhs1 match {
+          treeInfo.methPart(lhs1) match {
             case Select(qual, name) =>
               val sel = Select(qual, nme.getterToSetter(name.toTermName)) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
