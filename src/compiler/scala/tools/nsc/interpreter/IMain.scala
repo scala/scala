@@ -440,34 +440,44 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     trees.last match {
       case _:Assign                        => // we don't want to include assignments
       case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
-        // The position of the last tree
-        val lastpos0 = earliestPosition(trees.last)
-        // Oh boy, the parser throws away parens so "(2+2)" is mispositioned.
-        // So until we can fix the parser we'll have to go trawling.
-        val lastpos = {
-          val adjustment = (content take lastpos0).reverse takeWhile (ch => ch.isWhitespace || ch == '(') length;
-          lastpos0 - adjustment
-        }
-        // the source code split at the laboriously determined position.
-        val (l1, l2) = content splitAt lastpos
-        val prefix   = if (l1.trim == "") "" else l1 + ";\n"
         val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
-        // Note to self: val source needs to have this precise structure so that
-        // error messages print the user-submitted part without the "val res0 = " part.
-        val combined   = prefix + "val " + varName + " =\n" + l2
+        val rewrittenLine = (
+          // In theory this would come out the same without the 1-specific test, but
+          // it's a cushion against any more sneaky parse-tree position vs. code mismatches:
+          // this way such issues will only arise on multiple-statement repl input lines,
+          // which most people don't use.
+          if (trees.size == 1) "val " + varName + " =\n" + content
+          else {
+            // The position of the last tree
+            val lastpos0 = earliestPosition(trees.last)
+            // Oh boy, the parser throws away parens so "(2+2)" is mispositioned.
+            // So until we can fix the parser we'll have to go trawling.
+            val adjustment = ((content take lastpos0).reverse takeWhile { ch =>
+              ch.isWhitespace || ch == '(' || ch == ')'
+            }).length
+            val lastpos = lastpos0 - adjustment
 
-        repldbg(List(
-          "    line" -> line,
-          " content" -> content,
-          "     was" -> l2,
-          "combined" -> combined) map {
-            case (label, s) => label + ": '" + s + "'"
-          } mkString "\n"
+            // the source code split at the laboriously determined position.
+            val (l1, l2) = content splitAt lastpos
+            val prefix   = if (l1.trim == "") "" else l1 + ";\n"
+            // Note to self: val source needs to have this precise structure so that
+            // error messages print the user-submitted part without the "val res0 = " part.
+            val combined   = prefix + "val " + varName + " =\n" + l2
+
+            repldbg(List(
+              "    line" -> line,
+              " content" -> content,
+              "     was" -> l2,
+              "combined" -> combined) map {
+                case (label, s) => label + ": '" + s + "'"
+              } mkString "\n"
+            )
+            combined
+          }
         )
-
         // Rewriting    "foo ; bar ; 123"
         // to           "foo ; bar ; val resXX = 123"
-        requestFromLine(combined, synthetic) match {
+        requestFromLine(rewrittenLine, synthetic) match {
           case Right(req) => return Right(req withOriginalLine line)
           case x          => return x
         }
