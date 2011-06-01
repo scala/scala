@@ -46,7 +46,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			val traverser = new TopLevelHandler(sourceFile)
 			traverser.apply(unit.body)
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
-			val source = new xsbti.api.Source(packages, traverser.definitions.toArray[xsbti.api.Definition])
+			val source = new xsbti.api.SourceAPI(packages, traverser.definitions.toArray[xsbti.api.Definition])
 			forceStructures()
 			clearCaches()
 			callback.api(sourceFile, source)
