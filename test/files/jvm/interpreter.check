@@ -370,5 +370,5 @@ plusOne: (x: Int)Int
 res0: Int = 6
 res1: java.lang.String = after reset
 <console>:8: error: not found: value plusOne
-       plusOne(5) // should be undefined now
-       ^
+              plusOne(5) // should be undefined now
+              ^

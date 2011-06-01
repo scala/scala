@@ -572,7 +572,7 @@ trait Infer {
           tparam -> Some(
             if      (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
             else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
-            else if (targ.typeSymbol.isModuleClass) targ  // this infers Foo.type instead of "object Foo"
+            else if (targ.typeSymbol.isModuleClass) targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
             else targ.widen
           )
         }

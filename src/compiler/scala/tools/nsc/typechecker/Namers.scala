@@ -630,9 +630,14 @@ trait Namers { self: Analyzer =>
         case _ =>
           false
       }
+
       val tpe1 = tpe.deconst
       val tpe2 = tpe1.widen
-      if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
+
+      // This infers Foo.type instead of "object Foo"
+      // See Infer#adjustTypeArgs for the polymorphic case.
+      if (tpe.typeSymbolDirect.isModuleClass) tpe1
+      else if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
       // In an attempt to make pattern matches involving method local vals

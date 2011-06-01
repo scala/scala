@@ -1,4 +1,4 @@
-t3507.scala:13: error: No Manifest available for object _1.b.c.
+t3507.scala:13: error: No Manifest available for _1.b.c.type.
   mani/*[object _1.b.c]*/(c) // kaboom in manifestOfType / TreeGen.mkAttributedQualifier
                          ^
 one error found
