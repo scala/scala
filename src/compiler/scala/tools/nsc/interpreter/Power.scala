@@ -141,7 +141,8 @@ abstract class Power[G <: Global](
     "scala.tools.nsc._",
     "scala.collection.JavaConverters._",
     "global.{ error => _, _ }",
-    "power.Implicits._"
+    "power.Implicits._",
+    "power.rutil._"
   )
   def init = customInit getOrElse "import " + initImports.mkString(", ")
 
@@ -229,7 +230,8 @@ abstract class Power[G <: Global](
       def prettify(x: Any): TraversableOnce[String] = x match {
         case x: Name                => List(x.decode)
         case Tuple2(k, v)           => List(prettify(k).toIterator ++ Iterator("->") ++ prettify(v) mkString " ")
-        case xs: TraversableOnce[_] => (xs.toList flatMap prettify).sorted
+        case xs: Array[_]           => xs.iterator flatMap prettify
+        case xs: TraversableOnce[_] => xs flatMap prettify
         case x                      => List(Prettifier.stringOf(x))
       }
     }
@@ -255,7 +257,6 @@ abstract class Power[G <: Global](
   }
 
   abstract class PrettifierClass[T: Prettifier]() {
-    private implicit val ord: Ordering[T] = Ordering[String] on (_.toString)
     val pretty = implicitly[Prettifier[T]]
     import pretty._
 
@@ -267,21 +268,29 @@ abstract class Power[G <: Global](
     def freq[U](p: T => U) = (value.toSeq groupBy p mapValues (_.size)).toList sortBy (-_._2) map (_.swap)
     def ppfreq[U](p: T => U): Unit = freq(p) foreach { case (count, key) => println("%5d %s".format(count, key)) }
 
-    def |[U](f: Seq[T] => Seq[U]): Seq[U] = f(value)
-    def ^^[U](f: T => U): Seq[U] = value map f
+    def |[U](f: Seq[T] => Seq[U]): Seq[U]        = f(value)
+    def ^^[U](f: T => U): Seq[U]                 = value map f
     def ^?[U](pf: PartialFunction[T, U]): Seq[U] = value collect pf
 
-    def >>!(): Unit               = pp(_.sorted.distinct)
-    def >>(): Unit                = pp(_.sorted)
-    def >!(): Unit                = pp(_.distinct)
-    def >(): Unit                 = pp(identity)
+    def >>!(implicit ord: Ordering[T]): Unit     = pp(_.sorted.distinct)
+    def >>(implicit ord: Ordering[T]): Unit      = pp(_.sorted)
+    def >!(): Unit                               = pp(_.distinct)
+    def >(): Unit                                = pp(identity)
 
-    def >#(): Unit                = this ># (identity[T] _)
-    def >#[U](p: T => U): Unit    = this ppfreq p
+    def >#(): Unit                               = this ># (identity[T] _)
+    def >#[U](p: T => U): Unit                   = this ppfreq p
 
-    def >?(p: T => Boolean): Unit = pp(_ filter p)
-    def >?(s: String): Unit       = pp(_ filter (_.toString contains s))
-    def >?(r: Regex): Unit        = pp(_ filter (_.toString matches r.pattern.toString))
+    def >?(p: T => Boolean): Unit                = pp(_ filter p)
+    def >?(s: String): Unit                      = pp(_ filter (_.toString contains s))
+    def >?(r: Regex): Unit                       = pp(_ filter (_.toString matches fixRegex(r)))
+
+    private def fixRegex(r: scala.util.matching.Regex): String = {
+      val s = r.pattern.toString
+      val prefix = if (s startsWith "^") "" else """^.*?"""
+      val suffix = if (s endsWith "$") "" else """.*$"""
+
+      prefix + s + suffix
+    }
   }
 
   class MultiPrettifierClass[T: Prettifier](val value: Seq[T]) extends PrettifierClass[T]() { }
@@ -289,11 +298,17 @@ abstract class Power[G <: Global](
     val value = List(single)
   }
 
+  class RichReplString(s: String) {
+    def u: URL = (
+      if (s contains ":") new java.net.URL(s)
+      else if (new java.io.File(s) exists) new java.io.File(s).toURI.toURL
+      else new java.net.URL("http://" + s)
+    )
+  }
   class RichInputStream(in: InputStream)(implicit codec: Codec) {
-    def bytes(): Array[Byte] = io.Streamable.bytes(in)
-    def slurp(): String      = io.Streamable.slurp(in)
-    def <(url: URL): String  = io.Streamable.slurp(url)
-    def <(): String          = slurp()
+    def bytes(): Array[Byte]  = io.Streamable.bytes(in)
+    def slurp(): String       = io.Streamable.slurp(in)
+    def <<(): String          = slurp()
   }
 
   protected trait Implicits1 {
@@ -316,17 +331,19 @@ abstract class Power[G <: Global](
     implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
     implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
 
+    implicit def replEnhancedStrings(s: String): RichReplString = new RichReplString(s)
     implicit def replMultiPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrettifierClass[T] =
       new MultiPrettifierClass[T](xs.toSeq)
     implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
     implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
-    implicit def replInputStream(in: InputStream)(implicit codec: Codec): RichInputStream = new RichInputStream(in)
-    implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = replInputStream(url.openStream())
+    implicit def replInputStream(in: InputStream)(implicit codec: Codec) = new RichInputStream(in)
+    implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = new RichInputStream(url.openStream())
   }
   object Implicits extends Implicits2 { }
 
   trait ReplUtilities {
+    def info[T: Manifest] = InternalInfo[T]
     def ?[T: Manifest] = InternalInfo[T]
     def url(s: String) = {
       try new URL(s)
