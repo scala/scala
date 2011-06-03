@@ -117,12 +117,11 @@ trait Imports {
         * 'wanted' is the set of names that need to be imported.
        */
       def select(reqs: List[ReqAndHandler], wanted: Set[Name]): List[ReqAndHandler] = {
-        val isWanted = wanted contains _
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
           case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.definedNames exists isWanted)
+          case x                => x.definesImplicit || (x.definedNames exists wanted)
         }
 
         reqs match {
@@ -160,7 +159,7 @@ trait Imports {
         // If the user entered an import, then just use it; add an import wrapping
         // level if the import might conflict with some other import
         case x: ImportHandler =>
-          if (x.importsWildcard || (currentImps exists (x.importedNames contains _)))
+          if (x.importsWildcard || currentImps.exists(x.importedNames contains _))
             addWrapper()
 
           code append (x.member + "\n")
@@ -178,7 +177,7 @@ trait Imports {
           for (imv <- x.definedNames) {
             if (currentImps contains imv) addWrapper()
 
-            code append ("import %s\n" format (req fullPath imv))
+            code append ("import " + (req fullPath imv) + "\n")
             currentImps += imv
           }
       }

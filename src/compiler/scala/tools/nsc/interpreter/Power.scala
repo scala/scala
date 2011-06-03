@@ -225,81 +225,81 @@ abstract class Power[G <: Global](
 
   trait LowPriorityPrettifier {
     implicit object AnyPrettifier extends Prettifier[Any] {
-      def prettify(x: Any): List[String] = x match {
+      def show(x: Any): Unit = prettify(x) foreach println
+      def prettify(x: Any): TraversableOnce[String] = x match {
         case x: Name                => List(x.decode)
-        case Tuple2(k, v)           => List(prettify(k) ++ Seq("->") ++ prettify(v) mkString " ")
+        case Tuple2(k, v)           => List(prettify(k).toIterator ++ Iterator("->") ++ prettify(v) mkString " ")
         case xs: TraversableOnce[_] => (xs.toList flatMap prettify).sorted
-        case x                      => List(rutil.stringOf(x))
+        case x                      => List(Prettifier.stringOf(x))
       }
     }
   }
+  object StringPrettifier extends Prettifier[String] {
+    def show(x: String) = println(x)
+    def prettify(x: String) = List(Prettifier stringOf x)
+  }
   object Prettifier extends LowPriorityPrettifier {
-    def prettify[T](value: T): List[String] = default[T] prettify value
+    def stringOf(x: Any): String = scala.runtime.ScalaRunTime.stringOf(x)
+    def prettify[T](value: T): TraversableOnce[String] = default[T] prettify value
     def default[T] = new Prettifier[T] {
-      def prettify(x: T): List[String] = AnyPrettifier prettify x
+      def prettify(x: T): TraversableOnce[String] = AnyPrettifier prettify x
+      def show(x: T): Unit = AnyPrettifier show x
     }
   }
   trait Prettifier[T] {
-    def prettify(x: T): List[String]
+    def show(x: T): Unit
+    def prettify(x: T): TraversableOnce[String]
 
-    private var indentLevel = 0
-    private def spaces = "  " * indentLevel
-    def indented[T](body: => T): T = {
-      indentLevel += 1
-      try body
-      finally indentLevel -= 1
-    }
-
-    def show(x: T): Unit = grep(x, _ => true)
-    def grep(x: T, p: String => Boolean): Unit =
-      prettify(x) filter p foreach (x => println(spaces + x))
+    def show(xs: TraversableOnce[T]): Unit = prettify(xs) foreach println
+    def prettify(xs: TraversableOnce[T]): TraversableOnce[String] = xs flatMap (x => prettify(x))
   }
-  class MultiPrintingConvenience[T: Prettifier](coll: TraversableOnce[T]) {
+
+  abstract class PrettifierClass[T: Prettifier]() {
+    private implicit val ord: Ordering[T] = Ordering[String] on (_.toString)
     val pretty = implicitly[Prettifier[T]]
     import pretty._
 
-    def freqBy[U](p: T => U) = {
-      val map = coll.toList groupBy p
-      map.toList sortBy (-_._2.size)
-    }
-    def freqByFormatted[U](p: T => U) = {
-      val buf = new mutable.ListBuffer[String]
+    def value: Seq[T]
 
-      freqBy(p) foreach { case (k, vs) =>
-        buf += "%d: %s".format(vs.size, Prettifier.prettify(k))
-        vs flatMap prettify foreach (buf += "  " + _)
-      }
-      buf.toList
-    }
+    def pp(f: Seq[T] => Seq[T]): Unit =
+      pretty prettify f(value) foreach (StringPrettifier show _)
 
-    /** It makes sense.
-     *
-     *    #  means how many
-     *    ?  means "I said, HOW MANY?"
-     *    >  means print
-     *
-     *  Now don't you feel silly for what you were thinking.
-     */
-    def #?>[U](p: T => U) = this freqByFormatted p foreach println
-    def #?[U](p: T => U) = this freqByFormatted p
+    def freq[U](p: T => U) = (value.toSeq groupBy p mapValues (_.size)).toList sortBy (-_._2) map (_.swap)
+    def ppfreq[U](p: T => U): Unit = freq(p) foreach { case (count, key) => println("%5d %s".format(count, key)) }
+
+    def |[U](f: Seq[T] => Seq[U]): Seq[U] = f(value)
+    def ^^[U](f: T => U): Seq[U] = value map f
+    def ^?[U](pf: PartialFunction[T, U]): Seq[U] = value collect pf
+
+    def >>!(): Unit               = pp(_.sorted.distinct)
+    def >>(): Unit                = pp(_.sorted)
+    def >!(): Unit                = pp(_.distinct)
+    def >(): Unit                 = pp(identity)
+
+    def >#(): Unit                = this ># (identity[T] _)
+    def >#[U](p: T => U): Unit    = this ppfreq p
+
+    def >?(p: T => Boolean): Unit = pp(_ filter p)
+    def >?(s: String): Unit       = pp(_ filter (_.toString contains s))
+    def >?(r: Regex): Unit        = pp(_ filter (_.toString matches r.pattern.toString))
   }
 
-  class PrintingConvenience[T: Prettifier](value: T) {
-    val pretty = implicitly[Prettifier[T]]
-
-    def >() { >(_ => true) }
-    def >(s: String): Unit = >(_ contains s)
-    def >(r: Regex): Unit = >(_ matches r.pattern.toString)
-    def >(p: String => Boolean): Unit = pretty.grep(value, p)
+  class MultiPrettifierClass[T: Prettifier](val value: Seq[T]) extends PrettifierClass[T]() { }
+  class SinglePrettifierClass[T: Prettifier](single: T) extends PrettifierClass[T]() {
+    val value = List(single)
   }
+
   class RichInputStream(in: InputStream)(implicit codec: Codec) {
     def bytes(): Array[Byte] = io.Streamable.bytes(in)
     def slurp(): String      = io.Streamable.slurp(in)
+    def <(url: URL): String  = io.Streamable.slurp(url)
+    def <(): String          = slurp()
   }
 
   protected trait Implicits1 {
     // fallback
-    implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) = new PrintingConvenience[T](x)
+    implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) =
+      new SinglePrettifierClass[T](x)
   }
   trait Implicits2 extends Implicits1 {
     class RichSymbol(sym: Symbol) {
@@ -316,7 +316,8 @@ abstract class Power[G <: Global](
     implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
     implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
 
-    implicit def replCollPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrintingConvenience[T] = new MultiPrintingConvenience[T](xs)
+    implicit def replMultiPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrettifierClass[T] =
+      new MultiPrettifierClass[T](xs.toSeq)
     implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
     implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
@@ -346,7 +347,6 @@ abstract class Power[G <: Global](
         case (next, rest) => next.map(_.toChar).mkString :: strings(rest)
       }
     }
-    def stringOf(x: Any): String = scala.runtime.ScalaRunTime.stringOf(x)
   }
 
   lazy val rutil: ReplUtilities = new ReplUtilities { }

@@ -75,9 +75,9 @@ trait Naming {
   private lazy val userVar     = new NameCreator(sessionNames.res)  // var name, like res0
   private lazy val internalVar = new NameCreator(sessionNames.ires) // internal var name, like $ires0
 
-  def isLineName(name: String)                 = (name startsWith sessionNames.line) && (name stripPrefix sessionNames.line forall (_.isDigit))
-  def isUserVarName(name: String)              = userVar didGenerate name
-  def isInternalVarName(name: String): Boolean = internalVar didGenerate name
+  def isLineName(name: String)        = (name startsWith sessionNames.line) && (name stripPrefix sessionNames.line forall (_.isDigit))
+  def isUserVarName(name: String)     = userVar didGenerate name
+  def isInternalVarName(name: String) = internalVar didGenerate name
 
   val freshLineId            = {
     var x = 0

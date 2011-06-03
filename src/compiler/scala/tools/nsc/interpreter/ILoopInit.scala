@@ -24,12 +24,11 @@ trait ILoopInit {
         |Type :help for more information.""" .
     stripMargin.format(versionString, javaVmName, javaVersion)
     echo(welcomeMsg)
-    if (isReplDebug || isReplPower)
-      echo("[info] started at " + new java.util.Date)
+    replinfo("[info] started at " + new java.util.Date)
   }
 
-  private def asyncMessage(msg: String) {
-    if (isReplDebug || isReplPower)
+  protected def asyncMessage(msg: String) {
+    if (isReplInfo || isReplPower)
       echoAndRefresh(msg)
   }
 
@@ -95,10 +94,10 @@ trait ILoopInit {
   // called once after init condition is signalled
   protected def postInitialization() {
     addThunk(intp.setContextClassLoader())
+    if (isReplPower)
+      addThunk(enablePowerMode(true))
     // do this last to avoid annoying uninterruptible startups
     addThunk(installSigIntHandler())
-    if (isReplPower)
-      addThunk(enablePowerMode())
 
     runThunks()
     initIsComplete = true

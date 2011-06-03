@@ -68,12 +68,11 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
     }
   }
 
-  def currentLine: String = consoleReader.getCursorBuffer.buffer.toString
+  def currentLine = consoleReader.getCursorBuffer.buffer.toString
   def redrawLine() = consoleReader.redrawLineAndFlush()
-  def eraseLine() = {
-    // while (consoleReader.delete()) { }
-    consoleReader.eraseLine()
-  }
+  def eraseLine() = consoleReader.eraseLine()
+  // Alternate implementation, not sure if/when I need this.
+  // def eraseLine() = while (consoleReader.delete()) { }
   def readOneLine(prompt: String) = consoleReader readLine prompt
   def readOneKey(prompt: String)  = consoleReader readOneKey prompt
 }
