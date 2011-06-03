@@ -388,7 +388,6 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val EXCEPTION_RESULT_PREFIX     = "exceptionResult"
     val INTERPRETER_IMPORT_WRAPPER  = "$iw"
     val INTERPRETER_LINE_PREFIX     = "line"
-    val INTERPRETER_SYNTHVAR_PREFIX = "synthvar$"
     val INTERPRETER_VAR_PREFIX      = "res"
     val INTERPRETER_WRAPPER_SUFFIX  = "$object"
     val WHILE_PREFIX                = "while$"

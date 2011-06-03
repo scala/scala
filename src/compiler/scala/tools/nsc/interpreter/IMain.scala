@@ -7,10 +7,12 @@ package scala.tools.nsc
 package interpreter
 
 import Predef.{ println => _, _ }
-import java.io.{ PrintWriter }
-import java.lang.reflect
-import java.net.URL
-import util._
+import util.{ Set => _, _ }
+import scala.collection.{ mutable, immutable }
+import scala.sys.BooleanProp
+import Exceptional.unwrap
+import ScalaClassLoader.URLClassLoader
+import symtab.Flags
 import io.VirtualDirectory
 import reporters._
 import symtab.Flags
@@ -44,7 +46,7 @@ import IMain._
  *  all variables defined by that code.  To extract the result of an
  *  interpreted line to show the user, a second "result object" is created
  *  which imports the variables exported by the above object and then
- *  exports a single member named "$export".  To accomodate user expressions
+ *  exports members called "$eval" and "$print". To accomodate user expressions
  *  that read from variables or methods defined in previous statements, "import"
  *  statements are used.
  *
@@ -57,25 +59,29 @@ import IMain._
  *  @author Moez A. Abdel-Gawad
  *  @author Lex Spoon
  */
-class IMain(val settings: Settings, protected val out: PrintWriter) extends Imports {
+class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imports {
   imain =>
 
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
   def this() = this(new Settings())
 
-  /** whether to print out result lines */
-  private[nsc] var printResults: Boolean = true
-
-  /** whether to print errors */
-  private[nsc] var totalSilence: Boolean = false
-
-  private val RESULT_OBJECT_PREFIX = "RequestResult$"
-
+  lazy val repllog: Logger = new Logger {
+    val out: JPrintWriter = imain.out
+    val isInfo: Boolean  = BooleanProp keyExists "scala.repl.info"
+    val isDebug: Boolean = BooleanProp keyExists "scala.repl.debug"
+    val isTrace: Boolean = BooleanProp keyExists "scala.repl.trace"
+  }
   lazy val formatting: Formatting = new Formatting {
     val prompt = Properties.shellPromptString
   }
+  lazy val reporter: ReplReporter = new ReplReporter(this)
+
   import formatting._
+  import reporter.{ printMessage, withoutTruncating }
+
+  private[nsc] var printResults: Boolean = true   // whether to print result lines
+  private[nsc] var totalSilence: Boolean = false  // whether to print anything
 
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None) {
@@ -89,14 +95,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     def show() = pp(this, 0)
   }
 
-  /** reporter */
-  lazy val reporter: ReplReporter = new ReplReporter(this)
-  import reporter.{ printMessage, withoutTruncating }
-
-  // not sure if we have some motivation to print directly to console
+  // This exists mostly because using the reporter too early leads to deadlock.
   private def echo(msg: String) { Console println msg }
-
-  // protected def defaultImports: List[String] = List("_root_.scala.sys.exit")
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -107,8 +107,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
    */
   private val _compiler: Global = newCompiler(settings, reporter)
   private var _initializeComplete = false
-  def isInitializeComplete = _initializeComplete
-
   private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
   private def _initialize() = {
     try {
@@ -130,6 +128,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
         result
       }
   }
+  def isInitializeComplete = _initializeComplete
 
   /** the public, go through the future compiler */
   lazy val global: Global = {
@@ -146,6 +145,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   lazy val compiler: global.type = global
 
   import global._
+  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule, RootClass }
 
   private implicit def privateTreeOps(t: Tree): List[Tree] = {
     (new Traversable[Tree] {
@@ -153,6 +153,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     }).toList
   }
 
+  // TODO: If we try to make naming a lazy val, we run into big time
+  // scalac unhappiness with what look like cycles.  It has not been easy to
+  // reduce, but name resolution clearly takes different paths.
   object naming extends {
     val global: imain.global.type = imain.global
   } with Naming {
@@ -162,6 +165,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       if (definedNameMap contains name) freshUserVarName()
       else name
     }
+    def isInternalVarName(name: Name): Boolean = isInternalVarName("" + name)
   }
   import naming._
 
@@ -179,14 +183,11 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   def afterTyper[T](op: => T): T = atPhase(currentRun.typerPhase.next)(op)
 
   /** Temporarily be quiet */
-  def beQuietDuring[T](operation: => T): T = {
-    val wasPrinting = printResults
-    ultimately(printResults = wasPrinting) {
-      if (isReplDebug) echo(">> beQuietDuring")
-      else printResults = false
-
-      operation
-    }
+  def beQuietDuring[T](body: => T): T = {
+    val saved = printResults
+    printResults = false
+    try body
+    finally printResults = saved
   }
   def beSilentDuring[T](operation: => T): T = {
     val saved = totalSilence
@@ -197,8 +198,21 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
 
   def quietRun[T](code: String) = beQuietDuring(interpret(code))
 
+  private def logAndDiscard[T](label: String, alt: => T): PartialFunction[Throwable, T] = {
+    case t => repldbg(label + ": " + t) ; alt
+  }
+
   /** whether to bind the lastException variable */
-  private var bindLastException = true
+  private var bindExceptions = true
+  /** takes AnyRef because it may be binding a Throwable or an Exceptional */
+  private def withLastExceptionLock[T](body: => T): T = {
+    assert(bindExceptions, "withLastExceptionLock called incorrectly.")
+    bindExceptions = false
+
+    try     beQuietDuring(body)
+    catch   logAndDiscard("bindLastException", null.asInstanceOf[T])
+    finally bindExceptions = true
+  }
 
   /** A string representing code to be wrapped around all lines. */
   private var _executionWrapper: String = ""
@@ -206,28 +220,25 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   def setExecutionWrapper(code: String) = _executionWrapper = code
   def clearExecutionWrapper() = _executionWrapper = ""
 
-  /** Temporarily stop binding lastException */
-  def withoutBindingLastException[T](operation: => T): T = {
-    val wasBinding = bindLastException
-    ultimately(bindLastException = wasBinding) {
-      bindLastException = false
-      operation
-    }
-  }
-
-  protected def createLineManager(): Line.Manager = new Line.Manager
   lazy val lineManager = createLineManager()
 
   /** interpreter settings */
   lazy val isettings = new ISettings(this)
 
-  /** Instantiate a compiler.  Subclasses can override this to
-   *  change the compiler class used by this interpreter. */
+  /** Create a line manager.  Overridable.  */
+  protected def createLineManager(): Line.Manager = new Line.Manager
+
+  /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
+
     new Global(settings, reporter)
   }
+
+  /** Parent classloader.  Overridable. */
+  protected def parentClassLoader: ClassLoader =
+    settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
 
   /** the compiler's classpath, as URL's */
   lazy val compilerClasspath = global.classPath.asURLs
@@ -272,11 +283,6 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       }
     }
   }
-  private def loadByName(s: String): JClass =
-    (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
-
-  protected def parentClassLoader: ClassLoader =
-    settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
 
   def getInterpreterClassLoader() = classLoader
 
@@ -347,7 +353,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       newSym <- req.definedSymbols get name
       oldSym <- oldReq.definedSymbols get name.companionName
     } {
-      replwarn("warning: previously defined %s is not a companion to %s.".format(oldSym, newSym))
+      replwarn("warning: previously defined %s is not a companion to %s.".format(
+        stripString("" + oldSym), stripString("" + newSym)))
       replwarn("Companions must be defined together; you may wish to use :paste mode for this.")
     }
 
@@ -523,6 +530,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       if (succeeded) {
         if (printResults)
           show()
+        else if (isReplDebug) // show quiet-mode activity
+          printMessage(result.trim.lines map ("[quiet] " + _) mkString "\n")
+
         // Book-keeping.  Have to record synthetic requests too,
         // as they may have been issued for information, e.g. :type
         recordRequest(req)
@@ -585,7 +595,8 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
   def bind(p: NamedParam): IR.Result                       = bind(p.name, p.tpe, p.value)
   def bind[T: Manifest](name: String, value: T): IR.Result = bind((name, value))
-  def bindValue(x: Any): IR.Result                         = bind(freshUserVarName(), TypeStrings.fromValue(x), x)
+  def bindValue(x: Any): IR.Result                         = bindValue(freshUserVarName(), x)
+  def bindValue(name: String, x: Any): IR.Result           = bind(name, TypeStrings.fromValue(x), x)
 
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
@@ -613,11 +624,40 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
   class ReadEvalPrint(lineId: Int) {
     def this() = this(freshLineId())
 
-    val packageName = "$line" + lineId
-    val readName    = "$read"
-    val evalName    = "$eval"
-    val printName   = "$print"
-    val valueMethod = "$result"   // no-args method giving result
+    val packageName = sessionNames.line + lineId
+    val readName    = sessionNames.read
+    val evalName    = sessionNames.eval
+    val printName   = sessionNames.print
+
+    class LineExceptional(ex: Throwable) extends Exceptional(ex) {
+      private def showReplInternal = isettings.showInternalStackTraces
+
+      override def spanFn(frame: JavaStackFrame) =
+        if (showReplInternal) super.spanFn(frame)
+        else !(frame.className startsWith evalPath)
+
+      override def contextPrelude = super.contextPrelude + (
+        if (showReplInternal) ""
+        else "/* The repl internal portion of the stack trace is elided. */\n"
+      )
+    }
+    def bindError(t: Throwable) = {
+      if (!bindExceptions) // avoid looping if already binding
+        throw t
+
+      val unwrapped = unwrap(t)
+      withLastExceptionLock {
+        if (opt.richExes) {
+          val ex = new LineExceptional(unwrapped)
+          bind[Exceptional]("lastException", ex)
+          ex.contextHead + "\n(access lastException for the full trace)"
+        }
+        else {
+          bind[Throwable]("lastException", unwrapped)
+          util.stackTraceString(unwrapped)
+        }
+      }
+    }
 
     // TODO: split it out into a package object and a regular
     // object and we can do that much less wrapping.
@@ -635,13 +675,13 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
 
     def callOpt(name: String, args: Any*): Option[AnyRef] =
       try Some(call(name, args: _*))
-      catch { case ex: Exception =>
-        quietBind("lastException", ex)
-        None
-      }
+      catch { case ex: Exception => bindError(ex) ; None }
 
-    lazy val evalClass = loadByName(evalPath)
-    lazy val evalValue = callOpt(valueMethod)
+    private def load(s: String): Class[_] =
+      (classLoader tryToInitializeClass s) getOrElse sys.error("Failed to load expected class: '" + s + "'")
+
+    lazy val evalClass = load(evalPath)
+    lazy val evalValue = callOpt(evalName)
 
     def compile(source: String): Boolean = compileAndSaveRun("<console>", source)
     def lineAfterTyper[T](op: => T): T = {
@@ -660,10 +700,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       }
     }
     private var lastRun: Run = _
-    private def evalMethod(name: String) = {
-      val methods = evalClass.getMethods filter (_.getName == name)
-      assert(methods.size == 1, "Internal error - eval object method " + name + " is overloaded: " + methods)
-      methods.head
+    private def evalMethod(name: String) = evalClass.getMethods filter (_.getName == name) match {
+      case Array(method) => method
+      case xs            => sys.error("Internal error: eval object " + evalClass + ", " + xs.mkString("\n", "\n", ""))
     }
     private def compileAndSaveRun(label: String, code: String) = {
       showCodeIfDebugging(code)
@@ -696,6 +735,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     /** def and val names */
     def termNames = handlers flatMap (_.definesTerm)
     def typeNames = handlers flatMap (_.definesType)
+    def definedOrImported = handlers flatMap (_.definedOrImported)
 
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
@@ -714,6 +754,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     def fullFlatName(name: String) =
       lineRep.readPath + accessPath.replace('.', '$') + "$" + name
 
+    /** The unmangled symbol name, but supplemented with line info. */
+    def disambiguated(name: Name): String = name + " (in " + lineRep + ")"
+
     /** Code to access a variable with the specified name */
     def fullPath(vname: Name): String = fullPath(vname.toString)
 
@@ -724,7 +767,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     private object ObjectSourceCode extends CodeAssembler[MemberHandler] {
       val preamble = """
         |object %s {
-        |  %s%s
+        |%s%s
       """.stripMargin.format(lineRep.readName, importsPreamble, indentCode(toCompute))
       val postamble = importsTrailer + "\n}"
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
@@ -740,9 +783,9 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
           case Some(vname) if typeOf contains vname =>
             """
             |lazy val $result = {
-            |  $export
             |  %s
-            |}""".stripMargin.format(fullPath(vname))
+            |  %s
+            |}""".stripMargin.format(lineRep.printName, fullPath(vname))
           case _  => ""
         }
       // first line evaluates object to make sure constructor is run
@@ -750,11 +793,12 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       val preamble = """
       |object %s {
       |  %s
-      |  val $export: String = %s {
+      |  val %s: String = %s {
       |    %s
       |    (""
       """.stripMargin.format(
-        lineRep.evalName, evalResult, executionWrapper, lineRep.readName + accessPath
+        lineRep.evalName, evalResult, lineRep.printName,
+        executionWrapper, lineRep.readName + accessPath
       )
 
       val postamble = """
@@ -819,50 +863,17 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     lazy val typesOfDefinedTerms: Map[Name, Type] =
       termNames map (x => x -> applyToResultMember(x, _.tpe)) toMap
 
-    private def bindExceptionally(t: Throwable) = {
-      val ex: Exceptional =
-        if (isettings.showInternalStackTraces) Exceptional(t)
-        else new Exceptional(t) {
-          override def spanFn(frame: JavaStackFrame) = !(frame.className startsWith lineRep.evalPath)
-          override def contextPrelude = super.contextPrelude + "/* The repl internal portion of the stack trace is elided. */\n"
-        }
-
-      quietBind("lastException", ex)
-      ex.contextHead + "\n(access lastException for the full trace)"
-    }
-    private def bindUnexceptionally(t: Throwable) = {
-      quietBind("lastException", t)
-      stackTraceString(t)
-    }
-
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
       import interpreter.Line._
 
-      def handleException(t: Throwable) = {
-        /** We turn off the binding to accomodate ticket #2817 */
-        withoutBindingLastException {
-          val message =
-            if (opt.richExes) bindExceptionally(unwrap(t))
-            else bindUnexceptionally(unwrap(t))
-
-          (message, false)
-        }
-      }
-
       try {
-        val execution = lineManager.set(originalLine)(lineRep call "$export")
+        val execution = lineManager.set(originalLine)(lineRep call sessionNames.print)
         execution.await()
 
         execution.state match {
           case Done       => ("" + execution.get(), true)
-          case Threw      =>
-            val ex = execution.caught()
-            if (isReplDebug)
-              ex.printStackTrace()
-
-            if (bindLastException) handleException(ex)
-            else throw ex
+          case Threw      => (lineRep.bindError(execution.caught()), false)
           case Cancelled  => ("Execution interrupted by signal.\n", false)
           case Running    => ("Execution still running! Seems impossible.", false)
         }
@@ -886,13 +897,16 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
       case _                        => naming.mostRecentVar
     })
 
-  private def requestForName(name: Name): Option[Request] = {
+  def requestForName(name: Name): Option[Request] = {
     assert(definedNameMap != null, "definedNameMap is null")
     definedNameMap get name
   }
 
-  private def requestForIdent(line: String): Option[Request] =
+  def requestForIdent(line: String): Option[Request] =
     requestForName(newTermName(line)) orElse requestForName(newTypeName(line))
+
+  def requestHistoryForName(name: Name): List[Request] =
+    prevRequests.toList.reverse filter (_.definedNames contains name)
 
   def safeClass(name: String): Option[Symbol] = {
     try Some(definitions.getClass(newTypeName(name)))
@@ -994,7 +1008,7 @@ class IMain(val settings: Settings, protected val out: PrintWriter) extends Impo
     /** Secret bookcase entrance for repl debuggers: end the line
      *  with "// show" and see what's going on.
      */
-    if (code.lines exists (_.trim endsWith "// show")) {
+    if (repllog.isTrace || (code.lines exists (_.trim endsWith "// show"))) {
       echo(code)
       parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(repldbg(asCompactString(t)))))
     }
@@ -1042,8 +1056,8 @@ object IMain {
       else str
     }
   }
-  abstract class StrippingTruncatingWriter(out: PrintWriter)
-          extends PrintWriter(out)
+  abstract class StrippingTruncatingWriter(out: JPrintWriter)
+          extends JPrintWriter(out)
              with StrippingWriter
              with TruncatingWriter {
     self =>
@@ -1057,17 +1071,6 @@ object IMain {
     def isStripping        = isettings.unwrapStrings
     def isTruncating       = reporter.truncationOK
 
-    def stripImpl(str: String): String = {
-      val cleaned = stripString(str)
-      var ctrlChars = 0
-      cleaned map { ch =>
-        if (ch.isControl && !ch.isWhitespace) {
-          ctrlChars += 1
-          if (ctrlChars > 5) return "[line elided for control chars: possibly a scala signature]"
-          else '?'
-        }
-        else ch
-      }
-    }
+    def stripImpl(str: String): String = naming.unmangle(str)
   }
 }

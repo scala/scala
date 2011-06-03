@@ -80,10 +80,7 @@ trait MemberHandlers {
   sealed abstract class MemberHandler(val member: Tree) {
     def definesImplicit = false
     def definesValue    = false
-    def isLegalTopLevel = member match {
-      case _: ModuleDef | _: ClassDef | _: Import => true
-      case _                                      => false
-    }
+    def isLegalTopLevel = false
 
     def definesTerm     = Option.empty[TermName]
     def definesType     = Option.empty[TypeName]
@@ -140,7 +137,7 @@ trait MemberHandlers {
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(req: Request) = {
       val lhsType = string2code(req lookupTypeOf name)
-      val res = string2code(req fullPath name)
+      val res     = string2code(req fullPath name)
 
       """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res) + "\n"
     }
@@ -149,6 +146,7 @@ trait MemberHandlers {
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
     override def definesTerm = Some(name)
     override def definesValue = true
+    override def isLegalTopLevel = true
 
     override def resultExtractionCode(req: Request) = codegenln("defined module ", name)
   }
@@ -156,6 +154,7 @@ trait MemberHandlers {
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {
     override def definesType = Some(name.toTypeName)
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
+    override def isLegalTopLevel = true
 
     override def resultExtractionCode(req: Request) =
       codegenln("defined %s %s".format(keyword, name))
@@ -172,6 +171,15 @@ trait MemberHandlers {
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
     def targetType = intp.typeOfExpression("" + expr)
+    override def isLegalTopLevel = true
+
+    def createImportForName(name: Name): String = {
+      selectors foreach {
+        case sel @ ImportSelector(old, _, `name`, _)  => return "import %s.{ %s }".format(expr, sel)
+        case _ => ()
+      }
+      "import %s.%s".format(expr, name)
+    }
     // TODO: Need to track these specially to honor Predef masking attempts,
     // because they must be the leading imports in the code generated for each
     // line.  We can use the same machinery as Contexts now, anyway.
@@ -184,6 +192,9 @@ trait MemberHandlers {
 
     /** Whether this import includes a wildcard import */
     val importsWildcard = selectorWild.nonEmpty
+
+    /** Whether anything imported is implicit .*/
+    def importsImplicit = implicitSymbols.nonEmpty
 
     def implicitSymbols = importedSymbols filter (_.isImplicit)
     def importedSymbols = individualSymbols ++ wildcardSymbols

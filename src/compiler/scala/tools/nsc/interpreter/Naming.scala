@@ -6,13 +6,56 @@
 package scala.tools.nsc
 package interpreter
 
+/** This is for name logic which is independent of the compiler (notice there's no Global.)
+ *  That includes at least generating, metaquoting, mangling, and unmangling.
+ */
 trait Naming {
-  val global: Global
-
-  import global.{ Name, nme }
-  import nme.{
-    INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX
+  def unmangle(str: String): String = {
+    val cleaned = removeIWPackages(removeLineWrapper(str))
+    var ctrlChars = 0
+    cleaned map { ch =>
+      if (ch.isControl && !ch.isWhitespace) {
+        ctrlChars += 1
+        if (ctrlChars > 5) return "[line elided for control chars: possibly a scala signature]"
+        else '?'
+      }
+      else ch
+    }
   }
+
+  // The two name forms this is catching are the two sides of this assignment:
+  //
+  // $line3.$read.$iw.$iw.Bippy =
+  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
+
+  private def noMeta(s: String) = "\\Q" + s + "\\E"
+  private lazy val lineRegex = {
+    val sn = sessionNames
+    val members = List(sn.read, sn.eval, sn.print) map noMeta mkString ("(?:", "|", ")")
+    debugging("lineRegex")(noMeta(sn.line) + """\d+[./]""" + members + """[$.]""")
+  }
+
+  private def removeLineWrapper(s: String) = s.replaceAll(lineRegex, "")
+  private def removeIWPackages(s: String)  = s.replaceAll("""\$iw[$.]""", "")
+
+  trait SessionNames {
+    // All values are configurable by passing e.g. -Dscala.repl.naming.read=XXX
+    final def propOr(name: String): String = propOr(name, "$" + name)
+    final def propOr(name: String, default: String): String =
+      sys.props.getOrElse("scala.repl.naming." + name, default)
+
+    // Prefixes used in repl machinery.  Default to $line, $read, etc.
+    def line  = propOr("line")
+    def read  = propOr("read")
+    def eval  = propOr("eval")
+    def print = propOr("print")
+
+    // The prefix for unnamed results: by default res0, res1, etc.
+    def res   = propOr("res", "res")  // INTERPRETER_VAR_PREFIX
+    // Internal ones
+    def ires  = propOr("ires")
+  }
+  lazy val sessionNames: SessionNames = new SessionNames { }
 
   /** Generates names pre0, pre1, etc. via calls to apply method */
   class NameCreator(pre: String) {
@@ -29,24 +72,21 @@ trait Naming {
       (name startsWith pre) && ((name drop pre.length) forall (_.isDigit))
   }
 
-  private lazy val line        = new NameCreator(INTERPRETER_LINE_PREFIX)     // line name, like line$0
-  private lazy val userVar     = new NameCreator(INTERPRETER_VAR_PREFIX)      // var name, like res0
-  private lazy val internalVar = new NameCreator(INTERPRETER_SYNTHVAR_PREFIX) // internal var name, like $synthvar0
+  private lazy val userVar     = new NameCreator(sessionNames.res)  // var name, like res0
+  private lazy val internalVar = new NameCreator(sessionNames.ires) // internal var name, like $ires0
 
+  def isLineName(name: String)                 = (name startsWith sessionNames.line) && (name stripPrefix sessionNames.line forall (_.isDigit))
   def isUserVarName(name: String)              = userVar didGenerate name
   def isInternalVarName(name: String): Boolean = internalVar didGenerate name
-  def isInternalVarName(name: Name): Boolean   = internalVar didGenerate name.toString
 
   val freshLineId            = {
     var x = 0
     () => { x += 1 ; x }
   }
-  def freshLineName()        = line()
   def freshUserVarName()     = userVar()
   def freshInternalVarName() = internalVar()
 
   def resetAllCreators() {
-    line.reset()
     userVar.reset()
     internalVar.reset()
   }

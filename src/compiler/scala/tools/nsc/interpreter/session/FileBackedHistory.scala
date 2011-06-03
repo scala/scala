@@ -69,6 +69,7 @@ trait FileBackedHistory extends JLineHistory with JPersistentHistory {
     }
     moveToEnd()
   }
+
   def flush(): Unit = ()
   def purge(): Unit = historyFile.truncate()
 }

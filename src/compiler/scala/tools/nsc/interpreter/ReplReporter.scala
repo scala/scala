@@ -17,6 +17,6 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, null, new
       if (intp.totalSilence) ()
       else super.printMessage(msg)
     }
-    else Console.println(msg)
+    else Console.println("[init] " + msg)
   }
 }
