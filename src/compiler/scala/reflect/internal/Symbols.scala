@@ -695,10 +695,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
 
     /** The class or term up to which this symbol is accessible,
-     *  or RootClass if it is public.
+     *  or RootClass if it is public.  As java protected statics are
+     *  otherwise completely inaccessible in scala, they are treated
+     *  as public.
      */
     def accessBoundary(base: Symbol): Symbol = {
       if (hasFlag(PRIVATE) || isLocal) owner
+      else if (hasAllFlags(PROTECTED | STATIC | JAVA)) RootClass
       else if (hasAccessBoundary && !phase.erasedTypes) privateWithin
       else if (hasFlag(PROTECTED)) base
       else RootClass

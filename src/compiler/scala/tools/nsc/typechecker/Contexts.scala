@@ -453,6 +453,7 @@ trait Contexts { self: Analyzer =>
 
       (pre == NoPrefix) || {
         val ab = sym.accessBoundary(sym.owner)
+
         (  (ab.isTerm || ab == definitions.RootClass)
         || (accessWithin(ab) || accessWithinLinked(ab)) &&
              (  !sym.hasLocalFlag

@@ -1,0 +1,16 @@
+S.scala:5: error: method f in object J cannot be accessed in object bippy.J
+    J.f()
+      ^
+S.scala:6: error: method f1 in object S1 cannot be accessed in object bippy.S1
+ Access to protected method f1 not permitted because
+ enclosing class object Test in package bippy is not a subclass of 
+ object S1 in package bippy where target is defined
+    S1.f1()
+       ^
+S.scala:8: error: method f2 in class S2 cannot be accessed in bippy.S2
+ Access to protected method f2 not permitted because
+ enclosing class object Test in package bippy is not a subclass of 
+ class S2 in package bippy where target is defined
+    x.f2()
+      ^
+three errors found
