@@ -124,8 +124,10 @@ trait Contexts { self: Analyzer =>
     var savedTypeBounds: List[(Symbol, Type)] = List() // saved type bounds
        // for type parameters which are narrowed in a GADT
 
-    var typingIndent: String = ""
+    var typingIndentLevel: Int = 0
+    def typingIndent = "  " * typingIndentLevel
 
+    def undetparamsString = if (undetparams.isEmpty) "" else undetparams.mkString("undetparams=", ", ", "")
     def undetparams = _undetparams
     def undetparams_=(ps: List[Symbol]) = {
       //System.out.println("undetparams = " + ps);//debug
@@ -136,6 +138,13 @@ trait Contexts { self: Analyzer =>
       val tparams = undetparams
       undetparams = List()
       tparams
+    }
+
+    def withoutReportingErrors[T](op: => T): T = {
+      val saved = reportGeneralErrors
+      reportGeneralErrors = false
+      try op
+      finally reportGeneralErrors = saved
     }
 
     def withImplicitsDisabled[T](op: => T): T = {
@@ -188,7 +197,7 @@ trait Contexts { self: Analyzer =>
       c.reportAmbiguousErrors = this.reportAmbiguousErrors
       c.reportGeneralErrors = this.reportGeneralErrors
       c.diagnostic = this.diagnostic
-      c.typingIndent = typingIndent
+      c.typingIndentLevel = typingIndentLevel
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
       c.retyping = this.retyping
@@ -207,8 +216,6 @@ trait Contexts { self: Analyzer =>
 
     def makeNewImport(imp: Import): Context =
       make(unit, imp, owner, scope, new ImportInfo(imp, depth) :: imports)
-
-
 
     def make(tree: Tree, owner: Symbol, scope: Scope): Context = {
       if (tree == this.tree && owner == this.owner && scope == this.scope) this
@@ -328,28 +335,39 @@ trait Contexts { self: Analyzer =>
       } else throw new TypeError(pos, msg)
     }
 
-    def outerContext(clazz: Symbol): Context = {
-      var c = this
-      while (c != NoContext && c.owner != clazz) c = c.outer.enclClass
-      c
+    def isLocal(): Boolean = tree match {
+      case Block(_,_)       => true
+      case PackageDef(_, _) => false
+      case EmptyTree        => false
+      case _                => outer.isLocal()
     }
 
-    def isLocal(): Boolean = tree match {
-      case Block(_,_) => true
-      case PackageDef(_, _) => false
-      case EmptyTree => false
-      case _ => outer.isLocal()
+    // nextOuter determines which context is searched next for implicits
+    // (after `this`, which contributes `newImplicits` below.) In
+    // most cases, it is simply the outer context: if we're owned by
+    // a constructor, the actual current context and the conceptual
+    // context are different when it comes to scoping. The current
+    // conceptual scope is the context enclosing the blocks which
+    // represent the constructor body (TODO: why is there more than one
+    // such block in the outer chain?)
+    private def nextOuter = {
+      // Drop the constructor body blocks, which come in varying numbers.
+      // -- If the first statement is in the constructor, scopingCtx == (constructor definition)
+      // -- Otherwise, scopingCtx == (the class which contains the constructor)
+      val scopingCtx =
+        if (owner.isConstructor) nextEnclosing(c => !c.tree.isInstanceOf[Block])
+        else this
+
+      scopingCtx.outer
     }
 
     def nextEnclosing(p: Context => Boolean): Context =
       if (this == NoContext || p(this)) this else outer.nextEnclosing(p)
 
-    override def toString(): String = {
+    override def toString = (
       if (this == NoContext) "NoContext"
-      else owner.toString() + " @ " + tree.getClass() +
-           " " + tree.toString() + ", scope = " + scope.## +
-           " " + scope.toList + "\n:: " + outer.toString()
-    }
+      else "Context(%s@%s scope=%s)".format(owner.fullName, tree.getClass.getName split "[.$]" last, scope.##)
+    )
 
     /** Is `sub' a subclass of `base' or a companion object of such a subclass?
      */
@@ -502,7 +520,7 @@ trait Contexts { self: Analyzer =>
     def resetCache() {
       implicitsRunId = NoRunId
       implicitsCache = null
-      if (outer != null && outer != this) outer.resetCache
+      if (outer != null && outer != this) outer.resetCache()
     }
 
     /** A symbol `sym` qualifies as an implicit if it has the IMPLICIT flag set,
@@ -518,8 +536,8 @@ trait Contexts { self: Analyzer =>
       })
 
     private def collectImplicits(syms: List[Symbol], pre: Type, imported: Boolean = false): List[ImplicitInfo] =
-      for (sym <- syms if isQualifyingImplicit(sym, pre, imported))
-      yield new ImplicitInfo(sym.name, pre, sym)
+      for (sym <- syms if isQualifyingImplicit(sym, pre, imported)) yield
+        new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val pre = imp.qual.tpe
@@ -542,16 +560,6 @@ trait Contexts { self: Analyzer =>
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
-      // nextOuter determines which context is searched next for implicits (after `this`, which contributes `newImplicits` below)
-      // in most cases, it is simply the outer context
-      // if we're owned by a constructor, the actual current context and the conceptual context are different when it comes to scoping:
-      // the current conceptual scope is the context enclosing the blocks that represent the constructor body
-      // (TODO: why is there more than one such block in the outer chain?)
-      val scopingCtx =
-        if(owner.isConstructor) nextEnclosing(c => !c.tree.isInstanceOf[Block]) // drop the constructor body blocks (they come in varying numbers depending on whether we are in the ctor call in the first statement or after)
-        // scopingCtx == the constructor definition (if we were after the ctor call) or the class that contains this constructor (if we are in the ctor call)
-        else this
-      val nextOuter = scopingCtx.outer
 
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId

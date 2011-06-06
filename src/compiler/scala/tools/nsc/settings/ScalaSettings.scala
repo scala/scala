@@ -141,6 +141,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ybuildmanagerdebug =
                       BooleanSetting    ("-Ybuild-manager-debug", "Generate debug information for the Refined Build Manager compiler.")
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignments.")
+  val Yinferdebug   = BooleanSetting    ("-Yinfer-debug", "Trace type inference and implicit search.")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
                                           withPostSetHook(_ => interpreter.replProps.debug setValue true)

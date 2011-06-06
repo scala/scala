@@ -3,15 +3,15 @@ divergent-implicit.scala:4: error: type mismatch;
  required: String
   val x1: String = 1
                    ^
-divergent-implicit.scala:5: error: diverging implicit expansion for type (Int) => String
+divergent-implicit.scala:5: error: diverging implicit expansion for type Int => String
 starting with method cast in object Test1
   val x2: String = cast[Int, String](1)
                                     ^
-divergent-implicit.scala:14: error: diverging implicit expansion for type (Test2.Baz) => Test2.Bar
+divergent-implicit.scala:14: error: diverging implicit expansion for type Test2.Baz => Test2.Bar
 starting with method baz2bar in object Test2
   val x: Bar = new Foo
                ^
-divergent-implicit.scala:15: error: diverging implicit expansion for type (Test2.Foo) => Test2.Bar
+divergent-implicit.scala:15: error: diverging implicit expansion for type Test2.Foo => Test2.Bar
 starting with method foo2bar in object Test2
   val y: Bar = new Baz
                ^

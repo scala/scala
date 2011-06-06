@@ -1,6 +1,6 @@
 t0003.scala:2: error: type mismatch;
- found   : (A) => (B) => B
- required: (A) => B
+ found   : A => B => B
+ required: A => B
   def foo[A, B, C](l: List[A], f: A => B=>B, g: B=>B=>C): List[C] = l map (g compose f)
                                                                                      ^
 one error found

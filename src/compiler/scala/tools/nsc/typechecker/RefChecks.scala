@@ -1147,11 +1147,12 @@ abstract class RefChecks extends InfoTransform {
      */
     private def checkDeprecated(sym: Symbol, pos: Position) {
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
-        val dmsg = sym.deprecationMessage map (": " + _) getOrElse ""
-
-        unit.deprecationWarning(pos, sym.fullLocationString + " is deprecated" + dmsg)
+        unit.deprecationWarning(pos, "%s%s is deprecated%s".format(
+          sym, sym.locationString, sym.deprecationMessage map (": " + _) getOrElse "")
+        )
       }
     }
+
     /** Similar to deprecation: check if the symbol is marked with @migration
      *  indicating it has changed semantics between versions.
      */
@@ -1230,7 +1231,7 @@ abstract class RefChecks extends InfoTransform {
     private def transformCaseApply(tree: Tree, ifNot: => Unit) = {
       val sym = tree.symbol
 
-      if (sym.isSourceMethod && sym.hasFlag(CASE) && sym.name == nme.apply)
+      if (sym.isSourceMethod && sym.isCase && sym.name == nme.apply)
         toConstructor(tree.pos, tree.tpe)
       else {
         ifNot

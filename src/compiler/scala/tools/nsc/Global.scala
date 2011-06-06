@@ -247,7 +247,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     // debugging
     def checkPhase = wasActive(settings.check)
     def logPhase   = isActive(settings.log)
-    def typerDebug = settings.Ytyperdebug.value
     def writeICode = settings.writeICode.value
 
     // showing/printing things
@@ -270,9 +269,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def profileClass = settings.YprofileClass.value
     def profileMem   = settings.YprofileMem.value
 
-    // XXX: short term, but I can't bear to add another option.
-    // scalac -Dscala.timings will make this true.
+    // shortish-term property based options
     def timings       = sys.props contains "scala.timings"
+    def inferDebug    = (sys.props contains "scalac.debug.infer") || settings.Yinferdebug.value
+    def typerDebug    = (sys.props contains "scalac.debug.typer") || settings.Ytyperdebug.value
   }
 
   // True if -Xscript has been set, indicating a script run.
@@ -350,6 +350,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   /** Switch to turn on detailed type logs */
   var printTypings = opt.typerDebug
+  var printInfers = opt.inferDebug
 
   // phaseName = "parser"
   object syntaxAnalyzer extends {
