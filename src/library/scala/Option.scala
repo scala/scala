@@ -105,7 +105,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *
    *  @param default  the default expression.
    */
-  def getOrElse[B >: A](default: => B): B =
+  @inline final def getOrElse[B >: A](default: => B): B =
     if (isEmpty) default else this.get
 
   /** Returns the option's value if it is nonempty,
@@ -117,7 +117,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * val textField = new JComponent(initalText.orNull,20)
    * }}}
    */
-  def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse null
+  @inline final def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse null
 
   /** Returns a $some containing the result of applying $f to this $option's
    * value if this $option is nonempty.
