@@ -1022,9 +1022,18 @@ abstract class Erasure extends AddInterfaces
                       Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
                     }
                   case RefinedType(parents, decls) if (parents.length >= 2) =>
-                    gen.evalOnce(qual, currentOwner, unit) { q =>
+                    // Optimization: don't generate isInstanceOf tests if the static type
+                    // conforms, because it always succeeds.  (Or at least it had better.)
+                    // At this writing the pattern matcher generates some instance tests
+                    // involving intersections where at least one parent is statically known true.
+                    // That needs fixing, but filtering the parents here adds an additional
+                    // level of robustness (in addition to the short term fix.)
+                    val parentTests = parents filterNot (qual.tpe <:< _)
+
+                    if (parentTests.isEmpty) Literal(Constant(true))
+                    else gen.evalOnce(qual, currentOwner, unit) { q =>
                       atPos(tree.pos) {
-                        parents map mkIsInstanceOf(q) reduceRight gen.mkAnd
+                        parentTests map mkIsInstanceOf(q) reduceRight gen.mkAnd
                       }
                     }
                   case _ =>
