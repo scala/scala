@@ -556,6 +556,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       var (uptoSuperStats, remainingConstrStats) = splitAtSuper(constrStatBuf.toList)
 
+      /** XXX This is not corect: remainingConstrStats.nonEmpty excludes too much,
+       *  but excluding it includes too much.  The constructor sequence being mimicked
+       *  needs to be reproduced with total fidelity.
+       *
+       *  See test case files/run/bug4680.scala, the output of which is wrong in many
+       *  particulars.
+       */
       val needsDelayedInit =
         (clazz isSubClass DelayedInitClass) /*&& !(defBuf exists isInitDef)*/ && remainingConstrStats.nonEmpty
 

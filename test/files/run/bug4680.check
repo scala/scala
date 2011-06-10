@@ -1,0 +1,60 @@
+
+
+// new C { }
+-A -B -C 
+
+// new C { 5 }
+-A -B -C 
+A+ B+ C+ 
+
+// new D()
+-A -B -C -D 
+A+ B+ C+ D+ 
+
+// new D() { }
+-A -B -C -D 
+A+ B+ C+ D+ 
+
+// new D() { val x = 5 }
+-A -B -C -D 
+A+ B+ C+ D+ 
+A+ B+ C+ D+ 
+
+// new { val x = 5 } with D()
+-A -B -C -D 
+A+ B+ C+ D+ 
+
+// new E() { val x = 5 }
+-A -B -C -D 
+A+ B+ C+ D+ E+
+-E
+
+A+ B+ C+ D+ E+
+
+A+ B+ C+ D+ E+
+
+
+// new { val x = 5 } with E()
+-A -B -C -D 
+A+ B+ C+ D+ E+
+-E
+
+A+ B+ C+ D+ E+
+
+
+// new { val x = 5 } with E() { }
+-A -B -C -D 
+A+ B+ C+ D+ E+
+-E
+
+A+ B+ C+ D+ E+
+
+
+// new { val x = 5 } with E() { 5 }
+-A -B -C -D 
+A+ B+ C+ D+ E+
+-E
+
+A+ B+ C+ D+ E+
+
+A+ B+ C+ D+ E+
