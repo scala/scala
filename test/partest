@@ -74,7 +74,9 @@ if $cygwin; then
     EXT_CLASSPATH=`cygpath --path --$format "$EXT_CLASSPATH"`
 fi
 
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx1024M -Xms16M"
+# last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the
+# supplied argument will be used.
+JAVA_OPTS="-Xmx1024M -Xms64M $JAVA_OPTS"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
 partestDebugStr=""
@@ -82,4 +84,12 @@ if [ ! -z "${PARTEST_DEBUG}" ] ; then
   partestDebugStr="-Dpartest.debug=${PARTEST_DEBUG}"
 fi
 
-${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" ${partestDebugStr} -Dscala.home="${SCALA_HOME}" -Dpartest.javacmd="${JAVACMD}" -Dpartest.java_opts="${JAVA_OPTS}" -Dpartest.scalac_opts="${SCALAC_OPTS}" -Dpartest.javac_cmd="${JAVA_HOME}/bin/javac" scala.tools.partest.nest.NestRunner  "$@"
+${JAVACMD:=java} \
+  $JAVA_OPTS -cp "$EXT_CLASSPATH" \
+  ${partestDebugStr} \
+  -Dscala.home="${SCALA_HOME}" \
+  -Dpartest.javacmd="${JAVACMD}" \
+  -Dpartest.java_opts="${JAVA_OPTS}" \
+  -Dpartest.scalac_opts="${SCALAC_OPTS}" \
+  -Dpartest.javac_cmd="${JAVA_HOME}/bin/javac" \
+  scala.tools.partest.nest.NestRunner "$@"

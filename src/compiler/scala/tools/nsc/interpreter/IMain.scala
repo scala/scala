@@ -129,8 +129,10 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       }
   }
   def initializeSynchronous(): Unit = {
-    if (!isInitializeComplete)
+    if (!isInitializeComplete) {
       _initialize()
+      assert(global != null, global)
+    }
   }
   def isInitializeComplete = _initializeComplete
 
