@@ -810,7 +810,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     printWelcome()
 
     try loop()
-    catch AbstractOrMissingHandler()
+    // catch AbstractOrMissingHandler()
     finally closeInterpreter()
 
     true
