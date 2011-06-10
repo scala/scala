@@ -128,18 +128,25 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
         result
       }
   }
+  def initializeSynchronous(): Unit = {
+    if (!isInitializeComplete)
+      _initialize()
+  }
   def isInitializeComplete = _initializeComplete
 
   /** the public, go through the future compiler */
   lazy val global: Global = {
-    // If init hasn't been called yet you're on your own.
-    if (_isInitialized == null) {
-      repldbg("Warning: compiler accessed before init set up.  Assuming no postInit code.")
-      initialize(())
+    if (isInitializeComplete) _compiler
+    else {
+      // If init hasn't been called yet you're on your own.
+      if (_isInitialized == null) {
+        repldbg("Warning: compiler accessed before init set up.  Assuming no postInit code.")
+        initialize(())
+      }
+      // blocks until it is ; false means catastrophic failure
+      if (_isInitialized()) _compiler
+      else null
     }
-    // blocks until it is ; false means catastrophic failure
-    if (_isInitialized()) _compiler
-    else null
   }
   @deprecated("Use `global` for access to the compiler instance.", "2.9.0")
   lazy val compiler: global.type = global

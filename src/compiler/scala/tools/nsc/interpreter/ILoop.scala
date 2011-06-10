@@ -43,6 +43,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   var settings: Settings = _
   var intp: IMain = _
 
+  def isAsync = !settings.Yreplsync.value
   lazy val power = {
     val g = intp.global
     Power[g.type](this, g)
@@ -530,8 +531,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
     // return false if repl should exit
     def processLine(line: String): Boolean = {
-      awaitInitialized()
-      runThunks()
+      if (isAsync) {
+        awaitInitialized()
+        runThunks()
+      }
       if (line eq null) false               // assume null means EOF
       else command(line) match {
         case Result(false, _)           => false
@@ -616,10 +619,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (isReplPower) "Already in power mode."
     else enablePowerMode(false)
   }
-  def enablePowerMode(isAsync: Boolean) = {
+  def enablePowerMode(isDuringInit: Boolean) = {
     replProps.power setValue true
     power.unleash()
-    if (isAsync) asyncMessage(power.banner)
+    if (isDuringInit) asyncMessage(power.banner)
     else echo(power.banner)
   }
 
@@ -806,11 +809,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     // our best to look ready.  The interlocking lazy vals tend to
     // inter-deadlock, so we break the cycle with a single asynchronous
     // message to an actor.
-    intp initialize initializedCallback()
+    if (isAsync) {
+      intp initialize initializedCallback()
+      createAsyncListener() // listens for signal to run postInitialization
+    }
+    else {
+      intp.initializeSynchronous()
+      postInitialization()
+    }
     printWelcome()
 
     try loop()
-    // catch AbstractOrMissingHandler()
+    catch AbstractOrMissingHandler()
     finally closeInterpreter()
 
     true

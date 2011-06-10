@@ -18,11 +18,12 @@ abstract class ReplTest extends App {
   def extraSettings: String = ""
   def settings: Settings = {
     val s = new Settings
-    s processArgumentString extraSettings
+    s processArgumentString (extraSettings + " -Yrepl-sync -Xnojline")
     s
   }
   def eval() = ILoop.runForTranscript(code, settings).lines drop 1
   def show() = eval() foreach println
 
-  show()
+  try show()
+  catch { case t => println(t) ; sys.exit(1) }
 }
