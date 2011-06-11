@@ -1105,7 +1105,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /**
      * Re-orders the source files to
      *  1. ScalaObject
-     *  2. LowPriorityImplicits / StandardEmbeddings (i.e. parents of Predef)
+     *  2. LowPriorityImplicits / EmbeddedControls (i.e. parents of Predef)
      *  3. the rest
      *
      * 1 is to avoid cyclic reference errors.
@@ -1135,6 +1135,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
           case "ScalaObject.scala"            => 1
           case "LowPriorityImplicits.scala"   => 2
           case "StandardEmbeddings.scala"     => 2
+          case "EmbeddedControls.scala"       => 2
           case "Predef.scala"                 => 3 /* Predef.scala before Any.scala, etc. */
           case _                              => goLast
         }
