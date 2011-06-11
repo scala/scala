@@ -404,7 +404,9 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
         var is = infos
         (is eq null) || {
           while (is.prev ne null) { is = is.prev }
-          is.info.isComplete && is.info.typeParams.isEmpty
+          is.info.isComplete && !is.info.isHigherKinded // was: is.info.typeParams.isEmpty.
+          // YourKit listed the call to PolyType.typeParams as a hot spot but it is likely an artefact.
+          // The change to isHigherKinded did not reduce the total running time.
         }
       }
 

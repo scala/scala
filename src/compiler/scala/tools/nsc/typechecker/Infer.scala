@@ -11,6 +11,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.control.ControlThrowable
 import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
 import symtab.Flags._
+import scala.annotation.tailrec
 
 /** This trait ...
  *
@@ -308,6 +309,7 @@ trait Infer {
      *  they are: perhaps someone more familiar with the intentional distinctions
      *  can examine the now much smaller concrete implementations below.
      */
+/*
     abstract class CompatibilityChecker {
       def resultTypeCheck(restpe: Type, arg: Type): Boolean
       def argumentCheck(arg: Type, param: Type): Boolean
@@ -367,23 +369,73 @@ trait Infer {
         case _                         => super.apply(tp, pt)
       }
     }
+*/
+    def isPlausiblyCompatible(tp: Type, pt: Type) = checkCompatibility(true, tp, pt)
+    def normSubType(tp: Type, pt: Type) = checkCompatibility(false, tp, pt)
+
+    @tailrec private def checkCompatibility(fast: Boolean, tp: Type, pt: Type): Boolean = tp match {
+      case mt @ MethodType(params, restpe) =>
+        if (mt.isImplicit)
+          checkCompatibility(fast, restpe, pt)
+        else pt match {
+          case tr @ TypeRef(pre, sym, args) =>
+
+            if (sym.isAliasType) checkCompatibility(fast, tp, pt.normalize)
+            else if (sym.isAbstractType) checkCompatibility(fast, tp, pt.bounds.lo)
+            else {
+              val len = args.length - 1
+              hasLength(params, len) &&
+              sym == FunctionClass(len) && {
+                var ps = params
+                var as = args
+                if (fast) {
+                  while (ps.nonEmpty && as.nonEmpty) {
+                    if (!isPlausiblySubType(as.head, ps.head.tpe))
+                      return false
+                    ps = ps.tail
+                    as = as.tail
+                  }
+                } else {
+                  while (ps.nonEmpty && as.nonEmpty) {
+                    if (!(as.head <:< ps.head.tpe))
+                      return false
+                    ps = ps.tail
+                    as = as.tail
+                  }
+                }
+                ps.isEmpty && as.nonEmpty && {
+                  val lastArg = as.head
+                  as.tail.isEmpty && checkCompatibility(fast, restpe, lastArg)
+                }
+              }
+            }
+
+          case _            => if (fast) false else tp <:< pt
+        }
+      case NullaryMethodType(restpe)  => checkCompatibility(fast, restpe, pt)
+      case PolyType(_, restpe)        => checkCompatibility(fast, restpe, pt)
+      case ExistentialType(_, qtpe)   => if (fast) checkCompatibility(fast, qtpe, pt) else normalize(tp) <:< pt // is !fast case needed??
+      case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
+    }
+
 
     /** This expresses more cleanly in the negative: there's a linear path
      *  to a final true or false.
      */
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type) = {
-      (tp1.normalize.widen, tp2.normalize.widen) match {
-        case (TypeRef(_, sym1, _), TypeRef(_, sym2, _)) =>
-           sym1.isClass &&
-           sym2.isClass &&
-          !(sym1 isSubClass sym2) &&
-          !(sym1 isNumericSubClass sym2)
-        case (tp1@TypeRef(_, sym1, _), tp2@RefinedType(_,decls)) =>
-          !decls.toList.forall(s => tp1.member(s.name) != NoSymbol)
-        case _ =>
-          false
-      }
+    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
+      case tr1 @ TypeRef(_, sym1, _) =>
+        tp2.normalize.widen match {
+          case TypeRef(_, sym2, _) =>
+             sym1.isClass &&
+             sym2.isClass &&
+            !(sym1 isSubClass sym2) &&
+            !(sym1 isNumericSubClass sym2)
+          case RefinedType(_, decls) =>
+            decls.nonEmpty && tp1.member(decls.head.name) == NoSymbol
+          case _ => false
+        }
+      case _ => false
     }
 
     def isCompatible(tp: Type, pt: Type): Boolean = {
