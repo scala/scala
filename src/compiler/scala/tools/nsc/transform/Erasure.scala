@@ -230,7 +230,7 @@ abstract class Erasure extends AddInterfaces
     }
   }
   // for debugging signatures: traces logic given system property
-  private val traceProp = sys.BooleanProp keyExists "scalac.sigs.trace"
+  private val traceProp = (sys.BooleanProp keyExists "scalac.sigs.trace").value // performance: get the value here
   private val traceSig  = util.Tracer(traceProp)
 
   /** This object is only used for sanity testing when -check:genjvm is set.

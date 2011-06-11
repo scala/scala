@@ -255,7 +255,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       parents = parents.distinct
 
       if (parents.tail.nonEmpty)
-        ifaces = parents drop 1 map (x => javaName(x.typeSymbol)) toArray;
+        ifaces = mkArray(parents drop 1 map (x => javaName(x.typeSymbol)))
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
                                   name,
@@ -573,7 +573,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
            *  in which case we treat every signature as valid.  Medium term we
            *  should certainly write independent signature validation.
            */
-          if (SigParser.isParserAvailable && !isValidSignature(sym, sig)) {
+          if (settings.Xverify.value && SigParser.isParserAvailable && !isValidSignature(sym, sig)) {
             clasz.cunit.warning(sym.pos,
                 """|compiler bug: created invalid generic signature for %s in %s
                    |signature: %s
@@ -750,8 +750,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,
-                                    m.params map (p => javaType(p.kind)) toArray,
-                                    m.params map (p => javaName(p.sym)) toArray)
+                                    mkArray(m.params map (p => javaType(p.kind))),
+                                    mkArray(m.params map (p => javaName(p.sym))))
 
       addRemoteException(jmethod, m.symbol)
 
@@ -953,8 +953,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         accessFlags,
         javaName(m),
         javaType(methodInfo.resultType),
-        paramJavaTypes.toArray,
-        paramNames.toArray)
+        mkArray(paramJavaTypes),
+        mkArray(paramNames))
       val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode]
       mirrorCode.emitGETSTATIC(moduleName,
                                nme.MODULE_INSTANCE_FIELD.toString,
@@ -1497,8 +1497,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
 //        assert(instr.pos.source.isEmpty || instr.pos.source.get == (clasz.cunit.source), "sources don't match")
 //        val crtLine = instr.pos.line.get(lastLineNr);
+
         val crtLine = try {
-          (instr.pos).line
+          if (instr.pos == NoPosition) lastLineNr else (instr.pos).line // check NoPosition to avoid costly exception
         } catch {
           case _: UnsupportedOperationException =>
             log("Warning: wrong position in: " + method)

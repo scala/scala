@@ -877,11 +877,12 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
         // For now I modified it as below, which achieves the same without error.
         //
         // make each type var in this type use its original type for comparisons instead of collecting constraints
-        suspension = new mutable.HashSet
+        val susp = new mutable.HashSet[TypeVar] // use a local val so it remains unboxed
         this foreach {
-          case tv: TypeVar  => tv.suspended = true; suspension += tv
+          case tv: TypeVar  => tv.suspended = true; susp += tv
           case _            =>
         }
+        suspension = susp
       }
 
       incCounter(findMemberCount)
@@ -930,12 +931,14 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
                   }
                 } else {
                   var prevEntry = members.lookupEntry(sym.name)
+                  var symtpe: Type = null
                   while ((prevEntry ne null) &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
                            !sym.hasFlag(PRIVATE) && {
                              if (self eq null) self = this.narrow
-                             self.memberType(prevEntry.sym) matches self.memberType(sym)
+                             if (symtpe eq null) symtpe = self.memberType(sym)
+                             self.memberType(prevEntry.sym) matches symtpe
                            })) {
                     prevEntry = members lookupNextEntry prevEntry
                   }
@@ -1844,9 +1847,9 @@ A type's typeSymbol should never be inspected directly.
         val substTps = formals.intersect(typeParams)
 
         if (sameLength(substTps, typeParams))
-          typeRef(pre, sym, actuals)
+          copyTypeRef(this, pre, sym, actuals)
         else if (sameLength(formals, actuals)) // partial application (needed in infer when bunching type arguments from classes and methods together)
-          typeRef(pre, sym, dummyArgs).subst(formals, actuals)
+          copyTypeRef(this, pre, sym, dummyArgs).subst(formals, actuals)
         else ErrorType
       }
       else
@@ -1864,7 +1867,7 @@ A type's typeSymbol should never be inspected directly.
     // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
     @inline private def etaExpand: Type = {
       val tpars = sym.info.typeParams // must go through sym.info for typeParams to initialise symbol
-      typeFunAnon(tpars, typeRef(pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
+      typeFunAnon(tpars, copyTypeRef(this, pre, sym, tpars map (_.tpeHK))) // todo: also beta-reduce?
     }
 
     override def dealias: Type =
@@ -2748,6 +2751,27 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  def copyTypeRef(tp: Type, pre: Type, sym: Symbol, args: List[Type]): Type = tp match {
+    case TypeRef(pre0, sym0, args0) =>
+      if ((pre == pre0) && (sym.name == sym0.name)) {
+
+        val sym1 = sym
+        // we require that object is initialized, thus info.typeParams instead of typeParams.
+        if (sym1.isAliasType && sameLength(sym1.info.typeParams, args)) {
+          if (sym1.lockOK) TypeRef(pre, sym1, args) // don't expand type alias (cycles checked by lockOK)
+          else throw new TypeError("illegal cyclic reference involving " + sym1)
+        }
+        else {
+          TypeRef(pre, sym1, args)
+        }
+
+      } else
+        typeRef(pre, sym, args)
+  }
+
+
+
+
   /** The canonical creator for implicit method types */
   def JavaMethodType(params: List[Symbol], resultType: Type): JavaMethodType =
     new JavaMethodType(params, resultType) // don't unique this!
@@ -2794,8 +2818,8 @@ A type's typeSymbol should never be inspected directly.
   def appliedType(tycon: Type, args: List[Type]): Type =
     if (args.isEmpty) tycon //@M! `if (args.isEmpty) tycon' is crucial (otherwise we create new types in phases after typer and then they don't get adapted (??))
     else tycon match {
-      case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => typeRef(pre, sym, Nil)   //@M drop type args to Any/Nothing
-      case TypeRef(pre, sym, _)                           => typeRef(pre, sym, args)
+      case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
+      case TypeRef(pre, sym, _)                           => copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
       case ExistentialType(tparams, restpe)               => ExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
@@ -3079,7 +3103,7 @@ A type's typeSymbol should never be inspected directly.
                       else mapOverArgs(args, tparams)
                     }
         if ((pre1 eq pre) && (args1 eq args)) tp
-        else typeRef(pre1, coevolveSym(pre, pre1, sym), args1)
+        else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1)
       case ThisType(_) => tp
       case SingleType(pre, sym) =>
         if (sym.isPackageClass) tp // short path
@@ -3548,7 +3572,7 @@ A type's typeSymbol should never be inspected directly.
   /** A map to implement the `substSym' method. */
   class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
     protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
-      case TypeRef(pre, _, args) => typeRef(pre, sym, args)
+      case TypeRef(pre, _, args) => copyTypeRef(fromtp, pre, sym, args)
       case SingleType(pre, _) => singleType(pre, sym)
     }
     override def apply(tp: Type): Type = if (from.isEmpty) tp else {
@@ -3561,7 +3585,7 @@ A type's typeSymbol should never be inspected directly.
         case TypeRef(pre, sym, args) if pre ne NoPrefix =>
           val newSym = subst(sym, from, to)
           // assert(newSym.typeParams.length == sym.typeParams.length, "typars mismatch in SubstSymMap: "+(sym, sym.typeParams, newSym, newSym.typeParams))
-          mapOver(typeRef(pre, newSym, args)) // mapOver takes care of subst'ing in args
+          mapOver(copyTypeRef(tp, pre, newSym, args)) // mapOver takes care of subst'ing in args
         case SingleType(pre, sym) if pre ne NoPrefix =>
           mapOver(singleType(pre, subst(sym, from, to)))
         case _ =>
@@ -3945,7 +3969,7 @@ A type's typeSymbol should never be inspected directly.
           try {
             val sym1 = adaptToNewRun(pre1, sym)
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
-            else typeRef(pre1, sym1, args1)
+            else copyTypeRef(tp, pre1, sym1, args1)
           } catch {
             case ex: MissingAliasControl =>
               apply(tp.dealias)
@@ -4087,7 +4111,7 @@ A type's typeSymbol should never be inspected directly.
     patType match {
       case TypeRef(pre, sym, args) =>
         val pre1 = maybeCreateDummyClone(pre, sym)
-        (pre1 ne NoType) && isPopulated(typeRef(pre1, sym, args), selType)
+        (pre1 ne NoType) && isPopulated(copyTypeRef(patType, pre1, sym, args), selType)
       case _ =>
         false
     }
@@ -4512,7 +4536,7 @@ A type's typeSymbol should never be inspected directly.
 
   def instTypeVar(tp: Type): Type = tp match {
     case TypeRef(pre, sym, args) =>
-      typeRef(instTypeVar(pre), sym, args)
+      copyTypeRef(tp, instTypeVar(pre), sym, args)
     case SingleType(pre, sym) =>
       singleType(instTypeVar(pre), sym)
     case TypeVar(_, constr) =>
