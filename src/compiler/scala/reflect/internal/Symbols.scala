@@ -1116,13 +1116,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       this == that || this.isError || that.isError ||
       info.baseTypeIndex(that) >= 0
 
-    final def isSubClass(that: Symbol): Boolean = {
+    final def isSubClass(that: Symbol): Boolean = (
       isNonBottomSubClass(that) ||
       this == NothingClass ||
       this == NullClass &&
       (that == AnyClass ||
-       that != NothingClass && (that isSubClass AnyRefClass))
-    }
+       that != NothingClass && (that isSubClass ObjectClass))
+    )
     final def isNumericSubClass(that: Symbol): Boolean =
       definitions.isNumericSubClass(this, that)
 

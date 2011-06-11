@@ -84,7 +84,7 @@ trait TypeDebugging {
       case TypeBounds(lo, hi)                  => ">: "+ debug(lo) +" <: "+ debug(hi)
       case tv @ TypeVar(_, _)                  => tv.toString
       case ExistentialType(tparams, qtpe)      => "forSome "+ str.brackets(tparams) + " " + debug(qtpe)
-      case _                                   => tp.toString
+      case _                                   => "?"+tp.getClass.getName+"?"//tp.toString might produce cyclic error...
     }
     def debugString(tp: Type) = debug(tp)
   }

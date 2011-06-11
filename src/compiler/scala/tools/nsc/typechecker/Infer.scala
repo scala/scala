@@ -317,7 +317,7 @@ trait Infer {
         val MethodType(params, restpe) = tp
         val TypeRef(pre, sym, args) = pt
 
-        if (sym.isAliasType) apply(tp, pt.dealias)
+        if (sym.isAliasType) apply(tp, pt.normalize)
         else if (sym.isAbstractType) apply(tp, pt.bounds.lo)
         else {
           val len = args.length - 1
@@ -353,7 +353,7 @@ trait Infer {
     }
 
     object isPlausiblyCompatible extends CompatibilityChecker {
-      def resultTypeCheck(restpe: Type, arg: Type) = isPlausiblySubType(restpe, arg)
+      def resultTypeCheck(restpe: Type, arg: Type) = isPlausiblyCompatible(restpe, arg)
       def argumentCheck(arg: Type, param: Type)    = isPlausiblySubType(arg, param)
       def lastChanceCheck(tp: Type, pt: Type)      = false
     }
@@ -373,12 +373,14 @@ trait Infer {
      */
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
     private def isImpossibleSubType(tp1: Type, tp2: Type) = {
-      (tp1.dealias, tp2.dealias) match {
+      (tp1.normalize.widen, tp2.normalize.widen) match {
         case (TypeRef(_, sym1, _), TypeRef(_, sym2, _)) =>
            sym1.isClass &&
            sym2.isClass &&
           !(sym1 isSubClass sym2) &&
           !(sym1 isNumericSubClass sym2)
+        case (tp1@TypeRef(_, sym1, _), tp2@RefinedType(_,decls)) =>
+          !decls.toList.forall(s => tp1.member(s.name) != NoSymbol)
         case _ =>
           false
       }
