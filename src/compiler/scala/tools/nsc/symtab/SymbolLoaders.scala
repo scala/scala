@@ -14,6 +14,7 @@ import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
 import util.Statistics._
+import scala.tools.nsc.io.AbstractFile
 
 /** This class ...
  *

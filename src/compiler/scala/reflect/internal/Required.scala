@@ -5,7 +5,7 @@ import settings.MutableSettings
 
 trait Required { self: SymbolTable =>
 
-  type AbstractFile >: Null <: { def path: String }
+  type AbstractFileType >: Null <: { def path: String }
 
   def picklerPhase: Phase
 

@@ -14,6 +14,7 @@ import Exceptional.unwrap
 import ScalaClassLoader.URLClassLoader
 import symtab.Flags
 import io.VirtualDirectory
+import scala.tools.nsc.io.AbstractFile
 import reporters._
 import symtab.Flags
 import scala.reflect.internal.Names

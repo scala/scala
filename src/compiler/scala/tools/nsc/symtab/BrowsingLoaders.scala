@@ -7,6 +7,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.tools.nsc.util.BatchSourceFile
+import scala.tools.nsc.io.AbstractFile
 
 /** A subclass of SymbolLoaders that implements browsing behavior.
  *  This class should be used whenever file dependencies and recompile sets

@@ -19,6 +19,7 @@ import ch.epfl.lamp.fjbg._
 import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.util.jar.{ JarEntry, JarOutputStream }
+import scala.tools.nsc.io.AbstractFile
 
 /** This class ...
  *

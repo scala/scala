@@ -10,6 +10,7 @@ import scala.collection.mutable.{HashMap, WeakHashMap}
 import scala.ref.WeakReference
 import symtab.Flags
 import symtab.Flags._
+import scala.tools.nsc.io.AbstractFile
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *

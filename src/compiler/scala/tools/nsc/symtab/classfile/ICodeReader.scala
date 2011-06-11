@@ -36,7 +36,7 @@ abstract class ICodeReader extends ClassfileParser {
    *  for non-static members.
    */
   def readClass(cls: Symbol): (IClass, IClass) = {
-    var classFile: AbstractFile = null;
+    var classFile: io.AbstractFile = null;
     var sym = cls
     sym.info // ensure accurate type information
 

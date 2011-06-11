@@ -14,6 +14,7 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
 import scala.annotation.switch
 import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
+import scala.tools.nsc.io.AbstractFile
 
 /** This abstract class implements a class file parser.
  *

@@ -52,9 +52,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     this(settings, new ConsoleReporter(settings))
 
   // fulfilling requirements
-
-  type AbstractFile = scala.tools.nsc.io.AbstractFile
-  val AbstractFile = scala.tools.nsc.io.AbstractFile
+  // Renamed AbstractFile to AbstractFileType for backward compatibility:
+  // it is difficult for sbt to work around the ambiguity errors which result.
+  type AbstractFileType = scala.tools.nsc.io.AbstractFile
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
 
