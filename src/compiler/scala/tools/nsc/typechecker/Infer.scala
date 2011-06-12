@@ -431,8 +431,9 @@ trait Infer {
              sym2.isClass &&
             !(sym1 isSubClass sym2) &&
             !(sym1 isNumericSubClass sym2)
-          case RefinedType(_, decls) =>
-            decls.nonEmpty && tp1.member(decls.head.name) == NoSymbol
+          // XXX - disabled for preventing scalaz from building.
+          // case RefinedType(_, decls) =>
+          //   decls.nonEmpty && tp1.member(decls.head.name) == NoSymbol
           case _ => false
         }
       case _ => false
