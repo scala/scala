@@ -142,23 +142,11 @@ trait MatrixAdditions extends ast.TreeDSL {
       import Flags.{ MUTABLE, ABSTRACT, SEALED }
 
       private case class Combo(index: Int, sym: Symbol) {
+        val isBaseClass = sym.tpe.baseClasses.toSet
+
         // is this combination covered by the given pattern?
         def isCovered(p: Pattern) = {
-          def coversSym = {
-            val lhs = decodedEqualsType(p.tpe)
-            val rhs = sym.tpe
-            // This logic, arrived upon after much struggle, attempts to find the
-            // the route through the type maze which let us issue precise exhaustiveness
-            // warnings against narrowed types (see test case sealed-java-enums.scala)
-            // while retaining the necessary pattern matching behavior that case _: List[_] =>
-            // matches both "object Nil" and "class ::[T]".
-            //
-            // Doubtless there is a more direct/correct expression of it.
-            if (rhs.typeSymbol.isSingletonExistential)
-              lhs <:< rhs
-            else
-              rhs.baseClasses contains lhs.typeSymbol
-          }
+          def coversSym = isBaseClass(decodedEqualsType(p.tpe).typeSymbol)
 
           cond(p.tree) {
             case _: UnApply | _: ArrayValue => true
