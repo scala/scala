@@ -46,7 +46,7 @@ object scaladoc extends Command {
 
     // tags are defined in class "scala.tools.nsc.doc.DocGenerator"
     "The recognised format of comments in source is described in the " & Link("online documentation",
-    "http://lampsvn.epfl.ch/trac/scala/wiki/Scaladoc"))
+    "http://lampsvn.epfl.ch/trac/scala-old/wiki/Scaladoc"))
 
   val options = Section("OPTIONS",
 
