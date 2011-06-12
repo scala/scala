@@ -15,7 +15,7 @@ import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 
 // Loosely based on the draft specification at:
-// https://lampsvn.epfl.ch/trac/scala/wiki/Classpath
+// https://wiki.scala-lang.org/display/SW/Classpath
 
 object PathResolver {
   def firstNonEmpty(xs: String*)            = xs find (_ != "") getOrElse ""
