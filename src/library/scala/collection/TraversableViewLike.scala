@@ -169,7 +169,7 @@ trait TraversableViewLike[+A,
     newForced(thisSeq.scanRight(z)(op)).asInstanceOf[That]
 
   override def groupBy[K](f: A => K): immutable.Map[K, This] =
-    thisSeq.groupBy(f).mapValues(xs => newForced(thisSeq))
+    thisSeq groupBy f mapValues (xs => newForced(xs))
 
   override def toString = viewToString
 }
