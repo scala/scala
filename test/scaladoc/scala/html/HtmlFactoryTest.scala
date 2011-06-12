@@ -306,4 +306,11 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("SI-4641") = {
+    createReferenceIndex("SI_4641.scala") match {
+      case Some(pages) => pages.contains("index/index-_.html")
+      case _ => false
+    }
+  }
 }
