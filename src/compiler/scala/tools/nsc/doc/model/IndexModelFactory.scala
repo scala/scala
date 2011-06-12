@@ -25,7 +25,7 @@ object IndexModelFactory {
         def addMember(d: MemberEntity) = {
           val firstLetter = {
             val ch = d.name.head.toLower
-            if(ch.isLetterOrDigit) ch else '#'
+            if(ch.isLetterOrDigit) ch else '_'
           }
           val letter = this.get(firstLetter).getOrElse {
             immutable.SortedMap[String, SortedSet[MemberEntity]]()
