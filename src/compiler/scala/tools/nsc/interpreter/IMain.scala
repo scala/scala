@@ -76,7 +76,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   lazy val formatting: Formatting = new Formatting {
     val prompt = Properties.shellPromptString
   }
-  lazy val reporter: ReplReporter = new ReplReporter(this)
+  lazy val reporter: ConsoleReporter = new ReplReporter(this)
 
   import formatting._
   import reporter.{ printMessage, withoutTruncating }
