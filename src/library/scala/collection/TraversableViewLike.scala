@@ -82,6 +82,27 @@ trait TraversableViewLike[+A,
   trait Transformed[+B] extends TraversableView[B, Coll] with super.Transformed[B] {
     def foreach[U](f: B => U): Unit
 
+    // Methods whose standard implementations use "isEmpty" need to be rewritten
+    // for views, else they will end up traversing twice in a situation like:
+    //   xs.view.flatMap(f).headOption
+    override def headOption: Option[B] = {
+      for (x <- this)
+        return Some(x)
+
+      None
+    }
+    override def lastOption: Option[B] = {
+      // (Should be) better than allocating a Some for every element.
+      var empty = true
+      var result: B = null.asInstanceOf[B]
+      for (x <- this) {
+        empty = false
+        result = x
+      }
+      if (empty) None else Some(result)
+    }
+
+    // XXX: As yet not dealt with, tail and init both call isEmpty.
     override def stringPrefix = self.stringPrefix
     override def toString = viewToString
   }
