@@ -1,3 +1,7 @@
 T<java.lang.Object> interface scala.ScalaObject
 List(A, char, class java.lang.Object)
 a
+public scala.collection.immutable.List<java.lang.Object> Arr.arr1(int[])
+public scala.collection.immutable.List<java.lang.Character> Arr.arr2(java.lang.Character[])
+public float[] Arr.arr3(float[][])
+public <T> java.lang.Object Arr.arr4(java.lang.Object[],scala.reflect.Manifest<T>)
