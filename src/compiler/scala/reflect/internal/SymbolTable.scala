@@ -27,7 +27,7 @@ abstract class SymbolTable extends /*reflect.generic.Universe
                               with Required
 {
   def rootLoader: LazyType
-  def log(msg: => AnyRef)
+  def log(msg: => AnyRef): Unit
   def abort(msg: String): Nothing = throw new Error(msg)
   def abort(): Nothing = throw new Error()
 

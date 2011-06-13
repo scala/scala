@@ -580,6 +580,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       REF(sym.owner.sourceModule) DOT sym
     }
 
+    @inline private def bitmapOperation[T](field: Symbol, transientCase: => T, privateCase: => T, rest: => T): T =
+      if (field.accessed.hasAnnotation(TransientAttr))
+        transientCase
+      else if (field.hasFlag(PRIVATE | notPRIVATE))
+        privateCase
+      else
+        rest
+
     /** Add all new definitions to a non-trait class
      *  These fall into the following categories:
      *    - for a trait interface:
@@ -671,14 +679,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       import lazyVals._
-
-      def bitmapOperation[T](field: Symbol, transientCase: => T, privateCase: => T, rest: => T): T =
-        if (field.accessed.hasAnnotation(TransientAttr))
-          transientCase
-        else if (field.hasFlag(PRIVATE) || field.hasFlag(notPRIVATE))
-          privateCase
-        else
-          rest
 
       /**
        *  Private or transient lazy vals use bitmaps that are private for the class context,

@@ -172,7 +172,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
-  def log(msg: => AnyRef): Unit = if (opt.logPhase) inform("[log " + phase + "] " + msg)
+  // Over 200 closure objects are eliminated by inlining this.
+  @inline final def log(msg: => AnyRef): Unit =
+    if (settings.log containsPhase globalPhase)
+      inform("[log " + phase + "] " + msg)
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
