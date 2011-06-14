@@ -130,7 +130,7 @@ abstract class ExplicitOuter extends InfoTransform
       if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
-      if (sym.owner.isTrait && sym.isProtected) sym setFlag notPROTECTED // 6
+      if (sym.owner.isTrait) sym setNotFlag PROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) { // 1
         val p = sym.newValueParameter(sym.pos, "arg" + nme.OUTER)
                    .setInfo(sym.owner.outerClass.thisType)
@@ -358,13 +358,6 @@ abstract class ExplicitOuter extends InfoTransform
       }
     }
 
-    /** If FLAG is set on symbol, sets notFLAG (this exists in anticipation of generalizing). */
-    def setNotFlags(sym: Symbol, flags: Int*) {
-      for (f <- flags ; notFlag <- notFlagMap get f)
-        if (sym hasFlag f)
-          sym setFlag notFlag
-    }
-
     def matchTranslation(tree: Match) = {
       val Match(selector, cases) = tree
       var nselector = transform(selector)
@@ -438,9 +431,10 @@ abstract class ExplicitOuter extends InfoTransform
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
-      if (sym != null && sym.isType)  //(9)
-        setNotFlags(sym, PRIVATE, PROTECTED)
-
+      if (sym != null && sym.isType) { //(9)
+        sym setNotFlag PRIVATE
+        sym setNotFlag PROTECTED
+      }
       tree match {
         case Template(parents, self, decls) =>
           val newDefs = new ListBuffer[Tree]

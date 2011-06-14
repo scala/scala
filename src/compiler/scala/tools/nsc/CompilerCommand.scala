@@ -98,7 +98,9 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     else if (Xhelp.value)         xusageMsg
     else if (Yhelp.value)         yusageMsg
     else if (showPlugins.value)   global.pluginDescriptions
-    else if (showPhases.value)    global.phaseDescriptions
+    else if (showPhases.value)    global.phaseDescriptions + (
+      if (debug.value) "\n" + global.phaseFlagDescriptions else ""
+    )
     else                          ""
   }
 

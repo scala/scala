@@ -538,7 +538,7 @@ abstract class Inliners extends SubComponent {
             if (settings.debug.value)
               log("Making not-private symbol out of synthetic: " + f)
 
-            if (f hasFlag Flags.PRIVATE) f setFlag Flags.notPRIVATE
+            f setNotFlag Flags.PRIVATE
             true
           }
 

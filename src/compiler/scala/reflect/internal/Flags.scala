@@ -166,32 +166,54 @@ class Flags extends ModifierFlags {
   final val AntiShift     = 56L
 
   // ------- late flags (set by a transformer phase) ---------------------------------
+  //
+  // Summary of how these are actually used, if at all.  You can
+  // get this output with scalac -Xshow-phases -Ydebug.  Only these
+  // flags are admitted to by the phases:
+  //
+  //     refchecks   7  [START] <latemethod>
+  // explicitouter  14  [START] <latefinal> <notprotected> <notprivate>
+  //       erasure  15  [START] <latedeferred> <lateinterface>
+  //         mixin  20  [START] <latemodule> <notabstract>
+  //
+  // lateDEFERRED set in AddInterfaces, Mixin, etc.
+  // lateFINAL set in Symbols#makeNotPrivate.
+  // lateINTERFACE set in AddInterfaces#transformMixinInfo.
+  // lateMETHOD set in RefChecks#transformInfo.
+  // lateMODULE set in Mixin#transformInfo.
+  // notABSTRACT never set.
+  // notPRIVATE set in Symbols#makeNotPrivate, IExplicitOuter#transform, Inliners.
+  // notPROTECTED set in ExplicitOuter#transform.
+  //
+  // Of the flags never mentioned in a phase's newFlags or nextFlags:
+  //
+  // lateABSTRACT only set in devirtualize.
+  // latePRIVATE never set.
+  // notDEFERRED only set in devirtualize.
+  // notFINAL only set in devirtualize.
+  // notMETHOD never set.
+  // notOVERRIDE set in mixin, not declared.
+  //
+  // Summary of redundant and/or incorrect late/antiflags:
+  //   Never used: notABSTRACT, notDEFERRED, notFINAL, notMETHOD, latePRIVATE, lateABSTRACT
+  //   Used without being declared: notOVERRIDE
 
-  final val latePRIVATE   = (PRIVATE: Long) << LateShift
   final val lateABSTRACT  = (ABSTRACT: Long) << LateShift
   final val lateDEFERRED  = (DEFERRED: Long) << LateShift
-  final val lateINTERFACE = (INTERFACE: Long) << LateShift
-  final val lateMODULE    = (MODULE: Long) << LateShift
   final val lateFINAL     = (FINAL: Long) << LateShift
+  final val lateINTERFACE = (INTERFACE: Long) << LateShift
   final val lateMETHOD    = (METHOD: Long) << LateShift
+  final val lateMODULE    = (MODULE: Long) << LateShift
+  final val latePRIVATE   = (PRIVATE: Long) << LateShift
 
-  final val notFINAL      = (FINAL: Long) << AntiShift
-  final val notPRIVATE    = (PRIVATE: Long) << AntiShift
-  final val notDEFERRED   = (DEFERRED: Long) << AntiShift
-  final val notPROTECTED  = (PROTECTED: Long) << AntiShift
   final val notABSTRACT   = (ABSTRACT: Long) << AntiShift
-  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+  final val notDEFERRED   = (DEFERRED: Long) << AntiShift
+  final val notFINAL      = (FINAL: Long) << AntiShift
   final val notMETHOD     = (METHOD: Long) << AntiShift
+  final val notOVERRIDE   = (OVERRIDE: Long) << AntiShift
+  final val notPRIVATE    = (PRIVATE: Long) << AntiShift
+  final val notPROTECTED  = (PROTECTED: Long) << AntiShift
 
-  final val notFlagMap = Map[Int, Long](
-    FINAL -> notFINAL,
-    PRIVATE -> notPRIVATE,
-    DEFERRED -> notDEFERRED,
-    PROTECTED -> notPROTECTED,
-    ABSTRACT -> notABSTRACT,
-    OVERRIDE -> notOVERRIDE,
-    METHOD -> notMETHOD
-  )
 
   // ------- masks -----------------------------------------------------------------------
 

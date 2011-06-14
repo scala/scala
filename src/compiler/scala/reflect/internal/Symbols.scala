@@ -696,6 +696,21 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Does symbol have ALL the flags in `mask` set? */
     final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
 
+    /** If the given flag is set on this symbol, also set the corresponding
+     *  notFLAG.  For instance if flag is PRIVATE, the notPRIVATE flag will
+     *  be set if PRIVATE is currently set.
+     */
+    final def setNotFlag(flag: Int) = if (hasFlag(flag)) setFlag((flag: @annotation.switch) match {
+      case FINAL     => notFINAL
+      case PRIVATE   => notPRIVATE
+      case DEFERRED  => notDEFERRED
+      case PROTECTED => notPROTECTED
+      case ABSTRACT  => notABSTRACT
+      case OVERRIDE  => notOVERRIDE
+      case METHOD    => notMETHOD
+      case _         => abort("setNotFlag on invalid flag: " + flag)
+    })
+
     /** The class or term up to which this symbol is accessible,
      *  or RootClass if it is public.  As java protected statics are
      *  otherwise completely inaccessible in scala, they are treated

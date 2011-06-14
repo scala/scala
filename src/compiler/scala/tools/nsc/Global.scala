@@ -645,6 +645,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
     line1 :: line2 :: descs mkString
   }
+  /** Summary of the per-phase values of nextFlags and newFlags, shown
+   *  with -Xshow-phases if -Ydebug also given.
+   */
+  def phaseFlagDescriptions: String = {
+    val width = phaseNames map (_.length) max
+    val fmt   = "%" + width + "s  %2s  %s\n"
+
+    val line1 = fmt.format("phase name", "id", "new flags")
+    val line2 = fmt.format("----------", "--", "---------")
+    val descs = phaseDescriptors.zipWithIndex map {
+      case (ph, idx) =>
+        def fstr1 = if (ph.phaseNewFlags == 0L) "" else "[START] " + Flags.flagsToString(ph.phaseNewFlags)
+        def fstr2 = if (ph.phaseNextFlags == 0L) "" else "[END] " + Flags.flagsToString(ph.phaseNextFlags)
+        val fstr = (
+          if (ph.ownPhase.id == 1) Flags.flagsToString(Flags.InitialFlags)
+          else if (ph.phaseNewFlags != 0L && ph.phaseNextFlags != 0L) fstr1 + " " + fstr2
+          else fstr1 + fstr2
+        )
+        fmt.format(ph.phaseName, idx + 1, fstr)
+    }
+    line1 :: line2 :: descs mkString
+  }
 
   // ----------- Runs ---------------------------------------
 
