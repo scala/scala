@@ -165,7 +165,7 @@ object ClassPath {
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {
       val name = rep.name
-      assert(name.length > 6 && name.substring(name.length - 6) == ".class", name)
+      assert(endsClass(name), name)
       name.substring(0, name.length - 6)
     }
     def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
@@ -175,16 +175,18 @@ object ClassPath {
     override def isValidName(name: String) = !isTraitImplementation(name)
   }
 
+  @inline private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
+  @inline private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"
+  @inline private def endsJava(s: String)  = s.length > 5 && s.substring(s.length - 5) == ".java"
+
   /** From the source file to its identifier.
    */
   def toSourceName(f: AbstractFile): String = {
     val name = f.name
-    if (name.length > 6 && name.substring(name.length - 6) == ".scala")
-      name.substring(0, name.length - 6)
-    else if (name.length > 5 && name.substring(name.length - 5) == ".java")
-      name.substring(0, name.length - 5)
-    else
-      throw new FatalError("Unexpected source file ending: " + name)
+
+    if (endsScala(name)) name.substring(0, name.length - 6)
+    else if (endsJava(name)) name.substring(0, name.length - 5)
+    else throw new FatalError("Unexpected source file ending: " + name)
   }
 }
 import ClassPath._
@@ -259,10 +261,9 @@ abstract class ClassPath[T] {
 
   /** Filters for assessing validity of various entities.
    */
-  def validClassFile(name: String)  = (name endsWith ".class") && context.isValidName(name)
-  def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name(0) != '.')
-  def validSourceFile(name: String) = validSourceExtensions exists (name endsWith _)
-  def validSourceExtensions         = List(".scala", ".java")
+  def validClassFile(name: String)  = endsClass(name) && context.isValidName(name)
+  def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.charAt(0) != '.')
+  def validSourceFile(name: String) = endsScala(name) || endsJava(name)
 
   /**
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
@@ -291,7 +292,7 @@ abstract class ClassPath[T] {
     case x: ClassPath[_]  => this.sortString == x.sortString
     case _                => false
   }
-  override def hashCode = sortString.##
+  override def hashCode = sortString.hashCode()
 }
 
 /**
@@ -300,10 +301,7 @@ abstract class ClassPath[T] {
 class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends ClassPath[T] {
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = dir.file match {
-    case null   => Nil
-    case file   => File(file).toURL :: Nil
-  }
+  def asURLs = if (dir.file == null) Nil else List(dir.toURL)
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq(dir)
 
@@ -329,10 +327,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
 class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = dir.file match {
-    case null   => Nil
-    case file   => File(file).toURL :: Nil
-  }
+  def asURLs = if (dir.file == null) Nil else List(dir.toURL)
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 

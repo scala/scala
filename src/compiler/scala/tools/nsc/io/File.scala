@@ -17,14 +17,14 @@ import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 
 object File {
-  def pathSeparator = JFile.pathSeparator
-  def separator = JFile.separator
+  def pathSeparator = java.io.File.pathSeparator
+  def separator = java.io.File.separator
 
   def apply(path: Path)(implicit codec: Codec) = new File(path.jfile)(codec)
 
   // Create a temporary file, which will be deleted upon jvm exit.
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) = {
-    val jfile = JFile.createTempFile(prefix, suffix, dir)
+    val jfile = java.io.File.createTempFile(prefix, suffix, dir)
     jfile.deleteOnExit()
     apply(jfile)
   }
@@ -48,7 +48,7 @@ object File {
   //
   // try {
   //   import Streamable.closing
-  //   val tmp = JFile.createTempFile("bug6503430", null, null)
+  //   val tmp = java.io.File.createTempFile("bug6503430", null, null)
   //   try closing(new FileInputStream(tmp)) { in =>
   //     val inc = in.getChannel()
   //     closing(new FileOutputStream(tmp, true)) { out =>

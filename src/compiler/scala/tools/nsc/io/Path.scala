@@ -65,9 +65,9 @@ object Path {
   def onlyFiles(xs: Iterator[Path]): Iterator[File] = xs filter (_.isFile) map (_.toFile)
   def onlyFiles(xs: List[Path]): List[File] = xs filter (_.isFile) map (_.toFile)
 
-  def roots: List[Path] = JFile.listRoots().toList map Path.apply
+  def roots: List[Path] = java.io.File.listRoots().toList map Path.apply
 
-  def apply(segments: Seq[String]): Path = apply(segments mkString JFile.separator)
+  def apply(segments: Seq[String]): Path = apply(segments mkString java.io.File.separator)
   def apply(path: String): Path = apply(new JFile(path))
   def apply(jfile: JFile): Path =
     if (jfile.isFile) new File(jfile)
@@ -84,8 +84,8 @@ import Path._
  *  semantics regarding how a Path might relate to the world.
  */
 class Path private[io] (val jfile: JFile) {
-  val separator = JFile.separatorChar
-  val separatorStr = JFile.separator
+  val separator = java.io.File.separatorChar
+  val separatorStr = java.io.File.separator
 
   // Validation: this verifies that the type of this object and the
   // contents of the filesystem are in agreement.  All objects are
@@ -130,7 +130,7 @@ class Path private[io] (val jfile: JFile) {
   // identity
   def name: String = jfile.getName()
   def path: String = jfile.getPath()
-  def normalize: Path = Path(jfile.getCanonicalPath())
+  def normalize: Path = Path(jfile.getAbsolutePath())
   def isRootPath: Boolean = roots exists (_ isSame this)
 
   def resolve(other: Path) = if (other.isAbsolute || isEmpty) other else /(other)
