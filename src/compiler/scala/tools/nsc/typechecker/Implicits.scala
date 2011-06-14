@@ -918,6 +918,9 @@ trait Implicits {
             getParts(tp.widen)
           case _: SingletonType =>
             getParts(tp.widen)
+          case HasMethodMatching(_, argtpes, restpe) =>
+            for (tp <- argtpes) getParts(tp)
+            getParts(restpe)
           case RefinedType(ps, _) =>
             for (p <- ps) getParts(p)
           case AnnotatedType(_, t, _) =>
