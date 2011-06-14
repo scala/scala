@@ -97,6 +97,7 @@ class Path private[io] (val jfile: JFile) {
   def toFile: File = new File(jfile)
   def toDirectory: Directory = new Directory(jfile)
   def toAbsolute: Path = if (isAbsolute) this else Path(jfile.getAbsolutePath())
+  def toCanonical: Path = Path(jfile.getCanonicalPath())
   def toURI: URI = jfile.toURI()
   def toURL: URL = toURI.toURL()
   /** If this path is absolute, returns it: otherwise, returns an absolute
@@ -212,7 +213,7 @@ class Path private[io] (val jfile: JFile) {
   def isHidden = jfile.isHidden()
   def isSymlink = {
     val x = parent / name
-    x.normalize != x.toAbsolute
+    x.toCanonical != x.toAbsolute
   }
   def isEmpty = path.length == 0
 
@@ -224,7 +225,7 @@ class Path private[io] (val jfile: JFile) {
   // Boolean path comparisons
   def endsWith(other: Path) = segments endsWith other.segments
   def startsWith(other: Path) = segments startsWith other.segments
-  def isSame(other: Path) = normalize == other.normalize
+  def isSame(other: Path) = toCanonical == other.toCanonical
   def isFresher(other: Path) = lastModified > other.lastModified
 
   // creations
