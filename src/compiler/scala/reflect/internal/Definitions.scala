@@ -228,11 +228,12 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     lazy val DynamicClass         = getClass("scala.Dynamic")
 
     // fundamental modules
+    lazy val SysPackage = getPackageObject("scala.sys")
+      def Sys_error    = getMember(SysPackage, nme.error)
     lazy val PredefModule: Symbol = getModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
       def Predef_AnyRef = getMember(PredefModule, "AnyRef") // used by the specialization annotation
       def Predef_classOf = getMember(PredefModule, nme.classOf)
-      def Predef_error    = getMember(PredefModule, nme.error)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
@@ -596,6 +597,12 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       attr.info.decls enter (attr newConstructor NoPosition setInfo MethodType(Nil, attr.tpe))
       attr
     }
+
+    def getPackageObjectClass(fullname: Name): Symbol =
+      getPackageObject(fullname).companionClass
+
+    def getPackageObject(fullname: Name): Symbol =
+      getModuleOrClass(fullname.toTermName).info.member(newTermName("package"))
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname.toTermName)

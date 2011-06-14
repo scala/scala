@@ -1451,7 +1451,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               if (target.isDeferred || conflicting(typeEnv(symbol))) {
                 treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt,
                   localTyper.typed(
-                    Apply(gen.mkAttributedRef(definitions.Predef_error),
+                    Apply(gen.mkAttributedRef(definitions.Sys_error),
                           List(Literal("boom! you stepped on a bug. This method should never be called.")))))
               } else {
                 // we have an rhs, specialize it

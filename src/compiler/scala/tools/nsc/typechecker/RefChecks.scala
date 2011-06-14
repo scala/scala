@@ -1337,7 +1337,7 @@ abstract class RefChecks extends InfoTransform {
           case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(NativeAttr) =>
             tree.symbol.resetFlag(DEFERRED)
             transform(treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
-                  typed(Apply(gen.mkAttributedRef(Predef_error), List(Literal("native method stub"))))))
+                  typed(Apply(gen.mkAttributedRef(Sys_error), List(Literal("native method stub"))))))
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)
