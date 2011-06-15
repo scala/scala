@@ -113,6 +113,10 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
       x
     }
+    private[nsc] def printing[T](fmt: String, xs: Any*)(x: T): T = {
+      println(fmt.format(xs: _*) + " == " + x)
+      x
+    }
 
     def indent(s: Any) = s.toString() split "\n" map ("  " + _) mkString "\n"
     def indentAll(s: Seq[Any]) = s map ("  " + _.toString() + "\n") mkString

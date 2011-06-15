@@ -19,7 +19,7 @@ trait MatrixAdditions extends ast.TreeDSL {
   import symtab.Flags
   import CODE._
   import Debug._
-  import treeInfo.{ IsTrue, IsFalse }
+  import treeInfo._
   import definitions.{ isValueClass }
 
   /** The Squeezer, responsible for all the squeezing.
@@ -53,17 +53,6 @@ trait MatrixAdditions extends ast.TreeDSL {
           super.traverse(tree)
       }
     }
-    class Subst(vd: ValDef) extends Transformer {
-      private var stop = false
-      override def transform(tree: Tree): Tree = tree match {
-        case t: Ident if t.symbol == vd.symbol =>
-          stop = true
-          vd.rhs
-        case _ =>
-          if (stop) tree
-          else super.transform(tree)
-      }
-    }
 
     /** Compresses multiple Blocks. */
     private def combineBlocks(stats: List[Tree], expr: Tree): Tree = expr match {
@@ -87,9 +76,12 @@ trait MatrixAdditions extends ast.TreeDSL {
           val rt = new RefTraverser(vd)
           rt.atOwner(owner)(rt traverse squeezedTail)
 
-          if (rt.canDrop) squeezedTail
-          else if (rt.canInline) new Subst(vd) transform squeezedTail
-          else default
+          if (rt.canDrop)
+            squeezedTail
+          else if (isConstantType(vd.symbol.tpe) || rt.canInline)
+            new TreeSubstituter(List(vd.symbol), List(vd.rhs)) transform squeezedTail
+          else
+            default
         case _ => default
       }
     }
@@ -103,26 +95,24 @@ trait MatrixAdditions extends ast.TreeDSL {
     import self.context._
 
     final def optimize(tree: Tree): Tree = {
+      // Uses treeInfo extractors rather than looking at trees directly
+      // because the many Blocks obscure our vision.
       object lxtt extends Transformer {
         override def transform(tree: Tree): Tree = tree match {
-          case blck @ Block(vdefs, ld @ LabelDef(name, params, body)) =>
-            if (targets exists (_ shouldInline ld.symbol)) squeezedBlock(vdefs, body)
-            else blck
-
-          case t =>
-            super.transform(t match {
-              // note - it is too early for any other true/false related optimizations
-              case If(cond, IsTrue(), IsFalse())  => cond
-
-              case If(cond1, If(cond2, thenp, elsep1), elsep2) if (elsep1 equalsStructure elsep2) =>
-                IF (cond1 AND cond2) THEN thenp ELSE elsep1
-              case If(cond1, If(cond2, thenp, Apply(jmp, Nil)), ld: LabelDef) if jmp.symbol eq ld.symbol =>
-                IF (cond1 AND cond2) THEN thenp ELSE ld
-              case t => t
-          })
+          case Block(stats, ld @ LabelDef(_, _, body)) if targets exists (_ shouldInline ld.symbol) =>
+            squeezedBlock(transformStats(stats, currentOwner), body)
+          case IsIf(cond, IsTrue(), IsFalse()) =>
+            transform(cond)
+          case IsIf(cond1, IsIf(cond2, thenp, elsep1), elsep2) if elsep1 equalsStructure elsep2 =>
+            transform(typer typed If(gen.mkAnd(cond1, cond2), thenp, elsep2))
+          case If(cond1, IsIf(cond2, thenp, Apply(jmp, Nil)), ld: LabelDef) if jmp.symbol eq ld.symbol =>
+            transform(typer typed If(gen.mkAnd(cond1, cond2), thenp, ld))
+          case _ =>
+            super.transform(tree)
         }
       }
-      returning(lxtt transform tree)(_ => clearSyntheticSyms())
+      try lxtt transform tree
+      finally clearSyntheticSyms()
     }
   }
 
