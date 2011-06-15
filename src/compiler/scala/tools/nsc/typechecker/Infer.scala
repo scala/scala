@@ -499,12 +499,13 @@ trait Infer {
      *  @param pt      ...
      *  @return        ...
      */
-    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, checkCompat: (Type, Type) => Boolean = isCompatible): List[Type] = {
+    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean = false): List[Type] = {
       val tvars = tparams map freshVar
-      if (checkCompat(restpe.instantiateTypeParams(tparams, tvars), pt)) {
+      val instResTp = restpe.instantiateTypeParams(tparams, tvars)
+      if ( if (useWeaklyCompatible) isWeaklyCompatible(instResTp, pt) else isCompatible(instResTp, pt) ) {
         try {
           // If the restpe is an implicit method, and the expected type is fully defined
-          // optimze type variables wrt to the implicit formals only; ignore the result type.
+          // optimize type variables wrt to the implicit formals only; ignore the result type.
           // See test pos/jesper.scala
           val varianceType = restpe match {
             case mt: MethodType if mt.isImplicit && isFullyDefined(pt) =>
@@ -835,7 +836,7 @@ trait Infer {
               try {
                 val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
                 // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
-                (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, isWeaklyCompatible) ne null) &&
+                (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, useWeaklyCompatible = true) ne null) &&
                 isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
               } catch {
                 case ex: NoInstance => false
@@ -1160,7 +1161,7 @@ trait Infer {
      * Substitute `tparams` to `targs` in `tree`, after adjustment by `adjustTypeArgs`, returning the type parameters that were not determined
      * If passed, infers against specified type `treeTp` instead of `tree.tp`.
      */
-    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, checkCompat: (Type, Type) => Boolean = isCompatible): List[Symbol] = {
+    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, useWeaklyCompatible: Boolean = false): List[Symbol] = {
       val treeTp = if(treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
       printInference(
         ptBlock("inferExprInstance",
@@ -1170,7 +1171,7 @@ trait Infer {
           "pt"      -> pt
         )
       )
-      val targs = exprTypeArgs(tparams, treeTp, pt, checkCompat)
+      val targs = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
         substExpr(tree, tparams, targs, pt)

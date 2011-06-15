@@ -744,7 +744,7 @@ trait Typers extends Modes {
                     // Looking for a manifest of Nil: This has many potential types,
                     // so we need to instantiate to minimal type List[Nothing].
                     keepNothings = false, // retract Nothing's that indicate failure, ambiguities in manifests are dealt with in manifestOfType
-                    checkCompat = isWeaklyCompatible) // #3808
+                    useWeaklyCompatible = true) // #3808
         }
 
         val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
