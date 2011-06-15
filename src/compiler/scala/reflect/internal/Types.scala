@@ -2484,8 +2484,9 @@ A type's typeSymbol should never be inspected directly.
       // this <: tp.baseType(sym)
       if (suspended) checkSubtype(tp, origin)
       else if (constr.instValid) checkSubtype(tp, constr.inst)  // type var is already set
-      else isRelatable(tp) && {
-        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyParents
+      else isRelatable(tp) && { // gradually let go of some type precision in hopes of finding a type that has the same shape as the type variable
+        // okay, this just screams "CLEAN ME UP" -- I think we could use tp.widen instead of tp straight from the get-go in registerBound, since we don't infer singleton types anyway (but maybe that'll change?)
+        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyFull(tp.widen.dealias) || unifyParents
       }
     }
 
