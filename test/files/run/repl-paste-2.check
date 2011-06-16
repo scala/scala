@@ -4,6 +4,9 @@ Type :help for more information.
 scala> 
 
 scala> scala> 0123
+
+// Detected repl transcript paste: ctrl-D to finish.
+
 res4: Int = 0123
 
 scala> 123

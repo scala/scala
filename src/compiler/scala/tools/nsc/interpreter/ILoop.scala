@@ -670,11 +670,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
 
     def transcript(start: String) = {
-      // Printing this message doesn't work very well because it's buried in the
-      // transcript they just pasted.  Todo: a short timer goes off when
-      // lines stop coming which tells them to hit ctrl-D.
-      //
-      // echo("// Detected repl transcript paste: ctrl-D to finish.")
+      echo("\n// Detected repl transcript paste: ctrl-D to finish.\n")
       apply(Iterator(start) ++ readWhile(_.trim != PromptString.trim))
     }
   }
