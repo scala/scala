@@ -253,12 +253,6 @@ trait TreeDSL {
 
     class SymbolMethods(target: Symbol) {
       def BIND(body: Tree) = Bind(target, body)
-
-      // Option
-      def IS_DEFINED() =
-        if (target.tpe.typeSymbol == SomeClass) TRUE   // is Some[_]
-        else NOT(ID(target) DOT nme.isEmpty)           // is Option[_]
-
       def IS_NULL()  = REF(target) OBJ_EQ NULL
       def NOT_NULL() = REF(target) OBJ_NE NULL
 

@@ -25,7 +25,7 @@ trait ParallelMatching extends ast.TreeDSL
   self: ExplicitOuter =>
 
   import global.{ typer => _, _ }
-  import definitions.{ AnyRefClass, NothingClass, IntClass, BooleanClass, getProductArgs, productProj }
+  import definitions.{ AnyRefClass, NothingClass, IntClass, BooleanClass, SomeClass, getProductArgs, productProj }
   import CODE._
   import Types._
   import Debug._
@@ -355,8 +355,9 @@ trait ParallelMatching extends ast.TreeDSL
         scrut.createVar(unMethod.tpe, Apply(unTarget, scrut.id :: trailing) setType _.tpe)
 
       lazy val cond: Tree =
-        if (unapplyResult.tpe.isBoolean) ID(unapplyResult.valsym)
-        else unapplyResult.valsym IS_DEFINED
+        if (unapplyResult.tpe.isBoolean) unapplyResult.ident
+        else if (unapplyResult.tpe.typeSymbol == SomeClass) TRUE
+        else NOT(unapplyResult.ident DOT nme.isEmpty)
 
       lazy val failure =
         mkFail(zipped.tail filterNot (x => SameUnapplyPattern(x._1)) map { case (pat, r) => r insert pat })
@@ -665,16 +666,20 @@ trait ParallelMatching extends ast.TreeDSL
       def unreached                 = referenceCount == 0
       def shouldInline(sym: Symbol) = referenceCount == 1 && label.exists(_.symbol == sym)
 
-      protected def maybeCast(lhs: Symbol, rhs: Symbol)(tree: Tree) = {
-        if (rhs.tpe <:< lhs.tpe) tree
-        else tree AS lhs.tpe
-      }
+      // Creates a simple Ident if the symbol's type conforms to
+      // the val definition's type, or a casted Ident if not.
+      private def newValIdent(lhs: Symbol, rhs: Symbol) =
+        if (rhs.tpe <:< lhs.tpe) Ident(rhs)
+        else Ident(rhs) AS lhs.tpe
 
       protected def newValDefinition(lhs: Symbol, rhs: Symbol) =
-        VAL(lhs) === maybeCast(lhs, rhs)(Ident(rhs))
+        typer typedValDef ValDef(lhs, newValIdent(lhs, rhs))
 
       protected def newValReference(lhs: Symbol, rhs: Symbol) =
-        maybeCast(lhs, rhs)(Ident(rhs))
+        typer typed newValIdent(lhs, rhs)
+
+      protected def valDefsFor(subst: Map[Symbol, Symbol]) = mapSubst(subst)(newValDefinition)
+      protected def identsFor(subst: Map[Symbol, Symbol])  = mapSubst(subst)(newValReference)
 
       protected def mapSubst[T](subst: Map[Symbol, Symbol])(f: (Symbol, Symbol) => T): List[T] =
         params flatMap { lhs =>
@@ -685,12 +690,6 @@ trait ParallelMatching extends ast.TreeDSL
             None
           }
         }
-
-      protected def valDefsFor(subst: Map[Symbol, Symbol]) =
-        mapSubst(subst)(typer typedValDef newValDefinition(_, _))
-
-      protected def identsFor(subst: Map[Symbol, Symbol]) =
-        mapSubst(subst)(typer typed newValReference(_, _))
 
       // typer is not able to digest a body of type Nothing being assigned result type Unit
       protected def caseResultType =

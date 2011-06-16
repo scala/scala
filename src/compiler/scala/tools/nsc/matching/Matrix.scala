@@ -198,16 +198,14 @@ trait Matrix extends MatrixAdditions {
      */
     class PatternVar(val lhs: Symbol, val rhs: Tree, val checked: Boolean) {
       def sym = lhs
-      def valsym = valDef.symbol
-      // XXX how will valsym.tpe differ from sym.tpe ?
-      def tpe = valsym.tpe
+      def tpe = lhs.tpe
 
       // See #1427 for an example of a crash which occurs unless we retype:
       // in that instance there is an existential in the pattern.
-      lazy val ident  = typer typed { ID(lhs) setType null }
-      lazy val valDef = typer typed { (VAL(lhs) withType ident.tpe) === rhs }
+      lazy val ident  = typer typed Ident(lhs)
+      lazy val valDef = typer typedValDef ValDef(lhs, rhs)
 
-      override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
+      override def toString() = "%s: %s = %s".format(lhs, tpe, rhs)
     }
 
     /** Sets the rhs to EmptyTree, which makes the valDef ignored in Scrutinee.
@@ -257,8 +255,5 @@ trait Matrix extends MatrixAdditions {
       // careful: pos has special meaning
       recordSyntheticSym(owner.newVariable(pos, n) setInfo tpe setFlag (SYNTHETIC.toLong /: flags)(_|_))
     }
-
-    def typedValDef(x: Symbol, rhs: Tree) =
-      tracing("typedVal")(typer typedValDef (VAL(x) === rhs))
   }
 }
