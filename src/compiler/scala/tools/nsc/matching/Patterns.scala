@@ -75,7 +75,7 @@ trait Patterns extends ast.TreeDSL {
       case ExtractorPattern(ua) if pv.sym.tpe <:< tpt.tpe => this rebindTo expr
       case _                                              => this
     }
-    override def description = "%s: %s".format(exprPat.boundNameString, tpt)
+    override def description = "%s: %s".format(exprPat, tpt)
   }
 
   // 8.1.3
@@ -190,35 +190,38 @@ trait Patterns extends ast.TreeDSL {
 
   // Special List handling.  It was like that when I got here.
   case class ListExtractorPattern(tree: UnApply, tpt: Tree, elems: List[Tree]) extends UnapplyPattern with SequenceLikePattern {
-    private val cons    = ConsClass.primaryConstructor.tpe.resultType
-    private val consRef = typeRef(cons.prefix, ConsClass, List(tpt.tpe))
-    private val listRef = typeRef(cons.prefix, ListClass, List(tpt.tpe))
-    private val seqRef  = typeRef(cons.prefix, SeqClass, List(tpt.tpe))
+    // As yet I can't testify this is doing any good relative to using
+    // tpt.tpe, but it doesn't seem to hurt either.
+    private val packedType = global.typer.computeType(tpt, tpt.tpe)
+    private val consRef    = typeRef(NoPrefix, ConsClass, List(packedType))
+    private val listRef    = typeRef(NoPrefix, ListClass, List(packedType))
+    private val seqRef     = typeRef(NoPrefix, SeqClass, List(packedType))
+
     private def thisSeqRef = {
       val tc = (tree.tpe baseType SeqClass).typeConstructor
-      if (tc.typeParams.size == 1) appliedType(tc, List(tpt.tpe))
+      if (tc.typeParams.size == 1) appliedType(tc, List(packedType))
       else seqRef
     }
 
     // Fold a list into a well-typed x :: y :: etc :: tree.
-    private def listFolder(x: Pattern, xs: Pattern): Pattern = x match {
-      case Pattern(Star(_)) => x rebindTo WILD(x.tpe)
-      case _        =>
+    private def listFolder(hd: Tree, tl: Tree): Tree = unbind(hd) match {
+      case t @ Star(_) => moveBindings(hd, WILD(t.tpe))
+      case _           =>
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
-        val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpt.tpe, listRef), consRef)
+        val consType    = MethodType(dummyMethod newSyntheticValueParams List(packedType, listRef), consRef)
 
-        Pattern(Apply(TypeTree(consType), List(x.boundTree, xs.boundTree)) setType consRef)
+        Apply(TypeTree(consType), List(hd, tl)) setType consRef
     }
-    private def foldedPatterns = elems.foldRight(NilPattern)((x, y) => listFolder(Pattern(x), y))
+    private def foldedPatterns = elems.foldRight(gen.mkNil)((x, y) => listFolder(x, y))
     override def necessaryType = if (nonStarPatterns.nonEmpty) consRef else listRef
 
     override def simplify(pv: PatternVar) = {
       if (pv.tpe <:< necessaryType)
-        foldedPatterns
+        Pattern(foldedPatterns)
       else
         this rebindTo (Typed(tree, TypeTree(necessaryType)) setType necessaryType)
     }
-    override def description = "List(%s => %s)".format(tpt.tpe, resTypesString)
+    override def description = "List(%s => %s)".format(packedType, resTypesString)
   }
 
   trait SequenceLikePattern extends Pattern {
@@ -277,7 +280,7 @@ trait Patterns extends ast.TreeDSL {
         return cache(tree)
 
       val p = tree match {
-        case x: Bind              => apply(unbind(tree)) withBoundTree x
+        case x: Bind              => apply(unbind(tree)) setBound x
         case EmptyTree            => WildcardPattern()
         case Ident(nme.WILDCARD)  => WildcardPattern()
         case x @ Alternative(ps)  => AlternativePattern(x)
@@ -455,11 +458,6 @@ trait Patterns extends ast.TreeDSL {
       tree setType tpe
       this
     }
-    def boundName: Option[Name] = boundTree match {
-      case Bind(name, _)  => Some(name)
-      case _              => None
-    }
-    def boundNameString = "" + (boundName getOrElse "_")
 
     def equalsCheck =
       tracing("equalsCheck")(
@@ -474,14 +472,9 @@ trait Patterns extends ast.TreeDSL {
     }
     override def hashCode() = boundTree.hashCode()
     def description = super.toString()
-    def bindingsDescription =
-      if (boundTree.isEmpty) ""
-      else (boundVariables map (_.name)).mkString("", ", ", " @ ")
 
-    final override def toString() = {
-      if (boundVariables.isEmpty) description
-      else "%s%s".format(bindingsDescription, description)
-    }
+    final override def toString() = description
+
     def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
   }
 

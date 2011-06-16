@@ -50,10 +50,12 @@ trait ParallelMatching extends ast.TreeDSL
       shortCuts(key) = theLabel
       -key
     }
-    def createLabelDef(prefix: String, params: List[Symbol] = Nil, tpe: Type = matchResultType) = {
-      val labelSym = owner.newLabel(owner.pos, cunit.freshTermName(prefix)) setInfo MethodType(params, tpe)
+    def createLabelDef(namePrefix: String, body: Tree, params: List[Symbol] = Nil, restpe: Type = matchResultType) = {
+      val labelName = cunit.freshTermName(namePrefix)
+      val labelSym  = owner.newLabel(owner.pos, labelName)
+      val labelInfo = MethodType(params, restpe)
 
-      (body: Tree) => LabelDef(labelSym, params, body setType tpe)
+      LabelDef(labelSym setInfo labelInfo, params, body setType restpe)
     }
 
     /** This is the recursively focal point for translating the current
@@ -297,7 +299,7 @@ trait ParallelMatching extends ast.TreeDSL
         literals.zipWithIndex map {
           case (lit, index) =>
             val tag  = lit.intValue
-            (tag -> index, tag -> lit.deepBoundVariables)
+            (tag -> index, tag -> lit.boundVariables)
         } unzip
       )
       def literalMap = litPairs groupBy (_._1) map {
@@ -511,7 +513,7 @@ trait ParallelMatching extends ast.TreeDSL
           case PseudoType(o)        => o
         }
       private lazy val labelDef =
-        createLabelDef("fail%")(remake((rest.rows.tail, pmatch.tail).zipped map (_ insert _)).toTree)
+        createLabelDef("fail%", remake((rest.rows.tail, pmatch.tail).zipped map (_ insert _)).toTree)
 
       lazy val cond       = handleOuter(rhs MEMBER_== scrut.id)
       lazy val successOne = rest.rows.head.insert2(List(NoPattern), head.boundVariables, scrut.sym)
@@ -707,7 +709,7 @@ trait ParallelMatching extends ast.TreeDSL
       traceCategory("Final State", "(%s) => %s", paramsString, body)
       def label = Some(labelDef)
 
-      private lazy val labelDef = createLabelDef("body%" + bx, params, caseResultType)(body)
+      private lazy val labelDef = createLabelDef("body%" + bx, body, params, caseResultType)
 
       protected def applyBindingsImpl(subst: Map[Symbol, Symbol]) = {
         val tree =
