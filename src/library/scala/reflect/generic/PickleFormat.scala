@@ -9,7 +9,7 @@ package generic
  *  @author Martin Odersky
  *  @version 1.0
  */
-object PickleFormat {
+@deprecated("scala.reflect.generic will be removed", "2.9.1") object PickleFormat {
 
 /***************************************************
  * Symbol table attribute format:

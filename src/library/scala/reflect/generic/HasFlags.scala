@@ -76,7 +76,7 @@ import Flags._
 /** Common code utilized by Modifiers (which carry the flags associated
  *  with Trees) and Symbol.
  */
-trait HasFlags {
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait HasFlags {
   type FlagsType
   type AccessBoundaryType
   type AnnotationType

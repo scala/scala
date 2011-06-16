@@ -18,6 +18,7 @@ import annotation.switch
 /** @author Martin Odersky
  *  @version 1.0
  */
+@deprecated("scala.reflect.generic will be removed", "2.9.1")
 abstract class UnPickler {
 
   val global: Universe

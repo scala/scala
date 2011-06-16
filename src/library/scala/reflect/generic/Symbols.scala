@@ -3,7 +3,7 @@ package generic
 
 import Flags._
 
-trait Symbols { self: Universe =>
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Symbols { self: Universe =>
 
   type Symbol >: Null <: AbsSymbol
 

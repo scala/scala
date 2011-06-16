@@ -4,7 +4,7 @@ package generic
 import java.io.{ PrintWriter, StringWriter }
 import Flags._
 
-trait Trees { self: Universe =>
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Trees { self: Universe =>
 
   abstract class AbsTreePrinter(out: PrintWriter) {
     def print(tree: Tree)

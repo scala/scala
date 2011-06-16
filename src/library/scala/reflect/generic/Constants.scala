@@ -9,7 +9,7 @@ package generic
 import java.lang.Integer.toOctalString
 import annotation.switch
 
-trait Constants {
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Constants {
   self: Universe =>
 
   import definitions._

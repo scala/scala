@@ -3,7 +3,7 @@ package generic
 
 /** Flags set on Modifiers instances in the parsing stage.
  */
-class ModifierFlags {
+@deprecated("scala.reflect.generic will be removed", "2.9.1") class ModifierFlags {
   final val IMPLICIT      = 0x00000200
   final val FINAL         = 0x00000020
   final val PRIVATE       = 0x00000004
@@ -43,7 +43,7 @@ class ModifierFlags {
 }
 object ModifierFlags extends ModifierFlags
 
-class Flags extends ModifierFlags {
+@deprecated("scala.reflect.generic will be removed", "2.9.1") class Flags extends ModifierFlags {
   final val METHOD        = 0x00000040    // a method
   final val MODULE        = 0x00000100    // symbol is module or class implementing a module
   final val PACKAGE       = 0x00004000    // symbol is a java package

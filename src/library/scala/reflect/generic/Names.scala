@@ -1,7 +1,7 @@
 package scala.reflect
 package generic
 
-trait Names {
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Names {
   type Name >: Null <: AnyRef
   type TypeName <: Name
   type TermName <: Name

@@ -507,14 +507,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isLocal: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
-    final def isConstant: Boolean =
-      isStable && (tpe match {
-        case ConstantType(_) => true
-        case PolyType(_, ConstantType(_)) => true
-        case MethodType(_, ConstantType(_)) => true
-        case NullaryMethodType(ConstantType(_)) => true
-        case _ => false
-      })
+    final def isConstant: Boolean = isStable && isConstantType(tpe.resultType)
 
     /** Is this class nested in another class or module (not a package)? */
     final def isNestedClass: Boolean =
