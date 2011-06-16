@@ -12,4 +12,6 @@ package scala.runtime
 
 import scala.util.control.ControlThrowable
 
-class NonLocalReturnControl[T](val key: AnyRef, val value: T) extends ControlThrowable
+class NonLocalReturnControl[T](val key: AnyRef, val value: T) extends ControlThrowable {
+  final override def fillInStackTrace(): Throwable = this
+}
