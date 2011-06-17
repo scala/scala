@@ -52,7 +52,7 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.1
   case class VariablePattern(tree: Ident) extends NamePattern {
-    val Ident(name) = tree
+    lazy val Ident(name) = tree
     require(isVarPattern(tree) && name != nme.WILDCARD)
 
     override def description = "%s".format(name)
@@ -60,27 +60,26 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.1 (b)
   case class WildcardPattern() extends Pattern {
-    val tree = EmptyTree
+    def tree = EmptyTree
     override def isDefault = true
     override def description = "_"
   }
 
   // 8.1.2
   case class TypedPattern(tree: Typed) extends Pattern {
-    private val Typed(expr, tpt) = tree
-    private lazy val exprPat = Pattern(expr)
+    lazy val Typed(expr, tpt) = tree
 
     override def subpatternsForVars: List[Pattern] = List(Pattern(expr))
     override def simplify(pv: PatternVar) = Pattern(expr) match {
       case ExtractorPattern(ua) if pv.sym.tpe <:< tpt.tpe => this rebindTo expr
       case _                                              => this
     }
-    override def description = "%s: %s".format(exprPat, tpt)
+    override def description = "%s: %s".format(Pattern(expr), tpt)
   }
 
   // 8.1.3
   case class LiteralPattern(tree: Literal) extends Pattern {
-    val Literal(const @ Constant(value)) = tree
+    lazy val Literal(const @ Constant(value)) = tree
 
     def isSwitchable = cond(const.tag) { case ByteTag | ShortTag | IntTag | CharTag => true }
     def intValue = const.intValue
@@ -94,7 +93,7 @@ trait Patterns extends ast.TreeDSL {
   case class ApplyIdentPattern(tree: Apply) extends ApplyPattern with NamePattern {
     // XXX - see bug 3411 for code which violates this assumption
     // require (!isVarPattern(fn) && args.isEmpty)
-    val ident @ Ident(name) = fn
+    lazy val ident @ Ident(name) = fn
 
     override def sufficientType = Pattern(ident).equalsCheck
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
@@ -103,7 +102,7 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.4 (b)
   case class ApplySelectPattern(tree: Apply) extends ApplyPattern with SelectPattern {
     require (args.isEmpty)
-    val Apply(select: Select, _) = tree
+    lazy val Apply(select: Select, _) = tree
 
     override lazy val sufficientType = qualifier.tpe match {
       case t: ThisType  => singleType(t, sym)   // this.X
@@ -138,7 +137,7 @@ trait Patterns extends ast.TreeDSL {
   }
   // 8.1.4 (e)
   case class SimpleIdPattern(tree: Ident) extends NamePattern {
-    val Ident(name) = tree
+    lazy val Ident(name) = tree
     override def description = "Id(%s)".format(name)
   }
 
@@ -192,10 +191,10 @@ trait Patterns extends ast.TreeDSL {
   case class ListExtractorPattern(tree: UnApply, tpt: Tree, elems: List[Tree]) extends UnapplyPattern with SequenceLikePattern {
     // As yet I can't testify this is doing any good relative to using
     // tpt.tpe, but it doesn't seem to hurt either.
-    private val packedType = global.typer.computeType(tpt, tpt.tpe)
-    private val consRef    = typeRef(NoPrefix, ConsClass, List(packedType))
-    private val listRef    = typeRef(NoPrefix, ListClass, List(packedType))
-    private val seqRef     = typeRef(NoPrefix, SeqClass, List(packedType))
+    private lazy val packedType = global.typer.computeType(tpt, tpt.tpe)
+    private lazy val consRef    = typeRef(NoPrefix, ConsClass, List(packedType))
+    private lazy val listRef    = typeRef(NoPrefix, ListClass, List(packedType))
+    private lazy val seqRef     = typeRef(NoPrefix, SeqClass, List(packedType))
 
     private def thisSeqRef = {
       val tc = (tree.tpe baseType SeqClass).typeConstructor
@@ -244,12 +243,12 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.8 (c)
   case class StarPattern(tree: Star) extends Pattern {
-    val Star(elem) = tree
+    lazy val Star(elem) = tree
     override def description = "_*"
   }
   // XXX temporary?
   case class ThisPattern(tree: This) extends NamePattern {
-    val This(name) = tree
+    lazy val This(name) = tree
     override def description = "this"
   }
 
@@ -412,7 +411,7 @@ trait Patterns extends ast.TreeDSL {
   }
 
   sealed trait ApplyPattern extends Pattern {
-    protected lazy val Apply(fn, args) = tree
+    lazy val Apply(fn, args) = tree
     override def subpatternsForVars: List[Pattern] = toPats(args)
 
     override def dummies =
@@ -423,7 +422,7 @@ trait Patterns extends ast.TreeDSL {
   }
 
   sealed abstract class Pattern extends PatternBindingLogic {
-    val tree: Tree
+    def tree: Tree
 
     // returns either a simplification of this pattern or identity.
     def simplify(pv: PatternVar): Pattern = this
