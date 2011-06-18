@@ -61,7 +61,7 @@ abstract class UnPickler {
     /** A map from entry numbers to symbols, types, or annotations */
     private val entries = new Array[AnyRef](index.length)
 
-    /** A map from symbols to their associated `decls' scopes */
+    /** A map from symbols to their associated `decls` scopes */
     private val symScopes = new HashMap[Symbol, Scope]
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
@@ -97,7 +97,7 @@ abstract class UnPickler {
                               " in "+filename)
     }
 
-    /** The `decls' scope associated with given symbol */
+    /** The `decls` scope associated with given symbol */
     protected def symScope(sym: Symbol) = symScopes.getOrElseUpdate(sym, newScope)
 
     /** Does entry represent an (internal) symbol */

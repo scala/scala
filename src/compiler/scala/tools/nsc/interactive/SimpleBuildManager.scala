@@ -95,7 +95,7 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
     success
   }
 
-  /** Save dependency information to `file'. */
+  /** Save dependency information to `file`. */
   def saveTo(file: AbstractFile, fromFile: AbstractFile => String) {
     compiler.dependencyAnalysis.dependenciesFile = file
     compiler.dependencyAnalysis.saveDependencies(fromFile)

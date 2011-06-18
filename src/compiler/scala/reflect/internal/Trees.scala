@@ -27,7 +27,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
   /** @param privateWithin the qualifier for a private (a type name)
    *    or tpnme.EMPTY, if none is given.
    *  @param annotations the annotations for the definition.
-   *    <strong>Note:</strong> the typechecker drops these annotations,
+   *    '''Note:''' the typechecker drops these annotations,
    *    use the AnnotationInfo's (Symbol.annotations) in later phases.
    */
   case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree], positions: Map[Long, Position]) extends HasFlags {
@@ -132,22 +132,22 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
     def isErroneous = (this.tpe ne null) && this.tpe.isErroneous
     def isTyped     = (this.tpe ne null) && !this.tpe.isErroneous
 
-    /** Apply `f' to each subtree */
+    /** Apply `f` to each subtree */
     def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(this) }
 
-    /** If 'pf' is defined for a given subtree, call super.traverse(pf(tree)),
+    /** If `pf` is defined for a given subtree, call super.traverse(pf(tree)),
      *  otherwise super.traverse(tree).
      */
     def foreachPartial(pf: PartialFunction[Tree, Tree]) { new ForeachPartialTreeTraverser(pf).traverse(this) }
 
-    /** Find all subtrees matching predicate `p' */
+    /** Find all subtrees matching predicate `p` */
     def filter(f: Tree => Boolean): List[Tree] = {
       val ft = new FilterTreeTraverser(f)
       ft.traverse(this)
       ft.hits.toList
     }
 
-    /** Returns optionally first tree (in a preorder traversal) which satisfies predicate `p',
+    /** Returns optionally first tree (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.
      */
     def find(p: Tree => Boolean): Option[Tree] = {
@@ -162,7 +162,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
       }
     }
 
-    /** Is there part of this tree which satisfies predicate `p'? */
+    /** Is there part of this tree which satisfies predicate `p`? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
     def equalsStructure(that : Tree) = equalsStructure0(that)(_ eq _)
@@ -491,7 +491,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
    */
   case class ApplyDynamic(qual: Tree, args: List[Tree])
        extends TermTree with SymTree
-    // The symbol of an ApplyDynamic is the function symbol of `qual', or NoSymbol, if there is none.
+    // The symbol of an ApplyDynamic is the function symbol of `qual`, or NoSymbol, if there is none.
 
   /** Super reference, qual = corresponding this reference */
   case class Super(qual: Tree, mix: TypeName) extends TermTree {
@@ -564,7 +564,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
   /** A synthetic tree holding an arbitrary type.  Not to be confused with
     * with TypTree, the trait for trees that are only used for type trees.
     * TypeTree's are inserted in several places, but most notably in
-    * <code>RefCheck</code>, where the arbitrary type trees are all replaced by
+    * `RefCheck`, where the arbitrary type trees are all replaced by
     * TypeTree's. */
   case class TypeTree() extends TypTree {
     private var orig: Tree = null
@@ -628,9 +628,9 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
    *  supercall arguments and template body.
    *
    *  @param sym        the class symbol
-   *  @param constrMods the modifiers for the class constructor, i.e. as in `class C private (...)'
+   *  @param constrMods the modifiers for the class constructor, i.e. as in `class C private (...)`
    *  @param vparamss   the value parameters -- if they have symbols they
-   *                    should be owned by `sym'
+   *                    should be owned by `sym`
    *  @param argss      the supercall arguments
    *  @param body       the template statements without primary constructor
    *                    and value parameter fields.
@@ -689,13 +689,13 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
     DefDef(sym, rhs(sym.info.paramss))
   }
 
-  /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
+  /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     atPos(sym.pos) {
       TypeDef(Modifiers(sym.flags), sym.name.toTypeName, sym.typeParams map TypeDef, rhs) setSymbol sym
     }
 
-  /** A TypeDef node which defines abstract type or type parameter for given `sym' */
+  /** A TypeDef node which defines abstract type or type parameter for given `sym` */
   def TypeDef(sym: Symbol): TypeDef =
     TypeDef(sym, TypeBoundsTree(TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi)))
 
@@ -1561,7 +1561,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
     override def toString() = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
   }
 
-  /** Substitute symbols in 'from' with symbols in 'to'. Returns a new
+  /** Substitute symbols in `from` with symbols in `to`. Returns a new
    *  tree using the new symbols and whose Ident and Select nodes are
    *  name-consistent with the new symbols.
    */

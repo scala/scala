@@ -135,10 +135,10 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
   protected def factoryName(clazz: Symbol) =
     atPhase(ownPhase) { newTermName("new$"+clazz.name) }
 
-  /** Does `clazz' contain virtual classes? */
+  /** Does `clazz` contain virtual classes? */
   protected def containsVirtuals(clazz: Symbol) = clazz.info.decls.toList exists (_.isVirtualClass)
 
-  /** The inner classes that need factory methods in `clazz'
+  /** The inner classes that need factory methods in `clazz`
    *  This is intended to catch situations like the following
    *
    *  abstract class C {
@@ -197,10 +197,10 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
   protected def mkPolyType(tparams: List[Symbol], tp: Type) =
     if (tparams.isEmpty) tp else PolyType(tparams, tp)
 
-  /** A lazy type to complete `sym', which is is generated for virtual class
-   *  `clazz'.
-   *  The info of the symbol is computed by method `getInfo'.
-   *  It is wrapped in copies of the type parameters of `clazz'.
+  /** A lazy type to complete `sym`, which is is generated for virtual class
+   *  `clazz`.
+   *  The info of the symbol is computed by method `getInfo`.
+   *  It is wrapped in copies of the type parameters of `clazz`.
    */
   abstract class PolyTypeCompleter(sym: Symbol, clazz: Symbol) extends LazyType {
     def getInfo: Type
@@ -359,7 +359,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
     // all code is executed at phase ownPhase.next
 
     /** Add trees for abstract types, worker traits, and factories (@see mkFactory)
-     *  to template body `stats'
+     *  to template body `stats`
      */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val stats1 = stats flatMap transformStat
@@ -408,7 +408,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
     }
 
 
-    /** The factory definition for virtual class `clazz' (@see mkFactory)
+    /** The factory definition for virtual class `clazz` (@see mkFactory)
      *  For a virtual class
      *
      *  attrs mods class VC[Ts] <: Ps { decls }
@@ -454,7 +454,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
       }
     }
 
-    /** Create an override bridge for method `meth' in concrete class `cclazz'.
+    /** Create an override bridge for method `meth` in concrete class `cclazz`.
      *  An override bridge has the form
      *
      *   override f(xs1)...(xsN) = super.f(xs)...(xsN)

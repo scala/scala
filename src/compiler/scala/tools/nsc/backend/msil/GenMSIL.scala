@@ -626,7 +626,7 @@ abstract class GenMSIL extends SubComponent {
     val endExBlock = new HashMap[BasicBlock, List[ExceptionHandler]]()
 
     /** When emitting the code (genBlock), the number of currently active try / catch
-     *  blocks. When seeing a `RETURN' inside a try / catch, we need to
+     *  blocks. When seeing a `RETURN` inside a try / catch, we need to
      *   - store the result in a local (if it's not UNIT)
      *   - emit `Leave handlerReturnLabel` instead of the Return
      *   - emit code at the end: load the local and return its value

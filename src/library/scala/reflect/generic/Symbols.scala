@@ -99,7 +99,7 @@ import Flags._
      *    object Foo
      *    class Foo
      *
-     *  Then object Foo has a `moduleClass' (invisible to the user, the backend calls it Foo$
+     *  Then object Foo has a `moduleClass` (invisible to the user, the backend calls it Foo$
      *  linkedClassOfClass goes from class Foo$ to class Foo, and back.
      */
     def linkedClassOfClass: Symbol

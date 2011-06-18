@@ -11,7 +11,7 @@ package generic
      */
     def isComplete: Boolean = true
 
-    /** If this is a lazy type, assign a new type to `sym'. */
+    /** If this is a lazy type, assign a new type to `sym`. */
     def complete(sym: Symbol) {}
 
     /** Convert toString avoiding infinite recursions by cutting off

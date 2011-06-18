@@ -153,14 +153,14 @@ trait CompilerControl { self: Global =>
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) =
     postWorkItem(new AskLinkPosItem(sym, source, response))
 
-  /** Sets sync var `response' to list of members that are visible
+  /** Sets sync var `response` to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    *  @pre  source is loaded
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
     postWorkItem(new AskTypeCompletionItem(pos, response))
 
-  /** Sets sync var `response' to list of members that are visible
+  /** Sets sync var `response` to list of members that are visible
    *  as members of the scope enclosing `pos`.
    *  @pre  source is loaded
    */

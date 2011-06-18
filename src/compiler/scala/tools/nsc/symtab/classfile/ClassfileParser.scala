@@ -1214,7 +1214,7 @@ abstract class ClassfileParser {
      *  If the given name is not an inner class, it returns the symbol found in 'definitions'.
      */
     def classSymbol(externalName: Name): Symbol = {
-      /** Return the symbol of `innerName', having the given `externalName'. */
+      /** Return the symbol of `innerName`, having the given `externalName`. */
       def innerSymbol(externalName: Name, innerName: Name, static: Boolean): Symbol = {
         def getMember(sym: Symbol, name: Name): Symbol =
           if (static)
@@ -1231,7 +1231,7 @@ abstract class ClassfileParser {
               else entry.outerName
             val sym = classSymbol(outerName)
             val s =
-              // if loading during initialization of `definitions' typerPhase is not yet set.
+              // if loading during initialization of `definitions` typerPhase is not yet set.
               // in that case we simply load the member at the current phase
               if (currentRun.typerPhase != null)
                 atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))

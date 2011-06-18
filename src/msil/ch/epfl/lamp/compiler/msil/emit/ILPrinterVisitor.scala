@@ -726,7 +726,7 @@ abstract class ILPrinterVisitor extends Visitor {
         val ta = ct.typeArgs(i)
           val sigOpt = primitive.get(ta)
           if (sigOpt.isDefined) print(sigOpt.get)
-          else printTypeName(ta); /* should be printSignature, but don't want `class' or `valuetype'
+          else printTypeName(ta); /* should be printSignature, but don't want `class` or `valuetype`
         appearing before a type param usage. */
         i = i + 1;
         if (i < ct.typeArgs.length) {

@@ -39,12 +39,12 @@ trait Scanners extends Parsers {
   def whitespace: Parser[Any]
 
   /** <p>
-   *    <code>Scanner</code> is essentially(*) a parser that produces `Token's
+   *    <code>Scanner</code> is essentially(*) a parser that produces `Token`s
    *    from a stream of characters. The tokens it produces are typically
    *    passed to parsers in <code>TokenParsers</code>.
    *  </p>
    *  <p>
-   *   Note: (*) <code>Scanner</code> is really a `Reader' of `Token's
+   *   Note: (*) <code>Scanner</code> is really a `Reader` of `Token`s
    *  </p>
    */
   class Scanner(in: Reader[Char]) extends Reader[Token] {

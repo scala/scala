@@ -45,7 +45,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @return      the updated buffer.
    */
   @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=' if you intend to create a new collection.", "2.8.0")
+              "Use `clone() ++=` if you intend to create a new collection.", "2.8.0")
   override def +(elem: A): Buffer[A] = self.+(elem)
 
   /** Append a single element to this buffer.

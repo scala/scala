@@ -32,7 +32,7 @@ object StreamReader {
  *
  *  NOTE:
  *  StreamReaders do not really fulfill the new contract for readers, which
- *  requires a `source' CharSequence representing the full input.
+ *  requires a `source` CharSequence representing the full input.
  *  Instead source is treated line by line.
  *  As a consequence, regex matching cannot extend beyond a single line
  *  when a StreamReader are used for input.

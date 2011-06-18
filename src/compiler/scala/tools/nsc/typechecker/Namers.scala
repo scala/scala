@@ -46,7 +46,7 @@ trait Namers { self: Analyzer =>
   def newNamer(context : Context) : Namer = new NormalNamer(context)
 
   // In the typeCompleter (templateSig) of a case class (resp it's module),
-  // synthetic `copy' (reps `apply', `unapply') methods are added. To compute
+  // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
   // their signatures, the corresponding ClassDef is needed.
   // During naming, for each case class module symbol, the corresponding ClassDef
   // is stored in this map. The map is cleared lazily, i.e. when the new symbol
@@ -147,7 +147,7 @@ trait Namers { self: Analyzer =>
         nme.isSetterName(newS.name) ||
         newS.owner.isPackageClass) &&
         !((newS.owner.isTypeParameter || newS.owner.isAbstractType) &&
-          newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_' for higher-order type params
+          newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_` for higher-order type params
     }
 
     private def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
@@ -937,7 +937,7 @@ trait Namers { self: Analyzer =>
             case _ =>
           }
           if (tpt.isEmpty) {
-            // provisionally assign `meth' a method type with inherited result type
+            // provisionally assign `meth` a method type with inherited result type
             // that way, we can leave out the result type even if method is recursive.
             meth setInfo thisMethodType(resultPt)
           }
@@ -1316,9 +1316,9 @@ trait Namers { self: Analyzer =>
 
     /** Check that symbol's definition is well-formed. This means:
      *   - no conflicting modifiers
-     *   - `abstract' modifier only for classes
-     *   - `override' modifier never for classes
-     *   - `def' modifier never for parameters of case classes
+     *   - `abstract` modifier only for classes
+     *   - `override` modifier never for classes
+     *   - `def` modifier never for parameters of case classes
      *   - declarations only in mixins or abstract classes (when not @native)
      */
     def validate(sym: Symbol) {

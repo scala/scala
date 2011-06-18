@@ -22,9 +22,9 @@ import collection.mutable.HashSet
  *  </p>
  *  <p>
  *    To distinguish between identifiers and keywords, it uses a set of reserved identifiers:
- *    every string contained in `reserved' is returned as a keyword token.
+ *    every string contained in `reserved` is returned as a keyword token.
  *    (Note that "=>" is hard-coded as a keyword.)
- *    Additionally, the kinds of delimiters can be specified by the `delimiters' set.
+ *    Additionally, the kinds of delimiters can be specified by the `delimiters` set.
  *  </p>
  *  <p>
  *    Usually this component is used to break character-based input into bigger tokens,
@@ -34,7 +34,7 @@ import collection.mutable.HashSet
  * @author Martin Odersky, Iulian Dragos, Adriaan Moors
  */
 class StdLexical extends Lexical with StdTokens {
-  // see `token' in `Scanners'
+  // see `token` in `Scanners`
   def token: Parser[Token] =
     ( identChar ~ rep( identChar | digit )              ^^ { case first ~ rest => processIdent(first :: rest mkString "") }
     | digit ~ rep( digit )                              ^^ { case first ~ rest => NumericLit(first :: rest mkString "") }
@@ -50,7 +50,7 @@ class StdLexical extends Lexical with StdTokens {
   // legal identifier chars other than digits
   def identChar = letter | elem('_')
 
-  // see `whitespace in `Scanners'
+  // see `whitespace in `Scanners`
   def whitespace: Parser[Any] = rep(
       whitespaceChar
     | '/' ~ '*' ~ comment
@@ -63,7 +63,7 @@ class StdLexical extends Lexical with StdTokens {
     | chrExcept(EofCh) ~ comment
     )
 
-  /** The set of reserved identifiers: these will be returned as `Keyword's */
+  /** The set of reserved identifiers: these will be returned as `Keyword`s */
   val reserved = new HashSet[String]
 
   /** The set of delimiters (ordering does not matter) */

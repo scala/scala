@@ -93,7 +93,7 @@ object Map extends ImmutableMapFactory[Map] {
     def - (key: Any): Map[Any, Nothing] = this
   }
 
-  @deprecated("use `Map.empty' instead", "2.8.0")
+  @deprecated("use `Map.empty` instead", "2.8.0")
   class EmptyMap[A,B] extends Map[A,B] with Serializable {
     override def size: Int = 0
     def get(key: A): Option[B] = None

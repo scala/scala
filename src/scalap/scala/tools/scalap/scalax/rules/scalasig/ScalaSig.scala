@@ -350,5 +350,5 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
    *   AnnotArg       = Tree | Constant
    *   ConstAnnotArg  = Constant | AnnotInfo | AnnotArgArray
    *
-   *   len is remaining length after `len'.
+   *   len is remaining length after `len`.
    */

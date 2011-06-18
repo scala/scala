@@ -19,7 +19,7 @@ import scala.collection.{ mutable, immutable }
  *  - for every use of a def-parameter: x ==> x.apply()
  *  - for every argument to a def parameter `x: => T':
  *      if argument is not a reference to a def parameter:
- *        convert argument `e' to (expansion of) `() => e'
+ *        convert argument `e` to (expansion of) `() => e'
  *  - for every repeated Scala parameter `x: T*' --> x: Seq[T].
  *  - for every repeated Java parameter `x: T...' --> x: Array[T], except:
  *    if T is an unbounded abstract type, replace --> x: Array[Object]
@@ -106,7 +106,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
     if (sym.isType) uncurryType(tp) else uncurry(tp)
 
   /** Traverse tree omitting local method definitions.
-   *  If a `return' is encountered, set `returnFound' to true.
+   *  If a `return` is encountered, set `returnFound` to true.
    *  Used for MSIL only.
    */
   private object lookForReturns extends Traverser {
@@ -155,8 +155,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         throw ex
     }
 
-    /* Is tree a reference `x' to a call by name parameter that needs to be converted to
-     * x.apply()? Note that this is not the case if `x' is used as an argument to another
+    /* Is tree a reference `x` to a call by name parameter that needs to be converted to
+     * x.apply()? Note that this is not the case if `x` is used as an argument to another
      * call by name parameter.
      */
     def isByNameRef(tree: Tree): Boolean =
@@ -482,7 +482,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
       def shouldBeLiftedAnyway(tree: Tree) = false && // buggy, see #1981
         forMSIL && lookForReturns.found(tree)
 
-      /** Transform tree `t' to { def f = t; f } where `f' is a fresh name
+      /** Transform tree `t` to { def f = t; f } where `f` is a fresh name
        */
       def liftTree(tree: Tree) = {
         if (settings.debug.value)

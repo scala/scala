@@ -45,23 +45,23 @@ case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends P
   /** The column number referred to by the position; column numbers start at 1 */
   def column: Int = offset - index(line - 1) + 1
 
-  /** The contents of the line numbered `lnum' (must not contain a new-line character).
+  /** The contents of the line numbered `lnum` (must not contain a new-line character).
    *
-   * @param lnum a 1-based integer index into the `document'
-   * @return the line at `lnum' (not including a newline)
+   * @param lnum a 1-based integer index into the `document`
+   * @return the line at `lnum` (not including a newline)
    */
   def lineContents: String =
     source.subSequence(index(line - 1), index(line)).toString
 
-  /** Returns a string representation of the `Position', of the form `line.column' */
+  /** Returns a string representation of the `Position`, of the form `line.column` */
   override def toString = line+"."+column
 
   /** Compare this position to another, by first comparing their line numbers,
    * and then -- if necessary -- using the columns to break a tie.
    *
-   * @param `that' a `Position' to compare to this `Position'
-   * @return true if this position's line or (in case of a tie wrt. line numbers)
-   *         its column is smaller than the corresponding components of `that'
+   * @param `that` a `Position` to compare to this `Position`
+   * @return true if this position's line number or (in case of equal line numbers)
+   *         column is smaller than the corresponding components of `that`
    */
   override def <(that: Position) = that match {
     case OffsetPosition(_, that_offset) =>

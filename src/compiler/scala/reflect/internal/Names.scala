@@ -25,21 +25,17 @@ trait Names /*extends reflect.generic.Names*/ {
 
   final val nameDebug = false
 
-  /** memory to store all names sequentially
-   */
+  /** Memory to store all names sequentially. */
   var chrs: Array[Char] = new Array[Char](NAME_SIZE)
   private var nc = 0
 
-  /** hashtable for finding term names quickly
-   */
+  /** Hashtable for finding term names quickly. */
   private val termHashtable = new Array[TermName](HASH_SIZE)
 
-  /** hashtable for finding type names quickly
-   */
+  /** Hashtable for finding type names quickly. */
   private val typeHashtable = new Array[TypeName](HASH_SIZE)
 
-  /** the hashcode of a name
-   */
+  /** The hashcode of a name. */
   private def hashValue(cs: Array[Char], offset: Int, len: Int): Int =
     if (len > 0)
       (len * (41 * 41 * 41) +
@@ -58,8 +54,7 @@ trait Names /*extends reflect.generic.Names*/ {
     i == len
   }
 
-  /** enter characters into chrs array
-   */
+  /** Enter characters into chrs array. */
   private def enterChars(cs: Array[Char], offset: Int, len: Int) {
     var i = 0
     while (i < len) {
@@ -75,8 +70,7 @@ trait Names /*extends reflect.generic.Names*/ {
     else nc = nc + len
   }
 
-  /** Create a term name from the characters in cs[offset..offset+len-1].
-   */
+  /** Create a term name from the characters in cs[offset..offset+len-1]. */
   def newTermName(cs: Array[Char], offset: Int, len: Int): TermName = {
     val h = hashValue(cs, offset, len) & HASH_MASK
     var n = termHashtable(h)
@@ -89,30 +83,25 @@ trait Names /*extends reflect.generic.Names*/ {
     n
   }
 
-  /** create a term name from string
-   */
+  /** Create a term name from string. */
   def newTermName(s: String): TermName =
     newTermName(s.toCharArray(), 0, s.length())
 
-  /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
-   */
+  /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
   def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
     val chars = Codec fromUTF8 bs.slice(offset, offset + len)
     newTermName(chars, 0, chars.length)
   }
 
-  /** Create a type name from the characters in cs[offset..offset+len-1].
-   */
+  /** Create a type name from the characters in cs[offset..offset+len-1]. */
   def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName =
     newTermName(cs, offset, len).toTypeName
 
-  /** Create a type name from string
-   */
+  /** Create a type name from string. */
   def newTypeName(s: String): TypeName =
     newTermName(s).toTypeName
 
-  /** Create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1].
-   */
+  /** Create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
@@ -124,8 +113,7 @@ trait Names /*extends reflect.generic.Names*/ {
   def nameChars: Array[Char] = chrs
   @deprecated("", "2.9.0") def view(s: String): TermName = newTermName(s)
 
-  /** An implicit conversion from names to term names
-   */
+  /** An implicit conversion from names to term names. */
   implicit def promoteTermNamesAsNecessary(name: Name): TermName = mkTermName(name)
 
 
@@ -136,12 +124,10 @@ trait Names /*extends reflect.generic.Names*/ {
     /** Index into name table */
     def start: Int = index
 
-    /** next name in the same hash bucket
-     */
+    /** The next name in the same hash bucket. */
     def next: Name
 
-    /** return the length of this name
-     */
+    /** The length of this name. */
     final def length: Int = len
     final def isEmpty = length == 0
     final def nonEmpty = !isEmpty
@@ -153,26 +139,23 @@ trait Names /*extends reflect.generic.Names*/ {
     def companionName: Name
     def bothNames: List[Name] = List(toTermName, toTypeName)
 
-    /** Copy bytes of this name to buffer cs, starting at position `offset`.
-     */
+    /** Copy bytes of this name to buffer cs, starting at position `offset`. */
     final def copyChars(cs: Array[Char], offset: Int) =
       compat.Platform.arraycopy(chrs, index, cs, offset, len)
 
-    /** return the ascii representation of this name
-     */
+    /** @return the ascii representation of this name */
     final def toChars: Array[Char] = {
       val cs = new Array[Char](len)
       copyChars(cs, 0)
       cs
     }
 
-    /** return the string representation of this name
-     */
+    /** @return the string representation of this name */
     final override def toString(): String = new String(chrs, index, len)
     def debugString() = NameTransformer.decode(toString) + (if (isTypeName) "!" else "")
 
     /** Write to UTF8 representation of this name to given character array.
-     *  Start copying to index `to'. Return index of next free byte in array.
+     *  Start copying to index `to`. Return index of next free byte in array.
      *  Array must have enough remaining space for all bytes
      *  (i.e. maximally 3*length bytes).
      */
@@ -182,8 +165,7 @@ trait Names /*extends reflect.generic.Names*/ {
       offset + bytes.length
     }
 
-    /** return the hash value of this name
-     */
+    /** @return the hash value of this name */
     final override def hashCode(): Int = index
 
     // Presently disabled.
@@ -209,17 +191,16 @@ trait Names /*extends reflect.generic.Names*/ {
       false
     }
 
-    /** return the i'th Char of this name
-     */
+    /** @return the i'th Char of this name */
     final def apply(i: Int): Char = chrs(index + i)
 
-    /** return the index of first occurrence of char c in this name, length if not found */
+    /** @return the index of first occurrence of char c in this name, length if not found */
     final def pos(c: Char): Int = pos(c, 0)
 
-    /** return the index of first occurrence of char c in this name, length if not found */
+    /** @return the index of first occurrence of char c in this name, length if not found */
     final def pos(s: String): Int = pos(s, 0)
 
-    /** return the index of the first occurrence of character c in
+    /** Returns the index of the first occurrence of character c in
      *  this name from start, length if not found.
      *
      *  @param c     the character
@@ -232,7 +213,7 @@ trait Names /*extends reflect.generic.Names*/ {
       i
     }
 
-    /** return the index of the first occurrence of nonempty string s
+    /** Returns the index of the first occurrence of nonempty string s
      *  in this name from start, length if not found.
      *
      *  @param s     the string
@@ -252,7 +233,7 @@ trait Names /*extends reflect.generic.Names*/ {
       len
     }
 
-    /** return the index of last occurrence of char c in this
+    /** Returns the index of last occurrence of char c in this
      *  name, -1 if not found.
      *
      *  @param c the character
@@ -262,7 +243,7 @@ trait Names /*extends reflect.generic.Names*/ {
 
     final def lastPos(s: String): Int = lastPos(s, len - s.length)
 
-    /** return the index of the last occurrence of char c in this
+    /** Returns the index of the last occurrence of char c in this
      *  name from start, -1 if not found.
      *
      *  @param c     the character
@@ -275,7 +256,7 @@ trait Names /*extends reflect.generic.Names*/ {
       i
     }
 
-    /** return the index of the last occurrence of string s in this
+    /** Returns the index of the last occurrence of string s in this
      *  name from start, -1 if not found.
      *
      *  @param s     the string
@@ -295,12 +276,10 @@ trait Names /*extends reflect.generic.Names*/ {
       -s.length()
     }
 
-    /** does this name start with prefix?
-     */
+    /** Does this name start with prefix? */
     final def startsWith(prefix: Name): Boolean = startsWith(prefix, 0)
 
-    /** does this name start with prefix at given start index?
-     */
+    /** Does this name start with prefix at given start index? */
     final def startsWith(prefix: Name, start: Int): Boolean = {
       var i = 0
       while (i < prefix.length && start + i < len &&
@@ -309,12 +288,10 @@ trait Names /*extends reflect.generic.Names*/ {
       i == prefix.length
     }
 
-    /** does this name end with suffix?
-     */
+    /** Does this name end with suffix? */
     final def endsWith(suffix: Name): Boolean = endsWith(suffix, len)
 
-    /** does this name end with suffix just before given end index?
-     */
+    /** Does this name end with suffix just before given end index? */
     final def endsWith(suffix: Name, end: Int): Boolean = {
       var i = 1
       while (i <= suffix.length && i <= end &&
@@ -347,8 +324,7 @@ trait Names /*extends reflect.generic.Names*/ {
 
     def lastIndexOf(ch: Char) = toChars lastIndexOf ch
 
-    /** Return the subname with characters from start to end-1.
-     */
+    /** Return the subname with characters from start to end-1. */
     def subName(from: Int, to: Int): Name
 
     /** Replace all occurrences of `from` by `to` in
@@ -365,8 +341,7 @@ trait Names /*extends reflect.generic.Names*/ {
       newTermName(cs, 0, len)
     }
 
-    /** Replace operator symbols by corresponding $op_name.
-     */
+    /** Replace operator symbols by corresponding $op_name. */
     def encode: Name = {
       val str = toString()
       val res = NameTransformer.encode(str)
@@ -378,8 +353,7 @@ trait Names /*extends reflect.generic.Names*/ {
     def append(suffix: String): Name
     def append(suffix: Name): Name
 
-    /** Replace $op_name by corresponding operator symbol.
-     */
+    /** Replace $op_name by corresponding operator symbol. */
     def decode: String = (
       NameTransformer.decode(toString()) +
       (if (nameDebug && isTypeName) "!" else ""))//debug

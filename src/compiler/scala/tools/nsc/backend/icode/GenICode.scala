@@ -1168,7 +1168,7 @@ abstract class GenICode extends SubComponent  {
       }
     }
 
-    /** Load the qualifier of `tree' on top of the stack. */
+    /** Load the qualifier of `tree` on top of the stack. */
     private def genLoadQualifier(tree: Tree, ctx: Context): Context =
       tree match {
         case Select(qualifier, _) =>
@@ -1884,7 +1884,7 @@ abstract class GenICode extends SubComponent  {
       /** current exception handlers */
       var handlers: List[ExceptionHandler] = Nil
 
-      /** The current monitors or finalizers, to be cleaned up upon `return'. */
+      /** The current monitors or finalizers, to be cleaned up upon `return`. */
       var cleanups: List[Cleanup] = Nil
 
       /** The exception handlers we are currently generating code for */
@@ -2178,8 +2178,8 @@ abstract class GenICode extends SubComponent  {
        *  but with `NoSymbol` as the exception class. The covered blocks are all blocks of
        *  the `try { .. } catch { .. }`.
        *
-       *  Also, TryMsil does not enter any Finalizers into the `cleanups', because the
-       *  CLI takes care of running the finalizer when seeing a `leave' statement inside
+       *  Also, TryMsil does not enter any Finalizers into the `cleanups`, because the
+       *  CLI takes care of running the finalizer when seeing a `leave` statement inside
        *  a try / catch.
        */
       def TryMsil(body: Context => Context,
@@ -2232,7 +2232,7 @@ abstract class GenICode extends SubComponent  {
      * Represent a label in the current method code. In order
      * to support forward jumps, labels can be created without
      * having a deisgnated target block. They can later be attached
-     * by calling `anchor'.
+     * by calling `anchor`.
      */
     class Label(val symbol: Symbol) {
       var anchored = false

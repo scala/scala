@@ -215,7 +215,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   def gcd (that: BigInt): BigInt = new BigInt(this.bigInteger.gcd(that.bigInteger))
 
   /** Returns a BigInt whose value is (this mod m).
-   *  This method differs from `%' in that it always returns a non-negative BigInt.
+   *  This method differs from `%` in that it always returns a non-negative BigInt.
    */
   def mod (that: BigInt): BigInt = new BigInt(this.bigInteger.mod(that.bigInteger))
 

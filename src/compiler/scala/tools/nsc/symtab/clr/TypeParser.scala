@@ -69,7 +69,7 @@ abstract class TypeParser {
     override def complete(sym: Symbol) { throw new AssertionError("cyclic type dereferencing") }
   }
 
-  /* the names `classTParams' and `newTParams' stem from the forJVM version (ClassfileParser.sigToType())
+  /* the names `classTParams` and `newTParams` stem from the forJVM version (ClassfileParser.sigToType())
   *  but there are differences that should be kept in mind.
   *  forMSIL, a nested class knows nothing about any type-params in the nesting class,
   *  therefore newTParams is redundant (other than for recording lexical order),

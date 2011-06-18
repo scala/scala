@@ -428,12 +428,12 @@ trait Implicits {
      case _ => tp.isStable
     }
 
-    /** Does type `tp' match expected type `pt'
-     *  This is the case if either `pt' is a unary function type with a
-     *  HasMethodMatching type as result, and `tp' is a unary function
+    /** Does type `tp` match expected type `pt`
+     *  This is the case if either `pt` is a unary function type with a
+     *  HasMethodMatching type as result, and `tp` is a unary function
      *  or method type whose result type has a method whose name and type
      *  correspond to the HasMethodMatching type,
-     *  or otherwise if `tp' is compatible with `pt'.
+     *  or otherwise if `tp` is compatible with `pt`.
      *  This method is performance critical: 5-8% of typechecking time.
      */
     private def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) = {
@@ -620,15 +620,15 @@ trait Implicits {
       }
     }
 
-    /** Is `sym' the standard conforms method in Predef?
-     *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def'
+    /** Is `sym` the standard conforms method in Predef?
+     *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def`
      *  which does a member lookup (it can't be a lazy val because we might reload Predef
      *  during resident compilations).
      */
     private def isConformsMethod(sym: Symbol) =
       sym.name == nme.conforms && sym.owner == PredefModule.moduleClass
 
-    /** Should implicit definition symbol `sym' be considered for applicability testing?
+    /** Should implicit definition symbol `sym` be considered for applicability testing?
      *  This is the case if one of the following holds:
      *   - the symbol's type is initialized
      *   - the symbol comes from a classfile

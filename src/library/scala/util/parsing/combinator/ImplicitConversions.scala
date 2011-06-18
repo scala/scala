@@ -9,17 +9,17 @@
 
 package scala.util.parsing.combinator
 
-/** This object contains implicit conversions that come in handy when using the `^^' combinator
+/** This object contains implicit conversions that come in handy when using the `^^` combinator
  * {@see Parsers} to construct an AST from the concrete syntax.
  *<p>
- * The reason for this is that the sequential composition combinator (`~') combines its constituents
- * into a ~. When several `~'s are combined, this results in nested `~'s (to the left).
- * The `flatten*' coercions makes it easy to apply an `n'-argument function to a nested ~ of
- * depth (`n-1')</p>
+ * The reason for this is that the sequential composition combinator (`~`) combines its constituents
+ * into a ~. When several `~`s are combined, this results in nested `~`s (to the left).
+ * The `flatten*` coercions makes it easy to apply an `n`-argument function to a nested ~ of
+ * depth (`n-1`)</p>
  *<p>
- * The `headOptionTailToFunList' converts a function that takes a List[A] to a function that
+ * The `headOptionTailToFunList` converts a function that takes a List[A] to a function that
  * accepts a ~[A, Option[List[A]]] (this happens when, e.g., parsing something of the following
- * shape: p ~ opt("." ~ repsep(p, ".")) -- where `p' is a parser that yields an A)</p>
+ * shape: p ~ opt("." ~ repsep(p, ".")) -- where `p` is a parser that yields an A)</p>
  *
  * @author Martin Odersky, Iulian Dragos, Adriaan Moors
  */

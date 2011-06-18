@@ -13,8 +13,8 @@ import util.Statistics._
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
  *  of a type. It characterized by the following two laws:
  *
- *  (1) Each element of `tp.baseTypeSeq'  is a basetype of `tp'
- *  (2) For each basetype `bt1' of `tp' there is an element `bt' in `tp.baseTypeSeq' such that
+ *  (1) Each element of `tp.baseTypeSeq`  is a basetype of `tp`
+ *  (2) For each basetype `bt1` of `tp` there is an element `bt` in `tp.baseTypeSeq` such that
  *
  *      bt.typeSymbol = bt1.typeSymbol
  *      bt <: bt1
@@ -96,16 +96,16 @@ trait BaseTypeSeqs {
       new BaseTypeSeq(parents, arr)
     }
 
-    /** Compute new base type sequence with `tp' prepended to this sequence */
+    /** Compute new base type sequence with `tp` prepended to this sequence */
     def prepend(tp: Type): BaseTypeSeq = copy(tp, 1)
 
-    /** Compute new base type sequence with `tp' replacing the head of this sequence */
+    /** Compute new base type sequence with `tp` replacing the head of this sequence */
     def updateHead(tp: Type): BaseTypeSeq = copy(tp, 0)
 
     /** Compute new base type sequence where every element is mapped
-     *  with function `f'. Lazy types are mapped but not evaluated */
+     *  with function `f`. Lazy types are mapped but not evaluated */
     def map(f: Type => Type): BaseTypeSeq = {
-	  // inlined `elems map f' for performance
+	  // inlined `elems map f` for performance
       val len = length
       var arr = new Array[Type](len)
       var i = 0
@@ -139,7 +139,7 @@ trait BaseTypeSeqs {
       d
     }
 
-    /** The maximum depth of type `tp' */
+    /** The maximum depth of type `tp` */
     protected def maxDpth(tp: Type): Int = tp match {
       case TypeRef(pre, sym, args) =>
         max(maxDpth(pre), maxDpth(args) + 1)
@@ -159,7 +159,7 @@ trait BaseTypeSeqs {
         1
     }
 
-    /** The maximum depth of all types `tps' */
+    /** The maximum depth of all types `tps` */
     private def maxDpth(tps: Seq[Type]): Int = {
       var d = 0
       for (tp <- tps) d = max(d, maxDpth(tp))

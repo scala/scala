@@ -234,26 +234,26 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  the collection itself.
    *
    *  $compatMutate
-   *  You are strongly recommended to use '+=' instead.
+   *  You are strongly recommended to use `+=` instead.
    *
    *  @param elem  the element to add.
    */
   @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() +=' if you intend to create a new collection.", "2.8.0")
+              "Use `clone() +=` if you intend to create a new collection.", "2.8.0")
   def + (elem: A): This = { +=(elem); repr }
 
   /** Adds two or more elements to this collection and returns
    *  the collection itself.
    *
    *  $compatMutate
-   *  You are strongly recommended to use '++=' instead.
+   *  You are strongly recommended to use `++=` instead.
    *
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=' if you intend to create a new collection.", "2.8.0")
+              "Use `clone() ++=` if you intend to create a new collection.", "2.8.0")
   def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
     repr

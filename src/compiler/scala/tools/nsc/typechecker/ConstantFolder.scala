@@ -27,7 +27,7 @@ abstract class ConstantFolder {
     case _ => null
   })
 
-  /** If tree is a constant value that can be converted to type `pt', perform
+  /** If tree is a constant value that can be converted to type `pt`, perform
    *  the conversion.
    *
    *  @param tree ...

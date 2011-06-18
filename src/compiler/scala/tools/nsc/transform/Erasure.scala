@@ -234,7 +234,7 @@ abstract class Erasure extends AddInterfaces
   private val traceSig  = util.Tracer(traceProp)
 
   /** This object is only used for sanity testing when -check:genjvm is set.
-   *  In that case we make sure that the erasure of the `normalized' type
+   *  In that case we make sure that the erasure of the `normalized` type
    *  is the same as the erased type that's generated. Normalization means
    *  unboxing some primitive types and further simplifications as they are done in jsig.
    */
@@ -519,7 +519,7 @@ abstract class Erasure extends AddInterfaces
     private def safeToRemoveUnbox(cls: Symbol): Boolean =
       (cls == definitions.NullClass) || isBoxedValueClass(cls)
 
-    /** Box `tree' of unboxed type */
+    /** Box `tree` of unboxed type */
     private def box(tree: Tree): Tree = tree match {
       case LabelDef(name, params, rhs) =>
         val rhs1 = box(rhs)
@@ -679,7 +679,7 @@ abstract class Erasure extends AddInterfaces
     override protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree =
       adaptToType(tree, pt)
 
-    /** A replacement for the standard typer's `typed1' method.
+    /** A replacement for the standard typer's `typed1` method.
      */
     override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       val tree1 = try {

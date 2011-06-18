@@ -55,8 +55,7 @@ self =>
   override protected[this] def thisCollection: Iterable[A] = this.asInstanceOf[Iterable[A]]
   override protected[this] def toCollection(repr: Repr): Iterable[A] = repr.asInstanceOf[Iterable[A]]
 
-  /** Creates a new iterator over all elements contained in this
-   *  iterable object.
+  /** Creates a new iterator over all elements contained in this iterable object.
    *
    *  @return the new iterator
    */
@@ -298,20 +297,22 @@ self =>
 
   override /*TraversableLike*/ def view(from: Int, until: Int) = view.slice(from, until)
 
-  @deprecated("use `iterator' instead", "2.8.0")
+  @deprecated("use `iterator` instead", "2.8.0")
   def elements = iterator
 
-  @deprecated("use `head' instead", "2.8.0") def first: A = head
+  @deprecated("use `head` instead", "2.8.0")
+  def first: A = head
 
   /** `None` if iterable is empty.
    */
-  @deprecated("use `headOption' instead", "2.8.0") def firstOption: Option[A] = headOption
+  @deprecated("use `headOption` instead", "2.8.0")
+  def firstOption: Option[A] = headOption
 
   /**
    * returns a projection that can be used to call non-strict `filter`,
    * `map`, and `flatMap` methods that build projections
    * of the collection.
    */
-  @deprecated("use `view' instead", "2.8.0")
+  @deprecated("use `view` instead", "2.8.0")
   def projection = view
 }

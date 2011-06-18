@@ -21,9 +21,9 @@ object CharArrayReader {
  * from an array.
  *
  * @param source an array of characters
- * @param index  starting offset into the array; the first element returned will be `source(index)'
- * @param line   the line number of the first element (counting from index `0' of `source')
- * @param column the column number of the first element (counting from index `0' of `source')
+ * @param index  starting offset into the array; the first element returned will be `source(index)`
+ * @param line   the line number of the first element (counting from index `0` of `source`)
+ * @param column the column number of the first element (counting from index `0` of `source`)
  *
  * @author Martin Odersky, Adriaan Moors
  */

@@ -11,7 +11,7 @@ package generic
 
 import mutable.Builder
 
-/** A template class for companion objects of ``regular'' collection classes
+/** A template class for companion objects of "regular" collection classes
  *  represent an unconstrained higher-kinded type. Typically
  *  such classes inherit from trait `GenericTraversableTemplate`.
  *  @tparam  CC   The type constructor representing the collection class.

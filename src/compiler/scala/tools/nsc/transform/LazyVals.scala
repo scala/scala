@@ -4,7 +4,7 @@ package transform
 import scala.collection.{ mutable, immutable }
 
 abstract class LazyVals extends Transform with TypingTransformers with ast.TreeDSL {
-  // inherits abstract value `global' and class `Phase' from Transform
+  // inherits abstract value `global` and class `Phase` from Transform
 
   import global._                  // the global environment
   import definitions._             // standard classes and methods

@@ -141,13 +141,13 @@ abstract class TreeInfo {
     case _                  => false
   }
 
-  /** The first constructor definitions in `stats' */
+  /** The first constructor definitions in `stats` */
   def firstConstructor(stats: List[Tree]): Tree = stats find {
     case x: DefDef  => nme.isConstructorName(x.name)
     case _          => false
   } getOrElse EmptyTree
 
-  /** The arguments to the first constructor in `stats'. */
+  /** The arguments to the first constructor in `stats`. */
   def firstConstructorArgs(stats: List[Tree]): List[Tree] = firstConstructor(stats) match {
     case DefDef(_, _, _, args :: _, _, _) => args
     case _                                => Nil
@@ -204,7 +204,7 @@ abstract class TreeInfo {
     ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
   }
 
-  /** Is tree a this node which belongs to `enclClass'? */
+  /** Is tree a this node which belongs to `enclClass`? */
   def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {
     case This(_) => tree.symbol == enclClass
     case _ => false

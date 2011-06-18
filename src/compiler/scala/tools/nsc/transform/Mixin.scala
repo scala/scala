@@ -116,7 +116,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   def isConcreteAccessor(member: Symbol) =
     member.hasAccessorFlag && (!member.isDeferred || (member hasFlag lateDEFERRED))
 
-  /** Is member overridden (either directly or via a bridge) in base class sequence `bcs'? */
+  /** Is member overridden (either directly or via a bridge) in base class sequence `bcs`? */
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atPhase(ownPhase) {
     def hasOverridingAccessor(clazz: Symbol) = {
       clazz.info.nonPrivateDecl(member.name).alternatives.exists(
@@ -486,7 +486,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *   - For every trait, add all late interface members to the class info
      *   - For every static implementation method:
      *       - remove override flag
-     *       - create a new method definition that also has a `self' parameter
+     *       - create a new method definition that also has a `self` parameter
      *         (which comes first) Iuli: this position is assumed by tail call elimination
      *         on a different receiver. Storing a new 'this' assumes it is located at
      *         index 0 in the local variable table. See 'STORE_THIS' and GenJVM/GenMSIL.
@@ -633,7 +633,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         addDef(position(sym), DefDef(sym, rhs(sym.paramss.head)))
       }
 
-      /** Add `newdefs' to `stats', removing any abstract method definitions
+      /** Add `newdefs` to `stats`, removing any abstract method definitions
        *  in <code>stats</code> that are matched by some symbol defined in
        *  <code>newDefs</code>.
        */
@@ -656,7 +656,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           deferredBitmaps(clazz) = typedPos(clazz.pos)(tree)::deferredBitmaps.getOrElse(clazz, List())
       }
 
-      /** If `stat' is a superaccessor, complete it by adding a right-hand side.
+      /** If `stat` is a superaccessor, complete it by adding a right-hand side.
        *  Note: superaccessors are always abstract until this point.
        *   The method to call in a superaccessor is stored in the accessor symbol's alias field.
        *  The rhs is:
@@ -1026,11 +1026,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case None =>
       }
 
-      // for all symbols `sym' in the class definition, which are mixed in:
+      // for all symbols `sym` in the class definition, which are mixed in:
       for (sym <- clazz.info.decls.toList) {
         if (sym hasFlag MIXEDIN) {
           if (clazz hasFlag lateINTERFACE) {
-            // if current class is a trait interface, add an abstract method for accessor `sym'
+            // if current class is a trait interface, add an abstract method for accessor `sym`
             addDefDef(sym, vparamss => EmptyTree)
           } else if (!clazz.isTrait) {
             // if class is not a trait add accessor definitions
@@ -1144,7 +1144,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *      to static calls of methods in implementation modules (@see staticCall)
      *    - change super calls to methods in implementation classes to static calls
      *      (@see staticCall)
-     *    - change `this' in implementation modules to references to the self parameter
+     *    - change `this` in implementation modules to references to the self parameter
      *    - refer to fields in some implementation class vie an abstract method in the interface.
      */
     private def postTransform(tree: Tree): Tree = {
@@ -1180,7 +1180,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
            *     - if qual != super, qual itself
            *     - if qual == super, and we are in an implementation class,
            *       the current self parameter.
-           *     - if qual == super, and we are not in an implementation class, `this'
+           *     - if qual == super, and we are not in an implementation class, `this`
            */
           def staticCall(target: Symbol) = {
             if (target == NoSymbol)
@@ -1196,7 +1196,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case Super(_, mix) =>
               // change super calls to methods in implementation classes to static calls.
               // Transform references super.m(args) as follows:
-              //  - if `m' refers to a trait, insert a static call to the corresponding static
+              //  - if `m` refers to a trait, insert a static call to the corresponding static
               //    implementation
               //  - otherwise return tree unchanged
               if (mix == tpnme.EMPTY && currentOwner.enclClass.isImplClass)

@@ -340,7 +340,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       List() // don't pass on annotations for now
     }
 
-    /** Annotation ::= TypeName [`(' AnnotationArgument {`,' AnnotationArgument} `)']
+    /** Annotation ::= TypeName [`(` AnnotationArgument {`,` AnnotationArgument} `)`]
      */
     def annotation() {
       val pos = in.currentPos
@@ -577,7 +577,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      *  This one is tricky because a comma might also appear in an
      *  initializer. Since we don't parse initializers we don't know
      *  what the comma signifies.
-     *  We solve this with a second list buffer `maybe' which contains
+     *  We solve this with a second list buffer `maybe` which contains
      *  potential variable definitions.
      *  Once we have reached the end of the statement, we know whether
      *  these potential definitions are real or not.
@@ -589,7 +589,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         in.nextToken
         if (in.token == IDENTIFIER) { // if there's an ident after the comma ...
           val name = ident()
-          if (in.token == ASSIGN || in.token == SEMI) { // ... followed by a `=' or `;', we know it's a real variable definition
+          if (in.token == ASSIGN || in.token == SEMI) { // ... followed by a `=` or `;`, we know it's a real variable definition
             buf ++= maybe
             buf += varDecl(in.currentPos, mods, tpt.duplicate, name)
             maybe.clear()

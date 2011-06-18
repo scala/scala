@@ -498,7 +498,7 @@ self =>
     override def apply(idx: Int) = self.apply(idx)
   }
 
-  /** Defines the prefix of this object's <code>toString</code> representation as ``Stream''.
+  /** Defines the prefix of this object's `toString` representation as `Stream`.
    */
   override def stringPrefix = "Stream"
 
@@ -726,7 +726,7 @@ object Stream extends SeqFactory[Stream] {
    * @param step the increment function of the stream, must be monotonically increasing or decreasing
    * @return the stream starting at value <code>start</code>.
    */
-  @deprecated("use `iterate' instead.", "2.8.0")
+  @deprecated("use `iterate` instead.", "2.8.0")
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] =
     iterate(start, end - start)(step)
 
@@ -736,7 +736,7 @@ object Stream extends SeqFactory[Stream] {
    * @param elem the element composing the resulting stream
    * @return the stream containing an infinite number of elem
    */
-  @deprecated("use `continually' instead", "2.8.0")
+  @deprecated("use `continually` instead", "2.8.0")
   def const[A](elem: A): Stream[A] = cons(elem, const(elem))
 
   /** Create a stream containing several copies of an element.

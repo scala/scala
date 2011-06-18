@@ -10,8 +10,8 @@ package scala.util.parsing
 package combinator
 package token
 
-/** This component provides the notion of `Token', the unit of information that is passed from lexical
- * parsers in the `Lexical' component to the parsers in the `TokenParsers' component.
+/** This component provides the notion of `Token`, the unit of information that is passed from lexical
+ * parsers in the `Lexical` component to the parsers in the `TokenParsers` component.
  *
  * @author Martin Odersky, Adriaan Moors
  */

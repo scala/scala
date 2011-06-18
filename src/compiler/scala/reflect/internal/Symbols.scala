@@ -184,10 +184,10 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def newSyntheticValueParam(argtype: Type): Symbol =
       newSyntheticValueParams(List(argtype)).head
 
-    /** Type skolems are type parameters ``seen from the inside''
+    /** Type skolems are type parameters ''seen from the inside''
      *  Assuming a polymorphic method m[T], its type is a PolyType which has a TypeParameter
-     *  with name `T' in its typeParams list. While type checking the parameters, result type and
-     *  body of the method, there's a local copy of `T' which is a TypeSkolem.
+     *  with name `T` in its typeParams list. While type checking the parameters, result type and
+     *  body of the method, there's a local copy of `T` which is a TypeSkolem.
      */
     final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name.toTypeName, this)
@@ -503,7 +503,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isEffectivelyFinal: Boolean = isFinal || isTerm && (
       hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE))
 
-    /** Is this symbol locally defined? I.e. not accessed from outside `this' instance */
+    /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
     final def isLocal: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
@@ -533,14 +533,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
 
 
-    /** Is this symbol a member of class `clazz'
-     */
+    /** Is this symbol a member of class `clazz`? */
     def isMemberOf(clazz: Symbol) =
       clazz.info.member(name).alternatives contains this
 
-    /** A a member of class `base' is incomplete if
+    /** A a member of class `base` is incomplete if
      *  (1) it is declared deferred or
-     *  (2) it is abstract override and its super symbol in `base' is
+     *  (2) it is abstract override and its super symbol in `base` is
      *      nonexistent or incomplete.
      *
      *  @param base ...
@@ -1100,7 +1099,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     /** A total ordering between symbols that refines the class
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
-     *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `id'.
+     *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `id`.
      */
     final def isLess(that: Symbol): Boolean = {
       def baseTypeSeqLength(sym: Symbol) =
@@ -1163,11 +1162,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
 // ------ cloneing -------------------------------------------------------------------
 
-    /** A clone of this symbol */
+    /** A clone of this symbol. */
     final def cloneSymbol: Symbol =
       cloneSymbol(owner)
 
-    /** A clone of this symbol, but with given owner */
+    /** A clone of this symbol, but with given owner. */
     final def cloneSymbol(owner: Symbol): Symbol = {
       val newSym = cloneSymbolImpl(owner)
       newSym.privateWithin = privateWithin
@@ -1175,19 +1174,18 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
         .setFlag(this.rawflags).setAnnotations(this.annotations)
     }
 
-    /** Internal method to clone a symbol's implementation without flags or type
-     */
+    /** Internal method to clone a symbol's implementation without flags or type. */
     def cloneSymbolImpl(owner: Symbol): Symbol
 
 // ------ access to related symbols --------------------------------------------------
 
-    /** The next enclosing class */
+    /** The next enclosing class. */
     def enclClass: Symbol = if (isClass) this else owner.enclClass
 
-    /** The next enclosing method */
+    /** The next enclosing method. */
     def enclMethod: Symbol = if (isSourceMethod) this else owner.enclMethod
 
-    /** The primary constructor of a class */
+    /** The primary constructor of a class. */
     def primaryConstructor: Symbol = {
       var c = info.decl(
         if (isTrait || isImplClass) nme.MIXIN_CONSTRUCTOR
@@ -1202,7 +1200,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      */
     def thisSym: Symbol = this
 
-    /** The type of `this' in a class, or else the type of the symbol itself. */
+    /** The type of `this` in a class, or else the type of the symbol itself. */
     def typeOfThis = thisSym.tpe
 
     /** If symbol is a class, the type <code>this.type</code> in this class,
@@ -1251,23 +1249,23 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** The symbol accessed by this accessor (getter or setter) function. */
     final def accessed: Symbol = accessed(owner.info)
 
-    /** The symbol accessed by this accessor function, but with given owner type */
+    /** The symbol accessed by this accessor function, but with given owner type. */
     final def accessed(ownerTp: Type): Symbol = {
       assert(hasAccessorFlag)
       ownerTp.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name))
     }
 
     /** The module corresponding to this module class (note that this
-     *  is not updated when a module is cloned), or NoSymbol if this is not a ModuleClass
+     *  is not updated when a module is cloned), or NoSymbol if this is not a ModuleClass.
      */
     def sourceModule: Symbol = NoSymbol
 
-    /** The implementation class of a trait */
+    /** The implementation class of a trait. */
     final def implClass: Symbol = owner.info.decl(nme.implClassName(name))
 
-    /** The class that is logically an outer class of given `clazz'.
+    /** The class that is logically an outer class of given `clazz`.
      *  This is the enclosing class, except for classes defined locally to constructors,
-     *  where it is the outer class of the enclosing class
+     *  where it is the outer class of the enclosing class.
      */
     final def outerClass: Symbol =
       if (owner.isClass) owner
@@ -1275,11 +1273,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       else owner.outerClass
 
     /** For a paramaccessor: a superclass paramaccessor for which this symbol
-     *  is an alias, NoSymbol for all others
+     *  is an alias, NoSymbol for all others.
      */
     def alias: Symbol = NoSymbol
 
-    /** For a lazy value, its lazy accessor. NoSymbol for all others */
+    /** For a lazy value, its lazy accessor. NoSymbol for all others. */
     def lazyAccessor: Symbol = NoSymbol
 
     /** If this is a lazy value, the lazy accessor; otherwise this symbol. */
@@ -1290,7 +1288,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      */
     def outerSource: Symbol = NoSymbol
 
-    /** The superclass of this class */
+    /** The superclass of this class. */
     def superClass: Symbol = if (info.parents.isEmpty) NoSymbol else info.parents.head.typeSymbol
 
     /** The directly or indirectly inherited mixins of this class
@@ -1302,8 +1300,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       ancestors takeWhile (sc ne)
     }
 
-    /** All directly or indirectly inherited classes.
-     */
+    /** All directly or indirectly inherited classes. */
     def ancestors: List[Symbol] = info.baseClasses drop 1
 
     /** The package class containing this symbol, or NoSymbol if there
@@ -1346,7 +1343,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      *
      *  def f() { val x = { def g() = ...; g() } }
      *
-     *  In this case the owner chain of `g' is `x', followed by `f' and
+     *  In this case the owner chain of `g` is `x`, followed by `f` and
      *  `g.logicallyEnclosingMember == f`.
      *
      *  Example 2:
@@ -1356,9 +1353,9 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      *    val x = { def g() = ...; g() } }
      *  }
      *
-     *  In this case the owner chain of `g' is `x', followed by `C' but
-     *  g.logicallyEnclosingMember is the primary constructor symbol `<init>'
-     *  (or, for traits: `$init') of `C'.
+     *  In this case the owner chain of `g` is `x`, followed by `C` but
+     *  g.logicallyEnclosingMember is the primary constructor symbol `<init>`
+     *  (or, for traits: `$init`) of `C`.
      *
      */
     def logicallyEnclosingMember: Symbol =
@@ -1366,14 +1363,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       else if (isMethod || isClass) this
       else owner.logicallyEnclosingMember
 
-    /** The top-level class containing this symbol */
+    /** The top-level class containing this symbol. */
     def toplevelClass: Symbol =
       if (owner.isPackageClass) {
         if (isClass) this else moduleClass
       } else owner.toplevelClass
 
-    /** Is this symbol defined in the same scope and compilation unit as `that' symbol?
-     */
+    /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = (
       (this.rawInfo ne NoType) &&
       (this.owner == that.owner) && {
@@ -1513,40 +1509,40 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       ofclazz.info.nonPrivateDecl(name).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
-    /** The non-private member of `site' whose type and name match the type of this symbol
-     */
+    /** The non-private member of `site` whose type and name match the type of this symbol. */
     final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
       site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
-    /** The symbol overridden by this symbol in given class `ofclazz'.
-     *  @pre 'ofclazz' is a base class of this symbol's owner.
+    /** The symbol overridden by this symbol in given class `ofclazz`.
+     *
+     *  @param ofclazz is a base class of this symbol's owner.
      */
     final def overriddenSymbol(ofclazz: Symbol): Symbol =
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, owner.thisType)
 
-    /** The symbol overriding this symbol in given subclass `ofclazz'
-     *  @pre: `ofclazz' is a subclass of this symbol's owner
+    /** The symbol overriding this symbol in given subclass `ofclazz`.
+     *
+     *  @param ofclazz is a subclass of this symbol's owner
      */
     final def overridingSymbol(ofclazz: Symbol): Symbol =
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
 
-    /** Returns all symbols overriden by this symbol
-     */
+    /** Returns all symbols overriden by this symbol. */
     final def allOverriddenSymbols: List[Symbol] =
       if (!owner.isClass) Nil
       else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
     /** Returns all symbols overridden by this symbol, plus all matching symbols
-     *  defined in parents of the selftype
+     *  defined in parents of the selftype.
      */
     final def extendedOverriddenSymbols: List[Symbol] =
       if (!owner.isClass) Nil
       else owner.thisSym.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
     /** The symbol accessed by a super in the definition of this symbol when
-     *  seen from class `base'. This symbol is always concrete.
-     *  pre: `this.owner' is in the base class sequence of `base'.
+     *  seen from class `base`. This symbol is always concrete.
+     *  pre: `this.owner` is in the base class sequence of `base`.
      */
     final def superSymbol(base: Symbol): Symbol = {
       var bcs = base.info.baseClasses.dropWhile(owner !=).tail
@@ -1559,7 +1555,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       sym
     }
 
-    /** The getter of this value or setter definition in class `base', or NoSymbol if
+    /** The getter of this value or setter definition in class `base`, or NoSymbol if
      *  none exists.
      */
     final def getter(base: Symbol): Symbol = {
@@ -1594,7 +1590,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      *  where it was unpacked. Resulttype is AnyRef because trees are not visible here. */
     def unpackLocation: AnyRef = null
 
-    /** Remove private modifier from symbol `sym's definition. If `sym' is a
+    /** Remove private modifier from symbol `sym`s definition. If `sym` is a
      *  term symbol rename it by expanding its name to avoid name clashes
      */
     final def makeNotPrivate(base: Symbol) {
@@ -1608,7 +1604,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       }
     }
 
-    /** change name by appending $$<fully-qualified-name-of-class `base'>
+    /** change name by appending $$<fully-qualified-name-of-class `base`>
      *  Do the same for any accessed symbols or setters/getters
      */
     def expandName(base: Symbol) {
@@ -1999,12 +1995,16 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     /** Let's say you have a type definition
      *
+     *  {{{
      *    type T <: Number
+     *  }}}
      *
      *  and tsym is the symbol corresponding to T. Then
      *
+     *  {{{
      *    tsym.info = TypeBounds(Nothing, Number)
      *    tsym.tpe  = TypeRef(NoPrefix, T, List())
+     *  }}}
      */
     override def tpe: Type = {
       if (tpeCache eq NoType) throw CyclicReference(this, typeConstructor)
@@ -2077,7 +2077,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
    *  the type parameter from which the skolem was created. If it got created from
    *  skolemizeExistential, origin is either null or a Tree. If it is a Tree, it indicates
    *  where the skolem was introduced (this is important for knowing when to pack it
-   *  again into ab Existential). origin is `null' only in skolemizeExistentials called
+   *  again into ab Existential). origin is `null` only in skolemizeExistentials called
    *  from <:< or isAsSpecific, because here its value does not matter.
    *  I elieve the following invariant holds:
    *

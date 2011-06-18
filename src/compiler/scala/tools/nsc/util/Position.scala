@@ -12,7 +12,7 @@ object Position {
 }
 /** The Position class and its subclasses represent positions of ASTs and symbols.
  *  Except for NoPosition and FakePos, every position refers to a SourceFile
- *  and to an offset in the sourcefile (its `point'). For batch compilation,
+ *  and to an offset in the sourcefile (its `point`). For batch compilation,
  *  that's all. For interactive IDE's there are also RangePositions
  *  and TransparentPositions. A RangePosition indicates a start and an end
  *  in addition to its point. TransparentPositions are a subclass of RangePositions.
@@ -87,7 +87,7 @@ trait Position {
   /**  The point (where the ^ is) of the position */
   def point: Int = throw new UnsupportedOperationException("Position.point")
 
-  /**  The point (where the ^ is) of the position, or else `default' if undefined */
+  /**  The point (where the ^ is) of the position, or else `default` if undefined */
   def pointOrElse(default: Int): Int = default
 
   /** The end of the position's range, error if not a range position */

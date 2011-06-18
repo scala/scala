@@ -80,7 +80,7 @@ trait EtaExpansion { self: Analyzer =>
         //   [...]
         //   val x$n = argn
         //   qual$1.fun(x$1, ..)..(.., x$n) }
-        // Eta-expansion has to be performed on `fun'
+        // Eta-expansion has to be performed on `fun`
         case Block(stats, fun) =>
           defs ++= stats
           liftoutPrefix(fun)

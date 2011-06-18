@@ -15,8 +15,8 @@ package scala.util.parsing.input
  *  <p>
  *    It provides functionality for:
  *  </p><ul>
- *    <li> generating a visual representation of this position (`longString');
- *    <li> comparing two positions (`<').
+ *    <li> generating a visual representation of this position (`longString`);
+ *    <li> comparing two positions (`<`).
  *  </ul>
  *  <p>
  *    To use this class for a concrete kind of ``document'', implement the
@@ -33,14 +33,14 @@ trait Position {
   /** The column number referred to by the position; column numbers start at 1 */
   def column: Int
 
-  /** The contents of the line numbered `lnum' (must not contain a new-line character).
+  /** The contents of the line numbered `lnum` (must not contain a new-line character).
    *
-   * @param lnum a 1-based integer index into the `document'
-   * @return the line at `lnum' (not including a newline)
+   * @param lnum a 1-based integer index into the `document`
+   * @return the line at `lnum` (not including a newline)
    */
   protected def lineContents: String
 
-  /** Returns a string representation of the `Position', of the form `line.column' */
+  /** Returns a string representation of the `Position`, of the form `line.column` */
   override def toString = ""+line+"."+column
 
   /** Returns a more ``visual'' representation of this position.
@@ -58,9 +58,9 @@ trait Position {
   /** Compare this position to another, by first comparing their line numbers,
    * and then -- if necessary -- using the columns to break a tie.
    *
-   * @param `that' a `Position' to compare to this `Position'
-   * @return true if this position's line or (in case of a tie wrt. line numbers)
-   *         its column is smaller than the corresponding components of `that'
+   * @param `that` a `Position` to compare to this `Position`
+   * @return true if this position's line number or (in case of equal line numbers)
+   *         column is smaller than the corresponding components of `that`
    */
   def <(that: Position) = {
     this.line < that.line ||

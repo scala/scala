@@ -218,10 +218,10 @@ self =>
     toString.split(re)
   }
 
-  /** You can follow a string with `.r', turning
+  /** You can follow a string with `.r`, turning
    *  it into a Regex. E.g.
    *
-   *  """A\w*""".r   is the regular expression for identifiers starting with `A'.
+   *  """A\w*""".r   is the regular expression for identifiers starting with `A`.
    */
   def r: Regex = new Regex(toString)
 

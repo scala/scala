@@ -256,7 +256,7 @@ abstract class AddInterfaces extends InfoTransform {
 
   /** Add mixin constructor definition
    *    def $init$(): Unit = ()
-   *  to `stats' unless there is already one.
+   *  to `stats` unless there is already one.
    */
   private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] =
     if (treeInfo.firstConstructor(stats) != EmptyTree) stats
@@ -296,7 +296,7 @@ abstract class AddInterfaces extends InfoTransform {
     }
     (tree: @unchecked) match {
       case Block(stats, expr) =>
-        // needs `hasSymbol' check because `supercall' could be a block (named / default args)
+        // needs `hasSymbol` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
         //assert(supercall.symbol.isClassConstructor, supercall)
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)

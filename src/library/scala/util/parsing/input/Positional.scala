@@ -17,7 +17,7 @@ trait Positional {
   /** The source position of this object, initially set to undefined. */
   var pos: Position = NoPosition
 
-  /** If current source position is undefined, update it with given position `newpos'
+  /** If current source position is undefined, update it with given position `newpos`
    *  @return  the object itself
    */
   def setPos(newpos: Position): this.type = {

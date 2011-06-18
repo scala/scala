@@ -78,7 +78,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
     /** Is the given environment a valid specialization for sym?
      *  It is valid if each binding is from a @specialized type parameter in sym (or its owner)
-     *  to a type for which `sym' is specialized.
+     *  to a type for which `sym` is specialized.
      */
     def isValid(env: TypeEnv, sym: Symbol): Boolean = {
       def validBinding(tvar: Symbol, tpe: Type, sym: Symbol) = (
@@ -156,7 +156,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def target = t
   }
 
-  /** Symbol is a specialized accessor for the `target' field. */
+  /** Symbol is a specialized accessor for the `target` field. */
   case class SpecializedAccessor(target: Symbol) extends SpecializedInfo {
     override def isAccessor = true
   }
@@ -164,7 +164,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Symbol is a specialized method whose body should be the target's method body. */
   case class Implementation(target: Symbol) extends SpecializedInfo
 
-  /** Symbol is a specialized override paired with `target'. */
+  /** Symbol is a specialized override paired with `target`. */
   case class SpecialOverride(target: Symbol) extends SpecializedInfo
 
   /** A specialized inner class that specializes original inner class `target` on a type parameter of the enclosing class, in the typeenv `env`. */
@@ -192,7 +192,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Map a symbol to additional information on specialization. */
   private val info: mutable.Map[Symbol, SpecializedInfo] = new mutable.HashMap[Symbol, SpecializedInfo]
 
-  /** Has `clazz' any type parameters that need be specialized? */
+  /** Has `clazz` any type parameters that need be specialized? */
   def hasSpecializedParams(clazz: Symbol): Boolean =
     !specializedParams(clazz).isEmpty
 
@@ -293,7 +293,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   lazy val primitiveTypes = ScalaValueClasses map (_.tpe)
 
-  /** Return the types `sym' should be specialized at. This may be some of the primitive types
+  /** Return the types `sym` should be specialized at. This may be some of the primitive types
    *  or AnyRef. AnyRef means that a new type parameter T will be generated later, known to be a
    *  subtype of AnyRef (T <: AnyRef).
    */
@@ -321,7 +321,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Return a list of all type environments for all specializations
-   *  of @specialized types in `tps'.
+   *  of @specialized types in `tps`.
    */
   private def specializations(tps: List[Symbol]): List[TypeEnv] = {
     val stps = tps filter isSpecialized
@@ -557,7 +557,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       /** Enter 'sym' in the scope of the current specialized class. It's type is
        *  mapped through the active environment, binding type variables to concrete
-       *  types. The existing typeEnv for `sym' is composed with the current active
+       *  types. The existing typeEnv for `sym` is composed with the current active
        *  environment
        */
       def enterMember(sym: Symbol): Symbol = {
@@ -573,9 +573,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         decls1.enter(subst(fullEnv)(sym))
       }
 
-      /** Create and enter in scope an overridden symbol m1 for `m' that forwards
-       *  to `om'. `om' is a fresh, special overload of m1 that is an implementation
-       *  of `m'. For example, for a
+      /** Create and enter in scope an overridden symbol m1 for `m` that forwards
+       *  to `om`. `om` is a fresh, special overload of m1 that is an implementation
+       *  of `m`. For example, for a
        *
        *  class Foo[@specialized A] {
        *    def m(x: A) = <body> // m
@@ -758,7 +758,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     decls1
   }
 
-  /** Expand member `sym' to a set of normalized members. Normalized members
+  /** Expand member `sym` to a set of normalized members. Normalized members
    *  are monomorphic or polymorphic only in non-specialized types.
    *
    *  Given method m[@specialized T, U](x: T, y: U) it returns
@@ -806,7 +806,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     } else List(sym)
   }
 
-  /** Specialize member `m' w.r.t. to the outer environment and the type
+  /** Specialize member `m` w.r.t. to the outer environment and the type
    *  parameters of the innermost enclosing class.
    *
    *  Turns 'private' into 'protected' for members that need specialization.
@@ -843,7 +843,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       List()
   }
 
-  /** Return the specialized overload of `m', in the given environment. */
+  /** Return the specialized overload of `m`, in the given environment. */
   private def specializedOverload(owner: Symbol, sym: Symbol, env: TypeEnv): Symbol = {
     val specMember = sym.cloneSymbol(owner) // this method properly duplicates the symbol's info
     specMember.name = specializedName(sym, env)
@@ -854,7 +854,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** For each method m that overrides inherited method m', add a special
-   *  overload method `om' that overrides the corresponding overload in the
+   *  overload method `om` that overrides the corresponding overload in the
    *  superclass. For the following example:
    *
    *  class IntFun extends Function1[Int, Int] {
@@ -1023,7 +1023,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     override def default(key: Symbol) = emptyEnv
   }
 
-  /** Apply type bindings in the given environment `env' to all declarations.  */
+  /** Apply type bindings in the given environment `env` to all declarations.  */
   private def subst(env: TypeEnv, decls: List[Symbol]): List[Symbol] =
     decls map subst(env)
 
@@ -1137,8 +1137,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     conflicting(env, silent)
   }
 
-  /** Is any type variable in `env' conflicting with any if its type bounds, when
-   *  type bindings in `env' are taken into account?
+  /** Is any type variable in `env` conflicting with any if its type bounds, when
+   *  type bindings in `env` are taken into account?
    *
    *  A conflicting type environment could still be satisfiable.
    */
@@ -1727,7 +1727,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def forwardCtorCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]], clazz: Symbol): Tree = {
 
-    /** A constructor parameter `f' initializes a specialized field
+    /** A constructor parameter `f` initializes a specialized field
      *  iff:
      *    - it is specialized itself
      *    - there is a getter for the original (non-specialized) field in the same class

@@ -33,7 +33,7 @@ trait BuildManager {
   /** Load saved dependency information. */
   def loadFrom(file: AbstractFile, toFile: String => AbstractFile) : Boolean
 
-  /** Save dependency information to `file'. */
+  /** Save dependency information to `file`. */
   def saveTo(file: AbstractFile, fromFile: AbstractFile => String)
 
   def compiler: scala.tools.nsc.Global

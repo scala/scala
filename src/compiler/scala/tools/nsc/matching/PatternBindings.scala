@@ -37,7 +37,7 @@ trait PatternBindings extends ast.TreeDSL
     case _                  => newTree
   }
 
-  // used as argument to `EqualsPatternClass'
+  // used as argument to `EqualsPatternClass`
   case class PseudoType(o: Tree) extends SimpleTypeProxy {
     override def underlying: Type = o.tpe
     override def safeToString: String = "PseudoType("+o+")"

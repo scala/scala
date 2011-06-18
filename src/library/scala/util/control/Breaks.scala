@@ -29,7 +29,7 @@ class Breaks {
 
   private val breakException = new BreakControl
 
-  /** A block from which one can exit with a `break''. */
+  /** A block from which one can exit with a `break`'. */
   def breakable(op: => Unit) {
     try {
       op

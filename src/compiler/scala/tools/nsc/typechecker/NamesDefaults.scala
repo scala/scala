@@ -51,7 +51,7 @@ trait NamesDefaults { self: Analyzer =>
     res.toList
   }
 
-  /** returns `true' if every element is equal to its index */
+  /** returns `true` if every element is equal to its index */
   def isIdentity(a: Array[Int]) = (0 until a.length).forall(i => a(i) == i)
 
   /**
@@ -106,7 +106,7 @@ trait NamesDefaults { self: Analyzer =>
      * Transform a function into a block, and passing context.namedApplyBlockInfo to
      * the new block as side-effect.
      *
-     * `baseFun' is typed, the resulting block must be typed as well.
+     * `baseFun` is typed, the resulting block must be typed as well.
      *
      * Fun is transformed in the following way:
      *  - Ident(f)                                    ==>  Block(Nil, Ident(f))
@@ -114,7 +114,7 @@ trait NamesDefaults { self: Analyzer =>
      *  - Select(qual, f) otherwise                   ==>  Block(ValDef(qual$1, qual), Select(qual$1, f))
      *  - TypeApply(fun, targs)                       ==>  Block(Nil or qual$1, TypeApply(fun, targs))
      *  - Select(New(TypeTree()), <init>)             ==>  Block(Nil, Select(New(TypeTree()), <init>))
-     *  - Select(New(Select(qual, typeName)), <init>) ==>  Block(Nil, Select(...))     NOTE: qual must be stable in a `new'
+     *  - Select(New(Select(qual, typeName)), <init>) ==>  Block(Nil, Select(...))     NOTE: qual must be stable in a `new`
      */
     def baseFunBlock(baseFun: Tree): Tree = {
       val isConstr = baseFun.symbol.isConstructor
@@ -299,7 +299,7 @@ trait NamesDefaults { self: Analyzer =>
     if (isNamedApplyBlock(tree)) {
       context.namedApplyBlockInfo.get._1
     } else tree match {
-      // `fun' is typed. `namelessArgs' might be typed or not, if they are types are kept.
+      // `fun` is typed. `namelessArgs` might be typed or not, if they are types are kept.
       case Apply(fun, namelessArgs) =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
         if (transformedFun.isErroneous) setError(tree)
@@ -365,7 +365,7 @@ trait NamesDefaults { self: Analyzer =>
   }
 
   /**
-   * Extend the argument list `givenArgs' with default arguments. Defaults are added
+   * Extend the argument list `givenArgs` with default arguments. Defaults are added
    * as named arguments calling the corresponding default getter.
    *
    * Example: given

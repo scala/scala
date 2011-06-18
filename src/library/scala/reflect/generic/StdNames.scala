@@ -30,7 +30,7 @@ import scala.reflect.NameTransformer
     val LOCAL_SUFFIX_STRING     = " "
     val ROOTPKG: NameType       = "_root_"
 
-    /** The expanded name of `name' relative to this class `base` with given `separator`
+    /** The expanded name of `name` relative to this class `base` with given `separator`
      */
     def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName =
       newTermName(base.fullName('$') + separator + name)

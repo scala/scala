@@ -49,7 +49,7 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
   }
 
   /** Tests whether the type represented by this manifest is a subtype
-    * of the type represented by `that' manifest, subject to the limitations
+    * of the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
   def <:<(that: ClassManifest[_]): Boolean = {
@@ -82,7 +82,7 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
   }
 
   /** Tests whether the type represented by this manifest is a supertype
-    * of the type represented by `that' manifest, subject to the limitations
+    * of the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
   def >:>(that: ClassManifest[_]): Boolean =
@@ -94,7 +94,7 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
   }
 
   /** Tests whether the type represented by this manifest is equal to
-    * the type represented by `that' manifest, subject to the limitations
+    * the type represented by `that` manifest, subject to the limitations
     * described in the header.
     */
   override def equals(that: Any): Boolean = that match {
@@ -179,7 +179,7 @@ object ClassManifest {
 
   def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = Manifest.singleType(value)
 
-  /** ClassManifest for the class type `clazz', where `clazz' is
+  /** ClassManifest for the class type `clazz`, where `clazz` is
     * a top-level or static class.
     * @note This no-prefix, no-arguments case is separate because we
     *       it's called from ScalaRunTime.boxArray itself. If we
@@ -189,12 +189,12 @@ object ClassManifest {
   def classType[T <: AnyRef](clazz: JClass[_]): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
-  /** ClassManifest for the class type `clazz[args]', where `clazz' is
+  /** ClassManifest for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class and `args` are its type arguments */
   def classType[T <: AnyRef](clazz: JClass[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
-  /** ClassManifest for the class type `clazz[args]', where `clazz' is
+  /** ClassManifest for the class type `clazz[args]`, where `clazz` is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
   def classType[T <: AnyRef](prefix: OptManifest[_], clazz: JClass[_], args: OptManifest[_]*): ClassManifest[T] =
@@ -205,7 +205,7 @@ object ClassManifest {
     case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
   }
 
-  /** ClassManifest for the abstract type `prefix # name'. `upperBound' is not
+  /** ClassManifest for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: OptManifest[_], name: String, clazz: JClass[_], args: OptManifest[_]*): ClassManifest[T] =
@@ -215,7 +215,7 @@ object ClassManifest {
       override def toString = prefix.toString+"#"+name+argString
     }
 
-  /** ClassManifest for the abstract type `prefix # name'. `upperBound' is not
+  /** ClassManifest for the abstract type `prefix # name`. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection.
     * todo: remove after next boostrap
@@ -228,7 +228,7 @@ object ClassManifest {
     }
 }
 
-/** Manifest for the class type `clazz[args]', where `clazz' is
+/** Manifest for the class type `clazz[args]`, where `clazz` is
   * a top-level or static class. */
 private class ClassTypeManifest[T <: AnyRef](
   prefix: Option[OptManifest[_]],

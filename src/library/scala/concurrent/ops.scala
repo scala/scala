@@ -49,7 +49,7 @@ object ops
     runner.futureAsFunction(runner submit runner.functionAsTask(() => p))
   }
 
-  /** Evaluates two expressions in parallel. Invoking `par' blocks the current
+  /** Evaluates two expressions in parallel. Invoking `par` blocks the current
    *  thread until both expressions have been evaluated.
    *
    *  @param  xp the first expression to evaluate
@@ -68,7 +68,7 @@ object ops
    *  @param end   ...
    *  @param p     ...
    */
-  @deprecated("use `collection.parallel.ParIterable.foreach' instead", "2.9.0")
+  @deprecated("use `collection.parallel.ParIterable.foreach` instead", "2.9.0")
   def replicate(start: Int, end: Int)(p: Int => Unit)(implicit runner: TaskRunner = defaultRunner) {
     if (start == end)
       ()

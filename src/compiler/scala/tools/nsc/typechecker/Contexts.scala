@@ -369,14 +369,14 @@ trait Contexts { self: Analyzer =>
       else "Context(%s@%s scope=%s)".format(owner.fullName, tree.getClass.getName split "[.$]" last, scope.##)
     )
 
-    /** Is `sub' a subclass of `base' or a companion object of such a subclass?
+    /** Is `sub` a subclass of `base` or a companion object of such a subclass?
      */
     def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
       sub.isNonBottomSubClass(base) ||
       sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
 
-    /** Return closest enclosing context that defines a superclass of `clazz', or a
-     *  companion module of a superclass of `clazz', or NoContext if none exists */
+    /** Return closest enclosing context that defines a superclass of `clazz`, or a
+     *  companion module of a superclass of `clazz`, or NoContext if none exists */
     def enclosingSuperClassContext(clazz: Symbol): Context = {
       var c = this.enclClass
       while (c != NoContext &&
@@ -386,7 +386,7 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Return closest enclosing context that defines a subclass of `clazz' or a companion
+    /** Return closest enclosing context that defines a subclass of `clazz` or a companion
      * object thereof, or NoContext if no such context exists
      */
     def enclosingSubClassContext(clazz: Symbol): Context = {
@@ -396,7 +396,7 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Is <code>sym</code> accessible as a member of tree `site' with type
+    /** Is <code>sym</code> accessible as a member of tree `site` with type
      *  <code>pre</code> in current context?
      *
      *  @param sym         ...
@@ -416,7 +416,7 @@ trait Contexts { self: Analyzer =>
         (linked ne NoSymbol) && accessWithin(linked)
       }
 
-      /** Are we inside definition of `ab'? */
+      /** Are we inside definition of `ab`? */
       def accessWithin(ab: Symbol) = {
         // #3663: we must disregard package nesting if sym isJavaDefined
         if (sym.isJavaDefined) {
@@ -438,7 +438,7 @@ trait Contexts { self: Analyzer =>
         c != NoContext
       }
 */
-      /** Is `clazz' a subclass of an enclosing class? */
+      /** Is `clazz` a subclass of an enclosing class? */
       def isSubClassOfEnclosing(clazz: Symbol): Boolean =
         enclosingSuperClassContext(clazz) != NoContext
 

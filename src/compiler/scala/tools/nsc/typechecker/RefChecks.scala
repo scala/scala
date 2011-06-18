@@ -163,12 +163,12 @@ abstract class RefChecks extends InfoTransform {
       bridges.toList
     }
 
-    /** 1. Check all members of class `clazz' for overriding conditions.
+    /** 1. Check all members of class `clazz` for overriding conditions.
      *  That is for overriding member M and overridden member O:
      *
      *    1.1. M must have the same or stronger access privileges as O.
      *    1.2. O must not be final.
-     *    1.3. O is deferred, or M has `override' modifier.
+     *    1.3. O is deferred, or M has `override` modifier.
      *    1.4. If O is stable, then so is M.
      *     // @M: LIFTED 1.5. Neither M nor O are a parameterized type alias
      *    1.6. If O is a type alias, then M is an alias of O.
@@ -184,7 +184,7 @@ abstract class RefChecks extends InfoTransform {
      *  2. Check that only abstract classes have deferred members
      *  3. Check that concrete classes do not have deferred definitions
      *     that are not implemented in a subclass.
-     *  4. Check that every member with an `override' modifier
+     *  4. Check that every member with an `override` modifier
      *     overrides some other member.
      */
     private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false) {
@@ -631,7 +631,7 @@ abstract class RefChecks extends InfoTransform {
         (inclazz != clazz) && (matchingSyms != NoSymbol)
       }
 
-      // 4. Check that every defined member with an `override' modifier overrides some other member.
+      // 4. Check that every defined member with an `override` modifier overrides some other member.
       for (member <- clazz.info.decls.toList)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
             !(clazz.thisType.baseClasses exists (hasMatchingSym(_, member)))) {
@@ -911,7 +911,7 @@ abstract class RefChecks extends InfoTransform {
         def onTrees[T](f: List[Tree] => T) = f(List(qual, args.head))
         def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
 
-        // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol'
+        // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
         def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
 
         /** Symbols which limit the warnings we can issue since they may be value types */
@@ -994,7 +994,7 @@ abstract class RefChecks extends InfoTransform {
 
 // Transformation ------------------------------------------------------------
 
-    /* Convert a reference to a case factory of type `tpe' to a new of the class it produces. */
+    /* Convert a reference to a case factory of type `tpe` to a new of the class it produces. */
     def toConstructor(pos: Position, tpe: Type): Tree = {
       var rtpe = tpe.finalResultType
       assert(rtpe.typeSymbol hasFlag CASE, tpe);

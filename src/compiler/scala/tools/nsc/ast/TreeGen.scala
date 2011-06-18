@@ -108,7 +108,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else arg
   }
 
-  /** Make forwarder to method `target', passing all parameters in `params' */
+  /** Make forwarder to method `target`, passing all parameters in `params` */
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     (target /: vparamss)((fn, vparams) => Apply(fn, vparams map paramToArg))
 
@@ -194,8 +194,8 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
   }
 
-  /** Return a double-checked locking idiom around the syncBody tree. It guards with 'cond' and
-   *  synchronizez on 'clazz.this'. Additional statements can be included after initialization,
+  /** Return a double-checked locking idiom around the syncBody tree. It guards with `cond` and
+   *  synchronizez on `clazz.this`. Additional statements can be included after initialization,
    *  (outside the synchronized block).
    *
    *  The idiom works only if the condition is using a volatile field.

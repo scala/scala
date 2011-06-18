@@ -227,7 +227,7 @@ trait DocComments { self: Global =>
       }
   }
 
-  /** Expand variable occurrences in string `str', until a fix point is reached or
+  /** Expand variable occurrences in string `str`, until a fix point is reached or
    *  a expandLimit is exceeded.
    *
    *  @param str   The string to be expanded

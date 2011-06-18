@@ -60,7 +60,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         parameterNamed(nme.getterName(acc.originalName))
 
       // The constructor parameter with given name. This means the parameter
-      // has given name, or starts with given name, and continues with a `$' afterwards.
+      // has given name, or starts with given name, and continues with a `$` afterwards.
       def parameterNamed(name: Name): Symbol = {
         def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + "$")
 
@@ -103,7 +103,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
       }
 
-      // Move tree into constructor, take care of changing owner from `oldowner' to constructor symbol
+      // Move tree into constructor, take care of changing owner from `oldowner` to constructor symbol
       def intoConstructor(oldowner: Symbol, tree: Tree) =
         intoConstructorTransformer.transform(
           new ChangeOwnerTraverser(oldowner, constr.symbol)(tree))
@@ -114,7 +114,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         case _                     => false
       }
 
-      // Create an assignment to class field `to' with rhs `from'
+      // Create an assignment to class field `to` with rhs `from`
       def mkAssign(to: Symbol, from: Tree): Tree =
         localTyper.typedPos(to.pos) { Assign(Select(This(clazz), to), from) }
 

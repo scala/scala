@@ -290,7 +290,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
 
-  @deprecated("use `reverseIterator' instead", "2.8.0")
+  @deprecated("use `reverseIterator` instead", "2.8.0")
   def reversedElements = reverseIterator
 
   def startsWith[B](that: GenSeq[B], offset: Int): Boolean = {
@@ -687,7 +687,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    * <code>map</code>, and <code>flatMap</code> methods that build projections
    * of the collection.
    */
-  @deprecated("use `view' instead", "2.8.0")
+  @deprecated("use `view` instead", "2.8.0")
   override def projection = view
 }
 

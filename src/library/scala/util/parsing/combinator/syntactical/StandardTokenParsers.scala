@@ -14,7 +14,7 @@ package syntactical
 import token._
 import lexical.StdLexical
 
-/** This component provides primitive parsers for the standard tokens defined in `StdTokens'.
+/** This component provides primitive parsers for the standard tokens defined in `StdTokens`.
 *
 * @author Martin Odersky, Adriaan Moors
  */

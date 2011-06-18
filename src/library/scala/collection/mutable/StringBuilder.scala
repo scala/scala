@@ -89,7 +89,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    */
   def capacity: Int = underlying.capacity()
 
-  @deprecated("Use `ensureCapacity' instead. An assignment is misleading because\n"+
+  @deprecated("Use `ensureCapacity` instead. An assignment is misleading because\n"+
               "it can never decrease the capacity.", "2.8.0")
   def capacity_=(n: Int) { ensureCapacity(n) }
 
@@ -367,11 +367,11 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   def insert(index: Int, x: Char): StringBuilder    = insert(index, String.valueOf(x))
 
   @deprecated("Use appendAll instead. This method is deprecated because of the\n"+
-              "possible confusion with `append(Any)'.", "2.8.0")
+              "possible confusion with `append(Any)`.", "2.8.0")
   def append(x: Seq[Char]): StringBuilder = appendAll(x)
 
   @deprecated("use appendAll instead. This method is deprecated because\n"+
-              "of the possible confusion with `append(Any)'.", "2.8.0")
+              "of the possible confusion with `append(Any)`.", "2.8.0")
   def append(x: Array[Char]): StringBuilder = appendAll(x)
 
   @deprecated("use appendAll instead. This method is deprecated because\n"+

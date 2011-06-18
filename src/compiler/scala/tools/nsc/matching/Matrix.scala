@@ -23,9 +23,9 @@ trait Matrix extends MatrixAdditions {
 
   /** Translation of match expressions.
    *
-   *  `p':  pattern
-   *  `g':  guard
-   *  `bx': body index
+   *  `p`:  pattern
+   *  `g`:  guard
+   *  `bx`: body index
    *
    *   internal representation is (tvars:List[Symbol], rows:List[Row])
    *

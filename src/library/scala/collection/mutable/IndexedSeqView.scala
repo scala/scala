@@ -19,7 +19,7 @@ import TraversableView.NoBuilder
  *  $viewInfo
  *  Some of the operations of this class will yield again a mutable indexed sequence,
  *  others will just yield a plain indexed sequence of type `collection.IndexedSeq`.
- *  Because this is a leaf class there is no associated `Like' class.
+ *  Because this is a leaf class there is no associated `Like` class.
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8

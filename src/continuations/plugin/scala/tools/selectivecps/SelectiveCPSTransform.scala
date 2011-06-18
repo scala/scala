@@ -16,7 +16,7 @@ import scala.tools.nsc.ast._
  */
 abstract class SelectiveCPSTransform extends PluginComponent with
   InfoTransform with TypingTransformers with CPSUtils {
-  // inherits abstract value `global' and class `Phase' from Transform
+  // inherits abstract value `global` and class `Phase` from Transform
 
   import global._                  // the global environment
   import definitions._             // standard classes and methods

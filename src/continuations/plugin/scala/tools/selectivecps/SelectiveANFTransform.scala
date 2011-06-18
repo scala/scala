@@ -14,7 +14,7 @@ import scala.tools.nsc.ast._
  */
 abstract class SelectiveANFTransform extends PluginComponent with Transform with
   TypingTransformers with CPSUtils {
-  // inherits abstract value `global' and class `Phase' from Transform
+  // inherits abstract value `global` and class `Phase` from Transform
 
   import global._                  // the global environment
   import definitions._             // standard classes and methods

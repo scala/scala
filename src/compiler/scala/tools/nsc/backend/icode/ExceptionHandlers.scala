@@ -12,10 +12,10 @@ import scala.collection.{ mutable, immutable, generic }
 import util.{ Position, NoPosition }
 
 /**
- * Exception handlers are pieces of code that `handle' exceptions on
+ * Exception handlers are pieces of code that `handle` exceptions on
  * the covered basic blocks. Since Scala's exception handling uses
  * pattern matching instead of just class names to identify handlers,
- * all our handlers will catch `Throwable' and rely on proper ordering
+ * all our handlers will catch `Throwable` and rely on proper ordering
  * in the generated code to preserve nesting.
  */
 trait ExceptionHandlers {
@@ -46,7 +46,7 @@ trait ExceptionHandlers {
       this
     }
 
-    /** Is `b' covered by this exception handler? */
+    /** Is `b` covered by this exception handler? */
     def covers(b: BasicBlock): Boolean = covered(b)
 
     /** The body of this exception handler. May contain 'dead' blocks (which will not

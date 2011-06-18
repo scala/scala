@@ -7,9 +7,9 @@ import java.io.Writer
 /** An abstract class for writing and reading Scala objects to and
  *  from a legible representation. The presesentation follows the following grammar:
  *  {{{
- *  Pickled = `true' | `false' | `null' | NumericLit | StringLit |
- *            Labelled | Pickled `,' Pickled
- *  Labelled = StringLit `(' Pickled? `)'
+ *  Pickled = `true` | `false` | `null` | NumericLit | StringLit |
+ *            Labelled | Pickled `,` Pickled
+ *  Labelled = StringLit `(` Pickled? `)`
  *  }}}
  *
  *  All ...Lit classes are as in JSON. @see scala.tools.nsc.io.Lexer

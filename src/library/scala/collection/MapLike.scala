@@ -248,7 +248,7 @@ self =>
     def get(key: A) = self.get(key).map(f)
   }
 
-  @deprecated("use `mapValues' instead", "2.8.0")
+  @deprecated("use `mapValues` instead", "2.8.0")
   def mapElements[C](f: B => C) = mapValues(f)
 
   // The following 5 operations (updated, two times +, two times ++) should really be

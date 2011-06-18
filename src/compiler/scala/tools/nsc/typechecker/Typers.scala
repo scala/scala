@@ -221,7 +221,7 @@ trait Typers extends Modes {
       }
     }
 
-    /** Check that `tpt' refers to a non-refinement class type */
+    /** Check that `tpt` refers to a non-refinement class type */
     def checkClassType(tpt: Tree, existentialOK: Boolean, stablePrefix: Boolean) {
       def check(tpe: Type): Unit = tpe.normalize match {
         case TypeRef(pre, sym, _) if sym.isClass && !sym.isRefinementClass =>
@@ -296,9 +296,9 @@ trait Typers extends Modes {
         case MethodType(formals, restpe) =>
           /*
           if (formals.exists(_.typeSymbol == ByNameParamClass) && formals.length != 1)
-            error(pos, "methods with `=>'-parameter can be converted to function values only if they take no other parameters")
+            error(pos, "methods with `=>`-parameter can be converted to function values only if they take no other parameters")
           if (formals exists (isRepeatedParamType(_)))
-            error(pos, "methods with `*'-parameters cannot be converted to function values");
+            error(pos, "methods with `*`-parameters cannot be converted to function values");
           */
           if (restpe.isDependent)
             error(pos, "method with dependent type "+tpe+" cannot be converted to function value")
@@ -657,8 +657,8 @@ trait Typers extends Modes {
           }
       }
 
-    /** Perform the following adaptations of expression, pattern or type `tree' wrt to
-     *  given mode `mode' and given prototype `pt':
+    /** Perform the following adaptations of expression, pattern or type `tree` wrt to
+     *  given mode `mode` and given prototype `pt`:
      *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
      *  (0) Convert expressions with constant types to literals (unless in interactive/scaladoc mode)
      *  (1) Resolve overloading, unless mode contains FUNmode
@@ -668,9 +668,9 @@ trait Typers extends Modes {
      *      unless followed by explicit type application.
      *  (4) Do the following to unapplied methods used as values:
      *  (4.1) If the method has only implicit parameters pass implicit arguments
-     *  (4.2) otherwise, if `pt' is a function type and method is not a constructor,
+     *  (4.2) otherwise, if `pt` is a function type and method is not a constructor,
      *        convert to function by eta-expansion,
-     *  (4.3) otherwise, if the method is nullary with a result type compatible to `pt'
+     *  (4.3) otherwise, if the method is nullary with a result type compatible to `pt`
      *        and it is not a constructor, apply it to ()
      *  otherwise issue an error
      *  (5) Convert constructors in a pattern as follows:
@@ -993,12 +993,12 @@ trait Typers extends Modes {
       }
     }
 
-    /** Try to apply an implicit conversion to `qual' to that it contains
-     *  a method `name` which can be applied to arguments `args' with expected type `pt'.
-     *  If `pt' is defined, there is a fallback to try again with pt = ?.
+    /** Try to apply an implicit conversion to `qual` to that it contains
+     *  a method `name` which can be applied to arguments `args` with expected type `pt`.
+     *  If `pt` is defined, there is a fallback to try again with pt = ?.
      *  This helps avoiding propagating result information too far and solves
      *  #1756.
-     *  If no conversion is found, return `qual' unchanged.
+     *  If no conversion is found, return `qual` unchanged.
      *
      */
     def adaptToArguments(qual: Tree, name: Name, args: List[Tree], pt: Type): Tree = {
@@ -1017,7 +1017,7 @@ trait Typers extends Modes {
         doAdapt(pt)
     }
 
-    /** Try o apply an implicit conversion to `qual' to that it contains
+    /** Try o apply an implicit conversion to `qual` to that it contains
      *  a method `name`. If that's ambiguous try taking arguments into account using `adaptToArguments`.
      */
     def adaptToMemberWithArgs(tree: Tree, qual: Tree, name: Name, mode: Int): Tree = {
@@ -1043,9 +1043,9 @@ trait Typers extends Modes {
       }
     }
 
-    /** Try to apply an implicit conversion to `qual' to that it contains a
+    /** Try to apply an implicit conversion to `qual` to that it contains a
      *  member `name` of arbitrary type.
-     *  If no conversion is found, return `qual' unchanged.
+     *  If no conversion is found, return `qual` unchanged.
      */
     def adaptToName(qual: Tree, name: Name) =
       if (member(qual, name) != NoSymbol) qual
@@ -2224,7 +2224,7 @@ trait Typers extends Modes {
       }
     }
 
-    /** Is `tree' a block created by a named application?
+    /** Is `tree` a block created by a named application?
      */
     def isNamedApplyBlock(tree: Tree) =
       context.namedApplyBlockInfo exists (_._1 == tree)
@@ -2305,7 +2305,7 @@ trait Typers extends Modes {
           // repeat vararg as often as needed, remove by-name
           val formals = formalTypes(paramTypes, args.length)
 
-          /** Try packing all arguments into a Tuple and apply `fun'
+          /** Try packing all arguments into a Tuple and apply `fun`
            *  to that. This is the last thing which is tried (after
            *  default arguments)
            */
@@ -2780,16 +2780,16 @@ trait Typers extends Modes {
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
       sym.isTypeParameter && sym.owner.isJavaDefined
 
-    /** Given a set `rawSyms' of term- and type-symbols, and a type `tp'.
+    /** Given a set `rawSyms` of term- and type-symbols, and a type `tp`.
      *  produce a set of fresh type parameters and a type so that it can be
      *  abstracted to an existential type.
-     *  Every type symbol `T' in `rawSyms' is mapped to a clone.
-     *  Every term symbol `x' of type `T' in `rawSyms' is given an
+     *  Every type symbol `T` in `rawSyms` is mapped to a clone.
+     *  Every term symbol `x` of type `T` in `rawSyms` is given an
      *  associated type symbol of the following form:
      *
      *    type x.type <: T with <singleton>
      *
-     *  The name of the type parameter is `x.type', to produce nice diagnostics.
+     *  The name of the type parameter is `x.type`, to produce nice diagnostics.
      *  The <singleton> parent ensures that the type parameter is still seen as a stable type.
      *  Type symbols in rawSyms are fully replaced by the new symbols.
      *  Term symbols are also replaced, except when they are the term
@@ -2815,7 +2815,7 @@ trait Typers extends Modes {
       (typeParams, tp.subst(rawSyms, typeParamTypes))
     }
 
-    /** Compute an existential type from raw hidden symbols `syms' and type `tp'
+    /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
     def packSymbols(hidden: List[Symbol], tp: Type): Type =
       if (hidden.isEmpty) tp
@@ -2863,7 +2863,7 @@ trait Typers extends Modes {
             mapOver(tp)
         }
       }
-      // add all local symbols of `tp' to `localSyms'
+      // add all local symbols of `tp` to `localSyms`
       // TODO: expand higher-kinded types into individual copies for each instance.
       def addLocals(tp: Type) {
         val remainingSyms = new ListBuffer[Symbol]
@@ -3193,7 +3193,7 @@ trait Typers extends Modes {
         }
 
         /** If current tree <tree> appears in <val x(: T)? = <tree>>
-         *  return `tp with x.type' else return `tp'.
+         *  return `tp with x.type' else return `tp`.
          */
         def narrowRhs(tp: Type) = { val sym = context.tree.symbol
           context.tree match {
@@ -3702,8 +3702,8 @@ trait Typers extends Modes {
           }
 
           // detect ambiguous definition/import,
-          // update `defSym' to be the final resolved symbol,
-          // update `pre' to be `sym's prefix type in case it is an imported member,
+          // update `defSym` to be the final resolved symbol,
+          // update `pre` to be `sym`s prefix type in case it is an imported member,
           // and compute value of:
 
           if (defSym.exists && impSym.exists) {
@@ -4107,7 +4107,7 @@ trait Typers extends Modes {
           var qual1 = checkDead(typedQualifier(qual, mode))
           if (name.isTypeName) qual1 = checkStable(qual1)
 
-          val tree1 = // temporarily use `filter' and an alternative for `withFilter'
+          val tree1 = // temporarily use `filter` and an alternative for `withFilter`
             if (name == nme.withFilter)
               silent(_ => typedSelect(qual1, name)) match {
                 case result1: Tree =>

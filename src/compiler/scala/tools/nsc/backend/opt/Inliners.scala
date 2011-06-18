@@ -383,7 +383,7 @@ abstract class Inliners extends SubComponent {
           handler
         }
 
-        /** alfa-rename `l' in caller's context. */
+        /** alfa-rename `l` in caller's context. */
         def dupLocal(l: Local): Local = {
           val sym = caller.sym.newVariable(l.sym.pos, freshName(l.sym.name.toString))
           // sym.setInfo(l.sym.tpe)

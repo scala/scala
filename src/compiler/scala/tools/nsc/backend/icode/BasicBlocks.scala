@@ -84,7 +84,7 @@ trait BasicBlocks {
     var varsInScope: mutable.Set[Local] = new mutable.LinkedHashSet()
 
     /** ICode instructions, used as temporary storage while emitting code.
-     * Once closed is called, only the `instrs' array should be used.
+     * Once closed is called, only the `instrs` array should be used.
      */
     private var instructionList: List[Instruction] = Nil
 
@@ -149,7 +149,7 @@ trait BasicBlocks {
 
     /**
      * Replace the given instruction with the new one.
-     * Returns `true' if it actually changed something.
+     * Returns `true` if it actually changed something.
      * It retains the position of the previous instruction.
      */
     def replaceInstruction(oldInstr: Instruction, newInstr: Instruction): Boolean = {

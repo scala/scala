@@ -300,7 +300,7 @@ object Regex {
       nextSeen
     }
 
-    /** The next matched substring of `source' */
+    /** The next matched substring of `source` */
     def next: String = {
       if (!hasNext) throw new NoSuchElementException
       nextSeen = false

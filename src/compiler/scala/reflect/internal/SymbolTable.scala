@@ -31,10 +31,10 @@ abstract class SymbolTable extends /*reflect.generic.Universe
   def abort(msg: String): Nothing = throw new Error(msg)
   def abort(): Nothing = throw new Error()
 
-  /** Are we compiling for Java SE ? */
+  /** Are we compiling for Java SE? */
   // def forJVM: Boolean
 
-  /** Are we compiling for .NET ? */
+  /** Are we compiling for .NET? */
   def forMSIL: Boolean = false
 
   /** A period is an ordinal number for a phase in a run.
@@ -63,28 +63,28 @@ abstract class SymbolTable extends /*reflect.generic.Universe
   /** The current compiler run identifier. */
   def currentRunId: RunId
 
-  /** The run identifier of the given period */
+  /** The run identifier of the given period. */
   final def runId(period: Period): RunId = period >> 8
 
-  /** The phase identifier of the given period */
+  /** The phase identifier of the given period. */
   final def phaseId(period: Period): Phase#Id = period & 0xFF
 
-  /** The period at the start of run that includes `period' */
+  /** The period at the start of run that includes `period`. */
   final def startRun(period: Period): Period = period & 0xFFFFFF00
 
-  /** The current period */
+  /** The current period. */
   final def currentPeriod: Period = {
     //assert(per == (currentRunId << 8) + phase.id)
     per
   }
 
-  /** The phase associated with given period */
+  /** The phase associated with given period. */
   final def phaseOf(period: Period): Phase = phaseWithId(phaseId(period))
 
   final def period(rid: RunId, pid: Phase#Id): Period =
     (currentRunId << 8) + pid
 
-  /** Perform given operation at given phase */
+  /** Perform given operation at given phase. */
   final def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase
     phase = ph
@@ -113,18 +113,18 @@ abstract class SymbolTable extends /*reflect.generic.Universe
     }
   }
 
-  /** Break into repl debugger if assertion is true */
+  /** Break into repl debugger if assertion is true. */
   // def breakIf(assertion: => Boolean, args: Any*): Unit =
   //   if (assertion)
   //     ILoop.break(args.toList)
 
-  /** The set of all installed infotransformers */
+  /** The set of all installed infotransformers. */
   var infoTransformers = new InfoTransformer {
     val pid = NoPhase.id
     val changesBaseClasses = true
     def transform(sym: Symbol, tpe: Type): Type = tpe
   }
 
-  /** The phase which has given index as identifier */
+  /** The phase which has given index as identifier. */
   val phaseWithId: Array[Phase]
 }

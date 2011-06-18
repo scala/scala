@@ -94,13 +94,13 @@ trait NameManglers {
         name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
     }
 
-    /** The expanded setter name of `name' relative to this class `base`
+    /** The expanded setter name of `name` relative to this class `base`
      */
     def expandedSetterName(name: TermName, base: Symbol): TermName =
       expandedName(name, base, separator = TRAIT_SETTER_SEPARATOR_STRING)
 
-    /** If `name' is an expandedName name, the original name.
-     *  Otherwise `name' itself.
+    /** If `name` is an expandedName name, the original name.
+     *  Otherwise `name` itself.
      */
     def originalName(name: Name): Name = {
       var i = name.length

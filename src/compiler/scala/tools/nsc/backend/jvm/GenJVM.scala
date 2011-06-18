@@ -983,8 +983,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       addParamAnnotations(mirrorMethod, m.info.params.map(_.annotations))
     }
 
-    /** Add forwarders for all methods defined in `module' that don't conflict
-     *  with methods in the companion class of `module'. A conflict arises when
+    /** Add forwarders for all methods defined in `module` that don't conflict
+     *  with methods in the companion class of `module`. A conflict arises when
      *  a method with the same name is defined both in a class and its companion
      *  object: method signature is not taken into account.
      */
@@ -1014,7 +1014,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       lazy val membersInCommon     =
         memberNames(linkedModule) intersect memberNames(linkedClass)
 
-      /** Should method `m' get a forwarder in the mirror class? */
+      /** Should method `m` get a forwarder in the mirror class? */
       def shouldForward(m: Symbol): Boolean = (
         m.owner != ObjectClass
         && m.isMethod

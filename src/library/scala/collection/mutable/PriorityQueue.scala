@@ -92,8 +92,8 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
   }
 
   @deprecated(
-    "Use += instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() +=' if you intend to create a new collection.", "2.8.0"
+    "Use `+=` instead if you intend to add by side effect to an existing collection.\n"+
+    "Use `clone() +=` if you intend to create a new collection.", "2.8.0"
   )
   def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
 
@@ -103,8 +103,8 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @param    kvs the remaining elements.
    */
   @deprecated(
-    "Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() ++=' if you intend to create a new collection.", "2.8.0"
+    "Use `++=` instead if you intend to add by side effect to an existing collection.\n"+
+    "Use `clone() ++=` if you intend to create a new collection.", "2.8.0"
   )
   def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
 

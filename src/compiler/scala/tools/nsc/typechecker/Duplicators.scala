@@ -118,7 +118,7 @@ abstract class Duplicators extends Analyzer {
       tpe3
     }
 
-    /** Return the new symbol corresponding to `sym'. */
+    /** Return the new symbol corresponding to `sym`. */
     private def updateSym(sym: Symbol): Symbol =
       if (invalidSyms.isDefinedAt(sym))
         invalidSyms(sym).symbol

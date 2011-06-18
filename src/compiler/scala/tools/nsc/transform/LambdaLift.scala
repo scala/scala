@@ -66,14 +66,14 @@ abstract class LambdaLift extends InfoTransform {
     private def isSameOwnerEnclosure(sym: Symbol) =
       sym.owner.logicallyEnclosingMember == currentOwner.logicallyEnclosingMember
 
-    /** Mark symbol `sym' as being free in `enclosure', unless `sym'
-     *  is defined in `enclosure' or there is a class between `enclosure's owner
-     *  and the owner of `sym'.
-     *  Return `true' if there is no class between `enclosure' and
+    /** Mark symbol `sym` as being free in `enclosure`, unless `sym`
+     *  is defined in `enclosure` or there is a class between `enclosure`s owner
+     *  and the owner of `sym`.
+     *  Return `true` if there is no class between `enclosure` and
      *  the owner of sym.
      *  pre: sym.isLocal, (enclosure.isMethod || enclosure.isClass)
      *
-     *  The idea of `markFree' is illustrated with an example:
+     *  The idea of `markFree` is illustrated with an example:
      *
      *  def f(x: int) = {
      *    class C {
@@ -83,8 +83,8 @@ abstract class LambdaLift extends InfoTransform {
      *    }
      *  }
      *
-     *  In this case `x' is free in the primary constructor of class `C'.
-     *  but it is not free in `D', because after lambda lift the code would be transformed
+     *  In this case `x` is free in the primary constructor of class `C`.
+     *  but it is not free in `D`, because after lambda lift the code would be transformed
      *  as follows:
      *
      *  def f(x$0: int) {
@@ -179,7 +179,7 @@ abstract class LambdaLift extends InfoTransform {
       }
     }
 
-    /** Compute free variables map `fvs'.
+    /** Compute free variables map `fvs`.
      *  Also assign unique names to all
      *  value/variable/let that are free in some function or class, and to
      *  all class/function symbols that are owned by some function.

@@ -59,8 +59,8 @@ object PagedSeq {
     fromStrings(source.iterator)
 
   /** Constructs a character sequence from a line iterator
-   *  Lines do not contain trailing `\n' characters; The method inserts
-   *  a line separator `\n' between any two lines in the sequence.
+   *  Lines do not contain trailing `\n` characters; The method inserts
+   *  a line separator `\n` between any two lines in the sequence.
    */
   def fromLines(source: Iterator[String]): PagedSeq[Char] = {
     var isFirst = true
@@ -73,8 +73,8 @@ object PagedSeq {
   }
 
   /** Constructs a character sequence from a line iterable
-   *  Lines do not contain trailing `\n' characters; The method inserts
-   *  a line separator `\n' between any two lines in the sequence.
+   *  Lines do not contain trailing `\n` characters; The method inserts
+   *  a line separator `\n` between any two lines in the sequence.
    */
   def fromLines(source: Iterable[String]): PagedSeq[Char] =
     fromLines(source.iterator)
@@ -104,7 +104,7 @@ object PagedSeq {
 import PagedSeq._
 
 /** An implementation of lazily computed sequences, where elements are stored
- *  in ``pages'', i.e. arrays of fixed size.
+ *  in "pages", i.e. arrays of fixed size.
  *
  *  @tparam T     the type of the elements contained in this paged sequence, with a `ClassManifest` context bound.
  *
@@ -156,14 +156,14 @@ extends scala.collection.IndexedSeq[T]
     (latest.end min end) - start
   }
 
-  /** The character at position `index'.
+  /** The character at position `index`.
    */
   def apply(index: Int) =
     if (isDefinedAt(index)) page(index + start)(index + start)
     else throw new IndexOutOfBoundsException(index.toString)
 
-  /** Is character sequence defined at `index'?
-   *  Unlike `length' this operation does not force reading
+  /** Is character sequence defined at `index`?
+   *  Unlike `length` this operation does not force reading
    *  a lazy sequence to the end.
    */
   override def isDefinedAt(index: Int) =
@@ -171,8 +171,8 @@ extends scala.collection.IndexedSeq[T]
       val p = page(index + start); index + start < p.end
     }
 
-  /** the subsequence from index `start' up to and excluding
-   *  the minimum of index `end' and the length of the current sequence.
+  /** the subsequence from index `start` up to and excluding
+   *  the minimum of index `end` and the length of the current sequence.
    */
   override def slice(_start: Int, _end: Int): PagedSeq[T] = {
     page(start)
@@ -183,7 +183,7 @@ extends scala.collection.IndexedSeq[T]
     new PagedSeq(more, f, s, e)
   }
 
-  /** the subsequence from index `start' up to the
+  /** the subsequence from index `start` up to the
    *  length of the current sequence.
    */
   def slice(start: Int): PagedSeq[T] = slice(start, UndeterminedEnd)
@@ -212,7 +212,7 @@ private class Page[T: ClassManifest](val num: Int) {
   /** The number of characters read into this page */
   var filled: Int = 0
 
-  /** Is this page the permamnently last one in the sequence? Only true once `more'
+  /** Is this page the permamnently last one in the sequence? Only true once `more`
    *  method has returned -1 to signal end of input. */
   var isLast: Boolean = false
 
@@ -239,7 +239,7 @@ private class Page[T: ClassManifest](val num: Int) {
     data(index - start)
   }
 
-  /** produces more characters by calling `more' and appends them on the current page,
+  /** produces more characters by calling `more` and appends them on the current page,
    *  or fills a subsequent page if current page is full
    *  pre: if current page is full, it is the last one in the sequence.
    */

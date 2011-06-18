@@ -164,7 +164,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  If key is not present return None.
    *  @param    key the key to be removed
    */
-  @deprecated("Use `remove' instead", "2.8.0")
+  @deprecated("Use `remove` instead", "2.8.0")
   def removeKey(key: A): Option[B] = remove(key)
 
   /** Removes all bindings from the map. After this operation has completed,

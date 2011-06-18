@@ -25,7 +25,7 @@ import scala.util.parsing.combinator.syntactical.TokenParsers
  *  </p><pre>
  *    <b>val</b> parser = syntactic.term</pre>
  *  <p>
- *    (if MyParsers extends TokenParsers with a parser called `term')
+ *    (if MyParsers extends TokenParsers with a parser called `term`)
  *  </p>
  *
  * @author Martin Odersky, Adriaan Moors
@@ -36,7 +36,7 @@ abstract class Tester {
   val parser: syntactic.Parser[Any]
 
 
-  /** Scans a String (using a `syntactic.lexical.Scanner'), parses it
+  /** Scans a String (using a `syntactic.lexical.Scanner`), parses it
    *  using <code>phrase(parser)</code>, and  prints the input and the
    *  parsed result to the console.
    */

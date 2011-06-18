@@ -30,7 +30,7 @@ object DocStrings {
 
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
-   *  a single `*' character or the `/``**` sequence.
+   *  a single `*` character or the `/``**` sequence.
    *  @pre  start == str.length || str(start) == `\n'
    */
   def skipLineLead(str: String, start: Int): Int =
@@ -51,7 +51,7 @@ object DocStrings {
     else start
 
   /** Returns first index following `start` and starting a line (i.e. after skipLineLead) or starting the comment
-   *  which satisfies predicate `p'.
+   *  which satisfies predicate `p`.
    */
   def findNext(str: String, start: Int)(p: Int => Boolean): Int = {
     val idx = skipLineLead(str, skipToEol(str, start))
@@ -60,7 +60,7 @@ object DocStrings {
   }
 
   /** Return first index following `start` and starting a line (i.e. after skipLineLead)
-   *  which satisfies predicate `p'.
+   *  which satisfies predicate `p`.
    */
   def findAll(str: String, start: Int)(p: Int => Boolean): List[Int] = {
     val idx = findNext(str, start)(p)
@@ -70,7 +70,7 @@ object DocStrings {
 
   /** Produces a string index, which is a list of ``sections'', i.e
    *  pairs of start/end positions of all tagged sections in the string.
-   *  Every section starts with a `@' and extends to the next `@', or
+   *  Every section starts with a `@` and extends to the next `@`, or
    *  to the end of the comment string, but excluding the final two
    *  characters which terminate the comment.
    */
