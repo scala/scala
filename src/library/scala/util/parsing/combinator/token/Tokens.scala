@@ -13,11 +13,13 @@ package token
 /** This component provides the notion of `Token`, the unit of information that is passed from lexical
  * parsers in the `Lexical` component to the parsers in the `TokenParsers` component.
  *
- * @author Martin Odersky, Adriaan Moors
+ * @author Martin Odersky
+ * @author Adriaan Moors
  */
 trait Tokens {
-  /** Objects of this type are produced by a lexical parser or ``scanner'', and consumed by a parser
-   * {@see scala.util.parsing.combinator.syntactical.TokenParsers}.
+  /** Objects of this type are produced by a lexical parser or ``scanner'', and consumed by a parser.
+   *
+   *  @see [[scala.util.parsing.combinator.syntactical.TokenParsers]]
    */
   abstract class Token {
     def chars: String
@@ -35,6 +37,6 @@ trait Tokens {
     def chars = "<eof>"
   }
 
-  /** This token is produced by a scanner {@see Scanner} when scanning failed. */
+  /** This token is produced by a scanner `Scanner` when scanning failed. */
   def errorToken(msg: String): Token = new ErrorToken(msg)
 }

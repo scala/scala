@@ -9,7 +9,7 @@
 
 package scala.util.parsing.input
 
-/** An object encapsulating basic character constants
+/** An object encapsulating basic character constants.
  *
  * @author Martin Odersky, Adriaan Moors
  */
@@ -29,27 +29,27 @@ class CharSequenceReader(override val source: java.lang.CharSequence,
                          override val offset: Int) extends Reader[Char] {
   import CharSequenceReader._
 
-  /** Construct a <code>CharSequenceReader</code> with its first element at
-   *  <code>source(0)</code> and position <code>(1,1)</code>.
+  /** Construct a `CharSequenceReader` with its first element at
+   *  `source(0)` and position `(1,1)`.
    */
   def this(source: java.lang.CharSequence) = this(source, 0)
 
-  /** Returns the first element of the reader, or EofCh if reader is at its end
+  /** Returns the first element of the reader, or EofCh if reader is at its end.
    */
   def first =
     if (offset < source.length) source.charAt(offset) else EofCh
 
-  /** Returns a CharSequenceReader consisting of all elements except the first
+  /** Returns a CharSequenceReader consisting of all elements except the first.
    *
-   * @return If <code>atEnd</code> is <code>true</code>, the result will be
-   *         <code>this'; otherwise, it's a <code>CharSequenceReader</code> containing
+   * @return If `atEnd` is `true`, the result will be
+   *         `this'; otherwise, it's a `CharSequenceReader` containing
    *         the rest of input.
    */
   def rest: CharSequenceReader =
     if (offset < source.length) new CharSequenceReader(source, offset + 1)
     else this
 
-  /** The position of the first element in the reader
+  /** The position of the first element in the reader.
    */
   def pos: Position = new OffsetPosition(source, offset)
 
@@ -59,7 +59,7 @@ class CharSequenceReader(override val source: java.lang.CharSequence,
   def atEnd = offset >= source.length
 
   /** Returns an abstract reader consisting of all elements except the first
-   *  <code>n</code> elements.
+   *  `n` elements.
    */
   override def drop(n: Int): CharSequenceReader =
     new CharSequenceReader(source, offset + n)

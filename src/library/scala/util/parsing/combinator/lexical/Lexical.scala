@@ -15,28 +15,25 @@ package lexical
 import token._
 import input.CharArrayReader.EofCh
 
-/** <p>
- *    This component complements the <code>Scanners</code> component with
- *    common operations for lexical parsers.
- *  </p>
- *  <p>
- *   {@see StdLexical} for a concrete implementation for a simple, Scala-like
- *   language.
- *  </p>
+/** This component complements the `Scanners` component with
+ *  common operations for lexical parsers.
+ *
+ *  Refer to [[scala.util.parsing.combinator.lexical.StdLexical]]
+ *  for a concrete implementation for a simple, Scala-like language.
  *
  * @author Martin Odersky, Adriaan Moors
  */
 abstract class Lexical extends Scanners with Tokens {
 
-  /** A character-parser that matches a letter (and returns it)*/
+  /** A character-parser that matches a letter (and returns it).*/
   def letter = elem("letter", _.isLetter)
 
-  /** A character-parser that matches a digit (and returns it)*/
+  /** A character-parser that matches a digit (and returns it).*/
   def digit = elem("digit", _.isDigit)
 
-  /** A character-parser that matches any character except the ones given in `cs` (and returns it)*/
+  /** A character-parser that matches any character except the ones given in `cs` (and returns it).*/
   def chrExcept(cs: Char*) = elem("", ch => (cs forall (ch !=)))
 
-  /** A character-parser that matches a white-space character (and returns it)*/
+  /** A character-parser that matches a white-space character (and returns it).*/
   def whitespaceChar = elem("space char", ch => ch <= ' ' && ch != EofCh)
 }

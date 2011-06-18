@@ -10,8 +10,7 @@
 
 package scala.util.regexp
 
-/** pointed regular hedge expressions, a useful subclass of
- *  regular hedge expressions.
+/** Pointed regular hedge expressions, a useful subclass of regular hedge expressions.
  *
  *  @author  Burak Emir
  *  @version 1.0

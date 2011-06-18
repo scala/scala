@@ -11,8 +11,9 @@
 package scala.util.control
 
 /** A class that can be instantiated for the break control abstraction.
- *  Example usage:<pre>
+ *  Example usage:
  *
+ *  <pre>
  *  val mybreaks = new Breaks
  *  import</b> mybreaks.{break, breakable}
  *
@@ -22,7 +23,7 @@ package scala.util.control
  *    }
  *  }</pre>
  *
- *  Calls to break from one instantiation of Breaks will never
+ *  Calls to break from one instantiation of `Breaks` will never
  *  target breakable objects of some other instantion.
  */
 class Breaks {
@@ -53,9 +54,9 @@ class Breaks {
     }
   }
 
-  /* Break from dynamically closest enclosing breakable block
-   * @note this might be different than the statically closest enclosing
-   * block!
+  /* Break from dynamically closest enclosing breakable block.
+   *
+   * @note This might be different than the statically closest enclosing block!
    */
   def break() { throw breakException }
 }

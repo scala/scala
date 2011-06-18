@@ -15,10 +15,9 @@ import scala.collection.{ mutable, immutable }
 
 // todo: replace global variable pos with acc
 
-/** this turns a regexp over A into a NondetWorkAutom over A using the
- *  celebrated position automata construction (also called Berry-Sethi or
- *  Glushkov)
- */
+/** This class turns a regular expression over A into a [[scala.util.automata.NondetWorkAutom]]
+  * over A using the celebrated position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
+  */
 abstract class BaseBerrySethi {
   val lang: Base
   import lang.{ Alt, Eps, Meta, RegExp, Sequ, Star }
@@ -47,10 +46,10 @@ abstract class BaseBerrySethi {
     case _        => throw new IllegalArgumentException("unexpected pattern " + r.getClass())
   }
 
-  /** computes first( r ) for the word regexp r */
+  /** Computes `first(r)` for the word regexp `r`. */
   protected def compFirst(r: RegExp): Set[Int] = doComp(r, compFirst)
 
-  /** computes last( r ) for the regexp r */
+  /** Computes `last(r)` for the regexp `r`. */
   protected def compLast(r: RegExp): Set[Int] = doComp(r, compLast)
 
   /** Starts from the right-to-left
@@ -73,8 +72,7 @@ abstract class BaseBerrySethi {
     follow(0)
   }
 
-  /** returns the first set of an expression, setting the follow set along
-   *  the way.
+  /** Returns the first set of an expression, setting the follow set along the way.
    *
    *  @param fol1 ...
    *  @param r    ...
@@ -94,8 +92,7 @@ abstract class BaseBerrySethi {
     case _          => throw new IllegalArgumentException("unexpected pattern: " + r.getClass())
   }
 
-  /** returns "Sethi-length" of a pattern, creating the set of position
-   *  along the way.
+  /** Returns the "Sethi-length" of a pattern, creating the set of position along the way.
    *
    *  @param r ...
    */

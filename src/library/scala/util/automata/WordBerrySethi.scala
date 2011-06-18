@@ -14,13 +14,12 @@ import scala.collection.{ immutable, mutable }
 import mutable.{ HashSet, HashMap }
 import scala.util.regexp.WordExp
 
-/** This class turns a regexp into a NondetWordAutom using the
- *  celebrated position automata construction (also called Berry-Sethi or
- *  Glushkov)
- *
- *  @author Burak Emir
- *  @version 1.0
- */
+/** This class turns a regular expression into a [[scala.util.automata.NondetWorkAutom]]
+  * celebrated position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
+  *
+  *  @author Burak Emir
+  *  @version 1.0
+  */
 abstract class WordBerrySethi extends BaseBerrySethi {
   override val lang: WordExp
 
@@ -33,20 +32,20 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   protected var defaultq: Array[List[Int]]                 = _ // default transitions
   protected var initials: Set[Int]                         = _
 
-  /** Computes <code>first(r)</code> where the word regexp <code>r</code>.
+  /** Computes `first(r)` where the word regexp `r`.
    *
    *  @param r the regular expression
-   *  @return  the computed set <code>first(r)</code>
+   *  @return  the computed set `first(r)`
    */
   protected override def compFirst(r: RegExp): Set[Int] = r match {
     case x: Letter  => Set(x.pos)
     case _          => super.compFirst(r)
   }
 
-  /** Computes <code>last(r)</code> where the word regexp <code>r</code>.
+  /** Computes `last(r)` where the word regexp `r`.
    *
    *  @param r the regular expression
-   *  @return  the computed set <code>last(r)</code>
+   *  @return  the computed set `last(r)`
    */
   protected override def compLast(r: RegExp): Set[Int] = r match {
     case x: Letter  => Set(x.pos)
@@ -66,11 +65,11 @@ abstract class WordBerrySethi extends BaseBerrySethi {
       case _          => super.compFollow1(fol1, r)
     }
 
-  /** returns "Sethi-length" of a pattern, creating the set of position
+  /** Returns "Sethi-length" of a pattern, creating the set of position
    *  along the way
    */
 
-  /** called at the leaves of the regexp */
+  /** Called at the leaves of the regexp */
   protected def seenLabel(r: RegExp, i: Int, label: _labelT) {
     labelAt = labelAt.updated(i, label)
     this.labels += label

@@ -10,17 +10,17 @@ package scala.util.parsing.input
 
 import collection.mutable.ArrayBuffer
 
-/** <p>
- *    <code>OffsetPosition</code> is a standard class for positions
- *    represented as offsets into a source ``document''.
- *    @param source   The source document
- *    @param offset   The offset indicating the position
+/** `OffsetPosition` is a standard class for positions
+ *   represented as offsets into a source ``document''.
+ *
+ *   @param source   The source document
+ *   @param offset   The offset indicating the position
  *
  * @author Martin Odersky
  */
 case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends Position {
 
-  /** An index that contains all line starts, including first line, and eof */
+  /** An index that contains all line starts, including first line, and eof. */
   private lazy val index: Array[Int] = {
     var lineStarts = new ArrayBuffer[Int]
     lineStarts += 0
@@ -30,7 +30,7 @@ case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends P
     lineStarts.toArray
   }
 
-  /** The line number referred to by the position; line numbers start at 1 */
+  /** The line number referred to by the position; line numbers start at 1. */
   def line: Int = {
     var lo = 0
     var hi = index.length - 1
@@ -42,7 +42,7 @@ case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends P
     lo + 1
   }
 
-  /** The column number referred to by the position; column numbers start at 1 */
+  /** The column number referred to by the position; column numbers start at 1. */
   def column: Int = offset - index(line - 1) + 1
 
   /** The contents of the line numbered `lnum` (must not contain a new-line character).
@@ -53,7 +53,7 @@ case class OffsetPosition(source: java.lang.CharSequence, offset: Int) extends P
   def lineContents: String =
     source.subSequence(index(line - 1), index(line)).toString
 
-  /** Returns a string representation of the `Position`, of the form `line.column` */
+  /** Returns a string representation of the `Position`, of the form `line.column`. */
   override def toString = line+"."+column
 
   /** Compare this position to another, by first comparing their line numbers,

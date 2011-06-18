@@ -15,14 +15,10 @@ import scala.collection.mutable.Map
   // TODO: avoid clashes when substituting
   // TODO: check binders in the same scope are distinct
 
-/** <p>
- *    This trait provides the core Scrap-Your-Boilerplate abstractions as
- *    well as implementations for common datatypes.
- *  </p>
- *  <p>
- *    Based on Ralph Laemmel's <a target="_top"
- *    href="http://homepages.cwi.nl/~ralf/publications.html">SYB papers</a>.
- *  </p>
+/** This trait provides the core Scrap-Your-Boilerplate abstractions as
+ *  well as implementations for common datatypes.
+ *
+ *  Based on Ralph Laemmel's [[http://homepages.cwi.nl/~ralf/publications.html SYB papers]].
  *
  * @author Adriaan Moors
  */
@@ -58,57 +54,52 @@ trait Mappable {
     }
 }
 
-/** <p>
- *    This component provides functionality for enforcing variable binding
- *    during parse-time.
- *  </p>
- *  <p>
- *   When parsing simple languages, like Featherweight Scala, these parser
- *   combinators will fully enforce the binding discipline. When names are
- *   allowed to be left unqualified, these mechanisms would have to be
- *   complemented by an extra phase that resolves names that couldn't be
- *   resolved using the naive binding rules. (Maybe some machinery to
- *   model `implicit` binders (e.g., `this` and imported qualifiers)
- *   and selection on a binder will suffice?)
- * </p>
+/** This component provides functionality for enforcing variable binding
+ *  during parse-time.
+ *
+ *  When parsing simple languages, like Featherweight Scala, these parser
+ *  combinators will fully enforce the binding discipline. When names are
+ *  allowed to be left unqualified, these mechanisms would have to be
+ *  complemented by an extra phase that resolves names that couldn't be
+ *  resolved using the naive binding rules. (Maybe some machinery to
+ *  model `implicit` binders (e.g., `this` and imported qualifiers)
+ *  and selection on a binder will suffice?)
  *
  * @author Adriaan Moors
  */
 trait Binders extends AbstractSyntax with Mappable {
   /** A `Scope` keeps track of one or more syntactic elements that represent bound names.
-   * The elements it contains share the same scope and must all be distinct, as determined by `==`.
+   *  The elements it contains share the same scope and must all be distinct, as determined by `==`.
    *
-   * A `NameElement` `n` in the AST that is conceptually bound by a `Scope` `s`, is replaced by a
-   * `BoundElement(n, s)'. (For example, in `val x:Int=x+1', the first `x` is modelled by a
-   * Scope `s` that contains `x` and the second `x` is represented by a `BoundElement(`x`, s)')
-   * The term (`x+1`) in scope of the Scope becomes an `UnderBinder(s, `x+1`).
+   *  A `NameElement` `n` in the AST that is conceptually bound by a `Scope` `s`, is replaced by a
+   *  `BoundElement(n, s)`. (For example, in `val x:Int=x+1`, the first `x` is modelled by a
+   *  Scope `s` that contains `x` and the second `x` is represented by a `BoundElement(x, s)`)
+   *  The term (`x+1`) in scope of the Scope becomes an `UnderBinder(s, x+1)`.
    *
-   * A `NameElement` `n` is bound by a `Scope` `s` if it is wrapped as a `BoundElement(`n`, s)', and
-   * `s` has a binder element that is semantically equal (`equals` or `==`) to `n`.
+   *  A `NameElement` `n` is bound by a `Scope` `s` if it is wrapped as a `BoundElement(n, s)`, and
+   *  `s` has a binder element that is semantically equal (`equals` or `==`) to `n`.
    *
-   * A `Scope` is represented textually by its list of binder elements, followed by the scope's `id`.
-   * For example: `[x, y]!1` represents the scope with `id` `1` and binder elements `x` and `y`.
-   * (`id` is solely used for this textual representation.)
+   *  A `Scope` is represented textually by its list of binder elements, followed by the scope's `id`.
+   *  For example: `[x, y]!1` represents the scope with `id` `1` and binder elements `x` and `y`.
+   *  (`id` is solely used for this textual representation.)
    */
   class Scope[binderType <: NameElement] extends Iterable[binderType]{
     private val substitution: Map[binderType, Element] =
       new scala.collection.mutable.LinkedHashMap[binderType, Element] // a LinkedHashMap is ordered by insertion order -- important!
 
-    /** Returns a unique number identifying this Scope (only used for representation purposes).
-     */
+    /** Returns a unique number identifying this Scope (only used for representation purposes). */
     val id: Int = _Binder.genId
 
     /** Returns the binders in this scope.
-     * For a typical let-binding, this is just the variable name. For an argument list to a method body,
-     * there is one binder per formal argument.
+     *  For a typical let-binding, this is just the variable name. For an argument list to a method body,
+     *  there is one binder per formal argument.
      */
     def iterator = substitution.keysIterator
 
-    /** Return the `i`th binder in this scope.*/
+    /** Return the `i`th binder in this scope. */
     def apply(i: Int): binderType = this.iterator.toList(i)
 
-    /** Returns true if this container has a binder equal (==) to `b`
-     */
+    /** Returns true if this container has a binder equal (as determined by `==`) to `b`. */
     def binds(b: binderType): Boolean = substitution.contains(b)
 
     def indexFor(b: binderType): Option[Int] = {
@@ -123,53 +114,53 @@ trait Binders extends AbstractSyntax with Mappable {
       None
     }
 
-    /** Adds a new binder.
-     * (e.g. the variable name in a local variable declaration)
+    /** Adds a new binder, for example the variable name in a local variable declaration.
      *
      * @param b a new binder that is distinct from the existing binders in this scope,
-     *           and shares their conceptual scope. canAddBinder(b)` must hold.`
+     *           and shares their conceptual scope. `canAddBinder(b)` must hold.
      * @return `binds(b)` and `getElementFor(b) eq b` will hold.
      */
     def addBinder(b: binderType) { substitution += Pair(b, b) }
 
+    // TODO: strengthen this condition so that no binders may be added after this scope has been
+    //       linked to its `UnderBinder` (i.e., while parsing, BoundElements may be added to the Scope
+    //       associated to the UnderBinder, but after that, no changes are allowed, except for substitution)?
     /** `canAddElement` indicates whether `b` may be added to this scope.
      *
-     * TODO: strengthen this condition so that no binders may be added after this scope has been
-     *       linked to its `UnderBinder` (i.e., while parsing, BoundElements may be added to the Scope
-     *       associated to the UnderBinder, but after that, no changes are allowed, except for substitution)?
      *
      * @return true if `b` had not been added yet
      */
     def canAddBinder(b: binderType): Boolean = !binds(b)
 
-    /** ``Replaces'' the bound occurrences of a contained binder by their new value.
-     * The bound occurrences of `b` are not actually replaced; the scope keeps track
-     * of a substitution that maps every binder to its current value. Since a `BoundElement` is
-     * a proxy for the element it is bound to by its binder, `substitute` may thus be thought of
-     * as replacing all the bound occurrences of the given binder `b` by their new value `value`.
+    /** ''Replaces'' the bound occurrences of a contained binder by their new value.
+     *  The bound occurrences of `b` are not actually replaced; the scope keeps track
+     *  of a substitution that maps every binder to its current value. Since a `BoundElement` is
+     *  a proxy for the element it is bound to by its binder, `substitute` may thus be thought of
+     *  as replacing all the bound occurrences of the given binder `b` by their new value `value`.
      *
-     * @param b    the binder whose bound occurrences should be given a new value. `binds(b)` must hold.
-     * @param value the new value for the bound occurrences of `b`
-     * @return `getElementFor(b) eq value` will hold.
+     *  @param b    the binder whose bound occurrences should be given a new value. `binds(b)` must hold.
+     *  @param value the new value for the bound occurrences of `b`
+     *  @return `getElementFor(b) eq value` will hold.
      */
     def substitute(b: binderType, value: Element): Unit = substitution(b) = value
 
     /** Returns the current value for the bound occurrences of `b`.
      *
-     * @param b the contained binder whose current value should be returned `binds(b)` must hold.
+     *  @param b the contained binder whose current value should be returned `binds(b)` must hold.
      */
     def getElementFor(b: binderType): Element = substitution(b)
 
     override def toString: String =  this.iterator.toList.mkString("[",", ","]")+"!"+id // TODO show substitution?
 
-    /** Returns a list of strings that represent the binder elements, each tagged with this scope's id.*/
+    /** Returns a list of strings that represent the binder elements, each tagged with this scope's id. */
     def bindersToString: List[String] = (for(b <- this.iterator) yield b+"!"+id).toList
 
-    /** Return a new inheriting scope that won't check whether binding is respected until the scope is left (so as to support forward references) **/
+    /** Return a new inheriting scope that won't check whether binding is respected until the scope is left (so as to support forward references). */
     def allowForwardRef: Scope[binderType] = this // TODO
 
     /** Return a nested scope -- binders entered into it won't be visible in this scope, but if this scope allows forward references,
-      * the binding in the returned scope also does, and thus the check that all variables are bound is deferred until this scope is left  **/
+     *  the binding in the returned scope also does, and thus the check that all variables are bound is deferred until this scope is left.
+     */
     def nested: Scope[binderType] = this // TODO
 
     def onEnter() {}
@@ -184,17 +175,17 @@ trait Binders extends AbstractSyntax with Mappable {
   }
 
   /** A `BoundElement` is bound in a certain scope `scope`, which keeps track of the actual element that
-   * `el` stands for.
+   *  `el` stands for.
    *
-   * A `BoundElement` is represented textually by its bound element, followed by its scope's `id`.
-   * For example: `x@1` represents the variable `x` that is bound in the scope with `id` `1`.
+   *  A `BoundElement` is represented textually by its bound element, followed by its scope's `id`.
+   *  For example: `x@1` represents the variable `x` that is bound in the scope with `id` `1`.
    *
-   * @note `scope.binds(el)` holds before and after.
+   *  @note `scope.binds(el)` holds before and after.
    */
   case class BoundElement[boundElement <: NameElement](el: boundElement, scope: Scope[boundElement]) extends NameElement with Proxy with BindingSensitive {
     /** Returns the element this `BoundElement` stands for.
-     * The `Proxy` trait ensures `equals`, `hashCode` and `toString` are forwarded to
-     * the result of this method.
+     *  The `Proxy` trait ensures `equals`, `hashCode` and `toString` are forwarded to
+     *  the result of this method.
      */
     def self: Element = scope.getElementFor(el)
 
@@ -206,8 +197,7 @@ trait Binders extends AbstractSyntax with Mappable {
     def alpha_==[t <: NameElement](other: BoundElement[t]): Boolean = scope.indexFor(el) == other.scope.indexFor(other.el)
   }
 
-  /** A variable that escaped its scope (i.e., a free variable) -- we don't deal very well with these yet
-   */
+  /** A variable that escaped its scope (i.e., a free variable) -- we don't deal very well with these yet. */
   class UnboundElement[N <: NameElement](private val el: N) extends NameElement {
     def name = el.name+"@??"
   }
@@ -216,20 +206,22 @@ trait Binders extends AbstractSyntax with Mappable {
   // if we knew a more specific type for the element that the bound element represents, this could make sense
   // implicit def BoundElementProxy[t <: NameElement](e: BoundElement[t]): Element = e.self
 
-  /** Represents an element with variables that are bound in a certain scope.
-   */
+  /** Represents an element with variables that are bound in a certain scope. */
   class UnderBinder[binderType  <: NameElement, elementT <% Mappable[elementT]](val scope: Scope[binderType], private[Binders] val element: elementT) extends Element with BindingSensitive {
     override def toString: String = "(" + scope.toString + ") in { "+element.toString+" }"
 
     /** Alpha-equivalence -- TODO
-     * Returns true if the `element` of the `other` `UnderBinder` is equal to this `element` up to alpha-conversion.
+     *  Returns true if the `element` of the `other` `UnderBinder` is equal to this `element` up to alpha-conversion.
      *
-     * That is, regular equality is used for all elements but `BoundElement`s: such an element is
-     * equal to a `BoundElement` in `other` if their binders are equal. Binders are equal if they
-     * are at the same index in their respective scope.
+     *  That is, regular equality is used for all elements but `BoundElement`s: such an element is
+     *  equal to a `BoundElement` in `other` if their binders are equal. Binders are equal if they
+     *  are at the same index in their respective scope.
      *
-     * Example: UnderBinder([x, y]!1, x@1) alpha_== UnderBinder([a, b]!2, a@2)
-     *          ! (UnderBinder([x, y]!1, y@1) alpha_== UnderBinder([a, b]!2, a@2))
+     *  Example:
+     *  {{{
+     *    UnderBinder([x, y]!1, x@1) alpha_== UnderBinder([a, b]!2, a@2)
+     *    ! (UnderBinder([x, y]!1, y@1) alpha_== UnderBinder([a, b]!2, a@2))
+     *  }}}
      */
     /*def alpha_==[bt <: binderType, st <: elementT](other: UnderBinder[bt, st]): Boolean = {
        var result = true
@@ -259,7 +251,7 @@ trait Binders extends AbstractSyntax with Mappable {
     def extract: elementT = cloneElementNoBoundElements
     def extract(subst: scala.collection.immutable.Map[NameElement, NameElement]): elementT = cloneElementWithSubst(subst)
 
-    /** Get a string representation of element, normally we don't allow direct access to element, but just getting a string representation is ok*/
+    /** Get a string representation of element, normally we don't allow direct access to element, but just getting a string representation is ok. */
     def elementToString: String = element.toString
   }
 
@@ -291,12 +283,12 @@ trait Binders extends AbstractSyntax with Mappable {
     def unit[bt <: NameElement, elementT <% Mappable[elementT]](x: elementT) = UnderBinder(new Scope[bt](), x)
   }
 
-  /** If a list of `UnderBinder`s all have the same scope, they can be turned in to an UnderBinder
-   * containing a list of the elements in the original `UnderBinder`.
+  /** If a list of `UnderBinder`s all have the same scope, they can be turned in to an `UnderBinder`
+   *  containing a list of the elements in the original `UnderBinder`.
    *
-   * The name `sequence` comes from the fact that this method's type is equal to the type of monadic sequence.
+   *  The name `sequence` comes from the fact that this method's type is equal to the type of monadic sequence.
    *
-   * @note `!orig.isEmpty` implies `orig.forall(ub => ub.scope eq orig(0).scope)`
+   *  @note `!orig.isEmpty` implies `orig.forall(ub => ub.scope eq orig(0).scope)`
    *
    */
   def sequence[bt <: NameElement, st <% Mappable[st]](orig: List[UnderBinder[bt, st]]): UnderBinder[bt, List[st]] =
@@ -307,13 +299,13 @@ trait Binders extends AbstractSyntax with Mappable {
   def unsequence[bt <: NameElement, st <% Mappable[st]](orig: UnderBinder[bt, List[st]]): List[UnderBinder[bt, st]] =
     orig.element.map(sc => UnderBinder(orig.scope, sc))
 
+  //TODO: more documentation
   /** An environment that maps a `NameElement` to the scope in which it is bound.
-   * This can be used to model scoping during parsing.
+   *  This can be used to model scoping during parsing.
    *
-   * (This class is similar to Burak's ECOOP paper on pattern matching, except that we use `==`
-   *  instead of `eq`, thus types can't be unified in general)
-   *
-   * TODO: more documentation
+   *  @note This class uses similar techniques as described by ''Burak Emir'' in
+   *        [[http://library.epfl.ch/theses/?nr=3899 Object-oriented pattern matching]],
+   *        but uses `==` instead of `eq`, thus types can't be unified in general.
    */
   abstract class BinderEnv {
     def apply[A <: NameElement](v: A): Option[Scope[A]]
@@ -328,17 +320,16 @@ trait Binders extends AbstractSyntax with Mappable {
     def apply[A <: NameElement](v: A): Option[Scope[A]] = None
   }
 
+  // TODO: move this to some utility object higher in the scala hierarchy?
   /** Returns a given result, but executes the supplied closure before returning.
-   * (The effect of this closure does not influence the returned value.)
+   *  (The effect of this closure does not influence the returned value.)
    *
-   * TODO: move this to some utility object higher in the scala hierarchy?
-   *
-   * @param result the result to be returned
-   * @param block  code to be executed, purely for its side-effects
+   *  @param result the result to be returned
+   *  @param block  code to be executed, purely for its side-effects
    */
   trait ReturnAndDo[T]{
     def andDo(block: => Unit): T
-  } // gotta love Smalltalk syntax :-)
+  }
 
   def return_[T](result: T): ReturnAndDo[T] =
     new ReturnAndDo[T] {

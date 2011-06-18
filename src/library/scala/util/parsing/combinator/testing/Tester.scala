@@ -13,22 +13,23 @@ import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.lexical.Lexical
 import scala.util.parsing.combinator.syntactical.TokenParsers
 
-/** <p>
- *    Facilitates testing a given parser on various input strings.
- *  </p>
- *  <p>
- *    Example use:
- *  </p><pre>
- *    <b>val</b> syntactic = <b>new</b> MyParsers</pre>
- *  <p>
- *    and
- *  </p><pre>
- *    <b>val</b> parser = syntactic.term</pre>
- *  <p>
- *    (if MyParsers extends TokenParsers with a parser called `term`)
- *  </p>
+/** Facilitates testing a given parser on various input strings.
  *
- * @author Martin Odersky, Adriaan Moors
+ *  Example use:
+ *
+ *  <pre>
+ *    <b>val</b> syntactic = <b>new</b> MyParsers
+ *  </pre>
+ *  and
+ *  <pre>
+ *    <b>val</b> parser = syntactic.term
+ *  </pre>
+ *
+ *  (If `MyParsers` extends [[scala.util.parsing.combinator.syntactical.TokenParsers]]
+ *  with a parser called `term`.)
+ *
+ * @author Martin Odersky
+ * @author Adriaan Moors
  */
 abstract class Tester {
 
@@ -37,7 +38,7 @@ abstract class Tester {
 
 
   /** Scans a String (using a `syntactic.lexical.Scanner`), parses it
-   *  using <code>phrase(parser)</code>, and  prints the input and the
+   *  using `phrase(parser)`, and  prints the input and the
    *  parsed result to the console.
    */
   def test(in: String) {

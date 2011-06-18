@@ -19,7 +19,7 @@ trait AbstractSyntax {
    */
   trait Element extends Positional
 
-  /** The base class for elements in the AST that represent names {@see Binders}.
+  /** The base class for elements in the AST that represent names [[scala.util.parsing.ast.Binders]].
    */
   trait NameElement extends Element {
     def name: String

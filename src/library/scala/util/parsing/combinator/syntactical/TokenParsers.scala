@@ -13,13 +13,14 @@ package syntactical
 
 /** This is the core component for token-based parsers.
  *
- *  @author Martin Odersky, Adriaan Moors
+ *  @author Martin Odersky
+ *  @author Adriaan Moors
  */
 trait TokenParsers extends Parsers {
-  /** Tokens is the abstract type of the `Token`s consumed by the parsers in this component. */
+  /** `Tokens` is the abstract type of the `Token`s consumed by the parsers in this component. */
   type Tokens <: token.Tokens
 
-  /** lexical is the component responsible for consuming some basic kind of
+  /** `lexical` is the component responsible for consuming some basic kind of
    *  input (usually character-based) and turning it into the tokens
    *  understood by these parsers.
    */

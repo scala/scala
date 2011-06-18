@@ -16,7 +16,7 @@ import scala.collection.{ immutable, mutable }
  *  in the delta function. Default transitions are transitions that
  *  are taken when no other transitions can be applied.
  *  All states are reachable. Accepting states are those for which
- *  the partial function 'finals' is defined.
+ *  the partial function `finals` is defined.
  */
 abstract class NondetWordAutom[T <: AnyRef] {
   import immutable.BitSet
@@ -27,22 +27,22 @@ abstract class NondetWordAutom[T <: AnyRef] {
   val delta: Array[mutable.Map[T, BitSet]]
   val default: Array[BitSet]
 
-  /** returns true if the state is final */
+  /** @return true if the state is final */
   final def isFinal(state: Int) = finals(state) > 0
 
-  /** returns tag of final state */
+  /** @return tag of final state */
   final def finalTag(state: Int) = finals(state)
 
-  /** returns true if the set of states contains at least one final state */
+  /** @return true if the set of states contains at least one final state */
   final def containsFinal(Q: BitSet): Boolean = Q exists isFinal
 
-  /** returns true if there are no accepting states */
+  /** @return true if there are no accepting states */
   final def isEmpty = (0 until nstates) forall (x => !isFinal(x))
 
-  /** returns a BitSet with the next states for given state and label */
+  /** @return a BitSet with the next states for given state and label */
   def next(q: Int, a: T): BitSet = delta(q).getOrElse(a, default(q))
 
-  /** returns a BitSet with the next states for given state and label */
+  /** @return a BitSet with the next states for given state and label */
   def next(Q: BitSet, a: T): BitSet = next(Q, next(_, a))
   def nextDefault(Q: BitSet): BitSet = next(Q, default)
 

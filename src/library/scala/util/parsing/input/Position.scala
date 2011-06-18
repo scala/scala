@@ -8,29 +8,23 @@
 
 package scala.util.parsing.input
 
-/** <p>
- *    <code>Position</code> is the base trait for objects describing a
- *    position in a ``document''.
- *  </p>
- *  <p>
- *    It provides functionality for:
- *  </p><ul>
- *    <li> generating a visual representation of this position (`longString`);
- *    <li> comparing two positions (`<`).
- *  </ul>
- *  <p>
- *    To use this class for a concrete kind of ``document'', implement the
- *    <code>lineContents</code> method.
- *  </p>
+/** `Position` is the base trait for objects describing a position in a ``document''.
  *
- * @author Martin Odersky, Adriaan Moors
+ *  It provides functionality for:
+ *   - generating a visual representation of this position (`longString`);
+ *   - comparing two positions (`<`).
+ *
+ *  To use this class for a concrete kind of ``document'', implement the `lineContents` method.
+ *
+ * @author Martin Odersky
+ * @author Adriaan Moors
  */
 trait Position {
 
-  /** The line number referred to by the position; line numbers start at 1 */
+  /** The line number referred to by the position; line numbers start at 1. */
   def line: Int
 
-  /** The column number referred to by the position; column numbers start at 1 */
+  /** The column number referred to by the position; column numbers start at 1. */
   def column: Int
 
   /** The contents of the line numbered `lnum` (must not contain a new-line character).
@@ -40,18 +34,19 @@ trait Position {
    */
   protected def lineContents: String
 
-  /** Returns a string representation of the `Position`, of the form `line.column` */
+  /** Returns a string representation of the `Position`, of the form `line.column`. */
   override def toString = ""+line+"."+column
 
   /** Returns a more ``visual'' representation of this position.
-   *  More precisely, the resulting string consists of two lines: <ol>
-   *    <li> the line in the document referred to by this position </li>
-   *    <li>a caret indicating the column</li></ol>
+   *  More precisely, the resulting string consists of two lines:
+   *   1. the line in the document referred to by this position
+   *   2. a caret indicating the column
    *
    *  Example:
-   *
-   *<pre>    List(this, is, a, line, from, the, document)
-   *                  ^</pre>
+   *  {{{
+   *    List(this, is, a, line, from, the, document)
+   *                 ^
+   *  }}}
    */
   def longString = lineContents+"\n"+lineContents.take(column-1).map{x => if (x == '\t') x else ' ' } + "^"
 

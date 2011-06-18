@@ -10,18 +10,17 @@
 package scala.util.control
 
 /**
- * A marker trait indicating that the <code>Throwable</code> it is mixed
+ * A marker trait indicating that the `Throwable` it is mixed
  * into is intended for flow control.
  *
- * <p>Note that <code>Throwable</code> subclasses which extend this trait
- * may extend any other <code>Throwable</code> subclass (eg.
- * <code>RuntimeException</code>) and are not required to extend
- * <code>Throwable</code> directly.</p>
+ * Note that `Throwable` subclasses which extend this trait
+ * may extend any other `Throwable` subclass (eg.
+ * `RuntimeException`) and are not required to extend
+ * `Throwable` directly.
  *
- * <p>Instances of <code>Throwable</code> subclasses marked in
- * this way should not normally be caught. Where catch-all behaviour is
- * required <code>ControlThrowable</code>s should be propagated, for
- * example,</p>
+ * Instances of `Throwable` subclasses marked in this way should
+ * not normally be caught. Where catch-all behaviour is required
+ * `ControlThrowable`s should be propagated, for example:
  *
  * <pre>
  *  import scala.util.control.ControlThrowable

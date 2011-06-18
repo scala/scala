@@ -24,7 +24,7 @@ abstract class Base
   }
 
   object Alt {
-    /** Alt( R,R,R* ) */
+    /** `Alt( R,R,R* )`. */
     def apply(rs: _regexpT*) =
       if (rs.size < 2) throw new SyntaxError("need at least 2 branches in Alt")
       else new Alt(rs: _*)
@@ -57,7 +57,7 @@ abstract class Base
     override def toString() = "Eps"
   }
 
-  /** this class can be used to add meta information to regexps */
+  /** this class can be used to add meta information to regexps. */
   class Meta(r1: _regexpT) extends RegExp {
     final val isNullable = r1.isNullable
     def r = r1

@@ -13,12 +13,12 @@ import scala.math.Ordering
 
 /** The Sorting object provides functions that can sort various kinds of
   * objects. You can provide a comparison function, or you can request a sort
-  * of items that are viewable as <code>Ordered</code>. Some sorts that
+  * of items that are viewable as [[scala.math.Ordered]]. Some sorts that
   * operate directly on a subset of value types are also provided. These
   * implementations are derived from those in the Sun JDK.
   *
-  * Note that stability doesn't matter for value types, so use the quickSort
-  * variants for those. <code>stableSort</code> is intended to be used with
+  * Note that stability doesn't matter for value types, so use the `quickSort`
+  * variants for those. `stableSort` is intended to be used with
   * objects when the prior ordering should be preserved, where possible.
   *
   * @author  Ross Judson
@@ -43,17 +43,15 @@ object Sorting {
     stableSort(a, 0, a.length-1, new Array[K](a.length), Ordering[K].lt _)
   }
 
-  /** Sorts an array of <code>K</code> given an ordering function
-   *  <code>f</code>. <code>f</code> should return <code>true</code> iff
-   *  its first parameter is strictly less than its second parameter.
+  /** Sorts an array of `K` given an ordering function `f`.
+   *  `f` should return `true` iff its first parameter is strictly less than its second parameter.
    */
   def stableSort[K: ClassManifest](a: Array[K], f: (K, K) => Boolean) {
     stableSort(a, 0, a.length-1, new Array[K](a.length), f)
   }
 
   /** Sorts an arbitrary sequence into an array, given a comparison function
-   *  that should return <code>true</code> iff parameter one is strictly less
-   *  than parameter two.
+   *  that should return `true` iff parameter one is strictly less than parameter two.
    *
    *  @param  a the sequence to be sorted.
    *  @param  f the comparison function.
@@ -125,7 +123,7 @@ object Sorting {
           var l = off
           var n = off + len - 1
           if (len > 40) {        // Big arrays, pseudomedian of 9
-            var s = len / 8
+            val s = len / 8
             l = med3(l, l+s, l+2*s)
             m = med3(m-s, m, m+s)
             n = med3(n-2*s, n-s, n)
@@ -226,7 +224,7 @@ object Sorting {
           var l = off
           var n = off + len - 1
           if (len > 40) {        // Big arrays, pseudomedian of 9
-            var s = len / 8
+            val s = len / 8
             l = med3(l, l+s, l+2*s)
             m = med3(m-s, m, m+s)
             n = med3(n-2*s, n-s, n)
@@ -330,7 +328,7 @@ object Sorting {
           var l = off
           var n = off + len - 1
           if (len > 40) {        // Big arrays, pseudomedian of 9
-            var s = len / 8
+            val s = len / 8
             l = med3(l, l+s, l+2*s)
             m = med3(m-s, m, m+s)
             n = med3(n-2*s, n-s, n)
@@ -438,7 +436,7 @@ object Sorting {
           var l = off
           var n = off + len - 1
           if (len > 40) {        // Big arrays, pseudomedian of 9
-            var s = len / 8
+            val s = len / 8
             l = med3(l, l+s, l+2*s)
             m = med3(m-s, m, m+s)
             n = med3(n-2*s, n-s, n)

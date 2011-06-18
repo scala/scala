@@ -15,11 +15,9 @@ import java.util.regex.{ Pattern, Matcher }
 /** This class provides methods for creating and using regular expressions.
  *  It is based on the regular expressions of the JDK since 1.4.
  *
- *  <p>
- *  You can use special pattern syntax construct <code>(?idmsux-idmsux)</code> to switch
- *  various regex compilation options like <code>CASE_INSENSITIVE</code> or <code>UNICODE_CASE</code>.
- *  See <code>java.util.regex.Pattern</code> javadoc for details.
- *  </p>
+ *  You can use special pattern syntax construct `(?idmsux-idmsux)` to switch
+ *  various regex compilation options like `CASE_INSENSITIVE` or `UNICODE_CASE`.
+ *  See [[java.util.regex.Pattern]] for details.
  *
  *  @author  Thibaud Hottelier
  *  @author  Philipp Haller
@@ -37,8 +35,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   /** The compiled pattern */
   val pattern = Pattern.compile(regex)
 
-  /** Tries to match target (whole match) and returns
-   *  the matches.
+  /** Tries to match target (whole match) and returns the matches.
    *
    *  @param target The string to match
    *  @return       The matches
@@ -135,8 +132,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
     m.replaceFirst(replacement)
   }
 
-  /** Splits the provided character sequence around matches of this
-   *  regexp.
+  /** Splits the provided character sequence around matches of this regexp.
    *
    *  @param toSplit The character sequence to split
    *  @return        The array of strings computed by splitting the
@@ -150,11 +146,13 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
 }
 
 /** This object defines inner classes that describe
- *  regex matches. The class hierarchy is as follows.
+ *  regex matches. The class hierarchy is as follows:
  *
+ *  {{{
  *            MatchData
- *              |      \
- *      MatchIterator  Match
+ *            /      \
+ *   MatchIterator  Match
+ *  }}}
  */
 object Regex {
 
@@ -175,25 +173,24 @@ object Regex {
     /** The index of the first matched character, or -1 if nothing was matched */
     def start: Int
 
-    /** The index of the first matched character in group <code>i</code>,
+    /** The index of the first matched character in group `i`,
      *  or -1 if nothing was matched for that group */
     def start(i: Int): Int
 
     /** The index of the last matched character, or -1 if nothing was matched */
     def end: Int
 
-    /** The index following the last matched character in group <code>i</code>,
+    /** The index following the last matched character in group `i`,
      *  or -1 if nothing was matched for that group */
     def end(i: Int): Int
 
-    /** The matched string,
-     *  of <code>null</code> if nothing was matched */
+    /** The matched string, or `null` if nothing was matched */
     def matched: String =
       if (start >= 0) source.subSequence(start, end).toString
       else null
 
-    /** The matched string in group <code>i</code>,
-     *  or <code>null</code> if nothing was matched */
+    /** The matched string in group `i`,
+     *  or `null` if nothing was matched */
     def group(i: Int): String =
       if (start(i) >= 0) source.subSequence(start(i), end(i)).toString
       else null
@@ -202,25 +199,25 @@ object Regex {
     def subgroups: List[String] = (1 to groupCount).toList map group
 
     /** The char sequence before first character of match,
-     *  or <code>null</code> if nothing was matched */
+     *  or `null` if nothing was matched */
     def before: java.lang.CharSequence =
       if (start >= 0) source.subSequence(0, start)
       else null
 
-    /** The char sequence before first character of match in group <code>i</code>,
-     *  or <code>null</code> if nothing was matched for that group  */
+    /** The char sequence before first character of match in group `i`,
+     *  or `null` if nothing was matched for that group  */
     def before(i: Int): java.lang.CharSequence =
       if (start(i) >= 0) source.subSequence(0, start(i))
       else null
 
     /** Returns char sequence after last character of match,
-     *  or <code>null</code> if nothing was matched */
+     *  or `null` if nothing was matched */
     def after: java.lang.CharSequence =
       if (end >= 0) source.subSequence(end, source.length)
       else null
 
-    /** The char sequence after last character of match in group <code>i</code>,
-     *  or <code>null</code> if nothing was matched for that group  */
+    /** The char sequence after last character of match in group `i`,
+     *  or `null` if nothing was matched for that group  */
     def after(i: Int): java.lang.CharSequence =
       if (end(i) >= 0) source.subSequence(end(i), source.length)
       else null
@@ -231,15 +228,14 @@ object Regex {
      *
      *  @param id The group name
      *  @return   The requested group
-     *  @throws   <code>NoSuchElementException</code> if the requested
-     *            group name is not defined
+     *  @throws   NoSuchElementException if the requested group name is not defined
      */
     def group(id: String): String = nameToIndex.get(id) match {
       case None => throw new NoSuchElementException("group name "+id+" not defined")
       case Some(index) => group(index)
     }
 
-    /** The matched string; equivalent to <code>matched.toString</code> */
+    /** The matched string; equivalent to `matched.toString` */
     override def toString = matched
 
   }
@@ -264,10 +260,10 @@ object Regex {
     private lazy val ends: Array[Int] =
       ((0 to groupCount) map matcher.end).toArray
 
-    /** The index of the first matched character in group <code>i</code> */
+    /** The index of the first matched character in group `i` */
     def start(i: Int) = starts(i)
 
-    /** The index following the last matched character in group <code>i</code> */
+    /** The index following the last matched character in group `i` */
     def end(i: Int) = ends(i)
 
     /** The match itself with matcher-dependent lazy vals forced,
@@ -312,13 +308,13 @@ object Regex {
     /** The index of the first matched character */
     def start: Int = matcher.start
 
-    /** The index of the first matched character in group <code>i</code> */
+    /** The index of the first matched character in group `i` */
     def start(i: Int): Int = matcher.start(i)
 
     /** The index of the last matched character */
     def end: Int = matcher.end
 
-    /** The index following the last matched character in group <code>i</code> */
+    /** The index following the last matched character in group `i` */
     def end(i: Int): Int = matcher.end(i)
 
     /** The number of subgroups */

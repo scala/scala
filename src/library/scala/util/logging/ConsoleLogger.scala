@@ -11,15 +11,15 @@
 package scala.util.logging
 
 /**
- *  The trait <code>ConsoleLogger</code> is mixed into a concrete class who
- *  has class <code>Logged</code> among its base classes.
+ *  The trait `ConsoleLogger` is mixed into a concrete class who
+ *  has class `Logged` among its base classes.
  *
  *  @author  Burak Emir
  *  @version 1.0
  */
 trait ConsoleLogger extends Logged {
 
-  /** logs argument to Console using <code>Console.println</code>
+  /** logs argument to Console using [[scala.Console.println]]
    */
   override def log(msg: String): Unit = Console.println(msg)
 }

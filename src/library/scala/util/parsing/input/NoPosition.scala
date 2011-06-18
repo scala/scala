@@ -10,9 +10,10 @@
 
 package scala.util.parsing.input
 
-/** Undefined position
+/** Undefined position.
  *
- * @author Martin Odersky, Adriaan Moors
+ * @author Martin Odersky
+ * @author Adriaan Moors
  */
 object NoPosition extends Position {
   def line = 0

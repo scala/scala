@@ -12,7 +12,7 @@ package scala.util.automata
 
 
 /** A fast test of language inclusion between minimal automata.
- *  inspired by the AMoRE automata library
+ *  inspired by the ''AMoRE automata library''.
  *
  *  @author Burak Emir
  *  @version 1.0
@@ -21,7 +21,7 @@ trait Inclusion[A <: AnyRef] {
 
   val labels: Seq[A]
 
-  /** Returns true if dfa1 is included in dfa2.
+  /** Returns true if `dfa1` is included in `dfa2`.
    *
    *  @param dfa1 ...
    *  @param dfa2 ...

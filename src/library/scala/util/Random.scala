@@ -100,8 +100,8 @@ class Random(val self: java.util.Random) {
 
   /** Returns a new collection of the same type in a randomly chosen order.
    *
-   *  @param  coll    the TraversableOnce to shuffle
-   *  @return         the shuffled TraversableOnce
+   *  @param  coll    the [[scala.collection.TraversableOnce]] to shuffle
+   *  @return         the shuffled [[scala.collection.TraversableOnce]]
    */
   def shuffle[T, CC[X] <: TraversableOnce[X]](xs: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
     val buf = new ArrayBuffer[T] ++= xs
@@ -122,7 +122,7 @@ class Random(val self: java.util.Random) {
 
 }
 
-/** The object <code>Random</code> offers a default implementation
+/** The object `Random` offers a default implementation
  *  of scala.util.Random and random-related convenience methods.
  *
  *  @since 2.8

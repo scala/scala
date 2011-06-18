@@ -10,13 +10,13 @@ package scala.util
 
 import java.lang.InheritableThreadLocal
 
-/** DynamicVariables provide a binding mechanism where the current
+/** `DynamicVariables` provide a binding mechanism where the current
  *  value is found through dynamic scope, but where access to the
  *  variable itself is resolved through static scope.
  *
- *  The current value can be retrieved with the value method.  New values
- *  should be pushed using the withValue method. Values pushed via
- *  withValue only stay valid while the withValue's second argument, a
+ *  The current value can be retrieved with the value method. New values
+ *  should be pushed using the `withValue` method. Values pushed via
+ *  `withValue` only stay valid while the `withValue`'s second argument, a
  *  parameterless closure, executes. When the second argument finishes,
  *  the variable reverts to the previous value.
  *
@@ -28,7 +28,7 @@ import java.lang.InheritableThreadLocal
  *  }}}
  *
  *  Each thread gets its own stack of bindings.  When a
- *  new thread is created, the DynamicVariable gets a copy
+ *  new thread is created, the `DynamicVariable` gets a copy
  *  of the stack of bindings from the parent thread, and
  *  from then on the bindings for the new thread
  *  are independent of those for the original thread.
