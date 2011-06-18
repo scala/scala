@@ -30,7 +30,7 @@ trait SeqLike[A, +This <: SeqLike[A, This] with Seq[A]]
    *
    *  @param n       the index of the element to replace.
    *  @param lem     the new value.
-   *  @throws   IndexOutofBoundsException if the index is not valid.
+   *  @throws   IndexOutOfBoundsException if the index is not valid.
    */
   def update(idx: Int, elem: A)
 

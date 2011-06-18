@@ -49,7 +49,7 @@ self =>
   protected[this] def newBuilder: Builder[Char, Repr]
 
   /** Return element at index `n`
-   *  @throws   IndexOutofBoundsException if the index is not valid
+   *  @throws   IndexOutOfBoundsException if the index is not valid
    */
   def apply(n: Int): Char = toString charAt n
 
