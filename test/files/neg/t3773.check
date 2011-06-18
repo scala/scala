@@ -1,4 +1,4 @@
-t3773.scala:3: error: method elements in trait IterableLike is deprecated: use `iterator' instead
+t3773.scala:3: error: method elements in trait IterableLike is deprecated: use `iterator` instead
   for ((v, t) <- m.elements) ()
                    ^
 one error found
