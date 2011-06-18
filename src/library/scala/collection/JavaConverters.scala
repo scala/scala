@@ -48,8 +48,8 @@ package scala.collection
  *  In addition, the following one way conversions are provided via `asJava`:
  *  </p>
  *  <ul>
- *    <li><code>scala.collection.Seq => <code>java.util.List }</code></li>
- *    <li><code>scala.collection.mutable.Seq => <code>java.util.List</code></li>
+ *    <li><code>scala.collection.Seq</code> => <code>java.util.List</code></li>
+ *    <li><code>scala.collection.mutable.Seq</code> => <code>java.util.List</code></li>
  *    <li><code>scala.collection.Set</code> => <code>java.util.Set</code></li>
  *    <li><code>scala.collection.Map</code> => <code>java.util.Map</code></li>
  *  </ul>
