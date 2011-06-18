@@ -16,22 +16,20 @@ import token._
 import input.CharArrayReader.EofCh
 import collection.mutable.HashSet
 
-/** <p>
- *    This component provides a standard lexical parser for a simple, Scala-like language.
- *    It parses keywords and identifiers, numeric literals (integers), strings, and delimiters.
- *  </p>
- *  <p>
- *    To distinguish between identifiers and keywords, it uses a set of reserved identifiers:
- *    every string contained in `reserved` is returned as a keyword token.
- *    (Note that "=>" is hard-coded as a keyword.)
- *    Additionally, the kinds of delimiters can be specified by the `delimiters` set.
- *  </p>
- *  <p>
- *    Usually this component is used to break character-based input into bigger tokens,
- *    which are then passed to a token-parser {@see TokenParsers}.
- *  </p>
+/** This component provides a standard lexical parser for a simple, Scala-like language.
+ *  It parses keywords and identifiers, numeric literals (integers), strings, and delimiters.
  *
- * @author Martin Odersky, Iulian Dragos, Adriaan Moors
+ *  To distinguish between identifiers and keywords, it uses a set of reserved identifiers:
+ *  every string contained in `reserved` is returned as a keyword token.
+ *  (Note that "=>" is hard-coded as a keyword.)
+ *  Additionally, the kinds of delimiters can be specified by the `delimiters` set.
+ *
+ *  Usually this component is used to break character-based input into bigger tokens,
+ *  which are then passed to a token-parser {@see TokenParsers}.
+ *
+ * @author Martin Odersky
+ * @author Iulian Dragos
+ * @author Adriaan Moors
  */
 class StdLexical extends Lexical with StdTokens {
   // see `token` in `Scanners`
@@ -47,7 +45,7 @@ class StdLexical extends Lexical with StdTokens {
     | failure("illegal character")
     )
 
-  // legal identifier chars other than digits
+  /** Returns the legal identifier chars, except digits. */
   def identChar = letter | elem('_')
 
   // see `whitespace in `Scanners`
@@ -63,10 +61,10 @@ class StdLexical extends Lexical with StdTokens {
     | chrExcept(EofCh) ~ comment
     )
 
-  /** The set of reserved identifiers: these will be returned as `Keyword`s */
+  /** The set of reserved identifiers: these will be returned as `Keyword`s. */
   val reserved = new HashSet[String]
 
-  /** The set of delimiters (ordering does not matter) */
+  /** The set of delimiters (ordering does not matter). */
   val delimiters = new HashSet[String]
 
   protected def processIdent(name: String) =

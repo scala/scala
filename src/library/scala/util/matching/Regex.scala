@@ -15,9 +15,11 @@ import java.util.regex.{ Pattern, Matcher }
 /** This class provides methods for creating and using regular expressions.
  *  It is based on the regular expressions of the JDK since 1.4.
  *
- *  You can use special pattern syntax construct `(?idmsux-idmsux)` to switch
+ *  You can use special pattern syntax constructs like `(?idmsux-idmsux)`¹ to switch
  *  various regex compilation options like `CASE_INSENSITIVE` or `UNICODE_CASE`.
- *  See [[java.util.regex.Pattern]] for details.
+ *
+ *  @note ¹ A detailed description is available in [[java.util.regex.Pattern]].
+ *  @see [[java.util.regex.Pattern]]
  *
  *  @author  Thibaud Hottelier
  *  @author  Philipp Haller

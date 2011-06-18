@@ -15,12 +15,12 @@ import scala.collection.mutable.Map
   // TODO: avoid clashes when substituting
   // TODO: check binders in the same scope are distinct
 
-/** This trait provides the core Scrap-Your-Boilerplate abstractions as
+/** This trait provides the core ''Scrap-Your-Boilerplate'' abstractions as
  *  well as implementations for common datatypes.
  *
- *  Based on Ralph Laemmel's [[http://homepages.cwi.nl/~ralf/publications.html SYB papers]].
+ *  (Based on Ralf Lämmel's [[http://homepages.cwi.nl/~ralf/syb3/ SYB papers]].)
  *
- * @author Adriaan Moors
+ *  @author Adriaan Moors
  */
 trait Mappable {
   trait Mapper { def apply[T <% Mappable[T]](x: T): T } /* TODO: having type `Forall T. T => T` is too strict:
