@@ -3188,7 +3188,7 @@ trait Typers extends Modes {
           if (tpt0.hasSymbol && !tpt0.symbol.typeParams.isEmpty) {
             context.undetparams = cloneSymbols(tpt0.symbol.typeParams)
             TypeTree().setOriginal(tpt0)
-                      .setType(appliedType(tpt0.tpe, context.undetparams map (_.tpe)))
+                      .setType(appliedType(tpt0.tpe, context.undetparams map (_.tpeHK))) // @PP: tpeHK! #3343, #4018, #4347.
           } else tpt0
         }
 
