@@ -1212,10 +1212,10 @@ trait Infer {
     /** Substitute free type variables <code>undetparams</code> of application
      *  <code>fn(args)</code>, given prototype <code>pt</code>.
      *
-     *  @param fn          ...
-     *  @param undetparams ...
-     *  @param args        ...
-     *  @param pt          ...
+     *  @param fn          fn: the function that needs to be instantiated.
+     *  @param undetparams the parameters that need to be determined
+     *  @param args        the actional argumments in the call.
+     *  @param pt          the expected type of the function application
      *  @return            The type parameters that remain uninstantiated,
      *                     and that thus have not been substituted.
      */
@@ -1285,9 +1285,9 @@ trait Infer {
     /** Substitute free type variables <code>undetparams</code> of type constructor
      *  <code>tree</code> in pattern, given prototype <code>pt</code>.
      *
-     *  @param tree        ...
-     *  @param undetparams ...
-     *  @param pt          ...
+     *  @param tree        the constuctor that needs to be instantiated
+     *  @param undetparams the undetermined type parameters
+     *  @param pt          the expected result type of the instance
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
       val pt = widen(pt0)
