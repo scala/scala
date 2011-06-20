@@ -323,7 +323,7 @@ private[collection] object FlatHashTable {
    */
   private[collection] def initialSize: Int = 16
 
-  private[collection] def sizeForThreshold(size: Int, _loadFactor: Int) = size * loadFactorDenum / _loadFactor
+  private[collection] def sizeForThreshold(size: Int, _loadFactor: Int) = (size.toLong * loadFactorDenum / _loadFactor).toInt
 
   private[collection] def newThreshold(_loadFactor: Int, size: Int) = {
     val lf = _loadFactor
