@@ -6,7 +6,6 @@ import scala.collection.parallel.CompositeThrowable
 object Test {
 
   def main(args: Array[String]) {
-    /* disabled
     val N = 1500
     val M = 1500
     var unmatchedLeft = new PMHashSet[Int]
@@ -25,7 +24,6 @@ object Test {
     } catch {
       case c: CompositeThrowable => for (t <- c.throwables) println("\n%s\n%s".format(t, t.getStackTrace.mkString("\n")))
     }
-    */
   }
 
 }
