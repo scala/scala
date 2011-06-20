@@ -8,6 +8,9 @@ object Basis {
 import Basis._
 
 object DoesWork {
+  // Doesn'tWork
+  // def f1 = x ++ y ++ x1 ++ x2
+
   def f2 = List(x, y, x1, x2).flatten
 }
 

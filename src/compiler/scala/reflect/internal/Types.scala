@@ -5595,10 +5595,11 @@ A type's typeSymbol should never be inspected directly.
     }
 
 
-// TODO: this desperately needs to be cleaned up
-// plan: split into kind inference and subkinding
-// every Type has a (cached) Kind
-  def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean = checkKindBounds0(tparams, targs, pre, owner, false).isEmpty
+  // TODO: this desperately needs to be cleaned up
+  // plan: split into kind inference and subkinding
+  // every Type has a (cached) Kind
+  def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean =
+    checkKindBounds0(tparams, targs, pre, owner, false).isEmpty
 
   /** Check well-kindedness of type application (assumes arities are already checked) -- @M
    *
@@ -5628,7 +5629,15 @@ A type's typeSymbol should never be inspected directly.
     def variancesMatch(sym1: Symbol, sym2: Symbol): Boolean = (sym2.variance==0 || sym1.variance==sym2.variance)
 
     // check that the type parameters <arg>hkargs</arg> to a higher-kinded type conform to the expected params <arg>hkparams</arg>
-    def checkKindBoundsHK(hkargs: List[Symbol], arg: Symbol, param: Symbol, paramowner: Symbol, underHKParams: List[Symbol], withHKArgs: List[Symbol]): (List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
+    def checkKindBoundsHK(
+      hkargs:        List[Symbol],
+      arg:           Symbol,
+      param:         Symbol,
+      paramowner:    Symbol,
+      underHKParams: List[Symbol],
+      withHKArgs:    List[Symbol]
+    ): (List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
+
       def bindHKParams(tp: Type) = tp.substSym(underHKParams, withHKArgs)
       // @M sometimes hkargs != arg.typeParams, the symbol and the type may have very different type parameters
       val hkparams = param.typeParams
@@ -5640,12 +5649,14 @@ A type's typeSymbol should never be inspected directly.
       }
 
       if (!sameLength(hkargs, hkparams)) {
-        if(arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
-        else {error = true; (List((arg, param)), Nil, Nil)} // shortcut: always set error, whether explainTypesOrNot
-      } else {
-        val _arityMismatches = if(explainErrors) new ListBuffer[(Symbol, Symbol)] else null
-        val _varianceMismatches = if(explainErrors) new ListBuffer[(Symbol, Symbol)] else null
-        val _stricterBounds = if(explainErrors)new ListBuffer[(Symbol, Symbol)] else null
+        if (arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
+        else {error = true; (List((arg, param)), Nil, Nil) } // shortcut: always set error, whether explainTypesOrNot
+      }
+      else {
+        val _arityMismatches    = if (explainErrors) new ListBuffer[(Symbol, Symbol)] else null
+        val _varianceMismatches = if (explainErrors) new ListBuffer[(Symbol, Symbol)] else null
+        val _stricterBounds     = if (explainErrors) new ListBuffer[(Symbol, Symbol)] else null
+
         def varianceMismatch(a: Symbol, p: Symbol) { if(explainErrors) _varianceMismatches += ((a, p)) else error = true}
         def stricterBound(a: Symbol, p: Symbol) { if(explainErrors) _stricterBounds += ((a, p)) else error = true }
         def arityMismatches(as: Iterable[(Symbol, Symbol)]) { if(explainErrors) _arityMismatches ++= as }
@@ -5661,42 +5672,66 @@ A type's typeSymbol should never be inspected directly.
             // substSym(hkparams, hkargs) --> these types are going to be compared as types of kind *
             //    --> their arguments use different symbols, but are conceptually the same
             //        (could also replace the types by polytypes, but can't just strip the symbols, as ordering is lost then)
-            if (!(bindHKParams(transformedBounds(hkparam, paramowner)) <:< transform(hkarg.info.bounds, owner)))
+            val declaredBounds     = transformedBounds(hkparam, paramowner)
+            val declaredBoundsInst = bindHKParams(declaredBounds)
+            val argumentBounds     = transform(hkarg.info.bounds, owner)
+            if (!(declaredBoundsInst <:< argumentBounds))
               stricterBound(hkarg, hkparam)
 
-            if (settings.debug.value) {
-              log("checkKindBoundsHK base case: "+ hkparam +" declared bounds: "+ transformedBounds(hkparam, paramowner) +" after instantiating earlier hkparams: "+ bindHKParams(transformedBounds(hkparam, paramowner)))
-              log("checkKindBoundsHK base case: "+ hkarg +" has bounds: "+ transform(hkarg.info.bounds, owner))
-            }
-          } else {
-            if(settings.debug.value) log("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
-            val (am, vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkarg, hkparam, paramowner, underHKParams ++ hkparam.typeParams, withHKArgs ++ hkarg.typeParams)
+            if (settings.debug.value) log(
+              "checkKindBoundsHK base case: " + hkparam +
+              " declared bounds: " + declaredBounds +
+              " after instantiating earlier hkparams: " + declaredBoundsInst + "\n" +
+              "checkKindBoundsHK base case: "+ hkarg +
+              " has bounds: " + argumentBounds
+            )
+          }
+          else {
+            if (settings.debug.value)
+              log("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
+            val (am, vm, sb) = checkKindBoundsHK(
+              hkarg.typeParams,
+              hkarg,
+              hkparam,
+              paramowner,
+              underHKParams ++ hkparam.typeParams,
+              withHKArgs ++ hkarg.typeParams
+            )
             arityMismatches(am)
             varianceMismatches(vm)
             stricterBounds(sb)
           }
-          if(!explainErrors && error) return (Nil, Nil, Nil) // stop as soon as we encountered an error
+          if (!explainErrors && error) return (Nil, Nil, Nil) // stop as soon as we encountered an error
         }
-        if(!explainErrors) (Nil, Nil, Nil)
+        if (!explainErrors) (Nil, Nil, Nil)
         else (_arityMismatches.toList, _varianceMismatches.toList, _stricterBounds.toList)
       }
     }
 
     val errors = new ListBuffer[(Type, Symbol, List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)])]
-    (tparams zip targs).foreach{ case (tparam, targ) if (targ.isHigherKinded || !tparam.typeParams.isEmpty) =>
-      // @M must use the typeParams of the type targ, not the typeParams of the symbol of targ!!
+    if (tparams.nonEmpty || targs.nonEmpty)
+      log("checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", " + owner + ", " + explainErrors + ")")
+
+    for {
+      (tparam, targ) <- tparams zip targs
+      // Prevent WildcardType from causing kind errors, as typevars may be higher-order
+      if (targ != WildcardType) && (targ.isHigherKinded || tparam.typeParams.nonEmpty)
+    } {
+      // @M must use the typeParams of the *type* targ, not of the *symbol* of targ!!
       targ.typeSymbolDirect.info // force symbol load for #4205
-      val tparamsHO =  targ.typeParams
+      val tparamsHO = targ.typeParams
 
-      val (arityMismatches, varianceMismatches, stricterBounds) =
-        checkKindBoundsHK(tparamsHO, targ.typeSymbolDirect, tparam, tparam.owner, tparam.typeParams, tparamsHO) // NOTE: *not* targ.typeSymbol, which normalizes
-
-      if(!explainErrors) {if(error) return List((NoType, NoSymbol, Nil, Nil, Nil))}
-      else if (arityMismatches.nonEmpty || varianceMismatches.nonEmpty || stricterBounds.nonEmpty) {
-        errors += ((targ, tparam, arityMismatches, varianceMismatches, stricterBounds))
+      val (arityMismatches, varianceMismatches, stricterBounds) = (
+        // NOTE: *not* targ.typeSymbol, which normalizes
+        checkKindBoundsHK(tparamsHO, targ.typeSymbolDirect, tparam, tparam.owner, tparam.typeParams, tparamsHO)
+      )
+      if (explainErrors) {
+        if (arityMismatches.nonEmpty || varianceMismatches.nonEmpty || stricterBounds.nonEmpty) {
+          errors += ((targ, tparam, arityMismatches, varianceMismatches, stricterBounds))
+        }
       }
-     // case (tparam, targ) => println("no check: "+(tparam, targ, tparam.typeParams.isEmpty))
-     case _ =>
+      else if (error)
+        return List((NoType, NoSymbol, Nil, Nil, Nil))
     }
 
     errors.toList
