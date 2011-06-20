@@ -279,7 +279,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     // improve(hcode) & (table.length - 1)
     val improved = improve(hcode)
     val ones = table.length - 1
-    (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
+    (improved >>> (32 - java.lang.Integer.bitCount(ones))) & ones
   }
 
   protected def clearTable() {
