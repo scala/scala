@@ -48,23 +48,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
       </div>
     </body>
 
-
-  def isExcluded(dtpl: DocTemplateEntity) = {
-    val qname = dtpl.qualifiedName
-    ( ( qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
-       qname.startsWith("scala.Function") || qname.startsWith("scala.runtime.AbstractFunction")
-     ) && !(
-      qname == "scala.Tuple1" || qname == "scala.Tuple2" ||
-      qname == "scala.Product" || qname == "scala.Product1" || qname == "scala.Product2" ||
-      qname == "scala.Function" || qname == "scala.Function1" || qname == "scala.Function2" ||
-      qname == "scala.runtime.AbstractFunction0" || qname == "scala.runtime.AbstractFunction1" ||
-      qname == "scala.runtime.AbstractFunction2"
-    )
-   )
-  }
-
   def browser =
-	<xml:group>
     <div id="browser" class="ui-layout-west">
       <div class="ui-west-center">
       <div id="filter"></div>
@@ -121,60 +105,8 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
           </xml:group>
         }
         packageElem(universe.rootPackage)
-      }</div></div>{ scriptElement }
+      }</div></div><script src="index.js"></script>
     </div>
-    </xml:group>
-
-  def mergeByQualifiedName(source: List[DocTemplateEntity]): Map[String, List[DocTemplateEntity]]= {
-    var result = Map[String, List[DocTemplateEntity]]()
-
-    for (t <- source) {
-      val k = t.qualifiedName
-      result += k -> (result.getOrElse(k, List()) :+ t)
-    }
-
-    result
-  }
-
-  def scriptElement = {
-    val packages = allPackagesWithTemplates.toIterable.map(_ match {
-      case (pack, templates) => {
-        val merged = mergeByQualifiedName(templates)
-
-        val ary = merged.keys.toList.sortBy(_.toLowerCase).map(key => {
-          val pairs = merged(key).map(
-            t => docEntityKindToString(t) -> relativeLinkTo(t)
-          ) :+ ("name" -> key)
-
-          JSONObject(scala.collection.immutable.Map(pairs : _*))
-        })
-
-        pack.qualifiedName -> JSONArray(ary)
-      }
-    }).toSeq
-
-    val obj =
-      JSONObject(scala.collection.immutable.Map(packages : _*)).toString()
-
-    <script type="text/javascript">
-      Index.PACKAGES = {scala.xml.Unparsed(obj)};
-    </script>
-  }
-
-  def allPackagesWithTemplates: Map[Package, List[DocTemplateEntity]] = {
-    Map(allPackages.map((key) => {
-      key -> key.templates.filter(t => !t.isPackage && !isExcluded(t))
-    }) : _*)
-  }
-
-  def allPackages: List[Package] = {
-    def f(parent: Package): List[Package] = {
-      parent.packages.flatMap(
-        p => f(p) :+ p
-      )
-    }
-    f(universe.rootPackage).sortBy(_.toString)
-  }
 
   def packageQualifiedName(ety: DocTemplateEntity): String =
     if (ety.inTemplate.isPackage) ety.name else (packageQualifiedName(ety.inTemplate) + "." + ety.name)

@@ -97,6 +97,7 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/unselected.png")
 
     new page.Index(universe, index) writeFor this
+    new page.IndexScript(universe, index) writeFor this
 
     writeTemplates(page => page.writeFor(this))
 
