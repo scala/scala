@@ -1287,9 +1287,9 @@ trait Infer {
     /** Substitute free type variables <code>undetparams</code> of type constructor
      *  <code>tree</code> in pattern, given prototype <code>pt</code>.
      *
-     *  @param tree        ...
-     *  @param undetparams ...
-     *  @param pt          ...
+     *  @param tree        the constuctor that needs to be instantiated
+     *  @param undetparams the undetermined type parameters
+     *  @param pt          the expected result type of the instance
      */
     def inferConstructorInstance(tree: Tree, undetparams: List[Symbol], pt0: Type) {
       val pt = widen(pt0)
