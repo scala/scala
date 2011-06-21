@@ -3969,8 +3969,14 @@ A type's typeSymbol should never be inspected directly.
           val args1 = args mapConserve (this)
           try {
             val sym1 = adaptToNewRun(pre1, sym)
-            if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
-            else copyTypeRef(tp, pre1, sym1, args1)
+            if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) {
+              tp
+            } else if (sym1 == NoSymbol) {
+              if (settings.debug.value) println("adapt fail: "+pre+" "+pre1+" "+sym)
+              tp
+            } else {
+              copyTypeRef(tp, pre1, sym1, args1)
+            }
           } catch {
             case ex: MissingAliasControl =>
               apply(tp.dealias)
