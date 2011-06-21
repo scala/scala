@@ -732,6 +732,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
     def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
+    def isScalaValueType(tp: Type) = scalaValueClassesSet(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)
