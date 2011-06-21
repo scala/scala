@@ -5574,26 +5574,32 @@ A type's typeSymbol should never be inspected directly.
    *  Returns list of list of bounds infos, where corresponding type
    *  parameters are renamed to tparams.
    */
-  private def matchingBounds(tps: List[Type], tparams: List[Symbol]): List[List[Type]] =
-    tps map {
+  private def matchingBounds(tps: List[Type], tparams: List[Symbol]): List[List[Type]] = {
+    def getBounds(tp: Type): List[Type] = tp match {
       case PolyType(tparams1, _) if sameLength(tparams1, tparams) =>
         tparams1 map (tparam => tparam.info.substSym(tparams1, tparams))
-      case _ =>
-        throw new NoCommonType(tps)
+      case tp =>
+        if (tp ne tp.normalize) getBounds(tp.normalize)
+        else throw new NoCommonType(tps)
     }
+    tps map getBounds
+  }
 
   /** All types in list must be polytypes with type parameter lists of
    *  same length as tparams.
    *  Returns list of instance types, where corresponding type
    *  parameters are renamed to tparams.
    */
-  private def matchingInstTypes(tps: List[Type], tparams: List[Symbol]): List[Type] =
-    tps map {
+  private def matchingInstTypes(tps: List[Type], tparams: List[Symbol]): List[Type] = {
+    def transformResultType(tp: Type): Type = tp match {
       case PolyType(tparams1, restpe) if sameLength(tparams1, tparams) =>
         restpe.substSym(tparams1, tparams)
-      case _ =>
-        throw new NoCommonType(tps)
+      case tp =>
+        if (tp ne tp.normalize) transformResultType(tp.normalize)
+        else throw new NoCommonType(tps)
     }
+    tps map transformResultType
+  }
 
   /** All types in list must be method types with equal parameter types.
    *  Returns list of their result types.
