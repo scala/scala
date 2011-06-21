@@ -2694,7 +2694,7 @@ trait Typers extends Modes {
                   (nme.ERROR, None)
                 } else {
                   names -= sym
-                  if(isJava) sym.cookJavaRawInfo() // #3429
+                  if (isJava) sym.cookJavaRawInfo() // #3429
                   val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
                   (sym.name, annArg)
                 }
@@ -3275,7 +3275,7 @@ trait Typers extends Modes {
         }
       }
 
-      /** Try to apply function to arguments; if it does not work try to
+      /** Try to apply function to arguments; if it does not work, try to convert Java raw to existentials, or try to
        *  insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
@@ -3285,6 +3285,17 @@ trait Typers extends Modes {
             t
           case ex: TypeError =>
             stopTimer(failedApplyNanos, start)
+
+            // If the problem is with raw types, copnvert to existentials and try again.
+            // See #4712 for a case where this situation arises,
+            if ((fun.symbol ne null) && fun.symbol.isJavaDefined) {
+              val newtpe = rawToExistential(fun.tpe)
+              if (fun.tpe ne newtpe) {
+                // println("late cooking: "+fun+":"+fun.tpe) // DEBUG
+                return tryTypedApply(fun setType newtpe, args)
+              }
+            }
+
             def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
               case Block(_, r)                        => treesInResult(r)
               case Match(_, cases)                    => cases
@@ -3297,11 +3308,11 @@ trait Typers extends Modes {
             })
             def errorInResult(tree: Tree) = treesInResult(tree) exists (_.pos == ex.pos)
             val retry = fun :: tree :: args exists errorInResult
-            printTyping({
+            printTyping {
               val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
               if (retry) "second try: " + funStr
               else "no second try: " + funStr + " because error not in result: " + ex.pos+"!="+tree.pos
-            })
+            }
             if (retry) {
               val Select(qual, name) = fun
               val args1 = tryTypedArgs(args, forArgMode(fun, mode), ex)
