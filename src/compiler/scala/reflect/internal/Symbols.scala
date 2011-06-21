@@ -325,7 +325,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     )
     /** Is this symbol an effective root for fullname string?
      */
-    def isEffectiveRoot = isRoot || isEmptyPackageClass || isInterpreterWrapper
+    def isEffectiveRoot = isRoot || isEmptyPackageClass
 
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
