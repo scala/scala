@@ -832,10 +832,13 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       // Since getClass is not actually a polymorphic method, this requires compiler
       // participation.  At the "Any" level, the return type is Class[_] as it is in
       // java.lang.Object.  Java also special cases the return type.
-      Any_getClass = (
-        newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType)
-          setFlag DEFERRED
-      )
+      Any_getClass = {
+        val eparams = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
+        eparams.head setInfo TypeBounds.empty
+        val tpe = existentialAbstraction(eparams, appliedType(ClassClass.tpe, List(eparams.head.tpe)))
+
+        newMethod(AnyClass, nme.getClass_, Nil, tpe) setFlag DEFERRED
+      }
       Any_isInstanceOf = newPolyMethod(
         AnyClass, nme.isInstanceOf_, tparam => NullaryMethodType(booltype)) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(
