@@ -3635,7 +3635,8 @@ trait Typers extends Modes {
           // getClass, we have to catch it immediately so expressions
           // like x.getClass().newInstance() are typed with the type of x.
           val isRefinableGetClass = (
-               selection.symbol.name == nme.getClass_
+              !Properties.isJava5   // seems to be failing weirdly on java5
+            && selection.symbol.name == nme.getClass_
             && selection.tpe.params.isEmpty
             // TODO: If the type of the qualifier is inaccessible, we can cause private types
             // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
@@ -3643,7 +3644,7 @@ trait Typers extends Modes {
             && qual.tpe.typeSymbol.isPublic
           )
           if (isRefinableGetClass)
-              selection setType MethodType(Nil, erasure.getClassReturnType(qual.tpe))
+            selection setType MethodType(Nil, erasure.getClassReturnType(qual.tpe))
           else
             selection
         }
