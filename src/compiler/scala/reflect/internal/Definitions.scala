@@ -10,6 +10,7 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ HashMap }
 import Flags._
 import PartialFunction._
+import scala.tools.nsc.Properties
 
 trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
   self: SymbolTable =>
