@@ -15,8 +15,9 @@ package scala
  *  not represented as objects by the underlying host system.  There is
  *  only one value of type Unit: `()`.
  */
-final class Unit extends AnyVal { }
-
+final class Unit extends AnyVal {
+  def getClass(): Class[Unit] = sys.error("stub")
+}
 
 object Unit extends AnyValCompanion {
 

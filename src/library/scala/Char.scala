@@ -144,6 +144,7 @@ final class Char extends AnyVal {
   def %(x: Float): Float = sys.error("stub")
   def %(x: Double): Double = sys.error("stub")
 
+  def getClass(): Class[Char] = sys.error("stub")
 }
 
 object Char extends AnyValCompanion {

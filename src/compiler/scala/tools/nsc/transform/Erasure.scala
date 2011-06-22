@@ -66,6 +66,39 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  // A type function from T => Class[U], used to determine the return
+  // type of getClass calls.  The returned type is:
+  //
+  //  1. If T is a value type, Class[T].
+  //  2. If T is anonymous or a refinement type, calculate the intersection
+  //     dominator of the parents T', and Class[_ <: T'].
+  //  3. If T is a phantom type (Any or AnyVal), Class[_].
+  //  4. Otherwise, Class[_ <: T].
+  //
+  // Note: AnyVal cannot be Class[_ <: AnyVal] because if the static type of the
+  // receiver is AnyVal, it implies the receiver is boxed, so the correct
+  // class object is that of java.lang.Integer, not Int.
+  //
+  // TODO: If T is final, return type could be Class[T].  Should it?
+  def getClassReturnType(tp: Type): Type = {
+    def mkClass(targs: List[Type]) = typeRef(ClassClass.tpe.prefix, ClassClass, targs)
+    val tparams = ClassClass.typeParams
+    val sym     = tp.typeSymbol
+
+    if (tparams.isEmpty) mkClass(Nil)   // call must be coming post-erasure
+    else if (isValueClass(sym)) mkClass(List(tp.widen))
+    else if (sym.isLocalClass) getClassReturnType(erasure.intersectionDominator(tp.parents))
+    else {
+      val eparams    = typeParamsToExistentials(ClassClass, tparams)
+      val upperBound = if (isPhantomClass(sym)) AnyClass.tpe else tp.widen
+
+      existentialAbstraction(
+        eparams,
+        mkClass(List(eparams.head setInfo TypeBounds.upper(upperBound) tpe))
+      )
+    }
+  }
+
   private def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefClass.tpe) => level
     case _ => 0
@@ -491,6 +524,12 @@ abstract class Erasure extends AddInterfaces
       case _ => tp.deconst
     }
   }
+  // Methods on Any/Object which we rewrite here while we still know what
+  // is a primitive and what arrived boxed.
+  private lazy val interceptedMethods = Set[Symbol](Any_##, Object_##, Any_getClass) ++ (
+    // Each value class has its own getClass for ultra-precise class object typing.
+    ScalaValueClasses map (_.tpe member nme.getClass_)
+  )
 
 // -------- erasure on trees ------------------------------------------
 
@@ -974,17 +1013,24 @@ abstract class Erasure extends AddInterfaces
               SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
               args)
 
-        case Apply(fn @ Select(qual, _), Nil) if fn.symbol == Any_## || fn.symbol == Object_## =>
-          // This is unattractive, but without it we crash here on ().## because after
-          // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
-          // This must be because some earlier transformation is being skipped on ##, but so
-          // far I don't know what.  For null we now define null.## == 0.
-          val arg = qual.tpe.typeSymbolDirect match {
-            case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))   // ({ expr; UNIT }).##
-            case NullClass  => LIT(0)                             // (null: Object).##
-            case _          => qual
+        case Apply(fn @ Select(qual, _), Nil) if interceptedMethods(fn.symbol) =>
+          if (fn.symbol == Any_## || fn.symbol == Object_##) {
+            // This is unattractive, but without it we crash here on ().## because after
+            // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
+            // This must be because some earlier transformation is being skipped on ##, but so
+            // far I don't know what.  For null we now define null.## == 0.
+            val arg = qual.tpe.typeSymbolDirect match {
+              case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))   // ({ expr; UNIT }).##
+              case NullClass  => LIT(0)                             // (null: Object).##
+              case _          => qual
+            }
+            Apply(gen.mkAttributedRef(scalaRuntimeHash), List(arg))
           }
-          Apply(gen.mkAttributedRef(scalaRuntimeHash), List(arg))
+          // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
+          else if (isValueClass(qual.tpe.typeSymbol))
+            Apply(gen.mkAttributedRef(scalaRuntimeAnyValClass), List(qual))
+          else
+            tree
 
         case Apply(fn, args) =>
           if (fn.symbol == Any_asInstanceOf)

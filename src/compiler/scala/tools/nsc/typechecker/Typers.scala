@@ -3611,7 +3611,7 @@ trait Typers extends Modes {
           if (settings.Xchecknull.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
-          result match {
+          val selection = result match {
             // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
             case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs nonEmpty => // TODO: somehow the new qual is not checked in refchecks
               treeCopy.SelectFromTypeTree(
@@ -3631,6 +3631,21 @@ trait Typers extends Modes {
             case _ =>
               result
           }
+          // To fully benefit from special casing the return type of
+          // getClass, we have to catch it immediately so expressions
+          // like x.getClass().newInstance() are typed with the type of x.
+          val isRefinableGetClass = (
+               selection.symbol.name == nme.getClass_
+            && selection.tpe.params.isEmpty
+            // TODO: If the type of the qualifier is inaccessible, we can cause private types
+            // to escape scope here, e.g. pos/t1107.  I'm not sure how to properly handle this
+            // so for now it requires the type symbol be public.
+            && qual.tpe.typeSymbol.isPublic
+          )
+          if (isRefinableGetClass)
+              selection setType MethodType(Nil, erasure.getClassReturnType(qual.tpe))
+          else
+            selection
         }
       }
 

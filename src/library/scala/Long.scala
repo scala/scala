@@ -144,6 +144,7 @@ final class Long extends AnyVal {
   def %(x: Float): Float = sys.error("stub")
   def %(x: Double): Double = sys.error("stub")
 
+  def getClass(): Class[Long] = sys.error("stub")
 }
 
 object Long extends AnyValCompanion {
