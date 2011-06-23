@@ -1,4 +1,4 @@
-bug876.scala:25: error: too many arguments for method apply: (key: AssertionError.A)manager.B in trait MapLike
+bug876.scala:25: error: too many arguments for method apply: (key: AssertionError.A)manager.B in class HashMap
         assert(manager.map(A2) == List(manager.map(A2, A1)))
                                                   ^
 one error found

@@ -141,10 +141,7 @@ self =>
    *  @param key the key
    *  @return    `true` if there is a binding for `key` in this map, `false` otherwise.
    */
-  def contains(key: A): Boolean = get(key) match {
-    case None => false
-    case Some(_) => true
-  }
+  def contains(key: A): Boolean = get(key).isDefined
 
   /** Tests whether this map contains a binding for a key. This method,
    *  which implements an abstract method of trait `PartialFunction`,

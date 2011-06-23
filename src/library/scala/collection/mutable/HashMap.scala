@@ -59,6 +59,14 @@ extends Map[A, B]
 
   override def par = new ParHashMap[A, B](hashTableContents)
 
+  // contains and apply overridden to avoid option allocations.
+  override def contains(key: A) = findEntry(key) != null
+  override def apply(key: A): B = {
+    val result = findEntry(key)
+    if (result == null) default(key)
+    else result.value
+  }
+
   def get(key: A): Option[B] = {
     val e = findEntry(key)
     if (e == null) None

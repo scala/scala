@@ -57,7 +57,7 @@ abstract class TypeFlowAnalysis {
 
   /** A map which returns the bottom type for unfound elements */
   class VarBinding extends mutable.HashMap[icodes.Local, icodes.TypeKind] {
-    override def get(l: icodes.Local) = super.get(l) orElse Some(typeLattice.bottom)
+    override def default(l: icodes.Local) = typeLattice.bottom
 
     def this(o: VarBinding) = {
       this()

@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -33,8 +31,11 @@ import parallel.immutable.ParHashMap
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(2L)
-class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Serializable with CustomParallelizable[(A, B), ParHashMap[A, B]] {
-
+class HashMap[A, +B] extends Map[A,B]
+                        with MapLike[A, B, HashMap[A, B]]
+                        with Serializable
+                        with CustomParallelizable[(A, B), ParHashMap[A, B]]
+{
   override def size: Int = 0
 
   override def empty = HashMap.empty[A, B]
@@ -103,9 +104,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]
 
-  private object EmptyHashMap extends HashMap[Any,Nothing] {
-
-  }
+  private object EmptyHashMap extends HashMap[Any, Nothing] { }
 
   // TODO: add HashMap2, HashMap3, ...
 
@@ -319,7 +318,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
 
 /*
-
 def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }
 var mOld = OldHashMap.empty[Int,Int]
 var mNew = HashMap.empty[Int,Int]
@@ -335,9 +333,7 @@ time { mOld.iterator.foreach( p => ()) }
 time { mNew.iterator.foreach( p => ()) }
 time { mNew.iterator.foreach( p => ()) }
 time { mNew.iterator.foreach( p => ()) }
-
 */
-
 
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
       var i = 0;
@@ -347,18 +343,14 @@ time { mNew.iterator.foreach( p => ()) }
       }
     }
 
-    private def printBitmap(bm: Int) {
-      println(bitString(bm, " "))
-    }
-
     private def posOf(n: Int, bm: Int) = {
       var left = n
       var i = -1
       var b = bm
       while (left >= 0) {
-	i += 1
-	if ((b & 1) != 0) left -= 1
-	b = b >>> 1
+        i += 1
+        if ((b & 1) != 0) left -= 1
+        b = b >>> 1
       }
       i
     }
@@ -366,20 +358,12 @@ time { mNew.iterator.foreach( p => ()) }
     override def split: Seq[HashMap[A, B]] = if (size == 1) Seq(this) else {
       val nodesize = Integer.bitCount(bitmap)
       if (nodesize > 1) {
-        // printBitmap(bitmap)
-        // println(elems.toList)
-
-        // println("subtrees: " + nodesize)
-        // println("will split at: " + (nodesize / 2))
         val splitpoint = nodesize / 2
         val bitsplitpoint = posOf(nodesize / 2, bitmap)
         val bm1 = bitmap & (-1 << bitsplitpoint)
         val bm2 = bitmap & (-1 >>> (32 - bitsplitpoint))
-        // printBitmap(bm1)
-        // printBitmap(bm2)
+
         val (e1, e2) = elems.splitAt(splitpoint)
-        // println(e1.toList)
-        // println(e2.toList)
         val hm1 = new HashTrieMap(bm1, e1, e1.foldLeft(0)(_ + _.size))
         val hm2 = new HashTrieMap(bm2, e2, e2.foldLeft(0)(_ + _.size))
 
@@ -389,10 +373,8 @@ time { mNew.iterator.foreach( p => ()) }
 
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[B1]): HashMap[A, B1] = that match {
       case hm: HashMap1[_, _] =>
-        // onetrie += 1
         this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv, merger)
       case hm: HashTrieMap[_, _] =>
-        // bothtries += 1
         val that = hm.asInstanceOf[HashTrieMap[A, B1]]
         val thiselems = this.elems
         val thatelems = that.elems
@@ -400,12 +382,12 @@ time { mNew.iterator.foreach( p => ()) }
         var thatbm = that.bitmap
 
         // determine the necessary size for the array
-	val subcount = Integer.bitCount(thisbm | thatbm)
+        val subcount = Integer.bitCount(thisbm | thatbm)
 
         // construct a new array of appropriate size
         val merged = new Array[HashMap[A, B1]](subcount)
 
-	// run through both bitmaps and add elements to it
+        // run through both bitmaps and add elements to it
         var i = 0
         var thisi = 0
         var thati = 0
@@ -413,13 +395,9 @@ time { mNew.iterator.foreach( p => ()) }
         while (i < subcount) {
           val thislsb = thisbm ^ (thisbm & (thisbm - 1))
           val thatlsb = thatbm ^ (thatbm & (thatbm - 1))
-          // if (this.bitmap == -1660585213) { TODO remove
-          //   printBitmap(thislsb)
-          //   printBitmap(thatlsb)
-          //   println("------------------")
-          // }
+
+          // collision
           if (thislsb == thatlsb) {
-            // println("a collision")
             val m = thiselems(thisi).merge0(thatelems(thati), level + 5, merger)
             totalelems += m.size
             merged(i) = m
@@ -435,14 +413,13 @@ time { mNew.iterator.foreach( p => ()) }
             val b = thatlsb - 1
 
             if (unsignedCompare(thislsb - 1, thatlsb - 1)) {
-              // println("an element from this trie")
               val m = thiselems(thisi)
               totalelems += m.size
               merged(i) = m
               thisbm = thisbm & ~thislsb
               thisi += 1
-            } else {
-              // println("an element from that trie")
+            }
+            else {
               val m = thatelems(thati)
               totalelems += m.size
               merged(i) = m
@@ -458,25 +435,6 @@ time { mNew.iterator.foreach( p => ()) }
       case hm: HashMap[_, _] => this
       case _ => sys.error("section supposed to be unreachable.")
     }
-  }
-
-  private def check[K](x: HashMap[K, _], y: HashMap[K, _], xy: HashMap[K, _]) = { // TODO remove this debugging helper
-    var xs = Set[K]()
-    for (elem <- x) xs += elem._1
-    var ys = Set[K]()
-    for (elem <- y) ys += elem._1
-    var union = Set[K]()
-    for (elem <- xy) union += elem._1
-    if ((xs ++ ys) != union) {
-      println("Error.")
-      println(x.getClass)
-      println(y.getClass)
-      println(xs)
-      println(ys)
-      println(xs ++ ys)
-      println(union)
-      false
-    } else true
   }
 
   @SerialVersionUID(2L)
