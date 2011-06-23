@@ -627,8 +627,14 @@ abstract class Erasure extends AddInterfaces
     /** Generate a synthetic cast operation from tree.tpe to pt.
      *  @pre pt eq pt.normalize
      */
-    private def cast(tree: Tree, pt: Type): Tree =
-      tree AS_ATTR pt
+    private def cast(tree: Tree, pt: Type): Tree = {
+      if (pt.typeSymbol == UnitClass) {
+        // See SI-4731 for one example of how this occurs.
+        log("Attempted to cast to Unit: " + tree)
+        tree.duplicate setType pt
+      }
+      else tree AS_ATTR pt
+    }
 
     private def isUnboxedValueMember(sym: Symbol) =
       sym != NoSymbol && isValueClass(sym.owner)
@@ -647,7 +653,7 @@ abstract class Erasure extends AddInterfaces
       else if (isValueClass(tree.tpe.typeSymbol) && !isValueClass(pt.typeSymbol))
         adaptToType(box(tree), pt)
       else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.params.isEmpty) {
-        if (!tree.symbol.isStable) assert(false, "adapt "+tree+":"+tree.tpe+" to "+pt)
+        assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe)
         cast(tree, pt)
