@@ -11,9 +11,6 @@ object Properties extends scala.util.PropertiesTrait {
   protected def propCategory    = "compiler"
   protected def pickJarBasedOn  = classOf[Global]
 
-  def isJava5 = javaVersion startsWith "1.5"
-  def isJava6 = javaVersion startsWith "1.6"
-
   // settings based on jar properties
   def fileEndingString      = scalaPropOrElse("file.ending", ".scala|.java")
   def residentPromptString  = scalaPropOrElse("resident.prompt", "\nnsc> ")
