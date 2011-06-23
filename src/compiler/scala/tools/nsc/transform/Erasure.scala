@@ -99,6 +99,15 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
+  // convert a numeric with a toXXX method
+  def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
+    val mname      = newTermName("to" + numericSym.name)
+    val conversion = tree.tpe member mname
+
+    assert(conversion != NoSymbol, tree + " => " + numericSym)
+    atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
+  }
+
   private def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefClass.tpe) => level
     case _ => 0
@@ -1021,12 +1030,14 @@ abstract class Erasure extends AddInterfaces
             // erasure the ScalaRunTime.hash overload goes from Unit => Int to BoxedUnit => Int.
             // This must be because some earlier transformation is being skipped on ##, but so
             // far I don't know what.  For null we now define null.## == 0.
-            val arg = qual.tpe.typeSymbolDirect match {
-              case UnitClass  => BLOCK(qual, REF(BoxedUnit_UNIT))   // ({ expr; UNIT }).##
-              case NullClass  => LIT(0)                             // (null: Object).##
-              case _          => qual
+            qual.tpe.typeSymbol match {
+              case UnitClass | NullClass                    => LIT(0)
+              case IntClass                                 => qual
+              case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
+              case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
+              case _                                        =>
+                Apply(gen.mkAttributedRef(scalaRuntimeHash), List(qual))
             }
-            Apply(gen.mkAttributedRef(scalaRuntimeHash), List(arg))
           }
           // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
           else if (isValueClass(qual.tpe.typeSymbol))
@@ -1038,16 +1049,11 @@ abstract class Erasure extends AddInterfaces
           if (fn.symbol == Any_asInstanceOf)
             (fn: @unchecked) match {
               case TypeApply(Select(qual, _), List(targ)) =>
-                if (qual.tpe <:< targ.tpe) {
+                if (qual.tpe <:< targ.tpe)
                   atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
-                } else if (isNumericValueClass(qual.tpe.typeSymbol) &&
-                           isNumericValueClass(targ.tpe.typeSymbol)) {
-                  // convert numeric type casts
-                  val cname = newTermName("to" + targ.tpe.typeSymbol.name)
-                  val csym = qual.tpe.member(cname)
-                  assert(csym != NoSymbol)
-                  atPos(tree.pos) { Apply(Select(qual, csym), List()) }
-                } else
+                else if (isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(targ.tpe.typeSymbol))
+                  atPos(tree.pos)(numericConversion(qual, targ.tpe.typeSymbol))
+                else
                   tree
             }
             // todo: also handle the case where the singleton type is buried in a compound
