@@ -745,9 +745,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      *    @M you should use tpeHK for a type symbol with type parameters if
      *       the kind of the type need not be *, as tpe introduces dummy arguments
      *       to generate a type of kind *
-     *  for a term symbol, its usual type
+     *  for a term symbol, its usual type.
+     *  See the tpe/tpeHK overrides in TypeSymbol for more.
      */
     def tpe: Type = info
+    def tpeHK: Type = tpe
 
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
@@ -925,15 +927,6 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      */
     def typeConstructor: Type =
       abort("typeConstructor inapplicable for " + this)
-
-    /** @M -- tpe vs tpeHK:
-     * Symbol::tpe creates a TypeRef that has dummy type arguments to get a type of kind *
-     * Symbol::tpeHK creates a TypeRef without type arguments, but with type params --> higher-kinded if non-empty list of tpars
-     * calling tpe may hide errors or introduce spurious ones
-     *   (e.g., when deriving a type from the symbol of a type argument that must be higher-kinded)
-     * as far as I can tell, it only makes sense to call tpe in conjunction with a substitution that replaces the generated dummy type arguments by their actual types
-     */
-    def tpeHK = if (isType) typeConstructor else tpe // @M! used in memberType
 
     /** The type parameters of this symbol, without ensuring type completion.
      *  assumption: if a type starts out as monomorphic, it will not acquire
@@ -2016,7 +2009,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
           tpeCache = NoType
           val targs =
             if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
+            else unsafeTypeParams map (_.typeConstructor)
+            //@M! use typeConstructor to generate dummy type arguments,
             // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
             // memberType should be used instead, that's why it uses tpeHK and not tpe
           tpeCache = newTypeRef(targs)
@@ -2025,6 +2019,22 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       assert(tpeCache ne null/*, "" + this + " " + phase*/)//debug
       tpeCache
     }
+
+    /** @M -- tpe vs tpeHK:
+     *
+     *    tpe: creates a TypeRef with dummy type arguments and kind *
+     *  tpeHK: creates a TypeRef with no type arguments but with type parameters
+     *
+     * If typeParams is nonEmpty, calling tpe may hide errors or
+     * introduce spurious ones. (For example, when deriving a type from
+     * the symbol of a type argument that must be higher-kinded.) As far
+     * as I can tell, it only makes sense to call tpe in conjunction
+     * with a substitution that replaces the generated dummy type
+     * arguments by their actual types.
+     *
+     * TODO: the above conditions desperately need to be enforced by code.
+     */
+    override def tpeHK = typeConstructor // @M! used in memberType
 
     // needed for experimental code for early types as type parameters
     // def refreshType() { tpePeriod = NoPeriod }
@@ -2100,7 +2110,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** If type skolem comes from an existential, the tree where it was created */
     override def unpackLocation = origin
 
-    override def typeParams = info.typeParams //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
+    //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
+    override def typeParams = info.typeParams
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =
       new TypeSkolem(owner, pos, name, origin)
@@ -2109,7 +2120,6 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       if (settings.debug.value) (super.nameString + "&" + level)
       else super.nameString
   }
-
 
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)

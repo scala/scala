@@ -1839,20 +1839,30 @@ A type's typeSymbol should never be inspected directly.
       else sym.unsafeTypeParams
 
     // placeholders derived from type params
-    private def dummyArgs = typeParamsDirect map (_.typeConstructor) //@M must be .typeConstructor
+    private def dummyArgs = {
+      // @PP to @AM: this appears to me a place where
+      // higher-order tparams are going off the beam.
+      // if (sym.isAbstractType) { something goes wrong }
+
+      //@M must be .typeConstructor
+      typeParamsDirect map (_.typeConstructor)
+    }
 
     // (!result.isEmpty) IFF isHigherKinded
     override def typeParams: List[Symbol] = if (isHigherKinded) typeParamsDirect else List()
 
+    // note: does not go through typeRef. There's no need to because
+    // neither `pre` nor `sym` changes.  And there's a performance
+    // advantage to call TypeRef directly.
     override def typeConstructor = TypeRef(pre, sym, Nil)
-      // note: does not go through typeRef. There's no need to because neither `pre` nor `sym` changes.
-      // And there's a performance advantage to call TypeRef directly.
 
-
-    // a reference (in a Scala program) to a type that has type parameters, but where the reference does not include type arguments
-    // note that it doesn't matter whether the symbol refers to a java or scala symbol,
-    // it does matter whether it occurs in java or scala code
-    // typerefs w/o type params that occur in java signatures/code are considered raw types, and are represented as existential types
+    // A reference (in a Scala program) to a type that has type
+    // parameters, but where the reference does not include type
+    // arguments. Note that it doesn't matter whether the symbol refers
+    // to a java or scala symbol, it does matter whether it occurs in
+    // java or scala code. TypeRefs w/o type params that occur in java
+    // signatures/code are considered raw types, and are represented as
+    // existential types.
     override def isHigherKinded = args.isEmpty && typeParamsDirect.nonEmpty
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
@@ -1869,12 +1879,17 @@ A type's typeSymbol should never be inspected directly.
         super.instantiateTypeParams(formals, actuals)
 
 
+    /** @pre: sym.info.typeParams.length == typeArgs.length */
     @inline private def betaReduce: Type = {
-      assert(sameLength(sym.info.typeParams, typeArgs), this)
-      // isHKSubType0 introduces synthetic type params so that betaReduce can first apply sym.info to typeArgs before calling asSeenFrom
-      // asSeenFrom then skips synthetic type params, which are used to reduce HO subtyping to first-order subtyping, but which can't be instantiated from the given prefix and class
-      // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner) // this crashes pos/depmet_implicit_tpbetareduce.scala
+      // isHKSubType0 introduces synthetic type params so that
+      // betaReduce can first apply sym.info to typeArgs before calling
+      // asSeenFrom.  asSeenFrom then skips synthetic type params, which
+      // are used to reduce HO subtyping to first-order subtyping, but
+      // which can't be instantiated from the given prefix and class.
       transform(sym.info.resultType)
+      //
+      // this crashes pos/depmet_implicit_tpbetareduce.scala
+      // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     }
 
     // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
@@ -5075,7 +5090,7 @@ A type's typeSymbol should never be inspected directly.
    *
    *  @See baseTypeSeq  for a definition of sorted and upwards closed.
    */
-  private def lubList(tss: List[List[Type]], depth: Int): List[Type] =
+  private def lubList(tss: List[List[Type]], depth: Int): List[Type] = {
     if (tss.tail.isEmpty) tss.head
     else if (tss exists (_.isEmpty)) List()
     else {
@@ -5086,6 +5101,13 @@ A type's typeSymbol should never be inspected directly.
       else
         lubList(tss map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts), depth)
     }
+  }
+  // @PP lubLists gone bad: lubList(List(
+  //   List(scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq], ScalaObject, java.lang.Object, Any)
+  //   List(scala.collection.generic.GenericCompanion[scala.collection.mutable.Seq], ScalaObject, java.lang.Object, Any)
+  // )) == (
+  //   List(scala.collection.generic.GenericCompanion[Seq[Any]], ScalaObject, java.lang.Object, Any)
+  // )
 
   private def lubBaseTypeSeq(tss: List[BaseTypeSeq], depth: Int): List[Type] =
     lubList(tss map (_.toList), depth)
