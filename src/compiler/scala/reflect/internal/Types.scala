@@ -90,6 +90,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
 
   private final val printLubs = false
+  /** In case anyone wants to turn off lub verification without reverting anything. */
+  private final val verifyLubs = true
 
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
@@ -5310,9 +5312,25 @@ A type's typeSymbol should never be inspected directly.
               }
           }
           if (lubRefined.decls.isEmpty) lubBase
+          else if (!verifyLubs) lubRefined
           else {
-//            println("refined lub of "+ts+"/"+narrowts+" is "+lubRefined+", baseclasses = "+(ts map (_.baseTypeSeq) map (_.toList)))
-            lubRefined
+            // Verify that every given type conforms to the calculated lub.
+            // In theory this should not be necessary, but higher-order type
+            // parameters are not handled correctly.
+            val ok = ts forall { t =>
+              (t <:< lubRefined) || {
+                if (settings.debug.value) {
+                  Console.println(
+                    "Malformed lub: " + lubRefined + "\n" +
+                    "Argument " + t + " does not conform.  Falling back to " + lubBase
+                  )
+                }
+                false
+              }
+            }
+            // If not, fall back on the more conservative calculation.
+            if (ok) lubRefined
+            else lubBase
           }
         }
       existentialAbstraction(tparams, lubType)

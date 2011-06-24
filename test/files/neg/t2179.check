@@ -1,9 +1,0 @@
-t2179.scala:2: error: inferred type arguments [scala.collection.immutable.Seq[Double]{def companion: scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq[Any]]; protected def thisCollection: Seq[Double]{def companion: scala.collection.generic.GenericCompanion[Seq[Any]]}}] do not conform to method reduceLeft's type parameter bounds [B >: List[Double]]
-  (Nil:List[List[Double]]).reduceLeft((_: Any, _: Any) => Nil.indices.map(_ => 0d))
-                           ^
-t2179.scala:2: error: type mismatch;
- found   : (Any, Any) => scala.collection.immutable.IndexedSeq[Double]
- required: (scala.collection.immutable.Seq[Double]{def companion: scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq[Any]]; protected def thisCollection: Seq[Double]{def companion: scala.collection.generic.GenericCompanion[Seq[Any]]}}, List[Double]) => scala.collection.immutable.Seq[Double]{def companion: scala.collection.generic.GenericCompanion[scala.collection.immutable.Seq[Any]]; protected def thisCollection: Seq[Double]{def companion: scala.collection.generic.GenericCompanion[Seq[Any]]}}
-  (Nil:List[List[Double]]).reduceLeft((_: Any, _: Any) => Nil.indices.map(_ => 0d))
-                                                       ^
-two errors found
