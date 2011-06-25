@@ -1378,11 +1378,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case NormalizedMember(target) =>
               log("Normalized member: " + symbol + ", target: " + target)
               if (target.isDeferred || conflicting(typeEnv(symbol))) {
-                treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt,
-                  localTyper.typed(
-                    Apply(gen.mkAttributedRef(definitions.Sys_error),
-                          List(Literal("boom! you stepped on a bug. This method should never be called.")))))
-              } else {
+                treeCopy.DefDef(
+                  tree, mods, name, tparams, vparamss, tpt,
+                  localTyper typed gen.mkSysErrorCall("boom! you stepped on a bug. This method should never be called.")
+                )
+              }
+              else {
                 // we have an rhs, specialize it
                 val tree1 = duplicateBody(ddef, target)
                 debuglog("implementation: " + tree1)

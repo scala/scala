@@ -189,6 +189,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     // val productElementName: NameType = "productElementName"
     val TYPE_ : NameType           = "TYPE"
     val add_ : NameType            = "add"
+    val anyValClass: NameType      = "anyValClass"
     val apply: NameType            = "apply"
     val arrayValue: NameType       = "arrayValue"
     val arraycopy: NameType        = "arraycopy"

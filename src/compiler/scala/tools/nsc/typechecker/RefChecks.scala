@@ -1265,7 +1265,7 @@ abstract class RefChecks extends InfoTransform {
           }
         }
         val newResult = localTyper.typedPos(tree.pos) {
-          new ApplyToImplicitArgs(Apply(Select(gen.mkAttributedRef(ArrayModule), nme.ofDim), args), List(manif))
+          new ApplyToImplicitArgs(gen.mkMethodCall(ArrayModule, nme.ofDim, args), List(manif))
         }
         currentApplication = tree
         newResult
@@ -1336,8 +1336,10 @@ abstract class RefChecks extends InfoTransform {
         var result: Tree = tree match {
           case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(NativeAttr) =>
             tree.symbol.resetFlag(DEFERRED)
-            transform(treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
-                  typed(Apply(gen.mkAttributedRef(Sys_error), List(Literal("native method stub"))))))
+            transform(treeCopy.DefDef(
+              tree, mods, name, tparams, vparams, tpt,
+              typed(gen.mkSysErrorCall("native method stub"))
+            ))
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)

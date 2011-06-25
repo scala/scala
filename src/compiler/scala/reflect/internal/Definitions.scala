@@ -247,8 +247,6 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
-      def scalaRuntimeHash = getMember(ScalaRunTimeModule, "hash")
-      def scalaRuntimeAnyValClass = getMember(ScalaRunTimeModule, "anyValClass")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
 
     // classes with special meanings
@@ -489,7 +487,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
 
     def ClassType(arg: Type) =
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
-      else appliedType(ClassClass.tpe, List(arg))
+      else appliedType(ClassClass.typeConstructor, List(arg))
 
     //
     // .NET backend

@@ -84,10 +84,29 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
-    Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
+    mkRuntimeCall(meth, Nil, args)
 
   def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
-    Apply(TypeApply(Select(mkAttributedRef(ScalaRunTimeModule), meth), targs map TypeTree), args)
+    mkMethodCall(ScalaRunTimeModule, meth, targs, args)
+
+  def mkSysErrorCall(message: String): Tree =
+    mkMethodCall(Sys_error, List(Literal(message)))
+
+  /** A creator for a call to a scala.reflect.Manifest or ClassManifest factory method.
+   *
+   *  @param    full          full or partial manifest (target will be Manifest or ClassManifest)
+   *  @param    constructor   name of the factory method (e.g. "classType")
+   *  @param    tparg         the type argument
+   *  @param    args          value arguments
+   *  @return   the tree
+   */
+  def mkManifestFactoryCall(full: Boolean, constructor: String, tparg: Type, args: List[Tree]): Tree =
+    mkMethodCall(
+      if (full) FullManifestModule else PartialManifestModule,
+      constructor,
+      List(tparg),
+      args
+    )
 
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =
@@ -123,10 +142,12 @@ abstract class TreeGen extends reflect.internal.TreeGen {
       else if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(sym)) "wrapRefArray"
       else "genericWrapArray"
 
-    if (isValueClass(sym))
-      Apply(Select(mkAttributedRef(PredefModule), meth), List(tree))
-    else
-      Apply(TypeApply(Select(mkAttributedRef(PredefModule), meth), List(TypeTree(elemtp))), List(tree))
+    mkMethodCall(
+      PredefModule,
+      meth,
+      if (isValueClass(sym)) Nil else List(elemtp),
+      List(tree)
+    )
   }
 
   /** Generate a cast for tree Tree representing Array with

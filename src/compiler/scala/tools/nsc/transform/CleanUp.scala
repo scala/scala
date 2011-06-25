@@ -199,8 +199,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val reflClassCacheSym: Symbol =
                 addStaticVariableToClass("reflClass$Cache", SoftReferenceClass.tpe, NULL, false)
 
-              def getMethodSym = ClassClass.tpe member nme.getMethod_
-
               def isCacheEmpty(receiver: Symbol): Tree =
                 reflClassCacheSym.IS_NULL() OR (reflClassCacheSym.GET() OBJ_NE REF(receiver))
 
@@ -208,7 +206,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 case Pair(reflMethodSym, List(forReceiverSym)) =>
                   BLOCK(
                     IF (isCacheEmpty(forReceiverSym)) THEN BLOCK(
-                      safeREF(reflMethodCacheSym) === ((REF(forReceiverSym) DOT getMethodSym)(LIT(method), safeREF(reflParamsCacheSym))) ,
+                      safeREF(reflMethodCacheSym) === ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), safeREF(reflParamsCacheSym))) ,
                       safeREF(reflClassCacheSym) === gen.mkSoftRef(REF(forReceiverSym)),
                       UNIT
                     ) ENDIF,

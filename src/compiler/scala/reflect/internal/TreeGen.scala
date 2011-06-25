@@ -24,6 +24,33 @@ abstract class TreeGen {
     AppliedTypeTree(cls, argtpes :+ restpe)
   }
 
+  /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
+   *  There are a number of variations.
+   *
+   *  @param    receiver    symbol of the method receiver
+   *  @param    methodName  name of the method to call
+   *  @param    targs       type arguments (if Nil, no TypeApply node will be generated)
+   *  @param    args        value arguments
+   *  @return               the newly created trees.
+   */
+  def mkMethodCall(receiver: Symbol, methodName: Name, targs: List[Type], args: List[Tree]): Tree =
+    mkMethodCall(Select(mkAttributedRef(receiver), methodName), targs, args)
+  def mkMethodCall(method: Symbol, targs: List[Type], args: List[Tree]): Tree =
+    mkMethodCall(mkAttributedRef(method), targs, args)
+  def mkMethodCall(method: Symbol, args: List[Tree]): Tree =
+    mkMethodCall(method, Nil, args)
+  def mkMethodCall(target: Tree, args: List[Tree]): Tree =
+    mkMethodCall(target, Nil, args)
+  def mkMethodCall(receiver: Symbol, methodName: Name, args: List[Tree]): Tree =
+    mkMethodCall(receiver, methodName, Nil, args)
+  def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree =
+    mkMethodCall(Select(receiver, method), targs, args)
+
+  def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree = {
+    val typeApplied = if (targs.isEmpty) target else TypeApply(target, targs map TypeTree)
+    Apply(typeApplied, args)
+  }
+
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it
    *  must not be a TypeRef pointing to an abstract type variable.
@@ -191,8 +218,17 @@ abstract class TreeGen {
           mkAsInstanceOf(tree, pt)
       }
 
+  /** Apparently we smuggle a Type around as a Literal(Constant(tp))
+   *  and the implementation of Constant#tpe is such that x.tpe becomes
+   *  ClassType(value.asInstanceOf[Type]), i.e. java.lang.Class[Type].
+   *  Can't find any docs on how/why it's done this way. See ticket
+   *  SI-490 for some interesting comments from lauri alanko suggesting
+   *  that the type given by classOf[T] is too strong and should be
+   *  weakened so as not to suggest that classOf[List[String]] is any
+   *  different from classOf[List[Int]].
+   */
   def mkClassOf(tp: Type): Tree =
-    Literal(Constant(tp)) setType ConstantType(Constant(tp))// ClassType(tp)
+    Literal(Constant(tp)) setType ConstantType(Constant(tp))
 
   /** Builds a list with given head and tail. */
   def mkNewCons(head: Tree, tail: Tree): Tree =
