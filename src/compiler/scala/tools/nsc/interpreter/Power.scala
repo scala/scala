@@ -212,7 +212,7 @@ abstract class Power[G <: Global](
     }
     def ?         = this
 
-    def whoHas(name: String) = bts filter (_.decls.toList exists (_.name.toString == name))
+    def whoHas(name: String) = bts filter (_.decls exists (_.name.toString == name))
     def <:<[U: Manifest](other: U) = tpe <:< InternalInfo[U].tpe
     def lub[U: Manifest](other: U) = global.lub(List(tpe, InternalInfo[U].tpe))
     def glb[U: Manifest](other: U) = global.glb(List(tpe, InternalInfo[U].tpe))

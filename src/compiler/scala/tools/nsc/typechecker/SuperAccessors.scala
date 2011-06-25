@@ -149,7 +149,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case ClassDef(_, _, _, _) =>
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
-          for (s <- decls.toList) {
+          for (s <- decls) {
             if (s.privateWithin.isClass && !s.privateWithin.isModuleClass &&
                 !s.hasFlag(EXPANDEDNAME) && !s.isConstructor) {
               decls.unlink(s)

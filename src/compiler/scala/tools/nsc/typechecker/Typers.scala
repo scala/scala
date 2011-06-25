@@ -1892,7 +1892,7 @@ trait Typers extends Modes {
                 case BoundedWildcardType(TypeBounds(lo, hi)) => lo.members
                 case _ => pt.members
               }
-              for (member <- classDef.symbol.info.decls.toList
+              for (member <- classDef.symbol.info.decls
                    if member.isTerm && !member.isConstructor &&
                       member.allOverriddenSymbols.isEmpty &&
                       (!member.isPrivate && !member.hasAccessBoundary) &&

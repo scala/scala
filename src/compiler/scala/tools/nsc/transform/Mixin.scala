@@ -185,7 +185,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       val impl = implClass(clazz)
       assert(impl != NoSymbol)
 
-      for (member <- impl.info.decls.toList) {
+      for (member <- impl.info.decls) {
         if (!member.isMethod && !member.isModule && !member.isModuleVar) {
           assert(member.isTerm && !member.isDeferred, member)
           if (member.getter(impl).isPrivate) {
@@ -258,7 +258,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           "%s (%s) is not a an implementation class, it cannot mix in %s".format(
             impl, impl.defaultFlagString, iface)
         )
-        for (member <- impl.info.decls.toList) {
+        for (member <- impl.info.decls) {
           if (isForwarded(member)) {
             val imember = member.overriddenSymbol(iface)
             // atPhase(currentRun.erasurePhase){
@@ -282,7 +282,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def mixinTraitMembers(mixinClass: Symbol) {
         // For all members of a trait's interface do:
-        for (member <- mixinClass.info.decls.toList) {
+        for (member <- mixinClass.info.decls) {
           if (isConcreteAccessor(member)) {
             if (isOverriddenAccessor(member, clazz.info.baseClasses)) {
               if (settings.debug.value)
@@ -576,7 +576,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       sym.owner.owner.info //todo: needed?
       if (sym.owner.sourceModule == NoSymbol)
         assert(false, "" + sym + " in " + sym.owner + " in " + sym.owner.owner +
-                      " " + sym.owner.owner.info.decls.toList)//debug
+                      " " + sym.owner.owner.info.decls)//debug
       REF(sym.owner.sourceModule) DOT sym
     }
 
@@ -1027,7 +1027,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       // for all symbols `sym` in the class definition, which are mixed in:
-      for (sym <- clazz.info.decls.toList) {
+      for (sym <- clazz.info.decls) {
         if (sym hasFlag MIXEDIN) {
           if (clazz hasFlag lateINTERFACE) {
             // if current class is a trait interface, add an abstract method for accessor `sym`

@@ -136,7 +136,7 @@ abstract class DeVirtualize /* extends InfoTransform with TypingTransformers {
     atPhase(ownPhase) { newTermName("new$"+clazz.name) }
 
   /** Does `clazz` contain virtual classes? */
-  protected def containsVirtuals(clazz: Symbol) = clazz.info.decls.toList exists (_.isVirtualClass)
+  protected def containsVirtuals(clazz: Symbol) = clazz.info.decls exists (_.isVirtualClass)
 
   /** The inner classes that need factory methods in `clazz`
    *  This is intended to catch situations like the following

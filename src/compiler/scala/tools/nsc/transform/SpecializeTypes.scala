@@ -1546,7 +1546,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val mbrs = new mutable.ListBuffer[Tree]
       var hasSpecializedFields = false
 
-      for (m <- cls.info.decls.toList
+      for (m <- cls.info.decls
              if m.hasFlag(SPECIALIZED)
                  && (m.sourceFile ne null)
                  && satisfiable(typeEnv(m), !cls.hasFlag(SPECIALIZED))) {

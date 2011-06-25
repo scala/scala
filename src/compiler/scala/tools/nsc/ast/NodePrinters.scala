@@ -92,7 +92,7 @@ abstract class NodePrinters {
                     !(sym.owner eq definitions.ScalaPackageClass) &&
                     !sym.isModuleClass && !sym.isPackageClass &&
                     !sym.isJavaDefined) {
-                  val members = for (m <- tree.tpe.decls.toList)
+                  val members = for (m <- tree.tpe.decls)
                     yield m.toString() + ": " + m.tpe + ", "
                   buf.append(", tpe.decls=" + members)
                 }

@@ -811,7 +811,7 @@ trait Namers { self: Analyzer =>
         log(
           "ClassInfoType(\n%s,\n%s,\n%s)".format(
             "  " + (parents map (_.typeSymbol) mkString ", "),
-            if (global.opt.debug) decls.toList map (">> " + _) mkString("\n", "\n", "") else "  <decls>",
+            if (global.opt.debug) decls map (">> " + _) mkString("\n", "\n", "") else "  <decls>",
             "  " + clazz)
         )
       }

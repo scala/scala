@@ -984,7 +984,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       val thistp = tp.typeSymbol.thisType
       val oldsymbuf = new ListBuffer[Symbol]
       val newsymbuf = new ListBuffer[Symbol]
-      for (sym <- info.decls.toList) {
+      for (sym <- info.decls) {
         // todo: what about public references to private symbols?
         if (sym.isPublic && !sym.isConstructor) {
           oldsymbuf += sym

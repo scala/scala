@@ -42,12 +42,12 @@ abstract class Flatten extends InfoTransform {
         var parents1 = parents
         val decls1 = new Scope
         if (clazz.isPackageClass) {
-          atPhase(phase.next)(decls.toList foreach (sym => decls1 enter sym))
+          atPhase(phase.next)(decls foreach (decls1 enter _))
         } else {
           val oldowner = clazz.owner
           atPhase(phase.next)(oldowner.info)
           parents1 = parents mapConserve (this)
-          for (sym <- decls.toList) {
+          for (sym <- decls) {
             if (sym.isTerm && !sym.isStaticModule) {
               decls1 enter sym
               if (sym.isModule) sym.moduleClass setFlag LIFTED

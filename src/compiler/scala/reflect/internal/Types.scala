@@ -1411,7 +1411,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 
     override def isStructuralRefinement: Boolean =
       typeSymbol.isAnonOrRefinementClass &&
-        (decls.toList exists { entry => !entry.isConstructor && entry.allOverriddenSymbols.isEmpty })
+        (decls exists { entry => !entry.isConstructor && entry.allOverriddenSymbols.isEmpty })
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
@@ -2019,7 +2019,7 @@ A type's typeSymbol should never be inspected directly.
       else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
         thisInfo.parents.mkString(" with ") + {
           if (sym.isStructuralRefinement)
-            ((decls.toList filter { entry =>
+            ((decls filter { entry =>
               !entry.isConstructor && entry.allOverriddenSymbols.isEmpty && !entry.isPrivate
             }) map { entry => entry.defString }).mkString("{", "; ", "}")
           else
@@ -4744,7 +4744,7 @@ A type's typeSymbol should never be inspected directly.
         thirdTryRef(tp1, tr2)
       case rt2: RefinedType =>
         (rt2.parents forall (tp1 <:< _)) &&
-        (rt2.decls.toList forall tp1.specializes)
+        (rt2.decls forall tp1.specializes)
       case et2: ExistentialType =>
         et2.withTypeVars(tp1 <:< _, depth) || fourthTry
       case nn2: NotNullType =>

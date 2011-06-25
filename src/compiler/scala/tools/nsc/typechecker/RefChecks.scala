@@ -632,7 +632,7 @@ abstract class RefChecks extends InfoTransform {
       }
 
       // 4. Check that every defined member with an `override` modifier overrides some other member.
-      for (member <- clazz.info.decls.toList)
+      for (member <- clazz.info.decls)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
             !(clazz.thisType.baseClasses exists (hasMatchingSym(_, member)))) {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
@@ -782,7 +782,7 @@ abstract class RefChecks extends InfoTransform {
             validateVariances(parents, variance)
           case RefinedType(parents, decls) =>
             validateVariances(parents, variance)
-            for (sym <- decls.toList)
+            for (sym <- decls)
               validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
