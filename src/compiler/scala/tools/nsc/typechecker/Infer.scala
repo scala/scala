@@ -1214,7 +1214,7 @@ trait Infer {
      *
      *  @param fn          fn: the function that needs to be instantiated.
      *  @param undetparams the parameters that need to be determined
-     *  @param args        the actional argumments in the call.
+     *  @param args        the actual arguments supplied in the call.
      *  @param pt          the expected type of the function application
      *  @return            The type parameters that remain uninstantiated,
      *                     and that thus have not been substituted.
@@ -1234,7 +1234,7 @@ trait Infer {
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(params0 map (_.tpe), args.length)
-          val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
+          val argtpes = actualTypes(args map (x => elimAnonymousClass(x.tpe.deconst)), formals.length)
           val restpe  = fn.tpe.resultType(argtpes)
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =

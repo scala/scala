@@ -5134,6 +5134,12 @@ A type's typeSymbol should never be inspected directly.
       val rest = elimSuper(ts1 filter (t1 => !(t <:< t1)))
       if (rest exists (t1 => t1 <:< t)) rest else t :: rest
   }
+  def elimAnonymousClass(t: Type) = t match {
+    case TypeRef(pre, clazz, Nil) if clazz.isAnonymousClass =>
+      clazz.classBound.asSeenFrom(pre, clazz.owner)
+    case _ =>
+      t
+  }
 
   /** A collector that tests for existential types appearing at given variance in a type */
   class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) {
@@ -5153,12 +5159,6 @@ A type's typeSymbol should never be inspected directly.
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
   private def elimSub(ts: List[Type], depth: Int): List[Type] = {
-    def elimAnonymousClass(t: Type) = t match {
-      case TypeRef(pre, clazz, List()) if clazz.isAnonymousClass =>
-        clazz.classBound.asSeenFrom(pre, clazz.owner)
-      case _ =>
-        t
-    }
     def elimSub0(ts: List[Type]): List[Type] = ts match {
       case List() => List()
       case t :: ts1 =>
