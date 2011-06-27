@@ -83,32 +83,39 @@ abstract class RefChecks extends InfoTransform {
     var checkedCombinations = Set[List[Type]]()
 
     // only one overloaded alternative is allowed to define default arguments
-    private def checkOverloadedRestrictions(clazz: Symbol) {
-      def check(members: List[Symbol]): Unit = members match {
-        case x :: xs =>
-          if (x.hasParamWhich(_.hasDefaultFlag) && !nme.isProtectedAccessorName(x.name)) {
-            val others = xs.filter(alt => {
-              alt.name == x.name &&
-              (alt hasParamWhich (_.hasDefaultFlag)) &&
-              (!alt.isConstructor || alt.owner == x.owner) // constructors of different classes are allowed to have defaults
-            })
-            if (!others.isEmpty) {
-              val all = x :: others
-              val rest = if (all.exists(_.owner != clazz)) ".\nThe members with defaults are defined in "+
-                         all.map(_.owner).mkString("", " and ", ".") else "."
-              unit.error(clazz.pos, "in "+ clazz +", multiple overloaded alternatives of "+ x +
-                         " define default arguments"+ rest)
-              }
+    private def checkOverloadedRestrictions(clazz: Symbol): Unit = {
+      // Using the default getters (such as methodName$default$1) as a cheap way of
+      // finding methods with default parameters. This way, we can limit the members to
+      // those with the DEFAULTPARAM flag, and infer the methods. Looking for the methods
+      // directly requires inspecting the parameter list of every one. That modification
+      // shaved 95% off the time spent in this method.
+      val defaultGetters     = clazz.info.findMember(nme.ANYNAME, 0L, DEFAULTPARAM, false).alternatives
+      val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
+
+      defaultMethodNames.distinct foreach { name =>
+        val methods      = clazz.info.findMember(name, 0L, METHOD, false).alternatives
+        val haveDefaults = methods filter (sym => sym.hasParamWhich(_.hasDefaultFlag) && !nme.isProtectedAccessorName(sym.name))
+
+        if (haveDefaults.lengthCompare(1) > 0) {
+          val owners = haveDefaults map (_.owner)
+           // constructors of different classes are allowed to have defaults
+          if (haveDefaults.exists(x => !x.isConstructor) || owners.distinct.size < haveDefaults.size) {
+            unit.error(clazz.pos,
+              "in "+ clazz +
+              ", multiple overloaded alternatives of "+ haveDefaults.head +
+              " define default arguments" + (
+                if (owners.forall(_ == clazz)) "."
+                else ".\nThe members with defaults are defined in "+owners.map(_.fullLocationString).mkString("", " and ", ".")
+              )
+            )
           }
-          check(xs)
-        case _ => ()
+        }
       }
       clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
         val alts = clazz.info.decl(sym.name).alternatives
         if (alts.size > 1)
           alts foreach (x => unit.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
       }
-      check(clazz.info.members)
     }
 
 // Override checking ------------------------------------------------------------
