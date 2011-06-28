@@ -7,7 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
-import collection.mutable.{HashSet, HashMap}
+import collection.{ mutable, immutable }
 import transform.InfoTransform
 import scala.collection.mutable.ListBuffer
 
@@ -658,11 +658,13 @@ abstract class RefChecks extends InfoTransform {
      *  </ol>
      */
     private def validateBaseTypes(clazz: Symbol) {
+      val seenParents = mutable.HashSet[Type]()
       val seenTypes = new Array[List[Type]](clazz.info.baseTypeSeq.length)
-      for (i <- 0 until seenTypes.length) seenTypes(i) = Nil
+      for (i <- 0 until seenTypes.length)
+        seenTypes(i) = Nil
 
       /** validate all base types of a class in reverse linear order. */
-      def register(tp: Type) {
+      def register(tp: Type): Unit = {
 //        if (clazz.fullName.endsWith("Collection.Projection"))
 //            println("validate base type "+tp)
         val baseClass = tp.typeSymbol
@@ -674,7 +676,9 @@ abstract class RefChecks extends InfoTransform {
                 tp :: (seenTypes(index) filter (tp1 => !(tp <:< tp1)))
           }
         }
-        tp.parents foreach register
+        val remaining = tp.parents filterNot seenParents
+        seenParents ++= remaining
+        remaining foreach register
       }
       register(clazz.tpe)
       for (i <- 0 until seenTypes.length) {
@@ -701,7 +705,7 @@ abstract class RefChecks extends InfoTransform {
     private val CoVariance = 1
     private val AnyVariance = 2
 
-    private val escapedPrivateLocals = new HashSet[Symbol]
+    private val escapedPrivateLocals = new mutable.HashSet[Symbol]
 
     val varianceValidator = new Traverser {
 
@@ -851,7 +855,7 @@ abstract class RefChecks extends InfoTransform {
     }
 
     private var currentLevel: LevelInfo = null
-    private val symIndex = new HashMap[Symbol, Int]
+    private val symIndex = new mutable.HashMap[Symbol, Int]
 
     private def pushLevel() {
       currentLevel = new LevelInfo(currentLevel)
