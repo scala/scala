@@ -286,7 +286,17 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             !(sym.name.toString contains '$') && sym.hasModuleFlag && !sym.isImplClass && !sym.isNestedClass
           }
 
-        val lmoc = c.symbol.companionModule
+        // At some point this started throwing lots of exceptions as a compile was finishing.
+        // error: java.lang.AssertionError:
+        //   assertion failed: List(object package$CompositeThrowable, object package$CompositeThrowable)
+        // ...is the one I've seen repeatedly.  Suppressing.
+        val lmoc = (
+          try c.symbol.companionModule
+          catch { case x: AssertionError =>
+            Console.println("Suppressing failed assert: " + x)
+            NoSymbol
+          }
+        )
         // add static forwarders if there are no name conflicts; see bugs #363 and #1735
         if (lmoc != NoSymbol && !c.symbol.isInterface) {
           if (isCandidateForForwarders(lmoc) && !settings.noForwarders.value) {
