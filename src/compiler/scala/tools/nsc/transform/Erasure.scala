@@ -214,24 +214,41 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
   private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
-  private lazy val tagOfClass = Map[Symbol,Char](
-    ByteClass -> BYTE_TAG,
-    CharClass -> CHAR_TAG,
-    DoubleClass -> DOUBLE_TAG,
-    FloatClass -> FLOAT_TAG,
-    IntClass -> INT_TAG,
-    LongClass -> LONG_TAG,
-    ShortClass -> SHORT_TAG,
-    BooleanClass -> BOOL_TAG,
-    UnitClass -> VOID_TAG
+  // only refer to type params that will actually make it into the sig, this excludes:
+  // * higher-order type parameters (aka !sym.owner.isTypeParameterOrSkolem)
+  // * parameters of methods
+  private def isTypeParameterInSig(sym: Symbol) = (
+    sym.isTypeParameterOrSkolem &&
+    !sym.owner.isTypeParameterOrSkolem
   )
+  // Ensure every '.' in the generated signature immediately follows
+  // a close angle bracket '>'.  Any which do not are replaced with '$'.
+  // This arises due to multiply nested classes in the face of the
+  // rewriting explained at rebindInnerClass.   This should be done in a
+  // more rigorous way up front rather than catching it after the fact,
+  // but that will be more involved.
+  private def dotCleanup(sig: String): String = {
+    var last: Char = '\0'
+    sig map {
+      case '.' if last != '>' => last = '.' ; '$'
+      case ch                 => last = ch ; ch
+    }
+  }
 
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
   def javaSig(sym0: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
+    def jsig(tp: Type): String = jsig2(false, Nil, tp)
 
-    def jsig(tp: Type): String = jsig2(false, List(), tp)
+    def boxedSig(tp: Type) = (boxedClass get tp.typeSymbol) match {
+      case Some(boxed) => jsig(boxed.tpe)
+      case None        => jsig(tp)
+    }
+    def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
+      case RefinedType(parents, _) => parents map normalize
+      case tp                      => List(tp)
+    }
 
     def jsig2(toplevel: Boolean, tparams: List[Symbol], tp0: Type): String = {
       val tp = tp0.dealias
@@ -244,29 +261,28 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           def argSig(tp: Type) =
             if (tparams contains tp.typeSymbol) {
               val bounds = tp.typeSymbol.info.bounds
-              if (!(AnyRefClass.tpe <:< bounds.hi)) "+"+jsig(bounds.hi)
-              else if (!(bounds.lo <:< NullClass.tpe)) "-"+jsig(bounds.lo)
-              else "*"
-            } else if (tp.typeSymbol == UnitClass) {
+              if (AnyRefClass.tpe <:< bounds.hi) {
+                if (bounds.lo <:< NullClass.tpe) "*"
+                else "-" + jsig(bounds.lo)
+              }
+              else "+" + jsig(bounds.hi)
+            }
+            else if (tp.typeSymbol == UnitClass) {
               jsig(ObjectClass.tpe)
             } else {
-              boxedClass get tp.typeSymbol match {
-                case Some(boxed) => jsig(boxed.tpe)
-                case None => jsig(tp)
-              }
+              boxedSig(tp)
             }
-          def classSig: String =
+          def classSig = (
             "L"+atPhase(currentRun.icodePhase)(sym.fullName + global.genJVM.moduleSuffix(sym)).replace('.', '/')
-          def classSigSuffix: String =
-            "."+sym.name
-          if (sym == ArrayClass)
+          )
+          def classSigSuffix = "." + sym.name
+
+          // If args isEmpty, Array is being used as a higher-kinded type
+          if (sym == ArrayClass && args.nonEmpty) {
             if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
             else ARRAY_TAG.toString+(args map jsig).mkString
-          else if (sym.isTypeParameterOrSkolem &&
-                  // only refer to type params that will actually make it into the sig, this excludes:
-                  !sym.owner.isTypeParameterOrSkolem && // higher-order type parameters (!sym.owner.isTypeParameterOrSkolem), and parameters of methods
-                  (!sym0.isClass || sym.owner.isClass) // if we're generating the sig for a class, type params must be owned by a class (not a method -- #3249)
-                  )
+          }
+          else if (isTypeParameterInSig(sym))
             TVAR_TAG.toString+sym.name+";"
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
@@ -277,35 +293,41 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
           else if (isValueClass(sym))
-            tagOfClass(sym).toString
-          else if (sym.isClass)
-            {
-              val preRebound = pre.baseType(sym.owner) // #2585
-              if (needsJavaSig(preRebound)) {
-                val s = jsig(preRebound)
-                if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
+            abbrvTag(sym).toString
+          else if (sym.isClass) {
+            val preRebound = pre.baseType(sym.owner) // #2585
+            dotCleanup(
+              (
+                if (needsJavaSig(preRebound)) {
+                  val s = jsig(preRebound)
+                  if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
+                  else classSig
+                }
                 else classSig
-              } else classSig
-            } + {
-              if (args.isEmpty) "" else "<"+(args map argSig).mkString+">"
-            } + ";"
+              ) + (
+                if (args.isEmpty) "" else
+                "<"+(args map argSig).mkString+">"
+              ) + (
+                ";"
+              )
+            )
+          }
           else jsig(erasure(tp))
         case PolyType(tparams, restpe) =>
-          def hiBounds(bounds: TypeBounds): List[Type] = bounds.hi.normalize match {
-            case RefinedType(parents, _) => parents map normalize
-            case tp => List(tp)
-          }
+          assert(tparams.nonEmpty)
           def boundSig(bounds: List[Type]) = {
-            def isClassBound(t: Type) = !t.typeSymbol.isTrait
-            val classBound = bounds find isClassBound match {
-              case Some(t) => jsig(t)
-              case None => ""
-            }
-            ":"+classBound+(for (t <- bounds if !isClassBound(t)) yield ":"+jsig(t)).mkString
+            val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
+
+            ":" + (
+              if (isClass.isEmpty) "" else boxedSig(isClass.head)
+            ) + (
+              isTrait map (x => ":" + boxedSig(x)) mkString
+            )
           }
-          assert(!tparams.isEmpty)
-          def paramSig(tsym: Symbol) = tsym.name+boundSig(hiBounds(tsym.info.bounds))
-          (if (toplevel) "<"+(tparams map paramSig).mkString+">" else "")+jsig(restpe)
+          def paramSig(tsym: Symbol) = tsym.name + boundSig(hiBounds(tsym.info.bounds))
+
+          val paramString = if (toplevel) tparams map paramSig mkString ("<", "", ">") else ""
+          paramString + jsig(restpe)
         case MethodType(params, restpe) =>
           "("+(params map (_.tpe) map jsig).mkString+")"+
           (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
