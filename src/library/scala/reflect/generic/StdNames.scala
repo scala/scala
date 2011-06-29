@@ -17,10 +17,14 @@ trait StdNames { self: Universe =>
     val ROOT               = newTermName("<root>")
     val ROOTPKG            = newTermName("_root_")
     val EMPTY              = newTermName("")
+    val MODULE_SUFFIX      = newTermName("$module")
 
     /** The expanded name of `name' relative to this class `base` with given `separator`
      */
     def expandedName(name: Name, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): Name =
       newTermName(base.fullName('$') + separator + name)
+
+    def moduleVarName(name: Name): Name =
+      newTermName(name.toString() + MODULE_SUFFIX)
   }
 }

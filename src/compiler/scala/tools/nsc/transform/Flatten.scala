@@ -48,7 +48,9 @@ abstract class Flatten extends InfoTransform {
           for (sym <- decls.toList) {
             if (sym.isTerm && !sym.isStaticModule) {
               decls1 enter sym
-              if (sym.isModule) sym.moduleClass setFlag LIFTED
+              if (sym.isModule) sym.moduleClass setFlag LIFTED  // Only top modules
+              // Nested modules (MODULE flag is reset so we access through lazy):
+              if (sym.isModuleVar && sym.hasFlag(LAZY)) sym.lazyAccessor.lazyAccessor setFlag LIFTED
             } else if (sym.isClass) {
               liftClass(sym)
               if (sym.needsImplClass) liftClass(erasure.implClass(sym))
