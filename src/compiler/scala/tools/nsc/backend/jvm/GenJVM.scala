@@ -475,10 +475,30 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
       nannots
     }
 
+    /** Run the signature parser to catch bogus signatures.
+     */
+    def isValidSignature(sym: Symbol, sig: String) = (
+      if (sym.isMethod) SigParser verifyMethod sig
+      else if (sym.isTerm) SigParser verifyType sig
+      else SigParser verifyClass sig
+    )
+
+    // @M don't generate java generics sigs for (members of) implementation
+    // classes, as they are monomorphic (TODO: ok?)
+    private def needsGenericSignature(sym: Symbol) = !(
+      // PP: This condition used to include sym.hasExpandedName, but this leads
+      // to the total loss of generic information if a private member is
+      // accessed from a closure: both the field and the accessor were generated
+      // without it.  This is particularly bad because the availability of
+      // generic information could disappear as a consequence of a seemingly
+      // unrelated change.
+         sym.isSynthetic
+      || sym.isLiftedMethod
+      || sym.isBridge
+      || (sym.ownerChain exists (_.isImplClass))
+    )
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
-      if (!sym.hasFlag(Flags.EXPANDEDNAME | Flags.SYNTHETIC)
-          && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))
-          && !(sym.ownerChain exists (_.isImplClass))) {  // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
+      if (needsGenericSignature(sym)) {
         val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
         // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
@@ -488,34 +508,37 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
            *  in which case we treat every signature as valid.  Medium term we
            *  should certainly write independent signature validation.
            */
-          if (SigParser.isParserAvailable && isValidSignature(sym, sig)) {
+          if (SigParser.isParserAvailable && !isValidSignature(sym, sig)) {
+            clasz.cunit.warning(sym.pos,
+                """|compiler bug: created invalid generic signature for %s in %s
+                   |signature: %s
+                   |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
+            return
+          }
+          if ((settings.check.value contains "genjvm")) {
             val normalizedTpe = atPhase(currentRun.erasurePhase)(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
-            if (sym.isType || (erasure.erasure(normalizedTpe) =:= bytecodeTpe)) {
-              val index = jmember.getConstantPool.addUtf8(sig).toShort
-              if (opt.verboseDebug)
-                atPhase(currentRun.erasurePhase) {
-                  println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
-                }
-              val buf = ByteBuffer.allocate(2)
-              buf putShort index
-              addAttribute(jmember, tpnme.SignatureATTR, buf)
-            } else {
-              if (sym.hasFlag(Flags.MIXEDIN))
-                ()// println("suppressing signature for mixedin "+sym)
-              else
-                clasz.cunit.warning(sym.pos,
-              """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
-                 |signature: %s
-                 |erasure type: %s
-                 |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
-              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, bytecodeTpe))
+            if (!sym.isType && !sym.isConstructor && !(erasure.erasure(normalizedTpe) =:= bytecodeTpe)) {
+              clasz.cunit.warning(sym.pos,
+                  """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
+                     |signature: %s
+                     |original type: %s
+                     |normalized type: %s
+                     |erasure type: %s
+                     |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
+                  """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
+               return
             }
-          } else clasz.cunit.warning(sym.pos,
-            """|compiler bug: created invalid generic signature for %s in %s
-               |signature: %s
-               |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
-            """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
+          }
+          val index = jmember.getConstantPool.addUtf8(sig).toShort
+          if (opt.verboseDebug)
+            atPhase(currentRun.erasurePhase) {
+              println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
+            }
+          val buf = ByteBuffer.allocate(2)
+          buf putShort index
+          addAttribute(jmember, tpnme.SignatureATTR, buf)
         }
       }
     }
@@ -1768,11 +1791,20 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
       jf = jf | ACC_SUPER
 
     // constructors of module classes should be private
-    if (sym.isPrimaryConstructor && isTopLevelModule(sym.owner)) {
-      jf |= ACC_PRIVATE
-      jf &= ~ACC_PUBLIC
-    }
-    jf
+    // PP: why are they only being marked private at this stage and not earlier?
+    val isConsideredPrivate =
+      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
+
+    mkFlags(
+      if (isConsideredPrivate) ACC_PRIVATE else ACC_PUBLIC,
+      if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
+      if (sym.isInterface) ACC_INTERFACE else 0,
+      if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
+      if (sym.isStaticMember) ACC_STATIC else 0,
+      if (sym.isBridge || sym.hasFlag(Flags.MIXEDIN) && sym.isMethod) ACC_BRIDGE else 0,
+      if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
+      if (sym.isVarargsMethod) ACC_VARARGS else 0
+    )
   }
 
   def isTopLevelModule(sym: Symbol): Boolean =
