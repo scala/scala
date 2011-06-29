@@ -9,8 +9,7 @@ Bundle-ClassPath:
  bin,
  lib/fjbg.jar,
  lib/jline.jar,
- lib/msil.jar,
- lib/scala-library.jar
+ lib/msil.jar
 Export-Package: 
  scala.tools.nsc,
  scala.tools.nsc.ast,
@@ -22,6 +21,10 @@ Export-Package:
  scala.tools.nsc.backend.opt,
  scala.tools.nsc.dependencies,
  scala.tools.nsc.doc,
+ scala.tools.nsc.doc.html,
+ scala.tools.nsc.doc.html.page,
+ scala.tools.nsc.doc.model,
+ scala.tools.nsc.doc.model.comment,
  scala.tools.nsc.interactive,
  scala.tools.nsc.interpreter,
  scala.tools.nsc.io,
@@ -36,6 +39,8 @@ Export-Package:
  scala.tools.nsc.typechecker,
  scala.tools.nsc.util,
  scala.tools.util,
+ scala.reflect.internal,
+ scala.reflect.internal.settings,
  ch.epfl.lamp.compiler.msil,
  ch.epfl.lamp.compiler.msil.emit,
  ch.epfl.lamp.compiler.msil.util,
