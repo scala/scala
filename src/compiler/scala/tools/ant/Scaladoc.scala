@@ -385,7 +385,7 @@ class Scaladoc extends MatchingTask {
   /** This is forwarding method to circumvent bug #281 in Scala 2. Remove when
    *  bug has been corrected.
    */
-  override protected def getDirectoryScanner(baseDir: java.io.File) =
+  override def getDirectoryScanner(baseDir: java.io.File) =
     super.getDirectoryScanner(baseDir)
 
   /** Transforms a string name into a file relative to the provided base

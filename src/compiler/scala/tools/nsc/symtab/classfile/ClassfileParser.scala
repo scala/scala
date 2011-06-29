@@ -1302,6 +1302,11 @@ abstract class ClassfileParser {
       // apparently occurs when processing v45.3 bytecode.
       if (sym.toplevelClass != NoSymbol)
         sym.privateWithin = sym.toplevelClass.owner
+
+    // protected in java means package protected. #3946
+    if ((jflags & JAVA_ACC_PROTECTED) != 0)
+      if (sym.toplevelClass != NoSymbol)
+        sym.privateWithin = sym.toplevelClass.owner
   }
 
   @inline final private def isPrivate(flags: Int) =

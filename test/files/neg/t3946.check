@@ -1,0 +1,5 @@
+S_1.scala:3: error: overriding method m in class J of type ()Unit;
+ method m has weaker access privileges; it should be at least protected[p]
+  override protected def m { }
+                         ^
+one error found

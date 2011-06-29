@@ -408,37 +408,41 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      * classes, this has to be signaled as error.
      */
     private def needsProtectedAccessor(sym: Symbol, pos: Position): Boolean = {
-      def errorRestriction(msg: String) {
-        unit.error(pos, "Implementation restriction: " + msg)
+      val clazz = currentOwner.enclClass
+      def accessibleThroughSubclassing =
+        validCurrentOwner && clazz.thisSym.isSubClass(sym.owner) && !clazz.isTrait
+
+      def packageAccessBoundry(sym: Symbol) = {
+        val b = sym.accessBoundary(sym.owner)
+        if (b.isPackageClass) b
+        else b.enclosingPackageClass
       }
 
-      def accessibleThroughSubclassing: Boolean =
-        (validCurrentOwner
-            && currentOwner.enclClass.thisSym.isSubClass(sym.owner)
-            && !currentOwner.enclClass.isTrait)
-
-      val res = /* settings.debug.value && */
-      ((sym hasFlag PROTECTED)
-       && sym.hasFlag(JAVA)
-       && !sym.owner.isPackageClass
-       && !accessibleThroughSubclassing
-       && (sym.owner.enclosingPackageClass != currentOwner.enclosingPackageClass)
-       && (sym.owner.enclosingPackageClass == sym.accessBoundary(sym.owner).enclosingPackageClass))
-
-      if (res) {
-        val host = hostForAccessorOf(sym, currentOwner.enclClass)
-        // bug #1393 - as things stand now the "host" could be a package.
-        if (host.isPackageClass) false
-        else if (host.thisSym != host) {
-          if (host.thisSym.tpe.typeSymbol.hasFlag(JAVA))
-            errorRestriction("%s accesses protected %s from self type %s.".format(currentOwner.enclClass, sym, host.thisSym.tpe))
-          false
-        } else if (host.isTrait && sym.hasFlag(JAVA)) {
-            errorRestriction(("%s accesses protected %s inside a concrete trait method. " +
-                    "Add an accessor in a class extending %s to work around this bug.").format(currentOwner.enclClass, sym, sym.enclClass))
-            false
-        } else res
-      } else res
+      val isCandidate = (
+           sym.isProtected
+        && sym.isJavaDefined
+        && !sym.definedInPackage
+        && !accessibleThroughSubclassing
+        && (sym.owner.enclosingPackageClass != currentOwner.enclosingPackageClass)
+        && (sym.owner.enclosingPackageClass == packageAccessBoundry(sym))
+      )
+      val host = hostForAccessorOf(sym, clazz)
+      def isSelfType = !(host.tpe <:< host.typeOfThis) && {
+        if (host.typeOfThis.typeSymbol.isJavaDefined)
+          unit.error(pos, "Implementation restriction: " +
+            "%s accesses protected %s from self type %s.".format(clazz, sym, host.typeOfThis)
+          )
+        true
+      }
+      def isJavaProtected = host.isTrait && sym.isJavaDefined && {
+        unit.error(pos, "Implementation restriction: " +
+          """|%s accesses protected %s inside a concrete trait method.
+             |Add an accessor in a class extending %s as a workaround.""".stripMargin.format(
+                clazz, sym, sym.enclClass)
+        )
+        true
+      }
+      isCandidate && !host.isPackageClass && !isSelfType && !isJavaProtected
     }
 
     /** Return the innermost enclosing class C of referencingClass for which either
