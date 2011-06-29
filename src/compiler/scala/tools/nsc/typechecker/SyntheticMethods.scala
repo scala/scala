@@ -234,14 +234,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         result
     }
 
-    def needsReadResolve = (
-      // only nested objects inside objects should get readResolve automatically
-      // otherwise after de-serialization we get null references for lazy accessors (nested object -> lazy val + class def)
-      // since the bitmap gets serialized but the moduleVar not
-      (clazz.hasAnnotation(SerializableAttr)) &&
-      ((!clazz.owner.isPackageClass && clazz.owner.isModuleClass) || clazz.owner.isPackageClass)
-    )
-
     val ts = new ListBuffer[Tree]
 
     if (!phase.erasedTypes) try {
@@ -304,24 +296,14 @@ trait SyntheticMethods extends ast.TreeDSL {
           if (comp.hasFlag(Flags.CASE) || hasSerializableAnnotation(comp))
             clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
         }
-        def hasReadResolve = {
-          val sym = clazz.info member nme.readResolve // any member, including private
-          sym.isTerm && !sym.isDeferred
-        }
 
         /** If you serialize a singleton and then deserialize it twice,
          *  you will have two instances of your singleton, unless you implement
          *  the readResolve() method (see http://www.javaworld.com/javaworld/
          *  jw-04-2003/jw-0425-designpatterns_p.html)
          */
-        if (!hasReadResolve && needsReadResolve){
-          // PP: To this day I really can't figure out what this next comment is getting at:
-          // the !!! normally means there is something broken, but if so, what is it?
-          //
-          // !!! the synthetic method "readResolve" should be private, but then it is renamed !!!
-          val method = newSyntheticMethod(nme.readResolve, PROTECTED, makeNoArgConstructor(ObjectClass.tpe))
-          ts += typer typed (DEF(method) === REF(clazz.sourceModule))
-        }
+        if (hasSerializableAnnotation(clazz) && !hasImplementation(nme.readResolve))
+          ts += readResolveMethod
       }
     } catch {
       case ex: TypeError =>
