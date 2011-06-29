@@ -3724,24 +3724,12 @@ A type's typeSymbol should never be inspected directly.
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (phase.flatClasses) {
-        sym
-      } else if (sym.isModuleClass) {
-        val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
-        // Handle nested objects properly
-        val result0 = if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
-        val result = if (result0 == NoSymbol)
-          // The only possible way we got here is when
-          // object is defined inside the method and unfortunately
-          // we have no way of retrieving that information (and using it)
-          // at this point, so just use the old symbol.
-          // This also means that sym.sourceModule == adaptedSym since
-          // pre == NoPrefix. see #4215
-          sym
-        else result0
-
-        result
-      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
+      if (sym.isModuleClass && !phase.flatClasses) {
+        if (!sym.owner.isPackageClass)
+          sym // Nested lazy object
+        else
+          adaptToNewRun(pre, sym.sourceModule).moduleClass
+      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
@@ -4632,7 +4620,7 @@ A type's typeSymbol should never be inspected directly.
   def specializesSym(tp: Type, sym: Symbol): Boolean =
     tp.typeSymbol == NothingClass ||
     tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
-    (tp.nonPrivateMember(sym.name).alternatives exists
+    (tp.member(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
   /** Does member `sym1' of `tp1' have a stronger type

@@ -156,7 +156,7 @@ abstract class LambdaLift extends InfoTransform {
           }
           changedFreeVars = true
           if (settings.debug.value) log("" + sym + " is free in " + owner);
-          if (sym.isVariable && !(sym hasFlag CAPTURED)) {
+          if ((sym.isVariable || (sym.isValue && sym.hasFlag(LAZY))) && !(sym hasFlag CAPTURED)) {
             sym setFlag CAPTURED
             val symClass = sym.tpe.typeSymbol;
             atPhase(phase.next) {
