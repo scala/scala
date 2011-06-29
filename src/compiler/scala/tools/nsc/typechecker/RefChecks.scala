@@ -819,10 +819,11 @@ abstract class RefChecks extends InfoTransform {
         index = index + 1;
         stat match {
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
-            assert(stat.symbol != NoSymbol, stat);//debug
-            if (stat.symbol.isLocal) {
-              currentLevel.scope.enter(stat.symbol)
-              symIndex(stat.symbol) = index;
+            //assert(stat.symbol != NoSymbol, stat);//debug
+            val sym = stat.symbol.lazyAccessorOrSelf
+            if (sym.isLocal) {
+              currentLevel.scope.enter(sym)
+              symIndex(sym) = index;
             }
           case _ =>
         }
@@ -915,11 +916,75 @@ abstract class RefChecks extends InfoTransform {
 
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       pushLevel()
-      enterSyms(stats)
-      var index = -1
-      val stats1 = stats flatMap { stat => index += 1; transformStat(stat, index) }
-      popLevel()
-      stats1
+      try {
+        enterSyms(stats)
+        var index = -1
+        stats flatMap { stat => index += 1; transformStat(stat, index) }
+      }
+      finally popLevel()
+    }
+
+    /** Eliminate ModuleDefs.
+     *   - A top level object is replaced with their module class.
+     *   - An inner object is transformed into a module var, created on first access.
+     *
+     *  In both cases, this transformation returns the list of replacement trees:
+     *   - Top level: the module class accessor definition
+     *   - Inner: a class definition, declaration of module var, and module var accessor
+     */
+    private def eliminateModuleDefs(tree: Tree): List[Tree] = {
+      val ModuleDef(mods, name, impl) = tree
+      val sym = tree.symbol
+
+      // transformedInfo check is necessary here because the object info may already
+      // have been transformed, and we do not want to have duplicate lazy accessors
+      // (through duplicate nested object -> lazy val transformation.)
+      val transformedInfo = sym.isLazy
+      val classSym        = if (transformedInfo) sym.lazyAccessor else sym.moduleClass
+      val cdef            = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
+
+      def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
+        lazy val createModuleVar = gen.mkModuleVarDef(sym)
+        if (!transformedInfo) createModuleVar
+        else sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
+          // In case we are dealing with local symbol then we already have
+          // to correct error with forward reference
+          case NoSymbol => createModuleVar
+          case vsym     => ValDef(vsym)
+        }
+      }
+      def createStaticModuleAccessor() = atPhase(phase.next) {
+        val method = (
+          sym.owner.newMethod(sym.pos, sym.name.toTermName)
+          setFlag (sym.flags | STABLE) resetFlag MODULE setInfo NullaryMethodType(sym.moduleClass.tpe)
+        )
+        sym.owner.info.decls enter method
+        localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym))
+      }
+      def createInnerModuleAccessor(vdef: Tree) = List(
+        vdef,
+        localTyper.typedPos(tree.pos) {
+          val vsym = vdef.symbol
+          atPhase(phase.next) {
+            val rhs  = gen.newModule(sym, vsym.tpe)
+            // side effecting symbol flags
+            if (!transformedInfo) {
+              sym resetFlag (MODULE | FINAL | CASE)
+              sym setFlag (LAZY | ACCESSOR | SYNTHETIC)
+              sym setInfo NullaryMethodType(sym.tpe)
+              sym setFlag (lateMETHOD | STABLE)
+            }
+            val body = if (sym.owner.isTrait) rhs else gen.mkAssignAndReturn(vsym, rhs)
+            DefDef(sym, body.changeOwner(vsym -> sym))
+          }
+        }
+      )
+      transformTrees(cdef :: {
+        if (sym.isStatic)
+          if (sym.allOverriddenSymbols.isEmpty) Nil
+          else List(createStaticModuleAccessor())
+        else createInnerModuleAccessor(findOrCreateModuleVar)
+      })
     }
 
     /** Implements lazy value accessors:
@@ -928,119 +993,46 @@ abstract class RefChecks extends InfoTransform {
      *    - for all other lazy values z the accessor is a block of this form:
      *      { z = <rhs>; z } where z can be an identifier or a field.
      */
+    private def makeLazyAccessor(tree: Tree, rhs: Tree): List[Tree] = {
+      val vsym        = tree.symbol
+      assert(vsym.isTerm, vsym)
+      val hasUnitType = vsym.tpe.typeSymbol == UnitClass
+      val lazySym     = vsym.lazyAccessor
+      assert(lazySym != NoSymbol, vsym)
+
+      // for traits, this is further transformed in mixins
+      val body = (
+        if (tree.symbol.owner.isTrait || hasUnitType) rhs
+        else gen.mkAssignAndReturn(vsym, rhs)
+      )
+      val lazyDef = atPos(tree.pos)(DefDef(lazySym, body.changeOwner(vsym -> lazySym)))
+      log("Made lazy def: " + lazyDef)
+
+      if (hasUnitType) List(typed(lazyDef))
+      else List(
+        typed(ValDef(vsym)),
+        atPhase(phase.next)(typed(lazyDef))
+      )
+    }
+
     def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
-      case ModuleDef(mods, name, impl) =>
-        val sym = tree.symbol
-        if (sym.isStatic) {
-          val cdef = ClassDef(mods | MODULE, name, List(), impl)
-            .setPos(tree.pos)
-            .setSymbol(sym.moduleClass)
-            .setType(NoType)
-
-          if (!sym.allOverriddenSymbols.isEmpty) {
-            val factory = sym.owner.newMethod(sym.pos, sym.name)
-              .setFlag(sym.flags | STABLE).resetFlag(MODULE)
-              .setInfo(PolyType(List(), sym.moduleClass.tpe))
-            sym.owner.info.decls.enter(factory)
-            val ddef =
-              atPhase(phase.next) {
-                localTyper.typed {
-                  gen.mkModuleAccessDef(factory, sym.tpe)
-                }
-              }
-            transformTrees(List(cdef, ddef))
-          } else {
-            List(transform(cdef))
-          }
-        } else {
-          def lazyNestedObjectTrees(transformedInfo: Boolean) = {
-            val cdef = ClassDef(mods | MODULE, name, List(), impl)
-              .setPos(tree.pos)
-              .setSymbol(if (!transformedInfo) sym.moduleClass else sym.lazyAccessor)
-              .setType(NoType)
-
-            val vdef = localTyper.typedPos(tree.pos){
-              if (!transformedInfo)
-                gen.mkModuleVarDef(sym)
-              else {
-                val vsym = sym.owner.info.decl(nme.moduleVarName(sym.name))
-                assert(vsym != NoSymbol, "Nested object after transformInfo set module variable")
-                ValDef(vsym, EmptyTree)
-              }
-            }
-            val vsym = vdef.symbol
-
-            val ddef = atPhase(phase.next) {
-              localTyper.typed {
-                val rhs = gen.newModule(sym, vsym.tpe)
-                if (!transformedInfo) {
-                  sym.resetFlag(MODULE | FINAL | CASE)
-                  sym.setFlag(LAZY | ACCESSOR | SYNTHETIC)
-
-                  sym.setInfo(PolyType(List(), sym.tpe))
-                  sym setFlag (lateMETHOD | STABLE)
-                }
-
-                val ownerTransformer = new ChangeOwnerTraverser(vsym, sym)
-                val lazyDef = atPos(tree.pos)(
-                  DefDef(sym, ownerTransformer(
-                    if (sym.owner.isTrait) rhs
-                    else Block(List(
-                            Assign(gen.mkAttributedRef(vsym), rhs)),
-                            gen.mkAttributedRef(vsym)))
-                       ))
-                lazyDef
-              }
-            }
-            transformTrees(List(cdef, vdef, ddef))
-          }
-          lazyNestedObjectTrees(sym.hasFlag(LAZY))
-        }
-
+      case ModuleDef(_, _, _) => eliminateModuleDefs(tree)
       case ValDef(_, _, _, _) =>
-        val tree1 = transform(tree); // important to do before forward reference check
-        val ValDef(_, _, _, rhs) = tree1
-        if (tree.symbol.hasFlag(LAZY)) {
-          assert(tree.symbol.isTerm, tree.symbol)
-          val vsym = tree.symbol
-          val hasUnitType = (tree.symbol.tpe.typeSymbol == UnitClass)
-          val lazyDefSym = vsym.lazyAccessor
-          assert(lazyDefSym != NoSymbol, vsym)
-          val ownerTransformer = new ChangeOwnerTraverser(vsym, lazyDefSym)
-          val lazyDef = atPos(tree.pos)(
-              DefDef(lazyDefSym, ownerTransformer(
-                if (tree.symbol.owner.isTrait // for traits, this is further transformed in mixins
-                    || hasUnitType) rhs
-                else Block(List(
-                       Assign(gen.mkAttributedRef(vsym), rhs)),
-                       gen.mkAttributedRef(vsym)))))
-          log("Made lazy def: " + lazyDef)
-          if (hasUnitType)
-            typed(lazyDef) :: Nil
-          else
-            typed(ValDef(vsym, EmptyTree)) :: atPhase(phase.next) { typed(lazyDef) } :: Nil
-        } else {
-          if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
+        val tree1 @ ValDef(_, _, _, rhs) = transform(tree) // important to do before forward reference check
+        if (tree.symbol.isLazy)
+          makeLazyAccessor(tree, rhs)
+        else {
+          val lazySym = tree.symbol.lazyAccessorOrSelf
+          if (lazySym.isLocal && index <= currentLevel.maxindex) {
             if (settings.debug.value)
               Console.println(currentLevel.refsym)
-            unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
+            unit.error(currentLevel.refpos, "forward reference extends over definition of " + lazySym)
           }
           List(tree1)
         }
-
-      case Import(_, _) =>
-        List()
-
-      case _ =>
-        List(transform(tree))
+      case Import(_, _) => Nil
+      case _            => List(transform(tree))
     }
-
-    /******** Begin transform inner function section ********/
-
-    /** The private functions between here and 'transform' are conceptually
-     *  inner functions to that method, but have been moved outside of it to
-     *  ease the burden on the optimizer.
-     */
 
     /* Check whether argument types conform to bounds of type parameters */
     private def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type], pos: Position): Unit =
@@ -1055,27 +1047,24 @@ abstract class RefChecks extends InfoTransform {
             ()
           }
       }
-    private def isIrrefutable(pat: Tree, seltpe: Type): Boolean = {
-      val result = pat match {
-        case Apply(_, args) =>
-          val clazz = pat.tpe.typeSymbol;
-          clazz == seltpe.typeSymbol &&
-          clazz.isClass && (clazz hasFlag CASE) &&
-          (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable) // @PP: corresponds
-        case Typed(pat, tpt) =>
-          seltpe <:< tpt.tpe
-        case Ident(nme.WILDCARD) =>
-          true
-        case Bind(_, pat) =>
-          isIrrefutable(pat, seltpe)
-        case _ =>
-          false
-      }
-      //Console.println("is irefutable? " + pat + ":" + pat.tpe + " against " + seltpe + ": " + result);//DEBUG
-      result
+    private def isIrrefutable(pat: Tree, seltpe: Type): Boolean = pat match {
+      case Apply(_, args) =>
+        val clazz = pat.tpe.typeSymbol
+        clazz == seltpe.typeSymbol &&
+        clazz.isCaseClass &&
+        (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable)
+      case Typed(pat, tpt) =>
+        seltpe <:< tpt.tpe
+      case Ident(tpnme.WILDCARD) =>
+        true
+      case Bind(_, pat) =>
+        isIrrefutable(pat, seltpe)
+      case _ =>
+        false
     }
-    /** If symbol is deprecated and is not contained in a deprecated definition,
-     *  issue a deprecated warning
+
+    /** If symbol is deprecated, and the point of reference is not enclosed
+     *  in either a deprecated member or a scala bridge method, issue a warning.
      */
     private def checkDeprecated(sym: Symbol, pos: Position) {
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(_.isDeprecated)) {
