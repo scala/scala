@@ -302,7 +302,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
 	         !m.symbol.isGetter &&
 	         !m.symbol.isSetter) yield javaName(m.symbol)
 
-      val constructor = beanInfoClass.addNewMethod(JAccessFlags.ACC_PUBLIC, "<init>", JType.VOID, javaTypes(Nil), javaNames(Nil))
+      val constructor = beanInfoClass.addNewMethod(JAccessFlags.ACC_PUBLIC, "<init>", JType.VOID, new Array[JType](0), new Array[String](0))
       val jcode = constructor.getCode().asInstanceOf[JExtendedCode]
       val strKind = new JObjectType(javaName(definitions.StringClass))
       val stringArrayKind = new JArrayType(strKind)
@@ -622,8 +622,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,
-                                    javaTypes(m.params map (_.kind)),
-                                    javaNames(m.params map (_.sym)));
+                                    m.params map (p => javaType(p.kind)) toArray,
+                                    m.params map (p => javaName(p.sym)) toArray);
 
       addRemoteException(jmethod, m.symbol)
 
@@ -824,7 +824,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
       val mirrorMethod = jclass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
         javaName(m),
         javaType(methodInfo.resultType),
-        javaTypes(paramJavaTypes),
+        methodInfo.paramTypes map javaType toArray,
         paramNames);
       val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
       mirrorCode.emitGETSTATIC(moduleName,
