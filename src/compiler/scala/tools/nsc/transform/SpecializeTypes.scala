@@ -223,7 +223,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  preserve that here.
    */
   private def abbrvTag281(t: Type) = definitions.abbrvTag(t.typeSymbol) match {
-    case 'L'  => 'J'
+    case 'J'  => 'L'
     case ch   => ch
   }
 
