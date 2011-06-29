@@ -778,7 +778,6 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
         }
         val current = phase
         try {
-          assertCorrectThread()
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
         } finally {
@@ -829,13 +828,11 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       val curPid = phaseId(curPeriod)
 
       if (validTo != NoPeriod) {
-
         // skip any infos that concern later phases
         while (curPid < phaseId(infos.validFrom) && infos.prev != null)
           infos = infos.prev
 
         if (validTo < curPeriod) {
-          assertCorrectThread()
           // adapt any infos that come from previous runs
           val current = phase
           try {
