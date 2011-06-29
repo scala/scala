@@ -51,24 +51,11 @@ abstract class RefChecks extends InfoTransform {
     new RefCheckTransformer(unit)
   override def changesBaseClasses = false
 
-  def transformInfo(sym: Symbol, tp: Type): Type = {
-    def isNestedModule = sym.isModule && !sym.isRootPackage && !sym.owner.isPackageClass
-
+  def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isModule && !sym.isStatic) {
-
       sym setFlag (lateMETHOD | STABLE)
-      if (isNestedModule) {
-        val moduleVar = sym.owner.info.decl(nme.moduleVarName(sym.name))
-        if (moduleVar == NoSymbol) {
-          val tree = gen.mkModuleVarDef(sym)
-          tree.symbol.setInfo(tp)
-          sym.resetFlag(MODULE)
-          sym.setFlag(LAZY | ACCESSOR)
-        }
-      }
-      PolyType(List(), tp)
+      NullaryMethodType(tp)
     } else tp
-  }
 
   val toJavaRepeatedParam = new TypeMap {
     def apply(tp: Type) = tp match {
@@ -936,17 +923,12 @@ abstract class RefChecks extends InfoTransform {
       val ModuleDef(mods, name, impl) = tree
       val sym = tree.symbol
 
-      // transformedInfo check is necessary here because the object info may already
-      // have been transformed, and we do not want to have duplicate lazy accessors
-      // (through duplicate nested object -> lazy val transformation.)
-      val transformedInfo = sym.isLazy
-      val classSym        = if (transformedInfo) sym.lazyAccessor else sym.moduleClass
+      val classSym        = sym.moduleClass
       val cdef            = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
 
       def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
         lazy val createModuleVar = gen.mkModuleVarDef(sym)
-        if (!transformedInfo) createModuleVar
-        else sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
+        sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
           // In case we are dealing with local symbol then we already have
           // to correct error with forward reference
           case NoSymbol => createModuleVar
@@ -967,13 +949,6 @@ abstract class RefChecks extends InfoTransform {
           val vsym = vdef.symbol
           atPhase(phase.next) {
             val rhs  = gen.newModule(sym, vsym.tpe)
-            // side effecting symbol flags
-            if (!transformedInfo) {
-              sym resetFlag (MODULE | FINAL | CASE)
-              sym setFlag (LAZY | ACCESSOR | SYNTHETIC)
-              sym setInfo NullaryMethodType(sym.tpe)
-              sym setFlag (lateMETHOD | STABLE)
-            }
             val body = if (sym.owner.isTrait) rhs else gen.mkAssignAndReturn(vsym, rhs)
             DefDef(sym, body.changeOwner(vsym -> sym))
           }

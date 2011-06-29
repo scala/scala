@@ -445,6 +445,13 @@ abstract class LambdaLift extends InfoTransform {
               if (elemTree.tpe.typeSymbol != tp.typeSymbol) gen.mkAttributedCast(elemTree, tp) else elemTree
             }
           else tree1
+        case Block(stats, expr0) =>
+          val (lzyVals, rest) = stats.partition {
+                      case stat@ValDef(_, _, _, _) if stat.symbol.isLazy => true
+                      case stat@ValDef(_, _, _, _) if stat.symbol.hasFlag(MODULEVAR) => true
+                      case _                                             => false
+                  }
+          treeCopy.Block(tree, lzyVals:::rest, expr0)
         case _ =>
           tree
       }

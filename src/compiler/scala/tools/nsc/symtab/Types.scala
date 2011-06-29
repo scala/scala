@@ -3727,9 +3727,7 @@ A type's typeSymbol should never be inspected directly.
       if (phase.refChecked) {
         sym
       } else if (sym.isModuleClass) {
-        val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
-        // Handle nested objects properly
-        if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
+        adaptToNewRun(pre, sym.sourceModule).moduleClass
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
@@ -4621,7 +4619,7 @@ A type's typeSymbol should never be inspected directly.
   def specializesSym(tp: Type, sym: Symbol): Boolean =
     tp.typeSymbol == NothingClass ||
     tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
-    (tp.member(sym.name).alternatives exists
+    (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
   /** Does member `sym1' of `tp1' have a stronger type
