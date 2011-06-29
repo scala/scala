@@ -1063,12 +1063,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                 if (sym.isSetter) {
                   val isOverriddenSetter =
                     nme.isTraitSetterName(sym.name) && {
-                      sym.allOverriddenSymbols match {
-                        case other :: _ =>
-                          isOverriddenAccessor(other.getter(other.owner), clazz.info.baseClasses)
-                        case _ =>
-                          false
-                      }
+                      val other = sym.nextOverriddenSymbol
+                      (other != NoSymbol) && isOverriddenAccessor(other.getter(other.owner), clazz.info.baseClasses)
                     }
                   if (isOverriddenSetter) UNIT
                   else accessedRef match {

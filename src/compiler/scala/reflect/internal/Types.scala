@@ -1410,8 +1410,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def isNotNull: Boolean = parents exists (_.isNotNull)
 
     override def isStructuralRefinement: Boolean =
-      typeSymbol.isAnonOrRefinementClass &&
-        (decls exists { entry => !entry.isConstructor && entry.allOverriddenSymbols.isEmpty })
+      typeSymbol.isAnonOrRefinementClass && decls.exists(_.isVisibleInRefinement)
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
@@ -2019,11 +2018,8 @@ A type's typeSymbol should never be inspected directly.
       else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
         thisInfo.parents.mkString(" with ") + {
           if (sym.isStructuralRefinement)
-            ((decls filter { entry =>
-              !entry.isConstructor && entry.allOverriddenSymbols.isEmpty && !entry.isPrivate
-            }) map { entry => entry.defString }).mkString("{", "; ", "}")
-          else
-            ""
+            decls filter (_.isVisibleInRefinement) map (_.defString) mkString("{", "; ", "}")
+          else ""
         }
       else if (sym.isRefinementClass && sym.isInitialized)
         thisInfo.toString

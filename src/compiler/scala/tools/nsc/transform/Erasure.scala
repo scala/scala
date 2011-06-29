@@ -1102,7 +1102,7 @@ abstract class Erasure extends AddInterfaces
           }
           else {
             def doDynamic(fn: Tree, qual: Tree): Tree = {
-              if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty)
+              if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol)
                 ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
               else tree
             }
@@ -1118,9 +1118,9 @@ abstract class Erasure extends AddInterfaces
           val owner = tree.symbol.owner
           // println("preXform: "+ (tree, tree.symbol, tree.symbol.owner, tree.symbol.owner.isRefinementClass))
           if (owner.isRefinementClass) {
-            val overridden = tree.symbol.allOverriddenSymbols
-            assert(!overridden.isEmpty, tree.symbol)
-            tree.symbol = overridden.head
+            val overridden = tree.symbol.nextOverriddenSymbol
+            assert(overridden != NoSymbol, tree.symbol)
+            tree.symbol = overridden
           }
           def isAccessible(sym: Symbol) = localTyper.context.isAccessible(sym, sym.owner.thisType)
           if (!isAccessible(owner) && qual.tpe != null) {

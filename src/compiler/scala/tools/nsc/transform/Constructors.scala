@@ -215,7 +215,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
       def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
         sym.isParamAccessor && sym.isPrivateLocal ||
-        sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty &&
+        sym.isOuterAccessor && sym.owner.isFinal && !sym.isOverridingSymbol &&
         !(clazz isSubClass DelayedInitClass)
       )
 

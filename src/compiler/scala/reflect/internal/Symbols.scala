@@ -293,6 +293,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     override final def isTrait: Boolean = isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
     final def isAbstractClass = isClass && hasFlag(ABSTRACT)
+    final def isConcreteClass = isClass && !hasFlag(ABSTRACT | TRAIT)
     final def isBridge = hasFlag(BRIDGE)
     final def isContravariant = isType && hasFlag(CONTRAVARIANT)
     final def isCovariant = isType && hasFlag(COVARIANT)
@@ -306,6 +307,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isOverloaded = hasFlag(OVERLOADED)
     final def isRefinementClass = isClass && name == tpnme.REFINE_CLASS_NAME
+    final def isRefinementMember = owner.isStructuralRefinement && isVisibleInRefinement && !hasAccessBoundary
+    final def isVisibleInRefinement = !(isConstructor || isOverridingSymbol || isPrivate)
     final def isSourceMethod = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
     final def isTypeParameter = isType && isParameter && !isSkolem
 
@@ -395,6 +398,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       nme.isReplWrapperName(name) // not isInterpreterWrapper due to nesting
     )
 
+    def isFBounded = info.baseTypeSeq exists (_ contains this)
+
     /** Is symbol a monomorphic type?
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters in later phases.
@@ -411,7 +416,10 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       }
 
     def isStrictFP          = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
-    def isSerializable      = info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass) || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
+    def isSerializable      = (
+         info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass)
+      || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
+    )
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
@@ -445,12 +453,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) &&
       !(tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
 
-    def isVirtualClass =
-      hasFlag(DEFERRED) && isClass
-
-    def isVirtualTrait =
-      hasFlag(DEFERRED) && isTrait
-
+    // def isVirtualClass = hasFlag(DEFERRED) && isClass
+    // def isVirtualTrait = hasFlag(DEFERRED) && isTrait
     def isLiftedMethod = isMethod && hasFlag(LIFTED)
     def isCaseClass    = isClass && isCase
 
@@ -531,7 +535,6 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      */
     final def isStructuralRefinement: Boolean =
       (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
-
 
     /** Is this symbol a member of class `clazz`? */
     def isMemberOf(clazz: Symbol) =
@@ -1131,25 +1134,24 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 // ------ overloaded alternatives ------------------------------------------------------
 
     def alternatives: List[Symbol] =
-      if (hasFlag(OVERLOADED)) info.asInstanceOf[OverloadedType].alternatives
+      if (isOverloaded) info.asInstanceOf[OverloadedType].alternatives
       else List(this)
 
     def filter(cond: Symbol => Boolean): Symbol =
-      if (hasFlag(OVERLOADED)) {
-        //assert(info.isInstanceOf[OverloadedType], "" + this + ":" + info);//DEBUG
+      if (isOverloaded) {
         val alts = alternatives
         val alts1 = alts filter cond
         if (alts1 eq alts) this
         else if (alts1.isEmpty) NoSymbol
         else if (alts1.tail.isEmpty) alts1.head
         else owner.newOverloaded(info.prefix, alts1)
-      } else if (this == NoSymbol || cond(this)) {
-        this
-      } else NoSymbol
+      }
+      else if (cond(this)) this
+      else NoSymbol
 
     def suchThat(cond: Symbol => Boolean): Symbol = {
       val result = filter(cond)
-      assert(!(result hasFlag OVERLOADED), result.alternatives)
+      assert(!result.isOverloaded, result.alternatives)
       result
     }
 
@@ -1525,6 +1527,20 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def allOverriddenSymbols: List[Symbol] =
       if (!owner.isClass) Nil
       else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
+
+    /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
+    def isOverridingSymbol = owner.isClass && (
+      owner.ancestors exists (cls => matchingSymbol(cls, owner.thisType) != NoSymbol)
+    )
+    /** Equivalent to allOverriddenSymbols.head (or NoSymbol if no overrides) but more efficient. */
+    def nextOverriddenSymbol: Symbol = {
+      if (owner.isClass) owner.ancestors foreach { base =>
+        val sym = overriddenSymbol(base)
+        if (sym != NoSymbol)
+          return sym
+      }
+      NoSymbol
+    }
 
     /** Returns all symbols overridden by this symbol, plus all matching symbols
      *  defined in parents of the selftype.
@@ -2250,6 +2266,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
       unlock()
       validTo = currentPeriod
     }
+    override def filter(cond: Symbol => Boolean) = this
     override def defString: String = toString
     override def locationString: String = ""
     override def enclClass: Symbol = this

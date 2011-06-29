@@ -217,10 +217,7 @@ abstract class RefChecks extends InfoTransform {
       val self = clazz.thisType
 
       def isAbstractTypeWithoutFBound(sym: Symbol) = // (part of DEVIRTUALIZE)
-        sym.isAbstractType && !isFBounded(sym)
-
-      def isFBounded(tsym: Symbol) =
-        tsym.info.baseTypeSeq exists (_ contains tsym)
+        sym.isAbstractType && !sym.isFBounded
 
       def infoString(sym: Symbol) = infoString0(sym, sym.owner != clazz)
       def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
@@ -443,7 +440,7 @@ abstract class RefChecks extends InfoTransform {
       printMixinOverrideErrors()
 
       // Verifying a concrete class has nothing unimplemented.
-      if (clazz.isClass && !clazz.isTrait && !(clazz hasFlag ABSTRACT) && !typesOnly) {
+      if (clazz.isConcreteClass && !typesOnly) {
         val abstractErrors = new ListBuffer[String]
         def abstractErrorMessage =
           // a little formatting polish
@@ -470,11 +467,14 @@ abstract class RefChecks extends InfoTransform {
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
 
-        def ignoreDeferred(member: Symbol) =
-          isAbstractTypeWithoutFBound(member) ||
-          (member.isJavaDefined &&
-           (currentRun.erasurePhase == NoPhase || // the test requires atPhase(erasurePhase.next) so shouldn't be done if the compiler has no erasure phase available
-            javaErasedOverridingSym(member) != NoSymbol))
+        def ignoreDeferred(member: Symbol) = (
+          (member.isAbstractType && !member.isFBounded) || (
+            member.isJavaDefined &&
+            // the test requires atPhase(erasurePhase.next) so shouldn't be
+            // done if the compiler has no erasure phase available
+            (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
+          )
+        )
 
         // 2. Check that only abstract classes have deferred members
         def checkNoAbstractMembers() = {
@@ -566,7 +566,7 @@ abstract class RefChecks extends InfoTransform {
         //
         // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
-          for (decl <- bc.info.decls.iterator) {
+          for (decl <- bc.info.decls) {
             if (decl.isDeferred && !ignoreDeferred(decl)) {
               val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
@@ -746,8 +746,7 @@ abstract class RefChecks extends InfoTransform {
               // However, if `sym` does override a type in a base class
               // we have to assume NoVariance, as there might then be
               // references to the type parameter that are not variance checked.
-              state = if (sym.allOverriddenSymbols.isEmpty) AnyVariance
-                      else NoVariance
+              state = if (sym.isOverridingSymbol) NoVariance else AnyVariance
             }
             sym = sym.owner
           }
@@ -1070,10 +1069,12 @@ abstract class RefChecks extends InfoTransform {
         }
       )
       transformTrees(cdef :: {
-        if (sym.isStatic)
-          if (sym.allOverriddenSymbols.isEmpty) Nil
-          else List(createStaticModuleAccessor())
-        else createInnerModuleAccessor(findOrCreateModuleVar)
+        if (!sym.isStatic)
+          createInnerModuleAccessor(findOrCreateModuleVar)
+        else if (sym.isOverridingSymbol)
+          List(createStaticModuleAccessor())
+        else
+          Nil
       })
     }
 
