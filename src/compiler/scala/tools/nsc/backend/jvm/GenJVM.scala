@@ -489,9 +489,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
            *  should certainly write independent signature validation.
            */
           if (SigParser.isParserAvailable && isValidSignature(sym, sig)) {
-            val normalizedTpe = erasure.prepareSigMap(memberTpe)
+            val normalizedTpe = atPhase(currentRun.erasurePhase)(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
-            if (erasure.erasure(normalizedTpe) =:= bytecodeTpe) {
+            if (sym.isType || (erasure.erasure(normalizedTpe) =:= bytecodeTpe)) {
               val index = jmember.getConstantPool.addUtf8(sig).toShort
               if (opt.verboseDebug)
                 atPhase(currentRun.erasurePhase) {
@@ -500,12 +500,17 @@ abstract class GenJVM extends SubComponent with GenJVMUtil {
               val buf = ByteBuffer.allocate(2)
               buf putShort index
               addAttribute(jmember, tpnme.SignatureATTR, buf)
-            } else clasz.cunit.warning(sym.pos,
+            } else {
+              if (sym.hasFlag(Flags.MIXEDIN))
+                ()// println("suppressing signature for mixedin "+sym)
+              else
+                clasz.cunit.warning(sym.pos,
               """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
                  |signature: %s
                  |erasure type: %s
                  |if this is reproducible, please report bug at http://lampsvn.epfl.ch/trac/scala
               """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, bytecodeTpe))
+            }
           } else clasz.cunit.warning(sym.pos,
             """|compiler bug: created invalid generic signature for %s in %s
                |signature: %s

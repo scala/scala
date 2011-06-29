@@ -262,7 +262,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           else squashBoxed(tp1)
         }
         if (sym == ArrayClass && args.nonEmpty)
-          if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
+          if (unboundedGenericArrayLevel(tp1) == 1) ObjectClass.tpe
           else mapOver(tp1)
         else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
           ObjectClass.tpe
@@ -351,8 +351,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             jsig(RuntimeNothingClass.tpe)
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
-          else if (isValueClass(sym))
-            abbrvTag(sym).toString
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
             dotCleanup(
