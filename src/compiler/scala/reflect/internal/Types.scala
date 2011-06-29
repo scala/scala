@@ -107,6 +107,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
 
     /** Undo all changes to constraints to type variables upto `limit`. */
     private def undoTo(limit: UndoLog) {
+      assertCorrectThread()
       while ((log ne limit) && log.nonEmpty) {
         val (tv, constr) = log.head
         tv.constr = constr

@@ -31,6 +31,10 @@ abstract class SymbolTable extends /*reflect.generic.Universe
   def abort(msg: String): Nothing = throw new Error(msg)
   def abort(): Nothing = throw new Error()
 
+  /** Check that the executing thread is the compiler thread. No-op here,
+   *  overridden in interactive.Global. */
+  def assertCorrectThread() {}
+
   /** Are we compiling for Java SE? */
   // def forJVM: Boolean
 
