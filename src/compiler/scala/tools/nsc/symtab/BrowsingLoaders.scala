@@ -92,7 +92,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
     }
 
 //    System.out.println("Browsing "+src)
-    val source = new BatchSourceFile(src)
+    val source = getSourceFile(src) // this uses the current encoding
     val body = new OutlineParser(source).parse()
 //    System.out.println(body)
     val browser = new BrowserTraverser
@@ -111,7 +111,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
         browseTopLevel(root, src)
     } catch {
       case ex: syntaxAnalyzer.MalformedInput =>
-        println("caught malformed input exception at offset "+ex.offset+": "+ex.msg)
+        println("[%s] caught malformed input exception at offset %d: %s".format(src, ex.offset, ex.msg))
         super.enterToplevelsFromSource(root, name, src)
     }
   }
