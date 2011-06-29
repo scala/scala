@@ -218,6 +218,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     specializedName(sym.name, tvars1 map env, tvars2 map env)
   }
 
+  /** Great moments in backward compatibility: the specialized names in 2.8.1
+   *  were created based on data which mapped "Long" to "L" instead of "J", so we
+   *  preserve that here.
+   */
+  private def abbrvTag281(t: Type) = definitions.abbrvTag(t.typeSymbol) match {
+    case 'L'  => 'J'
+    case ch   => ch
+  }
+
   /** Specialize name for the two list of types. The first one denotes
    *  specialization on method type parameters, the second on outer environment.
    */
@@ -231,8 +240,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     else {
       val (base, cs, ms) = nme.splitSpecializedName(name)
       newTermName(base.toString + "$"
-                  + "m" + ms + types1.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "")
-                  + "c" + cs + types2.map(t => definitions.abbrvTag(t.typeSymbol)).mkString("", "", "$sp"))
+                  + "m" + ms + types1.map(abbrvTag281).mkString("", "", "")
+                  + "c" + cs + types2.map(abbrvTag281).mkString("", "", "$sp"))
     }
   }
 
