@@ -218,10 +218,12 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
   // * higher-order type parameters (aka !sym.owner.isTypeParameterOrSkolem)
   // * parameters of methods
   // * type members not visible in the enclosing template
-  private def isTypeParameterInSig(sym: Symbol, nestedIn: Symbol) = (
-    !sym.owner.isTypeParameterOrSkolem &&
-    sym.isTypeParameterOrSkolem &&
-    (sym isNestedIn nestedIn)
+  private def isTypeParameterInSig(sym: Symbol, initialSymbol: Symbol) = (
+    !sym.isHigherOrderTypeParameter &&
+    sym.isTypeParameterOrSkolem && (
+      (initialSymbol.enclClassChain.exists(sym isNestedIn _)) ||
+      (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
+    )
   )
   // Ensure every '.' in the generated signature immediately follows
   // a close angle bracket '>'.  Any which do not are replaced with '$'.
@@ -374,7 +376,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                 )
               )
           }
-          else jsig(erasure(tp), existentiallyBound, toplevel, primitiveOK)
+          else jsig(erasure(tp))
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
           def boundSig(bounds: List[Type]) = {
@@ -398,10 +400,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         case ClassInfoType(parents, _, _) =>
           (parents map (boxedSig(_))).mkString
         case AnnotatedType(_, atp, _) =>
-          jsig(atp, existentiallyBound, toplevel, primitiveOK)
+          jsig(atp)
         case BoundedWildcardType(bounds) =>
           println("something's wrong: "+sym0+":"+sym0.tpe+" has a bounded wildcard type")
-          jsig(bounds.hi, existentiallyBound, toplevel, primitiveOK)
+          jsig(bounds.hi)
         case _ =>
           val etp = erasure(tp)
           if (etp eq tp) throw new UnknownSig
