@@ -3,3 +3,10 @@ package q {
     override protected def f() { }
   }
 }
+
+package p {
+  object T {
+    val a = new A()
+    a.f()
+  }
+}
