@@ -1220,16 +1220,21 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Is this symbol defined in the same scope and compilation unit as `that' symbol?
      */
     def isCoDefinedWith(that: Symbol) =
-      (this.rawInfo ne NoType) &&
-      (this.owner == that.owner) && {
-        !this.owner.isPackageClass ||
-        (this.sourceFile eq null) ||
-        (that.sourceFile eq null) ||
-        (this.sourceFile == that.sourceFile) || {
-          // recognize companion object in separate file and fail, else compilation
-          // appears to succeed but highly opaque errors come later: see bug #1286
-          if (this.sourceFile.path != that.sourceFile.path)
+      (this.rawInfo ne NoType) && {
+        val res =
+          !this.owner.isPackageClass ||
+          (this.sourceFile eq null) ||
+          (that.sourceFile eq null) ||
+          (this.sourceFile eq that.sourceFile) ||
+          (this.sourceFile == that.sourceFile)
+
+        // recognize companion object in separate file and fail, else compilation
+        // appears to succeed but highly opaque errors come later: see bug #1286
+        if (res == false) {
+          val (f1, f2) = (this.sourceFile, that.sourceFile)
+          if (f1 != null && f2 != null && f1.path != f2.path)
             throw InvalidCompanions(this, that)
+        }
 
           false
         }
@@ -2103,9 +2108,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   }
 
   case class InvalidCompanions(sym1: Symbol, sym2: Symbol)
-  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file") {
-      override def toString = getMessage
-  }
+  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file")
 
   /** A class for type histories */
   private sealed case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {

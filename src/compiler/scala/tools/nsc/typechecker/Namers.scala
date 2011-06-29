@@ -1382,7 +1382,7 @@ trait Namers { self: Analyzer =>
    * Finds the companion module of a class symbol. Calling .companionModule
    * does not work for classes defined inside methods.
    */
-  def companionModuleOf(clazz: Symbol, context: Context): Symbol = {
+  def companionModuleOf(clazz: Symbol, context: Context) = {
     try {
       var res = clazz.companionModule
       if (res == NoSymbol)
@@ -1396,7 +1396,7 @@ trait Namers { self: Analyzer =>
     }
   }
 
-  def companionClassOf(module: Symbol, context: Context): Symbol = {
+  def companionClassOf(module: Symbol, context: Context) = {
     try {
       var res = module.companionClass
       if (res == NoSymbol)
