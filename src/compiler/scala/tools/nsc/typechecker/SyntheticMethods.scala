@@ -238,7 +238,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       // only nested objects inside objects should get readResolve automatically
       // otherwise after de-serialization we get null references for lazy accessors (nested object -> lazy val + class def)
       // since the bitmap gets serialized but the moduleVar not
-      clazz.isSerializable &&
+      (clazz.hasAnnotation(SerializableAttr)) &&
       ((!clazz.owner.isPackageClass && clazz.owner.isModuleClass) || clazz.owner.isPackageClass)
     )
 
@@ -303,6 +303,10 @@ trait SyntheticMethods extends ast.TreeDSL {
           val comp = companionClassOf(clazz, context)
           if (comp.hasFlag(Flags.CASE) || hasSerializableAnnotation(comp))
             clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
+        }
+        def hasReadResolve = {
+          val sym = clazz.info member nme.readResolve // any member, including private
+          sym.isTerm && !sym.isDeferred
         }
 
         /** If you serialize a singleton and then deserialize it twice,

@@ -236,8 +236,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       case ch                 => last = ch ; ch
     }
   }
-  // for debugging signatures: traces logic given system property
-  private val traceSig = util.Tracer(sys.props contains "scalac.sigs.trace")
 
   /** This object is only used for sanity testing when -check:genjvm is set.
    *  In that case we make sure that the erasure of the `normalized' type
@@ -327,7 +325,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           jsig(tpe, tparams, toplevel, primitiveOK)
         case TypeRef(pre, sym, args) =>
           def argSig(tp: Type) =
-            if (tparams contains tp.typeSymbol) {
+            if (existentiallyBound contains tp.typeSymbol) {
               val bounds = tp.typeSymbol.info.bounds
               if (!(AnyRefClass.tpe <:< bounds.hi)) "+" + boxedSig(bounds.hi)
               else if (!(bounds.lo <:< NullClass.tpe)) "-" + boxedSig(bounds.lo)
@@ -360,7 +358,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           }
           else if (sym.isClass) {
             val preRebound = pre.baseType(sym.owner) // #2585
-            traceSig.seq("sym.isClass", Seq(sym.ownerChain, preRebound, sym0.enclClassChain)) {
               dotCleanup(
                 (
                   if (needsJavaSig(preRebound)) {
@@ -369,15 +366,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                     else classSig
                   }
                   else classSig
-                }
-                else classSig
-              ) + (
-                if (args.isEmpty) "" else
-                "<"+(args map argSig).mkString+">"
-              ) + (
-                ";"
+                ) + (
+                  if (args.isEmpty) "" else
+                  "<"+(args map argSig).mkString+">"
+                ) + (
+                  ";"
+                )
               )
-            )
           }
           else jsig(erasure(tp), existentiallyBound, toplevel, primitiveOK)
         case PolyType(tparams, restpe) =>
@@ -413,13 +408,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           else jsig(etp)
       }
     }
-    traceSig("javaSig", sym0, info) {
-      if (needsJavaSig(info)) {
-        try Some(jsig(info, toplevel = true))
-        catch { case ex: UnknownSig => None }
-      }
-      else None
+    if (needsJavaSig(info)) {
+      try Some(jsig(info, toplevel = true))
+      catch { case ex: UnknownSig => None }
     }
+    else None
   }
 
   class UnknownSig extends Exception

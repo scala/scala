@@ -54,7 +54,7 @@ abstract class RefChecks extends InfoTransform {
   def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isModule && !sym.isStatic) {
       sym setFlag (lateMETHOD | STABLE)
-      NullaryMethodType(tp)
+      PolyType(Nil, tp)
     } else tp
 
   val toJavaRepeatedParam = new TypeMap {
@@ -938,10 +938,10 @@ abstract class RefChecks extends InfoTransform {
       def createStaticModuleAccessor() = atPhase(phase.next) {
         val method = (
           sym.owner.newMethod(sym.pos, sym.name.toTermName)
-          setFlag (sym.flags | STABLE) resetFlag MODULE setInfo NullaryMethodType(sym.moduleClass.tpe)
+          setFlag (sym.flags | STABLE) resetFlag MODULE setInfo PolyType(Nil, sym.moduleClass.tpe)
         )
         sym.owner.info.decls enter method
-        localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym))
+        localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym.tpe))
       }
       def createInnerModuleAccessor(vdef: Tree) = List(
         vdef,
@@ -1026,11 +1026,11 @@ abstract class RefChecks extends InfoTransform {
       case Apply(_, args) =>
         val clazz = pat.tpe.typeSymbol
         clazz == seltpe.typeSymbol &&
-        clazz.isCaseClass &&
+        (clazz.isClass && clazz.isCase) &&
         (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable)
       case Typed(pat, tpt) =>
         seltpe <:< tpt.tpe
-      case Ident(tpnme.WILDCARD) =>
+      case Ident(nme.WILDCARD) =>
         true
       case Bind(_, pat) =>
         isIrrefutable(pat, seltpe)

@@ -766,7 +766,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               val getter = sym.getter(clazz)
               if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
                 treeCopy.DefDef(stat, mods, name, tp, vp, tpt,
-                        Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter))), UNIT))
+                        Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter)))), UNIT))
               else
                 stat
           case DefDef(mods, name, tp, vp, tpt, rhs)

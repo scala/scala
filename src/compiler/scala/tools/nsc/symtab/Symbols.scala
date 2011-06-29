@@ -1238,9 +1238,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
           if (f1 != null && f2 != null && f1.path != f2.path)
             throw InvalidCompanions(this, that)
         }
-
-          false
-        }
+        res
       }
 
     /** @PP: Added diagram because every time I come through here I end up
