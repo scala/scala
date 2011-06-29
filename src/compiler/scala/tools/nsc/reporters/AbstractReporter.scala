@@ -31,7 +31,7 @@ abstract class AbstractReporter extends Reporter {
 
   protected def info0(pos: Position, msg: String, _severity: Severity, force: Boolean) {
     val severity =
-      if (settings.Xwarnfatal.value && _severity == WARNING) ERROR
+      if (settings.fatalWarnings.value && _severity == WARNING) ERROR
       else _severity
 
     if (severity == INFO) {

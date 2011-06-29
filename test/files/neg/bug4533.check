@@ -1,4 +1,0 @@
-bug4533.scala:6: error: wrong number of type arguments for scala.collection.GenSetLike, should be 2
-  def statusByAlarms(alarms: GenSetLike[FooAlarm]) = println("hello")
-                             ^
-one error found

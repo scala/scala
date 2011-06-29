@@ -1,0 +1,13 @@
+abstract-inaccessible.scala:5: error: method implementMe in trait YourTrait references private[foo] trait Bippy.
+Classes which cannot access Bippy may be unable to provide a concrete implementation of implementMe.
+    def implementMe(f: Int => (String, Bippy)): Unit
+        ^
+abstract-inaccessible.scala:6: error: method overrideMe in trait YourTrait references private[foo] trait Bippy.
+Classes which cannot access Bippy may be unable to override overrideMe.
+    def overrideMe[T <: Bippy](x: T): T = x
+        ^
+abstract-inaccessible.scala:7: error: method overrideMeAlso in trait YourTrait references private[foo] trait Bippy.
+Classes which cannot access Bippy may be unable to override overrideMeAlso.
+    def overrideMeAlso(x: Map[Int, Set[Bippy]]) = 5
+        ^
+three errors found

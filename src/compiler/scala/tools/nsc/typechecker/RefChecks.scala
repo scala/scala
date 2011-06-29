@@ -75,6 +75,11 @@ abstract class RefChecks extends InfoTransform {
     }
   }
 
+  def accessFlagsToString(sym: Symbol) = flagsToString(
+    sym getFlag (PRIVATE | PROTECTED),
+    if (sym.hasAccessBoundary) "" + sym.privateWithin.name else ""
+  )
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
@@ -272,11 +277,6 @@ abstract class RefChecks extends InfoTransform {
           }
         }
 
-        def accessFlagsToString(sym: Symbol) = flagsToString(
-          sym getFlag (PRIVATE | PROTECTED),
-          if (sym.hasAccessBoundary) "" + sym.privateWithin.name else ""
-        )
-
         def overrideAccessError() {
           val otherAccess = accessFlagsToString(other)
           overrideError("has weaker access privileges; it should be "+ (if (otherAccess == "") "public" else "at least "+otherAccess))
@@ -356,6 +356,11 @@ abstract class RefChecks extends InfoTransform {
             overrideError("must be declared lazy to override a concrete lazy value")
           } else {
             checkOverrideTypes()
+            if (settings.warnNullaryOverride.value) {
+              if (other.paramss.isEmpty && !member.paramss.isEmpty) {
+                unit.warning(member.pos, "non-nullary method overrides nullary method")
+              }
+            }
           }
         }
 
@@ -502,6 +507,7 @@ abstract class RefChecks extends InfoTransform {
               )
             }
             else if (underlying.isMethod) {
+
               // If there is a concrete method whose name matches the unimplemented
               // abstract method, and a cursory examination of the difference reveals
               // something obvious to us, let's make it more obvious to them.
@@ -1173,6 +1179,60 @@ abstract class RefChecks extends InfoTransform {
         unit.warning(pos, sym.fullLocationString + " has changed semantics:\n" + msg)
     }
 
+    private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
+         (otherSym != NoSymbol)
+      && !otherSym.isTypeParameterOrSkolem
+      && !otherSym.isExistentiallyBound
+      && (otherSym isLessAccessibleThan memberSym)
+      && (otherSym isLessAccessibleThan memberSym.enclClass)
+    )
+    private def lessAccessibleSymsInType(other: Type, memberSym: Symbol): List[Symbol] = {
+      val extras = other match {
+        case TypeRef(pre, _, args) =>
+          // checking the prefix here gives us spurious errors on e.g. a private[process]
+          // object which contains a type alias, which normalizes to a visible type.
+          args filterNot (_ eq NoPrefix) flatMap (tp => lessAccessibleSymsInType(tp, memberSym))
+        case _ =>
+          Nil
+      }
+      if (lessAccessible(other.typeSymbol, memberSym)) other.typeSymbol :: extras
+      else extras
+    }
+    private def warnLessAccessible(otherSym: Symbol, memberSym: Symbol) {
+      val comparison = accessFlagsToString(memberSym) match {
+        case ""   => ""
+        case acc  => " is " + acc + " but"
+      }
+      val cannot =
+        if (memberSym.isDeferred) "may be unable to provide a concrete implementation of"
+        else "may be unable to override"
+
+      unit.warning(memberSym.pos,
+        "%s%s references %s %s.".format(
+          memberSym.fullLocationString, comparison,
+          accessFlagsToString(otherSym), otherSym
+        ) + "\nClasses which cannot access %s %s %s.".format(
+          otherSym.decodedName, cannot, memberSym.decodedName)
+      )
+    }
+    /** Warn about situations where a method signature will include a type which
+     *  has more restrictive access than the method itself.
+     */
+    private def checkAccessibilityOfReferencedTypes(tree: Tree) {
+      val member = tree.symbol
+
+      // types of the value parameters
+      member.paramss.flatten foreach { p =>
+        val normalized = p.tpe.normalize
+        if ((normalized ne p.tpe) && lessAccessibleSymsInType(normalized, member).isEmpty) ()
+        else lessAccessibleSymsInType(p.tpe, member) foreach (sym => warnLessAccessible(sym, member))
+      }
+      // upper bounds of type parameters
+      member.typeParams.map(_.info.bounds.hi.widen) foreach { tp =>
+        lessAccessibleSymsInType(tp, member) foreach (sym => warnLessAccessible(sym, member))
+      }
+    }
+
     /** Check that a deprecated val or def does not override a
       * concrete, non-deprecated method.  If it does, then
       * deprecation is meaningless.
@@ -1197,6 +1257,7 @@ abstract class RefChecks extends InfoTransform {
       case _ =>
         false
     }
+
     private def checkTypeRef(tp: Type, pos: Position) = tp match {
       case TypeRef(pre, sym, args) =>
         checkDeprecated(sym, pos)
@@ -1335,6 +1396,19 @@ abstract class RefChecks extends InfoTransform {
       }
     }
 
+    // Warning about nullary methods returning Unit.
+    private def checkNullaryMethodReturnType(sym: Symbol) = sym.tpe match {
+      case NullaryMethodType(restpe) if restpe.typeSymbol == UnitClass =>
+        // this may be the implementation of e.g. a generic method being parameterized
+        // on Unit, in which case we had better let it slide.
+        if (sym.isGetter || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))) ()
+        else unit.warning(sym.pos,
+          "side-effecting nullary methods are discouraged: suggest defining as `def %s()` instead".format(
+           sym.name.decode)
+        )
+        case _ => ()
+    }
+
     override def transform(tree: Tree): Tree = {
       val savedLocalTyper = localTyper
       val savedCurrentApplication = currentApplication
@@ -1355,6 +1429,12 @@ abstract class RefChecks extends InfoTransform {
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)
+            if (settings.warnNullaryUnit.value)
+              checkNullaryMethodReturnType(sym)
+            if (settings.warnInaccessible.value) {
+              if (!sym.isConstructor && !sym.isEffectivelyFinal && !sym.isSynthetic)
+                checkAccessibilityOfReferencedTypes(tree)
+            }
             tree
 
           case Template(parents, self, body) =>

@@ -12,7 +12,9 @@ import annotation.elidable
 import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable.HashSet
 
-trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
+trait ScalaSettings extends AbsScalaSettings
+                       with StandardScalaSettings
+                       with Warnings {
   self: MutableSettings =>
 
   import Defaults.scalaUserClassPath
@@ -78,9 +80,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show internal representation of object.", "")
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases.")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
-
-  val Xwarnfatal    = BooleanSetting    ("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
-  val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference.")
 
   // Experimental Extensions
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions.") .
@@ -161,11 +160,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
 
   def stop = stopAfter
-
-  /**
-   * Warnings
-   */
-  val Ywarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
 
   /**
    * IDE-specific settings

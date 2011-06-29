@@ -98,7 +98,7 @@ abstract class SymbolLoaders {
     private var ok = false
 
     private def setSource(sym: Symbol) {
-      sourcefile map (sf => sym match {
+      sourcefile foreach (sf => sym match {
         case cls: ClassSymbol => cls.sourceFile = sf
         case mod: ModuleSymbol => mod.moduleClass.sourceFile = sf
         case _ => ()

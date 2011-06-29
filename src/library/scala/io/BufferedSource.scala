@@ -31,8 +31,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     val bufReader = BufferedSource.this.bufferedReader()
     var nextLine = bufReader.readLine
 
-    override def hasNext() = nextLine != null
-
+    override def hasNext = nextLine != null
     override def next(): String = {
       val result = nextLine
       nextLine = bufReader.readLine

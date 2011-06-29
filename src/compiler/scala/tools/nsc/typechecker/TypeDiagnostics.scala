@@ -421,7 +421,7 @@ trait TypeDiagnostics {
         // Error suppression will squash some of these warnings unless we circumvent it.
         // It is presumed if you are using a -Y option you would really like to hear
         // the warnings you've requested.
-        if (settings.Ywarndeadcode.value && context.unit != null && treeOK(tree) && exprOK) {
+        if (settings.warnDeadCode.value && context.unit != null && treeOK(tree) && exprOK) {
           val saved = context.reportGeneralErrors
           try {
             context.reportGeneralErrors = true

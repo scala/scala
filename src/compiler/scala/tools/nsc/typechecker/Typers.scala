@@ -892,10 +892,16 @@ trait Typers extends Modes {
                 case TypeRef(_, sym, _) =>
                   // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
                   // infinite expansion if pt is constant type ()
-                  if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) // (12)
+                  if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12)
+                    if (settings.warnValueDiscard.value)
+                      context.unit.warning(tree.pos, "discarded non-Unit value")
                     return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
-                  else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt))
+                  }
+                  else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
+                    if (settings.warnNumericWiden.value)
+                      context.unit.warning(tree.pos, "implicit numeric widening")
                     return typed(atPos(tree.pos)(Select(tree, "to"+sym.name)), mode, pt)
+                  }
                 case AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (13)
                     return typed(adaptAnnotations(tree, mode, pt), mode, pt)
                 case _ =>
@@ -3616,7 +3622,7 @@ trait Typers extends Modes {
             !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
           }
           // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
-          if (settings.Xchecknull.value && isPotentialNullDeference && unit != null)
+          if (settings.warnSelectNullable.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
           val selection = result match {
