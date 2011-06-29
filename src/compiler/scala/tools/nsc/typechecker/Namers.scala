@@ -90,11 +90,12 @@ trait Namers { self: Analyzer =>
       sym.flags = flags | lockedFlag
       if (sym.isModule && sym.moduleClass != NoSymbol)
         updatePosFlags(sym.moduleClass, pos, moduleClassFlags(flags))
-      if (sym.owner.isPackageClass &&
-          (sym.companionSymbol.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
-           sym.companionSymbol.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
+      var companion: Symbol = NoSymbol
+      if (sym.owner.isPackageClass && {companion = companionSymbolOf(sym, context); true} &&
+        (companion.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
+         companion.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
         // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
-        sym.companionSymbol.setInfo(NoType)
+        companion.setInfo(NoType)
       sym
     }
 
@@ -1382,7 +1383,7 @@ trait Namers { self: Analyzer =>
    * Finds the companion module of a class symbol. Calling .companionModule
    * does not work for classes defined inside methods.
    */
-  def companionModuleOf(clazz: Symbol, context: Context) = {
+  def companionModuleOf(clazz: Symbol, context: Context) =
     try {
       var res = clazz.companionModule
       if (res == NoSymbol)
@@ -1394,9 +1395,8 @@ trait Namers { self: Analyzer =>
         context.error(clazz.pos, e.getMessage)
         NoSymbol
     }
-  }
 
-  def companionClassOf(module: Symbol, context: Context) = {
+  def companionClassOf(module: Symbol, context: Context) =
     try {
       var res = module.companionClass
       if (res == NoSymbol)
@@ -1407,7 +1407,6 @@ trait Namers { self: Analyzer =>
         context.error(module.pos, e.getMessage)
         NoSymbol
     }
-  }
 
   def companionSymbolOf(sym: Symbol, context: Context) =
     if (sym.isTerm) companionClassOf(sym, context)

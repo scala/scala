@@ -1294,7 +1294,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** For a module its linked class, for a class its linked module or case
      *  factory otherwise.
      *  Note: does not work for modules owned by methods, see
-     *  Namers.companionModuleOf / Namers.companionClassOf
+     *  Namers.companionSymbolOf
      */
     final def companionSymbol: Symbol =
       if (isTerm) companionClass
@@ -2108,7 +2108,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   }
 
   case class InvalidCompanions(sym1: Symbol, sym2: Symbol)
-  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file")
+  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file") {
+      override def toString = getMessage
+  }
 
   /** A class for type histories */
   private sealed case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {
