@@ -5104,7 +5104,7 @@ A type's typeSymbol should never be inspected directly.
     // instead of wrapping it in a polytype, the current approach uses elimHOTparams to patch up this type so that
     // it looks more like a type ctor: Template[Container] with Container, but this is ill-kinded as Template[Container] is a proper type, whereas Container is not
     def elimHOTparams(ts: List[Type]) = ts map {
-      case tp@TypeRef(pre, sym, args) if args.nonEmpty && tsParams.contains(args.map(_.typeSymbolDirect)) => tp.typeConstructor
+      case tp@TypeRef(pre, sym, args) if args.nonEmpty && tsParams.contains(args.map(_.typeSymbol)) => tp.typeConstructor
       case tp => tp
     }
 
@@ -5119,13 +5119,13 @@ A type's typeSymbol should never be inspected directly.
       // due to the invariant, that symbol is the current maximal symbol for which this holds, i.e., the one that conveys most information wrt subtyping
       // before merging, strip type arguments that refer to bound type params (when we're computing the lub of type constructors)
       // furthermore, the number of types to merge is reduced without losing information by dropping types that are a subtype of some other type
-      val sym0 = ts0.head.typeSymbolDirect
-      if (ts0.tail forall (_.typeSymbolDirect == sym0)){
+      val sym0 = ts0.head.typeSymbol
+      if (ts0.tail forall (_.typeSymbol == sym0)){
         mergePrefixAndArgs(elimSub(elimHOTparams(ts0), depth), 1, depth).toList ::: lubList(tsParams, tsBts map (_.tail), depth)
       } else {
         // frontier is not uniform yet, move it beyond the current minimal symbol; lather, rince, repeat
         val sym = minSym(ts0)
-        lubList(tsParams, tsBts map (ts => if (ts.head.typeSymbolDirect == sym) ts.tail else ts), depth)
+        lubList(tsParams, tsBts map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts), depth)
       }
     }
   }
