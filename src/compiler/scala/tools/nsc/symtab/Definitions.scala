@@ -82,14 +82,16 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val UnitClass    =
       newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
 
-    lazy val ByteClass    = newValueClass(nme.Byte, 'B', 2)
-    lazy val ShortClass   = newValueClass(nme.Short, 'S', 4)
-    lazy val CharClass    = newValueClass(nme.Char, 'C', 3)
-    lazy val IntClass     = newValueClass(nme.Int, 'I', 12)
-    lazy val LongClass    = newValueClass(nme.Long, 'L', 24)
-    lazy val FloatClass   = newValueClass(nme.Float, 'F', 48)
-    lazy val DoubleClass  = newValueClass(nme.Double, 'D', 96)
-    lazy val BooleanClass = newValueClass(nme.Boolean, 'Z', 0)
+    import classfile.ClassfileConstants._
+
+    lazy val ByteClass    = newValueClass(nme.Byte,    BYTE_TAG, 2)
+    lazy val ShortClass   = newValueClass(nme.Short,   SHORT_TAG, 4)
+    lazy val CharClass    = newValueClass(nme.Char,    CHAR_TAG, 3)
+    lazy val IntClass     = newValueClass(nme.Int,     INT_TAG, 12)
+    lazy val LongClass    = newValueClass(nme.Long,    LONG_TAG, 24)
+    lazy val FloatClass   = newValueClass(nme.Float,   FLOAT_TAG, 48)
+    lazy val DoubleClass  = newValueClass(nme.Double,  DOUBLE_TAG, 96)
+    lazy val BooleanClass = newValueClass(nme.Boolean, BOOL_TAG, 0)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
 
