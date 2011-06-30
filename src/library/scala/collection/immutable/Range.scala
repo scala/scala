@@ -128,7 +128,7 @@ extends IndexedSeq[Int]
     if (isEmpty)
       Nil.init
 
-    dropRight(length - 1)
+    dropRight(1)
   }
 
   /** Creates a new range containing all the elements of this range except the first one.
