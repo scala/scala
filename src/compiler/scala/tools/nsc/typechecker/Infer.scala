@@ -425,11 +425,10 @@ trait Infer {
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
     private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
       case tr1 @ TypeRef(_, sym1, _) =>
-        // If the lhs is an abstract type, we can't rule out a subtype
-        // relationship because we don't know what it is.
-        !sym1.isAbstractType && (tp2.normalize.widen match {
+        // We can only rule out a subtype relationship if the left hand
+        // side is a class, else we may not know enough.
+        sym1.isClass && (tp2.normalize.widen match {
           case TypeRef(_, sym2, _) =>
-             sym1.isClass &&
              sym2.isClass &&
             !(sym1 isSubClass sym2) &&
             !(sym1 isNumericSubClass sym2)
