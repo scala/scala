@@ -1784,7 +1784,7 @@ trait Typers extends Modes {
         }
       }
 
-      if (meth.isRefinementMember)
+      if (meth.isStructuralRefinementMember)
         checkMethodStructuralCompatible(meth)
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
@@ -1907,8 +1907,8 @@ trait Typers extends Modes {
               //   -> members that are hidden by the type of the block are made private
               ( classDecls filter (member =>
                      member.isTerm
-                  && member.isVisibleInRefinement
-                  && !member.hasAccessBoundary
+                  && member.isPossibleInRefinement
+                  && member.isPublic
                   && !matchesVisibleMember(member)
                 )
                 foreach { member =>

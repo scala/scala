@@ -307,8 +307,8 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isOverloaded = hasFlag(OVERLOADED)
     final def isRefinementClass = isClass && name == tpnme.REFINE_CLASS_NAME
-    final def isRefinementMember = owner.isStructuralRefinement && isVisibleInRefinement && !hasAccessBoundary
-    final def isVisibleInRefinement = !(isConstructor || isOverridingSymbol || isPrivate)
+    final def isPossibleInRefinement = !isConstructor && !isOverridingSymbol
+    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
     final def isSourceMethod = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
     final def isTypeParameter = isType && isParameter && !isSkolem
 
