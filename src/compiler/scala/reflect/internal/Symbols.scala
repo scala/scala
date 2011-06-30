@@ -2082,11 +2082,12 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
     protected def doCookJavaRawInfo() {
-      // don't require isJavaDefined, since T in the above example does not have that flag
-      val tpe1 = rawToExistential(info)
-      // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
-      if (tpe1 ne info) {
-        setInfo(tpe1)
+      if (isJavaDefined || owner.isJavaDefined) {
+        val tpe1 = rawToExistential(info)
+        // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
+        if (tpe1 ne info) {
+          setInfo(tpe1)
+        }
       }
     }
 

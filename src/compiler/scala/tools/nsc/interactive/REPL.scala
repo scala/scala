@@ -60,7 +60,7 @@ object REPL {
 
   def main(args: Array[String]) {
     process(args)
-    exit(if (reporter.hasErrors) 1 else 0)
+    /*sys.*/exit(if (reporter.hasErrors) 1 else 0)// Don't use sys yet as this has to run on 2.8.2 also.
   }
 
   def loop(action: (String) => Unit) {
