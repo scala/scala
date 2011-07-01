@@ -107,11 +107,6 @@ trait Symbols { self: Universe =>
      */
     def moduleClass: Symbol
 
-    /**
-     *  If symbol is a lazy val, it's lazy accessor
-     */
-    def lazyAccessor: Symbol
-
 // flags and kind tests
 
     def isTerm         = false  // to be overridden

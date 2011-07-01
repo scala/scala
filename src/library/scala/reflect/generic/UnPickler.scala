@@ -166,6 +166,13 @@ abstract class UnPickler {
       }
     }
 
+    /** Reflection access to lazyAccessor for binary compatibility
+     *  between 2.8.1 and 2.8.2.
+     */
+    private def binaryCompatLazyAccessor(x: AnyRef): Symbol =
+      try x.getClass.getMethod("lazyAccessor").invoke(x).asInstanceOf[Symbol]
+      catch { case _: Exception => null }
+
     /** Read a symbol */
     protected def readSymbol(): Symbol = {
       val tag = readByte()
@@ -197,9 +204,9 @@ abstract class UnPickler {
               case EXTMODCLASSref =>
                 val moduleVar = owner.info.decl(nme.moduleVarName(name))
                 if (moduleVar.hasFlag(LAZY)) {
-                  val lazyAcc = moduleVar.lazyAccessor
-                  if (lazyAcc != NoSymbol)
-                    sym = lazyAcc.lazyAccessor
+                  val lazyAcc = binaryCompatLazyAccessor(moduleVar)
+                  if (lazyAcc != null)
+                    sym = binaryCompatLazyAccessor(lazyAcc)
                 }
               case _ =>
             }
