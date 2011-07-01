@@ -226,6 +226,9 @@ abstract class TreeGen {
    *  that the type given by classOf[T] is too strong and should be
    *  weakened so as not to suggest that classOf[List[String]] is any
    *  different from classOf[List[Int]].
+   *
+   *  !!! See deconstMap in Erasure for one bug this encoding has induced:
+   *  I would be very surprised if there aren't more.
    */
   def mkClassOf(tp: Type): Tree =
     Literal(Constant(tp)) setType ConstantType(Constant(tp))
