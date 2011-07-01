@@ -126,6 +126,13 @@ trait SyntheticMethods extends ast.TreeDSL {
       val method = syntheticMethod(nme.toString_, FINAL, makeNoArgConstructor(StringClass.tpe))
       typer typed { DEF(method) === LIT(clazz.name.decode) }
     }
+    def moduleHashCodeMethod: Tree = {
+      val method = syntheticMethod(nme.hashCode_, FINAL, makeNoArgConstructor(IntClass.tpe))
+      // The string being used as hashcode basis is also productPrefix.
+      val code   = clazz.name.decode.hashCode
+
+      typer typed { DEF(method) === LIT(code) }
+    }
 
     def forwardingMethod(name: Name, targetName: Name): Tree = {
       val target      = getMember(ScalaRunTimeModule, targetName)
@@ -262,6 +269,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         )
         // methods for case objects only
         def objectMethods = List(
+          Object_hashCode -> (() => moduleHashCodeMethod),
           Object_toString -> (() => moduleToStringMethod)
         )
         // methods for both classes and objects
