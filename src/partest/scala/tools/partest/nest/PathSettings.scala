@@ -25,7 +25,7 @@ object PathSettings {
   }
 
   // Directory <root>/test/files
-  lazy val srcDir = Directory(testRoot / srcDirName normalize)
+  lazy val srcDir = Directory(testRoot / srcDirName toCanonical)
 
   // Directory <root>/test/files/lib
   lazy val srcLibDir = Directory(srcDir / "lib")

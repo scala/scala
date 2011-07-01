@@ -65,7 +65,7 @@ class ConsoleFileManager extends FileManager {
   }
 
   CLASSPATH = {
-    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.normalize.path)
+    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.toCanonical.path)
 
     // add all jars in libs
     (CLASSPATH :: libs.toList) mkString pathSeparator
@@ -74,11 +74,11 @@ class ConsoleFileManager extends FileManager {
   def findLatest() {
     NestUI.verbose("test parent: "+testParent)
 
-    def prefixFileWith(parent: File, relPath: String) = (io.File(parent) / relPath).normalize
-    def prefixFile(relPath: String) = (testParent / relPath).normalize
+    def prefixFileWith(parent: File, relPath: String) = (io.File(parent) / relPath).toCanonical
+    def prefixFile(relPath: String) = (testParent / relPath).toCanonical
 
     if (!testClasses.isEmpty) {
-      testClassesDir = Path(testClasses.get).normalize.toDirectory
+      testClassesDir = Path(testClasses.get).toCanonical.toDirectory
       NestUI.verbose("Running with classes in "+testClassesDir)
 
       latestFile        = testClassesDir.parent / "bin"

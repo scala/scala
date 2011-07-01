@@ -211,10 +211,13 @@ class ConsoleRunner extends DirectRunner {
    * @return (success count, failure count)
    */
   def testCheckAll(enabledSets: List[TestSet]): (Int, Int) = {
-    def kindOf(f: File) = (srcDir relativize Path(f).normalize).segments.head
+    def kindOf(f: File) = (srcDir relativize Path(f).toCanonical).segments.head
 
     val (valid, invalid) = testFiles partition (x => testSetKinds contains kindOf(x))
-    invalid foreach (x => NestUI.failure("Invalid test file '%s', skipping.\n" format x))
+    invalid foreach (x => NestUI.failure(
+      "Invalid test file '%s', skipping.\n".format(x) +
+      "(Test kind '%s' not in known set '%s')".format(kindOf(x), testSetKinds))
+    )
 
     val grouped = (valid groupBy kindOf).toList sortBy (x => testSetKinds indexOf x._1)
     val runTestsFileLists =
