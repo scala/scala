@@ -369,8 +369,14 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           else
             NullaryMethodType(restpe)
         case EXISTENTIALtpe =>
-          val restpe = readTypeRef()
-          ExistentialType(until(end, readSymbolRef), restpe)
+          val restpe  = readTypeRef()
+          // @PP: Where is the flag setting supposed to happen? I infer
+          // from the lack of flag setting in the rest of the unpickler
+          // that it isn't right here. See #4757 for the immediate
+          // motivation to fix it.
+          val tparams = until(end, readSymbolRef) map (_ setFlag EXISTENTIAL)
+          ExistentialType(tparams, restpe)
+
         case ANNOTATEDtpe =>
           var typeRef = readNat()
           val selfsym = if (isSymbolRef(typeRef)) {
