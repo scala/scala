@@ -1,0 +1,57 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> :type List[1, 2, 3]
+<console>:2: error: identifier expected but integer literal found.
+       List[1, 2, 3]
+            ^
+
+
+scala> :type List(1, 2, 3)
+List[Int]
+
+scala> :type def foo[T](x: T) = List(x)
+[T](x: T)List[T]
+
+scala> :type val bar = List(Set(1))
+List[scala.collection.immutable.Set[Int]]
+
+scala> :type lazy val bar = Set(Set(1))
+scala.collection.immutable.Set[scala.collection.immutable.Set[Int]]
+
+scala> :type def f[T >: Null, U <: String](x: T, y: U) = Set(x, y)
+[T >: Null, U <: String](x: T, y: U)scala.collection.immutable.Set[Any]
+
+scala> :type def x = 1 ; def bar[T >: Null <: AnyRef](xyz: T) = 5
+[T >: Null <: AnyRef](xyz: T)Int
+
+scala> 
+
+scala> :type 5
+Int
+
+scala> :type val f = 5
+Int
+
+scala> :type lazy val f = 5
+Int
+
+scala> :type protected lazy val f = 5
+Int
+
+scala> :type def f = 5
+Int
+
+scala> :type def f() = 5
+()Int
+
+scala> 
+
+scala> :type def g[T](xs: Set[_ <: T]) = Some(xs.head)
+[T](xs: Set[_ <: T])Some[T]
+
+scala> 
+
+scala> 

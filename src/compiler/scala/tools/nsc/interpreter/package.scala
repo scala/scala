@@ -27,12 +27,19 @@ package object interpreter extends ReplConfig with ReplStrings {
   type JClass         = java.lang.Class[_]
   type JList[T]       = java.util.List[T]
   type JCollection[T] = java.util.Collection[T]
+  type JPrintWriter   = java.io.PrintWriter
   type InputStream    = java.io.InputStream
   type OutputStream   = java.io.OutputStream
 
-  private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
+  val IR = Results
+
   private[interpreter] implicit def javaCharSeqCollectionToScala(xs: JCollection[_ <: CharSequence]): List[String] = {
     import collection.JavaConverters._
     xs.asScala.toList map ("" + _)
   }
+
+  private[nsc] implicit def enrichClass[T](clazz: Class[T]) = new RichClass[T](clazz)
+  private[nsc] implicit def enrichAnyRefWithTap[T](x: T) = new TapMaker(x)
+  private[nsc] def tracing[T](msg: String)(x: T): T = x.tapTrace(msg)
+  private[nsc] def debugging[T](msg: String)(x: T) = x.tapDebug(msg)
 }

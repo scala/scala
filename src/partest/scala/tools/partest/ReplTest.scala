@@ -14,48 +14,26 @@ import java.lang.reflect.{ Method => JMethod, Field => JField }
  */
 abstract class ReplTest extends App {
   def code: String
-  def settings: Settings = new Settings // override for custom settings
+  // override to add additional settings with strings
+  def extraSettings: String = ""
+  // override to transform Settings object immediately before the finish
+  def transformSettings(s: Settings): Settings = s
+
+  // final because we need to enforce the existence of a couple settings.
+  final def settings: Settings = {
+    val s = new Settings
+    s.Yreplsync.value = true
+    s.Xnojline.value = true
+    val settingString = sys.props("scala.partest.debug.repl-args") match {
+      case null   => extraSettings
+      case s      => extraSettings + " " + s
+    }
+    s processArgumentString settingString
+    transformSettings(s)
+  }
   def eval() = ILoop.runForTranscript(code, settings).lines drop 1
   def show() = eval() foreach println
 
-  show()
-}
-
-trait SigTest {
-  def mstr(m: JMethod) = "  (m) %s%s".format(
-    m.toGenericString,
-    if (m.isBridge) " (bridge)" else ""
-  )
-  def fstr(f: JField) = "  (f) %s".format(f.toGenericString)
-
-  def isObjectMethodName(name: String) = classOf[Object].getMethods exists (_.getName == name)
-
-  def fields[T: ClassManifest](p: JField => Boolean) = {
-    val cl = classManifest[T].erasure
-    val fs = (cl.getFields ++ cl.getDeclaredFields).distinct sortBy (_.getName)
-
-    fs filter p
-  }
-  def methods[T: ClassManifest](p: JMethod => Boolean) = {
-    val cl = classManifest[T].erasure
-    val ms = (cl.getMethods ++ cl.getDeclaredMethods).distinct sortBy (x => (x.getName, x.isBridge))
-
-    ms filter p
-  }
-  def allFields[T: ClassManifest]()                = fields[T](_ => true)
-  def allMethods[T: ClassManifest]()               = methods[T](m => !isObjectMethodName(m.getName))
-  def fieldsNamed[T: ClassManifest](name: String)  = fields[T](_.getName == name)
-  def methodsNamed[T: ClassManifest](name: String) = methods[T](_.getName == name)
-
-  def allGenericStrings[T: ClassManifest]() =
-    (allMethods[T]() map mstr) ++ (allFields[T]() map fstr)
-
-  def genericStrings[T: ClassManifest](name: String) =
-    (methodsNamed[T](name) map mstr) ++ (fieldsNamed[T](name) map fstr)
-
-  def show[T: ClassManifest](name: String = "") = {
-    println(classManifest[T].erasure.getName)
-    if (name == "") allGenericStrings[T]() foreach println
-    else genericStrings[T](name) foreach println
-  }
+  try show()
+  catch { case t => println(t) ; sys.exit(1) }
 }

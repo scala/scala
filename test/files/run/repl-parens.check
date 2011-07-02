@@ -1,0 +1,58 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> (2)
+res0: Int = 2
+
+scala> (2 + 2)
+res1: Int = 4
+
+scala> ((2 + 2))
+res2: Int = 4
+
+scala>   ((2 + 2))
+res3: Int = 4
+
+scala>   (  (2 + 2))
+res4: Int = 4
+
+scala>   (  (2 + 2 )  )
+res5: Int = 4
+
+scala> 5 ;   (  (2 + 2 )  ) ; ((5))
+res6: Int = 5
+
+scala> (((2 + 2)), ((2 + 2)))
+res7: (Int, Int) = (4,4)
+
+scala> (((2 + 2)), ((2 + 2)), 2)
+res8: (Int, Int, Int) = (4,4,2)
+
+scala> ((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3) mkString)
+res9: String = 4423
+
+scala> 
+
+scala> 55 ; ((2 + 2)) ; (1, 2, 3)
+res10: (Int, Int, Int) = (1,2,3)
+
+scala> 
+
+scala> () => 5
+res11: () => Int = <function0>
+
+scala> 55 ; () => 5
+res12: () => Int = <function0>
+
+scala> () => { class X ; new X }
+res13: () => java.lang.Object with ScalaObject = <function0>
+
+scala> 
+
+scala> def foo(x: Int)(y: Int)(z: Int) = x+y+z
+foo: (x: Int)(y: Int)(z: Int)Int
+
+scala> foo(5)(10)(15)+foo(5)(10)(15)
+res14: Int = 60
+
+scala> 

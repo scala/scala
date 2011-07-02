@@ -79,15 +79,12 @@ val x : Int @Where(self > 0 && self < 100) = 3
 
 """
 
-  override def settings: Settings = {
-    val s = new Settings
-
+  override def transformSettings(s: Settings): Settings = {
     s.Xexperimental.value = true
     s.selfInAnnots.value = true
     s.deprecation.value = true
     // when running that compiler, give it a scala-library to the classpath
     s.classpath.value = sys.props("java.class.path")
-
     s
   }
 }

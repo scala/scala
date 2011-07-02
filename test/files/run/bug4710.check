@@ -1,0 +1,7 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> def method : String = { implicit def f(s: Symbol) = "" ; 'symbol }
+method: String
+
+scala> 

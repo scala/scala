@@ -27,7 +27,7 @@ object ProcessResult {
 }
 
 trait LoopCommands {
-  protected def out: java.io.PrintWriter
+  protected def out: JPrintWriter
 
   // a single interpreter command
   abstract class LoopCommand(val name: String, val help: String) extends (String => Result) {

@@ -6,13 +6,13 @@
 package scala.tools.nsc
 package interpreter
 
-import java.io.{ BufferedReader, PrintWriter }
+import java.io.{ BufferedReader }
 import session.NoHistory
 
 /** Reads using standard JDK API */
 class SimpleReader(
   in: BufferedReader,
-  out: PrintWriter,
+  out: JPrintWriter,
   val interactive: Boolean)
 extends InteractiveReader
 {
@@ -37,8 +37,8 @@ extends InteractiveReader
 
 object SimpleReader {
   def defaultIn  = Console.in
-  def defaultOut = new PrintWriter(Console.out)
+  def defaultOut = new JPrintWriter(Console.out)
 
-  def apply(in: BufferedReader = defaultIn, out: PrintWriter = defaultOut, interactive: Boolean = true): SimpleReader =
+  def apply(in: BufferedReader = defaultIn, out: JPrintWriter = defaultOut, interactive: Boolean = true): SimpleReader =
     new SimpleReader(in, out, interactive)
 }

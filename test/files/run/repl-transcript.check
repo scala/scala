@@ -4,6 +4,9 @@ Type :help for more information.
 scala> 
 
 scala> scala> class Bippity
+
+// Detected repl transcript paste: ctrl-D to finish.
+
 defined class Bippity
 
 scala> def f = new Bippity

@@ -15,6 +15,9 @@ trait Imports {
   import definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
+  def isNoImports = settings.noimports.value
+  def isNoPredef  = false   // settings.nopredef.value
+
   /** Synthetic import handlers for the language defined imports. */
   private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
     val hd :: tl = sym.fullName.split('.').toList map newTermName
@@ -88,7 +91,7 @@ trait Imports {
    *  2. A code fragment that should go after the code
    *  of the new request.
    *
-   *  3. An access path which can be traverested to access
+   *  3. An access path which can be traversed to access
    *  any bindings inside code wrapped by #1 and #2 .
    *
    * The argument is a set of Names that need to be imported.
@@ -114,12 +117,11 @@ trait Imports {
         * 'wanted' is the set of names that need to be imported.
        */
       def select(reqs: List[ReqAndHandler], wanted: Set[Name]): List[ReqAndHandler] = {
-        val isWanted = wanted contains _
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
           case _: ImportHandler => true
-          case x                => x.definesImplicit || (x.definedNames exists isWanted)
+          case x                => x.definesImplicit || (x.definedNames exists wanted)
         }
 
         reqs match {
@@ -157,7 +159,7 @@ trait Imports {
         // If the user entered an import, then just use it; add an import wrapping
         // level if the import might conflict with some other import
         case x: ImportHandler =>
-          if (x.importsWildcard || (currentImps exists (x.importedNames contains _)))
+          if (x.importsWildcard || currentImps.exists(x.importedNames contains _))
             addWrapper()
 
           code append (x.member + "\n")
@@ -175,7 +177,7 @@ trait Imports {
           for (imv <- x.definedNames) {
             if (currentImps contains imv) addWrapper()
 
-            code append ("import %s\n" format (req fullPath imv))
+            code append ("import " + (req fullPath imv) + "\n")
             currentImps += imv
           }
       }

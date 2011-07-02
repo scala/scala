@@ -13,9 +13,14 @@ import scala.collection.JavaConverters._
 import Completion._
 import io.Streamable.slurp
 
-/** Reads from the console using JLine */
-class JLineReader(val completion: Completion) extends InteractiveReader {
+/**
+ *  Reads from the console using JLine.
+ */
+class JLineReader(_completion: => Completion) extends InteractiveReader {
   val interactive = true
+  val consoleReader = new JLineConsoleReader()
+
+  lazy val completion = _completion
   lazy val history: JLineHistory = JLineHistory()
   lazy val keyBindings =
     try KeyBinding parse slurp(term.getDefaultBindings)
@@ -44,34 +49,30 @@ class JLineReader(val completion: Completion) extends InteractiveReader {
     }
     def eraseLine() = consoleReader.resetPromptLine("", "", 0)
     def redrawLineAndFlush(): Unit = { flush() ; drawLine() ; flush() }
+    // override def readLine(prompt: String): String
 
-    this setBellEnabled false
-    if (history ne NoHistory)
-      this setHistory history
+    // A hook for running code after the repl is done initializing.
+    lazy val postInit: Unit = {
+      this setBellEnabled false
+      if (history ne NoHistory)
+        this setHistory history
 
-    if (completion ne NoCompletion) {
-      val argCompletor: ArgumentCompleter =
-        new ArgumentCompleter(new JLineDelimiter, scalaToJline(completion.completer()))
-      argCompletor setStrict false
+      if (completion ne NoCompletion) {
+        val argCompletor: ArgumentCompleter =
+          new ArgumentCompleter(new JLineDelimiter, scalaToJline(completion.completer()))
+        argCompletor setStrict false
 
-      this addCompleter argCompletor
-      this setAutoprintThreshold 400 // max completion candidates without warning
+        this addCompleter argCompletor
+        this setAutoprintThreshold 400 // max completion candidates without warning
+      }
     }
   }
 
-  val consoleReader: JLineConsoleReader = new JLineConsoleReader()
-
-  def currentLine: String = consoleReader.getCursorBuffer.buffer.toString
+  def currentLine = consoleReader.getCursorBuffer.buffer.toString
   def redrawLine() = consoleReader.redrawLineAndFlush()
-  def eraseLine() = {
-    while (consoleReader.delete()) { }
-    // consoleReader.eraseLine()
-  }
+  def eraseLine() = consoleReader.eraseLine()
+  // Alternate implementation, not sure if/when I need this.
+  // def eraseLine() = while (consoleReader.delete()) { }
   def readOneLine(prompt: String) = consoleReader readLine prompt
   def readOneKey(prompt: String)  = consoleReader readOneKey prompt
-}
-
-object JLineReader {
-  def apply(intp: IMain): JLineReader = apply(new JLineCompletion(intp))
-  def apply(comp: Completion): JLineReader = new JLineReader(comp)
 }
