@@ -470,7 +470,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
             // Oh boy, the parser throws away parens so "(2+2)" is mispositioned.
             // So until we can fix the parser we'll have to go trawling.
             val adjustment = ((content take lastpos0).reverse takeWhile { ch =>
-              ch.isWhitespace || ch == '(' || ch == ')'
+              ch.isWhitespace || ch == '('
             }).length
             val lastpos = lastpos0 - adjustment
 

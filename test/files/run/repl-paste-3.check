@@ -1,0 +1,14 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> println(3)
+3
+
+scala>   List(1,2)
+res1: List[Int] = List(1, 2)
+
+scala> 
+
+scala> 
