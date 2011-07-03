@@ -174,18 +174,33 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     case _            => EmptyTree
   }
 
+  /** Create a ValDef initialized to the given expression, setting the
+   *  symbol to its packed type, and an function for creating Idents
+   *  which refer to it.
+   */
+  private def mkPackedValDef(expr: Tree, owner: Symbol, name: Name): (ValDef, () => Ident) = {
+    val packedType = typer.packedType(expr, owner)
+    val sym = (
+      owner.newValue(expr.pos.makeTransparent, name)
+      setFlag SYNTHETIC
+      setInfo packedType
+    )
+
+    (ValDef(sym, expr), () => Ident(sym) setPos sym.pos.focus setType expr.tpe)
+  }
+
   /** Used in situations where you need to access value of an expression several times
    */
   def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree = {
     var used = false
     if (treeInfo.isPureExpr(expr)) {
       within(() => if (used) expr.duplicate else { used = true; expr })
-    } else {
-      val temp = owner.newValue(expr.pos.makeTransparent, unit.freshTermName("ev$"))
-        .setFlag(SYNTHETIC).setInfo(expr.tpe)
-      val containing = within(() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
+    }
+    else {
+      val (valDef, identFn) = mkPackedValDef(expr, owner, unit.freshTermName("ev$"))
+      val containing = within(identFn)
       ensureNonOverlapping(containing, List(expr))
-      Block(List(ValDef(temp, expr)), containing) setPos (containing.pos union expr.pos)
+      Block(List(valDef), containing) setPos (containing.pos union expr.pos)
     }
   }
 
@@ -200,11 +215,11 @@ abstract class TreeGen extends reflect.internal.TreeGen {
           val idx = i
           () => if (used(idx)) expr.duplicate else { used(idx) = true; expr }
         }
-      } else {
-        val temp = owner.newValue(expr.pos.makeTransparent, unit.freshTermName("ev$"))
-          .setFlag(SYNTHETIC).setInfo(expr.tpe)
-        vdefs += ValDef(temp, expr)
-        exprs1 += (() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
+      }
+      else {
+        val (valDef, identFn) = mkPackedValDef(expr, owner, unit.freshTermName("ev$"))
+        vdefs += valDef
+        exprs1 += identFn
       }
       i += 1
     }
