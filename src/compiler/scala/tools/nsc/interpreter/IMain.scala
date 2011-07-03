@@ -467,15 +467,20 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
           else {
             // The position of the last tree
             val lastpos0 = earliestPosition(trees.last)
-            // Oh boy, the parser throws away parens so "(2+2)" is mispositioned.
-            // So until we can fix the parser we'll have to go trawling.
-            val adjustment = ((content take lastpos0).reverse takeWhile { ch =>
-              ch.isWhitespace || ch == '('
-            }).length
+            // Oh boy, the parser throws away parens so "(2+2)" is mispositioned,
+            // with increasingly hard to decipher positions as we move on to "() => 5",
+            // (x: Int) => x + 1, and more.  So I abandon attempts to finesse and just
+            // look for semicolons and newlines, which I'm sure is also buggy.
+            val (raw1, raw2) = content splitAt lastpos0
+            repldbg("[raw] " + raw1 + "   <--->   " + raw2)
+
+            val adjustment = (raw1.reverse takeWhile (ch => (ch != ';') && (ch != '\n'))).size
             val lastpos = lastpos0 - adjustment
 
             // the source code split at the laboriously determined position.
             val (l1, l2) = content splitAt lastpos
+            repldbg("[adj] " + l1 + "   <--->   " + l2)
+
             val prefix   = if (l1.trim == "") "" else l1 + ";\n"
             // Note to self: val source needs to have this precise structure so that
             // error messages print the user-submitted part without the "val res0 = " part.
