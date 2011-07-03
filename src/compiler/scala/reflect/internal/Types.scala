@@ -2995,6 +2995,27 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+  // Set to true for A* => Seq[A]
+  //   (And it will only rewrite A* in method result types.)
+  //   This is the pre-existing behavior.
+  // Or false for Seq[A] => Seq[A]
+  //   (It will rewrite A* everywhere but method parameters.)
+  //   This is the specified behavior.
+  private final val etaExpandKeepsStar = true
+
+  object dropRepeatedParamType extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case MethodType(params, restpe) =>
+        MethodType(params, apply(restpe))
+      case PolyType(tparams, restpe) =>
+        PolyType(tparams, apply(restpe))
+      case TypeRef(_, RepeatedParamClass, arg :: Nil) =>
+        seqType(arg)
+      case _ =>
+        if (etaExpandKeepsStar) tp else mapOver(tp)
+    }
+  }
+
 // Hash consing --------------------------------------------------------------
 
   private val initialUniquesCapacity = 4096
