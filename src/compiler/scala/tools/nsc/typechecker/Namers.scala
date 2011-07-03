@@ -1258,12 +1258,12 @@ trait Namers { self: Analyzer =>
                         return
                       }
 
-                      def notMember = context.error(tree.pos, from.decode + " is not a member of " + expr)
+                      def notMember() = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
                       if (from endsWith nme.raw.DOLLAR)
-                        isValidSelector(from stripEnd "$")(notMember)
+                        isValidSelector(from stripEnd "$")(notMember())
                       else
-                        notMember
+                        notMember()
                     }
 
                     if (checkNotRedundant(tree.pos, from, to))

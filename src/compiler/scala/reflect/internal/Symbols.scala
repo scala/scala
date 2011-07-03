@@ -683,7 +683,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     final def setFlag(mask: Long): this.type = { rawflags = rawflags | mask; this }
     final def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask; this }
     final def getFlag(mask: Long): Long = flags & mask
-    final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
+    final def resetFlags() { rawflags = rawflags & TopLevelCreationFlags }
 
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = (flags & mask) != 0L
@@ -1023,7 +1023,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Reset symbol to initial state
      */
     def reset(completer: Type) {
-      resetFlags
+      resetFlags()
       infos = null
       validTo = NoPeriod
       //limit = NoPhase.id
