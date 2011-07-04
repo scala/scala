@@ -163,6 +163,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (opt.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
+  @inline final def ifDebug(body: => Unit) {
+    if (settings.debug.value)
+      body
+  }
+  @inline final def debuglog(msg: => String) {
+    if (settings.debug.value)
+      inform("[log " + phase + "] " + msg)
+  }
   private def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (currentTime - start) + "ms"
 

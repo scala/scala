@@ -39,9 +39,6 @@ abstract class GenICode extends SubComponent  {
 
   override def newPhase(prev: Phase) = new ICodePhase(prev)
 
-  private def debugLog(msg: => String): Unit =
-    if (settings.debug.value) log(msg)
-
   class ICodePhase(prev: Phase) extends StdPhase(prev) {
 
     override def description = "Generate ICode from the AST"
@@ -316,7 +313,7 @@ abstract class GenICode extends SubComponent  {
         MONITOR_ENTER() setPos tree.pos
       ))
       ctx1.enterSynchronized(monitor)
-      debugLog("synchronized block start")
+      debuglog("synchronized block start")
 
       ctx1 = ctx1.Try(
         bodyCtx => {
@@ -340,7 +337,7 @@ abstract class GenICode extends SubComponent  {
             exhCtx
           })), EmptyTree, tree)
 
-      debugLog("synchronized block end with block %s closed=%s".format(ctx1.bb, ctx1.bb.closed))
+      debuglog("synchronized block end with block %s closed=%s".format(ctx1.bb, ctx1.bb.closed))
       ctx1.exitSynchronized(monitor)
       if (hasResult)
         ctx1.bb.emit(LOAD_LOCAL(monitorResult))
@@ -368,7 +365,7 @@ abstract class GenICode extends SubComponent  {
       val resKind = if (hasUnitBranch) UNIT else ifKind
 
       if (hasUnitBranch)
-        debugLog("Will drop result from an if branch")
+        debuglog("Will drop result from an if branch")
 
       thenCtx = genLoad(thenp, thenCtx, resKind)
       elseCtx = genLoad(elsep, elseCtx, resKind)

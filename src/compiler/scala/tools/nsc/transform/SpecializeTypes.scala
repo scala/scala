@@ -54,13 +54,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                                        => false
   }
 
-  @inline private def debuglog(msg: => String) {
-    if (settings.debug.value) log(msg)
-  }
-  @inline private def ifDebug(body: => Unit) {
-    if (settings.debug.value) { body }
-  }
-
   object TypeEnv {
     /** Return a new type environment binding specialized type parameters of sym to
      *  the given args. Expects the lists to have the same length.

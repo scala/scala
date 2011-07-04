@@ -241,12 +241,10 @@ abstract class ReachingDefinitions {
       findDefs(bb, idx, m, 0)
 
     override def toString: String = {
-      val sb = new StringBuilder
-      sb.append("rdef: \n")
-      for (b <- method.code.blocks)
-        sb.append("rdef_entry(" + b + ")= " + in(b)).append("\nrdef_exit(" + b + ")= " + out(b))
-      sb.toString()
+      method.code.blocks map { b =>
+        "  entry(%s) = %s\n".format(b, in(b)) +
+        "   exit(%s) = %s\n".format(b, out(b))
+      } mkString ("ReachingDefinitions {\n", "\n", "\n}")
     }
-
   }
 }

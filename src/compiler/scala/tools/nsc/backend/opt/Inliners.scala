@@ -98,8 +98,7 @@ abstract class Inliners extends SubComponent {
 
     def analyzeClass(cls: IClass): Unit =
       if (settings.inline.value) {
-        if (settings.debug.value)
-        	log("Analyzing " + cls)
+        debuglog("Analyzing " + cls)
 
         this.currentIClazz = cls
         cls.methods filterNot (_.symbol.isConstructor) foreach analyzeMethod
@@ -126,9 +125,10 @@ abstract class Inliners extends SubComponent {
       def analyzeInc(msym: Symbol, i: Instruction, bb: BasicBlock): Boolean = {
         var inlined = false
         def paramTypes  = msym.info.paramTypes
-        val receiver    = (info.stack.types drop paramTypes.length).head match {
-          case REFERENCE(s) => s
-          case _            => NoSymbol
+        val receiver    = (info.stack.types drop paramTypes.length) match {
+          case Nil               => log("analyzeInc(" + msym + "), no type on the stack!") ; NoSymbol
+          case REFERENCE(s) :: _ => s
+          case _                 => NoSymbol
         }
         val concreteMethod  = lookupImplFor(msym, receiver)
 
@@ -149,8 +149,7 @@ abstract class Inliners extends SubComponent {
                 || receiver.enclosingPackage == definitions.RuntimePackage
                 )   // only count non-closures
 
-        if (settings.debug.value)
-          log("Treating " + i
+        debuglog("Treating " + i
               + "\n\treceiver: " + receiver
               + "\n\ticodes.available: " + isAvailable
               + "\n\tconcreteMethod.isEffectivelyFinal: " + concreteMethod.isEffectivelyFinal)
@@ -185,8 +184,7 @@ abstract class Inliners extends SubComponent {
               }
             case None =>
               warnNoInline("bytecode was not available")
-              if (settings.debug.value)
-                log("could not find icode\n\treceiver: " + receiver + "\n\tmethod: " + concreteMethod)
+              debuglog("could not find icode\n\treceiver: " + receiver + "\n\tmethod: " + concreteMethod)
           }
         }
         else warnNoInline(
@@ -212,8 +210,11 @@ abstract class Inliners extends SubComponent {
             breakable {
               for (i <- bb) {
                 i match {
-                  case CALL_METHOD(msym, Dynamic) =>
-                    if (analyzeInc(msym, i, bb)) break
+                  // Dynamic == normal invocations
+                  // Static(true) == calls to private members
+                  case CALL_METHOD(msym, Dynamic | Static(true)) if !msym.isConstructor =>
+                    if (analyzeInc(msym, i, bb))
+                      break
                   case _ => ()
                 }
                 info = tfa.interpret(info, i)
@@ -253,8 +254,7 @@ abstract class Inliners extends SubComponent {
       def loadCondition = sym.isEffectivelyFinal && isMonadicMethod(sym) && isHigherOrderMethod(sym)
 
       val res = hasInline(sym) || alwaysLoad || loadCondition
-      if (settings.debug.value)
-        log("shouldLoadImplFor: " + receiver + "." + sym + ": " + res)
+      debuglog("shouldLoadImplFor: " + receiver + "." + sym + ": " + res)
       res
     }
 
@@ -274,8 +274,7 @@ abstract class Inliners extends SubComponent {
       }
       if (needsLookup) {
         val concreteMethod = lookup(clazz)
-        if (settings.debug.value)
-          log("\tlooked up method: " + concreteMethod.fullName)
+        debuglog("\tlooked up method: " + concreteMethod.fullName)
 
         concreteMethod
       }
@@ -312,6 +311,10 @@ abstract class Inliners extends SubComponent {
       def hasCode       = m.code != null
       def hasSourceFile = m.sourceFile != null
       def hasHandlers   = handlers.nonEmpty
+      def hasNonFinalizerHandler = handlers exists {
+        case _: Finalizer => true
+        case _            => false
+      }
 
       // the number of inlined calls in 'm', used by 'shouldInline'
       var inlinedCalls = 0
@@ -535,8 +538,7 @@ abstract class Inliners extends SubComponent {
       def isSafeToInline(stack: TypeStack): Boolean = {
         def makePublic(f: Symbol): Boolean =
           inc.hasSourceFile && (f.isSynthetic || f.isParamAccessor) && {
-            if (settings.debug.value)
-              log("Making not-private symbol out of synthetic: " + f)
+            debuglog("Making not-private symbol out of synthetic: " + f)
 
             f setNotFlag Flags.PRIVATE
             true
@@ -572,22 +574,20 @@ abstract class Inliners extends SubComponent {
           }
 
           def iterate(): NonPublicRefs.Value = inc.instructions.foldLeft(Public)((res, inc) => getAccess(inc) match {
-            case Private    => return Private
+            case Private    => log("instruction " + inc + " requires private access.") ; return Private
             case Protected  => Protected
             case Public     => res
           })
           iterate()
         })
 
-        def isIllegalStack = (stack.length > inc.minimumStack && inc.hasHandlers) || {
-          if (settings.debug.value)
-            log("method " + inc.sym + " is used on a non-empty stack with finalizer.")
-
-          false
+        canAccess(accessNeeded) && {
+          val isIllegalStack = (stack.length > inc.minimumStack && inc.hasNonFinalizerHandler)
+          !isIllegalStack || {
+            debuglog("method " + inc.sym + " is used on a non-empty stack with finalizer.  Stack: " + stack)
+            false
+          }
         }
-//        if (!canAccess(accessNeeded))
-//          println("access needed and failed: " + accessNeeded)
-        canAccess(accessNeeded) && !isIllegalStack
       }
 
       /** Decide whether to inline or not. Heuristics:
@@ -601,8 +601,7 @@ abstract class Inliners extends SubComponent {
       private def alwaysInline  = inc.inline
 
       def shouldInline: Boolean = !neverInline && (alwaysInline || {
-        if (settings.debug.value)
-          log("shouldInline: " + caller.m + " with " + inc.m)
+        debuglog("shouldInline: " + caller.m + " with " + inc.m)
 
         var score = 0
 
@@ -615,8 +614,7 @@ abstract class Inliners extends SubComponent {
           score += 1
         if (caller.isSmall && isLargeSum) {
           score -= 1
-          if (settings.debug.value)
-            log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
+          debuglog("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
         }
         if (inc.isLarge)
           score -= 1

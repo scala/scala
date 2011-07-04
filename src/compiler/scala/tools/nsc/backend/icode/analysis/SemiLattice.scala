@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend.icode
 package analysis
@@ -26,6 +25,11 @@ trait SemiLattice {
       case _ =>
         false
     }
+    private def tstring(x: Any): String = x match {
+      case xs: TraversableOnce[_] => xs map tstring mkString " "
+      case _                      => "" + x
+    }
+    override def toString = "IState(" + tstring(vars) + ", " + tstring(stack) + ")"
   }
 
   /** Return the least upper bound of a and b. */
