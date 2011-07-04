@@ -67,7 +67,7 @@ class DoubleLinkedList[A]() extends LinearSeq[A]
  */
 object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, DoubleLinkedList[A]] =
     new Builder[A, DoubleLinkedList[A]] {

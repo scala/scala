@@ -426,7 +426,8 @@ object List extends SeqFactory[List] {
   import scala.collection.{Iterable, Seq, IndexedSeq}
 
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 

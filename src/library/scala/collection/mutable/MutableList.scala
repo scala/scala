@@ -143,7 +143,7 @@ extends LinearSeq[A]
 
 
 object MutableList extends SeqFactory[MutableList] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, MutableList[A]] = new MutableList[A]
 }

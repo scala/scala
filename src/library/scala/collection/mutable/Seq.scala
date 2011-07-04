@@ -39,6 +39,6 @@ trait Seq[A] extends Iterable[A]
  *  @define Coll mutable.Seq
  */
 object Seq extends SeqFactory[Seq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
 }

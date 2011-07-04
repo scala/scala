@@ -31,6 +31,6 @@ trait IndexedSeq[A] extends Seq[A]
  *  @define Coll mutable.IndexedSeq
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]
 }

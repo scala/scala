@@ -39,7 +39,7 @@ trait GenSeq[+A] extends GenIterable[A]
 
 
 // object GenSeq extends SeqFactory[GenSeq] {
-//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenSeq[A]] = new GenericCanBuildFrom[A]
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 //   def newBuilder[A]: Builder[A, GenSeq[A]] = Seq.newBuilder
 // }
 

@@ -36,6 +36,12 @@ package generic
 abstract class GenTraversableFactory[CC[X] <: GenTraversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {
 
+  // A default implementation of GenericCanBuildFrom which can be cast
+  // to whatever is desired.
+  private[collection] object ReusableCBF extends GenericCanBuildFrom[Nothing] {
+    override def apply() = newBuilder[Nothing]
+  }
+
   /** A generic implementation of the `CanBuildFrom` trait, which forwards
    *  all calls to `apply(from)` to the `genericBuilder` method of
    *  $coll `from`, and which forwards all calls of `apply()` to the

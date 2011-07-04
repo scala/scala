@@ -103,7 +103,7 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   private[collection] val breaks: Breaks = new Breaks
 
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }

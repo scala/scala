@@ -61,7 +61,7 @@ class LinkedList[A]() extends LinearSeq[A]
  */
 object LinkedList extends SeqFactory[LinkedList] {
   override def empty[A]: LinkedList[A] = new LinkedList[A]
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
   def newBuilder[A]: Builder[A, LinkedList[A]] =
     (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)

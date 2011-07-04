@@ -94,7 +94,7 @@ extends IndexedSeq[A]
  */
 object ArraySeq extends SeqFactory[ArraySeq] {
   /** $genericCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, ArraySeq[A]] =
     new ArrayBuffer[A] mapResult { buf =>
       val result = new ArraySeq[A](buf.length)

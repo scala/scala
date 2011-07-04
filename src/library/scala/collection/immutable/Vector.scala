@@ -6,29 +6,22 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import compat.Platform
-
 import scala.collection.generic._
 import scala.collection.mutable.Builder
 import scala.collection.parallel.immutable.ParVector
 
-
 object Vector extends SeqFactory[Vector] {
-  private[immutable] val BF = new GenericCanBuildFrom[Nothing] {
-    override def apply() = newBuilder[Nothing]
-  }
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
-    BF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
   @inline override def empty[A]: Vector[A] = NIL
 }
-
 
 // in principle, most members should be private. however, access privileges must
 // be carefully chosen to not prevent method inlining

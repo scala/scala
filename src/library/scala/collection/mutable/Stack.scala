@@ -33,7 +33,7 @@ object Stack extends SeqFactory[Stack] {
     }
   }
 
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, Stack[A]] = new StackBuilder[A]
   val empty: Stack[Nothing] = new Stack(Nil)
 }

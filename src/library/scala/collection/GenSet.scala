@@ -31,7 +31,7 @@ extends GenSetLike[A, GenSet[A]]
 
 
 object GenSet extends GenTraversableFactory[GenSet] {
-  implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A] = Set.newBuilder
 }
 

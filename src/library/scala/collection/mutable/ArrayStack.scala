@@ -22,7 +22,7 @@ import generic._
  *  @define Coll ArrayStack
  */
 object ArrayStack extends SeqFactory[ArrayStack] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
   def empty: ArrayStack[Nothing] = new ArrayStack()
   def apply[A: ClassManifest](elems: A*): ArrayStack[A] = {

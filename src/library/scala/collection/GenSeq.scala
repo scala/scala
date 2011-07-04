@@ -31,6 +31,6 @@ extends GenSeqLike[A, GenSeq[A]]
 
 
 object GenSeq extends GenTraversableFactory[GenSeq] {
-  implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A] = Seq.newBuilder
 }

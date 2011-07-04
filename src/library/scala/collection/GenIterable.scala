@@ -30,7 +30,7 @@ extends GenIterableLike[A, GenIterable[A]]
 
 
 object GenIterable extends GenTraversableFactory[GenIterable] {
-  implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A] = Iterable.newBuilder
 }
 

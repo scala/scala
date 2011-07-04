@@ -30,7 +30,7 @@ trait GenIterable[A] extends GenTraversable[A]
 
 
 // object GenIterable extends TraversableFactory[GenIterable] {
-//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenIterable[A]] = new GenericCanBuildFrom[A]
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenIterable[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 //   def newBuilder[A]: Builder[A, GenIterable[A]] = Iterable.newBuilder
 // }
 

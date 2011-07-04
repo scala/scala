@@ -38,6 +38,6 @@ trait GenSet[A] extends GenIterable[A]
 
 
 // object GenSet extends TraversableFactory[GenSet] {
-//   implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
+//   implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 //   def newBuilder[A] = Set.newBuilder
 // }

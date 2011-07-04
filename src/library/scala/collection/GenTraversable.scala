@@ -32,7 +32,7 @@ extends GenTraversableLike[A, GenTraversable[A]]
 
 
 object GenTraversable extends GenTraversableFactory[GenTraversable] {
-  implicit def canBuildFrom[A] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A] = Traversable.newBuilder
 }
 

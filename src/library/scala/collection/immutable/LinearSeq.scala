@@ -31,6 +31,6 @@ trait LinearSeq[+A] extends Seq[A]
  *  @define Coll immutable.LinearSeq
  */
 object LinearSeq extends SeqFactory[LinearSeq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = new GenericCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, LinearSeq[A]] = new mutable.ListBuffer
 }
