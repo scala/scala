@@ -1823,7 +1823,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: SymbolTable =>
     // >: lo <: hi
   case ExistentialTypeTree(tpt, whereClauses) =>                  (eliminated by uncurry)
     // tpt forSome { whereClauses }
-
+  case SelectFromArray(_, _, _) =>                                (created and eliminated by erasure)
 */
 }
 

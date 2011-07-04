@@ -89,6 +89,7 @@ object REPL {
     val completeResult = new Response[List[comp.Member]]
     val typedResult = new Response[comp.Tree]
     val structureResult = new Response[comp.Tree]
+    val instrumentedResult = new Response[(String, SourceFile)]
 
     def makePos(file: String, off1: String, off2: String) = {
       val source = toSourceFile(file)
@@ -109,6 +110,11 @@ object REPL {
     def doStructure(file: String) {
       comp.askParsedEntered(toSourceFile(file), false, structureResult)
       show(structureResult)
+    }
+
+    def formatInstrumented(r: (String, SourceFile)) = {
+      val (name, source) = r
+      "toplevel object = "+name+", contents = \n"+source.content.mkString
     }
 
     loop { line =>
@@ -132,6 +138,11 @@ object REPL {
           doComplete(makePos(file, off1, off2))
         case List("complete", file, off1) =>
           doComplete(makePos(file, off1, off1))
+        case List("instrument", file) =>
+          val source = toSourceFile(file)
+          comp.askReload(List(source), reloadResult)
+          comp.askInstrumented(source, instrumentedResult)
+          show(instrumentedResult, formatInstrumented)
         case List("quit") =>
           comp.askShutdown()
           // deleted sys. as this has to run on 2.8 also
@@ -146,9 +157,9 @@ object REPL {
 
   def toSourceFile(name: String) = new BatchSourceFile(new PlainFile(new java.io.File(name)))
 
-  def show[T](svar: Response[T]) {
+  def show[T](svar: Response[T], transform: T => Any = (x: T) => x) {
     svar.get match {
-      case Left(result) => println("==> "+result)
+      case Left(result) => println("==> "+transform(result))
       case Right(exc) => exc.printStackTrace; println("ERROR: "+exc)
     }
     svar.clear()

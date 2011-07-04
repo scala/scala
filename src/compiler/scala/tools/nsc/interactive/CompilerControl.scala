@@ -203,6 +203,21 @@ trait CompilerControl { self: Global =>
   def askParsedEntered(source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) =
     postWorkItem(new AskParsedEnteredItem(source, keepLoaded, response))
 
+  /** Set sync var `response` to a pair consisting of
+   *                  - the fully qualified name of the first top-level object definition in the file.
+   *                    or "" if there are no object definitions.
+   *                  - the text of the instrumented program which, when run,
+   *                    prints its output and all defined values in a comment column.
+   *
+   *  @param source       The source file to be analyzed
+   *  @param keepLoaded   If set to `true`, source file will be kept as a loaded unit afterwards.
+   *                      If keepLoaded is `false` the operation is run at low priority, only after
+   *                      everything is brought up to date in a regular type checker run.
+   *  @param response     The response.
+   */
+  def askInstrumented(source: SourceFile, response: Response[(String, SourceFile)]) =
+    postWorkItem(new AskInstrumentedItem(source, response))
+
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
@@ -211,7 +226,7 @@ trait CompilerControl { self: Global =>
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
 
-  @deprecated("use parseTree(source) instead") // deleted 2nd parameter, as thius has to run on 2.8 also.
+  @deprecated("use parseTree(source) instead") // deleted 2nd parameter, as this has to run on 2.8 also.
   def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
     parseTree(source)
   }
@@ -311,6 +326,11 @@ trait CompilerControl { self: Global =>
   class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
+  }
+
+  class AskInstrumentedItem(val source: SourceFile, response: Response[(String, SourceFile)]) extends WorkItem {
+    def apply() = self.getInstrumented(source, response)
+    override def toString = "getInstrumented "+source
   }
 }
 

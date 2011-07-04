@@ -30,6 +30,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
      with RangePositions
      with ContextTrees
      with RichCompilationUnits
+     with ScratchPadMaker
      with Picklers {
 
   import definitions._
@@ -630,7 +631,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   }
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
-  private def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
+  private[interactive] def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
     informIDE("typedTree " + source + " forceReload: " + forceReload)
     val unit = getOrCreateUnitOf(source)
     if (forceReload) reset(unit)
@@ -909,6 +910,12 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
         parseAndEnter(unit)
         unit.body
       }
+    }
+  }
+
+  def getInstrumented(source: SourceFile, response: Response[(String, SourceFile)]) {
+    respond(response) {
+      instrument(source)
     }
   }
 
