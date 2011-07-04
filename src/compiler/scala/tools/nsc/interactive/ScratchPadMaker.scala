@@ -83,7 +83,8 @@ trait ScratchPadMaker { self: Global =>
       case PackageDef(_, _) =>
         super.traverse(tree)
       case ModuleDef(_, name, Template(_, _, body)) =>
-        if (objectName.isEmpty) objectName = tree.symbol.fullName
+        if (objectName.length == 0 /* objectName.isEmpty does not compile on Java 5 due to ambiguous implicit conversions: augmentString, stringToTermName */)
+          objectName = tree.symbol.fullName
         body foreach traverseStat
       case _ =>
     }
