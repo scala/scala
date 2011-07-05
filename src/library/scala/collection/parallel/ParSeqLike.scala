@@ -181,9 +181,12 @@ self =>
     executeAndWaitResult(new Reverse(() => newCombiner, splitter) mapResult { _.result })
   }
 
-  def reverseMap[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
+  def reverseMap[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
+    executeAndWaitResult(new ReverseMap[S, That](f, () => bf(repr).asCombiner, splitter) mapResult { _.result })
+  } else seq.reverseMap(f)(bf2seq(bf))
+  /*bf ifParallel { pbf =>
     executeAndWaitResult(new ReverseMap[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.reverseMap(f)(bf2seq(bf))
+  } otherwise seq.reverseMap(f)(bf2seq(bf))*/
 
   /** Tests whether this $coll contains the given sequence at a given index.
    *
@@ -256,9 +259,12 @@ self =>
     b.result
   }
 
-  def updated[U >: T, That](index: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = bf ifParallel { pbf =>
+  def updated[U >: T, That](index: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = if (bf(repr).isCombiner) {
+    executeAndWaitResult(new Updated(index, elem, () => bf(repr).asCombiner, splitter) mapResult { _.result })
+  } else seq.updated(index, elem)(bf2seq(bf))
+  /*bf ifParallel { pbf =>
     executeAndWaitResult(new Updated(index, elem, pbf, splitter) mapResult { _.result })
-  } otherwise seq.updated(index, elem)(bf2seq(bf))
+  } otherwise seq.updated(index, elem)(bf2seq(bf))*/
 
   def +:[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
     patch(0, mutable.ParArray(elem), 0)
@@ -423,10 +429,10 @@ self =>
     override def merge(that: Reverse[U, This]) = result = that.result combine result
   }
 
-  protected[this] class ReverseMap[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: SeqSplitter[T])
+  protected[this] class ReverseMap[S, That](f: T => S, pbf: () => Combiner[S, That], protected[this] val pit: SeqSplitter[T])
   extends Transformer[Combiner[S, That], ReverseMap[S, That]] {
     @volatile var result: Combiner[S, That] = null
-    def leaf(prev: Option[Combiner[S, That]]) = result = pit.reverseMap2combiner(f, pbf(self.repr))
+    def leaf(prev: Option[Combiner[S, That]]) = result = pit.reverseMap2combiner(f, pbf())
     protected[this] def newSubtask(p: SuperParIterator) = new ReverseMap(f, pbf, down(p))
     override def merge(that: ReverseMap[S, That]) = result = that.result combine result
   }
@@ -448,10 +454,10 @@ self =>
     override def requiresStrictSplitters = true
   }
 
-  protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanCombineFrom[Repr, U, That], protected[this] val pit: SeqSplitter[T])
+  protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: () => Combiner[U, That], protected[this] val pit: SeqSplitter[T])
   extends Transformer[Combiner[U, That], Updated[U, That]] {
     @volatile var result: Combiner[U, That] = null
-    def leaf(prev: Option[Combiner[U, That]]) = result = pit.updated2combiner(pos, elem, pbf(self.repr))
+    def leaf(prev: Option[Combiner[U, That]]) = result = pit.updated2combiner(pos, elem, pbf())
     protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
       val pits = pit.split

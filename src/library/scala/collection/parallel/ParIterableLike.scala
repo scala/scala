@@ -285,6 +285,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
     }
 
     def ifIs[Cmb](isbody: Cmb => Unit): Otherwise[Cmb]
+    def isCombiner: Boolean
+    def asCombiner: Combiner[Elem, To]
   }
 
   trait SignallingOps[PI <: DelegatedSignalling] {
@@ -325,6 +327,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
         if (cb.getClass == m.erasure) isbody(cb.asInstanceOf[Cmb]) else notbody
       }
     }
+    def isCombiner = cb.isInstanceOf[Combiner[_, _]]
+    def asCombiner = cb.asInstanceOf[Combiner[Elem, To]]
   }
 
   protected[this] def bf2seq[S, That](bf: CanBuildFrom[Repr, S, That]) = new CanBuildFrom[Sequential, S, That] {
@@ -501,17 +505,26 @@ self: ParIterableLike[T, Repr, Sequential] =>
     reduce((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
   }
 
-  def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
+  def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
+    executeAndWaitResult(new Map[S, That](f, () => bf(repr).asCombiner, splitter) mapResult { _.result })
+  } else seq.map(f)(bf2seq(bf))
+  /*bf ifParallel { pbf =>
     executeAndWaitResult(new Map[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.map(f)(bf2seq(bf))
+  } otherwise seq.map(f)(bf2seq(bf))*/
 
-  def collect[S, That](pf: PartialFunction[T, S])(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
+  def collect[S, That](pf: PartialFunction[T, S])(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
+    executeAndWaitResult(new Collect[S, That](pf, () => bf(repr).asCombiner, splitter) mapResult { _.result })
+  } else seq.collect(pf)(bf2seq(bf))
+  /*bf ifParallel { pbf =>
     executeAndWaitResult(new Collect[S, That](pf, pbf, splitter) mapResult { _.result })
-  } otherwise seq.collect(pf)(bf2seq(bf))
+  } otherwise seq.collect(pf)(bf2seq(bf))*/
 
-  def flatMap[S, That](f: T => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
+  def flatMap[S, That](f: T => GenTraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
+    executeAndWaitResult(new FlatMap[S, That](f, () => bf(repr).asCombiner, splitter) mapResult { _.result })
+  } else seq.flatMap(f)(bf2seq(bf))
+  /*bf ifParallel { pbf =>
     executeAndWaitResult(new FlatMap[S, That](f, pbf, splitter) mapResult { _.result })
-  } otherwise seq.flatMap(f)(bf2seq(bf))
+  } otherwise seq.flatMap(f)(bf2seq(bf))*/
 
   /** Tests whether a predicate holds for all elements of this $coll.
    *
@@ -965,27 +978,28 @@ self: ParIterableLike[T, Repr, Sequential] =>
     override def requiresStrictSplitters = true
   }
 
-  protected[this] class Map[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: IterableSplitter[T])
+  protected[this] class Map[S, That](f: T => S, pbf: () => Combiner[S, That], protected[this] val pit: IterableSplitter[T])
   extends Transformer[Combiner[S, That], Map[S, That]] {
     @volatile var result: Combiner[S, That] = null
-    def leaf(prev: Option[Combiner[S, That]]) = result = pit.map2combiner(f, reuse(prev, pbf(self.repr)))
+    def leaf(prev: Option[Combiner[S, That]]) = result = pit.map2combiner(f, reuse(prev, pbf()))
     protected[this] def newSubtask(p: IterableSplitter[T]) = new Map(f, pbf, p)
     override def merge(that: Map[S, That]) = result = result combine that.result
   }
 
   protected[this] class Collect[S, That]
-  (pf: PartialFunction[T, S], pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: IterableSplitter[T])
+  (pf: PartialFunction[T, S], pbf: () => Combiner[S, That], protected[this] val pit: IterableSplitter[T])
   extends Transformer[Combiner[S, That], Collect[S, That]] {
     @volatile var result: Combiner[S, That] = null
-    def leaf(prev: Option[Combiner[S, That]]) = result = pit.collect2combiner[S, That](pf, pbf(self.repr))
+    def leaf(prev: Option[Combiner[S, That]]) = result = pit.collect2combiner[S, That](pf, pbf())
     protected[this] def newSubtask(p: IterableSplitter[T]) = new Collect(pf, pbf, p)
     override def merge(that: Collect[S, That]) = result = result combine that.result
   }
 
-  protected[this] class FlatMap[S, That](f: T => GenTraversableOnce[S], pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: IterableSplitter[T])
+  protected[this] class FlatMap[S, That]
+  (f: T => GenTraversableOnce[S], pbf: () => Combiner[S, That], protected[this] val pit: IterableSplitter[T])
   extends Transformer[Combiner[S, That], FlatMap[S, That]] {
     @volatile var result: Combiner[S, That] = null
-    def leaf(prev: Option[Combiner[S, That]]) = result = pit.flatmap2combiner(f, pbf(self.repr))
+    def leaf(prev: Option[Combiner[S, That]]) = result = pit.flatmap2combiner(f, pbf())
     protected[this] def newSubtask(p: IterableSplitter[T]) = new FlatMap(f, pbf, p)
     override def merge(that: FlatMap[S, That]) = {
       //debuglog("merging " + result + " and " + that.result)
