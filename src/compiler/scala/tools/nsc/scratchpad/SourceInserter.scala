@@ -26,7 +26,7 @@ class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) ext
 
   private var buf = contents
   private var offset = start
-  private var hilen = 0
+  private var hilen = contents.length
 
   def length = offset + hilen
 
@@ -56,6 +56,7 @@ class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) ext
   }
 
   private def insertChar(ch: Char) = {
+//  Console.err.print("["+ch+"]")
     buf(offset) = ch.toChar
     offset += 1
     ch match {
@@ -76,7 +77,6 @@ class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) ext
   }
 
   override def close() {
-    buf = null
   }
 
   override def flush() {
@@ -104,8 +104,9 @@ class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) ext
 
   def skip(len: Int) = synchronized {
     for (i <- 0 until len) {
-      insertChar(currentChar)
+      val ch = currentChar
       hilen -= 1
+      insertChar(ch)
     }
   }
 }

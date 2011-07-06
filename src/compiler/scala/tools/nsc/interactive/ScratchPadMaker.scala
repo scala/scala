@@ -11,7 +11,7 @@ trait ScratchPadMaker { self: Global =>
 
   private case class Patch(offset: Int, text: String)
 
-  private class Patcher(contents: Array[Char]) extends Traverser {
+  private class Patcher(contents: Array[Char], endOffset: Int) extends Traverser {
     var objectName: String = ""
 
     private val patches = new ArrayBuffer[Patch]
@@ -28,56 +28,62 @@ trait ScratchPadMaker { self: Global =>
 
     private def nameType(sym: Symbol): String = nameType(sym.name.toString, sym.tpe)
 
-    private def literal(str: String) = "\"\"\"\""+str+"\"\"\"\""
+    private def literal(str: String) = "\"\"\""+str+"\"\"\""
+
+    private def applyPendingPatches(offset: Int) = {
+      if (skipped == 0) patches += Patch(offset, "import scala.tools.nsc.scratchpad.Executor._; ")
+      for (msg <- toPrint) patches += Patch(offset, ";System.out.println("+msg+")")
+      toPrint.clear()
+    }
 
     private def addSkip(stat: Tree): Unit = {
-      if (stat.pos.start > skipped) {
-        for (msg <- toPrint)
-          patches += Patch(stat.pos.start, ";println("+msg+")")
-      }
+      if (stat.pos.start > skipped) applyPendingPatches(stat.pos.start)
+      if (stat.pos.start >= endOffset)
+        patches += Patch(stat.pos.start, ";$stop()")
       var end = stat.pos.end
       if (end > skipped) {
         while (end < contents.length && !(isLineBreakChar(contents(end)))) end += 1
-        patches += Patch(stat.pos.start, ";skip("+(end-skipped)+"); ")
+        patches += Patch(stat.pos.start, ";$skip("+(end-skipped)+"); ")
         skipped = end
       }
     }
 
-    private def addSandbox(expr: Tree) =
-      patches += (Patch(expr.pos.start, "sandbox("), Patch(expr.pos.end, ")"))
+    private def addSandbox(expr: Tree) = {}
+//      patches += (Patch(expr.pos.start, "sandbox("), Patch(expr.pos.end, ")"))
 
-    private def traverseStat(stat: Tree) = if (stat.pos.isInstanceOf[RangePosition]) {
-      stat match {
-      case ValDef(_, _, _, rhs) =>
-        addSkip(stat)
-        if (stat.symbol.isLazy)
-          toPrint += literal(nameType(stat.symbol)+" = <lazy>")
-        else if (!stat.symbol.isSynthetic) {
-          addSandbox(rhs)
-          toPrint += literal(nameType(stat.symbol)+" = ")+" + "+stat.symbol.name
-        }
-      case DefDef(_, _, _, _, _, _) =>
-        addSkip(stat)
-        toPrint += literal(nameType(stat.symbol))
-      case Annotated(_, arg) =>
-        traverse(arg)
-      case DocDef(_, defn) =>
-        traverse(defn)
-      case _ =>
-        if (stat.isTerm) {
-          addSkip(stat)
-          if (stat.tpe.typeSymbol == UnitClass) {
-            addSandbox(stat)
-          } else {
-            val resName = nextRes()
-            val dispResName = resName filter ('$' !=)
-            patches += Patch(stat.pos.start, "val "+resName+" = ")
-            addSandbox(stat)
-            toPrint += literal(nameType(dispResName, stat.tpe)+" = ")+" + "+resName
-          }
+    private def traverseStat(stat: Tree) =
+      if (stat.pos.isInstanceOf[RangePosition]) {
+        stat match {
+          case ValDef(_, _, _, rhs) =>
+            addSkip(stat)
+            if (stat.symbol.isLazy)
+              toPrint += literal(nameType(stat.symbol) + " = <lazy>")
+            else if (!stat.symbol.isSynthetic) {
+              addSandbox(rhs)
+              toPrint += literal(nameType(stat.symbol) + " = ") + " + " + stat.symbol.name
+            }
+          case DefDef(_, _, _, _, _, _) =>
+            addSkip(stat)
+            toPrint += literal(nameType(stat.symbol))
+          case Annotated(_, arg) =>
+            traverse(arg)
+          case DocDef(_, defn) =>
+            traverse(defn)
+          case _ =>
+            if (stat.isTerm) {
+              addSkip(stat)
+              if (stat.tpe.typeSymbol == UnitClass) {
+                addSandbox(stat)
+              } else {
+                val resName = nextRes()
+                val dispResName = resName filter ('$' !=)
+                patches += Patch(stat.pos.start, "val " + resName + " = ")
+                addSandbox(stat)
+                toPrint += literal(nameType(dispResName, stat.tpe) + " = ") + " + " + resName
+              }
+            }
         }
       }
-    }
 
     override def traverse(tree: Tree): Unit = tree match {
       case PackageDef(_, _) =>
@@ -86,6 +92,7 @@ trait ScratchPadMaker { self: Global =>
         if (objectName.length == 0 /* objectName.isEmpty does not compile on Java 5 due to ambiguous implicit conversions: augmentString, stringToTermName */)
           objectName = tree.symbol.fullName
         body foreach traverseStat
+        applyPendingPatches(skipped)
       case _ =>
     }
 
@@ -116,16 +123,18 @@ trait ScratchPadMaker { self: Global =>
 
   /** Compute an instrumented version of a sourcefile.
    *  @param source  The given sourcefile.
+   *  @param line    The line up to which results should be printed, -1 = whole document.
    *  @return        A pair consisting of
    *                  - the fully qualified name of the first top-level object definition in the file.
    *                    or "" if there are no object definitions.
    *                  - the text of the instrumented program which, when run,
    *                    prints its output and all defined values in a comment column.
    */
-  protected def instrument(source: SourceFile): (String, SourceFile) = {
+  protected def instrument(source: SourceFile, line: Int): (String, Array[Char]) = {
     val tree = typedTree(source, true)
-    val patcher = new Patcher(source.content)
+    val endOffset = if (line < 0) source.length else source.lineToOffset(line + 1)
+    val patcher = new Patcher(source.content, endOffset)
     patcher.traverse(tree)
-    (patcher.objectName, new BatchSourceFile(source.file, patcher.result))
+    (patcher.objectName, patcher.result)
   }
 }

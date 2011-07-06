@@ -1,28 +1,60 @@
 package scala.tools.nsc.scratchpad
 
 import java.io.{PrintStream, OutputStreamWriter, Writer}
+import java.lang.reflect.InvocationTargetException
 
 object Executor {
 
   println("exec started")
 
-  def execute(name: String, si: SourceInserter) {
-    val oldOut = System.out
-    val oldErr = System.err
-    val cwr = new CommentWriter(si)
-    val newOut = new PrintStream(new CommentOutputStream(cwr))
-    java.lang.System.setOut(newOut)
-    java.lang.System.setErr(newOut)
+  private var currentWriter: CommentWriter = null
 
+  def ultimateCause(ex: Throwable): Throwable = ex match {
+    case ex: InvocationTargetException =>
+      ultimateCause(ex.getCause)
+    case ex: ExceptionInInitializerError =>
+      ultimateCause(ex.getCause)
+    case ex =>
+      ex
+  }
+
+  /** Execute module with given name, redirecting all output to given
+   *  source inserter. Catch all exceptions and print stacktrace of underlying causes.
+   */
+  def execute(name: String, si: SourceInserter) {
+    val oldSysOut = System.out
+    val oldSysErr = System.err
+    val oldConsOut = Console.out
+    val oldConsErr = Console.err
+    val oldCwr = currentWriter
+    currentWriter = new CommentWriter(si)
+    val newOut = new PrintStream(new CommentOutputStream(currentWriter))
+    System.setOut(newOut)
+    System.setErr(newOut)
+    Console.setOut(newOut)
+    Console.setErr(newOut)
     try {
-      Class.forName(name).newInstance()
+      val clazz = Class.forName(name+"$")
+      clazz.getField("$MODULE").get(null)
     } catch {
       case ex: Throwable =>
-        ex.printStackTrace()
+        ultimateCause(ex) match {
+          case _: StopException => ;
+          case cause => cause.printStackTrace()
+        }
     } finally {
-      cwr.close()
-      System.setOut(oldOut)
-      System.setErr(oldErr)
+      currentWriter.close()
+      System.setOut(oldSysOut)
+      System.setErr(oldSysErr)
+      Console.setOut(oldConsOut)
+      Console.setErr(oldConsErr)
+      currentWriter = oldCwr
     }
   }
+
+  def $skip(n: Int) = currentWriter.skip(n)
+
+  def $stop() = throw new StopException
 }
+
+class StopException extends Exception

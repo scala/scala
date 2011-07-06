@@ -4,7 +4,7 @@ import java.io.Writer
 import reflect.internal.Chars._
 
 
-class CommentWriter(underlying: SourceInserter, startCol: Int = 40, endCol: Int = 124) extends Writer {
+class CommentWriter(underlying: SourceInserter, startCol: Int = 40, endCol: Int = 152) extends Writer {
 
   private def rightCol(marker: String) = {
     while (underlying.column < startCol) underlying.write(' ')

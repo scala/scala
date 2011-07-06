@@ -215,8 +215,8 @@ trait CompilerControl { self: Global =>
    *                      everything is brought up to date in a regular type checker run.
    *  @param response     The response.
    */
-  def askInstrumented(source: SourceFile, response: Response[(String, SourceFile)]) =
-    postWorkItem(new AskInstrumentedItem(source, response))
+  def askInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) =
+    postWorkItem(new AskInstrumentedItem(source, line, response))
 
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
@@ -328,8 +328,8 @@ trait CompilerControl { self: Global =>
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
   }
 
-  class AskInstrumentedItem(val source: SourceFile, response: Response[(String, SourceFile)]) extends WorkItem {
-    def apply() = self.getInstrumented(source, response)
+  class AskInstrumentedItem(val source: SourceFile, line: Int, response: Response[(String, Array[Char])]) extends WorkItem {
+    def apply() = self.getInstrumented(source, line, response)
     override def toString = "getInstrumented "+source
   }
 }

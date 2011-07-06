@@ -11,6 +11,8 @@ import scala.tools.nsc.symtab._
 import scala.tools.nsc.ast._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
+import scala.tools.nsc.scratchpad.{Executor, SourceInserter}
+import java.io.{File, FileWriter}
 
 /** Interface of interactive compiler to a client such as an IDE
  */
@@ -89,32 +91,62 @@ object REPL {
     val completeResult = new Response[List[comp.Member]]
     val typedResult = new Response[comp.Tree]
     val structureResult = new Response[comp.Tree]
-    val instrumentedResult = new Response[(String, SourceFile)]
+    val instrumentedResult = new Response[(String, Array[Char])]
 
     def makePos(file: String, off1: String, off2: String) = {
       val source = toSourceFile(file)
       comp.rangePos(source, off1.toInt, off1.toInt, off2.toInt)
     }
+
     def doTypeAt(pos: Position) {
       comp.askTypeAt(pos, typeatResult)
       show(typeatResult)
     }
+
     def doComplete(pos: Position) {
       comp.askTypeCompletion(pos, completeResult)
       show(completeResult)
     }
+
     def doTypedTree(file: String) {
       comp.askType(toSourceFile(file), true, typedResult)
       show(typedResult)
     }
+
     def doStructure(file: String) {
       comp.askParsedEntered(toSourceFile(file), false, structureResult)
       show(structureResult)
     }
 
-    def formatInstrumented(r: (String, SourceFile)) = {
-      val (name, source) = r
-      "toplevel object = "+name+", contents = \n"+source.content.mkString
+    /** This is the method for implement worksheet functionality
+     */
+    def instrument(source: SourceFile, line: Int): Option[Array[Char]] = {
+      // strip right hand side comment column and any trailing spaces from all lines
+      val strippedSource = new BatchSourceFile(source.file, SourceInserter.stripRight(source.content))
+      comp.askReload(List(strippedSource), reloadResult)
+      // todo: Display strippedSource in place of source
+      comp.askInstrumented(strippedSource, line, instrumentedResult)
+      using(instrumentedResult) { case (iFullName, iContents) =>
+        // iFullName: The full name of the first top-level object in source
+        // iContents: An Array[Char] containing the instrumented source
+        // Create a file from iContents so that it can be compiled
+        // The name here is <simple name of object>+"$instrumented.scala", but
+        // it could be anything.
+        val iSimpleName = iFullName drop ((iFullName lastIndexOf '.') + 1)
+        val iSourceName = iSimpleName + "$instrumented.scala"
+        val ifile = new FileWriter(iSourceName)
+        ifile.write(iContents)
+        ifile.close()
+        println("compiling "+iSourceName)
+        // Compile instrumented source
+        scala.tools.nsc.Main.process(Array(iSourceName, "-verbose", "-d", "/classes"))
+        // Run instrumented source, inserting all output into stripped source
+        println("running "+iSimpleName)
+        val si = new SourceInserter(strippedSource.content)
+        Executor.execute(iSimpleName, si)
+        println("done")
+        si.currentContents
+      }
     }
 
     loop { line =>
@@ -139,10 +171,9 @@ object REPL {
         case List("complete", file, off1) =>
           doComplete(makePos(file, off1, off1))
         case List("instrument", file) =>
-          val source = toSourceFile(file)
-          comp.askReload(List(source), reloadResult)
-          comp.askInstrumented(source, instrumentedResult)
-          show(instrumentedResult, formatInstrumented)
+          println(instrument(toSourceFile(file), -1).map(_.mkString))
+        case List("instrument", file, line) =>
+          println(instrument(toSourceFile(file), line.toInt).map(_.mkString))
         case List("quit") =>
           comp.askShutdown()
           // deleted sys. as this has to run on 2.8 also
@@ -157,11 +188,14 @@ object REPL {
 
   def toSourceFile(name: String) = new BatchSourceFile(new PlainFile(new java.io.File(name)))
 
-  def show[T](svar: Response[T], transform: T => Any = (x: T) => x) {
-    svar.get match {
-      case Left(result) => println("==> "+transform(result))
-      case Right(exc) => exc.printStackTrace; println("ERROR: "+exc)
+  def using[T, U](svar: Response[T])(op: T => U): Option[U] = {
+    val res = svar.get match {
+      case Left(result) => Some(op(result))
+      case Right(exc) => exc.printStackTrace; println("ERROR: "+exc); None
     }
     svar.clear()
+    res
   }
+
+  def show[T](svar: Response[T]) = using(svar)(res => println("==> "+res))
 }

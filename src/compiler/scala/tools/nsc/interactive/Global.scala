@@ -913,9 +913,9 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     }
   }
 
-  def getInstrumented(source: SourceFile, response: Response[(String, SourceFile)]) {
+  def getInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) {
     respond(response) {
-      instrument(source)
+      instrument(source, line)
     }
   }
 
