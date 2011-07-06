@@ -168,7 +168,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       body
   }
   @inline final def debuglog(msg: => String) {
-    if (settings.debug.value)
+    if (settings.debug.value && (settings.log containsPhase globalPhase))
       inform("[log " + phase + "] " + msg)
   }
   private def elapsedMessage(msg: String, start: Long) =
