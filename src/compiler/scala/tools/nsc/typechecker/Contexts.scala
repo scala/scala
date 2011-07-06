@@ -455,17 +455,20 @@ trait Contexts { self: Analyzer =>
             "\n Access to protected "+target+" not permitted because"+
             "\n "+"enclosing class "+this.enclClass.owner+this.enclClass.owner.locationString+" is not a subclass of "+
             "\n "+sym.owner+sym.owner.locationString+" where target is defined"
-        c != NoContext && {
-          val res =
-            isSubClassOrCompanion(pre.widen.typeSymbol, c.owner) ||
-            c.owner.isModuleClass &&
-            isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
-          if (!res)
-            lastAccessCheckDetails =
-              "\n Access to protected "+target+" not permitted because"+
-              "\n prefix type "+pre.widen+" does not conform to"+
-              "\n "+c.owner+c.owner.locationString+" where the access take place"
-          res
+        c != NoContext &&
+        {
+          target.isType || { // allow accesses to types from arbitrary subclasses fixes #4737
+            val res =
+              isSubClassOrCompanion(pre.widen.typeSymbol, c.owner) ||
+              c.owner.isModuleClass &&
+              isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
+            if (!res)
+              lastAccessCheckDetails =
+                "\n Access to protected "+target+" not permitted because"+
+                "\n prefix type "+pre.widen+" does not conform to"+
+                "\n "+c.owner+c.owner.locationString+" where the access take place"
+              res
+          }
         }
       }
 
