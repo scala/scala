@@ -26,8 +26,10 @@ abstract class SourceFile {
     new OffsetPosition(this, offset)
   }
   def position(line: Int, column: Int) : Position = new OffsetPosition(this, lineToOffset(line) + column)
+
   def offsetToLine(offset: Int): Int
   def lineToOffset(index : Int): Int
+
   /** Map a position to a position in the underlying source file.
    *  For regular source files, simply return the argument.
    */

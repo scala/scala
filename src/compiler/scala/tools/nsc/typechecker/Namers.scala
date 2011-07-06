@@ -1278,6 +1278,9 @@ trait Namers { self: Analyzer =>
               }
               checkSelectors(selectors)
               transformed(tree) = treeCopy.Import(tree, expr1, selectors)
+              expr.symbol = expr1.symbol // copy symbol and type attributes back into old expression
+                                         // so that the structure builder will find it.
+              expr.tpe = expr1.tpe
               ImportType(expr1)
           }
         } catch {
