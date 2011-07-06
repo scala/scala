@@ -425,7 +425,16 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }</dd>
           } else NodeSeq.Empty
 
-        example ++ version ++ sinceVersion ++ note ++ seeAlso
+        val exceptions: Seq[scala.xml.Node] =
+          if(!comment.throws.isEmpty && !isReduced) {
+            <dt>Exceptions thrown</dt>
+            <dd>{
+              val exceptionsXml: Iterable[scala.xml.NodeSeq] = (for(exception <- comment.throws ) yield <span class="cmt">{Text(exception._1) ++ bodyToHtml(exception._2)}</span> )
+              exceptionsXml.reduceLeft(_ ++ Text("") ++ _)
+            }</dd>
+          } else NodeSeq.Empty
+
+        example ++ version ++ sinceVersion ++ exceptions ++ note ++ seeAlso
 
       case None => NodeSeq.Empty
     }
