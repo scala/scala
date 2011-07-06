@@ -587,8 +587,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     def owner: Symbol = rawowner
     final def owner_=(owner: Symbol) {
-      if (originalOwner contains this) ()
-      else originalOwner(this) = rawowner
+      // don't keep the original owner in presentation compiler runs
+      // (the map will grow indefinitely, and the only use case is the
+      // backend).
+      if (!forInteractive) {
+        if (originalOwner contains this) ()
+        else originalOwner(this) = rawowner
+      }
 
       rawowner = owner
     }
@@ -1319,8 +1324,13 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
     /** Return the original enclosing method of this symbol. It should return
      *  the same thing as enclMethod when called before lambda lift,
      *  but it preserves the original nesting when called afterwards.
+     *
+     *  @note This method is NOT available in the presentation compiler run. The
+     *        originalOwner map is not populated for memory considerations (the symbol
+     *        may hang on to lazy types and in turn to whole (outdated) compilation units.
      */
     def originalEnclosingMethod: Symbol = {
+      assert(!forInteractive, "originalOwner is not kept in presentation compiler runs.")
       if (isMethod) this
       else {
         val owner = originalOwner.getOrElse(this, rawowner)

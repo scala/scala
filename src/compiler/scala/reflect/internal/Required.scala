@@ -14,4 +14,8 @@ trait Required { self: SymbolTable =>
   val gen: TreeGen { val global: Required.this.type }
 
   def settings: MutableSettings
+
+  def forInteractive: Boolean
+
+  def forScaladoc: Boolean
 }
