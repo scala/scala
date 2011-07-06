@@ -25,7 +25,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition
    */
-  private val treatedClassInfos = collection.mutable.Map[Symbol, Type]()
+  private val treatedClassInfos = perRunCaches.newMap[Symbol, Type]()
 
 // --------- helper functions -----------------------------------------------
 
@@ -204,10 +204,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   }
 
   /** Map a lazy, mixedin field accessor to it's trait member accessor */
-  val initializer = new mutable.HashMap[Symbol, Symbol]
+  val initializer = perRunCaches.newMap[Symbol, Symbol]
 
   /** Deferred bitmaps that will be added during the transformation of a class */
-  val deferredBitmaps: collection.mutable.Map[Symbol, List[Tree]] = new collection.mutable.HashMap[Symbol, List[Tree]]
+  val deferredBitmaps = perRunCaches.newMap[Symbol, List[Tree]]()
 
   /** Add all members to be mixed in into a (non-trait-) class
    *  These are:
@@ -477,7 +477,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      *  For each class, fields defined by the class come after inherited fields. Mixed-in
      *  fields count as fields defined by the class itself.
      */
-    private val fieldOffset: mutable.Map[Symbol, Int] = new mutable.HashMap[Symbol, Int]
+    private val fieldOffset = perRunCaches.newMap[Symbol, Int]()
 
     /** The first transform; called in a pre-order traversal at phase mixin
      *  (that is, every node is processed before its children).

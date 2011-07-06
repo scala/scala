@@ -66,7 +66,7 @@ trait TypeDiagnostics {
   /** A map of Positions to addendums - if an error involves a position in
    *  the map, the addendum should also be printed.
    */
-  private var addendums = mutable.Map[Position, () => String]()
+  private var addendums = perRunCaches.newMap[Position, () => String]()
 
   def setAddendum(pos: Position, msg: () => String) =
     if (pos != NoPosition)

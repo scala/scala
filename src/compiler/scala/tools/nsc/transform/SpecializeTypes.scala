@@ -190,7 +190,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Map a symbol to additional information on specialization. */
-  private val info: mutable.Map[Symbol, SpecializedInfo] = new mutable.HashMap[Symbol, SpecializedInfo]
+  private val info: mutable.Map[Symbol, SpecializedInfo] = perRunCaches.newMap[Symbol, SpecializedInfo]()
 
   /** Has `clazz' any type parameters that need be specialized? */
   def hasSpecializedParams(clazz: Symbol) =
@@ -359,7 +359,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   // holds mappings from regular type parameter symbols to symbols of
   // specialized type parameters which are subtypes of AnyRef
-  private val anyrefSpecCache = mutable.Map[Symbol, Symbol]()
+  private val anyrefSpecCache = perRunCaches.newMap[Symbol, Symbol]()
 
   /** Returns the type parameter in the specialized class `cls` that corresponds to type parameter
    *  `sym` in the original class. It will create it if needed or use the one from the cache.
@@ -383,10 +383,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   )
 
-  // holds mappings from members to the type variables in the class that they were already specialized for,
-  // so that they don't get specialized twice (this is for AnyRef specializations)
+  // holds mappings from members to the type variables in the class
+  // that they were already specialized for, so that they don't get
+  // specialized twice (this is for AnyRef specializations)
   private val wasSpecializedForTypeVars =
-    mutable.Map[Symbol, immutable.Set[Symbol]]() withDefaultValue immutable.Set[Symbol]()
+    perRunCaches.newMap[Symbol, immutable.Set[Symbol]]() withDefaultValue immutable.Set[Symbol]()
 
   /** Type parameters that survive when specializing in the specified environment. */
   def survivingParams(params: List[Symbol], env: TypeEnv) =
@@ -1187,12 +1188,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      */
     class CollectMethodBodies extends Traverser {
       override def traverse(tree: Tree) = tree match {
-        case  DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        case  DefDef(mods, name, tparams, vparams :: Nil, tpt, rhs) =>
           if (concreteSpecMethods(tree.symbol) || tree.symbol.isConstructor) {
             debuglog("!!! adding body of a defdef %s, symbol %s: %s".format(tree, tree.symbol, rhs))
             body(tree.symbol) = rhs
             //          body(tree.symbol) = tree // whole method
-            parameters(tree.symbol) = vparamss map (_ map (_.symbol))
+            parameters(tree.symbol) = vparams map (_.symbol)
             concreteSpecMethods -= tree.symbol
           } // no need to descend further down inside method bodies
 
@@ -1527,7 +1528,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       // log("Type env of: " + tree.symbol + ": " + boundTvars)
       // log("newtparams: " + newtparams)
       val symSubstituter = new ImplementationAdapter(
-        parameters(source).flatten ::: origtparams,
+        parameters(source) ::: origtparams,
         vparamss1.flatten.map(_.symbol) ::: newtparams,
         source.enclClass,
         false) // don't make private fields public
@@ -1555,10 +1556,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (m.isMethod)  {
           if (info(m).target.hasAccessorFlag) hasSpecializedFields = true
           if (m.isClassConstructor) {
-            val origParamss = parameters(info(m).target)
+            val origParams = parameters(info(m).target)
 
             val vparams =
-              for ((tp, sym) <- m.info.paramTypes zip origParamss(0))
+              for ((tp, sym) <- m.info.paramTypes zip origParams)
                 yield m.newValue(sym.pos, specializedName(sym, typeEnv(cls)))
                        .setInfo(tp)
                        .setFlag(sym.flags)

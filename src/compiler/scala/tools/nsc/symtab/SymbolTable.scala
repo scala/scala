@@ -7,7 +7,7 @@ package scala.tools.nsc
 package symtab
 
 import ast.{Trees, TreePrinters, DocComments}
-
+import scala.collection.{ mutable, immutable }
 import util._
 
 abstract class SymbolTable extends reflect.generic.Universe
@@ -115,6 +115,34 @@ abstract class SymbolTable extends reflect.generic.Universe
       if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
       else noChangeInBaseClasses(infoTransformers.nextFrom(phase.id), pid)
     }
+  }
+
+  object perRunCaches {
+    import java.lang.ref.WeakReference
+
+    // We can allow ourselves a structural type, these methods
+    // amount to a few calls per run at most.  This does suggest
+    // a "Clearable" trait may be useful.
+    private type Clearable = {
+      def size: Int
+      def clear(): Unit
+    }
+    // Weak references so the garbage collector will take care of
+    // letting us know when a cache is really out of commission.
+    private val caches = mutable.HashSet[WeakReference[Clearable]]()
+
+    def clearAll() = {
+      caches foreach { ref =>
+        val cache = ref.get()
+        if (cache == null)
+          caches -= ref
+        else
+          cache.clear()
+      }
+    }
+
+    def newMap[K, V]() = { val m = mutable.HashMap[K, V]() ; caches += new WeakReference(m) ; m }
+    def newSet[K]()    = { val s = mutable.HashSet[K]() ; caches += new WeakReference(s) ; s }
   }
 
   /** Break into repl debugger if assertion is true */

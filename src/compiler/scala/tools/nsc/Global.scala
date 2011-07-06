@@ -1020,6 +1020,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       // record dependency data
       if (!dependencyAnalysis.off)
         dependencyAnalysis.saveDependencyAnalysis()
+
+      // Clear any sets or maps created via perRunCaches.
+      perRunCaches.clearAll()
     }
 
     /** Compile list of abstract files. */
