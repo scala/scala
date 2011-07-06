@@ -122,13 +122,13 @@ object scaladoc extends Command {
 
   val exitStatus = Section("EXIT STATUS",
 
-    MBold(command) & " returns a zero exist status if it succeeds to process " &
+    MBold(command) & " returns a zero exit status if it succeeds at processing " &
     "the specified input files. Non zero is returned in case of failure.")
 
   override val authors = Section("AUTHORS",
 
     "This version of Scaladoc was written by Gilles Dubochet with contributions by Pedro Furlanetto and Johannes Rudolph. " &
-    "It is based on the original Scaladoc (Sean McDirmid, Geoffrey Washburn, Vincent Cremet and Stéphane Michleoud), " &
+    "It is based on the original Scaladoc (Sean McDirmid, Geoffrey Washburn, Vincent Cremet and Stéphane Micheloud), " &
     "on vScaladoc (David Bernard), as well as on an unreleased version of Scaladoc 2 (Manohar Jonnalagedda).")
 
   val seeAlso = Section("SEE ALSO",
