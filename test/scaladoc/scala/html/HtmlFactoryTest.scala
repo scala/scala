@@ -313,4 +313,14 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("SI-4421") = {
+    createTemplate("SI_4421.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains(">Example:") && html.contains(">Note<")
+      }
+      case _ => false
+    }
+  }
 }
