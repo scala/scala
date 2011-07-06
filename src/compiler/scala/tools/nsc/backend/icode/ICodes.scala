@@ -35,10 +35,10 @@ abstract class ICodes extends AnyRef
                                  with Repository
 {
   val global: Global
-  import global.{ definitions, settings }
+  import global.{ definitions, settings, perRunCaches }
 
   /** The ICode representation of classes */
-  val classes = new mutable.HashMap[global.Symbol, IClass]
+  val classes = perRunCaches.newMap[global.Symbol, IClass]()
 
   /** Debugging flag */
   def shouldCheckIcode = settings.check contains global.genicode.phaseName

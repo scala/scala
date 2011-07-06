@@ -182,7 +182,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Map a symbol to additional information on specialization. */
-  private val info: mutable.Map[Symbol, SpecializedInfo] = new mutable.HashMap[Symbol, SpecializedInfo]
+  private val info: mutable.Map[Symbol, SpecializedInfo] = perRunCaches.newMap[Symbol, SpecializedInfo]()
 
   /** Has `clazz` any type parameters that need be specialized? */
   def hasSpecializedParams(clazz: Symbol) =
@@ -351,7 +351,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   // holds mappings from regular type parameter symbols to symbols of
   // specialized type parameters which are subtypes of AnyRef
-  private val anyrefSpecCache = mutable.Map[Symbol, Symbol]()
+  private val anyrefSpecCache = perRunCaches.newMap[Symbol, Symbol]()
 
   /** Returns the type parameter in the specialized class `cls` that corresponds to type parameter
    *  `sym` in the original class. It will create it if needed or use the one from the cache.
@@ -375,10 +375,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   )
 
-  // holds mappings from members to the type variables in the class that they were already specialized for,
-  // so that they don't get specialized twice (this is for AnyRef specializations)
+  // holds mappings from members to the type variables in the class
+  // that they were already specialized for, so that they don't get
+  // specialized twice (this is for AnyRef specializations)
   private val wasSpecializedForTypeVars =
-    mutable.Map[Symbol, immutable.Set[Symbol]]() withDefaultValue immutable.Set[Symbol]()
+    perRunCaches.newMap[Symbol, immutable.Set[Symbol]]() withDefaultValue immutable.Set[Symbol]()
 
   /** Type parameters that survive when specializing in the specified environment. */
   def survivingParams(params: List[Symbol], env: TypeEnv) =

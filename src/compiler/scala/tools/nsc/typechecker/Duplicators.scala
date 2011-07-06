@@ -54,7 +54,7 @@ abstract class Duplicators extends Analyzer {
       else sym1 eq sym2
   }
 
-  private val invalidSyms: mutable.Map[Symbol, Tree] = mutable.HashMap.empty[Symbol, Tree]
+  private val invalidSyms: mutable.Map[Symbol, Tree] = perRunCaches.newMap[Symbol, Tree]()
 
   /** A typer that creates new symbols for all definitions in the given tree
    *  and updates references to them while re-typechecking. All types in the
