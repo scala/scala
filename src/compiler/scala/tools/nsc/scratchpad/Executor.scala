@@ -1,6 +1,7 @@
 package scala.tools.nsc.scratchpad
 
 import java.io.{PrintStream, OutputStreamWriter, Writer}
+import scala.runtime.ScalaRunTime.replStringOf
 import java.lang.reflect.InvocationTargetException
 
 object Executor {
@@ -55,6 +56,8 @@ object Executor {
   def $skip(n: Int) = currentWriter.skip(n)
 
   def $stop() = throw new StopException
+
+  def $show(x: Any): String = replStringOf(x, scala.Int.MaxValue)
 }
 
 class StopException extends Exception

@@ -51,6 +51,9 @@ trait ScratchPadMaker { self: Global =>
     private def addSandbox(expr: Tree) = {}
 //      patches += (Patch(expr.pos.start, "sandbox("), Patch(expr.pos.end, ")"))
 
+    private def resultString(prefix: String, expr: String) =
+      literal(prefix + " = ") + " + $show(" + expr + ")"
+
     private def traverseStat(stat: Tree) =
       if (stat.pos.isInstanceOf[RangePosition]) {
         stat match {
@@ -60,7 +63,7 @@ trait ScratchPadMaker { self: Global =>
               toPrint += literal(nameType(stat.symbol) + " = <lazy>")
             else if (!stat.symbol.isSynthetic) {
               addSandbox(rhs)
-              toPrint += literal(nameType(stat.symbol) + " = ") + " + " + stat.symbol.name
+              toPrint += resultString(nameType(stat.symbol), stat.symbol.name.toString)
             }
           case DefDef(_, _, _, _, _, _) =>
             addSkip(stat)
@@ -79,7 +82,7 @@ trait ScratchPadMaker { self: Global =>
                 val dispResName = resName filter ('$' !=)
                 patches += Patch(stat.pos.start, "val " + resName + " = ")
                 addSandbox(stat)
-                toPrint += literal(nameType(dispResName, stat.tpe) + " = ") + " + " + resName
+                toPrint += resultString(nameType(dispResName, stat.tpe), resName)
               }
             }
         }
