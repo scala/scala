@@ -5,6 +5,7 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
 package scala
 
 import scala.compat.Platform.currentTime
