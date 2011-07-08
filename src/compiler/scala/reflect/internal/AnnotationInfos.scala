@@ -41,8 +41,7 @@ trait AnnotationInfos /*extends reflect.generic.AnnotationInfos*/ { self: Symbol
     * reasons of efficiency, both in term of class-file size and in term of compiler performance. */
   case class ScalaSigBytes(bytes: Array[Byte]) extends ClassfileAnnotArg {
     override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
-    lazy val encodedBytes =
-      reflect.generic.ByteCodecs.encode(bytes)
+    lazy val encodedBytes = ByteCodecs.encode(bytes)
     def isLong: Boolean = (encodedBytes.length > 65535)
     def sigAnnot: Type =
       if (this.isLong)
