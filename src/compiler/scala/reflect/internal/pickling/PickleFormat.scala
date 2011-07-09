@@ -111,7 +111,7 @@ object PickleFormat {
  *   AnnotArg       = Tree | Constant
  *   ConstAnnotArg  = Constant | AnnotInfo | AnnotArgArray
  *
- *   len is remaining length after `len'.
+ *   len is remaining length after `len`.
  */
   val MajorVersion = 5
   val MinorVersion = 0

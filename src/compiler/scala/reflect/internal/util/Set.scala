@@ -18,7 +18,7 @@ abstract class Set[T <: AnyRef] {
 
   def apply(x: T): Boolean = contains(x)
 
-  @deprecated("use `iterator' instead", "2.9.0") def elements = iterator
+  @deprecated("use `iterator` instead", "2.9.0") def elements = iterator
 
   def contains(x: T): Boolean =
     findEntry(x) ne null

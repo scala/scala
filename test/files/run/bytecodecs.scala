@@ -1,4 +1,4 @@
-import scala.reflect.generic.ByteCodecs._
+import scala.reflect.internal.ByteCodecs._
 
 object Test {
 
