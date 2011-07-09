@@ -8,7 +8,7 @@ package backend.jvm
 
 import ch.epfl.lamp.fjbg._
 import java.io.{ DataOutputStream, OutputStream }
-import scala.tools.nsc.io.Path
+import scala.tools.nsc.io.{ Path, Directory }
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.util.Javap
 import java.util.jar.{ JarEntry, JarOutputStream }
@@ -57,7 +57,7 @@ trait BytecodeWriters {
   }
 
   trait JavapBytecodeWriter extends BytecodeWriter {
-    val baseDir = Path(settings.Ygenjavap.value)
+    val baseDir = Directory(settings.Ygenjavap.value).createDirectory()
 
     def emitJavap(bytes: Array[Byte], javapFile: io.File) {
       val pw    = javapFile.printWriter()
@@ -73,7 +73,7 @@ trait BytecodeWriters {
 
       val bytes     = getFile(sym, jclass, ".class").toByteArray
       val segments  = jclass.getName().split("[./]")
-      val javapFile = segments.foldLeft(baseDir)(_ / _) changeExtension "javap" toFile
+      val javapFile = segments.foldLeft(baseDir: Path)(_ / _) changeExtension "javap" toFile;
 
       javapFile.parent.createDirectory()
       emitJavap(bytes, javapFile)

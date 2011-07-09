@@ -1,1 +1,1 @@
--Xfatal-warnings
+-Xlint -Xfatal-warnings
