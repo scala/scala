@@ -97,10 +97,10 @@ object PartialFunction
   def cond[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
     (pf isDefinedAt x) && pf(x)
 
-  /** Transforms a PartialFunction[T, U] `pf' into Function1[T, Option[U]] `f'
+  /** Transforms a PartialFunction[T, U] `pf` into Function1[T, Option[U]] `f`
    *  whose result is Some(x) if the argument is in pf's domain and None otherwise,
-   *  and applies it to the value `x'.  In effect, it is a 'match' statement
-   *  which wraps all case results in Some(_) and adds 'case _ => None' to the end.
+   *  and applies it to the value `x`.  In effect, it is a `match` statement
+   *  which wraps all case results in Some(_) and adds `case _ => None` to the end.
    *
    *  @param  x     the value to test
    *  @param  pf    the PartialFunction[T, U]

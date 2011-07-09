@@ -39,7 +39,7 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
   /** The number of words (each with 64 bits) making up the set */
   protected def nwords: Int
 
-  /** The words at index `idx', or 0L if outside the range of the set
+  /** The words at index `idx`, or 0L if outside the range of the set
    *  '''Note:''' requires `idx >= 0`
    */
   protected def word(idx: Int): Long
