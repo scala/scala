@@ -72,8 +72,8 @@ trait RegexParsers extends Parsers {
   /** `positioned` decorates a parser's result with the start position of the input it consumed.
    * If whitespace is being skipped, then it is skipped before the start position is recorded.
    *
-   * @param p a `Parser` whose result conforms to `Positional'.
-   * @return A parser that has the same behaviour as `p', but which marks its result with the
+   * @param p a `Parser` whose result conforms to `Positional`.
+   * @return A parser that has the same behaviour as `p`, but which marks its result with the
    *         start position of the input it consumed after whitespace has been skipped, if it
    *         didn't already have a position.
    */

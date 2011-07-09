@@ -41,9 +41,8 @@ class CharSequenceReader(override val source: java.lang.CharSequence,
 
   /** Returns a CharSequenceReader consisting of all elements except the first.
    *
-   * @return If `atEnd` is `true`, the result will be
-   *         `this'; otherwise, it's a `CharSequenceReader` containing
-   *         the rest of input.
+   * @return If `atEnd` is `true`, the result will be `this`;
+   *         otherwise, it's a `CharSequenceReader` containing the rest of input.
    */
   def rest: CharSequenceReader =
     if (offset < source.length) new CharSequenceReader(source, offset + 1)

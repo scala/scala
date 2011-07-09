@@ -776,7 +776,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  Iterator[Seq[A]], with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
    *
-   *  Typical uses can be achieved via methods `grouped' and `sliding'.
+   *  Typical uses can be achieved via methods `grouped` and `sliding`.
    */
   class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
     require(size >= 1 && step >= 1, "size=%d and step=%d, but both must be positive".format(size, step))

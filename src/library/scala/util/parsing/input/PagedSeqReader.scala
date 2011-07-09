@@ -46,7 +46,7 @@ class PagedSeqReader(seq: PagedSeq[Char],
 
   /** Returns a PagedSeqReader consisting of all elements except the first
    *
-   * @return If `atEnd` is `true`, the result will be `this';
+   * @return If `atEnd` is `true`, the result will be `this`;
    *         otherwise, it's a `PagedSeqReader` containing the rest of input.
    */
   def rest: PagedSeqReader =
