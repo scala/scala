@@ -1,0 +1,4 @@
+Vector(1, 1, 1, 1, 1)
+Vector(Vector(1, 1, 1, 1, 1))
+List(1, 2)
+List(List(1, 2))

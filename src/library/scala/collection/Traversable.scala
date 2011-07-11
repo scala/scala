@@ -29,10 +29,10 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def seq: Traversable[A] = this
 
   @bridge
-  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Traversable[B] = super.flatten(asTraversable)
+  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Traversable[B] = super.flatten(asTraversable)
 
   @bridge
-  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Traversable[Traversable[B]] = super.transpose(asTraversable)
+  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Traversable[Traversable[B]] = super.transpose(asTraversable)
 
   /* The following methods are inherited from TraversableLike
    *

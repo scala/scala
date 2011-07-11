@@ -484,7 +484,7 @@ self =>
     result
   }
 
-  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Stream[B] = {
+  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
       if (!t.isEmpty)
         cons(t.head, flatten1(t.tail))
@@ -492,7 +492,7 @@ self =>
         tail.flatten
 
     if (isEmpty) Stream.empty
-    else flatten1(asTraversable(head).toTraversable)
+    else flatten1(asTraversable(head).seq.toTraversable)
   }
 
   override def view = new StreamView[A, Stream[A]] {

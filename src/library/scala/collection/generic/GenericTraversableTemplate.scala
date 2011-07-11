@@ -13,6 +13,7 @@ package generic
 
 import mutable.Builder
 import annotation.migration
+import annotation.bridge
 import annotation.unchecked.uncheckedVariance
 
 /** A template class for companion objects of ``regular`` collection classes
@@ -120,16 +121,21 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
    *
    *  @tparam B the type of the elements of each traversable collection.
    *  @param asTraversable an implicit conversion which asserts that the element
-   *          type of this $coll is a `Traversable`.
+   *          type of this $coll is a `GenTraversable`.
    *  @return a new $coll resulting from concatenating all element ${coll}s.
    *  @usecase def flatten[B]: $Coll[B]
    */
-  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[B] = {
+  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): CC[B] = {
     val b = genericBuilder[B]
     for (xs <- sequential)
-      b ++= asTraversable(xs)
+      b ++= asTraversable(xs).seq
     b.result
   }
+
+  // cannot have a bridge, because it would have the same signature as the target method after erasure
+  // @bridge
+  // def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[B] =
+  //   flatten[B](asTraversable: A => GenTraversableOnce[B])
 
   /** Transposes this $coll of traversable collections into
    *  a $coll of ${coll}s.
@@ -143,7 +149,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
    *          are not of the same size.
    */
   @migration(2, 9, "As of 2.9, transpose throws an exception if collections are not uniformly sized.")
-  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[CC[B] @uncheckedVariance] = {
+  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): CC[CC[B] @uncheckedVariance] = {
     if (isEmpty)
       return genericBuilder[CC[B]].result
 
