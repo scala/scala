@@ -100,6 +100,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val BooleanClass = valueCache(tpnme.Boolean)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
+      def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
 
     def ScalaValueClassesNoUnit = ScalaValueClasses filterNot (_ eq UnitClass)
     def ScalaValueClasses: List[Symbol] = List(
@@ -361,6 +362,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val OptionClass: Symbol = getClass("scala.Option")
     lazy val SomeClass: Symbol   = getClass("scala.Some")
     lazy val NoneModule: Symbol  = getModule("scala.None")
+    lazy val SomeModule: Symbol  = getModule("scala.Some")
 
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }

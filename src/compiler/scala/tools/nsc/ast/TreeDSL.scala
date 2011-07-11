@@ -27,12 +27,6 @@ trait TreeDSL {
     def nullSafe[T](f: Tree => Tree, ifNull: Tree): Tree => Tree =
       tree => IF (tree MEMBER_== NULL) THEN ifNull ELSE f(tree)
 
-    // strip bindings to find what lies beneath
-    final def unbind(x: Tree): Tree = x match {
-      case Bind(_, y) => unbind(y)
-      case y          => y
-    }
-
     def returning[T](x: T)(f: T => Unit): T = util.returning(x)(f)
 
     object LIT extends (Any => Literal) {
@@ -51,12 +45,9 @@ trait TreeDSL {
     def UNIT          = LIT(())
 
     object WILD {
-      def apply(tpe: Type = null) =
-        if (tpe == null) Ident(nme.WILDCARD)
-        else Ident(nme.WILDCARD) setType tpe
-
-      def unapply(other: Any) =
-        cond(other) { case Ident(nme.WILDCARD)  => true }
+      def empty               = Ident(nme.WILDCARD)
+      def apply(tpe: Type)    = Ident(nme.WILDCARD) setType tpe
+      def unapply(other: Any) = cond(other) { case Ident(nme.WILDCARD) => true }
     }
 
     def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
@@ -99,8 +90,8 @@ trait TreeDSL {
       def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
       def INT_!=  (other: Tree)     = fn(target, getMember(IntClass, nme.NE), other)
 
-      def BOOL_&& (other: Tree)     = fn(target, getMember(BooleanClass, nme.ZAND), other)
-      def BOOL_|| (other: Tree)     = fn(target, getMember(BooleanClass, nme.ZOR), other)
+      def BOOL_&& (other: Tree)     = fn(target, Boolean_and, other)
+      def BOOL_|| (other: Tree)     = fn(target, Boolean_or, other)
 
       /** Apply, Select, Match **/
       def APPLY(params: Tree*)      = Apply(target, params.toList)
@@ -249,7 +240,7 @@ trait TreeDSL {
     }
 
     def CASE(pat: Tree): CaseStart  = new CaseStart(pat, EmptyTree)
-    def DEFAULT: CaseStart          = new CaseStart(WILD(), EmptyTree)
+    def DEFAULT: CaseStart          = new CaseStart(WILD.empty, EmptyTree)
 
     class SymbolMethods(target: Symbol) {
       def BIND(body: Tree) = Bind(target, body)
@@ -270,10 +261,8 @@ trait TreeDSL {
     def THROW(sym: Symbol): Throw = Throw(New(TypeTree(sym.tpe), List(Nil)))
     def THROW(sym: Symbol, msg: Tree): Throw = Throw(New(TypeTree(sym.tpe), List(List(msg.TOSTRING()))))
 
-    def NEW(tpe: Tree, args: Tree*)   = New(tpe, List(args.toList))
-    def NEW(sym: Symbol, args: Tree*) =
-      if (args.isEmpty) New(TypeTree(sym.tpe))
-      else New(TypeTree(sym.tpe), List(args.toList))
+    def NEW(tpt: Tree, args: Tree*): Tree   = New(tpt, List(args.toList))
+    def NEW(sym: Symbol, args: Tree*): Tree = New(sym, args: _*)
 
     def DEF(name: Name, tp: Type): DefTreeStart     = DEF(name) withType tp
     def DEF(name: Name): DefTreeStart               = new DefTreeStart(name)
@@ -302,8 +291,8 @@ trait TreeDSL {
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
-    def NOT(tree: Tree)   = Select(tree, getMember(BooleanClass, nme.UNARY_!))
-    def SOME(xs: Tree*)   = Apply(scalaDot(nme.Some), List(makeTupleTerm(xs.toList, true)))
+    def NOT(tree: Tree)   = Select(tree, Boolean_not)
+    def SOME(xs: Tree*)   = Apply(SomeModule, makeTupleTerm(xs.toList, true))
 
     /** Typed trees from symbols. */
     def THIS(sym: Symbol)             = gen.mkAttributedThis(sym)
@@ -311,21 +300,15 @@ trait TreeDSL {
     def REF(sym: Symbol)              = gen.mkAttributedRef(sym)
     def REF(pre: Type, sym: Symbol)   = gen.mkAttributedRef(pre, sym)
 
-    /** Some of this is basically verbatim from TreeBuilder, but we do not want
-     *  to get involved with him because he's an untyped only sort.
-     */
-    private def tupleName(count: Int, f: (String) => Name = newTermName(_: String)) =
-      scalaDot(f("Tuple" + count))
-
     def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
       case Nil                        => UNIT
       case List(tree) if flattenUnary => tree
-      case _                          => Apply(tupleName(trees.length), trees)
+      case _                          => Apply(TupleClass(trees.length).companionModule, trees: _*)
     }
     def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
       case Nil                        => gen.scalaUnitConstr
       case List(tree) if flattenUnary => tree
-      case _                          => AppliedTypeTree(tupleName(trees.length, newTypeName), trees)
+      case _                          => AppliedTypeTree(REF(TupleClass(trees.length)), trees)
     }
 
     /** Implicits - some of these should probably disappear **/

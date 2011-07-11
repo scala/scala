@@ -209,6 +209,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
     val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
     (superRef /: argss) (Apply)
   }
+  /** 0-1 argument list new, based on a symbol.
+   */
+  def New(sym: Symbol, args: Tree*): Tree =
+    if (args.isEmpty) New(TypeTree(sym.tpe))
+    else New(TypeTree(sym.tpe), List(args.toList))
 
   def Apply(sym: Symbol, args: Tree*): Tree =
     Apply(Ident(sym), args.toList)

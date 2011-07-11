@@ -189,7 +189,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
         val varName     = context.unit.freshTermName(acc.name + "$")
         val isRepeated  = isRepeatedParamType(cpt)
-        val binding     = if (isRepeated) Star(WILD()) else WILD()
+        val binding     = if (isRepeated) Star(WILD.empty) else WILD.empty
         val eqMethod: Tree  =
           if (isRepeated) gen.mkRuntimeCall(nme.sameElements, List(Ident(varName), Ident(acc)))
           else (Ident(varName) DOT nme.EQ)(Ident(acc))

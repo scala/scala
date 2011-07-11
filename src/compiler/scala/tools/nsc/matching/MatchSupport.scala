@@ -57,7 +57,7 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
     def symbolToString(s: Symbol): String = s match {
       case x  => x.toString
     }
-    def treeToString(t: Tree): String = unbind(t) match {
+    def treeToString(t: Tree): String = treeInfo.unbind(t) match {
       case EmptyTree            => "?"
       case WILD()               => "_"
       case Literal(Constant(x)) => "LIT(%s)".format(x)
