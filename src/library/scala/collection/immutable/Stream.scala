@@ -569,7 +569,7 @@ object Stream extends SeqFactory[Stream] {
     def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
-  object Empty extends Stream[Nothing] {
+  object Empty extends Stream[Nothing] with Serializable {
     override def isEmpty = true
     override def head = throw new NoSuchElementException("head of empty stream")
     override def tail = throw new UnsupportedOperationException("tail of empty stream")

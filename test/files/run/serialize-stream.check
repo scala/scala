@@ -1,0 +1,6 @@
+Stream(1, ?)
+List(1, 2, 3)
+Stream(1, ?)
+List(1)
+Stream()
+List()
