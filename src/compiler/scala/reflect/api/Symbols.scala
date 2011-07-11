@@ -125,22 +125,25 @@ trait Symbols { self: Universe =>
     def isAliasType    : Boolean
     def isAbstractType : Boolean
 
-    def isAbstractClass: Boolean
-    def isBridge       : Boolean
-    def isContravariant: Boolean
-    def isCovariant    : Boolean
-    def isEarlyInitialized  : Boolean
-    def isExistentiallyBound: Boolean
-    def isImplClass    : Boolean
-    def isLazyAccessor : Boolean
-    def isMethod       : Boolean
-    def isVarargsMethod: Boolean
-    def isModule       : Boolean
-    def isModuleClass  : Boolean
-    def isOverloaded   : Boolean
-    def isRefinementClass: Boolean
-    def isSourceMethod : Boolean
-    def isTypeParameter: Boolean
+    def isAbstractClass      : Boolean
+    def isBridge             : Boolean
+    def isConcreteClass      : Boolean
+    def isContravariant      : Boolean
+    def isCovariant          : Boolean
+    def isEarlyInitialized   : Boolean
+    def isExistentiallyBound : Boolean
+    def isImplClass          : Boolean
+    def isLazyAccessor       : Boolean
+    def isMethod             : Boolean
+    def isModule             : Boolean
+    def isModuleClass        : Boolean
+    def isNumericValueClass  : Boolean
+    def isOverloaded         : Boolean
+    def isRefinementClass    : Boolean
+    def isSourceMethod       : Boolean
+    def isTypeParameter      : Boolean
+    def isValueClass         : Boolean
+    def isVarargsMethod      : Boolean
 
     /** Package tests */
     def isPackage      : Boolean
@@ -149,10 +152,7 @@ trait Symbols { self: Universe =>
     def isRoot         : Boolean
     def isEmptyPackage : Boolean
     def isEmptyPackageClass: Boolean
-
   }
 
   val NoSymbol: Symbol
 }
-
-

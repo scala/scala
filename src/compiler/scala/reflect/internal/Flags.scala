@@ -216,7 +216,6 @@ class Flags extends ModifierFlags {
   final val notPRIVATE    = (PRIVATE: Long) << AntiShift
   final val notPROTECTED  = (PROTECTED: Long) << AntiShift
 
-
   // ------- masks -----------------------------------------------------------------------
 
   /** These flags can be set when class or module symbol is first created. */

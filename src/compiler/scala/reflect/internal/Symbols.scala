@@ -300,34 +300,34 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol a type but not a class? */
     def isNonClassType = false // to be overridden
 
-    override final def isTrait: Boolean = isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
-    final def isAbstractClass = isClass && hasFlag(ABSTRACT)
-    final def isConcreteClass = isClass && !hasFlag(ABSTRACT | TRAIT)
-    final def isBridge = hasFlag(BRIDGE)
-    final def isContravariant = isType && hasFlag(CONTRAVARIANT)
-    final def isCovariant = isType && hasFlag(COVARIANT)
-    final def isEarlyInitialized: Boolean = isTerm && hasFlag(PRESUPER)
+    override final def isTrait     = isClass && hasFlag(TRAIT)
+    final def isAbstractClass      = isClass && hasFlag(ABSTRACT)
+    final def isBridge             = hasFlag(BRIDGE)
+    final def isContravariant      = isType && hasFlag(CONTRAVARIANT)
+    final def isConcreteClass      = isClass && !hasFlag(ABSTRACT | TRAIT)
+    final def isCovariant          = isType && hasFlag(COVARIANT)
+    final def isEarlyInitialized   = isTerm && hasFlag(PRESUPER)
     final def isExistentiallyBound = isType && hasFlag(EXISTENTIAL)
-    final def isImplClass = isClass && hasFlag(IMPLCLASS) // Is this symbol an implementation class for a mixin?
-    final def isLazyAccessor = isLazy && lazyAccessor != NoSymbol
-    final def isMethod = isTerm && hasFlag(METHOD)
-    final def isVarargsMethod = isMethod && hasFlag(VARARGS)
-    final def isModule = isTerm && hasFlag(MODULE)
-    final def isModuleClass = isClass && hasFlag(MODULE)
-    final def isOverloaded = hasFlag(OVERLOADED)
-    final def isRefinementClass = isClass && name == tpnme.REFINE_CLASS_NAME
-    final def isPossibleInRefinement = !isConstructor && !isOverridingSymbol
-    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
-    final def isSourceMethod = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
-    final def isTypeParameter = isType && isParameter && !isSkolem
+    final def isImplClass          = isClass && hasFlag(IMPLCLASS)
+    final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
+    final def isMethod             = isTerm && hasFlag(METHOD)
+    final def isModule             = isTerm && hasFlag(MODULE)
+    final def isModuleClass        = isClass && hasFlag(MODULE)
+    final def isNumericValueClass  = definitions.isNumericValueClass(this)
+    final def isOverloaded         = hasFlag(OVERLOADED)
+    final def isRefinementClass    = isClass && name == tpnme.REFINE_CLASS_NAME
+    final def isSourceMethod       = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
+    final def isTypeParameter      = isType && isParameter && !isSkolem
+    final def isValueClass         = definitions.isValueClass(this)
+    final def isVarargsMethod      = isMethod && hasFlag(VARARGS)
 
     /** Package tests */
-    final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
+    final def isEmptyPackage      = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == tpnme.EMPTY_PACKAGE_NAME
-    final def isPackage = isModule && hasFlag(PACKAGE)
-    final def isPackageClass = isClass && hasFlag(PACKAGE)
-    final def isRoot = isPackageClass && owner == NoSymbol
-    final def isRootPackage = isPackage && owner == NoSymbol
+    final def isPackage           = isModule && hasFlag(PACKAGE)
+    final def isPackageClass      = isClass && hasFlag(PACKAGE)
+    final def isRoot              = isPackageClass && owner == NoSymbol
+    final def isRootPackage       = isPackage && owner == NoSymbol
 
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
@@ -338,6 +338,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
+
+    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
+    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
 
     /** Term symbols with the exception of static parts of Java classes and packages.
      */

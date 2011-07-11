@@ -14,17 +14,9 @@ trait Names {
     def toTypeName: TypeName
   }
 
-  def newTermName(cs: Array[Char], offset: Int, len: Int): TermName
-  def newTermName(cs: Array[Byte], offset: Int, len: Int): TermName
   def newTermName(s: String): TermName
-
-  def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName
-  def newTypeName(cs: Array[Byte], offset: Int, len: Int): TypeName
   def newTypeName(s: String): TypeName
-
-  implicit def promoteTermNamesAsNecessary(name: Name): TermName = name.toTermName
 
   def EmptyTermName: TermName = newTermName("")
   def EmptyTypeName: TypeName = EmptyTermName.toTypeName
 }
-

@@ -721,15 +721,15 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     def PackageDef(tree: Tree, pid: RefTree, stats: List[Tree]) =
       new PackageDef(pid, stats).copyAttrs(tree)
     def ModuleDef(tree: Tree, mods: Modifiers, name: Name, impl: Template) =
-      new ModuleDef(mods, name, impl).copyAttrs(tree)
+      new ModuleDef(mods, name.toTermName, impl).copyAttrs(tree)
     def ValDef(tree: Tree, mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) =
-      new ValDef(mods, name, tpt, rhs).copyAttrs(tree)
+      new ValDef(mods, name.toTermName, tpt, rhs).copyAttrs(tree)
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) =
-      new DefDef(mods, name, tparams, vparamss, tpt, rhs).copyAttrs(tree)
+      new DefDef(mods, name.toTermName, tparams, vparamss, tpt, rhs).copyAttrs(tree)
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree) =
       new TypeDef(mods, name.toTypeName, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
-      new LabelDef(name, params, rhs).copyAttrs(tree)
+      new LabelDef(name.toTermName, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) =
       new Import(expr, selectors).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) =

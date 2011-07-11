@@ -11,9 +11,10 @@ trait StandardDefinitions { self: Universe =>
   val definitions: AbsDefinitions
 
   abstract class AbsDefinitions {
-
     // outer packages and their classes
-    def RootPackage: Symbol
+    // Under consideration
+    // def RootPackage: Symbol
+
     def RootClass: Symbol
     def EmptyPackage: Symbol
     def EmptyPackageClass: Symbol
