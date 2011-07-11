@@ -322,7 +322,7 @@ class MutableSettings(val errorFn: String => Unit)
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue with Mutable {
     /** Will be called after this Setting is set for any extra work. */
     private var _postSetHook: this.type => Unit = (x: this.type) => ()
-    def postSetHook(): Unit = _postSetHook(this)
+    override def postSetHook(): Unit = _postSetHook(this)
     def withPostSetHook(f: this.type => Unit): this.type = { _postSetHook = f ; this }
 
     /** The syntax defining this setting in a help string */
@@ -354,7 +354,7 @@ class MutableSettings(val errorFn: String => Unit)
     parser: String => Option[Int])
   extends Setting(name, descr) {
     type T = Int
-    protected var v = default
+    v = default
 
     // not stable values!
     val IntMin = Int.MinValue
@@ -411,7 +411,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr) {
     type T = Boolean
-    protected var v = false
+    v = false
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
@@ -427,7 +427,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr) {
     type T = List[String]
-    protected var v: List[String] = Nil
+    v = Nil
 
     def tryToSet(args: List[String]) = args match {
       case x :: xs if x startsWith prefix =>
@@ -448,7 +448,7 @@ class MutableSettings(val errorFn: String => Unit)
     val default: String)
   extends Setting(name, descr) {
     type T = String
-    protected var v = default
+    v = default
 
     def tryToSet(args: List[String]) = args match {
       case Nil      => errorAndValue("missing argument", None)
@@ -498,7 +498,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr) {
     type T = List[String]
-    protected var v: List[String] = Nil
+    v = Nil
     def appendToValue(str: String) { value ++= List(str) }
 
     def tryToSet(args: List[String]) = {
@@ -525,7 +525,7 @@ class MutableSettings(val errorFn: String => Unit)
     val default: String)
   extends Setting(name, descr + choices.mkString(" (", ",", ") default:" + default)) {
     type T = String
-    protected var v: String = default
+    v = default
     def indexOfChoice: Int = choices indexOf value
 
     private def usageErrorMessage = {
@@ -557,7 +557,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr + " <phase>.") {
     type T = List[String]
-    protected var v: List[String] = Nil
+    v = Nil
     override def value = if (v contains "all") List("all") else super.value
     private lazy val (numericValues, stringValues) =
       value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))

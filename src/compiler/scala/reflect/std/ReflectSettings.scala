@@ -5,8 +5,8 @@ class ReflectSettings extends internal.settings.MutableSettings {
 
   def newSetting[TT](init: TT) = new SettingValue {
     type T = TT
-    def postSetHook() {}
-    var v = init
+
+    v = init
     override def isDefault = v == init
   }
 

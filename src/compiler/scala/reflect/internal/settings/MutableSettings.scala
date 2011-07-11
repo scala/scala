@@ -17,8 +17,8 @@ abstract class MutableSettings extends AbsSettings {
   trait SettingValue extends AbsSettingValue {
     protected var v: T = _
     protected var setByUser: Boolean = false
-    def postSetHook(): Unit = {}
 
+    def postSetHook(): Unit = ()
     def isDefault: Boolean = !setByUser
     def value: T = v
     def value_=(arg: T) = {
@@ -28,6 +28,7 @@ abstract class MutableSettings extends AbsSettings {
     }
   }
 
+  def printtypes: SettingValue { type T = Boolean }
   def debug: SettingValue { type T = Boolean }
   def YdepMethTpes: SettingValue { type T = Boolean }
   def Ynotnull: SettingValue { type T = Boolean }
@@ -35,7 +36,6 @@ abstract class MutableSettings extends AbsSettings {
   def verbose: SettingValue { type T = Boolean }
   def uniqid: SettingValue { type T = Boolean }
   def Xprintpos: SettingValue { type T = Boolean }
-  def printtypes: SettingValue { type T = Boolean }
   def Yrecursion: SettingValue { type T = Int }
   def maxClassfileName: SettingValue { type T = Int }
 }
