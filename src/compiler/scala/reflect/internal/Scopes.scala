@@ -6,7 +6,7 @@
 package scala.reflect
 package internal
 
-trait Scopes { self: SymbolTable =>
+trait Scopes extends api.Scopes { self: SymbolTable =>
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket

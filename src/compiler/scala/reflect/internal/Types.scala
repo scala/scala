@@ -70,7 +70,7 @@ import util.Statistics._
     // Not presently used, it seems.
 */
 
-trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
+trait Types extends api.Types { self: SymbolTable =>
   import definitions._
 
   //statistics
@@ -235,7 +235,7 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   /** The base class for all types */
-  abstract class Type {
+  abstract class Type extends AbsType {
 
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
@@ -1166,7 +1166,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueThisType(sym: Symbol) extends ThisType(sym) with UniqueType { }
-  object ThisType {
+
+  object ThisType extends ThisTypeExtractor {
     def apply(sym: Symbol): Type = {
       if (!phase.erasedTypes) unique(new UniqueThisType(sym))
       else if (sym.isImplClass) sym.typeOfThis
@@ -1223,7 +1224,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueSingleType(pre: Type, sym: Symbol) extends SingleType(pre, sym) with UniqueType { }
-  object SingleType {
+
+  object SingleType extends SingleTypeExtractor {
     def apply(pre: Type, sym: Symbol): Type = {
       unique(new UniqueSingleType(pre, sym))
     }
@@ -1241,7 +1243,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueSuperType(thistp: Type, supertp: Type) extends SuperType(thistp, supertp) with UniqueType { }
-  object SuperType {
+
+  object SuperType extends SuperTypeExtractor {
     def apply(thistp: Type, supertp: Type): Type = {
       if (phase.erasedTypes) supertp
       else unique(new UniqueSuperType(thistp, supertp))
@@ -1264,7 +1267,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   }
 
   final class UniqueTypeBounds(lo: Type, hi: Type) extends TypeBounds(lo, hi) with UniqueType { }
-  object TypeBounds {
+
+  object TypeBounds extends TypeBoundsExtractor {
     def empty: TypeBounds           = apply(NothingClass.tpe, AnyClass.tpe)
     def upper(hi: Type): TypeBounds = apply(NothingClass.tpe, hi)
     def lower(lo: Type): TypeBounds = apply(lo, AnyClass.tpe)
@@ -1497,7 +1501,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
   final class RefinedType0(parents: List[Type], decls: Scope, clazz: Symbol) extends RefinedType(parents, decls) {
     override def typeSymbol = clazz
   }
-  object RefinedType {
+
+  object RefinedType extends RefinedTypeExtractor {
     def apply(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType =
       new RefinedType0(parents, decls, clazz)
   }
@@ -1642,6 +1647,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     override def kind = "ClassInfoType"
   }
 
+  object ClassInfoType extends ClassInfoTypeExtractor
+
   class PackageClassInfoType(decls: Scope, clazz: Symbol)
   extends ClassInfoType(List(), decls, clazz)
 
@@ -1668,7 +1675,8 @@ trait Types /*extends reflect.generic.Types*/ { self: SymbolTable =>
     private lazy val _tpe: Type = value.tpe
     override def underlying: Type = _tpe
   }
-  object ConstantType {
+
+  object ConstantType extends ConstantTypeExtractor {
     def apply(value: Constant): ConstantType = {
       unique(new UniqueConstantType(value)).asInstanceOf[ConstantType]
     }
@@ -2043,7 +2051,8 @@ A type's typeSymbol should never be inspected directly.
   }
 
   final class UniqueTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends TypeRef(pre, sym, args) with UniqueType { }
-  object TypeRef {
+
+  object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = {
       unique(new UniqueTypeRef(pre, sym, args))
     }
@@ -2120,6 +2129,8 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "MethodType"
   }
 
+  object MethodType extends MethodTypeExtractor
+
   class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
     override def isJava = true
   }
@@ -2146,6 +2157,8 @@ A type's typeSymbol should never be inspected directly.
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
   }
+
+  object NullaryMethodType extends NullaryMethodTypeExtractor
 
   /** A type function or the type of a polymorphic value (and thus of kind *).
    *
@@ -2207,6 +2220,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def kind = "PolyType"
   }
+
+  object PolyType extends PolyTypeExtractor
 
   case class ExistentialType(quantified: List[Symbol],
                              override val underlying: Type) extends RewrappingTypeProxy
@@ -2304,6 +2319,8 @@ A type's typeSymbol should never be inspected directly.
       }
     }
   }
+
+  object ExistentialType extends ExistentialTypeExtractor
 
   /** A class containing the alternatives and type prefix of an overloaded symbol.
    *  Not used after phase `typer`.
@@ -2651,6 +2668,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def kind = "AnnotatedType"
   }
+
+  object AnnotatedType extends AnnotatedTypeExtractor
 
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
@@ -3637,7 +3656,6 @@ A type's typeSymbol should never be inspected directly.
           super.apply(tp)
       }
     }
-
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object trans extends TypeMapTransformer {

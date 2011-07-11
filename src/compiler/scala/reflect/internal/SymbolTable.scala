@@ -9,8 +9,8 @@ package internal
 import scala.collection.{ mutable, immutable }
 import util._
 
-abstract class SymbolTable extends /*reflect.generic.Universe
-                              with*/ Names
+abstract class SymbolTable extends api.Universe
+                              with Names
                               with Symbols
                               with Types
                               with Scopes

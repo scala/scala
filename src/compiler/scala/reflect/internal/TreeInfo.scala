@@ -15,10 +15,12 @@ import util.HashSet
  *  @version 1.0
  */
 abstract class TreeInfo {
-  val trees: SymbolTable
-  import trees._
+  val global: SymbolTable
+  import global._
+
   import definitions.ThrowableClass
 
+  /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
     case PackageDef(_, _)
        | ClassDef(_, _, _, _)
@@ -27,10 +29,13 @@ abstract class TreeInfo {
        | Import(_, _) => true
     case _ => false
   }
+*/
 
-  def isDefinition(tree: Tree): Boolean = tree.isDef
+  // def isDefinition(tree: Tree): Boolean = tree.isDef
 
-  def isDeclaration(tree: Tree): Boolean = tree match {
+  /** Is tree a declaration or type definition?
+   */
+  def isDeclarationOrTypeDef(tree: Tree): Boolean = tree match {
     case DefDef(_, _, _, _, _, EmptyTree)
        | ValDef(_, _, _, EmptyTree)
        | TypeDef(_, _, _, _) => true
@@ -45,7 +50,6 @@ abstract class TreeInfo {
     case TypeDef(_, _, _, _)           => true
     case DefDef(mods, _, _, _, _, __)  => mods.isDeferred
     case ValDef(mods, _, _, _)         => mods.isDeferred
-    case DocDef(_, definition)         => isInterfaceMember(definition)
     case _ => false
   }
 
@@ -60,8 +64,6 @@ abstract class TreeInfo {
       true
     case ValDef(mods, _, _, rhs) =>
       !mods.isMutable && isPureExpr(rhs)
-    case DocDef(_, definition) =>
-      isPureDef(definition)
     case _ =>
       false
   }
@@ -95,6 +97,8 @@ abstract class TreeInfo {
       false
   }
 
+  /** Is symbol potentially a getter of a variable?
+   */
   def mayBeVarGetter(sym: Symbol): Boolean = sym.info match {
     case NullaryMethodType(_)              => sym.owner.isClass && !sym.isStable
     case PolyType(_, NullaryMethodType(_)) => sym.owner.isClass && !sym.isStable
@@ -102,6 +106,8 @@ abstract class TreeInfo {
     case _                                 => false
   }
 
+  /** Is tree a mutable variable, or the getter of a mutable field?
+   */
   def isVariableOrGetter(tree: Tree) = {
     def sym       = tree.symbol
     def isVar     = sym.isVariable
@@ -118,7 +124,8 @@ abstract class TreeInfo {
     }
   }
 
-  /** Is tree a self constructor call?
+  /** Is tree a self constructor call this(...)? I.e. a call to a constructor of the
+   *  same object?
    */
   def isSelfConstrCall(tree: Tree): Boolean = methPart(tree) match {
     case Ident(nme.CONSTRUCTOR)
@@ -126,15 +133,18 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Is tree a super constructor call?
+   */
   def isSuperConstrCall(tree: Tree): Boolean = methPart(tree) match {
     case Select(Super(_, _), nme.CONSTRUCTOR) => true
     case _ => false
   }
 
+  /** Is tree a self or super constructor call? */
   def isSelfOrSuperConstrCall(tree: Tree) =
     isSelfConstrCall(tree) || isSuperConstrCall(tree)
 
-  /** Is tree a variable pattern */
+  /** Is tree a variable pattern? */
   def isVarPattern(pat: Tree): Boolean = pat match {
     case _: BackQuotedIdent => false
     case x: Ident           => isVariableName(x.name)
@@ -173,20 +183,22 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** Is tpt of the form T* ? */
+  /** Is tpt a vararg type of the form T* ? */
   def isRepeatedParamType(tpt: Tree) = tpt match {
     case TypeTree()                                                          => definitions.isRepeatedParamType(tpt.tpe)
     case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), _)      => true
     case AppliedTypeTree(Select(_, tpnme.JAVA_REPEATED_PARAM_CLASS_NAME), _) => true
     case _                                                                   => false
   }
-  /** The parameter ValDefs from a def of the form T*. */
+
+  /** The parameter ValDefs of a method definition that have vararg types of the form T*
+   */
   def repeatedParams(tree: Tree): List[ValDef] = tree match {
     case DefDef(_, _, _, vparamss, _, _)  => vparamss.flatten filter (vd => isRepeatedParamType(vd.tpt))
     case _                                => Nil
   }
 
-  /** Is tpt a by-name parameter type? */
+  /** Is tpt a by-name parameter type of the form => T? */
   def isByNameParamType(tpt: Tree) = tpt match {
     case TypeTree()                                                 => definitions.isByNameParamType(tpt.tpe)
     case AppliedTypeTree(Select(_, tpnme.BYNAME_PARAM_CLASS_NAME), _) => true
@@ -204,7 +216,7 @@ abstract class TreeInfo {
     ((first.isLower && first.isLetter) || first == '_') && !reserved(name)
   }
 
-  /** Is tree a this node which belongs to `enclClass`? */
+  /** Is tree a `this` node which belongs to `enclClass`? */
   def isSelf(tree: Tree, enclClass: Symbol): Boolean = tree match {
     case This(_) => tree.symbol == enclClass
     case _ => false
@@ -225,10 +237,12 @@ abstract class TreeInfo {
     case Typed(_, Ident(tpnme.WILDCARD_STAR)) => true
     case _                                  => false
   }
+
+  /** Does this argument list end with an argument of the form <expr> : _* ? */
   def isWildcardStarArgList(trees: List[Tree]) =
     trees.nonEmpty && isWildcardStarArg(trees.last)
 
-  /** Is the argument a (possibly bound) _ arg?
+  /** Is the argument a wildcard argument of the form `_` or `x @ _`?
    */
   def isWildcardArg(tree: Tree): Boolean = unbind(tree) match {
     case Ident(nme.WILDCARD) => true
@@ -327,6 +341,18 @@ abstract class TreeInfo {
     case _                                                          => false
   }
 
+  /** Does list of trees start with a definition of
+   *  a class of module with given name (ignoring imports)
+   */
+  def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
+      case Import(_, _) :: xs               => firstDefinesClassOrObject(xs, name)
+      case Annotated(_, tree1) :: Nil       => firstDefinesClassOrObject(List(tree1), name)
+      case ModuleDef(_, `name`, _) :: Nil   => true
+      case ClassDef(_, `name`, _, _) :: Nil => true
+      case _                                => false
+    }
+
+
   /** Is this file the body of a compilation unit which should not
    *  have Predef imported?
    */
@@ -337,17 +363,10 @@ abstract class TreeInfo {
       case Import(expr, _) :: rest   => isPredefExpr(expr) || containsLeadingPredefImport(rest)
       case _                         => false
     }
-    def isImplDef(trees: List[Tree], name: Name): Boolean = trees match {
-      case Import(_, _) :: xs               => isImplDef(xs, name)
-      case DocDef(_, tree1) :: Nil          => isImplDef(List(tree1), name)
-      case Annotated(_, tree1) :: Nil       => isImplDef(List(tree1), name)
-      case ModuleDef(_, `name`, _) :: Nil   => true
-      case ClassDef(_, `name`, _, _) :: Nil => true
-      case _                                => false
-    }
+
     // Compilation unit is class or object 'name' in package 'scala'
     def isUnitInScala(tree: Tree, name: Name) = tree match {
-      case PackageDef(Ident(nme.scala_), defs) => isImplDef(defs, name)
+      case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
       case _                                   => false
     }
 

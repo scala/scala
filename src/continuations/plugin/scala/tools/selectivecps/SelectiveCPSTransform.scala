@@ -353,7 +353,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   val argSym = currentOwner.newValue(vd.symbol.name).setInfo(tpe)
                   val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member("getTrivialValue"))))
                   val switchExpr = localTyper.typed(atPos(vd.symbol.pos) {
-                    val body2 = duplicateTree(mkBlock(bodyStms, bodyExpr)) // dup before typing!
+                    val body2 = mkBlock(bodyStms, bodyExpr).duplicate // dup before typing!
                     If(Select(ctxRef, ctxSym.tpe.member("isTrivial")),
                       applyTrivial(argSym, mkBlock(argDef::bodyStms, bodyExpr)),
                       applyCombinatorFun(ctxRef, body2))

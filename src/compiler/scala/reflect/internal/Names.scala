@@ -15,7 +15,7 @@ import java.security.MessageDigest
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005
  */
-trait Names /*extends reflect.generic.Names*/ {
+trait Names extends api.Names {
 
 // Operations -------------------------------------------------------------
 
@@ -105,22 +105,13 @@ trait Names /*extends reflect.generic.Names*/ {
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
-  def mkTermName(name: Name): TermName = name.toTermName
-  def mkTypeName(name: Name): TypeName = name.toTypeName
-  def isTermName(name: Name): Boolean = name.isTermName
-  def isTypeName(name: Name): Boolean = name.isTypeName
-
   def nameChars: Array[Char] = chrs
   @deprecated("", "2.9.0") def view(s: String): TermName = newTermName(s)
-
-  /** An implicit conversion from names to term names. */
-  implicit def promoteTermNamesAsNecessary(name: Name): TermName = mkTermName(name)
-
 
 // Classes ----------------------------------------------------------------------
 
   /** The name class. */
-  sealed abstract class Name(protected val index: Int, protected val len: Int) extends Function1[Int, Char] {
+  sealed abstract class Name(protected val index: Int, protected val len: Int) extends AbsName with Function1[Int, Char] {
     /** Index into name table */
     def start: Int = index
 

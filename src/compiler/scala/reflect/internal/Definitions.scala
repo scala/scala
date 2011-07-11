@@ -11,7 +11,7 @@ import scala.collection.mutable.{ HashMap }
 import Flags._
 import PartialFunction._
 
-trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
+trait Definitions extends reflect.api.StandardDefinitions {
   self: SymbolTable =>
 
   // the scala value classes
@@ -115,7 +115,7 @@ trait Definitions /*extends reflect.generic.StandardDefinitions*/ {
     )
   }
 
-  object definitions extends ValueClassDefinitions {
+  object definitions extends AbsDefinitions with ValueClassDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
 

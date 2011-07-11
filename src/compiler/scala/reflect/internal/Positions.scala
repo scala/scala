@@ -1,10 +1,7 @@
 package scala.reflect
 package internal
 
-trait Positions { self: SymbolTable =>
-
-  type Position
-  val NoPosition: Position
+trait Positions extends api.Positions { self: SymbolTable =>
 
   def focusPos(pos: Position): Position
   def isRangePos(pos: Position): Boolean

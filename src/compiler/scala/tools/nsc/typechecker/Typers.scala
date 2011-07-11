@@ -2086,7 +2086,7 @@ trait Typers extends Modes {
         tree.pos.isRange && context.unit != null && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = {
-        if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
+        if (context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(stat))
           errorTree(stat, "only declarations allowed here")
         else
           stat match {

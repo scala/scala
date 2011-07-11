@@ -240,10 +240,7 @@ trait TreePrinters { self: SymbolTable =>
               print(many.map(selectorToString).mkString("{", ", ", "}"))
           }
 
-        case DocDef(comment, definition) =>
-          print(comment.raw); println(); print(definition)
-
-        case Template(parents, self, body) =>
+       case Template(parents, self, body) =>
           val currentOwner1 = currentOwner
           if (tree.symbol != NoSymbol) currentOwner = tree.symbol.owner
           printRow(parents, " with ")
@@ -301,9 +298,6 @@ trait TreePrinters { self: SymbolTable =>
           if (settings.uniqid.value && tree.symbol != null) print("#"+tree.symbol.id)
 
         case Assign(lhs, rhs) =>
-          print(lhs); print(" = "); print(rhs)
-
-        case AssignOrNamedArg(lhs, rhs) =>
           print(lhs); print(" = "); print(rhs)
 
         case If(cond, thenp, elsep) =>
@@ -406,14 +400,15 @@ trait TreePrinters { self: SymbolTable =>
           print(tpt);
           printColumn(whereClauses, " forSome { ", ";", "}")
 
-        case SelectFromArray(qualifier, name, _) =>
-          print(qualifier); print(".<arr>"); print(symName(tree, name))
+// SelectFromArray is no longer visible in reflect.internal.
+// eliminated until we figure out what we will do with both TreePrinters and
+// SelectFromArray.
+//          case SelectFromArray(qualifier, name, _) =>
+//          print(qualifier); print(".<arr>"); print(symName(tree, name))
 
-        case TypeTreeWithDeferredRefCheck() =>
-          print("<tree with deferred refcheck>")
 
         case tree =>
-          print("<unknown tree of class "+tree.getClass+">")
+          xprintRaw(this, tree)
       }
       if (settings.printtypes.value && tree.isTerm && !tree.isEmpty) {
         print("{"); print(if (tree.tpe eq null) "<null>" else tree.tpe.toString()); print("}")
@@ -439,6 +434,8 @@ trait TreePrinters { self: SymbolTable =>
           tree)
     }
   }
+
+  def xprintRaw(treePrinter: TreePrinter, tree: Tree) = print("<unknown tree of class "+tree.getClass+">")
 
   def newTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))

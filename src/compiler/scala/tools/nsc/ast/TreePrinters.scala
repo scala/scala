@@ -44,6 +44,30 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
     }
   }
 
+  // overflow cases missing from TreePrinter in reflect.api
+  override def xprintRaw(treePrinter: super.TreePrinter, tree: Tree) = tree match {
+    case DocDef(comment, definition) =>
+      treePrinter.print(comment.raw)
+      treePrinter.println()
+      treePrinter.print(definition)
+
+    case AssignOrNamedArg(lhs, rhs) =>
+      treePrinter.print(lhs)
+      treePrinter.print(" = ")
+      treePrinter.print(rhs)
+
+    case TypeTreeWithDeferredRefCheck() =>
+      treePrinter.print("<tree with deferred refcheck>")
+
+    case SelectFromArray(qualifier, name, _) =>
+      treePrinter.print(qualifier)
+      treePrinter.print(".<arr>")
+      treePrinter.print(treePrinter.symName(tree, name))
+
+    case _ =>
+      super.xprintRaw(treePrinter, tree)
+  }
+
   /** A tree printer which is stingier about vertical whitespace and unnecessary
    *  punctuation than the standard one.
    */

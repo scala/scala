@@ -6,6 +6,8 @@
 package scala.reflect
 package internal
 
+import api.Modifier
+
 // Flags at each index of a flags Long.  Those marked with /M are used in
 // Parsers/JavaParsers and therefore definitely appear on Modifiers; but the
 // absence of /M on the other flags does not imply they aren't.
@@ -422,6 +424,35 @@ class Flags extends ModifierFlags {
     val front = rawFlags map (_.toLong)
 
     front.toList ++ (all filterNot (front contains _))
+  }
+
+  def flagOfModifier(mod: Modifier.Value): Long = mod match {
+    case Modifier.`protected` => PROTECTED
+    case Modifier.`private` => PRIVATE
+    case Modifier.`override` => OVERRIDE
+    case Modifier.`abstract` => ABSTRACT
+    case Modifier.`final`=> FINAL
+    case Modifier.`sealed`=> SEALED
+    case Modifier.`implicit`=> IMPLICIT
+    case Modifier.`lazy`=> LAZY
+    case Modifier.`case`=> CASE
+    case Modifier.`trait`=> TRAIT
+    case Modifier.deferred => DEFERRED
+    case Modifier.interface => INTERFACE
+    case Modifier.mutable => MUTABLE
+    case Modifier.parameter => PARAM
+    case Modifier.covariant => COVARIANT
+    case Modifier.contravariant => CONTRAVARIANT
+    case Modifier.preSuper => PRESUPER
+    case Modifier.abstractOverride => ABSOVERRIDE
+    case Modifier.local => LOCAL
+    case Modifier.java => JAVA
+    case Modifier.static => STATIC
+    case Modifier.caseAccessor => CASEACCESSOR
+    case Modifier.defaultParameter => DEFAULTPARAM
+    case Modifier.defaultInit => DEFAULTINIT
+    case Modifier.paramAccessor => PARAMACCESSOR
+    case Modifier.bynameParameter => BYNAMEPARAM
   }
 }
 

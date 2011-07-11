@@ -9,7 +9,7 @@ package internal
 import util._
 
 /** AnnotationInfo and its helpers */
-trait AnnotationInfos /*extends reflect.generic.AnnotationInfos*/ { self: SymbolTable =>
+trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
   /** Arguments to classfile annotations (which are written to
    *  bytecode as java annotations) are either:
@@ -30,11 +30,15 @@ trait AnnotationInfos /*extends reflect.generic.AnnotationInfos*/ { self: Symbol
     override def toString = const.escapedStringValue
   }
 
+  object LiteralAnnotArg extends LiteralAnnotArgExtractor
+
   /** Represents an array of classfile annotation arguments */
   case class ArrayAnnotArg(args: Array[ClassfileAnnotArg])
   extends ClassfileAnnotArg {
     override def toString = args.mkString("[", ", ", "]")
   }
+
+  object ArrayAnnotArg extends ArrayAnnotArgExtractor
 
   /** A specific annotation argument that encodes an array of bytes as an array of `Long`. The type of the argument
     * declared in the annotation must be `String`. This specialised class is used to encode scala signatures for
@@ -57,6 +61,8 @@ trait AnnotationInfos /*extends reflect.generic.AnnotationInfos*/ { self: Symbol
     assert(annInfo.args.isEmpty, annInfo.args)
     override def toString = annInfo.toString
   }
+
+  object NestedAnnotArg extends NestedAnnotArgExtractor
 
   class AnnotationInfoBase
 
@@ -130,6 +136,8 @@ trait AnnotationInfos /*extends reflect.generic.AnnotationInfos*/ { self: Symbol
       case Literal(Constant(x: Int)) => x
     } else None
   }
+
+  object AnnotationInfo extends AnnotationInfoExtractor
 
   lazy val classfileAnnotArgManifest: ClassManifest[ClassfileAnnotArg] =
     reflect.ClassManifest.classType(classOf[ClassfileAnnotArg])

@@ -11,8 +11,9 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import util.Statistics._
 import Flags._
+import api.Modifier
 
-trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
+trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
 
   private var ids = 0
@@ -41,7 +42,7 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
   val originalOwner = perRunCaches.newMap[Symbol, Symbol]()
 
   /** The class for all symbols */
-  abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends HasFlags /*AbsSymbol */ {
+  abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends AbsSymbol with HasFlags {
 
     type FlagsType          = Long
     type AccessBoundaryType = Symbol
@@ -58,6 +59,14 @@ trait Symbols /* extends reflect.generic.Symbols*/ { self: SymbolTable =>
 
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
+
+    override def hasModifier(mod: Modifier.Value) =
+      hasFlag(flagOfModifier(mod)) &&
+      (!(mod == Modifier.bynameParameter) || isTerm) &&
+      (!(mod == Modifier.covariant) || isType)
+
+    override def allModifiers: Set[Modifier.Value] =
+      Modifier.values filter hasModifier
 
 // ------ creators -------------------------------------------------------------------
 
