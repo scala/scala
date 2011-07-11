@@ -200,13 +200,16 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
-        val elemsNew = new Array[HashSet[A]](elems.length)
-        Array.copy(elems, 0, elemsNew, 0, elems.length)
-        val sub = elems(offset)
         // TODO: might be worth checking if sub is HashTrieSet (-> monomorphic call site)
+        val sub = elems(offset)
         val subNew = sub.updated0(key, hash, level + 5)
-        elemsNew(offset) = subNew
-        new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
+        if (sub eq subNew) this
+        else {
+          val elemsNew = new Array[HashSet[A]](elems.length)
+          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          elemsNew(offset) = subNew
+          new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
+        }
       } else {
         val elemsNew = new Array[HashSet[A]](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
@@ -225,7 +228,8 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         val sub = elems(offset)
         // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
-        if (subNew.isEmpty) {
+        if (sub eq subNew) this
+        else if (subNew.isEmpty) {
           val bitmapNew = bitmap ^ mask
           if (bitmapNew != 0) {
             val elemsNew = new Array[HashSet[A]](elems.length - 1)
