@@ -15,9 +15,9 @@ abstract class MutableSettings extends AbsSettings {
 
   // basically this is a value which remembers if it's been modified
   trait SettingValue extends AbsSettingValue {
-    protected var v: T
+    protected var v: T = _
     protected var setByUser: Boolean = false
-    def postSetHook(): Unit
+    def postSetHook(): Unit = {}
 
     def isDefault: Boolean = !setByUser
     def value: T = v

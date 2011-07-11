@@ -1,7 +1,7 @@
 package scala.reflect
 package runtime
 
-class Universe extends internal.SymbolTable {
+class Universe extends internal.SymbolTable with JavaConversions {
 
   type AbstractFileType = AbstractFile
 
@@ -11,18 +11,20 @@ class Universe extends internal.SymbolTable {
 
   val gen = new internal.TreeGen { val global: Universe.this.type = Universe.this }
 
-  def settings = null
+  def settings = new Settings
   def forInteractive = false
   def forScaladoc = false
 
   val phaseWithId: Array[internal.Phase] = Array()
   val currentRunId = 0
   def log(msg: => AnyRef): Unit = println(" [] "+msg)
-  def rootLoader = null // not needed because RootClass will get a PackageType in Definitions anyway.
+  val rootLoader = new LazyType {
+    override def complete(sym: Symbol) = sym setInfo packageType(definitions.RootClass)
+  }
 
   private def packageType(clazz: Symbol) = new ClassInfoType(List(), newScope, clazz)
 
-  definitions.RootClass.setInfo(packageType(definitions.RootClass))
+  // definitions.RootClass.setInfo(packageType(definitions.RootClass))
 
   type TreeCopier = TreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
@@ -34,4 +36,8 @@ class Universe extends internal.SymbolTable {
 
   type Position = String // source file?
   val NoPosition = ""
+}
+
+object Universe extends Universe with App {
+  toplevelScalaClass(classOf[scala.collection.Iterable[_]])
 }
