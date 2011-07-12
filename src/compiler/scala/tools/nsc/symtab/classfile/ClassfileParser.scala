@@ -25,7 +25,7 @@ abstract class ClassfileParser {
   val global: Global
   import global._
 
-  import ClassfileConstants._
+  import scala.reflect.internal.ClassfileConstants._
   import Flags._
 
   protected var in: AbstractFileReader = _  // the class file reader
@@ -206,12 +206,12 @@ abstract class ClassfileParser {
       getExternalName(in.getChar(start + 1))
     }
 
-    /** Return the symbol of the class member at <code>index</code>.
+    /** Return the symbol of the class member at `index`.
      *  The following special cases exist:
-     *   - If the member refers to special MODULE$ static field, return
+     *   - If the member refers to special `MODULE$` static field, return
      *  the symbol of the corresponding module.
      *   - If the member is a field, and is not found with the given name,
-     *     another try is made by appending nme.LOCAL_SUFFIX_STRING
+     *     another try is made by appending `nme.LOCAL_SUFFIX_STRING`
      *   - If no symbol is found in the right tpe, a new try is made in the
      *     companion class, in case the owner is an implementation class.
      */
@@ -271,7 +271,7 @@ abstract class ClassfileParser {
     }
 
     /** Return a name and a type at the given index. If the type is a method
-     *  type, a dummy symbol is created in 'ownerTpe', which is used as the
+     *  type, a dummy symbol is created in `ownerTpe`, which is used as the
      *  owner of its value parameters. This might lead to inconsistencies,
      *  if a symbol of the given name already exists, and has a different
      *  type.
@@ -546,13 +546,13 @@ abstract class ClassfileParser {
     skipMembers() // fields
     skipMembers() // methods
     if (!isScala) {
-      clazz.setFlag(sflags)
+      clazz setFlag sflags
       setPrivateWithin(clazz, jflags)
       setPrivateWithin(staticModule, jflags)
       if (!hasMeta || isScalaRaw) {
         clazz.setInfo(classInfo)
       }
-      statics.setInfo(staticInfo)
+      statics setInfo staticInfo
       staticModule.setInfo(statics.tpe)
       staticModule.setFlag(JAVA)
       staticModule.moduleClass.setFlag(JAVA)
@@ -676,7 +676,7 @@ abstract class ClassfileParser {
   }
 
   /** Convert array parameters denoting a repeated parameter of a Java method
-   *  to JavaRepeatedParamClass types.
+   *  to `JavaRepeatedParamClass` types.
    */
   private def arrayToRepeated(tp: Type): Type = tp match {
     case MethodType(params, rtpe) =>
@@ -994,7 +994,7 @@ abstract class ClassfileParser {
     def parseScalaSigBytes: Option[ScalaSigBytes] = {
       val tag = in.nextByte.toChar
       assert(tag == STRING_TAG)
-      Some(ScalaSigBytes(pool.getBytes(in.nextChar)))
+      Some(ScalaSigBytes(pool getBytes in.nextChar))
     }
 
     def parseScalaLongSigBytes: Option[ScalaSigBytes] = try {
@@ -1106,10 +1106,10 @@ abstract class ClassfileParser {
 
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
       val innerModule = getOwner(jflags).newModule(NoPosition, name.toTermName).setInfo(completer).setFlag(sflags)
-      innerModule.moduleClass.setInfo(global.loaders.moduleClassLoader)
+      innerModule.moduleClass setInfo global.loaders.moduleClassLoader
 
-      getScope(jflags).enter(innerClass)
-      getScope(jflags).enter(innerModule)
+      getScope(jflags) enter innerClass
+      getScope(jflags) enter innerModule
 
       val decls = innerClass.enclosingPackage.info.decls
       val e = decls.lookupEntry(className(entry.externalName))
@@ -1135,8 +1135,8 @@ abstract class ClassfileParser {
     }
   }
 
-  /** Parse inner classes. Expects in.bp to point to the superclass entry. Restores the
-   *  old bp.
+  /** Parse inner classes. Expects `in.bp` to point to the superclass entry.
+   *  Restores the old `bp`.
    */
   def parseInnerClasses() {
     val oldbp = in.bp
@@ -1185,17 +1185,17 @@ abstract class ClassfileParser {
 
   /** An entry in the InnerClasses attribute of this class file. */
   case class InnerClassEntry(external: Int, outer: Int, name: Int, jflags: Int) {
-    def externalName = pool.getClassName(external)
-    def outerName    = pool.getClassName(outer)
-    def originalName = pool.getName(name)
+    def externalName = pool getClassName external
+    def outerName    = pool getClassName outer
+    def originalName = pool getName name
 
     override def toString =
       originalName + " in " + outerName + "(" + externalName +")"
   }
 
   object innerClasses extends collection.mutable.HashMap[Name, InnerClassEntry] {
-    /** Return the Symbol of the top level class enclosing 'name', or 'name's symbol
-     *  if no entry found for 'name'.
+    /** Return the Symbol of the top level class enclosing `name`,
+     *  or 'name's symbol if no entry found for `name`.
      */
     def topLevelClass(name: Name): Symbol = {
       val tlName = if (isDefinedAt(name)) {
@@ -1208,10 +1208,10 @@ abstract class ClassfileParser {
       classNameToSymbol(tlName)
     }
 
-    /** Return the class symbol for 'externalName'. It looks it up in its outer class.
+    /** Return the class symbol for `externalName`. It looks it up in its outer class.
      *  Forces all outer class symbols to be completed.
      *
-     *  If the given name is not an inner class, it returns the symbol found in 'definitions'.
+     *  If the given name is not an inner class, it returns the symbol found in `definitions`.
      */
     def classSymbol(externalName: Name): Symbol = {
       /** Return the symbol of `innerName`, having the given `externalName`. */

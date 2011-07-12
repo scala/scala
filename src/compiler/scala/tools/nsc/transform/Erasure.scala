@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.tools.nsc.symtab.classfile.ClassfileConstants._
+import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{ mutable, immutable }
 import symtab._
 import Flags._

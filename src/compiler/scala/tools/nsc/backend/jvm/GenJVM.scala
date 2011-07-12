@@ -14,7 +14,7 @@ import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
 import scala.tools.reflect.SigParser
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.symtab.classfile.ClassfileConstants._
+import scala.reflect.internal.ClassfileConstants._
 import ch.epfl.lamp.fjbg._
 import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
@@ -76,9 +76,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           icodes.classes -= sym
 
       val bytecodeWriter = settings.outputDirs.getSingleOutput match {
-        case Some(f) if f hasExtension "jar"    =>
+        case Some(f) if f hasExtension "jar" =>
           new DirectToJarfileWriter(f)
-        case _                                  =>
+        case _                               =>
           if (settings.Ygenjavap.isDefault) new ClassBytecodeWriter { }
           else new ClassBytecodeWriter with JavapBytecodeWriter { }
       }
