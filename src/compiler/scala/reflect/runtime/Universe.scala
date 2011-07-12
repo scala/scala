@@ -17,8 +17,10 @@ class Universe extends internal.SymbolTable with JavaConversions {
 
   val phaseWithId: Array[internal.Phase] = Array()
   val currentRunId = 0
+  per = 1 << 8 + 1 // fake a period so that it is different from NoPeriod
+
   def log(msg: => AnyRef): Unit = println(" [] "+msg)
-  val rootLoader = new LazyType {
+  override val rootLoader = new LazyType {
     override def complete(sym: Symbol) = sym setInfo packageType(definitions.RootClass)
   }
 
@@ -39,5 +41,5 @@ class Universe extends internal.SymbolTable with JavaConversions {
 }
 
 object Universe extends Universe with App {
-  toplevelScalaClass(classOf[scala.collection.Iterable[_]])
+  classToScala(classOf[scala.collection.Iterable[_]])
 }

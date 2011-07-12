@@ -496,7 +496,7 @@ abstract class ClassfileParser {
   def parseClass() {
     val jflags = in.nextChar
     val isAnnotation = hasAnnotation(jflags)
-    var sflags = transFlags(jflags, true)
+    var sflags = toScalaFlags(jflags, true)
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = if (externalName.toString.indexOf('$') < 0) pool.getClassSymbol(nameIdx) else clazz
@@ -604,7 +604,7 @@ abstract class ClassfileParser {
 
   def parseField() {
     val jflags = in.nextChar
-    var sflags = transFlags(jflags, false)
+    var sflags = toScalaFlags(jflags, false)
     if ((sflags & FINAL) == 0L) sflags = sflags | MUTABLE
     if ((sflags & PRIVATE) != 0L && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
@@ -636,7 +636,7 @@ abstract class ClassfileParser {
 
   def parseMethod() {
     val jflags = in.nextChar.toInt
-    var sflags = transFlags(jflags, false)
+    var sflags = toScalaFlags(jflags, false)
     if (isPrivate(jflags) && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
@@ -1102,7 +1102,7 @@ abstract class ClassfileParser {
 
     def enterClassAndModule(entry: InnerClassEntry, completer: global.loaders.SymbolLoader, jflags: Int) {
       val name = entry.originalName
-      var sflags = transFlags(jflags, true)
+      var sflags = toScalaFlags(jflags, true)
 
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
       val innerModule = getOwner(jflags).newModule(NoPosition, name.toTermName).setInfo(completer).setFlag(sflags)
@@ -1291,30 +1291,7 @@ abstract class ClassfileParser {
   protected def getScope(flags: Int): Scope =
     if (isStatic(flags)) staticDefs else instanceDefs
 
-  protected def transFlags(flags: Int, isClass: Boolean): Long = {
-    var res = 0l
-    if ((flags & JAVA_ACC_PRIVATE) != 0)
-      res = res | PRIVATE
-    else if ((flags & JAVA_ACC_PROTECTED) != 0)
-      res = res | PROTECTED
-    if ((flags & JAVA_ACC_ABSTRACT) != 0 && (flags & JAVA_ACC_ANNOTATION) == 0)
-      res = res | DEFERRED
-    if ((flags & JAVA_ACC_FINAL) != 0)
-      res = res | FINAL
-    if (((flags & JAVA_ACC_INTERFACE) != 0) &&
-        ((flags & JAVA_ACC_ANNOTATION) == 0))
-      res = res | TRAIT | INTERFACE | ABSTRACT
-    if ((flags & JAVA_ACC_SYNTHETIC) != 0)
-      res = res | SYNTHETIC
-    if ((flags & JAVA_ACC_STATIC) != 0)
-      res = res | STATIC
-    if (isClass && ((res & DEFERRED) != 0L))
-        res = res & ~DEFERRED | ABSTRACT
-
-    res | JAVA
-  }
-
-  private def setPrivateWithin(sym: Symbol, jflags: Int) {
+   private def setPrivateWithin(sym: Symbol, jflags: Int) {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
       // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
       // apparently occurs when processing v45.3 bytecode.

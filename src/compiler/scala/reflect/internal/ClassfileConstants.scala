@@ -329,4 +329,28 @@ object ClassfileConstants {
   final val breakpoint    = 0xca
   final val impdep1       = 0xfe
   final val impdep2       = 0xff
+
+  def toScalaFlags(flags: Int, isClass: Boolean): Long = {
+    import Flags._
+    var res = 0l
+    if ((flags & JAVA_ACC_PRIVATE) != 0)
+      res = res | PRIVATE
+    else if ((flags & JAVA_ACC_PROTECTED) != 0)
+      res = res | PROTECTED
+    if ((flags & JAVA_ACC_ABSTRACT) != 0 && (flags & JAVA_ACC_ANNOTATION) == 0)
+      res = res | DEFERRED
+    if ((flags & JAVA_ACC_FINAL) != 0)
+      res = res | FINAL
+    if (((flags & JAVA_ACC_INTERFACE) != 0) &&
+        ((flags & JAVA_ACC_ANNOTATION) == 0))
+      res = res | TRAIT | INTERFACE | ABSTRACT
+    if ((flags & JAVA_ACC_SYNTHETIC) != 0)
+      res = res | SYNTHETIC
+    if ((flags & JAVA_ACC_STATIC) != 0)
+      res = res | STATIC
+    if (isClass && ((res & DEFERRED) != 0L))
+        res = res & ~DEFERRED | ABSTRACT
+
+    res | JAVA
+  }
 }
