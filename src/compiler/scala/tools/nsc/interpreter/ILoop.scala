@@ -43,11 +43,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   var settings: Settings = _
   var intp: IMain = _
 
+  override def echoCommandMessage(msg: String): Unit =
+    intp.reporter.printMessage(msg)
+
   def isAsync = !settings.Yreplsync.value
-  lazy val power = {
-    val g = intp.global
-    Power[g.type](this, g)
-  }
+  lazy val power = Power(this)
 
   // TODO
   // object opt extends AestheticSettings
@@ -622,6 +622,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def enablePowerMode(isDuringInit: Boolean) = {
     replProps.power setValue true
     power.unleash()
+    intp.beSilentDuring(phaseCommand("typer"))
     if (isDuringInit) asyncMessage(power.banner)
     else echo(power.banner)
   }
