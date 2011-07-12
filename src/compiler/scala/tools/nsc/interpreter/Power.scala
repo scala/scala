@@ -147,18 +147,19 @@ abstract class Power(
   )
 
   def init = customInit match {
-    case Some(x)  => List(x)
-    case _        => initImports map ("import " + _)
+    case Some(x)  => x
+    case _        => initImports.mkString("import ", ", ", "")
   }
 
   /** Starts up power mode and runs whatever is in init.
    */
   def unleash(): Unit = beQuietDuring {
-    val r  = new ReplVals(repl)
-    intp.bind("$r", r)
-    r bindWithPrefix intp.pathToTerm("$r") // binds all the vals
-
-    init foreach interpret
+    // First we create the ReplVals instance and bind it to $r
+    intp.bind("$r", new ReplVals(repl))
+    // Then we import everything from $r.
+    intp interpret ("import " + intp.pathToTerm("$r") + "._")
+    // And whatever else there is to do.
+    init.lines foreach (intp interpret _)
   }
 
   trait LowPriorityInternalInfo {
