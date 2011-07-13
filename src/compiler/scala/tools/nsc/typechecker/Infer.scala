@@ -1074,12 +1074,15 @@ trait Infer {
       //@M TODO: errors for getters & setters are reported separately
       val kindErrors = checkKindBounds(tparams, targs, pre, owner)
 
-      if(!kindErrors.isEmpty) {
-        error(pos,
+      if (!kindErrors.isEmpty) {
+        if (targs contains WildcardType) ()
+        else error(pos,
           prefix + "kinds of the type arguments " + targs.mkString("(", ",", ")") +
-          " do not conform to the expected kinds of the type parameters "+ tparams.mkString("(", ",", ")") + tparams.head.locationString+ "." +
+          " do not conform to the expected kinds of the type parameters "+
+          tparams.mkString("(", ",", ")") + tparams.head.locationString+ "." +
           kindErrors.toList.mkString("\n", ", ", ""))
-      } else if (!isWithinBounds(pre, owner, tparams, targs)) {
+      }
+      else if (!isWithinBounds(pre, owner, tparams, targs)) {
         if (!(targs exists (_.isErroneous)) && !(tparams exists (_.isErroneous))) {
           //val bounds = instantiatedBounds(pre, owner, tparams, targs)//DEBUG
           //println("bounds = "+bounds+", targs = "+targs+", targclasses = "+(targs map (_.getClass))+", parents = "+(targs map (_.parents)))

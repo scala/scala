@@ -1,0 +1,4 @@
+hk-bad-bounds.scala:4: error: type arguments [Set] do not conform to class SeqFactory's type parameter bounds [CC[X] <: Seq[X] with scala.collection.generic.GenericTraversableTemplate[X,CC]]
+  def f(x: Boolean) = if (x) (null: SeqFactory[List]) else (null: SeqFactory[Set])
+                                                                  ^
+one error found
