@@ -12,23 +12,20 @@ package scala.reflect
 
 import annotation.target._
 
-/** <p>
- *    When attached to a field, this annotation adds a setter and a getter
- *    method following the  Java Bean convention. For example:
- *  </p><pre>
+/** When attached to a field, this annotation adds a setter and a getter
+ *  method following the Java Bean convention. For example:
+ *  {{{
  *    @BeanProperty
- *    <b>var</b> status = ""</pre>
- *  <p>
- *    adds the following methods to the class:
- *  </p><pre>
- *    <b>def</b> setStatus(s: String) { <b>this</b>.status = s }
- *    <b>def</b> getStatus: String = <b>this</b>.status
- *  </pre>
- *  <p>
- *    For fields of type <code>Boolean</code>, if you need a getter
- *    named <code>isStatus</code>, use the
- *    <code>scala.reflect.BooleanBeanProperty</code> annotation instead.
- *  </p>
+ *    var status = ""
+ *  }}}
+ *  adds the following methods to the class:
+ *  {{{
+ *    def setStatus(s: String) { this.status = s }
+ *    def getStatus: String = this.status
+ *  }}}
+ *  For fields of type `Boolean`, if you need a getter
+ *  named <code>isStatus</code>, use the
+ *  `scala.reflect.BooleanBeanProperty` annotation instead.
  */
 @field
 class BeanProperty extends annotation.StaticAnnotation

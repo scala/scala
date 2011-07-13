@@ -21,34 +21,34 @@ object EmitManPage {
   def emitSection(section: Section, depth: Int) {
     def emitPara(text: AbstractText) {
       emitText(text)
-      out.println("\n.IP")
+      out println "\n.IP"
     }
     def emitText(text: AbstractText) {
       text match {
         case seq:SeqText =>
-          seq.components.foreach(emitText)
+          seq.components foreach emitText
 
         case seq:SeqPara =>
-          seq.components.foreach(emitPara)
+          seq.components foreach emitPara
 
         case Text(text) =>
-          out.print(escape(text))
+          out print escape(text)
 
         case BSlash =>
-          out.print("\\e")
+          out print "\\e"
 
         case NDash | MDash =>
-          out.print("\\-")
+          out print "\\-"
 
         case Bold(text) =>
-          out.print("\\fB")
+          out print "\\fB"
           emitText(text)
-          out.print("\\fR")
+          out print "\\fR"
 
         case Italic(text) =>
-          out.print("\\fI")
+          out print "\\fI"
           emitText(text)
-          out.print("\\fR")
+          out print "\\fR"
 
         case Emph(text) =>
           out.print("\\fI")
@@ -68,7 +68,7 @@ object EmitManPage {
         case DefinitionList(definitions @ _*) =>
           var n = definitions.length
           for (d <- definitions) {
-            out.println(".TP")
+            out println ".TP"
             emitText(d.term)
             out.println
             emitText(d.description)
@@ -79,30 +79,30 @@ object EmitManPage {
           emitText(label)
 
         case _ =>
-          error("unknown text node: " + text)
+          sys.error("unknown text node: " + text)
       }
     }
 
     def emitParagraph(para: Paragraph) {
       para match {
         case TextParagraph(text) =>
-          out.println(".PP")
+          out println ".PP"
           emitText(text)
           out.println
 
         case BlockQuote(text) =>
-          out.println(".TP")
+          out println ".TP"
           emitText(text)
           out.println
 
         case CodeSample(text) =>
-          out.println("\n.nf")
+          out println "\n.nf"
           out.print(text)
-          out.println("\n.fi")
+          out println "\n.fi"
 
         case lst:BulletList =>
           for (item <- lst.items) {
-            out.println(".IP")
+            out println ".IP"
             emitText(item)
             out.println
           }
@@ -118,68 +118,68 @@ object EmitManPage {
           }
 
         case TitledPara(title, text) =>
-          out.println(".PP")
-          out.print("\\fB")
+          out println ".PP"
+          out print "\\fB"
           emitText(title)
-          out.print("\\fR")
+          out print "\\fR"
           emitText(text)
 
         case EmbeddedSection(sect) =>
           emitSection(sect, depth + 1)
 
         case _ =>
-          error("unknown paragraph node: " + para)
+          sys.error("unknown paragraph node: " + para)
       }
     }
 
-    out.println(".\\\"")
+    out println ".\\\""
     out.println(".\\\" ############################## " + section.title + " ###############################")
-    out.println(".\\\"")
+    out println ".\\\""
     val tag = if (depth > 1) ".SS" else ".SH"
     val title =
       if (section.title.indexOf(" ") > 0) "\"" + section.title + "\""
       else section.title
     out.println(tag + " " + title)
 
-    section.paragraphs.foreach(emitParagraph)
+    section.paragraphs foreach emitParagraph
   }
 
   def emitDocument(doc: Document) {
-    out.println(".\\\" ##########################################################################")
-    out.println(".\\\" #                      __                                                #")
-    out.println(".\\\" #      ________ ___   / /  ___     Scala 2 On-line Manual Pages          #")
-    out.println(".\\\" #     / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL              #")
-    out.println(".\\\" #   __\\ \\/ /__/ __ |/ /__/ __ |                                          #")
-    out.println(".\\\" #  /____/\\___/_/ |_/____/_/ | |    http://scala-lang.org/                #")
-    out.println(".\\\" #                           |/                                           #")
-    out.println(".\\\" ##########################################################################")
-    out.println(".\\\"")
-    out.println(".\\\" Process this file with nroff -man scala.1")
-    out.println(".\\\"")
+    out println ".\\\" ##########################################################################"
+    out println ".\\\" #                      __                                                #"
+    out println ".\\\" #      ________ ___   / /  ___     Scala 2 On-line Manual Pages          #"
+    out println ".\\\" #     / __/ __// _ | / /  / _ |    (c) 2002-2011, LAMP/EPFL              #"
+    out println ".\\\" #   __\\ \\/ /__/ __ |/ /__/ __ |                                          #"
+    out println ".\\\" #  /____/\\___/_/ |_/____/_/ | |    http://scala-lang.org/                #"
+    out println ".\\\" #                           |/                                           #"
+    out println ".\\\" ##########################################################################"
+    out println ".\\\""
+    out println ".\\\" Process this file with nroff -man scala.1"
+    out println ".\\\""
     out.println(".TH " + doc.title + " " + doc.category.id +
                 "  \"" + doc.date + "\" \"version " + doc.version +
                 "\" \"" + doc.category + "\"")
 
-    doc.sections.foreach(s => emitSection(s, 1))
+    doc.sections foreach (s => emitSection(s, 1))
   }
 
   def main(args: Array[String]) {
     try {
       val cl = this.getClass.getClassLoader()
-      val clasz = cl.loadClass(args(0))
-      val meth = clasz.getDeclaredMethod("manpage")
+      val clasz = cl loadClass args(0)
+      val meth = clasz getDeclaredMethod "manpage"
       val doc = meth.invoke(null).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
       case ex: Exception =>
         ex.printStackTrace()
-        System.err.println("Error in EmitManPage")
-        exit(1)
+        System.err println "Error in EmitManPage"
+        sys.exit(1)
     }
   }
 
   def emitManPage(classname: String, outStream: java.io.OutputStream) {
-    out.setOut(outStream)
+    out setOut outStream
     main(Array(classname))
   }
 }

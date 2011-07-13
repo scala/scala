@@ -71,22 +71,22 @@ import java.net.{ URL, MalformedURLException }
  *       <code>parse()</code> method</li>
  *  </ol>
  *
- *  <p> e.g.</p>
- *  <pre><code>XIncludeFilter includer = new XIncludeFilter(base);
- *  includer.setParent(parser);
- *  includer.setContentHandler(new SAXXIncluder(System.out));
- *  includer.parse(args[i]);</code>
- *  </pre>
- * </p>
- * translated from Elliotte Rusty Harold's Java source
+ *  e.g.
+ *  {{{
+ *  val includer = new XIncludeFilter(base)
+ *  includer setParent parser
+ *  includer setContentHandler new SAXXIncluder(System.out)
+ *  includer parse args(i)
+ *  }}}
+ *  translated from Elliotte Rusty Harold's Java source.
  * @author Burak Emir
  */
 class XIncludeFilter extends XMLFilterImpl {
 
-  final val  XINCLUDE_NAMESPACE = "http://www.w3.org/2001/XInclude";
+  final val XINCLUDE_NAMESPACE = "http://www.w3.org/2001/XInclude"
 
-  private val bases = new Stack[URL]();
-  private val locators = new Stack[Locator]();
+  private val bases = new Stack[URL]()
+  private val locators = new Stack[Locator]()
 
 /*    private EntityResolver resolver;
 
@@ -103,7 +103,7 @@ class XIncludeFilter extends XMLFilterImpl {
     // do I need to check this in startDocument() and push something
     // there????
   override def setDocumentLocator(locator: Locator) {
-    locators.push(locator)
+    locators push locator
     val base = locator.getSystemId()
     try {
       bases.push(new URL(base))
@@ -152,30 +152,30 @@ class XIncludeFilter extends XMLFilterImpl {
                                    + currentBase, e)
         }
       }
-      bases.push(currentBase);
+      bases push currentBase
 
       if (uri.equals(XINCLUDE_NAMESPACE) && localName.equals("include")) {
         // include external document
         val href = atts.getValue("href")
         // Verify that there is an href attribute
-        if (href==null) {
+        if (href == null) {
           throw new SAXException("Missing href attribute")
         }
 
-        var parse = atts.getValue("parse")
+        var parse = atts getValue "parse"
         if (parse == null) parse = "xml"
 
-        if (parse.equals("text")) {
-          val encoding = atts.getValue("encoding");
+        if (parse equals "text") {
+          val encoding = atts getValue "encoding"
           includeTextDocument(href, encoding);
         }
-        else if (parse.equals("xml")) {
+        else if (parse equals "xml") {
           includeXMLDocument(href);
         }
         // Need to check this also in DOM and JDOM????
         else {
           throw new SAXException(
-            "Illegal value for parse attribute: " + parse);
+            "Illegal value for parse attribute: " + parse)
         }
         level += 1
       }
@@ -196,7 +196,7 @@ class XIncludeFilter extends XMLFilterImpl {
   override def endElement(uri: String, localName: String, qName: String) {
     if (uri.equals(XINCLUDE_NAMESPACE)
         && localName.equals("include")) {
-          level -= 1;
+          level -= 1
     }
     else if (level == 0) {
       bases.pop()
@@ -214,7 +214,7 @@ class XIncludeFilter extends XMLFilterImpl {
 
   override def endDocument() {
     locators.pop()
-    bases.pop(); // pop the URL for the document itself
+    bases.pop()  // pop the URL for the document itself
     depth -= 1
     if (depth == 0) super.endDocument()
   }
@@ -321,29 +321,26 @@ class XIncludeFilter extends XMLFilterImpl {
       val c = new Array[Char](1024)
       var charsRead: Int = 0  // bogus init value
       do {
-        charsRead = reader.read(c, 0, 1024);
-        if (charsRead > 0) this.characters(c, 0, charsRead);
-      } while (charsRead != -1) ;
+        charsRead = reader.read(c, 0, 1024)
+        if (charsRead > 0) this.characters(c, 0, charsRead)
+      } while (charsRead != -1)
     }
     catch {
       case e: UnsupportedEncodingException =>
         throw new SAXException("Unsupported encoding: "
-                               + encoding + getLocation(), e);
+                               + encoding + getLocation(), e)
       case e: IOException =>
         throw new SAXException("Document not found: "
-                               + source.toExternalForm() + getLocation(), e);
+                               + source.toExternalForm() + getLocation(), e)
     }
 
   }
 
   private var atRoot = false
 
-  /**
-    * <p>
-    * This utility method reads a document at a specified URL
-    * and fires off calls to various <code>ContentHandler</code> methods.
-    * It's used to include files with <code>parse="xml"</code>
-    * </p>
+  /** This utility method reads a document at a specified URL
+    * and fires off calls to various `ContentHandler` methods.
+    * It's used to include files with `parse="xml"`.
     *
     * @param  url          URL of the document that will be read
     * @return void

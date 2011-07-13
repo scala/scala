@@ -35,18 +35,18 @@ object Option {
  *  `foreach`:
  *
  *  {{{
- *  val name:Option[String] = request.getParameter("name")
+ *  val name: Option[String] = request getParameter "name"
  *  val upper = name map { _.trim } filter { _.length != 0 } map { _.toUpperCase }
- *  println(upper.getOrElse(""))
+ *  println(upper getOrElse "")
  *  }}}
  *
  *  Note that this is equivalent to {{{
  *  val upper = for {
- *    name <- request.getParameter("name")
+ *    name <- request getParameter "name"
  *    trimmed <- Some(name.trim)
  *    upper <- Some(trimmed.toUpperCase) if trimmed.length != 0
  *  } yield upper
- *  println(upper.getOrElse(""))
+ *  println(upper getOrElse "")
  *  }}}
  *
  *  Because of how for comprehension works, if $none is returned
@@ -57,14 +57,12 @@ object Option {
  *  having to check for the existence of a value.
  *
  *  A less-idiomatic way to use $option values is via pattern matching: {{{
- *  val nameMaybe = request.getParameter("name")
+ *  val nameMaybe = request getParameter "name"
  *  nameMaybe match {
- *    case Some(name) => {
+ *    case Some(name) =>
  *      println(name.trim.toUppercase)
- *    }
- *    case None => {
+ *    case None =>
  *      println("No name value")
- *    }
  *  }
  *  }}}
  *

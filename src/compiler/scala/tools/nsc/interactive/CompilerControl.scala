@@ -76,7 +76,7 @@ trait CompilerControl { self: Global =>
   /** Removes the CompilationUnit corresponding to the given SourceFile
    *  from consideration for recompilation.
    */
-  def removeUnitOf(s: SourceFile): Option[RichCompilationUnit] = {  toBeRemoved += s.file; unitOfFile get s.file }
+  def removeUnitOf(s: SourceFile): Option[RichCompilationUnit] = { toBeRemoved += s.file; unitOfFile get s.file }
 
   /** Returns the top level classes and objects that were deleted
    * in the editor since last time recentlyDeleted() was called.

@@ -10,9 +10,9 @@
 
 package scala
 
-/** A <code>Cell</code> is a generic wrapper which completely
+/** A `Cell` is a generic wrapper which completely
  *  hides the functionality of the wrapped object. The wrapped
- *  object is accessible via the <code>elem</code> accessor method.
+ *  object is accessible via the `elem` accessor method.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 08/08/2003

@@ -19,10 +19,10 @@ import java.util.Comparator
  *  relation</a> is a binary relation on a type. This relation is exposed as
  *  the `equiv` method of the `Equiv` trait.  The relation must be:
  *
- *  1. reflexive: equiv(x, x) == true for any x of type T.
- *  2. symmetric: equiv(x, y) == equiv(y, x) for any x and y of type T.
- *  3. transitive: if equiv(x, y) == true and equiv(y, z) == true, then
- *  equiv(x, z) == true for any x, y, and z of type T.
+ *  1. reflexive: `equiv(x, x) == true` for any x of type `T`.
+ *  2. symmetric: `equiv(x, y) == equiv(y, x)` for any x and y of type T.
+ *  3. transitive: if `equiv(x, y) == true` and `equiv(y, z) == true`, then
+ *  `equiv(x, z) == true` for any x, y, and z of type T.
  *
  *  @author  Geoffrey Washburn, Paul Phillips
  *  @version 1.0, 2008-04-03

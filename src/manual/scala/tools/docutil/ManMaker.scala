@@ -1,3 +1,9 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2011 LAMP/EPFL
+ * @author Stephane Micheloud
+ * Adapted from Lex Spoon's sbaz manual
+ */
+
 package scala.tools.docutil
 
 import org.apache.tools.ant.Task
@@ -32,9 +38,9 @@ class ManMaker extends Task {
   }
 
   override def execute() {
-    if (command.isEmpty) error("Attribute 'command' is not set.")
-    if (htmlout.isEmpty) error("Attribute 'htmlout' is not set.")
-    if (manout.isEmpty) error("Attribute 'manout' is not set.")
+    if (command.isEmpty) sys.error("Attribute 'command' is not set.")
+    if (htmlout.isEmpty) sys.error("Attribute 'htmlout' is not set.")
+    if (manout.isEmpty) sys.error("Attribute 'manout' is not set.")
 
     command foreach (cmd => {
       val classname = "scala.man1."+ cmd

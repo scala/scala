@@ -14,18 +14,18 @@ import java.lang.{ Class => JClass }
 import scala.annotation.tailrec
 
 /** An element of a polymorphic object cache.
-  * This class is refered to by the CleanUp phase. Each PolyMethodCache chain
-  * must only relate to one method as PolyMethodCache does not identify
-  * the method name and argument types. In practice, one variable will be
-  * generated per call point, and will uniquely relate to the method called
-  * at that point, making the method name and argument types irrelevant. **/
+ *  This class is refered to by the `CleanUp` phase. Each `PolyMethodCache` chain
+ *  must only relate to one method as `PolyMethodCache` does not identify
+ *  the method name and argument types. In practice, one variable will be
+ *  generated per call point, and will uniquely relate to the method called
+ *  at that point, making the method name and argument types irrelevant. */
 /* TODO: if performance is acceptable, PolyMethodCache should be made generic on the method type */
 sealed abstract class MethodCache {
-  /** Searches for a cached method in the MethodCache chain that
-  * is compatible with receiver class "forReceiver". If none is cached,
-  * "null" is returned. If "null is returned", find's caller should look-
-  * up the right method using whichever means it prefers, and add it to
-  * the cache for later use. */
+  /** Searches for a cached method in the `MethodCache` chain that
+   *  is compatible with receiver class `forReceiver`. If none is cached,
+   *  `null` is returned. If `null` is returned, find's caller should look-
+   *  up the right method using whichever means it prefers, and add it to
+   *  the cache for later use. */
   def find(forReceiver: JClass[_]): JMethod
   def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache
 }
@@ -59,7 +59,7 @@ final class PolyMethodCache(
 ) extends MethodCache {
 
   /** To achieve tail recursion this must be a separate method
-   *  from find, because the type of next is not PolyMethodCache.
+   *  from `find`, because the type of next is not `PolyMethodCache`.
    */
   @tailrec private def findInternal(forReceiver: JClass[_]): JMethod =
     if (forReceiver eq receiver) method

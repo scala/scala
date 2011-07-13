@@ -61,6 +61,19 @@ span.tool {
 	font-weight: bold;
 }
 
-th {
+table.basic {
+    width: 100%;
+}
+
+table.basic td {
+    margin: 0;
+    padding: 2px; 
+}
+
+table.basic th {
+    text-align: left;
+}
+
+table.basic th.links, td.links {
 	white-space: nowrap;
 }

@@ -109,11 +109,11 @@ class ScalaTool extends ScalaMatchingTask {
    * Note that this mechanism of setting the classpath is generally preferred
    * for general purpose scripts, as this does not assume all elements are
    * relative to the ant basedir.  Additionally, the platform specific demarcation
-   * of any script variables (e.g. ${SCALA_HOME} or %SCALA_HOME%) can be specified
-   * in a platform independant way (e.g. @SCALA_HOME@) and automatically translated
+   * of any script variables (e.g. `${SCALA_HOME}` or `%SCALA_HOME%`) can be specified
+   * in a platform independant way (e.g. `@SCALA_HOME@`) and automatically translated
    * for you.
    */
-  def setClassPath(input: String): Unit = {
+  def setClassPath(input: String) {
     classpath = classpath ::: input.split(",").toList
   }
 
@@ -130,7 +130,7 @@ class ScalaTool extends ScalaMatchingTask {
    * this is not a mechanism for setting the classpath for more general use scripts,
    * such as those distributed within sbaz distribution packages.
    */
-  def setClassPathRef(input: Reference): Unit = {
+  def setClassPathRef(input: Reference) {
     val tmpPath = emptyPath
     tmpPath.setRefid(input)
     classpath = classpath ::: tmpPath.list.toList
@@ -239,7 +239,7 @@ class ScalaTool extends ScalaMatchingTask {
         buildError("File " + file + " is not writable")
       else {
         val writer = new FileWriter(file, false)
-        writer.write(content)
+        writer write content
         writer.close()
       }
 
@@ -262,13 +262,13 @@ class ScalaTool extends ScalaMatchingTask {
     // Consolidate Paths into classpath
     classpath = classpath ::: classpathPath.list.toList
     // Generate the scripts
-    if (platforms.contains("unix")) {
+    if (platforms contains "unix") {
       val unixPatches = patches + (("classpath", getUnixclasspath))
       val unixTemplateResource = resourceRoot + "tool-unix.tmpl"
       val unixTemplate = readAndPatchResource(unixTemplateResource, unixPatches)
       writeFile(file.get, unixTemplate)
     }
-    if (platforms.contains("windows")) {
+    if (platforms contains "windows") {
       val winPatches = patches + (("classpath", getWinclasspath))
       val winTemplateResource = resourceRoot + "tool-windows.tmpl"
       val winTemplate = readAndPatchResource(winTemplateResource, winPatches)

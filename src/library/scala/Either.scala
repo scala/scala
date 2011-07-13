@@ -10,13 +10,11 @@
 
 package scala
 
-/**
- *   Represents a value of one of two possible
- *   types (a disjoint union). The data constructors [[scala.Left]] and
- *   [[scala.Right]] represent the two possible values.
- *   The `Either` type is often used as an alternative to
- *   [[scala.Option]] where `Left` represents failure
- *   (by convention) and `Right` is akin to `Some`.
+/** Represents a value of one of two possible types (a disjoint union).
+ *  The data constructors [[scala.Left]] and [[scala.Right]] represent
+ *  the two possible values.
+ *  The `Either` type is often used as an alternative to [[scala.Option]]
+ *  where `Left` represents failure (by convention) and `Right` is akin to `Some`.
  *
  *  @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  *  @version 1.0, 11/10/2008
@@ -35,6 +33,7 @@ sealed abstract class Either[+A, +B] {
 
   /**
    * Applies `fa` if this is a `Left` or `fb` if this is a `Right`.
+   *
    * @param fa the function to apply if this is a `Left`
    * @param fb the function to apply if this is a `Right`
    * @return the results of applying the function
@@ -329,8 +328,8 @@ object Either {
     case Right(t) => t
   }
 
-  /** If the condition satisfies, return the given A in `Left`,
-   *  otherwise, return the given B in `Right`.
+  /** If the condition satisfies, return the given `A` in `Left`,
+   *  otherwise, return the given `B` in `Right`.
    */
   def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =
     if (test) Right(right) else Left(left)

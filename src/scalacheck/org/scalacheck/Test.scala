@@ -259,7 +259,7 @@ object Test {
   type TestResCallback = (String,Result) => Unit
 
   /** @deprecated (v1.8) Use <code>check(prms.copy(testCallback = myCallback), p)</code> instead. */
-  @deprecated("(v1.8) Use check(prms.copy(testCallback = myCallback), p) instead")
+  @deprecated("Use check(prms.copy(testCallback = myCallback), p) instead", "1.8")
   def check(prms: Params, p: Prop, propCallb: PropEvalCallback): Result = {
     val testCallback = new TestCallback {
       override def onPropEval(n: String, t: Int, s: Int, d: Int) = propCallb(s,d)
@@ -271,13 +271,13 @@ object Test {
    *  <code>maxDiscarded</code> parameter specifies how many
    *  discarded tests that should be allowed before ScalaCheck
    *  @deprecated (v1.8) Use <code>check(Params(maxDiscardedTests = n, testCallback = ConsoleReporter()), p)</code> instead. */
-  @deprecated("(v1.8) Use check(Params(maxDiscardedTests = n, testCallback = ConsoleReporter()), p) instead.")
+  @deprecated("Use check(Params(maxDiscardedTests = n, testCallback = ConsoleReporter()), p) instead.", "1.8")
   def check(p: Prop, maxDiscarded: Int): Result =
     check(Params(maxDiscardedTests = maxDiscarded, testCallback = ConsoleReporter()), p)
 
   /** Tests a property and prints results to the console
    *  @deprecated (v1.8) Use <code>check(Params(testCallback = ConsoleReporter()), p)</code> instead. */
-  @deprecated("(v1.8) Use check(Params(testCallback = ConsoleReporter()), p) instead.")
+  @deprecated("Use check(Params(testCallback = ConsoleReporter()), p) instead.", "1.8")
   def check(p: Prop): Result = check(Params(testCallback = ConsoleReporter()), p)
 
   /** Tests all properties with the given testing parameters, and returns
@@ -285,7 +285,7 @@ object Test {
    *  time a property is evaluted. <code>g</code> is a function called each
    *  time a property has been fully tested.
    *  @deprecated (v1.8) Use <code>checkProperties(prms.copy(testCallback = myCallback), ps)</code> instead. */
-  @deprecated("(v1.8) Use checkProperties(prms.copy(testCallback = myCallback), ps) instead.")
+  @deprecated("Use checkProperties(prms.copy(testCallback = myCallback), ps) instead.", "1.8")
   def checkProperties(ps: Properties, prms: Params,
     propCallb: NamedPropEvalCallback, testCallb: TestResCallback
   ): Seq[(String,Result)] = {
@@ -299,7 +299,7 @@ object Test {
   /** Tests all properties with the given testing parameters, and returns
    *  the test results.
    *  @deprecated (v1.8) Use checkProperties(prms, ps) instead */
-  @deprecated("(v1.8) Use checkProperties(prms, ps) instead")
+  @deprecated("Use checkProperties(prms, ps) instead", "1.8")
   def checkProperties(ps: Properties, prms: Params): Seq[(String,Result)] =
     checkProperties(ps, prms, (n,s,d) => (), (n,s) => ())
 
@@ -307,7 +307,7 @@ object Test {
    *  the test results. The results are also printed on the console during
    *  testing.
    *  @deprecated (v1.8) Use <code>checkProperties(Params(), ps)</code> instead. */
-  @deprecated("(v1.8) Use checkProperties(Params(), ps) instead.")
+  @deprecated("Use checkProperties(Params(), ps) instead.", "1.8")
   def checkProperties(ps: Properties): Seq[(String,Result)] =
     checkProperties(Params(), ps)
 }

@@ -306,8 +306,9 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
 
   /** Given a simple repl-defined name, returns the real name of
    *  the class representing it, e.g. for "Bippy" it may return
-   *
+   *  {{{
    *    $line19.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$Bippy
+   *  }}}
    */
   def generatedName(simpleName: String): Option[String] = {
     if (simpleName endsWith "$") optFlatName(simpleName.init) map (_ + "$")
@@ -329,7 +330,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   private def mostRecentlyHandledTree: Option[Tree] = {
     prevRequests.reverse foreach { req =>
       req.handlers.reverse foreach {
-        case x: MemberDefHandler if x.definesValue && !isInternalVarName(x.name)  => return Some(x.member)
+        case x: MemberDefHandler if x.definesValue && !isInternalVarName(x.name) => return Some(x.member)
         case _ => ()
       }
     }
@@ -352,6 +353,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       repldbg("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
     }
   }
+
   def recordRequest(req: Request) {
     if (req == null || referencedNameMap == null)
       return
@@ -383,9 +385,10 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     }
   }
 
-  private[nsc] def replwarn(msg: => String): Unit =
+  private[nsc] def replwarn(msg: => String) {
     if (!settings.nowarnings.value)
       printMessage(msg)
+  }
 
   def isParseable(line: String): Boolean = {
     beSilentDuring {
@@ -430,6 +433,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       case idx  => s take idx
     }) mkString "\n"
   }
+
   private def safePos(t: Tree, alt: Int): Int =
     try t.pos.startOrPoint
     catch { case _: UnsupportedOperationException => alt }
@@ -755,7 +759,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   /** One line of code submitted by the user for interpretation */
   // private
   class Request(val line: String, val trees: List[Tree]) {
-    val lineRep     = new ReadEvalPrint()
+    val lineRep = new ReadEvalPrint()
     import lineRep.lineAfterTyper
 
     private var _originalLine: String = null
@@ -951,6 +955,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     try Some(definitions.getClass(newTypeName(name)))
     catch { case _: MissingRequirementError => None }
   }
+
   def safeModule(name: String): Option[Symbol] = {
     try Some(definitions.getModule(newTermName(name)))
     catch { case _: MissingRequirementError => None }
@@ -971,6 +976,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     case nme.ROOTPKG  => Some(definitions.RootClass.tpe)
     case name         => requestForName(name) flatMap (_.compilerTypeOf get name)
   }
+
   def symbolOfTerm(id: String): Symbol =
     requestForIdent(id) flatMap (_.definedSymbols get newTermName(id)) getOrElse NoSymbol
 
@@ -1085,6 +1091,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(repldbg(asCompactString(t)))))
     }
   }
+
   // debugging
   def debugging[T](msg: String)(res: T) = {
     repldbg(msg + " " + res)

@@ -12,16 +12,15 @@ package scala
 
 /** Annotate type parameters on which code should be automatically
  *  specialized. For example:
- *  <code>
+ *  {{{
  *    class MyList[@specialized T] ...
- *  </code>
+ *  }}}
  *
  *  Type T can be specialized on a subset of the primitive types by
  *  specifying a list of primitive types to specialize at:
- *
- *  <code>
- *   class MyList[@specialized(Int, Double, Boolean) T] ..
- *  </code>
+ *  {{{
+ *    class MyList[@specialized(Int, Double, Boolean) T] ..
+ *  }}}
  *
  *  @since 2.8
  */
@@ -30,4 +29,3 @@ class specialized(types: SpecializableCompanion*) extends annotation.StaticAnnot
     this(Unit, Boolean, Byte, Short, Char, Int, Long, Float, Double)
   }
 }
-
