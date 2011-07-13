@@ -1,0 +1,4 @@
+bug1431.scala:8: error: class type required but X#Factory found
+  def fun[X<:MyTrait with Singleton]() = new X#Factory().value
+                                               ^
+one error found

@@ -223,15 +223,24 @@ trait Typers extends Modes {
 
     /** Check that `tpt` refers to a non-refinement class type */
     def checkClassType(tpt: Tree, existentialOK: Boolean, stablePrefix: Boolean) {
+      def errorNotClass(found: AnyRef) = error(tpt.pos, "class type required but "+found+" found")
       def check(tpe: Type): Unit = tpe.normalize match {
         case TypeRef(pre, sym, _) if sym.isClass && !sym.isRefinementClass =>
-          if (stablePrefix && phase.id <= currentRun.typerPhase.id && !pre.isStable)
-            error(tpt.pos, "type "+pre+" is not a stable prefix")
+          if (stablePrefix && phase.id <= currentRun.typerPhase.id) {
+            if (!pre.isStable)
+              error(tpt.pos, "type "+pre+" is not a stable prefix")
+            // A type projection like X#Y can get by the stable check if the
+            // prefix is singleton-bounded, so peek at the tree too.
+            else tpt match {
+              case SelectFromTypeTree(qual, _) if !isSingleType(qual.tpe) => errorNotClass(tpt)
+              case _                                                      => ;
+            }
+          }
         case ErrorType => ;
         case PolyType(_, restpe) => check(restpe)
         case ExistentialType(_, restpe) if existentialOK => check(restpe)
         case AnnotatedType(_, underlying, _) => check(underlying)
-        case t => error(tpt.pos, "class type required but "+t+" found")
+        case t => errorNotClass(t)
       }
       check(tpt.tpe)
     }
