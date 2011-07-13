@@ -50,7 +50,6 @@ trait Typers extends Modes {
     resetNamer()
     resetImplicits()
     transformed.clear()
-    resetSynthetics()
   }
 
   object UnTyper extends Traverser {
@@ -1076,10 +1075,9 @@ trait Typers extends Modes {
     private def validateNoCaseAncestor(clazz: Symbol) = {
       if (!phase.erasedTypes) {
         for (ancestor <- clazz.ancestors find (_.isCase)) {
-          unit.deprecationWarning(clazz.pos, (
-            "case class `%s' has case ancestor `%s'.  Case-to-case inheritance has potentially "+
-            "dangerous bugs which are unlikely to be fixed.  You are strongly encouraged to "+
-            "instead use extractors to pattern match on non-leaf nodes."
+          unit.error(clazz.pos, (
+            "case class `%s' has case ancestor `%s'. Case-to-case inheritance is prohibited."+
+            " To overcome this limitation use extractors to pattern match on non-leaf nodes."
           ).format(clazz, ancestor))
         }
       }

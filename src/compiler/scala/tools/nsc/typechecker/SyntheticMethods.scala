@@ -35,22 +35,6 @@ trait SyntheticMethods extends ast.TreeDSL {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
 
-  /** In general case classes/objects are not given synthetic equals methods if some
-   *  non-AnyRef implementation is inherited.  However if you let a case object inherit
-   *  an implementation from a case class, it creates an asymmetric equals with all the
-   *  associated badness: see ticket #883.  So if it sees such a thing this has happened
-   *  (by virtue of the symbol being in createdMethodSymbols) it re-overrides it with
-   *  reference equality.
-   *
-   *  TODO: remove once (deprecated) case class inheritance is dropped form nsc.
-   */
-  private val createdMethodSymbols = new mutable.HashSet[Symbol]
-
-  /** Clear the cache of createdMethodSymbols.  */
-  def resetSynthetics() {
-    createdMethodSymbols.clear()
-  }
-
   /** Add the synthetic methods to case classes.  Note that a lot of the
    *  complexity herein is a consequence of case classes inheriting from
    *  case classes, which has been deprecated as of Sep 11 2009.  So when
@@ -64,7 +48,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info nonPrivateMember meth.name
       def isOverride(s: Symbol) = {
-        s != meth && !s.isDeferred && !s.isSynthetic && !createdMethodSymbols(s) &&
+        s != meth && !s.isDeferred && !s.isSynthetic &&
         (clazz.thisType.memberType(s) matches clazz.thisType.memberType(meth))
       }
       sym.alternatives exists isOverride
@@ -75,7 +59,6 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def newSyntheticMethod(name: Name, flags: Int, tpeCons: Symbol => Type) = {
       val method = clazz.newMethod(clazz.pos.focus, name.toTermName) setFlag flags
-      createdMethodSymbols += method
       method setInfo tpeCons(method)
       clazz.info.decls.enter(method)
     }
@@ -284,13 +267,6 @@ trait SyntheticMethods extends ast.TreeDSL {
             // Product_productElementName  -> (() => productElementNameMethod(accessors)),
             Product_canEqual        -> (() => canEqualMethod)
           )
-        }
-
-        if (clazz.isModuleClass) {
-          // if there's a synthetic method in a parent case class, override its equality
-          // with eq (see #883)
-          val otherEquals = clazz.info.nonPrivateMember(Object_equals.name)
-          if (otherEquals.owner != clazz && createdMethodSymbols(otherEquals)) ts += equalsModuleMethod
         }
 
         val methods = (if (clazz.isModuleClass) objectMethods else classMethods) ++ everywhereMethods

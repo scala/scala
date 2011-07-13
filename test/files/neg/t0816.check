@@ -1,0 +1,4 @@
+t0816.scala:5: error: case class `class Ctest' has case ancestor `class Btest'. Case-to-case inheritance is prohibited. To overcome this limitation use extractors to pattern match on non-leaf nodes.
+case class Ctest(override val data: String) extends Btest(data, true)
+           ^
+one error found

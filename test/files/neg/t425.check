@@ -1,0 +1,4 @@
+t425.scala:3: error: case class `class B' has case ancestor `class A'. Case-to-case inheritance is prohibited. To overcome this limitation use extractors to pattern match on non-leaf nodes.
+  case class B(override val x: Int, y: Double) extends A(x)
+             ^
+one error found
