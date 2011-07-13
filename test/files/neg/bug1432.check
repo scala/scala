@@ -1,0 +1,6 @@
+bug1432.scala:10: error: type mismatch;
+ found   : (Int, Bug_NoUnique.Wrap[Bug_NoUnique.Wrap[Unit]] => Double)
+ required: (Int, Unit => Double)
+  def test(x : TypeCon[Wrap[Unit]]) : TypeCon[Unit] = wrap(x)
+                                                          ^
+one error found
