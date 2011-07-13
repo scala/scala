@@ -1790,8 +1790,8 @@ trait Types extends api.Types { self: SymbolTable =>
         relativeInfoCache
       }
 
-    override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
-    override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
+    override def typeSymbol = if (sym.isAliasType && (this ne normalize)) normalize.typeSymbol else sym
+    override def termSymbol = if (sym.isAliasType && (this ne normalize)) normalize.termSymbol else super.termSymbol
     override def typeSymbolDirect = sym
     override def termSymbolDirect = super.termSymbol
 

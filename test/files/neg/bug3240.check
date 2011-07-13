@@ -1,0 +1,7 @@
+bug3240.scala:3: error: only classes can have declared but undefined members
+  type t
+       ^
+bug3240.scala:5: error: type arguments [this.t] do not conform to method asInstanceOf's type parameter bounds [T0]
+       a.getOrElse(defVal).asInstanceOf[t]
+                                       ^
+two errors found
