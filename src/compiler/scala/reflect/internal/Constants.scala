@@ -225,7 +225,7 @@ trait Constants extends api.Constants {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
         case ClassTag  => "classOf[" + signature(typeValue) + "]"
-        case CharTag   => escape("'" + escapedChar(charValue) + "'")
+        case CharTag   => "'" + escapedChar(charValue) + "'"
         case LongTag   => longValue.toString() + "L"
         case _         => String.valueOf(value)
       }
