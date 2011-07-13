@@ -150,7 +150,10 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   private def updateStatus(key: String, num: Int) = status(key) = num
 
   private def cleanup() {
-    toDelete foreach (_.deleteRecursively())
+    // keep output directories under debug
+    if (!isPartestDebug)
+      toDelete foreach (_.deleteRecursively())
+
     toDelete.clear()
   }
   sys addShutdownHook cleanup()
