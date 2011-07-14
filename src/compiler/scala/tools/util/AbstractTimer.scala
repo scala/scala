@@ -10,7 +10,7 @@
 package scala.tools.util
 
 import compat.Platform.currentTime
-import scala.collection.mutable.Stack
+import scala.collection.mutable
 
 /**
  * This abstract class implements the collection of timings. How the
@@ -25,7 +25,7 @@ abstract class AbstractTimer {
   // Private Fields
 
   /** A stack for maintaining start times */
-  private val starts = new Stack[Long]()
+  private val starts = new mutable.Stack[Long]()
 
   //########################################################################
   // Public Methods

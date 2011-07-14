@@ -10,7 +10,7 @@
 package scala.actors
 package remote
 
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.mutable
 
 case class NamedSend(senderLoc: Locator, receiverLoc: Locator, data: Array[Byte], session: Symbol)
 
@@ -39,8 +39,8 @@ private[remote] class NetKernel(service: Service) {
     sendToNode(receiverLoc.node, NamedSend(senderLoc, receiverLoc, bytes, session))
   }
 
-  private val actors = new HashMap[Symbol, OutputChannel[Any]]
-  private val names = new HashMap[OutputChannel[Any], Symbol]
+  private val actors = new mutable.HashMap[Symbol, OutputChannel[Any]]
+  private val names = new mutable.HashMap[OutputChannel[Any], Symbol]
 
   def register(name: Symbol, a: OutputChannel[Any]): Unit = synchronized {
     actors += Pair(name, a)
@@ -83,7 +83,7 @@ private[remote] class NetKernel(service: Service) {
     p
   }
 
-  val proxies = new HashMap[(Node, Symbol), Proxy]
+  val proxies = new mutable.HashMap[(Node, Symbol), Proxy]
 
   def getOrCreateProxy(senderNode: Node, senderName: Symbol): Proxy =
     proxies.synchronized {

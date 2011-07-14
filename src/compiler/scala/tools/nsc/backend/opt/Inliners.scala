@@ -78,12 +78,12 @@ abstract class Inliners extends SubComponent {
       val Private, Protected, Public = Value
 
       /** Cache whether a method calls private members. */
-      val usesNonPublics: mutable.Map[IMethod, Value] = new mutable.HashMap
+      val usesNonPublics: mutable.Map[IMethod, Value] = perRunCaches.newMap()
     }
     import NonPublicRefs._
 
     /* fresh name counter */
-    val fresh = new mutable.HashMap[String, Int] withDefaultValue 0
+    val fresh = perRunCaches.newMap[String, Int]() withDefaultValue 0
     def freshName(s: String) = {
       fresh(s) += 1
       s + fresh(s)
@@ -108,9 +108,7 @@ abstract class Inliners extends SubComponent {
     tfa.stat  = global.opt.printStats
 
     // how many times have we already inlined this method here?
-    private val inlinedMethodCount: mutable.Map[Symbol, Int] = new mutable.HashMap[Symbol, Int] {
-    	override def default(k: Symbol) = 0
-    }
+    private val inlinedMethodCount = perRunCaches.newMap[Symbol, Int]() withDefaultValue 0
 
     def analyzeMethod(m: IMethod): Unit = {
       var sizeBeforeInlining  = if (m.code ne null) m.code.blockCount else 0
@@ -367,7 +365,7 @@ abstract class Inliners extends SubComponent {
           case x     => newLocal("$retVal", x)
         }
 
-        val inlinedLocals: mutable.Map[Local, Local] = new mutable.HashMap
+        val inlinedLocals = perRunCaches.newMap[Local, Local]()
 
         /** Add a new block in the current context. */
         def newBlock() = {

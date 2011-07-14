@@ -6,14 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
 import generic._
 import script._
-import annotation.{migration, bridge}
+import annotation.{ migration, bridge }
 import parallel.mutable.ParSet
 
 /** A template trait for mutable sets of type `mutable.Set[A]`.

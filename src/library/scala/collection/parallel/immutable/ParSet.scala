@@ -6,23 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package parallel.immutable
 
-
-
-
-
-
 import scala.collection.GenSet
-import scala.collection.immutable.Set
 import scala.collection.generic._
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
-
-
-
 
 /** An immutable variant of `ParSet`.
  *
@@ -34,7 +24,7 @@ extends collection/*.immutable*/.GenSet[T]
    with GenericParTemplate[T, ParSet]
    with parallel.ParSet[T]
    with ParIterable[T]
-   with ParSetLike[T, ParSet[T], Set[T]]
+   with ParSetLike[T, ParSet[T], collection.immutable.Set[T]]
 {
 self =>
   override def empty: ParSet[T] = ParHashSet[T]()
@@ -47,8 +37,6 @@ self =>
   override def toSet[U >: T]: ParSet[U] = this.asInstanceOf[ParSet[U]]
 }
 
-
-
 /** $factoryInfo
  *  @define Coll mutable.ParSet
  *  @define coll mutable parallel set
@@ -58,17 +46,3 @@ object ParSet extends ParSetFactory[ParSet] {
 
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParSet[T]] = new GenericCanCombineFrom[T]
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

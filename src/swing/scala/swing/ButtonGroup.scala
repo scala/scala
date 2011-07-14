@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import event._
 import javax.swing.{AbstractButton => JAbstractButton,Icon}
-import scala.collection._
-import scala.collection.mutable.Buffer
+import scala.collection.{ mutable, immutable }
 
 /**
  * A button mutex. At most one of its associated buttons is selected

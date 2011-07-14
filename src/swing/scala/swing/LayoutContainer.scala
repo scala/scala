@@ -11,7 +11,7 @@
 package scala.swing
 
 import javax.swing.JComponent
-import scala.collection.mutable.Map
+import scala.collection.mutable
 
 /** <p>
  *    A container that associates layout constraints of member type
@@ -57,7 +57,7 @@ trait LayoutContainer extends Container.Wrapper {
    *
    * also ensures that myComponent is properly added to this container.
    */
-  def layout: Map[Component, Constraints] = new Map[Component, Constraints] {
+  def layout: mutable.Map[Component, Constraints] = new mutable.Map[Component, Constraints] {
     def -= (c: Component): this.type = { _contents -= c; this }
     def += (cl: (Component, Constraints)): this.type = { update(cl._1, cl._2); this }
     override def update (c: Component, l: Constraints) {

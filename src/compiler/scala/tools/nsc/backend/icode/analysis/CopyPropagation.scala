@@ -3,11 +3,10 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend.icode.analysis
 
-import scala.collection.mutable.{ Map, HashMap }
+import scala.collection.{ mutable, immutable }
 
 /** A modified copy-propagation like analysis. It
  *  is augmented with a record-like value which is used
@@ -30,7 +29,7 @@ abstract class CopyPropagation {
   abstract class Value {
     def isRecord = false
   }
-  case class Record(cls: Symbol, bindings: Map[Symbol, Value]) extends Value {
+  case class Record(cls: Symbol, bindings: mutable.Map[Symbol, Value]) extends Value {
     override def isRecord = true
   }
   /** The value of some location in memory. */
@@ -46,13 +45,13 @@ abstract class CopyPropagation {
   case object Unknown extends Value
 
   /** The bottom record. */
-  object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value])
+  object AllRecords extends Record(NoSymbol, mutable.HashMap[Symbol, Value]())
 
   /** The lattice for this analysis.   */
   object copyLattice extends SemiLattice {
-    type Bindings = Map[Location, Value]
+    type Bindings = mutable.Map[Location, Value]
 
-    def emptyBinding = new HashMap[Location, Value]()
+    def emptyBinding = mutable.HashMap[Location, Value]()
 
     class State(val bindings: Bindings, var stack: List[Value]) {
 
@@ -141,7 +140,7 @@ abstract class CopyPropagation {
         "\nBindings: " + bindings + "\nStack: " + stack;
 
       def dup: State = {
-        val b: Bindings = new HashMap()
+        val b: Bindings = mutable.HashMap()
         b ++= bindings
         new State(b, stack)
       }
@@ -176,7 +175,7 @@ abstract class CopyPropagation {
           if (v1 == v2) v1 else Unknown
         }
         */
-        val resBindings = new HashMap[Location, Value]
+        val resBindings = mutable.HashMap[Location, Value]()
 
         for ((k, v) <- a.bindings if b.bindings.isDefinedAt(k) && v == b.bindings(k))
           resBindings += (k -> v);
@@ -226,7 +225,7 @@ abstract class CopyPropagation {
 
     import opcodes._
 
-    private def retain[A, B](map: Map[A, B])(p: (A, B) => Boolean) = {
+    private def retain[A, B](map: mutable.Map[A, B])(p: (A, B) => Boolean) = {
       for ((k, v) <- map ; if !p(k, v)) map -= k
       map
     }
@@ -370,7 +369,7 @@ abstract class CopyPropagation {
 
         case NEW(kind) =>
           val v1 = kind match {
-            case REFERENCE(cls) => Record(cls, new HashMap[Symbol, Value])
+            case REFERENCE(cls) => Record(cls, mutable.HashMap[Symbol, Value]())
             case _              => Unknown
           }
           out.stack = v1 :: out.stack
@@ -525,10 +524,10 @@ abstract class CopyPropagation {
      *  method has to find the correct mapping from fields to the order in which
      *  they are passed on the stack. It works for primary constructors.
      */
-    private def getBindingsForPrimaryCtor(in: copyLattice.State, ctor: Symbol): Map[Symbol, Value] = {
+    private def getBindingsForPrimaryCtor(in: copyLattice.State, ctor: Symbol): mutable.Map[Symbol, Value] = {
       val paramAccessors = ctor.owner.constrParamAccessors;
       var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
-      val bindings = new HashMap[Symbol, Value];
+      val bindings = mutable.HashMap[Symbol, Value]()
 
       if (settings.debug.value) log("getBindings for: " + ctor + " acc: " + paramAccessors)
 

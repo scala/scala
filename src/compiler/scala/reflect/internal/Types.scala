@@ -9,8 +9,6 @@ package internal
 import scala.collection.{ mutable, immutable }
 import scala.ref.WeakReference
 import mutable.ListBuffer
-//import ast.TreeGen
-//import util.{ Position, NoPosition }
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.tailrec
@@ -105,6 +103,9 @@ trait Types extends api.Types { self: SymbolTable =>
     private type UndoLog = List[(TypeVar, TypeConstraint)]
     private[scala] var log: UndoLog = List()
 
+    // register with the auto-clearing cache manager
+    perRunCaches.recordCache(this)
+
     /** Undo all changes to constraints to type variables upto `limit`. */
     private def undoTo(limit: UndoLog) {
       while ((log ne limit) && log.nonEmpty) {
@@ -123,6 +124,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
       log = Nil
     }
+    def size = log.size
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
@@ -149,7 +151,7 @@ trait Types extends api.Types { self: SymbolTable =>
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = new mutable.WeakHashMap[List[Type], WeakReference[Type]]
+  val intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
 
   //private object gen extends {
   //  val global : Types.this.type = Types.this

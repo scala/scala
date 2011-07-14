@@ -11,7 +11,7 @@
 package scala.tools.ant {
 
   import scala.collection.DefaultMap
-  import scala.collection.mutable.HashMap
+  import scala.collection.{ mutable, immutable }
   import java.io.{File, FileInputStream, FileOutputStream,
                   FileWriter, StringReader}
   import java.net.URL
@@ -78,7 +78,7 @@ package scala.tools.ant {
 
     /** The sets of files to include in the package */
     private object fileSetsMap extends DefaultMap[String, List[FileSet]] {
-      private var content = new HashMap[String, List[FileSet]]()
+      private var content = new mutable.HashMap[String, List[FileSet]]()
       def get(key: String): Option[List[FileSet]] = content.get(key)
       override def size: Int = content.size
       def update(key: String, value: FileSet) {

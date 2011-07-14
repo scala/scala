@@ -8,8 +8,7 @@
 
 package scala
 
-import scala.collection.SetLike
-import scala.collection.{ mutable, immutable, generic }
+import scala.collection.{ mutable, immutable, generic, SetLike }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
 
 /**
@@ -242,7 +241,6 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
 
   /** A factory object for value sets */
   object ValueSet {
-    import mutable.{ Builder, SetBuilder }
     import generic.CanBuildFrom
 
     /** The empty value set */
@@ -250,7 +248,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
     /** A value set consisting of given elements */
     def apply(elems: Value*): ValueSet = empty ++ elems
     /** A builder object for value sets */
-    def newBuilder: Builder[Value, ValueSet] = new SetBuilder(empty)
+    def newBuilder: mutable.Builder[Value, ValueSet] = new mutable.SetBuilder(empty)
     /** The implicit builder for value sets */
     implicit def canBuildFrom: CanBuildFrom[ValueSet, Value, ValueSet] =
       new CanBuildFrom[ValueSet, Value, ValueSet] {

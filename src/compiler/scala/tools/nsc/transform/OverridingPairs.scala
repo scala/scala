@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package transform
 
-import collection.mutable.HashMap
+import scala.collection.mutable
 import symtab.Flags._
 import util.HashSet
 import annotation.tailrec
@@ -99,7 +99,7 @@ abstract class OverridingPairs {
     /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
      *  linearization order.
      */
-    private val index = new HashMap[Symbol, Int]
+    private val index = new mutable.HashMap[Symbol, Int]
 
     // Note: overridingPairs can be called at odd instances by the Eclipse plugin
     // Soemtimes symbols are not yet defined and we get missing keys.

@@ -7,7 +7,6 @@ package scala.reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
-import scala.collection.mutable.{ HashMap }
 import Flags._
 import PartialFunction._
 
@@ -503,7 +502,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     var Delegate_scalaCallers: List[Symbol] = List()
     // Symbol -> (Symbol, Type): scalaCaller -> (scalaMethodSym, DelegateType)
     // var Delegate_scalaCallerInfos: HashMap[Symbol, (Symbol, Type)] = _
-    lazy val Delegate_scalaCallerTargets: HashMap[Symbol, Symbol] = new HashMap()
+    lazy val Delegate_scalaCallerTargets: mutable.HashMap[Symbol, Symbol] = mutable.HashMap()
 
     def isCorrespondingDelegate(delegateType: Type, functionType: Type): Boolean = {
       isSubType(delegateType, DelegateClass.tpe) &&

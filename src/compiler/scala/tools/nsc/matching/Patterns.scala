@@ -271,8 +271,7 @@ trait Patterns extends ast.TreeDSL {
 
   object Pattern {
     // a small tree -> pattern cache
-    private val cache = new collection.mutable.HashMap[Tree, Pattern]
-    def clear() = cache.clear()
+    private val cache = perRunCaches.newMap[Tree, Pattern]()
 
     def apply(tree: Tree): Pattern = {
       if (cache contains tree)

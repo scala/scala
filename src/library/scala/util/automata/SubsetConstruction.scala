@@ -12,34 +12,33 @@ import scala.collection.{ mutable, immutable }
 
 class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
   import nfa.labels
-  import immutable.BitSet
 
-  def selectTag(Q: BitSet, finals: Array[Int]) =
+  def selectTag(Q: immutable.BitSet, finals: Array[Int]) =
     Q map finals filter (_ > 0) min
 
   def determinize: DetWordAutom[T] = {
     // for assigning numbers to bitsets
-    var indexMap    = collection.Map[BitSet, Int]()
-    var invIndexMap = collection.Map[Int, BitSet]()
+    var indexMap    = collection.Map[immutable.BitSet, Int]()
+    var invIndexMap = collection.Map[Int, immutable.BitSet]()
     var ix = 0
 
     // we compute the dfa with states = bitsets
-    val q0 = BitSet(0)            // the set { 0 }
-    val sink = BitSet.empty       // the set { }
+    val q0 = immutable.BitSet(0)            // the set { 0 }
+    val sink = immutable.BitSet.empty       // the set { }
 
     var states = Set(q0, sink)    // initial set of sets
-    val delta    = new mutable.HashMap[BitSet, mutable.HashMap[T, BitSet]]
+    val delta    = new mutable.HashMap[immutable.BitSet, mutable.HashMap[T, immutable.BitSet]]
     var deftrans = mutable.Map(q0 -> sink, sink -> sink)  // initial transitions
-    var finals: mutable.Map[BitSet, Int]  = mutable.Map()
-    val rest = new mutable.Stack[BitSet]
+    var finals: mutable.Map[immutable.BitSet, Int]  = mutable.Map()
+    val rest = new mutable.Stack[immutable.BitSet]
 
     rest.push(sink, q0)
 
-    def addFinal(q: BitSet) {
+    def addFinal(q: immutable.BitSet) {
       if (nfa containsFinal q)
         finals = finals.updated(q, selectTag(q, nfa.finals))
     }
-    def add(Q: BitSet) {
+    def add(Q: immutable.BitSet) {
       if (!states(Q)) {
         states += Q
         rest push Q
@@ -57,7 +56,7 @@ class SubsetConstruction[T <: AnyRef](val nfa: NondetWordAutom[T]) {
       ix += 1
 
       // make transition map
-      val Pdelta = new mutable.HashMap[T, BitSet]
+      val Pdelta = new mutable.HashMap[T, immutable.BitSet]
       delta.update(P, Pdelta)
 
       labels foreach { label =>

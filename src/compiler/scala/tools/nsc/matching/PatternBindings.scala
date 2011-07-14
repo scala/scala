@@ -7,7 +7,6 @@ package scala.tools.nsc
 package matching
 
 import transform.ExplicitOuter
-import collection.immutable.TreeMap
 import PartialFunction._
 
 trait PatternBindings extends ast.TreeDSL

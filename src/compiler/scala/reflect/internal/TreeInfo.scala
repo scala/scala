@@ -7,7 +7,6 @@ package scala.reflect
 package internal
 
 import Flags._
-import util.HashSet
 
 /** This class ...
  *

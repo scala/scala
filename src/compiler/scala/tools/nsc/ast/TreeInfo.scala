@@ -8,7 +8,6 @@ package ast
 
 import reflect.internal.Flags._
 import symtab._
-import util.HashSet
 
 /** This class ...
  *

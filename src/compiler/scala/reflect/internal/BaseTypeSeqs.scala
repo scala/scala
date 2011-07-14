@@ -6,7 +6,7 @@ package scala.reflect
 package internal
 
 // todo implement in terms of BitSet
-import scala.collection.mutable.{ListBuffer, BitSet}
+import scala.collection.{ mutable, immutable }
 import math.max
 import util.Statistics._
 
@@ -41,7 +41,7 @@ trait BaseTypeSeqs {
     // (while NoType is in there to indicate a cycle in this BTS, during the execution of
     //  the mergePrefixAndArgs below, the elems get copied without the pending map,
     //  so that NoType's are seen instead of the original type --> spurious compile error)
-    val pending = new BitSet(length)
+    val pending = new mutable.BitSet(length)
 
     /** The type at i'th position in this sequence; lazy types are returned evaluated. */
     def apply(i: Int): Type =
@@ -187,7 +187,7 @@ trait BaseTypeSeqs {
     val tsym = tp.typeSymbol
     val parents = tp.parents
 //    Console.println("computing baseTypeSeq of " + tsym.tpe + " " + parents)//DEBUG
-    val buf = new ListBuffer[Type]
+    val buf = new mutable.ListBuffer[Type]
     buf += tsym.tpe
     var btsSize = 1
     if (parents.nonEmpty) {

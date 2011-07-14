@@ -10,7 +10,7 @@
 package scala.actors
 package remote
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 /**
  * @author Philipp Haller
@@ -113,8 +113,8 @@ private[remote] case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])
  * @author Philipp Haller
  */
 private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, kernel: NetKernel) extends Actor {
-  var channelMap = new HashMap[Symbol, OutputChannel[Any]]
-  var sessionMap = new HashMap[OutputChannel[Any], Symbol]
+  var channelMap = new mutable.HashMap[Symbol, OutputChannel[Any]]
+  var sessionMap = new mutable.HashMap[OutputChannel[Any], Symbol]
 
   def act() {
     Actor.loop {

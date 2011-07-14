@@ -3,7 +3,7 @@ package transform
 
 import scala.tools.nsc.symtab.SymbolTable
 import scala.reflect
-import collection.mutable.HashMap
+import collection.mutable
 
 /** Functions to reify (and un-reify) symbols, types, and trees.
  *  These can be used with only a symbol table; they do not
@@ -184,8 +184,8 @@ trait Reifiers {
 
   case class FreeValue(tree: Tree) extends reflect.Tree
 
-  class ReifyEnvironment extends HashMap[Symbol, reflect.Symbol] {
-    var targets = new HashMap[String, Option[reflect.LabelSymbol]]()
+  class ReifyEnvironment extends mutable.HashMap[Symbol, reflect.Symbol] {
+    var targets = new mutable.HashMap[String, Option[reflect.LabelSymbol]]()
     def addTarget(name: String, target: reflect.LabelSymbol): Unit =
       targets.update(name, Some(target))
     def getTarget(name: String): Option[reflect.LabelSymbol] =

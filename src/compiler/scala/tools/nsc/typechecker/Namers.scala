@@ -6,9 +6,8 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.{HashMap, WeakHashMap}
+import scala.collection.mutable
 import scala.ref.WeakReference
-import symtab.Flags
 import symtab.Flags._
 import scala.tools.nsc.io.AbstractFile
 
@@ -52,7 +51,7 @@ trait Namers { self: Analyzer =>
   // is stored in this map. The map is cleared lazily, i.e. when the new symbol
   // is created with the same name, the old one (if present) is wiped out, or the
   // entry is deleted when it is used and no longer needed.
-  private val caseClassOfModuleClass = new WeakHashMap[Symbol, WeakReference[ClassDef]]
+  private val caseClassOfModuleClass = perRunCaches.newWeakMap[Symbol, WeakReference[ClassDef]]()
 
   // Default getters of constructors are added to the companion object in the
   // typeCompleter of the constructor (methodSig). To compute the signature,
@@ -60,7 +59,7 @@ trait Namers { self: Analyzer =>
   // object, we need the templateNamer of that module class.
   // This map is extended during naming of classes, the Namer is added in when
   // it's available, i.e. in the type completer (templateSig) of the module class.
-  private[typechecker] val classAndNamerOfModule = new HashMap[Symbol, (ClassDef, Namer)]
+  private[typechecker] val classAndNamerOfModule = perRunCaches.newMap[Symbol, (ClassDef, Namer)]()
 
   def resetNamer() {
     classAndNamerOfModule.clear
@@ -548,7 +547,7 @@ trait Namers { self: Analyzer =>
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      if (settings.debug.value) log("defining " + sym + Flags.flagsToString(sym.flags)+sym.locationString)
+      if (settings.debug.value) log("defining " + sym + flagsToString(sym.flags)+sym.locationString)
       val tp = typeSig(tree)
       tp match {
         case TypeBounds(lo, hi) =>
@@ -1323,10 +1322,10 @@ trait Namers { self: Analyzer =>
         if (sym.hasFlag(flag1) && sym.hasFlag(flag2))
           context.error(sym.pos,
             if (flag1 == DEFERRED)
-              "abstract member may not have " + Flags.flagsToString(flag2) + " modifier";
+              "abstract member may not have " + flagsToString(flag2) + " modifier";
             else
               "illegal combination of modifiers: " +
-              Flags.flagsToString(flag1) + " and " + Flags.flagsToString(flag2) +
+              flagsToString(flag1) + " and " + flagsToString(flag2) +
               " for: " + sym);
       }
 

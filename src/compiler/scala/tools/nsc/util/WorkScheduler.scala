@@ -1,15 +1,15 @@
 package scala.tools.nsc
 package util
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable
 
 class WorkScheduler {
 
   type Action = () => Unit
 
-  private var todo = new Queue[Action]
-  private var throwables = new Queue[Throwable]
-  private var interruptReqs = new Queue[InterruptReq]
+  private var todo = new mutable.Queue[Action]
+  private var throwables = new mutable.Queue[Throwable]
+  private var interruptReqs = new mutable.Queue[InterruptReq]
 
   /** Called from server: block until one of todo list, throwables or interruptReqs is nonempty */
   def waitForMoreWork() = synchronized {

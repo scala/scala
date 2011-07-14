@@ -1796,7 +1796,7 @@ abstract class GenICode extends SubComponent  {
      *  to delay it any more: they will be used at some point.
      */
     class DuplicateLabels(boundLabels: Set[Symbol]) extends Transformer {
-      val labels: mutable.Map[Symbol, Symbol] = new mutable.HashMap
+      val labels = perRunCaches.newMap[Symbol, Symbol]()
       var method: Symbol = _
       var ctx: Context = _
 
@@ -1873,7 +1873,7 @@ abstract class GenICode extends SubComponent  {
       var bb: BasicBlock = _
 
       /** Map from label symbols to label objects. */
-      var labels = mutable.HashMap[Symbol, Label]()
+      var labels = perRunCaches.newMap[Symbol, Label]()
 
       /** Current method definition. */
       var defdef: DefDef = _
@@ -1977,7 +1977,7 @@ abstract class GenICode extends SubComponent  {
        */
       def enterMethod(m: IMethod, d: DefDef): Context = {
         val ctx1 = new Context(this) setMethod(m)
-        ctx1.labels = new mutable.HashMap()
+        ctx1.labels = mutable.HashMap()
         ctx1.method.code = new Code(m)
         ctx1.bb = ctx1.method.code.startBlock
         ctx1.defdef = d
@@ -1991,7 +1991,7 @@ abstract class GenICode extends SubComponent  {
         val block = method.code.newBlock
         handlers foreach (_ addCoveredBlock block)
         currentExceptionHandlers foreach (_ addBlock block)
-        block.varsInScope = new mutable.HashSet() ++= scope.varsInScope
+        block.varsInScope = mutable.HashSet() ++= scope.varsInScope
         new Context(this) setBasicBlock block
       }
 

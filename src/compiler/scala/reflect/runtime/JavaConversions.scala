@@ -8,7 +8,7 @@ import java.lang.reflect.{
 import internal.ByteCodecs
 import internal.ClassfileConstants._
 import internal.pickling.UnPickler
-import collection.mutable.HashMap
+import scala.collection.{ mutable, immutable }
 
 trait JavaConversions { self: Universe =>
 
@@ -17,8 +17,8 @@ trait JavaConversions { self: Universe =>
   }
 
   class TwoWayCache[J, S] {
-    val toScalaMap = new HashMap[J, S]
-    val toJavaMap = new HashMap[S, J]
+    val toScalaMap = mutable.HashMap[J, S]()
+    val toJavaMap = mutable.HashMap[S, J]()
 
     def toScala(key: J)(body: => S) = toScalaMap.getOrElseUpdate(key, body)
     def toJava(key: S)(body: => J) = toJavaMap.getOrElseUpdate(key, body)

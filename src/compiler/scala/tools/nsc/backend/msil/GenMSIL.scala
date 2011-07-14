@@ -9,8 +9,7 @@ package backend.msil
 
 import java.io.{File, IOException}
 import java.nio.{ByteBuffer, ByteOrder}
-
-import scala.collection.mutable.{Map, HashMap, HashSet, Stack, ListBuffer}
+import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.symtab._
 
 import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
@@ -132,7 +131,7 @@ abstract class GenMSIL extends SubComponent {
 
     // java instance methods that are mapped to static methods in .net
     // these will need to be called with OpCodes.Call (not Callvirt)
-    val dynToStatMapped: HashSet[Symbol] = new HashSet()
+    val dynToStatMapped = mutable.HashSet[Symbol]()
 
     initMappings()
 
@@ -563,7 +562,7 @@ abstract class GenMSIL extends SubComponent {
      */
     val msilLinearizer = new MSILLinearizer()
 
-    val labels: HashMap[BasicBlock, Label] = new HashMap()
+    val labels = mutable.HashMap[BasicBlock, Label]()
 
     /* when emitting .line, it's enough to include the full filename just once per method, thus reducing filesize.
      * this scheme relies on the fact that the entry block is emitted first. */
@@ -619,11 +618,11 @@ abstract class GenMSIL extends SubComponent {
     }
 
     // the try blocks starting at a certain BasicBlock
-    val beginExBlock = new HashMap[BasicBlock, List[ExceptionHandler]]()
+    val beginExBlock = mutable.HashMap[BasicBlock, List[ExceptionHandler]]()
 
     // the catch blocks starting / endling at a certain BasicBlock
-    val beginCatchBlock = new HashMap[BasicBlock, ExceptionHandler]()
-    val endExBlock = new HashMap[BasicBlock, List[ExceptionHandler]]()
+    val beginCatchBlock = mutable.HashMap[BasicBlock, ExceptionHandler]()
+    val endExBlock = mutable.HashMap[BasicBlock, List[ExceptionHandler]]()
 
     /** When emitting the code (genBlock), the number of currently active try / catch
      *  blocks. When seeing a `RETURN` inside a try / catch, we need to
@@ -631,7 +630,7 @@ abstract class GenMSIL extends SubComponent {
      *   - emit `Leave handlerReturnLabel` instead of the Return
      *   - emit code at the end: load the local and return its value
      */
-    var currentHandlers = new Stack[ExceptionHandler]
+    var currentHandlers = new mutable.Stack[ExceptionHandler]
     // The IMethod the Local/Label/Kind below belong to
     var handlerReturnMethod: IMethod = _
     // Stores the result when returning inside an exception block
@@ -658,11 +657,11 @@ abstract class GenMSIL extends SubComponent {
      *  So for every finalizer, we have a label which marks the place of the `endfinally`,
      *  nested try/catch blocks will leave there.
      */
-    val endFinallyLabels = new HashMap[ExceptionHandler, Label]()
+    val endFinallyLabels = mutable.HashMap[ExceptionHandler, Label]()
 
     /** Computes which blocks are the beginning / end of a try or catch block */
     private def computeExceptionMaps(blocks: List[BasicBlock], m: IMethod): List[BasicBlock] = {
-      val visitedBlocks = new HashSet[BasicBlock]()
+      val visitedBlocks = new mutable.HashSet[BasicBlock]()
 
       // handlers which have not been introduced so far
       var openHandlers = m.exh
@@ -689,11 +688,11 @@ abstract class GenMSIL extends SubComponent {
 
       // Stack of nested try blocks. Each bloc has a List of ExceptionHandler (multiple
       // catch statements). Example *1*: Stack(List(h2, h3), List(h1))
-      val currentTryHandlers = new Stack[List[ExceptionHandler]]()
+      val currentTryHandlers = new mutable.Stack[List[ExceptionHandler]]()
 
       // Stack of nested catch blocks. The head of the list is the current catch block. The
       // tail is all following catch blocks. Example *2*: Stack(List(h3), List(h4, h5))
-      val currentCatchHandlers = new Stack[List[ExceptionHandler]]()
+      val currentCatchHandlers = new mutable.Stack[List[ExceptionHandler]]()
 
       for (b <- blocks) {
 
@@ -752,7 +751,7 @@ abstract class GenMSIL extends SubComponent {
         // (checked by the assertions below)
         val sizes = newHandlersBySize.keys.toList.sortWith(_ > _)
 
-        val beginHandlers = new ListBuffer[ExceptionHandler]
+        val beginHandlers = new mutable.ListBuffer[ExceptionHandler]
         for (s <- sizes) {
           val sHandlers = newHandlersBySize(s)
           for (h <- sHandlers) {
@@ -1724,13 +1723,13 @@ abstract class GenMSIL extends SubComponent {
 
     var entryPoint: Symbol = _
 
-    val notInitializedModules: HashSet[Symbol] = new HashSet()
+    val notInitializedModules = mutable.HashSet[Symbol]()
 
     // TODO: create fields also in def createType, and not in genClass,
     // add a getField method (it only works as it is because fields never
     // accessed from outside a class)
 
-    val localBuilders: HashMap[Local, LocalBuilder] = new HashMap()
+    val localBuilders = mutable.HashMap[Local, LocalBuilder]()
 
     private[GenMSIL] def findEntryPoint(cls: IClass) {
 

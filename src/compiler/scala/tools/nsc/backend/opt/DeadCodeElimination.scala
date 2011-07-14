@@ -59,7 +59,7 @@ abstract class DeadCodeElimination extends SubComponent {
     val worklist: mutable.Set[(BasicBlock, Int)] = new mutable.LinkedHashSet
 
     /** what instructions have been marked as useful? */
-    val useful: mutable.Map[BasicBlock, mutable.BitSet] = new mutable.HashMap
+    val useful: mutable.Map[BasicBlock, mutable.BitSet] = perRunCaches.newMap()
 
     /** what local variables have been accessed at least once? */
     var accessedLocals: List[Local] = Nil
@@ -68,7 +68,7 @@ abstract class DeadCodeElimination extends SubComponent {
     var method: IMethod = _
 
     /** Map instructions who have a drop on some control path, to that DROP instruction. */
-    val dropOf: mutable.Map[(BasicBlock, Int), (BasicBlock, Int)] = new mutable.HashMap()
+    val dropOf: mutable.Map[(BasicBlock, Int), (BasicBlock, Int)] = perRunCaches.newMap()
 
     def dieCodeDie(m: IMethod) {
       if (m.code ne null) {

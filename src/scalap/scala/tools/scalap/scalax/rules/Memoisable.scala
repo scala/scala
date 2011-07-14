@@ -14,7 +14,7 @@ package scala.tools.scalap
 package scalax
 package rules
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 trait MemoisableRules extends Rules {
   def memo[In <: Memoisable, Out, A, X](key : AnyRef)(toRule : => In => Result[Out, A, X]) = {
@@ -38,7 +38,7 @@ object DefaultMemoisable {
 }
 
 trait DefaultMemoisable extends Memoisable {
-  protected val map = new HashMap[AnyRef, Any]
+  protected val map = new mutable.HashMap[AnyRef, Any]
 
   def memo[A](key : AnyRef, a : => A) = {
     map.getOrElseUpdate(key, compute(key, a)).asInstanceOf[A]

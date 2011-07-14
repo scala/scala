@@ -14,9 +14,8 @@ package dtd
 import PartialFunction._
 import ContentModel.ElemName
 import MakeValidationException._    // @todo other exceptions
-
 import scala.util.automata._
-import scala.collection.mutable.BitSet
+import scala.collection.mutable
 
 /** validate children and/or attributes of an element
  *  exceptions are created but not thrown.
@@ -62,7 +61,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
    */
   def check(md: MetaData): Boolean = {
     val len: Int = exc.length
-    var ok = new BitSet(adecls.length)
+    var ok = new mutable.BitSet(adecls.length)
 
     for (attr <- md) {
       def attrStr = attr.value.toString

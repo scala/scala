@@ -7,9 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
-
-import scala.collection.mutable.{ListBuffer, WeakHashMap}
-import scala.collection.immutable.Set
+import scala.collection.mutable
 
 /**
  *  @author Lukas Rytz
@@ -20,9 +18,8 @@ trait NamesDefaults { self: Analyzer =>
   import global._
   import definitions._
 
-  val defaultParametersOfMethod = new WeakHashMap[Symbol, Set[Symbol]] {
-    override def default(key: Symbol) = Set()
-  }
+  val defaultParametersOfMethod =
+    perRunCaches.newWeakMap[Symbol, Set[Symbol]]() withDefaultValue Set()
 
   case class NamedApplyInfo(qual: Option[Tree], targs: List[Tree],
                             vargss: List[List[Tree]], blockTyper: Typer)
@@ -45,7 +42,7 @@ trait NamesDefaults { self: Analyzer =>
   /** @param pos maps indicies from new to old (!) */
   def reorderArgsInv[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
-    val res = new ListBuffer[T]
+    val res = new mutable.ListBuffer[T]
     for (i <- 0 until argsArray.length)
       res += argsArray(pos(i))
     res.toList

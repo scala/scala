@@ -116,6 +116,9 @@ abstract class SymbolTable extends api.Universe
 
   object perRunCaches {
     import java.lang.ref.WeakReference
+    import scala.tools.util.Signallable
+    import scala.runtime.ScalaRunTime.stringOf
+
 
     // We can allow ourselves a structural type, these methods
     // amount to a few calls per run at most.  This does suggest
@@ -127,6 +130,25 @@ abstract class SymbolTable extends api.Universe
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
     private val caches = mutable.HashSet[WeakReference[Clearable]]()
+
+    private def dumpCaches() {
+      println(caches.size + " structures are in perRunCaches.")
+      caches.zipWithIndex foreach { case (ref, index) =>
+        val cache = ref.get()
+        println("(" + index + ")" + (
+          if (cache == null) " has been collected."
+          else " has " + cache.size + " entries:\n" + stringOf(cache)
+        ))
+      }
+    }
+    if (settings.debug.value) {
+      println(Signallable("dump compiler caches")(dumpCaches()))
+    }
+
+    def recordCache[T <: Clearable](cache: T): T = {
+      caches += new WeakReference(cache)
+      cache
+    }
 
     def clearAll() = {
       if (settings.debug.value) {
@@ -142,8 +164,9 @@ abstract class SymbolTable extends api.Universe
       }
     }
 
-    def newMap[K, V]() = { val m = mutable.HashMap[K, V]() ; caches += new WeakReference(m) ; m }
-    def newSet[K]()    = { val s = mutable.HashSet[K]() ; caches += new WeakReference(s) ; s }
+    def newWeakMap[K, V]() = recordCache(mutable.WeakHashMap[K, V]())
+    def newMap[K, V]()     = recordCache(mutable.HashMap[K, V]())
+    def newSet[K]()        = recordCache(mutable.HashSet[K]())
   }
 
   /** Break into repl debugger if assertion is true. */

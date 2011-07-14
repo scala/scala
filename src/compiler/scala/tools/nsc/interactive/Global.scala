@@ -6,10 +6,9 @@ package scala.tools.nsc
 package interactive
 
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
-import collection.mutable.{ArrayBuffer, ListBuffer, SynchronizedBuffer, HashMap}
-
 import scala.collection.mutable
-import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
+import collection.mutable.{ ArrayBuffer, ListBuffer, SynchronizedBuffer }
+import mutable.{LinkedHashMap, SynchronizedMap, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }

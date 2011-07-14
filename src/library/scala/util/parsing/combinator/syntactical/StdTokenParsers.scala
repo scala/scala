@@ -13,7 +13,7 @@ package combinator
 package syntactical
 
 import token._
-import collection.mutable.HashMap
+import scala.collection.mutable
 
 /** This component provides primitive parsers for the standard tokens defined in `StdTokens`.
 *
@@ -23,7 +23,7 @@ trait StdTokenParsers extends TokenParsers {
   type Tokens <: StdTokens
   import lexical.{Keyword, NumericLit, StringLit, Identifier}
 
-  protected val keywordCache : HashMap[String, Parser[String]] = HashMap.empty
+  protected val keywordCache = mutable.HashMap[String, Parser[String]]()
 
   /** A parser which matches a single keyword token.
    *

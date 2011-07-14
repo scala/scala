@@ -6,17 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.actors
 package scheduler
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 private[scheduler] trait TerminationMonitor {
   _: IScheduler =>
 
   protected var activeActors = 0
-  protected val terminationHandlers = new HashMap[TrackedReactor, () => Unit]
+  protected val terminationHandlers = new mutable.HashMap[TrackedReactor, () => Unit]
   private var started = false
 
   /** newActor is invoked whenever a new actor is started. */

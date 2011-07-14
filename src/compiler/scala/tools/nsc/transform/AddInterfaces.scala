@@ -39,13 +39,13 @@ abstract class AddInterfaces extends InfoTransform {
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
    */
-  private val implClassMap = new mutable.HashMap[Symbol, Symbol]
+  private val implClassMap = perRunCaches.newMap[Symbol, Symbol]()
 
   /** A lazily constructed map that associates every concrete method in a non-interface
    *  trait that's currently compiled with its corresponding method in the trait's
    *  implementation class.
    */
-  private val implMethodMap = new mutable.HashMap[Symbol, Symbol]
+  private val implMethodMap = perRunCaches.newMap[Symbol, Symbol]()
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
     implClassMap.clear()

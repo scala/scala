@@ -13,9 +13,8 @@ import java.net.URL
 import java.util.StringTokenizer
 import scala.util.Sorting
 
-import scala.collection.mutable.{ ListBuffer, HashSet => MutHashSet }
+import scala.collection.mutable
 import scala.tools.nsc.io.AbstractFile
-
 import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
 import ClassPath.{ ClassPathContext, isTraitImplementation }
 
@@ -54,8 +53,8 @@ object MsilClassPath {
 
   private def assembleEntries(ext: String, user: String, source: String, context: MsilContext): List[ClassPath[MSILType]] = {
     import ClassPath._
-    val etr = new ListBuffer[ClassPath[MSILType]]
-    val names = new MutHashSet[String]
+    val etr = new mutable.ListBuffer[ClassPath[MSILType]]
+    val names = new mutable.HashSet[String]
 
     // 1. Assemblies from -Xassem-extdirs
     for (dirName <- expandPath(ext, expandStar = false)) {
@@ -127,7 +126,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
   }
 
   lazy val classes = {
-    val cls = new ListBuffer[ClassRep]
+    val cls = new mutable.ListBuffer[ClassRep]
     var i = first
     while (i < types.length && types(i).Namespace.startsWith(namespace)) {
       // CLRTypes used to exclude java.lang.Object and java.lang.String (no idea why..)
@@ -139,7 +138,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
   }
 
   lazy val packages = {
-    val nsSet = new MutHashSet[String]
+    val nsSet = new mutable.HashSet[String]
     var i = first
     while (i < types.length && types(i).Namespace.startsWith(namespace)) {
       val subns = types(i).Namespace

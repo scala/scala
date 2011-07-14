@@ -11,7 +11,7 @@ import reporters.Reporter
 import util.{Position, NoPosition}
 import util.DocStrings._
 import scala.reflect.internal.Chars._
-import scala.collection.mutable.{HashMap, ListBuffer, StringBuilder}
+import scala.collection.mutable
 
 /*
  *  @author  Martin Odersky
@@ -22,7 +22,7 @@ trait DocComments { self: Global =>
   def reporter: Reporter
 
   /** The raw doc comment map */
-  val docComments = new HashMap[Symbol, DocComment]
+  val docComments = mutable.HashMap[Symbol, DocComment]()
 
   /** Associate comment with symbol `sym` at position `pos`. */
   def docComment(sym: Symbol, docStr: String, pos: Position = NoPosition) =
@@ -204,9 +204,7 @@ trait DocComments { self: Global =>
   /** Maps symbols to the variable -> replacement maps that are defined
    *  in their doc comments
    */
-  private val defs = new HashMap[Symbol, Map[String, String]] {
-    override def default(key: Symbol) = Map()
-  }
+  private val defs = mutable.HashMap[Symbol, Map[String, String]]() withDefaultValue Map()
 
   /** Lookup definition of variable.
    *

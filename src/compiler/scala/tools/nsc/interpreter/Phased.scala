@@ -7,7 +7,6 @@ package scala.tools.nsc
 package interpreter
 
 import scala.collection.{ mutable, immutable }
-import immutable.SortedMap
 
 /** Mix this into an object and use it as a phasing
  *  swiss army knife.
@@ -66,8 +65,7 @@ trait Phased {
     try parseInternal(str)
     catch { case _: Exception => NoPhaseName }
 
-  def apply[T](body: => T): SortedMap[PhaseName, T] =
-    SortedMap[PhaseName, T](atMap(PhaseName.all)(body): _*)
+  def apply[T](body: => T) = immutable.SortedMap[PhaseName, T](atMap(PhaseName.all)(body): _*)
 
   def atCurrent[T](body: => T): T = atPhase(get)(body)
   def multi[T](body: => T): Seq[T] = multi map (ph => at(ph)(body))

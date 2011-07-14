@@ -6,13 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import java.awt.Cursor
 import event._
-import scala.collection.mutable.HashMap
 import scala.ref._
 import java.util.WeakHashMap
 

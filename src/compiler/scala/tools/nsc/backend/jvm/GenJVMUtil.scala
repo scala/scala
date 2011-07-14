@@ -3,12 +3,10 @@
  * @author  Iulian Dragos
  */
 
-
 package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.{ mutable, immutable }
-
 import ch.epfl.lamp.fjbg._
 
 trait GenJVMUtil {
@@ -34,16 +32,13 @@ trait GenJVMUtil {
     DOUBLE -> new JObjectType("java.lang.Double")
   )
 
-  private val javaNameCache = {
-    val map = new mutable.WeakHashMap[Symbol, String]()
-    map ++= List(
-      NothingClass        -> RuntimeNothingClass.fullName('/'),
-      RuntimeNothingClass -> RuntimeNothingClass.fullName('/'),
-      NullClass           -> RuntimeNullClass.fullName('/'),
-      RuntimeNullClass    -> RuntimeNullClass.fullName('/')
-    )
-    map
-  }
+  // Don't put this in per run caches.
+  private val javaNameCache = new mutable.WeakHashMap[Symbol, String]() ++= List(
+    NothingClass        -> RuntimeNothingClass.fullName('/'),
+    RuntimeNothingClass -> RuntimeNothingClass.fullName('/'),
+    NullClass           -> RuntimeNullClass.fullName('/'),
+    RuntimeNullClass    -> RuntimeNullClass.fullName('/')
+  )
 
   /** This trait may be used by tools who need access to
    *  utility methods like javaName and javaType. (for instance,

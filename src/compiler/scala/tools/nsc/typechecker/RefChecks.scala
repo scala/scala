@@ -862,7 +862,7 @@ abstract class RefChecks extends InfoTransform {
     }
 
     private var currentLevel: LevelInfo = null
-    private val symIndex = new mutable.HashMap[Symbol, Int]
+    private val symIndex = perRunCaches.newMap[Symbol, Int]()
 
     private def pushLevel() {
       currentLevel = new LevelInfo(currentLevel)

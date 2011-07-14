@@ -664,8 +664,8 @@ abstract class ICodeReader extends ClassfileParser {
 
   class LinearCode {
     var instrs: ListBuffer[(Int, Instruction)] = new ListBuffer
-    var jmpTargets: mutable.Set[Int] = new mutable.HashSet[Int]
-    var locals: mutable.Map[Int, List[(Local, TypeKind)]] = new mutable.HashMap()
+    var jmpTargets: mutable.Set[Int] = perRunCaches.newSet[Int]()
+    var locals: mutable.Map[Int, List[(Local, TypeKind)]] = perRunCaches.newMap()
 
     var containsDUPX = false
     var containsNEW  = false

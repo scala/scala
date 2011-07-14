@@ -13,7 +13,7 @@ package typechecker
 
 import annotation.tailrec
 import scala.collection.{ mutable, immutable }
-import mutable.{ HashMap, LinkedHashMap, ListBuffer }
+import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
 import util.Statistics._
@@ -83,7 +83,7 @@ trait Implicits {
   private type InfoMap = LinkedHashMap[Symbol, List[ImplicitInfo]] // A map from class symbols to their associated implicits
   private val implicitsCache = new LinkedHashMap[Type, Infoss]
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
-  private val improvesCache = new HashMap[(ImplicitInfo, ImplicitInfo), Boolean]
+  private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
 
   def resetImplicits() {
     implicitsCache.clear()
@@ -175,7 +175,7 @@ trait Implicits {
   /** An extractor for types of the form ? { name: ? }
    */
   object HasMember {
-    private val hasMemberCache = new mutable.HashMap[Name, Type]
+    private val hasMemberCache = perRunCaches.newMap[Name, Type]()
     def apply(name: Name): Type = hasMemberCache.getOrElseUpdate(name, memberWildcardType(name, WildcardType))
     def unapply(pt: Type): Option[Name] = pt match {
       case RefinedType(List(WildcardType), decls) =>

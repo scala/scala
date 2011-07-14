@@ -18,7 +18,7 @@ trait Repository {
   import global._
   import icodes._
 
-  val loaded: mutable.Map[Symbol, IClass] = new mutable.HashMap
+  val loaded: mutable.Map[Symbol, IClass] = perRunCaches.newMap()
 
   /** Is the given class available as icode? */
   def available(sym: Symbol) = classes.contains(sym) || loaded.contains(sym)

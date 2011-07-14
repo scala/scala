@@ -11,8 +11,7 @@ package scala.xml
 package include.sax
 
 import scala.xml.include._
-import collection.mutable.Stack
-
+import scala.collection.mutable
 import org.xml.sax.{ ContentHandler, XMLReader, Locator, Attributes }
 import org.xml.sax.ext.LexicalHandler
 import java.io.{ File, OutputStream, OutputStreamWriter, Writer, IOException }
@@ -137,7 +136,7 @@ class XIncluder(outs: OutputStream, encoding: String) extends ContentHandler wit
 
   // LexicalHandler methods
   private var inDTD: Boolean = false
-  private val entities = new Stack[String]()
+  private val entities = new mutable.Stack[String]()
 
   def startDTD(name: String, publicID: String, systemID: String) {
     inDTD = true

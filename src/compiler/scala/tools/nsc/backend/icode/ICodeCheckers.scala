@@ -60,8 +60,8 @@ abstract class ICodeCheckers {
     var method: IMethod = _
     var code: Code = _
 
-    val in: mutable.Map[BasicBlock, TypeStack]  = new mutable.HashMap()
-    val out: mutable.Map[BasicBlock, TypeStack] = new mutable.HashMap()
+    val in: mutable.Map[BasicBlock, TypeStack]  = perRunCaches.newMap()
+    val out: mutable.Map[BasicBlock, TypeStack] = perRunCaches.newMap()
     val emptyStack = new TypeStack() {
       override def toString = "<empty>"
     }

@@ -6,11 +6,11 @@
 package scala.tools
 package partest
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 trait Statistics {
   /** Only collected when --stats is given. */
-  lazy val testStatistics = new HashMap[String, Long]
+  lazy val testStatistics = new mutable.HashMap[String, Long]
 
   /** Given function and block of code, evaluates code block,
    *  calls function with milliseconds elapsed, and returns block result.

@@ -5,9 +5,8 @@
 
 package scala.tools.detach
 
-import scala.collection.immutable
-import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
-
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.symtab.Flags._
@@ -116,23 +115,23 @@ abstract class Detach extends PluginComponent
     private val remoteRefClass = immutable.HashMap(elems(""): _*)
     private val remoteRefImpl = immutable.HashMap(elems("Impl"): _*)
 
-    private val proxyInterfaceDefs = new HashMap[Symbol/*owner*/, ListBuffer[Tree]]
-    private val detachedClosureApply = new HashMap[Tree, Apply]
+    private val proxyInterfaceDefs = new mutable.HashMap[Symbol/*owner*/, ListBuffer[Tree]]
+    private val detachedClosureApply = new mutable.HashMap[Tree, Apply]
 
-    private type SymSet = HashSet[Symbol]
-    private val capturedObjects = new HashMap[Symbol/*clazz*/, SymSet]
-    private val capturedFuncs = new HashMap[Symbol/*clazz*/, SymSet]
-    private val capturedCallers = new HashMap[Symbol/*clazz*/, SymSet]
-    private val capturedThisClass = new HashMap[Symbol, Symbol]
+    private type SymSet = mutable.HashSet[Symbol]
+    private val capturedObjects = new mutable.HashMap[Symbol/*clazz*/, SymSet]
+    private val capturedFuncs = new mutable.HashMap[Symbol/*clazz*/, SymSet]
+    private val capturedCallers = new mutable.HashMap[Symbol/*clazz*/, SymSet]
+    private val capturedThisClass = new mutable.HashMap[Symbol, Symbol]
 
-    private val proxies = new HashMap[
+    private val proxies = new mutable.HashMap[
       Symbol, //clazz
-      (Symbol, Symbol, HashMap[Symbol, Symbol]) //iface, impl, accessor map
+      (Symbol, Symbol, mutable.HashMap[Symbol, Symbol]) //iface, impl, accessor map
     ]
     def toInterface(clazz: Symbol) = proxies(clazz)._1
-    private val classdefs = new HashMap[Symbol/*clazz*/, ClassDef]
+    private val classdefs = new mutable.HashMap[Symbol/*clazz*/, ClassDef]
     // detachedClosure gathers class definitions containing a "detach" apply
-    private val detachedClosure = new HashMap[Symbol/*clazz*/, ClassDef]
+    private val detachedClosure = new mutable.HashMap[Symbol/*clazz*/, ClassDef]
 
     /** <p>
      *    The method <code>freeObjTraverser.traverse</code> is invoked
@@ -146,9 +145,9 @@ abstract class Detach extends PluginComponent
      *  </p>
      */
     private val freeObjTraverser = new Traverser {
-      def symSet(f: HashMap[Symbol, SymSet], sym: Symbol): SymSet = f.get(sym) match {
+      def symSet(f: mutable.HashMap[Symbol, SymSet], sym: Symbol): SymSet = f.get(sym) match {
         case Some(ss) => ss
-        case None => val ss = new HashSet[Symbol]; f(sym) = ss; ss
+        case None => val ss = new mutable.HashSet[Symbol]; f(sym) = ss; ss
       }
       def getClosureApply(tree: Tree): Apply = tree match {
         case Block(_, expr) => getClosureApply(expr)
@@ -255,7 +254,7 @@ abstract class Detach extends PluginComponent
         println("\nTreeOuterSubstituter:"+
                 "\n\tfrom="+from.mkString(",")+
                 "\n\tto="+to.mkString(","))
-      val substMap = new HashMap[Symbol, Symbol]
+      val substMap = new mutable.HashMap[Symbol, Symbol]
       override def traverse(tree: Tree) {
         def subst(from: List[Symbol], to: List[Symbol]) {
           if (!from.isEmpty)
@@ -328,7 +327,7 @@ abstract class Detach extends PluginComponent
         }
         subst(sym.tpe)
       }
-      val map = new HashMap[Symbol, Symbol]
+      val map = new mutable.HashMap[Symbol, Symbol]
       override def traverse(tree: Tree) {
         if (tree.hasSymbol && tree.symbol != NoSymbol) {
           val sym = tree.symbol
@@ -751,7 +750,7 @@ abstract class Detach extends PluginComponent
           //val cparents = List(ObjectClass.tpe, iface.tpe,
           //                    UnreferencedClass.tpe, ScalaObjectClass.tpe)
           iclaz setInfo ClassInfoType(cparents, new Scope, iclaz)
-          val proxy = (iface, iclaz, new HashMap[Symbol, Symbol])
+          val proxy = (iface, iclaz, new mutable.HashMap[Symbol, Symbol])
           proxies(clazz) = proxy
           proxy
       }

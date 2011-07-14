@@ -14,7 +14,7 @@ package lexical
 
 import token._
 import input.CharArrayReader.EofCh
-import collection.mutable.HashSet
+import scala.collection.mutable
 
 /** This component provides a standard lexical parser for a simple, Scala-like language.
  *  It parses keywords and identifiers, numeric literals (integers), strings, and delimiters.
@@ -62,10 +62,10 @@ class StdLexical extends Lexical with StdTokens {
     )
 
   /** The set of reserved identifiers: these will be returned as `Keyword`s. */
-  val reserved = new HashSet[String]
+  val reserved = new mutable.HashSet[String]
 
   /** The set of delimiters (ordering does not matter). */
-  val delimiters = new HashSet[String]
+  val delimiters = new mutable.HashSet[String]
 
   protected def processIdent(name: String) =
     if (reserved contains name) Keyword(name) else Identifier(name)

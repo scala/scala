@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 
-import collection.mutable
-import mutable.{ Set, HashSet }
+import scala.collection.mutable
 import parsing.XhtmlEntities
 
 /**
@@ -20,8 +17,7 @@ import parsing.XhtmlEntities
  *
  * @author Burak Emir
  */
-object Utility extends AnyRef with parsing.TokenTests
-{
+object Utility extends AnyRef with parsing.TokenTests {
   final val SU = '\u001A'
 
   implicit def implicitSbToString(sb: StringBuilder) = sb.toString()
@@ -151,7 +147,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @return      ...
    */
   def collectNamespaces(nodes: Seq[Node]): mutable.Set[String] =
-    nodes.foldLeft(new HashSet[String]) { (set, x) => collectNamespaces(x, set) ; set }
+    nodes.foldLeft(new mutable.HashSet[String]) { (set, x) => collectNamespaces(x, set) ; set }
 
   /**
    * Adds all namespaces in node to set.

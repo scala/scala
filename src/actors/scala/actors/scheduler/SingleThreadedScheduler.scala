@@ -10,7 +10,7 @@
 package scala.actors
 package scheduler
 
-import scala.collection.mutable.Queue
+import scala.collection.mutable
 
 /**
  * This scheduler executes actor tasks on the current thread.
@@ -19,7 +19,7 @@ import scala.collection.mutable.Queue
  */
 class SingleThreadedScheduler extends IScheduler {
 
-  private val tasks = new Queue[Runnable]
+  private val tasks = new mutable.Queue[Runnable]
 
   /** The maximum number of nested tasks that are run
    *  without unwinding the call stack.

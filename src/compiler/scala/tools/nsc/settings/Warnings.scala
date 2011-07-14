@@ -7,10 +7,6 @@ package scala.tools
 package nsc
 package settings
 
-import annotation.elidable
-import scala.tools.util.PathResolver.Defaults
-import scala.collection.mutable.HashSet
-
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {

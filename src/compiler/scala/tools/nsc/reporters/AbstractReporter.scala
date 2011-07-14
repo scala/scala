@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package reporters
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.Position
 
@@ -18,7 +18,7 @@ abstract class AbstractReporter extends Reporter {
   def display(pos: Position, msg: String, severity: Severity): Unit
   def displayPrompt(): Unit
 
-  private val positions = new HashMap[Position, Severity]
+  private val positions = new mutable.HashMap[Position, Severity]
 
   override def reset() {
     super.reset

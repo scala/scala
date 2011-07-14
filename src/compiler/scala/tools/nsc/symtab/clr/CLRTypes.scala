@@ -10,10 +10,8 @@ package clr
 import java.io.File
 import java.util.{Comparator, StringTokenizer}
 import scala.util.Sorting
-
 import ch.epfl.lamp.compiler.msil._
-
-import scala.collection.mutable.{ListBuffer, Map, HashMap, Set, HashSet}
+import scala.collection.{ mutable, immutable }
 import scala.tools.nsc.util.{Position, NoPosition}
 
 /**
@@ -56,13 +54,13 @@ abstract class CLRTypes {
   var DELEGATE_COMBINE: MethodInfo = _
   var DELEGATE_REMOVE: MethodInfo = _
 
-  val types: Map[Symbol,Type] = new HashMap
-  val constructors: Map[Symbol,ConstructorInfo] = new HashMap
-  val methods: Map[Symbol,MethodInfo] = new HashMap
-  val fields: Map[Symbol, FieldInfo] = new HashMap
-  val sym2type: Map[Type,Symbol] = new HashMap
-  val addressOfViews: HashSet[Symbol] = new HashSet[Symbol]
-  val mdgptrcls4clssym: Map[ /*cls*/ Symbol, /*cls*/ Symbol] = new HashMap
+  val types: mutable.Map[Symbol,Type] = new mutable.HashMap
+  val constructors: mutable.Map[Symbol,ConstructorInfo] = new mutable.HashMap
+  val methods: mutable.Map[Symbol,MethodInfo] = new mutable.HashMap
+  val fields: mutable.Map[Symbol, FieldInfo] = new mutable.HashMap
+  val sym2type: mutable.Map[Type,Symbol] = new mutable.HashMap
+  val addressOfViews = new mutable.HashSet[Symbol]
+  val mdgptrcls4clssym: mutable.Map[ /*cls*/ Symbol, /*cls*/ Symbol] = new mutable.HashMap
 
   def isAddressOf(msym : Symbol) = addressOfViews.contains(msym)
 

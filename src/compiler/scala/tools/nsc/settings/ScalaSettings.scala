@@ -10,7 +10,7 @@ package settings
 
 import annotation.elidable
 import scala.tools.util.PathResolver.Defaults
-import scala.collection.mutable.HashSet
+import scala.collection.mutable
 
 trait ScalaSettings extends AbsScalaSettings
                        with StandardScalaSettings
@@ -20,7 +20,7 @@ trait ScalaSettings extends AbsScalaSettings
   import Defaults.scalaUserClassPath
 
   /** Set of settings */
-  protected lazy val allSettings = HashSet[Setting]()
+  protected lazy val allSettings = mutable.HashSet[Setting]()
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s

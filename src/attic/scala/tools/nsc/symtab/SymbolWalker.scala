@@ -11,7 +11,6 @@ trait SymbolWalker {
     def apply(pos : Position) : Symbol
     def putDef(sym : Symbol, pos : Position) : Unit = ()
   }
-  import scala.collection.mutable.Map
   /*
   implicit def map2use(map : Map[Position,Symbol]) = new Visitor {
     def update(pos : Position, sym : Symbol) : Unit = map.update(pos, sym)

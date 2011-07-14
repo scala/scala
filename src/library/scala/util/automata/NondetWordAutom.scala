@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.automata
 
 import scala.collection.{ immutable, mutable }
@@ -19,13 +18,11 @@ import scala.collection.{ immutable, mutable }
  *  the partial function `finals` is defined.
  */
 abstract class NondetWordAutom[T <: AnyRef] {
-  import immutable.BitSet
-
   val nstates: Int
   val labels: Seq[T]
   val finals: Array[Int] // 0 means not final
-  val delta: Array[mutable.Map[T, BitSet]]
-  val default: Array[BitSet]
+  val delta: Array[mutable.Map[T, immutable.BitSet]]
+  val default: Array[immutable.BitSet]
 
   /** @return true if the state is final */
   final def isFinal(state: Int) = finals(state) > 0
@@ -34,20 +31,20 @@ abstract class NondetWordAutom[T <: AnyRef] {
   final def finalTag(state: Int) = finals(state)
 
   /** @return true if the set of states contains at least one final state */
-  final def containsFinal(Q: BitSet): Boolean = Q exists isFinal
+  final def containsFinal(Q: immutable.BitSet): Boolean = Q exists isFinal
 
   /** @return true if there are no accepting states */
   final def isEmpty = (0 until nstates) forall (x => !isFinal(x))
 
-  /** @return a BitSet with the next states for given state and label */
-  def next(q: Int, a: T): BitSet = delta(q).getOrElse(a, default(q))
+  /** @return a immutable.BitSet with the next states for given state and label */
+  def next(q: Int, a: T): immutable.BitSet = delta(q).getOrElse(a, default(q))
 
-  /** @return a BitSet with the next states for given state and label */
-  def next(Q: BitSet, a: T): BitSet = next(Q, next(_, a))
-  def nextDefault(Q: BitSet): BitSet = next(Q, default)
+  /** @return a immutable.BitSet with the next states for given state and label */
+  def next(Q: immutable.BitSet, a: T): immutable.BitSet = next(Q, next(_, a))
+  def nextDefault(Q: immutable.BitSet): immutable.BitSet = next(Q, default)
 
-  private def next(Q: BitSet, f: (Int) => BitSet): BitSet =
-    (Q map f).foldLeft(BitSet.empty)(_ ++ _)
+  private def next(Q: immutable.BitSet, f: (Int) => immutable.BitSet): immutable.BitSet =
+    (Q map f).foldLeft(immutable.BitSet.empty)(_ ++ _)
 
   private def finalStates = 0 until nstates filter isFinal
   override def toString = {

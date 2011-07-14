@@ -8,12 +8,11 @@ package scala.tools.nsc
 package matching
 
 import PartialFunction._
-import scala.collection.{ mutable, immutable }
+import scala.collection.{ mutable }
 import util.Position
 import transform.ExplicitOuter
 import symtab.Flags
 import mutable.ListBuffer
-import immutable.IntMap
 import annotation.elidable
 
 trait ParallelMatching extends ast.TreeDSL
@@ -43,7 +42,7 @@ trait ParallelMatching extends ast.TreeDSL
     lazy val (rows, targets)                    = expand(roots, cases).unzip
     lazy val expansion: Rep                     = make(roots, rows)
 
-    private val shortCuts = mutable.HashMap[Int, Symbol]()
+    private val shortCuts = perRunCaches.newMap[Int, Symbol]()
 
     final def createShortCut(theLabel: Symbol): Int = {
       val key = shortCuts.size + 1

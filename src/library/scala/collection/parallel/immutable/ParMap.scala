@@ -6,15 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package parallel.immutable
 
-
-
-
-
-import scala.collection.immutable.Map
 import scala.collection.generic.ParMapFactory
 import scala.collection.generic.GenericParMapTemplate
 import scala.collection.generic.GenericParMapCompanion
@@ -22,10 +16,6 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.GenMapLike
-
-
-
-
 
 /** A template trait for immutable parallel maps.
  *
@@ -42,7 +32,7 @@ extends collection/*.immutable*/.GenMap[K, V]
    with GenericParMapTemplate[K, V, ParMap]
    with parallel.ParMap[K, V]
    with ParIterable[(K, V)]
-   with ParMapLike[K, V, ParMap[K, V], Map[K, V]]
+   with ParMapLike[K, V, ParMap[K, V], collection.immutable.Map[K, V]]
 {
 self =>
 
@@ -65,22 +55,3 @@ object ParMap extends ParMapFactory[ParMap] {
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParMap[K, V]] = new CanCombineFromMap[K, V]
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

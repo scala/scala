@@ -9,7 +9,6 @@
 package scala.collection.parallel.mutable
 
 import collection.generic._
-import collection.mutable.HashSet
 import collection.mutable.FlatHashTable
 import collection.parallel.Combiner
 import collection.mutable.UnrolledBuffer
@@ -51,7 +50,7 @@ extends ParSet[T]
 
   def clear() = clearTable()
 
-  override def seq = new HashSet(hashTableContents)
+  override def seq = new collection.mutable.HashSet(hashTableContents)
 
   def +=(elem: T) = {
     addEntry(elem)

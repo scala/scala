@@ -6,12 +6,9 @@
 package scala.reflect
 package internal
 
-import java.io.{PrintWriter, StringWriter}
-import scala.collection.mutable.ListBuffer
+import java.io.{ PrintWriter, StringWriter }
 import Flags._
 import api.Modifier
-
-//import scala.tools.nsc.util.{ FreshNameCreator, HashSet, SourceFile }
 
 trait Trees extends api.Trees { self: SymbolTable =>
 

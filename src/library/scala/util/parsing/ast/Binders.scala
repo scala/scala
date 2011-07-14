@@ -8,7 +8,7 @@
 
 package scala.util.parsing.ast
 
-import scala.collection.mutable.Map
+import scala.collection.mutable
 
 //DISCLAIMER: this code is highly experimental!
 
@@ -84,8 +84,8 @@ trait Binders extends AbstractSyntax with Mappable {
    *  (`id` is solely used for this textual representation.)
    */
   class Scope[binderType <: NameElement] extends Iterable[binderType]{
-    private val substitution: Map[binderType, Element] =
-      new scala.collection.mutable.LinkedHashMap[binderType, Element] // a LinkedHashMap is ordered by insertion order -- important!
+    private val substitution: mutable.Map[binderType, Element] =
+      new mutable.LinkedHashMap[binderType, Element] // a LinkedHashMap is ordered by insertion order -- important!
 
     /** Returns a unique number identifying this Scope (only used for representation purposes). */
     val id: Int = _Binder.genId
@@ -236,7 +236,7 @@ trait Binders extends AbstractSyntax with Mappable {
        })
     }*/
 
-    def cloneElementWithSubst(subst: scala.collection.immutable.Map[NameElement, NameElement]) = element.gmap(new Mapper { def apply[t <% Mappable[t]](x :t): t = x match{
+    def cloneElementWithSubst(subst: Map[NameElement, NameElement]) = element.gmap(new Mapper { def apply[t <% Mappable[t]](x :t): t = x match{
       case substable: NameElement if subst.contains(substable) => subst.get(substable).asInstanceOf[t] // TODO: wrong... substitution is not (necessarily) the identity function
          //Console.println("substed: "+substable+"-> "+subst.get(substable)+")");
       case x => x // Console.println("subst: "+x+"(keys: "+subst.keys+")");x
@@ -249,7 +249,7 @@ trait Binders extends AbstractSyntax with Mappable {
     }})
 
     def extract: elementT = cloneElementNoBoundElements
-    def extract(subst: scala.collection.immutable.Map[NameElement, NameElement]): elementT = cloneElementWithSubst(subst)
+    def extract(subst: Map[NameElement, NameElement]): elementT = cloneElementWithSubst(subst)
 
     /** Get a string representation of element, normally we don't allow direct access to element, but just getting a string representation is ok. */
     def elementToString: String = element.toString

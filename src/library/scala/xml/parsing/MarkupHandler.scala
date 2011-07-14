@@ -11,8 +11,7 @@
 package scala.xml
 package parsing
 
-import collection.mutable
-import mutable.HashMap
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.logging.Logged
 import scala.xml.dtd._
@@ -32,7 +31,7 @@ abstract class MarkupHandler extends Logged
   val isValidating: Boolean = false
 
   var decls: List[Decl] = Nil
-  var ent: mutable.Map[String, EntityDecl] = new HashMap[String, EntityDecl]()
+  var ent: mutable.Map[String, EntityDecl] = new mutable.HashMap[String, EntityDecl]()
 
   def lookupElemDecl(Label: String): ElemDecl = {
     for (z @ ElemDecl(Label, _) <- decls)

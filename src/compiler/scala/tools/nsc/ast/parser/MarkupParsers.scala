@@ -7,7 +7,7 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable
-import mutable.{ Buffer, ArrayBuffer, ListBuffer, HashMap }
+import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.{SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
@@ -113,7 +113,7 @@ trait MarkupParsers {
      *                      | `{` scalablock `}`
      */
     def xAttributes = {
-      val aMap = new HashMap[String, Tree]()
+      val aMap = mutable.HashMap[String, Tree]()
 
       while (isNameStart(ch)) {
         val start = curOffset

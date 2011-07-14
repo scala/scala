@@ -3,11 +3,9 @@
  * @author  Iulian Dragos
  */
 
-
 package scala.tools.nsc
 package backend.opt
 
-import scala.collection.mutable.{Map, HashMap}
 import scala.tools.nsc.backend.icode.analysis.LubException
 import scala.tools.nsc.symtab._
 

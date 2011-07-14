@@ -4,10 +4,6 @@ package scala.tools.selectivecps
 
 import scala.tools.nsc.Global
 
-import scala.collection.mutable.{Map, HashMap}
-
-import java.io.{StringWriter, PrintWriter}
-
 abstract class CPSAnnotationChecker extends CPSUtils {
   val global: Global
   import global._

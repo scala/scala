@@ -14,8 +14,6 @@ import scala.reflect.internal.Flags.PARAMACCESSOR
 import scala.reflect.internal.Flags.PRESUPER
 import scala.reflect.internal.Flags.TRAIT
 
-import util.HashSet
-
 trait Trees extends reflect.internal.Trees { self: Global =>
 
   // --- additional cases --------------------------------------------------------
@@ -267,7 +265,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   }
 
   private class ResetLocalAttrsTraverser extends ResetAttrsTraverser {
-    private val erasedSyms = HashSet[Symbol](8)
+    private val erasedSyms = util.HashSet[Symbol](8)
     override protected def isLocal(sym: Symbol) = erasedSyms(sym)
     override protected def resetDef(tree: Tree) {
       erasedSyms addEntry tree.symbol

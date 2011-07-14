@@ -13,7 +13,8 @@ import java.lang.Double.longBitsToDouble
 
 import Flags._
 import PickleFormat._
-import collection.mutable.{HashMap, ListBuffer}
+import scala.collection.{ mutable, immutable }
+import collection.mutable.ListBuffer
 import annotation.switch
 
 /** @author Martin Odersky
@@ -57,7 +58,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     private val entries = new Array[AnyRef](index.length)
 
     /** A map from symbols to their associated `decls` scopes */
-    private val symScopes = new HashMap[Symbol, Scope]
+    private val symScopes = mutable.HashMap[Symbol, Scope]()
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
