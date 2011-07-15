@@ -388,7 +388,7 @@ trait Implicits {
      *  Detect infinite search trees for implicits.
      *
      *  @param info    The given implicit info describing the implicit definition
-     *  @pre           <code>info.tpe</code> does not contain an error
+     *  @pre           `info.tpe` does not contain an error
      */
     private def typedImplicit(info: ImplicitInfo, ptChecked: Boolean): SearchResult = {
       printInference("[typedImplicit] " + info)

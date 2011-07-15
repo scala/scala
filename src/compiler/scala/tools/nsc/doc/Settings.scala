@@ -47,6 +47,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "A directory containing sources which should be parsed, no more (e.g. AnyRef.scala)",
     ""
   )
+
   lazy val uncompilableFiles = docUncompilable.value match {
     case ""     => Nil
     case path   => io.Directory(path).deepFiles filter (_ hasExtension "scala") toList
@@ -57,7 +58,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   val docsourceurl = StringSetting (
     "-doc-source-url",
     "url",
-    "A URL pattern used to build links to template sources; use variables, for example: €{TPL_NAME} ('Seq'), €{TPL_OWNER} ('scala.collection'), €{FILE_PATH} ('scala/collection/Seq')",
+    "A URL pattern used to build links to template sources; use variables, for example: ?{TPL_NAME} ('Seq'), ?{TPL_OWNER} ('scala.collection'), ?{FILE_PATH} ('scala/collection/Seq')",
     ""
   )
 

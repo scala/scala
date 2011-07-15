@@ -109,6 +109,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
     </div>
 
   def packageQualifiedName(ety: DocTemplateEntity): String =
-    if (ety.inTemplate.isPackage) ety.name else (packageQualifiedName(ety.inTemplate) + "." + ety.name)
+    if (ety.inTemplate.isPackage) ety.name
+    else (packageQualifiedName(ety.inTemplate) + "." + ety.name)
 
 }

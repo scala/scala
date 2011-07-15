@@ -46,7 +46,7 @@ object Test extends Properties("CommentFactory") {
   )
   property("parse") = parse(
     "/** One `two` three */",
-    Chain(List(Text("One "), Monospace("two"), Text(" three")))
+    Chain(List(Text("One "), Monospace(Text("two")), Text(" three")))
   )
 
   property("parse") = parse(
@@ -59,21 +59,21 @@ object Test extends Properties("CommentFactory") {
       """
 /** One `two`
   * three */""",
-      Chain(List(Text("One "), Monospace("two"), Text("\n"), Text("three")))
+      Chain(List(Text("One "), Monospace(Text("two")), Text("\n"), Text("three")))
   )
 
   property("parse") = parse(
       """
 /** One `two`
  *  three */""",
-      Chain(List(Text("One "), Monospace("two"), Text("\n"), Text(" three")))
+      Chain(List(Text("One "), Monospace(Text("two")), Text("\n"), Text(" three")))
   )
 
   property("parse") = parse(
       """
 /** One
   * `two` three */""",
-      Chain(List(Text("One"), Text("\n"), Monospace("two"), Text(" three")))
+      Chain(List(Text("One"), Text("\n"), Monospace(Text("two")), Text(" three")))
   )
 
   property("Trac #4361 - ^...^") = parse(
