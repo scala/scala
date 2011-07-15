@@ -356,20 +356,16 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree
 
-  /** <p>
-   *    Pattern matching expression  (before explicitouter)
-   *    Switch statements            (after explicitouter)
-   *  </p>
-   *  <p>
-   *    After explicitouter, cases will satisfy the following constraints:
-   *  </p>
-   *  <ul>
-   *    <li>all guards are EmptyTree,</li>
-   *    <li>all patterns will be either <code>Literal(Constant(x:Int))</code>
-   *      or <code>Alternative(lit|...|lit)</code></li>
-   *    <li>except for an "otherwise" branch, which has pattern
-   *      <code>Ident(nme.WILDCARD)</code></li>
-   *  </ul>
+  /** - Pattern matching expression  (before explicitouter)
+   *  - Switch statements            (after explicitouter)
+   *
+   *  After explicitouter, cases will satisfy the following constraints:
+   *
+   *  - all guards are `EmptyTree`,
+   *  - all patterns will be either `Literal(Constant(x:Int))`
+   *    or `Alternative(lit|...|lit)`
+   *  - except for an "otherwise" branch, which has pattern
+   *    `Ident(nme.WILDCARD)`
    */
   case class Match(selector: Tree, cases: List[CaseDef])
        extends TermTree

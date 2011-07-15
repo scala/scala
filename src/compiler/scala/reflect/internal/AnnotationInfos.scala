@@ -13,16 +13,15 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
   /** Arguments to classfile annotations (which are written to
    *  bytecode as java annotations) are either:
-   *  <ul>
-   *   <li>constants</li>
-   *   <li>arrays of constants</li>
-   *   <li>or nested classfile annotations</li>
-   *  </ul>
+   *
+   *  - constants
+   *  - arrays of constants
+   *  - or nested classfile annotations
    */
   abstract class ClassfileAnnotArg
 
-  /** Represents a compile-time Constant (Boolean, Byte, Short,
-   *  Char, Int, Long, Float, Double, String, java.lang.Class or
+  /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
+   *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
    *  an instance of a Java enumeration value).
    */
   case class LiteralAnnotArg(const: Constant)
@@ -40,9 +39,12 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
   object ArrayAnnotArg extends ArrayAnnotArgExtractor
 
-  /** A specific annotation argument that encodes an array of bytes as an array of `Long`. The type of the argument
-    * declared in the annotation must be `String`. This specialised class is used to encode scala signatures for
-    * reasons of efficiency, both in term of class-file size and in term of compiler performance. */
+  /** A specific annotation argument that encodes an array of bytes as an
+   *  array of `Long`. The type of the argument declared in the annotation
+   *  must be `String`. This specialised class is used to encode Scala
+   *  signatures for reasons of efficiency, both in term of class-file size
+   *  and in term of compiler performance.
+   */
   case class ScalaSigBytes(bytes: Array[Byte]) extends ClassfileAnnotArg {
     override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
     lazy val encodedBytes = ByteCodecs.encode(bytes)
@@ -66,30 +68,21 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
   class AnnotationInfoBase
 
-  /** <p>
-   *    Typed information about an annotation. It can be attached to
-   *    either a symbol or an annotated type.
-   *  </p>
-   *  <p>
-   *    Annotations are written to the classfile as java annotations
-   *    if <code>atp</code> conforms to <code>ClassfileAnnotation</code>
-   *    (the classfile parser adds this interface to any Java annotation
-   *    class).
-   *  </p>
-   *  <p>
-   *    Annotations are pickled (written to scala symtab attribute
-   *    in the classfile) if <code>atp</code> inherits form
-   *    <code>StaticAnnotation</code>.
-   *  </p>
-   *  <p>
-   *    <code>args</code> stores arguments to Scala annotations,
-   *    represented as  typed trees. Note that these trees are not
-   *    transformed by any phases following the type-checker.
-   *  </p>
-   *  <p>
-   *    <code>assocs</code> stores arguments to classfile annotations
-   *    as name-value pairs.
-   *  </p>
+  /** Typed information about an annotation. It can be attached to either
+   *  a symbol or an annotated type.
+   *
+   *  Annotations are written to the classfile as Java annotations
+   *  if `atp` conforms to `ClassfileAnnotation` (the classfile parser adds
+   *  this interface to any Java annotation class).
+   *
+   *  Annotations are pickled (written to scala symtab attribute in the
+   *  classfile) if `atp` inherits form `StaticAnnotation`.
+   *
+   *  `args` stores arguments to Scala annotations, represented as typed
+   *  trees. Note that these trees are not transformed by any phases
+   *  following the type-checker.
+   *
+   *  `assocs` stores arguments to classfile annotations as name-value pairs.
    */
   case class AnnotationInfo(atp: Type, args: List[Tree],
                             assocs: List[(Name, ClassfileAnnotArg)])
@@ -142,7 +135,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
   lazy val classfileAnnotArgManifest: ClassManifest[ClassfileAnnotArg] =
     reflect.ClassManifest.classType(classOf[ClassfileAnnotArg])
 
-  /** Symbol annotations parsed in Namer (typeCompleter of
+  /** Symbol annotations parsed in `Namer` (typeCompleter of
    *  definitions) have to be lazy (#1782)
    */
   case class LazyAnnotationInfo(annot: () => AnnotationInfo)

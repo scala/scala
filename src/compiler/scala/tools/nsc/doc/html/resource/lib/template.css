@@ -398,6 +398,30 @@ div.members > ol > li:last-child {
   font-family: monospace;
 }
 
+.cmt pre span.ano {
+  color: blue;
+}
+
+.cmt pre span.cmt {
+  color: green;
+}
+
+.cmt pre span.kw {
+  font-weight: bold;
+}
+
+.cmt pre span.lit {
+  color: #c71585;
+}
+
+.cmt pre span.num {
+  color: #1e90ff; /* dodgerblue */
+}
+
+.cmt pre span.std {
+  color: #008080; /* teal */
+}
+
 .cmt ul {
   display: block;
   list-style: circle;

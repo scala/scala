@@ -45,9 +45,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     case _ => Nil
   })
 
-  /* for body, there is a special case for AnyRef, otherwise AnyRef appears like a package/object
-   * this problem should be fixed, this implementation is just a patch
-   */
+  /* for body, there is a special case for AnyRef, otherwise AnyRef appears
+   * like a package/object this problem should be fixed, this implementation
+   * is just a patch. */
   val body = {
     val templateName = if (tpl.isRootPackage) "root package" else tpl.name
     val displayName = tpl.companion match {
@@ -63,7 +63,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
     }
 
-    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }>
+    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }
+          onload={ "sh_highlightDocument('../lib/', '.min.js');" }>
       <div id="definition">
         {
           tpl.companion match {
@@ -339,7 +340,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       val annotationsWithHiddenArguments = List("deprecated", "Deprecated", "migration")
 
       def showArguments(annotation: Annotation) =
-        if (annotationsWithHiddenArguments.contains(annotation.qualifiedName)) false else true
+        !(annotationsWithHiddenArguments.contains(annotation.qualifiedName))
 
       if (!mbr.annotations.isEmpty) {
         <dt>Annotations</dt>
@@ -522,7 +523,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
         {
-          val nameHtml = <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
+          val nameHtml = {
+            val value = if (mbr.isConstructor) tpl.name else mbr.name
+            if (mbr.deprecation.isDefined)
+              <span class={"name deprecated"} title={"Deprecated: "+bodyToStr(mbr.deprecation.get)}>{ value }</span>
+            else
+              <span class={"name"}>{ value }</span>
+          }
           if (!nameLink.isEmpty)
             <a href={nameLink}>{nameHtml}</a>
           else nameHtml
@@ -616,7 +623,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     def codeStringToXml(text: String): NodeSeq = {
       var goodLookingXml: NodeSeq = NodeSeq.Empty
       var indent = 0
-      for(c<-text) c match {
+      for (c <- text) c match {
         case '{' => indent+=1
           goodLookingXml ++= Text("{")
         case '}' => indent-=1
@@ -637,7 +644,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     val str = tree.expression
     val length = str.length
     var myXml: NodeSeq = NodeSeq.Empty
-    for( (from, (member, to)) <- tree.refEntity.toSeq) {
+    for ((from, (member, to)) <- tree.refEntity.toSeq) {
       if (index < from) {
         myXml ++= codeStringToXml(str.substring(index,from))
         index = from
@@ -664,13 +671,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     if (index <= length-1)
       myXml ++= codeStringToXml(str.substring(index, length ))
 
-    if(length < 36)
+    if (length < 36)
       <span class="symbol">{ myXml }</span>
     else
       <span class="defval" name={ myXml }>{ "..." }</span>
   }
 
-  def argumentsToHtml(argss: List[ValueArgument]): NodeSeq = {
+  private def argumentsToHtml(argss: List[ValueArgument]): NodeSeq = {
     def argumentsToHtml0(argss: List[ValueArgument]): NodeSeq = argss match {
       case Nil         => NodeSeq.Empty
       case arg :: Nil  => argumentToHtml(arg)
@@ -679,7 +686,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     <span class="args">({ argumentsToHtml0(argss) })</span>
   }
 
-  def argumentToHtml(arg: ValueArgument): NodeSeq = {
+  private def argumentToHtml(arg: ValueArgument): NodeSeq = {
     <span>
       {
         arg.parameter match {
@@ -689,6 +696,25 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
       { treeToHtml(arg.value) }
     </span>
+  }
+
+  private def bodyToStr(body: comment.Body): String =
+    body.blocks flatMap (blockToStr(_)) mkString ""
+
+  private def blockToStr(block: comment.Block): String = block match {
+    case comment.Paragraph(in) => inlineToStr(in)
+    case _ => block.toString
+  }
+
+  private def inlineToStr(inl: comment.Inline): String = inl match {
+    case comment.Chain(items) => items flatMap (inlineToStr(_)) mkString ""
+    case comment.Italic(in) => inlineToStr(in)
+    case comment.Bold(in) => inlineToStr(in)
+    case comment.Underline(in) => inlineToStr(in)
+    case comment.Monospace(in) => inlineToStr(in)
+    case comment.Text(text) => text
+    case comment.Summary(in) => inlineToStr(in)
+    case _ => inl.toString
   }
 
 }

@@ -1,4 +1,7 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2011 LAMP/EPFL */
+/* NSC -- new Scala compiler
+ * Copyright 2007-2011 LAMP/EPFL
+ * @author  Manohar Jonnalagedda
+ */
 
 package scala.tools.nsc
 package doc
@@ -9,8 +12,9 @@ import scala.collection._
 
 import java.net.URL
 
-/** A body of text. A comment has a single body, which is composed of at least one block. Inside every body is exactly
-  * one summary (see [[scala.tools.nsc.doc.model.comment.Summary]]). */
+/** A body of text. A comment has a single body, which is composed of
+  * at least one block. Inside every body is exactly one summary (see
+  * [[scala.tools.nsc.doc.model.comment.Summary]]). */
 final case class Body(blocks: Seq[Block]) {
 
   /** The summary text of the comment body. */
@@ -18,14 +22,14 @@ final case class Body(blocks: Seq[Block]) {
     def summaryInBlock(block: Block): Seq[Inline] = block match {
       case Title(text, _)        => summaryInInline(text)
       case Paragraph(text)       => summaryInInline(text)
-      case UnorderedList(items)  => items flatMap { summaryInBlock(_) }
-      case OrderedList(items, _) => items flatMap { summaryInBlock(_) }
-      case DefinitionList(items) => items.values.toSeq flatMap { summaryInBlock(_) }
+      case UnorderedList(items)  => items flatMap summaryInBlock
+      case OrderedList(items, _) => items flatMap summaryInBlock
+      case DefinitionList(items) => items.values.toSeq flatMap summaryInBlock
       case _                     => Nil
     }
     def summaryInInline(text: Inline): Seq[Inline] = text match {
       case Summary(text)     => List(text)
-      case Chain(items)      => items flatMap { summaryInInline(_) }
+      case Chain(items)      => items flatMap summaryInInline
       case Italic(text)      => summaryInInline(text)
       case Bold(text)        => summaryInInline(text)
       case Underline(text)   => summaryInInline(text)
@@ -65,7 +69,7 @@ final case class Superscript(text: Inline) extends Inline
 final case class Subscript(text: Inline) extends Inline
 final case class Link(target: String, title: Inline) extends Inline
 final case class EntityLink(target: TemplateEntity) extends Inline
-final case class Monospace(text: String) extends Inline
+final case class Monospace(text: Inline) extends Inline
 final case class Text(text: String) extends Inline
 final case class HtmlTag(data: String) extends Inline {
   def canClose(open: HtmlTag) = {

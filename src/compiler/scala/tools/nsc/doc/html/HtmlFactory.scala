@@ -16,12 +16,15 @@ import scala.collection._
   * @author David Bernard
   * @author Gilles Dubochet */
 class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
-  /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
+
+  /** The character encoding to be used for generated Scaladoc sites.
+    * This value is currently always UTF-8. */
   def encoding: String = "UTF-8"
 
   def siteRoot: JFile = new JFile(universe.settings.outdir.value)
 
-  /** Generates the Scaladoc site for a model into the site root. A scaladoc site is a set of HTML and related files
+  /** Generates the Scaladoc site for a model into the site root.
+    * A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
   def generate() {
@@ -106,15 +109,16 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     }
   }
 
-  def writeTemplates(writeForThis: HtmlPage => Unit): Unit = {
+  def writeTemplates(writeForThis: HtmlPage => Unit) {
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity): Unit =
+    def writeTemplate(tpl: DocTemplateEntity) {
       if (!(written contains tpl)) {
         writeForThis(new page.Template(tpl))
         written += tpl
         tpl.templates map (writeTemplate(_))
       }
+    }
 
     writeTemplate(universe.rootPackage)
   }

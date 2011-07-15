@@ -1,4 +1,7 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2011 LAMP/EPFL */
+/* NSC -- new Scala compiler
+ * Copyright 2007-2011 LAMP/EPFL
+ * @author  Manohar Jonnalagedda
+ */
 
 package scala.tools.nsc
 package doc
@@ -11,8 +14,8 @@ import scala.collection._
   *
   * '''Note:''' the only instantiation site of this class is in [[CommentFactory]].
   *
-  * @author Gilles Dubochet
-  * @author Manohar Jonnalagedda */
+  * @author Manohar Jonnalagedda
+  * @author Gilles Dubochet */
 abstract class Comment {
 
   /** The main body of the comment that describes what the entity does and is.  */
@@ -20,10 +23,10 @@ abstract class Comment {
 
   private def closeHtmlTags(inline: Inline) = {
     val stack = mutable.ListBuffer.empty[HtmlTag]
-    def scan(i: Inline): Unit = {
+    def scan(i: Inline) {
       i match {
         case Chain(list) =>
-          list.foreach(scan)
+          list foreach scan
         case tag: HtmlTag => {
           if (stack.length > 0 && tag.canClose(stack.last)) {
             stack.remove(stack.length-1)
@@ -57,26 +60,30 @@ abstract class Comment {
   /** A list of authors. The empty list is used when no author is defined. */
   def authors: List[Body]
 
-  /** A list of other resources to see, including links to other entities or to external documentation. The empty list
-    * is used when no other resource is mentionned. */
+  /** A list of other resources to see, including links to other entities or
+    * to external documentation. The empty list is used when no other resource
+    * is mentionned. */
   def see: List[Body]
 
-  /** A description of the result of the entity. Typically, this provides additional information on the domain of the
-    * result, contractual post-conditions, etc. */
+  /** A description of the result of the entity. Typically, this provides additional
+    * information on the domain of the result, contractual post-conditions, etc. */
   def result: Option[Body]
 
-  /** A map of exceptions that the entity can throw when accessed, and a description of what they mean. */
+  /** A map of exceptions that the entity can throw when accessed, and a
+    * description of what they mean. */
   def throws: Map[String, Body]
 
-  /** A map of value parameters, and a description of what they are. Typically, this provides additional information on
-    * the domain of the parameters, contractual pre-conditions, etc. */
+  /** A map of value parameters, and a description of what they are. Typically,
+    * this provides additional information on the domain of the parameters,
+    * contractual pre-conditions, etc. */
   def valueParams: Map[String, Body]
 
-  /** A map of type parameters, and a description of what they are. Typically, this provides additional information on
-    * the domain of the parameters. */
+  /** A map of type parameters, and a description of what they are. Typically,
+    * this provides additional information on the domain of the parameters. */
   def typeParams: Map[String, Body]
 
-  /** The version number of the entity. There is no formatting or further meaning attached to this value. */
+  /** The version number of the entity. There is no formatting or further
+    * meaning attached to this value. */
   def version: Option[Body]
 
   /** A version number of a containing entity where this member-entity was introduced. */
@@ -85,8 +92,8 @@ abstract class Comment {
   /** An annotation as to expected changes on this entity. */
   def todo: List[Body]
 
-  /** Whether the entity is deprecated. Using the "@deprecated" Scala attribute is prefereable to using this Scaladoc
-    * tag. */
+  /** Whether the entity is deprecated. Using the `@deprecated` Scala attribute
+    * is prefereable to using this Scaladoc tag. */
   def deprecated: Option[Body]
 
   /** An additional note concerning the contract of the entity. */

@@ -1,4 +1,7 @@
-/* NSC -- new Scala compiler -- Copyright 2007-2011 LAMP/EPFL */
+/* NSC -- new Scala compiler
+ * Copyright 2007-2011 LAMP/EPFL
+ * @author  David Bernard, Manohar Jonnalagedda
+ */
 
 package scala.tools.nsc
 package doc
@@ -9,18 +12,20 @@ import util.NoPosition
 import io.{ File, Directory }
 import DocParser.Parsed
 
-/** A documentation processor controls the process of generating Scala documentation, which is as follows.
+/** A documentation processor controls the process of generating Scala
+  * documentation, which is as follows.
   *
-  * * A simplified compiler instance (with only the front-end phases enabled) is created, and additional
-  *   ''sourceless'' comments are registered.
+  * * A simplified compiler instance (with only the front-end phases enabled)
+  * * is created, and additional ''sourceless'' comments are registered.
   * * Documentable files are compiled, thereby filling the compiler's symbol table.
   * * A documentation model is extracted from the post-compilation symbol table.
   * * A generator is used to transform the model into the correct final format (HTML).
   *
-  * A processor contains a single compiler instantiated from the processor's `settings`. Each call to `document`
-  * uses the same compiler instance with the same symbol table. In particular, this implies that the scaladoc site
-  * obtained from a call to `run` will contain documentation about files compiled during previous calls to the same
-  * processor's `run` method.
+  * A processor contains a single compiler instantiated from the processor's
+  * `settings`. Each call to `document` uses the same compiler instance with
+  * the same symbol table. In particular, this implies that the scaladoc site
+  * obtained from a call to `run` will contain documentation about files compiled
+  * during previous calls to the same processor's `run` method.
   *
   * @param reporter The reporter to which both documentation and compilation errors will be reported.
   * @param settings The settings to be used by the documenter and compiler for generating documentation.
@@ -41,9 +46,10 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     override def forScaladoc = true
   }
 
-  /** Creates a scaladoc site for all symbols defined in this call's `files`, as well as those defined in `files` of
-    * previous calls to the same processor.
-    * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
+  /** Creates a scaladoc site for all symbols defined in this call's `files`,
+    * as well as those defined in `files` of previous calls to the same processor.
+    * @param files The list of paths (relative to the compiler's source path,
+    *        or absolute) of files to document. */
   def makeUniverse(files: List[String]): Option[Universe] = {
     assert(settings.docformat.value == "html")
     new compiler.Run() compile files
@@ -97,7 +103,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
   /** Generate document(s) for all `files` containing scaladoc documenataion.
     * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
-  def document(files: List[String]): Unit = {
+  def document(files: List[String]) {
     def generate() = {
       import doclet._
       val docletClass    = Class.forName(settings.docgenerator.value) // default is html.Doclet
@@ -120,6 +126,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     try generate()
     catch documentError
   }
+
   private[doc] def docdbg(msg: String) {
     if (settings.Ydocdebug.value)
       println(msg)

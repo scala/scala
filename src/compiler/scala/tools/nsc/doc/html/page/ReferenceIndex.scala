@@ -11,7 +11,7 @@ import doc.model._
 
 class ReferenceIndex(letter: Char, index: doc.Index, universe: Universe) extends HtmlPage {
 
-  def path = List("index-"+letter+".html","index")
+  def path = List("index-"+letter+".html", "index")
 
   def title = {
     val s = universe.settings

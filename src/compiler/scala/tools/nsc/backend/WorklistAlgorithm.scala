@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 
@@ -15,14 +14,13 @@ import scala.collection.{ mutable, immutable }
  * function is applied repeatedly to the first element in the
  * worklist, as long as the stack is not empty.
  *
- * The client class should mix-in this class and initialize the
- * worklist field and define the <code>processElement</code> method.
- * Then call the <code>run</code> method providing a function that
- * initializes the worklist.
+ * The client class should mix-in this class and initialize the worklist
+ * field and define the `processElement` method. Then call the `run` method
+ * providing a function that initializes the worklist.
  *
  * @author  Martin Odersky
  * @version 1.0
- * @see     <a href="icode/Linearizers.html" target="contentFrame">scala.tools.nsc.backend.icode.Linearizers</a>
+ * @see     [[scala.tools.nsc.backend.icode.Linearizers]]
  */
 trait WorklistAlgorithm {
   type Elem
@@ -31,9 +29,9 @@ trait WorklistAlgorithm {
   val worklist: WList
 
   /**
-   * Run the iterative algorithm until the worklist
-   * remains empty. The initializer is run once before
-   * the loop starts and should initialize the worklist.
+   * Run the iterative algorithm until the worklist remains empty.
+   * The initializer is run once before the loop starts and should
+   * initialize the worklist.
    *
    * @param initWorklist ...
    */
