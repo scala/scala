@@ -393,6 +393,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isPredefModule      = this == PredefModule
     final def isScalaPackage      = (this == ScalaPackage) || (isPackageObject && owner == ScalaPackageClass)
     final def isScalaPackageClass = skipPackageObject == ScalaPackageClass
+    def inDefaultNamespace        = owner.isPredefModule || owner.isScalaPackageClass
 
     /** If this is a package object or package object class, its owner: otherwise this.
      */
