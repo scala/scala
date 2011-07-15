@@ -6,14 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 
 /** A document information item (according to InfoSet spec). The comments
  *  are copied from the Infoset spec, only augmented with some information
  *  on the Scala types for definitions that might have no value.
- *  also plays the role of an <code>XMLEvent</code> for pull parsing
+ *  Also plays the role of an `XMLEvent` for pull parsing.
  *
  *  @author  Burak Emir
  *  @version 1.0, 26/04/2005
@@ -62,14 +60,14 @@ class Document extends NodeSeq with pull.XMLEvent with Serializable {
   /** An indication of the standalone status of the document, either
    *  true or false. This property is derived from the optional standalone
    *  document declaration in the XML declaration at the beginning of the
-   *  document entity, and has no value (<code>None</code>) if there is no
+   *  document entity, and has no value (`None`) if there is no
    *  standalone document declaration.
    */
   var standAlone: Option[Boolean] = _
 
   /** A string representing the XML version of the document. This
    *  property is derived from the XML declaration optionally present at
-   *  the beginning of the document entity, and has no value (<code>None</code>)
+   *  the beginning of the document entity, and has no value (`None`)
    *  if there is no XML declaration.
    */
   var version: Option[String] = _

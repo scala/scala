@@ -6,16 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.actors
 
 import java.util.{Timer, TimerTask}
 
 /**
- * Extends the [[scala.actors.Reactor]]
- *    trait with methods to reply to the sender of a message.
- *    Sending a message to a <code>ReplyReactor</code> implicitly
- *    passes a reference to the sender together with the message.
+ * Extends the [[scala.actors.Reactor]] trait with methods to reply to the
+ * sender of a message.
+ *
+ * Sending a message to a `ReplyReactor` implicitly passes a reference to
+ * the sender together with the message.
  *
  *  @author Philipp Haller
  *
@@ -43,7 +43,7 @@ trait ReplyReactor extends Reactor[Any] with ReactorCanReply {
   protected[actors] def sender: OutputChannel[Any] = senders.head
 
   /**
-   * Replies with <code>msg</code> to the sender.
+   * Replies with `msg` to the sender.
    */
   protected[actors] def reply(msg: Any) {
     sender ! msg

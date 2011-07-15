@@ -8,9 +8,9 @@
 
 package scala
 
-/** The package object <code>scala.math</code> contains methods for performing basic numeric
- *  operations such as the elementary exponential, logarithm, square root, and
- *  trigonometric functions.
+/** The package object `scala.math` contains methods for performing basic
+ *  numeric operations such as the elementary exponential, logarithm,
+ *  square root, and trigonometric functions.
  */
 
 package object math extends MathCommon {

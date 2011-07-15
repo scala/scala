@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 
-
-/** The class <code>Comment</code> implements an XML node for comments.
+/** The class `Comment` implements an XML node for comments.
  *
  * @author Burak Emir
  * @param text the text contained in this node, may not contain "--"

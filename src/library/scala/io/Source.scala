@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.io
 
 import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile }
@@ -22,7 +20,7 @@ import java.net.{ URI, URL }
 object Source {
   val DefaultBufSize = 2048
 
-  /** Creates a <code>Source</code> from System.in.
+  /** Creates a `Source` from System.in.
    */
   def stdin = fromInputStream(System.in)
 
@@ -59,7 +57,7 @@ object Source {
   def fromFile(name: String, enc: String): BufferedSource =
     fromFile(name)(Codec(enc))
 
-  /** creates <code>Source</code> from file with given file: URI
+  /** creates `ource` from file with given file `URI`.
    */
   def fromFile(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)
@@ -83,9 +81,9 @@ object Source {
   def fromFile(file: JFile, enc: String, bufferSize: Int): BufferedSource =
     fromFile(file, bufferSize)(Codec(enc))
 
-  /** Creates Source from <code>file</code>, using given character encoding,
-   *  setting its description to filename. Input is buffered in a buffer of
-   *  size <code>bufferSize</code>.
+  /** Creates Source from `file`, using given character encoding, setting
+   *  its description to filename. Input is buffered in a buffer of size
+   *  `bufferSize`.
    */
   def fromFile(file: JFile, bufferSize: Int)(implicit codec: Codec): BufferedSource = {
     val inputStream = new FileInputStream(file)
@@ -98,12 +96,12 @@ object Source {
     )(codec) withDescription ("file:" + file.getAbsolutePath)
   }
 
-  /** Create a <code>Source</code> from array of bytes, decoding
+  /** Create a `Source` from array of bytes, decoding
    *  the bytes according to codec.
    *
    *  @param bytes ...
    *  @param enc   ...
-   *  @return      the created <code>Source</code> instance.
+   *  @return      the created `Source` instance.
    */
   def fromBytes(bytes: Array[Byte])(implicit codec: Codec): Source =
     fromString(new String(bytes, codec.name))
@@ -111,13 +109,13 @@ object Source {
   def fromBytes(bytes: Array[Byte], enc: String): Source =
     fromBytes(bytes)(Codec(enc))
 
-  /** Create a <code>Source</code> from array of bytes, assuming
+  /** Create a `Source` from array of bytes, assuming
    *  one byte per character (ISO-8859-1 encoding.)
    */
   def fromRawBytes(bytes: Array[Byte]): Source =
     fromString(new String(bytes, Codec.ISO8859.name))
 
-  /** creates <code>Source</code> from file with given file: URI
+  /** creates `Source` from file with given file: URI
    */
   def fromURI(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)
@@ -171,9 +169,9 @@ object Source {
     createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
 }
 
-/** The class <code>Source</code> implements an iterable representation
- *  of source data.  Calling method <code>reset</code> returns an identical,
- *  resetted source, where possible.
+/** The class `Source` implements an iterable representation of source data.
+ *  Calling method `reset` returns an identical, resetted source, where
+ *  possible.
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -233,7 +231,7 @@ abstract class Source extends Iterator[Char] {
    */
   def getLines(): Iterator[String] = new LineIterator()
 
-  /** Returns <code>true</code> if this source has more characters.
+  /** Returns `'''true'''` if this source has more characters.
    */
   def hasNext = iter.hasNext
 
@@ -284,11 +282,11 @@ abstract class Source extends Iterator[Char] {
   def ch = positioner.ch
   def pos = positioner.pos
 
-  /** Reports an error message to the output stream <code>out</code>.
+  /** Reports an error message to the output stream `out`.
    *
    *  @param pos the source position (line/column)
    *  @param msg the error message to report
-   *  @param out PrintStream to use (optional: defaults to <code>Console.err</code>)
+   *  @param out PrintStream to use (optional: defaults to `Console.err`)
    */
   def reportError(
     pos: Int,
@@ -315,7 +313,7 @@ abstract class Source extends Iterator[Char] {
   /**
    *  @param pos the source position (line/column)
    *  @param msg the warning message to report
-   *  @param out PrintStream to use (optional: defaults to <code>Console.out</code>)
+   *  @param out PrintStream to use (optional: defaults to `Console.out`)
    */
   def reportWarning(
     pos: Int,

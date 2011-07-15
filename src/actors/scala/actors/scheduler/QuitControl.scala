@@ -11,8 +11,8 @@ package scala.actors.scheduler
 import scala.util.control.ControlThrowable
 
 /**
- * The <code>QuitControl</code> class is used to manage control flow
- * of certain schedulers.
+ * The `QuitControl` class is used to manage control flow of certain
+ * schedulers.
  *
  * @author Philipp Haller
  */

@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
-/** A <code>SyncChannel</code> allows one to exchange data
- *  synchronously between a reader and a writer thread.
- *  The writer thread is blocked until the data to be written
- *  has been read by a corresponding reader thread.
+/** A `SyncChannel` allows one to exchange data synchronously between
+ *  a reader and a writer thread. The writer thread is blocked until the
+ *  data to be written has been read by a corresponding reader thread.
  *
  *  @author  Philipp Haller
  *  @version 2.0, 04/17/2008

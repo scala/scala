@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 
 import Utility.sbToString
 
-
-/** The class <code>NamespaceBinding</code> represents namespace bindings
+/** The class `NamespaceBinding` represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null
  *  prefix. the absent namespace is represented with the null uri. Neither
  *  prefix nor uri may be empty, which is not checked.

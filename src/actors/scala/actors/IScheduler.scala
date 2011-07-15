@@ -10,12 +10,10 @@
 package scala.actors
 
 /**
- * A common interface
- * for all schedulers used to execute actor tasks.
+ * A common interface for all schedulers used to execute actor tasks.
  *
- * Subclasses of <code>Actor</code> that override its
- * <code>scheduler</code> member must provide
- * an <code>IScheduler</code> implementation.
+ * Subclasses of `Actor` that override its `scheduler` member must provide
+ * an `IScheduler` implementation.
  *
  * @author Philipp Haller
  */
@@ -27,7 +25,7 @@ trait IScheduler {
    */
   def execute(fun: => Unit): Unit
 
-  /** Submits a <code>Runnable</code> for execution.
+  /** Submits a `Runnable` for execution.
    *
    *  @param  task  the task to be executed
    */

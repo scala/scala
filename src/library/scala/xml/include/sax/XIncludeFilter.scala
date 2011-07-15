@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package include.sax
 
@@ -19,57 +18,40 @@ import java.io.{ InputStream, BufferedInputStream, InputStreamReader, IOExceptio
 import java.util.Stack
 import java.net.{ URL, MalformedURLException }
 
-/**
- * <p>
- *  This is a SAX filter which resolves all XInclude include elements
- *  before passing them on to the client application. Currently this
- *  class has the following known deviation from the XInclude specification:
- * </p>
- *  <ol>
- *   <li>XPointer is not supported.</li>
- *  </ol>
+/** This is a SAX filter which resolves all XInclude include elements before
+ *  passing them on to the client application. Currently this class has the
+ *  following known deviation from the XInclude specification:
  *
- *  <p>
- *    Furthermore, I would definitely use a new instance of this class
- *    for each document you want to process. I doubt it can be used
- *    successfully on multiple documents. Furthermore, I can virtually
- *    guarantee that this class is not thread safe. You have been
- *    warned.
- *  </p>
+ *  1. XPointer is not supported.
  *
- *  <p>
- *    Since this class is not designed to be subclassed, and since
- *    I have not yet considered how that might affect the methods
- *    herein or what other protected methods might be needed to support
- *    subclasses, I have declared this class final. I may remove this
- *    restriction later, though the use-case for subclassing is weak.
- *    This class is designed to have its functionality extended via a
- *    a horizontal chain of filters, not a
- *    vertical hierarchy of sub and superclasses.
- *  </p>
+ *  Furthermore, I would definitely use a new instance of this class for each
+ *  document you want to process. I doubt it can be used successfully on
+ *  multiple documents. Furthermore, I can virtually guarantee that this
+ *  class is not thread safe. You have been warned.
  *
- *  <p>
- *    To use this class:
- *  </p>
- *  <ol>
- *   <li>Construct an <code>XIncludeFilter</code> object with a known base URL</li>
- *   <li>Pass the <code>XMLReader</code> object from which the raw document will
- *       be read to the <code>setParent()</code> method of this object. </li>
- *   <li>Pass your own <code>ContentHandler</code> object to the
- *       <code>setContentHandler()</code> method of this object. This is the
- *       object which will receive events from the parsed and included
- *       document.
- *   </li>
- *   <li>Optional: if you wish to receive comments, set your own
- *       <code>LexicalHandler</code> object as the value of this object's
- *       http://xml.org/sax/properties/lexical-handler property.
- *       Also make sure your <code>LexicalHandler</code> asks this object
- *       for the status of each comment using <code>insideIncludeElement</code>
- *       before doing anything with the comment.
- *   </li>
- *   <li>Pass the URL of the document to read to this object's
- *       <code>parse()</code> method</li>
- *  </ol>
+ *  Since this class is not designed to be subclassed, and since I have not
+ *  yet considered how that might affect the methods herein or what other
+ *  protected methods might be needed to support subclasses, I have declared
+ *  this class final. I may remove this restriction later, though the use-case
+ *  for subclassing is weak. This class is designed to have its functionality
+ *  extended via a horizontal chain of filters, not a vertical hierarchy of
+ *  sub and superclasses.
+ *
+ *  To use this class:
+ *
+ *  - Construct an `XIncludeFilter` object with a known base URL
+ *  - Pass the `XMLReader` object from which the raw document will be read to
+ *    the `setParent()` method of this object.
+ *  - Pass your own `ContentHandler` object to the `setContentHandler()`
+ *    method of this object. This is the object which will receive events
+ *    from the parsed and included document.
+ *  - Optional: if you wish to receive comments, set your own `LexicalHandler`
+ *    object as the value of this object's
+ *    `http://xml.org/sax/properties/lexical-handler` property.
+ *    Also make sure your `LexicalHandler` asks this object for the status of
+ *    each comment using `insideIncludeElement` before doing anything with the
+ *    comment.
+ *  - Pass the URL of the document to read to this object's `parse()` method
  *
  *  e.g.
  *  {{{
@@ -79,6 +61,7 @@ import java.net.{ URL, MalformedURLException }
  *  includer parse args(i)
  *  }}}
  *  translated from Elliotte Rusty Harold's Java source.
+ *
  * @author Burak Emir
  */
 class XIncludeFilter extends XMLFilterImpl {
@@ -119,15 +102,12 @@ class XIncludeFilter extends XMLFilterImpl {
   // necessary to throw away contents of non-empty XInclude elements
   private var level = 0
 
-  /**
-    * <p>
-    * This utility method returns true if and only if this reader is
-    * currently inside a non-empty include element. (This is <strong>
-    * not</strong> the same as being inside the node set which replaces
-    * the include element.) This is primarily needed for comments
-    * inside include elements. It must be checked by the actual
-    * LexicalHandler to see whether a comment is passed or not.
-    * </p>
+  /** This utility method returns true if and only if this reader is
+    * currently inside a non-empty include element. (This is '''not''' the
+    * same as being inside the node set which replaces the include element.)
+    * This is primarily needed for comments inside include elements.
+    * It must be checked by the actual `LexicalHandler` to see whether
+    * a comment is passed or not.
     *
     * @return boolean
     */

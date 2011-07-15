@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -78,10 +76,10 @@ class ListSet[A] extends Set[A]
   override def size: Int = 0
   override def isEmpty: Boolean = true;
 
-  /** Checks if this set contains element <code>elem</code>.
+  /** Checks if this set contains element `elem`.
    *
    *  @param  elem    the element to check for membership.
-   *  @return true, iff <code>elem</code> is contained in this set.
+   *  @return `'''true'''`, iff `elem` is contained in this set.
    */
   def contains(elem: A): Boolean = false
 
@@ -158,10 +156,10 @@ class ListSet[A] extends Set[A]
      */
     override def isEmpty: Boolean = false
 
-    /** Checks if this set contains element <code>elem</code>.
+    /** Checks if this set contains element `elem`.
      *
      *  @param  elem    the element to check for membership.
-     *  @return true, iff <code>elem</code> is contained in this set.
+     *  @return `'''true'''`, iff `elem` is contained in this set.
      */
     override def contains(e: A) = containsInternal(this, e)
     @tailrec private def containsInternal(n: ListSet[A], e: A): Boolean =
@@ -171,8 +169,7 @@ class ListSet[A] extends Set[A]
      */
     override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    /** <code>-</code> can be used to remove a single element from
-     *  a set.
+    /** `-` can be used to remove a single element from a set.
      */
     override def -(e: A): ListSet[A] = if (e == elem) self else {
       val tail = self - e; new tail.Node(elem)

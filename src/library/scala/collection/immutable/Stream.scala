@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -166,8 +164,8 @@ self =>
    *  `f` to each element of this stream.
    *
    *  @param f function to apply to each element.
-   *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
-   *           sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
+   *  @return  `f(a,,0,,), ..., f(a,,n,,)` if this
+   *           sequence is `a,,0,,, ..., a,,n,,`.
    */
   override final def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     if (isStreamBuilder(bf)) asThat(
@@ -198,8 +196,8 @@ self =>
    *
    *  @param f  the function to apply on each element.
    *  @param bf $bfinfo
-   *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
-   *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
+   *  @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if
+   *           this stream is `[a,,0,,, ..., a,,n,,]`.
    */
   override final def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[B]
@@ -224,10 +222,10 @@ self =>
     else super.flatMap(f)(bf)
 
   /** Returns all the elements of this stream that satisfy the
-   *  predicate <code>p</code>. The order of the elements is preserved.
+   *  predicate `p`. The order of the elements is preserved.
    *
    *  @param p the predicate used to filter the stream.
-   *  @return the elements of this stream satisfying <code>p</code>.
+   *  @return the elements of this stream satisfying `p`.
    */
   override def filter(p: A => Boolean): Stream[A] = {
     // optimization: drop leading prefix of elems for which f returns false
@@ -276,7 +274,7 @@ self =>
   /** A lazier Iterator than LinearSeqLike's. */
   override def iterator: Iterator[A] = new StreamIterator(self)
 
-  /** Apply the given function <code>f</code> to each element of this linear sequence
+  /** Apply the given function `f` to each element of this linear sequence
    *  (while respecting the order of the elements).
    *
    *  @param f the treatment to apply to each element.
@@ -319,22 +317,24 @@ self =>
   }
 
   /** Returns all the elements of this stream that satisfy the
-   *  predicate <code>p</code>. The order of the elements is preserved.
+   *  predicate `p`. The order of the elements is preserved.
    *
    *  @param p the predicate used to filter the stream.
-   *  @return the elements of this stream satisfying <code>p</code>.
+   *  @return the elements of this stream satisfying `p`.
    */
   override def partition(p: A => Boolean): (Stream[A], Stream[A]) = (filter(p(_)), filterNot(p(_)))
 
   /** Returns a stream formed from this stream and the specified stream
-   *  <code>that</code> by associating each element of the former with
-   *  the element at the same position in the latter.
-   *  If one of the two streams is longer than the other, its remaining elements are ignored.
+   *  `that` by associating each element of the former with the element at
+   *  the same position in the latter.
    *
-   *  @return     <code>Stream({a<sub>0</sub>,b<sub>0</sub>}, ...,
-   *              {a<sub>min(m,n)</sub>,b<sub>min(m,n)</sub>)}</code> when
-   *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
-   *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
+   *  If one of the two streams is longer than the other, its remaining
+   *  elements are ignored.
+   *
+   *  @return     `Stream({a,,0,,,b,,0,,}, ...,
+   *              {a,,min(m,n),,,b,,min(m,n),,)}` when
+   *              `Stream(a,,0,,, ..., a,,m,,)
+   *              zip Stream(b,,0,,, ..., b,,n,,)` is invoked.
    */
   override final def zip[A1 >: A, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
@@ -351,11 +351,11 @@ self =>
     this.zip[A1, Int, That](Stream.from(0))
 
   /** Write all defined elements of this iterable into given string builder.
-   *  The written text begins with the string <code>start</code> and is finished by the string
-   *  <code>end</code>. Inside, the string representations of defined elements (w.r.t.
-   *  the method <code>toString()</code>) are separated by the string
-   *  <code>sep</code>. The method will not force evaluation of undefined elements. A
-   *  tail of such elements will be represented by a "?" instead.
+   *  The written text begins with the string `start` and is finished by the string
+   *  `end`. Inside, the string representations of defined elements (w.r.t.
+   *  the method `toString()`) are separated by the string `sep`. The method will
+   *  not force evaluation of undefined elements. A tail of such elements will be
+   * represented by a `"?"` instead.
    */
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     def loop(pre: String, these: Stream[A]) {
@@ -381,11 +381,11 @@ self =>
 
   override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
 
-  /** Returns the <code>n</code> first elements of this stream, or else the whole
-   *  stream, if it has less than <code>n</code> elements.
+  /** Returns the `n` first elements of this stream, or else the whole
+   *  stream, if it has less than `n` elements.
    *
    *  @param n the number of elements to take.
-   *  @return the <code>n</code> first elements of this stream.
+   *  @return the `n` first elements of this stream.
    */
   override def take(n: Int): Stream[A] =
     if (n <= 0 || isEmpty) Stream.empty
@@ -409,14 +409,14 @@ self =>
   }
 
   /** The stream without its last element.
-   *  @throws Predef.UnsupportedOperationException if the stream is empty.
+   *  @throws `Predef.UnsupportedOperationException` if the stream is empty.
    */
   override def init: Stream[A] =
     if (isEmpty) super.init
     else if (tail.isEmpty) Stream.Empty
     else cons(head, tail.init)
 
-  /** Returns the rightmost <code>n</code> elements from this iterable.
+  /** Returns the rightmost `n` elements from this iterable.
    *  @param n the number of elements to take
    */
   override def takeRight(n: Int): Stream[A] = {
@@ -432,7 +432,7 @@ self =>
   // there's nothing we can do about dropRight, so we just keep the definition in LinearSeq
 
   /** Returns the longest prefix of this stream whose elements satisfy
-   *  the predicate <code>p</code>.
+   *  the predicate `p`.
    *
    *  @param p the test predicate.
    */
@@ -441,7 +441,7 @@ self =>
     else Stream.Empty
 
   /** Returns the longest suffix of this iterable whose first element
-   *  does not satisfy the predicate <code>p</code>.
+   *  does not satisfy the predicate `p`.
    *
    *  @param p the test predicate.
    */
@@ -458,8 +458,8 @@ self =>
     if (isEmpty) this
     else cons(head, tail.filter(head !=).distinct)
 
-  /** Returns a new sequence of given length containing the elements of this sequence followed by zero
-   *  or more occurrences of given elements.
+  /** Returns a new sequence of given length containing the elements of this
+   *  sequence followed by zero or more occurrences of given elements.
    */
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     def loop(len: Int, these: Stream[A]): Stream[B] =
@@ -534,8 +534,7 @@ final class StreamIterator[+A](self: Stream[A]) extends Iterator[A] {
 }
 
 /**
- * The object <code>Stream</code> provides helper functions
- * to manipulate streams.
+ * The object `Stream` provides helper functions to manipulate streams.
  *
  * @author Martin Odersky, Matthias Zenger
  * @version 1.1 08/08/03
@@ -544,7 +543,7 @@ final class StreamIterator[+A](self: Stream[A]) extends Iterator[A] {
 object Stream extends SeqFactory[Stream] {
 
   /** The factory for streams.
-   *  @note Methods such as map/flatMap will not invoke the Builder factory,
+   *  @note Methods such as map/flatMap will not invoke the `Builder` factory,
    *        but will return a new stream directly, to preserve laziness.
    *        The new stream is then cast to the factory's result type.
    *        This means that every CanBuildFrom that takes a
@@ -650,28 +649,27 @@ object Stream extends SeqFactory[Stream] {
     iterate(start)(f) take len
 
   /**
-   * Create an infinite stream starting at <code>start</code>
-   * and incrementing by step <code>step</code>
+   * Create an infinite stream starting at `start` and incrementing by
+   * step `step`.
    *
    * @param start the start value of the stream
    * @param step the increment value of the stream
-   * @return the stream starting at value <code>start</code>.
+   * @return the stream starting at value `start`.
    */
   def from(start: Int, step: Int): Stream[Int] =
     cons(start, from(start+step, step))
 
   /**
-   * Create an infinite stream starting at <code>start</code>
-   * and incrementing by 1.
+   * Create an infinite stream starting at `start` and incrementing by `1`.
    *
    * @param start the start value of the stream
-   * @return the stream starting at value <code>start</code>.
+   * @return the stream starting at value `start`.
    */
   def from(start: Int): Stream[Int] = from(start, 1)
 
   /**
-   * Create an infinite stream containing the given element expression (which is computed for each
-   * occurrence)
+   * Create an infinite stream containing the given element expression (which
+   * is computed for each occurrence).
    *
    * @param elem the element composing the resulting stream
    * @return the stream containing an infinite number of elem
@@ -720,15 +718,14 @@ object Stream extends SeqFactory[Stream] {
   def concat[A](xs: Iterator[Stream[A]]): Stream[A] = xs.toStream.flatten //(conforms[Stream[A], scala.collection.Traversable[A]])
 
   /**
-   * Create a stream with element values
-   * <code>v<sub>n+1</sub> = step(v<sub>n</sub>)</code>
-   * where <code>v<sub>0</sub> = start</code>
-   * and elements are in the range between <code>start</code> (inclusive)
-   * and <code>end</code> (exclusive)
+   * Create a stream with element values `v,,n+1,, = step(v,,n,,)` where
+   * `v,,0,, = start` and elements are in the range between `start` (inclusive)
+   * and `end` (exclusive).
+   *
    * @param start the start value of the stream
    * @param end the end value of the stream
    * @param step the increment function of the stream, must be monotonically increasing or decreasing
-   * @return the stream starting at value <code>start</code>.
+   * @return the stream starting at value `start`.
    */
   @deprecated("use `iterate` instead.", "2.8.0")
   def range(start: Int, end: Int, step: Int => Int): Stream[Int] =

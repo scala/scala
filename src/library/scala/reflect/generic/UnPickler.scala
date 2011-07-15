@@ -147,9 +147,9 @@ abstract class UnPickler {
       result
     }
 
-    /** If entry at <code>i</code> is undefined, define it by performing
-     *  operation <code>op</code> with <code>readIndex at start of i'th
-     *  entry. Restore <code>readIndex</code> afterwards.
+    /** If entry at `i` is undefined, define it by performing operation `op`
+     *  with `readIndex` at start of `i`'th entry. Restore `readIndex`
+     *  afterwards.
      */
     protected def at[T <: AnyRef](i: Int, op: () => T): T = {
       var r = entries(i)

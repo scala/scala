@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 import java.util.concurrent.{ExecutorService, Callable, TimeUnit}
 
-/** The <code>ThreadPoolRunner</code> trait uses
- *  a <code>java.util.concurrent.ExecutorService</code>
+/** The `ThreadPoolRunner` trait uses a `java.util.concurrent.ExecutorService`
  *  to run submitted tasks.
  *
  *  @author Philipp Haller

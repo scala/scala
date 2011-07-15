@@ -61,7 +61,7 @@ package generic
     writeByte((x & 0x7f).toInt)
   }
 
-  /** Write a natural number <code>x</code> at position <code>pos</code>.
+  /** Write a natural number `x` at position `pos`.
    *  If number is more than one byte, shift rest of array to make space.
    *
    *  @param pos ...
@@ -150,9 +150,8 @@ package generic
     result.toIndexedSeq
   }
 
-  /** Perform operation <code>op</code> until the condition
-   *  <code>readIndex == end</code> is satisfied.
-   *  Concatenate results into a list.
+  /** Perform operation `op` until the condition `readIndex == end` is
+   *  satisfied. Concatenate results into a list.
    *
    *  @param end ...
    *  @param op  ...
@@ -161,8 +160,8 @@ package generic
   def until[T](end: Int, op: () => T): List[T] =
     if (readIndex == end) List() else op() :: until(end, op);
 
-  /** Perform operation <code>op</code> the number of
-   *  times specified.  Concatenate the results into a list.
+  /** Perform operation `op` the number of times specified.
+   *  Concatenate the results into a list.
    */
   def times[T](n: Int, op: ()=>T): List[T] =
     if (n == 0) List() else op() :: times(n-1, op)

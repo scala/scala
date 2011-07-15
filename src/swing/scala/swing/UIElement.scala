@@ -44,8 +44,8 @@ object UIElement {
    * Returns a wrapper for a given Java Swing peer. If there is a
    * compatible wrapper in use, this method will return it.
    *
-   * `wrap` methods in companion objects of subclasses of UIElement have the
-   * same behavior, except that they return more specific wrappers.
+   * `wrap` methods in companion objects of subclasses of `UIElement` have
+   * the  same behavior, except that they return more specific wrappers.
    */
   def wrap(c: java.awt.Component): UIElement = {
     val w = cachedWrapper[UIElement](c)
@@ -57,7 +57,7 @@ object UIElement {
 /**
  * The base trait of all user interface elements. Subclasses belong to one
  * of two groups: top-level elements such as windows and dialogs, or
- * <code>Component</code>s.
+ * `Component`s.
  *
  * @note [Java Swing] This trait does not have an exact counterpart in
  * Java Swing. The peer is of type java.awt.Component since this is the
@@ -78,19 +78,19 @@ trait UIElement extends Proxy with LazyPublisher {
   UIElement.cache(this)
 
   def foreground: Color = peer.getForeground
-  def foreground_=(c: Color) = peer.setForeground(c)
+  def foreground_=(c: Color) = peer setForeground c
   def background: Color = peer.getBackground
-  def background_=(c: Color) = peer.setBackground(c)
+  def background_=(c: Color) = peer setBackground c
 
   def minimumSize = peer.getMinimumSize
-  def minimumSize_=(x: Dimension) = peer.setMinimumSize(x)
+  def minimumSize_=(x: Dimension) = peer setMinimumSize x
   def maximumSize = peer.getMaximumSize
-  def maximumSize_=(x: Dimension) = peer.setMaximumSize(x)
+  def maximumSize_=(x: Dimension) = peer setMaximumSize x
   def preferredSize = peer.getPreferredSize
-  def preferredSize_=(x: Dimension) = peer.setPreferredSize(x)
+  def preferredSize_=(x: Dimension) = peer setPreferredSize x
 
   def font: Font = peer.getFont
-  def font_=(f: Font) = peer.setFont(f)
+  def font_=(f: Font) = peer setFont f
 
   def locationOnScreen = peer.getLocationOnScreen
   def location = peer.getLocation

@@ -12,8 +12,7 @@ package scala.actors
 import java.lang.Thread
 
 /**
- * Provides a dynamic actor proxy for normal
- * Java threads.
+ * Provides a dynamic actor proxy for normal Java threads.
  *
  * @author Philipp Haller
  */
@@ -22,7 +21,7 @@ private[actors] class ActorProxy(t: Thread, override final val scheduler: ISched
   def act() {}
 
   /**
-   * Terminates with exit reason <code>'normal</code>.
+   * Terminates with exit reason `'normal`.
    */
   override def exit(): Nothing = {
     shouldExit = false

@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 
 import Utility.sbToString
@@ -20,10 +19,12 @@ import scala.collection.Iterator
 object MetaData {
 
   /**
-   * appends all attributes from new_tail to attribs, without attempting to detect
-   * or remove duplicates. The method guarantees that all attributes from attribs come before
-   * the attributes in new_tail, but does not guarantee to preserve the relative order of attribs.
-   * Duplicates can be removed with normalize.
+   * appends all attributes from new_tail to attribs, without attempting to
+   * detect or remove duplicates. The method guarantees that all attributes
+   * from attribs come before the attributes in new_tail, but does not
+   * guarantee to preserve the relative order of attribs.
+   *
+   * Duplicates can be removed with `normalize`.
    */
   @tailrec
   def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
@@ -60,16 +61,17 @@ object MetaData {
 
 }
 
-/** <p>
- *    This class represents an attribute and at the same time a linked list of attributes.
- *    Every instance of this class is either an instance of UnprefixedAttribute <code>key,value</code>
- *    or an instance of PrefixedAttribute <code>namespace_prefix,key,value</code> or Null, the empty
- *    attribute list. Namespace URIs are obtained by using the namespace scope of the element owning
- *    this attribute (see <code>getNamespace</code>)
- * </p>
+/** This class represents an attribute and at the same time a linked list of
+ *  attributes. Every instance of this class is either
+ *  - an instance of `UnprefixedAttribute key,value` or
+ *  - an instance of `PrefixedAttribute namespace_prefix,key,value` or
+ *  - `Null, the empty attribute list.
  *
- * Copyright 2008 Google Inc. All Rights Reserved.
- * @author Burak Emir <bqe@google.com>
+ *  Namespace URIs are obtained by using the namespace scope of the element
+ *  owning this attribute (see `getNamespace`).
+ *
+ *  Copyright 2008 Google Inc. All Rights Reserved.
+ *  @author Burak Emir <bqe@google.com>
  */
 abstract class MetaData extends Iterable[MetaData] with Equality with Serializable {
   /** Updates this MetaData with the MetaData given as argument. All attributes that occur in updates
@@ -91,7 +93,7 @@ abstract class MetaData extends Iterable[MetaData] with Equality with Serializab
    */
   def apply(key: String): Seq[Node]
 
-  /** convenience method, same as <code>apply(namespace, owner.scope, key)</code>.
+  /** convenience method, same as `apply(namespace, owner.scope, key)`.
    *
    *  @param namespace_uri namespace uri of key
    *  @param owner the element owning this attribute list
@@ -207,7 +209,7 @@ abstract class MetaData extends Iterable[MetaData] with Equality with Serializab
 
   /**
    *  @param scope ...
-   *  @return      <code>true</code> iff ...
+   *  @return      `'''true'''` iff ...
    */
   def wellformed(scope: NamespaceBinding): Boolean
 

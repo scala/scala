@@ -63,11 +63,9 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
    */
   def get(key: A): Option[B] = None
 
-  /** This method allows one to create a new map with an
-   *  additional mapping from <code>key</code>
-   *  to <code>value</code>. If the map contains already a
-   *  mapping for <code>key</code>, it will be overridden by this
-   *  function.
+  /** This method allows one to create a new map with an additional mapping
+   *  from `key` to `value`. If the map contains already a mapping for `key`,
+   *  it will be overridden by this function.
    *
    *  @param key  the key element of the updated entry.
    *  @param value the value element of the updated entry.
@@ -103,7 +101,7 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
   @bridge def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): ListMap[A, B1] =
     ++(xs: GenTraversableOnce[(A, B1)])
 
-  /** This creates a new mapping without the given <code>key</code>.
+  /** This creates a new mapping without the given `key`.
    *  If the map does not contain a mapping for the given key, the
    *  method returns the same map.
    *
@@ -157,7 +155,7 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
 
     @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 = if (k == cur.key) cur.value else apply0(cur.next, k)
 
-    /** Checks if this map maps <code>key</code> to a value and return the
+    /** Checks if this map maps `key` to a value and return the
      *  value if it exists.
      *
      *  @param  key the key of the mapping of interest
@@ -181,7 +179,7 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
       new m.Node[B2](k, v)
     }
 
-    /** Creates a new mapping without the given <code>key</code>.
+    /** Creates a new mapping without the given `key`.
      *  If the map does not contain a mapping for the given key, the
      *  method returns the same map.
      *

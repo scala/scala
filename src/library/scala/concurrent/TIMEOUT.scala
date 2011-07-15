@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 /**
  * The message sent to a message box when the period specified in
- * <code>receiveWithin</code> expires.
+ * `receiveWithin` expires.
  *
  * @author  Martin Odersky
  * @version 1.0, 10/03/2003

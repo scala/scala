@@ -56,9 +56,8 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   override def readOnly = self.readOnly
 
-  /** Appends a number of elements provided by a traversable object
-   *  via its <code>foreach</code> method. The identity of the
-   *  buffer is returned.
+  /** Appends a number of elements provided by a traversable object via its
+   *  `foreach` method. The identity of the buffer is returned.
    *
    *  @param iter  the traversable object.
    *  @return      the updated buffer.

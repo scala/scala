@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.actors
 
 /**
- * This class is used by our efficient message queue
- * implementation.
+ * This class is used by our efficient message queue implementation.
  *
  * @author Philipp Haller
  */
@@ -28,10 +26,9 @@ private[actors] class MQueueElement[Msg >: Null](val msg: Msg, val session: Outp
 }
 
 /**
- * The class <code>MessageQueue</code> provides an efficient
- * implementation of a message queue specialized for this actor
- * library. Classes in this package are supposed to be the only
- * clients of this class.
+ * The class `MessageQueue` provides an efficient implementation of a message
+ * queue specialized for this actor library. Classes in this package are
+ * supposed to be the only clients of this class.
  *
  * @author Philipp Haller
  */
@@ -107,7 +104,7 @@ private[actors] class MQueue[Msg >: Null](protected val label: String) {
     acc
   }
 
-  /** Returns the n-th message that satisfies the predicate <code>p</code>
+  /** Returns the n-th message that satisfies the predicate `p`
    *  without removing it.
    */
   def get(n: Int)(p: Msg => Boolean): Option[Msg] = {
@@ -129,8 +126,8 @@ private[actors] class MQueue[Msg >: Null](protected val label: String) {
   def remove(n: Int)(p: (Msg, OutputChannel[Any]) => Boolean): Option[(Msg, OutputChannel[Any])] =
     removeInternal(n)(p) map (x => (x.msg, x.session))
 
-  /** Extracts the first message that satisfies the predicate <code>p</code>
-   *  or <code>null</code> if <code>p</code> fails for all of them.
+  /** Extracts the first message that satisfies the predicate `p`
+   *  or `'''null'''` if `p` fails for all of them.
    */
   def extractFirst(p: (Msg, OutputChannel[Any]) => Boolean): MQueueElement[Msg] =
     removeInternal(0)(p) orNull

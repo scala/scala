@@ -172,7 +172,8 @@ object JavaConverters {
    * returned.
    *
    * @param b The `Buffer` to be converted.
-   * @return An object with an `asJava` method that returns a Java <code>List</code> view of the argument.
+   * @return An object with an `asJava` method that returns a Java `List` view
+   *         of the argument.
    */
   implicit def bufferAsJavaListConverter[A](b : mutable.Buffer[A]): AsJava[ju.List[A]] =
     new AsJava(bufferAsJavaList(b))
@@ -234,8 +235,9 @@ object JavaConverters {
    * call of `asSet(java.util.Set)` then the original Java `Set` will be
    * returned.
    *
-   * @param s The <code>Set</code> to be converted.
-   * @return An object with an `asJava` method that returns a Java <code>Set</code> view of the argument.
+   * @param s The `Set` to be converted.
+   * @return An object with an `asJava` method that returns a Java `Set` view
+   *         of the argument.
    */
   implicit def mutableSetAsJavaSetConverter[A](s : mutable.Set[A]): AsJava[ju.Set[A]] =
     new AsJava(mutableSetAsJavaSet(s))
@@ -252,8 +254,8 @@ object JavaConverters {
    * the Scala interface and vice versa.
    *
    * If the Scala `Set` was previously obtained from an implicit or explicit
-   * call of <code>asSet(java.util.Set)</code> then the original Java `Set`
-   * will be returned.
+   * call of `asSet(java.util.Set)` then the original Java `Set` will be
+   * returned.
    *
    * @param s The `Set` to be converted.
    * @return An object with an `asJava` method that returns a Java `Set` view
@@ -299,7 +301,7 @@ object JavaConverters {
    * explicit call of `asMap(java.util.Dictionary)` then the original
    * Java `Dictionary` will be returned.
    *
-   * @param m The <code>Map</code> to be converted.
+   * @param m The `Map` to be converted.
    * @return An object with an `asJavaDictionary` method that returns a
    *         Java `Dictionary` view of the argument.
    */
@@ -386,17 +388,20 @@ object JavaConverters {
     new AsScala(enumerationAsScalaIterator(i))
 
   /**
-   * Adds an `asScala` method that implicitly converts a Java <code>Iterable</code> to a Scala <code>Iterable</code>.
-   * The returned Scala <code>Iterable</code> is backed by the provided Java
-   * <code>Iterable</code> and any side-effects of using it via the Scala interface will
-   * be visible via the Java interface and vice versa.
-   * <p>
-   * If the Java <code>Iterable</code> was previously obtained from an implicit or
-   * explicit call of <code>asIterable(scala.collection.Iterable)</code> then the original
-   * Scala <code>Iterable</code> will be returned.
+   * Adds an `asScala` method that implicitly converts a Java `Iterable` to
+   * a Scala `Iterable`.
    *
-   * @param i The <code>Iterable</code> to be converted.
-   * @return An object with an `asScala` method that returns a Scala <code>Iterable</code> view of the argument.
+   * The returned Scala `Iterable` is backed by the provided Java `Iterable`
+   * and any side-effects of using it via the Scala interface will be visible
+   * via the Java interface and vice versa.
+   *
+   * If the Java `Iterable` was previously obtained from an implicit or
+   * explicit call of `asIterable(scala.collection.Iterable)` then the original
+   * Scala `Iterable` will be returned.
+   *
+   * @param i The `Iterable` to be converted.
+   * @return An object with an `asScala` method that returns a Scala `Iterable`
+   *         view of the argument.
    */
   implicit def iterableAsScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] =
     new AsScala(iterableAsScalaIterable(i))
@@ -405,14 +410,16 @@ object JavaConverters {
   def asScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] = iterableAsScalaIterableConverter(i)
 
   /**
-   * Adds an `asScala` method that implicitly converts a Java <code>Collection</code> to an Scala <code>Iterable</code>.
-   * <p>
-   * If the Java <code>Collection</code> was previously obtained from an implicit or
-   * explicit call of <code>asCollection(scala.collection.SizedIterable)</code> then
-   * the original Scala <code>SizedIterable</code> will be returned.
+   * Adds an `asScala` method that implicitly converts a Java `Collection` to
+   * an Scala `Iterable`.
    *
-   * @param i The <code>Collection</code> to be converted.
-   * @return An object with an `asScala` method that returns a Scala <code>SizedIterable</code> view of the argument.
+   * If the Java `Collection` was previously obtained from an implicit or
+   * explicit call of `asCollection(scala.collection.SizedIterable)` then
+   * the original Scala `SizedIterable` will be returned.
+   *
+   * @param i The `Collection` to be converted.
+   * @return An object with an `asScala` method that returns a Scala
+   *        `SizedIterable` view of the argument.
    */
   implicit def collectionAsScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] =
     new AsScala(collectionAsScalaIterable(i))

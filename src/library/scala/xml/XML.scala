@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.xml
 
 import parsing.NoBindingFactoryAdapter
@@ -30,9 +28,9 @@ object Source
 }
 import Source._
 
-/** The object <code>XML</code> provides constants, and functions to load
+/** The object `XML` provides constants, and functions to load
  *  and save XML elements. Use this when data binding is not desired, i.e.
- *  when XML is handled using <code>Symbol</code> nodes.
+ *  when XML is handled using `Symbol` nodes.
  *
  *  @author  Burak Emir
  *  @version 1.0, 25/04/2005
@@ -89,7 +87,7 @@ object XML extends XMLLoader[Elem]
    *
    *  @param w        the writer
    *  @param node     the xml node we want to write
-   *  @param enc      the string to be used in <code>xmlDecl</code>
+   *  @param enc      the string to be used in `xmlDecl`
    *  @param xmlDecl  if true, write xml declaration
    *  @param doctype  if not null, write doctype declaration
    */

@@ -98,7 +98,7 @@ object Utility extends AnyRef with parsing.TokenTests {
   import Escapes.{ escMap, unescMap }
 
   /**
-   * Appends escaped string to <code>s</code>.
+   * Appends escaped string to `s`.
    *
    * @param text ...
    * @param s    ...
@@ -134,8 +134,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    *
    * @param ref ...
    * @param s   ...
-   * @return    <code>null</code> if <code>ref</code> was not a predefined
-   *            entity.
+   * @return    `'''null'''` if `ref` was not a predefined entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
     (unescMap get ref) map (s append _) orNull
@@ -271,7 +270,7 @@ object Utility extends AnyRef with parsing.TokenTests {
   def appendQuoted(s: String): String = sbToString(appendQuoted(s, _))
 
   /**
-   * Appends &quot;s&quot; if string <code>s</code> does not contain &quot;,
+   * Appends &quot;s&quot; if string `s` does not contain &quot;,
    * &apos;s&apos; otherwise.
    *
    * @param s  ...

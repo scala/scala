@@ -6,17 +6,14 @@
 **                                                                      **
 \*                                                                      */
 
-
-
 package scala.runtime
-
 
 final class StringAdd(self: Any) {
 
   def +(other: String) = String.valueOf(self) + other
 
-  /** Returns string formatted according to given <code>format</code> string.
-   *  Format strings are as for <code>String.format</code>
+  /** Returns string formatted according to given `format` string.
+   *  Format strings are as for `String.format`
    *  (@see java.lang.String.format).
    */
   def formatted(fmtstr: String): String = fmtstr format self

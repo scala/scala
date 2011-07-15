@@ -363,7 +363,7 @@ final class ListBuffer[A]
 
   /** Returns a clone of this buffer.
    *
-   *  @return a <code>ListBuffer</code> with the same elements.
+   *  @return a `ListBuffer` with the same elements.
    */
   override def clone(): ListBuffer[A] = (new ListBuffer[A]) ++= this
 

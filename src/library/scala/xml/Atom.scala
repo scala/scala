@@ -6,14 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 
-/** The class <code>Atom</code> provides an XML node for text (PCDATA).
+/** The class `Atom` provides an XML node for text (`PCDATA`).
  *  It is used in both non-bound and bound XML representations.
  *
  *  @author Burak Emir
- *  @param text the text contained in this node, may not be <code>null</code>.
+ *  @param text the text contained in this node, may not be `'''null'''`.
  */
 class Atom[+A](val data: A) extends SpecialNode with Serializable
 {

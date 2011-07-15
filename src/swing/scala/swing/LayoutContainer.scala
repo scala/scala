@@ -6,22 +6,19 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import javax.swing.JComponent
 import scala.collection.mutable
 
-/** <p>
- *    A container that associates layout constraints of member type
- *    <code>Constraints</code> with its children. See <code>GridBagPanel</code>
- *    for an example container with custom constraints.
- *  </p>
+/** A container that associates layout constraints of member type
+ *  `Constraints` with its children.
+ *
+ *  See `GridBagPanel` for an example container with custom constraints.
  *
  *  @note [Java Swing] In scala.swing, panels and layout managers are
- *  combined into subclasses of this base class. This approach allows for typed
- *  component constraints.
+ *  combined into subclasses of this base class. This approach allows for
+ *  typed component constraints.
  */
 trait LayoutContainer extends Container.Wrapper {
   /**

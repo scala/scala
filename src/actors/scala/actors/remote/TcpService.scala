@@ -77,7 +77,7 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
 
   /**
    * Sends a byte array to another node on the network.
-   * If the node is not yet up, up to <code>TcpService.BufSize</code>
+   * If the node is not yet up, up to `TcpService.BufSize`
    * messages are buffered.
    */
   def send(node: Node, data: Array[Byte]): Unit = synchronized {

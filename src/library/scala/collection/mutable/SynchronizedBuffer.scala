@@ -85,7 +85,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Appends a number of elements provided by a traversable object
-   *  via its <code>foreach</code> method.
+   *  via its `foreach` method.
    *
    *  @param xs the traversable object.
    */
@@ -103,8 +103,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   }
 
   /** Prepends a number of elements provided by a traversable object
-   *  via its <code>foreach</code> method. The identity of the
-   *  buffer is returned.
+   *  via its `foreach` method. The identity of the buffer is returned.
    *
    *  @param xs the traversable object.
    */
@@ -117,8 +116,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
   override def prepend(elems: A*): Unit = prependAll(elems)
 
   /** Prepends a number of elements provided by a traversable object
-   *  via its <code>foreach</code> method. The identity of the
-   *  buffer is returned.
+   *  via its `foreach` method. The identity of the buffer is returned.
    *
    *  @param xs the traversable object.
    */
@@ -126,9 +124,9 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
     super.prependAll(xs)
   }
 
-  /** Inserts new elements at the index <code>n</code>. Opposed to method
-   *  <code>update</code>, this method will not replace an element with a
-   *  one. Instead, it will insert the new elements at index <code>n</code>.
+  /** Inserts new elements at the index `n`. Opposed to method `update`,
+   *  this method will not replace an element with a one.
+   *  Instead, it will insert the new elements at index `n`.
    *
    *  @param n      the index where a new element will be inserted.
    *  @param elems  the new elements to insert.
@@ -137,9 +135,9 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
     super.insertAll(n, elems)
   }
 
-  /** Inserts new elements at the index <code>n</code>. Opposed to method
-   *  <code>update</code>, this method will not replace an element with a
-   *  one. Instead, it will insert a new element at index <code>n</code>.
+  /** Inserts new elements at the index `n`. Opposed to method `update`,
+   *  this method will not replace an element with a one.
+   *  Instead, it will insert a new element at index `n`.
    *
    *  @param n     the index where a new element will be inserted.
    *  @param xs    the traversable object providing all elements to insert.
@@ -148,8 +146,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
      super.insertAll(n, xs)
   }
 
-  /** Replace element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
+  /** Replace element at index `n` with the new element `newelem`.
    *
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
@@ -178,13 +175,13 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
 
   /** Return a clone of this buffer.
    *
-   *  @return an <code>ArrayBuffer</code> with the same elements.
+   *  @return an `ArrayBuffer` with the same elements.
    */
   override def clone(): Self = synchronized {
     super.clone()
   }
 
-  /** The hashCode method always yields an error, since it is not
+  /** The `hashCode` method always yields an error, since it is not
    *  safe to use buffers as keys in hash tables.
    *
    *  @return never.

@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import java.io.File
@@ -16,9 +14,9 @@ import javax.swing.filechooser._
 
 object FileChooser {
   /**
-   * The result of a file dialog. The precise meaning of the <code>Approve</code>
-   * result depends on the specific dialog type. Could be "save" or "open" for
-   * example.
+   * The result of a file dialog. The precise meaning of the `Approve`
+   * result depends on the specific dialog type. Could be `"save"` or
+   * `"open"` for instance.
    */
   object Result extends Enumeration {
     val Cancel = Value(JFileChooser.CANCEL_OPTION)
@@ -39,7 +37,7 @@ object FileChooser {
 /**
  * Used to open file dialogs.
  *
- * @see javax.swing.JFileChooser
+ * @see [[javax.swing.JFileChooser]]
  */
 class FileChooser(dir: File) {
   import FileChooser._
@@ -66,7 +64,7 @@ class FileChooser(dir: File) {
   def fileSelectionMode: SelectionMode.Value = SelectionMode(peer.getFileSelectionMode)
   def fileSelectionMode_=(s: SelectionMode.Value) { peer.setFileSelectionMode(s.id) }
   def fileFilter: FileFilter = peer.getFileFilter
-  def fileFilter_=(f: FileFilter) { peer.setFileFilter(f) }
+  def fileFilter_=(f: FileFilter) { peer setFileFilter f }
 
   def selectedFile: File = peer.getSelectedFile
   def selectedFile_=(file: File) { peer.setSelectedFile(file) }

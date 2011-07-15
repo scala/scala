@@ -6,15 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.parsing.input
 
 import java.io.BufferedReader
 import scala.collection.immutable.PagedSeq
 
-/** An object to create a StreamReader from a <code>java.io.Reader</code>.
+/** An object to create a `StreamReader` from a `java.io.Reader`.
  *
- * @param in the <code>java.io.Reader</code> that provides the underlying
+ * @param in the `java.io.Reader` that provides the underlying
  *           stream of characters for this Reader.
  *
  * @author Miles Sabin
@@ -38,7 +37,7 @@ object StreamReader {
  *  when a StreamReader are used for input.
  *
  *  If you need to match regexes spanning several lines you should consider
- *  class <code>PagedSeqReader</code> instead.
+ *  class `PagedSeqReader` instead.
  *
  *  @author Miles Sabin
  *  @author Martin Odersky

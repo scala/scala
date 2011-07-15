@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 import java.util.concurrent.{ThreadPoolExecutor, LinkedBlockingQueue, TimeUnit}
 
-/** The <code>TaskRunners</code> object...
+/** The `TaskRunners` object...
  *
  *  @author Philipp Haller
  */

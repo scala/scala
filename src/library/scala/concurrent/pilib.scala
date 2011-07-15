@@ -36,7 +36,7 @@ object pilib {
 
   /**
    * Run several processes in parallel using the following syntax:
-   * <code>spawn &lt; p<sub>1</sub> | ... | p<sub>n</sub> &gt;</code>
+   * `spawn < p,,1,, | ... | p,,n,, >`.
    */
   abstract class Spawn {
     def <(p: => Unit): Spawn

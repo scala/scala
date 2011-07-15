@@ -38,7 +38,7 @@ object Scheduler extends DelegatingScheduler {
     sched
   }
 
-  /* Only <code>ForkJoinScheduler</code> implements this method.
+  /* Only `ForkJoinScheduler` implements this method.
    */
   @deprecated("snapshot will be removed", "2.8.0")
   def snapshot() {
@@ -48,7 +48,7 @@ object Scheduler extends DelegatingScheduler {
       sys.error("scheduler does not implement snapshot")
   }
 
-  /* Only <code>ForkJoinScheduler</code> implements this method.
+  /* Only `ForkJoinScheduler` implements this method.
    */
   @deprecated("restart will be removed", "2.8.0")
   def restart() {

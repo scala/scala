@@ -1,3 +1,11 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
 package scala.reflect
 package generic
 
@@ -571,19 +579,19 @@ import Flags._
   }
 
   /** A synthetic term holding an arbitrary type.  Not to be confused with
-    * with TypTree, the trait for trees that are only used for type trees.
-    * TypeTree's are inserted in several places, but most notably in
-    * <code>RefCheck</code>, where the arbitrary type trees are all replaced by
+    * `TypTree`, the trait for trees that are only used for type trees.
+    * `TypeTree`'s are inserted in several places, but most notably in
+    * `RefCheck`, where the arbitrary type trees are all replaced by
     * TypeTree's. */
   abstract class AbsTypeTree extends TypTree {
     override def symbol = if (tpe == null) null else tpe.typeSymbol
     override def isEmpty = (tpe eq null) || tpe == NoType
   }
 
-  /** A tree that has an annotation attached to it. Only used for annotated types and
-   *  annotation ascriptions, annotations on definitions are stored in the Modifiers.
-   *  Eliminated by typechecker (typedAnnotated), the annotations are then stored in
-   *  an AnnotatedType.
+  /** A tree that has an annotation attached to it. Only used for annotated
+   *  types and annotation ascriptions, annotations on definitions are stored
+   *  in the Modifiers. Eliminated by typechecker (`typedAnnotated`), the
+   *  annotations are then stored in an `AnnotatedType`.
    */
   case class Annotated(annot: Tree, arg: Tree) extends Tree
 

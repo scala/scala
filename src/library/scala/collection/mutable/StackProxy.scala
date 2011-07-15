@@ -1,16 +1,13 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
-
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
@@ -25,9 +22,9 @@ trait StackProxy[A] extends Stack[A] with Proxy {
 
   def self: Stack[A]
 
-  /** Access element number <code>n</code>.
+  /** Access element number `n`.
    *
-   *  @return  the element at index <code>n</code>.
+   *  @return  the element at index `n`.
    */
   override def apply(n: Int): A = self.apply(n)
 
@@ -52,9 +49,9 @@ trait StackProxy[A] extends Stack[A] with Proxy {
 
   override def pushAll(xs: TraversableOnce[A]): this.type = { self pushAll xs; this }
 
-  /** Pushes all elements provided by an <code>Iterable</code> object
-   *  on top of the stack. The elements are pushed in the order they
-   *  are given out by the iterator.
+  /** Pushes all elements provided by an `Iterable` object on top of the
+   *  stack. The elements are pushed in the order they are given out by
+   *  the iterator.
    *
    *  @param  iter        an iterable object
    */

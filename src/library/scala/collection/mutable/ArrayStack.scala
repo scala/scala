@@ -6,14 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
 import generic._
-
-
 
 /** Factory object for the `ArrayStack` class.
  *
@@ -88,8 +84,7 @@ extends Seq[T]
 
   override def companion = ArrayStack
 
-  /** Replace element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
+  /** Replace element at index `n` with the new element `newelem`.
    *
    *  This is a constant time operation.
    *

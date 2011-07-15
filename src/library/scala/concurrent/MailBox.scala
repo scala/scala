@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 /** This class ...
@@ -83,7 +81,7 @@ class MailBox extends AnyRef with ListQueueCreator {
 
   /**
   * Block until there is a message in the mailbox for which the processor
-  * <code>f</code> is defined.
+  * `f` is defined.
   */
   def receive[A](f: PartialFunction[Message, A]): A = {
     val r = new Receiver(f)
@@ -93,7 +91,7 @@ class MailBox extends AnyRef with ListQueueCreator {
 
   /**
   * Block until there is a message in the mailbox for which the processor
-  * <code>f</code> is defined or the timeout is over.
+  * `f` is defined or the timeout is over.
   */
   def receiveWithin[A](msec: Long)(f: PartialFunction[Message, A]): A = {
     val r = new Receiver(f)

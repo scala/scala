@@ -32,23 +32,25 @@ case class SingleType(pre: Type, sym: Symbol) extends Type
   * clazz.this */
 case class ThisType(clazz: Symbol) extends Type
 
-/** This type is required by the compiler and <b>should not be used in client code</b>.
+/** This type is required by the compiler and '''should not be used in client code'''.
   * clazz.super[superClazz]
-  * <code>tpe[args1, ..., argsn]</code> */
+  * `tpe[args,,1,,, ..., args,,n,,]`
+  */
 case class AppliedType(tpe: Type, args: List[Type]) extends Type
 
-/** This type is required by the compiler and <b>should not be used in client code</b>.
+/** This type is required by the compiler and '''should not be used in client code'''.
   * [a &lt;: lo &gt;: hi] */
 case class TypeBounds(lo: Type, hi: Type) extends Type
 
-/** This type is required by the compiler and <b>should not be used in client code</b>.
-  * <code>(formals1 ... formalsn) restpe</code> */
+/** This type is required by the compiler and '''should not be used in client code'''.
+  * `(formals,,1,, ... formals,,n,,) restpe`
+  */
 case class MethodType(formals: List[Symbol], restpe: Type) extends Type
 
-/** This type is required by the compiler and <b>should not be used in client code</b>. */
+/** This type is required by the compiler and '''should not be used in client code'''. */
 case class NullaryMethodType(resultType: Type) extends Type
 
-/** This type is required by the compiler and <b>should not be used in client code</b>. */
+/** This type is required by the compiler and '''should not be used in client code'''. */
 case class PolyType(typeParams: List[Symbol], typeBounds: List[(Type, Type)], resultType: Type) extends Type
 
 /* Standard pattern match:

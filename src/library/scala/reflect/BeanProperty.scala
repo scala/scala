@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
 
 import annotation.target._
@@ -23,9 +21,8 @@ import annotation.target._
  *    def setStatus(s: String) { this.status = s }
  *    def getStatus: String = this.status
  *  }}}
- *  For fields of type `Boolean`, if you need a getter
- *  named <code>isStatus</code>, use the
- *  `scala.reflect.BooleanBeanProperty` annotation instead.
+ *  For fields of type `Boolean`, if you need a getter named `isStatus`,
+ *  use the `scala.reflect.BooleanBeanProperty` annotation instead.
  */
 @field
 class BeanProperty extends annotation.StaticAnnotation

@@ -6,16 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 
-/** This singleton object contains the apply and unapplySeq methods for convenient construction and
- *  deconstruction. It is possible to deconstruct any Node instance (that is not a SpecialNode or
- *  a Group) using the syntax
- * <code> case Elem(prefix, label, attribs, scope, child @ _*) => ... </code>
+/** This singleton object contains the apply and unapplySeq methods for
+ *  convenient construction and deconstruction. It is possible to deconstruct
+ *  any `Node` instance (that is not a `SpecialNode` or a `Group`) using the
+ *  syntax `case Elem(prefix, label, attribs, scope, child @ _*) => ...`
  *
- * Copyright 2008 Google Inc. All Rights Reserved.
- * @author Burak Emir <bqe@google.com>
+ *  Copyright 2008 Google Inc. All Rights Reserved.
+ *
+ *  @author Burak Emir <bqe@google.com>
  */
 object Elem {
   def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
@@ -27,7 +27,7 @@ object Elem {
   }
 }
 
-/** The case class <code>Elem</code> extends the <code>Node</code> class,
+/** The case class `Elem` extends the `Node` class,
  *  providing an immutable data object representing an XML element.
  *
  *  @param prefix namespace prefix (may be null, but not the empty string)
@@ -83,8 +83,7 @@ extends Node with Serializable
     child: Seq[Node] = this.child.toSeq
   ): Elem = Elem(prefix, label, attributes, scope, child: _*)
 
-  /** Returns concatenation of <code>text(n)</code> for each child
-   *  <code>n</code>.
+  /** Returns concatenation of `text(n)` for each child `n`.
    */
   override def text = child map (_.text) mkString
 }

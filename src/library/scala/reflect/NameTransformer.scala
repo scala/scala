@@ -130,10 +130,10 @@ object NameTransformer {
               unicode = true
             } catch {
               case _:NumberFormatException =>
-                /* <code>hex</code> did not decode to a hexadecimal number, so
+                /* `hex` did not decode to a hexadecimal number, so
                  * do nothing. */
             }
-                       }
+          }
         }
       }
       /* If we didn't see an opcode or encoded Unicode glyph, and the

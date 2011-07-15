@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.actors.scheduler
 
 import scala.actors.threadpool.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue,
@@ -15,13 +14,11 @@ import scala.actors.{Debug, IScheduler}
 import scala.concurrent.ManagedBlocker
 
 /**
- * This scheduler class uses a <code>ThreadPoolExecutor</code>
- * to execute <code>Actor</code>s.
+ * This scheduler class uses a `ThreadPoolExecutor` to execute `Actor`s.
  *
  * The scheduler attempts to shut down itself and the underlying
- * <code>ThreadPoolExecutor</code> only if <code>terminate</code>
- * is set to true. Otherwise, the scheduler must be shut down
- * explicitly.
+ * `ThreadPoolExecutor` only if `terminate` is set to true. Otherwise,
+ * the scheduler must be shut down explicitly.
  *
  * @author Philipp Haller
  */
@@ -176,7 +173,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
   }
 
   /** Resumes the execution of the scheduler if it was previously
-   *  suspended using <code>snapshot</code>.
+   *  suspended using `snapshot`.
    */
   def restart() {
     synchronized {

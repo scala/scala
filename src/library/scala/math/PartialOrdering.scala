@@ -6,34 +6,24 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.math
 
-/** <p>
- *    A trait for representing partial orderings.  It is important to
- *    distinguish between a type that has a partial order and a representation
- *    of partial ordering on some type.  This trait is for representing the
- *    latter.
- *  </p>
- *  <p>
- *    A <a href="http://en.wikipedia.org/wiki/Partial_order">partial ordering</a>
- *    is a binary relation on a type <code>T</code> that is also an equivalence
- *    relation on values of type <code>T</code>.  This relation is exposed as
- *    the <code>lteq</code> method of the <code>PartialOrdering</code> trait.
- *    This relation must be:
- *  </p>
- *  <ul>
- *    <li>reflexive: <code>lteq(x, x) == true</code>, for any <code>x</code> of
- *      type <code>T</code>.</li>
- *    <li>anti-symmetric: <code>lteq(x, y) == true</code> and
- *      <code>lteq(y, x) == true</code> then <code>equiv(x, y)</code>, for any
- *      <code>x</code> and <code>y</code> of type <code>T</code>.</li>
- *    <li>transitive: if <code>lteq(x, y) == true</code> and
- *      <code>lteq(y, z) == true</code> then <code>lteq(x, z) == true</code>,
- *      for any <code>x</code>, <code>y</code>, and <code>z</code> of type
- *      <code>T</code>.</li>
- * </ul>
+/** A trait for representing partial orderings.  It is important to
+ *  distinguish between a type that has a partial order and a representation
+ *  of partial ordering on some type.  This trait is for representing the
+ *  latter.
+ *
+ *  A [[http://en.wikipedia.org/wiki/Partial_order partial ordering]] is a
+ *  binary relation on a type `T` that is also an equivalence relation on
+ *  values of type `T`.  This relation is exposed as the `lteq` method of
+ *  the `PartialOrdering` trait. This relation must be:
+ *
+ *  - reflexive: `lteq(x, x) == '''true'''`, for any `x` of type `T`.
+ *  - anti-symmetric: `lteq(x, y) == '''true'''` and `lteq(y, x) == true`
+ *    then `equiv(x, y)`, for any `x` and `y` of type `T`.
+ *  - transitive: if `lteq(x, y) == '''true'''` and
+ *    `lteq(y, z) == '''true'''` then `lteq(x, z) == '''true'''`,
+ *    for any `x`, `y`, and `z` of type `T`.
  *
  *  @author  Geoffrey Washburn
  *  @version 1.0, 2008-04-0-3
@@ -43,37 +33,34 @@ package scala.math
 trait PartialOrdering[T] extends Equiv[T] {
   outer =>
 
-  /** Result of comparing <code>x</code> with operand <code>y</code>.
-   *  Returns <code>None</code> if operands are not comparable.
-   *  If operands are comparable, returns <code>Some(r)</code> where
-   *  <code>r &lt; 0</code>    iff    <code>x &lt; y</code>
-   *  <code>r == 0</code>   iff    <code>x == y</code>
-   *  <code>r &gt; 0</code>    iff    <code>x &gt; y</code>
+  /** Result of comparing `x` with operand `y`.
+   *  Returns `None` if operands are not comparable.
+   *  If operands are comparable, returns `Some(r)` where
+   *  - `r < 0`    iff    `x < y`
+   *  - `r == 0`   iff    `x == y`
+   *  - `r > 0`    iff    `x > y`
    */
   def tryCompare(x: T, y: T): Option[Int]
 
-  /** Returns <code>true</code> iff <code>x</code> comes before
-   *  <code>y</code> in the ordering.
+  /** Returns `'''true'''` iff `x` comes before `y` in the ordering.
    */
   def lteq(x: T, y: T): Boolean
 
-  /** Returns <code>true</code> iff <code>y</code> comes before
-   *  <code>x</code> in the ordering.
+  /** Returns `'''true'''` iff `y` comes before `x` in the ordering.
    */
   def gteq(x: T, y: T): Boolean = lteq(y, x)
 
-  /** Returns <code>true</code> iff <code>x</code> comes before
-   *  <code>y</code> in the ordering and is not the same as <code>y</code>.
+  /** Returns `'''true'''` iff `x` comes before `y` in the ordering
+   *  and is not the same as `y`.
    */
   def lt(x: T, y: T): Boolean = lteq(x, y) && !equiv(x, y)
 
-  /** Returns <code>true</code> iff <code>y</code> comes before
-   *  <code>x</code> in the ordering and is not the same as <code>x</code>.
+  /** Returns `'''true'''` iff `y` comes before `x` in the ordering
+   *  and is not the same as `x`.
    */
   def gt(x: T, y: T): Boolean = gteq(x, y) && !equiv(x, y)
 
-  /** Returns <code>true</code> iff <code>x</code> is equivalent to
-   *  <code>y</code> in the ordering.
+  /** Returns `'''true'''` iff `x` is equivalent to `y` in the ordering.
    */
   def equiv(x: T, y: T): Boolean = lteq(x,y) && lteq(y,x)
 

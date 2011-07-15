@@ -6,39 +6,33 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package include
 
 /**
- * <p>
- * <code>XIncludeException</code> is the generic superclass
- * for all checked exceptions that may be thrown as a result
- * of a violation of XInclude's rules.
- * </p>
- * <p>
- * Constructs an <code>XIncludeException</code> with the specified detail
- * message. The error message string <code>message</code> can later be
- * retrieved by the <code>{@link java.lang.Throwable#getMessage}</code>
- * method of class <code>java.lang.Throwable</code>.
- * </p>
+ * `XIncludeException` is the generic superclass for all checked exceptions
+ * that may be thrown as a result of a violation of XInclude's rules.
+ *
+ * Constructs an `XIncludeException` with the specified detail message.
+ * The error message string `message` can later be retrieved by the
+ * `{@link java.lang.Throwable#getMessage}`
+ * method of class `java.lang.Throwable`.
  *
  * @param   message   the detail message.
  */
 class XIncludeException(message: String) extends Exception(message) {
 
   /**
-   * uses <code>null</code> as its error detail message.
+   * uses `'''null'''` as its error detail message.
    */
   def this() = this(null)
 
   private var rootCause: Throwable = null
 
   /**
-   * When an <code>IOException</code>, <code>MalformedURLException</code>
-   * or other generic exception is thrown while processing an XML document
-   * for XIncludes, it is customarily replaced
-   * by some form of <code>XIncludeException</code>.
+   * When an `IOException`, `MalformedURLException` or other generic
+   * exception is thrown while processing an XML document for XIncludes,
+   * it is customarily replaced by some form of `XIncludeException`.
    * This method allows you to store the original exception.
    *
    * @param   nestedException   the underlying exception which
@@ -49,15 +43,14 @@ class XIncludeException(message: String) extends Exception(message) {
   }
 
   /**
-   * When an <code>IOException</code>, <code>MalformedURLException</code>
-   * or other generic exception is thrown while processing an XML document
-   * for XIncludes, it is customarily replaced
-   * by some form of <code>XIncludeException</code>.
+   * When an `IOException`, `MalformedURLException` or other generic
+   * exception is thrown while processing an XML document for XIncludes,
+   * it is customarily replaced by some form of `XIncludeException`.
    * This method allows you to retrieve the original exception.
-   * It returns null if no such exception caused this <code>XIncludeException</code>.
+   * It returns null if no such exception caused this `XIncludeException`.
    *
    * @return Throwable   the underlying exception which caused the
-   *                     <code>XIncludeException</code> to be thrown
+   *                     `XIncludeException` to be thrown
    */
   def getRootCause(): Throwable = this.rootCause
 

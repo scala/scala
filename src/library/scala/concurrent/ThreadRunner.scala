@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
 import java.lang.Thread
 
-/** The <code>ThreadRunner</code> trait...
+/** The `ThreadRunner` trait...
  *
  *  @author Philipp Haller
  */

@@ -6,10 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.text
-
 
 import java.io.Writer
 
@@ -34,8 +31,8 @@ abstract class Document {
   def :/:(hd: String): Document = hd :: DocBreak :: this
 
   /**
-   * Format this document on <code>writer</code> and try to set line
-   * breaks so that the result fits in <code>width</code> columns.
+   * Format this document on `writer` and try to set line
+   * breaks so that the result fits in `width` columns.
    *
    * @param width  ...
    * @param writer ...
