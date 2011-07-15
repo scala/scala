@@ -508,7 +508,9 @@ self =>
 
 }
 
-/** See #3273 and test case run/bug3273 for motivation. */
+/** A specialized, extra-lazy implementation of a stream iterator, so it can
+ *  iterate as lazily as it traverses the tail.
+ */
 final class StreamIterator[+A](self: Stream[A]) extends Iterator[A] {
   // A call-by-need cell.
   class LazyCell(st: => Stream[A]) {
