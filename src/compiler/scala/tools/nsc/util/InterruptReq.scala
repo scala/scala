@@ -1,8 +1,6 @@
 package scala.tools.nsc
 package util
 
-import interactive.AskException
-
 /** A class of work items to be used in interrupt requests.
  */
 abstract class InterruptReq {
