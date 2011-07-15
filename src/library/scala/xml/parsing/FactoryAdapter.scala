@@ -49,7 +49,7 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
   // abstract methods
 
   /** Tests if an XML element contains text.
-   * @return true if element named <code>localName</code> contains text.
+   * @return true if element named `localName` contains text.
    */
   def nodeContainsText(localName: String): Boolean // abstract
 

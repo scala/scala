@@ -312,30 +312,31 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   }
 
   /**
-   * A combined transform and filter function. Returns an IntMap such that for each (key, value) mapping
-   * in this map, if f(key, value) == None the map contains no mapping for key, and if <code>f(key, value)
+   * A combined transform and filter function. Returns an `IntMap` such that
+   * for each `(key, value)` mapping in this map, if `f(key, value) == None`
+   * the map contains no mapping for key, and if `f(key, value)`.
    *
    * @tparam S  The type of the values in the resulting `LongMap`.
    * @param f   The transforming function.
    * @return    The modified map.
    */
   def modifyOrRemove[S](f : (Int, T) => Option[S]) : IntMap[S] = this match {
-      case IntMap.Bin(prefix, mask, left, right) => {
-        val newleft = left.modifyOrRemove(f);
-        val newright = right.modifyOrRemove(f);
-        if ((left eq newleft) && (right eq newright)) this.asInstanceOf[IntMap[S]];
-        else bin(prefix, mask, newleft, newright)
-      }
+    case IntMap.Bin(prefix, mask, left, right) =>
+      val newleft = left.modifyOrRemove(f)
+      val newright = right.modifyOrRemove(f)
+      if ((left eq newleft) && (right eq newright)) this.asInstanceOf[IntMap[S]]
+      else bin(prefix, mask, newleft, newright)
     case IntMap.Tip(key, value) => f(key, value) match {
-      case None => IntMap.Nil;
+      case None =>
+        IntMap.Nil
       case Some(value2) =>
         //hack to preserve sharing
         if (value.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef]) this.asInstanceOf[IntMap[S]]
-        else IntMap.Tip(key, value2);
+        else IntMap.Tip(key, value2)
       }
-    case IntMap.Nil => IntMap.Nil;
+    case IntMap.Nil =>
+      IntMap.Nil
   }
-
 
   /**
    * Forms a union map with that map, using the combining function to resolve conflicts.
@@ -367,9 +368,9 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   }
 
   /**
-   * Forms the intersection of these two maps with a combining function. The resulting map is
-   * a map that has only keys present in both maps and has values produced from the original mappings
-   * by combining them with f.
+   * Forms the intersection of these two maps with a combining function. The
+   * resulting map is a map that has only keys present in both maps and has
+   * values produced from the original mappings by combining them with `f`.
    *
    * @tparam S      The type of values in `that`.
    * @tparam R      The type of values in the resulting `LongMap`.
@@ -380,29 +381,29 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   def intersectionWith[S, R](that : IntMap[S], f : (Int, T, S) => R) : IntMap[R] = (this, that) match {
     case (IntMap.Bin(p1, m1, l1, r1), that@IntMap.Bin(p2, m2, l2, r2)) =>
       if (shorter(m1, m2)) {
-        if (!hasMatch(p2, p1, m1)) IntMap.Nil;
-        else if (zero(p2, m1)) l1.intersectionWith(that, f);
-        else r1.intersectionWith(that, f);
+        if (!hasMatch(p2, p1, m1)) IntMap.Nil
+        else if (zero(p2, m1)) l1.intersectionWith(that, f)
+        else r1.intersectionWith(that, f)
       } else if (m1 == m2) bin(p1, m1, l1.intersectionWith(l2, f), r1.intersectionWith(r2, f));
         else {
-        if (!hasMatch(p1, p2, m2)) IntMap.Nil;
-        else if (zero(p1, m2)) this.intersectionWith(l2, f);
-        else this.intersectionWith(r2, f);
+        if (!hasMatch(p1, p2, m2)) IntMap.Nil
+        else if (zero(p1, m2)) this.intersectionWith(l2, f)
+        else this.intersectionWith(r2, f)
       }
     case (IntMap.Tip(key, value), that) => that.get(key) match {
-      case None => IntMap.Nil;
-      case Some(value2) => IntMap.Tip(key, f(key, value, value2));
+      case None => IntMap.Nil
+      case Some(value2) => IntMap.Tip(key, f(key, value, value2))
     }
     case (_, IntMap.Tip(key, value)) => this.get(key) match {
-      case None => IntMap.Nil;
-      case Some(value2) => IntMap.Tip(key, f(key, value2, value));
+      case None => IntMap.Nil
+      case Some(value2) => IntMap.Tip(key, f(key, value2, value))
     }
-    case (_, _) => IntMap.Nil;
+    case (_, _) => IntMap.Nil
   }
 
   /**
-   * Left biased intersection. Returns the map that has all the same mappings as this but only for keys
-   * which are present in the other map.
+   * Left biased intersection. Returns the map that has all the same mappings
+   * as this but only for keys which are present in the other map.
    *
    * @tparam R      The type of values in `that`.
    * @param that    The map to intersect with.
@@ -417,8 +418,8 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
    * The entry with the lowest key value considered in unsigned order.
    */
   final def firstKey : Int = this match {
-    case Bin(_, _, l, r) => l.firstKey;
-    case Tip(k, v) => k;
+    case Bin(_, _, l, r) => l.firstKey
+    case Tip(k, v) => k
     case IntMap.Nil => sys.error("Empty set")
   }
 
@@ -426,8 +427,8 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
    * The entry with the highest key value considered in unsigned order.
    */
   final def lastKey : Int = this match {
-    case Bin(_, _, l, r) => r.lastKey;
-    case Tip(k, v) => k;
+    case Bin(_, _, l, r) => r.lastKey
+    case Tip(k, v) => k
     case IntMap.Nil => sys.error("Empty set")
   }
 }

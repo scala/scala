@@ -9,13 +9,10 @@
 
 package scala.xml
 
-/** <p>
- *    <code>SpecialNode</code> is a special XML node which
- *    represents either text (PCDATA), a comment, a PI, or an entity ref.
- *  </p>
- *  <p>
- *    SpecialNodes also play the role of XMLEvents for pull-parsing.
- *  </p>
+/** `SpecialNode` is a special XML node which represents either text
+ *  `(PCDATA)`, a comment, a `PI`, or an entity ref.
+ *
+ *  SpecialNodes also play the role of XMLEvents for pull-parsing.
  *
  *  @author Burak Emir
  */
@@ -30,6 +27,6 @@ abstract class SpecialNode extends Node with pull.XMLEvent
   /** always empty */
   final def child = Nil
 
-  /** append string representation to the given stringbuffer */
+  /** Append string representation to the given stringbuffer argument. */
   def buildString(sb: StringBuilder): StringBuilder
 }

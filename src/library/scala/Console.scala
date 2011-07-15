@@ -253,7 +253,7 @@ object Console {
    */
   def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
 
-  /** Read a full line from the default input.  Returns <code>null</code> if the end of the
+  /** Read a full line from the default input.  Returns `null` if the end of the
    * input stream has been reached.
    *
    * @return the string read from the terminal or null if the end of stream was reached.
@@ -397,14 +397,14 @@ object Console {
       s.toDouble
   }
 
-  /** Reads in some structured input (from the default input), specified by a format specifier.
-   *  See class <code>java.text.MessageFormat</code> for details of
+  /** Reads in some structured input (from the default input), specified by
+   *  a format specifier. See class `java.text.MessageFormat` for details of
    *  the format specification.
    *
    *  @param format the format of the input.
    *  @return a list of all extracted values.
-   *  @throws java.io.EOFException if the end of the
-   *  input stream has been reached.
+   *  @throws java.io.EOFException if the end of the input stream has been
+   *          reached.
    */
   def readf(format: String): List[Any] = {
     val s = readLine()
@@ -414,8 +414,9 @@ object Console {
       textComponents(new MessageFormat(format).parse(s))
   }
 
-  /** Reads in some structured input (from the default input), specified by a format specifier, returning
-   *  only the first value extracted, according to the format specification.
+  /** Reads in some structured input (from the default input), specified by
+   *  a format specifier, returning only the first value extracted, according
+   *  to the format specification.
    *
    *  @param format format string, as accepted by `readf`.
    *  @return The first value that was extracted from the input

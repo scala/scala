@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import generic._
@@ -20,7 +18,8 @@ import annotation.bridge
  *
  *  @define seqViewInfo
  *  $viewInfo
- *  All views for sequences are defined by re-interpreting the `length` and `apply` methods.
+ *  All views for sequences are defined by re-interpreting the `length` and
+ * `apply` methods.
  *
  *  @author Martin Odersky
  *  @version 2.8
@@ -142,5 +141,3 @@ trait SeqViewLike[+A,
 
   override def stringPrefix = "SeqView"
 }
-
-

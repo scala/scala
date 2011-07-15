@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package script
 
-
-/** Classes that mix in the <code>Scriptable</code> class allow
- *  messages to be sent to objects of that class.
+/** Classes that mix in the `Scriptable` class allow messages to be sent to
+ *  objects of that class.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 09/05/2004

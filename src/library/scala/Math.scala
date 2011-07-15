@@ -9,9 +9,9 @@
 
 package scala
 
-/** The object <code>Math</code> contains methods for performing basic numeric
- *  operations such as the elementary exponential, logarithm, square root, and
- *  trigonometric functions.
+/** The object `Math` contains methods for performing basic numeric
+ *  operations such as the elementary exponential, logarithm, square root,
+ *  and trigonometric functions.
  */
 @deprecated("use the scala.math package object instead.\n(Example package object usage: scala.math.Pi )", "2.8.0")
 object Math extends MathCommon {

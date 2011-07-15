@@ -1,6 +1,13 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2010-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
 package scala.collection
 package mutable
-
 
 /** A template trait for mutable maps that allow concurrent access.
  *
@@ -17,7 +24,8 @@ package mutable
  *  This is a base trait for all Scala concurrent map implementations. It
  *  provides all of the methods a `Map` does, with the difference that all the
  *  changes are atomic. It also describes methods specific to concurrent maps.
- *  Note: The concurrent maps do not accept `null` for keys or values.
+ *
+ *  '''Note''': The concurrent maps do not accept `'''null'''` for keys or values.
  *
  *  @define atomicop
  *  This is an atomic operation.
@@ -25,42 +33,49 @@ package mutable
 trait ConcurrentMap[A, B] extends Map[A, B] {
 
   /**
-   * Associates the given key with a given value, unless the key was already associated with some other value.
+   * Associates the given key with a given value, unless the key was already
+   * associated with some other value.
    *
    * $atomicop
    *
    * @param k   key with which the specified value is to be associated with
    * @param v   value to be associated with the specified key
-   * @return    `Some(oldvalue)` if there was a value `oldvalue` previously associated with the
-   *            specified key, or `None` if there was no mapping for the specified key
+   * @return    `Some(oldvalue)` if there was a value `oldvalue` previously
+   *            associated with the specified key, or `None` if there was no
+   *            mapping for the specified key
    */
   def putIfAbsent(k: A, v: B): Option[B]
 
   /**
-   * Removes the entry for the specified key if its currently mapped to the specified value.
+   * Removes the entry for the specified key if its currently mapped to the
+   * specified value.
    *
    * $atomicop
    *
    * @param k   key for which the entry should be removed
-   * @param v   value expected to be associated with the specified key if the removal is to take place
+   * @param v   value expected to be associated with the specified key if
+   *            the removal is to take place
    * @return    `true` if the removal took place, `false` otherwise
    */
   def remove(k: A, v: B): Boolean
 
   /**
-   * Replaces the entry for the given key only if it was previously mapped to a given value.
+   * Replaces the entry for the given key only if it was previously mapped to
+   * a given value.
    *
    * $atomicop
    *
    * @param k         key for which the entry should be replaced
-   * @param oldvalue  value expected to be associated with the specified key if replacing is to happen
+   * @param oldvalue  value expected to be associated with the specified key
+   *                  if replacing is to happen
    * @param newvalue  value to be associated with the specified key
    * @return          `true` if the entry was replaced, `false` otherwise
    */
   def replace(k: A, oldvalue: B, newvalue: B): Boolean
 
   /**
-   * Replaces the entry for the given key only if it was previously mapped to some value.
+   * Replaces the entry for the given key only if it was previously mapped
+   * to some value.
    *
    * $atomicop
    *

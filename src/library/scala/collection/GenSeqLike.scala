@@ -215,14 +215,13 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
 
   /** Tests whether this $coll contains the given sequence at a given index.
    *
-   * If the both the receiver object, <code>this</code> and
-   * the argument, <code>that</code> are infinite sequences
-   * this method may not terminate.
+   * '''Note''': If the both the receiver object `this` and the argument
+   * `that` are infinite sequences this method may not terminate.
    *
    * @param  that    the sequence to test
    * @param  offset  the index where the sequence is searched.
-   * @return `true` if the sequence `that` is contained in this $coll at index `offset`,
-   *         otherwise `false`.
+   * @return `true` if the sequence `that` is contained in this $coll at
+   *         index `offset`, otherwise `false`.
    */
   def startsWith[B](that: GenSeq[B], offset: Int): Boolean
 

@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.parsing.combinator
 
 import scala.util.parsing.combinator._
@@ -14,29 +13,34 @@ import scala.util.parsing.input.{ Reader, Position }
 import scala.collection.mutable
 
 /**
- *  `PackratParsers` is a component that extends the parser combinators provided by
- *  [[scala.util.parsing.combinator.Parsers]] with a memoization facility (``Packrat Parsing'').
+ *  `PackratParsers` is a component that extends the parser combinators
+ *  provided by [[scala.util.parsing.combinator.Parsers]] with a memoization
+ *  facility (''Packrat Parsing'').
  *
- *  Packrat Parsing is a technique for implementing backtracking, recursive-descent parsers, with the
- *  advantage that it guarantees unlimited lookahead and a linear parse time. Using this technique,
+ *  Packrat Parsing is a technique for implementing backtracking,
+ *  recursive-descent parsers, with the advantage that it guarantees
+ *  unlimited lookahead and a linear parse time. Using this technique,
  *  left recursive grammars can also be accepted.
  *
  *  Using `PackratParsers` is very similar to using `Parsers`:
- *   - any class/trait that extends `Parsers` (directly or through a subclass) can mix in `PackratParsers`.
- *     Example: `object MyGrammar extends StandardTokenParsers with PackratParsers `
- *   - each grammar production previously declared as a `def` without formal parameters
- *     becomes a `lazy val`, and its type is changed from `Parser[Elem]` to `PackratParser[Elem]`.
- *     So, for example, `def production: Parser[Int] = {...}`
- *     becomes `lazy val production: PackratParser[Int] = {...}`
- *   - Important: using `PackratParser`s is not an ``all or nothing'' decision.
+ *   - any class/trait that extends `Parsers` (directly or through a subclass)
+ *     can mix in `PackratParsers`.
+ *     Example: `'''object''' MyGrammar '''extends''' StandardTokenParsers '''with''' PackratParsers`
+ *   - each grammar production previously declared as a `def` without formal
+ *     parameters becomes a `lazy val`, and its type is changed from
+ *     `Parser[Elem]` to `PackratParser[Elem]`.
+ *     So, for example, `'''def''' production: Parser[Int] = {...}`
+ *     becomes `'''lazy val''' production: PackratParser[Int] = {...}`
+ *   - Important: using `PackratParser`s is not an ''all or nothing'' decision.
  *     They can be free mixed with regular `Parser`s in a single grammar.
  *
  *  Cached parse results are attached to the ''input'', not the grammar.
  *  Therefore, `PackratsParser`s require a `PackratReader` as input, which
- *  adds memoization to an underlying `Reader`. Programmers can create `PackratReader`
- *  objects either manually, as in `production(new PackratReader(new lexical.Scanner("input")))`,
- *  but the common way should be to rely on the combinator `phrase` to wrap a given
- *  input with a `PackratReader` if the input is not one itself.
+ *  adds memoization to an underlying `Reader`. Programmers can create
+ *  `PackratReader` objects either manually, as in
+ *  `production('''new''' PackratReader('''new''' lexical.Scanner("input")))`,
+ *  but the common way should be to rely on the combinator `phrase` to wrap
+ *  a given input with a `PackratReader` if the input is not one itself.
  *
  * @see Bryan Ford: "Packrat Parsing: Simple, Powerful, Lazy, Linear Time." ICFP'02
  * @see Alessandro Warth, James R. Douglass, Todd Millstein: "Packrat Parsers Can Support Left Recursion." PEPM'08
@@ -54,7 +58,7 @@ trait PackratParsers extends Parsers {
    * A specialized `Reader` class that wraps an underlying `Reader`
    * and provides memoization of parse results.
    */
-  class PackratReader[+T](underlying: Reader[T]) extends Reader[T]  { outer =>
+  class PackratReader[+T](underlying: Reader[T]) extends Reader[T] { outer =>
 
     /*
      * caching of intermediate parse results and information about recursion
@@ -91,7 +95,6 @@ trait PackratParsers extends Parsers {
     def atEnd: Boolean = underlying.atEnd
   }
 
-
   /**
    *  A parser generator delimiting whole phrases (i.e. programs).
    *
@@ -107,7 +110,6 @@ trait PackratParsers extends Parsers {
       }
     }
   }
-
 
   private def getPosFromResult(r: ParseResult[_]): Position = r.next.pos
 
@@ -136,13 +138,13 @@ trait PackratParsers extends Parsers {
   /**
    * Implicitly convert a parser to a packrat parser.
    * The conversion is triggered by giving the appropriate target type:
-   * val myParser: PackratParser[MyResult] = aParser
-   */
+   * {{{
+   *   val myParser: PackratParser[MyResult] = aParser
+   * }}} */
   implicit def parser2packrat[T](p: => super.Parser[T]): PackratParser[T] = {
     lazy val q = p
     memo(super.Parser {in => q(in)})
   }
-
 
   /*
    * An unspecified function that is called when a packrat reader is applied.

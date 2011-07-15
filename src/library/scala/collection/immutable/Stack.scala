@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -102,7 +100,7 @@ class Stack[+A] protected (protected val elems: List[A])
     else throw new NoSuchElementException("top of empty stack")
 
   /** Removes the top element from the stack.
-   *  Note: should return <code>(A, Stack[A])</code> as for queues (mics)
+   *  Note: should return `(A, Stack[A])` as for queues (mics)
    *
    *  @throws Predef.NoSuchElementException
    *  @return the new stack without the former top element.
@@ -129,4 +127,3 @@ class Stack[+A] protected (protected val elems: List[A])
    */
   override def toString() = elems.mkString("Stack(", ", ", ")")
 }
-

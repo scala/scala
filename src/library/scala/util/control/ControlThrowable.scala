@@ -6,32 +6,28 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.control
 
-/**
- * A marker trait indicating that the `Throwable` it is mixed
- * into is intended for flow control.
+/** A marker trait indicating that the `Throwable` it is mixed into is
+ *  intended for flow control.
  *
- * Note that `Throwable` subclasses which extend this trait
- * may extend any other `Throwable` subclass (eg.
- * `RuntimeException`) and are not required to extend
- * `Throwable` directly.
+ *  Note that `Throwable` subclasses which extend this trait may extend any
+ *  other `Throwable` subclass (eg. `RuntimeException`) and are not required
+ *  to extend `Throwable` directly.
  *
- * Instances of `Throwable` subclasses marked in this way should
- * not normally be caught. Where catch-all behaviour is required
- * `ControlThrowable`s should be propagated, for example:
- *
- * <pre>
+ *  Instances of `Throwable` subclasses marked in this way should not normally
+ *  be caught. Where catch-all behaviour is required `ControlThrowable`
+ *  should be propagated, for example:
+ *  {{{
  *  import scala.util.control.ControlThrowable
  *
  *  try {
  *    // Body might throw arbitrarily
- * } catch {
- *   case ce : ControlThrowable => throw ce // propagate
- *   case t : Exception => log(t)           // log and suppress
- * </pre>
+ *  } catch {
+ *    case ce : ControlThrowable => throw ce // propagate
+ *    case t : Exception => log(t)           // log and suppress
+ *  }}}
  *
- * @author Miles Sabin
+ *  @author Miles Sabin
  */
 trait ControlThrowable extends Throwable with NoStackTrace

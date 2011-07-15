@@ -14,9 +14,10 @@ import immutable.{ List, Stream }
 
 /** This trait implements a forwarder for traversable objects. It forwards
  *  all calls to a different traversable, except for:
- {{{
-  toString, hashCode, equals, stringPrefix, newBuilder, view
- }}}
+ *
+ *  - `toString`, `hashCode`, `equals`, `stringPrefix`
+ *  - `newBuilder`, `view`
+ *
  *  All calls creating a new traversable of the same kind.
  *
  *  @author  Martin Odersky
@@ -27,15 +28,15 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   /** The traversable object to which calls are forwarded. */
   protected def underlying: Traversable[A]
 
-  override def foreach[B](f: A => B): Unit = underlying.foreach(f)
+  override def foreach[B](f: A => B): Unit = underlying foreach f
   override def isEmpty: Boolean = underlying.isEmpty
   override def nonEmpty: Boolean = underlying.nonEmpty
   override def size: Int = underlying.size
   override def hasDefiniteSize = underlying.hasDefiniteSize
-  override def forall(p: A => Boolean): Boolean = underlying.forall(p)
-  override def exists(p: A => Boolean): Boolean = underlying.exists(p)
-  override def count(p: A => Boolean): Int = underlying.count(p)
-  override def find(p: A => Boolean): Option[A] = underlying.find(p)
+  override def forall(p: A => Boolean): Boolean = underlying forall p
+  override def exists(p: A => Boolean): Boolean = underlying exists p
+  override def count(p: A => Boolean): Int = underlying count p
+  override def find(p: A => Boolean): Option[A] = underlying find p
   override def foldLeft[B](z: B)(op: (B, A) => B): B = underlying.foldLeft(z)(op)
   override def /: [B](z: B)(op: (B, A) => B): B = underlying./:(z)(op)
   override def foldRight[B](z: B)(op: (A, B) => B): B = underlying.foldRight(z)(op)
@@ -44,10 +45,10 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = underlying.reduceLeftOption(op)
   override def reduceRight[B >: A](op: (A, B) => B): B = underlying.reduceRight(op)
   override def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = underlying.reduceRightOption(op)
-  override def sum[B >: A](implicit num: Numeric[B]): B = underlying.sum(num)
-  override def product[B >: A](implicit num: Numeric[B]): B = underlying.product(num)
-  override def min[B >: A](implicit cmp: Ordering[B]): A = underlying.min(cmp)
-  override def max[B >: A](implicit cmp: Ordering[B]): A = underlying.max(cmp)
+  override def sum[B >: A](implicit num: Numeric[B]): B = underlying sum num
+  override def product[B >: A](implicit num: Numeric[B]): B = underlying product num
+  override def min[B >: A](implicit cmp: Ordering[B]): A = underlying min cmp
+  override def max[B >: A](implicit cmp: Ordering[B]): A = underlying max cmp
   override def head: A = underlying.head
   override def headOption: Option[A] = underlying.headOption
   override def last: A = underlying.last

@@ -6,18 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
 
 import annotation.target._
 
-/** <p>
- *    This annotation has the same functionality as
- *    <code>scala.reflect.BeanProperty</code>, but the generated
- *    Bean getter will be named <code>isFieldName</code> instead
- *    of <code>getFieldName</code>.
- *  </p>
+/** This annotation has the same functionality as
+ *  `scala.reflect.BeanProperty`, but the generated Bean getter will be
+ *  named `isFieldName` instead of `getFieldName`.
  */
 @field
 class BooleanBeanProperty extends annotation.StaticAnnotation

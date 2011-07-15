@@ -26,10 +26,12 @@ import annotation.migration
  *    and the new element type `B`.
  *  @define orderDependent
  *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered.
  *  @define orderDependentFold
  *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered.
  *    or the operator is associative and commutative.
  *  @define mayNotTerminateInf
  *

@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.concurrent
 
-/** The <code>ManagedBlocker</code> trait...
+/** The `ManagedBlocker` trait...
  *
  *  @author Philipp Haller
  */
@@ -19,15 +17,16 @@ trait ManagedBlocker {
   /**
    * Possibly blocks the current thread, for example waiting for
    * a lock or condition.
+   *
    * @return true if no additional blocking is necessary (i.e.,
-   * if isReleasable would return true).
+   *         if `isReleasable` would return `true`).
    * @throws InterruptedException if interrupted while waiting
-   * (the method is not required to do so, but is allowed to).
+   *         (the method is not required to do so, but is allowed to).
    */
   def block(): Boolean
 
   /**
-   * Returns true if blocking is unnecessary.
+   * Returns `true` if blocking is unnecessary.
    */
   def isReleasable: Boolean
 

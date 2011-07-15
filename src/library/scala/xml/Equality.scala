@@ -8,26 +8,23 @@
 
 package scala.xml
 
-/** In an attempt to contain the damage being inflicted on
- *  consistency by the ad hoc equals methods spread around
- *  xml, the logic is centralized and all the xml classes
- *  go through the xml.Equality trait.  There are two forms
- *  of xml comparison.
+/** In an attempt to contain the damage being inflicted on consistency by the
+ *  ad hoc `equals` methods spread around `xml`, the logic is centralized and
+ *  all the `xml` classes go through the `xml.Equality trait`.  There are two
+ *  forms of `xml` comparison.
  *
- *  1) def strict_==(other: xml.Equality)
+ *  1. `'''def''' strict_==(other: xml.Equality)`
  *
- *  This one tries to honor the little things like symmetry
- *  and hashCode contracts.  The equals method routes all
- *  comparisons through this.
+ *  This one tries to honor the little things like symmetry and hashCode
+ *  contracts.  The `equals` method routes all comparisons through this.
  *
- *  2) xml_==(other: Any)
+ *  1. `xml_==(other: Any)`
  *
- *  This one picks up where strict_== leaves off.  It might
- *  declare any two things equal.
+ *  This one picks up where `strict_==` leaves off.  It might declare any two
+ *  things equal.
  *
- *  As things stood, the logic not only made a mockery of
- *  the collections equals contract, but also laid waste to
- *  that of case classes.
+ *  As things stood, the logic not only made a mockery of the collections
+ *  equals contract, but also laid waste to that of case classes.
  *
  *  Among the obstacles to sanity are/were:
  *
@@ -74,7 +71,7 @@ trait Equality extends scala.Equals {
   def strict_==(other: Equality): Boolean
   def strict_!=(other: Equality) = !strict_==(other)
 
-  /** We insist we're only equal to other xml.Equality implementors,
+  /** We insist we're only equal to other `xml.Equality` implementors,
    *  which heads off a lot of inconsistency up front.
    */
   override def canEqual(other: Any): Boolean = other match {
@@ -107,4 +104,3 @@ trait Equality extends scala.Equals {
     strictlyEqual || (blithe && compareBlithely(this, asRef(other)))
   }
 }
-

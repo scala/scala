@@ -9,23 +9,22 @@
 
 package scala
 
-/** Common code between the deprecated scala.Math object and
- *  the scala.math package object.
+/** Common code between the deprecated `scala.Math` object and
+ *  the `scala.math` package object.
  */
 private[scala] class MathCommon {
-  /** The <code>double</code> value that is closer than any other to
-   *  <code>e</code>, the base of the natural logarithms.
+  /** The `double` value that is closer than any other to `e`, the base of
+   *  the natural logarithms.
    */
   val E = java.lang.Math.E
 
-  /** The <code>double</code> value that is closer than any other to
-   *  <code>pi</code>, the ratio of the circumference of a circle to its
-   *  diameter.
+  /** The `double` value that is closer than any other to `pi`, the ratio of
+   *  the circumference of a circle to its diameter.
    */
   val Pi = java.lang.Math.PI
 
-  /** Returns a <code>double</code> value with a positive sign, greater than
-   *  or equal to <code>0.0</code> and less than <code>1.0</code>.
+  /** Returns a `double` value with a positive sign, greater than or equal
+   *  to `0.0` and less than `1.0`.
    */
   def random: Double = java.lang.Math.random()
 
@@ -40,7 +39,7 @@ private[scala] class MathCommon {
    *  angle measured in radians.
    *
    *  @param  x an angle, in degrees
-   *  @return the measurement of the angle <code>x</code> in radians.
+   *  @return the measurement of the angle `x` in radians.
    */
   def toRadians(x: Double): Double = java.lang.Math.toRadians(x)
 
@@ -48,16 +47,15 @@ private[scala] class MathCommon {
    *  angle measured in degrees.
    *
    *  @param  x angle, in radians
-   *  @return the measurement of the angle <code>x</code> in degrees.
+   *  @return the measurement of the angle `x` in degrees.
    */
   def toDegrees(x: Double): Double = java.lang.Math.toDegrees(x)
 
-  /** Returns Euler's number <code>e</code> raised to the power of a
-   *  <code>double</code> value.
+  /** Returns Euler's number `e` raised to the power of a `double` value.
    *
-   *  @param  x the exponent to raise <code>e</code> to.
-   *  @return the value <code>e<sup>a</sup></code>, where <code>e</code>
-   *          is the base of the natural logarithms.
+   *  @param  x the exponent to raise `e` to.
+   *  @return the value `e^a^`, where `e` is the base of the natural
+   *          logarithms.
    */
   def exp(x: Double): Double = java.lang.Math.exp(x)
   def log(x: Double): Double = java.lang.Math.log(x)
@@ -67,23 +65,22 @@ private[scala] class MathCommon {
   def ceil(x: Double): Double = java.lang.Math.ceil(x)
   def floor(x: Double): Double = java.lang.Math.floor(x)
 
-  /** Returns the <code>double</code> value that is closest in value to the
+  /** Returns the `double` value that is closest in value to the
    *  argument and is equal to a mathematical integer.
    *
-   *  @param  x a <code>double</code> value
+   *  @param  x a `double` value
    *  @return the closest floating-point value to a that is equal to a
    *          mathematical integer.
    */
   def rint(x: Double): Double = java.lang.Math.rint(x)
 
-  /** Converts rectangular coordinates <code>(x, y)</code> to polar
-   *  <code>(r, theta)</code>.
+  /** Converts rectangular coordinates `(x, y)` to polar `(r, theta)`.
    *
    *  @param  x the ordinate coordinate
    *  @param  y the abscissa coordinate
-   *  @return the <em>theta</em> component of the point <code>(r, theta)</code>
-   *          in polar coordinates that corresponds to the point
-   *          <code>(x, y)</code> in Cartesian coordinates.
+   *  @return the ''theta'' component of the point `(r, theta)` in polar
+   *          coordinates that corresponds to the point `(x, y)` in
+   *          Cartesian coordinates.
    */
   def atan2(y: Double, x: Double): Double = java.lang.Math.atan2(y, x)
 
@@ -92,15 +89,14 @@ private[scala] class MathCommon {
    *
    *  @param x the base.
    *  @param y the exponent.
-   *  @return the value <code>x<sup>y</sup></code>.
+   *  @return the value `x^y^`.
    */
   def pow(x: Double, y: Double): Double = java.lang.Math.pow(x, y)
 
-  /** Returns the closest <code>long</code> to the argument.
+  /** Returns the closest `long` to the argument.
    *
-   *  @param  x a floating-point value to be rounded to a <code>long</code>.
-   *  @return the value of the argument rounded to the nearest
-   *          <code>long</code> value.
+   *  @param  x a floating-point value to be rounded to a `long`.
+   *  @return the value of the argument rounded to the nearest`long` value.
    */
   def round(x: Float): Int = java.lang.Math.round(x)
   def round(x: Double): Long = java.lang.Math.round(x)

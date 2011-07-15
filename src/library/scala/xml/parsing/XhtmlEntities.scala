@@ -6,15 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package parsing
 
 import scala.xml.dtd.{ IntDef, ParsedEntityDecl }
 
-/** <p>
- *    (c) David Pollak 2007 WorldWide Conferencing, LLC.
- *  </p>
+/**
+ *  @author (c) David Pollak 2007 WorldWide Conferencing, LLC.
+ *
  */
 object XhtmlEntities {
   val entList = List(("quot",34), ("amp",38), ("lt",60), ("gt",62), ("nbsp",160), ("iexcl",161), ("cent",162), ("pound",163), ("curren",164), ("yen",165),

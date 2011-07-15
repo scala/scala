@@ -6,15 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
 
-/** <p>
- *    A <code>OptManifest[T]</code> is an optional <a href="Manifest.html"
- *    target="ContentFrame"><code>Manifest</code></a>.<br/>
- *    It is either a <code>Manifest</code> or the value <code>NoManifest</code>.
- *  </p>
+/** A `OptManifest[T]` is an optional [[scala.reflect.Manifest]].
+ *
+ *  It is either a `Manifest` or the value `NoManifest`.
  *
  *  @author Martin Odersky
  */

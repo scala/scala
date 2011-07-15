@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2011 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.reflect
 package generic
 
@@ -73,15 +78,16 @@ package generic
 
 import Flags._
 
-/** Common code utilized by Modifiers (which carry the flags associated
- *  with Trees) and Symbol.
+/** Common code utilized by `Modifiers` (which carry the flags associated
+ *  with `Trees`) and `Symbol`.
  */
-@deprecated("scala.reflect.generic will be removed", "2.9.1") trait HasFlags {
+@deprecated("scala.reflect.generic will be removed", "2.9.1")
+trait HasFlags {
   type FlagsType
   type AccessBoundaryType
   type AnnotationType
 
-  /** Though both Symbol and Modifiers widen this method to public, it's
+  /** Though both `Symbol` and `Modifiers` widen this method to public, it's
    *  defined protected here to give us the option in the future to route
    *  flag methods through accessors and disallow raw flag manipulation.
    *  And after that, perhaps, on some magical day: a typesafe enumeration.
@@ -93,8 +99,8 @@ import Flags._
    */
   def hasFlagsToString(mask: FlagsType): String
 
-  /** Access level encoding: there are three scala flags (PRIVATE, PROTECTED,
-   *  and LOCAL) which combine with value privateWithin (the "foo" in private[foo])
+  /** Access level encoding: there are three scala flags (`PRIVATE`, `PROTECTED`,
+   *  and `LOCAL`) which combine with value privateWithin (the `foo` in `private[foo]`)
    *  to define from where an entity can be accessed.  The meanings are as follows:
    *
    *  PRIVATE     access restricted to class only.
@@ -102,18 +108,19 @@ import Flags._
    *  LOCAL       can only be set in conjunction with PRIVATE or PROTECTED.
    *              Further restricts access to the same object instance.
    *
-   *  In addition, privateWithin can be used to set a visibility barrier.
+   *  In addition, `privateWithin` can be used to set a visibility barrier.
    *  When set, everything contained in the named enclosing package or class
-   *  has access.  It is incompatible with PRIVATE or LOCAL, but is additive
-   *  with PROTECTED (i.e. if either the flags or privateWithin allow access,
+   *  has access.  It is incompatible with `PRIVATE` or `LOCAL`, but is additive
+   *  with `PROTECTED` (i.e. if either the flags or privateWithin allow access,
    *  then it is allowed.)
    *
-   *  The java access levels translate as follows:
-   *
+   *  The Java access levels translate as follows:
+   *  {{{
    *  java private:     hasFlag(PRIVATE)                && !hasAccessBoundary
    *  java package:     !hasFlag(PRIVATE | PROTECTED)   && (privateWithin == enclosing package)
    *  java protected:   hasFlag(PROTECTED)              && (privateWithin == enclosing package)
    *  java public:      !hasFlag(PRIVATE | PROTECTED)   && !hasAccessBoundary
+   *  }}}
    */
   def privateWithin: AccessBoundaryType
 
@@ -158,7 +165,7 @@ import Flags._
   def isSuperAccessor  = hasFlag(SUPERACCESSOR)
   def isLifted         = hasFlag(LIFTED)
 
-  // Formerly the Modifiers impl did not include the access boundary check,
+  // Formerly the `Modifiers` impl did not include the access boundary check,
   // which must have been a bug.
   def isPublic = hasNoFlags(PRIVATE | PROTECTED) && !hasAccessBoundary
 
@@ -228,4 +235,3 @@ import Flags._
   // def isAccessor      = hasFlag(ACCESSOR )
   // final def isGetterOrSetter = hasAccessorFlag
 }
-

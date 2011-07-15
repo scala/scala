@@ -11,37 +11,34 @@ package scala.math
 import java.util.Comparator
 
 /** A trait for representing total orderings.  It is important to
- * distinguish between a type that has a total order and a representation
- * of total ordering on some type.  This trait is for the latter.
+ *  distinguish between a type that has a total order and a representation
+ *  of total ordering on some type.  This trait is for the latter.
  *
- * A [[http://en.wikipedia.org/wiki/Total_order|total ordering]]
- * is a binary relation on a type `T` that is also an equivalence relation
- * and partial ordering on values of type `T`.  This relation is exposed as
- * the `compare` method of the `Ordering` trait.
+ *  A [[http://en.wikipedia.org/wiki/Total_order total ordering]]
+ *  is a binary relation on a type `T` that is also an equivalence relation
+ *  and partial ordering on values of type `T`.  This relation is exposed as
+ *  the `compare` method of the `Ordering` trait.
  *
- * This relation must be:
- {{{
-      reflexive:  x == x
-  antisymmetric:  if x <= y && y <= x, then x == y
-     transitive:  if x <= y && y <= z, then x <= z
- }}}
+ *  This relation must be:
  *
- * @author Geoffrey Washburn
- * @version 0.9.5, 2008-04-15
- * @since 2.7
+ *  - reflexive:  `x == x`
+ *  - antisymmetric:  if `x <= y && y <= x`, then `x == y`
+ *  - transitive:  if `x <= y && y <= z`, then `x <= z`
+ *
+ *  @author Geoffrey Washburn
+ *  @version 0.9.5, 2008-04-15
+ *  @since 2.7
  */
 @annotation.implicitNotFound(msg = "No implicit Ordering defined for ${T}.")
 trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable {
   outer =>
 
-  /** An Ordering is defined at all x and y. */
+  /** An `Ordering` is defined at all `x` and `y`. */
   def tryCompare(x: T, y: T) = Some(compare(x, y))
 
- /** Returns a negative integer iff `x` comes before
-   * `y` in the ordering, returns 0 iff `x`
-   * is the same in the ordering as `y`, and returns a
-   * positive number iff `x` comes after
-   * `y` in the ordering.
+ /** Returns a negative integer iff `x` comes before `y` in the ordering,
+   * returns 0 iff `x` is the same in the ordering as `y`, and returns a
+   * positive number iff `x` comes after `y` in the ordering.
    */
   def compare(x: T, y: T): Int
 
@@ -76,7 +73,7 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
     def compare(x: T, y: T) = outer.compare(y, x)
   }
 
-  /** Given a function U => T, creates Ordering[U]. */
+  /** Given a function `U => T`, creates `Ordering[U]`. */
   def on[U](f: U => T): Ordering[U] = new Ordering[U] {
     def compare(x: U, y: U) = outer.compare(f(x), f(y))
   }
@@ -96,9 +93,9 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
 trait LowPriorityOrderingImplicits {
   /** This would conflict with all the nice implicit Orderings
    *  available, but thanks to the magic of prioritized implicits
-   *  via subclassing we can make Ordered[A] => Ordering[A] only
-   *  turn up if nothing else works.  Since Ordered[A] extends
-   *  Comparable[A] anyway, we can throw in some java interop too.
+   *  via subclassing we can make `Ordered[A] => Ordering[A]` only
+   *  turn up if nothing else works.  Since `Ordered[A]` extends
+   *  `Comparable[A]` anyway, we can throw in some Java interop too.
    */
   implicit def ordered[A <% Comparable[A]]: Ordering[A] = new Ordering[A] {
     def compare(x: A, y: A): Int = x compareTo y
@@ -113,7 +110,7 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   trait ExtraImplicits {
     /** Not in the standard scope due to the potential for divergence:
-     *  For instance implicitly[Ordering[Any]] diverges in its presence.
+     *  For instance `implicitly[Ordering[Any]]` diverges in its presence.
      */
     implicit def seqDerivedOrdering[CC[X] <: collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
       new Ordering[CC[T]] {
@@ -130,9 +127,9 @@ object Ordering extends LowPriorityOrderingImplicits {
         }
       }
 
-    /** This implicit creates a conversion from any value for which an implicit Ordering
-     *  exists to the class which creates infix operations.  With it imported, you can write
-     *  methods as follows:
+    /** This implicit creates a conversion from any value for which an
+     *  implicit `Ordering` exists to the class which creates infix operations.
+     *  With it imported, you can write methods as follows:
      *  {{{
      *  def lessThen[T: Ordering](x: T, y: T) = x < y
      *  }}}

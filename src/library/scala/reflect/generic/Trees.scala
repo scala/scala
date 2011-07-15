@@ -225,22 +225,17 @@ import Flags._
   case class TypeDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef
 
-  /** <p>
-   *    Labelled expression - the symbols in the array (must be Idents!)
-   *    are those the label takes as argument
-   *  </p>
-   *  <p>
-   *    The symbol that is given to the labeldef should have a MethodType
-   *    (as if it were a nested function)
-   *  </p>
-   *  <p>
-   *    Jumps are apply nodes attributed with label symbol, the arguments
-   *    will get assigned to the idents.
-   *  </p>
-   *  <p>
-   *  Note: on 2005-06-09 Martin, Iuli, Burak agreed to have forward
-   *        jumps within a Block.
-   *  </p>
+  /** Labelled expression - the symbols in the array (must be Idents!)
+   *  are those the label takes as argument.
+   *
+   *  The symbol that is given to the `labeldef` should have a `MethodType`
+   *  (as if it were a nested function).
+   *
+   *  Jumps are apply nodes attributed with label symbol, the arguments
+   *  will get assigned to the idents.
+   *
+   *  '''Note''': on 2005-06-09 Martin, Iuli, Burak agreed to have forward
+   *        jumps within a `Block`.
    */
   case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree
@@ -337,20 +332,17 @@ import Flags._
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree
 
-  /** <p>
-   *    Pattern matching expression  (before explicitouter)
-   *    Switch statements            (after explicitouter)
-   *  </p>
-   *  <p>
-   *    After explicitouter, cases will satisfy the following constraints:
-   *  </p>
-   *  <ul>
-   *    <li>all guards are EmptyTree,</li>
-   *    <li>all patterns will be either <code>Literal(Constant(x:Int))</code>
-   *      or <code>Alternative(lit|...|lit)</code></li>
-   *    <li>except for an "otherwise" branch, which has pattern
-   *      <code>Ident(nme.WILDCARD)</code></li>
-   *  </ul>
+  /**
+   *  - Pattern matching expression  (before explicitouter)
+   *  - Switch statements            (after explicitouter)
+   *
+   *  After explicitouter, cases will satisfy the following constraints:
+   *
+   *  - all guards are EmptyTree,
+   *  - all patterns will be either `Literal(Constant(x:Int))`
+   *    or `Alternative(lit|...|lit)`
+   *  - except for an "otherwise" branch, which has pattern
+   *    `Ident(nme.WILDCARD)`
    */
   case class Match(selector: Tree, cases: List[CaseDef])
        extends TermTree
@@ -400,10 +392,10 @@ import Flags._
   }
 
   /** Dynamic value application.
-   *  In a dynamic application   q.f(as)
-   *   - q is stored in qual
-   *   - as is stored in args
-   *   - f is stored as the node's symbol field.
+   *  In a dynamic application `q.f(as)`
+   *   - `q` is stored in parameter `qual`
+   *   - `as` is stored in parameter `args`
+   *   - `f` is stored as the node's symbol field.
    */
   case class ApplyDynamic(qual: Tree, args: List[Tree])
        extends TermTree with SymTree

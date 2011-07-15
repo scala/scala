@@ -75,7 +75,7 @@ extends Seq[A]
   /** The number of elements in the stack */
   override def length = elems.length
 
-  /** Retrieve n'th element from stack, where top of stack has index 0.
+  /** Retrieve `n`-th element from stack, where top of stack has index `0`.
    *
    *  This is a linear time operation.
    *
@@ -85,8 +85,7 @@ extends Seq[A]
    */
   override def apply(index: Int) = elems(index)
 
-  /** Replace element at index <code>n</code> with the new element
-   *  <code>newelem</code>.
+  /** Replace element at index `n` with the new element `newelem`.
    *
    *  This is a linear time operation.
    *
@@ -114,9 +113,8 @@ extends Seq[A]
   def push(elem1: A, elem2: A, elems: A*): this.type =
     this.push(elem1).push(elem2).pushAll(elems)
 
-  /** Push all elements in the given traversable object onto
-   *  the stack. The last element in the traversable object
-   *  will be on top of the new stack.
+  /** Push all elements in the given traversable object onto the stack. The
+   *  last element in the traversable object will be on top of the new stack.
    *
    *  @param xs the traversable object.
    *  @return the stack with the new elements on top.
@@ -157,8 +155,8 @@ extends Seq[A]
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.
    *  such changes will not be reflected in the iterator. The iterator
-   *  issues elements in the reversed order they were inserted into the stack
-   *  (LIFO order).
+   *  issues elements in the reversed order they were inserted into the
+   *  stack (LIFO order).
    *
    *  @return an iterator over all stack elements.
    */
@@ -181,4 +179,3 @@ extends Seq[A]
    */
   override def clone(): Stack[A] = new Stack[A](elems)
 }
-

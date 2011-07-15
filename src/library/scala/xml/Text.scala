@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 
 // XXX This attempt to make Text not a case class revealed a bug in the pattern
@@ -26,7 +25,7 @@ package scala.xml
 //   }
 // }
 
-/** The class <code>Text</code> implements an XML node for text (PCDATA).
+/** The class `Text` implements an XML node for text (PCDATA).
  *  It is used in both non-bound and bound XML representations.
  *
  *  @author Burak Emir

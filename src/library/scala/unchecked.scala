@@ -29,11 +29,9 @@ package scala
  *                              ^
  *    one warning found
  *  }}}
- *  The above message may be suppressed by substituting the expression
- *  `x` with `(x: @unchecked)`. Then the
- *  modified code will compile silently, but, in any case, a
- *  <a href="MatchError.html"><code>MatchError</code></a>
- *  will be raised at runtime.
+ *  The above message may be suppressed by substituting the expression `x`
+ *  with `(x: @unchecked)`. Then the modified code will compile silently,
+ *  but, in any case, a [[scala.MatchError]] will be raised at runtime.
  *
  *  @since 2.4
  */

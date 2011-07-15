@@ -19,10 +19,12 @@ package scala.collection
  *  @define possiblyparinfo
  *  This trait may possibly have operations implemented in parallel.
  *  @define undefinedorder
- *  The order in which operations are performed on elements is unspecified and may be nondeterministic.
+ *  The order in which operations are performed on elements is unspecified
+ *  and may be nondeterministic.
  *  @define orderDependent
  *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered.
  *  @define orderDependentFold
  *
  *    Note: might return different results for different runs, unless the
@@ -91,7 +93,8 @@ trait GenTraversableOnce[+A] {
    */
   def reduce[A1 >: A](op: (A1, A1) => A1): A1
 
-  /** Optionally reduces the elements of this sequence using the specified associative binary operator.
+  /** Optionally reduces the elements of this sequence using the specified
+   *  associative binary operator.
    *
    *  $undefinedorder
    *
@@ -107,13 +110,14 @@ trait GenTraversableOnce[+A] {
    */
   def reduceOption[A1 >: A](op: (A1, A1) => A1): Option[A1]
 
-  /** Folds the elements of this sequence using the specified associative binary operator.
-   *  The order in which the elements are reduced is unspecified and may be nondeterministic.
+  /** Folds the elements of this sequence using the specified associative
+   *  binary operator. The order in which the elements are reduced is
+   *  unspecified and may be nondeterministic.
    *
    *  Note this method has a different signature than the `foldLeft`
    *  and `foldRight` methods of the trait `Traversable`.
-   *  The result of folding may only be a supertype of this parallel collection's
-   *  type parameter `T`.
+   *  The result of folding may only be a supertype of this parallel
+   *  collection's type parameter `T`.
    *
    *  @tparam U      a type parameter for the binary operator, a supertype of `T`.
    *  @param z       a neutral element for the fold operation, it may be added to the result
@@ -141,7 +145,7 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(op(z, x,,1,,), x,,2,,), ..., x,,n,,)
+   *             op(...op(op(z, x1), x2), ..., xn)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -161,7 +165,7 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
+   *             op(x1, op(x2, ... op(xn, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -179,7 +183,7 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
+   *             op(...op(z, x1), x2, ..., xn)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -196,7 +200,7 @@ trait GenTraversableOnce[+A] {
    *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
+   *             op(x1, op(x2, ... op(xn, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
@@ -204,18 +208,18 @@ trait GenTraversableOnce[+A] {
 
   /** Aggregates the results of applying an operator to subsequent elements.
    *
-   *  This is a more general form of `fold` and `reduce`. It has similar semantics, but does
-   *  not require the result to be a supertype of the element type. It traverses the elements in
-   *  different partitions sequentially, using `seqop` to update the result, and then
-   *  applies `combop` to results from different partitions. The implementation of this
-   *  operation may operate on an arbitrary number of collection partitions, so `combop`
-   *  may be invoked arbitrary number of times.
+   *  This is a more general form of `fold` and `reduce`. It has similar
+   *  semantics, but does not require the result to be a supertype of the
+   *  element type. It traverses the elements in different partitions
+   *  sequentially, using `seqop` to update the result, and then applies
+   *  `combop` to results from different partitions. The implementation of
+   *  this operation may operate on an arbitrary number of collection
+   *  partitions, so `combop` may be invoked arbitrary number of times.
    *
-   *  For example, one might want to process some elements and then produce a `Set`. In this
-   *  case, `seqop` would process an element and append it to the list, while `combop`
-   *  would concatenate two lists from different partitions together. The initial value
-   *  `z` would be an empty set.
-   *
+   *  For example, one might want to process some elements and then produce
+   *  a `Set`. In this case, `seqop` would process an element and append it
+   *  to the list, while `combop` would concatenate two lists from different
+   *  partitions together. The initial value `z` would be an empty set.
    *  {{{
    *    pc.aggregate(Set[Int]())(_ += process(_), _ ++ _)
    *  }}}

@@ -1,10 +1,18 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
 package scala.util.control
 
 /** Methods exported by this object implement tail calls via trampolining.
- *  Tail calling methods have to return their result using `done` or call the next
- *  method using `tailcall`. Both return a `TailRec` object. The result of evaluating
- *  a tailcalling function can be retrieved from a `Tailrec` value using method result`.
- *  Here's a usage example:
+ *  Tail calling methods have to return their result using `done` or call the
+ *  next method using `tailcall`. Both return a `TailRec` object. The result
+ *  of evaluating a tailcalling function can be retrieved from a `Tailrec`
+ *  value using method `result`. Here's a usage example:
  *  {{{
  *  import scala.util.control.TailCalls._
  *
@@ -19,10 +27,10 @@ package scala.util.control
  */
 object TailCalls {
 
-  /** This class represents a tailcalling computation.
+  /** This class represents a tailcalling computation
    */
   abstract class TailRec[+A] {
-    /** Returns the result of the tailcalling computation
+    /** Returns the result of the tailcalling computation.
      */
     def result: A = {
       def loop(body: TailRec[A]): A = body match {
@@ -36,7 +44,8 @@ object TailCalls {
   /** Internal class representing a tailcall */
   protected case class Call[A](rest: () => TailRec[A]) extends TailRec[A]
 
-  /** Internal class representing the final result return from a tailcalling computation */
+  /** Internal class representing the final result returned from a tailcalling
+    * computation */
   protected case class Done[A](override val result: A) extends TailRec[A]
 
   /** Performs a tailcall
@@ -47,10 +56,9 @@ object TailCalls {
 
   /** Used to return final result from tailcalling computation
    *  @param  `result` the result value
-   *  @return a `TailRec` object representing a computation which immediately returns `result`
+   *  @return a `TailRec` object representing a computation which immediately
+   *          returns `result`
    */
   def done[A](result: A): TailRec[A] = new Done(result)
 
 }
-
-

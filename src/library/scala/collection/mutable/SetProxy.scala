@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.collection
 package mutable
 
-/** This is a simple wrapper class for <a href="Set.html"
- *  target="contentFrame"><code>scala.collection.mutable.Set</code></a>.
+/** This is a simple wrapper class for [[scala.collection.mutable.Set]].
  *  It is most useful for assembling customized set abstractions
  *  dynamically using object composition and forwarding.
  *

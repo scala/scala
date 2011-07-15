@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package script
 
-
-/** Class <code>Location</code> describes locations in messages implemented by
- *  class <a href="Message.html" target="contentFrame"><code>Message</code></a>.
+/** Class `Location` describes locations in messages implemented by
+ *  class [[scala.collection.script.Message]].
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004

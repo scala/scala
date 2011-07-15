@@ -10,20 +10,19 @@
 
 package scala.testing
 
-/** Classes inheriting trait `Show` can test their member methods
- *  using the notattion <code>meth(arg<sub>1</sub>, ..., arg<sub>n</sub>)</code>,
- *  where `meth` is the name of the method and
- *  <code>arg<sub>1</sub>,...,arg<sub>n</sub></code> are the arguments.
+/** Classes inheriting trait `Show` can test their member methods using the
+ *  notattion `meth(arg,,1,,, ..., arg,,n,,)`, where `meth` is the name of
+ *  the method and `arg,,1,,,...,arg,,n,,` are the arguments.
  *
  *  The only difference to a normal method call is the leading quote
- *  character (`'`). A quoted method call like the one above will produces a
- *  legible diagnostic to be printed on [[scala.Console]].
+ *  character (`'`). A quoted method call like the one above will produces
+ *  a legible diagnostic to be printed on [[scala.Console]].
  *
  *  It is of the form
- *  <pre>
- *    meth(arg<sub>1</sub>, ..., arg<sub>n</sub>)  gives  &lt;result&gt;</pre>
  *
- *  where <code>&lt;result&gt;</code> is the result of evaluating the call.
+ *    `meth(arg,,1,,, ..., arg,,n,,)`  gives  `&lt;result&gt;`
+ *
+ *  where `&lt;result&gt;` is the result of evaluating the call.
  *
  */
 trait Show {

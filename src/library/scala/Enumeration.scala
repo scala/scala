@@ -11,18 +11,17 @@ package scala
 import scala.collection.{ mutable, immutable, generic, SetLike }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
 
-/**
- *    Defines a finite set of values specific to the enumeration. Typically
- *    these values enumerate all possible forms something can take and provide a
- *    lightweight alternative to case classes.
+/** Defines a finite set of values specific to the enumeration. Typically
+ *  these values enumerate all possible forms something can take and provide
+ *  a lightweight alternative to case classes.
  *
- *    Each call to a `Value` method adds a new unique value to the
- *    enumeration. To be accessible, these values are usually defined as
- *    `val` members of the evaluation.
+ *  Each call to a `Value` method adds a new unique value to the enumeration.
+ *  To be accessible, these values are usually defined as `val` members of
+ *  the evaluation.
  *
- *    All values in an enumeration share a common, unique type defined as the
- *    `Value` type member of the enumeration (`Value`
- *    selected on the stable identifier path of the enumeration instance).
+ *  All values in an enumeration share a common, unique type defined as the
+ *  `Value` type member of the enumeration (`Value` selected on the stable
+ *  identifier path of the enumeration instance).
  *
  * @example {{{
  *  object Main extends Application {
@@ -108,29 +107,30 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
    */
   final def apply(x: Int): Value = vmap(x)
 
-  /** Returns a Value from this Enumeration whose name matches
-   * the argument <var>s</var>.
+  /**
+   * Return a `Value` from this `Enumeration` whose name matches
+   * the argument `s`.
    *
-   * You can pass a String* set of names to the constructor, or
-   * initialize each Enumeration with Value(String). Otherwise, the
-   * names are determined automatically through reflection.
+   * You can pass a String* set of names to the constructor, or initialize
+   * each `Enumeration` with `Value(String)`. Otherwise, the names are
+   * determined automatically through reflection.
    *
    * Note the change here wrt 2.7 is intentional. You should know whether
-   * a name is in an Enumeration beforehand. If not, just use find on
+   * a name is in an `Enumeration` beforehand. If not, just use find on
    * values.
    *
-   * @param  s an Enumeration name
-   * @return   the Value of this Enumeration if its name matches <var>s</var>
-   * @throws   java.util.NoSuchElementException if no Value with a matching
-   *           name is in this Enumeration
+   * @param  s an `Enumeration` name
+   * @return   the `Value` of this `Enumeration` if its name matches `s`
+   * @throws   java.util.NoSuchElementException if no `Value` with a matching
+   *           name is in this `Enumeration`
    */
   final def withName(s: String): Value = values.find(_.toString == s).get
 
   /** Creates a fresh value, part of this enumeration. */
   protected final def Value: Value = Value(nextId)
 
-  /** Creates a fresh value, part of this enumeration, identified by the integer
-   *  `i`.
+  /** Creates a fresh value, part of this enumeration, identified by the
+   *  integer `i`.
    *
    *  @param i An integer that identifies this value at run-time. It must be
    *           unique amongst all values of the enumeration.
@@ -197,16 +197,15 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
     override def hashCode: Int = id.##
   }
 
-  /** A class implementing the <a href="Enumeration.Value.html"
-   *  target="contentFrame">`Value`</a> type. This class can be
-   *  overridden to change the enumeration's naming and integer identification
-   *  behaviour.
+  /** A class implementing the [[scala.Enumeration.Value]] type. This class
+   *  can be overridden to change the enumeration's naming and integer
+   *  identification behaviour.
    */
   @SerialVersionUID(0 - 3501153230598116017L)
   protected class Val(i: Int, name: String) extends Value with Serializable {
-    def this(i: Int)        = this(i, nextNameOrNull)
-    def this(name: String)  = this(nextId, name)
-    def this()              = this(nextId)
+    def this(i: Int)       = this(i, nextNameOrNull)
+    def this(name: String) = this(nextId, name)
+    def this()             = this(nextId)
 
     assert(!vmap.isDefinedAt(i), "Duplicate id: " + i)
     vmap(i) = this
@@ -226,9 +225,10 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
     }
   }
 
-  /** A class for sets of values
+  /** A class for sets of values.
    *  Iterating through this set will yield values in increasing order of their ids.
-   *  @param   ids   The set of ids of values, organized as a SortedSet.
+   *
+   *  @param ids The set of ids of values, organized as a `SortedSet`.
    */
   class ValueSet private[Enumeration] (val ids: immutable.SortedSet[Int]) extends Set[Value] with SetLike[Value, ValueSet] {
     override def empty = ValueSet.empty

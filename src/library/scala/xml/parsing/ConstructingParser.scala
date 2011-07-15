@@ -36,7 +36,7 @@ object ConstructingParser {
   *     val doc = cpa.document()
   *
   *     // let's see what it is
-  *     val ppr = new scala.xml.PrettyPrinter(80,5)
+  *     val ppr = new scala.xml.PrettyPrinter(80, 5)
   *     val ele = doc.docElem
   *     println("finished parsing")
   *     val out = ppr.format(ele)

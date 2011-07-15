@@ -5,13 +5,14 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+
 package scala.annotation
 
-/** <p>
- *    A method annotation which verifies that the method will be compiled
- *    with tail call optimization.  If it is present, the compiler will
- *    issue an error if the method cannot be optimized into a loop.
- *  </p>
+/** A method annotation which verifies that the method will be compiled
+ *  with tail call optimization.
+ *
+ *  If it is present, the compiler will issue an error if the method cannot
+ *  be optimized into a loop.
  *
  *  @since 2.8
  */

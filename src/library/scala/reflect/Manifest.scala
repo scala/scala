@@ -10,12 +10,12 @@ package scala.reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
 
-/** A Manifest[T] is an opaque descriptor for type T.  Its
- *  supported use is to give access to the erasure of the type
- *  as a Class instance, as is necessary for the creation of native
- *  Arrays if the class is not known at compile time.
+/** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
+ *  is to give access to the erasure of the type as a `Class` instance, as
+ *  is necessary for the creation of native `Arrays` if the class is not
+ *  known at compile time.
  *
- *  The type-relation operators <:< and =:= should be considered
+ *  The type-relation operators `<:<` and `=:=` should be considered
  *  approximations only, as there are numerous aspects of type conformance
  *  which are not yet adequately represented in manifests.
  *
@@ -70,7 +70,7 @@ trait AnyValManifest[T] extends Manifest[T] with Equals {
   override def hashCode = System.identityHashCode(this)
 }
 
-/** The object Manifest defines factory methods for manifests.
+/** The object `Manifest` defines factory methods for manifests.
  *  It is intended for use by the compiler and should not be used
  *  in client code.
  */

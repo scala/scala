@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -24,9 +24,9 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
 
   def self: Queue[A]
 
-  /** Access element number <code>n</code>.
+  /** Access element number `n`.
    *
-   *  @return  the element at index <code>n</code>.
+   *  @return  the element at index `n`.
    */
   override def apply(n: Int): A = self.apply(n)
 
@@ -46,9 +46,8 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
    */
   override def +=(elem: A): this.type = { self += elem; this }
 
-  /** Adds all elements provided by an iterator
-   *  at the end of the queue. The elements are prepended in the order they
-   *  are given out by the iterator.
+  /** Adds all elements provided by an iterator at the end of the queue. The
+   *  elements are prepended in the order they are given out by the iterator.
    *
    *  @param  iter        an iterator
    */
@@ -61,7 +60,7 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
    *
    *  @param  elems       the elements to add.
    */
-  override def enqueue(elems: A*): Unit = self ++= elems
+  override def enqueue(elems: A*) { self ++= elems }
 
   /** Returns the first element in the queue, and removes this element
    *  from the queue.

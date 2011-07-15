@@ -35,6 +35,14 @@ class FallbackArrayBuilding {
 }
 
 /** Utility methods for operating on arrays.
+ *  For example:
+ *  {{{
+ *  val a = Array(1, 2)
+ *  val b = Array.ofDim[Int](2)
+ *  val c = Array.concat(a, b)
+ *  }}}
+ *  where the array objects `a`, `b` and `c` have respectively the values
+ *  `Array(1, 2)`, `Array(0, 0)` and `Array(1, 2, 0, 0)`.
  *
  *  @author Martin Odersky
  *  @version 1.0

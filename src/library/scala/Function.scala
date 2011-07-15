@@ -1,7 +1,7 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
-**  __\ \/ /__/ __ |/ /__/ __ |                                         **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
@@ -16,9 +16,8 @@ package scala
  *  @version 1.0, 29/11/2006
  */
 object Function {
-  /** Given a sequence of functions <code>f<sub>1</sub></code>, ...,
-   *  <code>f<sub>n</sub></code>, return the function <code>f<sub>1</sub>
-   *  andThen ... andThen f<sub>n</sub></code>.
+  /** Given a sequence of functions `f,,1,,`, ..., `f,,n,,`, return the
+   *  function `f,,1,, andThen ... andThen f,,n,,`.
    *
    *  @param fs The given sequence of functions
    *  @return   ...
@@ -28,15 +27,17 @@ object Function {
   /** The constant function */
   def const[T, U](x: T)(y: U): T = x
 
-  /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.  Important note:
-   *  this transformation implies the original function will be called 2 or more
-   *  times on each logical invocation, because the only way to supply an implementation
-   *  of isDefinedAt is to call the function and examine the return value.
+  /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.
    *
-   *  @param   f    a function T => Option[R]
+   *  '''Important note''': this transformation implies the original function
+   *  will be called 2 or more times on each logical invocation, because the
+   *  only way to supply an implementation of `isDefinedAt` is to call the
+   *  function and examine the return value.
+   *
+   *  @param   f    a function `T => Option[R]`
    *  @return       a partial function defined for those inputs where
-   *                f returns Some(_) and undefined where f returns None.
-   *  @see PartialFunction#lift
+   *                f returns `Some(_)` and undefined where `f` returns `None`.
+   *  @see [[scala.PartialFunction#lift]]
    */
   def unlift[T, R](f: T => Option[R]): PartialFunction[T, R] = new PartialFunction[T, R] {
     def apply(x: T): R = f(x).get

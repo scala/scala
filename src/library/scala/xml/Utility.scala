@@ -12,8 +12,8 @@ import scala.collection.mutable
 import parsing.XhtmlEntities
 
 /**
- * The <code>Utility</code> object provides utility functions for processing
- * instances of bound and not bound XML classes, as well as escaping text nodes.
+ * The `Utility` object provides utility functions for processing instances
+ * of bound and not bound XML classes, as well as escaping text nodes.
  *
  * @author Burak Emir
  */
@@ -31,22 +31,21 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
   private[xml] def isAtomAndNotText(x: Node) = x.isAtom && !x.isInstanceOf[Text]
 
-  /** trims an element - call this method, when you know that it is an
+  /** Trims an element - call this method, when you know that it is an
    *  element (and not a text node) so you know that it will not be trimmed
-   *  away. With this assumption, the function can return a <code>Node</code>,
-   *  rather than a <code>Seq[Node]</code>. If you don't know, call
-   *  <code>trimProper</code> and account for the fact that you may get back
-   *  an empty sequence of nodes.
+   *  away. With this assumption, the function can return a `Node`, rather
+   *  than a `Seq[Node]`. If you don't know, call `trimProper` and account
+   *  for the fact that you may get back an empty sequence of nodes.
    *
-   *  precondition: node is not a text node (it might be trimmed)
+   *  Precondition: node is not a text node (it might be trimmed)
    */
   def trim(x: Node): Node = x match {
     case Elem(pre, lab, md, scp, child@_*) =>
       Elem(pre, lab, md, scp, (child flatMap trimProper):_*)
   }
 
-  /** trim a child of an element. <code>Attribute</code> values and
-   *  <code>Atom</code> nodes that are not <code>Text</code> nodes are unaffected.
+  /** trim a child of an element. `Attribute` values and `Atom` nodes that
+   *  are not `Text` nodes are unaffected.
    */
   def trimProper(x:Node): Seq[Node] = x match {
     case Elem(pre,lab,md,scp,child@_*) =>
@@ -56,6 +55,7 @@ object Utility extends AnyRef with parsing.TokenTests {
     case _ =>
       x
   }
+
   /** returns a sorted attribute list */
   def sort(md: MetaData): MetaData = if((md eq Null) || (md.next eq Null)) md else {
     val key = md.key
@@ -64,11 +64,12 @@ object Utility extends AnyRef with parsing.TokenTests {
     smaller.append( Null ).append(md.copy ( greater ))
   }
 
-  /** returns the node with its attribute list sorted alphabetically (prefixes are ignored) */
+  /** Return the node with its attribute list sorted alphabetically
+   *  (prefixes are ignored) */
   def sort(n:Node): Node = n match {
-	  case Elem(pre,lab,md,scp,child@_*) =>
-		  Elem(pre,lab,sort(md),scp, (child map sort):_*)
-	  case _ => n
+	case Elem(pre,lab,md,scp,child@_*) =>
+      Elem(pre,lab,sort(md),scp, (child map sort):_*)
+    case _ => n
   }
 
   /**
@@ -128,8 +129,8 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
 
   /**
-   * Appends unescaped string to <code>s</code>, amp becomes &amp;
-   * lt becomes &lt; etc..
+   * Appends unescaped string to `s`, `amp` becomes `&amp;`,
+   * `lt` becomes `&lt;` etc..
    *
    * @param ref ...
    * @param s   ...
@@ -313,7 +314,7 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
 
   /**
-   * Returns <code>null</code> if the value is a correct attribute value,
+   * Returns `'''null'''` if the value is a correct attribute value,
    * error message if it isn't.
    *
    * @param value ...
@@ -395,13 +396,11 @@ object Utility extends AnyRef with parsing.TokenTests {
   }
 
   /**
-   * <pre>
+   * {{{
    *   CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
    *             | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
-   * </pre>
-   * <p>
-   *   see [66]
-   * <p>
+   * }}}
+   * See [66]
    *
    * @param ch                ...
    * @param nextch            ...

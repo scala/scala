@@ -11,21 +11,20 @@ package scala.reflect
 import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
 import java.lang.{ Class => JClass }
 
-/** A ClassManifest[T] is an opaque descriptor for type T.
+/** A `ClassManifest[T]` is an opaque descriptor for type `T`.
  *  It is used by the compiler to preserve information necessary
- *  for instantiating Arrays in those cases where the element type
+ *  for instantiating `Arrays` in those cases where the element type
  *  is unknown at compile time.
  *
- *  The type-relation operators make an effort to present a
- *  more accurate picture than can be realized with erased types,
- *  but they should not be relied upon to give correct answers.
- *  In particular they are likely to be wrong when variance is
- *  involved or when a subtype has a different number of type
- *  arguments than a supertype.
+ *  The type-relation operators make an effort to present a more accurate
+ *  picture than can be realized with erased types, but they should not be
+ *  relied upon to give correct answers. In particular they are likely to
+ *  be wrong when variance is involved or when a subtype has a different
+ *  number of type arguments than a supertype.
  */
 trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
-  /** A class representing the type U to which T would be erased. Note
-    * that there is no subtyping relationship between T and U. */
+  /** A class representing the type `U` to which `T` would be erased. Note
+    * that there is no subtyping relationship between `T` and `U`. */
   def erasure: JClass[_]
 
   private def subtype(sub: JClass[_], sup: JClass[_]): Boolean = {
@@ -89,8 +88,8 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
     that <:< this
 
   def canEqual(other: Any) = other match {
-    case _: ClassManifest[_]  => true
-    case _                    => false
+    case _: ClassManifest[_] => true
+    case _                   => false
   }
 
   /** Tests whether the type represented by this manifest is equal to
@@ -144,9 +143,8 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
     else ""
 }
 
-/** The object ClassManifest defines factory methods for manifests.
- *  It is intended for use by the compiler and should not be used
- *  in client code.
+/** The object `ClassManifest` defines factory methods for manifests.
+ *  It is intended for use by the compiler and should not be used in client code.
  */
 object ClassManifest {
   val Byte    = Manifest.Byte

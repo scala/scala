@@ -10,19 +10,17 @@
 
 package scala.concurrent
 
-/** <p>
- *    Library for using Pi-calculus concurrent primitives in
- *    <a href="http://scala-lang.org/" target="_top">Scala</a>. As an
- *    example, the definition of a two-place buffer using the <code>pilib</code>
- *    library looks like:
- *  </p><pre>
- *  <b>def</b> Buffer[a](put: Chan[a], get: Chan[a]) {
- *    <b>def</b> B0 { choice ( put * { x => B1(x) } ) }
- *    <b>def</b> B1(x: a) { choice ( get(x) * B0, put * { y => B2(x, y) } ) }
- *    <b>def</b> B2(x: a, y: a) { choice ( get(x) * B1(y) ) }
+/** Library for using Pi-calculus concurrent primitives in
+ *  [[http://scala-lang.org/#_top Scala]]. As an example, the definition of
+ *  a two-place buffer using the `pilib` library looks like:
+ *  {{{
+ *  def Buffer[a](put: Chan[a], get: Chan[a]) {
+ *    def B0 { choice ( put * { x => B1(x) } ) }
+ *    def B1(x: a) { choice ( get(x) * B0, put * { y => B2(x, y) } ) }
+ *    def B2(x: a, y: a) { choice ( get(x) * B1(y) ) }
  *    B0
  *  }
- *  </pre>
+ *  }}}
  *
  *  @see     <a href="http://scala-lang.org/docu/papers.html" target="_top">
  *           PiLib: A Hosted Language for Pi-Calculus Style Concurrency</a>

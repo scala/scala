@@ -6,18 +6,17 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.concurrent
 
 import ops.future
 
-/** A <code>DelayedLazyVal</code> is a wrapper for lengthy
- *  computations which have a valid partially computed result.
- *  The first argument is a function for obtaining the result
- *  at any given point in time, and the second is the lengthy
- *  computation.  Once the computation is complete, the apply()
- *  method will stop recalculating it and return a fixed value
- *  from that point forward.
+/** A `DelayedLazyVal` is a wrapper for lengthy computations which have a
+ *  valid partially computed result.
+ *
+ *  The first argument is a function for obtaining the result at any given
+ *  point in time, and the second is the lengthy computation.  Once the
+ *  computation is complete, the `apply` method will stop recalculating it
+ *  and return a fixed value from that point forward.
  *
  *  @param  f      the function to obtain the current value at any point in time
  *  @param  body   the computation to run to completion in another thread

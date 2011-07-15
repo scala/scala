@@ -29,8 +29,7 @@ abstract class BitSet extends Set[Int]
 
   def fromArray(elems: Array[Long]): BitSet = BitSet.fromArray(elems)
 
-  /** Update word at index <code>idx</code>; enlarge set if <code>idx</code>
-   *  outside range of set.
+  /** Update word at index `idx`; enlarge set if `idx` outside range of set.
    */
   protected def updateWord(idx: Int, w: Long): BitSet
 
@@ -103,4 +102,3 @@ object BitSet extends BitSetFactory[BitSet] {
     protected def updateWord(idx: Int, w: Long): BitSet = fromArray(updateArray(elems, idx, w))
   }
 }
-

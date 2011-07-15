@@ -6,13 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
-/** <p>
- *    Annotation for specifying the exceptions thrown by a method.
- *    For example:
+/**
+ * Annotation for specifying the exceptions thrown by a method.
+ * For example:
  * {{{
  * class Reader(fname: String) {
  *   private val in = new BufferedReader(new FileReader(fname))

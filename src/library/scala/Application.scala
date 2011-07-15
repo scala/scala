@@ -47,7 +47,7 @@ import scala.compat.Platform.currentTime
  *    fail to optimize or JIT the code in the body of an `object` extending
  *    `Application`.  This can lead to a significant performance degradation.
  *
- *  It is recommended to use the `[[scala.App]]` trait instead.
+ *  It is recommended to use the [[scala.App]] trait instead.
  *  {{{
  *  object Main {
  *    def main(args: Array[String]) {

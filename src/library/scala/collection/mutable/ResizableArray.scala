@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
@@ -62,10 +60,12 @@ trait ResizableArray[A] extends IndexedSeq[A]
     }
   }
 
-  /** Fills the given array <code>xs</code> with at most `len` elements of
-   *  this traversable starting at position `start`.
-   *  Copying will stop once either the end of the current traversable is reached or
-   *  `len` elements have been copied or the end of the array is reached.
+  /** Fills the given array `xs` with at most `len` elements of this
+   *  traversable starting at position `start`.
+   *
+   *  Copying will stop once either the end of the current traversable is
+   *  reached or `len` elements have been copied or the end of the array
+   *  is reached.
    *
    *  @param  xs the array to fill.
    *  @param  start starting index.
@@ -78,7 +78,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
 
   //##########################################################################
 
-  /** remove elements of this array at indices after <code>sz</code>
+  /** Remove elements of this array at indices after `sz`.
    */
   def reduceToSize(sz: Int) {
     require(sz <= size0)
@@ -88,7 +88,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
     }
   }
 
-  /** ensure that the internal array has at n cells */
+  /** Ensure that the internal array has at `n` cells. */
   protected def ensureSize(n: Int) {
     if (n > array.length) {
       var newsize = array.length * 2
@@ -117,6 +117,8 @@ trait ResizableArray[A] extends IndexedSeq[A]
 }
 
 object ResizableArray extends SeqFactory[ResizableArray] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ResizableArray[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ResizableArray[A]] =
+    ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+
   def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
 }

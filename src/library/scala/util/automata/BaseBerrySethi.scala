@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.automata
 
 import scala.util.regexp.{ Base }
@@ -15,8 +13,9 @@ import scala.collection.{ mutable, immutable }
 
 // todo: replace global variable pos with acc
 
-/** This class turns a regular expression over A into a [[scala.util.automata.NondetWorkAutom]]
-  * over A using the celebrated position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
+/** This class turns a regular expression over `A` into a
+  * [[scala.util.automata.NondetWordAutom]] over `A` using the celebrated
+  * position automata construction (also called ''Berry-Sethi'' or ''Glushkov'').
   */
 abstract class BaseBerrySethi {
   val lang: Base
@@ -43,7 +42,7 @@ abstract class BaseBerrySethi {
       val (l1, l2) = x.rs span (_.isNullable)
       ((l1 ++ (l2 take 1)) map compFunction).foldLeft(emptySet)(_ ++ _)
     case Star(t)  => compFunction(t)
-    case _        => throw new IllegalArgumentException("unexpected pattern " + r.getClass())
+    case _        => throw new IllegalArgumentException("unexpected pattern " + r.getClass)
   }
 
   /** Computes `first(r)` for the word regexp `r`. */
@@ -89,7 +88,7 @@ abstract class BaseBerrySethi {
         if (p.isNullable) fol ++ first
         else first
       }
-    case _          => throw new IllegalArgumentException("unexpected pattern: " + r.getClass())
+    case _          => throw new IllegalArgumentException("unexpected pattern: " + r.getClass)
   }
 
   /** Returns the "Sethi-length" of a pattern, creating the set of position along the way.
@@ -98,10 +97,10 @@ abstract class BaseBerrySethi {
    */
   protected def traverse(r: RegExp): Unit = r match {
     // (is tree automaton stuff, more than Berry-Sethi)
-    case x: Alt   => x.rs foreach traverse
-    case x: Sequ  => x.rs foreach traverse
-    case x: Meta  => traverse(x.r)
-    case Star(t)  => traverse(t)
-    case _        => throw new IllegalArgumentException("unexp pattern " + r.getClass())
+    case x: Alt  => x.rs foreach traverse
+    case x: Sequ => x.rs foreach traverse
+    case x: Meta => traverse(x.r)
+    case Star(t) => traverse(t)
+    case _       => throw new IllegalArgumentException("unexp pattern " + r.getClass)
   }
 }

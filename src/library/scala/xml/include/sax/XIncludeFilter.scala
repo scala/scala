@@ -265,12 +265,8 @@ class XIncludeFilter extends XMLFilterImpl {
     locationString
   }
 
-  /**
-    * <p>
-    * This utility method reads a document at a specified URL
-    * and fires off calls to <code>characters()</code>.
-    * It's used to include files with <code>parse="text"</code>
-    * </p>
+  /** This utility method reads a document at a specified URL and fires off
+    * calls to `characters()`. It's used to include files with `parse="text"`.
     *
     * @param  url          URL of the document that will be read
     * @param  encoding     Encoding of the document; e.g. UTF-8,
@@ -291,9 +287,9 @@ class XIncludeFilter extends XMLFilterImpl {
     catch {
       case e: MalformedURLException =>
         val ex = new UnavailableResourceException("Unresolvable URL " + url
-                                                  + getLocation());
-      ex.setRootCause(e);
-      throw new SAXException("Unresolvable URL " + url + getLocation(), ex);
+                                                  + getLocation())
+      ex.setRootCause(e)
+      throw new SAXException("Unresolvable URL " + url + getLocation(), ex)
     }
 
     try {

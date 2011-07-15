@@ -8,11 +8,9 @@
 
 package scala.annotation
 
-/** <p>
- *    A base class for classfile annotations. These are stored as
- *    <a href="http://java.sun.com/j2se/1.5.0/docs/guide/language/annotations.html"
- *    target="_top">Java annotations</a> in classfiles.
- *  </p>
+/** A base class for classfile annotations. These are stored as
+ *  [[http://java.sun.com/j2se/1.5.0/docs/guide/language/annotations.html#_top Java annotations]]]
+ *  in classfiles.
  *
  *  @author  Martin Odersky
  *  @version 1.1, 2/02/2007

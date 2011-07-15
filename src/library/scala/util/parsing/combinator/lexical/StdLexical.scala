@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util.parsing
 package combinator
 package lexical
@@ -16,16 +14,19 @@ import token._
 import input.CharArrayReader.EofCh
 import scala.collection.mutable
 
-/** This component provides a standard lexical parser for a simple, Scala-like language.
- *  It parses keywords and identifiers, numeric literals (integers), strings, and delimiters.
+/** This component provides a standard lexical parser for a simple,
+ *  [[http://scala-lang.org Scala]]-like language. It parses keywords and
+ *  identifiers, numeric literals (integers), strings, and delimiters.
  *
- *  To distinguish between identifiers and keywords, it uses a set of reserved identifiers:
- *  every string contained in `reserved` is returned as a keyword token.
- *  (Note that "=>" is hard-coded as a keyword.)
- *  Additionally, the kinds of delimiters can be specified by the `delimiters` set.
+ *  To distinguish between identifiers and keywords, it uses a set of
+ *  reserved identifiers:  every string contained in `reserved` is returned
+ *  as a keyword token. (Note that `=>` is hard-coded as a keyword.)
+ *  Additionally, the kinds of delimiters can be specified by the
+ *  `delimiters` set.
  *
- *  Usually this component is used to break character-based input into bigger tokens,
- *  which are then passed to a token-parser {@see TokenParsers}.
+ *  Usually this component is used to break character-based input into
+ *  bigger tokens, which are then passed to a token-parser {@see
+ *  [[scala.util.parsing.combinator.syntactical.TokenParsers]]}.
  *
  * @author Martin Odersky
  * @author Iulian Dragos

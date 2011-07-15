@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 package persistent
 
@@ -17,13 +16,12 @@ import java.lang.Thread
 import scala.util.logging.Logged
 import scala.collection.Iterator
 
-/** <p>
- *    Mutable storage of immutable xml trees. Everything is kept in memory,
- *    with a thread periodically checking for changes and writing to file.
- *    To ensure atomicity, two files are used, filename1 and '$'+filename1.
- *    The implementation switches between the two, deleting the older one
- *    after a complete dump of the database has been written.
- *  </p>
+/** Mutable storage of immutable xml trees. Everything is kept in memory,
+ *  with a thread periodically checking for changes and writing to file.
+ *
+ *  To ensure atomicity, two files are used, `filename1` and `'$'+filename1`.
+ *  The implementation switches between the two, deleting the older one
+ *  after a complete dump of the database has been written.
  *
  *  @author Burak Emir
  */
@@ -31,7 +29,8 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
 
   private val file2 = new File(file1.getParent, file1.getName+"$")
 
-  /**  either equals file1 or file2, references the next file in which updates will be stored
+  /** Either equals `file1` or `file2`, references the next file in which
+   *  updates will be stored.
    */
   private var theFile: File = null
 
@@ -85,10 +84,10 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
 
   /** saves the XML to file */
   private def save() = if (this.dirty) {
-    log("[save]\ndeleting "+theFile);
-    theFile.delete();
-    log("creating new "+theFile);
-    theFile.createNewFile();
+    log("[save]\ndeleting "+theFile)
+    theFile.delete()
+    log("creating new "+theFile)
+    theFile.createNewFile()
     val fos = new FileOutputStream(theFile)
     val c   = fos.getChannel()
 
@@ -97,7 +96,7 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     val w = Channels.newWriter(c, "utf-8")
     XML.write(w, storageNode, "utf-8", true, null)
 
-    log("writing to "+theFile);
+    log("writing to "+theFile)
 
     w.close
     c.close
@@ -107,19 +106,20 @@ abstract class CachedFileStorage(private val file1: File) extends Thread with Lo
     log("[save done]")
   }
 
-  /** run method of the thread. remember to use start() to start a thread, not run. */
+  /** Run method of the thread. remember to use `start()` to start a thread,
+    * not `run`. */
   override def run = {
-    log("[run]\nstarting storage thread, checking every "+interval+" ms");
-    while(true) {
-      Thread.sleep( this.interval );
+    log("[run]\nstarting storage thread, checking every "+interval+" ms")
+    while (true) {
+      Thread.sleep( this.interval )
       save
     }
   }
 
-  /** forces writing of contents to the file, even if there has not been any update. */
+  /** Force writing of contents to the file, even if there has not been any
+    * update. */
   def flush() = {
-    this.dirty = true;
+    this.dirty = true
     save
   }
 }
-

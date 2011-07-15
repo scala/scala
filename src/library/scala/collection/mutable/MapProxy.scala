@@ -6,14 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
 /**
- *  This trait implements a proxy for <a href="Map.html"
- *  target="contentFrame"><code>scala.collection.mutable.Map</code></a>.
+ *  This trait implements a proxy for [[scala.collection.mutable.Map]].
  *
  *  It is most useful for assembling customized map abstractions
  *  dynamically using object composition and forwarding.

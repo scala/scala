@@ -14,8 +14,8 @@ import annotation.migration
 import immutable.StringLike
 
 /** A builder for mutable sequence of characters.  This class provides an API
- *  mostly compatible with java.lang.StringBuilder, except where there are conflicts
- *  with the Scala collections API (such as the `reverse` method.)
+ *  mostly compatible with `java.lang.StringBuilder`, except where there are
+ *  conflicts with the Scala collections API (such as the `reverse` method.)
  *
  *  @author Stephane Micheloud
  *  @author Martin Odersky
@@ -36,8 +36,8 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = new GrowingBuilder(new StringBuilder)
 
-  /** Constructs a string builder initialized with String initValue
-   *  and with additional Char capacity initCapacity.
+  /** Constructs a string builder initialized with string value `initValue`
+   *  and with additional character capacity `initCapacity`.
    */
   def this(initCapacity: Int, initValue: String) =
     this(new JavaStringBuilder(initValue.length + initCapacity) append initValue)
@@ -48,7 +48,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   def this() = this(16, "")
 
   /** Constructs a string builder with no characters in it and an
-   *  initial capacity specified by the capacity argument.
+   *  initial capacity specified by the `capacity` argument.
    *
    *  @param  capacity  the initial capacity.
    *  @throws NegativeArraySizeException  if capacity < 0.
@@ -96,11 +96,11 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   /** Ensure that the capacity is at least the given argument.
    *  If the argument is greater than the current capacity, new
    *  storage will be allocated with size equal to the given
-   *  argument or to (2 * capacity + 2), whichever is larger.
+   *  argument or to `(2 * capacity + 2)`, whichever is larger.
    *
    *  @param newCapacity    the minimum desired capacity.
    */
-  def ensureCapacity(newCapacity: Int): Unit = underlying ensureCapacity newCapacity
+  def ensureCapacity(newCapacity: Int) { underlying ensureCapacity newCapacity }
 
   /** Returns the Char at the specified index, counting from 0 as in Arrays.
    *
@@ -165,7 +165,8 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
 
   /** For implementing CharSequence.
    */
-  def subSequence(start: Int, end: Int): java.lang.CharSequence = substring(start, end)
+  def subSequence(start: Int, end: Int): java.lang.CharSequence =
+    substring(start, end)
 
   /** Appends the given Char to the end of the sequence.
    */
@@ -177,6 +178,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
     underlying append s
     this
   }
+
   def appendAll(xs: String): StringBuilder = {
     underlying append xs
     this
@@ -187,9 +189,9 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
   def +(x: Char): this.type = { +=(x); this }
 
   /** Appends the string representation of the given argument,
-   *  which is converted to a String with String.valueOf.
+   *  which is converted to a String with `String.valueOf`.
    *
-   *  @param  x   an <code>Any</code> object.
+   *  @param  x   an `Any` object.
    *  @return     this StringBuilder.
    */
   def append(x: Any): StringBuilder = {
