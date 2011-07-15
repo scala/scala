@@ -308,19 +308,19 @@ trait TypeDiagnostics {
     def modifyName(f: String => String) =
       sym.name = newTypeName(f(sym.name.toString))
 
+    def scalaQualify() = {
+      val intersect = Set(trueOwner, aliasOwner) intersect Set(ScalaPackageClass, PredefModuleClass)
+      if (intersect.nonEmpty) preQualify()
+    }
+
     // functions to manipulate the name
     def preQualify()   = modifyName(trueOwner.fullName + "." + _)
     def postQualify()  = modifyName(_ + "(in " + trueOwner + ")")
-    def scalaQualify() = if (inPredefOrScala) preQualify()
     def typeQualify()  = if (sym.isTypeParameterOrSkolem) postQualify()
     def nameQualify()  = if (trueOwner.isPackageClass) preQualify() else postQualify()
 
     def trueOwner  = tp.typeSymbol.owner.skipPackageObject
     def aliasOwner = tp.typeSymbolDirect.owner.skipPackageObject
-    def owners     = List(trueOwner, aliasOwner)
-
-    private def scalaAndPredef = Set(ScalaPackageClass, PredefModuleClass)
-    def inPredefOrScala = owners exists scalaAndPredef
 
     def sym_==(other: TypeDiag)     = tp.typeSymbol == other.tp.typeSymbol
     def owner_==(other: TypeDiag)   = trueOwner == other.trueOwner
@@ -339,9 +339,8 @@ trait TypeDiagnostics {
       |tp.typeSymbol.owner = %s
       |tp.typeSymbolDirect = %s
       |tp.typeSymbolDirect.owner = %s
-      |inPredefOrScala = %s
       """.stripMargin.format(
-        tp, tp.typeSymbol, tp.typeSymbol.owner, tp.typeSymbolDirect, tp.typeSymbolDirect.owner, inPredefOrScala
+        tp, tp.typeSymbol, tp.typeSymbol.owner, tp.typeSymbolDirect, tp.typeSymbolDirect.owner
       )
     }
   }
