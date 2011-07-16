@@ -76,53 +76,39 @@ trait GenTraversableOnce[+A] {
    */
   def isTraversableAgain: Boolean
 
-  /** Reduces the elements of this sequence using the specified associative binary operator.
+  /** Reduces the elements of this $coll using the specified associative binary operator.
    *
    *  $undefinedorder
    *
-   *  Note this method has a different signature than the `reduceLeft`
-   *  and `reduceRight` methods of the trait `Traversable`.
-   *  The result of reducing may only be a supertype of this parallel collection's
-   *  type parameter `T`.
-   *
-   *  @tparam U      A type parameter for the binary operator, a supertype of `T`.
+   *  @tparam A1      A type parameter for the binary operator, a supertype of `A`.
    *  @param op       A binary operator that must be associative.
-   *  @return         The result of applying reduce operator `op` between all the elements if the collection is nonempty.
+   *  @return         The result of applying reduce operator `op` between all the elements if the $coll is nonempty.
    *  @throws UnsupportedOperationException
    *  if this $coll is empty.
    */
   def reduce[A1 >: A](op: (A1, A1) => A1): A1
 
-  /** Optionally reduces the elements of this sequence using the specified
+  /** Reduces the elements of this $coll, if any, using the specified
    *  associative binary operator.
    *
    *  $undefinedorder
    *
-   *  Note this method has a different signature than the `reduceLeftOption`
-   *  and `reduceRightOption` methods of the trait `Traversable`.
-   *  The result of reducing may only be a supertype of this parallel collection's
-   *  type parameter `T`.
-   *
-   *  @tparam U      A type parameter for the binary operator, a supertype of `T`.
+   *  @tparam A1     A type parameter for the binary operator, a supertype of `A`.
    *  @param op      A binary operator that must be associative.
    *  @return        An option value containing result of applying reduce operator `op` between all
    *                 the elements if the collection is nonempty, and `None` otherwise.
    */
   def reduceOption[A1 >: A](op: (A1, A1) => A1): Option[A1]
 
-  /** Folds the elements of this sequence using the specified associative
-   *  binary operator. The order in which the elements are reduced is
-   *  unspecified and may be nondeterministic.
+  /** Folds the elements of this $coll using the specified associative
+   *  binary operator.
    *
-   *  Note this method has a different signature than the `foldLeft`
-   *  and `foldRight` methods of the trait `Traversable`.
-   *  The result of folding may only be a supertype of this parallel
-   *  collection's type parameter `T`.
+   *  $undefinedorder
    *
-   *  @tparam U      a type parameter for the binary operator, a supertype of `T`.
-   *  @param z       a neutral element for the fold operation, it may be added to the result
-   *                 an arbitrary number of times, not changing the result (e.g. `Nil` for list concatenation,
-   *                 0 for addition, or 1 for multiplication)
+   *  @tparam A1     a type parameter for the binary operator, a supertype of `A`.
+   *  @param z       a neutral element for the fold operation; may be added to the result
+   *                 an arbitrary number of times, and must not change the result (e.g., `Nil` for list concatenation,
+   *                 0 for addition, or 1 for multiplication.)
    *  @param op      a binary operator that must be associative
    *  @return        the result of applying fold operator `op` between all the elements and `z`
    */
@@ -214,7 +200,7 @@ trait GenTraversableOnce[+A] {
    *  sequentially, using `seqop` to update the result, and then applies
    *  `combop` to results from different partitions. The implementation of
    *  this operation may operate on an arbitrary number of collection
-   *  partitions, so `combop` may be invoked arbitrary number of times.
+   *  partitions, so `combop` may be invoked an arbitrary number of times.
    *
    *  For example, one might want to process some elements and then produce
    *  a `Set`. In this case, `seqop` would process an element and append it
@@ -227,7 +213,7 @@ trait GenTraversableOnce[+A] {
    *  Another example is calculating geometric mean from a collection of doubles
    *  (one would typically require big doubles for this).
    *
-   *  @tparam S        the type of accumulated results
+   *  @tparam B        the type of accumulated results
    *  @param z         the initial value for the accumulated result of the partition - this
    *                   will typically be the neutral element for the `seqop` operator (e.g.
    *                   `Nil` for list concatenation or `0` for summation)
