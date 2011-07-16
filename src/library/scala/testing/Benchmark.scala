@@ -13,26 +13,19 @@ package scala.testing
 
 import compat.Platform
 
-/** <p>
- *    <code>Benchmark</code> can be used to quickly turn an existing
- *    class into a benchmark. Here is a short example:
- *  </p><pre>
- *  <b>object</b> sort1 <b>extends</b> Sorter <b>with</b> Benchmark {
- *    <b>def</b> run = sort(List.range(1, 1000))
+/** `Benchmark` can be used to quickly turn an existing class into a
+ *  benchmark. Here is a short example:
+ *  {{{
+ *  object sort1 extends Sorter with Benchmark {
+ *    def run = sort(List.range(1, 1000))
  *  }
- *  </pre>
- *  <p>
- *    The <code>run</code> method has to be defined by the user, who
- *    will perform the timed operation there.
- *    Run the benchmark as follows:
- *  </p>
- *  <pre>
- *  &gt; scala sort1 5 times.log
- *  </pre>
- *  <p>
- *    This will run the benchmark 5 times and log the execution times in
- *    a file called <code>times.log</code>
- *  </p>
+ *  }}}
+ *  The `run` method has to be defined by the user, who will perform the
+ *  timed operation there. Run the benchmark as follows:
+ *  {{{
+ *  > scala sort1 5
+ *  }}}
+ *  This will run the benchmark 10 times, and print the execution times to stdout.
  *
  *  @author Iulian Dragos, Burak Emir
  */
@@ -40,8 +33,7 @@ trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark.
    *  This method is called by the benchmarking code for a number of times.
-   *  The GC is called between "multiplier" calls to run, right after tear
-   *  down.
+   *  The GC is called before each call to 'run'.
    *
    *  @see setUp
    *  @see tearDown
@@ -50,9 +42,8 @@ trait Benchmark {
 
   var multiplier = 1
 
-  /** Run the benchmark the specified number of times
-   *  and return a list with the execution times in milliseconds
-   *  in reverse order of the execution
+  /** Run the benchmark the specified number of times and return a list with
+   *  the execution times in milliseconds in reverse order of the execution.
    *
    *  @param noTimes ...
    *  @return        ...
@@ -94,11 +85,10 @@ trait Benchmark {
   def prefix: String = getClass().getName()
 
   /**
-   * The entry point. It takes two arguments (n),
-   *  and an optional argument multiplier (mult).
-   *  (n) is the number of consecutive runs,
-   *  if (mult) is present, the n runs are repeated (mult)
-   *  times.
+   * The entry point. It takes two arguments:
+   * - argument `n` is the number of consecutive runs
+   * - optional argument `mult` specifies that the `n` runs are repeated
+   *   `mult` times.
    */
   def main(args: Array[String]) {
     if (args.length > 0) {
