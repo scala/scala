@@ -413,11 +413,8 @@ object Regex {
     def unapply(m: Match): Some[String] = Some(m.matched)
   }
 
-  /** An extractor object that yields groups in the match. The main
-   *  advantage of using this is extractor instead of using the original
-   *  regex is that this avoids rematching the string.
-   *
-   *  For example:
+  /** An extractor object that yields the groups in the match. Using an extractor
+   *  rather than the original regex avoids recomputing the match.
    *
    *  {{{
    *  import scala.util.matching.Regex.Groups
