@@ -1785,18 +1785,21 @@ trait Infer {
       tree setSymbol resSym setType resTpe
     }
 
-    case class AccessError(tree: Tree, sym: Symbol, pre: Type, explanation: String) extends Tree {
-      override def pos = tree.pos
-      override def hasSymbol = tree.hasSymbol
-      override def symbol = tree.symbol
-      override def symbol_=(x: Symbol) = tree.symbol = x
+    abstract class TreeForwarder(forwardTo: Tree) extends Tree {
+      override def pos       = forwardTo.pos
+      override def hasSymbol = forwardTo.hasSymbol
+      override def symbol    = forwardTo.symbol
+      override def symbol_=(x: Symbol) = forwardTo.symbol = x
+    }
+
+    case class AccessError(tree: Tree, sym: Symbol, pre: Type, explanation: String) extends TreeForwarder(tree) {
       setError(this)
 
+      // @PP: It is improbable this logic shouldn't be in use elsewhere as well.
+      private def location = if (sym.isClassConstructor) context.enclClass.owner else pre.widen
       def emit(): Tree = {
         val realsym = underlying(sym)
-        errorTree(tree, realsym + realsym.locationString + " cannot be accessed in " +
-            (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
-            explanation)
+        errorTree(tree, realsym.fullLocationString + " cannot be accessed in " + location + explanation)
       }
     }
   }
