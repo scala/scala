@@ -366,11 +366,32 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def doubleValue = this.bigDecimal.doubleValue
 
-  /** This BigDecimal as an exact value.
-   */
+  /** Converts this `BigDecimal` to a [[scala.Byte]], checking for lost information.
+    * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
+    * range for a [[scala.Byte]] result, then a `java.lang.ArithmeticException` is
+    * thrown.
+    */
   def toByteExact = bigDecimal.byteValueExact
+
+  /** Converts this `BigDecimal` to a [[scala.Short]], checking for lost information.
+    * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
+    * range for a [[scala.Short]] result, then a `java.lang.ArithmeticException` is
+    * thrown.
+    */
   def toShortExact = bigDecimal.shortValueExact
+
+  /** Converts this `BigDecimal` to a [[scala.Int]], checking for lost information.
+    * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
+    * range for an [[scala.Int]] result, then a `java.lang.ArithmeticException` is
+    * thrown.
+    */
   def toIntExact = bigDecimal.intValueExact
+
+  /** Converts this `BigDecimal` to a [[scala.Long]], checking for lost information.
+    * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
+    * range for a [[scala.Long]] result, then a `java.lang.ArithmeticException` is
+    * thrown.
+    */
   def toLongExact = bigDecimal.longValueExact
 
   /** Creates a partially constructed NumericRange[BigDecimal] in range
