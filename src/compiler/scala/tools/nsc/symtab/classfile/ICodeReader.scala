@@ -10,8 +10,7 @@ package classfile
 import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
 import backend.icode._
-import scala.reflect.internal.ClassfileConstants
-import scala.reflect.internal.ClassfileConstants._
+import ClassfileConstants._
 import scala.reflect.internal.Flags._
 
 /** ICode reader from Java bytecode.

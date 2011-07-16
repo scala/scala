@@ -12,7 +12,7 @@ package scala.tools.scalap
 import scala.tools.scalap.scalax.rules.scalasig._
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.util.ScalaClassLoader.getSystemLoader
-import scala.reflect.internal.ByteCodecs
+import scala.reflect.internal.pickling.ByteCodecs
 
 import ClassFileParser.{ ConstValueIndex, Annotation }
 import Main.{ SCALA_SIG, SCALA_SIG_ANNOTATION, BYTES_VALUE }

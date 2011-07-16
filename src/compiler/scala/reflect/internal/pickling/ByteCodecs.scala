@@ -44,6 +44,9 @@ object ByteCodecs {
       if (in == 0xc0 && (src(i + 1) & 0xff) == 0x80) {
         src(j) = 0x7f
         i += 2
+      } else if (in == 0) {
+        src(j) = 0x7f
+        i += 1
       } else {
         src(j) = (in - 1).toByte
         i += 1

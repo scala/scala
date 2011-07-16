@@ -647,6 +647,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
       var j = fullname.pos('.', i)
       while (j < fullname.length) {
         sym = sym.info.member(fullname.subName(i, j))
+        // if (sym == NoSymbol)
+        //   println("no member "+fullname.subName(i, j)+" found in "+sym0+sym0.info.getClass+" "+sym0.info.typeSymbol.info.getClass)
         i = j + 1
         j = fullname.pos('.', i)
       }
@@ -654,6 +656,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         if (module) sym.info.member(fullname.subName(i, j)).suchThat(_ hasFlag MODULE)
         else sym.info.member(fullname.subName(i, j).toTypeName)
       if (result == NoSymbol) {
+      //   println("no member "+fullname.subName(i, j)+" found in "+sym+" "+module)
         if (settings.debug.value)
           { log(sym.info); log(sym.info.members) }//debug
         throw new MissingRequirementError((if (module) "object " else "class ") + fullname)

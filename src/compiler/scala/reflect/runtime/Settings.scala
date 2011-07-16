@@ -1,6 +1,10 @@
 package scala.reflect
 package runtime
 
+/** The Settings class for runtime reflection.
+ *  This should be refined, so that settings are settable via command
+ *  line options or properties.
+ */
 class Settings extends internal.settings.MutableSettings {
 
   class Setting extends SettingValue

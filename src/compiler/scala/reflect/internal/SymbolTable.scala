@@ -50,7 +50,7 @@ abstract class SymbolTable extends api.Universe
   final val NoRunId = 0
 
   private var ph: Phase = NoPhase
-  protected var per = NoPeriod
+  private var per = NoPeriod
 
   final def phase: Phase = ph
 

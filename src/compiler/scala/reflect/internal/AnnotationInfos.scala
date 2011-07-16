@@ -7,6 +7,7 @@ package scala.reflect
 package internal
 
 import util._
+import pickling.ByteCodecs
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>

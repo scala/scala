@@ -1,32 +1,30 @@
 package scala.reflect
 package runtime
 
-class Universe extends internal.SymbolTable with JavaConversions {
+import internal.{SomePhase, NoPhase, Phase, TreeGen}
+
+/** The universe for standard runtime reflection from Java.
+ *  This type implements all abstract term members in internal.SymbolTable.
+ *  It also provides methods to go from Java members to Scala members,
+ *  using the code in JavaConversions.
+ */
+class Universe extends internal.SymbolTable with JavaConversions with Loaders {
 
   type AbstractFileType = AbstractFile
 
-  def picklerPhase = internal.NoPhase
+  def picklerPhase = SomePhase
 
-  //val treePrinter = null
-
-  val gen = new internal.TreeGen { val global: Universe.this.type = Universe.this }
+  val gen = new TreeGen { val global: Universe.this.type = Universe.this }
 
   def settings = new Settings
   def forInteractive = false
   def forScaladoc = false
 
-  val phaseWithId: Array[internal.Phase] = Array()
-  val currentRunId = 0
-  per = 1 << 8 + 1 // fake a period so that it is different from NoPeriod
+  val phaseWithId: Array[Phase] = Array(NoPhase, SomePhase)
+  val currentRunId = 1 // fake a run id so that it is different from NoRunId
+  phase = SomePhase // set to a phase different from NoPhase
 
   def log(msg: => AnyRef): Unit = println(" [] "+msg)
-  override val rootLoader = new LazyType {
-    override def complete(sym: Symbol) = sym setInfo packageType(definitions.RootClass)
-  }
-
-  private def packageType(clazz: Symbol) = new ClassInfoType(List(), newScope, clazz)
-
-  // definitions.RootClass.setInfo(packageType(definitions.RootClass))
 
   type TreeCopier = TreeCopierOps
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
@@ -40,6 +38,15 @@ class Universe extends internal.SymbolTable with JavaConversions {
   val NoPosition = ""
 }
 
-object Universe extends Universe with App {
-  classToScala(classOf[scala.collection.Iterable[_]])
+object Universe extends Universe
+
+/** test code; should go to tests once things settle down a bit
+ */
+object Test extends Universe with App {
+  val sym = classToScala(classOf[scala.collection.Iterable[_]])
+  println(sym)
+  println("parents = "+sym.info.parents)
+  println("decls = "+(sym.info.decls.toList map (_.defString)))
+  val ms = sym.info.members.toList map (_.initialize)
+  println("members = "+(ms map (_.defString) mkString ("\n  ")))
 }
