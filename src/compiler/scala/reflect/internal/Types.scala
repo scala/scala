@@ -2390,19 +2390,13 @@ A type's typeSymbol should never be inspected directly.
       new TypeVar(origin, constr, args, params)
   }
 
-  /** A class representing a type variable: not used after phase `typer`.
-   *
-   *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
-   *  A TypeVar with nonEmpty typeArgs can only be instantiated by a higher-kinded
-   *  type that can be applied to those args.  A TypeVar is much like a TypeRef,
-   *  except it has special logic for equality and subtyping.
+  /** A class representing a type variable
+   * Not used after phase `typer`.
+   * A higher-kinded type variable has type arguments (a list of Type's) and type parameters (list of Symbols)
+   * A TypeVar whose list of args is non-empty can only be instantiated by a higher-kinded type that can be applied to these args
+   * a typevar is much like a typeref, except it has special logic for type equality/subtyping
    */
-  class TypeVar(
-    val origin: Type,
-    val constr0: TypeConstraint,
-    override val typeArgs: List[Type],
-    override val params: List[Symbol]
-  ) extends Type {
+  class TypeVar(val origin: Type, val constr0: TypeConstraint, override val typeArgs: List[Type], override val params: List[Symbol]) extends Type {
     // params are needed to keep track of variance (see mapOverArgs in SubstMap)
     assert(typeArgs.isEmpty || sameLength(typeArgs, params))
     // var tid = { tidCount += 1; tidCount } //DEBUG
@@ -2415,16 +2409,14 @@ A type's typeSymbol should never be inspected directly.
     val level = skolemizationLevel
 
     /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
-     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
-     *
-     *  `constr` for `?CC` only tracks type constructors anyway,
-     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
-     *  `?CC's` hibounds contains List and Iterable.
+     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`
+     *  `constr` for `?CC` only tracks type constructors anyway, so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
+     *  `?CC's` hibounds contains List and Iterable
      */
     def applyArgs(newArgs: List[Type]): TypeVar =
       if (newArgs.isEmpty) this // SubstMap relies on this (though this check is redundant when called from appliedType...)
       else TypeVar(origin, constr, newArgs, params) // @M TODO: interaction with undoLog??
-      // newArgs.length may differ from args.length (could've been empty before)
+        // newArgs.length may differ from args.length (could've been empty before)
       // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
       // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
       // TypeVars get applied to different arguments over time (in asSeenFrom)
@@ -2435,8 +2427,7 @@ A type's typeSymbol should never be inspected directly.
       // they share the same TypeConstraint instance
 
     // <region name="constraint mutators + undoLog">
-    // invariant: before mutating constr, save old state in undoLog
-    // (undoLog is used to reset constraints to avoid piling up unrelated ones)
+    // invariant: before mutating constr, save old state in undoLog (undoLog is used to reset constraints to avoid piling up unrelated ones)
     def setInst(tp: Type) {
 //      assert(!(tp containsTp this), this)
       undoLog record this
@@ -2444,7 +2435,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
-      assert(tp != this, tp) // implies there is a cycle somewhere (?)
+      assert(tp != this) // implies there is a cycle somewhere (?)
       //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
       undoLog record this
       constr.addLoBound(tp, isNumericBound)
@@ -2513,38 +2504,27 @@ A type's typeSymbol should never be inspected directly.
        *  Checks subtyping of higher-order type vars, and uses variances as defined in the
        *  type parameter we're trying to infer (the result will be sanity-checked later).
        */
-      def unifyFull(tpe: Type) = {
-        // Since the alias/widen variations are often no-ops, this
-        // keenly collects them in a Set to avoid redundant tests.
-        Set(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias) exists { tp =>
-          sameLength(typeArgs, tp.typeArgs) && {
-            // this is a higher-kinded type var with same arity as tp.
-            // side effect: adds the type constructor itself as a bound
-            addBound(tp.typeConstructor)
-            if (isLowerBound) isSubArgs(tp.typeArgs, typeArgs, params)
-            else isSubArgs(typeArgs, tp.typeArgs, params)
-          }
-        }
+      def unifyFull(tp: Type) = sameLength(typeArgs, tp.typeArgs) && { // this is a higher-kinded type var with same arity as tp
+        // side effect: adds the type constructor itself as a bound
+        addBound(tp.typeConstructor)
+        if (isLowerBound) isSubArgs(tp.typeArgs, typeArgs, params)
+        else isSubArgs(typeArgs, tp.typeArgs, params)
       }
 
-      // There's a <:< test taking place right now, where tp is a concrete type and this is
-      // a typevar attempting to satisfy that test.  If we determine that the subtype test is
-      // infeasible, we'll return false. Otherwise will retain all the constraints implied by
-      // this test, which will eventually be lub/glbed to instantiate the typevar. We must
-      // be able to find a type with the same number of typeargs among the base types of tp,
-      // or tp after dealiasing/widening.
-
       /** TODO: need positive/negative test cases demonstrating this is correct. */
-      def unifyBaseTypes =
-        if (isLowerBound) tp.baseTypeSeq exists unifyFull
-        else tp.baseTypeSeq.toList forall unifyFull
+      def unifyParents =
+        if (isLowerBound) tp.parents exists unifyFull
+        else tp.parents forall unifyFull
 
-      if (suspended)
-        checkSubtype(tp, origin)
-      else if (constr.instValid)  // type var is already set
-        checkSubtype(tp, constr.inst)
-      else  // relax precision seeking a type whose shape matches the typevar
-        isRelatable(tp) && (unifySimple || unifyFull(tp) || unifyBaseTypes)
+      // TODO: fancier unification, maybe rewrite constraint as follows?
+      // val sym = constr.hiBounds map {_.typeSymbol} find { _.typeParams.length == typeArgs.length}
+      // this <: tp.baseType(sym)
+      if (suspended) checkSubtype(tp, origin)
+      else if (constr.instValid) checkSubtype(tp, constr.inst)  // type var is already set
+      else isRelatable(tp) && { // gradually let go of some type precision in hopes of finding a type that has the same shape as the type variable
+        // okay, this just screams "CLEAN ME UP" -- I think we could use tp.widen instead of tp straight from the get-go in registerBound, since we don't infer singleton types anyway (but maybe that'll change?)
+        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyFull(tp.widen.dealias) || unifyParents
+      }
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
