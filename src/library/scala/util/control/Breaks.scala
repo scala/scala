@@ -16,7 +16,7 @@ package scala.util.control
  *
  *  breakable {
  *    for (...) {
- *      if (...) break
+ *      if (...) break()
  *    }
  *  }
  *  }}}
@@ -27,7 +27,11 @@ class Breaks {
 
   private val breakException = new BreakControl
 
-  /** A block from which one can exit with a `break`. */
+  /**
+   * A block from which one can exit with a `break`. The `break` may be
+   * executed further down in the call stack provided that it is called on the
+   * exact same instance of `Breaks`.
+   */
   def breakable(op: => Unit) {
     try {
       op
@@ -41,6 +45,18 @@ class Breaks {
     def catchBreak(onBreak: => Unit): Unit
   }
 
+  /**
+   * This variant enables the execution of a code block in case of a `break()`:
+   * {{{
+   * tryBreakable {
+   *   for (...) {
+   *     if (...) break()
+   *   }
+   * } catchBreak {
+   *   doCleanup()
+   * }
+   * }}}
+   */
   def tryBreakable(op: => Unit) = new TryBlock {
     def catchBreak(onBreak: => Unit) = try {
       op
@@ -51,9 +67,11 @@ class Breaks {
     }
   }
 
-  /** Break from dynamically closest enclosing breakable block.
+  /**
+   * Break from dynamically closest enclosing breakable block using this exact
+   * `Breaks` instance.
    *
-   *  @note This might be different than the statically closest enclosing block!
+   * @note This might be different than the statically closest enclosing block!
    */
   def break() { throw breakException }
 }
