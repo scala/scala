@@ -85,6 +85,8 @@ self =>
     iterator.reduceRight(op)
   override /*TraversableLike*/ def toIterable: Iterable[A] =
     thisCollection
+  override /*TraversableLike*/ def toIterator: Iterator[A] =
+    iterator
   override /*TraversableLike*/ def head: A =
     iterator.next
 
