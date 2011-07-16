@@ -14,8 +14,7 @@ package scala.xml
  *  @author Burak Emir
  *  @param text the text contained in this node, may not be `'''null'''`.
  */
-class Atom[+A](val data: A) extends SpecialNode with Serializable
-{
+class Atom[+A](val data: A) extends SpecialNode with Serializable {
   if (data == null)
     throw new IllegalArgumentException("cannot construct Atom(null)")
 
