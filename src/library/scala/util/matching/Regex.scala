@@ -15,6 +15,41 @@ import java.util.regex.{ Pattern, Matcher }
 /** This class provides methods for creating and using regular expressions.
  *  It is based on the regular expressions of the JDK since 1.4.
  *
+ *  Its main goal is to extract strings that match a pattern, or the subgroups
+ *  that make it up. For that reason, it is usually used with for comprehensions
+ *  and matching (see methods for examples).
+ *
+ *  Because regex patterns make extensive use of the backslash character (`\`),
+ *  it is usually defined with triple quotes so that backslash characters won't
+ *  need to be quoted. Also, an implicit conversion is available through
+ *  [[scala.Predef]] that makes converting a [[java.lang.String]] into a Regex
+ *  as easy as calling the method `r` on it. For example:
+ *
+ *  {{{
+ *  val datePattern = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+ *  }}}
+ *
+ *  Regex provide methods to find and replace patterns, but also provides
+ *  extractors for pattern subgroups. Note, however, that extractors require
+ *  that the whole text be matched, or they fail.
+ *
+ *  For example, the subgroups in the pattern above can be obtained in the following ways:
+ *
+ *  {{{
+ *  val datePattern(year, month, day) = "2011-07-15"
+ *
+ *  // val datePattern(year, month, day) = "Date 2011-07-15" // throws an exception at runtime
+ *
+ *  val copyright: String = datePattern findFirstIn "Date of this document: 2011-07-15" match {
+ *    case Some(datePattern(year, month, day)) => "Copyright "+year
+ *    case None                                => "No copyright"
+ *  }
+ *
+ *  val copyright: Option[String] = for {
+ *    datePattern(year, month, day) <- datePattern findFirstIn "Last modified 2011-07-15"
+ *  } yield year
+ *  }}}
+ *
  *  You can use special pattern syntax constructs like `(?idmsux-idmsux)`¹ to switch
  *  various regex compilation options like `CASE_INSENSITIVE` or `UNICODE_CASE`.
  *
@@ -37,7 +72,29 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   /** The compiled pattern */
   val pattern = Pattern.compile(regex)
 
-  /** Tries to match target (whole match) and returns the matches.
+  /** Tries to match target (whole match) and returns the matching subgroups.
+   *  if the pattern has no subgroups, then it returns an empty list on a
+   *  successful match.
+   *
+   *  Note, however, that if some subgroup has not been matched, a `null` will
+   *  be returned for that subgroup.
+   *
+   *  For example:
+   *
+   *  {{{
+   *  val p1 = "ab*c".r
+   *  val p2 = "a(b*)c".r
+   *
+   *  val p1Matches = "abbbc" match {
+   *    case p1() => true
+   *    case _    => false
+   *  }
+   *
+   *  val numberOfB = "abbbc" match {
+   *    case p2(b) => Some(b.length)
+   *    case _     => None
+   *  }
+   *  }}}
    *
    *  @param target The string to match
    *  @return       The matches
@@ -53,12 +110,25 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
       None
   }
 
-  /** Return all matches of this regexp in given character sequence as an iterator
+  /** Return all matches of this regexp in given character sequence as a [[scala.util.mathcing.Regex.MatchIterator]],
+   *  which is a special [[scala.collection.Iterator]] that returns the
+   *  matched strings, but can also be converted into a normal iterator
+   *  that returns objects of type [[scala.util.matching.Regex.Match]]
+   *  that can be queried for data such as the text that precedes the
+   *  match, subgroups, etc.
+   *
+   *  @param source The text to match against.
+   *  @return       A [[scala.util.matching.Reegex.MatchIterator]] of all matches.
+   *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
   def findAllIn(source: java.lang.CharSequence) = new Regex.MatchIterator(source, this, groupNames)
 
   /** Return optionally first matching string of this regexp in given character sequence,
-   *  None if it does not exist.
+   *  or None if it does not exist.
+   *
+   *  @param source The text to match against.
+   *  @return       An [[scala.Option]] of the first matching string in the text.
+   *  @example      {{{"""\w+""".r findFirstIn "A simple example." foreach println // prints "A"}}}
    */
   def findFirstIn(source: java.lang.CharSequence): Option[String] = {
     val m = pattern.matcher(source)
@@ -66,7 +136,16 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   }
 
   /** Return optionally first match of this regexp in given character sequence,
-   *  None if it does not exist.
+   *  or None if it does not exist.
+   *
+   *  The main difference between this method and `findFirstIn` is that the (optional) return
+   *  type for this is [[scala.util.matching.Regex.Match]], through which more
+   *  data can be obtained about the match, such as the strings that precede and follow it,
+   *  or subgroups.
+   *
+   *  @param source The text to match against.
+   *  @return       A [[scala.Option]] of [[scala.util.matching.Regex.Match]] of the first matching string in the text.
+   *  @example      {{{("""[a-z]""".r findFirstMatchIn "A simple example.") map (_.start) // returns Some(2), the index of the first match in the text}}}
    */
   def findFirstMatchIn(source: java.lang.CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
@@ -76,6 +155,14 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   /** Return optionally match of this regexp at the beginning of the
    *  given character sequence, or None if regexp matches no prefix
    *  of the character sequence.
+   *
+   *  The main difference from this method to `findFirstIn` is that this
+   *  method will not return any matches that do not begin at the start
+   *  of the text being matched against.
+   *
+   *  @param source The text to match against.
+   *  @return       A [[scala.Option]] of the matched prefix.
+   *  @example      {{{"""[a-z]""".r findPrefixOf "A simple example." // returns None, since the text does not begin with a lowercase letter}}}
    */
   def findPrefixOf(source: java.lang.CharSequence): Option[String] = {
     val m = pattern.matcher(source)
@@ -85,6 +172,14 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   /** Return optionally match of this regexp at the beginning of the
    *  given character sequence, or None if regexp matches no prefix
    *  of the character sequence.
+   *
+   *  The main difference from this method to `findFirstMatchIn` is that
+   *  this method will not return any matches that do not begin at the
+   *  start of the text being matched against.
+   *
+   *  @param source The text to match against.
+   *  @return       A [[scala.Option]] of the [[scala.util.matching.Regex.Match]] of the matched string.
+   *  @example      {{{"""\w+""".r findPrefixMatchOf "A simple example." map (_.after) // returns Some(" simple example.")}}}
    */
   def findPrefixMatchOf(source: java.lang.CharSequence): Option[Match] = {
     val m = pattern.matcher(source)
@@ -96,6 +191,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    *  @param target      The string to match
    *  @param replacement The string that will replace each match
    *  @return            The resulting string
+   *  @example           {{{"""\d+""".r replaceAllIn ("July 15", "<NUMBER>") // returns "July <NUMBER>"}}}
    */
   def replaceAllIn(target: java.lang.CharSequence, replacement: String): String = {
     val m = pattern.matcher(target)
@@ -103,7 +199,16 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   }
 
   /**
-   * Replaces all matches using a replacer function.
+   * Replaces all matches using a replacer function. The replacer function takes a
+   * [[scala.util.matching.Regex.Match]] so that extra information can be obtained
+   * from the match. For example:
+   *
+   * {{{
+   * import scala.util.matching.Regex
+   * val datePattern = new Regex("""(\d\d\d\d)-(\d\d)-(\d\d)""", "year", "month", "day")
+   * val text = "From 2011-07-15 to 2011-07-17"
+   * val repl = datePattern replaceAllIn (text, m => m.group("month")+"/"+m.group("day"))
+   * }}}
    *
    * @param target      The string to match.
    * @param replacer    The function which maps a match to another string.
@@ -115,6 +220,25 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
     it.replaced
   }
 
+  /**
+   * Replaces some of the matches using a replacer function that returns an [[scala.Option]].
+   * The replacer function takes a [[scala.util.matching.Regex.Match]] so that extra
+   * information can be btained from the match. For example:
+   *
+   * {{{
+   * import scala.util.matching.Regex._
+   *
+   * val map = Map("x" -> "a var", "y" -> "another var")
+   * val text = "A text with variables %x, %y and %z."
+   * val varPattern = """%(\w+)""".r
+   * val mapper = (m: Match) => map get (m group 1)
+   * val repl = varPattern replaceSomeIn (text, mapper)
+   * }}}
+   *
+   * @param target      The string to match.
+   * @param replacer    The function which optionally maps a match to another string.
+   * @return            The target string after replacements.
+   */
   def replaceSomeIn(target: java.lang.CharSequence, replacer: Match => Option[String]): String = {
     val it = new Regex.MatchIterator(target, this, groupNames).replacementData
     for (matchdata <- it ; replacement <- replacer(matchdata))
@@ -274,12 +398,35 @@ object Regex {
     def force: this.type = { starts; ends; this }
   }
 
-  /** An extractor object for Matches, yielding the matched string */
+  /** An extractor object for Matches, yielding the matched string
+   *
+   *  This can be used to help writing replacer functions when you
+   *  are not interested in match data. For example:
+   *
+   *  {{{
+   *  import scala.util.matching.Regex.Match
+   *  """\w+""".r replaceAllIn ("A simple example.", _ match { case Match(s) => s.toUpperCase })
+   *  }}}
+   *
+   */
   object Match {
     def unapply(m: Match): Some[String] = Some(m.matched)
   }
 
-  /** An extractor object that yields groups in the match. */
+  /** An extractor object that yields groups in the match. The main
+   *  advantage of using this is extractor instead of using the original
+   *  regex is that this avoids rematching the string.
+   *
+   *  For example:
+   *
+   *  {{{
+   *  import scala.util.matching.Regex.Groups
+   *
+   *  val datePattern = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+   *  val text = "The doc spree happened on 2011-07-15."
+   *  val day = datePattern replaceAllIn(text, _ match { case Groups(year, month, day) => month+"/"+day })
+   *  }}}
+   */
   object Groups {
     def unapplySeq(m: Match): Option[Seq[String]] = if (m.groupCount > 0) Some(1 to m.groupCount map m.group) else None
   }
