@@ -42,6 +42,3 @@ private[actors] class Logger(tag: String) {
   def doError(b: => Unit) =
     if (lev > 0) b
 }
-
-@deprecated("this class is going to be removed in a future release", "2.7.7")
-class Debug(tag: String) extends Logger(tag) {}

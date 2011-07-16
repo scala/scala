@@ -79,26 +79,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *
    *  @param  elem        the element to insert
    */
-  @deprecated("Use `enqueue` instead", "2.7.2")
-  def +[B >: A](elem: B) = enqueue(elem)
-
-  /** Creates a new queue with element added at the end
-   *  of the old queue.
-   *
-   *  @param  elem        the element to insert
-   */
   def enqueue[B >: A](elem: B) = new Queue(elem :: in, out)
-
-  /** Returns a new queue with all elements provided by an `Iterable` object
-   *  added at the end of the queue.
-   *
-   *  The elements are prepended in the order they are given out by the
-   *  iterator.
-   *
-   *  @param  iter        an iterable object
-   */
-  @deprecated("Use `enqueue` instead", "2.7.2")
-  def +[B >: A](iter: Iterable[B]) = enqueue(iter)
 
   /** Returns a new queue with all elements provided by an `Iterable` object
    *  added at the end of the queue.

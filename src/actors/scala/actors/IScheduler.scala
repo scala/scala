@@ -34,11 +34,12 @@ trait IScheduler {
   def executeFromActor(task: Runnable): Unit =
     execute(task)
 
-  /** Shuts down the scheduler.
-   */
+  /** Shuts down the scheduler. */
   def shutdown(): Unit
 
   /** When the scheduler is active, it can execute tasks.
+   *
+   * @return `'''true'''`, if the scheduler is active, otherwise false.
    */
   def isActive: Boolean
 
@@ -64,17 +65,5 @@ trait IScheduler {
   def onTerminate(a: TrackedReactor)(f: => Unit): Unit
 
   def managedBlock(blocker: scala.concurrent.ManagedBlocker): Unit
-
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
-  def tick(a: Actor) {}
-
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
-  def onLockup(handler: () => Unit) {}
-
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
-  def onLockup(millis: Int)(handler: () => Unit) {}
-
-  @deprecated("this member is going to be removed in a future release", "2.7.7")
-  def printActorDump() {}
 
 }
