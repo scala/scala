@@ -20,10 +20,9 @@ import compat.Platform
  *  The `run` method has to be defined by the user, who will perform the
  *  timed operation there. Run the benchmark as follows:
  *  {{{
- *  > scala sort1 5 times.log
+ *  > scala sort1 5
  *  }}}
- *  This will run the benchmark 5 times and log the execution times in
- *  a file called `times.log`.
+ *  This will run the benchmark 10 times, and print the execution times to stdout.
  *
  *  @author Iulian Dragos, Burak Emir
  */
