@@ -10,7 +10,7 @@ package scala.math
 
 /** A trait for data that have a single, natural ordering.  See
  *  [[scala.math.Ordering]] before using this trait for
- *  more information about whether to use use [[scala.math.Ordering]] instead.
+ *  more information about whether to use [[scala.math.Ordering]] instead.
  *
  *  Classes that implement this trait can be sorted with
  *  [[scala.utils.Sorting]] and can be compared with standard comparison operators
@@ -20,7 +20,8 @@ package scala.math
  *  integers) while Ordering allows for multiple ordering implementations.
  *  An Ordering instance will be implicitly created if necessary.
  *
- *  [[scala.math.Ordering]] is an alternative to this trait that allows multiple orderings to be defined for the same type.
+ *  [[scala.math.Ordering]] is an alternative to this trait that allows multiple orderings to be
+ *  defined for the same type.
  *
  *  [[scala.math.PartiallyOrdered]] is an alternative to this trait for partially ordered data.
  *
@@ -34,23 +35,16 @@ package scala.math
  *  val result = scala.utils.Sorting.quickSort(x)
  *  }}}
  *
- *  Some additional notes from the initial implementation:
+ *  It is important that the `equals` method for an instance of `Ordered[A]` be consistent with the
+ *  compare method. However, due to limitations inherent in the type erasure semantics, there is no
+ *  reasonable way to provide a default implementation of equality for instances of `Ordered[A]`.
+ *  Therefore, if you need to be able to use equality on an instance of `Ordered[A]` you must
+ *  provide it yourself either when inheriting or instantiating.
  *
- *  Note that since version 2006-07-24 this trait is no longer covariant in `A`.
- *
- *  It is important that the `equals` method for an instance of `Ordered[A]`
- *  	  be consistent with the compare method.  However,  due to limitations
- *        inherent in the type erasure semantics, there is no reasonable way to
- *        provide a default implementation of equality for instances of `Ordered[A]`.
- *        Therefore, if you need to be able to use equality on an instance of
- *        `Ordered[A]` you must provide it yourself either when inheriting or
- *        instantiating.
- *
- *  It is important that the `hashCode` method for an instance of `Ordered[A]`
- *        be consistent with the `compare` method. However, it is not possible to
- *        provide a sensible default implementation. Therefore, if you need to be
- *        able compute the hash of an instance of `Ordered[A]` you must provide it
- *        yourself either when inheriting or instantiating.
+ *  It is important that the `hashCode` method for an instance of `Ordered[A]` be consistent with
+ *  the `compare` method. However, it is not possible to provide a sensible default implementation.
+ *  Therefore, if you need to be able compute the hash of an instance of `Ordered[A]` you must
+ *  provide it yourself either when inheriting or instantiating.
  *
  *  @see [[scala.math.Ordering]], [[scala.math.PartiallyOrdered]]
  *  @author  Martin Odersky
