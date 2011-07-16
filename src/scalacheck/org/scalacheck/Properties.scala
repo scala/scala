@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2010 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -51,17 +51,23 @@ class Properties(val name: String) extends Prop {
   /** Convenience method that checks the properties and reports the
    *  result on the console. If you need to get the results from the test use
    *  the <code>check</code> methods in <code>Test</code> instead. */
-  override def check(): Unit = check(Test.Params())
+  override def check: Unit = check(Test.Params())
 
-  /** Convenience method that makes it possible to use a this instance
-   *  as an application that checks itself on execution */
-  override def main(args: Array[String]): Unit =
+  /** The logic for main, separated out to make it easier to
+   *  avoid System.exit calls.  Returns exit code.
+   */
+  override def mainRunner(args: Array[String]): Int = {
     Test.cmdLineParser.parseParams(args) match {
-      case Success(params, _) => Test.checkProperties(params, this)
+      case Success(params, _) =>
+        val res = Test.checkProperties(params, this)
+        val failed = res.filter(!_._2.passed).size
+        failed
       case e: NoSuccess =>
         println("Incorrect options:"+"\n"+e+"\n")
         Test.cmdLineParser.printHelp
+        -1
     }
+  }
 
   /** Adds all properties from another property collection to this one. */
   def include(ps: Properties) = for((n,p) <- ps.properties) property(n) = p

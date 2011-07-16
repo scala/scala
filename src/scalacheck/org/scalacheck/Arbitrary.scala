@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2010 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -115,7 +115,10 @@ object Arbitrary {
 
   /** Arbitrary instance of Char */
   implicit lazy val arbChar: Arbitrary[Char] = Arbitrary(
-    Gen.choose(Char.MinValue, Char.MaxValue)
+    Gen.frequency(
+      (0xD800-Char.MinValue, Gen.choose(Char.MinValue,0xD800-1)),
+      (Char.MaxValue-0xDFFF, Gen.choose(0xDFFF+1,Char.MaxValue))
+    )
   )
 
   /** Arbitrary instance of Byte */
@@ -209,7 +212,8 @@ object Arbitrary {
       minSize <- choose(0,500)
       sizeDiff <- choose(0,500)
       maxSize <- choose(minSize, minSize + sizeDiff)
-    } yield Test.Params(minSuccTests,maxDiscTests,minSize,maxSize))
+      ws <- choose(1,4)
+    } yield Test.Params(minSuccTests,maxDiscTests,minSize,maxSize,workers = ws))
 
   /** Arbitrary instance of gen params */
   implicit lazy val arbGenParams: Arbitrary[Gen.Params] =

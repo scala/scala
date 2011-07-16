@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2010 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -16,28 +16,16 @@ class ConsoleReporter(val verbosity: Int) extends Test.TestCallback {
 
   private val prettyPrms = Params(verbosity)
 
-  override def onPropEval(name: String, w: Int, s: Int, d: Int) =
+  override def onTestResult(name: String, res: Test.Result) = {
     if(verbosity > 0) {
       if(name == "") {
-        if(d == 0) printf("\rPassed %s tests\r", s)
-        else printf("\rPassed %s tests; %s discarded\r", s, d)
+        val s = (if(res.passed) "+ " else "! ") + pretty(res, prettyPrms)
+        printf("\r%s\n", format(s, "", "", 75))
       } else {
-        if(d == 0) printf("\r  %s: Passed %s tests\r", name, s)
-        else printf("\r  %s: Passed %s tests; %s discarded\r", name, s, d)
+        val s = (if(res.passed) "+ " else "! ") + name + ": " +
+          pretty(res, prettyPrms)
+        printf("\r%s\n", format(s, "", "", 75))
       }
-      Console.flush
-    }
-
-  override def onTestResult(name: String, res: Test.Result) = {
-    if(name == "") {
-      print(List.fill(78)(' ').mkString)
-      val s = (if(res.passed) "+ " else "! ") + pretty(res, prettyPrms)
-      printf("\r%s\n", format(s, "", "", 75))
-    } else {
-      print(List.fill(78)(' ').mkString)
-      val s = (if(res.passed) "+ " else "! ") + name + ": " +
-        pretty(res, prettyPrms)
-      printf("\r%s\n", format(s, "", "", 75))
     }
   }
 
@@ -49,21 +37,21 @@ object ConsoleReporter {
    *  the given verbosity */
   def apply(verbosity: Int = 0) = new ConsoleReporter(verbosity)
 
-  @deprecated("(v1.8)")
+  @deprecated("(v1.8)", "1.8")
   def propReport(s: Int, d: Int) = {
     if(d == 0) printf("\rPassed %s tests\r", s)
     else printf("\rPassed %s tests; %s discarded\r", s, d)
     Console.flush
   }
 
-  @deprecated("(v1.8)")
+  @deprecated("(v1.8)", "1.8")
   def propReport(pName: String, s: Int, d: Int) = {
     if(d == 0) printf("\r  %s: Passed %s tests\r", pName, s)
     else printf("\r  %s: Passed %s tests; %s discarded\r", pName, s, d)
     Console.flush
   }
 
-  @deprecated("(v1.8)")
+  @deprecated("(v1.8)", "1.8")
   def testReport(res: Test.Result) = {
     print(List.fill(78)(' ').mkString)
     val s = (if(res.passed) "+ " else "! ") + pretty(res, Params(0))
@@ -71,7 +59,7 @@ object ConsoleReporter {
     res
   }
 
-  @deprecated("(v1.8)")
+  @deprecated("(v1.8)", "1.8")
   def testStatsEx(res: Test.Result): Unit = testStatsEx("", res)
 
   def testStatsEx(msg: String, res: Test.Result) = {

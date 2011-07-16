@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2010 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -152,7 +152,7 @@ sealed trait Gen[+T] {
    *  and the given generator generates the same result, or both
    *  generators generate no result.
    *  @deprecated Use <code>==</code> instead */
-  @deprecated("Use == instead")
+  @deprecated("Use == instead", "1.7")
   def ===[U](g: Gen[U]): Prop = this == g
 
   /** Returns a new property that holds if and only if both this
@@ -207,12 +207,7 @@ object Gen {
     def choose(l: Long, h: Long): Long = {
       val d = h-l
       if (d < 0) throw new IllegalArgumentException("Invalid range")
-      else if (d == 0) l
-      else {
-        val r = math.abs(rng.nextLong)
-        val a = if(r == Long.MinValue) 1 else 0
-        l + (math.abs(r+a) % d) + a
-      }
+      else l + math.abs(rng.nextLong % (d+1))
     }
 
     /** @throws IllegalArgumentException if l is greater than h, or if
@@ -228,7 +223,7 @@ object Gen {
 
   /* Default generator parameters
    *  @deprecated Use <code>Gen.Params()</code> instead */
-  @deprecated("Use Gen.Params() instead")
+  @deprecated("Use Gen.Params() instead", "1.8")
   val defaultParams = Params()
 
   /* Generator factory method */
@@ -318,13 +313,13 @@ object Gen {
   /** Chooses one of the given values, with a weighted random distribution.
    *  @deprecated Use <code>frequency</code> with constant generators
    *  instead. */
-  @deprecated("Use 'frequency' with constant generators instead.")
+  @deprecated("Use 'frequency' with constant generators instead.", "1.6")
   def elementsFreq[T](vs: (Int, T)*): Gen[T] =
     frequency(vs.map { case (w,v) => (w, value(v)) } : _*)
 
   /** A generator that returns a random element from a list
    *  @deprecated Use <code>oneOf</code> with constant generators instead. */
-  @deprecated("Use 'oneOf' with constant generators instead.")
+  @deprecated("Use 'oneOf' with constant generators instead.", "1.6")
   def elements[T](xs: T*): Gen[T] = if(xs.isEmpty) fail else for {
     i <- choose(0,xs.length-1)
   } yield xs(i)
@@ -376,7 +371,7 @@ object Gen {
   /** Generates a list of the given length. This method is equal to calling
    *  <code>containerOfN[List,T](n,g)</code>.
    *  @deprecated Use the method <code>listOfN</code> instead. */
-  @deprecated("Use 'listOfN' instead.")
+  @deprecated("Use 'listOfN' instead.", "1.6")
   def vectorOf[T](n: Int, g: Gen[T]) = containerOfN[List,T](n,g)
 
   /** A generator that picks a random number of elements from a list */
@@ -445,12 +440,12 @@ object Gen {
 
   /* Generates positive integers
    * @deprecated Use <code>posNum[Int]code> instead */
-  @deprecated("Use posNum[Int] instead")
+  @deprecated("Use posNum[Int] instead", "1.7")
   def posInt: Gen[Int] = sized(max => choose(1, max))
 
   /* Generates negative integers
    * @deprecated Use <code>negNum[Int]code> instead */
-  @deprecated("Use negNum[Int] instead")
+  @deprecated("Use negNum[Int] instead", "1.7")
   def negInt: Gen[Int] = sized(max => choose(-max, -1))
 
   /** Generates positive numbers of uniform distribution, with an
@@ -484,4 +479,89 @@ object Gen {
     )
     frequency(allGens: _*)
   }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T,R](f: T => R)(implicit a: Arbitrary[T]): Gen[R] =
+    arbitrary[T] map f
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,R](f: (T1,T2) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2]
+  ): Gen[R] = arbitrary[T1] flatMap { t => resultOf(f(t, _:T2)) }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,R](f: (T1,T2,T3) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3]
+  ): Gen[R] = arbitrary[T1] flatMap { t => resultOf(f(t, _:T2, _:T3)) }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,T4,R](f: (T1,T2,T3,T4) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3], a4: Arbitrary[T4]
+  ): Gen[R] = arbitrary[T1] flatMap {
+    t => resultOf(f(t, _:T2, _:T3, _:T4))
+  }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,T4,T5,R](f: (T1,T2,T3,T4,T5) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3], a4: Arbitrary[T4],
+    a5: Arbitrary[T5]
+  ): Gen[R] = arbitrary[T1] flatMap {
+    t => resultOf(f(t, _:T2, _:T3, _:T4, _:T5))
+  }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,T4,T5,T6,R](
+    f: (T1,T2,T3,T4,T5,T6) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3],
+    a4: Arbitrary[T4], a5: Arbitrary[T5], a6: Arbitrary[T6]
+  ): Gen[R] = arbitrary[T1] flatMap {
+    t => resultOf(f(t, _:T2, _:T3, _:T4, _:T5, _:T6))
+  }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,T4,T5,T6,T7,R](
+    f: (T1,T2,T3,T4,T5,T6,T7) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3],
+    a4: Arbitrary[T4], a5: Arbitrary[T5], a6: Arbitrary[T6], a7: Arbitrary[T7]
+  ): Gen[R] = arbitrary[T1] flatMap {
+    t => resultOf(f(t, _:T2, _:T3, _:T4, _:T5, _:T6, _:T7))
+  }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,T4,T5,T6,T7,T8,R](
+    f: (T1,T2,T3,T4,T5,T6,T7,T8) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3], a4: Arbitrary[T4],
+    a5: Arbitrary[T5], a6: Arbitrary[T6], a7: Arbitrary[T7], a8: Arbitrary[T8]
+  ): Gen[R] = arbitrary[T1] flatMap {
+    t => resultOf(f(t, _:T2, _:T3, _:T4, _:T5, _:T6, _:T7, _:T8))
+  }
+
+  /** Takes a function and returns a generator that generates arbitrary
+   *  results of that function by feeding it with arbitrarily generated input
+   *  parameters. */
+  def resultOf[T1,T2,T3,T4,T5,T6,T7,T8,T9,R](
+    f: (T1,T2,T3,T4,T5,T6,T7,T8,T9) => R)(implicit
+    a1: Arbitrary[T1], a2: Arbitrary[T2], a3: Arbitrary[T3], a4: Arbitrary[T4],
+    a5: Arbitrary[T5], a6: Arbitrary[T6], a7: Arbitrary[T7], a8: Arbitrary[T8],
+    a9: Arbitrary[T9]
+  ): Gen[R] = arbitrary[T1] flatMap {
+    t => resultOf(f(t, _:T2, _:T3, _:T4, _:T5, _:T6, _:T7, _:T8, _:T9))
+  }
+
 }

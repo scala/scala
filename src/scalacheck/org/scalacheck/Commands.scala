@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2010 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2011 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -27,7 +27,7 @@ trait Commands extends Prop {
   class Binding(private val key: State) {
     def get: Any = bindings.find(_._1 eq key) match {
       case None => sys.error("No value bound")
-      case Some(x) => x
+      case Some(x) => x._2
     }
   }
 
@@ -47,7 +47,7 @@ trait Commands extends Prop {
     def nextState(s: State): State
 
     /** @deprecated Use <code>preConditions += ...</code> instead. */
-    @deprecated("Use 'preConditions += ...' instead.")
+    @deprecated("Use 'preConditions += ...' instead.", "1.6")
     def preCondition_=(f: State => Boolean) = {
       preConditions.clear
       preConditions += f
@@ -63,14 +63,14 @@ trait Commands extends Prop {
     val preConditions = new collection.mutable.ListBuffer[State => Boolean]
 
     /** @deprecated Use <code>postConditions += ...</code> instead. */
-    @deprecated("Use 'postConditions += ...' instead.")
+    @deprecated("Use 'postConditions += ...' instead.", "1.6")
     def postCondition_=(f: (State,Any) => Prop) = {
       postConditions.clear
       postConditions += ((s0,s1,r) => f(s0,r))
     }
 
     /** @deprecated Use <code>postConditions += ...</code> instead. */
-    @deprecated("Use 'postConditions += ...' instead.")
+    @deprecated("Use 'postConditions += ...' instead.", "1.6")
     def postCondition_=(f: (State,State,Any) => Prop) = {
       postConditions.clear
       postConditions += f
@@ -138,18 +138,16 @@ trait Commands extends Prop {
   private def runCommands(cmds: Cmds): Prop = cmds match {
     case Cmds(Nil, _) => proved
     case Cmds(c::cs, s::ss) =>
-      c.postCondition(s,c.nextState(s),c.run(s)) && runCommands(Cmds(cs,ss))
+      c.postCondition(s,c.nextState(s),c.run_(s)) && runCommands(Cmds(cs,ss))
     case _ => sys.error("Should not be here")
   }
 
   private def commandsProp: Prop = {
-
     def shrinkCmds(cmds: Cmds) = cmds match { case Cmds(cs,_) =>
       shrink(cs)(shrinkContainer).flatMap(cs => validCmds(initialState(), cs).toList)
     }
 
     forAllShrink(genCmds label "COMMANDS", shrinkCmds)(runCommands _)
-
   }
 
   def apply(p: Prop.Params) = commandsProp(p)
