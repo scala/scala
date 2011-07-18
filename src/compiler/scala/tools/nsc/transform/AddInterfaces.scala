@@ -26,15 +26,13 @@ abstract class AddInterfaces extends InfoTransform {
    */
   override def phaseNewFlags: Long = lateDEFERRED | lateINTERFACE
 
-  /** Type reference after erasure; to be defined in subclass
-   *  <code>Erasure</code>.
+  /** Type reference after erasure; defined in Erasure.
    */
   def erasedTypeRef(sym: Symbol): Type
 
-  /** Erasure type-map; to be defined in subclass
-   *  <code>Erasure</code>.
+  /** Erasure calculation; defined in Erasure.
    */
-  def erasure: TypeMap
+  def erasure(sym: Symbol, tpe: Type): Type
 
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
@@ -160,38 +158,33 @@ abstract class AddInterfaces extends InfoTransform {
     }
 
     override def complete(sym: Symbol) {
+      /** If `tp` refers to a non-interface trait, return a
+       *  reference to its implementation class. Otherwise return `tp`.
+       */
+      def mixinToImplClass(tp: Type): Type = erasure(sym,
+        tp match { //@MATN: no normalize needed (comes after erasure)
+          case TypeRef(pre, sym, args) if sym.needsImplClass =>
+            typeRef(pre, implClass(sym), args)
+          case _ =>
+            tp
+        }
+      )
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
           assert(phase == implClassPhase)
           ClassInfoType(
-            ObjectClass.tpe :: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass))
-              ::: List(iface.tpe),
+            ObjectClass.tpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass)) :+ iface.tpe,
             implDecls(sym, decls),
-            sym)
-        case PolyType(tparams, restpe) =>
+            sym
+          )
+        case PolyType(_, restpe) =>
           implType(restpe)
       }
-      sym.setInfo(implType(atPhase(currentRun.erasurePhase)(iface.info)))
+      sym setInfo implType(atPhase(currentRun.erasurePhase)(iface.info))
     }
 
     override def load(clazz: Symbol) { complete(clazz) }
   }
-
-  /** If type <code>tp</code> refers to a non-interface trait, return a
-   *  reference to its implementation class. Otherwise return <code>tp</code>
-   *  itself.
-   *
-   *  @param tp ...
-   *  @return   ...
-   */
-  private def mixinToImplClass(tp: Type): Type =
-    erasure(
-      tp match { //@MATN: no normalize needed (comes after erasure)
-        case TypeRef(pre, sym, args) if (sym.needsImplClass) =>
-          typeRef(pre, implClass(sym), args)
-        case _ =>
-          tp
-      })
 
   def transformMixinInfo(tp: Type): Type = tp match {
     case ClassInfoType(parents, decls, clazz) =>
