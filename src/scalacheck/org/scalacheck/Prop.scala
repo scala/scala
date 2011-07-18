@@ -59,7 +59,7 @@ trait Prop {
   /** Whether main should call System.exit with an exit code.
    *  Defaults to true; override to change.
    */
-  def mainCallsExit = true
+  def mainCallsExit = false
 
   /** Convenience method that makes it possible to use this property
    *  as an application that checks itself on execution */
