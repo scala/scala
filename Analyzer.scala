@@ -65,7 +65,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 					{
 						val classFile = fileForClass(outputDirectory, sym, separatorRequired)
 						if(classFile.exists)
-							callback.generatedClass(sourceFile, classFile)
+							callback.generatedClass(sourceFile, classFile, className(sym, '.', separatorRequired))
 					}
 					if(sym.isModuleClass && !sym.isImplClass)
 					{
@@ -108,8 +108,10 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		atPhase (currentRun.picklerPhase.next) {
 			sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
 		}
+	private def className(s: Symbol, sep: Char, dollarRequired: Boolean): String =
+		flatname(s, sep) + (if(dollarRequired) "$" else "")
 	private def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
-		new File(outputDirectory, flatname(s, File.separatorChar) + (if(separatorRequired) "$" else "") + ".class")
+		new File(outputDirectory, className(s, File.separatorChar, separatorRequired) + ".class")
 
 	// required because the 2.8 way to find a class is:
 	//   classPath.findClass(name).flatMap(_.binary)
