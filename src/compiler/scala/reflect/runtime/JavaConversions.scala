@@ -238,7 +238,10 @@ trait JavaConversions { self: Universe =>
 
   /** The Java class corresponding to given Scala class
    */
-  def classToJava(clazz: Symbol): jClass[_] = null // to be done
+  def classToJava(clazz: Symbol): jClass[_] = classCache.toJava(clazz) {
+    jClass.forName(clazz.fullName) // todo: what about local classes?
+  }
+
   def fieldToJava(fld: Symbol): jField = null // to be done
   def methodToJava(meth: Symbol): jMethod = null // to be done
   def constrToJava(constr: Symbol): jConstructor[_] = null // to be done
