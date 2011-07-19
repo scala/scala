@@ -780,7 +780,7 @@ trait Namers { self: Analyzer =>
       // the namer phase must traverse this copy method to create default getters for its parameters.
       // here, clazz is the ClassSymbol of the case class (not the module).
       // @check: this seems to work only if the type completer of the class runs before the one of the
-      // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
+      // module class: the one from the module class removes the entry from caseClassOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasModuleFlag) {
         Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass map { cdefRef =>
           val cdef = cdefRef()

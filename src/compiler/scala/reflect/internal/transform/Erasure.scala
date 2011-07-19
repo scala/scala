@@ -50,14 +50,20 @@ trait Erasure {
     case _ => 0
   }
 
-  // @M #2585 when generating a java generic signature that includes a selection of an inner class p.I,  (p = `pre`, I = `cls`)
-  // must rewrite to p'.I, where p' refers to the class that directly defines the nested class I
-  // see also #2585 marker in javaSig: there, type arguments must be included (use pre.baseType(cls.owner))
-  // requires cls.isClass
-  @inline protected def rebindInnerClass(pre: Type, cls: Symbol): Type =
+  // @M #2585 when generating a java generic signature that includes
+  // a selection of an inner class p.I, (p = `pre`, I = `cls`) must
+  // rewrite to p'.I, where p' refers to the class that directly defines
+  // the nested class I.
+  //
+  // See also #2585 marker in javaSig: there, type arguments must be
+  // included (use pre.baseType(cls.owner)).
+  //
+  // This requires that cls.isClass.
+  @inline protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
+  }
 
-   abstract class ErasureMap extends TypeMap {
+  abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
 
     def apply(tp: Type): Type = {

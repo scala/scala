@@ -211,6 +211,13 @@ abstract class Erasure extends AddInterfaces
       case RefinedType(parents, _) => parents map normalize
       case tp                      => tp :: Nil
     }
+    // Anything which could conceivably be a module (i.e. isn't known to be
+    // a type parameter or similar) must go through here or the signature is
+    // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
+    def nameInSig(sym: Symbol) = "" + sym.name + global.genJVM.moduleSuffix(sym)
+    def fullNameInSig(sym: Symbol) = "L" + (
+      atPhase(currentRun.icodePhase)(sym.fullName('/') + global.genJVM.moduleSuffix(sym))
+    )
 
     def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): String = {
       val tp = tp0.dealias
@@ -229,10 +236,6 @@ abstract class Erasure extends AddInterfaces
             } else {
               boxedSig(tp)
             }
-          def classSig: String =
-            "L"+atPhase(currentRun.icodePhase)(sym.fullName + global.genJVM.moduleSuffix(sym)).replace('.', '/')
-          def classSigSuffix: String =
-            "."+sym.name
 
           // If args isEmpty, Array is being used as a higher-kinded type
           if (sym == ArrayClass && args.nonEmpty) {
@@ -241,7 +244,7 @@ abstract class Erasure extends AddInterfaces
           }
           else if (isTypeParameterInSig(sym, sym0)) {
             assert(!sym.isAliasType, "Unexpected alias type: " + sym)
-            TVAR_TAG.toString+sym.name+";"
+            "" + TVAR_TAG + sym.name + ";"
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
@@ -263,10 +266,10 @@ abstract class Erasure extends AddInterfaces
                 (
                   if (needsJavaSig(preRebound)) {
                     val s = jsig(preRebound, existentiallyBound)
-                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
-                    else classSig
+                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + nameInSig(sym)
+                    else fullNameInSig(sym)
                   }
-                  else classSig
+                  else fullNameInSig(sym)
                 ) + (
                   if (args.isEmpty) "" else
                   "<"+(args map argSig).mkString+">"
