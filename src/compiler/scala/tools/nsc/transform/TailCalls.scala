@@ -205,7 +205,7 @@ abstract class TailCalls extends Transform {
           fail(reason)
         }
         def rewriteTailCall(recv: Tree): Tree = {
-          log("Rewriting tail recursive method call at: " + fun.pos)
+          log("Rewriting tail recursive call:  " + fun.pos.lineContent.trim)
 
           ctx.accessed = true
           typedPos(fun.pos)(Apply(Ident(ctx.label), recv :: transformArgs))
@@ -225,10 +225,9 @@ abstract class TailCalls extends Transform {
 
       tree match {
         case dd @ DefDef(mods, name, tparams, vparams, tpt, rhs) =>
-          log("Entering DefDef: " + name)
           val newCtx = new Context(dd)
 
-          log("Considering " + name + " for tailcalls")
+          debuglog("Considering " + name + " for tailcalls")
           val newRHS = transform(rhs, newCtx)
 
           treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, {

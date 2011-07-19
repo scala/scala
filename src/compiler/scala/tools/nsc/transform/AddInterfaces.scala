@@ -94,7 +94,7 @@ abstract class AddInterfaces extends InfoTransform {
       impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE) | IMPLCLASS
       impl setInfo new LazyImplClassType(iface)
       implClassMap(iface) = impl
-      if (settings.debug.value) log("generating impl class " + impl + " in " + iface.owner)//debug
+      debuglog("generating impl class " + impl + " in " + iface.owner)//debug
       impl
     }
   })

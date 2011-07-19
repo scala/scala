@@ -712,8 +712,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     def genField(f: IField) {
-      if (settings.debug.value)
-        log("Adding field: " + f.symbol.fullName)
+      debuglog("Adding field: " + f.symbol.fullName)
 
       val attributes = f.symbol.annotations.map(_.atp.typeSymbol).foldLeft(0) {
         case (res, TransientAttr) => res | ACC_TRANSIENT
@@ -737,7 +736,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     def genMethod(m: IMethod) {
       if (m.symbol.isStaticConstructor) return
 
-      log("Generating method " + m.symbol.fullName)
+      debuglog("Generating method " + m.symbol.fullName)
       method = m
       endPC.clear
       computeLocalVarsIndex(m)
@@ -787,8 +786,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         for (local <- m.locals if ! m.params.contains(local)) {
-          if (settings.debug.value)
-            log("add local var: " + local)
+          debuglog("add local var: " + local)
           jmethod.addNewLocalVariable(javaType(local.kind), javaName(local.sym))
         }
 
@@ -1000,8 +998,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def addForwarders(jclass: JClass, moduleClass: Symbol) {
       assert(moduleClass.isModuleClass)
-      if (settings.debug.value)
-        log("Dumping mirror class for object: " + moduleClass)
+      debuglog("Dumping mirror class for object: " + moduleClass)
 
       val className    = jclass.getName
       val linkedClass  = moduleClass.companionClass
@@ -1040,9 +1037,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
           addForwarder(jclass, moduleClass, m, accessFlags)
         }
-        else if (settings.debug.value) {
-          log("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
-        }
+        else debuglog("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
       }
     }
 
@@ -1079,8 +1074,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val jcode = jmethod.getCode.asInstanceOf[JExtendedCode]
 
       def makeLabels(bs: List[BasicBlock]) = {
-        if (settings.debug.value)
-          log("Making labels for: " + method)
+        debuglog("Making labels for: " + method)
 
         mutable.HashMap(bs map (_ -> jcode.newLabel) : _*)
       }
@@ -1138,16 +1132,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         if (!covered.isEmpty)
-          if (settings.debug.value)
-            log("Some covered blocks were not found in method: " + method +
+          debuglog("Some covered blocks were not found in method: " + method +
                 " covered: " + covered + " not in " + linearization)
         ranges
       }
 
       for (e <- this.method.exh ; p <- ranges(e).sortBy(_._1)) {
         if (p._1 < p._2) {
-          if (settings.debug.value)
-            log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+          debuglog("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
                 " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
           val cls = if (e.cls == NoSymbol || e.cls == ThrowableClass) null
                     else javaName(e.cls)
@@ -1162,8 +1154,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     def genBlock(b: BasicBlock) {
       labels(b).anchorToNext()
 
-      if (settings.debug.value)
-        log("Generating code for block: " + b + " at pc: " + labels(b).getAnchor())
+      debuglog("Generating code for block: " + b + " at pc: " + labels(b).getAnchor())
       var lastMappedPC = 0
       var lastLineNr = 0
       var crtPC = 0
@@ -1198,8 +1189,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
           case lf @ LOAD_FIELD(field, isStatic) =>
             var owner = javaName(lf.hostClass)
-            if (settings.debug.value)
-              log("LOAD_FIELD with owner: " + owner +
+            debuglog("LOAD_FIELD with owner: " + owner +
                   " flags: " + Flags.flagsToString(field.owner.flags))
             if (isStatic)
               jcode.emitGETSTATIC(owner,
@@ -1212,8 +1202,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
           case LOAD_MODULE(module) =>
 //            assert(module.isModule, "Expected module: " + module)
-            if (settings.debug.value)
-              log("generating LOAD_MODULE for: " + module + " flags: " +
+            debuglog("generating LOAD_MODULE for: " + module + " flags: " +
                   Flags.flagsToString(module.flags));
             if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
               jcode.emitALOAD_0()
@@ -1353,8 +1342,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
               branchArray(i) = labels(branches(i))
               i += 1
             }
-            if (settings.debug.value)
-              log("Emitting SWITCH:\ntags: " + tags + "\nbranches: " + branches)
+            debuglog("Emitting SWITCH:\ntags: " + tags + "\nbranches: " + branches)
             jcode.emitSWITCH(tagArray,
                              branchArray,
                              labels(branches.last),
@@ -1674,8 +1662,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         }
 
         case Conversion(src, dst) =>
-          if (settings.debug.value)
-            log("Converting from: " + src + " to: " + dst)
+          debuglog("Converting from: " + src + " to: " + dst)
           if (dst == BOOL) {
             println("Illegal conversion at: " + clasz +
                     " at: " + pos.source + ":" + pos.line)
@@ -1805,8 +1792,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         idx = 0;
 
       for (l <- m.locals) {
-        if (settings.debug.value)
-          log("Index value for " + l + "{" + l.## + "}: " + idx)
+        debuglog("Index value for " + l + "{" + l.## + "}: " + idx)
         l.index = idx
         idx += sizeOf(l.kind)
       }
@@ -1816,7 +1802,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     /** Calls to methods in 'sym' need invokeinterface? */
     def needsInterfaceCall(sym: Symbol): Boolean = {
-      log("checking for interface call: " + sym.fullName)
+      debuglog("checking for interface call: " + sym.fullName)
       // the following call to 'info' may cause certain symbols to fail loading
       // because we're too late in the compilation chain (aliases to overloaded
       // symbols will not be properly resolved, see scala.Range, method

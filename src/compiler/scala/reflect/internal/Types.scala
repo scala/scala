@@ -5940,7 +5940,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     val errors = new ListBuffer[(Type, Symbol, List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)])]
-    if (tparams.nonEmpty || targs.nonEmpty)
+    if (settings.debug.value &&(tparams.nonEmpty || targs.nonEmpty))
       log("checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", " + owner + ", " + explainErrors + ")")
 
     for {

@@ -82,7 +82,7 @@ abstract class ClassfileParser {
         println("Skipping class: " + root + ": " + root.getClass)
     }
 */
-    log("parsing " + file.name)
+    debuglog("parsing " + file.name)
     this.in = new AbstractFileReader(file)
     if (root.isModule) {
       this.clazz = root.companionClass

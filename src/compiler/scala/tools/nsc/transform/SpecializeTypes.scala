@@ -490,7 +490,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (parents.head.typeSymbol.isTrait)
           parents = parents.head.parents.head :: parents
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
-        log("extraSpecializedMixins: " + extraSpecializedMixins)
+        if (extraSpecializedMixins.nonEmpty)
+          debuglog("specializeClass on " + clazz + " founds extra specialized mixins: " + extraSpecializedMixins.mkString(", "))
+
         val infoType = ClassInfoType(parents ::: extraSpecializedMixins, decls1, cls)
         if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
@@ -728,7 +730,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val (keys, vals) = env.toList.unzip
 
           specMember.name = specializedName(sym, env)
-          log("normalizing: " + sym + " to " + specMember + " with params " + tps)
+          debuglog("normalizing: " + sym + " to " + specMember + " with params " + tps)
 
           typeEnv(specMember) = outerEnv ++ env
           val tps1 = produceTypeParameters(tps, specMember, env)
@@ -770,7 +772,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
         wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
 
-        log("sym " + specMember + " was specialized for type vars " + wasSpecializedForTypeVars(specMember))
+        debuglog("sym " + specMember + " was specialized for type vars " + wasSpecializedForTypeVars(specMember))
         debuglog("added specialized overload: %s in env: %s".format(specMember, typeEnv(specMember)))
 
         overloads(sym) ::= Overload(specMember, spec)
@@ -915,7 +917,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       else
         if (strict) throw UnifyError else env
     case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
-      log("Unify - both type refs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
+      log("Unify TypeRefs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
       if (strict && args1.length != args2.length) throw UnifyError
       val e = unify(args1, args2, env, strict)
       log("unified to: " + e)
@@ -924,11 +926,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       env
     case (MethodType(params1, res1), MethodType(params2, res2)) =>
       if (strict && params1.length != params2.length) throw UnifyError
-      log("Unify - method types: " + tp1 + " and " + tp2)
+      log("Unify MethodTypes: " + tp1 + " and " + tp2)
       unify(res1 :: (params1 map (_.tpe)), res2 :: (params2 map (_.tpe)), env, strict)
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       if (strict && tparams1.length != tparams2.length) throw UnifyError
-      log("Unify - poly types: " + tp1 + " and " + tp2)
+      log("Unify PolyTypes: " + tp1 + " and " + tp2)
       unify(res1, res2, env, strict)
     case (PolyType(_, res), other) =>
       unify(res, other, env, strict)
