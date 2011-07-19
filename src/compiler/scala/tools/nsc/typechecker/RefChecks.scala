@@ -37,7 +37,10 @@ import scala.collection.mutable.ListBuffer
  *
  *  @todo    Check whether we always check type parameter bounds.
  */
-abstract class RefChecks extends InfoTransform {
+abstract class RefChecks extends InfoTransform with reflect.internal.transform.RefChecks {
+
+  val global: Global               // need to repeat here because otherwise last mixin defines global as
+                                   // SymbolTable. If we had DOT this would not be an issue
 
   import global._
   import definitions._
@@ -51,11 +54,10 @@ abstract class RefChecks extends InfoTransform {
     new RefCheckTransformer(unit)
   override def changesBaseClasses = false
 
-  def transformInfo(sym: Symbol, tp: Type): Type =
-    if (sym.isModule && !sym.isStatic) {
-      sym setFlag (lateMETHOD | STABLE)
-      NullaryMethodType(tp)
-    } else tp
+  override def transformInfo(sym: Symbol, tp: Type): Type = {
+    if (sym.isModule && !sym.isStatic) sym setFlag (lateMETHOD | STABLE)
+    super.transformInfo(sym, tp)
+  }
 
   val toJavaRepeatedParam = new TypeMap {
     def apply(tp: Type) = tp match {

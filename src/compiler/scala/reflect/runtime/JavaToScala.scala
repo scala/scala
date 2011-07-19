@@ -10,28 +10,12 @@ import internal.ClassfileConstants._
 import internal.pickling.UnPickler
 import collection.mutable.HashMap
 
-trait JavaConversions { self: Universe =>
+trait JavaToScala extends ConversionUtil { self: Universe =>
 
   private object unpickler extends UnPickler {
-    val global: JavaConversions.this.type = self
+    val global: JavaToScala.this.type = self
   }
 
-  /** A cache that maintains a bijection between Java reflection type `J`
-   *  and Scala reflection type `S`.
-   */
-  private class TwoWayCache[J, S] {
-    private val toScalaMap = new HashMap[J, S]
-    private val toJavaMap = new HashMap[S, J]
-
-    def toScala(key: J)(body: => S) = toScalaMap.getOrElseUpdate(key, body)
-    def toJava(key: S)(body: => J) = toJavaMap.getOrElseUpdate(key, body)
-  }
-
-  private val classCache = new TwoWayCache[jClass[_], Symbol]
-  private val packageCache = new TwoWayCache[jPackage, Symbol]
-  private val methodCache = new TwoWayCache[jMethod, Symbol]
-  private val constructorCache = new TwoWayCache[jConstructor[_], Symbol]
-  private val fieldCache = new TwoWayCache[jField, Symbol]
 
   /** Generate types for top-level Scala root class and root companion object
    *  from the pickled information stored in a corresponding Java class
@@ -104,6 +88,13 @@ trait JavaConversions { self: Universe =>
     followStatic(classToScala(jmember.getDeclaringClass), jmember.getModifiers)
   }
 
+  /** Returns `true` if Scala name `name` equals Java name `jstr`, possibly after
+   *  make-not-private expansion.
+   */
+  private def approximateMatch(sym: Symbol, jstr: String): Boolean =
+    (sym.name.toString == jstr) ||
+    sym.isPrivate && nme.expandedName(sym.name, sym.owner).toString == jstr
+
   /** Find declarations or definition in class `clazz` that maps to a Java
    *  entity with name `jname`. Because of name-mangling, this is more difficult
    *  than a simple name-based lookup via `decl`. If `decl` fails, members
@@ -111,24 +102,12 @@ trait JavaConversions { self: Universe =>
    */
   private def lookup(clazz: Symbol, jname: String): Symbol =
     clazz.info.decl(newTermName(jname)) orElse {
-    (clazz.info.decls.iterator filter (_.name.toString startsWith jname)).toList match {
-      case List() => NoSymbol
-      case List(sym) => sym
-      case alts => clazz.newOverloaded(alts.head.tpe.prefix, alts)
+      (clazz.info.decls.iterator filter (approximateMatch(_, jname))).toList match {
+        case List() => NoSymbol
+        case List(sym) => sym
+        case alts => clazz.newOverloaded(alts.head.tpe.prefix, alts)
+      }
     }
-  }
-
-  /** Does method `meth` erase to Java method `jmeth`?
-   *  This is true if the Java method type is the same as the Scala method type after performing
-   *  all Scala-specific transformations in InfoTransformers. (to be done)
-   */
-  def erasesTo(meth: Symbol, jmeth: jMethod): Boolean = true //to do: implement
-
-  /** Does constructor `meth` erase to Java method `jconstr`?
-   *  This is true if the Java constructor type is the same as the Scala constructor type after performing
-   *  all Scala-specific transformations in InfoTransformers. (to be done)
-   */
-  def erasesTo(meth: Symbol, jconstr: jConstructor[_]): Boolean = true // to do: implement
 
   /** The Scala method corresponding to given Java method.
    *  @param  jmeth  The Java method
@@ -192,7 +171,7 @@ trait JavaConversions { self: Universe =>
 
   /** The Scala type that corresponds to given Java type (to be done)
    */
-  def typeToScala(tpe: jType): Type = NoType
+  def jtypeToScala(tpe: jType): Type = NoType
 
   /** The Scala class that corresponds to given Java class without taking
    *  Scala pickling info into account.
@@ -214,7 +193,7 @@ trait JavaConversions { self: Universe =>
   private def jfieldAsScala(jfield: jField): Symbol = fieldCache.toScala(jfield) {
     sOwner(jfield).newValue(NoPosition, newTermName(jfield.getName))
       .setFlag(toScalaFlags(jfield.getModifiers, isClass = false))
-      .setInfo(typeToScala(jfield.getGenericType))
+      .setInfo(jtypeToScala(jfield.getGenericType))
       // todo: copy annotations
   }
 
@@ -232,17 +211,5 @@ trait JavaConversions { self: Universe =>
    */
   private def jconstrAsScala(jconstr: jConstructor[_]): Symbol = NoSymbol // to be done
 
-  // to be done:
 
-  def packageToJava(pkg: Symbol): jPackage = null // to be done
-
-  /** The Java class corresponding to given Scala class
-   */
-  def classToJava(clazz: Symbol): jClass[_] = classCache.toJava(clazz) {
-    jClass.forName(clazz.fullName) // todo: what about local classes?
-  }
-
-  def fieldToJava(fld: Symbol): jField = null // to be done
-  def methodToJava(meth: Symbol): jMethod = null // to be done
-  def constrToJava(constr: Symbol): jConstructor[_] = null // to be done
 }
