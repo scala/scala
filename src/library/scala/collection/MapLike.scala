@@ -178,15 +178,16 @@ self =>
     def next() = iter.next._1
   }
 
-  /** Creates an iterator for all keys.
+  /** Collects all keys of this map in an iterable collection.
    *
-   *  @return an iterator over all keys.
+   *  @return the keys of this map as an iterable.
    */
   @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
   def keys: Iterable[A] = keySet
 
   /** Collects all values of this map in an iterable collection.
-   * @return the values of this map as an iterable.
+   *
+   *  @return the values of this map as an iterable.
    */
   @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
   def values: Iterable[B] = new DefaultValuesIterable
