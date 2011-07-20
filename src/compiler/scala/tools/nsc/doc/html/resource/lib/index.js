@@ -452,6 +452,17 @@ function resizeFilterBlock() {
 }
 
 function printAlphabet() {
-    $("#filter").append("<div id='letters'><a target='template' href='index/index-%23.html'>#</a><a target='template' href='index/index-a.html'>A</a><a target='template' href='index/index-b.html'>B</a><a target='template' href='index/index-c.html'>C</a><a target='template' href='index/index-d.html'>D</a><a target='template' href='index/index-e.html'>E</a><a target='template' href='index/index-f.html'>F</a><a target='template' href='index/index-g.html'>G</a><a target='template' href='index/index-h.html'>H</a><a target='template' href='index/index-i.html'>I</a><a target='template' href='index/index-j.html'>J</a><a target='template' href='index/index-k.html'>K</a><a target='template' href='index/index-l.html'>L</a><a target='template' href='index/index-m.html'>M</a><a target='template' href='index/index-n.html'>N</a><a target='template' href='index/index-o.html'>O</a><a target='template' href='index/index-p.html'>P</a><a target='template' href='index/index-q.html'>Q</a><a target='template' href='index/index-r.html'>R</a><a target='template' href='index/index-s.html'>S</a><a target='template' href='index/index-t.html'>T</a><a target='template' href='index/index-u.html'>U</a><a target='template' href='index/index-v.html'>V</a><a target='template' href='index/index-w.html'>W</a><a target='template' href='index/index-x.html'>X</a><a target='template' href='index/index-y.html'>Y</a><a target='template' href='index/index-z.html'>Z</a></div>");
+    var html = '<a target="template" href="index/index-_.html">#</a>';
+    var c;
+    for (c = 'a'; c < 'z'; c = String.fromCharCode(c.charCodeAt(0) + 1)) {
+        html += [
+            '<a target="template" href="index/index-',
+            c,
+            '.html">',
+            c.toUpperCase(),
+            '</a>'
+        ].join('');
+    }
+    $("#filter").append('<div id="letters">' + html + '</div>');
 }
 
