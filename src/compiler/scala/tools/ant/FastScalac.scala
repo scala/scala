@@ -6,21 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.tools.ant
 
-/** <p>
- *    An Ant task to compile with the fast Scala compiler (<code>fsc</code>).
- *  </p>
- *  <p>
- *    In addition to the attributes shared with the <code>Scalac</code>
- *    task, this task also accepts the following attributes:
- *  </p>
- *  <ul style="font-family:Courier;">
- *    <li>reset</li>
- *    <li>server</li>
- *    <li>shutdown</li>
- *  </ul>
+/** An Ant task to compile with the fast Scala compiler (`fsc`).
+ *
+ *  In addition to the attributes shared with the `Scalac` task, this task
+ *  also accepts the following attributes:
+ *  - `reset`
+ *  - `server`
+ *  - `shutdown`
  *
  *  @author Stephane Micheloud
  */
@@ -36,27 +30,23 @@ class FastScalac extends Scalac {
 **                             Properties setters                             **
 \*============================================================================*/
 
-  /** Sets the <code>reset</code> attribute. Used by Ant.
+  /** Sets the `reset` attribute. Used by [[http://ant.apache.org Ant]].
    *
-   *  @param input The value for <code>reset</code>.
+   *  @param input The value for `reset`.
    */
-  def setReset(input: Boolean): Unit =
-    resetCaches = input
+  def setReset(input: Boolean) { resetCaches = input }
 
-  /** Sets the <code>server</code> attribute. Used by Ant.
+  /** Sets the `server` attribute. Used by [[http://ant.apache.org Ant]].
    *
-   *  @param input The value for <code>server</code>.
+   *  @param input The value for `server`.
    */
-  def setServer(input: String): Unit = {
-    serverAddr = Some(input)
-  }
+  def setServer(input: String) { serverAddr = Some(input) }
 
-  /** Sets the <code>shutdown</code> attribute. Used by Ant.
+  /** Sets the `shutdown` attribute. Used by [[http://ant.apache.org Ant]].
    *
-   *  @param input The value for <code>shutdown</code>.
+   *  @param input The value for `shutdown`.
    */
-  def setShutdown(input: Boolean): Unit =
-    shutdownServer = input
+  def setShutdown(input: Boolean) { shutdownServer = input }
 
 /*============================================================================*\
 **                             The execute method                             **
@@ -75,10 +65,10 @@ class FastScalac extends Scalac {
       reset.value = resetCaches
       shutdown.value = shutdownServer
 
-      /** XXX Since fsc is largely unmaintained, the set of options being individually
-       *  assessed here is likely to bear little relationship to the current set of options.
-       *  Most likely this manifests in confusing and very difficult to debug behavior in fsc.
-       *  We should warn or fix.
+      /** XXX Since fsc is largely unmaintained, the set of options being
+       *  individually assessed here is likely to bear little relationship to
+       *  the current set of options. Most likely this manifests in confusing
+       *  and very difficult to debug behavior in fsc. We should warn or fix.
        */
       val stringSettings =
         List(s.outdir, s.classpath, s.bootclasspath, s.extdirs, s.encoding) flatMap (x => List(x.name, x.value))
@@ -107,7 +97,7 @@ class FastScalac extends Scalac {
           buildError("Compile failed; see the compiler error output for details.")
       }
       catch {
-        case exception: Throwable if (exception.getMessage ne null) =>
+        case exception: Throwable if exception.getMessage ne null =>
           exception.printStackTrace()
           buildError("Compile failed because of an internal compiler error (" +
             exception.getMessage + "); see the error output for details.")

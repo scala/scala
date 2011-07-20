@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package immutable
 
@@ -81,12 +79,11 @@ self =>
    *  Strip trailing line end character from this string if it has one.
    *
    *  A line end character is one of
-   *  <ul style="list-style-type: none;">
-   *    <li>LF - line feed   (0x0A hex)</li>
-   *    <li>FF - form feed   (0x0C hex)</li>
-   *  </ul>
-   *  If a line feed character LF is preceded by a carriage return CR
-   *  (0x0D hex), the CR character is also stripped (Windows convention).
+   *  - `LF` - line feed   (`0x0A` hex)
+   *  - `FF` - form feed   (`0x0C` hex)
+   *
+   *  If a line feed character `LF` is preceded by a carriage return `CR`
+   *  (`0x0D` hex), the `CR` character is also stripped (Windows convention).
    */
   def stripLineEnd: String = {
     val len = toString.length
@@ -100,18 +97,14 @@ self =>
     }
   }
 
-  /**
-   *    Return all lines in this string in an iterator, including trailing
-   *    line end characters.
+  /** Return all lines in this string in an iterator, including trailing
+   *  line end characters.
    *
-   *    The number of strings returned is one greater than the number of line
-   *    end characters in this string. For an empty string, a single empty
-   *    line is returned. A line end character is one of
-   *
-   *    <ul style="list-style-type: none;">
-   *      <li>LF - line feed   (0x0A hex)</li>
-   *      <li>FF - form feed   (0x0C hex)</li>
-   *    </ul>
+   *  The number of strings returned is one greater than the number of line
+   *  end characters in this string. For an empty string, a single empty
+   *  line is returned. A line end character is one of
+   *  - `LF` - line feed   (`0x0A` hex)
+   *  - `FF` - form feed   (`0x0C` hex)
    */
   def linesWithSeparators: Iterator[String] = new Iterator[String] {
     val str = self.toString
@@ -177,13 +170,10 @@ self =>
     toString.replaceAll(arg1, arg2)
   }
 
-  /**
-   *    For every line in this string:
+  /** For every line in this string:
    *
-   *    <blockquote>
-   *       Strip a leading prefix consisting of blanks or control characters
-   *       followed by `marginChar` from the line.
-   *    </blockquote>
+   *  Strip a leading prefix consisting of blanks or control characters
+   *  followed by `marginChar` from the line.
    */
   def stripMargin(marginChar: Char): String = {
     val buf = new StringBuilder
@@ -197,13 +187,10 @@ self =>
     buf.toString
   }
 
-  /**
-   *    For every line in this string:
+  /** For every line in this string:
    *
-   *    <blockquote>
-   *       Strip a leading prefix consisting of blanks or control characters
-   *       followed by `|` from the line.
-   *    </blockquote>
+   *  Strip a leading prefix consisting of blanks or control characters
+   *  followed by `|` from the line.
    */
   def stripMargin: String = stripMargin('|')
 
@@ -218,8 +205,7 @@ self =>
     toString.split(re)
   }
 
-  /** You can follow a string with `.r`, turning
-   *  it into a Regex. E.g.
+  /** You can follow a string with `.r`, turning it into a `Regex`. E.g.
    *
    *  """A\w*""".r   is the regular expression for identifiers starting with `A`.
    */
@@ -250,29 +236,25 @@ self =>
     case x              => x.asInstanceOf[AnyRef]
   }
 
-  /**
-   *  Uses the underlying string as a pattern (in a fashion similar to
+  /** Uses the underlying string as a pattern (in a fashion similar to
    *  printf in C), and uses the supplied arguments to fill in the
    *  holes.
    *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
    *    `java.util.Formatter`</a>, with the addition that
-   *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
-   *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
+   *    classes deriving from `ScalaNumber` (such as [[scala.BigInt]] and
+   *    [[scala.BigDecimal]]) are unwrapped to pass a type which `Formatter`
    *    understands.
    *
-   *
    *  @param args the arguments used to instantiating the pattern.
-   *  @throws java.lang.IllegalArgumentException
+   *  @throws `java.lang.IllegalArgumentException`
    */
   def format(args : Any*): String =
     java.lang.String.format(toString, args map unwrapArg: _*)
 
-  /**
-   *  Like `format(args*)` but takes an initial `Locale` parameter
+  /** Like `format(args*)` but takes an initial `Locale` parameter
    *  which influences formatting as in `java.lang.String`'s format.
-   *
    *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
@@ -281,12 +263,10 @@ self =>
    *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
    *    understands.
    *
-   *
    *  @param locale an instance of `java.util.Locale`
    *  @param args the arguments used to instantiating the pattern.
-   *  @throws java.lang.IllegalArgumentException
+   *  @throws `java.lang.IllegalArgumentException`
    */
   def formatLocal(l: java.util.Locale, args: Any*): String =
     java.lang.String.format(l, toString, args map unwrapArg: _*)
 }
-

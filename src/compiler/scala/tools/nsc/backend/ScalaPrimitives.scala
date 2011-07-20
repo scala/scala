@@ -3,38 +3,28 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 
 import scala.tools.nsc.backend.icode._
 import scala.collection.{ mutable, immutable }
 
-/**
- * Scala primitive operations are represented as methods in Any and
- * AnyVal subclasses. Here we demultiplex them by providing a mapping
- * from their symbols to integers. Different methods exist for
- * different value types, but with the same meaning (like plus, minus,
- * etc.). They will all be mapped to the same int.
+/** Scala primitive operations are represented as methods in `Any` and
+ *  `AnyVal` subclasses. Here we demultiplex them by providing a mapping
+ *  from their symbols to integers. Different methods exist for
+ *  different value types, but with the same meaning (like plus, minus,
+ *  etc.). They will all be mapped to the same int.
  *
- * <p>Note: The three equal methods have the following semantics:</p>
- * <ul>
- *   <li>
- *     <code>"=="</code> checks for null, and if non-null, calls
- *     <code>java.lang.Object.equals</code><br/>
- *     <code>(class: Any; modifier: final)</code>. Primitive: EQ
- *   </li>
- *   <li>
- *     <code>"eq"</code> usual reference comparison<br/>
- *     <code>(class: AnyRef; modifier: final)</code>. Primitive: ID
- *   </li>
- *   <li>
- *     <code>"equals"</code> user-defined equality (Java semantics)<br/>
- *     <code>(class: Object; modifier: none)</code>. Primitive: EQUALS
- *   </li>
- * </ul>
+ *  Note: The three equal methods have the following semantics:
+ *  - `"=="` checks for `null`, and if non-null, calls
+ *    `java.lang.Object.equals`
+ *    `(class: Any; modifier: final)`. Primitive: `EQ`
+ *  - `"eq"` usual reference comparison
+ *    `(class: AnyRef; modifier: final)`. Primitive: `ID`
+ *  - `"equals"` user-defined equality (Java semantics)
+ *    `(class: Object; modifier: none)`. Primitive: `EQUALS`
  *
- * Inspired from the scalac compiler.
+ * Inspired from the `scalac` compiler.
  */
 abstract class ScalaPrimitives {
   val global: Global

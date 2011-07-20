@@ -12,35 +12,26 @@ object ClassfileConstants {
   final val JAVA_MAJOR_VERSION = 45
   final val JAVA_MINOR_VERSION = 3
 
-  /** <p>
-   *    (see http://java.sun.com/docs/books/jvms/second_edition/jvms-clarify.html)
-   *  </p>
-   *  <p>
-   *    If the <code>ACC_INTERFACE</code> flag is set, the <code>ACC_ABSTRACT</code>
-   *    flag must also be set (ch. 2.13.1).
-   *  </p>
-   *  <p>
-   *    A class file cannot have both its <code>ACC_FINAL</code> and
-   *    <code>ACC_ABSTRACT</code> flags set (ch. 2.8.2).
-   *  </p>
-   *  <p>
-   *    A field may have at most one of its <code>ACC_PRIVATE</code>,
-   *    <code>ACC_PROTECTED</code>, <code>ACC_PUBLIC</code> flags set (ch. 2.7.4).
-   *  </p>
-   *  <p>
-   *    A field may not have both its <code>ACC_FINAL</code> and
-   *    <code>ACC_VOLATILE</code> flags set (ch. 2.9.1).
-   *  </p>
-   *  <p>
-   *    If a method has its <code>ACC_ABSTRACT</code> flag set it must not
-   *    have any of its <code>ACC_FINAL</code>, <code>ACC_NATIVE</code>,
-   *    <code>ACC_PRIVATE</code>, <code>ACC_STATIC</code>, <code>ACC_STRICT</code>,
-   *    or <code>ACC_SYNCHRONIZED</code> flags set (ch. 2.13.3.2).
-   *  </p>
-   *  <p>
-   *    All interface methods must have their <code>ACC_ABSTRACT</code> and
-   *    <code>ACC_PUBLIC</code> flags set.
-   *  </p>
+  /** (see http://java.sun.com/docs/books/jvms/second_edition/jvms-clarify.html)
+   *
+   *  If the `ACC_INTERFACE` flag is set, the `ACC_ABSTRACT` flag must also
+   *  be set (ch. 2.13.1).
+   *
+   *  A class file cannot have both its `ACC_FINAL` and `ACC_ABSTRACT` flags
+   *  set (ch. 2.8.2).
+   *
+   *  A field may have at most one of its `ACC_PRIVATE`, `ACC_PROTECTED`,
+   *  `ACC_PUBLIC` flags set (ch. 2.7.4).
+   *
+   *  A field may not have both its `ACC_FINAL` and `ACC_VOLATILE` flags set
+   *  (ch. 2.9.1).
+   *
+   *  If a method has its `ACC_ABSTRACT` flag set it must not have any of its
+   *  `ACC_FINAL`, `ACC_NATIVE`, `ACC_PRIVATE`, `ACC_STATIC`, `ACC_STRICT`,
+   *  or `ACC_SYNCHRONIZED` flags set (ch. 2.13.3.2).
+   *
+   *  All interface methods must have their `ACC_ABSTRACT` and
+   *  `ACC_PUBLIC` flags set.
    */                                        // Class   Field   Method
   final val JAVA_ACC_PUBLIC       = 0x0001   //   X       X        X
   final val JAVA_ACC_PRIVATE      = 0x0002   //           X        X

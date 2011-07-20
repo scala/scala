@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
 package scala.tools.ant
 
 import java.io.{BufferedOutputStream, File, FileInputStream,
@@ -18,18 +16,17 @@ import java.util.jar.Pack200.Packer._
 import org.apache.tools.ant.{BuildException, DirectoryScanner}
 import org.apache.tools.ant.types.FileSet
 
-/** <p>
- *    An Ant task that applies the pack200 encoding to a JAR file.
- *  </p><ul>
- *  <li>destdir (mandatory),</li>
- *  <li>dir (defaults to project's basedir),</li>
- *  <li>effort (default 9),</li>
- *  <li>keepFileOrder (default false),</li>
- *  <li>keepModificationTime (default false),</li>
- *  <li>repack (default false),</li>
- *  <li>segmentLimit (default -1 for no limit) </li>
- *  <li>suffix (default ".pack")</li>
- *  </ul>
+/** An [[http://ant.apache.org Ant]] task that applies the pack200 encoding
+ *  to a JAR file.
+ *
+ *  - `destdir` (mandatory),
+ *  - `dir` (defaults to project's basedir),
+ *  - `effort` (default 9),
+ *  - `keepFileOrder` (default `'''false'''`),
+ *  - `keepModificationTime` (default `'''false'''`),
+ *  - `repack` (default false),
+ *  - `segmentLimit` (default `-1` for no limit),
+ *  - `suffix` (default ".pack")
  *
  * @author  James Matlik
  */
@@ -69,8 +66,8 @@ class Pack200Task extends ScalaMatchingTask {
   /** Set the flag to specify if file reordering should be performed. Reordering
     * is used to remove empty packages and improve pack200 optimization.
     * @param keep
-    *         true to retain file ordering.
-    *         false to optimize directory structure (DEFAULT).  */
+    *         `'''true'''` to retain file ordering.
+    *         `'''false'''` to optimize directory structure (DEFAULT).  */
   def setKeepFileOrder(x: Boolean) { keepFileOrder = x }
 
   /** If false, a single modification time is used for all contained files */

@@ -6,25 +6,23 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.tools.ant
 
 import java.io.{File, InputStream, FileWriter}
 import org.apache.tools.ant.BuildException
 import org.apache.tools.ant.types.{Path, Reference}
 
-/** <p>
- *    An Ant task that generates a shell or batch script to execute a
- *    Scala program.
- *    This task can take the following parameters as attributes:
- *  </p><ul>
- *  <li>file (mandatory),</li>
- *  <li>class (mandatory),</li>
- *  <li>platforms,</li>
- *  <li>classpath,</li>
- *  <li>properties,</li>
- *  <li>javaflags,</li>
- *  <li>toolflags.</li></ul>
+/** An Ant task that generates a shell or batch script to execute a
+ *  Scala program.
+ *
+ *  This task can take the following parameters as attributes:
+ *  - `file` (mandatory),
+ *  - `class` (mandatory),
+ *  - `platforms`,
+ *  - `classpath`,
+ *  - `properties`,
+ *  - `javaflags`,
+ *  - `toolflags`.
  *
  * @author  Gilles Dubochet
  * @version 1.1
@@ -48,36 +46,36 @@ class ScalaTool extends ScalaMatchingTask {
     val values = List("unix", "windows")
   }
 
-  /** The path to the exec script file. ".bat" will be appended for the
+  /** The path to the exec script file. `".bat"` will be appended for the
     * Windows BAT file, if generated. */
   private var file: Option[File] = None
 
   /** The main class to run. */
   private var mainClass: Option[String] = None
 
-  /** Supported platforms for the script. Either "unix" or "windows".
+  /** Supported platforms for the script. Either `"unix"` or `"windows"`.
     * Defaults to both. */
   private var platforms: List[String] = List("unix", "windows")
 
   /** An (optional) path to all JARs that this script depend on. Paths must be
     * relative to the scala home directory. If not set, all JAR archives and
-    * folders in "lib/" are automatically added. */
+    * folders in `"lib/"` are automatically added. */
   private var classpath: List[String] = Nil
 
   /** An (optional) path to JARs that this script depends on relative to the
-    * ant project's basedir. */
+    * ant project's `basedir`. */
   private var classpathPath: Path = emptyPath
 
   /** Comma-separated Java system properties to pass to the JRE. Properties
-    * are formatted as name=value. Properties scala.home, scala.tool.name and
-    * scala.tool.version are always set. */
+    * are formatted as `name=value`. Properties `scala.home`, `scala.tool.name`
+    * and `scala.tool.version` are always set. */
   private var properties: List[(String, String)] = Nil
 
-  /** Additional flags passed to the JRE ("java [javaFlags] class"). */
+  /** Additional flags passed to the JRE (`"java [javaFlags] class"`). */
   private var javaFlags: String = ""
 
-  /** Additional flags passed to the tool ("java class [toolFlags]"). Can only
-    * be set when a main class is defined. */
+  /** Additional flags passed to the tool (`"java class [toolFlags]"`).
+    * Can only be set when a main class is defined. */
   private var toolFlags: String = ""
 
 /*============================================================================*\
@@ -104,14 +102,14 @@ class ScalaTool extends ScalaMatchingTask {
     }
   }
 
-  /**
-   * Sets the classpath with which to run the tool.
-   * Note that this mechanism of setting the classpath is generally preferred
-   * for general purpose scripts, as this does not assume all elements are
-   * relative to the ant basedir.  Additionally, the platform specific demarcation
-   * of any script variables (e.g. `${SCALA_HOME}` or `%SCALA_HOME%`) can be specified
-   * in a platform independant way (e.g. `@SCALA_HOME@`) and automatically translated
-   * for you.
+  /** Sets the classpath with which to run the tool.
+   *
+   *  Note that this mechanism of setting the classpath is generally preferred
+   *  for general purpose scripts, as this does not assume all elements are
+   *  relative to the Ant `basedir`.  Additionally, the platform specific
+   *  demarcation of any script variables (e.g. `${SCALA_HOME}` or
+   * `%SCALA_HOME%`) can be specified in a platform independant way (e.g.
+   * `@SCALA_HOME@`) and automatically translated for you.
    */
   def setClassPath(input: String) {
     classpath = classpath ::: input.split(",").toList

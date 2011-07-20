@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
 
-/** <p> One of the branches of an OptManifest
+/** One of the branches of an [[scala.reflect.OptManifest]].
   */
 object NoManifest extends OptManifest[Nothing] with Serializable {
   override def toString = "<?>"

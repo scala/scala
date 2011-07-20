@@ -887,8 +887,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
 
   /** Returns an iterator which groups this iterator into fixed size
    *  blocks.  Example usages:
-   *
-   *  <pre>
+   *  {{{
    *    // Returns List(List(1, 2, 3), List(4, 5, 6), List(7)))
    *    (1 to 7).iterator grouped 3 toList
    *    // Returns List(List(1, 2, 3), List(4, 5, 6))
@@ -897,7 +896,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    // Illustrating that withPadding's argument is by-name.
    *    val it2 = Iterator.iterate(20)(_ + 5)
    *    (1 to 7).iterator grouped 3 withPadding it2.next toList
-   *  </pre>
+   *  }}}
    */
   def grouped[B >: A](size: Int): GroupedIterator[B] =
     new GroupedIterator[B](self, size, size)
@@ -905,9 +904,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
   /** Returns an iterator which presents a "sliding window" view of
    *  another iterator.  The first argument is the window size, and
    *  the second is how far to advance the window on each iteration;
-   *  defaults to 1.  Example usages:
-   *
-   *  <pre>
+   *  defaults to `1`.  Example usages:
+   *  {{{
    *    // Returns List(List(1, 2, 3), List(2, 3, 4), List(3, 4, 5))
    *    (1 to 5).iterator.sliding(3).toList
    *    // Returns List(List(1, 2, 3, 4), List(4, 5))
@@ -918,7 +916,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    // Illustrating that withPadding's argument is by-name.
    *    val it2 = Iterator.iterate(20)(_ + 5)
    *    (1 to 5).iterator.sliding(4, 3).withPadding(it2.next).toList
-   *  </pre>
+   *  }}}
    */
   def sliding[B >: A](size: Int, step: Int = 1): GroupedIterator[B] =
     new GroupedIterator[B](self, size, step)
@@ -1028,7 +1026,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
     else Stream.empty[A]
 
   /** Converts this iterator to a string.
-   *  @return `"empty iterator"` or `"non-empty iterator"`, depending on whether or not the iterator is empty.
+   *  @return `"empty iterator"` or `"non-empty iterator"`, depending on
+   *           whether or not the iterator is empty.
    */
   override def toString = (if (hasNext) "non-empty" else "empty")+" iterator"
 

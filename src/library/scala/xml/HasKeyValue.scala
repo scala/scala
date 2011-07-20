@@ -6,16 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 
-/** <p>
- *    Use this class to match on (unprefixed) attribute values
- *  <p><pre>
- *  <b>val</b> hasName = <b>new</b> HasKeyValue("name")
- *  node <b>match</b> {
- *    <b>case</b> Node("foo", hasName(x), _*) => x // foo had attribute with key "name" and with value x
- *  }</pre>
+/** Use this class to match on (unprefixed) attribute values
+ *  {{{
+ *  val hasName = new HasKeyValue("name")
+ *  node match {
+ *    case Node("foo", hasName(x), _*) => x // foo had attribute with key "name" and with value x
+ *  }
+ *  }}}
  *
  *  @author Burak Emir
  */

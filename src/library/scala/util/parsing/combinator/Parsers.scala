@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.util.parsing.combinator
 
 import scala.util.parsing.input._
@@ -70,10 +69,12 @@ trait Parsers {
     /** Partial functional composition of ParseResults.
      *
      * @param `f` the partial function to be lifted over this result
-     * @param error a function that takes the same argument as `f` and produces an error message
-     *        to explain why `f` wasn't applicable (it is called when this is the case)
-     * @return if `f` f is defined at the result in this `ParseResult`, `f` applied to the result
-     *         of this `ParseResult`, packaged up as a new `ParseResult`. If `f` is not defined, `Failure`.
+     * @param error a function that takes the same argument as `f` and
+     *        produces an error message to explain why `f` wasn't applicable
+     *        (it is called when this is the case)
+     * @return if `f` f is defined at the result in this `ParseResult`, `f`
+     *         applied to the result of this `ParseResult`, packaged up as
+     *         a new `ParseResult`. If `f` is not defined, `Failure`.
      */
     def mapPartial[U](f: PartialFunction[T, U], error: T => String): ParseResult[U]
 
@@ -210,10 +211,11 @@ trait Parsers {
      *
      * `p ~ q` succeeds if `p` succeeds and `q` succeeds on the input left over by `p`.
      *
-     * @param q a parser that will be executed after `p` (this parser) succeeds -- evaluated at most once, and only when necessary
-     * @return a `Parser` that -- on success -- returns a `~` (like a Pair, but easier to pattern match on)
-     *         that contains the result of `p` and that of `q`.
-     *         The resulting parser fails if either `p` or `q` fails.
+     * @param q a parser that will be executed after `p` (this parser)
+     *          succeeds -- evaluated at most once, and only when necessary.
+     * @return a `Parser` that -- on success -- returns a `~` (like a `Pair`,
+     *         but easier to pattern match on) that contains the result of `p` and
+     *         that of `q`. The resulting parser fails if either `p` or `q` fails.
      */
     @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
     def ~ [U](q: => Parser[U]): Parser[~[T, U]] = { lazy val p = q // lazy argument
@@ -224,7 +226,8 @@ trait Parsers {
      *
      * `p ~> q` succeeds if `p` succeeds and `q` succeeds on the input left over by `p`.
      *
-     * @param q a parser that will be executed after `p` (this parser) succeeds -- evaluated at most once, and only when necessary
+     * @param q a parser that will be executed after `p` (this parser)
+     *        succeeds -- evaluated at most once, and only when necessary.
      * @return a `Parser` that -- on success -- returns the result of `q`.
      */
     @migration(2, 9, "As of 2.9, the call-by-name argument is evaluated at most once per constructed Parser object, instead of on every need that arises during parsing.")
@@ -234,8 +237,8 @@ trait Parsers {
 
     /** A parser combinator for sequential composition which keeps only the left result.
      *
-     * <p> `p <~ q` succeeds if `p` succeeds and `q` succeeds on the input
-     *           left over by `p`.</p>
+     *  `p <~ q` succeeds if `p` succeeds and `q` succeeds on the input
+     *           left over by `p`.
      *
      * @note <~ has lower operator precedence than ~ or ~>.
      *
@@ -272,9 +275,9 @@ trait Parsers {
      *
      * @param q a parser that will be executed if `p` (this parser) fails (and allows back-tracking)
      * @return a `Parser` that returns the result of the first parser to succeed (out of `p` and `q`)
-     *         The resulting parser succeeds if (and only if) <ul>
-     *           <li> `p` succeeds, <i>or</i>  </li>
-     *           <li> if `p` fails allowing back-tracking and `q` succeeds. </li> </ul>
+     *         The resulting parser succeeds if (and only if)
+     *         - `p` succeeds, ''or''
+     *         - if `p` fails allowing back-tracking and `q` succeeds.
      */
     def | [U >: T](q: => Parser[U]): Parser[U] = append(q).named("|")
 
@@ -356,18 +359,23 @@ trait Parsers {
      */
     def ^? [U](f: PartialFunction[T, U]): Parser[U] = ^?(f, r => "Constructor function not defined at "+r)
 
-    /** A parser combinator that parameterizes a subsequent parser with the result of this one.
+    /** A parser combinator that parameterizes a subsequent parser with the
+     *  result of this one.
      *
-     *  Use this combinator when a parser depends on the result of a previous parser. `p` should be
-     *  a function that takes the result from the first parser and returns the second parser.
+     *  Use this combinator when a parser depends on the result of a previous
+     *  parser. `p` should be a function that takes the result from the first
+     *  parser and returns the second parser.
      *
-     *  `p into fq` (with `fq` typically `{x => q}`) first applies `p`, and then, if `p` successfully
-     *  returned result `r`, applies `fq(r)` to the rest of the input.
+     *  `p into fq` (with `fq` typically `{x => q}`) first applies `p`, and
+     *  then, if `p` successfully returned result `r`, applies `fq(r)` to the
+     *  rest of the input.
      *
      *  ''From: G. Hutton. Higher-order functions for parsing. J. Funct. Program., 2(3):323--343, 1992.''
      *
-     * @param fq a function that, given the result from this parser, returns the second parser to be applied
-     * @return a parser that succeeds if this parser succeeds (with result `x`) and if then `fq(x)` succeeds
+     * @param fq a function that, given the result from this parser, returns
+     *        the second parser to be applied
+     * @return a parser that succeeds if this parser succeeds (with result `x`)
+     *         and if then `fq(x)` succeeds
      */
     def into[U](fq: T => Parser[U]): Parser[U] = flatMap(fq)
 
@@ -544,8 +552,8 @@ trait Parsers {
 
   /** A parser generator for non-empty repetitions.
    *
-   * <p> rep1(p) repeatedly uses `p` to parse the input until `p` fails -- `p` must succeed at least
-   *             once (the result is a `List` of the consecutive results of `p`)</p>
+   *  `rep1(p)` repeatedly uses `p` to parse the input until `p` fails -- `p` must succeed at least
+   *             once (the result is a `List` of the consecutive results of `p`)
    *
    * @param p a `Parser` that is to be applied successively to the input
    * @return A parser that returns a list of results produced by repeatedly applying `p` to the input
@@ -555,9 +563,9 @@ trait Parsers {
 
   /** A parser generator for non-empty repetitions.
    *
-   * <p> rep1(f, p) first uses `f` (which must succeed) and then repeatedly uses `p` to
-   *     parse the input until `p` fails
-   *     (the result is a `List` of the consecutive results of `f` and `p`)</p>
+   *  `rep1(f, p)` first uses `f` (which must succeed) and then repeatedly
+   *     uses `p` to parse the input until `p` fails
+   *     (the result is a `List` of the consecutive results of `f` and `p`)
    *
    * @param first a `Parser` that parses the first piece of input
    * @param p0 a `Parser` that is to be applied successively to the rest of the input (if any) -- evaluated at most once, and only when necessary
