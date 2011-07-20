@@ -36,6 +36,9 @@ class Universe extends internal.SymbolTable with JavaToScala with ScalaToJava wi
 
   type Position = String // source file?
   val NoPosition = ""
+
+  // establish root association to avoid cyclic dependency errors later
+  classToScala(classOf[java.lang.Object]).initialize
 }
 
 object Universe extends Universe

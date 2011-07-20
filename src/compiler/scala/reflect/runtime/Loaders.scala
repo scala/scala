@@ -51,17 +51,21 @@ trait Loaders { self: Universe =>
    *  and initialize with a lazy type completer.
    *  @param owner   The owner of the newly created class and object
    *  @param name    The simple name of the newly created class
+   *  @param completer  The completer to be used to set the info of the class and the module
    */
-  protected def createClassModule(owner: Symbol, name: TypeName) = {
+  protected def createClassModule(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
     val clazz = owner.newClass(NoPosition, name)
     val module = owner.newModule(NoPosition, name.toTermName)
     owner.info.decls enter clazz
     owner.info.decls enter module
-    val classCompleter = new TopClassCompleter(clazz, module)
-    clazz.setInfo(classCompleter)
-    module.setInfo(classCompleter)
-    module.moduleClass.setInfo(classCompleter)
+    initClassModule(clazz, module, completer(clazz, module))
     (clazz, module)
+  }
+
+  protected def initClassModule(clazz: Symbol, module: Symbol, completer: LazyType) = {
+    clazz.setInfo(completer)
+    module.setInfo(completer)
+    module.moduleClass.setInfo(completer)
   }
 
   /** The type for packages.
@@ -77,7 +81,7 @@ trait Loaders { self: Universe =>
         assert(this eq pkg.info, this+" "+pkg.info)
         assert(decls eq pkg.info.decls)
         println("creating "+name+" in "+pkg)
-        val (clazz, module) = createClassModule(pkg, name.toTypeName)
+        val (clazz, module) = createClassModule(pkg, name.toTypeName, new TopClassCompleter(_, _))
         if (name.isTypeName) clazz else module
       }
     override def member(name: Name): Symbol = decl(name)
