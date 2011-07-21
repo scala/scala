@@ -288,8 +288,11 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
     case java.lang.Double.TYPE => DoubleClass.tpe
     case java.lang.Boolean.TYPE => BooleanClass.tpe
     case jclazz: jClass[_] =>
-      val clazz = classToScala(jclazz)
-      rawToExistential(typeRef(clazz.owner.thisType, clazz, List()))
+      if (jclazz.isArray) arrayType(typeToScala(jclazz.getComponentType))
+      else {
+        val clazz = classToScala(jclazz)
+        rawToExistential(typeRef(clazz.owner.thisType, clazz, List()))
+      }
     case japplied: ParameterizedType =>
       val (pre, sym) = typeToScala(japplied.getRawType) match {
         case ExistentialType(tparams, TypeRef(pre, sym, _)) => (pre, sym)

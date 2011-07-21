@@ -63,7 +63,7 @@ trait ConversionUtil extends internal.transform.Transforms { self: Universe =>
    *  all Scala-specific transformations in InfoTransformers. (to be done)
    */
   protected def erasesTo(meth: Symbol, jmeth: jMethod): Boolean = {
-    val mtpe = javaType(meth)
+    val mtpe = transformedType(meth)
     (mtpe.paramTypes map typeToJavaClass) == jmeth.getParameterTypes.toList &&
     typeToJavaClass(mtpe.resultType) == jmeth.getReturnType
   }
@@ -73,7 +73,7 @@ trait ConversionUtil extends internal.transform.Transforms { self: Universe =>
    *  all Scala-specific transformations in InfoTransformers. (to be done)
    */
   protected def erasesTo(meth: Symbol, jconstr: jConstructor[_]): Boolean = {
-    val mtpe = javaType(meth)
+    val mtpe = transformedType(meth)
     (mtpe.paramTypes map typeToJavaClass) == jconstr.getParameterTypes.toList
   }
 }

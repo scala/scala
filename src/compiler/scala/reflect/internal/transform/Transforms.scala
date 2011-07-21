@@ -8,7 +8,7 @@ trait Transforms { self: SymbolTable =>
   object uncurry   extends { val global: Transforms.this.type = self } with UnCurry
   object erasure   extends { val global: Transforms.this.type = self } with Erasure
 
-  def javaType(sym: Symbol) =
+  def transformedType(sym: Symbol) =
     erasure.transformInfo(sym,
       uncurry.transformInfo(sym,
         refChecks.transformInfo(sym, sym.info)))
