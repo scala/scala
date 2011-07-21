@@ -8,8 +8,8 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
 class Mirror extends Universe with api.Mirror {
 
   def classWithName(name: String): Symbol = classToScala(java.lang.Class.forName(name))
-  def getClass(obj: Any): Symbol = classToScala(obj.getClass)
-  def getType(obj: Any): Type = typeToScala(obj.getClass)
+  def getClass(obj: Any): Symbol = classToScala(obj.asInstanceOf[AnyRef].getClass) // To do: Not sure what to do with primitive classes here
+  def getType(obj: Any): Type = typeToScala(obj.asInstanceOf[AnyRef].getClass)
 
   def getValue(receiver: AnyRef, field: Symbol): Any = fieldToJava(field).get(receiver)
   def setValue(receiver: AnyRef, field: Symbol, value: Any): Unit = fieldToJava(field).set(receiver, value)
