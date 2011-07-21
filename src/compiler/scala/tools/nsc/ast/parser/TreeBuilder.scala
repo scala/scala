@@ -33,6 +33,7 @@ abstract class TreeBuilder {
   def scalaUnitConstr          = gen.scalaUnitConstr
   def scalaScalaObjectConstr   = gen.scalaScalaObjectConstr
   def productConstr            = gen.productConstr
+  def productConstrN(n: Int)   = scalaDot(newTypeName("Product" + n))
   def serializableConstr       = gen.serializableConstr
 
   def convertToTypeName(t: Tree) = gen.convertToTypeName(t)

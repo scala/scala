@@ -247,6 +247,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val ofDim: NameType            = "ofDim"
     val productArity: NameType     = "productArity"
     val productElement: NameType   = "productElement"
+    val productIterator: NameType  = "productIterator"
     val productPrefix: NameType    = "productPrefix"
     val readResolve: NameType      = "readResolve"
     val sameElements: NameType     = "sameElements"

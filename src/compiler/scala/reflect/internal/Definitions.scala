@@ -415,6 +415,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def Product_productArity = getMember(ProductRootClass, nme.productArity)
       def Product_productElement = getMember(ProductRootClass, nme.productElement)
       // def Product_productElementName = getMember(ProductRootClass, nme.productElementName)
+      def Product_iterator = getMember(ProductRootClass, nme.productIterator)
       def Product_productPrefix = getMember(ProductRootClass, nme.productPrefix)
       def Product_canEqual = getMember(ProductRootClass, nme.canEqual_)
 

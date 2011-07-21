@@ -44,6 +44,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     val localTyper = newTyper(
       if (reporter.hasErrors) context makeSilent false else context
     )
+    def accessorTypes = clazz.caseFieldAccessors map (_.tpe.finalResultType)
+    def accessorLub = global.weakLub(accessorTypes)._1
 
     def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info nonPrivateMember meth.name
@@ -72,14 +74,30 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     import CODE._
 
-    def productPrefixMethod: Tree = typer.typed {
-      val method = syntheticMethod(nme.productPrefix, 0, sym => NullaryMethodType(StringClass.tpe))
-      DEF(method) === LIT(clazz.name.decode)
+    def newNullaryMethod(name: Name, tpe: Type, body: Tree) = {
+      val flags  = if (clazz.tpe.member(name.toTermName) != NoSymbol) OVERRIDE else 0
+      val method = clazz.newMethod(clazz.pos.focus, name.toTermName) setFlag flags
+
+      method setInfo NullaryMethodType(tpe)
+      clazz.info.decls enter method
+
+      typer typed (DEF(method) === body)
+    }
+    def productPrefixMethod            = newNullaryMethod(nme.productPrefix, StringClass.tpe, LIT(clazz.name.decode))
+    def productArityMethod(arity: Int) = newNullaryMethod(nme.productArity, IntClass.tpe, LIT(arity))
+    def productIteratorMethod = {
+      val method       = getMember(ScalaRunTimeModule, "typedProductIterator")
+      val iteratorType = typeRef(NoPrefix, IteratorClass, List(accessorLub))
+
+      newNullaryMethod(
+        nme.productIterator,
+        iteratorType,
+        gen.mkMethodCall(method, List(accessorLub), List(This(clazz)))
+      )
     }
 
-    def productArityMethod(nargs: Int): Tree = {
-      val method = syntheticMethod(nme.productArity, 0, sym => NullaryMethodType(IntClass.tpe))
-      typer typed { DEF(method) === LIT(nargs) }
+    def projectionMethod(accessor: Symbol, num: Int) = {
+      newNullaryMethod(nme.productAccessorName(num), accessor.tpe.resultType, REF(accessor))
     }
 
     /** Common code for productElement and (currently disabled) productElementName
@@ -230,7 +248,9 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     if (!phase.erasedTypes) try {
       if (clazz.isCase) {
-        val isTop = clazz.ancestors forall (x => !x.isCase)
+        val isTop     = clazz.ancestors forall (x => !x.isCase)
+        val accessors = clazz.caseFieldAccessors
+        val arity     = accessors.size
 
         if (isTop) {
           // If this case class has fields with less than public visibility, their getter at this
@@ -243,13 +263,29 @@ trait SyntheticMethods extends ast.TreeDSL {
             stat.symbol resetFlag CASEACCESSOR
           }
         }
+        /** The _1, _2, etc. methods to implement ProductN, and an override
+         *  of productIterator with a more specific element type.
+         *  Only enabled under -Xexperimental.
+         */
+        def productNMethods = {
+          val projectionMethods = (accessors, 1 to arity).zipped map ((accessor, num) =>
+            productProj(arity, num) -> (() => projectionMethod(accessor, num))
+          )
+          projectionMethods :+ (
+            Product_iterator -> (() => productIteratorMethod)
+          )
+        }
 
         // methods for case classes only
         def classMethods = List(
           Object_hashCode -> (() => forwardingMethod(nme.hashCode_, "_" + nme.hashCode_)),
           Object_toString -> (() => forwardingMethod(nme.toString_, "_" + nme.toString_)),
           Object_equals   -> (() => equalsClassMethod)
+        ) ++ (
+          if (settings.Xexperimental.value) productNMethods
+          else Nil
         )
+
         // methods for case objects only
         def objectMethods = List(
           Object_hashCode -> (() => moduleHashCodeMethod),
@@ -257,7 +293,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         )
         // methods for both classes and objects
         def everywhereMethods = {
-          val accessors = clazz.caseFieldAccessors
           List(
             Product_productPrefix   -> (() => productPrefixMethod),
             Product_productArity    -> (() => productArityMethod(accessors.length)),
