@@ -12,5 +12,6 @@ abstract class Universe extends Symbols
                            with StandardDefinitions {
   type Position
   val NoPosition: Position
+
 }
 

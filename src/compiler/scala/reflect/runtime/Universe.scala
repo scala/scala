@@ -40,16 +40,3 @@ class Universe extends internal.SymbolTable with JavaToScala with ScalaToJava wi
   // establish root association to avoid cyclic dependency errors later
   classToScala(classOf[java.lang.Object]).initialize
 }
-
-object Universe extends Universe
-
-/** test code; should go to tests once things settle down a bit
- */
-object Test extends Universe with App {
-  val sym = classToScala(classOf[scala.collection.Iterable[_]])
-  println(sym)
-  println("parents = "+sym.info.parents)
-  println("decls = "+(sym.info.decls.toList map (_.defString)))
-  val ms = sym.info.members.toList map (_.initialize)
-  println("members = "+(ms map (_.defString) mkString ("\n  ")))
-}

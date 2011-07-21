@@ -275,7 +275,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
     (args map targToScala, tparams.toList)
   }
 
-  /** The Scala type that corresponds to given Java type (to be done)
+  /** The Scala type that corresponds to given Java type
    */
   def typeToScala(jtpe: jType): Type = jtpe match {
     case java.lang.Void.TYPE => UnitClass.tpe
