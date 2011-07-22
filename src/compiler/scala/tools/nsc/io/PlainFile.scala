@@ -16,7 +16,15 @@ object PlainFile {
    * by it. Otherwise, returns null.
    */
   def fromPath(file: Path): PlainFile =
-    if (file.exists) new PlainFile(file) else null
+    if (file.isDirectory) new PlainDirectory(file.toDirectory)
+    else if (file.isFile) new PlainFile(file)
+    else null
+}
+
+class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
+  override def isDirectory = true
+  override def iterator = givenPath.list filter (_.exists) map (x => new PlainFile(x))
+  override def delete(): Unit = givenPath.deleteRecursively()
 }
 
 /** This class implements an abstract file backed by a File.
@@ -27,7 +35,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   val file = givenPath.jfile
   override def underlyingSource = Some(this)
 
-  private val fpath = try givenPath.normalize catch { case _: IOException => givenPath.toAbsolute }
+  private val fpath = givenPath.toAbsolute
 
   /** Returns the name of this abstract file. */
   def name = givenPath.name
@@ -36,7 +44,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   def path = givenPath.path
 
   /** The absolute file. */
-  def absolute = new PlainFile(givenPath.normalize)
+  def absolute = new PlainFile(givenPath.toAbsolute)
 
   override def container: AbstractFile = new PlainFile(givenPath.parent)
   override def input = givenPath.toFile.inputStream()
@@ -44,8 +52,10 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   override def sizeOption = Some(givenPath.length.toInt)
 
   override def hashCode(): Int = fpath.hashCode
-  override def equals(that: Any): Boolean =
-    cond(that) { case other: PlainFile  => fpath == other.fpath }
+  override def equals(that: Any): Boolean = that match {
+    case x: PlainFile => fpath == x.fpath
+    case _            => false
+  }
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = givenPath.isDirectory

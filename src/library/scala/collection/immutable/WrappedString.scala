@@ -37,8 +37,15 @@ class WrappedString(val self: String) extends IndexedSeq[Char] with StringLike[W
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = WrappedString.newBuilder
 
-  override def slice(from: Int, until: Int): WrappedString =
-    new WrappedString(self.substring(from max 0, until min self.length))
+  override def slice(from: Int, until: Int): WrappedString = {
+    val start = if (from < 0) 0 else from
+    if (until <= start || start >= repr.length)
+      return new WrappedString("")
+
+    val end = if (until > length) length else until
+    new WrappedString(repr.substring(start, end))
+  }
+  override def length = self.length
   override def toString = self
 }
 

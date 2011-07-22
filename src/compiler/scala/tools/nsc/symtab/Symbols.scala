@@ -406,7 +406,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         var is = infos
         (is eq null) || {
           while (is.prev ne null) { is = is.prev }
-          is.info.isComplete && is.info.typeParams.isEmpty
+          is.info.isComplete && !is.info.isHigherKinded // was: is.info.typeParams.isEmpty.
+          // YourKit listed the call to PolyType.typeParams as a hot spot but it is likely an artefact.
+          // The change to isHigherKinded did not reduce the total running time.
         }
       }
 
@@ -432,8 +434,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       owner.isEmptyPackageClass &&
       (name startsWith nme.INTERPRETER_LINE_PREFIX) &&
       (name endsWith nme.INTERPRETER_WRAPPER_SUFFIX)
-
-    override def isEffectiveRoot = super.isEffectiveRoot || isInterpreterWrapper
 
     /** Is this symbol an accessor method for outer? */
     final def isOuterAccessor = {
@@ -516,14 +516,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isLocal: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
-    final def isConstant: Boolean =
-      isStable && (tpe match {
-        case ConstantType(_) => true
-        case PolyType(_, ConstantType(_)) => true
-        case MethodType(_, ConstantType(_)) => true
-        case NullaryMethodType(ConstantType(_)) => true
-        case _ => false
-      })
+    final def isConstant: Boolean = isStable && isConstantType(tpe.resultType)
 
     /** Is this class nested in another class or module (not a package)? */
     final def isNestedClass: Boolean =
@@ -699,9 +692,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *    @M you should use tpeHK for a type symbol with type parameters if
      *       the kind of the type need not be *, as tpe introduces dummy arguments
      *       to generate a type of kind *
-     *  for a term symbol, its usual type
+     *  for a term symbol, its usual type.
+     *  See the tpe/tpeHK overrides in TypeSymbol for more.
      */
     override def tpe: Type = info
+    def tpeHK: Type = tpe
 
     /** Get type info associated with symbol at current phase, after
      *  ensuring that symbol is initialized (i.e. type is completed).
@@ -881,15 +876,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def typeConstructor: Type =
       abort("typeConstructor inapplicable for " + this)
 
-    /** @M -- tpe vs tpeHK:
-     * Symbol::tpe creates a TypeRef that has dummy type arguments to get a type of kind *
-     * Symbol::tpeHK creates a TypeRef without type arguments, but with type params --> higher-kinded if non-empty list of tpars
-     * calling tpe may hide errors or introduce spurious ones
-     *   (e.g., when deriving a type from the symbol of a type argument that must be higher-kinded)
-     * as far as I can tell, it only makes sense to call tpe in conjunction with a substitution that replaces the generated dummy type arguments by their actual types
-     */
-    def tpeHK = if (isType) typeConstructor else tpe // @M! used in memberType
-
     /** The type parameters of this symbol, without ensuring type completion.
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
@@ -1032,13 +1018,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       this == that || this.isError || that.isError ||
       info.baseTypeIndex(that) >= 0
 
-    final def isSubClass(that: Symbol): Boolean = {
+    final def isSubClass(that: Symbol): Boolean = (
       isNonBottomSubClass(that) ||
       this == NothingClass ||
       this == NullClass &&
       (that == AnyClass ||
-       that != NothingClass && (that isSubClass AnyRefClass))
-    }
+       that != NothingClass && (that isSubClass ObjectClass))
+    )
     final def isNumericSubClass(that: Symbol): Boolean =
       definitions.isNumericSubClass(this, that)
 
@@ -1914,7 +1900,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
           tpeCache = NoType
           val targs =
             if (phase.erasedTypes && this != ArrayClass) List()
-            else unsafeTypeParams map (_.typeConstructor) //@M! use typeConstructor to generate dummy type arguments,
+            else unsafeTypeParams map (_.typeConstructor)
+            //@M! use typeConstructor to generate dummy type arguments,
             // sym.tpe should not be called on a symbol that's supposed to be a higher-kinded type
             // memberType should be used instead, that's why it uses tpeHK and not tpe
           tpeCache = newTypeRef(targs)
@@ -1923,6 +1910,22 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       assert(tpeCache ne null/*, "" + this + " " + phase*/)//debug
       tpeCache
     }
+
+    /** @M -- tpe vs tpeHK:
+     *
+     *    tpe: creates a TypeRef with dummy type arguments and kind *
+     *  tpeHK: creates a TypeRef with no type arguments but with type parameters
+     *
+     * If typeParams is nonEmpty, calling tpe may hide errors or
+     * introduce spurious ones. (For example, when deriving a type from
+     * the symbol of a type argument that must be higher-kinded.) As far
+     * as I can tell, it only makes sense to call tpe in conjunction
+     * with a substitution that replaces the generated dummy type
+     * arguments by their actual types.
+     *
+     * TODO: the above conditions desperately need to be enforced by code.
+     */
+    override def tpeHK = typeConstructor // @M! used in memberType
 
     // needed for experimental code for early types as type parameters
     // def refreshType() { tpePeriod = NoPeriod }
@@ -1954,11 +1957,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
     protected def doCookJavaRawInfo() {
-      // don't require isJavaDefined, since T in the above example does not have that flag
-      val tpe1 = rawToExistential(info)
-      // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
-      if (tpe1 ne info) {
-        setInfo(tpe1)
+      if (isJavaDefined || owner.isJavaDefined) {
+        val tpe1 = rawToExistential(info)
+        // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
+        if (tpe1 ne info) {
+          setInfo(tpe1)
+        }
       }
     }
 
@@ -1998,7 +2002,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** If type skolem comes from an existential, the tree where it was created */
     override def unpackLocation = origin
 
-    override def typeParams = info.typeParams //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
+    //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
+    override def typeParams = info.typeParams
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =
       new TypeSkolem(owner, pos, name, origin)
@@ -2007,7 +2012,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (settings.debug.value) (super.nameString + "&" + level)
       else super.nameString
   }
-
 
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)

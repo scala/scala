@@ -1,4 +1,0 @@
-bug4533.scala:6: error: trait GenSetLike in package collection cannot be accessed in package collection
-  def statusByAlarms(alarms: GenSetLike[FooAlarm]) = println("hello")
-                             ^
-one error found

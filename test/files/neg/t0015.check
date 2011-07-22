@@ -1,6 +1,6 @@
 t0015.scala:5: error: type mismatch;
  found   : () => Nothing
- required: (Nothing) => ?
+ required: Nothing => ?
    Nil.map(f _)
            ^
 one error found

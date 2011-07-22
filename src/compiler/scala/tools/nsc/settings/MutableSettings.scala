@@ -412,6 +412,8 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     def unparse: List[String] =
       if (value == default) Nil
       else List(name, value.toString)
+
+    withHelpSyntax(name + " <n>")
   }
 
   /** A setting represented by a boolean flag (false, unless set) */

@@ -1,7 +1,7 @@
 package scala.reflect
 package generic
 
-trait Types { self: Universe =>
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait Types { self: Universe =>
 
   abstract class AbsType {
     def typeSymbol: Symbol

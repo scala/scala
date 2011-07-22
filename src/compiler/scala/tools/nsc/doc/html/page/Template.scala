@@ -31,8 +31,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val valueMembers =
     tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
 
-  val (absValueMembers, concValueMembers) =
+  val (absValueMembers, nonAbsValueMembers) =
     valueMembers partition (_.isAbstract)
+
+  val (deprValueMembers, concValueMembers) =
+    nonAbsValueMembers partition (_.deprecation.isDefined)
 
   val typeMembers =
     tpl.abstractTypes ++ tpl.aliasTypes ++ tpl.templates.filter(x => x.isTrait || x.isClass) sorted
@@ -129,6 +132,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             <div id="values" class="values members">
               <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
               <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (deprValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="values" class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol>{ deprValueMembers map (memberToHtml(_)) }</ol>
             </div>
         }
 

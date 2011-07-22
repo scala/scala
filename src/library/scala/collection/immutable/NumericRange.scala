@@ -192,24 +192,22 @@ extends IndexedSeq[T] with Serializable {
 /** A companion object for numeric ranges.
  */
 object NumericRange {
-  import Ordering.Implicits._
-  import math.Integral.Implicits._
-
   /** Calculates the number of elements in a range given start, end, step, and
    *  whether or not it is inclusive.  Throws an exception if step == 0 or
    *  the number of elements exceeds the maximum Int.
    */
-  def count[T: Integral](start: T, end: T, step: T, isInclusive: Boolean): Int = {
-    val zero    = implicitly[Integral[T]].zero
-    val upward  = start < end
-    val posStep = step > zero
+  def count[T](start: T, end: T, step: T, isInclusive: Boolean)(implicit num: Integral[T]): Int = {
+    val zero    = num.zero
+    val upward  = num.lt(start, end)
+    val posStep = num.gt(step, zero)
 
     if (step == zero) throw new IllegalArgumentException("step cannot be 0.")
     else if (start == end) if (isInclusive) 1 else 0
     else if (upward != posStep) 0
     else {
-      val jumps     = ((end - start) / step).toLong
-      val remainder = ((end - start) % step).toLong
+      val diff      = num.minus(end, start)
+      val jumps     = num.toLong(num.quot(diff, step))
+      val remainder = num.toLong(num.rem(diff, step))
       val longCount = jumps + (
         if (!isInclusive && zero == remainder) 0 else 1
       )
@@ -220,7 +218,7 @@ object NumericRange {
        *  overflow turn up as an empty range.
        */
       // The second condition contradicts an empty result.
-      val isOverflow = longCount == 0 && (start + step < end) == upward
+      val isOverflow = longCount == 0 && num.lt(num.plus(start, step), end) == upward
 
       if (longCount > scala.Int.MaxValue || longCount < 0L || isOverflow) {
         val word  = if (isInclusive) "to" else "until"

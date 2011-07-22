@@ -259,6 +259,12 @@ public enum Operation
      * Cancel search
      */
     ABORT(-64),
+
+    /**
+     * Delete next word
+     */
+    DELETE_NEXT_WORD(-65),
+
     ;
 
     public final short code;

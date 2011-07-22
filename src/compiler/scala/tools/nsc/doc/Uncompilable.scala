@@ -13,7 +13,7 @@ trait Uncompilable {
   val global: Global
   val settings: Settings
 
-  import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, Name, DocComment }
+  import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, Name, DocComment, NoSymbol }
   import global.definitions.RootClass
 
   private implicit def translateName(name: Global#Name) =
@@ -43,6 +43,6 @@ trait Uncompilable {
     pairs
   }
   override def toString = pairs.size + " uncompilable symbols:\n" + (
-    symbols map (x => "  " + x.owner.fullName + " " + x.defString) mkString "\n"
+    symbols filterNot (_ == NoSymbol) map (x => "  " + x.owner.fullName + " " + x.defString) mkString "\n"
   )
 }

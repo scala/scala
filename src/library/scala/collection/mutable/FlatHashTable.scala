@@ -279,7 +279,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     // improve(hcode) & (table.length - 1)
     val improved = improve(hcode)
     val ones = table.length - 1
-    (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
+    (improved >>> (32 - java.lang.Integer.bitCount(ones))) & ones
   }
 
   protected def clearTable() {
@@ -323,7 +323,7 @@ private[collection] object FlatHashTable {
    */
   private[collection] def initialSize: Int = 16
 
-  private[collection] def sizeForThreshold(size: Int, _loadFactor: Int) = size * loadFactorDenum / _loadFactor
+  private[collection] def sizeForThreshold(size: Int, _loadFactor: Int) = (size.toLong * loadFactorDenum / _loadFactor).toInt
 
   private[collection] def newThreshold(_loadFactor: Int, size: Int) = {
     val lf = _loadFactor

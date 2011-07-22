@@ -79,24 +79,4 @@ object Test extends Properties("Index") {
       case None => false
     }
   }
-
-  property("allPackages") = {
-    createIndex("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
-
-      case Some(index) =>
-        index.allPackages.map(_.toString) == List(
-          "scala",
-          "scala.tools",
-          "scala.tools.nsc",
-          "scala.tools.nsc.doc",
-          "scala.tools.nsc.doc.html",
-          "scala.tools.nsc.doc.html.page"
-        )
-
-      case None =>
-        false
-
-    }
-  }
-
 }

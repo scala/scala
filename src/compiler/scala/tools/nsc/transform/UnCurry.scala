@@ -468,8 +468,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
 // ------ The tree transformers --------------------------------------------------------
 
     def mainTransform(tree: Tree): Tree = {
-
-      def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
+      @inline def withNeedLift(needLift: Boolean)(f: => Tree): Tree = {
         val saved = needTryLift
         needTryLift = needLift
         try f

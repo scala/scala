@@ -144,6 +144,7 @@ final class Int extends AnyVal {
   def %(x: Float): Float = sys.error("stub")
   def %(x: Double): Double = sys.error("stub")
 
+  def getClass(): Class[Int] = sys.error("stub")
 }
 
 object Int extends AnyValCompanion {

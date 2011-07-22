@@ -741,7 +741,7 @@ abstract class ClassfileParser {
                     case variance @ ('+' | '-' | '*') =>
                       index += 1
                       val bounds = variance match {
-                        case '+' => TypeBounds.upper(sig2type(tparams, skiptvs))
+                        case '+' => TypeBounds.upper(objToAny(sig2type(tparams, skiptvs)))
                         case '-' => TypeBounds.lower(sig2type(tparams, skiptvs))
                         case '*' => TypeBounds.empty
                       }

@@ -949,6 +949,10 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       if (tree eq orig) super.transform(tree)
       else tree
   }
+  // Create a readable string describing a substitution.
+  private def substituterString(fromStr: String, toStr: String, from: List[Any], to: List[Any]): String = {
+    "subst[%s, %s](%s)".format(fromStr, toStr, (from, to).zipped map (_ + " -> " + _) mkString ", ")
+  }
 
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
@@ -961,11 +965,13 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       case _ =>
         super.transform(tree)
     }
+    override def toString = substituterString("Symbol", "Tree", from, to)
   }
 
   class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
     def fromContains = typeSubst.fromContains
+    def isEmpty = from.isEmpty && to.isEmpty
 
     override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
@@ -994,7 +1000,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
-    override def toString() = "TreeSymSubstTraverser("+from+","+to+")"
+    override def toString() = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
   }
 
   /** Substitute symbols in 'from' with symbols in 'to'. Returns a new
@@ -1025,7 +1031,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
         super.transform(tree)
     }
     def apply[T <: Tree](tree: T): T = transform(tree).asInstanceOf[T]
-    override def toString() = "TreeSymSubstituter("+from+","+to+")"
+    override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {

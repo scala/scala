@@ -68,6 +68,14 @@ trait GenJVMUtil {
       GE -> LT
     )
 
+    /** Specialized array conversion to prevent calling
+     *  java.lang.reflect.Array.newInstance via TraversableOnce.toArray
+     */
+
+    def mkArray(xs: Traversable[JType]): Array[JType] = { val a = new Array[JType](xs.size); xs.copyToArray(a); a }
+    def mkArray(xs: Traversable[String]): Array[String] = { val a = new Array[String](xs.size); xs.copyToArray(a); a }
+
+
     /** Return the a name of this symbol that can be used on the Java
      *  platform.  It removes spaces from names.
      *
@@ -109,7 +117,7 @@ trait GenJVMUtil {
       if (s.isMethod)
         new JMethodType(
           if (s.isClassConstructor) JType.VOID else javaType(s.tpe.resultType),
-          s.tpe.paramTypes map javaType toArray
+          mkArray(s.tpe.paramTypes map javaType)
         )
       else
         javaType(s.tpe)

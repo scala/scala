@@ -25,9 +25,10 @@ object ArrayStack extends SeqFactory[ArrayStack] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
   def empty: ArrayStack[Nothing] = new ArrayStack()
-  def apply[A: ClassManifest](elems: A*): ArrayStack[A]= {
+  def apply[A: ClassManifest](elems: A*): ArrayStack[A] = {
     val els: Array[AnyRef] = elems.reverse.map{_.asInstanceOf[AnyRef]}(breakOut)
-    new ArrayStack[A](els, els.length)
+    if (els.length == 0) new ArrayStack()
+    else new ArrayStack[A](els, els.length)
   }
 
   private[mutable] def growArray(x: Array[AnyRef]) = {

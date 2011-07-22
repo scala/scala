@@ -9,8 +9,6 @@ package io
 
 import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.net.URL
-import PartialFunction._
-
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -19,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 object AbstractFile {
   /** Returns "getFile(new File(path))". */
-  def getFile(path: String): AbstractFile = getFile(Path(path))
+  def getFile(path: String): AbstractFile = getFile(File(path))
   def getFile(path: Path): AbstractFile = getFile(path.toFile)
 
   /**
@@ -42,7 +40,7 @@ object AbstractFile {
    */
   def getDirectory(file: File): AbstractFile =
     if (file.isDirectory) new PlainFile(file)
-    else if (file.isFile && Path.isJarOrZip(file)) ZipArchive fromFile file
+    else if (file.isFile && Path.isExtensionJarOrZip(file.jfile)) ZipArchive fromFile file
     else null
 
   /**
@@ -54,7 +52,7 @@ object AbstractFile {
    * @return     ...
    */
   def getURL(url: URL): AbstractFile = {
-    if (url == null || !Path.isJarOrZip(url.getPath)) null
+    if (url == null || !Path.isExtensionJarOrZip(url.getPath)) null
     else ZipArchive fromURL url
   }
 }
@@ -92,7 +90,8 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def path: String
 
   /** Checks extension case insensitively. */
-  def hasExtension(other: String) = Path(path) hasExtension other
+  def hasExtension(other: String) = extension == other.toLowerCase
+  private lazy val extension: String = Path.extension(name)
 
   /** The absolute file, if this is a relative file. */
   def absolute: AbstractFile
@@ -102,7 +101,6 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   /** Returns the underlying File if any and null otherwise. */
   def file: JFile
-  def sfile = Option(file) map (x => File(x)) // XXX
 
   /** An underlying source, if known.  Mostly, a zip/jar file. */
   def underlyingSource: Option[AbstractFile] = None
@@ -111,7 +109,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def exists: Boolean = (file eq null) || file.exists
 
   /** Does this abstract file represent something which can contain classfiles? */
-  def isClassContainer = isDirectory || (sfile exists (Path isJarOrZip _))
+  def isClassContainer = isDirectory || (file != null && (extension == "jar" || extension == "zip"))
 
   /** Create a file on disk, if one does not exist already. */
   def create(): Unit
@@ -136,6 +134,8 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   /** size of this file if it is a concrete file. */
   def sizeOption: Option[Int] = None
+
+  def toURL: URL = if (file == null) null else file.toURI.toURL
 
   /** Returns contents of file (if applicable) in a Char array.
    *  warning: use <code>Global.getSourceFile()</code> to use the proper
@@ -199,7 +199,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   private def lookup(getFile: (AbstractFile, String, Boolean) => AbstractFile,
                      path0: String,
                      directory: Boolean): AbstractFile = {
-    val separator = JFile.separatorChar
+    val separator = java.io.File.separatorChar
     // trim trailing '/'s
     val path: String = if (path0.last == separator) path0 dropRight 1 else path0
     val length = path.length()
@@ -217,13 +217,23 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     file
   }
 
+  private def fileOrSubdirectoryNamed(name: String, isDir: Boolean): AbstractFile = {
+    val lookup = lookupName(name, isDir)
+    if (lookup != null) lookup
+    else {
+      val jfile = new JFile(file, name)
+      if (isDir) jfile.mkdirs() else jfile.createNewFile()
+      new PlainFile(jfile)
+    }
+  }
+
   /**
    * Get the file in this directory with the given name,
    * creating an empty file if it does not already existing.
    */
   def fileNamed(name: String): AbstractFile = {
     assert(isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
-    Option(lookupName(name, false)) getOrElse new PlainFile((sfile.get / name).createFile())
+    fileOrSubdirectoryNamed(name, false)
   }
 
   /**
@@ -232,7 +242,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def subdirectoryNamed(name: String): AbstractFile = {
     assert (isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
-    Option(lookupName(name, true)) getOrElse new PlainFile((sfile.get / name).createDirectory())
+    fileOrSubdirectoryNamed(name, true)
   }
 
   protected def unsupported(): Nothing = unsupported(null)

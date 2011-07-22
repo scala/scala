@@ -21,7 +21,7 @@ package scala.collection
  *  A map is a collection of bindings from keys to values, where there are
  *  no duplicate keys.
  */
-private[collection] trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals with Parallelizable[(A, B), parallel.ParMap[A, B]] {
+trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals with Parallelizable[(A, B), parallel.ParMap[A, B]] {
   def default(key: A): B
   def get(key: A): Option[B]
   def apply(key: A): B

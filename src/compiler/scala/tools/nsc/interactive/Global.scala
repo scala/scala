@@ -942,10 +942,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
      *  @return true iff typechecked correctly
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
-      val oldSource = reporter.getSource
-      reporter.withSource(unit.source) {
-        atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
-      }
+      atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
     }
   }
 

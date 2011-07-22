@@ -615,7 +615,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
         file
       }
-      val res = execWithArgFiles(java, List(writeSettings.getCanonicalPath))
+      val res = execWithArgFiles(java, List(writeSettings.getAbsolutePath))
       if (failonerror && res != 0)
         buildError("Compilation failed because of an internal compiler error;"+
               " see the error output for details.")

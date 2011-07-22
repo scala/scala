@@ -754,11 +754,11 @@ public class ConsoleReader
     }
 
     private boolean previousWord() throws IOException {
-        while (isDelimiter(buf.current()) && (moveCursor(-1) != 0)) {
+        while (isDelimiter(buf.charLeftOfCursor()) && (moveCursor(-1) != 0)) {
             // nothing
         }
 
-        while (!isDelimiter(buf.current()) && (moveCursor(-1) != 0)) {
+        while (!isDelimiter(buf.charLeftOfCursor()) && (moveCursor(-1) != 0)) {
             // nothing
         }
 
@@ -766,11 +766,11 @@ public class ConsoleReader
     }
 
     private boolean nextWord() throws IOException {
-        while (isDelimiter(buf.current()) && (moveCursor(1) != 0)) {
+        while (isDelimiter(buf.charAtCursor()) && (moveCursor(1) != 0)) {
             // nothing
         }
 
-        while (!isDelimiter(buf.current()) && (moveCursor(1) != 0)) {
+        while (!isDelimiter(buf.charAtCursor()) && (moveCursor(1) != 0)) {
             // nothing
         }
 
@@ -778,11 +778,23 @@ public class ConsoleReader
     }
 
     private boolean deletePreviousWord() throws IOException {
-        while (isDelimiter(buf.current()) && backspace()) {
+        while (isDelimiter(buf.charLeftOfCursor()) && backspace()) {
             // nothing
         }
 
-        while (!isDelimiter(buf.current()) && backspace()) {
+        while (!isDelimiter(buf.charLeftOfCursor()) && backspace()) {
+            // nothing
+        }
+
+        return true;
+    }
+
+    private boolean deleteNextWord() throws IOException {
+        while (isDelimiter(buf.charAtCursor()) && deleteCurrentCharacter()) {
+            // nothing
+        }
+
+        while (!isDelimiter(buf.charAtCursor()) && deleteCurrentCharacter()) {
             // nothing
         }
 
@@ -1283,7 +1295,7 @@ public class ConsoleReader
                             if (buf.buffer.length() == 0) {
                                 return null;
                             } else {
-                                deleteCurrentCharacter();
+                                success = deleteCurrentCharacter();
                             }
                             break;
 
@@ -1351,6 +1363,10 @@ public class ConsoleReader
 
                         case DELETE_PREV_WORD:
                             success = deletePreviousWord();
+                            break;
+
+                        case DELETE_NEXT_WORD:
+                            success = deleteNextWord();
                             break;
 
                         case PREV_WORD:

@@ -100,7 +100,7 @@ scala> def m = {
   val y : String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
-m: String @Annot("three")
+m: java.lang.String @Annot(x) forSome { val x: java.lang.String }
 
 scala> 
 

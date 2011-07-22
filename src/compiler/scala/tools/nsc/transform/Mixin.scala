@@ -580,6 +580,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       REF(sym.owner.sourceModule) DOT sym
     }
 
+    @inline private def bitmapOperation[T](field: Symbol, transientCase: => T, privateCase: => T, rest: => T): T =
+      if (field.accessed.hasAnnotation(TransientAttr))
+        transientCase
+      else if (field.hasFlag(PRIVATE | notPRIVATE))
+        privateCase
+      else
+        rest
+
     /** Add all new definitions to a non-trait class
      *  These fall into the following categories:
      *    - for a trait interface:
@@ -671,14 +679,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       import lazyVals._
-
-      def bitmapOperation[T](field: Symbol, transientCase: => T, privateCase: => T, rest: => T): T =
-        if (field.accessed.hasAnnotation(TransientAttr))
-          transientCase
-        else if (field.hasFlag(PRIVATE) || field.hasFlag(notPRIVATE))
-          privateCase
-        else
-          rest
 
       /**
        *  Private or transient lazy vals use bitmaps that are private for the class context,
@@ -892,8 +892,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.hasFlag(BRIDGE) =>
               val attrThis =
-                if (clazz.isImplClass) gen.mkAttributedIdent(vp.head.head.symbol)
-                else gen.mkAttributedThis(clazz)
+                if (clazz.isImplClass) {
+                  gen.mkAttributedIdent(vp.head.head.symbol)
+                  // Martin to Hubert I think this can be replaced by selfRef(tree.pos)
+                } else
+                  gen.mkAttributedThis(clazz)
               val rhs1 = mkInnerClassAccessorDoubleChecked(attrThis, rhs)
               treeCopy.DefDef(stat, mods, name, tp, vp, tpt, typedPos(stat.pos)(rhs1))
           case _ => stat

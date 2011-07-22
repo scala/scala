@@ -18,6 +18,10 @@ package scala.util.control
  */
 trait NoStackTrace extends Throwable {
   override def fillInStackTrace(): Throwable =
-    if (sys.SystemProperties.noTraceSupression) super.fillInStackTrace()
+    if (NoStackTrace.noSuppression) super.fillInStackTrace()
     else this
+}
+
+object NoStackTrace {
+  final val noSuppression = sys.SystemProperties.noTraceSupression.value
 }

@@ -8,9 +8,7 @@ package scala.tools.jline.console;
 
 import org.junit.Test;
 
-import static scala.tools.jline.console.Operation.DELETE_PREV_WORD;
-import static scala.tools.jline.console.Operation.MOVE_TO_END;
-import static scala.tools.jline.console.Operation.PREV_WORD;
+import static scala.tools.jline.console.Operation.*;
 
 /**
  * Tests various features of editing lines.
@@ -29,7 +27,19 @@ public class EditLineTest
         assertBuffer("This ", b = b.op(DELETE_PREV_WORD));
         assertBuffer("", b = b.op(DELETE_PREV_WORD));
         assertBuffer("", b = b.op(DELETE_PREV_WORD));
-        assertBuffer("", b = b.op(DELETE_PREV_WORD));
+        assertBuffer("", b.op(DELETE_PREV_WORD));
+    }
+
+    @Test
+    public void testDeleteNextWord() throws Exception {
+        Buffer b = new Buffer("This is  a  test  ");
+
+        assertBuffer(" is  a  test  ", b = b.op(MOVE_TO_BEG).op(DELETE_NEXT_WORD));
+        assertBuffer("  a  test  ", b = b.op(DELETE_NEXT_WORD));
+        assertBuffer("  test  ", b = b.op(DELETE_NEXT_WORD));
+        assertBuffer("  ", b = b.op(DELETE_NEXT_WORD));
+        assertBuffer("", b = b.op(DELETE_NEXT_WORD));
+        assertBuffer("", b.op(DELETE_NEXT_WORD));
     }
 
     @Test
@@ -96,6 +106,32 @@ public class EditLineTest
     }
 
     @Test
+    public void testNextWord() throws Exception {
+        assertBuffer("ThisX is a test",
+            new Buffer("This is a test").op(MOVE_TO_BEG)
+                .op(NEXT_WORD)
+                .append('X'));
+        assertBuffer("This isX a test",
+            new Buffer("This is a test").op(MOVE_TO_BEG)
+                .op(NEXT_WORD)
+                .op(NEXT_WORD)
+                .append('X'));
+        assertBuffer("This is aX test",
+            new Buffer("This is a test").op(MOVE_TO_BEG)
+                .op(NEXT_WORD)
+                .op(NEXT_WORD)
+                .op(NEXT_WORD)
+                .append('X'));
+        assertBuffer("This  is  a  testX  ",
+            new Buffer("This  is  a  test  ").op(MOVE_TO_BEG)
+                .op(NEXT_WORD)
+                .op(NEXT_WORD)
+                .op(NEXT_WORD)
+                .op(NEXT_WORD)
+                .append('X'));
+    }
+
+    @Test
     public void testLineStart() throws Exception {
         assertBuffer("XThis is a test",
             new Buffer("This is a test").ctrlA().append('X'));
@@ -139,7 +175,7 @@ public class EditLineTest
         assertBuffer("est", b = b.back());
         assertBuffer("est", b = b.back());
         assertBuffer("est", b = b.back());
-        assertBuffer("est", b = b.back());
+        assertBuffer("est", b.back());
     }
 
     @Test
@@ -162,7 +198,7 @@ public class EditLineTest
         assertBuffer("", b = b.back());
         assertBuffer("", b = b.back());
         assertBuffer("", b = b.back());
-        assertBuffer("", b = b.back());
+        assertBuffer("", b.back());
     }
 
     @Test

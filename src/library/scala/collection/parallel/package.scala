@@ -121,8 +121,10 @@ package object parallel {
   /* classes */
 
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
-  final class CompositeThrowable(val throwables: Set[Throwable])
-  extends Throwable("Multiple exceptions thrown during a parallel computation: " + throwables.map(t => (t, t.getStackTrace.toList)).mkString(", "))
+  final case class CompositeThrowable(val throwables: Set[Throwable])
+  extends Throwable("Multiple exceptions thrown during a parallel computation: " + throwables.map(
+    t => t + "\n" + t.getStackTrace.take(10).++("...").mkString("\n")
+  ).mkString("\n\n"))
 
 
   /** A helper iterator for iterating very small array buffers.

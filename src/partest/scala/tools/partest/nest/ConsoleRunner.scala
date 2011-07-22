@@ -143,7 +143,7 @@ class ConsoleRunner extends DirectRunner {
     val dir =
       if (fileManager.testClasses.isDefined) fileManager.testClassesDir
       else fileManager.testBuildFile getOrElse {
-        fileManager.latestCompFile.getParentFile.getParentFile.getCanonicalFile
+        fileManager.latestCompFile.getParentFile.getParentFile.getAbsoluteFile
       }
 
     val vmBin  = javaHome + File.separator + "bin"

@@ -32,6 +32,22 @@ object ScalaRunTime {
 
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
+  /** Return the class object representing an unboxed value type,
+   *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
+   *  rewrites expressions like 5.getClass to come here.
+   */
+  def anyValClass[T <: AnyVal](value: T): Class[T] = (value match {
+    case x: Byte    => java.lang.Byte.TYPE
+    case x: Short   => java.lang.Short.TYPE
+    case x: Char    => java.lang.Character.TYPE
+    case x: Int     => java.lang.Integer.TYPE
+    case x: Long    => java.lang.Long.TYPE
+    case x: Float   => java.lang.Float.TYPE
+    case x: Double  => java.lang.Double.TYPE
+    case x: Boolean => java.lang.Boolean.TYPE
+    case x: Unit    => java.lang.Void.TYPE
+  }).asInstanceOf[Class[T]]
+
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = xs match {
     case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]

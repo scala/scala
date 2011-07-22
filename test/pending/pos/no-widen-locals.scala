@@ -1,3 +1,5 @@
+// Worked from r23262 until that was reverted somewhere
+// around r25016.
 import annotation.switch
 
 object Test {

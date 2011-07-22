@@ -36,13 +36,13 @@ sealed trait RichWindow extends Window {
   def peer: AWTWindow with InterfaceMixin
 
   trait InterfaceMixin extends super.InterfaceMixin {
-    def getJMenuBar: JMenuBar
+    def getJMenuBar(): JMenuBar
     def setJMenuBar(b: JMenuBar)
     def setUndecorated(b: Boolean)
     def setTitle(s: String)
-    def getTitle: String
+    def getTitle(): String
     def setResizable(b: Boolean)
-    def isResizable: Boolean
+    def isResizable(): Boolean
   }
 
   def title: String = peer.getTitle

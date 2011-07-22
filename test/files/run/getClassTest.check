@@ -1,0 +1,18 @@
+f1: java.lang.Class<?>
+f2: java.lang.Class<?>
+f3: java.lang.Class<java.lang.Object>
+f4: java.lang.Class<? extends java.lang.Integer>
+f5: java.lang.Class<?>
+f0: T
+f1: class java.lang.Object
+f2: class java.lang.Object
+f3: class AnyRefs$A
+f4: class AnyRefs$B
+f5: class java.lang.Object
+f6: class java.lang.Object
+f7: class AnyRefs$A
+f8: class AnyRefs$B
+f1: java.lang.Class<? extends MoreAnyRefs$A>
+f2: java.lang.Class<? extends MoreAnyRefs$B>
+f3: java.lang.Class<?>
+f4: java.lang.Class<? extends MoreAnyRefs$A>

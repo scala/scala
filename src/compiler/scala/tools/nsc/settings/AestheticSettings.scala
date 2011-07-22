@@ -22,7 +22,7 @@ trait AestheticSettings {
   def declsOnly       = false
   def deprecation     = settings.deprecation.value
   def experimental    = settings.Xexperimental.value
-  def fatalWarnings   = settings.Xwarnfatal.value
+  def fatalWarnings   = settings.fatalWarnings.value
   def logClasspath    = settings.Ylogcp.value
   def printStats      = settings.Ystatistics.value
   def richExes        = settings.YrichExes.value || sys.props.traceSourcePath.isSet

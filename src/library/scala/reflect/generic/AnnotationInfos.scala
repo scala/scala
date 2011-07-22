@@ -1,7 +1,7 @@
 package scala.reflect
 package generic
 
-trait AnnotationInfos { self: Universe =>
+@deprecated("scala.reflect.generic will be removed", "2.9.1") trait AnnotationInfos { self: Universe =>
 
   type AnnotationInfo <: AnyRef
   val AnnotationInfo: AnnotationInfoExtractor

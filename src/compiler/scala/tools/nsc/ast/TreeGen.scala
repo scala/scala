@@ -211,7 +211,7 @@ abstract class TreeGen {
       if (tree.tpe != null || !tree.hasSymbol) tree.tpe
       else tree.symbol.tpe
 
-    if (!global.phase.erasedTypes && settings.Xchecknull.value &&
+    if (!global.phase.erasedTypes && settings.warnSelectNullable.value &&
         tpe <:< NotNullClass.tpe && !tpe.isNotNull)
       mkRuntimeCall(nme.checkInitialized, List(tree))
     else

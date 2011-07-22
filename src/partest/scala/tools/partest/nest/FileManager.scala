@@ -27,7 +27,7 @@ trait FileManager {
    */
   def compareFiles(f1: File, f2: File): String = {
     val diffWriter = new StringWriter
-    val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
+    val args = Array(f1.getAbsolutePath(), f2.getAbsolutePath())
 
     DiffPrint.doDiff(args, diffWriter)
     val res = diffWriter.toString

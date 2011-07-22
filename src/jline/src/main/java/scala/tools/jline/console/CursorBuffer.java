@@ -34,12 +34,25 @@ public class CursorBuffer
         return buffer.length();
     }
 
-    public char current() {
+    /**
+     * Gets the character to the left of the cursor.
+     */
+    public char charLeftOfCursor() {
         if (cursor <= 0) {
             return 0;
         }
 
         return buffer.charAt(cursor - 1);
+    }
+
+    /**
+     * Gets the character at the cursor.
+     */
+    public char charAtCursor() {
+        if (cursor < 0 || cursor >= buffer.length()) {
+            return 0;
+        }
+        return buffer.charAt(cursor);
     }
 
     /**

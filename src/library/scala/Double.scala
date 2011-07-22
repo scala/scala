@@ -118,6 +118,7 @@ final class Double extends AnyVal {
   def %(x: Float): Double = sys.error("stub")
   def %(x: Double): Double = sys.error("stub")
 
+  def getClass(): Class[Double] = sys.error("stub")
 }
 
 object Double extends AnyValCompanion {

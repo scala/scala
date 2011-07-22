@@ -157,7 +157,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
-  def log(msg: => AnyRef): Unit = if (opt.logPhase) inform("[log " + phase + "] " + msg)
+  // Over 200 closure objects are eliminated by inlining this.
+  @inline final def log(msg: => AnyRef): Unit =
+    if (settings.log containsPhase globalPhase)
+      inform("[log " + phase + "] " + msg)
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
@@ -232,7 +235,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     // debugging
     def checkPhase = wasActive(settings.check)
     def logPhase   = isActive(settings.log)
-    def typerDebug = settings.Ytyperdebug.value
     def writeICode = settings.writeICode.value
 
     // showing/printing things
@@ -255,9 +257,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def profileClass = settings.YprofileClass.value
     def profileMem   = settings.YprofileMem.value
 
-    // XXX: short term, but I can't bear to add another option.
-    // scalac -Dscala.timings will make this true.
+    // shortish-term property based options
     def timings       = sys.props contains "scala.timings"
+    def inferDebug    = (sys.props contains "scalac.debug.infer") || settings.Yinferdebug.value
+    def typerDebug    = (sys.props contains "scalac.debug.typer") || settings.Ytyperdebug.value
   }
 
   // True if -Xscript has been set, indicating a script run.
@@ -323,7 +326,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         currentRun.currentUnit = unit
         if (!cancelled(unit)) {
           currentRun.informUnitStarting(this, unit)
-          reporter.withSource(unit.source) { apply(unit) }
+          apply(unit)
         }
         currentRun.advanceUnit
       } finally {
@@ -335,6 +338,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   /** Switch to turn on detailed type logs */
   var printTypings = opt.typerDebug
+  var printInfers = opt.inferDebug
 
   // phaseName = "parser"
   object syntaxAnalyzer extends {
@@ -1051,9 +1055,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       def loop(ph: Phase) {
         if (stop(ph)) refreshProgress
         else {
-          reporter.withSource(unit.source) {
-            atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
-          }
+          atPhase(ph)(ph.asInstanceOf[GlobalPhase] applyPhase unit)
           loop(ph.next match {
             case `ph`   => null   // ph == ph.next implies terminal, and null ends processing
             case x      => x
@@ -1091,7 +1093,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /**
      * Re-orders the source files to
      *  1. ScalaObject
-     *  2. LowPriorityImplicits / StandardEmbeddings (i.e. parents of Predef)
+     *  2. LowPriorityImplicits / EmbeddedControls (i.e. parents of Predef)
      *  3. the rest
      *
      * 1 is to avoid cyclic reference errors.
@@ -1121,6 +1123,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           case "ScalaObject.scala"            => 1
           case "LowPriorityImplicits.scala"   => 2
           case "StandardEmbeddings.scala"     => 2
+          case "EmbeddedControls.scala"       => 2
           case "Predef.scala"                 => 3 /* Predef.scala before Any.scala, etc. */
           case _                              => goLast
         }

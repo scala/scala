@@ -54,6 +54,12 @@ abstract class Any {
    */
   def toString: String
 
+  /** Returns the runtime class representation of the object.
+   *
+   *  @return a class object corresponding to the static type of the receiver
+   */
+  def getClass(): Class[_]
+
   /** Test two objects for equality.
    *
    *  @param  that  the object to compare against this object for equality.

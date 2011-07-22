@@ -29,7 +29,7 @@ x=Foo, m=Foo[scala.collection.immutable.List[Int]]
 x=Foo, m=Foo[Foo[Int]]
 x=Foo, m=Foo[scala.collection.immutable.List[Foo[Int]]]
 
-x=Test1$$anon$1, m=Test1$$anon$1
+x=Test1$$anon$1, m=Object with Bar[java.lang.String]
 
 ()=()
 true=true

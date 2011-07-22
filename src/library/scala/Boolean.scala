@@ -29,6 +29,8 @@ final class Boolean extends AnyVal {
   def |(x: Boolean): Boolean  = sys.error("stub")
   def &(x: Boolean): Boolean  = sys.error("stub")
   def ^(x: Boolean): Boolean  = sys.error("stub")
+
+  def getClass(): Class[Boolean] = sys.error("stub")
 }
 
 object Boolean extends AnyValCompanion {

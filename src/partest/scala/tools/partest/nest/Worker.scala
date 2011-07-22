@@ -525,7 +525,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
         val succFn: (File, File) => Boolean = { (logFile, outDir) =>
           NestUI.verbose("compilation of "+file+" succeeded\n")
 
-          val outURL    = outDir.getCanonicalFile.toURI.toURL
+          val outURL    = outDir.getAbsoluteFile.toURI.toURL
           val logWriter = new PrintStream(new FileOutputStream(logFile), true)
 
           Output.withRedirected(logWriter) {
@@ -616,7 +616,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
               // create proper settings for the compiler
               val settings = new Settings(workerError)
-              settings.outdir.value = outDir.getCanonicalFile.getAbsolutePath
+              settings.outdir.value = outDir.getAbsoluteFile.getAbsolutePath
               settings.sourcepath.value = sourcepath
               settings.classpath.value = fileManager.CLASSPATH
               settings.Ybuildmanagerdebug.value = true
@@ -723,12 +723,12 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
             // run compiler in resident mode
             // $SCALAC -d "$os_dstbase".obj -Xresident -sourcepath . "$@"
-            val sourcedir  = logFile.getParentFile.getCanonicalFile
+            val sourcedir  = logFile.getParentFile.getAbsoluteFile
             val sourcepath = sourcedir.getAbsolutePath+File.separator
             NestUI.verbose("sourcepath: "+sourcepath)
 
             val argString =
-              "-d "+outDir.getCanonicalFile.getAbsolutePath+
+              "-d "+outDir.getAbsoluteFile.getPath+
               " -Xresident"+
               " -sourcepath "+sourcepath
             val argList = argString split ' ' toList
@@ -976,7 +976,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       react {
         case Timeout(file) =>
-          updateStatus(file.getCanonicalPath, TestState.Timeout)
+          updateStatus(file.getAbsolutePath, TestState.Timeout)
           val swr = new StringWriter
           val wr = new PrintWriter(swr, true)
           printInfoStart(file, wr)
@@ -988,7 +988,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
         case Result(file, logs) =>
           val state = if (succeeded) TestState.Ok else TestState.Fail
-          updateStatus(file.getCanonicalPath, state)
+          updateStatus(file.getAbsolutePath, state)
           reportResult(
             state,
             logs.file,

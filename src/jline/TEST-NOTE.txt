@@ -1,0 +1,4 @@
+Apparently the jline bundled with sbt interferes with testing some changes: for instance after changing the keybindings I kept seeing failures until I realized what was happening, and bypassed sbt, e.g.
+
+% java -cp ./lib_managed/scala_2.9.0/compile/jansi-1.4.jar:./lib_managed/scala_2.9.0/test/'*':./target/scala_2.9.0/classes:./target/scala_2.9.0/test-classes:./target/scala_2.9.0/resources org.junit.runner.JUnitCore scala.tools.jline.console.EditLineTest
+

@@ -9,7 +9,9 @@ package typechecker
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import scala.util.control.ControlThrowable
+import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
 import symtab.Flags._
+import scala.annotation.tailrec
 
 /** This trait ...
  *
@@ -18,10 +20,11 @@ import symtab.Flags._
  */
 trait Infer {
   self: Analyzer =>
+
   import global._
   import definitions._
-
-  private final val inferInfo = false //@MDEBUG
+  import typer.printInference
+  import typeDebug.ptBlock
 
 /* -- Type parameter inference utility functions --------------------------- */
 
@@ -69,13 +72,12 @@ trait Infer {
   private class DeferredNoInstance(getmsg: () => String) extends NoInstance("") {
     override def getMessage(): String = getmsg()
   }
+  private def ifNoInstance[T](f: String => T): PartialFunction[Throwable, T] = {
+    case x: NoInstance  => f(x.getMessage)
+  }
 
-  /** map every TypeVar to its constraint.inst field.
+  /** Map every TypeVar to its constraint.inst field.
    *  throw a NoInstance exception if a NoType or WildcardType is encountered.
-   *
-   *  @param  tp ...
-   *  @return    ...
-   *  @throws    NoInstance
    */
   object instantiate extends TypeMap {
     private var excludedVars = immutable.Set[TypeVar]()
@@ -86,7 +88,7 @@ trait Infer {
         if (constr.inst == NoType) {
           throw new DeferredNoInstance(() =>
             "no unique instantiation of type variable " + origin + " could be found")
-        } else if (excludedVars contains tv) {
+        } else if (excludedVars(tv)) {
           throw new NoInstance("cyclic instantiation")
         } else {
           excludedVars += tv
@@ -125,37 +127,37 @@ trait Infer {
       }
   }
 
-  /** Solve constraint collected in types <code>tvars</code>.
+  /** Solve constraint collected in types `tvars`.
    *
    *  @param tvars      All type variables to be instantiated.
-   *  @param tparams    The type parameters corresponding to <code>tvars</code>
+   *  @param tparams    The type parameters corresponding to `tvars`
    *  @param variances  The variances of type parameters; need to reverse
    *                    solution direction for all contravariant variables.
-   *  @param upper      When <code>true</code> search for max solution else min.
+   *  @param upper      When `true` search for max solution else min.
    *  @throws NoInstance
    */
   def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
                   variances: List[Int], upper: Boolean, depth: Int): List[Type] = {
-//    def boundsString(tvar: TypeVar) =
-//      "\n  "+
-//      ((tvar.constr.loBounds map (_ + " <: " + tvar.origin.typeSymbol.name)) :::
-//       (tvar.constr.hiBounds map (tvar.origin.typeSymbol.name + " <: " + _)) mkString ", ")
+
     if (!solve(tvars, tparams, variances, upper, depth)) {
-//    no panic, it's good enough to just guess a solution, we'll find out
-//    later whether it works.
-// @M danger, Will Robinson! this means that you should never trust inferred type arguments!
-// need to call checkBounds on the args/typars or type1 on the tree for the expression that results from type inference
-// see e.g., #2421: implicit search had been ignoring this caveat
-//      throw new DeferredNoInstance(() =>
-//        "no solution exists for constraints"+(tvars map boundsString))
+      // no panic, it's good enough to just guess a solution, we'll find out
+      // later whether it works.  *ZAP* @M danger, Will Robinson! this means
+      // that you should never trust inferred type arguments!
+      //
+      // Need to call checkBounds on the args/typars or type1 on the tree
+      // for the expression that results from type inference see e.g., #2421:
+      // implicit search had been ignoring this caveat
+      // throw new DeferredNoInstance(() =>
+      //   "no solution exists for constraints"+(tvars map boundsString))
     }
-    for (tvar <- tvars)
-      if (tvar.constr.inst == tvar)
-        if (tvar.origin.typeSymbol.info eq ErrorType) {
-          // this can happen if during solving a cyclic type parameter
-          // such as T <: T gets completed. See #360
-          tvar.constr.inst = ErrorType
-        } else assert(false, tvar.origin+" at "+tvar.origin.typeSymbol.owner)
+    for (tvar <- tvars ; if tvar.constr.inst == tvar) {
+      if (tvar.origin.typeSymbol.info eq ErrorType)
+        // this can happen if during solving a cyclic type parameter
+        // such as T <: T gets completed. See #360
+        tvar.constr.inst = ErrorType
+      else
+        assert(false, tvar.origin+" at "+tvar.origin.typeSymbol.owner)
+    }
     tvars map instantiate
   }
 
@@ -263,23 +265,22 @@ trait Infer {
             Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
           }
           new AccessError(tree, sym, pre,
-            if (settings.check.isDefault) {
+            if (settings.check.isDefault)
               analyzer.lastAccessCheckDetails
-            } else {
-              "\n because of an internal error (no accessible symbol):" +
-              "\nsym = " + sym +
-              "\nunderlying(sym) = " + underlying(sym) +
-              "\npre = " + pre +
-              "\nsite = " + site +
-              "\ntree = " + tree +
-              "\nsym.accessBoundary(sym.owner) = " + sym.accessBoundary(sym.owner) +
-              "\nsym.ownerChain = " + sym.ownerChain +
-              "\nsym.owner.thisType = " + sym.owner.thisType +
-              "\ncontext.owner = " + context.owner +
-              "\ncontext.outer.enclClass.owner = " + context.outer.enclClass.owner
-            }
+            else
+              ptBlock("because of an internal error (no accessible symbol)",
+                "sym.ownerChain"                -> sym.ownerChain,
+                "underlying(sym)"               -> underlying(sym),
+                "pre"                           -> pre,
+                "site"                          -> site,
+                "tree"                          -> tree,
+                "sym.accessBoundary(sym.owner)" -> sym.accessBoundary(sym.owner),
+                "context.owner"                 -> context.owner,
+                "context.outer.enclClass.owner" -> context.outer.enclClass.owner
+              )
           )
-        } else {
+        }
+        else {
           if(sym1.isTerm)
             sym1.cookJavaRawInfo() // xform java rawtypes into existentials
 
@@ -308,6 +309,7 @@ trait Infer {
      *  they are: perhaps someone more familiar with the intentional distinctions
      *  can examine the now much smaller concrete implementations below.
      */
+/*
     abstract class CompatibilityChecker {
       def resultTypeCheck(restpe: Type, arg: Type): Boolean
       def argumentCheck(arg: Type, param: Type): Boolean
@@ -317,7 +319,7 @@ trait Infer {
         val MethodType(params, restpe) = tp
         val TypeRef(pre, sym, args) = pt
 
-        if (sym.isAliasType) apply(tp, pt.dealias)
+        if (sym.isAliasType) apply(tp, pt.normalize)
         else if (sym.isAbstractType) apply(tp, pt.bounds.lo)
         else {
           val len = args.length - 1
@@ -353,7 +355,7 @@ trait Infer {
     }
 
     object isPlausiblyCompatible extends CompatibilityChecker {
-      def resultTypeCheck(restpe: Type, arg: Type) = isPlausiblySubType(restpe, arg)
+      def resultTypeCheck(restpe: Type, arg: Type) = isPlausiblyCompatible(restpe, arg)
       def argumentCheck(arg: Type, param: Type)    = isPlausiblySubType(arg, param)
       def lastChanceCheck(tp: Type, pt: Type)      = false
     }
@@ -367,21 +369,76 @@ trait Infer {
         case _                         => super.apply(tp, pt)
       }
     }
+*/
+    def isPlausiblyCompatible(tp: Type, pt: Type) = checkCompatibility(true, tp, pt)
+    def normSubType(tp: Type, pt: Type) = checkCompatibility(false, tp, pt)
+
+    @tailrec private def checkCompatibility(fast: Boolean, tp: Type, pt: Type): Boolean = tp match {
+      case mt @ MethodType(params, restpe) =>
+        if (mt.isImplicit)
+          checkCompatibility(fast, restpe, pt)
+        else pt match {
+          case tr @ TypeRef(pre, sym, args) =>
+
+            if (sym.isAliasType) checkCompatibility(fast, tp, pt.normalize)
+            else if (sym.isAbstractType) checkCompatibility(fast, tp, pt.bounds.lo)
+            else {
+              val len = args.length - 1
+              hasLength(params, len) &&
+              sym == FunctionClass(len) && {
+                var ps = params
+                var as = args
+                if (fast) {
+                  while (ps.nonEmpty && as.nonEmpty) {
+                    if (!isPlausiblySubType(as.head, ps.head.tpe))
+                      return false
+                    ps = ps.tail
+                    as = as.tail
+                  }
+                } else {
+                  while (ps.nonEmpty && as.nonEmpty) {
+                    if (!(as.head <:< ps.head.tpe))
+                      return false
+                    ps = ps.tail
+                    as = as.tail
+                  }
+                }
+                ps.isEmpty && as.nonEmpty && {
+                  val lastArg = as.head
+                  as.tail.isEmpty && checkCompatibility(fast, restpe, lastArg)
+                }
+              }
+            }
+
+          case _            => if (fast) false else tp <:< pt
+        }
+      case NullaryMethodType(restpe)  => checkCompatibility(fast, restpe, pt)
+      case PolyType(_, restpe)        => checkCompatibility(fast, restpe, pt)
+      case ExistentialType(_, qtpe)   => if (fast) checkCompatibility(fast, qtpe, pt) else normalize(tp) <:< pt // is !fast case needed??
+      case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
+    }
+
 
     /** This expresses more cleanly in the negative: there's a linear path
      *  to a final true or false.
      */
     private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
-    private def isImpossibleSubType(tp1: Type, tp2: Type) = {
-      (tp1.dealias, tp2.dealias) match {
-        case (TypeRef(_, sym1, _), TypeRef(_, sym2, _)) =>
-           sym1.isClass &&
-           sym2.isClass &&
-          !(sym1 isSubClass sym2) &&
-          !(sym1 isNumericSubClass sym2)
-        case _ =>
-          false
-      }
+    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
+      case tr1 @ TypeRef(_, sym1, _) =>
+        // If the lhs is an abstract type, we can't rule out a subtype
+        // relationship because we don't know what it is.
+        !sym1.isAbstractType && (tp2.normalize.widen match {
+          case TypeRef(_, sym2, _) =>
+             sym1.isClass &&
+             sym2.isClass &&
+            !(sym1 isSubClass sym2) &&
+            !(sym1 isNumericSubClass sym2)
+          case RefinedType(parents, decls) =>
+            decls.nonEmpty &&
+            tr1.member(decls.head.name) == NoSymbol
+          case _ => false
+        })
+      case _ => false
     }
 
     def isCompatible(tp: Type, pt: Type): Boolean = {
@@ -444,12 +501,13 @@ trait Infer {
      *  @param pt      ...
      *  @return        ...
      */
-    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, checkCompat: (Type, Type) => Boolean = isCompatible): List[Type] = {
+    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean = false): List[Type] = {
       val tvars = tparams map freshVar
-      if (checkCompat(restpe.instantiateTypeParams(tparams, tvars), pt)) {
+      val instResTp = restpe.instantiateTypeParams(tparams, tvars)
+      if ( if (useWeaklyCompatible) isWeaklyCompatible(instResTp, pt) else isCompatible(instResTp, pt) ) {
         try {
           // If the restpe is an implicit method, and the expected type is fully defined
-          // optimze type variables wrt to the implicit formals only; ignore the result type.
+          // optimize type variables wrt to the implicit formals only; ignore the result type.
           // See test pos/jesper.scala
           val varianceType = restpe match {
             case mt: MethodType if mt.isImplicit && isFullyDefined(pt) =>
@@ -571,7 +629,7 @@ trait Infer {
           tparam -> Some(
             if      (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
             else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
-            else if (targ.typeSymbol.isModuleClass) targ  // this infers Foo.type instead of "object Foo"
+            else if (targ.typeSymbol.isModuleClass) targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
             else targ.widen
           )
         }
@@ -584,73 +642,82 @@ trait Infer {
     *  Undetermined type arguments are represented by `definitions.NothingClass.tpe'.
     *  No check that inferred parameters conform to their bounds is made here.
     *
-    *  bq: was private, but need it for unapply checking
-    *
     *  @param   tparams         the type parameters of the method
     *  @param   formals         the value parameter types of the method
     *  @param   restp           the result type of the method
     *  @param   argtpes         the argument types of the application
     *  @param   pt              the expected return type of the application
     *  @return  @see adjustTypeArgs
-
+    *
     *  @throws                  NoInstance
     */
     def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
                      argtpes: List[Type], pt: Type): AdjustedTypeArgs.Result = {
       val tvars = tparams map freshVar
-      if (inferInfo)
-        println("methTypeArgs tparams = "+tparams+
-                ", formals = "+formals+
-                ", restpe = "+restpe+
-                ", argtpes = "+argtpes+
-                ", pt = "+pt+
-                ", tvars = "+tvars+" "+(tvars map (_.constr)))
-      if (!sameLength(formals, argtpes)) {
+      if (!sameLength(formals, argtpes))
         throw new NoInstance("parameter lists differ in length")
-      }
 
-      if (inferInfo) // @MDEBUG
-        println("methTypeArgs "+
-                "  tparams = "+tparams+"\n"+
-                "  formals = "+formals+"\n"+
-                "  restpe = "+restpe+"\n"+
-                "  restpe_inst = "+restpe.instantiateTypeParams(tparams, tvars)+"\n"+
-                "  argtpes = "+argtpes+"\n"+
-                "  pt = "+pt)
+      val restpeInst = restpe.instantiateTypeParams(tparams, tvars)
+      printInference(
+        ptBlock("methTypeArgs",
+          "tparams"     -> tparams,
+          "formals"     -> formals,
+          "restpe"      -> restpe,
+          "restpeInst"  -> restpeInst,
+          "argtpes"     -> argtpes,
+          "pt"          -> pt,
+          "tvars"       -> tvars,
+          "constraints" -> tvars.map(_.constr)
+        )
+      )
 
-      // check first whether type variables can be fully defined from
-      // expected result type.
-      if (!isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
-//      just wait and instantiate from the arguments.
-//      that way, we can try to apply an implicit conversion afterwards.
-//      This case could happen if restpe is not fully defined, so that
-//      search for an implicit from it to pt fails because of an ambiguity.
-//      See #0347. Therefore, the following two lines are commented out.
-//        throw new DeferredNoInstance(() =>
-//          "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
-      }
+      // first check if typevars can be fully defined from the expected type.
+      // The return value isn't used so I'm making it obvious that this side
+      // effects, because a function called "isXXX" is not the most obvious
+      // side effecter.
+      isConservativelyCompatible(restpeInst, pt)
+
+      // Return value unused with the following explanation:
+      //
+      // Just wait and instantiate from the arguments.  That way,
+      // we can try to apply an implicit conversion afterwards.
+      // This case could happen if restpe is not fully defined, so the
+      // search for an implicit from restpe => pt fails due to ambiguity.
+      // See #347.  Therefore, the following two lines are commented out.
+      //
+      // throw new DeferredNoInstance(() =>
+      //   "result type " + normalize(restpe) + " is incompatible with expected type " + pt)
+
       for (tvar <- tvars)
         if (!isFullyDefined(tvar)) tvar.constr.inst = NoType
 
       // Then define remaining type variables from argument types.
       (argtpes, formals).zipped map { (argtpe, formal) =>
-        //@M isCompatible has side-effect: isSubtype0 will register subtype checks in the tvar's bounds
-        if (!isCompatible(argtpe.deconst.instantiateTypeParams(tparams, tvars),
-                             formal.instantiateTypeParams(tparams, tvars))) {
+        val tp1 = argtpe.deconst.instantiateTypeParams(tparams, tvars)
+        val pt1 = formal.instantiateTypeParams(tparams, tvars)
+
+        // Note that isCompatible side-effects: subtype checks involving typevars
+        // are recorded in the typevar's bounds (see TypeConstraint)
+        if (!isCompatible(tp1, pt1)) {
           throw new DeferredNoInstance(() =>
-            "argument expression's type is not compatible with formal parameter type" +
-            foundReqMsg(argtpe.deconst.instantiateTypeParams(tparams, tvars), formal.instantiateTypeParams(tparams, tvars)))
+            "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
         }
-        ()
       }
-      if (inferInfo)
-        println("solve "+tvars+" "+(tvars map (_.constr)))
-      val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals),
-                              false, lubDepth(formals) max lubDepth(argtpes))
-//      val res =
-      adjustTypeArgs(tparams, targs, restpe)
-//      println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
-//      res
+      val targs = solvedTypes(
+        tvars, tparams, tparams map varianceInTypes(formals),
+        false, lubDepth(formals) max lubDepth(argtpes)
+      )
+      val result = adjustTypeArgs(tparams, targs, restpe)
+
+      printInference(
+        ptBlock("methTypeArgs result",
+          "tvars"              -> tvars,
+          "constraints"        -> tvars.map(_.constr),
+          "targs"              -> targs,
+          "adjusted type args" -> result
+        )
+      )
+      result
     }
 
     private[typechecker] def followApply(tp: Type): Type = tp match {
@@ -683,9 +750,8 @@ trait Infer {
      *  - namesOK is false when there's an invalid use of named arguments
      */
     private def checkNames(argtpes: List[Type], params: List[Symbol]) = {
-      val argPos = (new Array[Int](argtpes.length)) map (x => -1)
-      var positionalAllowed = true
-      var namesOK = true
+      val argPos = Array.fill(argtpes.length)(-1)
+      var positionalAllowed, namesOK = true
       var index = 0
       val argtpes1 = argtpes map {
         case NamedType(name, tp) => // a named argument
@@ -772,7 +838,7 @@ trait Infer {
               try {
                 val AdjustedTypeArgs.Undets(okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
                 // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
-                (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, isWeaklyCompatible) ne null) &&
+                (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, useWeaklyCompatible = true) ne null) &&
                 isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
               } catch {
                 case ex: NoInstance => false
@@ -1055,8 +1121,8 @@ trait Infer {
       errors foreach {case (targ, tparam, arityMismatches, varianceMismatches, stricterBounds) => errorMessages +=
         (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+
         (for ((a, p) <- arityMismatches)
-          yield a+qualify(a,p)+ " has "+reporter.countElementsAsString(a.typeParams.length, "type parameter")+", but "+
-            p+qualify(p,a)+" has "+reporter.countAsString(p.typeParams.length)).toList.mkString(", ") +
+          yield a+qualify(a,p)+ " has "+countElementsAsString(a.typeParams.length, "type parameter")+", but "+
+            p+qualify(p,a)+" has "+countAsString(p.typeParams.length)).toList.mkString(", ") +
         (for ((a, p) <- varianceMismatches)
           yield a+qualify(a,p)+ " is "+varStr(a)+", but "+
             p+qualify(p,a)+" is declared "+varStr(p)).toList.mkString(", ") +
@@ -1075,39 +1141,52 @@ trait Infer {
      *  attempts fail, an error is produced.
      */
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type) {
-      if (inferInfo)
-        println("infer argument instance "+tree+":"+tree.tpe+"\n"+
-                "  undetparams = "+undetparams+"\n"+
-                "  strict pt = "+strictPt+"\n"+
-                "  lenient pt = "+lenientPt)
+      printInference(
+        ptBlock("inferArgumentInstance",
+          "tree"        -> tree,
+          "tree.tpe"    -> tree.tpe,
+          "undetparams" -> undetparams,
+          "strictPt"    -> strictPt,
+          "lenientPt"   -> lenientPt
+        )
+      )
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt)
       if ((targs eq null) || !(tree.tpe.subst(undetparams, targs) <:< strictPt)) {
         targs = exprTypeArgs(undetparams, tree.tpe, lenientPt)
       }
       substExpr(tree, undetparams, targs, lenientPt)
+      printInference("[inferArgumentInstance] finished, targs = " + targs)
     }
-
 
     /** Infer type arguments `targs` for `tparams` of polymorphic expression in `tree`, given prototype `pt`.
      *
      * Substitute `tparams` to `targs` in `tree`, after adjustment by `adjustTypeArgs`, returning the type parameters that were not determined
      * If passed, infers against specified type `treeTp` instead of `tree.tp`.
      */
-    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, checkCompat: (Type, Type) => Boolean = isCompatible): List[Symbol] = {
+    def inferExprInstance(tree: Tree, tparams: List[Symbol], pt: Type = WildcardType, treeTp0: Type = null, keepNothings: Boolean = true, useWeaklyCompatible: Boolean = false): List[Symbol] = {
       val treeTp = if(treeTp0 eq null) tree.tpe else treeTp0 // can't refer to tree in default for treeTp0
-      if (inferInfo)
-        println("infer expr instance "+tree+":"+tree.tpe+"\n"+
-                "  tparams = "+tparams+"\n"+
-                "  pt = "+pt)
-
-      val targs = exprTypeArgs(tparams, treeTp, pt, checkCompat)
+      printInference(
+        ptBlock("inferExprInstance",
+          "tree"    -> tree,
+          "tree.tpe"-> tree.tpe,
+          "tparams" -> tparams,
+          "pt"      -> pt
+        )
+      )
+      val targs = exprTypeArgs(tparams, treeTp, pt, useWeaklyCompatible)
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
         substExpr(tree, tparams, targs, pt)
         List()
       } else {
         val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, targs)
-        if (inferInfo) println("inferred expr instance for "+ tree +" --> (okParams, okArgs, leftUndet)= "+(okParams, okArgs, leftUndet))
+        printInference(
+          ptBlock("inferExprInstance/AdjustedTypeArgs",
+            "okParams" -> okParams,
+            "okArgs" -> okArgs,
+            "leftUndet" -> leftUndet
+          )
+        )
         substExpr(tree, okParams, okArgs, pt)
         leftUndet
       }
@@ -1135,49 +1214,59 @@ trait Infer {
     /** Substitute free type variables <code>undetparams</code> of application
      *  <code>fn(args)</code>, given prototype <code>pt</code>.
      *
-     *  @param fn          ...
-     *  @param undetparams ...
-     *  @param args        ...
-     *  @param pt          ...
+     *  @param fn          fn: the function that needs to be instantiated.
+     *  @param undetparams the parameters that need to be determined
+     *  @param args        the actual arguments supplied in the call.
+     *  @param pt          the expected type of the function application
      *  @return            The type parameters that remain uninstantiated,
      *                     and that thus have not been substituted.
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
       case MethodType(params0, _) =>
-        if (inferInfo)
-          println("infer method instance "+fn+"\n"+
-                  "  undetparams = "+undetparams+"\n"+
-                  "  args = "+args+"\n"+
-                  "  pt = "+pt0)
+        printInference(
+          ptBlock("inferMethodInstance",
+            "fn"          -> fn,
+            "undetparams" -> undetparams,
+            "args"        -> args,
+            "pt0"         -> pt0
+          )
+        )
+
         try {
-          val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
+          val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(params0 map (_.tpe), args.length)
-          val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
-          val restpe = fn.tpe.resultType(argtpes)
-          val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+          val argtpes = actualTypes(args map (x => elimAnonymousClass(x.tpe.deconst)), formals.length)
+          val restpe  = fn.tpe.resultType(argtpes)
+
+          val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
+            methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+
           checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")
           val treeSubst = new TreeTypeSubstituter(okparams, okargs)
-          treeSubst.traverse(fn)
-          treeSubst.traverseTrees(args)
-          if(leftUndet nonEmpty) {  // #3890
-            val leftUndet1 = treeSubst.typeSubst mapOver leftUndet
-            if(leftUndet ne leftUndet1) {
-              val symSubst = new TreeSymSubstTraverser(leftUndet, leftUndet1)
-              symSubst.traverse(fn)
-              symSubst.traverseTrees(args)
-            }
-            leftUndet1
-          } else leftUndet
-        } catch {
-          case ex: NoInstance =>
-            errorTree(fn,
-              "no type parameters for " +
-              applyErrorMsg(
-                fn, " exist so that it can be applied to arguments ",
-                args map (_.tpe.widen), WildcardType) +
-              "\n --- because ---\n" + ex.getMessage())
-            List()
+          treeSubst traverseTrees fn :: args
+
+          val result = leftUndet match {
+            case Nil  => Nil
+            case xs   =>
+              // #3890
+              val xs1 = treeSubst.typeSubst mapOver xs
+              if (xs ne xs1)
+                new TreeSymSubstTraverser(xs, xs1) traverseTrees fn :: args
+
+              xs1
+          }
+          if (result.nonEmpty)
+            printInference("inferMethodInstance, still undetermined: " + result)
+
+          result
+        }
+        catch ifNoInstance { msg =>
+          errorTree(fn, "no type parameters for " +
+            applyErrorMsg(fn, " exist so that it can be applied to arguments ", args map (_.tpe.widen), WildcardType) +
+            "\n --- because ---\n" + msg
+          )
+          Nil
         }
     }
 
@@ -1188,7 +1277,7 @@ trait Infer {
       case TypeRef(_, sym, _) if sym.isAliasType =>
         widen(tp.normalize)
       case rtp @ RefinedType(parents, decls) =>
-        copyRefinedType(rtp, parents mapConserve (widen), decls)
+        copyRefinedType(rtp, parents mapConserve widen, decls)
       case AnnotatedType(_, underlying, _) =>
         widen(underlying)
       case _ =>
@@ -1322,6 +1411,7 @@ trait Infer {
             } else {
               for (arg <- args) {
                 if (sym == ArrayClass) check(arg, bound)
+                else if (arg.typeArgs.nonEmpty) ()   // avoid spurious warnings with higher-kinded types
                 else arg match {
                   case TypeRef(_, sym, _) if isLocalBinding(sym) =>
                     ;
@@ -1497,14 +1587,11 @@ trait Infer {
      */
     def inferExprAlternative(tree: Tree, pt: Type): Unit = tree.tpe match {
       case OverloadedType(pre, alts) => tryTwice {
-        var alts1 = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
+        val alts0     = alts filter (alt => isWeaklyCompatible(pre.memberType(alt), pt))
+        val secondTry = alts0.isEmpty
+        val alts1     = if (secondTry) alts else alts0
+
         //println("trying "+alts1+(alts1 map (_.tpe))+(alts1 map (_.locationString))+" for "+pt)
-        val applicable = alts1
-        var secondTry = false
-        if (alts1.isEmpty) {
-          alts1 = alts
-          secondTry = true
-        }
         def improves(sym1: Symbol, sym2: Symbol): Boolean =
           sym2 == NoSymbol || sym2.hasAnnotation(BridgeClass) ||
           { val tp1 = pre.memberType(sym1)
@@ -1512,9 +1599,12 @@ trait Infer {
             (tp2 == ErrorType ||
              !global.typer.infer.isWeaklyCompatible(tp2, pt) && global.typer.infer.isWeaklyCompatible(tp1, pt) ||
              isStrictlyMoreSpecific(tp1, tp2, sym1, sym2)) }
+
         val best = ((NoSymbol: Symbol) /: alts1) ((best, alt) =>
           if (improves(alt, best)) alt else best)
+
         val competing = alts1 dropWhile (alt => best == alt || improves(best, alt))
+
         if (best == NoSymbol) {
           if (settings.debug.value) {
             tree match {
@@ -1635,9 +1725,7 @@ trait Infer {
       if (context.implicitsEnabled) {
         val reportGeneralErrors = context.reportGeneralErrors
         context.reportGeneralErrors = false
-        try {
-          context.withImplicitsDisabled(infer)
-        }
+        try context.withImplicitsDisabled(infer)
         catch {
           case ex: CyclicReference  => throw ex
           case ex: TypeError        =>

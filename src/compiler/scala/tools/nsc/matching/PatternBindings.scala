@@ -31,6 +31,12 @@ trait PatternBindings extends ast.TreeDSL
   // For spotting duplicate unapplies
   def isEquivalentTree(t1: Tree, t2: Tree) = (t1.symbol == t2.symbol) && (t1 equalsStructure t2)
 
+  // Reproduce the Bind trees wrapping oldTree around newTree
+  def moveBindings(oldTree: Tree, newTree: Tree): Tree = oldTree match {
+    case b @ Bind(x, body)  => Bind(b.symbol, moveBindings(body, newTree))
+    case _                  => newTree
+  }
+
   // used as argument to `EqualsPatternClass'
   case class PseudoType(o: Tree) extends SimpleTypeProxy {
     override def underlying: Type = o.tpe
@@ -58,42 +64,20 @@ trait PatternBindings extends ast.TreeDSL
     // bound variables beneath them return a list of said patterns for flatMapping.
     def subpatternsForVars: List[Pattern] = Nil
 
-    private def shallowBoundVariables = strip(boundTree)
-    private def otherBoundVariables = subpatternsForVars flatMap (_.deepBoundVariables)
-
-    def deepBoundVariables: List[Symbol] = shallowBoundVariables ::: otherBoundVariables
-    // An indiscriminate deep search would be:
-    //
-    // def deepBoundVariables = deepstrip(boundTree)
-
-    lazy val boundVariables = {
-      val res = shallowBoundVariables
-      val deep = deepBoundVariables
-
-      if (res.size != deep.size)
-        TRACE("deep variable list %s is larger than bound %s", deep, res)
-
-      res
-    }
-
-    // XXX only a var for short-term experimentation.
-    private var _boundTree: Bind = null
-    def boundTree = if (_boundTree == null) tree else _boundTree
-    def withBoundTree(x: Bind): this.type = {
+    // The outermost Bind(x1, Bind(x2, ...)) surrounding the tree.
+    private var _boundTree: Tree = tree
+    def boundTree = _boundTree
+    def setBound(x: Bind): Pattern = {
       _boundTree = x
-      tracing[this.type]("Bound")(this)
+      this
     }
+    def boundVariables = strip(boundTree)
 
     // If a tree has bindings, boundTree looks something like
     //   Bind(v3, Bind(v2, Bind(v1, tree)))
     // This takes the given tree and creates a new pattern
     //   using the same bindings.
-    def rebindTo(t: Tree): Pattern = {
-      if (boundVariables.size < deepBoundVariables.size)
-        TRACE("ALERT: rebinding %s is losing %s", this, otherBoundVariables)
-
-      Pattern(wrapBindings(boundVariables, t))
-    }
+    def rebindTo(t: Tree): Pattern = Pattern(moveBindings(boundTree, t))
 
     // Wrap this pattern's bindings around (_: Type)
     def rebindToType(tpe: Type, ascription: Type = null): Pattern = {

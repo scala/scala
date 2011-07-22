@@ -96,10 +96,11 @@ abstract class TreeInfo {
       false
   }
 
-  def mayBeVarGetter(sym: Symbol) = sym.info match {
-    case NullaryMethodType(_)  => sym.owner.isClass && !sym.isStable
-    case mt @ MethodType(_, _) => mt.isImplicit && sym.owner.isClass && !sym.isStable
-    case _                     => false
+  def mayBeVarGetter(sym: Symbol): Boolean = sym.info match {
+    case NullaryMethodType(_)              => sym.owner.isClass && !sym.isStable
+    case PolyType(_, NullaryMethodType(_)) => sym.owner.isClass && !sym.isStable
+    case mt @ MethodType(_, _)             => mt.isImplicit && sym.owner.isClass && !sym.isStable
+    case _                                 => false
   }
 
   def isVariableOrGetter(tree: Tree) = {
@@ -361,8 +362,9 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  /** Some handy extractors for spotting true and false expressions
-   *  through the haze of braces.
+  /** Some handy extractors for spotting trees through the
+   *  the haze of irrelevant braces: i.e. Block(Nil, SomeTree)
+   *  should not keep us from seeing SomeTree.
    */
   abstract class SeeThroughBlocks[T] {
     protected def unapplyImpl(x: Tree): T
@@ -372,9 +374,21 @@ abstract class TreeInfo {
     }
   }
   object IsTrue extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure Literal(Constant(true))
+    protected def unapplyImpl(x: Tree): Boolean = x match {
+      case Literal(Constant(true)) => true
+      case _                       => false
+    }
   }
   object IsFalse extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure Literal(Constant(false))
+    protected def unapplyImpl(x: Tree): Boolean = x match {
+      case Literal(Constant(false)) => true
+      case _                        => false
+    }
+  }
+  object IsIf extends SeeThroughBlocks[Option[(Tree, Tree, Tree)]] {
+    protected def unapplyImpl(x: Tree) = x match {
+      case If(cond, thenp, elsep) => Some(cond, thenp, elsep)
+      case _                      => None
+    }
   }
 }

@@ -614,7 +614,6 @@ trait Namers { self: Analyzer =>
      *  modifier is the present means of signaling that a constant
      *  value should not be widened, so it has a use even in situations
      *  whether it is otherwise redundant (such as in a singleton.)
-     *  Locally defined symbols are also excluded from widening.
      */
     private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
@@ -631,13 +630,23 @@ trait Namers { self: Analyzer =>
         case _ =>
           false
       }
+
       val tpe1 = tpe.deconst
       val tpe2 = tpe1.widen
-      if ((sym.isVariable || sym.isMethod && !sym.hasAccessorFlag))
+
+      // This infers Foo.type instead of "object Foo"
+      // See Infer#adjustTypeArgs for the polymorphic case.
+      if (tpe.typeSymbolDirect.isModuleClass) tpe1
+      else if (sym.isVariable || sym.isMethod && !sym.hasAccessorFlag)
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
-      else if (sym.isFinal || sym.isLocal) tpe
-      else tpe1
+      // In an attempt to make pattern matches involving method local vals
+      // compilable into switches, for a time I had a more generous condition:
+      //    `if (sym.isFinal || sym.isLocal) tpe else tpe1`
+      // This led to issues with expressions like classOf[List[_]] which apparently
+      // depend on being deconst-ed here, so this is again the original:
+      else if (!sym.isFinal) tpe1
+      else tpe
     }
 
     // sets each ValDef's symbol

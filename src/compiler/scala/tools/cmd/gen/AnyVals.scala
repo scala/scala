@@ -12,12 +12,12 @@ trait AnyValReps {
   self: AnyVals =>
 
   sealed abstract class AnyValNum(name: String) extends AnyValRep(name) {
-    def isCardinal: Boolean    = isIntegerType(this)
-    def unaryOps      = if (isCardinal) List("+", "-", "~") else List("+", "-")
-    def bitwiseOps    = if (isCardinal) List("|", "&", "^") else Nil
-    def shiftOps      = if (isCardinal) List("<<", ">>>", ">>") else Nil
-    def comparisonOps = List("==", "!=", "<", "<=", ">", ">=")
-    def otherOps      = List("+", "-" ,"*", "/", "%")
+    def isCardinal: Boolean = isIntegerType(this)
+    def unaryOps            = if (isCardinal) List("+", "-", "~") else List("+", "-")
+    def bitwiseOps          = if (isCardinal) List("|", "&", "^") else Nil
+    def shiftOps            = if (isCardinal) List("<<", ">>>", ">>") else Nil
+    def comparisonOps       = List("==", "!=", "<", "<=", ">", ">=")
+    def otherOps            = List("+", "-" ,"*", "/", "%")
 
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
@@ -49,7 +49,7 @@ trait AnyValReps {
       )
       xs1 ++ xs2
     }
-    def classLines = clumps.foldLeft(List[String]()) {
+    def classLines = (clumps :+ commonClassLines).foldLeft(List[String]()) {
       case (res, Nil)   => res
       case (res, lines) =>
         val xs = lines map {
@@ -80,6 +80,9 @@ trait AnyValReps {
   sealed abstract class AnyValRep(val name: String) {
     def classLines: List[String]
     def objectLines: List[String]
+    def commonClassLines = List(
+      "def getClass(): Class[@name@]"
+    )
 
     def lcname = name.toLowerCase
     def boxedName = this match {
@@ -243,6 +246,8 @@ def &&(x: Boolean): Boolean = sys.error("stub")
 def |(x: Boolean): Boolean  = sys.error("stub")
 def &(x: Boolean): Boolean  = sys.error("stub")
 def ^(x: Boolean): Boolean  = sys.error("stub")
+
+def getClass(): Class[Boolean] = sys.error("stub")
     """.trim.lines.toList
 
     def objectLines = interpolate(allCompanions).lines.toList
@@ -254,7 +259,9 @@ def ^(x: Boolean): Boolean  = sys.error("stub")
  *  only one value of type Unit: `()`.
  */
 """
-    def classLines  = Nil
+    def classLines  = List(
+      """def getClass(): Class[Unit] = sys.error("stub")"""
+    )
     def objectLines = interpolate(allCompanions).lines.toList
 
     override def boxUnboxImpls = Map(

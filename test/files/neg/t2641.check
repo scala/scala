@@ -19,7 +19,17 @@ t2641.scala:25: error: something is wrong (wrong class file?): trait ManagedSeq 
 t2641.scala:27: error: something is wrong (wrong class file?): trait ManagedSeq with type parameters [A,Coll] gets applied to arguments [], phase = namer
   trait Sliced extends Transformed[A] with super.Sliced {
                ^
+t2641.scala:27: error: illegal inheritance; superclass Any
+ is not a subclass of the superclass ManagedSeqStrict
+ of the mixin trait Transformed
+  trait Sliced extends Transformed[A] with super.Sliced {
+                       ^
+t2641.scala:27: error: illegal inheritance; superclass Any
+ is not a subclass of the superclass Object
+ of the mixin trait Sliced
+  trait Sliced extends Transformed[A] with super.Sliced {
+                                                 ^
 t2641.scala:28: error: value managedIterator is not a member of ManagedSeq
     override def managedIterator = self.managedIterator slice (from, until)
                                         ^
-7 errors found
+9 errors found
