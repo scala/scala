@@ -511,6 +511,7 @@ div.fullcomment .block {
   padding: 5px 0 0;
   border-top: 1px solid #EBEBEB;
   margin-top: 5px;
+  overflow: hidden;
 }
 
 div.fullcommenttop .block {
@@ -546,12 +547,14 @@ div.fullcomment dl.paramcmts > dt {
   display: block;
   float: left;
   font-weight: bold;
+  min-width: 70px;
 }
 
 div.fullcommenttop dl.paramcmts > dd,
 div.fullcomment dl.paramcmts > dd {
   display: block;
-  padding-left: 80px;
+  padding-left: 10px;
+  float: left;
   margin-bottom: 5px;
 }
 
