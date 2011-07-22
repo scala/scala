@@ -18,7 +18,7 @@ trait Mirror extends Universe {
    *  @param  The object from which the class is returned
    *  @throws ?
    */
-  def getClass(obj: Any): Symbol
+  def getClass(obj: AnyRef): Symbol
 
   /** The Scala type corresponding to the runtime type of given object.
    *  If the underlying class is parameterized, this will be an existential type,
@@ -27,7 +27,7 @@ trait Mirror extends Universe {
    *  @param  The object from which the type is returned
    *  @throws ?
    */
-  def getType(obj: Any): Type
+  def getType(obj: AnyRef): Type
 
   def getValue(receiver: AnyRef, field: Symbol): Any
   def setValue(receiver: AnyRef, field: Symbol, value: Any): Unit

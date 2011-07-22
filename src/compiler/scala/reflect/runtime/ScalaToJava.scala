@@ -26,6 +26,7 @@ trait ScalaToJava extends ConversionUtil { self: Universe =>
    */
   def classToJava(clazz: Symbol): jClass[_] = classCache.toJava(clazz) {
     def noClass = throw new NoClassDefFoundError("no Java class corresponding to "+clazz+" found")
+    println("classToJava "+clazz+" "+clazz.owner+" "+clazz.owner.isPackageClass)
     if (clazz.owner.isPackageClass)
       jClass.forName(clazz.fullName)
     else if (clazz.owner.isClass)
