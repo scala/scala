@@ -80,20 +80,19 @@ trait Symbols { self: Universe =>
      */
     def info: Type
 
-    /** If this symbol is a class or trait, its self type, otherwise the type of the symbol itse;lf
+    /** If this symbol is a class or trait, its self type, otherwise the type of the symbol itself
      */
     def typeOfThis: Type
 
-    /** For a module class its linked class, for a plain class
-     *  the module class of its linked module.
-     *  For instance
-     *    object Foo
-     *    class Foo
-     *
-     *  Then object Foo has a `moduleClass` (invisible to the user, the backend calls it Foo$
-     *  linkedClassOfClass goes from class Foo$ to class Foo, and back.
+    /** For a class: the module or case class factory with the same name in the same package.
+     *  For all others: NoSymbol
      */
-    def linkedClassOfClass: Symbol
+    def companionModule: Symbol
+
+    /** For a module: the class with the same name in the same package.
+     *  For all others: NoSymbol
+     */
+    def companionClass: Symbol
 
     /** The module corresponding to this module class (note that this
      *  is not updated when a module is cloned), or NoSymbol if this is not a ModuleClass
@@ -108,11 +107,6 @@ trait Symbols { self: Universe =>
     /** The top-level class containing this symbol. */
     def toplevelClass: Symbol
 
-    /**
-     *  If symbol is a lazy val, it's lazy accessor
-     */
-    def lazyAccessor: Symbol
-
     /** The next enclosing class */
     def enclClass      : Symbol
 
@@ -124,34 +118,6 @@ trait Symbols { self: Universe =>
     def isClass        : Boolean
     def isAliasType    : Boolean
     def isAbstractType : Boolean
-
-    def isAbstractClass      : Boolean
-    def isBridge             : Boolean
-    def isConcreteClass      : Boolean
-    def isContravariant      : Boolean
-    def isCovariant          : Boolean
-    def isEarlyInitialized   : Boolean
-    def isExistentiallyBound : Boolean
-    def isImplClass          : Boolean
-    def isLazyAccessor       : Boolean
-    def isMethod             : Boolean
-    def isModule             : Boolean
-    def isModuleClass        : Boolean
-    def isNumericValueClass  : Boolean
-    def isOverloaded         : Boolean
-    def isRefinementClass    : Boolean
-    def isSourceMethod       : Boolean
-    def isTypeParameter      : Boolean
-    def isValueClass         : Boolean
-    def isVarargsMethod      : Boolean
-
-    /** Package tests */
-    def isPackage      : Boolean
-    def isPackageClass : Boolean
-    def isRootPackage  : Boolean
-    def isRoot         : Boolean
-    def isEmptyPackage : Boolean
-    def isEmptyPackageClass: Boolean
   }
 
   val NoSymbol: Symbol

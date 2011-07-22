@@ -22,12 +22,27 @@ trait ScalaToJava extends ConversionUtil { self: Universe =>
    *   - top-level classes
    *   - Scala classes that were generated via jclassToScala
    *   - classes that have a class owner that has a corresponding Java class
-   *  @throws A `NoClassDefFoundError` for all Scala classes not in one of these categories.
+   *  @throws A `ClassNotFoundException` for all Scala classes not in one of these categories.
    */
+  @throws(classOf[ClassNotFoundException])
   def classToJava(clazz: Symbol): jClass[_] = classCache.toJava(clazz) {
-    def noClass = throw new NoClassDefFoundError("no Java class corresponding to "+clazz+" found")
+    def noClass = throw new ClassNotFoundException("no Java class corresponding to "+clazz+" found")
     println("classToJava "+clazz+" "+clazz.owner+" "+clazz.owner.isPackageClass)
-    if (clazz.owner.isPackageClass)
+    if (clazz.isValueClass)
+      clazz match {
+        case UnitClass => java.lang.Void.TYPE
+        case ByteClass => java.lang.Byte.TYPE
+        case CharClass => java.lang.Character.TYPE
+        case ShortClass => java.lang.Short.TYPE
+        case IntClass => java.lang.Integer.TYPE
+        case LongClass => java.lang.Long.TYPE
+        case FloatClass => java.lang.Float.TYPE
+        case DoubleClass => java.lang.Double.TYPE
+        case BooleanClass => java.lang.Boolean.TYPE
+      }
+    else if (clazz == ArrayClass)
+      noClass
+    else if (clazz.owner.isPackageClass)
       jClass.forName(clazz.fullName)
     else if (clazz.owner.isClass)
       classToJava(clazz.owner)
@@ -76,20 +91,7 @@ trait ScalaToJava extends ConversionUtil { self: Universe =>
   def typeToJavaClass(tpe: Type): jClass[_] = tpe match {
     case ExistentialType(_, rtpe) => typeToJavaClass(rtpe)
     case TypeRef(_, ArrayClass, List(elemtpe)) => jArrayClass(typeToJavaClass(elemtpe))
-    case TypeRef(_, sym, _) => typeSymToJavaClass(sym)
+    case TypeRef(_, sym, _) => classToJava(sym)
     case _ => throw new NoClassDefFoundError("no Java class corresponding to "+tpe+" found")
-  }
-
-  private def typeSymToJavaClass(sym: Symbol): jClass[_] = sym match {
-    case UnitClass => java.lang.Void.TYPE
-    case ByteClass => java.lang.Byte.TYPE
-    case CharClass => java.lang.Character.TYPE
-    case ShortClass => java.lang.Short.TYPE
-    case IntClass => java.lang.Integer.TYPE
-    case LongClass => java.lang.Long.TYPE
-    case FloatClass => java.lang.Float.TYPE
-    case DoubleClass => java.lang.Double.TYPE
-    case BooleanClass => java.lang.Boolean.TYPE
-    case _ => jClass.forName(sym.fullName)
   }
 }

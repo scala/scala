@@ -1426,7 +1426,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      * (5) companionSymbol
      */
 
-    /** For a module or case factory: the class with the same name in the same package.
+    /** For a module: the class with the same name in the same package.
      *  For all others: NoSymbol
      *  Note: does not work for classes owned by methods, see Namers.companionClassOf
      *

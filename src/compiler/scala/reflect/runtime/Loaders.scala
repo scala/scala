@@ -1,6 +1,8 @@
 package scala.reflect
 package runtime
 
+import internal.Flags
+
 import java.lang.{Class => jClass, Package => jPackage}
 
 trait Loaders { self: Universe =>
@@ -21,9 +23,10 @@ trait Loaders { self: Universe =>
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends LazyType {
     def makePackage() {
       val ptpe = new PackageType(module.moduleClass)
-      clazz setInfo ptpe
-      module setInfo ptpe
-      module.moduleClass setInfo ptpe
+      for (sym <- List(clazz, module, module.moduleClass)) {
+        sym setFlag Flags.PACKAGE
+        sym setInfo ptpe
+      }
     }
     override def complete(sym: Symbol) = {
       println("completing "+sym+"/"+clazz.fullName)
@@ -54,6 +57,7 @@ trait Loaders { self: Universe =>
    *  @param completer  The completer to be used to set the info of the class and the module
    */
   protected def createClassModule(owner: Symbol, name: TypeName, completer: (Symbol, Symbol) => LazyType) = {
+    assert(!(name.toString endsWith "[]"), name)
     val clazz = owner.newClass(NoPosition, name)
     val module = owner.newModule(NoPosition, name.toTermName)
     owner.info.decls enter clazz
