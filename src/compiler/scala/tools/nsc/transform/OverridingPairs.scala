@@ -136,8 +136,7 @@ abstract class OverridingPairs {
                     include(subParents(bcIndex), pIndex)
                   case None =>
                 }
-              else if (settings.debug.value)
-                log("SKIPPING "+p+" -> "+p.baseType(bc)+" / "+self.baseType(bc)+" from "+base)
+              else debuglog("SKIPPING "+p+" -> "+p.baseType(bc)+" / "+self.baseType(bc)+" from "+base)
           case None =>
         }
       }

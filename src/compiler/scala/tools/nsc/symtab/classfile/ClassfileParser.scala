@@ -225,11 +225,9 @@ abstract class ClassfileParser {
             first != CONSTANT_METHODREF &&
             first != CONSTANT_INTFMETHODREF) errorBadTag(start)
         val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
-        if (settings.debug.value)
-          log("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
+        debuglog("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
         val (name0, tpe0) = getNameAndType(in.getChar(start + 3), ownerTpe)
-        if (settings.debug.value)
-          log("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
+        debuglog("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
 
         forceMangledName(tpe0.typeSymbol.name, false)
         val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
@@ -904,8 +902,7 @@ abstract class ClassfileParser {
           else println("failure to convert " + c + " to " + symtype); //debug
         case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
-            if (settings.debug.value)
-              log("warning: symbol " + sym.fullName + " has pickled signature in attribute")
+            debuglog("warning: symbol " + sym.fullName + " has pickled signature in attribute")
             unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
           }
           in.skip(attrLen)
@@ -932,8 +929,7 @@ abstract class ClassfileParser {
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
-            if (settings.debug.value)
-              log("" + sym + "; annotations = " + sym.rawAnnotations)
+            debuglog("" + sym + "; annotations = " + sym.rawAnnotations)
           } else
             in.skip(attrLen)
 
@@ -1049,8 +1045,7 @@ abstract class ClassfileParser {
     } catch {
       case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
       case ex: Throwable =>
-        if (settings.debug.value)
-          log("dropping annotation on " + sym + ", an error occured during parsing (e.g. annotation  class not found)")
+        debuglog("dropping annotation on " + sym + ", an error occured during parsing (e.g. annotation  class not found)")
 
         None // ignore malformed annotations ==> t1135
     }

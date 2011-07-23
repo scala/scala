@@ -1323,15 +1323,15 @@ trait Infer {
       if (restpe.instantiateTypeParams(undetparams, tvars) <:< pt) {
         computeArgs
       } else if (isFullyDefined(pt)) {
-        if (settings.debug.value) log("infer constr " + tree + ":" + restpe + ", pt = " + pt)
+        debuglog("infer constr " + tree + ":" + restpe + ", pt = " + pt)
         var ptparams = freeTypeParamsOfTerms.collect(pt)
-        if (settings.debug.value) log("free type params = " + ptparams)
+        debuglog("free type params = " + ptparams)
         val ptWithWildcards = pt.instantiateTypeParams(ptparams, ptparams map (ptparam => WildcardType))
         tvars = undetparams map freshVar
         if (restpe.instantiateTypeParams(undetparams, tvars) <:< ptWithWildcards) {
           computeArgs
           restpe = skipImplicit(tree.tpe.resultType)
-          if (settings.debug.value) log("new tree = " + tree + ":" + restpe)
+          debuglog("new tree = " + tree + ":" + restpe)
           val ptvars = ptparams map freshVar
           val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
           if (isPopulated(restpe, pt1)) {
@@ -1370,7 +1370,7 @@ trait Infer {
         context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
         tparam setInfo tvar.constr.inst
         tparam resetFlag DEFERRED
-        if (settings.debug.value) log("new alias of " + tparam + " = " + tparam.info)
+        debuglog("new alias of " + tparam + " = " + tparam.info)
       } else {
         val (lo, hi) = instBounds(tvar)
         if (lo <:< hi) {
@@ -1378,12 +1378,12 @@ trait Infer {
              && tparam != lo.typeSymbolDirect && tparam != hi.typeSymbolDirect) { // don't create illegal cycles
             context.nextEnclosing(_.tree.isInstanceOf[CaseDef]).pushTypeBounds(tparam)
             tparam setInfo TypeBounds(lo, hi)
-            if (settings.debug.value) log("new bounds of " + tparam + " = " + tparam.info)
+            debuglog("new bounds of " + tparam + " = " + tparam.info)
           } else {
-            if (settings.debug.value) log("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)
+            debuglog("redundant: "+tparam+" "+tparam.info+"/"+lo+" "+hi)
           }
         } else {
-          if (settings.debug.value) log("inconsistent: "+tparam+" "+lo+" "+hi)
+          debuglog("inconsistent: "+tparam+" "+lo+" "+hi)
         }
       }
     }
@@ -1474,8 +1474,7 @@ trait Infer {
       checkCheckable(pos, pattp, "pattern ")
       if (pattp <:< pt) ()
       else {
-        if (settings.debug.value)
-          log("free type params (1) = " + tpparams)
+        debuglog("free type params (1) = " + tpparams)
 
         var tvars = tpparams map freshVar
         var tp    = pattp.instantiateTypeParams(tpparams, tvars)
@@ -1485,8 +1484,7 @@ trait Infer {
           tvars = tpparams map freshVar
           tp    = pattp.instantiateTypeParams(tpparams, tvars)
 
-          if (settings.debug.value)
-            log("free type params (2) = " + ptparams)
+          debuglog("free type params (2) = " + ptparams)
 
           val ptvars = ptparams map freshVar
           val pt1    = pt.instantiateTypeParams(ptparams, ptvars)
@@ -1513,7 +1511,7 @@ trait Infer {
     def inferModulePattern(pat: Tree, pt: Type) =
       if (!(pat.tpe <:< pt)) {
         val ptparams = freeTypeParamsOfTerms.collect(pt)
-        if (settings.debug.value) log("free type params (2) = " + ptparams)
+        debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
         val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
         if (pat.tpe <:< pt1)
@@ -1655,8 +1653,7 @@ trait Infer {
       case OverloadedType(pre, alts) =>
         val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         tryTwice {
-          if (settings.debug.value)
-            log("infer method alt "+ tree.symbol +" with alternatives "+
+          debuglog("infer method alt "+ tree.symbol +" with alternatives "+
                 (alts map pre.memberType) +", argtpes = "+ argtpes +", pt = "+ pt)
 
           var allApplicable = alts filter (alt =>

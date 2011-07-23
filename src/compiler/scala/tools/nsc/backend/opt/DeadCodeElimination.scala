@@ -136,8 +136,7 @@ abstract class DeadCodeElimination extends SubComponent {
       while (!worklist.isEmpty) {
         val (bb, idx) = worklist.iterator.next
         worklist -= ((bb, idx))
-        if (settings.debug.value)
-          log("Marking instr: \tBB_" + bb + ": " + idx + " " + bb(idx))
+        debuglog("Marking instr: \tBB_" + bb + ": " + idx + " " + bb(idx))
 
         val instr = bb(idx)
         if (!useful(bb)(idx)) {
@@ -211,7 +210,7 @@ abstract class DeadCodeElimination extends SubComponent {
                 log("skipped object creation: " + sym + "inside " + m)
               case _ => ()
             }
-            if (settings.debug.value) log("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
+            debuglog("Skipped: bb_" + bb + ": " + idx + "( " + i + ")")
           }
         }
 

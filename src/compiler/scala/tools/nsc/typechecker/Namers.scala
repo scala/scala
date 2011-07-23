@@ -83,7 +83,7 @@ trait Namers { self: Analyzer =>
       (moduleFlags & ModuleToClassFlags) | FINAL | inConstructorFlag
 
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
-      if (settings.debug.value) log("overwriting " + sym)
+      debuglog("overwriting " + sym)
       val lockedFlag = sym.flags & LOCKED
       sym.reset(NoType)
       sym setPos pos
@@ -305,7 +305,7 @@ trait Namers { self: Analyzer =>
 
     private def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
       val sym = tree.symbol
-      if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
+      debuglog("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
       var ltype = namerOf(sym).typeCompleter(tree)
       if (tparams nonEmpty) {
         //@M! TypeDef's type params are handled differently
@@ -547,7 +547,7 @@ trait Namers { self: Analyzer =>
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      if (settings.debug.value) log("defining " + sym + flagsToString(sym.flags)+sym.locationString)
+      debuglog("defining " + sym + flagsToString(sym.flags)+sym.locationString)
       val tp = typeSig(tree)
       tp match {
         case TypeBounds(lo, hi) =>
@@ -565,7 +565,7 @@ trait Namers { self: Analyzer =>
           !typer.checkNonCyclic(tree.pos, tp))
         sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
                                // adding setters and getters --> bug798
-      if (settings.debug.value) log("defined " + sym);
+      debuglog("defined " + sym);
       validate(sym)
     }
 
@@ -579,18 +579,18 @@ trait Namers { self: Analyzer =>
     }
 
     def getterTypeCompleter(vd: ValDef) = mkTypeCompleter(vd) { sym =>
-      if (settings.debug.value) log("defining " + sym)
+      debuglog("defining " + sym)
       val tp = typeSig(vd)
       sym.setInfo(NullaryMethodType(tp))
-      if (settings.debug.value) log("defined " + sym)
+      debuglog("defined " + sym)
       validate(sym)
     }
 
     def setterTypeCompleter(vd: ValDef) = mkTypeCompleter(vd) { sym =>
-      if (settings.debug.value) log("defining " + sym)
+      debuglog("defining " + sym)
       val param = sym.newSyntheticValueParam(typeSig(vd))
       sym.setInfo(MethodType(List(param), UnitClass.tpe))
-      if (settings.debug.value) log("defined " + sym)
+      debuglog("defined " + sym)
       validate(sym)
     }
 

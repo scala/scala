@@ -1389,8 +1389,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
             case SpecialOverride(target) =>
               assert(body.isDefinedAt(target), "sym: " + symbol.fullName + " target: " + target.fullName)
-              //if (settings.debug.value)
-                log("moving implementation, body of target " + target + ": " + body(target))
+              //debuglog("moving implementation, body of target " + target + ": " + body(target))
               log("%s is param accessor? %b".format(ddef.symbol, ddef.symbol.isParamAccessor))
               // we have an rhs, specialize it
               val tree1 = addBody(ddef, target)

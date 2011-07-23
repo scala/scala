@@ -47,9 +47,6 @@ class TransFlagManager[T <: Global](val global: T) {
     private val mask               = symtab.Flags.TRANS_FLAG
     private val seen               = new mutable.HashSet[Symbol]
 
-    private def debug(msg: String) = if (settings.debug.value) log(msg)
-    private def trace(msg: String) = if (settings.debug.value && settings.verbose.value) log(msg)
-    private def isDebug            = settings.debug.value
     private def doWeOwnFlag        = trackerStack.headOption exists (_ eq this)
     private def isOK               = trackerStack.isEmpty || (trackerStack.head eq this)
 

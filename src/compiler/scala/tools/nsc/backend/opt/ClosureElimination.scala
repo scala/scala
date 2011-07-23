@@ -101,7 +101,7 @@ abstract class ClosureElimination extends SubComponent {
 
       for (bb <- linearizer.linearize(m)) {
         var info = cpp.in(bb)
-        if (settings.debug.value) log("Cpp info at entry to block " + bb + ": " + info)
+        debuglog("Cpp info at entry to block " + bb + ": " + info)
 
         for (i <- bb) {
           i match {

@@ -279,8 +279,7 @@ abstract class GenMSIL extends SubComponent {
 
 
     /*
-      if (settings.debug.value)
-        log("creating annotations: " + annotations + " for member : " + member)
+      debuglog("creating annotations: " + annotations + " for member : " + member)
       for (annot@ AnnotationInfo(typ, annArgs, nvPairs) <- annotations ;
            if annot.isConstant)
            //!typ.typeSymbol.isJavaDefined
@@ -452,8 +451,7 @@ abstract class GenMSIL extends SubComponent {
         val iclass   = classes(sym)
         val tBuilder = types(sym).asInstanceOf[TypeBuilder]
 
-        if (settings.debug.value)
-          log("Calling CreatType for " + sym + ", " + tBuilder.toString)
+        debuglog("Calling CreatType for " + sym + ", " + tBuilder.toString)
 
         tBuilder.CreateType()
         tBuilder.setSourceFilepath(iclass.cunit.source.file.path)
@@ -467,8 +465,7 @@ abstract class GenMSIL extends SubComponent {
 
     private[GenMSIL] def genClass(iclass: IClass) {
       val sym = iclass.symbol
-      if (settings.debug.value)
-        log("Generating class " + sym + " flags: " + Flags.flagsToString(sym.flags))
+      debuglog("Generating class " + sym + " flags: " + Flags.flagsToString(sym.flags))
       clasz = iclass
 
       val tBuilder = getType(sym).asInstanceOf[TypeBuilder]
@@ -480,8 +477,7 @@ abstract class GenMSIL extends SubComponent {
           !((m.symbol.name.toString() != "clone" || m.symbol.name.toString() != "Clone") &&
             m.symbol.tpe.paramTypes.length != 0)
         })) {
-          if (settings.debug.value)
-            log("auto-generating cloneable method for " + sym)
+          debuglog("auto-generating cloneable method for " + sym)
           val attrs: Short = (MethodAttributes.Public | MethodAttributes.Virtual |
                               MethodAttributes.HideBySig).toShort
           val cloneMethod = tBuilder.DefineMethod("Clone", attrs, MOBJECT,
@@ -514,8 +510,7 @@ abstract class GenMSIL extends SubComponent {
 
 
     private def genMethod(m: IMethod) {
-      if (settings.debug.value)
-        log("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
+      debuglog("Generating method " + m.symbol + " flags: " + Flags.flagsToString(m.symbol.flags) +
             " owner: " + m.symbol.owner)
       method = m
       localBuilders.clear
@@ -544,8 +539,7 @@ abstract class GenMSIL extends SubComponent {
 
       if (mcode != null) {
         for (local <- m.locals ; if !(m.params contains local)) {
-          if (settings.debug.value)
-            log("add local var: " + local + ", of kind " + local.kind)
+          debuglog("add local var: " + local + ", of kind " + local.kind)
           val t: MsilType = msilType(local.kind)
           val localBuilder = mcode.DeclareLocal(t)
           localBuilder.SetLocalSymInfo(msilName(local.sym))
@@ -571,8 +565,7 @@ abstract class GenMSIL extends SubComponent {
     def genCode(m: IMethod) {
 
       def makeLabels(blocks: List[BasicBlock]) = {
-        if (settings.debug.value)
-          log("Making labels for: " + method)
+        debuglog("Making labels for: " + method)
         for (bb <- blocks) labels(bb) = mcode.DefineLabel()
       }
 
@@ -818,8 +811,7 @@ abstract class GenMSIL extends SubComponent {
     def genBlock(block: BasicBlock, prev: BasicBlock, next: BasicBlock) {
 
       def loadLocalOrAddress(local: Local, msg : String , loadAddr : Boolean) {
-        if (settings.debug.value)
-          log(msg + " for " + local)
+        debuglog(msg + " for " + local)
         val isArg = local.arg
         val i = local.index
         if (isArg)
@@ -829,8 +821,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       def loadFieldOrAddress(field: Symbol, isStatic: Boolean, msg: String, loadAddr : Boolean) {
-        if (settings.debug.value)
-          log(msg + " with owner: " + field.owner +
+        debuglog(msg + " with owner: " + field.owner +
               " flags: " + Flags.flagsToString(field.owner.flags))
         var fieldInfo = fields.get(field) match {
           case Some(fInfo) => fInfo
@@ -916,8 +907,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       mcode.MarkLabel(labels(block))
-      if (settings.debug.value)
-        log("Generating code for block: " + block)
+      debuglog("Generating code for block: " + block)
 
       for (handler <- beginCatchBlock.get(block)) {
         if (!currentHandlers.isEmpty && currentHandlers.top.covered == handler.covered) {
@@ -1017,8 +1007,7 @@ abstract class GenMSIL extends SubComponent {
             mcode.Emit(OpCodes.Newobj, constructorInfo)
 
           case LOAD_MODULE(module) =>
-            if (settings.debug.value)
-              log("Generating LOAD_MODULE for: " + showsym(module))
+            debuglog("Generating LOAD_MODULE for: " + showsym(module))
             mcode.Emit(OpCodes.Ldsfld, getModuleInstanceField(module))
 
           case STORE_ARRAY_ITEM(kind) =>
@@ -1040,8 +1029,7 @@ abstract class GenMSIL extends SubComponent {
           case STORE_LOCAL(local) =>
             val isArg = local.arg
             val i = local.index
-            if (settings.debug.value)
-              log("store_local for " + local + ", index " + i)
+            debuglog("store_local for " + local + ", index " + i)
 
             // there are some locals defined by the compiler that
             // are isArg and are need to be stored.
@@ -1371,8 +1359,7 @@ abstract class GenMSIL extends SubComponent {
         }
 
         case Conversion(src, dst) =>
-          if (settings.debug.value)
-            log("Converting from: " + src + " to: " + dst)
+          debuglog("Converting from: " + src + " to: " + dst)
 
           dst match {
             case BYTE =>   mcode.Emit(OpCodes.Conv_I1) // I1 for System.SByte, i.e. a scala.Byte
@@ -1586,8 +1573,7 @@ abstract class GenMSIL extends SubComponent {
 
       val params = m.params
       for (l <- params) {
-        if (settings.debug.value)
-          log("Index value for parameter " + l + ": " + idx)
+        debuglog("Index value for parameter " + l + ": " + idx)
         l.index = idx
         idx += 1 // sizeOf(l.kind)
       }
@@ -1596,8 +1582,7 @@ abstract class GenMSIL extends SubComponent {
       idx = 0
 
       for (l <- locvars) {
-        if (settings.debug.value)
-          log("Index value for local variable " + l + ": " + idx)
+        debuglog("Index value for local variable " + l + ": " + idx)
         l.index = idx
         idx += 1 // sizeOf(l.kind)
       }
@@ -1856,8 +1841,7 @@ abstract class GenMSIL extends SubComponent {
         else sym.info.parents.distinct
 
       val superType : MsilType = if (isInterface(sym)) null else msilTypeFromSym(parents.head.typeSymbol)
-      if (settings.debug.value)
-        log("super type: " + parents(0).typeSymbol + ", msil type: " + superType)
+      debuglog("super type: " + parents(0).typeSymbol + ", msil type: " + superType)
 
       val interfaces: Array[MsilType] =
 	parents.tail.map(p => msilTypeFromSym(p.typeSymbol)).toArray
@@ -1897,8 +1881,7 @@ abstract class GenMSIL extends SubComponent {
 
       for (ifield <- iclass.fields) {
         val sym = ifield.symbol
-        if (settings.debug.value)
-          log("Adding field: " + sym.fullName)
+        debuglog("Adding field: " + sym.fullName)
 
         var attributes = msilFieldFlags(sym)
         val fieldTypeWithCustomMods =
@@ -1929,8 +1912,7 @@ abstract class GenMSIL extends SubComponent {
       if (iclass.symbol != definitions.ArrayClass) {
       for (m: IMethod <- iclass.methods) {
         val sym = m.symbol
-        if (settings.debug.value)
-          log("Creating MethodBuilder for " + Flags.flagsToString(sym.flags) + " " +
+        debuglog("Creating MethodBuilder for " + Flags.flagsToString(sym.flags) + " " +
               sym.owner.fullName + "::" + sym.name)
 
         val ownerType = getType(sym.enclClass).asInstanceOf[TypeBuilder]
@@ -1956,8 +1938,7 @@ abstract class GenMSIL extends SubComponent {
           if (!methods.contains(sym))
             mapMethod(sym, method)
           addAttributes(method, sym.annotations)
-          if (settings.debug.value)
-            log("\t created MethodBuilder " + method)
+          debuglog("\t created MethodBuilder " + method)
         }
       }
       } // method builders created for non-array iclass
@@ -1994,8 +1975,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def addModuleInstanceField(sym: Symbol) {
-      if (settings.debug.value)
-        log("Adding Module-Instance Field for " + showsym(sym))
+      debuglog("Adding Module-Instance Field for " + showsym(sym))
       val tBuilder = getType(sym).asInstanceOf[TypeBuilder]
       val fb = tBuilder.DefineField(MODULE_INSTANCE_NAME,
                            tBuilder,
@@ -2071,8 +2051,7 @@ abstract class GenMSIL extends SubComponent {
     private def dumpMirrorClass(sym: Symbol) {
       val tBuilder = getType(sym)
       assert(sym.isModuleClass, "Can't generate Mirror-Class for the Non-Module class " + sym)
-      if (settings.debug.value)
-        log("Dumping mirror class for object: " + sym)
+      debuglog("Dumping mirror class for object: " + sym)
       val moduleName = msilName(sym)
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
       val mirrorTypeBuilder = mmodule.DefineType(mirrorName,
@@ -2089,8 +2068,7 @@ abstract class GenMSIL extends SubComponent {
            m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.isCase &&
            !m.isDeferred)
         {
-          if (settings.debug.value)
-            log("   Mirroring method: " + m)
+          debuglog("   Mirroring method: " + m)
           val paramTypes = msilParamTypes(m)
           val paramNames: Array[String] = new Array[String](paramTypes.length)
           for (i <- 0 until paramTypes.length)

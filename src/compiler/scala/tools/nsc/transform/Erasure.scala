@@ -649,8 +649,7 @@ abstract class Erasure extends AddInterfaces
         if (!atPhase(currentRun.refchecksPhase.next)(
               root.thisType.memberType(opc.overriding) matches
               root.thisType.memberType(opc.overridden))) {
-          if (settings.debug.value)
-            log("" + opc.overriding.locationString + " " +
+          debuglog("" + opc.overriding.locationString + " " +
                      opc.overriding.infosString +
                      opc.overridden.locationString + " " +
                      opc.overridden.infosString)
@@ -669,7 +668,7 @@ abstract class Erasure extends AddInterfaces
                 atPhase(phase.next)(member.tpe =:= other.tpe) &&
                 !atPhase(refchecksPhase.next)(
                   root.thisType.memberType(member) matches root.thisType.memberType(other))) {
-              if (settings.debug.value) log("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
+              debuglog("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
               doubleDefError(member, other)
             }
           }
@@ -745,8 +744,7 @@ abstract class Erasure extends AddInterfaces
                           (((Select(This(owner), member): Tree) /: bridge.paramss)
                              ((fun, vparams) => Apply(fun, vparams map Ident)))
                       });
-                  if (settings.debug.value)
-                    log("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner, member.tpe) + member.locationString + " =\n " + bridgeDef);
+                  debuglog("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner, member.tpe) + member.locationString + " =\n " + bridgeDef);
                   bridgeDef
                 }
               } :: bridges
@@ -797,8 +795,7 @@ abstract class Erasure extends AddInterfaces
     private val preTransformer = new TypingTransformer(unit) {
       def preErase(tree: Tree): Tree = tree match {
         case ClassDef(mods, name, tparams, impl) =>
-          if (settings.debug.value)
-            log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
+          debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
           treeCopy.ClassDef(tree, mods, name, List(), impl)
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
@@ -997,8 +994,7 @@ abstract class Erasure extends AddInterfaces
       val tree1 = preTransformer.transform(tree)
       atPhase(phase.next) {
         val tree2 = mixinTransformer.transform(tree1)
-        if (settings.debug.value)
-          log("tree after addinterfaces: \n" + tree2)
+        debuglog("tree after addinterfaces: \n" + tree2)
 
         newTyper(rootContext(unit, tree, true)).typed(tree2)
       }

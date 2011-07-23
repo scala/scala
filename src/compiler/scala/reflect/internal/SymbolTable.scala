@@ -32,6 +32,9 @@ abstract class SymbolTable extends api.Universe
   def abort(msg: String): Nothing = throw new Error(msg)
   def abort(): Nothing = throw new Error()
 
+  /** Override with final implementation for inlining. */
+  def debuglog(msg: => String): Unit = if (settings.debug.value) log(msg)
+
   /** Are we compiling for Java SE? */
   // def forJVM: Boolean
 
@@ -118,7 +121,6 @@ abstract class SymbolTable extends api.Universe
     import java.lang.ref.WeakReference
     import scala.tools.util.Signallable
     import scala.runtime.ScalaRunTime.stringOf
-
 
     // We can allow ourselves a structural type, these methods
     // amount to a few calls per run at most.  This does suggest

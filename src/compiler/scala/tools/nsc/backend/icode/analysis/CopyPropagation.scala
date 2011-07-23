@@ -529,7 +529,7 @@ abstract class CopyPropagation {
       var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
       val bindings = mutable.HashMap[Symbol, Value]()
 
-      if (settings.debug.value) log("getBindings for: " + ctor + " acc: " + paramAccessors)
+      debuglog("getBindings for: " + ctor + " acc: " + paramAccessors)
 
       var paramTypes = ctor.tpe.paramTypes
       val diff = paramTypes.length - paramAccessors.length
@@ -556,7 +556,7 @@ abstract class CopyPropagation {
         values = values.tail;
       }
 
-      if (settings.debug.value) log("\t" + bindings)
+      debuglog("\t" + bindings)
       bindings
     }
 

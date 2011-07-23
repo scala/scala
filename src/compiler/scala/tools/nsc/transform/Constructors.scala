@@ -329,7 +329,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
             val stat2 = rewriteArrayUpdate(stat1)
             // statements coming from the original class need retyping in the current context
-            if (settings.debug.value) log("retyping " + stat2)
+            debuglog("retyping " + stat2)
 
             val d = new specializeTypes.Duplicator
             d.retyped(localTyper.context1.asInstanceOf[d.Context],

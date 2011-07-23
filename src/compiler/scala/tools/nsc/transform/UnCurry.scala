@@ -432,8 +432,7 @@ abstract class UnCurry extends InfoTransform
       /** Transform tree `t` to { def f = t; f } where `f` is a fresh name
        */
       def liftTree(tree: Tree) = {
-        if (settings.debug.value)
-          log("lifting tree at: " + (tree.pos))
+        debuglog("lifting tree at: " + (tree.pos))
         val sym = currentOwner.newMethod(tree.pos, unit.freshTermName("liftedTree"))
         sym.setInfo(MethodType(List(), tree.tpe))
         new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
@@ -620,7 +619,7 @@ abstract class UnCurry extends InfoTransform
                   EmptyTree,
                   Match(Ident(exname), cases))
               }
-            if (settings.debug.value) log("rewrote try: " + catches + " ==> " + catchall);
+            debuglog("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = localTyper.typedCases(
               tree, List(catchall), ThrowableClass.tpe, WildcardType)
             treeCopy.Try(tree, body, catches1, finalizer)
@@ -633,7 +632,7 @@ abstract class UnCurry extends InfoTransform
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
         case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.isLazy) =>
-          if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
+          debuglog("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
           atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
         case TypeTree() =>
           tree

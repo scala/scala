@@ -196,11 +196,11 @@ abstract class Duplicators extends Analyzer {
      *  namer/typer handle them, or Idents that refer to them.
      */
     override def typed(tree: Tree, mode: Int, pt: Type): Tree = {
-      if (settings.debug.value) log("typing " + tree + ": " + tree.tpe)
+      debuglog("typing " + tree + ": " + tree.tpe)
       if (tree.hasSymbol && tree.symbol != NoSymbol
           && !tree.symbol.isLabel  // labels cannot be retyped by the type checker as LabelDef has no ValDef/return type trees
           && invalidSyms.isDefinedAt(tree.symbol)) {
-        if (settings.debug.value) log("removed symbol " + tree.symbol)
+        debuglog("removed symbol " + tree.symbol)
         tree.symbol = NoSymbol
       }
 
@@ -266,7 +266,7 @@ abstract class Duplicators extends Analyzer {
           // log("selection on this: " + tree)
           val tree1 = This(newClassOwner)
           // log("tree1: " + tree1)
-          if (settings.debug.value) log("mapped " + tree + " to " + tree1)
+          debuglog("mapped " + tree + " to " + tree1)
           super.typed(atPos(tree.pos)(tree1), mode, pt)
 
         case This(_) =>

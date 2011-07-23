@@ -156,7 +156,7 @@ trait Typers extends Modes {
      *                          whether one type is coercible to another.
      */
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree = {
-      if (settings.debug.value) log("infer view from "+from+" to "+to)//debug
+      debuglog("infer view from "+from+" to "+to)//debug
       if (phase.id > currentRun.typerPhase.id) EmptyTree
       else from match {
         case MethodType(_, _) => EmptyTree
@@ -760,7 +760,7 @@ trait Typers extends Modes {
           typer1.silent(tpr => tpr.typed(tpr.applyImplicitArgs(tree), mode, pt)) match {
             case result: Tree => result
             case ex: TypeError =>
-              if (settings.debug.value) log("fallback on implicits: "+tree+"/"+resetAllAttrs(original))
+              debuglog("fallback on implicits: "+tree+"/"+resetAllAttrs(original))
               val tree1 = typed(resetAllAttrs(original), mode, WildcardType)
               tree1.tpe = addAnnotations(tree1, tree1.tpe)
               if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
@@ -777,7 +777,7 @@ trait Typers extends Modes {
           case _ => tree.symbol
         }
         if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
-          if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
+          debuglog("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
           val tree0 = etaExpand(context.unit, tree)
           // println("eta "+tree+" ---> "+tree0+":"+tree0.tpe+" undet: "+context.undetparams+ " mode: "+Integer.toHexString(mode))
@@ -919,18 +919,17 @@ trait Typers extends Modes {
               }
               if (context.implicitsEnabled && !tree.tpe.isError && !pt.isError) {
                 // (14); the condition prevents chains of views
-                if (settings.debug.value) log("inferring view from "+tree.tpe+" to "+pt)
+                debuglog("inferring view from "+tree.tpe+" to "+pt)
                 val coercion = inferView(tree, tree.tpe, pt, true)
                 // convert forward views of delegate types into closures wrapped around
                 // the delegate's apply method (the "Invoke" method, which was translated into apply)
                 if (forMSIL && coercion != null && isCorrespondingDelegate(tree.tpe, pt)) {
                   val meth: Symbol = tree.tpe.member(nme.apply)
-                  if(settings.debug.value)
-                    log("replacing forward delegate view with: " + meth + ":" + meth.tpe)
+                  debuglog("replacing forward delegate view with: " + meth + ":" + meth.tpe)
                   return typed(Select(tree, meth), mode, pt)
                 }
                 if (coercion != EmptyTree) {
-                  if (settings.debug.value) log("inferred view from "+tree.tpe+" to "+pt+" = "+coercion+":"+coercion.tpe)
+                  debuglog("inferred view from "+tree.tpe+" to "+pt+" = "+coercion+":"+coercion.tpe)
                   return newTyper(context.makeImplicit(context.reportAmbiguousErrors)).typed(
                     new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
                 }
@@ -1024,7 +1023,7 @@ trait Typers extends Modes {
           case result: Tree if result != qual =>
             result
           case _ =>
-            if (settings.debug.value) log("fallback on implicits in adaptToArguments: "+qual+" . "+name)
+            debuglog("fallback on implicits in adaptToArguments: "+qual+" . "+name)
             doAdapt(WildcardType)
         }
       } else
@@ -1583,7 +1582,7 @@ trait Typers extends Modes {
      *  @param rhs      ...
      */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
-      if (settings.debug.value) log("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs)//debug
+      debuglog("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs)//debug
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
         case Apply(fn, args) =>
           val (superConstr, args1) = decompose(fn)
@@ -1635,8 +1634,7 @@ trait Typers extends Modes {
                       if ((ownAcc hasFlag ACCESSOR) && !ownAcc.isDeferred)
                         ownAcc = ownAcc.accessed
                       if (!ownAcc.isVariable && !alias.accessed.isVariable) {
-                        if (settings.debug.value)
-                          log("" + ownAcc + " has alias "+alias + alias.locationString) //debug
+                        debuglog("" + ownAcc + " has alias "+alias + alias.locationString) //debug
                         ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
                       }
                     }
@@ -2497,7 +2495,7 @@ trait Typers extends Modes {
               val args1 = (args, formals).zipped map typedArgToPoly
               if (args1 exists (_.tpe.isError)) setError(tree)
               else {
-                if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info)) //debug
+                debuglog("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info)) //debug
                 // define the undetparams which have been fixed by this param list, replace the corresponding symbols in "fun"
                 // returns those undetparams which have not been instantiated.
                 val undetparams = inferMethodInstance(fun, tparams, args1, pt)
@@ -3469,7 +3467,7 @@ trait Typers extends Modes {
         }
         typed1(tree1, mode, pt)
 /*
-        if (settings.debug.value) log("retry assign: "+tree1)
+        debuglog("retry assign: "+tree1)
         silent(_.typed1(tree1, mode, pt)) match {
           case t: Tree =>
             t
@@ -4245,8 +4243,7 @@ trait Typers extends Modes {
 
       def dropExistential(tp: Type): Type = tp match {
         case ExistentialType(tparams, tpe) =>
-          if (settings.debug.value)
-            log("Dropping existential: " + tree + " " + tp)
+          debuglog("Dropping existential: " + tree + " " + tp)
           new SubstWildcardMap(tparams).apply(tp)
         case TypeRef(_, sym, _) if sym.isAliasType =>
           val tp0 = tp.normalize

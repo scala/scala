@@ -160,13 +160,13 @@ abstract class ICodeReader extends ClassfileParser {
         val attributeCount = in.nextChar
         for (i <- 0 until attributeCount) parseAttribute()
       } else {
-        if (settings.debug.value) log("Skipping non-existent method.");
+        debuglog("Skipping non-existent method.");
         skipAttributes();
       }
     } catch {
       case e: MissingRequirementError =>
         in.bp = beginning; skipAttributes
-        if (settings.debug.value) log("Skipping non-existent method. " + e.msg);
+        debuglog("Skipping non-existent method. " + e.msg);
     }
   }
 
@@ -932,7 +932,7 @@ abstract class ICodeReader extends ClassfileParser {
         for ((i, idx) <- bb.toList.zipWithIndex) i match {
           case CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
             val defs = rdef.findDefs(bb, idx, 1, m.info.paramTypes.length)
-            if (settings.debug.value) log("ctor: " + i + " found defs: " + defs)
+            debuglog("ctor: " + i + " found defs: " + defs)
             assert(defs.length == 1, "wrong defs at bb " + bb + "\n" + method.dump + rdef)
             val (bb1, idx1) = defs.head
             var producer = bb1(idx1)
