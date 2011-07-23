@@ -37,15 +37,14 @@ abstract class ICodeReader extends ClassfileParser {
    */
   def readClass(cls: Symbol): (IClass, IClass) = {
     var classFile: io.AbstractFile = null;
-    var sym = cls
-    sym.info // ensure accurate type information
+    cls.info // ensure accurate type information
 
     isScalaModule = cls.isModule && !cls.isJavaDefined
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
-    val name = cls.fullName('.') + (if (sym.hasFlag(MODULE)) "$" else "")
+    val name = cls.javaClassName
 
     classPath.findSourceFile(name) match {
-      case Some(classFile) => parse(classFile, sym)
+      case Some(classFile) => parse(classFile, cls)
       case _               => throw new MissingRequirementError("Could not find bytecode for " + cls)
     }
 
@@ -192,7 +191,7 @@ abstract class ICodeReader extends ClassfileParser {
       log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
       iface.owner.info // force the mixin type-transformer
       definitions.getClass(name)
-    } else if (name.endsWith("$")) {
+    } else if (name.endsWith(nme.MODULE_SUFFIX_STRING)) {
       val sym = forceMangledName(name.subName(0, name.length -1).decode, true)
 //      println("classNameToSymbol: " + name + " sym: " + sym)
       if (name.toString == "scala.collection.immutable.Stream$$hash$colon$colon$")

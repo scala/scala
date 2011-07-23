@@ -6,6 +6,8 @@
 package scala.tools.nsc
 package util
 
+import scala.reflect.NameTransformer._
+
 /** A debugging class for logging from whence a method is being called.
  *  Say you wanted to discover who was calling phase_= in SymbolTable.
  *  You could do this:
@@ -98,7 +100,7 @@ object Origins {
 
   class OneLine(clazz: Class[_]) extends Origins {
     type Rep                        = StackTraceElement
-    val originClass                 = clazz.getName stripSuffix "$"
+    val originClass                 = clazz.getName stripSuffix MODULE_SUFFIX_STRING
     def newRep(xs: StackSlice): Rep = xs(0)
     def repString(rep: Rep)         = "  " + rep
   }

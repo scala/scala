@@ -214,10 +214,7 @@ abstract class Erasure extends AddInterfaces
     // Anything which could conceivably be a module (i.e. isn't known to be
     // a type parameter or similar) must go through here or the signature is
     // likely to end up with Foo<T>.Empty where it needs Foo<T>.Empty$.
-    def nameInSig(sym: Symbol) = "" + sym.name + global.genJVM.moduleSuffix(sym)
-    def fullNameInSig(sym: Symbol) = "L" + (
-      atPhase(currentRun.icodePhase)(sym.fullName('/') + global.genJVM.moduleSuffix(sym))
-    )
+    def fullNameInSig(sym: Symbol) = "L" + atPhase(currentRun.icodePhase)(sym.javaBinaryName)
 
     def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): String = {
       val tp = tp0.dealias
@@ -266,7 +263,7 @@ abstract class Erasure extends AddInterfaces
                 (
                   if (needsJavaSig(preRebound)) {
                     val s = jsig(preRebound, existentiallyBound)
-                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + nameInSig(sym)
+                    if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + "." + sym.javaSimpleName
                     else fullNameInSig(sym)
                   }
                   else fullNameInSig(sym)

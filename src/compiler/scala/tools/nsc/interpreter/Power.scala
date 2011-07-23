@@ -188,7 +188,7 @@ abstract class Power(
         getCompilerClass("scala." + x).tpe
       case _                             =>
         val name = m.erasure.getName
-        if (name endsWith "$") getCompilerModule(name dropRight 1).tpe
+        if (name endsWith nme.MODULE_SUFFIX_STRING) getCompilerModule(name dropRight 1).tpe
         else {
           val sym  = getCompilerClass(name)
           val args = m.typeArguments
@@ -361,7 +361,7 @@ abstract class Power(
   object Implicits extends Implicits2 { }
 
   trait ReplUtilities {
-    def module[T: Manifest] = getCompilerModule(manifest[T].erasure.getName stripSuffix "$")
+    def module[T: Manifest] = getCompilerModule(manifest[T].erasure.getName stripSuffix nme.MODULE_SUFFIX_STRING)
     def clazz[T: Manifest] = getCompilerClass(manifest[T].erasure.getName)
     def info[T: Manifest] = InternalInfo[T]
     def ?[T: Manifest] = InternalInfo[T]

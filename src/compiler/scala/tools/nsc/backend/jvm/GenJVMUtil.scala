@@ -87,9 +87,9 @@ trait GenJVMUtil {
     def javaName(sym: Symbol): String =
       javaNameCache.getOrElseUpdate(sym, {
         if (sym.isClass || (sym.isModule && !sym.isMethod))
-          sym.fullName('/') + moduleSuffix(sym)
+          sym.javaBinaryName
         else
-          sym.simpleName.toString.trim() + moduleSuffix(sym)
+          sym.javaSimpleName
       })
 
     def javaType(t: TypeKind): JType = (t: @unchecked) match {

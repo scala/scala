@@ -20,7 +20,10 @@ trait NameManglers {
   trait NameManglingCommon {
     self: CommonNames =>
 
-    def flattenedName(segments: Name*): NameType = compactedString(segments mkString "$")
+    val MODULE_SUFFIX_STRING = NameTransformer.MODULE_SUFFIX_STRING
+    val NAME_JOIN_STRING     = NameTransformer.NAME_JOIN_STRING
+
+    def flattenedName(segments: Name*): NameType = compactedString(segments mkString NAME_JOIN_STRING)
 
     /**
      * COMPACTIFY
@@ -66,12 +69,12 @@ trait NameManglers {
     self: nme.type =>
 
     val IMPL_CLASS_SUFFIX             = "$class"
-    val SINGLETON_SUFFIX              = ".type"
     val LOCALDUMMY_PREFIX             = "<local "   // owner of local blocks
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SELECTOR_DUMMY                = "<unapply-selector>"
     val SETTER_SUFFIX                 = encode("_=")
+    val SINGLETON_SUFFIX              = ".type"
     val SUPER_PREFIX_STRING           = "super$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
 
@@ -87,6 +90,7 @@ trait NameManglers {
     def isSetterName(name: Name)            = name endsWith SETTER_SUFFIX
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
     def isSingletonName(name: Name)         = name endsWith SINGLETON_SUFFIX
+    def isModuleName(name: Name)            = name endsWith MODULE_SUFFIX_STRING
 
     def isOpAssignmentName(name: Name) = name match {
       case raw.NE | raw.LE | raw.GE | EMPTY => false
@@ -155,6 +159,13 @@ trait NameManglers {
       else name
     }
 
+    def stripModuleSuffix(name: Name): Name = (
+      if (isModuleName(name)) name stripEnd MODULE_SUFFIX_STRING else name
+    )
+
+    /** Note that for performance reasons, stripEnd does not verify that the
+     *  suffix is actually the suffix specified.
+     */
     def dropSingletonName(name: Name): TypeName = name stripEnd SINGLETON_SUFFIX toTypeName
     def singletonName(name: Name): TypeName     = name append SINGLETON_SUFFIX toTypeName
     def implClassName(name: Name): TypeName     = name append IMPL_CLASS_SUFFIX toTypeName

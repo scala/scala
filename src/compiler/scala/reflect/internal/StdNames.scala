@@ -92,7 +92,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val ANON_FUN_NAME: NameType      = "$anonfun"
     val EMPTY_PACKAGE_NAME: NameType = "<empty>"
     val IMPORT: NameType             = "<import>"
-    val MODULE_SUFFIX: NameType      = "$module"
+    val MODULE_VAR_SUFFIX: NameType  = "$module"
     val ROOT: NameType               = "<root>"
 
     // value types are all used as terms as well
@@ -172,7 +172,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val FAKE_LOCAL_THIS: NameType       = "this$"
     val INITIALIZER: NameType           = CONSTRUCTOR // Is this buying us something?
     val MIXIN_CONSTRUCTOR: NameType     = "$init$"
-    val MODULE_INSTANCE_FIELD: NameType = "MODULE$"
+    val MODULE_INSTANCE_FIELD: NameType = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                 = "$outer"
     val OUTER_LOCAL: NameType           = "$outer " // note the space
     val SELF: NameType                  = "$this"
@@ -374,7 +374,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName =
       newTermName(base.fullName('$') + separator + name)
 
-    def moduleVarName(name: TermName): TermName = newTermName("" + name + MODULE_SUFFIX)
+    def moduleVarName(name: TermName): TermName = newTermName("" + name + MODULE_VAR_SUFFIX)
 
     val EXPAND_SEPARATOR_STRING = "$$"
     val LOCAL_SUFFIX_STRING     = " "

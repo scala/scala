@@ -10,6 +10,8 @@ package scala
 
 import scala.collection.{ mutable, immutable, generic, SetLike }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
+import scala.reflect.NameTransformer._
+import java.util.regex.Pattern
 
 /** Defines a finite set of values specific to the enumeration. Typically
  *  these values enumerate all possible forms something can take and provide
@@ -59,11 +61,14 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
 
   /* Note that `readResolve` cannot be private, since otherwise
      the JVM does not invoke it when deserializing subclasses. */
-  protected def readResolve(): AnyRef = thisenum.getClass.getField("MODULE$").get()
+  protected def readResolve(): AnyRef = thisenum.getClass.getField(MODULE_INSTANCE_NAME).get()
 
   /** The name of this enumeration.
    */
-  override def toString = (getClass.getName stripSuffix "$" split '.' last) split '$' last
+  override def toString = (
+    (getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.' last)
+    split Pattern.quote(NAME_JOIN_STRING) last
+  )
 
   /** The mapping from the integer used to identify values to the actual
     * values. */

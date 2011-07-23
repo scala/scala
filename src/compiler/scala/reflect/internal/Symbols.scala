@@ -620,6 +620,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
+    def originalOwnerChain: List[Symbol] = this :: originalOwner.getOrElse(this, rawowner).originalOwnerChain
+
     def enclClassChain: List[Symbol] = {
       if (this eq NoSymbol) Nil
       else if (isClass && !isPackageClass) this :: owner.enclClassChain
@@ -665,13 +667,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def originalName = nme.originalName(name)
 
-        /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
+    /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
     def encodedName: String = name.toString
 
     /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */
     def decodedName: String = stripLocalSuffix(NameTransformer.decode(encodedName))
+
+    def moduleSuffix: String = (
+      if (hasModuleFlag && !isMethod && !isImplClass && !isJavaDefined) nme.MODULE_SUFFIX_STRING
+      else ""
+    )
+
+    /** These should be moved somewhere like JavaPlatform.
+     */
+    def javaSimpleName = stripLocalSuffix("" + simpleName) + moduleSuffix
+    def javaBinaryName = fullName('/') + moduleSuffix
+    def javaClassName  = fullName('.') + moduleSuffix
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by `separator` characters.

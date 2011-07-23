@@ -62,7 +62,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$` afterwards.
       def parameterNamed(name: Name): Symbol = {
-        def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + "$")
+        def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + nme.NAME_JOIN_STRING)
 
         (constrParams filter matchesName) match {
           case Nil    => assert(false, name + " not in " + constrParams) ; null

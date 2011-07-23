@@ -1618,9 +1618,7 @@ abstract class GenMSIL extends SubComponent {
      * not exist in the classpath: the type checker will be very confused.
      */
     def msilName(sym: Symbol): String = {
-      val suffix: String = if (sym.hasModuleFlag && !sym.isMethod &&
-                               !sym.isImplClass &&
-                               !sym.isJavaDefined) "$" else ""
+      val suffix = sym.moduleSuffix
       // Flags.JAVA: "symbol was not defined by a scala-class" (java, or .net-class)
 
       if (sym == definitions.NothingClass)
@@ -2035,19 +2033,13 @@ abstract class GenMSIL extends SubComponent {
     }
 
     def nestingAwareFullClassname(csym: Symbol) : String = {
-      val suffix = moduleSuffix(csym)
+      val suffix = csym.moduleSuffix
       val res = if (csym.isNestedClass)
         nestingAwareFullClassname(csym.owner) + "+" + csym.encodedName
       else
         csym.fullName
       res + suffix
     }
-
-  /** cut&pasted from GenJVM */
-  def moduleSuffix(sym: Symbol) =
-    if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
-       !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$"
-    else "";
 
     /** Adds a static initializer which creates an instance of the module
      *  class (calls the primary constructor). A special primary constructor

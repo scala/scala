@@ -10,6 +10,7 @@ import java.lang.reflect
 import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader
 import ScalaClassLoader.getSystemLoader
+import scala.reflect.NameTransformer._
 
 object ByteCode {
   /** Until I figure out why I can't get scalap onto the classpath such
@@ -17,7 +18,7 @@ object ByteCode {
    */
   private lazy val DECODER: Option[AnyRef] =
     for (clazz <- getSystemLoader.tryToLoadClass[AnyRef]("scala.tools.scalap.Decode$")) yield
-      clazz.getField("MODULE$").get()
+      clazz.getField(MODULE_INSTANCE_NAME).get()
 
   private def decoderMethod(name: String, args: JClass*): Option[reflect.Method] = {
     for (decoder <- DECODER ; m <- Option(decoder.getClass.getMethod(name, args: _*))) yield m

@@ -195,9 +195,9 @@ abstract class LambdaLift extends InfoTransform {
 
       for (sym <- renamable) {
         val originalName = sym.name
-        val base = sym.name + "$" + (
+        val base = sym.name + nme.NAME_JOIN_STRING + (
           if (sym.isAnonymousFunction && sym.owner.isMethod)
-            sym.owner.name + "$"
+            sym.owner.name + nme.NAME_JOIN_STRING
           else ""
         )
         sym.name =

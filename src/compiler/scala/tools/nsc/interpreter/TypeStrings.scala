@@ -9,6 +9,7 @@ package interpreter
 import java.lang.{ reflect => r }
 import r.TypeVariable
 import scala.reflect.NameTransformer
+import NameTransformer._
 
 /** Logic for turning a type into a String.  The goal is to be
  *  able to take some arbitrary object 'x' and obtain the most precise
@@ -36,17 +37,17 @@ trait TypeStrings {
   } toMap
 
   def scalaName(s: String): String = {
-    if (s endsWith "$") s.init + ".type"
+    if (s endsWith MODULE_SUFFIX_STRING) s.init + ".type"
     else if (s == "void") "scala.Unit"
     else if (primitives(s)) "scala." + s.capitalize
-    else primitiveMap.getOrElse(s, NameTransformer decode s)
+    else primitiveMap.getOrElse(s, NameTransformer.decode(s))
   }
   // Trying to put humpty dumpty back together again.
   def scalaName(clazz: JClass): String = {
     val name      = clazz.getName
     val isAnon    = clazz.isScalaAnonymous
     val enclClass = clazz.getEnclosingClass
-    def enclPre   = enclClass.getName + "$"
+    def enclPre   = enclClass.getName + MODULE_SUFFIX_STRING
     def enclMatch = name startsWith enclPre
 
     scalaName(

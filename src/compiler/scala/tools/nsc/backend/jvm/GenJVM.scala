@@ -95,12 +95,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
   }
 
-  /** Return the suffix of a class name */
-  def moduleSuffix(sym: Symbol) =
-    if (sym.hasModuleFlag && !sym.isMethod &&
-       !sym.isImplClass && !sym.isJavaDefined) "$"
-    else ""
-
   var pickledBytes = 0 // statistics
 
   /**
@@ -161,8 +155,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val emitVars   = debugLevel >= 3
 
     override def javaName(sym: Symbol): String = {
-      if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass)
+      val isInner = sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass
+      // TODO: something atPhase(currentRun.flattenPhase.prev) which accounts for
+      // being nested in parameterized classes (if we're going to selectively flatten.)
+      if (isInner) {
+        log("Inner class: " + sym.fullLocationString)
         innerClassBuffer += sym
+      }
 
       super.javaName(sym)
     }
@@ -199,7 +198,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def scalaSignatureAddingMarker(jclass: JClass, sym: Symbol): Option[AnnotationInfo] =
       currentRun.symData get sym match {
-        case Some(pickle) if !jclass.getName().endsWith("$") =>
+        case Some(pickle) if !nme.isModuleName(jclass.getName()) =>
           val scalaAttr =
             fjbgContext.JOtherAttribute(jclass, jclass, tpnme.ScalaSignatureATTR.toString,
                                         versionPickle.bytes, versionPickle.writeIndex)
@@ -673,7 +672,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           null
         else {
           val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) outerName stripSuffix "$"
+          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(outerName)
           else outerName
         }
       }

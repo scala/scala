@@ -209,7 +209,11 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   def quietRun[T](code: String) = beQuietDuring(interpret(code))
 
   private def logAndDiscard[T](label: String, alt: => T): PartialFunction[Throwable, T] = {
-    case t => repldbg(label + ": " + t) ; alt
+    case t =>
+      repldbg(label + ": " + unwrap(t))
+      repltrace(util.stackTraceString(unwrap(t)))
+
+      alt
   }
 
   /** whether to bind the lastException variable */
@@ -311,7 +315,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
    *  }}}
    */
   def generatedName(simpleName: String): Option[String] = {
-    if (simpleName endsWith "$") optFlatName(simpleName.init) map (_ + "$")
+    if (simpleName endsWith nme.MODULE_SUFFIX_STRING) optFlatName(simpleName.init) map (_ + nme.MODULE_SUFFIX_STRING)
     else optFlatName(simpleName)
   }
   def flatName(id: String)    = optFlatName(id) getOrElse id
@@ -795,7 +799,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
      *  $line5.$iw$$iw$$iw$Bippy      // fullFlatName
      */
     def fullFlatName(name: String) =
-      lineRep.readPath + accessPath.replace('.', '$') + "$" + name
+      lineRep.readPath + accessPath.replace('.', '$') + nme.NAME_JOIN_STRING + name
 
     /** The unmangled symbol name, but supplemented with line info. */
     def disambiguated(name: Name): String = name + " (in " + lineRep + ")"

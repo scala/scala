@@ -1259,8 +1259,8 @@ trait Namers { self: Analyzer =>
 
                       def notMember() = context.error(tree.pos, from.decode + " is not a member of " + expr)
                       // for Java code importing Scala objects
-                      if (from endsWith nme.raw.DOLLAR)
-                        isValidSelector(from stripEnd "$")(notMember())
+                      if (nme.isModuleName(from))
+                        isValidSelector(nme.stripModuleSuffix(from))(notMember())
                       else
                         notMember()
                     }

@@ -765,8 +765,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
       }
       def flatNameString(sym: Symbol, separator: Char): String =
         if (sym == NoSymbol) ""   // be more resistant to error conditions, e.g. neg/t3222.scala
-        else if (sym.owner.isPackageClass) sym.fullName('.') + (if (sym.isModuleClass) "$" else "")
-        else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
+        else if (sym.owner.isPackageClass) sym.javaClassName
+        else flatNameString(sym.owner, separator) + nme.NAME_JOIN_STRING + sym.simpleName
       def signature1(etp: Type): String = {
         if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))
         else if (isValueClass(etp.typeSymbol)) abbrvTag(etp.typeSymbol).toString()

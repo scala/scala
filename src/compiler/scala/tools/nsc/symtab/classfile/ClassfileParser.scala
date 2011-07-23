@@ -187,8 +187,8 @@ abstract class ClassfileParser {
         val start = starts(index)
         if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
-        if (name endsWith '$')
-          c = definitions.getModule(name stripEnd "$")
+        if (nme.isModuleName(name))
+          c = definitions.getModule(nme.stripModuleSuffix(name))
         else
           c = classNameToSymbol(name)
 
@@ -1226,9 +1226,7 @@ abstract class ClassfileParser {
 
         innerClasses.get(externalName) match {
           case Some(entry) =>
-            val outerName =
-              if (entry.outerName.endsWith("$")) entry.outerName.subName(0, entry.outerName.length - 1)
-              else entry.outerName
+            val outerName = nme.stripModuleSuffix(entry.outerName)
             val sym = classSymbol(outerName)
             val s =
               // if loading during initialization of `definitions` typerPhase is not yet set.
