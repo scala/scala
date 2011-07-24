@@ -171,17 +171,6 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    */
   def +=(x: Char): this.type = { append(x); this }
 
-  /** Optimization.
-   */
-  def ++=(s: String): this.type = {
-    underlying append s
-    this
-  }
-  def appendAll(xs: String): StringBuilder = {
-    underlying append xs
-    this
-  }
-
   /** !!! This should create a new sequence.
    */
   def +(x: Char): this.type = { +=(x); this }
