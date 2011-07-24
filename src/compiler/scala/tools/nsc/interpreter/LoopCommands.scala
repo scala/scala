@@ -29,6 +29,9 @@ object ProcessResult {
 trait LoopCommands {
   protected def out: JPrintWriter
 
+  // So outputs can be suppressed.
+  def echoCommandMessage(msg: String): Unit = out println msg
+
   // a single interpreter command
   abstract class LoopCommand(val name: String, val help: String) extends (String => Result) {
     private var _longHelp: String = null
@@ -95,7 +98,7 @@ trait LoopCommands {
     // to print something to the console, so we accomodate Unit and String returns.
     implicit def resultFromUnit(x: Unit): Result = default
     implicit def resultFromString(msg: String): Result = {
-      out println msg
+      echoCommandMessage(msg)
       default
     }
   }

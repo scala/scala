@@ -6,15 +6,15 @@
 package scala.tools.nsc
 package interpreter
 
-import java.lang.reflect.{ Method => JMethod }
-
-class ReplVals(final val r: ILoop) {
-  final val intp       = r.intp
-  final val global     = r.power.global
-  final val power      = r.power
-  final val phased     = r.power.phased
-  final val isettings  = r.intp.isettings
-  final val completion = r.in.completion
-  final val history    = r.in.history
-  final val rutil      = r.power.rutil
+final class ReplVals(r: ILoop) {
+  lazy val repl       = r
+  lazy val intp       = r.intp
+  lazy val power      = r.power
+  lazy val reader     = r.in
+  lazy val vals       = this
+  lazy val global     = intp.global
+  lazy val isettings  = intp.isettings
+  lazy val completion = reader.completion
+  lazy val history    = reader.history
+  lazy val phased     = power.phased
 }

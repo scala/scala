@@ -2,16 +2,15 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> :power
-** Power User mode enabled - BEEP BOOP WHIR **
+** Power User mode enabled - BEEP BOOP SPIZ **
+** :phase has been set to 'typer'.          **
 ** scala.tools.nsc._ has been imported      **
 ** global._ and definitions._ also imported **
-** New vals! Try repl, intp, global, power  **
-** New cmds! :help to discover them         **
-** New defs! Type power.<tab> to reveal     **
+** Try  :help,  vals.<tab>,  power.<tab>    **
 
 scala> // guarding against "error: reference to global is ambiguous"
 
 scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
-res0: global.emptyValDef.type = private val _ = _
+res0: $r.global.emptyValDef.type = private val _ = _
 
 scala> 

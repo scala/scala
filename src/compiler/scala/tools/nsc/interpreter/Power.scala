@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.NameTransformer
+import scala.reflect.{ NameTransformer, AnyValManifest }
 import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
 import scala.tools.nsc.util.{ BatchSourceFile }
@@ -15,8 +15,9 @@ import scala.io.Codec
 import java.net.{ URL, MalformedURLException }
 import io.{ Path }
 
-trait SharesGlobal[G <: Global] {
-  val global: G
+trait SharesGlobal {
+  type GlobalType <: Global
+  val global: GlobalType
 
   // This business gets really old:
   //
@@ -42,26 +43,26 @@ trait SharesGlobal[G <: Global] {
 }
 
 object Power {
-  def apply[G <: Global](repl: ILoop, g: G) =
-    new { final val global: G = g } with Power[G](repl, repl.intp)
-
-  def apply(intp: IMain) =
-    new { final val global = intp.global } with Power[Global](null, intp)
+  def apply(intp: IMain): Power = apply(null, intp)
+  def apply(repl: ILoop): Power = apply(repl, repl.intp)
+  def apply(repl: ILoop, intp: IMain): Power =
+    new Power(repl, intp) {
+      type GlobalType = intp.global.type
+      final val global: intp.global.type = intp.global
+    }
 }
 
 /** A class for methods to be injected into the intp in power mode.
  */
-abstract class Power[G <: Global](
+abstract class Power(
   val repl: ILoop,
   val intp: IMain
-) extends SharesGlobal[G] {
-  import intp.{ beQuietDuring, interpret, parse }
-  import global.{
-    opt, definitions, analyzer,
-    stringToTermName, typeRef,
-    CompilationUnit,
-    NoSymbol, NoPrefix, NoType
+) extends SharesGlobal {
+  import intp.{
+    beQuietDuring, typeOfExpression, getCompilerClass, getCompilerModule,
+    interpret, parse
   }
+  import global._
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -129,47 +130,37 @@ abstract class Power[G <: Global](
   private def customInit   = replProps.powerInitCode.option flatMap (f => io.File(f).safeSlurp())
 
   def banner = customBanner getOrElse """
-    |** Power User mode enabled - BEEP BOOP WHIR **
+    |** Power User mode enabled - BEEP BOOP SPIZ **
+    |** :phase has been set to 'typer'.          **
     |** scala.tools.nsc._ has been imported      **
     |** global._ and definitions._ also imported **
-    |** New vals! Try repl, intp, global, power  **
-    |** New cmds! :help to discover them         **
-    |** New defs! Type power.<tab> to reveal     **
+    |** Try  :help,  vals.<tab>,  power.<tab>    **
   """.stripMargin.trim
 
   private def initImports = List(
     "scala.tools.nsc._",
     "scala.collection.JavaConverters._",
     "global.{ error => _, _ }",
+    "definitions.{ getClass => _, _ }",
     "power.Implicits._",
     "power.rutil._"
   )
-  def init = customInit getOrElse "import " + initImports.mkString(", ")
+
+  def init = customInit match {
+    case Some(x)  => x
+    case _        => initImports.mkString("import ", ", ", "")
+  }
 
   /** Starts up power mode and runs whatever is in init.
    */
   def unleash(): Unit = beQuietDuring {
-    val r  = new ReplVals(repl)
-    intp.bind[ILoop]("repl", repl)
-    intp.bind[ReplVals]("$r", r)
-
-    intp.bind("intp", r.intp)
-    intp.bind("global", r.global)
-    intp.bind("power", r.power)
-    intp.bind("phased", r.phased)
-    intp.bind("isettings", r.isettings)
-    intp.bind("completion", r.completion)
-    intp.bind("history", r.history)
-
-    init split '\n' foreach interpret
+    // First we create the ReplVals instance and bind it to $r
+    intp.bind("$r", new ReplVals(repl))
+    // Then we import everything from $r.
+    intp interpret ("import " + intp.pathToTerm("$r") + "._")
+    // And whatever else there is to do.
+    init.lines foreach (intp interpret _)
   }
-
-  private def missingWrap(op: => Symbol): Symbol =
-    try op
-    catch { case _: MissingRequirementError => NoSymbol }
-
-  private def getCompilerClass(name: String)  = missingWrap(definitions.getClass(name))
-  private def getCompilerModule(name: String) = missingWrap(definitions.getModule(name))
 
   trait LowPriorityInternalInfo {
     implicit def apply[T: Manifest] : InternalInfo[T] = new InternalInfo[T](None)
@@ -181,14 +172,41 @@ abstract class Power[G <: Global](
    *    customizable symbol filter (had to hardcode no-spec to reduce noise)
    */
   class InternalInfo[T: Manifest](value: Option[T] = None) {
-    def companion = symbol.companionSymbol
-    def info      = symbol.info
-    def module    = symbol.moduleClass
-    def owner     = symbol.owner
-    def owners    = symbol.ownerChain drop 1
-    def symDef    = symbol.defString
-    def symName   = symbol.name
-    def tpe       = symbol.tpe
+    // Decided it was unwise to have implicit conversions via commonly
+    // used type/symbol methods, because it's too easy to e.g. call
+    // "x.tpe" where x is a Type, and rather than failing you get the
+    // Type representing Types#Type (or Manifest, or whatever.)
+    private def tpe    = tpe_
+    private def symbol = symbol_
+    private def name   = name_
+
+    // Would love to have stuff like existential types working,
+    // but very unfortunately those manifests just stuff the relevant
+    // information into the toString method.  Boo.
+    private def manifestToType(m: Manifest[_]): Type = m match {
+      case x: AnyValManifest[_] =>
+        getCompilerClass("scala." + x).tpe
+      case _                             =>
+        val name = m.erasure.getName
+        if (name endsWith "$") getCompilerModule(name dropRight 1).tpe
+        else {
+          val sym  = getCompilerClass(name)
+          val args = m.typeArguments
+
+          if (args.isEmpty) sym.tpe
+          else typeRef(NoPrefix, sym, args map manifestToType)
+        }
+    }
+
+    def symbol_ : Symbol = getCompilerClass(erasure.getName)
+    def tpe_ : Type      = manifestToType(man)
+    def name_ : Name     = symbol.name
+    def companion        = symbol.companionSymbol
+    def info             = symbol.info
+    def module           = symbol.moduleClass
+    def owner            = symbol.owner
+    def owners           = symbol.ownerChain drop 1
+    def defn             = symbol.defString
 
     def declares  = members filter (_.owner == symbol)
     def inherits  = members filterNot (_.owner == symbol)
@@ -197,8 +215,8 @@ abstract class Power[G <: Global](
     def overrides = declares filter (_.isOverride)
     def inPackage = owners find (x => x.isPackageClass || x.isPackage) getOrElse definitions.RootPackage
 
-    def erasure    = manifest[T].erasure
-    def symbol     = getCompilerClass(erasure.getName)
+    def man        = manifest[T]
+    def erasure    = man.erasure
     def members    = tpe.members filterNot (_.name.toString contains "$mc")
     def allMembers = tpe.members
     def bts        = info.baseTypeSeq.toList
@@ -331,10 +349,10 @@ abstract class Power[G <: Global](
     implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
     implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
 
+    implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
     implicit def replEnhancedStrings(s: String): RichReplString = new RichReplString(s)
     implicit def replMultiPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrettifierClass[T] =
       new MultiPrettifierClass[T](xs.toSeq)
-    implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
     implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
     implicit def replInputStream(in: InputStream)(implicit codec: Codec) = new RichInputStream(in)
@@ -343,6 +361,8 @@ abstract class Power[G <: Global](
   object Implicits extends Implicits2 { }
 
   trait ReplUtilities {
+    def module[T: Manifest] = getCompilerModule(manifest[T].erasure.getName stripSuffix "$")
+    def clazz[T: Manifest] = getCompilerClass(manifest[T].erasure.getName)
     def info[T: Manifest] = InternalInfo[T]
     def ?[T: Manifest] = InternalInfo[T]
     def url(s: String) = {
@@ -367,8 +387,10 @@ abstract class Power[G <: Global](
   }
 
   lazy val rutil: ReplUtilities = new ReplUtilities { }
-  lazy val phased: Phased = new Phased with SharesGlobal[G] {
-    val global: G = Power.this.global
+
+  lazy val phased: Phased = new Phased with SharesGlobal {
+    type GlobalType = Power.this.global.type
+    final val global: Power.this.global.type = Power.this.global
   }
 
   def context(code: String)    = analyzer.rootContext(unit(code))
