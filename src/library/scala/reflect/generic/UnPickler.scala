@@ -66,6 +66,27 @@ abstract class UnPickler {
 
     //println("unpickled " + classRoot + ":" + classRoot.rawInfo + ", " + moduleRoot + ":" + moduleRoot.rawInfo);//debug
 
+    // Unused: left in 2.9.1 to satisfy mima.
+    private def run$unused() {
+      // read children last, fix for #3951
+      val queue = new collection.mutable.ListBuffer[() => Unit]()
+      def delay(i: Int, action: => Unit) {
+        queue += (() => at(i, {() => action; null}))
+      }
+
+      for (i <- 0 until index.length) {
+        if (isSymbolEntry(i))
+          at(i, readSymbol)
+        else if (isSymbolAnnotationEntry(i))
+          delay(i, readSymbolAnnotation())
+        else if (isChildrenEntry(i))
+          delay(i, readChildren())
+      }
+
+      for (action <- queue)
+        action()
+    }
+
     // Laboriously unrolled for performance.
     def run() {
       var i = 0

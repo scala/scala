@@ -119,6 +119,18 @@ object ModifierFlags extends ModifierFlags
   private val rawFlags: Array[Int]     = rawPickledCorrespondence map (_._1)
   private val pickledFlags: Array[Int] = rawPickledCorrespondence map (_._2)
 
+  // unused in 2.9.1: left to satisfy mima complaint about missing f$1
+  private def mkCorrespondenceArray(correspondence: List[(Int, Int)]) = {
+    def f(flags: Int): Int = {
+      correspondence.foldLeft(0) {
+        case (result, (oldFlag, newFlag)) =>
+          if ((flags & oldFlag) != 0) result | newFlag
+          else result
+      }
+    }
+    0 to PKL_MASK map f toArray
+  }
+
   private def r2p(flags: Int): Int = {
     var result = 0
     var i      = 0

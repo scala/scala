@@ -154,14 +154,15 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
   @deprecated("Use `global` for access to the compiler instance.", "2.9.0")
   lazy val compiler: global.type = global
 
-  import global.{ treeWrapper => _, _ }
+  // import global.{ treeWrapper => _, _ }
+  import global._
   import definitions.{ ScalaPackage, JavaLangPackage, PredefModule, RootClass }
-
-  private implicit def privateTreeOps(t: Tree): List[Tree] = {
-    (new Traversable[Tree] {
-      def foreach[U](f: Tree => U): Unit = t foreach { x => f(x) ; () }
-    }).toList
-  }
+  //
+  // private implicit def privateTreeOps(t: Tree): List[Tree] = {
+  //   (new Traversable[Tree] {
+  //     def foreach[U](f: Tree => U): Unit = t foreach { x => f(x) ; () }
+  //   }).toList
+  // }
 
   // TODO: If we try to make naming a lazy val, we run into big time
   // scalac unhappiness with what look like cycles.  It has not been easy to
@@ -455,11 +456,11 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
       case Some(Nil)    => return Left(IR.Error) // parse error or empty input
       case Some(trees)  => trees
     }
-    repltrace(
-      trees map { t =>
-        t map { t0 => t0.getClass + " at " + safePos(t0, -1) + "\n" }
-      } mkString
-    )
+    // repltrace(
+    //   trees map { t =>
+    //     t map { t0 => t0.getClass + " at " + safePos(t0, -1) + "\n" }
+    //   } mkString
+    // )
     // If the last tree is a bare expression, pinpoint where it begins using the
     // AST node position and snap the line off there.  Rewrite the code embodied
     // by the last tree as a ValDef instead, so we can access the value.

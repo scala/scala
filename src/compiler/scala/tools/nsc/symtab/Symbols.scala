@@ -429,11 +429,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
-    final def isInterpreterWrapper =
-      (isModule || isModuleClass) &&
-      owner.isEmptyPackageClass &&
-      (name startsWith nme.INTERPRETER_LINE_PREFIX) &&
-      (name endsWith nme.INTERPRETER_WRAPPER_SUFFIX)
+    final def isInterpreterWrapper = (
+      (isModule || isModuleClass)
+      && owner.isPackageClass
+      && (name containsName nme.INTERPRETER_IMPORT_WRAPPER)
+    )
 
     /** Is this symbol an accessor method for outer? */
     final def isOuterAccessor = {
