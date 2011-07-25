@@ -595,7 +595,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           // }
           val bSym = normalizeTemplate(aSym)
           if (bSym.isNonClassType)
-            nameBuffer append bSym.name
+            nameBuffer append bSym.decodedName
           else {
             val tpl = makeTemplate(bSym)
             val pos0 = nameBuffer.length
