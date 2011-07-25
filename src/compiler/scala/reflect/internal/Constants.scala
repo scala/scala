@@ -211,16 +211,11 @@ trait Constants extends api.Constants {
       case '"'  => "\\\""
       case '\'' => "\\\'"
       case '\\' => "\\\\"
-      case _    => String.valueOf(ch)
+      case _    => if (ch.isControl) "\\0" + toOctalString(ch) else String.valueOf(ch)
     }
 
     def escapedStringValue: String = {
-      def escape(text: String): String = {
-        text map { ch =>
-          if (ch.isControl) "\\0" + toOctalString(ch)
-          else escapedChar(ch)
-        } mkString ""
-      }
+      def escape(text: String): String = (text map escapedChar) mkString ""
       tag match {
         case NullTag   => "null"
         case StringTag => "\"" + escape(stringValue) + "\""
