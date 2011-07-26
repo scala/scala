@@ -565,14 +565,24 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
             done = true
             receiveTimeout
           } else {
+            if (onTimeout.isEmpty) {
+              if (!f.isDefinedAt(TIMEOUT))
+                sys.error("unhandled timeout")
+
+              val thisActor = this
+              onTimeout = Some(new TimerTask {
+                def run() {
+                  thisActor.send(TIMEOUT, thisActor)
+                }
+              })
+              Actor.timer.schedule(onTimeout.get, msec)
+            }
+
+            // It is possible that !onTimeout.isEmpty, but TIMEOUT is not yet in mailbox
+            // See SI-4759
             waitingFor = f
             received = None
             isSuspended = true
-            val thisActor = this
-            onTimeout = Some(new TimerTask {
-              def run() { thisActor.send(TIMEOUT, thisActor) }
-            })
-            Actor.timer.schedule(onTimeout.get, msec)
             scheduler.managedBlock(blocker)
             drainSendBuffer(mailbox)
             // keep going
