@@ -567,7 +567,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
           } else {
             if (onTimeout.isEmpty) {
               if (!f.isDefinedAt(TIMEOUT))
-                sys.error("unhandled timeout")
+                error("unhandled timeout")
 
               val thisActor = this
               onTimeout = Some(new TimerTask {
