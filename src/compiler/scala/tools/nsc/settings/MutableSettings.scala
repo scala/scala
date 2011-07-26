@@ -53,6 +53,13 @@ class MutableSettings(val errorFn: String => Unit)
             errorFn("bad option: '" + x + "'")
             (false, args)
           }
+          // discard empties, sometimes they appear because of ant or etc.
+          // but discard carefully, because an empty string is valid as an argument
+          // to an option, e.g. -cp "" .  So we discard them only when they appear
+          // in option position.
+          else if (x == "") {
+            loop(xs, residualArgs)
+          }
           else lookupSetting(x) match {
             case Some(s) if s.shouldStopProcessing  => (checkDependencies, newArgs)
             case _                                  => loop(newArgs, residualArgs)
@@ -63,7 +70,7 @@ class MutableSettings(val errorFn: String => Unit)
           else (checkDependencies, args)
         }
     }
-    loop(arguments filterNot (_ == ""), Nil)
+    loop(arguments, Nil)
   }
   def processArgumentString(params: String) = processArguments(splitParams(params), true)
 
