@@ -396,7 +396,10 @@ abstract class UnPickler {
             NullaryMethodType(restpe)
         case EXISTENTIALtpe =>
           val restpe = readTypeRef()
-          ExistentialType(until(end, readSymbolRef), restpe)
+          val tparams = until(end, readSymbolRef)
+          // binary compatibility: in 2.9.x, Symbol doesn't have setFlag
+          tparams foreach (x => x.asInstanceOf[{ def setFlag(mask: Long): this.type }] setFlag EXISTENTIAL)
+          ExistentialType(tparams, restpe)
         case ANNOTATEDtpe =>
           var typeRef = readNat()
           val selfsym = if (isSymbolRef(typeRef)) {
