@@ -50,6 +50,10 @@ self =>
   def empty: ParMap[K, V] = new mutable.ParHashMap[K, V]
 
   override def stringPrefix = "ParMap"
+
+  override def updated [U >: V](key: K, value: U): ParMap[K, U] = this + ((key, value))
+
+  def + [U >: V](kv: (K, U)): ParMap[K, U]
 }
 
 
@@ -61,6 +65,15 @@ object ParMap extends ParMapFactory[ParMap] {
 
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParMap[K, V]] = new CanCombineFromMap[K, V]
 
+  /** An abstract shell used by { mutable, immutable }.Map but not by collection.Map
+   *  because of variance issues.
+   */
+  abstract class WithDefault[A, +B](underlying: ParMap[A, B], d: A => B) extends ParMap[A, B] {
+    override def size               = underlying.size
+    def get(key: A)                 = underlying.get(key)
+    def splitter                    = underlying.splitter
+    override def default(key: A): B = d(key)
+  }
 }
 
 
