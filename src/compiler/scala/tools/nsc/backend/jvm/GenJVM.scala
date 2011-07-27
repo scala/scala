@@ -577,6 +577,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
         erasure.javaSig(sym, memberTpe) foreach { sig =>
+          debuglog("sig(" + jmember.getName + ", " + sym + ", " + owner + ")      " + sig)
           /** Since we're using a sun internal class for signature validation,
            *  we have to allow for it not existing or otherwise malfunctioning:
            *  in which case we treat every signature as valid.  Medium term we

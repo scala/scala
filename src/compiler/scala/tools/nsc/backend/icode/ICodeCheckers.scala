@@ -51,6 +51,14 @@ abstract class ICodeCheckers {
    *
    *  @todo Better checks for <code>MONITOR_ENTER/EXIT</code>
    *        Better checks for local var initializations
+   *
+   *  @todo Iulian says: I think there's some outdated logic in the checker.
+   * The issue with exception handlers being special for least upper
+   * bounds pointed out some refactoring in the lattice class. Maybe
+   * a worthwhile refactoring would be to make the checker use the
+   * DataFlowAnalysis class, and use the lattice trait. In the
+   * implementation of LUB, there's a flag telling if one of the
+   * successors is 'exceptional'. The inliner is using this mechanism.
    */
   class ICodeChecker {
     import icodes._
