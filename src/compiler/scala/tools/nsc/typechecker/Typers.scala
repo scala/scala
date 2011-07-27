@@ -2552,10 +2552,13 @@ trait Typers extends Modes {
             val formals1 = formalTypes(formals0, args.length)
             if (sameLength(formals1, args)) {
               val args1 = typedArgs(args, mode, formals0, formals1)
-              assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+              // This used to be the following (failing) assert:
+              //   assert(isFullyDefined(pt), tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
+              // I modified as follows.  See SI-1048.
+              val pt1 = if (isFullyDefined(pt)) pt else makeFullyDefined(pt)
 
-              val itype = glb(List(pt, arg.tpe))
-              arg.tpe = pt    // restore type (arg is a dummy tree, just needs to pass typechecking)
+              val itype = glb(List(pt1, arg.tpe))
+              arg.tpe = pt1    // restore type (arg is a dummy tree, just needs to pass typechecking)
               UnApply(fun1, args1) setPos tree.pos setType itype
             }
             else {
