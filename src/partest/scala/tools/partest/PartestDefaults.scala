@@ -23,7 +23,7 @@ object PartestDefaults {
 
   def testBuild   = propOrNone("partest.build")
   def errorCount  = propOrElse("partest.errors", "0").toInt
-  def numActors   = propOrElse("partest.actors", "8").toInt
+  def numActors   = propOrElse("partest.actors", "6").toInt
   def poolSize    = wrapAccessControl(propOrNone("actors.corePoolSize"))
 
   def timeout     = "1200000"

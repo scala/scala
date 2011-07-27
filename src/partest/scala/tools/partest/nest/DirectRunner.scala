@@ -46,7 +46,7 @@ trait DirectRunner {
 
     if (PartestDefaults.poolSize.isEmpty) {
       scala.actors.Debug.info("actors.corePoolSize not defined")
-      setProp("actors.corePoolSize", "16")
+      setProp("actors.corePoolSize", "12")
     }
   }
 
