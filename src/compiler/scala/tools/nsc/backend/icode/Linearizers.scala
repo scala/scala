@@ -14,6 +14,8 @@ import mutable.ListBuffer
 
 trait Linearizers {
   self: ICodes =>
+
+  import global.debuglog
   import opcodes._
 
   abstract class Linearizer {
@@ -178,11 +180,14 @@ trait Linearizers {
      * Prepend b to the list, if not already scheduled.
      * @return Returns true if the block was added.
      */
-    def add(b: BasicBlock) =
+    def add(b: BasicBlock) = {
+      debuglog("Linearizer adding block " + b.label)
+
       if (!added(b.label)) {
         added += b.label
         blocks = b :: blocks;
       }
+    }
   }
 
   /** A 'dump' of the blocks in this method, which does not

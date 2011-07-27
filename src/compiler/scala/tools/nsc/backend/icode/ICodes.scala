@@ -35,7 +35,7 @@ abstract class ICodes extends AnyRef
                                  with Repository
 {
   val global: Global
-  import global.{ definitions, settings, perRunCaches }
+  import global.{ log, definitions, settings, perRunCaches }
 
   /** The ICode representation of classes */
   val classes = perRunCaches.newMap[global.Symbol, IClass]()
@@ -72,11 +72,22 @@ abstract class ICodes extends AnyRef
   }
 
   def checkValid(m: IMethod) {
-    for (b <- m.code.blocks)
-      if (!b.closed) {
-        m.dump
-        global.abort("Open block: " + b + " " + b.flagsString)
+    // always dicey to iterate over mutable structures
+    val bs = m.code.blocks.toList
+
+    for (b <- bs ; if !b.closed) {
+      // Something is leaving open/empty blocks around (see SI-4840) so
+      // let's not kill the deal unless it's nonempty.
+      if (b.isEmpty) {
+        log("!!! Found open but empty block while inlining " + m + ": removing from block list.")
+        m.code removeBlock b
       }
+      else {
+        Console.println("Fatal bug in inliner: found open block when inlining " + m)
+        m.dump
+        global.abort("Open block was: " + b + " " + b.flagsString)
+      }
+    }
   }
 
   object liveness extends Liveness {
