@@ -38,7 +38,7 @@ class Line[+T](val code: String, body: => T) {
   private def cancel() = if (running) setState(Cancelled)
 
   // This is where the line thread is created and started.
-  private val _thread = io.daemonize(true) {
+  private val _thread = io.daemonize {
     try {
       _result = body
       setState(Done)
