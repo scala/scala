@@ -882,7 +882,10 @@ trait Typers extends Modes {
           typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
           assert(!inHKMode(mode)) //@M
-          instantiate(tree, mode, pt)
+          if ((mode & (EXPRmode | FUNmode)) == EXPRmode && (pt.typeSymbol == UnitClass))
+            instantiateExpectingUnit(tree, mode)
+          else
+            instantiate(tree, mode, pt)
         } else if (tree.tpe <:< pt) {
           tree
         } else {
@@ -969,15 +972,23 @@ trait Typers extends Modes {
         }
     }
 
-    /**
-     *  @param tree ...
-     *  @param mode ...
-     *  @param pt   ...
-     *  @return     ...
-     */
     def instantiate(tree: Tree, mode: Int, pt: Type): Tree = {
       inferExprInstance(tree, context.extractUndetparams(), pt)
       adapt(tree, mode, pt)
+    }
+    /** If the expected type is Unit: try instantiating type arguments
+     *  with expected type Unit, but if that fails, try again with pt = WildcardType
+     *  and discard the expression.
+     */
+    def instantiateExpectingUnit(tree: Tree, mode: Int): Tree = {
+      val savedUndetparams = context.undetparams
+      silent(_.instantiate(tree, mode, UnitClass.tpe)) match {
+        case t: Tree => t
+        case _ =>
+          context.undetparams = savedUndetparams
+          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(())))
+          typed(valueDiscard, mode, UnitClass.tpe)
+      }
     }
 
     def adaptToMember(qual: Tree, searchTemplate: Type): Tree = {
