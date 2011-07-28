@@ -86,6 +86,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (intp ne null) {
       intp.close
       intp = null
+      removeSigIntHandler()
       Thread.currentThread.setContextClassLoader(originalClassLoader)
     }
   }

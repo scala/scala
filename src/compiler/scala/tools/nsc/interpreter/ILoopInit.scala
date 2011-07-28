@@ -59,6 +59,9 @@ trait ILoopInit {
       }
     }
   }
+  protected def removeSigIntHandler() {
+    SignalManager("INT") = null
+  }
 
   private val initLock = new java.util.concurrent.locks.ReentrantLock()
   private val initCompilerCondition = initLock.newCondition() // signal the compiler is initialized
