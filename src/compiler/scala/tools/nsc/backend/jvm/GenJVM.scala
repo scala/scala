@@ -951,14 +951,18 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     /** Add a forwarder for method m */
-    def addForwarder(jclass: JClass, module: Symbol, m: Symbol, accessFlags: Int) {
+    def addForwarder(jclass: JClass, module: Symbol, m: Symbol) {
       val moduleName     = javaName(module)
       val methodInfo     = module.thisType.memberInfo(m)
       val paramJavaTypes = methodInfo.paramTypes map javaType
       val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
+      /** Forwarders must not be marked final, as the JVM will not allow
+       *  redefinition of a final static method, and we don't know what classes
+       *  might be subclassing the companion class.  See SI-4827.
+       */
       val mirrorMethod = jclass.addNewMethod(
-        accessFlags,
+        PublicStatic,
         javaName(m),
         javaType(methodInfo.resultType),
         mkArray(paramJavaTypes),
@@ -1004,15 +1008,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val linkedClass  = moduleClass.companionClass
       val linkedModule = linkedClass.companionSymbol
 
-      /** If we use the usual algorithm for forwarders, we run into a problem if
-       *  an object extends its companion class.  However, there is an out: since
-       *  all the forwarders are static, inheriting from the class is no problem
-       *  so long as the methods aren't final (the JVM will not allow redefinition
-       *  of a final static method.) Thus the following.
-       */
-      val isIncestuous = moduleClass.tpe <:< linkedClass.tpe
-      val accessFlags  = if (isIncestuous) PublicStatic else PublicStaticFinal
-
       /** There was a bit of a gordian logic knot here regarding forwarders.
        *  All we really have to do is exclude certain categories of symbols and
        *  then all matching names.
@@ -1035,7 +1030,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       for (m <- moduleClass.info.nonPrivateMembers) {
         if (shouldForward(m)) {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
-          addForwarder(jclass, moduleClass, m, accessFlags)
+          addForwarder(jclass, moduleClass, m)
         }
         else debuglog("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
       }
