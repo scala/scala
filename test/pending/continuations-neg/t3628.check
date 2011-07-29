@@ -1,3 +1,0 @@
-ending/continuations-neg/t3628.scala:4: error: not found: type Actor
-  val impl: Actor = actor {
-            ^
