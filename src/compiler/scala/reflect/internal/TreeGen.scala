@@ -255,9 +255,7 @@ abstract class TreeGen {
       case IntClass     => Literal(0)
       case LongClass    => Literal(0L)
       case CharClass    => Literal(0.toChar)
-      case _            =>
-        if (NullClass.tpe <:< tp) Literal(null: Any)
-        else abort("Cannot determine zero for " + tp)
+      case _            => Literal(Constant(null))
     }
     tree setType tp
   }

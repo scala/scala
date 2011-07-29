@@ -770,8 +770,8 @@ abstract class UnCurry extends InfoTransform
       case DefDef(_, _, _, _, _, _) =>
         val lastMethod = currentMethod
         currentMethod = tree.symbol
-        super.traverse(tree)
-        currentMethod = lastMethod
+        try super.traverse(tree)
+        finally currentMethod = lastMethod
       /** A method call with a by-name parameter represents escape. */
       case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
         traverse(fn)
@@ -792,7 +792,7 @@ abstract class UnCurry extends InfoTransform
       case Ident(_) =>
         val sym = tree.symbol
         if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod))
-          freeMutableVars += sym
+          assert(false, "Failure to lift "+sym+sym.locationString); freeMutableVars += sym
       case _ =>
         super.traverse(tree)
     }

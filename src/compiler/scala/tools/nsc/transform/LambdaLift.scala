@@ -116,7 +116,11 @@ abstract class LambdaLift extends InfoTransform {
           }
           changedFreeVars = true
           debuglog("" + sym + " is free in " + enclosure);
-          if ((sym.isVariable || (sym.isValue && sym.isLazy)) && !sym.hasFlag(CAPTURED)) {
+          if (sym.isVariable && !sym.hasFlag(CAPTURED)) {
+            // todo: We should merge this with the lifting done in liftCode.
+            // We do have to lift twice: in liftCode, because Code[T] needs to see the lifted version
+            // and here again because lazy bitmaps are introduced later and get lifted here.
+            // But we should factor out the code and run it twice.
             sym setFlag CAPTURED
             val symClass = sym.tpe.typeSymbol
             atPhase(phase.next) {
