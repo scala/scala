@@ -34,6 +34,16 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
 
   /** Selects an element by its index in the $coll.
    *
+   * Example:
+   *
+   * {{{
+   *    scala> val x = LinkedList(1, 2, 3, 4, 5)
+   *    x: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4, 5)
+   *
+   *    scala> x(3)
+   *    res1: Int = 4
+   * }}}
+   *
    *  @param  idx  The index to select.
    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
    *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
@@ -263,6 +273,22 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** A copy of the $coll with an element prepended.
+   *
+   * Note that :-ending operators are right associative (see example).
+   * Also, the original $coll is not modified, so you will want to capture the result.
+   *
+   *  Example:
+   *  {{{
+   *      scala> val x = LinkedList(1)
+   *      x: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
+   *
+   *      scala> val y = 2 +: x
+   *      y: scala.collection.mutable.LinkedList[Int] = LinkedList(2, 1)
+   *
+   *      scala> println(x)
+   *      LinkedList(1)
+   *  }}}
+   *
    *  @param  elem   the prepended element
    *  @tparam B      the element type of the returned $coll.
    *  @tparam That   $thatinfo
@@ -276,6 +302,7 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
   def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** A copy of this $coll with an element appended.
+   *
    *  $willNotTerminateInf
    *  @param  elem   the appended element
    *  @tparam B      the element type of the returned $coll.
@@ -286,10 +313,25 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
    *  @usecase def :+(elem: A): $Coll[A]
    *  @return a new $coll consisting of
    *          all elements of this $coll followed by `elem`.
+   *  @example
+   *  {{{
+   *       scala> import scala.collection.mutable.LinkedList
+   *       import scala.collection.mutable.LinkedList
+   *
+   *       scala> val a = LinkedList(1)
+   *       a: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
+   *
+   *       scala> val b = a :+ 2
+   *       b: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *       scala> println(a)
+   *       LinkedList(1)
+   *  }}}
    */
   def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** A copy of this $coll with an element value appended until a given target length is reached.
+   *
    *  @param   len   the target length
    *  @param   elem  the padding value
    *  @tparam B      the element type of the returned $coll.

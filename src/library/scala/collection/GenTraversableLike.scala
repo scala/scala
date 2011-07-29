@@ -45,6 +45,7 @@ import annotation.migration
  *
  *  @define Coll GenTraversable
  *  @define coll general collection
+ *  @define collectExample
  *  @tparam A    the collection element type.
  *  @tparam Repr the actual type of the element container.
  *
@@ -160,6 +161,8 @@ trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Paralleli
   /** Builds a new collection by applying a partial function to all elements of this $coll
    *  on which the function is defined.
    *
+   *  $collectExample
+   *
    *  @param pf     the partial function which filters and maps the $coll.
    *  @tparam B     the element type of the returned collection.
    *  @tparam That  $thatinfo
@@ -193,7 +196,27 @@ trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Paralleli
    */
   def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
-  /** Concatenates this $coll with the elements of a traversable collection.
+  /** Returns a new $coll containing the elements from the left hand operand followed by the elements from the
+   *  right hand operand. The element type of the $coll is the most specific superclass encompassing
+   *  the element types of the two operands (see example).
+   *
+   * Example:
+   * {{{
+   *     scala> val a = LinkedList(1)
+   *     a: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
+   *
+   *     scala> val b = LinkedList(2)
+   *     b: scala.collection.mutable.LinkedList[Int] = LinkedList(2)
+   *
+   *     scala> val c = a ++ b
+   *     c: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *     scala> val d = LinkedList('a')
+   *     d: scala.collection.mutable.LinkedList[Char] = LinkedList(a)
+   *
+   *     scala> val e = c ++ d
+   *     e: scala.collection.mutable.LinkedList[AnyVal] = LinkedList(1, 2, a)
+   * }}}
    *
    *  @param that   the traversable to append.
    *  @tparam B     the element type of the returned collection.

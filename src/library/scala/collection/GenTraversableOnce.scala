@@ -114,7 +114,16 @@ trait GenTraversableOnce[+A] {
    */
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1
 
-  /** A syntactic sugar for out of order folding. See `fold`. */
+  /** A syntactic sugar for out of order folding. See `fold`.
+   *
+   * Example:
+   * {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = (a /:\ 5)(_+_)
+   *      b: Int = 15
+   * }}}*/
   def /:\[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = fold(z)(op)
 
   /** Applies a binary operator to a start value and all elements of this $coll,
@@ -122,6 +131,21 @@ trait GenTraversableOnce[+A] {
    *
    *  Note: `/:` is alternate syntax for `foldLeft`; `z /: xs` is the same as
    *  `xs foldLeft z`.
+   *
+   *  Examples:
+   *
+   *  Note that the folding function used to compute b is equivalent to that used to compute c.
+   *  {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = (5 /: a)(_+_)
+   *      b: Int = 15
+   *
+   *      scala> val c = (5 /: a)((x,y) => x + y)
+   *      c: Int = 15
+   *  }}}
+
    *  $willNotTerminateInf
    *  $orderDependentFold
    *
@@ -144,6 +168,21 @@ trait GenTraversableOnce[+A] {
    *  `xs foldRight z`.
    *  $willNotTerminateInf
    *  $orderDependentFold
+   *
+   *  Examples:
+   *
+   *  Note that the folding function used to compute b is equivalent to that used to compute c.
+   *  {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = (a :\ 5)(_+_)
+   *      b: Int = 15
+   *
+   *      scala> val c = (a :\ 5)((x,y) => x + y)
+   *      c: Int = 15
+   *
+   *  }}}
    *
    *  @param   z    the start value
    *  @param   op   the binary operator

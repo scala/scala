@@ -271,6 +271,19 @@ trait TraversableOnce[+A] extends GenTraversableOnce[A] {
    *  Inside, the string representations (w.r.t. the method `toString`)
    *  of all elements of this $coll are separated by the string `sep`.
    *
+   * Example:
+   *
+   * {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = new StringBuilder()
+   *      b: StringBuilder =
+   *
+   *      scala> a.addString(b, "LinkedList(", ", ", ")")
+   *      res1: StringBuilder = LinkedList(1, 2, 3, 4)
+   * }}}
+   *
    *  @param  b    the string builder to which elements are appended.
    *  @param start the starting string.
    *  @param sep   the separator string.
@@ -300,6 +313,19 @@ trait TraversableOnce[+A] extends GenTraversableOnce[A] {
    *  The written text consists of the string representations (w.r.t. the method `toString`)
    *  of all elements of this $coll, separated by the string `sep`.
    *
+   * Example:
+   *
+   * {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = new StringBuilder()
+   *      b: StringBuilder =
+   *
+   *      scala> a.addString(b, ", ")
+   *      res0: StringBuilder = 1, 2, 3, 4
+   * }}}
+   *
    *  @param  b    the string builder to which elements are appended.
    *  @param sep   the separator string.
    *  @return      the string builder `b` to which elements were appended.
@@ -310,6 +336,19 @@ trait TraversableOnce[+A] extends GenTraversableOnce[A] {
    *  The written text consists of the string representations (w.r.t. the method
    * `toString`) of all elements of this $coll without any separator string.
    *
+   * Example:
+   *
+   * {{{
+   *      scala> val a = LinkedList(1,2,3,4)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
+   *
+   *      scala> val b = new StringBuilder()
+   *      b: StringBuilder =
+   *
+   *      scala> val h = a.addString(b)
+   *      b: StringBuilder = 1234
+   * }}}
+
    *  @param  b    the string builder to which elements are appended.
    *  @return      the string builder `b` to which elements were appended.
    */
