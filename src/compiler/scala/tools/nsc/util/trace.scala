@@ -7,7 +7,7 @@ object trace extends SimpleTracer(System.out)
 object errtrace extends SimpleTracer(System.err)
 
 class SimpleTracer(out: PrintStream) {
-    def apply[T](msg: String)(value: T): T = {
+  def apply[T](msg: String)(value: T): T = {
     out.println(msg+value)
     value
   }

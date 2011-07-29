@@ -56,7 +56,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
             case _ => transform(rhs)
           }
           val rhs1 = typer.typedPos(rhs.pos) {
-            util.errtrace("lifted rhs for "+tree+" in "+unit) (
+            /*util.errtrace("lifted rhs for "+tree+" in "+unit)*/(
             Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(constructorArg)))
           }
           sym resetFlag MUTABLE
@@ -64,7 +64,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
           treeCopy.ValDef(tree, mods &~ MUTABLE, name, tpt1, rhs1)
         case Ident(name) if freeMutableVars(sym) =>
           localTyper.typedPos(tree.pos) {
-            util.errtrace("lifting ")(Select(tree setType sym.tpe, nme.elem))
+            /*util.errtrace("lifting ")*/(Select(tree setType sym.tpe, nme.elem))
           }
         case _ =>
           super.transform(tree)
