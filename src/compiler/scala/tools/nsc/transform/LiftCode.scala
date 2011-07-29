@@ -74,8 +74,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
   case class FreeValue(tree: Tree) extends Tree
 
-  class Reifier(owner: Symbol) {#::
-    import reflect.runtime.{Mirror => rm}
+  // !!! was:   class Reifier(owner: Symbol)
+  class Reifier() {
+    import reflect.runtime.{ Mirror => rm }
 
     private val boundVars: mutable.Set[Symbol] = mutable.Set()
     private val freeTrees: mutable.Set[Tree] = mutable.Set()
@@ -101,21 +102,21 @@ abstract class LiftCode extends Transform with TypingTransformers {
       case _ => ""
     }
 
-    def reify(value: Any): rm.Tree = {
-      def treatProduct(c: Product): rm.Tree = {
-        val name = objectName(c)
-        if (name.length != 0)
-          rm.gen.mkAttributedRef(rm.definitions.getModule(name))
-        else {
-          val name = className(c)
-          if (name.length == 0) abort("don't know how to inject " + value)
-          val injectedArgs = new ListBuffer[rm.Tree]
-          for (i <- 0 until c.productArity)
-            injectedArgs += reify(c.productElement(i))
-          rm.New(rm.gen.mkAttributedRef(rm.definitions.getClass(name)), List(injectedArgs.toList))
-        }
+    def treatProduct(c: Product): rm.Tree = {
+      val name = objectName(c)
+      if (name.length != 0)
+        rm.gen.mkAttributedRef(rm.definitions.getModule(name))
+      else {
+        val name = className(c)
+        if (name.length == 0) abort("don't know how to inject " + c)
+        val injectedArgs = new ListBuffer[rm.Tree]
+        for (i <- 0 until c.productArity)
+          injectedArgs += reify(c.productElement(i))
+        rm.New(rm.gen.mkAttributedRef(rm.definitions.getClass(name)), List(injectedArgs.toList))
       }
+    }
 
+    def reify(value: Any): rm.Tree = {
       def makeFree(tree: Tree): rm.Tree = {
         freeTrees += tree
         reify(Apply(gen.mkAttributedRef(definitions.freeValueMethod), List(tree)))
@@ -123,7 +124,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
       value match {
         case tree: Tree if freeTrees contains tree =>
-          tree
+          // !!!   was: tree
+          makeFree(tree)
         case tree: DefTree =>
           boundVars += tree.symbol
           reify1(tree)
@@ -153,16 +155,21 @@ abstract class LiftCode extends Transform with TypingTransformers {
     }
   } // Injector
 
-  def reify(tree: Tree): Tree =
-    new Reifier().reify(tree)
+  def reify(tree: Tree) = new Reifier().reify(tree)
 
-  def codify (tree: Tree): Tree =
-
-    Block(
-      ValDef(
-    New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,
-                             List(tree.tpe))),
-        List(List(reify(tree))))
+  def codify(tree: Tree) = {
+    val tp = appliedType(CodeClass.typeConstructor, List(tree.tpe))
+    // !!!
+    New(TypeTree(tp), List(List(tree)))
+  }
+  // was:
+  //
+  // def codify(tree: Tree): Tree =
+  // Block(
+  //   ValDef(
+  // New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,
+  //                          List(tree.tpe))),
+  //     List(List(reify(tree))))
 
   /** Set of mutable local variables that are free in some inner method. */
   private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
