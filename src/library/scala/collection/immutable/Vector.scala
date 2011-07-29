@@ -15,12 +15,7 @@ import scala.collection.generic._
 import scala.collection.mutable.Builder
 import scala.collection.parallel.immutable.ParVector
 
-/** Vector is a general-purpose, immutable data structure.  It provides random access and updates
- * in effectively constant time, as well as very fast append and prepend.  Because vectors strike
- * a good balance between fast random selections and fast random functional updates, they are
- * currently the default implementation of immutable indexed sequences.  It is backed by a little
- * endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not
- * contiguous, which is good for very large sequences.
+/** Companion object to the Vector class
  */
 object Vector extends SeqFactory[Vector] {
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
@@ -33,9 +28,14 @@ object Vector extends SeqFactory[Vector] {
 // in principle, most members should be private. however, access privileges must
 // be carefully chosen to not prevent method inlining
 
-/** A class implementing an immutable indexed sequence.
+/** Vector is a general-purpose, immutable data structure.  It provides random access and updates
+ *  in effectively constant time, as well as very fast append and prepend.  Because vectors strike
+ *  a good balance between fast random selections and fast random functional updates, they are
+ *  currently the default implementation of immutable indexed sequences.  It is backed by a little
+ *  endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not
+ *  contiguous, which is good for very large sequences.
  *
- * @tparam A the element type
+ *  @tparam A the element type
  *
  *  @define Coll Vector
  *  @define coll vector
