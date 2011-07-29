@@ -24,7 +24,7 @@ trait Erasure {
     }
 
     /** If `tp` is of the form Array[...Array[T]...] where `T` is an abstract type
-     *  then Some(N, T) where N is the number of Array constructors enclosing `T`,
+     *  then Some((N, T)) where N is the number of Array constructors enclosing `T`,
      *  otherwise None. Existentials on any level are ignored.
      */
     def unapply(tp: Type): Option[(Int, Type)] = tp.normalize match {
@@ -36,7 +36,7 @@ trait Erasure {
               case None => None
             }
           case core =>
-            Some(1, core)
+            Some((1, core))
         }
       case ExistentialType(tparams, restp) =>
         unapply(restp)

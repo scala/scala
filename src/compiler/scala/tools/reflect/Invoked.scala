@@ -34,18 +34,18 @@ object Invoked {
     new Invoked(proxy, m, fixedArgs)
   }
   def unapply(x: Any) = x match {
-    case x: Invoked => Some(x.proxy, x.m, x.args)
+    case x: Invoked => Some((x.proxy, x.m, x.args))
     case _          => None
   }
   object NameAndArgs {
     def unapply(x: Any) = x match {
-      case x: Invoked => Some(x.name, x.args)
+      case x: Invoked => Some((x.name, x.args))
       case _          => None
     }
   }
   object NameAndArity {
     def unapply(x: Any) = x match {
-      case x: Invoked => Some(x.name, x.arity)
+      case x: Invoked => Some((x.name, x.arity))
       case _          => None
     }
   }

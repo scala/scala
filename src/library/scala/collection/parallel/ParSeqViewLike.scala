@@ -92,10 +92,18 @@ self =>
     override def seq = self.seq.patch(from, patch, replaced).asInstanceOf[SeqView[U, CollSeq]]
   }
 
+  // !!!
+  //
+  // What is up with this trait and method, why are they here doing
+  // nothing but throwing exceptions, without even being deprecated?
+  // They're not implementing something abstract; why aren't they
+  // just removed?
+  //
   // use Patched instead
   trait Prepended[U >: T] extends super.Prepended[U] with Transformed[U] {
     unsupported
   }
+  protected def newPrepended[U >: T](elem: U): Transformed[U] = unsupported
 
   /* wrapper virtual ctors */
 
@@ -122,7 +130,6 @@ self =>
     val patch = _patch;
     val replaced = _replaced
   } with Patched[U]
-  protected def newPrepended[U >: T](elem: U): Transformed[U] = unsupported
 
   /* operation overrides */
 

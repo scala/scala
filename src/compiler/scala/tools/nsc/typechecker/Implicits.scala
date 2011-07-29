@@ -219,7 +219,7 @@ trait Implicits {
   object Function1 {
     val Sym = FunctionClass(1)
     def unapply(tp: Type) = tp match {
-      case TypeRef(_, Sym, arg1 :: arg2 :: _) => Some(arg1, arg2)
+      case TypeRef(_, Sym, arg1 :: arg2 :: _) => Some((arg1, arg2))
       case _                                  => None
     }
   }

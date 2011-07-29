@@ -410,7 +410,7 @@ abstract class TreeInfo {
   }
   object IsIf extends SeeThroughBlocks[Option[(Tree, Tree, Tree)]] {
     protected def unapplyImpl(x: Tree) = x match {
-      case If(cond, thenp, elsep) => Some(cond, thenp, elsep)
+      case If(cond, thenp, elsep) => Some((cond, thenp, elsep))
       case _                      => None
     }
   }

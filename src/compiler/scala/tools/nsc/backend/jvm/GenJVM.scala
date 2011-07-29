@@ -1106,7 +1106,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           if (! (covered contains b) ) {
             if (start >= 0) { // we're inside a handler range
               end = labels(b).getAnchor()
-              ranges ::= (start, end)
+              ranges ::= ((start, end))
               start = -1
             }
           } else {
@@ -1123,7 +1123,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
          * code!
          */
         if (start >= 0) {
-          ranges ::= (start, jcode.getPC())
+          ranges ::= ((start, jcode.getPC()))
         }
 
         if (!covered.isEmpty)

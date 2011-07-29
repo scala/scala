@@ -29,6 +29,7 @@ extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
 
   override def sizeHint(sz: Int) = if (chain.length == 1) chain(0).sizeHint(sz)
 
+  // public method with private[mutable] type ExposedArrayBuffer in parameter type; cannot be overridden.
   def newLazyCombiner(c: ArrayBuffer[ExposedArrayBuffer[T]]) = ResizableParArrayCombiner(c)
 
   def allocateAndCopy = if (chain.size > 1) {

@@ -185,7 +185,7 @@ self =>
 
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
-    override def templateBody(isPre: Boolean) = skipBraces(emptyValDef, List(EmptyTree))
+    override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, List(EmptyTree)))
   }
 
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {

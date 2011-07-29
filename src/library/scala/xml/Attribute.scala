@@ -15,8 +15,8 @@ package scala.xml
 
 object Attribute {
   def unapply(x: Attribute) = x match {
-    case PrefixedAttribute(_, key, value, next) => Some(key, value, next)
-    case UnprefixedAttribute(key, value, next)  => Some(key, value, next)
+    case PrefixedAttribute(_, key, value, next) => Some((key, value, next))
+    case UnprefixedAttribute(key, value, next)  => Some((key, value, next))
     case _                                      => None
   }
 

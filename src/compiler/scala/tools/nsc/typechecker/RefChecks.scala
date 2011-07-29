@@ -1221,22 +1221,27 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           otherSym.decodedName, cannot, memberSym.decodedName)
       )
     }
+
     /** Warn about situations where a method signature will include a type which
      *  has more restrictive access than the method itself.
      */
     private def checkAccessibilityOfReferencedTypes(tree: Tree) {
       val member = tree.symbol
 
+      def checkAccessibilityOfType(tpe: Type) {
+        val inaccessible = lessAccessibleSymsInType(tpe, member)
+        // if the unnormalized type is accessible, that's good enough
+        if (inaccessible.isEmpty) ()
+        // or if the normalized type is, that's good too
+        else if ((tpe ne tpe.normalize) && lessAccessibleSymsInType(tpe.normalize, member).isEmpty) ()
+        // otherwise warn about the inaccessible syms in the unnormalized type
+        else inaccessible foreach (sym => warnLessAccessible(sym, member))
+      }
+
       // types of the value parameters
-      member.paramss.flatten foreach { p =>
-        val normalized = p.tpe.normalize
-        if ((normalized ne p.tpe) && lessAccessibleSymsInType(normalized, member).isEmpty) ()
-        else lessAccessibleSymsInType(p.tpe, member) foreach (sym => warnLessAccessible(sym, member))
-      }
+      member.paramss.flatten foreach (p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
-      member.typeParams.map(_.info.bounds.hi.widen) foreach { tp =>
-        lessAccessibleSymsInType(tp, member) foreach (sym => warnLessAccessible(sym, member))
-      }
+      member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
 
     /** Check that a deprecated val or def does not override a

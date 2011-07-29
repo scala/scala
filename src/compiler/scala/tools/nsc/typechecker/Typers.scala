@@ -2118,6 +2118,8 @@ trait Typers extends Modes with Adaptations {
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this
                                  else newTyper(context.make(stat, exprOwner))
+                // XXX this creates a spurious dead code warning if an exception is thrown
+                // in a constructor, even if it is the only thing in the constructor.
                 val result = checkDead(localTyper.typed(stat, EXPRmode | BYVALmode, WildcardType))
                 if (treeInfo.isSelfOrSuperConstrCall(result)) {
                   context.inConstructorSuffix = true
@@ -2202,7 +2204,7 @@ trait Typers extends Modes with Adaptations {
           }) ::: newStats.toList
         }
       }
-      val result = stats mapConserve (typedStat)
+      val result = stats mapConserve typedStat
       if (phase.erasedTypes) result
       else checkNoDoubleDefsAndAddSynthetics(result)
     }

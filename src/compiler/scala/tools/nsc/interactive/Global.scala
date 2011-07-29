@@ -589,7 +589,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     }
     sources foreach (removeUnitOf(_))
     minRunId = currentRunId
-    respond(response) ()
+    respond(response)(())
     demandNewCompilerRun()
   }
 

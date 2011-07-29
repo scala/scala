@@ -316,7 +316,7 @@ trait Patterns extends ast.TreeDSL {
         case UnApply(
         Apply(TypeApply(Select(qual, nme.unapplySeq), List(tpt)), _),
         List(ArrayValue(_, elems))) =>
-          Some(qual.symbol, tpt, elems)
+          Some((qual.symbol, tpt, elems))
         case _ =>
           None
        }

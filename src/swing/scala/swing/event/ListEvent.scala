@@ -28,7 +28,7 @@ object ListChanged {
 class ListChanged[A](override val source: ListView[A]) extends ListChange(source)
 
 object ListElementsAdded {
-  def unapply[A](e: ListElementsAdded[A]) = Some(e.source, e.range)
+  def unapply[A](e: ListElementsAdded[A]) = Some((e.source, e.range))
   def apply[A](source: ListView[A], range: Range) = new ListElementsAdded(source, range)
 }
 
@@ -36,7 +36,7 @@ class ListElementsAdded[A](override val source: ListView[A], val range: Range)
            extends ListChange(source)
 
 object ListElementsRemoved {
-  def unapply[A](e: ListElementsRemoved[A]) = Some(e.source, e.range)
+  def unapply[A](e: ListElementsRemoved[A]) = Some((e.source, e.range))
   def apply[A](source: ListView[A], range: Range) = new ListElementsRemoved(source, range)
 }
 class ListElementsRemoved[A](override val source: ListView[A], val range: Range)

@@ -52,7 +52,7 @@ trait StringOps {
 
   def splitAt(str: String, idx: Int, doDropIndex: Boolean = false): Option[(String, String)] =
     if (idx == -1) None
-    else Some(str take idx, str drop (if (doDropIndex) idx + 1 else idx))
+    else Some((str take idx, str drop (if (doDropIndex) idx + 1 else idx)))
 
   /** Returns a string meaning "n elements".
    *

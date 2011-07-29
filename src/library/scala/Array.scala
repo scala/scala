@@ -522,61 +522,37 @@ object Array extends FallbackArrayBuilding {
  */
 final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = {
-     this(dim1);
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = this(dim1)
 
-   /** Multidimensional array creation */
-   @deprecated("use `Array.ofDim` instead", "2.8.0")
-   def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = {
-     this(dim1)
-     throw new Error()
-   }
+  /** Multidimensional array creation */
+  @deprecated("use `Array.ofDim` instead", "2.8.0")
+  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = this(dim1)
 
   /** The length of the array */
   def length: Int = throw new Error()

@@ -53,5 +53,5 @@ extends Attribute
 }
 
 object PrefixedAttribute {
-  def unapply(x: PrefixedAttribute) = Some(x.pre, x.key, x.value, x.next)
+  def unapply(x: PrefixedAttribute) = Some((x.pre, x.key, x.value, x.next))
 }

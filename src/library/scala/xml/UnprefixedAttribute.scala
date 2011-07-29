@@ -56,5 +56,5 @@ extends Attribute
     next(namespace, scope, key)
 }
 object UnprefixedAttribute {
-  def unapply(x: UnprefixedAttribute) = Some(x.key, x.value, x.next)
+  def unapply(x: UnprefixedAttribute) = Some((x.key, x.value, x.next))
 }

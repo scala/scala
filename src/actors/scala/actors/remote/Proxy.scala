@@ -83,7 +83,11 @@ private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: Net
     name+"@"+node
 }
 
-class LinkToFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {
+// Proxy is private[remote], but these classes are public and use it in a public
+// method signature.  That makes the only method they have non-overriddable.
+// So I made them final, which seems appropriate anyway.
+
+final class LinkToFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {
   def apply(target: AbstractActor, creator: Proxy) {
     target.linkTo(creator)
   }
@@ -91,7 +95,7 @@ class LinkToFun extends Function2[AbstractActor, Proxy, Unit] with Serializable 
     "<LinkToFun>"
 }
 
-class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {
+final class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {
   def apply(target: AbstractActor, creator: Proxy) {
     target.unlinkFrom(creator)
   }
@@ -99,7 +103,7 @@ class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] with Serializa
     "<UnlinkFromFun>"
 }
 
-class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] with Serializable {
+final class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] with Serializable {
   def apply(target: AbstractActor, creator: Proxy) {
     target.exit(creator, reason)
   }

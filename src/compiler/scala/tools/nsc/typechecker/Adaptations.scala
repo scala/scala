@@ -59,6 +59,7 @@ trait Adaptations {
         // an opt-in compiler option is given.
         oneArgObject && !(
              isStringAddition(t.symbol)
+          || isArrowAssoc(t.symbol)
           || t.symbol.name == nme.equals_
           || t.symbol.name == nme.EQ
           || t.symbol.name == nme.NE

@@ -255,14 +255,16 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // classes with special meanings
     lazy val StringAddClass   = getClass("scala.runtime.StringAdd")
+    lazy val ArrowAssocClass  = getClass("scala.Predef.ArrowAssoc")
     lazy val StringAdd_+      = getMember(StringAddClass, nme.PLUS)
     lazy val NotNullClass     = getClass("scala.NotNull")
     lazy val DelayedInitClass = getClass("scala.DelayedInit")
       def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
       // a dummy value that communicates that a delayedInit call is compiler-generated
       // from phase UnCurry to phase Constructors
-      def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
-        .setInfo(UnitClass.tpe)
+      // !!! This is not used anywhere (it was checked in that way.)
+      // def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
+      //   .setInfo(UnitClass.tpe)
 
     lazy val TypeConstraintClass   = getClass("scala.annotation.TypeConstraint")
     lazy val SingletonClass        = newClass(ScalaPackageClass, tpnme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
@@ -371,6 +373,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // The given symbol represents either String.+ or StringAdd.+
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
+    def isArrowAssoc(sym: Symbol) = ArrowAssocClass.tpe.decls.toList contains sym
 
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }
@@ -450,7 +453,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         }
       }
 
-    /** if tpe <: ProductN[T1,...,TN], returns Some(T1,...,TN) else None */
+    /** if tpe <: ProductN[T1,...,TN], returns Some((T1,...,TN)) else None */
     def getProductArgs(tpe: Type): Option[List[Type]] =
       tpe.baseClasses collectFirst { case x if isExactProductType(x.tpe) => tpe.baseType(x).typeArgs }
 

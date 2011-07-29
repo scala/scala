@@ -65,7 +65,6 @@ object Equality {
 }
 import Equality._
 
-private[xml]
 trait Equality extends scala.Equals {
   def basisForHashCode: Seq[Any]
   def strict_==(other: Equality): Boolean

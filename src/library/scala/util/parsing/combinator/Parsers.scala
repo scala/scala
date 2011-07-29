@@ -138,8 +138,8 @@ trait Parsers {
   /** An extractor so `NoSuccess(msg, next)` can be used in matches. */
   object NoSuccess {
     def unapply[T](x: ParseResult[T]) = x match {
-      case Failure(msg, next)   => Some(msg, next)
-      case Error(msg, next)     => Some(msg, next)
+      case Failure(msg, next)   => Some((msg, next))
+      case Error(msg, next)     => Some((msg, next))
       case _                    => None
     }
   }

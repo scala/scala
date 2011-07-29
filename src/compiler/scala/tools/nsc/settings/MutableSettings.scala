@@ -263,7 +263,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     def add(src: AbstractFile, dst: AbstractFile) {
       singleOutDir = None
-      outputDirs ::= (src, dst)
+      outputDirs ::= ((src, dst))
     }
 
     /** Return the list of source-destination directory pairs. */

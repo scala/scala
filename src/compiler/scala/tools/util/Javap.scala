@@ -121,15 +121,15 @@ object Javap {
     }
     private val envActionMap: Map[String, (String, Any)] = {
       val map = Map(
-        "-l"         -> ("showLineAndLocal", true),
-        "-c"         -> ("showDisassembled", true),
-        "-s"         -> ("showInternalSigs", true),
-        "-verbose"   -> ("showVerbose", true),
-        "-private"   -> ("showAccess", Access.PRIVATE),
-        "-package"   -> ("showAccess", Access.PACKAGE),
-        "-protected" -> ("showAccess", Access.PROTECTED),
-        "-public"    -> ("showAccess", Access.PUBLIC),
-        "-all"       -> ("showallAttr", true)
+        "-l"         -> (("showLineAndLocal", true)),
+        "-c"         -> (("showDisassembled", true)),
+        "-s"         -> (("showInternalSigs", true)),
+        "-verbose"   -> (("showVerbose", true)),
+        "-private"   -> (("showAccess", Access.PRIVATE)),
+        "-package"   -> (("showAccess", Access.PACKAGE)),
+        "-protected" -> (("showAccess", Access.PROTECTED)),
+        "-public"    -> (("showAccess", Access.PUBLIC)),
+        "-all"       -> (("showallAttr", true))
       )
       map ++ List(
         "-v" -> map("-verbose"),

@@ -24,7 +24,7 @@ class FscSettings(error: String => Unit) extends Settings(error) {
   val server       = StringSetting ("-server",   "hostname:portnumber", "Specify compile server socket", "")
   val preferIPv4   = BooleanSetting("-ipv4",     "Use IPv4 rather than IPv6 for the server socket")
   val idleMins     = IntSetting    ("-max-idle", "Set idle timeout in minutes for fsc (use 0 for no timeout)",
-                                              30, Some(0, Int.MaxValue), (_: String) => None)
+                                              30, Some((0, Int.MaxValue)), (_: String) => None)
 
   // For improved help output, separating fsc options from the others.
   def fscSpecific = Set[Settings#Setting](
