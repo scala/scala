@@ -13,30 +13,65 @@ package mutable
 
 import generic._
 
-/** This class implements single linked lists where both the head (`elem`)
- *  and the tail (`next`) are mutable.
- *
- *  @author Matthias Zenger
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   1
- *
- *  @tparam A     the type of the elements contained in this linked list.
- *
- *  @define Coll LinkedList
- *  @define coll linked list
- *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `LinkedList[B]` because an implicit of type `CanBuildFrom[LinkedList, B, LinkedList[B]]`
- *    is defined in object `LinkedList`.
- *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
- *    and the new element type `B`. This is usually the `canBuildFrom` value
- *    defined in object `LinkedList`.
- *  @define orderDependent
- *  @define orderDependentFold
- *  @define mayNotTerminateInf
- *  @define willNotTerminateInf
- */
+/** A more traditional/primitive style of linked list where the "list" is also the "head" link. Links can be manually
+  * created and manipulated, though the use of the API, when possible, is recommended.
+  *
+  * The danger of directly manipulating next:
+  * {{{
+  *     scala> val b = LinkedList(1)
+  *     b: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
+  *
+  *     scala> b.next = null
+  *
+  *     scala> println(b)
+  *     java.lang.NullPointerException
+  * }}}
+  *
+  *  $singleLinkedListExample
+  *
+  *  @author Matthias Zenger
+  *  @author Martin Odersky
+  *  @version 2.8
+  *  @since   1
+  *
+  *  @tparam A     the type of the elements contained in this linked list.
+  *
+  *  @constructor Creates an "empty" list, defined as a single node with no data element and next pointing to itself.
+
+  *  @define Coll LinkedList
+  *  @define coll linked list
+  *  @define thatinfo the class of the returned collection. In the standard library configuration,
+  *    `That` is always `LinkedList[B]` because an implicit of type `CanBuildFrom[LinkedList, B, LinkedList[B]]`
+  *    is defined in object `LinkedList`.
+  *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
+  *    result class `That` from the current representation type `Repr`
+  *    and the new element type `B`. This is usually the `canBuildFrom` value
+  *    defined in object `LinkedList`.
+  *  @define orderDependent
+  *  @define orderDependentFold
+  *  @define mayNotTerminateInf
+  *  @define willNotTerminateInf
+  *  @define collectExample Example:
+  *  {{{
+  *    scala>     val a = LinkedList(1, 2, 3)
+  *    a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3)
+  *
+  *    scala>     val addOne: PartialFunction[Any, Float] = {case i: Int => i + 1.0f}
+  *    addOne: PartialFunction[Any,Float] = <function1>
+  *
+  *    scala>     val b = a.collect(addOne)
+  *    b: scala.collection.mutable.LinkedList[Float] = LinkedList(2.0, 3.0, 4.0)
+  *
+  *    scala> val c = LinkedList('a')
+  *    c: scala.collection.mutable.LinkedList[Char] = LinkedList(a)
+  *
+  *    scala> val d = a ++ c
+  *    d: scala.collection.mutable.LinkedList[AnyVal] = LinkedList(1, 2, 3, a)
+  *
+  *    scala> val e = d.collect(addOne)
+  *    e: scala.collection.mutable.LinkedList[Float] = LinkedList(2.0, 3.0, 4.0)
+  *  }}}
+  */
 @SerialVersionUID(-7308240733518833071L)
 class LinkedList[A]() extends LinearSeq[A]
                          with GenericTraversableTemplate[A, LinkedList]
@@ -44,6 +79,21 @@ class LinkedList[A]() extends LinearSeq[A]
                          with Serializable {
   next = this
 
+  /** Creates a new list. If the parameter next is null, the result is an empty list. Otherwise, the result is
+   * a list with elem at the head, followed by the contents of next.
+   *
+   * Note that next is part of the new list, as opposed to the +: operator,
+   * which makes a new copy of the original list.
+   *
+   * @example
+   * {{{
+   *     scala> val m = LinkedList(1)
+   *     m: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
+   *
+   *     scala> val n = new LinkedList[Int](2, m)
+   *     n: scala.collection.mutable.LinkedList[Int] = LinkedList(2, 1)
+   * }}}
+   */
   def this(elem: A, next: LinkedList[A]) {
     this()
     if (next != null) {
