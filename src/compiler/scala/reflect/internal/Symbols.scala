@@ -1804,6 +1804,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case s    => " in " + s
     }
     def fullLocationString = toString + locationString
+    def signatureString = if (hasRawInfo) infoString(rawInfo) else "<_>"
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
@@ -1866,9 +1867,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def defString = compose(
       defaultFlagString,
       keyString,
-      varianceString + nameString + (
-        if (hasRawInfo) infoString(rawInfo) else "<_>"
-      )
+      varianceString + nameString + signatureString
     )
 
     /** Concatenate strings separated by spaces */

@@ -106,6 +106,9 @@ trait Modes {
   final def inPolyMode(mode: Int)                 = (mode & POLYmode) != 0
   final def inPatternMode(mode: Int)              = (mode & PATTERNmode) != 0
 
+  final def inExprModeButNot(mode: Int, prohibited: Int) =
+    (mode & (EXPRmode | prohibited)) == EXPRmode
+
   /** Translates a mask of mode flags into something readable.
    */
   private val modeNameMap = Map[Int, String](

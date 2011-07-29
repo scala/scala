@@ -1,0 +1,43 @@
+S.scala:2: error: Adapting argument list by inserting (): leaky (Object-receiving) target makes this especially dangerous.
+        signature: J(x: Any): J
+  given arguments: <none>
+ after adaptation: new J((): Unit)
+  val x1 = new J
+           ^
+S.scala:3: error: Adapting argument list by inserting (): leaky (Object-receiving) target makes this especially dangerous.
+        signature: J(x: Any): J
+  given arguments: <none>
+ after adaptation: new J((): Unit)
+  val x2 = new J()
+           ^
+S.scala:4: error: Adapting argument list by creating a 5-tuple: this may not be what you want.
+        signature: J(x: Any): J
+  given arguments: 1, 2, 3, 4, 5
+ after adaptation: new J((1, 2, 3, 4, 5): (Int, Int, Int, Int, Int))
+  val x3 = new J(1, 2, 3, 4, 5)
+           ^
+S.scala:6: error: Adapting argument list by creating a 3-tuple: this may not be what you want.
+        signature: Some.apply[A](x: A): Some[A]
+  given arguments: 1, 2, 3
+ after adaptation: Some((1, 2, 3): (Int, Int, Int))
+  val y1 = Some(1, 2, 3)
+               ^
+S.scala:7: error: Adapting argument list by creating a 3-tuple: this may not be what you want.
+        signature: Some(x: A): Some[A]
+  given arguments: 1, 2, 3
+ after adaptation: new Some((1, 2, 3): (Int, Int, Int))
+  val y2 = new Some(1, 2, 3)
+           ^
+S.scala:9: error: Adapting argument list by inserting (): this is unlikely to be what you want.
+        signature: J2[T](x: T): J2[T]
+  given arguments: <none>
+ after adaptation: new J2((): Unit)
+  val z1 = new J2
+           ^
+S.scala:10: error: Adapting argument list by inserting (): this is unlikely to be what you want.
+        signature: J2[T](x: T): J2[T]
+  given arguments: <none>
+ after adaptation: new J2((): Unit)
+  val z2 = new J2()
+           ^
+7 errors found

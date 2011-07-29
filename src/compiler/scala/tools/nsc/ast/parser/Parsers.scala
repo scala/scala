@@ -2589,9 +2589,12 @@ self =>
      */
     def templateParents(isTrait: Boolean): (List[Tree], List[List[Tree]]) = {
       val parents = new ListBuffer[Tree] += startAnnotType()
-      val argss =
+      val argss = (
+        // TODO: the insertion of List(Nil) here is where "new Foo" becomes
+        // indistinguishable from "new Foo()".
         if (in.token == LPAREN && !isTrait) multipleArgumentExprs()
         else List(Nil)
+      )
 
       while (in.token == WITH) {
         in.nextToken()

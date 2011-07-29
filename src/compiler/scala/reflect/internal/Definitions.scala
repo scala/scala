@@ -250,6 +250,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
 
     // classes with special meanings
+    lazy val StringAddClass   = getClass("scala.runtime.StringAdd")
+    lazy val StringAdd_+      = getMember(StringAddClass, nme.PLUS)
     lazy val NotNullClass     = getClass("scala.NotNull")
     lazy val DelayedInitClass = getClass("scala.DelayedInit")
       def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
@@ -362,6 +364,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val SomeClass: Symbol   = getClass("scala.Some")
     lazy val NoneModule: Symbol  = getModule("scala.None")
     lazy val SomeModule: Symbol  = getModule("scala.Some")
+
+    // The given symbol represents either String.+ or StringAdd.+
+    def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
 
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }

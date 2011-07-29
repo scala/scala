@@ -18,7 +18,7 @@ object ByteCode {
    */
   private lazy val DECODER: Option[AnyRef] =
     for (clazz <- getSystemLoader.tryToLoadClass[AnyRef]("scala.tools.scalap.Decode$")) yield
-      clazz.getField(MODULE_INSTANCE_NAME).get()
+      clazz.getField(MODULE_INSTANCE_NAME).get(null)
 
   private def decoderMethod(name: String, args: JClass*): Option[reflect.Method] = {
     for (decoder <- DECODER ; m <- Option(decoder.getClass.getMethod(name, args: _*))) yield m

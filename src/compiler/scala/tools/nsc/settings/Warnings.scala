@@ -28,7 +28,8 @@ trait Warnings {
     warnDeadCode,
     warnInaccessible,
     warnNullaryOverride,
-    warnNullaryUnit
+    warnNullaryUnit,
+    warnAdaptedArgs
   )
 
   // Warning groups.
@@ -43,6 +44,7 @@ trait Warnings {
 
   // Individual warnings.
   val warnSelectNullable   = BooleanSetting   ("-Xcheck-null", "Warn upon selection of nullable reference.")
+  val warnAdaptedArgs      = BooleanSetting   ("-Ywarn-adapted-args", "Warn if an argument list is modified to match the receiver.")
   val warnDeadCode         = BooleanSetting   ("-Ywarn-dead-code", "Warn when dead code is identified.")
   val warnValueDiscard     = BooleanSetting   ("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
   val warnNumericWiden     = BooleanSetting   ("-Ywarn-numeric-widen", "Warn when numerics are widened.")

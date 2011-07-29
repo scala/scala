@@ -36,7 +36,7 @@ trait Shield {
   def method(name: String, arity: Int)   = uniqueMethod(name, arity)
   def field(name: String)                = clazz getField name
 
-  def matchingMethods(name: String, arity: Int) = methods filter (m => nameAndArity(m) == (name, arity))
+  def matchingMethods(name: String, arity: Int) = methods filter (m => nameAndArity(m) == ((name, arity)))
   def uniqueMethod(name: String, arity: Int) = matchingMethods(name, arity) match {
     case List(x)  => x
     case _        => onError("No unique match for " + name)

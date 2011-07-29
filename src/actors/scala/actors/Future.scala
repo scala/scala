@@ -102,7 +102,9 @@ private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T]) exten
 
       loop {
         react {
-          case Eval => reply()
+          // This is calling ReplyReactor#reply(msg: Any).
+          // Was: reply().  Now: reply(()).
+          case Eval => reply(())
         }
       }
     }

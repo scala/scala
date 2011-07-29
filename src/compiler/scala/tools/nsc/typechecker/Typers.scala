@@ -27,7 +27,7 @@ import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Typers extends Modes {
+trait Typers extends Modes with Adaptations {
   self: Analyzer =>
 
   import global._
@@ -77,7 +77,7 @@ trait Typers extends Modes {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
-  abstract class Typer(context0: Context) extends TyperDiagnostics {
+  abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
 
@@ -882,7 +882,7 @@ trait Typers extends Modes {
           typed(atPos(tree.pos)(Select(qual, nme.apply)), mode, pt)
         } else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
           assert(!inHKMode(mode)) //@M
-          if ((mode & (EXPRmode | FUNmode)) == EXPRmode && (pt.typeSymbol == UnitClass))
+          if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
             instantiateExpectingUnit(tree, mode)
           else
             instantiate(tree, mode, pt)
@@ -898,7 +898,7 @@ trait Typers extends Modes {
           val tree1 = constfold(tree, pt) // (10) (11)
           if (tree1.tpe <:< pt) adapt(tree1, mode, pt, original)
           else {
-            if ((mode & (EXPRmode | FUNmode)) == EXPRmode) {
+            if (inExprModeButNot(mode, FUNmode)) {
               pt.normalize match {
                 case TypeRef(_, sym, _) =>
                   // note: was if (pt.typeSymbol == UnitClass) but this leads to a potentially
@@ -2346,8 +2346,13 @@ trait Typers extends Modes {
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) match {
                 case t: Tree =>
-//                  println("tuple conversion to "+t+" for "+mt)//DEBUG
-                  Some(t)
+                  // Depending on user options, may warn or error here if
+                  // a Unit or tuple was inserted.
+                  Some(t) filter (tupledTree =>
+                       !inExprModeButNot(mode, FUNmode)
+                    || tupledTree.symbol == null
+                    || checkValidAdaptation(tupledTree, args)
+                  )
                 case ex =>
                   context.undetparams = savedUndetparams
                   None

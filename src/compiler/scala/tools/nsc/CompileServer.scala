@@ -87,8 +87,7 @@ class StandardCompileServer extends SocketServer {
     val input           = in.readLine()
 
     def fscError(msg: String): Unit = out println (
-      FakePos("fsc"),
-      msg + "\n  fsc -help  gives more information"
+      FakePos("fsc") + msg + "\n  fsc -help  gives more information"
     )
     if (input == null || password != guessedPassword)
       return
