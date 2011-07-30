@@ -253,7 +253,7 @@ abstract class AddInterfaces extends InfoTransform {
    */
   private def addMixinConstructorDef(clazz: Symbol, stats: List[Tree]): List[Tree] =
     if (treeInfo.firstConstructor(stats) != EmptyTree) stats
-    else DefDef(clazz.primaryConstructor, Block(List(), Literal(()))) :: stats
+    else DefDef(clazz.primaryConstructor, Block(List(), Literal(Constant()))) :: stats
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = atPos(templ.pos) {

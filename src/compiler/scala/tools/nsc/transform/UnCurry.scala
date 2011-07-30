@@ -288,11 +288,11 @@ abstract class UnCurry extends InfoTransform
           def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
 
           def transformCase(cdef: CaseDef): CaseDef =
-            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)))
-          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))
+            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
+          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
 
           DefDef(m, mkUnchecked(
-            if (cases exists treeInfo.isDefaultCase) Literal(true)
+            if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
             else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
           ))
         }
@@ -401,7 +401,7 @@ abstract class UnCurry extends InfoTransform
 
     /** For removing calls to specially designated methods.
      */
-    def elideIntoUnit(tree: Tree): Tree = Literal(()) setPos tree.pos setType UnitClass.tpe
+    def elideIntoUnit(tree: Tree): Tree = Literal(Constant()) setPos tree.pos setType UnitClass.tpe
     def isElidable(tree: Tree) = {
       val sym = treeInfo.methPart(tree).symbol
       // XXX settings.noassertions.value temporarily retained to avoid

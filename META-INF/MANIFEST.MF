@@ -41,7 +41,6 @@ Export-Package:
  scala.tools.util,
  scala.reflect.internal,
  scala.reflect.internal.settings,
- scala.reflect.api,
  scala.reflect.runtime,
  scala.reflect.std,
  scala.reflect.internal.transform,

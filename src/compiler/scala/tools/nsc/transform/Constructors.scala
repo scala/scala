@@ -374,7 +374,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                   Apply(gen.mkAttributedRef(specializedFlag), List()),
                   definitions.getMember(definitions.BooleanClass, nme.UNARY_!)),
                 List()),
-              Block(stats, Literal(())),
+              Block(stats, Literal(Constant())),
               EmptyTree)
 
           List(localTyper.typed(tree))

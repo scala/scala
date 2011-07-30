@@ -524,7 +524,7 @@ trait Namers { self: Analyzer =>
 
           val getterName = if (hasBoolBP) "is" + beanName
                            else "get" + beanName
-          val getterMods = Modifiers(flags, mods.privateWithin, Nil, mods.positions)
+          val getterMods = Modifiers(flags, mods.privateWithin, Nil) setPositions mods.positions
           val beanGetterDef = atPos(vd.pos.focus) {
             DefDef(getterMods, getterName, Nil, List(Nil), tpt.duplicate,
                    if (mods.isDeferred) EmptyTree

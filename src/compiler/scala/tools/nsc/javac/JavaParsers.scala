@@ -549,7 +549,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
                   atPos(pos) {
                     New(Select(scalaDot(newTermName("runtime")), tpnme.AnnotationDefaultATTR), List(List()))
                   }
-                mods1 = Modifiers(mods1.flags, mods1.privateWithin, annot :: mods1.annotations, mods1.positions)
+                mods1 = mods1 withAnnotations List(annot)
                 skipTo(SEMI)
                 accept(SEMI)
                 blankExpr

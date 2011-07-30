@@ -51,7 +51,7 @@ trait ParsersCommon extends ScannersCommon {
     def inParensOrError[T](body: => T, alt: T): T =
       if (in.token == LPAREN) inParens(body)
       else { accept(LPAREN) ; alt }
-    def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(()))
+    def inParensOrUnit[T](body: => Tree): Tree = inParensOrError(body, Literal(Constant()))
     def inParensOrNil[T](body: => List[T]): List[T] = inParensOrError(body, Nil)
 
     def inBraces[T](body: => T): T = {
@@ -64,7 +64,7 @@ trait ParsersCommon extends ScannersCommon {
       if (in.token == LBRACE) inBraces(body)
       else { accept(LBRACE) ; alt }
     def inBracesOrNil[T](body: => List[T]): List[T] = inBracesOrError(body, Nil)
-    def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(()))
+    def inBracesOrUnit[T](body: => Tree): Tree = inBracesOrError(body, Literal(Constant()))
 
     def inBrackets[T](body: => T): T = {
       accept(LBRACKET)
@@ -1197,7 +1197,7 @@ self =>
         r
       } else {
         accept(LPAREN)
-        Literal(true)
+        Literal(Constant(true))
       }
     }
 
@@ -1250,7 +1250,7 @@ self =>
           newLinesOpt()
           val thenp = expr()
           val elsep = if (in.token == ELSE) { in.nextToken(); expr() }
-                      else Literal(())
+                      else Literal(Constant())
           If(cond, thenp, elsep)
         }
       case TRY =>
@@ -1311,7 +1311,7 @@ self =>
         }
       case RETURN =>
         atPos(in.skipToken()) {
-          Return(if (isExprIntro) expr() else Literal(()))
+          Return(if (isExprIntro) expr() else Literal(Constant()))
         }
       case THROW =>
         atPos(in.skipToken()) {
@@ -2431,7 +2431,7 @@ self =>
      */
     def constrExpr(vparamss: List[List[ValDef]]): Tree =
       if (in.token == LBRACE) constrBlock(vparamss)
-      else Block(List(selfInvocation(vparamss)), Literal(()))
+      else Block(List(selfInvocation(vparamss)), Literal(Constant()))
 
     /** {{{
      *  SelfInvocation  ::= this ArgumentExprs {ArgumentExprs}
@@ -2461,7 +2461,7 @@ self =>
           else Nil
         }
         accept(RBRACE)
-        Block(stats, Literal(()))
+        Block(stats, Literal(Constant()))
       }
 
     /** {{{
@@ -2902,7 +2902,7 @@ self =>
         else List(tmplDef(pos, mods))
 
       in.token match {
-        case RBRACE | CASE  => defs :+ (Literal(()) setPos o2p(in.offset))
+        case RBRACE | CASE  => defs :+ (Literal(Constant()) setPos o2p(in.offset))
         case _              => defs
       }
     }

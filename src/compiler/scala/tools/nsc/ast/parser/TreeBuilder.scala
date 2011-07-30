@@ -134,7 +134,7 @@ abstract class TreeBuilder {
     ImportSelector(name, nameOffset, name, nameOffset)
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil => Literal(())
+    case Nil => Literal(Constant())
     case List(tree) if flattenUnary => tree
     case _ => makeTuple(trees, false)
   }
@@ -243,21 +243,21 @@ abstract class TreeBuilder {
   /** Create tree representing a while loop */
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
     val continu = atPos(o2p(body.pos.endOrPoint)) { Apply(Ident(lname), Nil) }
-    val rhs = If(cond, Block(List(body), continu), Literal(()))
+    val rhs = If(cond, Block(List(body), continu), Literal(Constant()))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create tree representing a do-while loop */
   def makeDoWhile(lname: TermName, body: Tree, cond: Tree): Tree = {
     val continu = Apply(Ident(lname), Nil)
-    val rhs = Block(List(body), If(cond, continu, Literal(())))
+    val rhs = Block(List(body), If(cond, continu, Literal(Constant())))
     LabelDef(lname, Nil, rhs)
   }
 
   /** Create block of statements `stats`  */
   def makeBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) Literal(())
-    else if (!stats.last.isTerm) Block(stats, Literal(()))
+    if (stats.isEmpty) Literal(Constant())
+    else if (!stats.last.isTerm) Block(stats, Literal(Constant()))
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
@@ -276,8 +276,8 @@ abstract class TreeBuilder {
               List(
                 makeVisitor(
                   List(
-                    CaseDef(pat1.duplicate, EmptyTree, Literal(true)),
-                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))),
+                    CaseDef(pat1.duplicate, EmptyTree, Literal(Constant(true))),
+                    CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))),
                   false,
                   nme.CHECK_IF_REFUTABLE_STRING
                 )))

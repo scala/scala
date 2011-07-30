@@ -1397,7 +1397,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     private def transformIf(tree: If): Tree = {
       val If(cond, thenpart, elsepart) = tree
       def unitIfEmpty(t: Tree): Tree =
-        if (t == EmptyTree) Literal(()).setPos(tree.pos).setType(UnitClass.tpe) else t
+        if (t == EmptyTree) Literal(Constant()).setPos(tree.pos).setType(UnitClass.tpe) else t
 
       cond.tpe match {
         case ConstantType(value) =>

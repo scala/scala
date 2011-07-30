@@ -540,8 +540,8 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     assert(value ne null)
   }
 
-  def Literal(value: Any): Literal =
-    Literal(Constant(value))
+  @deprecated("will be removed and then be re-introduced with changed semantics, use Literal(Constant(x)) instead")
+  def Literal(x: Any) = new Literal(Constant(x))
 
   /** A tree that has an annotation attached to it. Only used for annotated types and
    *  annotation ascriptions, annotations on definitions are stored in the Modifiers.

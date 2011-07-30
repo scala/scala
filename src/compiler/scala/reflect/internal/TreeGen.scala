@@ -243,15 +243,15 @@ abstract class TreeGen {
    */
   def mkZero(tp: Type): Tree = {
     val tree = tp.typeSymbol match {
-      case UnitClass    => Literal(())
-      case BooleanClass => Literal(false)
-      case FloatClass   => Literal(0.0f)
-      case DoubleClass  => Literal(0.0d)
-      case ByteClass    => Literal(0.toByte)
-      case ShortClass   => Literal(0.toShort)
-      case IntClass     => Literal(0)
-      case LongClass    => Literal(0L)
-      case CharClass    => Literal(0.toChar)
+      case UnitClass    => Literal(Constant())
+      case BooleanClass => Literal(Constant(false))
+      case FloatClass   => Literal(Constant(0.0f))
+      case DoubleClass  => Literal(Constant(0.0d))
+      case ByteClass    => Literal(Constant(0.toByte))
+      case ShortClass   => Literal(Constant(0.toShort))
+      case IntClass     => Literal(Constant(0))
+      case LongClass    => Literal(Constant(0L))
+      case CharClass    => Literal(Constant(0.toChar))
       case _            => Literal(Constant(null))
     }
     tree setType tp
@@ -259,7 +259,7 @@ abstract class TreeGen {
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
-    if (elems.isEmpty) Literal(())
+    if (elems.isEmpty) Literal(Constant())
     else Apply(
       Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
       elems)

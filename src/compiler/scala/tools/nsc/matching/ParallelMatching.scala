@@ -311,7 +311,7 @@ trait ParallelMatching extends ast.TreeDSL
           val r       = remake(newRows ++ defaultRows, includeScrut = false)
           val r2      = make(r.tvars, r.rows map (x => x rebind bindVars(tag, x.subst)))
 
-          CASE(Literal(tag)) ==> r2.toTree
+          CASE(Literal(Constant(tag))) ==> r2.toTree
         }
 
       lazy val defaultTree = remake(defaultRows, includeScrut = false).toTree
@@ -834,7 +834,7 @@ trait ParallelMatching extends ast.TreeDSL
       typer typed {
         tpe match {
           case ConstantType(Constant(null)) if isRef  => scrutTree OBJ_EQ NULL
-          case ConstantType(Constant(value))          => scrutTree MEMBER_== Literal(value)
+          case ConstantType(const)                    => scrutTree MEMBER_== Literal(const)
           case SingleType(NoPrefix, sym)              => genEquals(sym)
           case SingleType(pre, sym) if sym.isStable   => genEquals(sym)
           case ThisType(sym) if sym.isModule          => genEquals(sym)

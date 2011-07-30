@@ -1356,7 +1356,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               forwardCtorCall(tree.pos, superRef, vparamss, symbol.owner)
             }
             if (symbol.isPrimaryConstructor) localTyper typed {
-                atPos(symbol.pos)(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, Block(List(t), Literal(()))))
+                atPos(symbol.pos)(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, Block(List(t), Literal(Constant()))))
             } else {
               // duplicate the original constructor
               duplicateBody(ddef, info(symbol).target)
@@ -1586,7 +1586,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                      .setInfo(MethodType(Nil, BooleanClass.tpe))
         cls.info.decls.enter(sym)
         mbrs += atPos(sym.pos) {
-          DefDef(sym, Literal(isSpecializedInstance).setType(BooleanClass.tpe)).setType(NoType)
+          DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanClass.tpe)).setType(NoType)
         }
       }
       mbrs.toList

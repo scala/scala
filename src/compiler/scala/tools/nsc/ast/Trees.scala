@@ -92,7 +92,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(())))))
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(List()), TypeTree(), Block(lvdefs, Literal(Constant())))))
       } else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
@@ -103,7 +103,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         val superCall = (superRef /: argss) (Apply)
         List(
           atPos(wrappingPos(superPos, lvdefs ::: argss.flatten)) (
-            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(())))))
+            DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
     // println("typed template, gvdefs = "+gvdefs+", parents = "+parents+", constrs = "+constrs)

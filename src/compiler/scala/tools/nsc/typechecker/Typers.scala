@@ -906,7 +906,7 @@ trait Typers extends Modes with Adaptations {
                   if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) { // (12)
                     if (settings.warnValueDiscard.value)
                       context.unit.warning(tree.pos, "discarded non-Unit value")
-                    return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
+                    return typed(atPos(tree.pos)(Block(List(tree), Literal(Constant()))), mode, pt)
                   }
                   else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt)) {
                     if (settings.warnNumericWiden.value)
@@ -986,7 +986,7 @@ trait Typers extends Modes with Adaptations {
         case t: Tree => t
         case _ =>
           context.undetparams = savedUndetparams
-          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(())))
+          val valueDiscard = atPos(tree.pos)(Block(List(instantiate(tree, mode, WildcardType)), Literal(Constant())))
           typed(valueDiscard, mode, UnitClass.tpe)
       }
     }
@@ -1534,7 +1534,7 @@ trait Typers extends Modes with Adaptations {
      *  into the symbol's ``annotations'' in the type completer / namer)
      */
     def removeAnnotations(mods: Modifiers): Modifiers =
-      mods.copy(annotations = Nil)
+      mods.copy(annotations = Nil) setPositions mods.positions
 
     /**
      *  @param vdef ...

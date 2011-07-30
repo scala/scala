@@ -49,6 +49,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
         case Apply(lift, List(tree)) if sym == Code_lift =>
           //printTypings = true //debug
           val result = transform(localTyper.typedPos(tree.pos)(codify(tree)))
+          //println("transformed = "+result) //debug
           //printTypings = false //debug
           result
         case ValDef(mods, name, tpt, rhs) if (freeMutableVars(sym)) =>
@@ -73,117 +74,151 @@ abstract class LiftCode extends Transform with TypingTransformers {
           super.transform(tree)
       }
     }
-  }
 
-  case class FreeValue(tree: Tree) extends Tree
+    /** todo: Treat embedded Code blocks by merging them into containing block
+     *
+     */
+    class Reifier() {
 
-  class Reifier() {
-    import reflect.runtime.{Mirror => rm}
+      private val boundVars: mutable.Set[Symbol] = mutable.Set()
 
-    private val boundVars: mutable.Set[Symbol] = mutable.Set()
-
-    // todo replace className by caseName in CaseClass once we have switched to nsc.
-    def className(value: AnyRef): String = value match {
-      case _ :: _ => "scala.$colon$colon"
-      case MethodType(_, _) => "scala.reflect.runtime.Mirror.MethodType"
-      case x: Product => "scala.reflect.runtime.Mirror."+x.productPrefix
-      case _ => ""
-    }
-
-    def objectName(value: Any): String = value match {
-      case Nil        => "scala.collection.immutable.Nil"
-      case EmptyTree  => "scala.reflect.runtime.Mirror.EmptyTree"
-      case NoSymbol   => "scala.reflect.runtime.Mirror.NoSymbol"
-      case definitions.RootClass => "scala.reflect.runtime.Mirror.definitions.RootClass"
-      case NoPrefix   => "scala.reflect.runtime.Mirror.NoPrefix"
-      case NoType     => "scala.reflect.runtime.Mirror.NoType"
-      case _ => ""
-    }
-
-    def makeFree(tree: Tree): Tree =
-      Apply(mkTerm("scala.reflect.runtime.Mirror.freeValue"), List(tree))
-
-    def reify(value: Any): Tree = {
-      //println("reifing "+value) //debug
-      /*util.trace("reified "+value+" --> ")*/ {
-      value match {
-        case tree: DefTree =>
-          boundVars += tree.symbol
-          reify1(tree)
-        case tree @ This(_) if !(boundVars contains tree.symbol) =>
-          makeFree(tree)
-        case tree @ Ident(_) if !(boundVars contains tree.symbol) =>
-          makeFree(tree)
-        case _ =>
-          reify1(value)
-      }}
-    }
-
-    def mkMember(name: String, mkName: String => Name): Tree = {
-      val parts = name split "\\."
-      val prefixParts = parts.init
-      val lastName = mkName(parts.last)
-      if (prefixParts.isEmpty) Ident(lastName)
-      else {
-        val prefixTree = ((Ident(prefixParts.head): Tree) /: prefixParts.tail) (Select(_, _))
-        Select(prefixTree, lastName)
+      // todo: review & rework
+      // todo replace className by caseName in CaseClass once we have switched to nsc.
+      def className(value: AnyRef): String = value match {
+        case _ :: _ => "scala.$colon$colon"
+        case MethodType(_, _) => "scala.reflect.runtime.Mirror.MethodType"
+        case x: Product => "scala.reflect.runtime.Mirror." + x.productPrefix
+        case _ => ""
       }
-    }
 
-    def mkTerm(name: String) = mkMember(name, newTermName)
-    def mkType(name: String) = mkMember(name, newTypeName)
+      // todo: review & rework
+      def objectName(value: Any): String = value match {
+        case Nil => "scala.collection.immutable.Nil"
+        case EmptyTree => "scala.reflect.runtime.Mirror.EmptyTree"
+        case NoSymbol => "scala.reflect.runtime.Mirror.NoSymbol"
+        case definitions.RootClass => "scala.reflect.runtime.Mirror.definitions.RootClass"
+        case NoPrefix => "scala.reflect.runtime.Mirror.NoPrefix"
+        case NoType => "scala.reflect.runtime.Mirror.NoType"
+        case _ => ""
+      }
 
-    def reify1(value: Any): Tree = {
-      def treatProduct(c: Product): Tree = {
-        val name = objectName(c)
-        if (name != "")
-          mkTerm(name)
-        else {
-          val name = className(c)
-          if (name == "")
-            abort("don't know how to inject " + value + " of class "+ value.getClass)
+      /** Reify a free reference. The result will be either a mirror reference
+       *  to a global value, or else a mirror Literal.
+       */
+      def reifyFree(tree: Tree): Tree =
+        if (tree.symbol.hasFlag(MODULE) && tree.symbol.isStatic)
+          reifiedPath(tree.symbol.fullName)
+        else
+          Apply(termPath("scala.reflect.runtime.Mirror.freeValue"), List(tree))
 
-          val injectedArgs = new ListBuffer[Tree]
-          for (i <- 0 until c.productArity)
-            injectedArgs += reify(c.productElement(i))
-          New(mkType(name), List(injectedArgs.toList))
-
-          // Note to self: do some profiling and find out how the speed
-          // of the above compares to:
-          //
-          // New(mkType(name), List(c.productIterator map reify toList))
+      /** Reify an arbitary value */
+      def reify(value: Any): Tree = {
+        //println("reifing "+value) //debug
+        /*util.trace("reified "+value+" --> ")*/ {
+          value match {
+            case tree: DefTree =>
+              boundVars += tree.symbol
+              reify1(tree)
+            case tree @ This(_) if !(boundVars contains tree.symbol) =>
+              reifyFree(tree)
+            case tree @ Ident(_) if !(boundVars contains tree.symbol) =>
+              reifyFree(tree)
+            case tree @ TypeTree() if tree.original != null =>
+              reify(tree.original)
+            // todo: should we also reify inferred types?
+            case _ =>
+              reify1(value)
+          }
         }
       }
 
-      value match {
-        case ()          => Literal(Constant(()))
-        case x: String   => Literal(Constant(x))
-        case x: Boolean  => Literal(Constant(x))
-        case x: Byte     => Literal(Constant(x))
-        case x: Short    => Literal(Constant(x))
-        case x: Char     => Literal(Constant(x))
-        case x: Int      => Literal(Constant(x))
-        case x: Long     => Literal(Constant(x))
-        case x: Float    => Literal(Constant(x))
-        case x: Double   => Literal(Constant(x))
-        //!!! Maps come from Modifiers, should not be part of case class
-        case x: Map[_,_] => Apply(mkTerm("scala.collection.immutable.Map.apply"), Nil)
-        case x: TermName => Apply(mkTerm("scala.reflect.runtime.Mirror.newTermName"), List(Literal(Constant(x.toString))))
-        case x: TypeName => Apply(mkTerm("scala.reflect.runtime.Mirror.newTypeName"), List(Literal(Constant(x.toString))))
-        case c: Product  => treatProduct(c)
-        case _           => abort("don't know how to inject " + value + " of class " + value.getClass)
+      /** Second part of reify */
+      def reify1(value: Any): Tree = {
+        def treatProduct(c: Product): Tree = {
+          val fullname = objectName(c)
+          if (!fullname.isEmpty)
+            termPath(fullname)
+          else {
+            val fullname = className(c)
+            if (fullname.isEmpty) abort("don't know how to inject " + value + " of class " + value.getClass)
+            val injectedArgs = new ListBuffer[Tree]
+            for (i <- 0 until c.productArity)
+              injectedArgs += reify(c.productElement(i))
+            New(typePath(fullname), List(injectedArgs.toList))
+          }
+        }
+
+        value match {
+          case () => Literal(Constant(()))
+          case x: String => Literal(Constant(x))
+          case x: Boolean => Literal(Constant(x))
+          case x: Byte => Literal(Constant(x))
+          case x: Short => Literal(Constant(x))
+          case x: Char => Literal(Constant(x))
+          case x: Int => Literal(Constant(x))
+          case x: Long => Literal(Constant(x))
+          case x: Float => Literal(Constant(x))
+          case x: Double => Literal(Constant(x))
+          case x: Name => reifiedName(x)
+          case c: Product => treatProduct(c)
+          case _ =>
+            abort("don't know how to inject " + value + " of class " + value.getClass)
+        }
       }
+
+     /** The reified version of given name */
+      def reifiedName(name: Name) = {
+        val fn = "scala.reflect.runtime.Mirror.new"+(if (name.isTypeName) "TypeName" else "TermName")
+        Apply(termPath(fn), List(Literal(Constant(name.toString))))
+      }
+
+      /** A reified identifier with given name */
+      def reifiedIdent(name: Name) =
+        New(typePath("scala.reflect.runtime.Mirror.Ident"), List(List(reifiedName(name))))
+
+      /** A reified selection over given qualifier and name */
+      def reifiedSelect(qual: Tree, name: Name) =
+        New(typePath("scala.reflect.runtime.Mirror.Select"), List(List(qual, reifiedName(name))))
+
+      /** A reified path that selects definition with given fully qualified name */
+      def reifiedPath(fullname: String): Tree = {
+        val parts = fullname split "\\."
+        val prefixParts = parts.init
+        val lastName = parts.last
+        if (prefixParts.isEmpty) reifiedIdent(lastName)
+        else {
+          val prefixTree = ((reifiedIdent(prefixParts.head): Tree) /: prefixParts.tail)(reifiedSelect(_, _))
+          reifiedSelect(prefixTree, lastName)
+        }
+      }
+
+      /** An (unreified) path that refers to definition with given fully qualified name
+       *  @param mkName   Creator for last portion of name (either TermName or TypeName)
+       */
+      private def path(fullname: String, mkName: String => Name): Tree = {
+        val parts = fullname split "\\."
+        val prefixParts = parts.init
+        val lastName = mkName(parts.last)
+        if (prefixParts.isEmpty) Ident(lastName)
+        else {
+          val prefixTree = ((Ident(prefixParts.head): Tree) /: prefixParts.tail)(Select(_, _))
+          Select(prefixTree, lastName)
+        }
+      }
+
+      /** An (unreified) path that refers to term definition with given fully qualified name */
+      def termPath(fullname: String) = path(fullname, newTermName)
+
+      /** An (unreified) path that refers to type definition with given fully qualified name */
+      def typePath(fullname: String) = path(fullname, newTypeName)
     }
-  }
 
-  def reify(tree: Tree): Tree =
-    new Reifier().reify(tree)
-
-  def codify (tree: Tree): Tree = {
-    val targetType = definitions.CodeClass.primaryConstructor.info.paramTypes.head
-    val arg = gen.mkAsInstanceOf(reify(tree), targetType, wrapInApply = false)
-    New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(tree.tpe))),
+    def codify(tree: Tree): Tree = /*util.trace("codified " + tree + " -> ")*/ {
+      val targetType = definitions.CodeClass.primaryConstructor.info.paramTypes.head
+      val arg = gen.mkAsInstanceOf(new Reifier().reify(tree), targetType, wrapInApply = false)
+      New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(tree.tpe))),
         List(List(arg)))
+    }
   }
 
   /** Set of mutable local variables that are free in some inner method. */

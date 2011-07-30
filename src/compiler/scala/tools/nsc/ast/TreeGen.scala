@@ -90,7 +90,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     mkMethodCall(ScalaRunTimeModule, meth, targs, args)
 
   def mkSysErrorCall(message: String): Tree =
-    mkMethodCall(Sys_error, List(Literal(message)))
+    mkMethodCall(Sys_error, List(Literal(Constant(message))))
 
   /** A creator for a call to a scala.reflect.Manifest or ClassManifest factory method.
    *
