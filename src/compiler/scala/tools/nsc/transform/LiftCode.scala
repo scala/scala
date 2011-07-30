@@ -136,11 +136,11 @@ abstract class LiftCode extends Transform with TypingTransformers {
       def reify1(value: Any): Tree = {
         def treatProduct(c: Product): Tree = {
           val fullname = objectName(c)
-          if (!fullname.isEmpty)
+          if (fullname.length != 0)
             termPath(fullname)
           else {
             val fullname = className(c)
-            if (fullname.isEmpty) abort("don't know how to inject " + value + " of class " + value.getClass)
+            if (fullname.length == 0) abort("don't know how to inject " + value + " of class " + value.getClass)
             val injectedArgs = new ListBuffer[Tree]
             for (i <- 0 until c.productArity)
               injectedArgs += reify(c.productElement(i))
