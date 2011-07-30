@@ -136,35 +136,42 @@ abstract class LiftCode extends Transform with TypingTransformers {
     def reify1(value: Any): Tree = {
       def treatProduct(c: Product): Tree = {
         val name = objectName(c)
-        if (!name.isEmpty)
+        if (name != "")
           mkTerm(name)
         else {
           val name = className(c)
-          if (name.isEmpty) abort("don't know how to inject " + value + " of class "+ value.getClass)
+          if (name == "")
+            abort("don't know how to inject " + value + " of class "+ value.getClass)
+
           val injectedArgs = new ListBuffer[Tree]
           for (i <- 0 until c.productArity)
             injectedArgs += reify(c.productElement(i))
           New(mkType(name), List(injectedArgs.toList))
+
+          // Note to self: do some profiling and find out how the speed
+          // of the above compares to:
+          //
+          // New(mkType(name), List(c.productIterator map reify toList))
         }
       }
 
       value match {
-      case ()           => Literal(Constant(()))
-      case x: String    => Literal(Constant(x))
-      case x: Boolean   => Literal(Constant(x))
-      case x: Byte      => Literal(Constant(x))
-      case x: Short     => Literal(Constant(x))
-      case x: Char      => Literal(Constant(x))
-      case x: Int       => Literal(Constant(x))
-      case x: Long      => Literal(Constant(x))
-      case x: Float     => Literal(Constant(x))
-      case x: Double    => Literal(Constant(x))
-      case x: Map[_,_]  => Apply(mkTerm("scala.collection.immutable.Map.apply"), Nil)//!!! Maps come from Modifiers, should not be part of case class
-      case x: TermName  => Apply(mkTerm("scala.reflect.runtime.Mirror.newTermName"), List(Literal(Constant(x.toString))))
-      case x: TypeName  => Apply(mkTerm("scala.reflect.runtime.Mirror.newTypeName"), List(Literal(Constant(x.toString))))
-      case c: Product   => treatProduct(c)
-      case _ =>
-        abort("don't know how to inject " + value+" of class "+ value.getClass)
+        case ()          => Literal(Constant(()))
+        case x: String   => Literal(Constant(x))
+        case x: Boolean  => Literal(Constant(x))
+        case x: Byte     => Literal(Constant(x))
+        case x: Short    => Literal(Constant(x))
+        case x: Char     => Literal(Constant(x))
+        case x: Int      => Literal(Constant(x))
+        case x: Long     => Literal(Constant(x))
+        case x: Float    => Literal(Constant(x))
+        case x: Double   => Literal(Constant(x))
+        //!!! Maps come from Modifiers, should not be part of case class
+        case x: Map[_,_] => Apply(mkTerm("scala.collection.immutable.Map.apply"), Nil)
+        case x: TermName => Apply(mkTerm("scala.reflect.runtime.Mirror.newTermName"), List(Literal(Constant(x.toString))))
+        case x: TypeName => Apply(mkTerm("scala.reflect.runtime.Mirror.newTypeName"), List(Literal(Constant(x.toString))))
+        case c: Product  => treatProduct(c)
+        case _           => abort("don't know how to inject " + value + " of class " + value.getClass)
       }
     }
   }
