@@ -29,7 +29,7 @@ trait Loaders { self: Universe =>
       }
     }
     override def complete(sym: Symbol) = {
-      println("completing "+sym+"/"+clazz.fullName)
+      //println("completing "+sym+"/"+clazz.fullName) //debug
       assert(sym == clazz || sym == module || sym == module.moduleClass)
       try {
         unpickleClass(clazz, module, jClass.forName(clazz.fullName))
@@ -84,7 +84,7 @@ trait Loaders { self: Universe =>
       (decls lookup name) orElse {
         assert(this eq pkg.info, this+" "+pkg.info)
         assert(decls eq pkg.info.decls)
-        println("creating "+name+" in "+pkg)
+        //println("creating "+name+" in "+pkg) //debug
         val (clazz, module) = createClassModule(pkg, name.toTypeName, new TopClassCompleter(_, _))
         if (name.isTypeName) clazz else module
       }

@@ -189,21 +189,18 @@ abstract class TreeGen {
     }
   }
 
-  private def mkTypeApply(value: Tree, tpe: Type, what: Symbol) =
-    Apply(
-      TypeApply(
-        mkAttributedSelect(value, what),
-        List(TypeTree(tpe.normalize))
-      ),
-      Nil
-    )
+  private def mkTypeApply(value: Tree, tpe: Type, what: Symbol, wrapInApply: Boolean) = {
+    val tapp = TypeApply(mkAttributedSelect(value, what), List(TypeTree(tpe.normalize)))
+    if (wrapInApply) Apply(tapp, List()) else tapp
+  }
+
   /** Builds an instance test with given value and type. */
-  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
-    mkTypeApply(value, tpe, (if (any) Any_isInstanceOf else Object_isInstanceOf))
+  def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree =
+    mkTypeApply(value, tpe, (if (any) Any_isInstanceOf else Object_isInstanceOf), wrapInApply)
 
   /** Builds a cast with given value and type. */
-  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
-    mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf))
+  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree =
+    mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf), wrapInApply)
 
   /** Cast `tree` to `pt`, unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =

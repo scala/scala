@@ -47,7 +47,10 @@ abstract class LiftCode extends Transform with TypingTransformers {
       val sym = tree.symbol
       tree match {
         case Apply(lift, List(tree)) if sym == Code_lift =>
-          transform(localTyper.typedPos(tree.pos)(codify(tree)))
+          //printTypings = true //debug
+          val result = transform(localTyper.typedPos(tree.pos)(codify(tree)))
+          //printTypings = false //debug
+          result
         case ValDef(mods, name, tpt, rhs) if (freeMutableVars(sym)) =>
           val tpt1 = TypeTree(sym.tpe) setPos tpt.pos
           /* Creating a constructor argument if one isn't present. */
@@ -56,7 +59,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
             case _ => transform(rhs)
           }
           val rhs1 = typer.typedPos(rhs.pos) {
-            /*util.errtrace("lifted rhs for "+tree+" in "+unit)*/(
+            /*util.errtrace("lifted rhs for "+tree+" in "+unit)*/ (
             Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(constructorArg)))
           }
           sym resetFlag MUTABLE
@@ -74,58 +77,36 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
   case class FreeValue(tree: Tree) extends Tree
 
-  // !!! was:   class Reifier(owner: Symbol)
   class Reifier() {
-    import reflect.runtime.{ Mirror => rm }
+    import reflect.runtime.{Mirror => rm}
 
     private val boundVars: mutable.Set[Symbol] = mutable.Set()
-    private val freeTrees: mutable.Set[Tree] = mutable.Set()
-    private val mirrorPrefix = gen.mkAttributedRef(ReflectRuntimeMirror)
 
     // todo replace className by caseName in CaseClass once we have switched to nsc.
     def className(value: AnyRef): String = value match {
       case _ :: _ => "scala.$colon$colon"
-      case reflect.MethodType(_, _) =>
-          "scala.reflect.MethodType"
-      case x:Product =>
-        "scala.reflect."+x.productPrefix //caseName
-      //case _ => // bq:unreachable code
-      //  ""
-    }
-
-    def objectName(value: Any): String = value match {
-      case Nil                => "scala.collection.immutable.Nil"
-      case reflect.NoSymbol   => "scala.reflect.runtime.Mirror.NoSymbol"
-      case reflect.RootSymbol => "scala.reflect.runtime.Mirror.definitions.RootSymbol"
-      case reflect.NoPrefix   => "scala.reflect.runtime.Mirror.NoPrefix"
-      case reflect.NoType     => "scala.reflect.runtime.Mirror.NoType"
+      case MethodType(_, _) => "scala.reflect.runtime.Mirror.MethodType"
+      case x: Product => "scala.reflect.runtime.Mirror."+x.productPrefix
       case _ => ""
     }
 
-    def treatProduct(c: Product): rm.Tree = {
-      val name = objectName(c)
-      if (name.length != 0)
-        rm.gen.mkAttributedRef(rm.definitions.getModule(name))
-      else {
-        val name = className(c)
-        if (name.length == 0) abort("don't know how to inject " + c)
-        val injectedArgs = new ListBuffer[rm.Tree]
-        for (i <- 0 until c.productArity)
-          injectedArgs += reify(c.productElement(i))
-        rm.New(rm.gen.mkAttributedRef(rm.definitions.getClass(name)), List(injectedArgs.toList))
-      }
+    def objectName(value: Any): String = value match {
+      case Nil        => "scala.collection.immutable.Nil"
+      case EmptyTree  => "scala.reflect.runtime.Mirror.EmptyTree"
+      case NoSymbol   => "scala.reflect.runtime.Mirror.NoSymbol"
+      case definitions.RootClass => "scala.reflect.runtime.Mirror.definitions.RootClass"
+      case NoPrefix   => "scala.reflect.runtime.Mirror.NoPrefix"
+      case NoType     => "scala.reflect.runtime.Mirror.NoType"
+      case _ => ""
     }
 
-    def reify(value: Any): rm.Tree = {
-      def makeFree(tree: Tree): rm.Tree = {
-        freeTrees += tree
-        reify(Apply(gen.mkAttributedRef(definitions.freeValueMethod), List(tree)))
-      }
+    def makeFree(tree: Tree): Tree =
+      Apply(mkTerm("scala.reflect.runtime.Mirror.freeValue"), List(tree))
 
+    def reify(value: Any): Tree = {
+      //println("reifing "+value) //debug
+      /*util.trace("reified "+value+" --> ")*/ {
       value match {
-        case tree: Tree if freeTrees contains tree =>
-          // !!!   was: tree
-          makeFree(tree)
         case tree: DefTree =>
           boundVars += tree.symbol
           reify1(tree)
@@ -135,41 +116,68 @@ abstract class LiftCode extends Transform with TypingTransformers {
           makeFree(tree)
         case _ =>
           reify1(value)
+      }}
+    }
+
+    def mkMember(name: String, mkName: String => Name): Tree = {
+      val parts = name split "\\."
+      val prefixParts = parts.init
+      val lastName = mkName(parts.last)
+      if (prefixParts.isEmpty) Ident(lastName)
+      else {
+        val prefixTree = ((Ident(prefixParts.head): Tree) /: prefixParts.tail) (Select(_, _))
+        Select(prefixTree, lastName)
       }
     }
 
-    def reify1(value: Any): rm.Tree = value match {
-      case ()           => rm.Literal(rm.Constant(()))
-      case x: String    => rm.Literal(rm.Constant(x))
-      case x: Boolean   => rm.Literal(rm.Constant(x))
-      case x: Byte      => rm.Literal(rm.Constant(x))
-      case x: Short     => rm.Literal(rm.Constant(x))
-      case x: Char      => rm.Literal(rm.Constant(x))
-      case x: Int       => rm.Literal(rm.Constant(x))
-      case x: Long      => rm.Literal(rm.Constant(x))
-      case x: Float     => rm.Literal(rm.Constant(x))
-      case x: Double    => rm.Literal(rm.Constant(x))
+    def mkTerm(name: String) = mkMember(name, newTermName)
+    def mkType(name: String) = mkMember(name, newTypeName)
+
+    def reify1(value: Any): Tree = {
+      def treatProduct(c: Product): Tree = {
+        val name = objectName(c)
+        if (!name.isEmpty)
+          mkTerm(name)
+        else {
+          val name = className(c)
+          if (name.isEmpty) abort("don't know how to inject " + value + " of class "+ value.getClass)
+          val injectedArgs = new ListBuffer[Tree]
+          for (i <- 0 until c.productArity)
+            injectedArgs += reify(c.productElement(i))
+          New(mkType(name), List(injectedArgs.toList))
+        }
+      }
+
+      value match {
+      case ()           => Literal(Constant(()))
+      case x: String    => Literal(Constant(x))
+      case x: Boolean   => Literal(Constant(x))
+      case x: Byte      => Literal(Constant(x))
+      case x: Short     => Literal(Constant(x))
+      case x: Char      => Literal(Constant(x))
+      case x: Int       => Literal(Constant(x))
+      case x: Long      => Literal(Constant(x))
+      case x: Float     => Literal(Constant(x))
+      case x: Double    => Literal(Constant(x))
+      case x: Map[_,_]  => Apply(mkTerm("scala.collection.immutable.Map.apply"), Nil)//!!! Maps come from Modifiers, should not be part of case class
+      case x: TermName  => Apply(mkTerm("scala.reflect.runtime.Mirror.newTermName"), List(Literal(Constant(x.toString))))
+      case x: TypeName  => Apply(mkTerm("scala.reflect.runtime.Mirror.newTypeName"), List(Literal(Constant(x.toString))))
       case c: Product   => treatProduct(c)
       case _ =>
-        abort("don't know how to inject " + value)
+        abort("don't know how to inject " + value+" of class "+ value.getClass)
+      }
     }
-  } // Injector
-
-  def reify(tree: Tree) = new Reifier().reify(tree)
-
-  def codify(tree: Tree) = {
-    val tp = appliedType(CodeClass.typeConstructor, List(tree.tpe))
-    // !!!
-    New(TypeTree(tp), List(List(tree)))
   }
-  // was:
-  //
-  // def codify(tree: Tree): Tree =
-  // Block(
-  //   ValDef(
-  // New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,
-  //                          List(tree.tpe))),
-  //     List(List(reify(tree))))
+
+  def reify(tree: Tree): Tree =
+    new Reifier().reify(tree)
+
+  def codify (tree: Tree): Tree = {
+    val targetType = definitions.CodeClass.primaryConstructor.info.paramTypes.head
+    val arg = gen.mkAsInstanceOf(reify(tree), targetType, wrapInApply = false)
+    New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(tree.tpe))),
+        List(List(arg)))
+  }
 
   /** Set of mutable local variables that are free in some inner method. */
   private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet

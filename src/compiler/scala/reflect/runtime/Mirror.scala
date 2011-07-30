@@ -33,9 +33,9 @@ class Mirror extends Universe with api.Mirror {
     methodToJava(meth).invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
   }
 
-  def freeValue(x: Any) = FreeValue(x)
+  def freeValue(x: Any): Tree = FreeValue(x)
 
-  case class FreeValue(any: Any)
+  case class FreeValue(any: Any) extends Tree
 
 }
 

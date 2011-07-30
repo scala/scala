@@ -38,7 +38,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
    *                   ScalaSignature or ScalaLongSignature annotation.
    */
   def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
-    println("unpickling " + clazz + " " + module)
+    //println("unpickling " + clazz + " " + module)//debug
     val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
     if (ssig != null) {
       val bytes = ssig.bytes.getBytes
@@ -55,10 +55,10 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
           bs.copyToArray(bytes, len, l)
           len += l
         }
-        println("long sig")
+        //println("long sig")//debug
         unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
       } else { // class does not have a Scala signature; it's a Java class
-        println("no sig found for " + jclazz)
+        //println("no sig found for " + jclazz)//debug
         initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
       }
     }
@@ -106,7 +106,7 @@ trait JavaToScala extends ConversionUtil { self: Universe =>
    */
   private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType {
     override def complete(sym: Symbol) = {
-      println("completing from Java " + sym + "/" + clazz.fullName)
+      //println("completing from Java " + sym + "/" + clazz.fullName)//debug
       assert(sym == clazz || sym == module || sym == module.moduleClass, sym)
       val flags = toScalaFlags(jclazz.getModifiers, isClass = true)
       clazz setFlag (flags | JAVA)
