@@ -16,11 +16,11 @@ package scala.concurrent
  */
 class SyncVar[A] {
   private var isDefined: Boolean = false
-  private var value: A = _
+  private var value: Option[A] = None
 
-  def get = synchronized {
+  def get: A = synchronized {
     while (!isDefined) wait()
-    value
+    value.get
   }
 
   /** Waits `timeout` millis. If `timeout <= 0` just returns 0. If the system clock
@@ -50,22 +50,22 @@ class SyncVar[A] {
       val elapsed = waitMeasuringElapsed(rest)
       rest -= elapsed
     }
-    if (isDefined) Some(value)
-    else None
+    value
   }
 
-  def take() = synchronized {
+  def take(): A = synchronized {
     try get
     finally unset()
   }
 
-  def set(x: A) = synchronized {
-    value = x
+  // TODO: this method should be private
+  def set(x: A): Unit = synchronized {
     isDefined = true
+    value = Some(x)
     notifyAll()
   }
 
-  def put(x: A) = synchronized {
+  def put(x: A): Unit = synchronized {
     while (isDefined) wait()
     set(x)
   }
@@ -74,8 +74,10 @@ class SyncVar[A] {
     isDefined
   }
 
+  // TODO: this method should be private
   def unset(): Unit = synchronized {
     isDefined = false
+    value = None
     notifyAll()
   }
 }
