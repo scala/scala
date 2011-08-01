@@ -54,6 +54,14 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   protected def initialSize: Int = HashTable.initialSize
 
+  private def lastPopulatedIndex = {
+    var idx = table.length - 1
+    while (table(idx) == null && idx > 0)
+      idx -= 1
+
+    idx
+  }
+
   /**
    * Initializes the collection from the input stream. `f` will be called for each key/value pair
    * read from the input stream in the order determined by the stream. This is useful for
@@ -156,38 +164,37 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    */
   protected def entriesIterator: Iterator[Entry] = new Iterator[Entry] {
     val iterTable = table
-    var idx = table.length - 1
-    var es = iterTable(idx).asInstanceOf[Entry]
-    scan()
+    var idx       = lastPopulatedIndex
+    var es        = iterTable(idx)
+
     def hasNext = es != null
     def next() = {
       val res = es
       es = es.next
-      scan()
-      res
-    }
-    def scan() {
       while (es == null && idx > 0) {
         idx = idx - 1
-        es = iterTable(idx).asInstanceOf[Entry]
+        es = iterTable(idx)
       }
+      res.asInstanceOf[Entry]
     }
   }
 
-  /*
-   * We should implement this as a primitive operation over the underlying array, but it can
-   * cause a behaviour change in edge cases where:
-   * - Someone modifies a map during iteration
-   * - The insertion point is close to the iteration point.
-   *
-   * The reason this happens is that the iterator prefetches the following element before
-   * returning from next (to simplify the implementation of hasNext) while the natural
-   * implementation of foreach does not.
-   *
-   * It should be mentioned that modifying a map during iteration leads to unpredictable
-   * results with either implementation.
-   */
-  protected final def foreachEntry[C](f: Entry => C) { entriesIterator.foreach(f) }
+  /** Avoid iterator for a 2x faster traversal. */
+  protected final def foreachEntry[C](f: Entry => C) {
+    val iterTable = table
+    var idx       = lastPopulatedIndex
+    var es        = iterTable(idx)
+
+    while (es != null) {
+      f(es.asInstanceOf[Entry])
+      es = es.next
+
+      while (es == null && idx > 0) {
+        idx -= 1
+        es = iterTable(idx)
+      }
+    }
+  }
 
   /** An iterator returning all entries */
   @deprecated("use entriesIterator instead", "2.8.0")

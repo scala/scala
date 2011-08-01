@@ -6,17 +6,11 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
 
 import generic._
-
-
 import scala.collection.parallel.mutable.ParHashMap
-
-
 
 /** This class implements mutable maps using a hashtable.
  *
@@ -112,16 +106,16 @@ extends Map[A, B]
 
   /* Override to avoid tuple allocation */
   override def keysIterator: Iterator[A] = new Iterator[A] {
-    val iter = entriesIterator
+    val iter    = entriesIterator
     def hasNext = iter.hasNext
-    def next() = iter.next.key
+    def next()  = iter.next.key
   }
 
   /* Override to avoid tuple allocation */
   override def valuesIterator: Iterator[B] = new Iterator[B] {
-    val iter = entriesIterator
+    val iter    = entriesIterator
     def hasNext = iter.hasNext
-    def next() = iter.next.value
+    def next()  = iter.next.value
   }
 
   /** Toggles whether a size map is used to track hash map statistics.

@@ -165,7 +165,7 @@ self =>
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
-    override def foreach[C](f: A => C) = for ((k, v) <- self) f(k)
+    override def foreach[C](f: A => C) = self.keysIterator foreach f
   }
 
   /** Creates an iterator for all keys.
@@ -197,7 +197,7 @@ self =>
   protected class DefaultValuesIterable extends Iterable[B] {
     def iterator = valuesIterator
     override def size = self.size
-    override def foreach[C](f: B => C) = for ((k, v) <- self) f(v)
+    override def foreach[C](f: B => C) = self.valuesIterator foreach f
   }
 
   /** Creates an iterator for all values in this map.

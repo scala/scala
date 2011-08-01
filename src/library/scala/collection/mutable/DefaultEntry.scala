@@ -6,12 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 package mutable
-
-
 
 /** Class used internally for default map model.
  *  @since 2.3
