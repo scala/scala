@@ -20,6 +20,7 @@ trait AdvancedScalaSettings {
     val future: BooleanSetting
     val generatephasegraph: StringSetting
     val logimplicits: BooleanSetting
+    val mainClass: StringSetting
     val migration: BooleanSetting
     val noforwarders: BooleanSetting
     val nojline: BooleanSetting

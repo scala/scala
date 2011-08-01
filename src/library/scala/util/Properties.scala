@@ -10,11 +10,16 @@
 package scala.util
 
 import java.io.{ IOException, PrintWriter }
+import java.util.jar.Attributes.{ Name => AttributeName }
 
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
   protected def propCategory    = "library"
   protected def pickJarBasedOn  = classOf[ScalaObject]
+
+  /** Scala manifest attributes.
+   */
+  val ScalaCompilerVersion = new AttributeName("Scala-Compiler-Version")
 }
 
 private[scala] trait PropertiesTrait {
@@ -89,6 +94,11 @@ private[scala] trait PropertiesTrait {
     else
       Some(s)
   }
+
+  /** Either the development or release version if known, otherwise
+   *  the empty string.
+   */
+  def versionNumberString = scalaPropOrEmpty("version.number")
 
   /** The version number of the jar this was loaded from plus "version " prefix,
    *  or "version (unknown)" if it cannot be determined.

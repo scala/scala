@@ -36,7 +36,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
     SerializableClass, StringClass, ClassClass, FunctionClass,
     DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
-    TransientAttr, CloneableAttr, RemoteAttr
+    TransientAttr, CloneableAttr, RemoteAttr,
+    hasJavaMainMethod
   }
 
   val phaseName = "jvm"
@@ -67,29 +68,84 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     override def erasedTypes = true
     def apply(cls: IClass) = sys.error("no implementation")
 
+    def isJavaEntryPoint(clasz: IClass) = {
+      val sym = clasz.symbol
+      def fail(msg: String) = {
+        clasz.cunit.warning(sym.pos,
+          sym.name + " has a main method, but " + sym.fullName('.') + " will not be a runnable program.\n" +
+          "  " + msg + ", which means no static forwarder can be generated.\n"
+          // TODO: make this next claim true, if possible
+          //   by generating valid main methods as static in module classes
+          //   not sure what the jvm allows here
+          // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
+        )
+        false
+      }
+      sym.hasModuleFlag && hasJavaMainMethod(sym) && {
+        // At this point we've seen a module with a main method, so if this
+        // doesn't turn out to be a valid entry point, issue a warning.
+        val companion = sym.linkedClassOfClass
+        if (companion.isTrait)
+          fail("Its companion is a trait")
+        else if (hasJavaMainMethod(companion) && !(sym isSubClass companion))
+          fail("Its companion contains its own main method")
+        // this is only because forwarders aren't smart enough yet
+        else if (companion.tpe.member(nme.main) != NoSymbol)
+          fail("Its companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
+        else
+          true
+      }
+    }
+
     override def run() {
       // we reinstantiate the bytecode generator at each run, to allow the GC
       // to collect everything
-      if (settings.debug.value) inform("[running phase " + name + " on icode]")
+      if (settings.debug.value)
+        inform("[running phase " + name + " on icode]")
+
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
           icodes.classes -= sym
 
+      // For predictably ordered error messages.
+      val sortedClasses = classes.values.toList sortBy ("" + _.symbol.fullName)
+      val entryPoints   = sortedClasses filter isJavaEntryPoint
+
       val bytecodeWriter = settings.outputDirs.getSingleOutput match {
         case Some(f) if f hasExtension "jar" =>
-          new DirectToJarfileWriter(f)
+          // If no main class was specified, see if there's only one
+          // entry point among the classes going into the jar.
+          if (settings.mainClass.isDefault) {
+            entryPoints map (_.symbol fullName '.') match {
+              case Nil      =>
+                log("No Main-Class designated or discovered.")
+              case name :: Nil =>
+                log("Unique entry point: setting Main-Class to " + name)
+                settings.mainClass.value = name
+              case names =>
+                log("No Main-Class due to multiple entry points:\n  " + names.mkString("\n  "))
+            }
+          }
+          else log("Main-Class was specified: " + settings.mainClass.value)
+
+          new DirectToJarfileWriter(f.file)
+
         case _                               =>
           if (settings.Ygenjavap.isDefault) new ClassBytecodeWriter { }
           else new ClassBytecodeWriter with JavapBytecodeWriter { }
       }
+
       val codeGenerator = new BytecodeGenerator(bytecodeWriter)
-      classes.values foreach { c =>
+      log("Created new bytecode generator for " + classes.size + " classes.")
+
+      sortedClasses foreach { c =>
         try codeGenerator.genClass(c)
         catch {
           case e: JCode.CodeSizeTooBigException =>
-            log("Skipped class %s because it has methods that are too long.".format(c.toString))
+            log("Skipped class %s because it has methods that are too long.".format(c))
         }
       }
+
       bytecodeWriter.close()
       classes.clear()
     }
@@ -158,10 +214,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val isInner = sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass
       // TODO: something atPhase(currentRun.flattenPhase.prev) which accounts for
       // being nested in parameterized classes (if we're going to selectively flatten.)
-      if (isInner) {
-        log("Inner class: " + sym.fullLocationString)
+      if (isInner && !innerClassBuffer(sym))
         innerClassBuffer += sym
-      }
 
       super.javaName(sym)
     }
@@ -222,7 +276,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     var isRemoteClass: Boolean = false
     var isParcelableClass = false
 
-    private val innerClassBuffer = new mutable.ListBuffer[Symbol]
+    private var innerClassBuffer = mutable.LinkedHashSet[Symbol]()
 
     def genClass(c: IClass) {
       clasz = c
@@ -687,26 +741,32 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase.next) {
         for (sym <- List(clasz.symbol, clasz.symbol.linkedClassOfClass) ; m <- sym.info.decls ; if m.isClass)
-          innerClassBuffer += m
+          if (!innerClassBuffer(m))
+            innerClassBuffer += m
       }
 
       val allInners = innerClassBuffer.toList
       if (allInners.nonEmpty) {
+        log(clasz.symbol.fullName('.') + " contains " + allInners.size + " inner classes.")
         val innerClassesAttr = jclass.getInnerClasses()
         // sort them so inner classes succeed their enclosing class
         // to satisfy the Eclipse Java compiler
-        //for (innerSym <- innerClasses.toList sortBy (_.name.length)) {
-        for (innerSym <- allInners.distinct sortBy (_.name.length)) {
-          var flags = javaFlags(innerSym)
-          if (innerSym.rawowner.hasModuleFlag)
-            flags |= ACC_STATIC
+        for (innerSym <- allInners sortBy (_.name.length)) {
+          val flags = {
+            val staticFlag = if (innerSym.rawowner.hasModuleFlag) ACC_STATIC else 0
+            (javaFlags(innerSym) | staticFlag) & INNER_CLASSES_FLAGS
+          }
+          val jname = javaName(innerSym)
+          val oname = outerName(innerSym)
+          val iname = innerName(innerSym)
 
-          innerClassesAttr.addEntry(
-            javaName(innerSym),
-            outerName(innerSym),
-            innerName(innerSym),
-            flags & INNER_CLASSES_FLAGS
+          // Mimicking javap inner class output
+          debuglog(
+            if (oname == null || iname == null) "//class " + jname
+            else "//%s=class %s of class %s".format(iname, jname, oname)
           )
+
+          innerClassesAttr.addEntry(jname, oname, iname, flags)
         }
       }
     }

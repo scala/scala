@@ -1,0 +1,26 @@
+main1.scala:3: error: Foo has a main method, but foo1.Foo will not be a runnable program.
+  Its companion is a trait, which means no static forwarder can be generated.
+
+  object Foo {  // companion is trait
+         ^
+main1.scala:10: error: Foo has a main method, but foo2.Foo will not be a runnable program.
+  Its companion contains its own main method, which means no static forwarder can be generated.
+
+  object Foo {  // companion has its own main
+         ^
+main1.scala:22: error: Foo has a main method, but foo3.Foo will not be a runnable program.
+  Its companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
+
+  object Foo {  // Companion contains main, but not an interfering main.
+         ^
+main1.scala:31: error: Foo has a main method, but foo4.Foo will not be a runnable program.
+  Its companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
+
+  object Foo extends Foo {  // Inherits main from the class
+         ^
+main1.scala:39: error: Foo has a main method, but foo5.Foo will not be a runnable program.
+  Its companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
+
+  object Foo extends Foo {  // Overrides main from the class
+         ^
+5 errors found

@@ -12,14 +12,8 @@ import java.util.jar.{ Attributes }
 package object io {
   type JManifest = java.util.jar.Manifest
   type JFile = java.io.File
-  private[io] implicit def installManifestOps(m: JManifest) = new ManifestOps(m)
 
-  class ManifestOps(manifest: JManifest) {
-    def attrs                                       = manifest.getMainAttributes()
-    def apply(name: Attributes.Name)                = "" + attrs.get(name)
-    def update(key: Attributes.Name, value: String) = attrs.put(key, value)
-  }
-
+  implicit def enrichManifest(m: JManifest): Jar.WManifest = Jar.WManifest(m)
   private lazy val daemonThreadPool = DaemonThreadFactory.newPool()
 
   def runnable(body: => Unit): Runnable       = new Runnable { override def run() = body }

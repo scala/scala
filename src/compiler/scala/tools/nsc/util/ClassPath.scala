@@ -25,6 +25,8 @@ object ClassPath {
   def scalaLibrary  = locate[ScalaObject]
   def scalaCompiler = locate[Global]
 
+  def infoFor[T](value: T)        = info(value.getClass)
+  def info[T](clazz: Class[T])    = new ClassAndJarInfo()(ClassManifest fromClass clazz)
   def info[T: ClassManifest]      = new ClassAndJarInfo[T]
   def locate[T: ClassManifest]    = info[T] rootClasspath
   def locateJar[T: ClassManifest] = info[T].rootPossibles find (x => isJarOrZip(x)) map (x => File(x))

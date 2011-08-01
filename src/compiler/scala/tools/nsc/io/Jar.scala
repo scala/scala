@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, FileInputStream }
+import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, FileInputStream, DataOutputStream }
 import java.util.jar._
 import collection.JavaConverters._
 import Attributes.Name
@@ -33,7 +33,9 @@ import util.ClassPath
 // static Attributes.Name   SPECIFICATION_VERSION
 
 class Jar(file: File) extends Iterable[JarEntry] {
+  def this(jfile: JFile) = this(File(jfile))
   def this(path: String) = this(File(path))
+
   protected def errorFn(msg: String): Unit = Console println msg
 
   lazy val jarFile  = new JarFile(file.jfile)
@@ -45,7 +47,9 @@ class Jar(file: File) extends Iterable[JarEntry] {
     try f(in)
     finally in.close()
   }
-  def jarWriter() = new JarWriter(file)
+  def jarWriter(mainAttrs: (Attributes.Name, String)*) = {
+    new JarWriter(file, Jar.WManifest(mainAttrs: _*).underlying)
+  }
 
   override def foreach[U](f: JarEntry => U): Unit = withJarInput { in =>
     Iterator continually in.getNextJarEntry() takeWhile (_ != null) foreach f
@@ -60,26 +64,40 @@ class Jar(file: File) extends Iterable[JarEntry] {
   override def toString = "" + file
 }
 
-class JarWriter(file: File, val manifest: Manifest = new Manifest()) {
+class JarWriter(val file: File, val manifest: Manifest) {
   private lazy val out = new JarOutputStream(file.outputStream(), manifest)
-  def writeAllFrom(dir: Directory) = {
+
+  /** Adds a jar entry for the given path and returns an output
+   *  stream to which the data should immediately be written.
+   *  This unusual interface exists to work with fjbg.
+   */
+  def newOutputStream(path: String): DataOutputStream = {
+    val entry = new JarEntry(path)
+    out putNextEntry entry
+    new DataOutputStream(out)
+  }
+
+  def writeAllFrom(dir: Directory) {
     try dir.list foreach (x => addEntry(x, ""))
     finally out.close()
-
-    file
   }
-  private def addFile(entry: File, prefix: String) {
-    out putNextEntry new JarEntry(prefix + entry.name)
-    try transfer(entry.inputStream(), out)
+  def addStream(entry: JarEntry, in: InputStream) {
+    out putNextEntry entry
+    try transfer(in, out)
     finally out.closeEntry()
   }
-  private def addEntry(entry: Path, prefix: String) {
+  def addFile(file: File, prefix: String) {
+    val entry = new JarEntry(prefix + file.name)
+    addStream(entry, file.inputStream())
+  }
+  def addEntry(entry: Path, prefix: String) {
     if (entry.isFile) addFile(entry.toFile, prefix)
     else addDirectory(entry.toDirectory, prefix + entry.name + "/")
   }
-  private def addDirectory(entry: Directory, prefix: String) {
+  def addDirectory(entry: Directory, prefix: String) {
     entry.list foreach (p => addEntry(p, prefix))
   }
+
   private def transfer(in: InputStream, out: OutputStream) = {
     val buf = new Array[Byte](10240)
     def loop(): Unit = in.read(buf, 0, buf.length) match {
@@ -88,9 +106,47 @@ class JarWriter(file: File, val manifest: Manifest = new Manifest()) {
     }
     loop
   }
+
+  def close() = out.close()
 }
 
 object Jar {
+  type AttributeMap = java.util.Map[Attributes.Name, String]
+
+  object WManifest {
+    def apply(mainAttrs: (Attributes.Name, String)*): WManifest = {
+      val m = WManifest(new JManifest)
+      for ((k, v) <- mainAttrs)
+        m(k) = v
+
+      m
+    }
+    def apply(manifest: JManifest): WManifest = new WManifest(manifest)
+    implicit def unenrichManifest(x: WManifest): JManifest = x.underlying
+  }
+  class WManifest(manifest: JManifest) {
+    for ((k, v) <- initialMainAttrs)
+      this(k) = v
+
+    def underlying = manifest
+    def attrs = manifest.getMainAttributes().asInstanceOf[AttributeMap].asScala withDefaultValue null
+    def initialMainAttrs: Map[Attributes.Name, String] = {
+      import scala.util.Properties._
+      Map(
+        Name.MANIFEST_VERSION -> "1.0",
+        ScalaCompilerVersion  -> versionNumberString
+      )
+    }
+
+    def apply(name: Attributes.Name): String        = attrs(name)
+    def apply(name: String): String                 = apply(new Attributes.Name(name))
+    def update(key: Attributes.Name, value: String) = attrs.put(key, value)
+    def update(key: String, value: String)          = attrs.put(new Attributes.Name(key), value)
+
+    def mainClass: String = apply(Name.MAIN_CLASS)
+    def mainClass_=(value: String) = update(Name.MAIN_CLASS, value)
+  }
+
   // See http://download.java.net/jdk7/docs/api/java/nio/file/Path.html
   // for some ideas.
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
@@ -100,10 +156,8 @@ object Jar {
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
 
-  def create(file: File, sourceDir: Directory, mainClass: String): File = {
-    val writer = new Jar(file).jarWriter()
-    writer.manifest(Name.MANIFEST_VERSION) = "1.0"
-    writer.manifest(Name.MAIN_CLASS) = mainClass
+  def create(file: File, sourceDir: Directory, mainClass: String) {
+    val writer = new Jar(file).jarWriter(Name.MAIN_CLASS -> mainClass)
     writer writeAllFrom sourceDir
   }
 }
