@@ -7,6 +7,7 @@ package scala.tools.nsc
 package io
 
 import java.net.URL
+import java.io.IOException
 import collection.JavaConverters._
 
 /** A convenience class for finding the jar with the bytecode for
@@ -25,7 +26,10 @@ class ClassAndJarInfo[T: ClassManifest] {
   def codeSource           = protectionDomain.getCodeSource()
   def internalClassName    = internalName + ".class"
   def internalName         = clazz.getName.replace('.', '/')
-  def jarManifest          = new JManifest(jarManifestUrl.openStream())
+  def jarManifest          = (
+    try new JManifest(jarManifestUrl.openStream())
+    catch { case _: IOException => new JManifest() }
+  )
   def jarManifestMainAttrs = jarManifest.getMainAttributes().asScala
   def jarManifestUrl       = new URL(baseOfPath("" + classUrl) + "!/META-INF/MANIFEST.MF")
   def locationFile         = File(locationUrl.toURI.getPath())

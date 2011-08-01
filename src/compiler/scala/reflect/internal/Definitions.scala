@@ -375,12 +375,27 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
     def isArrowAssoc(sym: Symbol) = ArrowAssocClass.tpe.decls.toList contains sym
 
+    // The given symbol is a method with the right signature to be a runnable java program.
+    def isJavaMainMethod(sym: Symbol) = sym.tpe match {
+      case MethodType(param :: Nil, restpe) if restpe.typeSymbol == UnitClass =>
+        param.tpe match {
+          case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol == StringClass
+          case _                                  => false
+        }
+      case _ => false
+    }
+    // The given class has a main method.
+    def hasJavaMainMethod(sym: Symbol): Boolean =
+      (sym.tpe member nme.main).alternatives exists isJavaMainMethod
+    def hasJavaMainMethod(path: String): Boolean =
+      hasJavaMainMethod(getModuleIfDefined(path))
+
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }
     def isNoneType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   NoneModule, List(_)) => true }
 
-    def optionType(tp: Type)    = typeRef(OptionClass.typeConstructor.prefix, OptionClass, List(tp))
-    def someType(tp: Type)      = typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
+    def optionType(tp: Type)    = typeRef(NoPrefix, OptionClass, List(tp))
+    def someType(tp: Type)      = typeRef(NoPrefix, SomeClass, List(tp))
     def symbolType              = typeRef(SymbolClass.typeConstructor.prefix, SymbolClass, List())
     def longType                = typeRef(LongClass.typeConstructor.prefix, LongClass, List())
 
@@ -628,11 +643,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
 
     def getClassIfDefined(fullname: Name): Symbol =
-      try {
-        getClass(fullname)
-      } catch {
-        case ex: MissingRequirementError => NoSymbol
-      }
+      try getClass(fullname.toTypeName)
+      catch { case _: MissingRequirementError => NoSymbol }
+
+    def getModuleIfDefined(fullname: Name): Symbol =
+      try getModule(fullname.toTermName)
+      catch { case _: MissingRequirementError => NoSymbol }
 
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol
@@ -641,10 +657,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
         case result   => result
       }
     }
-    def packageExists(packageName: String): Boolean = {
-      try getModuleOrClass(newTermName(packageName)).isPackage
-      catch { case _: MissingRequirementError => false }
-    }
+    def packageExists(packageName: String): Boolean =
+      getModuleIfDefined(packageName).isPackage
 
     /** If you're looking for a class, pass a type name.
      *  If a module, a term name.
