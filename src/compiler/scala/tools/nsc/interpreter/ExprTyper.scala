@@ -7,13 +7,15 @@ package scala.tools.nsc
 package interpreter
 
 import util.BatchSourceFile
-import ast.parser.Tokens.EOF
+import scala.tools.nsc.ast.parser.Tokens.EOF
 
 trait ExprTyper {
   val repl: IMain
+
   import repl._
-  import global.{ reporter => _, _ }
-  import syntaxAnalyzer.UnitParser
+  import replTokens.{ Tokenizer }
+  import global.{ reporter => _, Import => _, _ }
+  import syntaxAnalyzer.{ UnitParser, UnitScanner, token2name }
   import naming.freshInternalVarName
 
   object codeParser extends { val global: repl.global.type = repl.global } with CodeHandlers[Tree] {
@@ -22,10 +24,19 @@ trait ExprTyper {
       val unit    = new CompilationUnit(new BatchSourceFile("<console>", code))
       val scanner = new UnitParser(unit)
       val result  = rule(scanner)
+
       if (!reporter.hasErrors)
         scanner.accept(EOF)
 
       result
+    }
+    def tokens(code: String) = {
+      reporter.reset()
+      val unit = new CompilationUnit(new BatchSourceFile("<tokens>", code))
+      val in   = new UnitScanner(unit)
+      in.init()
+
+      new Tokenizer(in) tokenIterator
     }
 
     def decl(code: String)  = CodeHandlers.fail("todo")
@@ -50,6 +61,7 @@ trait ExprTyper {
       else Some(trees)
     }
   }
+  def tokens(line: String) = codeParser.tokens(line)
 
   // TODO: integrate these into a CodeHandler[Type].
 

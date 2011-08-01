@@ -19,7 +19,7 @@ import reporters._
 import symtab.Flags
 import scala.reflect.internal.Names
 import scala.tools.util.PathResolver
-import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
+import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional, Indenter }
 import ScalaClassLoader.URLClassLoader
 import Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
@@ -1007,11 +1007,20 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     }
   }
 
-  private object exprTyper extends { val repl: IMain.this.type = imain } with ExprTyper { }
+  object replTokens extends {
+    val global: imain.global.type = imain.global
+  } with ReplTokens { }
+
+  private object exprTyper extends {
+    val repl: IMain.this.type = imain
+  } with ExprTyper { }
+
   def parse(line: String): Option[List[Tree]] = exprTyper.parse(line)
   def typeOfExpression(expr: String, silent: Boolean = true): Option[Type] = {
     exprTyper.typeOfExpression(expr, silent)
   }
+  def prettyPrint(code: String) =
+    replTokens.prettyPrint(exprTyper tokens code)
 
   protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
@@ -1090,9 +1099,20 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
     /** Secret bookcase entrance for repl debuggers: end the line
      *  with "// show" and see what's going on.
      */
-    if (repllog.isTrace || (code.lines exists (_.trim endsWith "// show"))) {
-      echo(code)
-      parse(code) foreach (ts => ts foreach (t => withoutUnwrapping(repldbg(asCompactString(t)))))
+    def isShow    = code.lines exists (_.trim endsWith "// show")
+    def isShowRaw = code.lines exists (_.trim endsWith "// raw")
+
+    // checking for various debug signals
+    if (isShowRaw)
+      replTokens withRawTokens prettyPrint(code)
+    else if (repllog.isTrace || isShow)
+      prettyPrint(code)
+
+    // old style
+    parse(code) foreach { ts =>
+      ts foreach { t =>
+        withoutUnwrapping(repldbg(asCompactString(t)))
+      }
     }
   }
 

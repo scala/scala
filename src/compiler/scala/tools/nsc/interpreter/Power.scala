@@ -317,16 +317,23 @@ abstract class Power(
   }
 
   class RichReplString(s: String) {
+    // pretty print the string
+    def pp { intp.prettyPrint(s) }
+    // make an url out of the string
     def u: URL = (
-      if (s contains ":") new java.net.URL(s)
-      else if (new java.io.File(s) exists) new java.io.File(s).toURI.toURL
-      else new java.net.URL("http://" + s)
+      if (s contains ":") new URL(s)
+      else if (new JFile(s) exists) new JFile(s).toURI.toURL
+      else new URL("http://" + s)
     )
   }
   class RichInputStream(in: InputStream)(implicit codec: Codec) {
     def bytes(): Array[Byte]  = io.Streamable.bytes(in)
     def slurp(): String       = io.Streamable.slurp(in)
     def <<(): String          = slurp()
+  }
+  class RichReplURL(url: URL)(implicit codec: Codec) {
+    def slurp(): String = io.Streamable.slurp(url)
+    def pp { intp prettyPrint slurp() }
   }
 
   protected trait Implicits1 {
@@ -355,8 +362,9 @@ abstract class Power(
       new MultiPrettifierClass[T](xs.toSeq)
     implicit def replPrettifier[T] : Prettifier[T] = Prettifier.default[T]
     implicit def replTypeApplication(sym: Symbol): RichSymbol = new RichSymbol(sym)
+
     implicit def replInputStream(in: InputStream)(implicit codec: Codec) = new RichInputStream(in)
-    implicit def replInputStreamURL(url: URL)(implicit codec: Codec) = new RichInputStream(url.openStream())
+    implicit def replEnhancedURLs(url: URL)(implicit codec: Codec): RichReplURL = new RichReplURL(url)(codec)
   }
   object Implicits extends Implicits2 { }
 

@@ -131,9 +131,9 @@ class Main {
     def asClasspathString = ""
 
     val context     = DefaultJavaContext
-    val classes     = IndexedSeq[ClassRep]()
-    val packages    = IndexedSeq[ClassPath[AbstractFile]]()
-    val sourcepaths = IndexedSeq[AbstractFile]()
+    val classes     = IndexedSeq()
+    val packages    = IndexedSeq()
+    val sourcepaths = IndexedSeq()
   }
 }
 
