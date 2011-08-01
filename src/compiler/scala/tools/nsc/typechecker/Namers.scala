@@ -1381,28 +1381,30 @@ trait Namers { self: Analyzer =>
 
   var lockedCount = 0
 
-  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new TypeCompleter {
+  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter {
     val tree = t
-    override def complete(sym: Symbol) = try {
+    def completeImpl(sym: Symbol) = c(sym)
+  }
+
+  trait LockingTypeCompleter extends TypeCompleter {
+    def completeImpl(sym: Symbol): Unit
+
+    override def complete(sym: Symbol) = {
       lockedCount += 1
-      c(sym)
-    } finally {
-      lockedCount -= 1
+      try completeImpl(sym)
+      finally lockedCount -= 1
     }
   }
 
   /** A class representing a lazy type with known type parameters.
    */
-  class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends TypeCompleter {
+  class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends LockingTypeCompleter {
     override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
     override val tree = restp.tree
-    override def complete(sym: Symbol) = try {
-      lockedCount += 1
-      if(ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
+    def completeImpl(sym: Symbol) = {
+      if (ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
         newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
       restp.complete(sym)
-    } finally {
-      lockedCount -= 1
     }
   }
 

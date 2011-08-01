@@ -6,8 +6,6 @@
 package scala.tools.nsc
 package settings
 
-import io.AbstractFile
-
 /** A Settings abstraction boiled out of the original highly mutable Settings
  *  class with the intention of creating an ImmutableSettings which can be used
  *  interchangeably.   Except of course without the mutants.
@@ -32,7 +30,7 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
   def lookupSetting(cmd: String): Option[Setting] = allSettings find (_ respondsTo cmd)
 
   // two AbsSettings objects are equal if their visible settings are equal.
-  override def hashCode() = visibleSettings.hashCode
+  override def hashCode() = visibleSettings.size  // going for cheap
   override def equals(that: Any) = that match {
     case s: AbsSettings => this.userSetSettings == s.userSetSettings
     case _              => false
@@ -134,8 +132,8 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
       case x: AbsSettings#AbsSetting  => (name == x.name) && (value == x.value)
       case _                          => false
     }
-    override def hashCode() = (name, value).hashCode
-    override def toString() = "%s = %s".format(name, value)
+    override def hashCode() = name.hashCode + value.hashCode
+    override def toString() = name + " = " + value
   }
 
   trait InternalSetting extends AbsSetting {

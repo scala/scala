@@ -820,9 +820,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
         if (cnt == 3) abort("no progress in completing " + this + ":" + tp)
       }
-      val result = rawInfo
-      result
-    } catch {
+      rawInfo
+    }
+    catch {
       case ex: CyclicReference =>
         if (settings.debug.value) println("... trying to complete "+this)
         throw ex
@@ -904,12 +904,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         val prev1 = adaptInfos(infos.prev)
         if (prev1 ne infos.prev) prev1
         else {
-          def adaptToNewRun(info: Type): Type =
-            if (isPackageClass) info else adaptToNewRunMap(info)
           val pid = phaseId(infos.validFrom)
+
           validTo = period(currentRunId, pid)
-          phase = phaseWithId(pid)
-          val info1 = adaptToNewRun(infos.info)
+          phase   = phaseWithId(pid)
+
+          val info1 = (
+            if (isPackageClass) infos.info
+            else adaptToNewRunMap(infos.info)
+          )
           if (info1 eq infos.info) {
             infos.validFrom = validTo
             infos
