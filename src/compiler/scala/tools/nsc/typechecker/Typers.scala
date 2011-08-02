@@ -558,14 +558,16 @@ trait Typers extends Modes with Adaptations {
     private def stabilize(tree: Tree, pre: Type, mode: Int, pt: Type): Tree = {
       if (tree.symbol.isOverloaded && !inFunMode(mode))
         inferExprAlternative(tree, pt)
+
       val sym = tree.symbol
+      def fail() = errorTree(tree, sym.kindString + " " + sym.fullName + " is not a value")
 
       if (tree.tpe.isError) tree
       else if ((mode & (PATTERNmode | FUNmode)) == PATTERNmode && tree.isTerm) { // (1)
         if (sym.isValue) checkStable(tree)
-        else errorTree(tree, sym+" is not a value")
+        else fail()
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue && !phase.erasedTypes) { // (2)
-        errorTree(tree, sym+" is not a value")
+        fail()
       } else {
         if (sym.isStable && pre.isStable && !isByNameParamType(tree.tpe) &&
             (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))

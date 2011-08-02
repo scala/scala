@@ -1,0 +1,4 @@
+object-not-a-value.scala:5: error: object java.util.List is not a value
+    List(1) map (_ + 1)
+    ^
+one error found

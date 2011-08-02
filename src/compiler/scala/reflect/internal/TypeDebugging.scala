@@ -22,11 +22,14 @@ trait TypeDebugging {
     }
     def ptIndent(x: Any) = ("" + x).replaceAll("\\n", "  ")
     def ptBlock(label: String, pairs: (String, Any)*): String = {
-      val width = pairs map (_._1.length) max
-      val fmt   = "%-" + (width + 1) + "s %s"
-      val strs  = pairs map { case (k, v) => fmt.format(k, to_s(v)) }
+      if (pairs.isEmpty) label + "{ }"
+      else {
+        val width = pairs map (_._1.length) max
+        val fmt   = "%-" + (width + 1) + "s %s"
+        val strs  = pairs map { case (k, v) => fmt.format(k, to_s(v)) }
 
-      strs.mkString(label + " {\n  ", "\n  ", "\n}")
+        strs.mkString(label + " {\n  ", "\n  ", "\n}")
+      }
     }
     def ptLine(label: String, pairs: (String, Any)*): String = {
       val strs = pairs map { case (k, v) => k + "=" + to_s(v) }

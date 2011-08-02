@@ -935,7 +935,9 @@ trait Implicits {
 
       val infoMap = new InfoMap
       getParts(tp)(infoMap, new mutable.HashSet(), Set())
-      printInference("[companionImplicitMap] "+tp+" = "+infoMap)
+      printInference(
+        ptBlock("companionImplicitMap " + tp, infoMap.toSeq.map({ case (k, v) => ("" + k, v.mkString(", ")) }): _*)
+      )
       infoMap
     }
 
