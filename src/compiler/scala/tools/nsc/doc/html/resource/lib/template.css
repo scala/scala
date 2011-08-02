@@ -227,7 +227,7 @@ dl.attributes > dd {
   height: 18px;
 }
 
-#template > div.parent > h3 {
+#inheritedMembers > div.parent > h3 {
   background-color: #dadada;
 /*  border:1px solid #6f6f6f;
   border-left:0;
@@ -243,7 +243,7 @@ dl.attributes > dd {
   font-size: 12pt;
 }
 
-#template > div.parent > h3 * {
+#inheritedMembers > div.parent > h3 * {
   color: white;
 }
 
