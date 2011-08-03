@@ -127,6 +127,9 @@ trait MemberEntity extends Entity {
   /** Some deprecation message if this member is deprecated, or none otherwise. */
   def deprecation: Option[Body]
 
+  /** Some migration warning if this member has a migration annotation, or none otherwise. */
+  def migration: Option[Body]
+
   @deprecated("Use `inDefinitionTemplates` instead", "2.9.0")
   def inheritedFrom: List[TemplateEntity]
 
