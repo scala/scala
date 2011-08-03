@@ -1905,14 +1905,25 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
     // constructors of module classes should be private
     // PP: why are they only being marked private at this stage and not earlier?
-    val isConsideredPrivate =
+    val privateFlag =
       sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
 
+    // This does not check .isFinal (which checks flags for the FINAL flag),
+    // instead checking rawflags for that flag so as to exclude symbols which
+    // received lateFINAL.  These symbols are eligible for inlining, but to
+    // avoid breaking proxy software which depends on subclassing, we avoid
+    // insisting on their finality in the bytecode.
+    val finalFlag = (
+         ((sym.rawflags & Flags.FINAL) != 0)
+      && !sym.enclClass.isInterface
+      && !sym.isClassConstructor
+    )
+
     mkFlags(
-      if (isConsideredPrivate) ACC_PRIVATE else ACC_PUBLIC,
+      if (privateFlag) ACC_PRIVATE else ACC_PUBLIC,
       if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
       if (sym.isInterface) ACC_INTERFACE else 0,
-      if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
+      if (finalFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
       if (sym.isBridge || sym.hasFlag(Flags.MIXEDIN) && sym.isMethod) ACC_BRIDGE else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,

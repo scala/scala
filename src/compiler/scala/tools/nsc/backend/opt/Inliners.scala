@@ -187,7 +187,7 @@ abstract class Inliners extends SubComponent {
         }
         else warnNoInline(
           if (!isAvailable) "bytecode was not available"
-          else "it is not final"
+          else "it can be overridden"
         )
         inlined
       }
