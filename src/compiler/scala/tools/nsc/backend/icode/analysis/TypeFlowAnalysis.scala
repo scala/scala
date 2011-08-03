@@ -358,9 +358,7 @@ abstract class TypeFlowAnalysis {
           stack.push(typeLattice.Object)
 
         case _ =>
-          dump
-          abort("Unknown instruction: " + i)
-
+          dumpClassesAndAbort("Unknown instruction: " + i)
         }
 
         new TransferFunction(consumed, gens)
@@ -542,9 +540,7 @@ abstract class TypeFlowAnalysis {
           stack.push(typeLattice.top)
 
         case _ =>
-          dump
-          abort("Unknown instruction: " + i)
-
+          dumpClassesAndAbort("Unknown instruction: " + i)
       }
       out
     } // interpret

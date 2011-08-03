@@ -233,12 +233,7 @@ abstract class CopyPropagation {
     /** Abstract interpretation for one instruction. */
     def interpret(in: copyLattice.Elem, i: Instruction): copyLattice.Elem = {
       var out = in.dup
-
-      if (settings.debug.value) {
-        log("- " + i)
-        log("in: " + in)
-        log("\n")
-      }
+      debuglog("- " + i + "\nin: " + in + "\n")
 
       i match {
         case THIS(_) =>
@@ -421,8 +416,7 @@ abstract class CopyPropagation {
           out.stack = Unknown :: Nil
 
         case _ =>
-          dump
-          abort("Unknown instruction: " + i)
+          dumpClassesAndAbort("Unknown instruction: " + i)
       }
       out
     } /* def interpret */

@@ -254,9 +254,8 @@ trait Members { self: ICodes =>
     }
 
     def dump() {
-      val printer = new TextPrinter(new PrintWriter(Console.out, true),
-                                    new DumpLinearizer)
-      printer.printMethod(this)
+      Console.println("dumping IMethod(" + symbol + ")")
+      newTextPrinter() printMethod this
     }
   }
 

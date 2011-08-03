@@ -39,6 +39,11 @@ abstract class GenICode extends SubComponent  {
 
   override def newPhase(prev: Phase) = new ICodePhase(prev)
 
+  @inline private def debugassert(cond: => Boolean, msg: => Any) {
+    if (settings.debug.value)
+      assert(cond, msg)
+  }
+
   class ICodePhase(prev: Phase) extends StdPhase(prev) {
 
     override def description = "Generate ICode from the AST"
@@ -190,13 +195,11 @@ abstract class GenICode extends SubComponent  {
       var ctx1 = ctx
       var resKind = toTypeKind(larg.tpe)
 
-      if (settings.debug.value) {
-        assert(args.length <= 1,
+      debugassert(args.length <= 1,
                "Too many arguments for primitive function: " + fun.symbol)
-        assert(resKind.isNumericType | resKind == BOOL,
+      debugassert(resKind.isNumericType | resKind == BOOL,
                resKind.toString() + " is not a numeric or boolean type " +
                "[operation: " + fun.symbol + "]")
-      }
 
       args match {
         // unary operation
@@ -267,16 +270,14 @@ abstract class GenICode extends SubComponent  {
 
       if (scalaPrimitives.isArrayGet(code)) {
         // load argument on stack
-        if (settings.debug.value)
-          assert(args.length == 1,
+        debugassert(args.length == 1,
                  "Too many arguments for array get operation: " + tree);
         ctx1 = genLoad(args.head, ctx1, INT)
         generatedType = elem
         ctx1.bb.emit(LOAD_ARRAY_ITEM(elementType), tree.pos)
       }
       else if (scalaPrimitives.isArraySet(code)) {
-        if (settings.debug.value)
-          assert(args.length == 2,
+        debugassert(args.length == 2,
                  "Too many arguments for array set operation: " + tree);
         ctx1 = genLoad(args.head, ctx1, INT)
         ctx1 = genLoad(args.tail.head, ctx1, toTypeKind(args.tail.head.tpe))
@@ -369,7 +370,7 @@ abstract class GenICode extends SubComponent  {
       thenCtx = genLoad(thenp, thenCtx, resKind)
       elseCtx = genLoad(elsep, elseCtx, resKind)
 
-      assert(!settings.debug.value || !(hasUnitBranch && expectedType != UNIT),
+      debugassert(!hasUnitBranch || expectedType == UNIT,
         "I produce UNIT in a context where " + expectedType + " is expected!")
 
       // alternatives may be already closed by a tail-recursive jump
@@ -431,9 +432,8 @@ abstract class GenICode extends SubComponent  {
       else if (isArrayOp(code))
         genArrayOp(tree, ctx, code, expectedType)
       else if (isLogicalOp(code) || isComparisonOp(code)) {
-        val trueCtx = ctx.newBlock
-        val falseCtx = ctx.newBlock
-        val afterCtx = ctx.newBlock
+        val trueCtx, falseCtx, afterCtx = ctx.newBlock
+
         genCond(tree, ctx, trueCtx, falseCtx)
         trueCtx.bb.emitOnly(
           CONSTANT(Constant(true)) setPos tree.pos,
@@ -452,35 +452,25 @@ abstract class GenICode extends SubComponent  {
         genCoercion(tree, ctx1, code)
         (ctx1, scalaPrimitives.generatedKind(code))
       }
-      else abort("Primitive operation not handled yet: " + sym.fullName + "(" +
-                  fun.symbol.simpleName + ") " + " at: " + (tree.pos))
+      else abort(
+        "Primitive operation not handled yet: " + sym.fullName + "(" +
+        fun.symbol.simpleName + ") " + " at: " + (tree.pos)
+      )
     }
 
     /**
      * forMSIL
      */
-   private def msil_IsValuetypeInstMethod(msym: Symbol) = {
-     val mMSILOpt = loaders.clrTypes.methods.get(msym)
-     if (mMSILOpt.isEmpty) false
-     else {
-       val mMSIL = mMSILOpt.get
-       val res = mMSIL.IsInstance && mMSIL.DeclaringType.IsValueType
-       res
-     }
-   }
-
-    /**
-     * forMSIL
-     */
-    private def msil_IsValuetypeInstField(fsym: Symbol) = {
-     val fMSILOpt = loaders.clrTypes.fields.get(fsym)
-     if (fMSILOpt.isEmpty) false
-     else {
-       val fMSIL = fMSILOpt.get
-       val res = !fMSIL.IsStatic && fMSIL.DeclaringType.IsValueType
-       res
-     }
-   }
+    private def msil_IsValuetypeInstMethod(msym: Symbol) = (
+      loaders.clrTypes.methods get msym exists (mMSIL =>
+        mMSIL.IsInstance && mMSIL.DeclaringType.IsValueType
+      )
+    )
+    private def msil_IsValuetypeInstField(fsym: Symbol) = (
+      loaders.clrTypes.fields get fsym exists (fMSIL =>
+        !fMSIL.IsStatic && fMSIL.DeclaringType.IsValueType
+      )
+    )
 
     /**
      * forMSIL: Adds a local var, the emitted code requires one more slot on the stack as on entry
@@ -553,8 +543,7 @@ abstract class GenICode extends SubComponent  {
               if (scalaPrimitives.isArrayGet(code)) {
                 var ctx1 = genLoad(arrayObj, ctx, k)
                 // load argument on stack
-                if (settings.debug.value)
-                  assert(args.length == 1, "Too many arguments for array get operation: " + tree);
+                debugassert(args.length == 1, "Too many arguments for array get operation: " + tree)
                 ctx1 = genLoad(args.head, ctx1, INT)
                 generatedType = elementType // actually "managed pointer to element type" but the callsite is aware of this
                 ctx1.bb.emit(CIL_LOAD_ARRAY_ITEM_ADDRESS(elementType), tree.pos)
@@ -576,7 +565,7 @@ abstract class GenICode extends SubComponent  {
                   Even if it's not, the code below to handler !addressTaken below. */
       }
 
-      if(!addressTaken) {
+      if (!addressTaken) {
         resCtx = genLoad(tree, ctx, expectedType)
         if (!butRawValueIsAlsoGoodEnough) {
           // raw value on stack (must be an intermediate result, e.g. returned by method call), take address
@@ -666,7 +655,7 @@ abstract class GenICode extends SubComponent  {
           var ctx1         = genLoad(expr, ctx, returnedKind)
           lazy val tmp     = ctx1.makeLocal(tree.pos, expr.tpe, "tmp")
           val saved        = savingCleanups(ctx1) {
-            var saved = false
+            var savedFinalizer = false
             ctx1.cleanups foreach {
               case MonitorRelease(m) =>
                 debuglog("removing " + m + " from cleanups: " + ctx1.cleanups)
@@ -675,11 +664,10 @@ abstract class GenICode extends SubComponent  {
 
               case Finalizer(f, finalizerCtx) =>
                 debuglog("removing " + f + " from cleanups: " + ctx1.cleanups)
-
                 if (returnedKind != UNIT && mayCleanStack(f)) {
                   log("Emitting STORE_LOCAL for " + tmp + " to save finalizer.")
                   ctx1.bb.emit(STORE_LOCAL(tmp))
-                  saved = true
+                  savedFinalizer = true
                 }
 
                 // duplicate finalizer (takes care of anchored labels)
@@ -692,7 +680,7 @@ abstract class GenICode extends SubComponent  {
                 ctx1.bb.closeWith(JUMP(fctx.bb))
                 ctx1 = genLoad(f1, fctx, UNIT)
             }
-            saved
+            savedFinalizer
           }
 
           if (saved) {
@@ -705,7 +693,7 @@ abstract class GenICode extends SubComponent  {
           generatedType = expectedType
           ctx1
 
-        case t @ Try(_, _, _) => genLoadTry(t, ctx, (x: TypeKind) => generatedType = x)
+        case t @ Try(_, _, _) => genLoadTry(t, ctx, generatedType = _)
 
         case Throw(expr) =>
           val (ctx1, expectedType) = genThrow(expr, ctx)
@@ -778,13 +766,11 @@ abstract class GenICode extends SubComponent  {
         // instance (on JVM, <init> methods return VOID).
         case Apply(fun @ Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val ctor = fun.symbol
-          if (settings.debug.value)
-            assert(ctor.isClassConstructor,
+          debugassert(ctor.isClassConstructor,
                    "'new' call to non-constructor: " + ctor.name)
 
           generatedType = toTypeKind(tpt.tpe)
-          if (settings.debug.value)
-            assert(generatedType.isReferenceType || generatedType.isArrayType,
+          debugassert(generatedType.isReferenceType || generatedType.isArrayType,
                  "Non reference type cannot be instantiated: " + generatedType)
 
           generatedType match {
@@ -801,8 +787,7 @@ abstract class GenICode extends SubComponent  {
               ctx1
 
             case rt @ REFERENCE(cls) =>
-              if (settings.debug.value)
-                assert(ctor.owner == cls,
+              debugassert(ctor.owner == cls,
                        "Symbol " + ctor.owner.fullName + " is different than " + tpt)
 
               val ctx2 = if (forMSIL && loaders.clrTypes.isNonEnumValuetype(cls)) {
@@ -960,13 +945,12 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case Select(Ident(nme.EMPTY_PACKAGE_NAME), module) =>
-          if (settings.debug.value) {
-            assert(tree.symbol.isModule,
-                   "Selection of non-module from empty package: " + tree.toString() +
-                   " sym: " + tree.symbol +
-                   " at: " + (tree.pos))
-            log("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol);
-          }
+          debugassert(tree.symbol.isModule,
+            "Selection of non-module from empty package: " + tree +
+            " sym: " + tree.symbol + " at: " + (tree.pos)
+          )
+          debuglog("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol)
+
           assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
           genLoadModule(ctx, tree.symbol, tree.pos)
           ctx
@@ -1121,10 +1105,7 @@ abstract class GenICode extends SubComponent  {
             debuglog("Dropped an " + from);
 
           case _ =>
-            if (settings.debug.value) {
-              assert(from != UNIT,
-                  "Can't convert from UNIT to " + to + " at: " + pos)
-            }
+            debugassert(from != UNIT, "Can't convert from UNIT to " + to + " at: " + pos)
             assert(!from.isReferenceType && !to.isReferenceType,
               "type error: can't convert from " + from + " to " + to +" in unit " + unit.source + " at " + pos)
 
@@ -1169,11 +1150,10 @@ abstract class GenICode extends SubComponent  {
      * Generate code that loads args into label parameters.
      */
     private def genLoadLabelArguments(args: List[Tree], label: Label, ctx: Context): Context = {
-      if (settings.debug.value) {
-        assert(args.length == label.params.length,
-               "Wrong number of arguments in call to label " + label.symbol)
-      }
-
+      debugassert(
+        args.length == label.params.length,
+        "Wrong number of arguments in call to label " + label.symbol
+      )
       var ctx1 = ctx
 
       def isTrivial(kv: (Tree, Symbol)) = kv match {
@@ -1623,8 +1603,7 @@ abstract class GenICode extends SubComponent  {
      * class.
      */
     private def addClassFields(ctx: Context, cls: Symbol) {
-      if (settings.debug.value)
-        assert(ctx.clazz.symbol eq cls,
+      debugassert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
       /** Non-method term members are fields, except for module members. Module
@@ -1718,8 +1697,7 @@ abstract class GenICode extends SubComponent  {
               case JUMP(b) if (b == block) =>
                 debuglog("Pruning empty JMP branch.");
                 val replaced = p.replaceInstruction(p.lastInstruction, JUMP(cont))
-                if (settings.debug.value)
-                  assert(replaced, "Didn't find p.lastInstruction")
+                debugassert(replaced, "Didn't find p.lastInstruction")
 
               case SWITCH(tags, labels) if (labels contains block) =>
                 debuglog("Pruning empty SWITCH branch.");

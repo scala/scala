@@ -191,7 +191,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     val versionPickle = {
       val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
-      assert(vp.writeIndex == 0)
+      assert(vp.writeIndex == 0, vp)
       vp writeNat PickleFormat.MajorVersion
       vp writeNat PickleFormat.MinorVersion
       vp writeNat 0
@@ -324,7 +324,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
         if (isTopLevelModule(c.symbol)) {
           if (c.symbol.companionClass == NoSymbol)
-            dumpMirrorClass(c.symbol, c.cunit.source.toString)
+            generateMirrorClass(c.symbol, c.cunit.source.toString)
           else
             log("No mirror class for module with linked class: " +
                 c.symbol.fullName)
@@ -388,7 +388,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         )
       } else if (clazz.isAnonymousClass) {
         val enclClass = clazz.rawowner
-        assert(enclClass.isClass, "" + enclClass)
+        assert(enclClass.isClass, enclClass)
         val sym = enclClass.primaryConstructor
         if (sym == NoSymbol)
           log("Ran out of room looking for an enclosing method for %s: no constructor here.".format(
@@ -497,7 +497,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         nattr += 1
       }
 
-      assert(nattr > 0)
+      assert(nattr > 0, nattr)
       buf.putShort(0, nattr.toShort)
       addAttribute(jmethod, tpnme.ExceptionsATTR, buf)
     }
@@ -579,7 +579,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val AnnotationInfo(typ, args, assocs) = annotInfo
         val jtype = javaType(typ)
         buf putShort cpool.addUtf8(jtype.getSignature()).toShort
-        assert(args.isEmpty, args.toString)
+        assert(args.isEmpty, args)
         buf putShort assocs.length.toShort
         for ((name, value) <- assocs) {
           buf putShort cpool.addUtf8(name.toString).toShort
@@ -1061,7 +1061,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      *  object: method signature is not taken into account.
      */
     def addForwarders(jclass: JClass, moduleClass: Symbol) {
-      assert(moduleClass.isModuleClass)
+      assert(moduleClass.isModuleClass, moduleClass)
       debuglog("Dumping mirror class for object: " + moduleClass)
 
       val className    = jclass.getName
@@ -1096,13 +1096,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
     }
 
-    /** Dump a mirror class for a top-level module. A mirror class is a class
+    /** Generate a mirror class for a top-level module. A mirror class is a class
      *  containing only static methods that forward to the corresponding method
      *  on the MODULE instance of the given Scala object.  It will only be
      *  generated if there is no companion class: if there is, an attempt will
      *  instead be made to add the forwarder methods to the companion class.
      */
-    def dumpMirrorClass(clasz: Symbol, sourceFile: String) {
+    def generateMirrorClass(clasz: Symbol, sourceFile: String) {
       import JAccessFlags._
       val moduleName = javaName(clasz) // + "$"
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
@@ -1216,18 +1216,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       varsInBlock.clear()
 
       for (instr <- b) {
-        class CompilationException(msg: String) extends Exception(msg) {
-          override def toString: String = {
-            msg +
-            "\nCurrent method: " + method +
-            "\nCurrent block: " + b +
-            "\nCurrent instruction: " + instr +
-            "\n---------------------" +
-            method.dump
-          }
-        }
-        def assert(cond: Boolean, msg: String) =
-          if (!cond) throw new CompilationException(msg)
 
         instr match {
           case THIS(clasz) =>
@@ -1539,8 +1527,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             else if (b.varsInScope(lv)) {
               lv.ranges = (labels(b).getAnchor(), jcode.getPC()) :: lv.ranges
               b.varsInScope -= lv
-            } else
-              assert(false, "Illegal local var nesting: " + method)
+            }
+            else dumpMethodAndAbort(method, "Illegal local var nesting")
 
           case LOAD_EXCEPTION(_) =>
             ()
@@ -1832,8 +1820,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     def indexOf(local: Local): Int = {
-      assert(local.index >= 0,
-             "Invalid index for: " + local + "{" + local.## + "}: ")
+      assert(local.index >= 0, "Invalid index for: " + local + "{" + local.## + "}: ")
       local.index
     }
 
@@ -1876,13 +1863,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         case ((s1, e1) :: rest, (s2, e2)) if (e1 == s2) => (s1, e2) :: rest
         case _ => p :: collapsed
       }}).reverse
-
-    def assert(cond: Boolean, msg: => String) = if (!cond) {
-      method.dump
-      abort(msg + "\nMethod: " + method)
-    }
-
-    def assert(cond: Boolean) { assert(cond, "Assertion failed.") }
   }
 
   /**

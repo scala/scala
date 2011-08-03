@@ -11,6 +11,7 @@ import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.{SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
+import scala.xml.parsing.MarkupParserCommon
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
 import scala.reflect.internal.Chars.{ SU, LF }
 
@@ -47,7 +48,7 @@ trait MarkupParsers {
 
   import global._
 
-  class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends scala.xml.parsing.MarkupParserCommon {
+  class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends MarkupParserCommon {
 
     import Tokens.{ EMPTY, LBRACE, RBRACE }
 

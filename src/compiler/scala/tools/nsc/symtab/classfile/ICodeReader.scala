@@ -191,15 +191,15 @@ abstract class ICodeReader extends ClassfileParser {
       log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
       iface.owner.info // force the mixin type-transformer
       definitions.getClass(name)
-    } else if (name.endsWith(nme.MODULE_SUFFIX_STRING)) {
-      val sym = forceMangledName(name.subName(0, name.length -1).decode, true)
-//      println("classNameToSymbol: " + name + " sym: " + sym)
-      if (name.toString == "scala.collection.immutable.Stream$$hash$colon$colon$")
-        print("")
-      if (sym == NoSymbol)
-        definitions.getModule(name.subName(0, name.length - 1))
+    }
+    else if (nme.isModuleName(name)) {
+      val strippedName = nme.stripModuleSuffix(name)
+      val sym = forceMangledName(strippedName.decode, true)
+
+      if (sym == NoSymbol) definitions.getModule(strippedName)
       else sym
-    } else {
+    }
+    else {
       forceMangledName(name, false)
       atPhase(currentRun.flattenPhase.next)(definitions.getClass(name))
     }
@@ -632,10 +632,12 @@ abstract class ICodeReader extends ClassfileParser {
     assert(method.code ne null)
     // reverse parameters, as they were prepended during code generation
     method.params = method.params.reverse
-    if (code.containsDUPX) {
-      code.resolveDups
-    }
-    if (code.containsNEW) code.resolveNEWs
+
+    if (code.containsDUPX)
+      code.resolveDups()
+
+    if (code.containsNEW)
+      code.resolveNEWs()
   }
 
   /** Note: these methods are different from the methods of the same name found
@@ -922,33 +924,28 @@ abstract class ICodeReader extends ClassfileParser {
     /** Recover def-use chains for NEW and initializers. */
     def resolveNEWs() {
       import opcodes._
-
       val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis
       rdef.init(method)
       rdef.run
 
-      for (bb <- method.code.blocks) {
-        var info = rdef.in(bb)
-        for ((i, idx) <- bb.toList.zipWithIndex) i match {
-          case CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
-            val defs = rdef.findDefs(bb, idx, 1, m.info.paramTypes.length)
-            debuglog("ctor: " + i + " found defs: " + defs)
-            assert(defs.length == 1, "wrong defs at bb " + bb + "\n" + method.dump + rdef)
-            val (bb1, idx1) = defs.head
-            var producer = bb1(idx1)
-            while (producer.isInstanceOf[DUP]) {
-              val (bb2, idx2) = rdef.findDefs(bb1, idx1, 1).head
-              producer = bb2(idx2)
+      for (bb <- method.code.blocks ; (i, idx) <- bb.toList.zipWithIndex) i match {
+        case cm @ CALL_METHOD(m, Static(true)) if m.isClassConstructor =>
+          def loop(bb0: BasicBlock, idx0: Int, depth: Int = 0): Unit = {
+            rdef.findDefs(bb0, idx0, 1, depth) match {
+              case ((bb1, idx1)) :: _ =>
+                bb1(idx1) match {
+                  case _: DUP   => loop(bb1, idx1, 0)
+                  case x: NEW   => x.init = cm
+                  case _: THIS  => () // super constructor call
+                  case producer => dumpMethodAndAbort(method, "producer: " + producer)
+                }
+              case _ => ()
             }
-            producer match {
-              case nw: NEW => nw.init = i.asInstanceOf[CALL_METHOD]
-              case _: THIS => () // super constructor call
-              case _ => assert(false, producer + "\n" + method.dump)
-            }
-          case _ =>
-        }
-      }
+          }
+          loop(bb, idx, m.info.paramTypes.length)
 
+        case _ => ()
+      }
     }
 
     /** Return the local at given index, with the given type. */

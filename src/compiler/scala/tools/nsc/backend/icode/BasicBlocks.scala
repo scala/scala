@@ -89,7 +89,6 @@ trait BasicBlocks {
     private var instructionList: List[Instruction] = Nil
 
     private var instrs: Array[Instruction] = _
-
     override def toList: List[Instruction] =
       if (closed) instrs.toList else instructionList.reverse
 
@@ -99,7 +98,7 @@ trait BasicBlocks {
 
     /** return the underlying array of instructions */
     def getArray: Array[Instruction] = {
-      assert(closed)
+      assert(closed, this)
       instrs
     }
 
@@ -113,17 +112,18 @@ trait BasicBlocks {
      *  Returns -1 if not found.
      */
     def indexOf(inst: Instruction): Int = {
-      assert(closed)
+      assert(closed, this)
       instrs indexWhere (_ eq inst)
     }
 
     /** Apply a function to all the instructions of the block. */
     override def foreach[U](f: Instruction => U) = {
-      if (!closed) {
-        method.dump
-        global.abort("Traversing an open block!: " + label + " in " + method)
-      }
-      instrs foreach f
+      // !!! This appears to change behavior if I try to avoid the implicit
+      // conversion and traverse the array directly, which presumably means it
+      // is dependent on some mutation which is taking place during traversal.
+      // Please eliminate this if humanly possible.
+      if (!closed) dumpMethodAndAbort(method, this)
+      else instrs foreach f
     }
 
     /** The number of instructions in this basic block so far. */
@@ -198,7 +198,7 @@ trait BasicBlocks {
      *  @param positions ...
      */
     def removeInstructionsAt(positions: Int*) {
-      assert(closed)
+      assert(closed, this)
       instrs = instrs.indices.toArray filterNot positions.toSet map instrs
       code.touched = true
     }
@@ -248,7 +248,7 @@ trait BasicBlocks {
         print()
         Console.println("trying to emit: " + instr)
       } */
-      assert(!closed || ignore, "BasicBlock closed")
+      assert(!closed || ignore, this)
 
       if (ignore) {
         if (settings.debug.value) {
@@ -268,8 +268,8 @@ trait BasicBlocks {
       }
     }
 
-    def emit(instrs: Seq[Instruction]) {
-      instrs foreach (i => emit(i, i.pos))
+    def emit(is: Seq[Instruction]) {
+      is foreach (i => emit(i, i.pos))
     }
 
     /** The semantics of this are a little odd but it's designed to work
@@ -280,30 +280,30 @@ trait BasicBlocks {
      *  calling setPos on any instruction using the two arg version which
      *  I wanted to include in a call to emitOnly.
      */
-    def emitOnly(instrs: Instruction*) {
-      instrs foreach (i => if (i.pos == NoPosition) emit(i) else emit(i, i.pos))
-      this.close
+    def emitOnly(is: Instruction*) {
+      is foreach (i => if (i.pos == NoPosition) emit(i) else emit(i, i.pos))
+      this.close()
     }
 
     /** do nothing if block is already closed */
     def closeWith(instr: Instruction) {
-      if (closed) () else {
+      if (!closed) {
         emit(instr)
-        close
+        close()
       }
     }
 
     def closeWith(instr: Instruction, pos: Position) {
-      if (closed) () else {
+      if (!closed) {
         emit(instr, pos)
-        close
+        close()
       }
     }
 
     /** Close the block */
     def close() {
-      assert(!closed || ignore)
-      assert(instructionList.nonEmpty, "Empty block.")
+      assert(!closed || ignore, this)
+      assert(instructionList.nonEmpty, "Empty block: " + this)
       closed = true
       setFlag(DIRTYSUCCS)
       instructionList = instructionList.reverse
@@ -311,7 +311,7 @@ trait BasicBlocks {
     }
 
     def open() {
-      assert(closed)
+      assert(closed, this)
       closed = false
       ignore = false
       touched = true
@@ -324,7 +324,7 @@ trait BasicBlocks {
       preds  = null
     }
 
-    override def isEmpty: Boolean = instructionList.isEmpty
+    override def isEmpty = instructionList.isEmpty
 
     /** Enter ignore mode: new 'emit'ted instructions will not be
      *  added to this basic block. It makes the generation of THROW
@@ -335,7 +335,7 @@ trait BasicBlocks {
     }
 
     def exitIgnoreMode() {
-      assert(ignore, "Exit ignore mode when not in ignore mode.")
+      assert(ignore, "Exit ignore mode when not in ignore mode: " + this)
       ignore = false
     }
 
@@ -374,10 +374,8 @@ trait BasicBlocks {
         case RETURN(_)                  => Nil
         case THROW(_)                   => Nil
         case _ =>
-          if (closed) {
-            dump
-            global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
-          }
+          if (closed)
+            dumpClassesAndAbort("The last instruction is not a control flow instruction: " + lastInstruction)
           else Nil
       }
 
@@ -440,11 +438,11 @@ trait BasicBlocks {
 object BBFlags {
   val flagMap = Map[Int, String](
     LOOP_HEADER -> "loopheader",
-    IGNORING -> "ignore",
-    EX_HEADER -> "exheader",
-    CLOSED -> "closed",
-    DIRTYSUCCS -> "dirtysuccs",
-    DIRTYPREDS -> "dirtypreds"
+    IGNORING    -> "ignore",
+    EX_HEADER   -> "exheader",
+    CLOSED      -> "closed",
+    DIRTYSUCCS  -> "dirtysuccs",
+    DIRTYPREDS  -> "dirtypreds"
   )
   def flagsToString(flags: Int) = {
     flagMap collect { case (bit, name) if (bit & flags) != 0 => "<" + name + ">" } mkString " "
