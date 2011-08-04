@@ -1,0 +1,5 @@
+package-ob-case.scala:3: error: it is not recommended to define classes/objects inside of package objects.
+If possible, define class X in package foo instead.
+    case class X(z: Int) { }
+               ^
+one error found

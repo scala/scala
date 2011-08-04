@@ -453,6 +453,13 @@ trait Namers { self: Analyzer =>
               val m = ensureCompanionObject(tree, companionModuleDef(tree))
               classAndNamerOfModule(m) = (tree, null)
             }
+            val owner = tree.symbol.owner
+            if (owner.isPackageObjectClass) {
+              context.unit.warning(tree.pos,
+                "it is not recommended to define classes/objects inside of package objects.\n" +
+                "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
+              )
+            }
           case tree @ ModuleDef(mods, name, _) =>
             tree.symbol = enterModuleSymbol(tree)
             sym.moduleClass setInfo namerOf(sym).moduleClassTypeCompleter(tree)
