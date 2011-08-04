@@ -3632,7 +3632,7 @@ trait Typers extends Modes with Adaptations {
             return makeErrorTree
 
           if (!qual.tpe.widen.isErroneous)
-            notAMember(tree, qual, name)
+            notAMemberError(tree.pos, qual, name)
 
           if (forInteractive) makeErrorTree else setError(tree)
         } else {

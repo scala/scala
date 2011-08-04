@@ -1,4 +1,4 @@
-t2773.scala:5: error: x is not a member of c
+t2773.scala:5: error: value x is not a member of C
   import c.x
          ^
 t2773.scala:6: error: not found: value x

@@ -37,15 +37,9 @@ trait TypeDiagnostics {
 
   import global._
   import definitions._
-  import global.typer.infer
+  import global.typer.{ infer, context }
 
   private def currentUnit = currentRun.currentUnit
-
-  /** It can be quite difficult to know which of the many functions called "error"
-   *  is being called at any given point in the compiler.  To alleviate this I am
-   *  renaming such functions inside this trait based on where it originated.
-   */
-  def inferError(pos: Position, msg: String) = infer.error(pos, msg)
 
   /** The common situation of making sure nothing is erroneous could be
    *  nicer if Symbols, Types, and Trees all implemented some common interface
@@ -85,9 +79,10 @@ trait TypeDiagnostics {
 
   /** Does the positioned line assigned to t1 precede that of t2?
    */
-  def linePrecedes(t1: Tree, t2: Tree) = t1.pos.isDefined && t1.pos.isDefined && t1.pos.line < t2.pos.line
+  def posPrecedes(p1: Position, p2: Position) = p1.isDefined && p2.isDefined && p1.line < p2.line
+  def linePrecedes(t1: Tree, t2: Tree) = posPrecedes(t1.pos, t2.pos)
 
-  def notAMember(sel: Tree, qual: Tree, name: Name) = {
+  def notAMemberMessage(pos: Position, qual: Tree, name: Name) = {
     val owner            = qual.tpe.typeSymbol
     val target           = qual.tpe.widen
     def targetKindString = if (owner.isTypeParameterOrSkolem) "type parameter " else ""
@@ -104,7 +99,7 @@ trait TypeDiagnostics {
         else ""
       }
       val semicolon = (
-        if (linePrecedes(qual, sel))
+        if (posPrecedes(qual.pos, pos))
           "\npossible cause: maybe a semicolon is missing before `"+nameString+"'?"
         else
           ""
@@ -112,14 +107,13 @@ trait TypeDiagnostics {
       companion + semicolon
     }
 
-    inferError(
-      sel.pos,
-      withAddendum(qual.pos)(
-        if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
-        else nameString + " is not a member of " + targetKindString + target + addendum
-      )
+    withAddendum(qual.pos)(
+      if (name == nme.CONSTRUCTOR) target + " does not have a constructor"
+      else nameString + " is not a member of " + targetKindString + target + addendum
     )
   }
+  def notAMemberError(pos: Position, qual: Tree, name: Name) =
+    context.error(pos, notAMemberMessage(pos, qual, name))
 
   /** Only prints the parameter names if they're not synthetic,
    *  since "x$1: Int" does not offer any more information than "Int".

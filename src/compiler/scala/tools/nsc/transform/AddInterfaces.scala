@@ -15,14 +15,9 @@ abstract class AddInterfaces extends InfoTransform {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
 
-  /** <p>
-   *    The phase sets <code>lateINTERFACE</code> for non-interface traits
-   *    that now become interfaces.
-   *  </p>
-   *  <p>
-   *    It sets <code>lateDEFERRED</code> for formerly concrete methods in
-   *    such traits.
-   *  </p>
+  /** The phase sets lateINTERFACE for non-interface traits that now
+   *  become interfaces. It sets lateDEFERRED for formerly concrete
+   *  methods in such traits.
    */
   override def phaseNewFlags: Long = lateDEFERRED | lateINTERFACE
 
@@ -52,23 +47,32 @@ abstract class AddInterfaces extends InfoTransform {
   }
 
   /** Is given trait member symbol a member of the trait's interface
-   *  after this transform is performed? */
-  private def isInterfaceMember(sym: Symbol): Boolean = {
-    sym.isType ||
-    { sym.info; // to set lateMETHOD flag if necessary
-      sym.isMethod &&
-      !sym.isLabel &&
-      !sym.isPrivate &&
-      (!(sym hasFlag BRIDGE) || sym.hasBridgeAnnotation) && // count @_$bridge$_ annotated classes as interface members
-      !sym.isConstructor &&
-      !sym.isImplOnly
+   *  after this transform is performed?
+   */
+  private def isInterfaceMember(sym: Symbol) = (
+    sym.isType || {
+      // !!! Shouldn't the following code be equivalent to leaving
+      // out the "sym.info" call and starting with "sym.initialize.isMethod" ?
+      // Because, it is not, which I found a little disturbing.  The compiler
+      // fails to bootstrap with an error somewhere.
+      sym.info    // initialize to set lateMETHOD flag if necessary
+
+      (     sym.isMethod
+        && !sym.isLabel
+        && !sym.isPrivate
+        && (!(sym hasFlag BRIDGE) || sym.hasBridgeAnnotation) // count @bridge annotated classes as interface members
+        && !sym.isConstructor
+        && !sym.isImplOnly
+      )
     }
-  }
+  )
 
   /** Does symbol need an implementation method? */
-  private def needsImplMethod(sym: Symbol): Boolean =
-    sym.isMethod && isInterfaceMember(sym) &&
-    (!(sym hasFlag (DEFERRED | SUPERACCESSOR)) || (sym hasFlag lateDEFERRED))
+  private def needsImplMethod(sym: Symbol) = (
+       sym.isMethod
+    && isInterfaceMember(sym)
+    && (!sym.hasFlag(DEFERRED | SUPERACCESSOR) || (sym hasFlag lateDEFERRED))
+  )
 
   def implClassPhase = currentRun.erasurePhase.next
 
@@ -99,39 +103,20 @@ abstract class AddInterfaces extends InfoTransform {
     }
   })
 
-  /** <p>
-   *    A lazy type to set the info of an implementation class
-   *    The parents of an implementation class for trait <code>iface</code> are:
-   *  </p>
-   *  <ul>
-   *    <li>superclass: <code>Object</code></li>
-   *    <li>
-   *      mixin classes: mixin classes of <code>iface</code> where every
-   *      non-interface trait is mapped to its implementation class, followed
-   *      by <code>iface</code> itself.
-   *    </li>
-   *  </ul>
-   *  <p>
-   *    The declarations of a mixin class are:
-   *  </p>
-   *  <ul>
-   *    <li>
-   *      for every interface member of <code>iface</code> its implementation
-   *      method, if one is needed.
-   *    </li>
-   *    <li>
-   *      every former member of <code>iface</code> that is implementation only
-   *    </li>
-   *  </ul>
+  /** A lazy type to set the info of an implementation class
+   *  The parents of an implementation class for trait iface are:
+   *
+   *  - superclass: Object
+   *  - mixin classes: mixin classes of iface where every non-interface
+   *  trait is mapped to its implementation class, followed by iface itself.
+   *
+   *  The declarations of a mixin class are:
+   *  - for every interface member of iface: its implementation method, if one is needed
+   *  - every former member of iface that is implementation only
    */
   private class LazyImplClassType(iface: Symbol) extends LazyType {
-
-    /** Compute the decls of implementation class <code>implClass</code>,
-     *  given the decls <code>ifaceDecls</code> of its interface.
-     *
-     *  @param implClass  ...
-     *  @param ifaceDecls ...
-     *  @return           ...
+    /** Compute the decls of implementation class implClass,
+     *  given the decls ifaceDecls of its interface.
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
       val decls = new Scope
@@ -274,9 +259,8 @@ abstract class AddInterfaces extends InfoTransform {
   }
 
   /** Add calls to supermixin constructors
-   *  <blockquote><pre>super[mix].$init$()</pre></blockquote>
-   *  to <code>tree</code>. <code>tree</code> which is assumed to be the body
-   *  of a constructor of class <code>clazz</code>.
+   *    `super[mix].$init$()`
+   *  to tree, which is assumed to be the body of a constructor of class clazz.
    */
   private def addMixinConstructorCalls(tree: Tree, clazz: Symbol): Tree = {
     def mixinConstructorCall(impl: Symbol): Tree = atPos(tree.pos) {
@@ -291,7 +275,7 @@ abstract class AddInterfaces extends InfoTransform {
       case Block(stats, expr) =>
         // needs `hasSymbol` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
-        //assert(supercall.symbol.isClassConstructor, supercall)
+        // assert(supercall.symbol.isClassConstructor, supercall)
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }
