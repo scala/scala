@@ -179,6 +179,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def inform[T](msg: String, value: T): T  = returning(value)(x => inform(msg + x))
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
+  def logResult[T](msg: String)(result: T): T = {
+    log(msg + ": " + result)
+    result
+  }
   def logError(msg: String, t: Throwable): Unit = ()
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef): Unit =
