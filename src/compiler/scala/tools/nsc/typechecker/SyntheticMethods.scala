@@ -44,7 +44,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       if (reporter.hasErrors) context makeSilent false else context
     )
     def accessorTypes = clazz.caseFieldAccessors map (_.tpe.finalResultType)
-    def accessorLub   = global.weakLub(accessorTypes)._1
+    def accessorLub     = global.weakLub(accessorTypes)._1
 
     def hasOverridingImplementation(meth: Symbol): Boolean = {
       val sym = clazz.info nonPrivateMember meth.name
@@ -144,71 +144,59 @@ trait SyntheticMethods extends ast.TreeDSL {
       newTypedMethod(method)(This(clazz) ANY_EQ (method ARG 0))
     }
 
+    /** To avoid unchecked warnings on polymorphic classes.
+     */
+    def clazzTypeToTest = clazz.tpe.normalize match {
+      case TypeRef(pre, sym, args) if args.nonEmpty => ExistentialType(sym.typeParams, clazz.tpe)
+      case tp                                       => tp
+    }
+
     /** The canEqual method for case classes.
      *    def canEqual(that: Any) = that.isInstanceOf[This]
      */
     def canEqualMethod: Tree = {
       val method  = makeEqualityMethod(nme.canEqual_)
 
-      newTypedMethod(method)((method ARG 0) IS_OBJ clazz.tpe)
+      newTypedMethod(method)((method ARG 0) IS_OBJ clazzTypeToTest)
     }
 
-    /** The equality method for case classes.  The argument is an Any,
-     *  but because of boxing it will always be an Object, so a check
-     *  is neither necessary nor useful before the cast.
-     *
-     *   def equals(that: Any) =
-     *     (this eq that.asInstanceOf[AnyRef]) ||
-     *     (that match {
-     *       case x @ this.C(this.arg_1, ..., this.arg_n) => x canEqual this
-     *       case _                                       => false
-     *     })
+    /** The equality method for case classes.
+     *  0 args:
+     *    def equals(that: Any) = that.isInstanceOf[this.C] && that.asInstanceOf[this.C].canEqual(this)
+     *  1+ args:
+     *    def equals(that: Any) = (this eq that.asInstanceOf[AnyRef]) || {
+     *      (that.isInstanceOf[this.C]) && {
+     *        val x$1 = that.asInstanceOf[this.C]
+     *        (this.arg_1 == x$1.arg_1) && (this.arg_2 == x$1.arg_2) && ... && (x$1 canEqual this)
+     *       }
+     *    }
      */
     def equalsClassMethod: Tree = {
-      val method           = makeEqualityMethod(nme.equals_)
-      val that             = method ARG 0
-      val constrParamTypes = clazz.primaryConstructor.tpe.paramTypes
+      val method   = makeEqualityMethod(nme.equals_)
+      val that     = Ident(method.paramss.head.head)
+      val typeTest = gen.mkIsInstanceOf(that, clazzTypeToTest, true, false)
+      val typeCast = that AS_ATTR clazz.tpe
 
-      // returns (Apply, Bind)
-      def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
-        val varName     = context.unit.freshTermName(acc.name + "$")
-        val isRepeated  = isRepeatedParamType(cpt)
-        val binding     = Bind(
-          varName,
-          if (isRepeated) Star(WILD.empty) else WILD.empty
+      def argsBody = {
+        val valName       = context.unit.freshTermName(clazz.name + "$")
+        val valSym        = method.newValue(method.pos, valName) setInfo clazz.tpe setFlag SYNTHETIC
+        val valDef        = ValDef(valSym, typeCast)
+        val canEqualCheck = gen.mkMethodCall(valSym, nme.canEqual_, Nil, List(This(clazz)))
+        val pairwise      = clazz.caseFieldAccessors map { accessor =>
+          (Select(This(clazz), accessor) MEMBER_== Select(Ident(valSym), accessor))
+        }
+
+        (
+          (This(clazz) ANY_EQ that) OR
+          (typeTest AND Block(valDef, AND(pairwise :+ canEqualCheck: _*)))
         )
-        val eqMethod: Tree  =
-          if (isRepeated) gen.mkRuntimeCall(nme.sameElements, List(Ident(varName), Ident(acc)))
-          else (Ident(varName) DOT nme.EQ)(Ident(acc))
-
-        (eqMethod, binding)
       }
-
-      // Creates list of parameters and a guard for each
-      val (guards, params) = (clazz.caseFieldAccessors, constrParamTypes).zipped map makeTrees unzip
-
-      // Verify with canEqual method before returning true.
-      def canEqualCheck() = {
-        val that: Tree              = (method ARG 0) AS clazz.tpe
-        val canEqualOther: Symbol   = clazz.info nonPrivateMember nme.canEqual_
-
-        typer typed { (that DOT canEqualOther)(This(clazz)) }
-      }
-
-      // Pattern is classname applied to parameters, and guards are all logical and-ed
-      val guard = AND(guards: _*)
-      // You might think this next line could be written
-      //    val pat = Ident(clazz.companionModule) APPLY params
-      // However this prevents the compiler from bootstrapping,
-      // possibly due to a bug in how case classes are handled when
-      // read from classfiles as opposed to from source.
-      val pat   = Ident(clazz.name.toTermName) APPLY params
 
       newTypedMethod(method) {
-        (This(clazz) ANY_EQ that) OR (that MATCH(
-          (CASE(pat) IF guard)  ==> canEqualCheck()        ,
-          DEFAULT               ==> FALSE
-        ))
+        if (clazz.caseFieldAccessors.isEmpty)
+          typeTest AND ((typeCast DOT nme.canEqual_)(This(clazz)))
+        else
+          argsBody
       }
     }
 

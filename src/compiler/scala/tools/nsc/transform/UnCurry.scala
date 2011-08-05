@@ -263,17 +263,8 @@ abstract class UnCurry extends InfoTransform
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
         new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
-
-        def mkUnchecked(tree: Tree) = {
-          def newUnchecked(expr: Tree) = Annotated(New(gen.scalaDot(UncheckedClass.name), List(Nil)), expr)
-          tree match {
-            case Match(selector, cases) => atPos(tree.pos) { Match(newUnchecked(selector), cases) }
-            case _                      => tree
-          }
-        }
-
         def applyMethodDef() = {
-          val body = if (isPartial) mkUnchecked(fun.body) else fun.body
+          val body = if (isPartial) gen.mkUncheckedMatch(fun.body) else fun.body
           DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {
@@ -291,7 +282,7 @@ abstract class UnCurry extends InfoTransform
             substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(Constant(true))))
           def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false)))
 
-          DefDef(m, mkUnchecked(
+          DefDef(m, gen.mkUncheckedMatch(
             if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
             else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
           ))
