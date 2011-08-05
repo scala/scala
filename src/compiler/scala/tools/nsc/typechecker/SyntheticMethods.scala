@@ -183,7 +183,8 @@ trait SyntheticMethods extends ast.TreeDSL {
         val valDef        = ValDef(valSym, typeCast)
         val canEqualCheck = gen.mkMethodCall(valSym, nme.canEqual_, Nil, List(This(clazz)))
         val pairwise      = clazz.caseFieldAccessors map { accessor =>
-          (Select(This(clazz), accessor) MEMBER_== Select(Ident(valSym), accessor))
+          val method = accessor.tpe member nme.EQ
+          fn(Select(This(clazz), accessor), method, Select(Ident(valSym), accessor))
         }
 
         (
