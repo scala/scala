@@ -435,7 +435,16 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }</dd>
           } else NodeSeq.Empty
 
-        example ++ version ++ sinceVersion ++ exceptions ++ note ++ seeAlso
+        val todo: Seq[scala.xml.Node] =
+          if(!comment.todo.isEmpty) {
+            <dt>To do</dt>
+            <dd>{
+              val todoXml: List[scala.xml.NodeSeq] = (for(todo <- comment.todo ) yield <span class="cmt">{bodyToHtml(todo)}</span> )
+              todoXml.reduceLeft(_ ++ Text(", ") ++ _)
+            }</dd>
+          } else NodeSeq.Empty
+
+        example ++ version ++ sinceVersion ++ exceptions ++ todo ++ note ++ seeAlso
 
       case _ => NodeSeq.Empty
     }
