@@ -212,6 +212,13 @@ trait TypeDiagnostics {
     else if (sym.variance == -1) "contravariant"
     else "invariant"
 
+  // I think this should definitely be on by default, but I need to
+  // play with it a bit longer.  For now it's behind -Xlint.
+  def explainAlias(tp: Type) = (
+    if (!settings.lint.value || (tp eq tp.normalize)) ""
+    else "    (which expands to)\n             " + tp.normalize
+  )
+
   /** Look through the base types of the found type for any which
    *  might have been valid subtypes if given conformant type arguments.
    *  Examine those for situations where the type error would have been
@@ -286,12 +293,12 @@ trait TypeDiagnostics {
     ""    // no elaborable variance situation found
   }
 
-  def foundReqMsg(found: Type, req: Type): String = {
-    (withDisambiguation(List(), found, req) {
-      ";\n found   : " + found.toLongString + existentialContext(found) +
-       "\n required: " + req + existentialContext(req)
-    }) + explainVariance(found, req)
-  }
+  def foundReqMsg(found: Type, req: Type): String = (
+    withDisambiguation(Nil, found, req)(
+      ";\n found   : " + found.toLongString + existentialContext(found) + explainAlias(found) +
+       "\n required: " + req + existentialContext(req) + explainAlias(req)
+    ) + explainVariance(found, req)
+  )
 
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
     // save the name because it will be mutated until it has been

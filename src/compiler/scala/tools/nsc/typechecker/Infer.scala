@@ -229,7 +229,30 @@ trait Infer {
     }
 
     def typeErrorTree(tree: Tree, found: Type, req: Type): Tree = {
-      typeError(tree.pos, found, req)
+      // If the expected type is a refinement type, and the found type is a refinement or an anon
+      // class, we can greatly improve the error message by retyping the tree to recover the actual
+      // members present, then display along with the expected members. This is done here because
+      // this is the last point where we still have access to the original tree, rather than just
+      // the found/req types.
+      val foundType: Type = req.normalize match {
+        case RefinedType(parents, decls) if !decls.isEmpty && found.typeSymbol.isAnonOrRefinementClass =>
+          val retyped    = typer typed (tree.duplicate setType null)
+          val foundDecls = retyped.tpe.decls filter (sym => !sym.isConstructor && !sym.isSynthetic)
+
+          if (foundDecls.isEmpty) found
+          else {
+            // The members arrive marked private, presumably because there was no
+            // expected type and so they're considered members of an anon class.
+            foundDecls foreach (_ resetFlag (PRIVATE | PROTECTED))
+            // TODO: if any of the found parents match up with required parents after normalization,
+            // print the error so that they match. The major beneficiary there would be
+            // java.lang.Object vs. AnyRef.
+            refinedType(found.parents, found.typeSymbol.owner, foundDecls, tree.pos)
+          }
+        case _ =>
+          found
+      }
+      typeError(tree.pos, foundType, req)
       setError(tree)
     }
 

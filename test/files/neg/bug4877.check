@@ -1,0 +1,22 @@
+bug4877.scala:4: error: type mismatch;
+ found   : java.lang.Object{def bar: Int}
+ required: AnyRef{def bar: String}
+  def foo: AnyRef { def bar: String } = new AnyRef { def bar = 42 }
+                                        ^
+bug4877.scala:6: error: type mismatch;
+ found   : java.lang.Object{def bar(x: Int): java.lang.String}
+ required: AnyRef{def bar(x: Int): Int}
+  def foo3: AnyRef { def bar(x: Int): Int } = new AnyRef { def bar(x: Int) = "abc" }
+                                              ^
+bug4877.scala:7: error: type mismatch;
+ found   : java.lang.Object with C{def bar(x: Int): Int}
+ required: C{def bar(x: Int): Int; def quux(x: Int): Int}
+  def foo4: C { def bar(x: Int): Int ; def quux(x: Int): Int } = new C { def bar(x: Int) = 5 }
+                                                                 ^
+bug4877.scala:17: error: type mismatch;
+ found   : java.lang.Object{type Mom = String; def bar(x: Int): Int; def bippy(): List[Int]}
+ required: B.this.Bippy    (which expands to)
+             AnyRef{type Mom; def bar(x: Int): this.Mom; def bippy(): List[this.Mom]}
+  val x: Bippy = new AnyRef {
+                 ^
+four errors found
