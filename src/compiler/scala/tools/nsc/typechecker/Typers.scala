@@ -2101,7 +2101,7 @@ trait Typers extends Modes with Adaptations {
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def includesTargetPos(tree: Tree) =
-        tree.pos.isRange && context.unit != null && (tree.pos includes context.unit.targetPos)
+        tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
       def typedStat(stat: Tree): Tree = {
         if (context.owner.isRefinementClass && !treeInfo.isDeclarationOrTypeDef(stat))
@@ -3779,7 +3779,7 @@ trait Typers extends Modes with Adaptations {
             // compilation units. Defined symbols take precedence over erroneous imports.
             if (defSym.definedInPackage &&
                 (!currentRun.compiles(defSym) ||
-                 (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
+                 context.unit.exists && defSym.sourceFile != context.unit.source.file))
               defSym = NoSymbol
             else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
               impSym = NoSymbol
@@ -4328,8 +4328,7 @@ trait Typers extends Modes with Adaptations {
         case ex: Exception =>
           if (settings.debug.value) // @M causes cyclic reference error
             Console.println("exception when typing "+tree+", pt = "+pt)
-          if ((context ne null) && (context.unit ne null) &&
-              (context.unit.source ne null) && (tree ne null))
+          if (context != null && context.unit.exists && tree != null)
             logError("AT: " + (tree.pos).dbgString, ex)
           throw ex
       }

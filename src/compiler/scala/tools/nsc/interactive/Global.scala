@@ -205,7 +205,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
    */
   override def signalDone(context: Context, old: Tree, result: Tree) {
     if (interruptsEnabled && analyzer.lockedCount == 0) {
-      if (context.unit != null &&
+      if (context.unit.exists &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
         var located = new TypedLocator(context.unit.targetPos) locateIn result

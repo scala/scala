@@ -48,7 +48,7 @@ abstract class GenICode extends SubComponent  {
 
     override def description = "Generate ICode from the AST"
 
-    var unit: CompilationUnit = _
+    var unit: CompilationUnit = NoCompilationUnit
 
     override def run() {
       scalaPrimitives.init
@@ -61,7 +61,7 @@ abstract class GenICode extends SubComponent  {
       unit.icode.clear
       informProgress("Generating icode for " + unit)
       gen(unit.body)
-      this.unit = null
+      this.unit = NoCompilationUnit
     }
 
     def gen(tree: Tree): Context = gen(tree, new Context())

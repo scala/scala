@@ -51,6 +51,19 @@ abstract class SourceFile {
   def identifier(pos: Position): Option[String] = None
 }
 
+/** An object representing a missing source file.
+ */
+object NoSourceFile extends SourceFile {
+  def content                   = Array()
+  def file                      = null    // TODO: push NPE-defense out another level or two
+  def isLineBreak(idx: Int)     = false
+  def isSelfContained           = true
+  def length                    = -1
+  def offsetToLine(offset: Int) = -1
+  def lineToOffset(index : Int) = -1
+  override def toString = "NoSourceFile"
+}
+
 object ScriptSourceFile {
   /** Length of the script header from the given content, if there is one.
    *  The header begins with "#!" or "::#!" and ends with a line starting

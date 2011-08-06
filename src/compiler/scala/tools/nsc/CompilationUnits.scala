@@ -5,11 +5,19 @@
 
 package scala.tools.nsc
 
-import util.{ FreshNameCreator,Position,NoPosition,SourceFile }
+import util.{ FreshNameCreator, Position, NoPosition, SourceFile, NoSourceFile }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
 
 trait CompilationUnits { self: Global =>
+
+  /** An object representing a missing compilation unit.
+   */
+  object NoCompilationUnit extends CompilationUnit(NoSourceFile) {
+    override lazy val isJava = false
+    override def exists = false
+    override def toString() = "NoCompilationUnit"
+  }
 
   /** One unit of compilation that has been submitted to the compiler.
     * It typically corresponds to a single file of source code.  It includes
@@ -24,6 +32,8 @@ trait CompilationUnits { self: Global =>
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
+
+    def exists = source != NoSourceFile && source != null
 
 //    def parseSettings() = {
 //      val argsmarker = "SCALAC_ARGS"

@@ -249,7 +249,7 @@ trait Infer {
         tree setSymbol sym setType ErrorType
       } else {
         val topClass = context.owner.toplevelClass
-        if (context.unit != null)
+        if (context.unit.exists)
           context.unit.depends += sym.toplevelClass
 
         var sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
