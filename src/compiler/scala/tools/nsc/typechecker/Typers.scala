@@ -1795,10 +1795,10 @@ trait Typers extends Modes with Adaptations {
       if (phase.id <= currentRun.typerPhase.id) {
         val allParams = meth.paramss.flatten
         for (p <- allParams) {
-          deprecatedName(p).foreach(n => {
-            if (allParams.exists(p1 => p1.name == n || (p != p1 && deprecatedName(p1) == Some(n))))
+          for (n <- p.deprecatedParamName) {
+            if (allParams.exists(p1 => p1.name == n || (p != p1 && p1.deprecatedParamName.exists(_ == n))))
               error(p.pos, "deprecated parameter name "+ n +" has to be distinct from any other parameter name (deprecated or not).")
-          })
+          }
         }
       }
 

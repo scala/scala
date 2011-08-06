@@ -437,6 +437,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
+    def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
+
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.  However nothing in the compiler

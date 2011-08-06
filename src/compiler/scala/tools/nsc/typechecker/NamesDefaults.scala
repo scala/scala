@@ -21,8 +21,13 @@ trait NamesDefaults { self: Analyzer =>
   val defaultParametersOfMethod =
     perRunCaches.newWeakMap[Symbol, Set[Symbol]]() withDefaultValue Set()
 
-  case class NamedApplyInfo(qual: Option[Tree], targs: List[Tree],
-                            vargss: List[List[Tree]], blockTyper: Typer)
+  case class NamedApplyInfo(
+    qual:       Option[Tree],
+    targs:      List[Tree],
+    vargss:     List[List[Tree]],
+    blockTyper: Typer
+  ) { }
+
   val noApplyInfo = NamedApplyInfo(None, Nil, Nil, null)
 
   def nameOf(arg: Tree) = arg match {
@@ -558,17 +563,11 @@ trait NamesDefaults { self: Analyzer =>
       val p = rest.head
       if (!p.isSynthetic) {
         if (p.name == name) return (i, None)
-        if (deprecatedName(p) == Some(name)) return (i, Some(p.name))
+        if (p.deprecatedParamName == Some(name)) return (i, Some(p.name))
       }
       i += 1
       rest = rest.tail
     }
     (-1, None)
   }
-
-  def deprecatedName(sym: Symbol): Option[Name] =
-    sym.getAnnotation(DeprecatedNameAttr).map(ann => (ann.args(0): @unchecked) match {
-      case Apply(fun, Literal(str) :: Nil) if (fun.symbol == Symbol_apply) =>
-        newTermName(str.stringValue)
-    })
 }

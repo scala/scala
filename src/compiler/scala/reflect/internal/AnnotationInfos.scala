@@ -118,17 +118,21 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
       AnnotationInfo(atp, args.map(subs(_)), assocs).setPos(pos)
     }
 
-    // !!! when annotation arguments are not literal strings, but any sort of
-    // assembly of strings, there is a fair chance they will turn up here not as
-    // Literal(const) but some arbitrary AST.
-    def stringArg(index: Int): Option[String] = if(args.size > index) Some(args(index) match {
-      case Literal(const) => const.stringValue
-      case x              => x.toString // should not be necessary, but better than silently ignoring an issue
-    }) else None
+    def stringArg(index: Int) = constantAtIndex(index) map (_.stringValue)
+    def intArg(index: Int)    = constantAtIndex(index) map (_.intValue)
+    def symbolArg(index: Int) = argAtIndex(index) collect {
+      case Apply(fun, Literal(str) :: Nil) if fun.symbol == definitions.Symbol_apply =>
+        newTermName(str.stringValue)
+    }
 
-    def intArg(index: Int): Option[Int] = if(args.size > index) Some(args(index)) collect {
-      case Literal(Constant(x: Int)) => x
-    } else None
+    // !!! when annotation arguments are not literals, but any sort of
+    // expression, there is a fair chance they will turn up here not as
+    // Literal(const) but some arbitrary AST.
+    def constantAtIndex(index: Int): Option[Constant] =
+      argAtIndex(index) collect { case Literal(x) => x }
+
+    def argAtIndex(index: Int): Option[Tree] =
+      if (index < args.size) Some(args(index)) else None
   }
 
   object AnnotationInfo extends AnnotationInfoExtractor
