@@ -1343,6 +1343,13 @@ trait Namers { self: Analyzer =>
               " for: " + sym);
       }
 
+      if (sym.isConstructor) {
+        if (sym.hasFlag(OVERRIDE | ABSOVERRIDE))
+          context.error(sym.pos, "`override' modifier not allowed for constructors")
+        if (sym.isImplicit)
+          context.error(sym.pos, "`implicit' modifier not allowed for constructors")
+      }
+
       if (sym.hasFlag(IMPLICIT) && !sym.isTerm)
         context.error(sym.pos, "`implicit' modifier can be used only for values, variables and methods")
       if (sym.hasFlag(IMPLICIT) && sym.owner.isPackageClass)
@@ -1354,8 +1361,6 @@ trait Namers { self: Analyzer =>
           "\nit should be omitted for abstract members")
       if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && !sym.hasFlag(TRAIT) && sym.isClass)
         context.error(sym.pos, "`override' modifier not allowed for classes")
-      if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && sym.isConstructor)
-        context.error(sym.pos, "`override' modifier not allowed for constructors")
       if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
         context.error(sym.pos, "`abstract override' modifier only allowed for members of traits")
       if (sym.isLazy && sym.hasFlag(PRESUPER))
