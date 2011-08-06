@@ -17,10 +17,18 @@ trait ScalaSettings extends AbsScalaSettings
                        with Warnings {
   self: MutableSettings =>
 
-  import Defaults.scalaUserClassPath
-
   /** Set of settings */
   protected lazy val allSettings = mutable.HashSet[Setting]()
+
+  /** Against my better judgment, giving in to martin here and allowing
+   *  CLASSPATH to be used automatically.  So for the user-specified part
+   *  of the classpath:
+   *
+   *  - If -classpath or -cp is given, it is that
+   *  - Otherwise, if CLASSPATH is set, it is that
+   *  - If neither of those, then "." is used.
+   */
+  protected def defaultClasspath = Option(sys.props("CLASSPATH")) getOrElse "."
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
@@ -35,7 +43,7 @@ trait ScalaSettings extends AbsScalaSettings
    */
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", scalaUserClassPath) .
+  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) .
                                             withAbbreviation ("-cp")
   val d             = OutputSetting     (outputDirs, ".")
   val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program") .

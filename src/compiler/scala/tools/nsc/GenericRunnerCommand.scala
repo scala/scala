@@ -35,7 +35,10 @@ extends CompilerCommand(args, settings) {
     else {
       val f = io.File(target)
       if (!f.hasExtension("class", "jar", "zip") && f.canRead) AsScript
-      else sys.error("Cannot figure out how to run target: " + target)
+      else {
+        Console.err.println("No such file or class on classpath: " + target)
+        Error
+      }
     }
   }
   /** String with either the jar file, class name, or script file name. */
