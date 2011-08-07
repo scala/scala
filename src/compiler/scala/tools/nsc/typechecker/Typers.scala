@@ -3830,7 +3830,9 @@ trait Typers extends Modes with Adaptations {
                 log(context.imports)//debug
               }
               if (inaccessibleSym eq NoSymbol) {
-                error(tree.pos, "not found: "+decodeWithKind(name, context.owner))
+                // Avoiding some spurious error messages: see SI-2388.
+                if (reporter.hasErrors && (name startsWith tpnme.ANON_CLASS_NAME)) ()
+                else error(tree.pos, "not found: "+decodeWithKind(name, context.owner))
               }
               else new AccessError(
                 tree, inaccessibleSym, context.enclClass.owner.thisType,
