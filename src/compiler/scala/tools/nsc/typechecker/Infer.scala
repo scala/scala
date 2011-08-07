@@ -1540,8 +1540,30 @@ trait Infer {
         val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
         if (pat.tpe <:< pt1)
           ptvars foreach instantiateTypeVar
-        else
-          error(pat.pos, "pattern type is incompatible with expected type"+foundReqMsg(pat.tpe, pt))
+        else {
+          val sym   = pat.tpe.typeSymbol
+          val clazz = sym.companionClass
+          val addendum = (
+            if (sym.isModuleClass && clazz.isCaseClass && (clazz isSubClass pt1.typeSymbol)) {
+              // TODO: move these somewhere reusable.
+              val typeString = clazz.typeParams match {
+                case Nil  => "" + clazz.name
+                case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
+              }
+              val caseString = (
+                clazz.caseFieldAccessors
+                map (_ => "_")    // could use the actual param names here
+                mkString (clazz.name + "(", ",", ")")
+              )
+              (
+                "\nNote: if you intended to match against the class, try `case _: " +
+                typeString + "` or `case " + caseString + "`"
+              )
+            }
+            else ""
+          )
+          error(pat.pos, "pattern type is incompatible with expected type"+foundReqMsg(pat.tpe, pt) + addendum)
+        }
       }
 
     object toOrigin extends TypeMap {
