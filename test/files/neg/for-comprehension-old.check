@@ -1,25 +1,26 @@
-for-comprehension-old.scala:2: error: assignment in for comprehension must be preceded by `val`
+for-comprehension-old.scala:2: warning: for comprehension assignment without a `val' declaration is deprecated.
   for (x <- 1 to 5 ; y = x) yield x+y           // fail
-                       ^
+                      ^
+for-comprehension-old.scala:4: warning: for comprehension assignment without a `val' declaration is deprecated.
+  for (val x <- 1 to 5 ; y = x) yield x+y       // fail
+                          ^
+for-comprehension-old.scala:7: warning: for comprehension assignment without a `val' declaration is deprecated.
+  for (z <- 1 to 2 ; x <- 1 to 5 ; y = x) yield x+y           // fail
+                                    ^
+for-comprehension-old.scala:9: warning: for comprehension assignment without a `val' declaration is deprecated.
+  for (z <- 1 to 2 ; val x <- 1 to 5 ; y = x) yield x+y       // fail
+                                        ^
 for-comprehension-old.scala:4: error: val in for comprehension must be followed by assignment
   for (val x <- 1 to 5 ; y = x) yield x+y       // fail
              ^
-for-comprehension-old.scala:4: error: assignment in for comprehension must be preceded by `val`
-  for (val x <- 1 to 5 ; y = x) yield x+y       // fail
-                           ^
 for-comprehension-old.scala:5: error: val in for comprehension must be followed by assignment
   for (val x <- 1 to 5 ; val y = x) yield x+y   // fail
              ^
-for-comprehension-old.scala:7: error: assignment in for comprehension must be preceded by `val`
-  for (z <- 1 to 2 ; x <- 1 to 5 ; y = x) yield x+y           // fail
-                                     ^
 for-comprehension-old.scala:9: error: val in for comprehension must be followed by assignment
   for (z <- 1 to 2 ; val x <- 1 to 5 ; y = x) yield x+y       // fail
                            ^
-for-comprehension-old.scala:9: error: assignment in for comprehension must be preceded by `val`
-  for (z <- 1 to 2 ; val x <- 1 to 5 ; y = x) yield x+y       // fail
-                                         ^
 for-comprehension-old.scala:10: error: val in for comprehension must be followed by assignment
   for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail
                            ^
-8 errors found
+four warnings found
+four errors found
