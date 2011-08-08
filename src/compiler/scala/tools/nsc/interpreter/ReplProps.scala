@@ -13,6 +13,7 @@ class ReplProps {
 
   val jlineDebug = bool("scala.tools.jline.internal.Log.debug")
   val jlineTrace = bool("scala.tools.jline.internal.Log.trace")
+  val noThreads  = bool("scala.repl.no-threads")
 
   val info  = bool("scala.repl.info")
   val debug = bool("scala.repl.debug")
