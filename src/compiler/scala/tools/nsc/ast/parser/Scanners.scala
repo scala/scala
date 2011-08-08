@@ -344,10 +344,7 @@ trait Scanners extends ScannersCommon {
             nextChar()
             if (ch == '\"') {
               nextRawChar()
-              val saved = lineStartOffset
               getMultiLineStringLit()
-              if (lineStartOffset != saved) // ignore linestarts within a multi-line string
-                lastLineStartOffset = saved
             } else {
               token = STRINGLIT
               strVal = ""

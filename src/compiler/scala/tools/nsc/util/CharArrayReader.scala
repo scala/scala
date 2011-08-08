@@ -47,7 +47,10 @@ abstract class CharArrayReader { self =>
     }
   }
 
-  /** Advance one character, leaving CR;LF pairs intact */
+  /** Advance one character, leaving CR;LF pairs intact.
+   *  This is for use in multi-line strings, so there are no
+   *  "potential line ends" here.
+   */
   final def nextRawChar() {
     if (charOffset >= buf.length) {
       ch = SU
@@ -56,7 +59,6 @@ abstract class CharArrayReader { self =>
       ch = c
       charOffset += 1
       if (c == '\\') potentialUnicode()
-      else if (c < ' ') potentialLineEnd()
     }
   }
 
