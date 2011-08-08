@@ -30,7 +30,7 @@ object Test {
     def main(args: Array[String]) {
         for (length <- 0 to maxListLength;
              bitmap <- 0 until (1 << length);
-             data = List.range(0, length) map { x: Int =>
+             val data = List.range(0, length) map { x: Int =>
                if ((bitmap & (1 << x)) != 0) BigInt(x+16)
                else BigInt(x)
              })

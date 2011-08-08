@@ -24,7 +24,7 @@ object Test {
     val input = L.range(0,20)
     val oddFirstTimesTwo =
       for {x <- input
-           xf = firstDigit(x)
+           val xf = firstDigit(x)
            if xf % 2 == 1}
         yield x*2
     println(oddFirstTimesTwo)
@@ -36,9 +36,9 @@ object Test {
     val input = L.range(0, 20)
     val oddFirstTimesTwo =
       for {x <- input
-           xf = firstDigit(x)
-           yf = x - firstDigit(x) / 10
-           (a, b) = (xf - yf, xf + yf)
+           val xf = firstDigit(x)
+           val yf = x - firstDigit(x) / 10
+           val (a, b) = (xf - yf, xf + yf)
            if xf % 2 == 1}
         yield a + b
     println(oddFirstTimesTwo)
@@ -51,7 +51,7 @@ object Test {
     val input = L.range(0, 20).iterator
     val oddFirstTimesTwo =
       for {x <- input
-          xf = firstDigit(x)
+          val xf = firstDigit(x)
           if xf % 2 == 1}
         yield x*2
     println(oddFirstTimesTwo.toList)
@@ -63,7 +63,7 @@ object Test {
     val input = L.range(0,20)
     val oddFirstTimesTwo =
       for {x <- input
-          xf = firstDigit(x)
+          val xf = firstDigit(x)
           if xf % 2 == 1}
         yield xf*2
     println(oddFirstTimesTwo)
@@ -80,7 +80,7 @@ object Test {
 
     val input = L.range(0,20)
     for {x <- input
-         xf = fdct(x)
+         val xf = fdct(x)
          if xf % 2 == 1}
       yield xf
 

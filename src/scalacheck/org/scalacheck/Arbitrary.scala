@@ -143,7 +143,7 @@ object Arbitrary {
   /** Arbitrary instance of Date */
   implicit lazy val arbDate: Arbitrary[Date] = Arbitrary(for {
     l <- arbitrary[Long]
-    d = new Date
+    val d = new Date
   } yield new Date(d.getTime + l))
 
   /** Arbitrary instance of Throwable */

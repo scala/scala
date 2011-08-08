@@ -116,7 +116,7 @@ object Programs {
       (lhs.tyvars ::: (rhs flatMap (t => t.tyvars))).distinct;
     def newInstance = {
       var s: Subst = List();
-      for (val a <- tyvars) { s = Binding(a, newVar(a)) :: s }
+      for (a <- tyvars) { s = Binding(a, newVar(a)) :: s }
       Clause(lhs map s, rhs map (t => t map s))
     }
     override def toString() =
@@ -141,9 +141,9 @@ object Programs {
 	if (solve1(qs, s).isEmpty) Stream.cons(s, Stream.empty)
 	else Stream.empty
       case q :: query1 =>
-	for (val clause <- list2stream(clauses);
-	     val s1 <- tryClause(clause.newInstance, q, s);
-	     val s2 <- solve1(query1, s1)) yield s2
+	for (clause <- list2stream(clauses);
+	     s1 <- tryClause(clause.newInstance, q, s);
+	     s2 <- solve1(query1, s1)) yield s2
     }
 
     def solve1(query: List[Term], s: Subst): Stream[Subst] = {
@@ -154,8 +154,7 @@ object Programs {
 
     def tryClause(c: Clause, q: Term, s: Subst): Stream[Subst] = {
       if (debug) Console.println("trying " + c);
-      for (val s1 <- option2stream(unify(q, c.lhs, s));
-	   val s2 <- solve1(c.rhs, s1)) yield s2;
+      for (s1 <- option2stream(unify(q, c.lhs, s)); s2 <- solve1(c.rhs, s1)) yield s2;
     }
 
     solve1(query, List())

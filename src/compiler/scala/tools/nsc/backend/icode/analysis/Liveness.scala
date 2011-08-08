@@ -34,7 +34,6 @@ abstract class Liveness {
   final class LivenessAnalysis extends DataFlowAnalysis[livenessLattice.type] {
     type P = BasicBlock
     val lattice = livenessLattice
-
     var method: IMethod = _
 
     val gen: mutable.Map[BasicBlock, Set[Local]] = perRunCaches.newMap()
@@ -42,11 +41,10 @@ abstract class Liveness {
 
     def init(m: IMethod) {
       this.method = m
-      gen.clear
-      kill.clear
+      gen.clear()
+      kill.clear()
 
-      for (b <- m.code.blocks;
-           (g, k) = genAndKill(b)) {
+      for (b <- m.code.blocks; val (g, k) = genAndKill(b)) {
         gen  += (b -> g)
         kill += (b -> k)
       }

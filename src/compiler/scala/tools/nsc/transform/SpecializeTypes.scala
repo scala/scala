@@ -1512,7 +1512,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val (oldtparams, newtparams) = reskolemize(tparams)
 
       // create fresh symbols for value parameters to hold the skolem types
-      val vparamss1 = List(for (vdef <- vparamss.head; param = vdef.symbol) yield {
+      val vparamss1 = List(for (vdef <- vparamss.head; val param = vdef.symbol) yield {
         ValDef(param.cloneSymbol(symbol).setInfo(param.info.substSym(oldtparams, newtparams)))
       })
 

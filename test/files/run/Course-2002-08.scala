@@ -135,9 +135,9 @@ object M3 {
 object M4 {
 
   def test = {
-    for (val i <- range(1, 4)) { Console.print(i + " ") };
+    for (i <- range(1, 4)) { Console.print(i + " ") };
     Console.println;
-    Console.println(for (val i <- range(1, 4)) yield i);
+    Console.println(for (i <- range(1, 4)) yield i);
     Console.println;
   }
 }
@@ -561,14 +561,14 @@ class Main() extends CircuitSimulator() {
     val outNum = 1 << n;
 
     val in = new Wire();
-    val ctrl = for (val x <- range(0,n)) yield { new Wire() };
-    val out = for (val x <- range(0,outNum)) yield { new Wire() };
+    val ctrl = for (x <- range(0,n)) yield { new Wire() };
+    val out = for (x <- range(0,outNum)) yield { new Wire() };
 
     demux(in, ctrl.reverse, out.reverse);
 
     probe("in", in);
-    for (val Pair(x,c) <- range(0,n) zip ctrl) { probe("ctrl" + x, c) }
-    for (val Pair(x,o) <- range(0,outNum) zip out) { probe("out" + x, o) }
+    for (Pair(x,c) <- range(0,n) zip ctrl) { probe("ctrl" + x, c) }
+    for (Pair(x,o) <- range(0,outNum) zip out) { probe("out" + x, o) }
 
     in.setSignal(true);
     run;

@@ -18,6 +18,6 @@ class Foo extends TestJava {
   val aVal = repeatParam("1","2","3") */
 
   // THIS YIELDS TO CRASH
-  for (a <- 1 to 4 ; anotherVal = repeatParam("1","2","3"))
+  for (a <- 1 to 4 ; val anotherVal = repeatParam("1","2","3"))
     yield anotherVal
 }

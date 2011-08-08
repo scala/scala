@@ -75,12 +75,13 @@ abstract class ReachingDefinitions {
 
     def init(m: IMethod) {
       this.method = m
-      gen.clear;   kill.clear
-      drops.clear; outStack.clear
 
-      for (b <- m.code.blocks.toList;
-           (g, k) = genAndKill(b);
-           (d, st) = dropsAndGen(b)) {
+      gen.clear()
+      kill.clear()
+      drops.clear()
+      outStack.clear()
+
+      for (b <- m.code.blocks.toList; val (g, k) = genAndKill(b); val (d, st) = dropsAndGen(b)) {
         gen  += (b -> g)
         kill += (b -> k)
         drops += (b -> d)
@@ -96,7 +97,6 @@ abstract class ReachingDefinitions {
         m.exh foreach { e =>
           in(e.startBlock) = lattice.IState(new ListSet[Definition], List(new ListSet[(BasicBlock, Int)]))
         }
-
       }
     }
 

@@ -86,7 +86,7 @@ object Pretty {
       "> Collected test data: " / {
         for {
           (xs,r) <- fm.getRatios
-          ys = xs - ()
+          val ys = xs - ()
           if !ys.isEmpty
         } yield round(r*100)+"% " + ys.mkString(", ")
       }.mkString("\n")

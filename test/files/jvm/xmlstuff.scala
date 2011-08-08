@@ -27,7 +27,7 @@ object Test {
     <bar value="5" gi='go'/>
     </foo>;
 
-    val pelems_1 = for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
+    val pelems_1 = for (x <- p \ "bar"; y <- p \ "baz" ) yield {
       Text(x.attributes("value").toString + y.attributes("bazValue").toString+ "!")
     };
     val pelems_2 = new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) };
