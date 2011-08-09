@@ -18,7 +18,7 @@ object Bug4891 extends SigTest {
   def main(args: Array[String]): Unit = {
     show[T1[_]]()
     show[C1[_]]()
-    show[C2[_]]()
+    show[C2[_]]("m1")
 
     println(classOf[T1[_]].getGenericSuperclass)
     classOf[T1[_]].getGenericInterfaces foreach println
