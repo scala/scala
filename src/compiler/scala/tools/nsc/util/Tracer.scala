@@ -7,21 +7,36 @@ package scala.tools.nsc
 package util
 
 import java.io.PrintStream
+import scala.runtime.ScalaRunTime
 
 class Tracer(enabled: () => Boolean) {
   def out: PrintStream = System.out
   def intoString(x: Any): String = "" + x
-  def stringify(x: Any): String = x match {
-    case null                   => "null"
-    case x: TraversableOnce[_]  => x map stringify mkString ", "
-    case x: Product             => stringify(x.productIterator)
-    case x: AnyRef              => intoString(x)
+
+  def stringify(x: Any) = ScalaRunTime stringOf x
+
+  // So can pass tuples, lists, whatever as arguments and don't
+  // get a lot of extra parens or noisy prefixes.
+  def stringifyArgs(x: Any) = {
+    x match {
+      case x: TraversableOnce[_] => x map stringify mkString ", "
+      case x: Product            => x.productIterator map stringify mkString ", "
+      case _                     => stringify(x)
+    }
   }
 
   private val LBRACE = "{"
   private val RBRACE = "}"
   private var indentLevel = 0
-  private def ind(s: String) = (" " * (indentLevel * 2)) + s
+  private def spaces = " " * (indentLevel * 2)
+  private def pblock(result: Any) = {
+    p(LBRACE + "\n")
+    indented(p(spaces + stringify(result) + "\n"))
+    p(spaces + RBRACE + "\n")
+  }
+  private def passign(name: String, args: String) =
+    p(spaces + name + "(" + args + ") = ")
+
   private def indented[T](body: => T): T = {
     indentLevel += 1
     try body
@@ -31,30 +46,23 @@ class Tracer(enabled: () => Boolean) {
     out.print(s)
     out.flush()
   }
-  private def pin[T](x: T): T = {
-    p(ind("" + x))
-    x
-  }
+
   def apply[T](name: String, args: => Any)(body: => T): T = {
     val result = body
+
     if (enabled()) {
+      passign(name, stringifyArgs(args))
       // concise output optimization
-      val boolResult = result match {
-        case x: Boolean => Some(x)
-        case _          => None
+      val isOneliner = result match {
+        case _: Boolean | _: None.type => true
+        case s: String                 => s.length < 40
+        case _                         => false
       }
-      p(ind("%s(%s) = %s\n".format(
-        name,
-        stringify(args),
-        boolResult getOrElse LBRACE))
-      )
-      if (boolResult.isEmpty) {
-        indented(pin(result))
-        p("\n" + ind(RBRACE))
-      }
-      result
+      if (isOneliner) p(stringify(result) + "\n")
+      else pblock(result)
     }
-    else result
+
+    result
   }
 }
 
