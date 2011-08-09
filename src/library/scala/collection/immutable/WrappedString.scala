@@ -13,7 +13,6 @@ package immutable
 
 import generic._
 import mutable.{Builder, StringBuilder}
-import scala.util.matching.Regex
 
 /**
  *  This class serves as a wrapper augmenting `String`s with all the operations
