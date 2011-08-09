@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#
+
+file=${1:-test/files/run/bug4891/S_1.scala}
+# src/library/scala/collection/immutable/MapLike.scala
+
+rm -rf /tmp/o1 /tmp/o2
+mkdir /tmp/o1 /tmp/o2
+
+scalac3 -d /tmp/o1 $file
+pscalac -d /tmp/o2 $file
+
+jpdiff /tmp/o1 /tmp/o2

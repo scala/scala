@@ -11,8 +11,6 @@ import scala.runtime.ScalaRunTime
 
 class Tracer(enabled: () => Boolean) {
   def out: PrintStream = System.out
-  def intoString(x: Any): String = "" + x
-
   def stringify(x: Any) = ScalaRunTime stringOf x
 
   // So can pass tuples, lists, whatever as arguments and don't
@@ -52,14 +50,18 @@ class Tracer(enabled: () => Boolean) {
 
     if (enabled()) {
       passign(name, stringifyArgs(args))
+      val resultToPrint = result match {
+        case Some(x)  => x
+        case _        => result
+      }
       // concise output optimization
-      val isOneliner = result match {
+      val isOneliner = resultToPrint match {
         case _: Boolean | _: None.type => true
         case s: String                 => s.length < 40
         case _                         => false
       }
-      if (isOneliner) p(stringify(result) + "\n")
-      else pblock(result)
+      if (isOneliner) p(stringify(resultToPrint) + "\n")
+      else pblock(resultToPrint)
     }
 
     result

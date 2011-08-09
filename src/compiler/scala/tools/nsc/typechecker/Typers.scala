@@ -186,6 +186,16 @@ trait Typers extends Modes with Adaptations {
     var context = context0
     def context1 = context
 
+    def dropExistential(tp: Type): Type = tp match {
+      case ExistentialType(tparams, tpe) =>
+        new SubstWildcardMap(tparams).apply(tp)
+      case TypeRef(_, sym, _) if sym.isAliasType =>
+        val tp0 = tp.normalize
+        val tp1 = dropExistential(tp0)
+        if (tp1 eq tp0) tp else tp1
+      case _ => tp
+    }
+
     /** Check that <code>tree</code> is a stable expression.
      *
      *  @param tree ...
@@ -4262,17 +4272,6 @@ trait Typers extends Modes with Adaptations {
      */
     def typed(tree: Tree, mode: Int, pt: Type): Tree = {
       indentTyping()
-
-      def dropExistential(tp: Type): Type = tp match {
-        case ExistentialType(tparams, tpe) =>
-          debuglog("Dropping existential: " + tree + " " + tp)
-          new SubstWildcardMap(tparams).apply(tp)
-        case TypeRef(_, sym, _) if sym.isAliasType =>
-          val tp0 = tp.normalize
-          val tp1 = dropExistential(tp0)
-          if (tp1 eq tp0) tp else tp1
-        case _ => tp
-      }
 
       var alreadyTyped = false
       try {
