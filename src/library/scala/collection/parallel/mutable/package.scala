@@ -1,22 +1,25 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
 package scala.collection.parallel
-
-
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.ArraySeq
 import scala.collection.generic.Sizing
 
-
-
 package object mutable {
-
   /* aliases */
-
   type ParArrayCombiner[T] = ResizableParArrayCombiner[T]
   val ParArrayCombiner = ResizableParArrayCombiner
+}
 
+package mutable {
   /* classes and traits */
-
   private[mutable] trait SizeMapUtils {
 
     protected def calcNumElems(from: Int, until: Int, tableLength: Int, sizeMapBucketSize: Int) = {
@@ -53,7 +56,6 @@ package object mutable {
   }
 
   /* hack-arounds */
-
   private[mutable] class ExposedArrayBuffer[T] extends ArrayBuffer[T] with Sizing {
     def internalArray = array
     def setInternalSize(s: Int) = size0 = s
@@ -71,5 +73,4 @@ package object mutable {
     override val length = sz
     override def stringPrefix = "ArraySeq"
   }
-
 }
