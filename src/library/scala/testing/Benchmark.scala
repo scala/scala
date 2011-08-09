@@ -37,7 +37,8 @@ trait Benchmark {
 
   /** this method should be implemented by the concrete benchmark.
    *  This method is called by the benchmarking code for a number of times.
-   *  The GC is called before each call to 'run'.
+   *  The GC is called between "multiplier" calls to run, right after tear
+   *  down.
    *
    *  @see setUp
    *  @see tearDown
