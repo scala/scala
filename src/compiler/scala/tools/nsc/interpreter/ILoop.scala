@@ -225,7 +225,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("replay", "reset execution and replay all previous commands", replay),
     shCommand,
     nullary("silent", "disable/enable automatic printing of results", verbosity),
-    cmd("type", "<expr>", "display the type of an expression without evaluating it", typeCommand)
+    cmd("type", "<expr>", "display the type of an expression without evaluating it", typeCommand),
+    nullary("warnings", "show the suppressed warnings from the most recent line which had any", warningsCommand)
   )
 
   /** Power user commands */
@@ -392,6 +393,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       case Some(tp) => intp.afterTyper(tp.toString)
       case _        => "" // the error message was already printed
     }
+  }
+  private def warningsCommand(): Result = {
+    intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
   private def javapCommand(line: String): Result = {

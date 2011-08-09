@@ -1,0 +1,58 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> 
+
+scala> // "Is this thing on?" Not working on first couple
+
+scala> // commands, needs investigation.
+
+scala> 123
+res0: Int = 123
+
+scala> 123
+res1: Int = 123
+
+scala> 123
+res2: Int = 123
+
+scala> 
+
+scala> object o {
+  case class Bippy()
+  case class Dingus {
+    def f[T](xs: TraversableOnce[T]) = xs match {
+      case _: List[Int]   => 1
+      case _: Set[String] => 2
+      case _              => xs.isInstanceOf[Iterator[Double]]
+    }
+  }
+  case class DingDangDoobie(ding: Int, dang: Int, doobie: Double)
+  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
+}
+warning: there were 4 deprecation warnings; re-run with -deprecation for details
+warning: there were 3 unchecked warnings; re-run with -unchecked for details
+defined module o
+
+scala> :warnings
+<console>:3: warning: case classes without a parameter list have been deprecated;
+use either case objects or case classes with `()' as parameter list.
+  case class Dingus {
+                   ^
+<console>:11: warning: case classes without a parameter list have been deprecated;
+use either case objects or case classes with `()' as parameter list.
+  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
+                   ^
+<console>:11: warning: case classes without a parameter list have been deprecated;
+use either case objects or case classes with `()' as parameter list.
+  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
+                                         ^
+<console>:11: warning: for comprehension assignment without a `val' declaration is deprecated.
+  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
+                                                                             ^
+
+scala> 
+
+scala> 

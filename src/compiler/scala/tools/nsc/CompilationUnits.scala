@@ -83,11 +83,11 @@ trait CompilationUnits { self: Global =>
 
     def deprecationWarning(pos: Position, msg: String) =
       if (opt.deprecation) warning(pos, msg)
-      else currentRun.deprecationWarnings += 1
+      else currentRun.deprecationWarnings ::= ((pos, msg))
 
     def uncheckedWarning(pos: Position, msg: String) =
       if (opt.unchecked) warning(pos, msg)
-      else currentRun.uncheckedWarnings += 1
+      else currentRun.uncheckedWarnings ::= ((pos, msg))
 
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg)

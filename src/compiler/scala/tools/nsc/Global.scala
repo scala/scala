@@ -772,8 +772,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     var currentUnit: CompilationUnit = _
 
     /** Counts for certain classes of warnings during this run. */
-    var deprecationWarnings: Int = 0
-    var uncheckedWarnings: Int = 0
+    var deprecationWarnings: List[(Position, String)] = Nil
+    var uncheckedWarnings: List[(Position, String)] = Nil
 
     /** Progress tracking.  Measured in "progress units" which are 1 per
      *  compilation unit per phase completed.
@@ -954,8 +954,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
           if (option.isDefault && count > 0)
             warning("there were %d %s warnings; re-run with %s for details".format(count, what, option.name))
         )
-        warn(deprecationWarnings, "deprecation", settings.deprecation)
-        warn(uncheckedWarnings, "unchecked", settings.unchecked)
+        warn(deprecationWarnings.size, "deprecation", settings.deprecation)
+        warn(uncheckedWarnings.size, "unchecked", settings.unchecked)
         // todo: migrationWarnings
       }
     }
