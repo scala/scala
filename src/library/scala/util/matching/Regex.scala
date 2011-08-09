@@ -7,7 +7,27 @@
 \*                                                                      */
 
 
-
+/**
+ * This package is concerned with regular expression (regex) matching against strings,
+ * with the main goal of pulling out information from those matches, or replacing
+ * them with something else.
+ *
+ * There are four classes and three objects, with most of them being members of
+ * Regex companion object. [[scala.util.matching.Regex]] is the class users instantiate
+ * to do regular expression matching.
+ *
+ * The remaining classes and objects in the package are used in the following way:
+ *
+ * * The companion object to [[scala.util.matching.Regex]] just contains the other members.
+ * * [[scala.util.matching.Regex.Match]] makes more information about a match available.
+ * * [[scala.util.matching.Regex.MatchIterator]] is used to iterate over multiple matches.
+ * * [[scala.util.matching.Regex.MatchData]] is just a base trait for the above classes.
+ * * [[scala.util.matching.Regex.Groups]] extracts group from a [[scala.util.matching.Regex.Match]]
+ *   without recomputing the match.
+ * * [[scala.util.matching.Regex.Match]] converts a [[scala.util.matching.Regex.Match]]
+ *   into a [[java.lang.String]].
+ *
+ */
 package scala.util.matching
 
 import java.util.regex.{ Pattern, Matcher }
@@ -19,35 +39,84 @@ import java.util.regex.{ Pattern, Matcher }
  *  that make it up. For that reason, it is usually used with for comprehensions
  *  and matching (see methods for examples).
  *
- *  Because regex patterns make extensive use of the backslash character (`\`),
- *  it is usually defined with triple quotes so that backslash characters won't
- *  need to be quoted. Also, an implicit conversion is available through
- *  [[scala.Predef]] that makes converting a [[java.lang.String]] into a Regex
- *  as easy as calling the method `r` on it. For example:
+ *  A Regex is created from a [[java.lang.String]] representation of the
+ *  regular expression pattern^1^. That pattern is compiled
+ *  during construction, so frequently used patterns should be declared outside
+ *  loops if performance is of concern. Possibly, they might be declared on a
+ *  companion object, so that they need only to be initialized once.
+ *
+ *  The canonical way of creating regex patterns is by using the method `r`, provided
+ *  on [[java.lang.String]] through an implicit conversion into
+ *  [[scala.collection.immutable.WrappedString]]. Using triple quotes to write these
+ *  strings avoids having to quote the backslash character (`\`).
+ *
+ *  Using the constructor directly, on the other hand, makes
+ *  it possible to declare names for subgroups in the pattern.
+ *
+ *  For example, both declarations below generate the same regex, but the second
+ *  one associate names with the subgroups.
  *
  *  {{{
- *  val datePattern = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+ *  val dateP1 = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+ *  val dateP2 = new scala.util.matching.Regex("""(\d\d\d\d)-(\d\d)-(\d\d)""", "year", "month", "day")
  *  }}}
  *
- *  Regex provide methods to find and replace patterns, but also provides
- *  extractors for pattern subgroups. Note, however, that extractors require
- *  that the whole text be matched, or they fail.
+ *  There are two ways of using a `Regex` to find a pattern: calling methods on
+ *  Regex, such as `findFirstIn` or `findAllIn`, or using it as an extractor in a
+ *  pattern match.
  *
- *  For example, the subgroups in the pattern above can be obtained in the following ways:
+ *  Note, however, that when Regex is used as an extractor in a pattern match, it
+ *  only succeeds if the whole text can be matched. For this reason, one usually
+ *  calls a method to find the matching substrings, and then use it as an extractor
+ *  to break match into subgroups.
+ *
+ *  As an example, the above patterns can be used like this:
  *
  *  {{{
- *  val datePattern(year, month, day) = "2011-07-15"
+ *  val dateP1(year, month, day) = "2011-07-15"
  *
- *  // val datePattern(year, month, day) = "Date 2011-07-15" // throws an exception at runtime
+ *  // val dateP1(year, month, day) = "Date 2011-07-15" // throws an exception at runtime
  *
- *  val copyright: String = datePattern findFirstIn "Date of this document: 2011-07-15" match {
- *    case Some(datePattern(year, month, day)) => "Copyright "+year
- *    case None                                => "No copyright"
+ *  val copyright: String = dateP1 findFirstIn "Date of this document: 2011-07-15" match {
+ *    case Some(dateP1(year, month, day)) => "Copyright "+year
+ *    case None                           => "No copyright"
  *  }
  *
  *  val copyright: Option[String] = for {
- *    datePattern(year, month, day) <- datePattern findFirstIn "Last modified 2011-07-15"
+ *    dateP1(year, month, day) <- dateP1 findFirstIn "Last modified 2011-07-15"
  *  } yield year
+
+ *  def getYears(text: String): Iterator[String] = for (dateP1(year, _, _) <- dateP1 findAllIn text) yield year
+ *  def getFirstDay(text: String): Option[String] = for (m <- dateP2 findFirstMatchIn text) yield m group "day"
+ *  }}}
+ *
+ *  Regex does not provide a method that returns a [[scala.Boolean]]. One can
+ *  use [[java.lang.String]] `matches` method, or, if `Regex` is preferred,
+ *  either ignore the return value or test the `Option` for emptyness. For example:
+ *
+ *  {{{
+ *  def hasDate(text: String): Boolean = (dateP1 findFirstIn text).nonEmpty
+ *  def printLinesWithDates(lines: Traversable[String]) {
+ *    lines foreach { line =>
+ *      dateP1 findFirstIn line foreach { _ => println(line) }
+ *    }
+ *  }
+ *  }}}
+ *
+ *  The are also methods that can be used to replace the patterns
+ *  on a text. The substitutions can be simple replacements, or more
+ *  complex functions. For example:
+ *
+ *  {{{
+ *  val months = Map( 1 -> "Jan", 2 -> "Feb", 3 -> "Mar",
+ *                    4 -> "Apr", 5 -> "May", 6 -> "Jun",
+ *                    7 -> "Jul", 8 -> "Aug", 9 -> "Sep",
+ *                    10 -> "Oct", 11 -> "Nov", 12 -> "Dec")
+ *
+ *  import scala.util.matching.Regex.Match
+ *  def reformatDate(text: String) = dateP2 replaceAllIn ( text, (m: Match) =>
+ *    "%s %s, %s" format (months(m group "month" toInt), m group "day", m group "year")
+ *  )
  *  }}}
  *
  *  You can use special pattern syntax constructs like `(?idmsux-idmsux)`¹ to switch
@@ -272,13 +341,15 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
 }
 
 /** This object defines inner classes that describe
- *  regex matches. The class hierarchy is as follows:
+ *  regex matches and helper objects. The class hierarchy
+ *  is as follows:
  *
  *  {{{
  *            MatchData
  *            /      \
  *   MatchIterator  Match
  *  }}}
+ *
  */
 object Regex {
 
@@ -366,7 +437,7 @@ object Regex {
 
   }
 
-  /** A case class for a successful match.
+  /** Provides information about a succesful match.
    */
   class Match(val source: java.lang.CharSequence,
               matcher: Matcher,
