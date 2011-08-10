@@ -318,7 +318,7 @@ abstract class TreeBuilder {
   *
   *  3.
   *
-  *    for (P_1 <- G_1; val P_2 <- G_2; ...) ...
+  *    for (P_1 <- G_1; P_2 <- G_2; ...) ...
   *      ==>
   *    G_1.flatMap (P_1 => for (P_2 <- G_2; ...) ...)
   *
@@ -330,7 +330,7 @@ abstract class TreeBuilder {
   *
   *  5. For N < MaxTupleArity:
   *
-  *    for (P_1 <- G; val P_2 = E_2; val P_N = E_N; ...)
+  *    for (P_1 <- G; P_2 = E_2; val P_N = E_N; ...)
   *      ==>
   *    for (TupleN(P_1, P_2, ... P_N) <-
   *      for (x_1 @ P_1 <- G) yield {

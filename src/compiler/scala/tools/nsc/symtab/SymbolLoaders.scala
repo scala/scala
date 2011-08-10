@@ -251,7 +251,7 @@ abstract class SymbolLoaders {
       }
     }
     // enter decls of parent classes
-    for (pt <- module.info.parents; val p = pt.typeSymbol) {
+    for (pt <- module.info.parents; p = pt.typeSymbol) {
       if (p != definitions.ObjectClass && p != definitions.ScalaObjectClass) {
         openPackageModule(p)(packageClass)
       }

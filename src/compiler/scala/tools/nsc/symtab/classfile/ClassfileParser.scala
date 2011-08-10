@@ -417,7 +417,7 @@ abstract class ClassfileParser {
     val parts = name.decode.toString.split(Array('.', '$'))
     var sym: Symbol = definitions.RootClass
     atPhase(currentRun.flattenPhase.prev) {
-      for (part0 <- parts; if !(part0 == ""); val part = newTermName(part0)) {
+      for (part0 <- parts; if !(part0 == ""); part = newTermName(part0)) {
         val sym1 = atPhase(currentRun.icodePhase) {
           sym.linkedClassOfClass.info
           sym.info.decl(part.encode)

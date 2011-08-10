@@ -310,7 +310,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
 
         log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
-        val res = for (s <- originalStats; val stat = s.duplicate) yield {
+        val res = for (s <- originalStats; stat = s.duplicate) yield {
           log("merge: looking at " + stat)
           val stat1 = stat match {
             case Assign(sel @ Select(This(_), field), _) =>

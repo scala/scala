@@ -399,7 +399,7 @@ object Gen {
   /** A generator that picks a given number of elements from a list, randomly */
   def pick[T](n: Int, g1: Gen[T], g2: Gen[T], gs: Gen[T]*): Gen[Seq[T]] = for {
     is <- pick(n, 0 until (gs.size+2))
-    val allGs = gs ++ (g1::g2::Nil)
+    allGs = gs ++ (g1::g2::Nil)
     xs <- sequence[List,T](is.toList.map(allGs(_)))
   } yield xs
 

@@ -116,7 +116,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
   }
 
   protected def collectTransitions(): Unit =                // make transitions
-    for (j <- 0 until pos ; val fol = follow(j) ; k <- fol) {
+    for (j <- 0 until pos ; fol = follow(j) ; k <- fol) {
       if (pos == k) finals = finals.updated(j, finalTag)
       else makeTransition(j, k, labelAt(k))
     }

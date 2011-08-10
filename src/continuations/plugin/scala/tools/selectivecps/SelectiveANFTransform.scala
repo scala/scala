@@ -78,7 +78,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
               case Match(selector, cases) if (ext.isDefined && getAnswerTypeAnn(body.tpe).isEmpty) =>
                 val cases1 = for {
                   cd @ CaseDef(pat, guard, caseBody) <- cases
-                  val caseBody1 = transExpr(body, None, ext)
+                  caseBody1 = transExpr(body, None, ext)
                 } yield {
                   treeCopy.CaseDef(cd, transform(pat), transform(guard), caseBody1)
                 }
@@ -201,7 +201,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           val caseVals = for {
             cd @ CaseDef(pat, guard, body) <- cases
-            val bodyVal = transExpr(body, cpsA2, cpsR2)
+            bodyVal = transExpr(body, cpsA2, cpsR2)
           } yield {
             treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
           }
@@ -233,7 +233,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           val catchVals = for {
             cd @ CaseDef(pat, guard, body) <- catches
-            val bodyVal = transExpr(body, cpsA, cpsR)
+            bodyVal = transExpr(body, cpsA, cpsR)
           } yield {
             treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
           }

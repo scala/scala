@@ -222,7 +222,7 @@ class TypeBuilder (module: Module, attributes: Int, fullName: String, baseType: 
 object TypeBuilder {
     def types2String(types: Array[Type]): String = {
     var s = new StringBuffer("(")
-    for(val i <- 0 until types.length) {
+    for(i <- 0 until types.length) {
         if (i > 0) s.append(", ")
         s.append(types(i))
     }
@@ -239,7 +239,7 @@ object TypeBuilder {
     val p2 = m2.GetParameters()
     if (p1.length != p2.length)
         return false
-    for(val i <- 0 until p1.length)
+    for(i <- 0 until p1.length)
         if (p1(i).ParameterType != p2(i).ParameterType)
         return false
     return true
@@ -252,7 +252,7 @@ object TypeBuilder {
       val p2 = c2.GetParameters()
       if (p1.length != p2.length)
           return false
-      for(val i <- 0 until p1.length)
+      for(i <- 0 until p1.length)
           if (p1(i).ParameterType != p2(i).ParameterType)
           return false
       return true

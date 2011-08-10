@@ -224,7 +224,7 @@ trait Members { self: ICodes =>
       val nextBlock: mutable.Map[BasicBlock, BasicBlock] = mutable.HashMap.empty
       for (b <- code.blocks.toList
         if b.successors.length == 1;
-        val succ = b.successors.head;
+        succ = b.successors.head;
         if succ ne b;
         if succ.predecessors.length == 1;
         if succ.predecessors.head eq b;

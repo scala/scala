@@ -43,12 +43,12 @@ final class MultipleFilesILPrinterVisitor(destPath: String, sourceFilesPath: Str
 	// print each module
 	var m: Array[Module] = assemblyBuilder.GetModules()
         nomembers = true
-        for(val i <- 0 until m.length) {
+        for(i <- 0 until m.length) {
 	    print(m(i).asInstanceOf[ModuleBuilder])
 	}
 
         nomembers = false
-        for(val i <- 0 until m.length) {
+        for(i <- 0 until m.length) {
 	    print(m(i).asInstanceOf[ModuleBuilder])
 	}
 	ILPrinterVisitor.currAssembly = null
@@ -72,7 +72,7 @@ final class MultipleFilesILPrinterVisitor(destPath: String, sourceFilesPath: Str
 
 	// "Types" contain all the classes
 	var t: Array[Type] = module.GetTypes()
-        for(val i <- 0 until t.length) {
+        for(i <- 0 until t.length) {
         val tBuilder       = t(i).asInstanceOf[TypeBuilder]
         val sourceFilename = tBuilder.sourceFilename
         val sourceFilepath = new File(tBuilder.sourceFilepath).getCanonicalPath
@@ -124,7 +124,7 @@ final class MultipleFilesILPrinterVisitor(destPath: String, sourceFilesPath: Str
 		    printAttributes(module)
 		}
 
-                for(val i <- 0 until m.length) {
+                for(i <- 0 until m.length) {
 	   		print(m(i).asInstanceOf[MethodBuilder])
 		}
 

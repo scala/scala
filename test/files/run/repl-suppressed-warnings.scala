@@ -19,8 +19,13 @@ object o {
     }
   }
   case class DingDangDoobie(ding: Int, dang: Int, doobie: Double)
-  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
+  case class Dongoo
+  @serializable case class Heyooooo
+
+  @deprecated("I'm an ironic deprecation warning") def f0 = 5 // where's this disappearing?
+  def f1 = scala.Math.Pi    // and this?
 }
+
 :warnings
   """
 }

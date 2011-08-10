@@ -7,7 +7,7 @@ trait ScalaNodeScannerXXX {
   trait UnfixedImpl extends NodeImpl { def self : Unfixed; }
 }
 //def f = { Console.println("hello"); 42; }
-//for (val ns <-n; val i <- 0.until(ns)) yield f;
+//for (ns <-n; val i <- 0.until(ns)) yield f;
 
 
 trait NewScalaScannerXXX extends ScalaNodeScannerXXX {

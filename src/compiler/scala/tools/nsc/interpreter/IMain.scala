@@ -1064,13 +1064,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     for {
       tpe <- typeOfTerm(id)
       clazz <- classOfTerm(id)
-      val staticSym = tpe.typeSymbol
+      staticSym = tpe.typeSymbol
       runtimeSym <- safeClass(clazz.getName)
       if runtimeSym != staticSym
       if runtimeSym isSubClass staticSym
-    } yield {
-      runtimeSym.info
     }
+    yield runtimeSym.info
   }
 
   object replTokens extends {

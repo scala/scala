@@ -30,11 +30,17 @@ scala> object o {
     }
   }
   case class DingDangDoobie(ding: Int, dang: Int, doobie: Double)
-  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
+  case class Dongoo
+  @serializable case class Heyooooo 
+
+  @deprecated("I'm an ironic deprecation warning") def f0 = 5 // where's this disappearing?
+  def f1 = scala.Math.Pi    // and this?
 }
-warning: there were 4 deprecation warnings; re-run with -deprecation for details
+warning: there were 6 deprecation warnings; re-run with -deprecation for details
 warning: there were 3 unchecked warnings; re-run with -unchecked for details
 defined module o
+
+scala> 
 
 scala> :warnings
 <console>:3: warning: case classes without a parameter list have been deprecated;
@@ -43,15 +49,16 @@ use either case objects or case classes with `()' as parameter list.
                    ^
 <console>:11: warning: case classes without a parameter list have been deprecated;
 use either case objects or case classes with `()' as parameter list.
-  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
-                   ^
+  case class Dongoo
+                  ^
 <console>:11: warning: case classes without a parameter list have been deprecated;
 use either case objects or case classes with `()' as parameter list.
-  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
-                                         ^
-<console>:11: warning: for comprehension assignment without a `val' declaration is deprecated.
-  case class Dongoo ; case class Heyooooo ; for (x <- 1 to 10 ; val y = x ; z = y) yield x
-                                                                             ^
+  case class Dongoo
+                   ^
+<console>:12: warning: case classes without a parameter list have been deprecated;
+use either case objects or case classes with `()' as parameter list.
+  @serializable case class Heyooooo 
+                                   ^
 
 scala> 
 

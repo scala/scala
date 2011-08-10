@@ -81,7 +81,7 @@ abstract class ReachingDefinitions {
       drops.clear()
       outStack.clear()
 
-      for (b <- m.code.blocks.toList; val (g, k) = genAndKill(b); val (d, st) = dropsAndGen(b)) {
+      for (b <- m.code.blocks.toList; (g, k) = genAndKill(b); (d, st) = dropsAndGen(b)) {
         gen  += (b -> g)
         kill += (b -> k)
         drops += (b -> d)
