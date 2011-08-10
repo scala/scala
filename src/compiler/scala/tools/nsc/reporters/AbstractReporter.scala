@@ -42,8 +42,13 @@ abstract class AbstractReporter extends Reporter {
       val hidden = testAndLog(pos, severity)
       if (severity == WARNING && noWarnings) ()
       else {
-        if (!hidden || isPromptSet) display(pos, msg, severity)
-        if (isPromptSet) displayPrompt
+        if (!hidden || isPromptSet)
+          display(pos, msg, severity)
+        else if (settings.debug.value)
+          display(pos, "[ suppressed ] " + msg, severity)
+
+        if (isPromptSet)
+          displayPrompt
       }
     }
   }

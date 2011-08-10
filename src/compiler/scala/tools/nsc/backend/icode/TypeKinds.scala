@@ -26,7 +26,6 @@ package icode
 trait TypeKinds { self: ICodes =>
   import global._
   import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass, arrayType }
-  import icodes.{ checkerDebug, NothingReference, NullReference }
 
   /** A map from scala primitive Types to ICode TypeKinds */
   lazy val primitiveTypeMap: Map[Symbol, TypeKind] = {

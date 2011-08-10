@@ -12,7 +12,7 @@ import msil.GenMSIL
 
 trait MSILPlatform extends Platform[MSILType] {
   import global._
-  import definitions.{ ComparatorClass, BoxedNumberClass, getMember, getClass }
+  import definitions.{ ComparatorClass, BoxedNumberClass, getMember }
 
   if (settings.verbose.value)
     inform("[AssemRefs = " + settings.assemrefs.value + "]")

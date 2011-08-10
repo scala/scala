@@ -315,6 +315,7 @@ trait Namers { self: Analyzer =>
         }
         def check(to: Name) = {
           val e = context.scope.lookupEntry(to)
+
           if (e != null && e.owner == context.scope && e.sym.exists)
             warnRedundant(e.sym)
           else if (context ne context.enclClass) {
@@ -334,7 +335,7 @@ trait Namers { self: Analyzer =>
         }
       }
       def checkSelector(s: ImportSelector) = {
-        val ImportSelector(from, _, to, _) = s
+        val ImportSelector(from, fromPos, to, _) = s
         if (from != nme.WILDCARD && base != ErrorType) {
           if (isValid(from)) {
             if (currentRun.compileSourceFor(expr, from)) {
@@ -345,7 +346,10 @@ trait Namers { self: Analyzer =>
             else if (!nme.isModuleName(from) || isValid(nme.stripModuleSuffix(from)))
               notAMemberError(tree.pos, expr, from)
           }
-          checkNotRedundant(tree.pos, from, to)
+          // Setting the position at the import means that if there is more
+          // than one hidden names, the second will not be warned
+          // So it is the position of the actual hidden name.
+          checkNotRedundant(tree.pos withPoint fromPos, from, to)
         }
       }
       def noDuplicates(names: List[Name], message: String) {
