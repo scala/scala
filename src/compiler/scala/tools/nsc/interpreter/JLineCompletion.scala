@@ -359,18 +359,30 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
         if (!looksLikePath(buf)) None
         else tryCompletion(mkUndelimited, FileCompletion completionsFor _.buffer)
 
-      /** This is the kickoff point for all manner of theoretically possible compiler
-       *  unhappiness - fault may be here or elsewhere, but we don't want to crash the
-       *  repl regardless.  Hopefully catching Exception is enough, but because the
-       *  compiler still throws some Errors it may not be.
+      def tryAll = (
+                  lastResultCompletion
+           orElse regularCompletion
+           orElse fileCompletion
+        getOrElse Candidates(cursor, Nil)
+      )
+
+      /**
+       *  This is the kickoff point for all manner of theoretically
+       *  possible compiler unhappiness. The fault may be here or
+       *  elsewhere, but we don't want to crash the repl regardless.
+       *  The compiler makes it impossible to avoid catching Throwable
+       *  with its unfortunate tendency to throw java.lang.Errors and
+       *  AssertionErrors as the hats drop. We take two swings at it
+       *  because there are some spots which like to throw an assertion
+       *  once, then work after that. Yeah, what can I say.
        */
-      try {
-        (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse Candidates(cursor, Nil)
-      }
-      catch {
-        case ex: Exception =>
-          repldbg("Error: complete(%s, %s) provoked %s".format(buf, cursor, ex))
-          Candidates(cursor, List(" ", "<completion error: " + ex.getMessage +  ">"))
+      try tryAll
+      catch { case ex: Throwable =>
+        repldbg("Error: complete(%s, %s) provoked".format(buf, cursor) + ex)
+        Candidates(cursor,
+          if (isReplDebug) List("<error:" + ex + ">")
+          else Nil
+        )
       }
     }
   }

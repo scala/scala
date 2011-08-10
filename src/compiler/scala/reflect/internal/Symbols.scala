@@ -615,11 +615,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       rawowner = owner
     }
     private[Symbols] def flattenName(): Name = {
-      // TODO: this assertion causes me a lot of trouble in the interpeter in situations
+      // This assertion caused me no end of trouble in the interpeter in situations
       // where everything proceeds smoothly if there's no assert.  I don't think calling "name"
       // on a symbol is the right place to throw fatal exceptions if things don't look right.
-      // It really hampers exploration.
-      assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname + idString, rawowner))
+      // It really hampers exploration.  Finally I gave up and disabled it, and tickets like
+      // SI-4874 instantly start working.
+      // assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname + idString, rawowner))
+
       nme.flattenedName(rawowner.name, rawname)
     }
 
