@@ -10,8 +10,7 @@ import symtab.Flags._
 import scala.collection.mutable.ListBuffer
 import annotation.tailrec
 
-/** This trait ...
- *
+/**
  *  @author  Martin Odersky
  *  @version 1.0
  */
@@ -36,13 +35,13 @@ trait Contexts { self: Analyzer =>
   var lastAccessCheckDetails: String = ""
 
   /** List of symbols to import from in a root context.  Typically that
-   *  is java.lang, scala, and scala.Predef, in that order.  Exceptions:
+   *  is `java.lang`, `scala`, and [[scala.Predef]], in that order.  Exceptions:
    *
-   *  -- if -Yno-imports is given, nothing is imported
-   *  -- if the unit is java defined, only java.lang is imported
-   *  -- if -Yno-predef is given, if the unit has an import of Predef
-   *     among its leading imports, or if the unit is scala.ScalaObject
-   *     or scala.Predef, Predef is not imported.
+   *  - if option `-Yno-imports` is given, nothing is imported
+   *  - if the unit is java defined, only `java.lang` is imported
+   *  - if option `-Yno-predef` is given, if the unit has an import of Predef
+   *    among its leading imports, or if the unit is [[scala.ScalaObject]]
+   *    or [[scala.Predef]], `Predef` is not imported.
    */
   protected def rootImports(unit: CompilationUnit, tree: Tree): List[Symbol] = {
     import definitions._
@@ -128,12 +127,11 @@ trait Contexts { self: Analyzer =>
     var typingIndentLevel: Int = 0
     def typingIndent = "  " * typingIndentLevel
 
-    def undetparamsString = if (undetparams.isEmpty) "" else undetparams.mkString("undetparams=", ", ", "")
+    def undetparamsString =
+      if (undetparams.isEmpty) ""
+      else undetparams.mkString("undetparams=", ", ", "")
     def undetparams = _undetparams
-    def undetparams_=(ps: List[Symbol]) = {
-      //System.out.println("undetparams = " + ps);//debug
-      _undetparams = ps
-    }
+    def undetparams_=(ps: List[Symbol]) = { _undetparams = ps }
 
     def extractUndetparams() = {
       val tparams = undetparams
@@ -155,14 +153,6 @@ trait Contexts { self: Analyzer =>
       finally implicitsEnabled = saved
     }
 
-    /**
-     *  @param unit    ...
-     *  @param tree    ...
-     *  @param owner   ...
-     *  @param scope   ...
-     *  @param imports ...
-     *  @return        ...
-     */
     def make(unit: CompilationUnit, tree: Tree, owner: Symbol,
              scope: Scope, imports: List[ImportInfo]): Context = {
       val c   = new Context
@@ -218,13 +208,12 @@ trait Contexts { self: Analyzer =>
     def makeNewImport(imp: Import): Context =
       make(unit, imp, owner, scope, new ImportInfo(imp, depth) :: imports)
 
-    def make(tree: Tree, owner: Symbol, scope: Scope): Context = {
+    def make(tree: Tree, owner: Symbol, scope: Scope): Context =
       if (tree == this.tree && owner == this.owner && scope == this.scope) this
       else make0(tree, owner, scope)
-    }
-    private def make0(tree : Tree, owner : Symbol, scope : Scope) : Context = {
+
+    private def make0(tree: Tree, owner: Symbol, scope: Scope): Context =
       make(unit, tree, owner, scope, imports)
-    }
 
     def makeNewScope(tree: Tree, owner: Symbol): Context =
       make(tree, owner, new Scope(scope))
@@ -274,12 +263,10 @@ trait Contexts { self: Analyzer =>
       argContext
     }
 
-    private def diagString =
-      if (diagnostic.isEmpty) ""
-      else diagnostic.mkString("\n","\n", "")
-
     private def addDiagString(msg: String) = {
-      val ds = diagString
+      val ds =
+        if (diagnostic.isEmpty) ""
+        else diagnostic.mkString("\n","\n", "")
       if (msg endsWith ds) msg else msg + ds
     }
 
@@ -306,13 +293,6 @@ trait Contexts { self: Analyzer =>
       if (reportGeneralErrors) unit.warning(pos, msg)
     }
 
-    /**
-     *  @param pos  ...
-     *  @param pre  ...
-     *  @param sym1 ...
-     *  @param sym2 ...
-     *  @param rest ...
-     */
     def ambiguousError(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String) {
       val (reportPos, msg) = (
         if (sym1.hasDefaultFlag && sym2.hasDefaultFlag && sym1.enclClass == sym2.enclClass) {
@@ -385,8 +365,8 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Return closest enclosing context that defines a subclass of `clazz` or a companion
-     * object thereof, or NoContext if no such context exists
+    /** Return the closest enclosing context that defines a subclass of `clazz`
+     *  or a companion object thereof, or `NoContext` if no such context exists.
      */
     def enclosingSubClassContext(clazz: Symbol): Context = {
       var c = this.enclClass
@@ -395,13 +375,8 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Is <code>sym</code> accessible as a member of tree `site` with type
-     *  <code>pre</code> in current context?
-     *
-     *  @param sym         ...
-     *  @param pre         ...
-     *  @param superAccess ...
-     *  @return            ...
+    /** Is `sym` accessible as a member of tree `site` with type
+     *  `pre` in current context?
      */
     def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean = false): Boolean = {
       lastAccessCheckDetails = ""
@@ -452,7 +427,8 @@ trait Contexts { self: Analyzer =>
         if (c == NoContext)
           lastAccessCheckDetails =
             "\n Access to protected "+target+" not permitted because"+
-            "\n "+"enclosing class "+this.enclClass.owner+this.enclClass.owner.locationString+" is not a subclass of "+
+            "\n "+"enclosing "+this.enclClass.owner+
+            this.enclClass.owner.locationString+" is not a subclass of "+
             "\n "+sym.owner+sym.owner.locationString+" where target is defined"
         c != NoContext &&
         {
@@ -562,7 +538,6 @@ trait Contexts { self: Analyzer =>
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
-
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
@@ -603,8 +578,8 @@ trait Contexts { self: Analyzer =>
     def lookup(name: Name, expectedOwner: Symbol) = {
       var res: Symbol = NoSymbol
       var ctx = this
-      while(res == NoSymbol && ctx.outer != ctx) {
-        val s = ctx.scope.lookup(name)
+      while (res == NoSymbol && ctx.outer != ctx) {
+        val s = ctx.scope lookup name
         if (s != NoSymbol && s.owner == expectedOwner)
           res = s
         else
@@ -612,21 +587,21 @@ trait Contexts { self: Analyzer =>
       }
       res
     }
-  }
+  } //class Context
+
   class ImportInfo(val tree: Import, val depth: Int) {
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
       case ErrorType => tree setType NoType // fix for #2870
-      case _ => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info);//debug
+      case _ => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info) //debug
     }
 
     /** Is name imported explicitly, not via wildcard? */
     def isExplicitImport(name: Name): Boolean =
       tree.selectors exists (_.rename == name.toTermName)
 
-    /** The symbol with name <code>name</code> imported from import clause
-     *  <code>tree</code>.
+    /** The symbol with name `name` imported from import clause `tree`.
      */
     def importedSymbol(name: Name): Symbol = {
       var result: Symbol = NoSymbol
@@ -651,7 +626,7 @@ trait Contexts { self: Analyzer =>
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
       case List() => List()
       case List(ImportSelector(nme.WILDCARD, _, _, _)) => List(sym)
-      case ImportSelector(from, _, to, _) :: _ if (from == sym.name) =>
+      case ImportSelector(from, _, to, _) :: _ if from == sym.name =>
         if (to == nme.WILDCARD) List()
         else { val sym1 = sym.cloneSymbol; sym1.name = to; List(sym1) }
       case _ :: rest => transformImport(rest, sym)
