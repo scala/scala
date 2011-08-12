@@ -27,6 +27,14 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
 
   protected trait InterfaceMixin extends javax.swing.RootPaneContainer
 
+  protected trait SuperMixin extends AWTWindow {
+    override protected def processWindowEvent(e: java.awt.event.WindowEvent) {
+      super.processWindowEvent(e)
+      if (e.getID() == java.awt.event.WindowEvent.WINDOW_CLOSING)
+        closeOperation()
+    }
+  }
+
   /**
    * This method is called when the window is closing, after all other window
    * event listeners have been processed.

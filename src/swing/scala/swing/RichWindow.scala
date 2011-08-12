@@ -75,14 +75,6 @@ sealed trait RichWindow extends Window {
 class Frame(gc: java.awt.GraphicsConfiguration = null) extends RichWindow {
   override lazy val peer: JFrame with InterfaceMixin = new JFrame(gc) with InterfaceMixin with SuperMixin
 
-  protected trait SuperMixin extends JFrame {
-    override protected def processWindowEvent(e: java.awt.event.WindowEvent) {
-      super.processWindowEvent(e)
-      if (e.getID() == java.awt.event.WindowEvent.WINDOW_CLOSING)
-        closeOperation()
-    }
-  }
-
   def iconify() { peer.setExtendedState(peer.getExtendedState | AWTFrame.ICONIFIED) }
   def uniconify() { peer.setExtendedState(peer.getExtendedState & ~AWTFrame.ICONIFIED) }
   def iconified: Boolean = (peer.getExtendedState & AWTFrame.ICONIFIED) != 0
@@ -189,10 +181,10 @@ object Dialog {
  */
 class Dialog(owner: Window, gc: java.awt.GraphicsConfiguration = null) extends RichWindow {
   override lazy val peer: JDialog with InterfaceMixin =
-    if (owner == null) new JDialog with InterfaceMixin
+    if (owner == null) new JDialog with InterfaceMixin with SuperMixin
     else owner match {
-      case f: Frame => new JDialog(f.peer, "", false, gc) with InterfaceMixin
-      case d: Dialog => new JDialog(d.peer, "", false, gc) with InterfaceMixin
+      case f: Frame => new JDialog(f.peer, "", false, gc) with InterfaceMixin with SuperMixin
+      case d: Dialog => new JDialog(d.peer, "", false, gc) with InterfaceMixin with SuperMixin
     }
 
   def this() = this(null)
