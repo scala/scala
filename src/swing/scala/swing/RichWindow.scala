@@ -87,10 +87,10 @@ class Frame extends RichWindow {
 
   def iconify() { peer.setExtendedState(peer.getExtendedState | AWTFrame.ICONIFIED) }
   def uniconify() { peer.setExtendedState(peer.getExtendedState & ~AWTFrame.ICONIFIED) }
-  def iconified() { (peer.getExtendedState & AWTFrame.ICONIFIED) != 0 }
+  def iconified: Boolean = (peer.getExtendedState & AWTFrame.ICONIFIED) != 0
   def maximize() { peer.setExtendedState(peer.getExtendedState | AWTFrame.MAXIMIZED_BOTH) }
   def unmaximize() { peer.setExtendedState(peer.getExtendedState & ~AWTFrame.MAXIMIZED_BOTH) }
-  def maximized() { (peer.getExtendedState & AWTFrame.MAXIMIZED_BOTH) != 0 }
+  def maximized: Boolean = (peer.getExtendedState & AWTFrame.MAXIMIZED_BOTH) != 0
 
   def iconImage: Image = peer.getIconImage
   def iconImage_=(i: Image) { peer.setIconImage(i) }
