@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
 import event._
@@ -120,8 +118,6 @@ abstract class Component extends UIElement {
     })
   }*/
 
-
-
   @deprecated("Use mouse instead", "2.8.0") lazy val Mouse = mouse
 
   /**
@@ -132,10 +128,10 @@ abstract class Component extends UIElement {
     /**
      * Publishes clicks, presses and releases.
      */
-    val clicks: Publisher = new Publisher {
-      peer.addMouseListener(new MouseListener {
-        def mouseEntered(e: java.awt.event.MouseEvent) { }
-        def mouseExited(e: java.awt.event.MouseEvent) { }
+    val clicks: Publisher = new LazyPublisher {
+      lazy val l = new MouseListener {
+        def mouseEntered(e: java.awt.event.MouseEvent) {}
+        def mouseExited(e: java.awt.event.MouseEvent) {}
         def mouseClicked(e: java.awt.event.MouseEvent) {
           publish(new MouseClicked(e))
         }
@@ -145,13 +141,16 @@ abstract class Component extends UIElement {
         def mouseReleased(e: java.awt.event.MouseEvent) {
           publish(new MouseReleased(e))
         }
-      })
+      }
+
+      def onFirstSubscribe() = peer.addMouseListener(l)
+      def onLastUnsubscribe() = peer.removeMouseListener(l)
     }
     /**
      * Publishes enters, exits, moves, and drags.
      */
-    val moves: Publisher = new Publisher {
-      peer.addMouseListener(new MouseListener {
+    val moves: Publisher = new LazyPublisher {
+      lazy val mouseListener = new MouseListener {
         def mouseEntered(e: java.awt.event.MouseEvent) {
           publish(new MouseEntered(e))
         }
@@ -159,17 +158,26 @@ abstract class Component extends UIElement {
           publish(new MouseExited(e))
         }
         def mouseClicked(e: java.awt.event.MouseEvent) {}
-        def mousePressed(e: java.awt.event.MouseEvent) { }
-        def mouseReleased(e: java.awt.event.MouseEvent) { }
-      })
-      peer.addMouseMotionListener(new MouseMotionListener {
+        def mousePressed(e: java.awt.event.MouseEvent) {}
+        def mouseReleased(e: java.awt.event.MouseEvent) {}
+      }
+
+      lazy val mouseMotionListener = new MouseMotionListener {
         def mouseMoved(e: java.awt.event.MouseEvent) {
           publish(new MouseMoved(e))
         }
         def mouseDragged(e: java.awt.event.MouseEvent) {
           publish(new MouseDragged(e))
         }
-      })
+      }
+      def onFirstSubscribe() {
+        peer.addMouseListener(mouseListener)
+        peer.addMouseMotionListener(mouseMotionListener)
+      }
+      def onLastUnsubscribe() {
+        peer.removeMouseListener(mouseListener)
+        peer.removeMouseMotionListener(mouseMotionListener)
+      }
     }
     /**
      * Publishes mouse wheel moves.
@@ -178,9 +186,10 @@ abstract class Component extends UIElement {
       // We need to subscribe lazily and unsubscribe, since components in scroll panes capture
       // mouse wheel events if there is a listener installed. See ticket #1442.
       lazy val l = new MouseWheelListener {
-          def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
-            publish(new MouseWheelMoved(e)) }
+        def mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
+          publish(new MouseWheelMoved(e))
         }
+      }
       def onFirstSubscribe() = peer.addMouseWheelListener(l)
       def onLastUnsubscribe() = peer.removeMouseWheelListener(l)
     }
