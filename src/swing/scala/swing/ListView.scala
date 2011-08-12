@@ -239,6 +239,11 @@ class ListView[A] extends Component {
   def prototypeCellValue: A = peer.getPrototypeCellValue.asInstanceOf[A]
   def prototypeCellValue_=(a: A) { peer.setPrototypeCellValue(a) }
 
+  def visibleRowCount = peer.getVisibleRowCount
+  def visibleRowCount_=(n: Int) = peer.setVisibleRowCount(n)
+
+  def ensureIndexIsVisible(idx: Int) = peer.ensureIndexIsVisible(idx)
+
   def selectionForeground: Color = peer.getSelectionForeground
   def selectionForeground_=(c: Color) = peer.setSelectionForeground(c)
   def selectionBackground: Color = peer.getSelectionBackground
