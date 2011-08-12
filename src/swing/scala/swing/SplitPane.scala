@@ -28,16 +28,16 @@ class SplitPane(o: Orientation.Value, left: Component, right: Component) extends
 
   def contents: Seq[Component] = List(leftComponent, rightComponent)
   def contents_=(left: Component, right: Component) {
-    peer.setLeftComponent(left.peer)
-    peer.setRightComponent(right.peer)
+    peer.setLeftComponent(nullPeer(left))
+    peer.setRightComponent(nullPeer(right))
   }
 
   def topComponent: Component =
     UIElement.cachedWrapper[Component](peer.getTopComponent.asInstanceOf[javax.swing.JComponent])
-  def topComponent_=(c: Component) { peer.setTopComponent(c.peer) }
+  def topComponent_=(c: Component) { peer.setTopComponent(nullPeer(c)) }
   def bottomComponent: Component =
     UIElement.cachedWrapper[Component](peer.getBottomComponent.asInstanceOf[javax.swing.JComponent])
-  def bottomComponent_=(c: Component) { peer.setBottomComponent(c.peer) }
+  def bottomComponent_=(c: Component) { peer.setBottomComponent(nullPeer(c)) }
 
   def leftComponent: Component = topComponent
   def leftComponent_=(c: Component) { topComponent = c }
