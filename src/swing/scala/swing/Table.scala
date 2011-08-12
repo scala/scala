@@ -274,7 +274,10 @@ class Table extends Component with Scrollable.Wrapper {
    * The given cell coordinates are in view coordinates and thus not
    * necessarily the same as for the model.
    */
-  def apply(row: Int, column: Int): Any = model.getValueAt(row, viewToModelColumn(column))
+  def apply(row: Int, column: Int): Any = model.getValueAt(viewToModelRow(row), viewToModelColumn(column))
+
+  def viewToModelRow(idx: Int) = peer.convertRowIndexToModel(idx)
+  def modelToViewRow(idx: Int) = peer.convertRowIndexToView(idx)
 
   def viewToModelColumn(idx: Int) = peer.convertColumnIndexToModel(idx)
   def modelToViewColumn(idx: Int) = peer.convertColumnIndexToView(idx)
