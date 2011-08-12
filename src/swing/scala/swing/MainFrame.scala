@@ -16,6 +16,6 @@ import event._
  * A frame that can be used for main application windows. Shuts down the
  * framework and quits the application when closed.
  */
-class MainFrame extends Frame {
+class MainFrame(gc: java.awt.GraphicsConfiguration = null) extends Frame(gc) {
   override def closeOperation() { sys.exit(0) }
 }

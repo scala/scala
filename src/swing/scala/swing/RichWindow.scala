@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.swing
 
-import java.awt.{Window => AWTWindow, Frame => AWTFrame}
+import java.awt.{ Window => AWTWindow, Frame => AWTFrame }
 import javax.swing._
 import Swing._
 
@@ -52,15 +50,15 @@ sealed trait RichWindow extends Window {
    * The menu bar of this frame or `NoMenuBar` if no menu bar is set.
    */
   def menuBar: MenuBar = {
-      val m = UIElement.cachedWrapper[MenuBar](peer.getJMenuBar)
-      if (m != null) m else MenuBar.NoMenuBar
+    val m = UIElement.cachedWrapper[MenuBar](peer.getJMenuBar)
+    if (m != null) m else MenuBar.NoMenuBar
   }
   /**
    * Set the current menu bar of this frame. Pass `NoMenuBar` if this frame
    * should not show a menu bar.
    */
   def menuBar_=(m: MenuBar) =
-    peer.setJMenuBar(if(m == MenuBar.NoMenuBar) null else m.peer)
+    peer.setJMenuBar(if (m == MenuBar.NoMenuBar) null else m.peer)
 
   def resizable_=(b: Boolean) { peer.setResizable(b) }
   def resizable = peer.isResizable
@@ -74,8 +72,8 @@ sealed trait RichWindow extends Window {
  *
  * @see javax.swing.JFrame
  */
-class Frame extends RichWindow {
-  override lazy val peer: JFrame with InterfaceMixin = new JFrame with InterfaceMixin with SuperMixin
+class Frame(gc: java.awt.GraphicsConfiguration = null) extends RichWindow {
+  override lazy val peer: JFrame with InterfaceMixin = new JFrame(gc) with InterfaceMixin with SuperMixin
 
   protected trait SuperMixin extends JFrame {
     override protected def processWindowEvent(e: java.awt.event.WindowEvent) {
@@ -142,8 +140,8 @@ object Dialog {
                        optionType: Options.Value = Options.YesNo,
                        messageType: Message.Value = Message.Question,
                        icon: Icon = EmptyIcon): Result.Value =
-     Result(JOptionPane.showConfirmDialog(nullPeer(parent), message, title,
-                                   optionType.id, messageType.id, Swing.wrapIcon(icon)))
+    Result(JOptionPane.showConfirmDialog(nullPeer(parent), message, title,
+      optionType.id, messageType.id, Swing.wrapIcon(icon)))
 
   def showOptions(parent: Component = null,
                   message: Any,
@@ -154,8 +152,8 @@ object Dialog {
                   entries: Seq[Any],
                   initial: Int): Result.Value = {
     val r = JOptionPane.showOptionDialog(nullPeer(parent), message, title,
-                                   optionType.id, messageType.id, Swing.wrapIcon(icon),
-                                   entries map toAnyRef toArray, entries(initial))
+      optionType.id, messageType.id, Swing.wrapIcon(icon),
+      entries map toAnyRef toArray, entries(initial))
     Result(r)
   }
 
@@ -167,10 +165,10 @@ object Dialog {
                    entries: Seq[A] = Nil,
                    initial: A): Option[A] = {
     val e = if (entries.isEmpty) null
-            else entries map toAnyRef toArray
+    else entries map toAnyRef toArray
     val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
-        messageType.id, Swing.wrapIcon(icon),
-        e, initial)
+      messageType.id, Swing.wrapIcon(icon),
+      e, initial)
 
     toOption[A](r)
   }
@@ -179,8 +177,8 @@ object Dialog {
                   title: String = uiString("OptionPane.messageDialogTitle"),
                   messageType: Message.Value = Message.Info,
                   icon: Icon = EmptyIcon) {
-     JOptionPane.showMessageDialog(nullPeer(parent), message, title,
-                                   messageType.id, Swing.wrapIcon(icon))
+    JOptionPane.showMessageDialog(nullPeer(parent), message, title,
+      messageType.id, Swing.wrapIcon(icon))
   }
 }
 
@@ -189,12 +187,12 @@ object Dialog {
  *
  * @see javax.swing.JDialog
  */
-class Dialog(owner: Window) extends RichWindow {
+class Dialog(owner: Window, gc: java.awt.GraphicsConfiguration = null) extends RichWindow {
   override lazy val peer: JDialog with InterfaceMixin =
     if (owner == null) new JDialog with InterfaceMixin
     else owner match {
-      case f: Frame => new JDialog(f.peer) with InterfaceMixin
-      case d: Dialog => new JDialog(d.peer) with InterfaceMixin
+      case f: Frame => new JDialog(f.peer, "", false, gc) with InterfaceMixin
+      case d: Dialog => new JDialog(d.peer, "", false, gc) with InterfaceMixin
     }
 
   def this() = this(null)
