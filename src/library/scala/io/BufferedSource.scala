@@ -48,7 +48,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     // that calls hasNext to find out if they're empty, and that leads
     // to chars being buffered, and no, I don't work here, they left a
     // door unlocked.
-    private val lineReader: BufferedReader = {
+    val bufReader: BufferedReader = {
       // To avoid inflicting this silliness indiscriminately, we can
       // skip it if the char reader was never created: and almost always
       // it will not have been created, since getLines will be called
@@ -64,13 +64,13 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
 
     override def hasNext = {
       if (nextLine == null)
-        nextLine = lineReader.readLine
+        nextLine = bufReader.readLine
 
       nextLine != null
     }
     override def next(): String = {
       val result = {
-        if (nextLine == null) lineReader.readLine
+        if (nextLine == null) bufReader.readLine
         else try nextLine finally nextLine = null
       }
       if (result == null) Iterator.empty.next
