@@ -117,9 +117,6 @@ abstract class Component extends UIElement {
       def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper[Component](c))
     })
   }*/
-
-  @deprecated("Use mouse instead", "2.8.0") lazy val Mouse = mouse
-
   /**
    * Contains publishers for various mouse events. They are separated for
    * efficiency reasons.

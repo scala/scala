@@ -122,9 +122,6 @@ object ByteCodecs {
     dst
   }
 
-  @deprecated("use 2-argument version instead", "2.8.0")
-  def decode7to8(src: Array[Byte], srclen: Int, dstlen: Int) { decode7to8(src, srclen) }
-
   def decode7to8(src: Array[Byte], srclen: Int): Int = {
     var i = 0
     var j = 0
@@ -192,9 +189,6 @@ object ByteCodecs {
   }
 
   def encode(xs: Array[Byte]): Array[Byte] = avoidZero(encode8to7(xs))
-
-  @deprecated("use 1-argument version instead", "2.8.0")
-  def decode(xs: Array[Byte], dstlen: Int) { decode(xs) }
 
   /**
    * Destructively decodes array xs and returns the length of the decoded array.

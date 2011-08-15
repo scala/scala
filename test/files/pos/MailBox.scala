@@ -1,8 +1,9 @@
 package test;
 
-import scala.concurrent._;
+import scala.actors.TIMEOUT;
 
 class MailBox {
+
   private class LinkedList[a] {
     var elem: a = _;
     var next: LinkedList[a] = null;

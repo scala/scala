@@ -1,6 +1,6 @@
 object Test extends App {
   val a = Array(1, 2, 3)
-  println(a.deepToString)
+  println(a.deep.toString)
 
   val aaiIncomplete = new Array[Array[Array[Int]]](3)
   println(aaiIncomplete(0))
@@ -9,6 +9,6 @@ object Test extends App {
   println(aaiComplete.deep)
   for (i <- 0 until 3; j <- 0 until 3)
     aaiComplete(i)(j) = i + j
-  println(aaiComplete.deepToString)
+  println(aaiComplete.deep.toString)
   assert(aaiComplete.last.last == 4)
 }

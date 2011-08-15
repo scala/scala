@@ -117,10 +117,6 @@ extends Seq[T]
     x
   }
 
-  /** View the top element of the stack. */
-  @deprecated("use top instead", "2.8.0")
-  def peek = top
-
   /** View the top element of the stack.
    *
    *  Does not remove the element on the top. If the stack is empty,

@@ -15,20 +15,20 @@ object Test extends App {
   }
 
   def addAllOfNonCollectionWrapperAtZeroOnLinkedList() {
-    val l = new LinkedList[Int] + 1 + 2
+    val l = new LinkedList[Int] += 1 += 2
     l.addAll(0, List(10, 11))
     assertListEquals((List(10, 11, 1, 2)), l)
   }
 
   def addAllOfCollectionWrapperAtZeroOnLinkedList() {
-    val l = new LinkedList[Int] + 1 + 2
-    l.addAll(0, new LinkedList[Int] + 10 + 11)
+    val l = new LinkedList[Int] += 1 += 2
+    l.addAll(0, new LinkedList[Int] += 10 += 11)
     assertListEquals((List(10, 11, 1, 2)), l)
   }
 
   def addAllOfCollectionWrapperAtZeroOnEmptyLinkedList() {
     val l = new LinkedList[Int]
-    l.addAll(0, new LinkedList[Int] + 10 + 11)
+    l.addAll(0, new LinkedList[Int] += 10 += 11)
     assertListEquals((List(10, 11)), l)
   }
 

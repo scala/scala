@@ -61,24 +61,6 @@ object ops
     (xp, getOrThrow(y.get))
   }
 
-  /**
-   *  @param start ...
-   *  @param end   ...
-   *  @param p     ...
-   */
-  @deprecated("use `collection.parallel.ParIterable.foreach` instead", "2.9.0")
-  def replicate(start: Int, end: Int)(p: Int => Unit)(implicit runner: TaskRunner = defaultRunner) {
-    if (start == end)
-      ()
-    else if (start + 1 == end)
-      p(start)
-    else {
-      val mid = (start + end) / 2
-      spawn { replicate(start, mid)(p) }
-      replicate(mid, end)(p)
-    }
-  }
-
 /*
   def parMap[a,b](f: a => b, xs: Array[a]): Array[b] = {
     val results = new Array[b](xs.length);

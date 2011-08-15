@@ -93,16 +93,6 @@ object Map extends ImmutableMapFactory[Map] {
     def - (key: Any): Map[Any, Nothing] = this
   }
 
-  @deprecated("use `Map.empty` instead", "2.8.0")
-  class EmptyMap[A,B] extends Map[A,B] with Serializable {
-    override def size: Int = 0
-    def get(key: A): Option[B] = None
-    def iterator: Iterator[(A, B)] = Iterator.empty
-    override def updated [B1] (key: A, value: B1): Map[A, B1] = new Map1(key, value)
-    def + [B1](kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
-    def - (key: A): Map[A, B] = this
-  }
-
   class Map1[A, +B](key1: A, value1: B) extends Map[A, B] with Serializable {
     override def size = 1
     def get(key: A): Option[B] =

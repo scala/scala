@@ -14,12 +14,3 @@ package event
 trait ComponentEvent extends UIEvent {
   val source: Component
 }
-
-@deprecated("Use UIElementMoved instead.", "2.8.0")
-case class ComponentMoved(source: Component) extends ComponentEvent
-@deprecated("Use UIElementResized instead.", "2.8.0")
-case class ComponentResized(source: Component) extends ComponentEvent
-@deprecated("Use UIElementShown instead.", "2.8.0")
-case class ComponentShown(source: Component) extends ComponentEvent
-@deprecated("Use UIElementHidden instead.", "2.8.0")
-case class ComponentHidden(source: Component) extends ComponentEvent

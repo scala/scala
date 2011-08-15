@@ -230,7 +230,7 @@ object Array extends FallbackArrayBuilding {
    *
    *  Note that this means that `elem` is computed a total of n times:
    *  {{{
-   * scala> Array.fill(3){ java.lang.Math.random }
+   * scala> Array.fill(3){ math.random }
    * res3: Array[Double] = Array(0.365461167592537, 1.550395944913685E-4, 0.7907242137333306)
    *  }}}
    *
@@ -423,65 +423,6 @@ object Array extends FallbackArrayBuilding {
     if (x == null) None else Some(x.toIndexedSeq)
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
     // in pattern matcher.  @PP: I noted in #4364 I think the behavior is correct.
-
-  /** Creates an array containing several copies of an element.
-   *
-   *  @param n    the length of the resulting array
-   *  @param elem the element composing the resulting array
-   *  @return     an array composed of n elements all equal to elem
-   */
-  @deprecated("use `Array.fill` instead", "2.8.0")
-  def make[T: ClassManifest](n: Int, elem: T): Array[T] = {
-    val a = new Array[T](n)
-    var i = 0
-    while (i < n) {
-      a(i) = elem
-      i += 1
-    }
-    a
-  }
-
-  /** Creates an array containing the values of a given function `f`
-   *  over given range `[0..n)`
-   */
-  @deprecated("use `Array.tabulate` instead", "2.8.0")
-  def fromFunction[T: ClassManifest](f: Int => T)(n: Int): Array[T] = {
-    val a = new Array[T](n)
-    var i = 0
-    while (i < n) {
-      a(i) = f(i)
-      i += 1
-    }
-    a
-  }
-
-  /** Creates an array containing the values of a given function `f`
-   *  over given range `[0..n1, 0..n2)`
-   */
-  @deprecated("use `Array.tabulate` instead", "2.8.0")
-  def fromFunction[T: ClassManifest](f: (Int, Int) => T)(n1: Int, n2: Int): Array[Array[T]] =
-    fromFunction(i => fromFunction(f(i, _))(n2))(n1)
-
-  /** Creates an array containing the values of a given function `f`
-   *  over given range `[0..n1, 0..n2, 0..n3)`
-   */
-  @deprecated("use `Array.tabulate` instead", "2.8.0")
-  def fromFunction[T: ClassManifest](f: (Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int): Array[Array[Array[T]]] =
-    fromFunction(i => fromFunction(f(i, _, _))(n2, n3))(n1)
-
-  /** Creates an array containing the values of a given function `f`
-   *  over given range `[0..n1, 0..n2, 0..n3, 0..n4)`
-   */
-  @deprecated("use `Array.tabulate` instead", "2.8.0")
-  def fromFunction[T: ClassManifest](f: (Int, Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
-    fromFunction(i => fromFunction(f(i, _, _, _))(n2, n3, n4))(n1)
-
-  /** Creates an array containing the values of a given function `f`
-   *  over given range `[0..n1, 0..n2, 0..n3, 0..n4, 0..n5)`
-   */
-  @deprecated("use `Array.tabulate` instead", "2.8.0")
-  def fromFunction[T: ClassManifest](f: (Int, Int, Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[T]]]]] =
-    fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
 }
 
 /** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation
@@ -528,38 +469,6 @@ object Array extends FallbackArrayBuilding {
  *  section on `Array` by Martin Odersky for more information.
  */
 final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int) = this(dim1)
-
-  /** Multidimensional array creation */
-  @deprecated("use `Array.ofDim` instead", "2.8.0")
-  def this(dim1: Int, dim2: Int, dim3: Int, dim4: Int, dim5: Int, dim6: Int, dim7: Int, dim8: Int, dim9: Int) = this(dim1)
 
   /** The length of the array */
   def length: Int = throw new Error()

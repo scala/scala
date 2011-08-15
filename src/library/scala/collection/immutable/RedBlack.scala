@@ -35,12 +35,8 @@ abstract class RedBlack[A] extends Serializable {
     def delete(k: A): Tree[B] = blacken(del(k))
     def range(from: Option[A], until: Option[A]): Tree[B] = blacken(rng(from, until))
     def foreach[U](f: (A, B) =>  U)
-    @deprecated("use `foreach` instead", "2.8.0")
-    def visit[T](input: T)(f: (T, A, B) => (Boolean, T)): (Boolean, T)
     def toStream: Stream[(A,B)]
     def iterator: Iterator[(A, B)]
-    @deprecated("use `iterator` instead", "2.8.0")
-    def elements = iterator
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
@@ -165,14 +161,6 @@ abstract class RedBlack[A] extends Serializable {
       right foreach f
     }
 
-    @deprecated("use `foreach` instead", "2.8.0")
-    def visit[T](input: T)(f: (T,A,B) => (Boolean, T)): (Boolean, T) = {
-      val left = this.left.visit(input)(f)
-      if (!left._1) return left
-      val middle = f(left._2, key, value)
-      if (!middle._1) return middle
-      return this.right.visit(middle._2)(f)
-    }
     override def rng(from: Option[A], until: Option[A]): Tree[B] = {
       if (from == None && until == None) return this
       if (from != None && isSmaller(key, from.get)) return right.rng(from, until);
@@ -280,9 +268,6 @@ abstract class RedBlack[A] extends Serializable {
     def toStream: Stream[(A,Nothing)] = Stream.empty
 
     def foreach[U](f: (A, Nothing) => U) {}
-
-    @deprecated("use `foreach` instead", "2.8.0")
-    def visit[T](input: T)(f: (T, A, Nothing) => (Boolean, T)) = (true, input)
 
     def rng(from: Option[A], until: Option[A]) = this
     def first = throw new NoSuchElementException("empty map")

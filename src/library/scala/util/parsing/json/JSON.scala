@@ -33,20 +33,6 @@ import scala.util.parsing.combinator.lexical._
 object JSON extends Parser {
 
   /**
-   * Parse the given `JSON` string and return a list of elements. If the
-   * string is a `JSON` object it will be a list of pairs. If it's a `JSON`
-   * array it will be be a list of individual elements.
-   *
-   * @param input the given `JSON` string.
-   * @return      an optional list of of elements.
-   */
-  @deprecated("Use parseFull or parseRaw as needed.", "2.8.0")
-  def parse(input: String): Option[List[Any]] = parseRaw(input).map(unRaw).flatMap({
-    case l : List[_] => Some(l)
-    case _ => None
-  })
-
-  /**
    * This method converts ''raw'' results back into the original, deprecated
    * form.
    */

@@ -9,17 +9,16 @@ object Test {
 
   object MetaDataTest {
 
-    import scala.xml.{ HasKeyValue, TopScope, NamespaceBinding, Node, Atom, Text }
+    import scala.xml.{ TopScope, NamespaceBinding, Node, Atom, Text }
 
     def domatch(x:Node): Node = {
-      val hasBar = new HasKeyValue("bar")
       x match {
-        //case Node("foo", hasBar(z), _*) => z
-            case Node("foo", md, _*) if !hasBar.unapplySeq(md).isEmpty =>
+            case Node("foo", md @ UnprefixedAttribute(_, value, _), _*) if !value.isEmpty =>
                  md("bar")(0)
             case _ => new Atom(3)
       }
     }
+
     def run() {
 
       var x: MetaData         = Null

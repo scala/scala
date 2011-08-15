@@ -17,17 +17,93 @@ package scala
  *  which provides useful non-primitive operations.
  */
 final class Boolean extends AnyVal {
+  /**
+   * Negates a Boolean expression.
+   *
+   * - `!a` results in `false` if and only if `a` evaluates to `true` and
+   * - `!a` results in `true` if and only if `a` evaluates to `false`.
+   *
+   * @return the negated expression
+   */
   def unary_! : Boolean = sys.error("stub")
 
+  /**
+    * Compares two Boolean expressions and returns `true` if they evaluate to the same value.
+    *
+    * `a == b` returns `true` if and only if
+    *  - `a` and `b` are `true` or
+    *  - `a` and `b` are `false`.
+    */
   def ==(x: Boolean): Boolean = sys.error("stub")
+
+  /**
+    * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
+    *
+    * `a != b` returns `true` if and only if
+    *  - `a` is `true` and `b` is `false` or
+    *  - `a` is `false` and `b` is `true`.
+    */
   def !=(x: Boolean): Boolean = sys.error("stub")
+
+  /**
+    * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+    *
+    * `a || b` returns `true` if and only if
+    *  - `a` is `true` or
+    *  - `b` is `true` or
+    *  - `a` and `b` are `true`.
+    *
+    * @note This method uses 'short-circuit' evaluation and
+    *       behaves as if it was declared as `def ||(x: => Boolean): Boolean`.
+    *       If `a` evaluates to `true`, `true` is returned without evaluating `b`.
+    */
   def ||(x: Boolean): Boolean = sys.error("stub")
+
+  /**
+    * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+    *
+    * `a && b` returns `true` if and only if
+    *  - `a` and `b` are `true`.
+    *
+    * @note This method uses 'short-circuit' evaluation and
+    *       behaves as if it was declared as `def &&(x: => Boolean): Boolean`.
+    *       If `a` evaluates to `false`, `false` is returned without evaluating `b`.
+    */
   def &&(x: Boolean): Boolean = sys.error("stub")
+
   // Compiler won't build with these seemingly more accurate signatures
   // def ||(x: => Boolean): Boolean = sys.error("stub")
   // def &&(x: => Boolean): Boolean = sys.error("stub")
+
+  /**
+    * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+    *
+    * `a | b` returns `true` if and only if
+    *  - `a` is `true` or
+    *  - `b` is `true` or
+    *  - `a` and `b` are `true`.
+    *
+    * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`.
+    */
   def |(x: Boolean): Boolean  = sys.error("stub")
+
+  /**
+    * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+    *
+    * `a & b` returns `true` if and only if
+    *  - `a` and `b` are `true`.
+    *
+    * @note This method evaluates both `a` and `b`, even if the result is already determined after evaluating `a`.
+    */
   def &(x: Boolean): Boolean  = sys.error("stub")
+
+  /**
+    * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
+    *
+    * `a ^ b` returns `true` if and only if
+    *  - `a` is `true` and `b` is `false` or
+    *  - `a` is `false` and `b` is `true`.
+    */
   def ^(x: Boolean): Boolean  = sys.error("stub")
 
   def getClass(): Class[Boolean] = sys.error("stub")

@@ -39,8 +39,6 @@ trait Function2[@specialized(scala.Int, scala.Long, scala.Double) -T1, @speciali
   def curried: T1 => T2 => R = {
     (x1: T1) => (x2: T2) => apply(x1, x2)
   }
-  @deprecated("Use 'curried' instead", "2.8.0")
-  def curry = curried
 
   /** Creates a tupled version of this function: instead of 2 arguments,
    *  it accepts a single [[scala.Tuple2]] argument.

@@ -45,41 +45,6 @@ object Function {
     override def lift: T => Option[R] = f
   }
 
-  /** Currying for functions of arity 2. This transforms a function
-   *  of arity 2 into a a unary function returning another unary function.
-   *
-   *  @param f  ...
-   *  @return   ...
-   */
-  @deprecated("Use `f.curried` instead", "2.8.0")
-  def curried[a1, a2, b](f: (a1, a2) => b): a1 => a2 => b = {
-    x1 => x2 => f(x1, x2)
-  }
-
-  /** Currying for functions of arity 3.
-   *
-   *  @param f  ...
-   *  @return   ...
-   */
-  @deprecated("Use `f.curried` instead", "2.8.0")
-  def curried[a1, a2, a3, b](f: (a1, a2, a3) => b): a1 => a2 => a3 => b = {
-    x1 => x2 => x3 => f(x1, x2, x3)
-  }
-
-  /** Currying for functions of arity 4.
-   */
-  @deprecated("Use `f.curried` instead", "2.8.0")
-  def curried[a1, a2, a3, a4, b](f: (a1, a2, a3, a4) => b): a1 => a2 => a3 => a4 => b = {
-    x1 => x2 => x3 => x4 => f(x1, x2, x3, x4)
-  }
-
-  /** Currying for functions of arity 5.
-   */
-  @deprecated("Use `f.curried` instead", "2.8.0")
-  def curried[a1, a2, a3, a4, a5, b](f: (a1, a2, a3, a4, a5) => b): a1 => a2 => a3 => a4 => a5 => b = {
-    x1 => x2 => x3 => x4 => x5 => f(x1, x2, x3, x4, x5)
-  }
-
   /** Uncurrying for functions of arity 2. This transforms a unary function
    *  returning another unary function into a function of arity 2.
    */

@@ -144,15 +144,6 @@ self =>
    */
   override def isEmpty: Boolean = size == 0
 
-  /**  This method is an alias for `intersect`.
-   *  It computes an intersection with set `that`.
-   *  It removes all the elements that are not present in `that`.
-   *
-   *  @param that the set to intersect with
-   */
-  @deprecated("use & instead", "2.8.0")
-  def ** (that: Set[A]): This = &(that)
-
   /** Computes the union between of set and another set.
    *
    *  @param   that  the set to form the union with.

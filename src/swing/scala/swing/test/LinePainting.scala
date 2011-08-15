@@ -1,9 +1,10 @@
 package scala.swing
 package test
+
 import scala.swing.Swing._
-import scala.swing.{MainFrame, Panel, SimpleGUIApplication}
+import scala.swing.{MainFrame, Panel}
 import scala.swing.event._
-import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
+import java.awt.{Color, Graphics2D, Point, geom}
 
 /**
  * Dragging the mouse draws a simple graph

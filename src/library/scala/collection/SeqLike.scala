@@ -118,11 +118,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     -1
   }
 
-  /** Returns index of the first element satisfying a predicate, or `-1`.
-   */
-  @deprecated("Use indexWhere(p) instead.", "2.8.0")
-  def findIndexOf(p: A => Boolean): Int = indexWhere(p)
-
   def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = length - 1
     val it = reverseIterator
@@ -289,9 +284,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
    *  @return  an iterator yielding the elements of this $coll in reversed order
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
-
-  @deprecated("use `reverseIterator` instead", "2.8.0")
-  def reversedElements = reverseIterator
 
   def startsWith[B](that: GenSeq[B], offset: Int): Boolean = {
     val i = this.iterator drop offset
@@ -678,31 +670,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
   /* Need to override string, so that it's not the Function1's string that gets mixed in.
    */
   override def toString = super[IterableLike].toString
-
-  /** Returns index of the last element satisfying a predicate, or -1.
-   */
-  @deprecated("use `lastIndexWhere` instead", "2.8.0")
-  def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
-
-  /** Tests whether every element of this $coll relates to the
-   *  corresponding element of another sequence by satisfying a test predicate.
-   *
-   *  @param   that  the other sequence
-   *  @param   p     the test predicate, which relates elements from both sequences
-   *  @tparam  B     the type of the elements of `that`
-   *  @return  `true` if both sequences have the same length and
-   *                  `p(x, y)` is `true` for all corresponding elements `x` of this $coll
-   *                  and `y` of `that`, otherwise `false`.
-   */
-  @deprecated("use `corresponds` instead", "2.8.0")
-  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = corresponds(that)(f)
-
- /**
-   * returns a projection that can be used to call non-strict `filter`,
-   * `map`, and `flatMap` methods that build projections of the collection.
-   */
-  @deprecated("use `view` instead", "2.8.0")
-  override def projection = view
 }
 
 /** The companion object for trait `SeqLike`.

@@ -187,15 +187,6 @@ abstract class Source extends Iterator[Char] {
   var nerrors = 0
   var nwarnings = 0
 
-  /** Convenience method, returns given line (not including newline)
-   *  from Source.
-   *
-   *  @param line the line index, first line is 1
-   *  @return     the specified line.
-   *
-   */
-  @deprecated("Use a collections method such as getLines().toIndexedSeq for random access.", "2.8.0")
-  def getLine(line: Int): String = lineNum(line)
   private def lineNum(line: Int): String = getLines() drop (line - 1) take 1 mkString
 
   class LineIterator() extends Iterator[String] {

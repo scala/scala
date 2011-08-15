@@ -129,7 +129,4 @@ object Queue extends SeqFactory[Queue] {
   override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
 
   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
-
-  @deprecated("Use Queue.empty instead", "2.8.0")
-  val Empty: Queue[Nothing] = Queue()
 }

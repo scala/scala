@@ -38,16 +38,6 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   def apply(n: Int): A = self.apply(n)
 
-  /** Append a single element to this buffer and return
-   *  the identity of the buffer.
-   *
-   *  @param elem  the element to append.
-   *  @return      the updated buffer.
-   */
-  @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=` if you intend to create a new collection.", "2.8.0")
-  override def +(elem: A): Buffer[A] = self.+(elem)
-
   /** Append a single element to this buffer.
    *
    *  @param elem  the element to append.
@@ -55,16 +45,6 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   def +=(elem: A): this.type = { self.+=(elem); this }
 
   override def readOnly = self.readOnly
-
-  /** Appends a number of elements provided by a traversable object via its
-   *  `foreach` method. The identity of the buffer is returned.
-   *
-   *  @param iter  the traversable object.
-   *  @return      the updated buffer.
-   */
-  @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=` if you intend to create a new collection.", "2.8.0")
-  override def ++(xs: GenTraversableOnce[A]): Buffer[A] = self.++(xs)
 
   /** Appends a number of elements provided by a traversable object.
    *

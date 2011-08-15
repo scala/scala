@@ -2,11 +2,6 @@ a1 = Array[1,2,3]
 _a1 = Array[1,2,3]
 arrayEquals(a1, _a1): true
 
-c1 = Cell(a)
-_c1 = Cell(a)
-c1 eq _c1: false, _c1 eq c1: false
-c1 equals _c1: true, _c1 equals c1: true
-
 e1 = Left(1)
 _e1 = Left(1)
 e1 eq _e1: false, _e1 eq e1: false

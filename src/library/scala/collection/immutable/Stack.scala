@@ -20,9 +20,6 @@ object Stack extends SeqFactory[Stack] {
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
-
-  @deprecated("Use Stack.empty instead", "2.8.0")
-  val Empty: Stack[Nothing] = Stack()
 }
 
 /** This class implements immutable stacks using a list-based data

@@ -26,8 +26,6 @@ trait Function9[-T1, -T2, -T3, -T4, -T5, -T6, -T7, -T8, -T9, +R] extends AnyRef 
   def curried: T1 => T2 => T3 => T4 => T5 => T6 => T7 => T8 => T9 => R = {
     (x1: T1) => ((x2: T2, x3: T3, x4: T4, x5: T5, x6: T6, x7: T7, x8: T8, x9: T9) => self.apply(x1, x2, x3, x4, x5, x6, x7, x8, x9)).curried
   }
-  @deprecated("Use 'curried' instead", "2.8.0")
-  def curry = curried
 
   /** Creates a tupled version of this function: instead of 9 arguments,
    *  it accepts a single [[scala.Tuple9]] argument.

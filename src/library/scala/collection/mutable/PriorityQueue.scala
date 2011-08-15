@@ -91,23 +91,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     }
   }
 
-  @deprecated(
-    "Use `+=` instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() +=` if you intend to create a new collection.", "2.8.0"
-  )
-  def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
-
-  /** Add two or more elements to this set.
-   *  @param    elem1 the first element.
-   *  @param    kv2 the second element.
-   *  @param    kvs the remaining elements.
-   */
-  @deprecated(
-    "Use `++=` instead if you intend to add by side effect to an existing collection.\n"+
-    "Use `clone() ++=` if you intend to create a new collection.", "2.8.0"
-  )
-  def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
-
   /** Inserts a single element into the priority queue.
    *
    *  @param  elem        the element to insert.

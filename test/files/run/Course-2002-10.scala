@@ -2,7 +2,7 @@
 // Programmation IV - 2002 - Week 10
 //############################################################################
 
-import Math.{Pi, log}
+import math.{Pi, log}
 
 object M0 {
 

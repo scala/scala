@@ -33,7 +33,6 @@ trait SeqProxyLike[+A, +Repr <: SeqLike[A, Repr] with Seq[A]] extends SeqLike[A,
   override def prefixLength(p: A => Boolean) = self.prefixLength(p)
   override def indexWhere(p: A => Boolean): Int = self.indexWhere(p)
   override def indexWhere(p: A => Boolean, from: Int): Int = self.indexWhere(p, from)
-  override def findIndexOf(p: A => Boolean): Int = self.indexWhere(p)
   override def indexOf[B >: A](elem: B): Int = self.indexOf(elem)
   override def indexOf[B >: A](elem: B, from: Int): Int = self.indexOf(elem, from)
   override def lastIndexOf[B >: A](elem: B): Int = self.lastIndexOf(elem)

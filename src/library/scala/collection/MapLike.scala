@@ -246,9 +246,6 @@ self =>
     def get(key: A) = self.get(key).map(f)
   }
 
-  @deprecated("use `mapValues` instead", "2.8.0")
-  def mapElements[C](f: B => C) = mapValues(f)
-
   // The following 5 operations (updated, two times +, two times ++) should really be
   // generic, returning This[B]. We need better covariance support to express that though.
   // So right now we do the brute force approach of code duplication.

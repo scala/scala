@@ -23,7 +23,7 @@ object o {
   @serializable case class Heyooooo
 
   @deprecated("I'm an ironic deprecation warning") def f0 = 5 // where's this disappearing?
-  def f1 = scala.Math.Pi    // and this?
+  def f1 = Double.Epsilon   // and this?
 }
 
 :warnings

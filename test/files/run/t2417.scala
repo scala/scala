@@ -3,7 +3,7 @@ object Test {
 
   def parallel(numThreads: Int)(block: => Unit) {
     var failure: Throwable = null
-    val threads = Array.fromFunction(i => new Thread {
+    val threads = Array.tabulate(numThreads)(i => new Thread {
       override def run {
         try {
           block
@@ -11,7 +11,7 @@ object Test {
             case x => failure = x
           }
         }
-      })(numThreads)
+      })
       for (t <- threads) t.start
       for (t <- threads) t.join
       if (failure != null) println("FAILURE: " + failure)

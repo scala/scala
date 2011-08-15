@@ -195,24 +195,13 @@ class ListView[A] extends Component {
     object indices extends Indices(peer.getSelectedIndices) {
       def -=(n: Int): this.type = { peer.removeSelectionInterval(n,n); this }
       def +=(n: Int): this.type = { peer.addSelectionInterval(n,n); this }
-      @deprecated("Use ListView.selection.leadIndex", "2.8.0")
-      def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
-      @deprecated("Use ListView.selection.anchorIndex", "2.8.0")
-      def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
-
-    @deprecated("Use ListView.selectIndices", "2.8.0")
-    def selectIndices(ind: Int*) = peer.setSelectedIndices(ind.toArray)
 
     /**
      * The currently selected items.
      */
     object items extends scala.collection.SeqProxy[A] {
       def self = peer.getSelectedValues.map(_.asInstanceOf[A])
-      @deprecated("Use ListView.selection.leadIndex", "2.8.0")
-      def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
-      @deprecated("Use ListView.selection.anchorIndex", "2.8.0")
-      def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
 
     def intervalMode: IntervalMode.Value = IntervalMode(peer.getSelectionModel.getSelectionMode)

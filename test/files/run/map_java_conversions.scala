@@ -19,7 +19,7 @@ object Test {
     val concMap = new java.util.concurrent.ConcurrentHashMap[String, String]
 
     test(concMap)
-    val cmap = asConcurrentMap(concMap)
+    val cmap = asScalaConcurrentMap(concMap)
     cmap.putIfAbsent("absentKey", "absentValue")
     cmap.put("somekey", "somevalue")
     assert(cmap.remove("somekey", "somevalue") == true)

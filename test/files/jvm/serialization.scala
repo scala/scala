@@ -56,15 +56,6 @@ object Test1_scala {
     println("arrayEquals(a1, _a1): " + arrayEquals(a1, _a1))
     println()
 
-    // Cell
-    val c1 = new Cell('a')
-    val _c1: Cell[Char] = read(write(c1))
-    println("c1 = " + c1)
-    println("_c1 = " + _c1)
-    println("c1 eq _c1: " + (c1 eq _c1) + ", _c1 eq c1: " + (_c1 eq c1))
-    println("c1 equals _c1: " + (c1 equals _c1) + ", _c1 equals c1: " + (_c1 equals c1))
-    println()
-
     // Either
     val e1 = Left(1)
     val _e1: Either[Int, String] = read(write(e1))

@@ -12,6 +12,6 @@ for (i <- Array.range(0, my_arr(0).length)) yield
 
 val transposed = transpose(my_arr)
 
-println(transposed.deepToString)
+println(transposed.deep.toString)
 
 }

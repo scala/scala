@@ -40,15 +40,6 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
     super.apply(n)
   }
 
-  /** Append a single element to this buffer and return
-   *  the identity of the buffer.
-   *
-   *  @param elem  the element to append.
-   */
-  override def +(elem: A): Self = synchronized {
-    super.+(elem)
-  }
-
   /** Append a single element to this buffer.
    *
    *  @param elem  the element to append.

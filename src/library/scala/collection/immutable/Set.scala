@@ -58,16 +58,6 @@ object Set extends ImmutableSetFactory[Set] {
     override def foreach[U](f: Any =>  U): Unit = {}
   }
 
-  @deprecated("use `Set.empty` instead", "2.8.0")
-  class EmptySet[A] extends Set[A] with Serializable {
-    override def size: Int = 0
-    def contains(elem: A): Boolean = false
-    def + (elem: A): Set[A] = new Set1(elem)
-    def - (elem: A): Set[A] = this
-    def iterator: Iterator[A] = Iterator.empty
-    override def foreach[U](f: A =>  U): Unit = {}
-  }
-
   /** An optimized representation for immutable sets of size 1 */
   @SerialVersionUID(1233385750652442003L)
   class Set1[A] private[collection] (elem1: A) extends Set[A] with Serializable {

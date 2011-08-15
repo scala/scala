@@ -54,9 +54,6 @@ extends Map[A, B] with Serializable
 
   def iterator: Iterator[(A, B)] = imap.iterator
 
-  @deprecated("use `iterator` instead", "2.8.0")
-  override def elements = iterator
-
   override def toList: List[(A, B)] = imap.toList
 
   override def update(key: A, value: B): Unit = { imap = imap.updated(key, value) }

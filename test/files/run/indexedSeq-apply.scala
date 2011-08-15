@@ -1,11 +1,11 @@
 object Test extends App {
-  val empty = RandomAccessSeq()
+  val empty = IndexedSeq()
   assert(empty.isEmpty)
 
-  val single = RandomAccessSeq(1)
+  val single = IndexedSeq(1)
   assert(List(1) == single.toList)
 
-  val two = RandomAccessSeq("a", "b")
+  val two = IndexedSeq("a", "b")
   assert("a" == two.head)
   assert("b" == two.apply(1))
 

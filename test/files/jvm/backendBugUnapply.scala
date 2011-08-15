@@ -1,14 +1,11 @@
 object Test {
-  import scala.xml.{Node,HasKeyValue}
+  import scala.xml.{Node,UnprefixedAttribute}
 
-  def domatch(x:Node): Node = {
-    val hasBar = new HasKeyValue("bar")
-
+  def domatch(x:Node) =
     x match {
-      case Node("foo", hasBar(z), _*) => z
+      case Node("foo", UnprefixedAttribute("bar", z, _), _*) => z
       case _ => null
     }
-  }
 
   def main(args: Array[String]): Unit = {
     println(domatch(<foo bar="baz"><hi/></foo>))

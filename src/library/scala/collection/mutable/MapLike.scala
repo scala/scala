@@ -160,13 +160,6 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   )
   override def -(key: A): This = clone() -= key
 
-  /** If given key is defined in this map, remove it and return associated value as an Option.
-   *  If key is not present return None.
-   *  @param    key the key to be removed
-   */
-  @deprecated("Use `remove` instead", "2.8.0")
-  def removeKey(key: A): Option[B] = remove(key)
-
   /** Removes all bindings from the map. After this operation has completed,
    *  the map will be empty.
    */

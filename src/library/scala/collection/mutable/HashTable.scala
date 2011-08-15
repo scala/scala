@@ -196,10 +196,6 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     }
   }
 
-  /** An iterator returning all entries */
-  @deprecated("use entriesIterator instead", "2.8.0")
-  protected def entries: Iterator[Entry] = entriesIterator
-
   /** Remove all entries from table
    */
   protected def clearTable() {

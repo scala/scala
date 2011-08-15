@@ -42,9 +42,6 @@ trait Product extends Equals {
     def next() = { val result = productElement(c); c += 1; result }
   }
 
-  @deprecated("use productIterator instead", "2.8.0")
-  def productElements: Iterator[Any] = productIterator
-
   /** A string used in the `toString` methods of derived classes.
    *  Implementations may override this method to prepend a string prefix
    *  to the result of `toString` methods.

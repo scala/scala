@@ -5,7 +5,7 @@ object Test {
     if (depth == 0)
       Stream(bias)
     else {
-      Stream.concat(Stream.range(1, 100).map((x: Int) => walk(depth-1, bias + x)))
+      (Stream.iterate(1, 99)(_+1).map((x: Int) => walk(depth-1, bias + x))).flatten
     }
   }
 
