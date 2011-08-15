@@ -116,8 +116,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
 
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
-    def shortClass: String = this.getClass.getName split "[.$]" last
-
+    def shortClass: String = tree.getClass.getName split "[.$]" last
   }
 
   // ---- values and creators ---------------------------------------
