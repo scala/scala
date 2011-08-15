@@ -35,12 +35,19 @@ abstract class LiftCode extends Transform with TypingTransformers {
     new Lifter(unit)
 
   class Lifter(unit: CompilationUnit) extends TypingTransformer(unit) {
+
+    /** Set of mutable local variables that are free in some inner method. */
+    private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
+    private val converted: mutable.Set[Symbol] = new mutable.HashSet // debug
+
     override def transformUnit(unit: CompilationUnit) {
       freeMutableVars.clear()
-        freeLocalsTraverser(unit.body)
+      freeLocalsTraverser(unit.body)
       atPhase(phase.next) {
         super.transformUnit(unit)
       }
+      for (v <- freeMutableVars)
+        assert(converted contains v, "unconverted: "+v+" in "+v.owner+" in unit "+unit)
     }
 
     override def transform(tree: Tree): Tree = {
@@ -65,6 +72,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
           }
           sym resetFlag MUTABLE
           sym removeAnnotation VolatileAttr
+          converted += sym
           treeCopy.ValDef(tree, mods &~ MUTABLE, name, tpt1, rhs1)
         case Ident(name) if freeMutableVars(sym) =>
           localTyper.typedPos(tree.pos) {
@@ -219,70 +227,69 @@ abstract class LiftCode extends Transform with TypingTransformers {
       New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(tree.tpe))),
         List(List(arg)))
     }
-  }
 
-  /** Set of mutable local variables that are free in some inner method. */
-  private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
+    /**
+     * PP: There is apparently some degree of overlap between the CAPTURED
+     *  flag and the role being filled here.  I think this is how this was able
+     *  to go for so long looking only at DefDef and Ident nodes, as bugs
+     *  would only emerge under more complicated conditions such as #3855.
+     *  I'll try to figure it all out, but if someone who already knows the
+     *  whole story wants to fill it in, that too would be great.
+     */
+    private val freeLocalsTraverser = new Traverser {
+      var currentMethod: Symbol = NoSymbol
+      var maybeEscaping = false
 
-  /** PP: There is apparently some degree of overlap between the CAPTURED
-   *  flag and the role being filled here.  I think this is how this was able
-   *  to go for so long looking only at DefDef and Ident nodes, as bugs
-   *  would only emerge under more complicated conditions such as #3855.
-   *  I'll try to figure it all out, but if someone who already knows the
-   *  whole story wants to fill it in, that too would be great.
-   */
-  private val freeLocalsTraverser = new Traverser {
-    var currentMethod: Symbol = NoSymbol
-    var maybeEscaping = false
+      def withEscaping(body: => Unit) {
+        val saved = maybeEscaping
+        maybeEscaping = true
+        try body
+        finally maybeEscaping = saved
+      }
 
-    def withEscaping(body: => Unit) {
-      val saved = maybeEscaping
-      maybeEscaping = true
-      try body
-      finally maybeEscaping = saved
-    }
-
-    override def traverse(tree: Tree) = tree match {
-      case DefDef(_, _, _, _, _, _) =>
-        val lastMethod = currentMethod
-        currentMethod = tree.symbol
-        try super.traverse(tree)
-        finally currentMethod = lastMethod
-      /** A method call with a by-name parameter represents escape. */
-      case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
-        traverse(fn)
-        (fn.symbol.paramss.head, args).zipped foreach { (param, arg) =>
-          if (param.tpe != null && isByNameParamType(param.tpe))
-            withEscaping(traverse(arg))
-          else
-            traverse(arg)
-        }
-      /** The rhs of a closure represents escape. */
-      case Function(vparams, body) =>
-        vparams foreach traverse
-        withEscaping(traverse(body))
-
-      /** The appearance of an ident outside the method where it was defined or
-       *  anytime maybeEscaping is true implies escape.
-       */
-      case Ident(_) =>
-        val sym = tree.symbol
-        if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod)) {
-          freeMutableVars += sym
-          val symTpe = sym.tpe
-          val symClass = symTpe.typeSymbol
-          atPhase(phase.next) {
-            def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
-              if (isValueClass(symClass)) valueRef(symClass).tpe
-              else appliedType(objectRefClass.typeConstructor, List(symTpe))
-
-            sym updateInfo (
-              if (sym.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
-              else refType(refClass, ObjectRefClass))
+      override def traverse(tree: Tree) = tree match {
+        case DefDef(_, _, _, _, _, _) =>
+          val lastMethod = currentMethod
+          currentMethod = tree.symbol
+          try super.traverse(tree)
+          finally currentMethod = lastMethod
+        /** A method call with a by-name parameter represents escape. */
+        case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
+          traverse(fn)
+          (fn.symbol.paramss.head, args).zipped foreach { (param, arg) =>
+            if (param.tpe != null && isByNameParamType(param.tpe))
+              withEscaping(traverse(arg))
+            else
+              traverse(arg)
           }
-        }
-      case _ =>
-        super.traverse(tree)
+        /** The rhs of a closure represents escape. */
+        case Function(vparams, body) =>
+          vparams foreach traverse
+          withEscaping(traverse(body))
+
+        /**
+         * The appearance of an ident outside the method where it was defined or
+         *  anytime maybeEscaping is true implies escape.
+         */
+        case Ident(_) =>
+          val sym = tree.symbol
+          if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod)) {
+            freeMutableVars += sym
+            val symTpe = sym.tpe
+            val symClass = symTpe.typeSymbol
+            atPhase(phase.next) {
+              def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
+                if (isValueClass(symClass)) valueRef(symClass).tpe
+                else appliedType(objectRefClass.typeConstructor, List(symTpe))
+
+              sym updateInfo (
+                if (sym.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
+                else refType(refClass, ObjectRefClass))
+            }
+          }
+        case _ =>
+          super.traverse(tree)
+      }
     }
   }
 }
