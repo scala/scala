@@ -9,6 +9,7 @@
 package scala.reflect
 
 import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
+import mirror._
 
 /** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
  *  is to give access to the erasure of the type as a `Class` instance, as
@@ -201,6 +202,7 @@ object Manifest {
 
   private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
     lazy val erasure = value.getClass
+    override lazy val tpe = mirror.SingleType(mirror.NoPrefix, InstanceRefSymbol(value))
     override lazy val toString = value.toString + ".type"
   }
 
@@ -234,6 +236,15 @@ object Manifest {
   private class ClassTypeManifest[T](prefix: Option[Manifest[_]],
                                      val erasure: Predef.Class[_],
                                      override val typeArguments: List[Manifest[_]]) extends Manifest[T] {
+    override lazy val tpe = {
+      val clazz = classToSymbol(erasure)
+      val pre = prefix match {
+        case Some(pm) => pm.tpe
+        case None => clazz.owner.thisType
+      }
+      namedType(pre, clazz, typeArguments map (_.tpe))
+    }
+
     override def toString =
       (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
       (if (erasure.isArray) "Array" else erasure.getName) +
@@ -246,9 +257,10 @@ object Manifest {
   /** Manifest for the abstract type `prefix # name'. `upperBound` is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
-  def abstractType[T](prefix: Manifest[_], name: String, clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
+  def abstractType[T](prefix: Manifest[_], name: String, upperBound: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
-      def erasure = clazz
+      def erasure = upperBound
+      override lazy val tpe = namedType(prefix.tpe, prefix.tpe.member(newTypeName(name)), args map (_.tpe) toList)
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }
@@ -258,6 +270,7 @@ object Manifest {
   def wildcardType[T](lowerBound: Manifest[_], upperBound: Manifest[_]): Manifest[T] =
     new Manifest[T] {
       def erasure = upperBound.erasure
+      override lazy val tpe = mirror.TypeBounds(lowerBound.tpe, upperBound.tpe)
       override def toString =
         "_" +
         (if (lowerBound eq Nothing) "" else " >: "+lowerBound) +
@@ -268,6 +281,7 @@ object Manifest {
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     new Manifest[T] {
       def erasure = parents.head.erasure
+      override lazy val tpe = mirror.RefinedType((parents map (_.tpe)).toList, newScope)
       override def toString = parents.mkString(" with ")
     }
 }

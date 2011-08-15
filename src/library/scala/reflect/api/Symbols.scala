@@ -84,6 +84,10 @@ trait Symbols { self: Universe =>
      */
     def typeOfThis: Type
 
+    /** The type `C.this`, where `C` is the current class.
+     */
+    def thisType: Type
+
     /** For a class: the module or case class factory with the same name in the same package.
      *  For all others: NoSymbol
      */

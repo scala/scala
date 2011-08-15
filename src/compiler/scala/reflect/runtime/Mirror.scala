@@ -6,7 +6,7 @@ import java.lang.reflect.Array
 
 /** The mirror for standard runtime reflection from Java.
  */
-class Mirror extends Universe with api.Mirror {
+class Mirror extends Universe with RuntimeTypes with api.Mirror {
 
   import definitions._
 
@@ -33,12 +33,8 @@ class Mirror extends Universe with api.Mirror {
     methodToJava(meth).invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
   }
 
-  def freeValue(x: Any): Tree = FreeValue(x)
-
-  // to do: replace with generalized
-  // case class Literal(x: Any),
-  // once calls to the deprecated factory Literal(x: Any) has been eliminated from all code.
-  case class FreeValue(any: Any) extends Tree
+  override def classToType(jclazz: java.lang.Class[_]): Type = typeToScala(jclazz)
+  override def classToSymbol(jclazz: java.lang.Class[_]): Symbol = classToScala(jclazz)
 
 }
 

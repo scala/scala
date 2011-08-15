@@ -6,6 +6,7 @@ trait Types { self: Universe =>
   abstract class AbsType {
     def typeSymbol: Symbol
     def decl(name: Name): Symbol
+    def member(name: Name): Symbol
   }
 
   type Type >: Null <: AbsType
