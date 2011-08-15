@@ -306,7 +306,7 @@ div.members > ol > li:last-child {
   text-decoration: none;
 }
 
-.signature .symbol {
+.signature > .symbol {
   display: block;
   padding-left: 8.7em;
 }
