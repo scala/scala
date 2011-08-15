@@ -89,7 +89,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @return      the updated buffer.
    */
   override def ++=(xs: TraversableOnce[A]): this.type = xs match {
-    case v: IndexedSeq[_] =>
+    case v: collection.IndexedSeqLike[_, _] =>
       val n = v.length
       ensureSize(size0 + n)
       v.copyToArray(array.asInstanceOf[scala.Array[Any]], size0, n)

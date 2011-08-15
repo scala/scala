@@ -65,7 +65,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *  @param delta a correction to add to the `coll.size` to produce the size hint.
    */
   def sizeHint(coll: TraversableLike[_, _], delta: Int = 0) {
-    if (coll.isInstanceOf[IndexedSeqLike[_,_]]) {
+    if (coll.isInstanceOf[collection.IndexedSeqLike[_,_]]) {
       sizeHint(coll.size + delta)
     }
   }
@@ -83,7 +83,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *                       than collection's size are reduced.
    */
   def sizeHintBounded(size: Int, boundingColl: TraversableLike[_, _]) {
-    if (boundingColl.isInstanceOf[IndexedSeqLike[_,_]])
+    if (boundingColl.isInstanceOf[collection.IndexedSeqLike[_,_]])
       sizeHint(size min boundingColl.size)
   }
 

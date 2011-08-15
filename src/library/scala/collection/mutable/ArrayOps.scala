@@ -65,7 +65,7 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParalleliza
    */
   def flatten[U, To](implicit asTrav: T => collection.Traversable[U], m: ClassManifest[U]): Array[U] = {
     val b = Array.newBuilder[U]
-    b.sizeHint(map{case is: IndexedSeq[_] => is.size case _ => 0} sum)
+    b.sizeHint(map{case is: collection.IndexedSeq[_] => is.size case _ => 0} sum)
     for (xs <- this)
       b ++= asTrav(xs)
     b.result
