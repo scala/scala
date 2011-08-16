@@ -533,19 +533,30 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                   mismatches match {
                     // Only one mismatched parameter: say something useful.
                     case (pa, pc) :: Nil  =>
-                      val addendum =
-                        if (pa.typeSymbol == pc.typeSymbol) {
+                      val abstractSym = pa.typeSymbol
+                      val concreteSym = pc.typeSymbol
+                      def subclassMsg(c1: Symbol, c2: Symbol) = (
+                        ": %s is a subclass of %s, but method parameter types must match exactly.".format(
+                          c1.fullLocationString, c2.fullLocationString)
+                      )
+                      val addendum = (
+                        if (abstractSym == concreteSym) {
                           // TODO: what is the optimal way to test for a raw type at this point?
                           // Compilation has already failed so we shouldn't have to worry overmuch
                           // about forcing types.
-                          if (underlying.isJavaDefined && pa.typeArgs.isEmpty && pa.typeSymbol.typeParams.nonEmpty)
+                          if (underlying.isJavaDefined && pa.typeArgs.isEmpty && abstractSym.typeParams.nonEmpty)
                             ". To implement a raw type, use %s[_]".format(pa)
                           else if (pa.prefix =:= pc.prefix)
                             ": their type parameters differ"
                           else
                             ": their prefixes (i.e. enclosing instances) differ"
                         }
+                        else if (abstractSym isSubClass concreteSym)
+                          subclassMsg(abstractSym, concreteSym)
+                        else if (concreteSym isSubClass abstractSym)
+                          subclassMsg(concreteSym, abstractSym)
                         else ""
+                      )
 
                       undefined("\n(Note that %s does not match %s%s)".format(pa, pc, addendum))
                     case xs =>
