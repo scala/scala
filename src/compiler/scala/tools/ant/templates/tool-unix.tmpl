@@ -111,6 +111,7 @@ declare -a scala_args
 
 # default to the boot classpath for speed.
 CPSELECT="-Xbootclasspath/a:"
+USEJAVACP=false
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -134,6 +135,7 @@ while [ $# -gt 0 ]; do
       ;;
     -nobootcp)
       CPSELECT="-classpath "
+      USEJAVACP=true
       shift
       ;;
     *)
@@ -154,7 +156,7 @@ fi
   $JAVA_OPTS \
   "${java_args[@@]}" \
   ${CPSELECT}${TOOL_CLASSPATH} \
-  -Dscala.usejavacp=false \
+  -Dscala.usejavacp="$USEJAVACP" \
   -Dscala.home="$SCALA_HOME" \
   -Denv.emacs="$EMACS" \
   $CYGWIN_JLINE_TERMINAL \
