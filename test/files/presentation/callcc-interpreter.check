@@ -1,0 +1,92 @@
+reload: CallccInterpreter.scala
+
+askTypeCompletion at CallccInterpreter.scala(51,38)
+================================================================================
+[response] aksTypeCompletion at (51,38)
+retrieved 62 members
+`class AddcallccInterpreter.Add`
+`class AppcallccInterpreter.App`
+`class CcccallccInterpreter.Ccc`
+`class ConcallccInterpreter.Con`
+`class FuncallccInterpreter.Fun`
+`class LamcallccInterpreter.Lam`
+`class McallccInterpreter.M`
+`class NumcallccInterpreter.Num`
+`class VarcallccInterpreter.Var`
+`method !=(x$1: Any)Boolean`
+`method !=(x$1: AnyRef)Boolean`
+`method ##()Int`
+`method +(other: String)java.lang.String`
+`method ->[B](y: B)(callccInterpreter.type, B)`
+`method ==(x$1: Any)Boolean`
+`method ==(x$1: AnyRef)Boolean`
+`method add(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value]`
+`method apply(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[callccInterpreter.Value]`
+`method asInstanceOf[T0]=> T0`
+`method callCC[A](h: A => callccInterpreter.M[A] => callccInterpreter.M[A])callccInterpreter.M[A]`
+`method clone()java.lang.Object`
+`method ensuring(cond: Boolean)callccInterpreter.type`
+`method ensuring(cond: Boolean, msg: => Any)callccInterpreter.type`
+`method ensuring(cond: callccInterpreter.type => Boolean)callccInterpreter.type`
+`method ensuring(cond: callccInterpreter.type => Boolean, msg: => Any)callccInterpreter.type`
+`method eq(x$1: AnyRef)Boolean`
+`method equals(x$1: Any)Boolean`
+`method finalize()Unit`
+`method formatted(fmtstr: String)String`
+`method hashCode()Int`
+`method id[A]=> A => A`
+`method interp(t: callccInterpreter.Term, e: callccInterpreter.Environment)callccInterpreter.M[callccInterpreter.Value]`
+`method isInstanceOf[T0]=> Boolean`
+`method lookup(x: callccInterpreter.Name, e: callccInterpreter.Environment)callccInterpreter.M[callccInterpreter.Value]`
+`method main(args: Array[String])Unit`
+`method ne(x$1: AnyRef)Boolean`
+`method notify()Unit`
+`method notifyAll()Unit`
+`method showM(m: callccInterpreter.M[callccInterpreter.Value])java.lang.String`
+`method synchronized[T0](x$1: T0)T0`
+`method test(t: callccInterpreter.Term)String`
+`method toString()java.lang.String`
+`method unitM[A](a: A)callccInterpreter.M[A]`
+`method wait()Unit`
+`method wait(x$1: Long)Unit`
+`method wait(x$1: Long, x$2: Int)Unit`
+`method ?[B](y: B)(callccInterpreter.type, B)`
+`object Wrongobject callccInterpreter.Wrong`
+`trait TermcallccInterpreter.Term`
+`trait ValuecallccInterpreter.Value`
+`type AnswercallccInterpreter.Answer`
+`type EnvironmentcallccInterpreter.Environment`
+`type NamecallccInterpreter.Name`
+`value selfAny`
+`value term0callccInterpreter.App`
+`value term1callccInterpreter.App`
+`value term2callccInterpreter.Add`
+`value xcallccInterpreter.type`
+================================================================================
+
+askType at CallccInterpreter.scala(14,21)
+================================================================================
+[response] askTypeAt at (14,21)
+def unitM[A >: Nothing <: Any](a: A): callccInterpreter.M[A] = callccInterpreter.this.M.apply[A](((c: A => callccInterpreter.Answer) => c.apply(a)))
+================================================================================
+
+askType at CallccInterpreter.scala(16,12)
+================================================================================
+[response] askTypeAt at (16,12)
+def id[A >: Nothing <: Any]: A => A = ((x: A) => x)
+================================================================================
+
+askType at CallccInterpreter.scala(17,25)
+================================================================================
+[response] askTypeAt at (17,25)
+def showM(m: callccInterpreter.M[callccInterpreter.Value]): java.lang.String = m.in.apply(callccInterpreter.this.id[callccInterpreter.Value]).toString()
+================================================================================
+
+askType at CallccInterpreter.scala(50,30)
+================================================================================
+[response] askTypeAt at (50,30)
+def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value] = scala.this.Predef.Pair.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
+  case scala.this.Predef.Pair.unapply[callccInterpreter.Value, callccInterpreter.Value](<unapply-selector>) <unapply> ((n: Int)callccInterpreter.Num((m @ _)), (n: Int)callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
+  case _ => callccInterpreter.this.unitM[callccInterpreter.Wrong.type](callccInterpreter.this.Wrong)
+}
+================================================================================
