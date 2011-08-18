@@ -14,11 +14,7 @@ import xsbti.api.{ClassLike, DefinitionType, PathComponent, SimpleType}
 object API
 {
 	val name = "xsbt-api"
-	// for 2.7 compatibility: this class was removed in 2.8
-	type ImplicitMethodType = AnyRef
 }
- // imports ImplicitMethodType, which will preserve source compatibility in 2.7 for defDef
-import API._
 
 final class API(val global: Global, val callback: xsbti.AnalysisCallback) extends Compat
 {
@@ -116,7 +112,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(pre == NoPrefix)
 		{
 			if(sym.isLocalClass || sym.isRoot || sym.isRootPackage) Constants.emptyType
-			else if(sym.isTypeParameterOrSkolem || isExistential(sym)) reference(sym)
+			else if(sym.isTypeParameterOrSkolem || sym.isExistentiallyBound) reference(sym)
 			else {
 				// this appears to come from an existential type in an inherited member- not sure why isExistential is false here
 				/*println("Warning: Unknown prefixless type: " + sym + " in " + sym.owner + " in " + sym.enclClass)
@@ -145,17 +141,10 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def =
 		{
-			// 2.8 compatibility
-			implicit def symbolsToParameters(syms: List[Symbol]): xsbti.api.ParameterList =
+			def parameterList(syms: List[Symbol]): xsbti.api.ParameterList =
 			{
 				val isImplicitList = syms match { case head :: _ => isImplicit(head); case _ => false }
 				new xsbti.api.ParameterList(syms.map(parameterS).toArray, isImplicitList)
-			}
-			// 2.7 compatibility
-			implicit def typesToParameters(syms: List[Type]): xsbti.api.ParameterList =
-			{
-				val isImplicitList = t.isInstanceOf[ImplicitMethodType]
-				new xsbti.api.ParameterList(syms.map(parameterT).toArray, isImplicitList)
 			}
 			t match
 			{
@@ -163,8 +152,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 					assert(typeParams.isEmpty)
 					assert(valueParameters.isEmpty)
 					build(base, typeParameters(in, typeParams0), Nil)
-				case MethodType(params, resultType) => // in 2.7, params is of type List[Type], in 2.8 it is List[Symbol]
-					build(resultType, typeParams, (params: xsbti.api.ParameterList) :: valueParameters)
+				case MethodType(params, resultType) =>
+					build(resultType, typeParams, parameterList(params) :: valueParameters)
 				case Nullary(resultType) => // 2.9 and later
 					build(resultType, typeParams, valueParameters)
 				case returnType =>
@@ -174,9 +163,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		}
 		def parameterS(s: Symbol): xsbti.api.MethodParameter =
 			makeParameter(s.nameString, s.info, s.info.typeSymbol, s)
-
-		def parameterT(t: Type): xsbti.api.MethodParameter =
-			makeParameter("", t, t.typeSymbol, NoSymbol)
 
 		// paramSym is only for 2.8 and is to determine if the parameter has a default
 		def makeParameter(name: String, tpe: Type, ts: Symbol, paramSym: Symbol): xsbti.api.MethodParameter =
@@ -194,13 +180,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		val t = viewer(in).memberInfo(s)
 		build(t, Array(), Nil)
 	}
-	private def hasDefault(s: Symbol) =
-	{
-		// 2.7 compatibility
-		implicit def flagsWithDefault(f: AnyRef): WithDefault = new WithDefault
-		class WithDefault { val DEFAULTPARAM = 0x00000000 }
-		s != NoSymbol && s.hasFlag(Flags.DEFAULTPARAM)
-	}
+	private def hasDefault(s: Symbol) = s != NoSymbol && s.hasFlag(Flags.DEFAULTPARAM)
 	private def fieldDef[T](in: Symbol, s: Symbol, keepConst: Boolean, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
 	{
 		val t = dropNullary(viewer(in).memberType(s))
@@ -266,7 +246,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		def mkVal = Some(fieldDef(in, sym, true, new xsbti.api.Val(_,_,_,_,_)))
 		if(sym.isClass || sym.isModule)
 			if(ignoreClass(sym)) None else Some(classLike(in, sym))
-		else if(isNonClassType(sym))
+		else if(sym.isNonClassType)
 			Some(typeDef(in, sym))
 		else if(sym.isVariable)
 			if(isSourceField(sym)) mkVar else None
@@ -278,7 +258,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			None
 	}
 	private def ignoreClass(sym: Symbol): Boolean =
-		sym.isLocalClass || sym.isAnonymousClass || fullName(sym).endsWith(LocalChild)
+		sym.isLocalClass || sym.isAnonymousClass || sym.fullName.endsWith(LocalChild)
 
 	// This filters private[this] vals/vars that were not in the original source.
 	//  The getter will be used for processing instead.
@@ -305,7 +285,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		else
 		{
 			val within = c.privateWithin
-			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(fullName(within))
+			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(within.fullName)
 			if(c.hasFlag(Flags.PROTECTED)) new xsbti.api.Protected(qualifier)
 			else new xsbti.api.Private(qualifier)
 		}
@@ -354,7 +334,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def classLike(in: Symbol, c: Symbol): ClassLike = classLikeCache.getOrElseUpdate( (in,c), mkClassLike(in, c))
 	private def mkClassLike(in: Symbol, c: Symbol): ClassLike =
 	{
-		val name = fullName(c)
+		val name = c.fullName
 		val isModule = c.isModuleClass || c.isModule
 		val struct = if(isModule) c.moduleClass else c
 		val defType =
@@ -379,7 +359,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				()
 			else
 			{
-				packages += fullName(p)
+				packages += p.fullName
 				`package`(p.enclosingPackage)
 			}
 		}
@@ -414,10 +394,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			(sym ne null) && (sym != NoSymbol) && !sym.isImplClass && !sym.isNestedClass && sym.isStatic &&
 			!sym.hasFlag(Flags.SYNTHETIC) && !sym.hasFlag(Flags.JAVA)
 	}
-	
-		// In 2.8, attributes is renamed to annotations
-		implicit def compat(a: AnyRef): WithAnnotations = new WithAnnotations(a)
-		class WithAnnotations(a: AnyRef) { def attributes = a.getClass.getMethod("annotations").invoke(a).asInstanceOf[List[AnnotationInfo]] }
 
 	private def annotations(in: Symbol, s: Symbol): Array[xsbti.api.Annotation] =
 		atPhase(currentRun.typerPhase) {
@@ -427,14 +403,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			//  a) they are recorded as normal source methods anyway
 			//  b) there is no way to distinguish them from user-defined methods
 			val associated = List(b, b.getter(b.enclClass), b.setter(b.enclClass)).filter(_ != NoSymbol)
-			associated.flatMap( ss => annotations(in, ss.attributes) ).removeDuplicates.toArray ;
+			associated.flatMap( ss => annotations(in, ss.annotations) ).distinct.toArray ;
 		}
 	private def annotatedType(in: Symbol, at: AnnotatedType): xsbti.api.Type =
 	{
-		val annots = at.attributes
+		val annots = at.annotations
 		if(annots.isEmpty) processType(in, at.underlying) else annotated(in, annots, at.underlying)
 	}
-	private def fullName(s: Symbol): String = nameString(s)
 	private def simpleName(s: Symbol): String =
 	{
 		val n = s.originalName
