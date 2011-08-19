@@ -40,7 +40,7 @@ retrieved 48 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(properties.Property[java.lang.String], B)`
+`method →[B](y: B)(properties.Property[java.lang.String], B)`
 `value initjava.lang.String`
 `value selfAny`
 `value xproperties.Property[java.lang.String]`
@@ -89,7 +89,7 @@ retrieved 48 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(properties.Property[java.lang.String], B)`
+`method →[B](y: B)(properties.Property[java.lang.String], B)`
 `value initjava.lang.String`
 `value selfAny`
 `value xproperties.Property[java.lang.String]`
@@ -129,7 +129,7 @@ retrieved 36 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(properties.User, B)`
+`method →[B](y: B)(properties.User, B)`
 `value firstnameproperties.Property[java.lang.String]`
 `value lastnameproperties.Property[java.lang.String]`
 `value selfAny`

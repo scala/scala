@@ -37,7 +37,7 @@ retrieved 43 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(timeofday.TimeOfDayVar, B)`
+`method →[B](y: B)(timeofday.TimeOfDayVar, B)`
 `value selfAny`
 `value xtimeofday.TimeOfDayVar`
 `variable hInt`
@@ -82,7 +82,7 @@ retrieved 43 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(timeofday.TimeOfDayVar, B)`
+`method →[B](y: B)(timeofday.TimeOfDayVar, B)`
 `value selfAny`
 `value xtimeofday.TimeOfDayVar`
 `variable hInt`

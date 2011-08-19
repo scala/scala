@@ -1,4 +1,4 @@
-reload: Actor.scala, ActorRef.scala, ActorRegistry.scala, Actors.java, BootableActorLoaderService.scala, FSM.scala, package.scala, Scheduler.scala, Supervisor.scala, UntypedActor.scala, AkkaException.scala, Config.scala, ConfigParser.scala, Configuration.scala, Configurator.scala, Importer.scala, SupervisionConfig.scala, DataFlow.scala, Dispatchers.scala, ExecutorBasedEventDrivenDispatcher.scala, ExecutorBasedEventDrivenWorkStealingDispatcher.scala, Future.scala, MailboxHandling.scala, MessageHandling.scala, ThreadBasedDispatcher.scala, ThreadPoolBuilder.scala, EventHandler.scala, JavaEventHandler.java, JavaAPI.scala, RemoteEventHandler.scala, RemoteInterface.scala, Iterators.scala, Listeners.scala, Pool.scala, Routers.scala, Routing.scala, Address.scala, AkkaLoader.scala, Bootable.scala, BoundedBlockingQueue.scala, Crypt.scala, Duration.scala, HashCode.scala, Helpers.scala, ListenerManagement.scala, LockUtil.scala, package.scala, ReflectiveAccess.scala, Hex.java, MACAddressParser.java, UUID.java, UUIDGen.java, UUIDHelper.java, UUIDHolder.java, pi.scala
+reload: Actor.scala, ActorRef.scala, ActorRegistry.scala, Actors.java, Address.scala, AkkaException.scala, AkkaLoader.scala, Bootable.scala, BootableActorLoaderService.scala, BoundedBlockingQueue.scala, Config.scala, ConfigParser.scala, Configuration.scala, Configurator.scala, Crypt.scala, DataFlow.scala, Dispatchers.scala, Duration.scala, EventHandler.scala, ExecutorBasedEventDrivenDispatcher.scala, ExecutorBasedEventDrivenWorkStealingDispatcher.scala, FSM.scala, Future.scala, HashCode.scala, Helpers.scala, Hex.java, Importer.scala, Iterators.scala, JavaAPI.scala, JavaEventHandler.java, ListenerManagement.scala, Listeners.scala, LockUtil.scala, MACAddressParser.java, MailboxHandling.scala, MessageHandling.scala, Pool.scala, ReflectiveAccess.scala, RemoteEventHandler.scala, RemoteInterface.scala, Routers.scala, Routing.scala, Scheduler.scala, SupervisionConfig.scala, Supervisor.scala, ThreadBasedDispatcher.scala, ThreadPoolBuilder.scala, UUID.java, UUIDGen.java, UUIDHelper.java, UUIDHolder.java, UntypedActor.scala, package.scala, package.scala, pi.scala
 
 askTypeCompletion at pi.scala(52,59)
 ================================================================================
@@ -45,7 +45,7 @@ retrieved 43 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(akka.routing.Routing.type, B)`
+`method →[B](y: B)(akka.routing.Routing.type, B)`
 `trait RoutingMessageakka.routing.Routing.RoutingMessage`
 `type PFakka.routing.Routing.PF`
 `value selfAny`
@@ -169,7 +169,7 @@ retrieved 129 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(akka.actor.ActorRef, B)`
+`method →[B](y: B)(akka.actor.ActorRef, B)`
 `value selfAny`
 `value xakka.actor.ActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
@@ -300,7 +300,7 @@ retrieved 129 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(akka.actor.ActorRef, B)`
+`method →[B](y: B)(akka.actor.ActorRef, B)`
 `value selfAny`
 `value xakka.actor.ActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
@@ -431,7 +431,7 @@ retrieved 129 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(akka.actor.ScalaActorRef, B)`
+`method →[B](y: B)(akka.actor.ScalaActorRef, B)`
 `value selfAny`
 `value xakka.actor.ScalaActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`

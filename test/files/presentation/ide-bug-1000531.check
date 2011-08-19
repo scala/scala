@@ -118,7 +118,7 @@ retrieved 121 members
 `method zipAll[B, A1 >: B, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1)java.lang.Object with Iterator[(A1, B1)]`
 `method zipWithIndex=> java.lang.Object with Iterator[(B, Int)]{def idx: Int; def idx_=(x$1: Int): Unit}`
 `method zip[B](that: Iterator[B])java.lang.Object with Iterator[(B, B)]`
-`method ?[B](y: B)(java.util.Iterator[B], B)`
+`method →[B](y: B)(java.util.Iterator[B], B)`
 `value selfAny`
 `value xjava.util.Iterator[B]`
 ================================================================================

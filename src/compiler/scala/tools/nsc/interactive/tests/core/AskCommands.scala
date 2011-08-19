@@ -1,3 +1,7 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2011 Scala Solutions and LAMP/EPFL
+ * @author Martin Odersky
+ */
 package scala.tools.nsc
 package interactive
 package tests.core
@@ -58,7 +62,8 @@ trait AskReload extends AskCommand {
 
   /** Reload the given source files and wait for them to be reloaded. */
   def askReload(sources: Seq[SourceFile])(implicit reporter: Reporter): Response[Unit] = {
-    reporter.println("reload: " + sources.mkString("", ", ", ""))
+    val sortedSources = (sources map (_.file.name)).sorted
+    reporter.println("reload: " + sortedSources.mkString(", "))
 
     ask {
       compiler.askReload(sources.toList, _)
@@ -107,7 +112,4 @@ trait AskType extends AskCommand {
       askType(source, forceReload)
   }
 }
-
-
-
 

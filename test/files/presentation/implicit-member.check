@@ -33,7 +33,7 @@ retrieved 36 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(Implicit.type, B)`
+`method →[B](y: B)(Implicit.type, B)`
 `value selfAny`
 `value xImplicit.type`
 ================================================================================

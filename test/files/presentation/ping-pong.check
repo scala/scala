@@ -32,7 +32,7 @@ retrieved 38 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(Pong, B)`
+`method →[B](y: B)(Pong, B)`
 `value namejava.lang.String`
 `value pingPing`
 `value selfAny`
@@ -73,7 +73,7 @@ retrieved 38 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method ?[B](y: B)(Ping, B)`
+`method →[B](y: B)(Ping, B)`
 `value pongPong`
 `value selfAny`
 `value xPing`
