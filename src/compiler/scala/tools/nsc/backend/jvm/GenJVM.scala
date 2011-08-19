@@ -11,6 +11,7 @@ import java.io.{ DataOutputStream, OutputStream }
 import java.nio.ByteBuffer
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
+import scala.tools.reflect.SigParser
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.symtab._
 import scala.reflect.internal.ClassfileConstants._
@@ -421,15 +422,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             c.cunit.source.toString)
 
       var fieldList = List[String]()
-      for {
-        f <- clasz.fields
-        if f.symbol.hasGetter
-	      g = f.symbol.getter(c.symbol)
-	      s = f.symbol.setter(c.symbol)
-	      if g.isPublic && !(f.symbol.name startsWith "$") // inserting $outer breaks the bean
-	    } {
+      for (f <- clasz.fields if f.symbol.hasGetter;
+	         val g = f.symbol.getter(c.symbol);
+	         val s = f.symbol.setter(c.symbol);
+	         if g.isPublic && !(f.symbol.name startsWith "$"))  // inserting $outer breaks the bean
         fieldList = javaName(f.symbol) :: javaName(g) :: (if (s != NoSymbol) javaName(s) else null) :: fieldList
-      }
       val methodList =
 	     for (m <- clasz.methods
 	         if !m.symbol.isConstructor &&
@@ -606,6 +603,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       nannots
     }
 
+    /** Run the signature parser to catch bogus signatures.
+     */
+    def isValidSignature(sym: Symbol, sig: String) = (
+      if (sym.isMethod) SigParser verifyMethod sig
+      else if (sym.isTerm) SigParser verifyType sig
+      else SigParser verifyClass sig
+    )
+
     // @M don't generate java generics sigs for (members of) implementation
     // classes, as they are monomorphic (TODO: ok?)
     private def needsGenericSignature(sym: Symbol) = !(
@@ -627,8 +632,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
         erasure.javaSig(sym, memberTpe) foreach { sig =>
           debuglog("sig(" + jmember.getName + ", " + sym + ", " + owner + ")      " + sig)
-
-          if (settings.Xverify.value && !erasure.isValidSignature(sym, sig)) {
+          /** Since we're using a sun internal class for signature validation,
+           *  we have to allow for it not existing or otherwise malfunctioning:
+           *  in which case we treat every signature as valid.  Medium term we
+           *  should certainly write independent signature validation.
+           */
+          if (settings.Xverify.value && SigParser.isParserAvailable && !isValidSignature(sym, sig)) {
             clasz.cunit.warning(sym.pos,
                 """|compiler bug: created invalid generic signature for %s in %s
                    |signature: %s
@@ -652,10 +661,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
             }
           }
           val index = jmember.getConstantPool.addUtf8(sig).toShort
-          if (opt.verboseDebug || erasure.traceSignatures)
+          if (opt.verboseDebug)
             atPhase(currentRun.erasurePhase) {
-              log("new signature for " + sym+":"+sym.info)
-              log("  " + sig)
+              println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
             }
           val buf = ByteBuffer.allocate(2)
           buf putShort index
@@ -1818,14 +1826,20 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     /**
      * Compute the indexes of each local variable of the given
-     * method. Assumes parameters come first in the list of locals.
+     * method. *Does not assume the parameters come first!*
      */
     def computeLocalVarsIndex(m: IMethod) {
       var idx = 1
       if (m.symbol.isStaticMember)
         idx = 0;
 
-      for (l <- m.locals) {
+      for (l <- m.params) {
+        debuglog("Index value for " + l + "{" + l.## + "}: " + idx)
+        l.index = idx
+        idx += sizeOf(l.kind)
+      }
+
+      for (l <- m.locals if !(m.params contains l)) {
         debuglog("Index value for " + l + "{" + l.## + "}: " + idx)
         l.index = idx
         idx += sizeOf(l.kind)

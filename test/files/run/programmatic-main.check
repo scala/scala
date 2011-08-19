@@ -1,28 +1,29 @@
-    phase name  id  description
-    ----------  --  -----------
-        parser   1  parse source into ASTs, perform simple desugaring
-         namer   2  resolve names, attach symbols to named trees
-packageobjects   3  load package objects
-         typer   4  the meat and potatoes: type the trees
-superaccessors   5  add super accessors in traits and nested classes
-       pickler   6  serialize symbol tables
-     refchecks   7  reference/override checking, translate nested objects
-      liftcode   8  reify trees
-       uncurry   9  uncurry, translate function values to anonymous classes
-     tailcalls  10  replace tail calls by jumps
-    specialize  11  @specialized-driven class and method specialization
- explicitouter  12  this refs to outer pointers, translate patterns
-       erasure  13  erase types, add interfaces for traits
-      lazyvals  14  allocate bitmaps, translate lazy vals into lazified defs
-    lambdalift  15  move nested functions to top level
-  constructors  16  move field definitions into constructors
-       flatten  17  eliminate inner classes
-         mixin  18  mixin composition
-       cleanup  19  platform-specific cleanups, generate reflective calls
-         icode  20  generate portable intermediate code
-       inliner  21  optimization: do inlining
-      closelim  22  optimization: eliminate uncalled closures
-           dce  23  optimization: eliminate dead code
-           jvm  24  generate JVM bytecode
-      terminal  25  The last phase in the compiler chain
+             phase name  id  description
+             ----------  --  -----------
+                 parser   1  parse source into ASTs, perform simple desugaring
+                  namer   2  resolve names, attach symbols to named trees
+         packageobjects   3  load package objects
+                  typer   4  the meat and potatoes: type the trees
+         superaccessors   5  add super accessors in traits and nested classes
+                pickler   6  serialize symbol tables
+              refchecks   7  reference/override checking, translate nested objects
+               liftcode   8  reify trees
+                uncurry   9  uncurry, translate function values to anonymous classes
+              tailcalls  10  replace tail calls by jumps
+             specialize  11  @specialized-driven class and method specialization
+          explicitouter  12  this refs to outer pointers, translate patterns
+                erasure  13  erase types, add interfaces for traits
+               lazyvals  14  allocate bitmaps, translate lazy vals into lazified defs
+             lambdalift  15  move nested functions to top level
+           constructors  16  move field definitions into constructors
+                flatten  17  eliminate inner classes
+                  mixin  18  mixin composition
+                cleanup  19  platform-specific cleanups, generate reflective calls
+                  icode  20  generate portable intermediate code
+                inliner  21  optimization: do inlining
+inlineExceptionHandlers  22  optimization: inline exception handlers
+               closelim  23  optimization: eliminate uncalled closures
+                    dce  24  optimization: eliminate dead code
+                    jvm  25  generate JVM bytecode
+               terminal  26  The last phase in the compiler chain
 

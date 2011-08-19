@@ -535,9 +535,9 @@ abstract class TypeFlowAnalysis {
         case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
           ()
 
-        case LOAD_EXCEPTION(_) =>
+        case LOAD_EXCEPTION(clasz) =>
           stack.pop(stack.length)
-          stack.push(typeLattice.top)
+          stack.push(toTypeKind(clasz.tpe))
 
         case _ =>
           dumpClassesAndAbort("Unknown instruction: " + i)

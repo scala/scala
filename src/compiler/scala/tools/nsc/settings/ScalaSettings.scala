@@ -48,7 +48,7 @@ trait ScalaSettings extends AbsScalaSettings
   val d             = OutputSetting     (outputDirs, ".")
   val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program") .
                                             withAbbreviation("-optimize") .
-                                            withPostSetHook(set => List(inline, Xcloselim, Xdce) foreach (_.value = set.value))
+                                            withPostSetHook(set => List(inline, inlineHandlers, Xcloselim, Xdce) foreach (_.value = set.value))
   val nospecialization = BooleanSetting    ("-no-specialization", "Ignore @specialize annotations.")
 
   /**
@@ -120,6 +120,7 @@ trait ScalaSettings extends AbsScalaSettings
   val termConflict  = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts",
     List("package", "object", "error"), "error")
   val inline        = BooleanSetting    ("-Yinline", "Perform inlining when possible.")
+  val inlineHandlers= BooleanSetting    ("-Yinline-handlers", "Perform exception handler inlining when possible.")
   val Xlinearizer   = ChoiceSetting     ("-Ylinearizer", "which", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val log           = PhasesSetting     ("-Ylog", "Log operations during")
   val Ylogcp        = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")

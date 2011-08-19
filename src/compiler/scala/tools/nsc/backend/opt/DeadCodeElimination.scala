@@ -68,7 +68,7 @@ abstract class DeadCodeElimination extends SubComponent {
     var method: IMethod = _
 
     /** Map instructions who have a drop on some control path, to that DROP instruction. */
-    val dropOf: mutable.Map[(BasicBlock, Int), (BasicBlock, Int)] = perRunCaches.newMap()
+    val dropOf: mutable.Map[(BasicBlock, Int), List[(BasicBlock, Int)]] = perRunCaches.newMap()
 
     def dieCodeDie(m: IMethod) {
       if (m.code ne null) {
@@ -115,7 +115,7 @@ abstract class DeadCodeElimination extends SubComponent {
                   case CALL_METHOD(m1, _) if isSideEffecting(m1) => true
                   case LOAD_EXCEPTION(_) | DUP(_) | LOAD_MODULE(_) => true
                   case _ =>
-                    dropOf((bb1, idx1)) = (bb, idx)
+                    dropOf((bb1, idx1)) = (bb,idx) :: dropOf.getOrElse((bb1, idx1), Nil)
 //                    println("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
                     false
                 }
@@ -141,9 +141,9 @@ abstract class DeadCodeElimination extends SubComponent {
         val instr = bb(idx)
         if (!useful(bb)(idx)) {
           useful(bb) += idx
-          dropOf.get(bb, idx) match {
-            case Some((bb1, idx1)) => useful(bb1) += idx1
-            case None => ()
+          dropOf.get(bb, idx) foreach {
+              for ((bb1, idx1) <- _)
+                useful(bb1) += idx1
           }
           instr match {
             case LOAD_LOCAL(l1) =>
