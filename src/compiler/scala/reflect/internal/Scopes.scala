@@ -311,6 +311,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   def newScope: Scope = new Scope
 
+  def newScopeWith(elems: Symbol*) = {
+    val scope = newScope
+    elems foreach scope.enter
+    scope
+  }
+
+
   /** The empty scope (immutable).
    */
   object EmptyScope extends Scope {
