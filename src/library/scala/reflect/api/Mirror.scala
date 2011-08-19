@@ -64,4 +64,18 @@ trait Mirror extends Universe with RuntimeTypes {
    *  @return  A symbol that represents the Scala view of the class.
    */
   def classToSymbol(clazz: java.lang.Class[_]): Symbol
+
+/*
+   /** Selects term symbol with given name and type from the defined members of prefix type
+   *  @pre   The prefix type
+   *  @name  The name of the selected member
+   *  @tpe   The type of the selected member
+   */
+  def selectTerm(pre: Type, name: String, tpe: Type) : Symbol
+
+  /** Selects type symbol with given name from the defined members of prefix type
+   */
+  def selectType(pre: Type, name: String): Symbol
+
+*/
 }

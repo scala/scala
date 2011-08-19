@@ -36,6 +36,14 @@ class Mirror extends Universe with RuntimeTypes with api.Mirror {
   override def classToType(jclazz: java.lang.Class[_]): Type = typeToScala(jclazz)
   override def classToSymbol(jclazz: java.lang.Class[_]): Symbol = classToScala(jclazz)
 
+  def staticClass(name: String): Symbol = definitions.getClass(newTypeName(name))
+  def staticModule(name: String): Symbol = definitions.getModule(newTermName(name))
+
+  def selectType(owner: Symbol, name: String): Symbol =
+    owner.info.decl(newTypeName(name))
+
+  def selectTerm(owner: Symbol, name: String, tpe: Type): Symbol =
+    owner.info.decl(newTermName(name)) suchThat (_.tpe == tpe)
 }
 
 object Mirror extends Mirror
