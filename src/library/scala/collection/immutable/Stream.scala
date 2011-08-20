@@ -20,7 +20,7 @@ import Stream.cons
  *  are only evaluated when they are needed. Here is an example:
  *
  *  {{{
- *  object Main extends Application {
+ *  object Main extends App {
  *
  *    def from(n: Int): Stream[Int] =
  *      Stream.cons(n, from(n + 1))
