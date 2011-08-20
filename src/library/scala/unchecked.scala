@@ -15,7 +15,7 @@ package scala
  *  suppressed.
  *  For example, compiling the code:
  *  {{{
- *    object test extends Application {
+ *    object test extends App {
  *      def f(x: Option[Int]) = x match {
  *        case Some(y) => y
  *      }

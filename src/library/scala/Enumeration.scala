@@ -26,7 +26,7 @@ import java.util.regex.Pattern
  *  identifier path of the enumeration instance).
  *
  * @example {{{
- *  object Main extends Application {
+ *  object Main extends App {
  *
  *    object WeekDay extends Enumeration {
  *      type WeekDay = Value
