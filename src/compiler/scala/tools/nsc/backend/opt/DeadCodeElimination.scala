@@ -16,6 +16,7 @@ abstract class DeadCodeElimination extends SubComponent {
   import global._
   import icodes._
   import icodes.opcodes._
+  import definitions.RuntimePackage
 
   val phaseName = "dce"
 
@@ -103,7 +104,7 @@ abstract class DeadCodeElimination extends SubComponent {
               defs = defs + Pair(((bb, idx)), rd.vars)
 //              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
-                 THROW(_)   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
+                 THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
                  LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
             case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); log("marking " + m1)
             case CALL_METHOD(m1, SuperCall(_)) =>
@@ -268,15 +269,12 @@ abstract class DeadCodeElimination extends SubComponent {
       abort("could not find init in: " + method)
     }
 
+    private def isPure(sym: Symbol) = (
+         (sym.isGetter && sym.isFinal && !sym.isLazy)
+      || (sym.isPrimaryConstructor && (sym.enclosingPackage == RuntimePackage || inliner.isClosureClass(sym.owner)))
+    )
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
-    private def isSideEffecting(sym: Symbol): Boolean = {
-      !((sym.isGetter && sym.isFinal && !sym.isLazy)
-       || (sym.isConstructor
-           && !(sym.owner == method.symbol.owner && method.symbol.isConstructor) // a call to another constructor
-           && sym.owner.owner == definitions.RuntimePackage.moduleClass)
-       || (sym.isConstructor && inliner.isClosureClass(sym.owner))
-/*       || definitions.isBox(sym)
-       || definitions.isUnbox(sym)*/)
-    }
+    private def isSideEffecting(sym: Symbol) = !isPure(sym)
+
   } /* DeadCode */
 }
