@@ -308,6 +308,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
     val extras = if (isPartestDebug) List("-Dpartest.debug=true") else Nil
     val propertyOptions = List(
+      "-Dfile.encoding=UTF-8",
       "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
       "-Dpartest.output="+outDir.getAbsolutePath,
       "-Dpartest.lib="+LATEST_LIB,
