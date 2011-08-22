@@ -298,6 +298,16 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     if (argString != "")
       NestUI.verbose("Found javaopts file '%s', using options: '%s'".format(argsFile, argString))
 
+    val testFullPath = {
+      val d = new File(logFile.getParentFile, fileBase)
+      if (d.isDirectory) d.getAbsolutePath
+      else {
+        val f = new File(logFile.getParentFile, fileBase + ".scala")
+        if (f.isFile) f.getAbsolutePath
+        else ""
+      }
+    }
+
     // Note! As this currently functions, JAVA_OPTS must precede argString
     // because when an option is repeated to java only the last one wins.
     // That means until now all the .javaopts files were being ignored because
@@ -313,6 +323,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Dpartest.output="+outDir.getAbsolutePath,
       "-Dpartest.lib="+LATEST_LIB,
       "-Dpartest.cwd="+outDir.getParent,
+      "-Dpartest.test-path="+testFullPath,
       "-Dpartest.testname="+fileBase,
       "-Djavacmd="+JAVACMD,
       "-Djavaccmd="+javacCmd,

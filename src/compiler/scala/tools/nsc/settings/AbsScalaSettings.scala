@@ -29,7 +29,7 @@ trait AbsScalaSettings {
   def MultiStringSetting(name: String, helpArg: String, descr: String): MultiStringSetting
   def OutputSetting(outputDirs: OutputDirs, default: String): OutputSetting
   def PathSetting(name: String, descr: String, default: String): PathSetting
-  def PhasesSetting(name: String, descr: String): PhasesSetting
+  def PhasesSetting(name: String, descr: String, default: String): PhasesSetting
   def StringSetting(name: String, helpArg: String, descr: String, default: String): StringSetting
   def PrefixSetting(name: String, prefix: String, descr: String): PrefixSetting
 

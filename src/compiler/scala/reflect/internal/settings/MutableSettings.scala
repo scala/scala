@@ -19,7 +19,8 @@ abstract class MutableSettings extends AbsSettings {
     protected var setByUser: Boolean = false
 
     def postSetHook(): Unit = ()
-    def isDefault: Boolean = !setByUser
+    def isDefault = !setByUser
+    def isSetByUser = setByUser
     def value: T = v
     def value_=(arg: T) = {
       setByUser = true

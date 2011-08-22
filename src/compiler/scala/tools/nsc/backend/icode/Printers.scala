@@ -3,13 +3,11 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 package icode
 
 import java.io.PrintWriter
-
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.util.Position
 
@@ -105,7 +103,7 @@ trait Printers { self: ICodes =>
 
     def printExceptionHandler(e: ExceptionHandler) {
       indent;
-      println("catch (" + e.cls.simpleName + ") in " + e.covered + " starting at: " + e.startBlock);
+      println("catch (" + e.cls.simpleName + ") in " + e.covered.toSeq.sortBy(_.label) + " starting at: " + e.startBlock);
       println("consisting of blocks: " + e.blocks);
       undent;
       println("with finalizer: " + e.finalizer);

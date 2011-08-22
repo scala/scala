@@ -31,7 +31,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     |Boolean settings are always false unless set.
     |Where multiple values are accepted, they should be comma-separated.
     |  example: -Xplugin:plugin1,plugin2
-    |<phase> means one or a list of:
+    |<phases> means one or a comma-separated list of:
     |  (partial) phase names, phase ids, phase id ranges, or the string "all".
     |  example: -Xprint:all prints all phases.
     |  example: -Xprint:expl,24-26 prints phases explicitouter, closelim, dce, jvm.

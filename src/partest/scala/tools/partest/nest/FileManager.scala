@@ -16,7 +16,7 @@ import scala.tools.nsc.io.{ Path, Directory, File => SFile }
 import sys.process._
 import scala.collection.mutable
 
-trait FileManager {
+trait FileUtil {
   /**
    * Compares two files using a Java implementation of the GNU diff
    * available at http://www.bmsi.com/java/#diff.
@@ -33,6 +33,24 @@ trait FileManager {
     val res = diffWriter.toString
     if (res startsWith "No") "" else res
   }
+  def compareContents(lines1: Seq[String], lines2: Seq[String]): String = {
+    val xs1 = lines1.toArray[AnyRef]
+    val xs2 = lines2.toArray[AnyRef]
+
+    val diff   = new Diff(xs1, xs2)
+    val change = diff.diff_2(false)
+    val writer = new StringWriter
+    val p      = new DiffPrint.NormalPrint(xs1, xs2, writer)
+
+    p.print_script(change)
+    val res = writer.toString
+    if (res startsWith "No ") ""
+    else res
+  }
+}
+object FileUtil extends FileUtil { }
+
+trait FileManager extends FileUtil {
 
   def testRootDir: Directory
   def testRootPath: String

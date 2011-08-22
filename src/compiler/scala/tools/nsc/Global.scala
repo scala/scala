@@ -262,7 +262,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     // debugging
     def checkPhase = wasActive(settings.check)
     def logPhase   = isActive(settings.log)
-    def writeICode = settings.writeICode.value
+
+    // Write *.icode files the setting was given.
+    def writeICode = settings.writeICode.isSetByUser && isActive(settings.writeICode)
 
     // showing/printing things
     def browsePhase   = isActive(settings.browse)
@@ -1019,7 +1021,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         phaseTimings(globalPhase) = currentTime - startTime
 
         // write icode to *.icode files
-        if (opt.writeICode && (runIsAt(icodePhase) || opt.printPhase && runIsPast(icodePhase)))
+        if (opt.writeICode)
           writeICode()
 
         // print trees
