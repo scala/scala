@@ -66,7 +66,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   // Install a signal handler so we can be prodded.
   private val signallable =
-    if (isReplDebug) Signallable("Dump repl state.")(dumpCommand())
+    if (isReplDebug && !settings.Yreplsync.value)
+      Signallable("Dump repl state.")(dumpCommand())
     else null
 
   // classpath entries added via :cp
@@ -95,19 +96,21 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     override lazy val formatting = new Formatting {
       def prompt = ILoop.this.prompt
     }
-    override protected def createLineManager() = new Line.Manager {
-      override def onRunaway(line: Line[_]): Unit = {
-        val template = """
-          |// She's gone rogue, captain! Have to take her out!
-          |// Calling Thread.stop on runaway %s with offending code:
-          |// scala> %s""".stripMargin
+    override protected def createLineManager(): Line.Manager =
+      if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager {
+        override def onRunaway(line: Line[_]): Unit = {
+          val template = """
+            |// She's gone rogue, captain! Have to take her out!
+            |// Calling Thread.stop on runaway %s with offending code:
+            |// scala> %s""".stripMargin
 
-        echo(template.format(line.thread, line.code))
-        // XXX no way to suppress the deprecation warning
-        line.thread.stop()
-        in.redrawLine()
+          echo(template.format(line.thread, line.code))
+          // XXX no way to suppress the deprecation warning
+          line.thread.stop()
+          in.redrawLine()
+        }
       }
-    }
+
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )
   }

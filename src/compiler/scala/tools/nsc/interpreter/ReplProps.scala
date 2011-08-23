@@ -24,3 +24,9 @@ class ReplProps {
   val powerInitCode = Prop[JFile]("scala.repl.power.initcode")
   val powerBanner   = Prop[JFile]("scala.repl.power.banner")
 }
+
+object ReplPropsKludge {
+  // !!! short term binary compatibility hack for 2.9.1 to put this
+  // here - needed a not previously existing object.
+  def noThreadCreation(settings: Settings) = replProps.noThreads || settings.Yreplsync.value
+}

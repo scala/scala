@@ -119,7 +119,6 @@ abstract class SymbolTable extends api.Universe
 
   object perRunCaches {
     import java.lang.ref.WeakReference
-    import scala.tools.util.Signallable
     import scala.runtime.ScalaRunTime.stringOf
 
     // We can allow ourselves a structural type, these methods
@@ -143,9 +142,9 @@ abstract class SymbolTable extends api.Universe
         ))
       }
     }
-    if (settings.debug.value) {
-      println(Signallable("dump compiler caches")(dumpCaches()))
-    }
+    // if (settings.debug.value) {
+    //   println(Signallable("dump compiler caches")(dumpCaches()))
+    // }
 
     def recordCache[T <: Clearable](cache: T): T = {
       caches += new WeakReference(cache)

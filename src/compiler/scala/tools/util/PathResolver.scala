@@ -7,7 +7,7 @@ package scala.tools
 package util
 
 import java.net.{ URL, MalformedURLException }
-import scala.util.Properties._
+import scala.tools.reflect.WrappedProperties.AccessControl
 import nsc.{ Settings, GenericRunnerSettings }
 import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
 import nsc.io.{ File, Directory, Path, AbstractFile }
@@ -18,6 +18,10 @@ import PartialFunction.condOpt
 // https://wiki.scala-lang.org/display/SW/Classpath
 
 object PathResolver {
+  // Imports property/environment functions which suppress
+  // security exceptions.
+  import AccessControl._
+
   def firstNonEmpty(xs: String*)            = xs find (_ != "") getOrElse ""
 
   /** Map all classpath elements to absolute paths and reconstruct the classpath.
@@ -34,10 +38,9 @@ object PathResolver {
   /** Values found solely by inspecting environment or property variables.
    */
   object Environment {
-    private def searchForBootClasspath = {
-      import scala.collection.JavaConversions._
-      System.getProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
-    }
+    private def searchForBootClasspath = (
+      systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
+    )
 
     /** Environment variables which java pays attention to so it
      *  seems we do as well.
