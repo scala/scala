@@ -39,11 +39,33 @@ class Mirror extends Universe with RuntimeTypes with api.Mirror {
   def staticClass(name: String): Symbol = definitions.getClass(newTypeName(name))
   def staticModule(name: String): Symbol = definitions.getModule(newTermName(name))
 
+ /** Selects type symbol with given name from the defined members of prefix type
+   */
   def selectType(owner: Symbol, name: String): Symbol =
     owner.info.decl(newTypeName(name))
 
+  /** Selects term symbol with given name and type from the defined members of prefix type
+   *  @pre   The prefix type
+   *  @name  The name of the selected member
+   *  @tpe   The type of the selected member
+   */
   def selectTerm(owner: Symbol, name: String, tpe: Type): Symbol =
     owner.info.decl(newTermName(name)) suchThat (_.tpe == tpe)
+
+  def selectParam(owner: Symbol, idx: Int): Symbol = {
+    def selectInList(params: List[Symbol], idx: Int, fallback: Type): Symbol = {
+      if (params.isEmpty) selectIn(fallback, idx)
+      else if (idx == 0) params.head
+      else selectInList(params.tail, idx - 1, fallback)
+    }
+    def selectIn(tpe: Type, idx: Int): Symbol = tpe match {
+      case PolyType(tparams, res) => selectInList(tparams, idx, res)
+      case MethodType(params, res) => selectInList(params, idx, res)
+      case _ => NoSymbol
+    }
+    selectIn(owner.info, idx)
+  }
+
 }
 
 object Mirror extends Mirror

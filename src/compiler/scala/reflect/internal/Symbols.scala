@@ -600,6 +600,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isContravariant) -1
       else 0
 
+
+    /** The sequence number of this parameter symbol among all type
+     *  and value parameters of symbol's owner. -1 if symbol does not
+     *  appear among the parameters of its owner.
+     */
+    def paramPos: Int = {
+      def searchIn(tpe: Type, base: Int): Int = {
+        def searchList(params: List[Symbol], fallback: Type): Int = {
+          val idx = params indexOf this
+          if (idx >= 0) idx + base
+          else searchIn(fallback, base + params.length)
+        }
+        tpe match {
+          case PolyType(tparams, res) => searchList(tparams, res)
+          case MethodType(params, res) => searchList(params, res)
+          case _ => -1
+        }
+      }
+      searchIn(owner.info, 0)
+    }
+
 // ------ owner attribute --------------------------------------------------------------
 
     def owner: Symbol = rawowner
