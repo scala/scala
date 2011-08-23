@@ -46,7 +46,7 @@ trait ILoopInit {
     }
     ignoring(classOf[Exception]) {
       SignalManager("INT") = {
-        if (intp == null)
+        if (intp == null || intp.lineManager == null)
           onExit()
         else if (intp.lineManager.running)
           intp.lineManager.cancel()

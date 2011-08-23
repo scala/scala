@@ -11,7 +11,6 @@ package nest
 import java.io.{ File }
 import java.util.StringTokenizer
 import scala.util.Properties.{ setProp }
-import scala.tools.util.Signallable
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.io.Path
 import scala.collection.{ mutable, immutable }

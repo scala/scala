@@ -238,7 +238,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
 
   /** Create a line manager.  Overridable.  */
   protected def createLineManager(): Line.Manager =
-    if (replProps.noThreads) null else new Line.Manager
+    if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -910,7 +910,7 @@ class IMain(val settings: Settings, protected val out: JPrintWriter) extends Imp
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
-      if (replProps.noThreads) return {
+      if (lineManager == null) return {
         try   { ("" + (lineRep call sessionNames.print), true) }
         catch { case ex => (lineRep.bindError(ex), false) }
       }
