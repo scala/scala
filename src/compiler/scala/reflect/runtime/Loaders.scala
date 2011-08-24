@@ -1,11 +1,11 @@
 package scala.reflect
 package runtime
 
-import internal.Flags
+import internal.{Flags, SymbolTable}
 
 import java.lang.{Class => jClass, Package => jPackage}
 
-trait Loaders { self: Universe =>
+trait Loaders { self: SymbolTable =>
 
   /** The lazy type for root.
    */

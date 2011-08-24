@@ -8,7 +8,7 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
  *  It also provides methods to go from Java members to Scala members,
  *  using the code in JavaConversions.
  */
-class Universe extends internal.SymbolTable with JavaToScala with ScalaToJava with Loaders {
+class Universe extends ReflexiveLoaders with internal.transform.Transforms {
 
   type AbstractFileType = AbstractFile
 

@@ -21,7 +21,7 @@ import internal.pickling.UnPickler
 import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
 
-trait JavaToScala extends ConversionUtil { self: Universe =>
+trait JavaToScala extends ConversionUtil { self: SymbolTable =>
 
   import definitions._
 

@@ -7,7 +7,7 @@ import java.lang.reflect.{
   Member => jMember, Type => jType, TypeVariable => jTypeVariable, GenericDeclaration}
 import collection.mutable.HashMap
 
-trait ConversionUtil extends internal.transform.Transforms { self: Universe =>
+trait ConversionUtil { self: internal.SymbolTable =>
 
   /** A cache that maintains a bijection between Java reflection type `J`
    *  and Scala reflection type `S`.
@@ -56,6 +56,11 @@ trait ConversionUtil extends internal.transform.Transforms { self: Universe =>
   protected val fieldCache = new TwoWayCache[jField, Symbol]
   protected val tparamCache = new TwoWayCache[jTypeVariable[_], Symbol]
 
+  /** the type of this symbol after Scala -> Java transformsi in refChecks, uncurry, erasure
+   */
+  def transformedType(sym: Symbol): Type
+
+  /** The Java class thaty given type compiles to */
   def typeToJavaClass(tpe: Type): jClass[_]
 
   /** Does method `meth` erase to Java method `jmeth`?

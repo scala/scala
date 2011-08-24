@@ -6,7 +6,7 @@ import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Modifier => jModifier, Field => jField,
   Member => jMember, Type => jType, Array => jArray, GenericDeclaration}
 
-trait ScalaToJava extends ConversionUtil { self: Universe =>
+trait ScalaToJava extends ConversionUtil { self: SymbolTable =>
 
   import definitions._
 
