@@ -17,18 +17,9 @@ import Properties.{ versionString, copyrightString, residentPromptString, msilLi
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */
-object Main extends AnyRef with EvalLoop {
-  val versionMsg = "Scala compiler " +
-    versionString + " -- " +
-    copyrightString
+object Main extends Driver with EvalLoop {
 
   val prompt = residentPromptString
-
-  var reporter: ConsoleReporter = _
-
-  private def scalacError(msg: String) {
-    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
-  }
 
   def resident(compiler: Global) {
     loop { line =>
@@ -39,15 +30,8 @@ object Main extends AnyRef with EvalLoop {
     }
   }
 
-  def process(args: Array[String]) {
-    val ss       = new Settings(scalacError)
-    reporter     = new ConsoleReporter(ss)
-    val command  = new CompilerCommand(args.toList, ss)
-    val settings = command.settings
-
-    if (settings.version.value)
-      reporter.info(null, versionMsg, true)
-    else if (settings.Yidedebug.value) {
+  override def processSettingsHook(): Boolean =
+    if (settings.Yidedebug.value) {
       settings.Xprintpos.value = true
       settings.Yrangepos.value = true
       val compiler = new interactive.Global(settings, reporter)
@@ -62,6 +46,7 @@ object Main extends AnyRef with EvalLoop {
         case None => reporter.reset() // Causes other compiler errors to be ignored
       }
       askShutdown
+      false
     }
     else if (settings.Ybuilderdebug.value != "none") {
       def fileSet(files : List[String]) = Set.empty ++ (files map AbstractFile.getFile)
@@ -78,50 +63,21 @@ object Main extends AnyRef with EvalLoop {
         val command = new CompilerCommand(args.toList, settings)
         buildManager.update(fileSet(command.files), Set.empty)
       }
+      false
     }
     else {
       if (settings.target.value == "msil")
         msilLibPath foreach (x => settings.assemrefs.value += (pathSeparator + x))
-
-      val compiler =
-        if (settings.Yrangepos.value) new interactive.Global(settings, reporter)
-        else new Global(settings, reporter)
-
-      try {
-        if (reporter.hasErrors)
-          return reporter.flush()
-
-        if (command.shouldStopWithInfo) {
-          reporter.info(null, command.getInfoMessage(compiler), true)
-        }
-        else {
-          if (settings.resident.value)
-            resident(compiler)
-          else if (command.files.isEmpty) {
-            reporter.info(null, command.usageMsg, true)
-            reporter.info(null, compiler.pluginOptionsHelp, true)
-          }
-          else {
-            val run = new compiler.Run()
-            run compile command.files
-            reporter.printSummary()
-          }
-        }
-      }
-      catch {
-        case ex =>
-          compiler.logThrowable(ex)
-          ex match {
-            case FatalError(msg)  => reporter.error(null, "fatal error: " + msg)
-            case _                => throw ex
-          }
-      }
+      true
     }
-  }
 
-  def main(args: Array[String]) {
-    process(args)
-    sys.exit(if (reporter.hasErrors) 1 else 0)
-  }
+  override def newCompiler(): Global =
+    if (settings.Yrangepos.value) new interactive.Global(settings, reporter)
+    else new Global(settings, reporter)
 
+  override def doCompile(compiler: Global) {
+    if (settings.resident.value)
+      resident(compiler)
+    else super.doCompile(compiler)
+  }
 }
