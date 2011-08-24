@@ -1,0 +1,6 @@
+t677.scala:2: error: type mismatch;
+ found   : () => Int
+ required: Nothing
+  val zx: Nothing = {() => 4}
+                        ^
+one error found

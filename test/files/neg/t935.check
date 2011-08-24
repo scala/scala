@@ -1,0 +1,7 @@
+t935.scala:7: error: type arguments [Test3.B] do not conform to class E's type parameter bounds [T <: String]
+  @E[B](new B) val b = "hi"
+                   ^
+t935.scala:13: error: type arguments [Test4.B] do not conform to class E's type parameter bounds [T <: String]
+  val b: String @E[B](new B) = "hi"
+                 ^
+two errors found

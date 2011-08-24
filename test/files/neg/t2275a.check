@@ -1,0 +1,13 @@
+t2275a.scala:4: error: in XML literal: in XML content, please use '}}' to express '}'
+  }else{
+  ^
+t2275a.scala:3: error:  I encountered a '}' where I didn't expect one, maybe this tag isn't closed <br>
+    <br>
+     ^
+t2275a.scala:4: error: ';' expected but 'else' found.
+  }else{
+   ^
+t2275a.scala:7: error: '}' expected but eof found.
+}
+ ^
+four errors found

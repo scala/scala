@@ -1,7 +1,0 @@
-bug418.scala:2: error: not found: value Foo12340771
-  null match { case Foo12340771.Bar(x) => x }
-                    ^
-bug418.scala:2: error: not found: value x
-  null match { case Foo12340771.Bar(x) => x }
-                                          ^
-two errors found

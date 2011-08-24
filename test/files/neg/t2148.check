@@ -1,0 +1,4 @@
+t2148.scala:9: error: type A is not a stable prefix
+  val b = new A with A#A1
+                       ^
+one error found

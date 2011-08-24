@@ -1,0 +1,6 @@
+t452.scala:3: error: type mismatch;
+ found   : Test.type (with underlying type object Test)
+ required: Test.Foo
+    def this() = this(this);
+                      ^
+one error found

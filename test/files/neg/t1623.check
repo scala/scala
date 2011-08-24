@@ -1,0 +1,4 @@
+t1623.scala:11: error: class BImpl cannot be instantiated because it does not conform to its self-type test.BImpl with test.A
+  val b = new BImpl
+          ^
+one error found

@@ -1,0 +1,4 @@
+t639.scala:3: error: not found: object a
+import a._
+       ^
+one error found

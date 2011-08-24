@@ -1,0 +1,4 @@
+t1523.scala:4: error: too many arguments for method bug: (x: Any)Any
+  def go() = bug("a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a")
+                ^
+one error found

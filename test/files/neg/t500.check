@@ -1,0 +1,4 @@
+t500.scala:3: error: lower bound X does not conform to upper bound Y
+    type T >: X <: Y;
+         ^
+one error found

@@ -1,0 +1,13 @@
+t4879.scala:6: error: pattern type is incompatible with expected type;
+ found   : object C
+ required: C
+Note: if you intended to match against the class, try `case _: C` or `case C(_)`
+    case C  => true
+         ^
+t4879.scala:10: error: pattern type is incompatible with expected type;
+ found   : object D
+ required: D[T,U,V]
+Note: if you intended to match against the class, try `case _: D[_,_,_]` or `case D(_,_,_)`
+    case D  => true
+         ^
+two errors found

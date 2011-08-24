@@ -1,4 +1,0 @@
-bug908.scala:8: error: not found: value makeA
-    this(makeA)
-         ^
-one error found

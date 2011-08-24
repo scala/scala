@@ -1,0 +1,4 @@
+t2388.scala:2: error: recursive method search needs result type
+  val searchField = new AnyRef { search() }
+                                 ^
+one error found

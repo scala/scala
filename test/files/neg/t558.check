@@ -1,0 +1,4 @@
+t558.scala:13: error: value file is not a member of NewModel.this.RootURL
+    final val source = top.file;
+                           ^
+one error found

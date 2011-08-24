@@ -1,0 +1,4 @@
+t556.scala:3: error: wrong number of parameters; expected = 1
+  def g:Int = f((x,y)=>x)
+                     ^
+one error found

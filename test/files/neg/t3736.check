@@ -1,0 +1,16 @@
+t3736.scala:4: error: super not allowed here: use this.isInstanceOf instead
+    def f2 = super.isInstanceOf[String]
+                   ^
+t3736.scala:5: error: super not allowed here: use this.asInstanceOf instead
+    def f3 = super.asInstanceOf[AnyRef]
+                   ^
+t3736.scala:6: error: super not allowed here: use this.== instead
+    def f4 = super.==(new AnyRef)
+                   ^
+t3736.scala:7: error: super not allowed here: use this.!= instead
+    def f5 = super.!=(new AnyRef)
+                   ^
+t3736.scala:8: error: super not allowed here: use this.## instead
+    def f6 = super.##
+                   ^
+5 errors found

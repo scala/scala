@@ -1,6 +1,0 @@
-bug856.scala:3: error: class ComplexRect needs to be abstract, since:
-method _2 in trait Product2 of type => Double is not defined
-method canEqual in trait Equals of type (that: Any)Boolean is not defined
-class ComplexRect(val _1:Double, _2:Double) extends Complex {
-      ^
-one error found

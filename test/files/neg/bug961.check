@@ -1,4 +1,0 @@
-bug961.scala:11: error: object Temp.B does not take parameters
-  B() match {
-   ^
-one error found

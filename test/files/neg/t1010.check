@@ -1,0 +1,6 @@
+t1010.scala:14: error: type mismatch;
+ found   : MailBox#Message
+ required: _3.in.Message where val _3: Actor
+   unstable.send(msg) // in.Message becomes unstable.Message, but that's ok since Message is a concrete type member
+                 ^
+one error found

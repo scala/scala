@@ -1,0 +1,4 @@
+t649.scala:3: error: overloaded method foo needs result type
+  def foo[A] = foo[A]
+                  ^
+one error found

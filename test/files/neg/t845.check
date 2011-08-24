@@ -1,0 +1,4 @@
+t845.scala:4: error: only classes can have declared but undefined members
+  type Bar;
+       ^
+one error found

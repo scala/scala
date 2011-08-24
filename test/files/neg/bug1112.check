@@ -1,4 +1,0 @@
-bug1112.scala:12: error: too many arguments for method call: (p: Int)(f: => () => Unit)Unit
-    call(0,() => System.out.println("here we are"))
-        ^
-one error found

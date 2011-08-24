@@ -1,0 +1,6 @@
+t4221.scala:8: error: type mismatch;
+ found   : Unit
+ required: Wrapper[S]
+  def wrap[S <: Cl#Sub[S]](v: S): Wrapper[S] = {
+                                               ^
+one error found

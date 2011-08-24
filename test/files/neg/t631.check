@@ -1,0 +1,4 @@
+t631.scala:1: error: `implicit' modifier cannot be used for top-level objects
+implicit object Test {
+                ^
+one error found

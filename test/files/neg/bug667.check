@@ -1,4 +1,0 @@
-bug667.scala:8: error: class Ni inherits itself
-    class Ni extends super.Ni with Ni;
-                                   ^
-one error found

@@ -1,0 +1,6 @@
+t729.scala:20: error: type mismatch;
+ found   : ScalaParserAutoEdit.this.NodeImpl(in trait Parser)
+ required: ScalaParserAutoEdit.this.NodeImpl(in trait ScalaParserAutoEdit)
+      val yyy : NodeImpl = link.from;
+                                ^
+one error found

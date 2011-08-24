@@ -1,0 +1,4 @@
+t4882.scala:2: error: `implicit' modifier not allowed for constructors
+  implicit def this(a: String) = this(a.toInt)
+               ^
+one error found

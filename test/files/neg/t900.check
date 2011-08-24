@@ -1,0 +1,10 @@
+t900.scala:4: error: type mismatch;
+ found   : Foo.this.x.type (with underlying type Foo.this.bar)
+ required: AnyRef
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method any2Ensuring in object Predef of type [A](x: A)Ensuring[A]
+ and method any2ArrowAssoc in object Predef of type [A](x: A)ArrowAssoc[A]
+ are possible conversion functions from Foo.this.x.type to AnyRef
+        def break(): x.type
+                     ^
+one error found

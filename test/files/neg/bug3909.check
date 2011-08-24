@@ -1,4 +1,0 @@
-bug3909.scala:1: error: in object DO, multiple overloaded alternatives of m1 define default arguments
-object DO {
-       ^
-one error found

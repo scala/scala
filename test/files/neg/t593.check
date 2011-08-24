@@ -1,0 +1,4 @@
+t593.scala:1: error: traits or objects may not have parameters
+trait Wrapper[T](x : T) {
+                ^
+one error found

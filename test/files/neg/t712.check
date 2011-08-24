@@ -1,0 +1,4 @@
+t712.scala:10: error: value self is not a member of B.this.ParentImpl
+  implicit def coerce(p : ParentImpl) = p.self;
+                                          ^
+one error found

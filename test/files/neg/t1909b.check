@@ -1,0 +1,4 @@
+t1909b.scala:4: error: this can be used only in a class, object, or template
+    def bar() = this.z + 5
+                ^
+one error found

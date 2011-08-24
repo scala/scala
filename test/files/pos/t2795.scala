@@ -1,4 +1,4 @@
-package bug1
+package t1
 
 trait Element[T] {
 }

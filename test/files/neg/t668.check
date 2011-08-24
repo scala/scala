@@ -1,0 +1,4 @@
+t668.scala:1: error: type Iterable takes type parameters
+class Test extends Iterable
+                   ^
+one error found

@@ -1,0 +1,4 @@
+t693.scala:4: error: x is already defined as value x
+  val x : Int = 10; 
+      ^
+one error found

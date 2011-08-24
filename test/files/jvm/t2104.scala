@@ -28,7 +28,7 @@ object Test
     tp
   }
 
-  implicit val name="bug2104"
+  implicit val name="t2104"
   val chars=List('\n','\r','a')
 
   type Cs = List[Char]

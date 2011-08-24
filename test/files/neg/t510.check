@@ -1,0 +1,4 @@
+t510.scala:19: error: cyclic aliasing or subtyping involving type T
+    def g(t: e.T): Unit = {
+          ^
+one error found

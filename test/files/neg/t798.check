@@ -1,0 +1,4 @@
+t798.scala:2: error: cyclic aliasing or subtyping involving type Bracks
+trait Test[Bracks <: Bracks] {
+           ^
+one error found

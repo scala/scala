@@ -1,0 +1,4 @@
+t512.scala:3: error: not found: value something
+    val xxx = something ||
+              ^
+one error found

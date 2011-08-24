@@ -1,0 +1,15 @@
+t2213.scala:9: error: class C needs to be abstract, since:
+value y in class A of type Int is not defined
+value x in class A of type Int is not defined
+method g in class A of type => Int is not defined
+method f in class A of type => Int is not defined
+class C extends A {}
+      ^
+t2213.scala:11: error: object creation impossible, since:
+value y in class A of type Int is not defined
+value x in class A of type Int is not defined
+method g in class A of type => Int is not defined
+method f in class A of type => Int is not defined
+object Q extends A { }
+       ^
+two errors found

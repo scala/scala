@@ -1,0 +1,24 @@
+t692.scala:3: error: not found: type T
+  trait Type[T0] extends Type0[T];
+                               ^
+t692.scala:10: error: class Foo takes type parameters
+  case class FooType() extends ClassType[Foo,AnyRef](ObjectType());
+                                         ^
+t692.scala:13: error: class Foo takes type parameters
+  case class BarType[T3 <: Foo](tpeT : RefType[T3]) extends ClassType[Bar[T3],Foo](FooType);
+                                                                              ^
+t692.scala:13: error: class Foo takes type parameters
+  case class BarType[T3 <: Foo](tpeT : RefType[T3]) extends ClassType[Bar[T3],Foo](FooType);
+                           ^
+t692.scala:14: error: class Foo takes type parameters
+  implicit def typeOfBar[T4 <: Foo](implicit elem : RefType[T4]) : RefType[Bar[T4]] = 
+                               ^
+t692.scala:15: error: type mismatch;
+ found   : test3.this.BarType[T4]
+ required: test3.this.RefType[test3.this.Bar[T4]]
+    BarType(elem);
+           ^
+t692.scala:19: error: class Foo takes type parameters
+  class Bar[A <: Foo](implicit tpeA : Type[A]) extends Foo;
+                 ^
+7 errors found

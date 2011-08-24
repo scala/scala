@@ -1,0 +1,4 @@
+t2144.scala:2: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
+  def foo[A](a: A) = new { def bar(x: A): A = x }
+                               ^
+one error found

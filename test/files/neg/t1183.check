@@ -1,0 +1,17 @@
+t1183.scala:6: error: name clash: class Foo defines object Baz
+and its companion object Foo also defines class Baz
+    object Baz
+           ^
+t1183.scala:7: error: name clash: class Foo defines class Bam
+and its companion object Foo also defines object Bam
+    class Bam
+          ^
+t1183.scala:8: error: name clash: class Foo defines object Bar
+and its companion object Foo also defines class Bar
+    object Bar
+           ^
+t1183.scala:9: error: name clash: class Foo defines class Bar
+and its companion object Foo also defines class Bar
+    case class Bar(i:Int)
+               ^
+four errors found

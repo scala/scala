@@ -1,4 +1,0 @@
-bug421.scala:5: error: star patterns must correspond with varargs parameters
-    case Bar("foo",_*) => error("huh?");
-                    ^
-one error found

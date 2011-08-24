@@ -1,7 +1,0 @@
-bug877.scala:3: error: Invalid literal number
-trait Foo extends A(22A, Bug!) {}
-                    ^
-bug877.scala:3: error: parents of traits may not have parameters
-trait Foo extends A(22A, Bug!) {}
-                   ^
-two errors found

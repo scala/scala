@@ -1,0 +1,4 @@
+t650.scala:4: error: missing type arguments
+trait Test2 extends LinkedList;
+                    ^
+one error found

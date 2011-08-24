@@ -1,4 +1,0 @@
-bug591.scala:38: error: method input_= is defined twice
-    def input_=(in : Input) = {}
-        ^
-one error found

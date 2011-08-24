@@ -1,7 +1,0 @@
-bug3189.scala:2: error: illegal start of simple pattern
-  val Array(a,b*) = ("": Any)
-                ^
-bug3189.scala:3: error: ')' expected but '}' found.
-}
-^
-two errors found

@@ -1,0 +1,7 @@
+t550.scala:6: error: type List takes type parameters
+  def sum[a](xs: List)(implicit m: Monoid[a]): a =
+                 ^
+t550.scala:8: error: could not find implicit value for parameter m: Monoid[a]
+  sum(List(1,2,3))
+     ^
+two errors found

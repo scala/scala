@@ -1,0 +1,4 @@
+t715.scala:12: error: method chilren in trait NodeImpl is accessed from super. It may not be abstract unless it is overridden by a member declared `abstract' and `override'
+    override def children = super.chilren;
+                                  ^
+one error found

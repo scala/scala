@@ -1,0 +1,4 @@
+t4302.scala:2: error: abstract type T in type T is unchecked since it is eliminated by erasure
+  def hasMatch[T](x: AnyRef) = x.isInstanceOf[T]
+                                             ^
+one error found

@@ -1,7 +1,0 @@
-bug545.scala:4: error: value blah is not a member of Test.Foo
-  val x = foo.blah match {
-              ^
-bug545.scala:5: error: recursive value x needs type
-    case List(x) => x
-                    ^
-two errors found

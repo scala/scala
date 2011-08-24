@@ -1,0 +1,6 @@
+t752.scala:6: error: type mismatch;
+ found   : String => Unit
+ required: Int => Unit
+                f(g _)
+                  ^
+one error found

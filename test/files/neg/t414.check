@@ -1,0 +1,12 @@
+t414.scala:5: error: pattern type is incompatible with expected type;
+ found   : object Empty
+ required: IntMap[a]
+Note: if you intended to match against the class, try `case _: Empty[_]` or `case Empty()`
+                case Empty =>
+                     ^
+t414.scala:7: error: type mismatch;
+ found   : Unit
+ required: a
+                case _ =>
+                       ^
+two errors found

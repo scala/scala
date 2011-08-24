@@ -1,0 +1,4 @@
+t576.scala:14: error: overloaded method insert needs result type
+      if (true) sibling.insert(node);
+                              ^
+one error found

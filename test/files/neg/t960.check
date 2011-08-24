@@ -1,0 +1,10 @@
+t960.scala:18: error: ambiguous reference to overloaded definition,
+both method unapply in object List of type [a](xs: List[a])Option[Null]
+and  method unapply in object List of type [a](xs: List[a])Option[(a, List[a])]
+match argument types (List[a])
+    case List(x, xs) => 7
+         ^
+t960.scala:12: error: method unapply is defined twice
+  def unapply[a](xs: List[a]): Option[Null] = xs match {
+      ^
+two errors found

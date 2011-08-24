@@ -1,0 +1,16 @@
+t464-neg.scala:7: error: not found: value f1
+  f1()
+  ^
+t464-neg.scala:8: error: method f1 in class A cannot be accessed in A with ScalaObject
+  super.f1()
+        ^
+t464-neg.scala:9: error: value f2 is not a member of B
+  def otherb(b2: B) = b2.f2()
+                         ^
+t464-neg.scala:10: error: method f3 in class A cannot be accessed in B
+  f3()
+  ^
+t464-neg.scala:11: error: method f3 in class A cannot be accessed in A with ScalaObject
+  super.f3()
+        ^
+5 errors found

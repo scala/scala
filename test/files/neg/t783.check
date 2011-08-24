@@ -1,0 +1,6 @@
+t783.scala:12: error: type mismatch;
+ found   : Contexts.this.Global#Template
+ required: Contexts.this.global.Template
+      globalInit0.Template(10, 20);
+                          ^
+one error found

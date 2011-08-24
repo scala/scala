@@ -1,0 +1,10 @@
+t2275b.scala:2: error: in XML literal: in XML content, please use '}}' to express '}'
+  {<br>}xx
+       ^
+t2275b.scala:2: error:  I encountered a '}' where I didn't expect one, maybe this tag isn't closed <br>
+  {<br>}xx
+    ^
+t2275b.scala:3: error: '}' expected but eof found.
+}
+ ^
+three errors found

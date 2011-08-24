@@ -1,0 +1,4 @@
+t779.scala:6: error: method ast has return statement; needs result type
+    override def ast = return null
+                       ^
+one error found

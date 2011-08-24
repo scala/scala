@@ -1,0 +1,6 @@
+t1275.scala:11: error: type mismatch;
+ found   : xs.MyType[a]
+ required: s
+     = xs f
+          ^
+one error found

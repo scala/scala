@@ -1,0 +1,5 @@
+t565.scala:2: error: only classes can have declared but undefined members
+(Note that variables need to be initialized to be defined)
+  var s0: String
+      ^
+one error found

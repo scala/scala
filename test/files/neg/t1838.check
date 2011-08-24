@@ -1,0 +1,7 @@
+t1838.scala:6: error: `sealed' modifier can be used only for classes
+  sealed val v = 0
+             ^
+t1838.scala:5: error: `sealed' modifier can be used only for classes
+  sealed def f = 0
+             ^
+two errors found

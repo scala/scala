@@ -1,4 +1,0 @@
-bug1011.scala:8: error: not found: value entity
-       <dl><code>{Text(entity)}</code>
-                       ^
-one error found

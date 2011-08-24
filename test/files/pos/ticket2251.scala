@@ -1,6 +1,6 @@
 
 // Martin: I am not sure this is a solvable problem right now. I'll leave it in pending.
-// derived from pos/bug1001
+// derived from pos/t1001
 class A
 trait B[T <: B[T]] extends A
 class C extends B[C]

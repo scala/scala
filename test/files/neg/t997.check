@@ -1,0 +1,13 @@
+t997.scala:7: error: wrong number of arguments for object Foo
+"x" match { case Foo(a) => Console.println(a) }
+                    ^
+t997.scala:7: error: not found: value a
+"x" match { case Foo(a) => Console.println(a) }
+                                           ^
+t997.scala:13: error: wrong number of arguments for object Foo
+"x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
+                    ^
+t997.scala:13: error: not found: value a
+"x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
+                                                  ^
+four errors found

@@ -1,0 +1,4 @@
+t563.scala:6: error: missing parameter type
+            map(n,ptr => Option(ptr.get));
+                  ^
+one error found

@@ -1,0 +1,4 @@
+t501.scala:3: error: lower bound X does not conform to upper bound Y
+    abstract class I { type T >: X <: Y; }
+                            ^
+one error found

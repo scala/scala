@@ -1,0 +1,4 @@
+t944.scala:5: error: implementation restricts functions to 22 parameters
+           a23:Int) => 1
+                    ^
+one error found

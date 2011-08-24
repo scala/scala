@@ -1,0 +1,4 @@
+t700.scala:6: error: method foobar in trait Foo is accessed from super. It may not be abstract unless it is overridden by a member declared `abstract' and `override'
+  def foobar: Unit = super.foobar
+                           ^
+one error found

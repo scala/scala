@@ -1,0 +1,4 @@
+t585.scala:1: error: unclosed comment
+/*
+^
+one error found

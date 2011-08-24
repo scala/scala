@@ -1,0 +1,4 @@
+t882.scala:2: error: traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'
+trait SortedSet[A <% Ordered[A]] {
+                                 ^
+one error found

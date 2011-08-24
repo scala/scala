@@ -1,0 +1,4 @@
+t691.scala:27: error: ambiguous parent class qualifier
+    trait TiC extends super[Arrow].Ti2 with super[AssignArrow].Ti1;
+                      ^
+one error found

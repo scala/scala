@@ -1,4 +1,0 @@
-bug766.scala:5: error: not found: value badIdentifier
-      val p = badIdentifier
-              ^
-one error found

@@ -1,0 +1,5 @@
+t412.scala:11: error: stable identifier required, but A.this.c found.
+ Note that value c is not stable because its type, A.this.CX with A.this.C2, is volatile.
+    def castA(x: c.T): T2 = x;
+                 ^
+one error found

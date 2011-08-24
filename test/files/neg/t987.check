@@ -1,0 +1,19 @@
+t987.scala:15: error: illegal inheritance;
+ class E inherits different type instances of trait B:
+B[D] and B[C]
+class E extends D
+      ^
+t987.scala:20: error: illegal inheritance;
+ class F inherits different type instances of trait B:
+B[D] and B[C]
+class F extends D
+      ^
+t987.scala:25: error: illegal inheritance;
+ class D inherits different type instances of trait B:
+B[D] and B[C]
+abstract class D extends C with B[D] {}
+               ^
+t987.scala:25: error: type arguments [D] do not conform to trait B's type parameter bounds [T <: B[T]]
+abstract class D extends C with B[D] {}
+                                ^
+four errors found

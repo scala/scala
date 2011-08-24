@@ -1,4 +1,0 @@
-bug1241.scala:5: error: class type required but AnyRef{def hello(): Unit} found
-  val x4 = new T { def hello() { println("4") } }        // error!
-               ^
-one error found

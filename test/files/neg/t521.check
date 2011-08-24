@@ -1,0 +1,15 @@
+t521.scala:10: error: class PlainFile needs to be abstract, since method path in class AbstractFile of type => String is not defined
+class PlainFile(val file : File) extends AbstractFile {}
+      ^
+t521.scala:13: error: overriding value file in class PlainFile of type java.io.File;
+ value file needs `override' modifier
+final class ZipArchive(val file : File, archive : ZipFile) extends PlainFile(file) {
+                           ^
+t521.scala:13: error: class ZipArchive needs to be abstract, since method path in class AbstractFile of type => String is not defined
+final class ZipArchive(val file : File, archive : ZipFile) extends PlainFile(file) {
+            ^
+t521.scala:15: error: overriding value path in class VirtualFile of type String;
+ method path needs to be a stable, immutable value
+    override def path = "";
+                 ^
+four errors found

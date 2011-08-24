@@ -1,0 +1,4 @@
+t633.scala:3: error: not found: type ListBuffer
+        def t(a : ListBuffer[String]) = {
+                  ^
+one error found

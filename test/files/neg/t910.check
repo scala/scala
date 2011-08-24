@@ -1,0 +1,6 @@
+t910.scala:4: error: type mismatch;
+ found   : Seq[Char]
+ required: Seq[Int]
+    val y: Seq[Int] = rest
+                      ^
+one error found

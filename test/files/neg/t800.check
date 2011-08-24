@@ -1,0 +1,13 @@
+t800.scala:4: error: qualification is already defined as value qualification
+  val qualification = false;
+      ^
+t800.scala:8: error: method qualification is defined twice
+  val qualification = false;
+      ^
+t800.scala:12: error: value qualification is defined twice
+  var qualification = false;
+      ^
+t800.scala:16: error: method qualification is defined twice
+  var qualification = false;
+      ^
+four errors found

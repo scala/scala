@@ -1,0 +1,5 @@
+t630.scala:20: error: overriding value foo in trait Bar of type Req2;
+ object foo has incompatible type
+        object foo extends Req1
+               ^
+one error found

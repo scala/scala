@@ -6,7 +6,7 @@ object Overload{
   foo.getDeclaringClass
 }
 
-// was bug1001.scala
+// was t1001.scala
 
 // I suspect the stack overflow is occurring when the compiler is determining the types for the following line at the end of the file:-
 //    val data = List(N26,N25)

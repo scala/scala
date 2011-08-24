@@ -1,4 +1,4 @@
-// bug1231: reported by Vladimir Reshetnikov on 19 July 2007
+// t1231: reported by Vladimir Reshetnikov on 19 July 2007
 trait A {
  type T[_]
 }

@@ -1,0 +1,4 @@
+t3392.scala:9: error: not found: value x
+    case x@A(x/*<-- refers to the pattern that includes this comment*/.Ex(42)) =>
+             ^
+one error found

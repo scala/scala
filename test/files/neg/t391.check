@@ -1,0 +1,13 @@
+t391.scala:2: error: identifier expected but 'def' found.
+  def fun1(def x: Int): Int = x; // the "def x" is illegal
+           ^
+t391.scala:4: error: ':' expected but '}' found.
+}
+^
+t391.scala:6: error: identifier expected but 'def' found.
+class E(def x: Int); // the "def x" is illegal
+        ^
+t391.scala:6: error: ':' expected but eof found.
+class E(def x: Int); // the "def x" is illegal
+                                              ^
+four errors found

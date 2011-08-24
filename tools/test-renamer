@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+#
+# Despite its shameful hackiness, checked in for posterity.
+# It'll live on forever in the git history; then I can remove it.
+
+# set -e
+shopt -s nullglob
+
+cd $(dirname $0)/../test
+
+rename_pattern='^.*/bug[0-9]+.*?(\.scala)?$'
+
+targets ()
+{
+  ls -d pending/*/* disabled/*/* | egrep "$rename_pattern"
+}
+
+showRun ()
+{
+  echo "$@"
+  "$@"
+}
+
+for path in $(targets); do
+  if [[ -f "$path" ]]; then
+    # echo "$path"
+    dir=$(dirname "$path")
+    file=$(basename "$path")
+    base=${file%%.scala}
+    num=${base##bug}
+
+    (cd "$dir" && 
+      for file in ${base}.*; do
+        ext=${file##*.}
+        newname="t${num}.${ext}"
+        
+        if [[ -e "$newname" ]]; then
+          echo "Hey, $newname already exists."
+        else
+          showRun perl -pi -e "'s/bug$num\b/t$num/g;'" "$file"
+          showRun mv "$file" "$newname"
+        fi
+      done
+    )
+  fi
+  
+  if [[ -d "$path" ]]; then
+    dir=$(dirname "$path")
+    file=$(basename "$path")
+    base="$file"
+    num=${base##bug}
+    
+    (cd "$dir" &&
+      for file in $file ${file}.*; do
+        ext=${file##*.}
+        if [[ "$ext" != "$file" ]]; then
+          newname="t${num}.${ext}"
+        else
+          newname="t${num}"
+          for file0 in ${file}/*; do
+            showRun perl -pi -e "'s/bug$num\b/t$num/g;'" "$file0"
+          done
+        fi
+        
+        if [[ -e "$newname" ]]; then
+          echo "Hey, $newname already exists."
+        else
+          if [[ -f "$file" ]]; then
+            showRun perl -pi -e "'s/bug$num\b/t$num/g;'" "$file"
+          fi
+          showRun mv "$file" "$newname"
+        fi
+      done
+    )
+    
+  fi
+
+done
+# 
+# for d in files/*/*; do
+#   [[ -d "$d" ]] && do_dir "$d"
+# done

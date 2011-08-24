@@ -1,0 +1,6 @@
+t3683a.scala:14: error: match is not exhaustive!
+missing combination             XX
+
+    w match {
+    ^
+one error found

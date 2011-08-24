@@ -1,0 +1,4 @@
+t3913.scala:2: error: super constructor cannot be passed a self reference unless parameter is declared by-name
+object LimboStage  extends Stage( Set( LimboStage ))
+                                       ^
+one error found

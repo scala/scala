@@ -1,0 +1,4 @@
+t343.scala:5: error: private class Foo escapes its defining scope as part of type C.this.Foo
+  def get:Foo = new Foo();
+          ^
+one error found

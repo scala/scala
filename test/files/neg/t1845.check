@@ -1,0 +1,4 @@
+t1845.scala:9: error: illegal cyclic reference involving value <import>
+  val lexical = new StdLexical
+                    ^
+one error found

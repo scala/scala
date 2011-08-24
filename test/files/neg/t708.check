@@ -1,0 +1,5 @@
+t708.scala:8: error: overriding type S in trait X with bounds >: Nothing <: A.this.T;
+ type S has incompatible type
+    override private[A] type S = Any;
+                             ^
+one error found

@@ -26,7 +26,7 @@ object Foo1258 {
   }
 }
 
-object Bug1261 {
+object t1261 {
   sealed trait Elem
   case class Foo() extends Elem
   case class Bar() extends Elem
@@ -94,7 +94,7 @@ trait Outer { // bug #1282 compile-only
 }
 
 class Test806_818 { // #806, #811 compile only -- type of bind
-  // bug811
+  // t811
   trait Core {
     trait NodeImpl
     trait OtherImpl extends NodeImpl

@@ -1,0 +1,4 @@
+t765.scala:3: error: not found: type Bar123
+    val bar = new Bar123
+                  ^
+one error found

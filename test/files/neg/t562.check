@@ -1,0 +1,4 @@
+t562.scala:10: error: super may be not be used on value y
+  override val y = super.y;
+                         ^
+one error found

@@ -1,0 +1,4 @@
+t4196.scala:5: error: Some[String] does not take parameters
+  }.apply("first param") ("spurious param")
+                         ^
+one error found

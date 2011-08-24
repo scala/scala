@@ -1,0 +1,6 @@
+t515.scala:7: error: type mismatch;
+ found   : java.lang.String
+ required: Test.Truc
+  val parent: Truc = file.getMachin
+                          ^
+one error found

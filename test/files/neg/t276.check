@@ -1,0 +1,5 @@
+t276.scala:6: error: overriding type Bar in class Foo, which equals (Int, Int);
+ class Bar cannot be used here - classes and objects can only override abstract types
+  class Bar
+        ^
+one error found

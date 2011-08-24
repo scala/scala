@@ -1,0 +1,17 @@
+t875.scala:3: error: no `: _*' annotation allowed here
+(such annotations are only allowed in arguments to *-parameters)
+  val ys = List(1, 2, 3, xs: _*)
+                           ^
+t875.scala:6: error: no `: _*' annotation allowed here
+(such annotations are only allowed in arguments to *-parameters)
+  mkList1(xs: _*)
+            ^
+t875.scala:15: error: no `: _*' annotation allowed here
+(such annotations are only allowed in arguments to *-parameters)
+  f(true, 1, xs: _*)
+               ^
+t875.scala:16: error: no `: _*' annotation allowed here
+(such annotations are only allowed in arguments to *-parameters)
+  g(1, xs:_*)
+         ^
+four errors found

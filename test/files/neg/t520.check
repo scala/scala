@@ -1,0 +1,4 @@
+t520.scala:8: error: overloaded method verifyKeyword needs result type
+      verifyKeyword("", source, pos);
+                   ^
+one error found

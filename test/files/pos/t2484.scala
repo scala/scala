@@ -1,6 +1,6 @@
 class Admin extends javax.swing.JApplet {
   val jScrollPane = new javax.swing.JScrollPane (null, 0, 0)
-  def bug2484: Unit = {
+  def t2484: Unit = {
     scala.concurrent.ops.spawn {jScrollPane.synchronized {
       def someFunction () = {}
       //scala.concurrent.ops.spawn {someFunction ()}

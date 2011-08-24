@@ -1,0 +1,6 @@
+t909.scala:6: error: type mismatch;
+ found   : java.lang.String("Hello")
+ required: Int
+                        case Foo("Hello") =>
+                                 ^
+one error found

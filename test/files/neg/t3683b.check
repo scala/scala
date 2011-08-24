@@ -1,0 +1,8 @@
+t3683b.scala:15: error: constructor cannot be instantiated to expected type;
+ found   : X
+ required: W[Bar]
+Note: Foo >: Bar (and X <: W[Foo]), but trait W is invariant in type T.
+You may wish to define T as -T instead. (SLS 4.5)
+      case X() => 1
+           ^
+one error found

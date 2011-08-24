@@ -1,0 +1,4 @@
+t4217.scala:2: error: 'case' expected but '}' found.
+  42 match { } 
+             ^
+one error found
