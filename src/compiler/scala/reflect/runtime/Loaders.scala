@@ -1,7 +1,7 @@
 package scala.reflect
 package runtime
 
-import internal.{Flags, SymbolTable}
+import internal.Flags
 
 import java.lang.{Class => jClass, Package => jPackage}
 
