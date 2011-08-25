@@ -1174,7 +1174,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       prettyPrint(code)
 
     // old style
-    parse(code) foreach { ts =>
+    beSilentDuring(parse(code)) foreach { ts =>
       ts foreach { t =>
         withoutUnwrapping(repldbg(asCompactString(t)))
       }

@@ -66,7 +66,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   // Install a signal handler so we can be prodded.
   private val signallable =
-    if (isReplDebug && !settings.Yreplsync.value)
+    if (isReplDebug)
       Signallable("Dump repl state.")(dumpCommand())
     else null
 

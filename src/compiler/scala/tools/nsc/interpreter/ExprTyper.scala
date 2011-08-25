@@ -61,7 +61,7 @@ trait ExprTyper {
       else Some(trees)
     }
   }
-  def tokens(line: String) = codeParser.tokens(line)
+  def tokens(line: String) = beSilentDuring(codeParser.tokens(line))
 
   // TODO: integrate these into a CodeHandler[Type].
 
