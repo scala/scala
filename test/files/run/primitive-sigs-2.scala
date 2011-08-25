@@ -34,6 +34,6 @@ object Test {
     println(c2.getGenericInterfaces.map(_.toString).sorted mkString " ")
     println(c1m ++ c2m sorted)
     println(new C f)
-    c3m foreach println
+    c3m.sorted foreach println
   }
 }
