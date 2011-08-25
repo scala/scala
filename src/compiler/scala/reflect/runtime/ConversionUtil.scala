@@ -18,6 +18,7 @@ trait ConversionUtil { self: internal.SymbolTable =>
     private val toJavaMap = new HashMap[S, J]
 
     def enter(j: J, s: S) = {
+      println("cached: "+j+"/"+s)
       toScalaMap(j) = s
       toJavaMap(s) = j
     }

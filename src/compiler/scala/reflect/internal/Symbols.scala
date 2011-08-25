@@ -54,6 +54,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private var rawpos = initPos
     val id = { ids += 1; ids } // identity displayed when -uniqid
+    //assert(id != 34, initName)
 
     var validTo: Period = NoPeriod
 
@@ -839,6 +840,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
         } finally {
+          if (id == 431) println("completer ran "+tp.getClass+" for "+fullName)
           unlock()
           phase = current
         }

@@ -29,7 +29,8 @@ trait Loaders { self: SymbolTable =>
       }
     }
     override def complete(sym: Symbol) = {
-      //println("completing "+sym+"/"+clazz.fullName) //debug
+      println("completing "+sym+"/"+clazz.fullName+
+              (if (sym == clazz) 1 else if (sym == module) 2 else if (sym == module.moduleClass) 3 else 4)) //debug
       assert(sym == clazz || sym == module || sym == module.moduleClass)
       try {
         unpickleClass(clazz, module, jClass.forName(clazz.fullName))
@@ -91,5 +92,6 @@ trait Loaders { self: SymbolTable =>
     override def member(name: Name): Symbol = decl(name)
     override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean) =
       member(name).filter (m => m.hasAllFlags(requiredFlags) && !m.hasFlag(excludedFlags))
+    override def safeToString = pkg.toString
   }
 }
