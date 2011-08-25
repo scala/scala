@@ -21,14 +21,14 @@ abstract class IcodeTest extends DirectTest {
   // override to check icode at a different point.
   def printIcodeAfterPhase = "icode"
   // override to use source code other than the file being tested.
-  def code = io.File(sys.props("partest.test-path")).slurp()
+  def code = testPath.slurp()
 
   override def extraSettings: String = "-usejavacp -Xprint-icode:" + printIcodeAfterPhase
 
   // Compile, read in all the *.icode files, delete them, and return their contents
   def collectIcode(args: String*): List[String] = {
-    compile(args: _*)
-    val icodeFiles = Directory(".").files.toList filter (_ hasExtension "icode")
+    compile("-d" :: testOutput.path :: args.toList : _*)
+    val icodeFiles = testOutput.files.toList filter (_ hasExtension "icode")
 
     try     icodeFiles sortBy (_.name) flatMap (f => f.lines.toList)
     finally icodeFiles foreach (f => f.delete())

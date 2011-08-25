@@ -19,6 +19,10 @@ abstract class DirectTest extends App {
   // produce the output to be compared against a checkfile
   def show(): Unit
 
+  // the test file or dir, and output directory
+  def testPath   = io.File(sys.props("partest.test-path"))
+  def testOutput = io.Directory(sys.props("partest.output"))
+
   // override to add additional settings with strings
   def extraSettings: String = ""
   // a default Settings object
