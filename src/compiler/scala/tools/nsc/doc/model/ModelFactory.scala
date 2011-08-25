@@ -199,12 +199,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           val tplOwner = this.inTemplate.qualifiedName
           val tplName = this.name
           val patches = new Regex("""€\{(FILE_PATH|TPL_OWNER|TPL_NAME)\}""")
-          val patchedString = patches.replaceAllIn(settings.docsourceurl.value, { m => m.group(1) match {
-              case "FILE_PATH" => filePath
-              case "TPL_OWNER" => tplOwner
-              case "TPL_NAME" => tplName
-            }
-          })
+          def substitute(name: String): String = name match {
+            case "FILE_PATH" => filePath
+            case "TPL_OWNER" => tplOwner
+            case "TPL_NAME" => tplName
+          }
+          val patchedString = patches.replaceAllIn(settings.docsourceurl.value, m => java.util.regex.Matcher.quoteReplacement(substitute(m.group(1))) )
           new java.net.URL(patchedString)
         }
       else None
