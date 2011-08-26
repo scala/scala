@@ -24,7 +24,6 @@ trait JavaPlatform extends Platform[AbstractFile] {
 
   def platformPhases = List(
     flatten,    // get rid of inner classes
-    liftcode,   // generate reified trees
     genJVM      // generate .class files
   ) ++ depAnalysisPhase
 

@@ -598,6 +598,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       superAccessors          -> "add super accessors in traits and nested classes",
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
+      liftcode                -> "reify trees",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
@@ -622,7 +623,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // and attractive -Xshow-phases output is unlikely if the descs span 20 files anyway.
   private val otherPhaseDescriptions = Map(
     "flatten"  -> "eliminate inner classes",
-    "liftcode" -> "reify trees",
     "jvm"      -> "generate JVM bytecode"
   ) withDefaultValue ""
 
