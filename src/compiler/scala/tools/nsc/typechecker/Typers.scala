@@ -3779,7 +3779,6 @@ trait Typers extends Modes with Adaptations {
           while (defSym == NoSymbol && cx != NoContext) {
             currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name)
             pre = cx.enclClass.prefix
-            if (name.toString == "Console") println("looking in "+cx.owner)
             defEntry = cx.scope.lookupEntry(name)
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
               defSym = defEntry.sym

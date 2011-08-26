@@ -436,6 +436,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
             else
               traverse(arg)
           }
+
         /** The rhs of a closure represents escape. */
         case Function(vparams, body) =>
           vparams foreach traverse
