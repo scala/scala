@@ -54,7 +54,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     private var rawpos = initPos
     val id = { ids += 1; ids } // identity displayed when -uniqid
-    //assert(id != 34, initName)
+    //assert(id != 3204, initName)
 
     var validTo: Period = NoPeriod
 

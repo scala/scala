@@ -97,7 +97,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType {
     override def complete(sym: Symbol) = {
-      sym setInfo TypeBounds(NothingClass.tpe, lub(jtvar.getBounds.toList map typeToScala))
+      sym setInfo TypeBounds(NothingClass.tpe, glb(jtvar.getBounds.toList map typeToScala map objToAny))
     }
   }
 
@@ -253,11 +253,13 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  this one bypasses the cache.
    */
   private def makeScalaPackage(fullname: String): Symbol = {
+    println("make scala pkg "+fullname)
     val split = fullname lastIndexOf '.'
     val owner = if (split > 0) packageNameToScala(fullname take split) else RootClass
-    assert(owner.isModuleClass)
+    assert(owner.isModuleClass, owner+" when making "+fullname)
     val name = fullname drop (split + 1)
     val pkg = owner.info decl newTermName(name)
+    println(" = "+pkg+"/"+pkg.moduleClass)
     pkg.moduleClass
   }
 
@@ -327,7 +329,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         val tparam = owner.newExistential(NoPosition, newTypeName("T$" + tparams.length))
           .setInfo(TypeBounds(
             lub(jwild.getLowerBounds.toList map typeToScala),
-            glb(scala.tools.nsc.util.trace("glb args")(jwild.getUpperBounds.toList) map typeToScala)))
+            glb(scala.tools.nsc.util.trace("glb args")(jwild.getUpperBounds.toList) map typeToScala map objToAny)))
         tparams += tparam
         typeRef(NoPrefix, tparam, List())
       case _ =>
@@ -386,6 +388,10 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     field
   }
 
+  private def setMethType(meth: Symbol, tparams: List[Symbol], paramtpes: List[Type], restpe: Type) = {
+    meth setInfo polyType(tparams, MethodType(meth.owner.newSyntheticValueParams(paramtpes map objToAny), restpe))
+  }
+
   /**
    * The Scala method that corresponds to given Java method without taking
    *  Scala pickling info into account.
@@ -399,7 +405,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val tparams = jmeth.getTypeParameters.toList map createTypeParameter
     val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
     val resulttpe = typeToScala(jmeth.getGenericReturnType)
-    meth setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), resulttpe))
+    setMethType(meth, tparams, paramtpes, resulttpe)
     copyAnnotations(meth, jmeth)
     meth
   }
@@ -417,6 +423,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       .setFlag(toScalaFlags(jconstr.getModifiers, isClass = false) | JAVA)
     val tparams = jconstr.getTypeParameters.toList map createTypeParameter
     val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
+    setMethType(meth, tparams, paramtpes, clazz.tpe)
     meth setInfo polyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
     copyAnnotations(meth, jconstr)
     meth
