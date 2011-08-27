@@ -840,7 +840,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
         } finally {
-          if (id == 431) println("completer ran "+tp.getClass+" for "+fullName)
+          // if (id == 431) println("completer ran "+tp.getClass+" for "+fullName)
           unlock()
           phase = current
         }
