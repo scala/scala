@@ -6069,7 +6069,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   private def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
-    Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.asInstanceOf[AnyRef].getClass+")"*/)
+    Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
     indent = indent + "  "
     val result = p(tp1, arg2)
     indent = indent dropRight 2

@@ -627,7 +627,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *           simple name of the collection class $coll.
    */
   def stringPrefix : String = {
-    var string = repr.asInstanceOf[AnyRef].getClass.getName
+    var string = repr.getClass.getName
     val idx1 = string.lastIndexOf('.' : Int)
     if (idx1 != -1) string = string.substring(idx1 + 1)
     val idx2 = string.indexOf('$')

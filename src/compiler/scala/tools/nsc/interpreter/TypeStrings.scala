@@ -56,7 +56,7 @@ trait TypeStrings {
     )
   }
   def scalaName(m: ClassManifest[_]): String = scalaName(m.erasure)
-  def anyClass(x: Any): JClass               = if (x == null) null else x.asInstanceOf[AnyRef].getClass
+  def anyClass(x: Any): JClass               = if (x == null) null else x.getClass
 
   private def brackets(tps: String*): String =
     if (tps.isEmpty) ""

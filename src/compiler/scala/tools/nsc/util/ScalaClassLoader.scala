@@ -134,7 +134,7 @@ object ScalaClassLoader {
   }
 
   /** Finding what jar a clazz or instance came from */
-  def origin(x: Any): Option[URL] = originOfClass(x.asInstanceOf[AnyRef].getClass)
+  def origin(x: Any): Option[URL] = originOfClass(x.getClass)
   def originOfClass(x: Class[_]): Option[URL] =
     Option(x.getProtectionDomain.getCodeSource) flatMap (x => Option(x.getLocation))
 }

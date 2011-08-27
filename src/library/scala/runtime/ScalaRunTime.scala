@@ -25,7 +25,7 @@ import java.lang.reflect.{ Modifier, Method => JMethod }
 object ScalaRunTime {
   def isArray(x: AnyRef): Boolean = isArray(x, 1)
   def isArray(x: Any, atLevel: Int): Boolean =
-    x != null && isArrayClass(x.asInstanceOf[AnyRef].getClass, atLevel)
+    x != null && isArrayClass(x.getClass, atLevel)
 
   private def isArrayClass(clazz: Class[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))

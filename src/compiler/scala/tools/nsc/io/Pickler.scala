@@ -246,7 +246,7 @@ object Pickler {
         p.tryPickle(wr, x) || qq.tryPickle(wr, x)
       def pickle(wr: Writer, x: T) =
         require(tryPickle(wr, x),
-                "no pickler found for "+x+" of class "+x.asInstanceOf[AnyRef].getClass.getName)
+                "no pickler found for "+x+" of class "+x.getClass.getName)
       def unpickle(rd: Lexer) = p.unpickle(rd) orElse qq.unpickle(rd)
     }
 
