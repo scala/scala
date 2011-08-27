@@ -71,11 +71,10 @@ trait Sorted[K, +This <: Sorted[K, This]] {
    *  @param to The upper-bound (inclusive) of the ranged projection.
    */
   def to(to: K): This = {
-    // tough!
     val i = keySet.from(to).iterator
     if (i.isEmpty) return repr
     val next = i.next
-    if (next == to)
+    if (compare(next, to) == 0)
       if (i.isEmpty) repr
       else until(i.next)
     else
