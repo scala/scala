@@ -99,7 +99,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *  @param  iter        an iterable object
    */
   def enqueue[B >: A](iter: Iterable[B]) =
-    new Queue(iter.toList.reverse ::: in, out)
+    new Queue(iter.toList reverse_::: in, out)
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.

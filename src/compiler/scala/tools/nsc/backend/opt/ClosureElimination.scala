@@ -232,7 +232,7 @@ abstract class ClosureElimination extends SubComponent {
         while (t != Nil) {
           peep(b, h, t.head) match {
             case Some(newInstrs) =>
-              newInstructions = seen.reverse ::: newInstrs ::: t.tail;
+              newInstructions = seen reverse_::: newInstrs ::: t.tail
               redo = true
             case None =>
             	()

@@ -94,7 +94,7 @@ trait BasicBlocks {
 
     /** Return an iterator over the instructions in this basic block. */
     def iterator: Iterator[Instruction] =
-      if (closed) instrs.iterator else instructionList.reverse.iterator
+      if (closed) instrs.iterator else instructionList.reverseIterator
 
     /** return the underlying array of instructions */
     def getArray: Array[Instruction] = {
