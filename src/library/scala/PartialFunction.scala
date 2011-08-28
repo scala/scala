@@ -81,8 +81,15 @@ trait PartialFunction[-A, +B] extends (A => B) {
  *  @author  Paul Phillips
  *  @since   2.8
  */
-object PartialFunction
-{
+object PartialFunction {
+  private[this] final val empty_pf = new PartialFunction[Any, Nothing] {
+    def isDefinedAt(x: Any) = false
+    def apply(x: Any): Nothing = sys.error("undefined")
+    override def orElse[A1, B1](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = that
+    override def lift = (x: Any) => None
+  }
+  def empty[A, B] : PartialFunction[A, B] = empty_pf.asInstanceOf[PartialFunction[A, B]]
+
   /** Creates a Boolean test based on a value and a partial function.
    *  It behaves like a 'match' statement with an implied 'case _ => false'
    *  following the supplied cases.
