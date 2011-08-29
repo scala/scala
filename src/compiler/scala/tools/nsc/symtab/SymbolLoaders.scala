@@ -13,6 +13,7 @@ import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
+import reflect.internal.MissingRequirementError
 import util.Statistics._
 import scala.tools.nsc.io.AbstractFile
 
@@ -105,6 +106,14 @@ abstract class SymbolLoaders {
       })
     }
     override def complete(root: Symbol) : Unit = {
+      def signalError(ex: Exception) {
+        ok = false
+        if (settings.debug.value) ex.printStackTrace()
+        val msg = ex.getMessage()
+        globalError(
+          if (msg eq null) "i/o error while loading " + root.name
+          else "error while loading " + root.name + ", " + msg);
+      }
       try {
         val start = currentTime
         val currentphase = phase
@@ -116,12 +125,9 @@ abstract class SymbolLoaders {
         setSource(root.companionSymbol) // module -> class, class -> module
       } catch {
         case ex: IOException =>
-          ok = false
-          if (settings.debug.value) ex.printStackTrace()
-          val msg = ex.getMessage()
-          globalError(
-            if (msg eq null) "i/o error while loading " + root.name
-            else "error while loading " + root.name + ", " + msg);
+          signalError(ex)
+        case ex: MissingRequirementError =>
+          signalError(ex)
       }
       initRoot(root)
       if (!root.isPackageClass) initRoot(root.companionSymbol)

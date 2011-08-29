@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import java.io.IOException
 import scala.collection.mutable.ListBuffer
 import io.File
 

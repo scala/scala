@@ -22,6 +22,7 @@ trait Loaders { self: SymbolTable =>
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends LazyType {
     def makePackage() {
+      println("wrong guess; making package "+clazz)
       val ptpe = newPackageType(module.moduleClass)
       for (sym <- List(clazz, module, module.moduleClass)) {
         sym setFlag Flags.PACKAGE
@@ -80,7 +81,7 @@ trait Loaders { self: SymbolTable =>
    *  a TopClassCompleter type. When any of the two symbols is forced via info,
    *  the TopClassCompleter will sort things out.
    */
-  def newPackageType(pkg: Symbol) = new ClassInfoType(List(), new PackageScope(pkg), pkg) {
+  def newPackageType(pkgClass: Symbol) = new ClassInfoType(List(), new PackageScope(pkgClass), pkgClass) {
     /*
     override def decl(name: Name): Symbol =
       (decls lookup name) orElse {
@@ -94,24 +95,31 @@ trait Loaders { self: SymbolTable =>
     override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean) =
       member(name).filter (m => m.hasAllFlags(requiredFlags) && !m.hasFlag(excludedFlags))
 */
-    override def safeToString = pkg.toString
+    override def safeToString = pkgClass.toString
   }
 
-  class PackageScope(pkg: Symbol) extends Scope {
+  class PackageScope(pkgClass: Symbol) extends Scope {
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)
       if (e != null)
         e
       else try {
-        if (name.isTypeName) jClass.forName(pkg.fullName + "." + name)
-        val (clazz, module) = createClassModule(pkg, name.toTypeName, new TopClassCompleter(_, _))
-        println("created "+module+"/"+module.moduleClass+" in "+pkg+", scope = "+(this map (_.name)))
+        jClass.forName(pkgClass.fullName + "." + name)
+        val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+        println("created "+module+"/"+module.moduleClass+" in "+pkgClass+", scope = "+(this map (_.name)))
         lookupEntry(name)
       } catch {
         case ex: ClassNotFoundException =>
-          println("not found: "+pkg.fullName + "." + name)
+          println("not found : "+pkgClass.fullName + "." + name)
           null
       }
     }
+    override def mkScope(decls: List[Symbol]) = {
+      val result = new PackageScope(pkgClass)
+      decls foreach (result enter)
+      result
+    }
   }
+
+  override def newPackageScope(pkgClass: Symbol) = new PackageScope(pkgClass)
 }

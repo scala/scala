@@ -64,7 +64,7 @@ abstract class Flatten extends InfoTransform {
         typeRef(sym.toplevelClass.owner.thisType, sym, Nil)
       case ClassInfoType(parents, decls, clazz) =>
         var parents1 = parents
-        val decls1 = new Scope
+        val decls1 = decls.mkScope()
         if (clazz.isPackageClass) {
           atPhase(phase.next)(decls foreach (decls1 enter _))
         }

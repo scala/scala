@@ -72,6 +72,7 @@ object Mirror extends Mirror
 
 /** test code; should go to tests once things settle down a bit
  *
+ */
 object Test extends Mirror with App {
   val sym = classToScala(classOf[scala.collection.Iterable[_]])
   println(sym)
@@ -80,4 +81,3 @@ object Test extends Mirror with App {
   val ms = sym.info.members.toList map (_.initialize)
   println("members = "+(ms map (_.defString) mkString ("\n  ")))
 }
-*/

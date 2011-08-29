@@ -16,6 +16,7 @@ import java.lang.reflect.{
   WildcardType,
   AnnotatedElement
 }
+import internal.MissingRequirementError
 import internal.pickling.ByteCodecs
 import internal.ClassfileConstants._
 import internal.pickling.UnPickler
@@ -41,6 +42,14 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
     def markAbsent(tpe: Type) = List(clazz, module, module.moduleClass) foreach (_ setInfo tpe)
+    def handleError(ex: Exception) = {
+      markAbsent(ErrorType)
+      if (settings.debug.value) ex.printStackTrace()
+      val msg = ex.getMessage()
+      throw new MissingRequirementError(
+        if (msg eq null) "reflection error while loading " + clazz.name
+        else "error while loading " + clazz.name + ", " + msg)
+    }
     try {
       println("unpickling " + clazz + " " + module) //debug
       markAbsent(NoType)
@@ -69,13 +78,10 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         }
       }
     } catch {
+      case ex: MissingRequirementError =>
+        handleError(ex)
       case ex: IOException =>
-        markAbsent(ErrorType)
-        if (settings.debug.value) ex.printStackTrace()
-        val msg = ex.getMessage()
-        throw new IOException(
-          if (msg eq null) "reflection error while loading " + clazz.name
-          else "error while loading " + clazz.name + ", " + msg)
+        handleError(ex)
     }
   }
 
@@ -133,9 +139,14 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
 
       val tparams = jclazz.getTypeParameters.toList map createTypeParameter
 
-      val jsuperclazz = jclazz.getGenericSuperclass
-      val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
-      val parents = superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
+      val parents = try {
+        parentsLevel += 1
+        val jsuperclazz = jclazz.getGenericSuperclass
+        val superclazz = if (jsuperclazz == null) AnyClass.tpe else typeToScala(jsuperclazz)
+        superclazz :: (jclazz.getGenericInterfaces.toList map typeToScala)
+      } finally {
+        parentsLevel -= 1
+      }
       clazz setInfo polyType(tparams, new ClassInfoType(parents, newScope, clazz))
       module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
       module setInfo module.moduleClass.tpe
@@ -143,16 +154,32 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       def enter(sym: Symbol) =
         (if (sym.isStatic) module.moduleClass else clazz).info.decls enter sym
 
-      for (jfield <- jclazz.getDeclaredFields)
-        enter(jfieldAsScala(jfield))
+      pendingLoadActions = { () =>
 
-      for (jmeth <- jclazz.getDeclaredMethods)
-        enter(jmethodAsScala(jmeth))
+        for (jfield <- jclazz.getDeclaredFields)
+          enter(jfieldAsScala(jfield))
 
-      for (jconstr <- jclazz.getConstructors)
-        enter(jconstrAsScala(jconstr))
+        for (jmeth <- jclazz.getDeclaredMethods)
+          enter(jmethodAsScala(jmeth))
+
+        for (jconstr <- jclazz.getConstructors)
+          enter(jconstrAsScala(jconstr))
+
+      } :: pendingLoadActions
+
+      if (parentsLevel == 0) {
+        while (!pendingLoadActions.isEmpty) {
+          val item = pendingLoadActions.head
+          pendingLoadActions = pendingLoadActions.tail
+          item()
+        }
+      }
     }
   }
+
+  /** used to avoid cyclies */
+  var parentsLevel = 0
+  var pendingLoadActions: List[() => Unit] = Nil
 
   /**
    * If Java modifiers `mods` contain STATIC, return the module class
@@ -252,13 +279,20 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    * The Scala package with given fully qualified name. Unlike `packageNameToScala`,
    *  this one bypasses the cache.
    */
-  private def makeScalaPackage(fullname: String): Symbol = {
+  def makeScalaPackage(fullname: String): Symbol = {
     println("make scala pkg "+fullname)
     val split = fullname lastIndexOf '.'
     val owner = if (split > 0) packageNameToScala(fullname take split) else RootClass
     assert(owner.isModuleClass, owner+" when making "+fullname)
-    val name = fullname drop (split + 1)
-    val pkg = owner.info decl newTermName(name)
+    val name = newTermName(fullname drop (split + 1))
+    var pkg = owner.info decl name
+    if (pkg == NoSymbol) {
+      pkg = owner.newPackage(NoPosition, name)
+      pkg.moduleClass setInfo newPackageType(pkg.moduleClass)
+      pkg setInfo typeRef(pkg.owner.thisType, pkg.moduleClass, Nil)
+      owner.info.decls enter pkg
+    } else if (!pkg.isPackage)
+      throw new ReflectError(pkg+" is not a package")
     println(" = "+pkg+"/"+pkg.moduleClass)
     pkg.moduleClass
   }
@@ -329,7 +363,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         val tparam = owner.newExistential(NoPosition, newTypeName("T$" + tparams.length))
           .setInfo(TypeBounds(
             lub(jwild.getLowerBounds.toList map typeToScala),
-            glb(scala.tools.nsc.util.trace("glb args")(jwild.getUpperBounds.toList) map typeToScala map objToAny)))
+            glb(scala.tools.nsc.util.trace("glb args of "+owner)(jwild.getUpperBounds.toList) map typeToScala map objToAny)))
         tparams += tparam
         typeRef(NoPrefix, tparam, List())
       case _ =>
@@ -429,3 +463,5 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     meth
   }
 }
+
+class ReflectError(msg: String) extends java.lang.Error(msg)

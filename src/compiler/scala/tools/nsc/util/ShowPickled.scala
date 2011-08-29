@@ -7,7 +7,7 @@ package scala.tools
 package nsc
 package util
 
-import java.io.{File, FileInputStream, PrintStream, IOException}
+import java.io.{File, FileInputStream, PrintStream}
 import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble

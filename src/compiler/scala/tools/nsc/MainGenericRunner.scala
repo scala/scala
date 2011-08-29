@@ -5,7 +5,6 @@
 
 package scala.tools.nsc
 
-import java.io.IOException
 import java.net.URL
 import scala.tools.util.PathResolver
 

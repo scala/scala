@@ -316,7 +316,7 @@ trait Names extends api.Names {
 
     def lastIndexOf(ch: Char) = toChars lastIndexOf ch
 
-    /** Return the subname with characters from start to end-1. */
+    /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): Name
 
     /** Replace all occurrences of `from` by `to` in

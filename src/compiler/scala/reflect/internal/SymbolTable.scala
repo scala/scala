@@ -41,6 +41,12 @@ abstract class SymbolTable extends api.Universe
   /** Are we compiling for .NET? */
   def forMSIL: Boolean = false
 
+  /** A last effort if symbol in a select <owner>.<name> is not found.
+   *  This is overridden by the reflection compiler to make up a package
+   *  when it makes sense (i.e. <owner> is a package and <name> is a term name).
+   */
+  def missingHook(owner: Symbol, name: Name): Symbol = NoSymbol
+
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.
    *  Later phases have higher periods than earlier phases in the same run.

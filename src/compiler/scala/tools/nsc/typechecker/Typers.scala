@@ -3668,8 +3668,11 @@ trait Typers extends Modes with Adaptations {
           if (name == nme.ERROR && forInteractive)
             return makeErrorTree
 
-          if (!qual.tpe.widen.isErroneous)
+          if (!qual.tpe.widen.isErroneous) {
+            val lastTry = missingHook(qual.tpe.typeSymbol, name)
+            if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
             notAMemberError(tree.pos, qual, name)
+          }
 
           if (forInteractive) makeErrorTree else setError(tree)
         } else {

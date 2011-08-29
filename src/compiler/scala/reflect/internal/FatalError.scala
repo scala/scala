@@ -3,4 +3,4 @@
  * @author  Martin Odersky
  */
 package scala.reflect.internal
-case class FatalError(msg: String) extends Throwable(msg)
+case class FatalError(msg: String) extends Exception(msg)
