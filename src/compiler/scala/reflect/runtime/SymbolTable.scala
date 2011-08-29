@@ -15,7 +15,7 @@ trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava
     if (name.isTermName && owner.hasPackageFlag)
       makeScalaPackage(if (owner.isRoot) name.toString else owner.fullName+"."+name).sourceModule
     else {
-      println(name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)
+      info("*** missing: "+name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)
       super.missingHook(owner, name)
     }
 
@@ -23,4 +23,9 @@ trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava
   override def validateClassInfo(tp: ClassInfoType) {
     assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
   }
+
+  protected var verbose = false
+
+  def info(msg: => String) =
+    if (verbose) println("[reflect-compiler] "+msg)
 }

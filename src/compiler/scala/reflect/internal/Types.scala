@@ -2758,6 +2758,7 @@ A type's typeSymbol should never be inspected directly.
   /** A class representing an as-yet unevaluated type.
    */
   abstract class LazyType extends Type {
+    def fromSource = false
     override def isComplete: Boolean = false
     override def complete(sym: Symbol)
     override def safeToString = "<?>"

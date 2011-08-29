@@ -35,6 +35,6 @@ object Test {
     val thickness = 2
     val color = 0
   }
-  scala.Console.println(bcs1 == bcs1)
-  scala.Console.println(bcs1 == bcs2)
+  Console.println(bcs1 == bcs1)
+  Console.println(bcs1 == bcs2)
 }

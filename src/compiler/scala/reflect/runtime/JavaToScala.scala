@@ -51,13 +51,12 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         else "error while loading " + clazz.name + ", " + msg)
     }
     try {
-      println("unpickling " + clazz + " " + module) //debug
+      info("unpickling " + clazz + " " + module) //debug
       markAbsent(NoType)
       val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
       if (ssig != null) {
         val bytes = ssig.bytes.getBytes
         val len = ByteCodecs.decode(bytes)
-        println("short sig:" + len)
         unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
       } else {
         val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
@@ -70,10 +69,9 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
             bs.copyToArray(bytes, len, l)
             len += l
           }
-          println("long sig") //debug
           unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
         } else { // class does not have a Scala signature; it's a Java class
-          println("no sig found for " + jclazz) //debug
+          info("no sig found for " + jclazz) //debug
           initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
         }
       }
@@ -127,7 +125,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType {
     override def complete(sym: Symbol) = {
-      println("completing from Java " + sym + "/" + clazz.fullName)//debug
+      info("completing from Java " + sym + "/" + clazz.fullName)//debug
       assert(sym == clazz || sym == module || sym == module.moduleClass, sym)
       val flags = toScalaFlags(jclazz.getModifiers, isClass = true)
       clazz setFlag (flags | JAVA)
@@ -288,7 +286,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     var pkg = owner.info decl name
     if (pkg == NoSymbol) {
       pkg = owner.newPackage(NoPosition, name)
-      pkg.moduleClass setInfo newPackageType(pkg.moduleClass)
+      pkg.moduleClass setInfo new LazyPackageType
       pkg setInfo typeRef(pkg.owner.thisType, pkg.moduleClass, Nil)
       owner.info.decls enter pkg
     } else if (!pkg.isPackage)

@@ -231,36 +231,7 @@ abstract class SymbolLoaders {
         enterPackage(root, pkg.name, newPackageLoader(pkg))
       }
 
-      // if there's a $member object, enter its members as well.
-      val pkgModule = root.info.decl(nme.PACKAGEkw)
-      if (pkgModule.isModule && !pkgModule.rawInfo.isInstanceOf[SourcefileLoader]) {
-        // println("open "+pkgModule)//DEBUG
-        openPackageModule(pkgModule)()
-      }
-    }
-  }
-
-  def openPackageModule(module: Symbol)(packageClass: Symbol = module.owner): Unit = {
-    // unlink existing symbols in the package
-    for (member <- module.info.decls.iterator) {
-      if (!member.isPrivate && !member.isConstructor) {
-        // todo: handle overlapping definitions in some way: mark as errors
-        // or treat as abstractions. For now the symbol in the package module takes precedence.
-        for (existing <- packageClass.info.decl(member.name).alternatives)
-          packageClass.info.decls.unlink(existing)
-      }
-    }
-    // enter non-private decls the class
-    for (member <- module.info.decls.iterator) {
-      if (!member.isPrivate && !member.isConstructor) {
-        packageClass.info.decls.enter(member)
-      }
-    }
-    // enter decls of parent classes
-    for (pt <- module.info.parents; p = pt.typeSymbol) {
-      if (p != definitions.ObjectClass && p != definitions.ScalaObjectClass) {
-        openPackageModule(p)(packageClass)
-      }
+      openPackageModule(root)
     }
   }
 
@@ -328,6 +299,7 @@ abstract class SymbolLoaders {
 
   class SourcefileLoader(val srcfile: AbstractFile) extends SymbolLoader {
     protected def description = "source file "+ srcfile.toString
+    override def fromSource = true
     override def sourcefile = Some(srcfile)
     protected def doComplete(root: Symbol): Unit = global.currentRun.compileLate(srcfile)
   }

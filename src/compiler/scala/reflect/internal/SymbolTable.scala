@@ -123,6 +123,44 @@ abstract class SymbolTable extends api.Universe
     }
   }
 
+  def openPackageModule(container: Symbol, dest: Symbol) {
+    // unlink existing symbols in the package
+    for (member <- container.info.decls.iterator) {
+      if (!member.isPrivate && !member.isConstructor) {
+        // todo: handle overlapping definitions in some way: mark as errors
+        // or treat as abstractions. For now the symbol in the package module takes precedence.
+        for (existing <- dest.info.decl(member.name).alternatives)
+          dest.info.decls.unlink(existing)
+      }
+    }
+    // enter non-private decls the class
+    for (member <- container.info.decls.iterator) {
+      if (!member.isPrivate && !member.isConstructor) {
+        dest.info.decls.enter(member)
+      }
+    }
+    // enter decls of parent classes
+    for (pt <- container.info.parents; p = pt.typeSymbol) {
+      if (p != definitions.ObjectClass && p != definitions.ScalaObjectClass) {
+        openPackageModule(p, dest)
+      }
+    }
+  }
+
+  /** if there's a `package` member object in `pkgClass`, enter its members into it. */
+  def openPackageModule(pkgClass: Symbol) {
+
+    val pkgModule = pkgClass.info.decl(nme.PACKAGEkw)
+    def fromSource = pkgModule.rawInfo match {
+      case ltp: LazyType => ltp.fromSource
+      case _ => false
+    }
+    if (pkgModule.isModule && !fromSource) {
+      // println("open "+pkgModule)//DEBUG
+      openPackageModule(pkgModule, pkgClass)
+    }
+  }
+
   object perRunCaches {
     import java.lang.ref.WeakReference
     import scala.runtime.ScalaRunTime.stringOf

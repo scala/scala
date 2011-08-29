@@ -191,8 +191,9 @@ trait Namers { self: Analyzer =>
       var pkg = owner.info.decls.lookup(pid.name)
       if (!pkg.isPackage || owner != pkg.owner) {
         pkg = owner.newPackage(pos, pid.name.toTermName)
-        pkg.moduleClass.setInfo(new PackageClassInfoType(new Scope, pkg.moduleClass))
-        pkg.setInfo(pkg.moduleClass.tpe)
+        val pkgClass = pkg.moduleClass
+        pkgClass.setInfo(new PackageClassInfoType(newPackageScope(pkgClass), pkgClass))
+        pkg.setInfo(pkgClass.tpe)
         enterInScope(pkg, owner.info.decls)
       }
       pkg

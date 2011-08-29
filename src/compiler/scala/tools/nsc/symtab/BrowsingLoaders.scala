@@ -84,7 +84,7 @@ abstract class BrowsingLoaders extends SymbolLoaders {
             entered += 1
             if (name == nme.PACKAGEkw) {
               println("open package module: "+module)
-              loaders.openPackageModule(module)()
+              openPackageModule(module, root)
             }
           } else println("prefixes differ: "+packagePrefix+","+root.fullName)
         case _ =>
