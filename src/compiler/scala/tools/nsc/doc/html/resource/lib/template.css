@@ -34,6 +34,15 @@ body {
   font-size: 10pt;
 }
 
+#footer {
+  font-size: 9pt;
+  text-align: center;
+  color: #858484;
+  bottom: 0;
+  width: 100%;
+  height: 20px;
+}
+
 a[href] {
   text-decoration: underline;
   color: #315479;
