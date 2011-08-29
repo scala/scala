@@ -1522,6 +1522,10 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="misc/scala-devel/plugins/*.jar"/>
     </same>
   </target>
+
+  <target name="test.classload" depends="pack.done">
+    <classloadVerify classpath="${build-pack.dir}/lib/scala-library.jar" />
+  </target>
   
   <!-- this target will run only those tests found in test/debug -->
   <target name="test.debug">

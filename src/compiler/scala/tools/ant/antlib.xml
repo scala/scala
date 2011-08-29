@@ -1,6 +1,8 @@
 <antlib>
     <!--<taskdef name="scala"
              classname="scala.tools.ant.Scala"/>-->
+    <taskdef name="classloadVerify"
+             classname="scala.tools.ant.ClassloadVerify"/>
     <taskdef name="fsc"
              classname="scala.tools.ant.FastScalac"/>
     <taskdef name="scalac"
