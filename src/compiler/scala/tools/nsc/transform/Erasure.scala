@@ -604,7 +604,8 @@ abstract class Erasure extends AddInterfaces
           abort()
         case ex: Exception =>
           //if (settings.debug.value)
-          Console.println("exception when typing " + tree);
+          try Console.println("exception when typing " + tree)
+          finally throw ex
           throw ex
       }
       def adaptCase(cdef: CaseDef): CaseDef = {
