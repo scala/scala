@@ -7,7 +7,7 @@ import java.lang.reflect.{
   Member => jMember, Type => jType, TypeVariable => jTypeVariable, GenericDeclaration}
 import collection.mutable.HashMap
 
-trait ConversionUtil { self: internal.SymbolTable =>
+trait ConversionUtil { self: SymbolTable =>
 
   /** A cache that maintains a bijection between Java reflection type `J`
    *  and Scala reflection type `S`.
@@ -18,7 +18,7 @@ trait ConversionUtil { self: internal.SymbolTable =>
     private val toJavaMap = new HashMap[S, J]
 
     def enter(j: J, s: S) = {
-      println("cached: "+j+"/"+s)
+      info("cached: "+j+"/"+s)
       toScalaMap(j) = s
       toJavaMap(s) = j
     }
