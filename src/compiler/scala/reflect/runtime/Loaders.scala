@@ -49,6 +49,7 @@ trait Loaders { self: SymbolTable =>
           // You'll see an error that class `parallel` has the wrong name.
 //      }
     }
+    override def load(sym: Symbol) = complete(sym)
   }
 
   /** Create a class and a companion object, enter in enclosing scope,
