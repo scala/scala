@@ -276,62 +276,98 @@ trait CompilerControl { self: Global =>
 
   abstract class WorkItem extends (() => Unit) {
     val onCompilerThread = self.onCompilerThread
+
+    /** Raise a MissingReponse, if the work item carries a response. */
+    def raiseMissing(): Unit
   }
 
   case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = reload(sources, response)
     override def toString = "reload "+sources
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
   case class FilesDeletedItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
     def apply() = filesDeleted(sources, response)
     override def toString = "files deleted "+sources
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
+  case class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTreeAt(pos, response)
     override def toString = "typeat "+pos.source+" "+pos.show
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskTypeItem(val source: SourceFile, val forceReload: Boolean, response: Response[Tree]) extends WorkItem {
+  case class AskTypeItem(val source: SourceFile, val forceReload: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTree(source, forceReload, response)
     override def toString = "typecheck"
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskTypeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
+  case class AskTypeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
     def apply() = self.getTypeCompletion(pos, response)
     override def toString = "type completion "+pos.source+" "+pos.show
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskScopeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
+  case class AskScopeCompletionItem(val pos: Position, response: Response[List[Member]]) extends WorkItem {
     def apply() = self.getScopeCompletion(pos, response)
     override def toString = "scope completion "+pos.source+" "+pos.show
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
   class AskToDoFirstItem(val source: SourceFile) extends WorkItem {
     def apply() = moveToFront(List(source))
     override def toString = "dofirst "+source
+
+    def raiseMissing() = ()
   }
 
-  class AskLinkPosItem(val sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
+  case class AskLinkPosItem(val sym: Symbol, val source: SourceFile, response: Response[Position]) extends WorkItem {
     def apply() = self.getLinkPos(sym, source, response)
     override def toString = "linkpos "+sym+" in "+source
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
+  case class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
     def apply() = self.waitLoadedTyped(source, response, this.onCompilerThread)
     override def toString = "wait loaded & typed "+source
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
+  case class AskParsedEnteredItem(val source: SourceFile, val keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
     def apply() = self.getParsedEntered(source, keepLoaded, response, this.onCompilerThread)
     override def toString = "getParsedEntered "+source+", keepLoaded = "+keepLoaded
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
 
-  class AskInstrumentedItem(val source: SourceFile, line: Int, response: Response[(String, Array[Char])]) extends WorkItem {
+  case class AskInstrumentedItem(val source: SourceFile, line: Int, response: Response[(String, Array[Char])]) extends WorkItem {
     def apply() = self.getInstrumented(source, line, response)
     override def toString = "getInstrumented "+source
+
+    def raiseMissing() =
+      response raise new MissingResponse
   }
+
 }
 
   // ---------------- Interpreted exceptions -------------------

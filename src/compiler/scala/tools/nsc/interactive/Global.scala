@@ -320,6 +320,22 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
           newTyperRun()
           minRunId = currentRunId
           demandNewCompilerRun()
+
+        case Some(ShutdownReq) =>
+          scheduler.synchronized { // lock the work queue so no more items are posted while we clean it up
+            val units = scheduler.dequeueAll {
+              case item: WorkItem => Some(item.raiseMissing())
+              case _ => Some(())
+            }
+            debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
+            debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
+                .format(waitLoadedTypeResponses.size, getParsedEnteredResponses.size))
+            checkNoResponsesOutstanding()
+
+            log.flush();
+            throw ShutdownReq
+          }
+
         case Some(ex: Throwable) => log.flush(); throw ex
         case _ =>
       }
