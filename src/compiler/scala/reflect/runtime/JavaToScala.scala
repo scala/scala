@@ -315,7 +315,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     if (pkg == NoSymbol) {
       pkg = owner.newPackage(NoPosition, name)
       pkg.moduleClass setInfo new LazyPackageType
-      pkg setInfo typeRef(pkg.owner.thisType, pkg.moduleClass, Nil)
+      pkg setInfo pkg.moduleClass.tpe
       owner.info.decls enter pkg
     } else if (!pkg.isPackage)
       throw new ReflectError(pkg+" is not a package")
