@@ -14,6 +14,12 @@ import java.io.{ BufferedReader, InputStreamReader, FilterInputStream, FilterOut
 import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.immutable.Stream
 
+/**
+  * This object contains factories for [[scala.sys.process.ProcessIO]],
+  * which can be used to control the I/O of a [[scala.sys.process.Process]]
+  * when a [[scala.sys.process.ProcessBuilder]] is started with the `run`
+  * command.
+  */
 object BasicIO {
   final val BufferSize = 8192
   final val Newline    = props("line.separator")
