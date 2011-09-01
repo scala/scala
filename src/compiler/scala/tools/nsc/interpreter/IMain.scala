@@ -272,7 +272,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     settings.outputDirs setSingleOutput virtualDirectory
     settings.exposeEmptyPackage.value = true
 
-    new Global(settings, reporter)
+    Global(settings, reporter)
   }
 
   /** Parent classloader.  Overridable. */

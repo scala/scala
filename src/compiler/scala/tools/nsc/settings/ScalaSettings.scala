@@ -145,6 +145,7 @@ trait ScalaSettings extends AbsScalaSettings
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "policy", "structural method dispatch policy",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache")
+  val globalClass   = StringSetting     ("-Yglobal-class", "class", "subclass of scala.tools.nsc.Global to use for compiler", "")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val YrichExes     = BooleanSetting    ("-Yrich-exceptions",
                                             "Fancier exceptions.  Set source search path with -D" +

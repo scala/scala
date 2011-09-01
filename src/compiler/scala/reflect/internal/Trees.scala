@@ -117,6 +117,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
     def shortClass: String = tree.getClass.getName split "[.$]" last
+    /** When you want to know a little more than the class, but a lot
+     *  less than the whole tree.
+     */
+    def summaryString: String = tree match {
+      case Select(qual, name) => qual.summaryString + "." + name
+      case Ident(name)        => name.longString
+      case t: DefTree         => t.shortClass + " " + t.name
+      case t: RefTree         => t.shortClass + " " + t.name.longString
+      case t                  => t.shortClass
+    }
   }
 
   // ---- values and creators ---------------------------------------

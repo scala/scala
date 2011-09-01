@@ -84,7 +84,7 @@ class ScriptRunner extends HasCompileSocket {
   }
 
   protected def newGlobal(settings: Settings, reporter: Reporter) =
-    new Global(settings, reporter)
+    Global(settings, reporter)
 
   /** Compile a script and then run the specified closure with
     * a classpath for the compiled script.

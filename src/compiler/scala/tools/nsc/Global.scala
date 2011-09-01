@@ -9,11 +9,11 @@ import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundE
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
 
-import scala.tools.util.Profiling
+import scala.tools.util.{ Profiling, PathResolver }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ Exceptional, ClassPath, SourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
+import util.{ NoPosition, Exceptional, ClassPath, SourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, ScalaClassLoader, returning }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 
@@ -377,8 +377,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsRightAfter = None
   } with SyntaxAnalyzer
 
+  // !!! I think we're overdue for all these phase objects being lazy vals.
+  // There's no way for a Global subclass to provide a custom typer
+  // despite the existence of a "def newTyper(context: Context): Typer"
+  // which is clearly designed for that, because it's defined in
+  // Analyzer and Global's "object analyzer" allows no override. For now
+  // I only changed analyzer.
+  //
   // factory for phases: namer, packageobjects, typer
-  object analyzer extends {
+  lazy val analyzer = new {
     val global: Global.this.type = Global.this
   } with Analyzer
 
@@ -1294,4 +1301,37 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   @deprecated("Use forInteractive or forScaladoc, depending on what you're after", "2.9.0")
   def onlyPresentation = false
+}
+
+object Global {
+  /** If possible, instantiate the global specified via -Yglobal-class.
+   *  This allows the use of a custom Global subclass with the software which
+   *  wraps Globals, such as scalac, fsc, and the repl.
+   */
+  def fromSettings(settings: Settings, reporter: Reporter): Global = {
+    // !!! The classpath isn't known until the Global is created, which is too
+    // late, so we have to duplicate it here.  Classpath is too tightly coupled,
+    // it is a construct external to the compiler and should be treated as such.
+    val loader = ScalaClassLoader.fromURLs(new PathResolver(settings).result.asURLs)
+    val name   = settings.globalClass.value
+    val clazz  = Class.forName(name, true, loader)
+    val cons   = clazz.getConstructor(classOf[Settings], classOf[Reporter])
+
+    cons.newInstance(settings, reporter).asInstanceOf[Global]
+  }
+
+  /** A global instantiated this way honors -Yglobal-class setting, and
+   *  falls back on calling the Global constructor directly.
+   */
+  def apply(settings: Settings, reporter: Reporter): Global = {
+    val g = (
+      if (settings.globalClass.isDefault) null
+      else try fromSettings(settings, reporter) catch { case x =>
+        reporter.warning(NoPosition, "Failed to instantiate " + settings.globalClass.value + ": " + x)
+        null
+      }
+    )
+    if (g != null) g
+    else new Global(settings, reporter)
+  }
 }
