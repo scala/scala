@@ -168,9 +168,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       </div>
 
       <div id="tooltip" ></div>
-      <div id="footerwrap">
-        <div id="footer">Scala programming documentation. Copyright (c) 2003-2011 EPFL, with contributions from Typesafe.</div>
-      </div>
+      <div id="footer">Scala programming documentation. Copyright (c) 2003-2011 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
 
     </body>
   }
