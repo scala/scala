@@ -11,13 +11,113 @@ package gen
 trait AnyValReps {
   self: AnyVals =>
 
-  sealed abstract class AnyValNum(name: String) extends AnyValRep(name) {
+  sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String) extends AnyValRep(name,repr,javaEquiv) {
+
+    case class Op(val op : String, val doc : String)
+
     def isCardinal: Boolean = isIntegerType(this)
-    def unaryOps            = if (isCardinal) List("+", "-", "~") else List("+", "-")
-    def bitwiseOps          = if (isCardinal) List("|", "&", "^") else Nil
-    def shiftOps            = if (isCardinal) List("<<", ">>>", ">>") else Nil
-    def comparisonOps       = List("==", "!=", "<", "<=", ">", ">=")
-    def otherOps            = List("+", "-" ,"*", "/", "%")
+    def unaryOps = {
+      val ops = List(
+        Op("+", "/**\n" +
+                " * @return this value, unmodified\n" +
+                " */"),
+        Op("-", "/**\n" +
+                " * @return the negation of this value\n" +
+                " */"))
+
+      if(isCardinal)
+        Op("~", "/**\n" +
+                " * @return the bitwise negation of this value\n" +
+                " * @example {{{\n" +
+                " * ~5 == -6\n" +
+                " * // in binary: ~00000101 == \n" +
+                " * //             11111010\n" +
+                " * }}}\n" +
+                " */") :: ops
+      else ops
+    }
+
+    def bitwiseOps =
+      if (isCardinal)
+        List(
+          Op("|", "/**\n" +
+                     "  * @return the bitwise OR of this value and x\n" +
+                     "  * @example {{{\n" +
+                     "  * (0xf0 | 0xaa) == 0xfa\n" +
+                     "  * // in binary:   11110000 \n" +
+                     "  * //            | 10101010 \n" +
+                     "  * //              -------- \n" +
+                     "  * //              11111010\n" +
+                     "  * }}}\n" +
+                     "  */"),
+          Op("&", "/**\n" +
+                     "  * @return the bitwise AND of this value and x\n" +
+                     "  * @example {{{\n" +
+                     "  * (0xf0 & 0xaa) == 0xa0\n" +
+                     "  * // in binary:   11110000 \n" +
+                     "  * //            & 10101010 \n" +
+                     "  * //              -------- \n" +
+                     "  * //              10100000\n" +
+                     "  * }}}\n" +
+                     "  */"),
+          Op("^", "/**\n" +
+                     "  * @return the bitwise XOR of this value and x\n" +
+                     "  * @example {{{\n" +
+                     "  * (0xf0 ^ 0xaa) == 0x5a\n" +
+                     "  * // in binary:   11110000 \n" +
+                     "  * //            ^ 10101010 \n" +
+                     "  * //              -------- \n" +
+                     "  * //              01011010\n" +
+                     "  * }}}\n" +
+                     "  */"))
+      else Nil
+
+    def shiftOps            =
+      if (isCardinal)
+        List(
+          Op("<<",  "/**\n" +
+                       "  * @return this value bit-shifted left by the specified number of bits,\n" +
+                       "  *         filling in the new right bits with zeroes.\n" +
+                       "  * @example {{{ 6 << 3 == 48 // in binary: 0110 << 3 == 0110000 }}}\n" +
+                       "  */"),
+
+          Op(">>>", "/**\n" +
+                       "  * @return this value bit-shifted right by the specified number of bits,\n" +
+                       "  *         filling the new left bits with zeroes. \n" +
+                       "  * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}\n" +
+                       "  * @example {{{\n" +
+                       "  * -21 >>> 3 == 536870909 \n" +
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == \n" +
+                       "  * //            00011111 11111111 11111111 11111101\n" +
+                       "  * }}}\n" +
+                       "  */"),
+
+          Op(">>",  "/**\n" +
+                       "  * @return this value bit-shifted left by the specified number of bits,\n" +
+                       "  *         filling in the right bits with the same value as the left-most bit of this.\n" +
+                       "  *         The effect of this is to retain the sign of the value.\n" +
+                       "  * @example {{{\n" +
+                       "  * -21 >> 3 == -3 \n" +
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == \n" +
+                       "  * //            11111111 11111111 11111111 11111101\n" +
+                       "  * }}}\n" +
+                       "  */"))
+      else Nil
+
+    def comparisonOps       = List(
+      Op("==", "/**\n  * @return `true` if this value is equal x, `false` otherwise\n  */"),
+      Op("!=", "/**\n  * @return `true` if this value is not equal to x, `false` otherwise\n  */"),
+      Op("<",  "/**\n  * @return `true` if this value is less than x, `false` otherwise\n  */"),
+      Op("<=", "/**\n  * @return `true` if this value is less than or equal to x, `false` otherwise\n  */"),
+      Op(">",  "/**\n  * @return `true` if this value is greater than x, `false` otherwise\n  */"),
+      Op(">=", "/**\n  * @return `true` if this value is greater than or equal to x, `false` otherwise\n  */"))
+
+    def otherOps = List(
+      Op("+", "/**\n  * @return the sum of this value and x\n  */"),
+      Op("-", "/**\n  * @return the difference of this value and x\n  */"),
+      Op("*", "/**\n  * @return the product of this value and x\n  */"),
+      Op("/", "/**\n  * @return the quotient of this value and x\n  */"),
+      Op("%", "/**\n  * @return the remainder of the division of this value by x\n  */"))
 
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
@@ -33,11 +133,11 @@ trait AnyValReps {
     }
 
     def mkCoercions = numeric map (x => "def to%s: %s".format(x, x))
-    def mkUnaryOps  = unaryOps map (x => "def unary_%s : %s".format(x, this opType I))
+    def mkUnaryOps  = unaryOps map (x => "%s\n  def unary_%s : %s".format(x.doc, x.op, this opType I))
     def mkStringOps = List("def +(x: String): String")
     def mkShiftOps  = (
       for (op <- shiftOps ; arg <- List(I, L)) yield
-        "def %s(x: %s): %s".format(op, arg, this opType I)
+        "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, this opType I)
     )
 
     def clumps: List[List[String]] = {
@@ -70,14 +170,15 @@ trait AnyValReps {
      *  @param    resultFn  function which calculates return type based on arg type
      *  @return             list of function definitions
      */
-    def mkBinOpsGroup(ops: List[String], args: List[AnyValNum], resultFn: AnyValNum => AnyValRep): List[String] = (
+    def mkBinOpsGroup(ops: List[Op], args: List[AnyValNum], resultFn: AnyValNum => AnyValRep): List[String] = (
       ops flatMap (op =>
-        args.map(arg => "def %s(x: %s): %s".format(op, arg, resultFn(arg))) :+ ""
+        args.map(arg =>
+          "%s\n  def %s(x: %s): %s".format(op.doc, op.op, arg, resultFn(arg))) :+ ""
       )
     ).toList
   }
 
-  sealed abstract class AnyValRep(val name: String) {
+  sealed abstract class AnyValRep(val name: String, val repr: Option[String], val javaEquiv: String) {
     def classLines: List[String]
     def objectLines: List[String]
     def commonClassLines = List(
@@ -98,6 +199,8 @@ trait AnyValReps {
       case _ => "0"
     }
 
+    def representation = repr.map(", a " + _).getOrElse("")
+
     def indent(s: String)  = if (s == "") "" else "  " + s
     def indentN(s: String) = s.lines map indent mkString "\n"
 
@@ -108,6 +211,8 @@ trait AnyValReps {
     )
     def interpolations = Map(
       "@name@"      -> name,
+      "@representation@" -> representation,
+      "@javaequiv@" -> javaEquiv,
       "@boxed@"     -> boxedName,
       "@lcname@"    -> lcname,
       "@zero@"      -> zeroRep
@@ -156,8 +261,9 @@ package scala
 """.trim.format(timestampString) + "\n\n")
 
   def classDocTemplate = ("""
-/** `@name@` is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.
+/** `@name@`@representation@ (equivalent to Java's `@javaequiv@` primitive type) is a
+ *  subtype of [[scala.AnyVal]], meaning that instances of `@name@` are not
+ *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.@name@]] => [[scala.runtime.Rich@name@]]
  *  which provides useful non-primitive operations.
@@ -225,14 +331,14 @@ final val MaxValue = @boxed@.MAX_VALUE
 }
 
 class AnyVals extends AnyValReps with AnyValTemplates {
-  object B extends AnyValNum("Byte")
-  object S extends AnyValNum("Short")
-  object C extends AnyValNum("Char")
-  object I extends AnyValNum("Int")
-  object L extends AnyValNum("Long")
-  object F extends AnyValNum("Float")
-  object D extends AnyValNum("Double")
-  object Z extends AnyValRep("Boolean") {
+  object B extends AnyValNum("Byte",    Some("8-bit signed integer"),                  "byte")
+  object S extends AnyValNum("Short",   Some("16-bit signed integer"),                 "short")
+  object C extends AnyValNum("Char",    Some("16-bit unsigned integer"),               "char")
+  object I extends AnyValNum("Int",     Some("32-bit signed integer"),                 "int")
+  object L extends AnyValNum("Long",    Some("64-bit signed integer"),                 "long")
+  object F extends AnyValNum("Float",   Some("32-bit IEEE-754 floating point number"), "float")
+  object D extends AnyValNum("Double",  Some("64-bit IEEE-754 floating point number"), "double")
+  object Z extends AnyValRep("Boolean", None,                                          "boolean") {
     def classLines = """
 /**
  * Negates a Boolean expression.
@@ -328,11 +434,11 @@ def getClass(): Class[Boolean] = sys.error("stub")
 
     def objectLines = interpolate(allCompanions).lines.toList
   }
-  object U extends AnyValRep("Unit") {
+  object U extends AnyValRep("Unit", None, "void") {
     override def classDoc = """
-/** Unit is a member of the value classes, those whose instances are
- *  not represented as objects by the underlying host system.  There is
- *  only one value of type Unit: `()`.
+/** `Unit` (equivalent to Java's `void` type) is a subtype of [[scala.AnyVal]], meaning that
+ *  it is not represented by an object in the underlying runtime system. There is
+ *  only one value of type `Unit`: `()`.
  */
 """
     def classLines  = List(
