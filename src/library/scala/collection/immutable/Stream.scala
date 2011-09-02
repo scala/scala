@@ -18,17 +18,152 @@ import Stream.cons
  *  are only evaluated when they are needed. Here is an example:
  *
  *  {{{
+ *  import scala.math.BigInt
  *  object Main extends App {
  *
- *    def from(n: Int): Stream[Int] =
- *      Stream.cons(n, from(n + 1))
+ *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
  *
- *    def sieve(s: Stream[Int]): Stream[Int] =
- *      Stream.cons(s.head, sieve(s.tail filter { _ % s.head != 0 }))
+ *    fibs take 5 foreach println
+ *  }
  *
- *    def primes = sieve(from(2))
+ *  // prints
+ *  //
+ *  // 0
+ *  // 1
+ *  // 1
+ *  // 2
+ *  // 3
+ *  }}}
  *
- *    primes take 10 print
+ *  The `Stream` class also employs memoization such that previously computed
+ *  values are converted from `Stream` elements to concrete values of type `A`.
+ *  To illustrate, we will alter body of the `fibs` value above and take some
+ *  more values:
+ *
+ *  {{{
+ *  import scala.math.BigInt
+ *  object Main extends App {
+ *
+ *    val fibs: Stream[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
+ *      fibs.tail).map(n => {
+ *        println("Adding %d and %d".format(n._1, n._2))
+ *        n._1 + n._2
+ *      })
+ *
+ *    fibs take 5 foreach println
+ *    fibs take 6 foreach println
+ *  }
+ *
+ *  // prints
+ *  //
+ *  // 0
+ *  // 1
+ *  // Adding 0 and 1
+ *  // 1
+ *  // Adding 1 and 1
+ *  // 2
+ *  // Adding 1 and 2
+ *  // 3
+ *
+ *  // And then prints
+ *  //
+ *  // 0
+ *  // 1
+ *  // 1
+ *  // 2
+ *  // 3
+ *  // Adding 2 and 3
+ *  // 5
+ *  }}}
+ *
+ *  There are a number of subtle points to the above example.
+ *
+ *  - The definition of `fibs` is a `val` not a method.  The memoization of the
+ *  `Stream` requires us to have somewhere to store the information and a `val`
+ *  allows us to do that.
+ *
+ *  - While the `Stream` is actually being modified during access, this does not
+ *  change the notion of its immutability.  Once the values are memoized they do
+ *  not change and values that have yet to be memoized still "exist", they
+ *  simply haven't been realized yet.
+ *
+ *  - One must be cautious of memoization; you can very quickly eat up large
+ *  amounts of memory if you're not careful.  The reason for this is that the
+ *  memoization of the `Stream` creates a structure much like
+ *  [[scala.collection.immutable.List]].  So long as something is holding on to
+ *  the head, the head holds on to the tail, and so it continues recursively.
+ *  If, on the other hand, there is nothing holding on to the head (e.g. we used
+ *  `def` to define the `Stream`) then once it is no longer being used directly,
+ *  it disappears.
+ *  {{{
+ *  // For example, let's build the natural numbers and do some silly iteration
+ *  // over them.
+ *
+ *  // We'll start with a silly iteration
+ *  def loop(s: String, i: Int, iter: Iterator[Int]): Unit = {
+ *    // Stop after 200,000
+ *    if (i < 200001) {
+ *      if (i % 50000 == 0) println(s + i)
+ *      loop(s, iter.next, iter)
+ *    }
+ *  }
+ *
+ *  // Our first Stream definition will be a val definition
+ *  val stream1: Stream[Int] = {
+ *    def loop(v: Int): Stream[Int] = v #:: loop(v + 1)
+ *    loop(0)
+ *  }
+ *
+ *  // Because stream1 is a val, everything that the iterator produces is held
+ *  // by virtue of the fact that the head of the Stream is held in stream1
+ *  val it1 = stream1.iterator
+ *  loop("Iterator1: ", it1.next, it1)
+ *
+ *  // We can redefine this Stream such that all we have is the Iterator left
+ *  // and allow the Stream to be garbage collected as required.  Using a def
+ *  // to provide the Stream ensures that no val is holding onto the head as
+ *  // is the case with stream1
+ *  def stream2: Stream[Int] = {
+ *    def loop(v: Int): Stream[Int] = v #:: loop(v + 1)
+ *    loop(0)
+ *  }
+ *  val it2 = stream2.iterator
+ *  loop("Iterator2: ", it2.next, it2)
+ *
+ *  // And, of course, we don't actually need a Stream at all for such a simple
+ *  // problem.  There's no reason to use a Stream if you don't actually need
+ *  // one.
+ *  val it3 = new Iterator[Int] {
+ *    var i = -1
+ *    def hasNext = true
+ *    def next: Int = { i += 1; i }
+ *  }
+ *  loop("Iterator3: ", it3.next, it3)
+ *  }}}
+ *
+ *  - The fact that `tail` works at all is of interest.  In the definition of
+ *  `fibs` we have an initial `(0, 1, Stream(...))` so `tail` is deterministic.
+ *  If we deinfed `fibs` such that only `0` were concretely known then the act
+ *  of determining `tail` would require the evaluation of `tail` which would
+ *  cause an infinite recursion and stack overflow.  If we define a definition
+ *  where the tail is not initially computable then we're going to have an
+ *  infinite recursion:
+ *  {{{
+ *  // The first time we try to access the tail we're going to need more
+ *  // information which will require us to recurse, which will require us to
+ *  // recurse, which...
+ *  val sov: Stream[Vector[Int]] = Vector(0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
+ *  }}}
+ *
+ *  The definition of `fibs` above creates a larger number of objects than
+ *  necessary depending on how you might want to implement it.  The following
+ *  implementation provides a more "cost effective" implementation due to the
+ *  fact that it has a more direct route to the numbers themselves:
+ *
+ *  {{{
+ *  lazy val fib: Stream[Int] = {
+ *    def loop(h: Int, n: Int): Stream[Int] = h #:: loop(n, h + n)
+ *    loop(1, 1)
  *  }
  *  }}}
  *
@@ -37,6 +172,7 @@ import Stream.cons
  *  @author Martin Odersky, Matthias Zenger
  *  @version 1.1 08/08/03
  *  @since   2.8
+ *  @define naturalsEx def naturalsFrom(i: Int): Stream[Int] = i #:: naturalsFrom(i + 1)
  *  @define Coll Stream
  *  @define coll stream
  *  @define orderDependent
@@ -50,15 +186,33 @@ self =>
 
   import scala.collection.{Traversable, Iterable, Seq, IndexedSeq}
 
-  /** is this stream empty? */
+  /** Indicates whether or not the `Stream` is empty.
+   *
+   * @return `true` if the `Stream` is empty and `false` otherwise.
+   */
   def isEmpty: Boolean
 
-  /** The first element of this stream
+  /** Gives constant time access to the first element of this `Stream`.  Using
+   * the `fibs` example from earlier:
+   *
+   * {{{
+   * println(fibs head)
+   * // prints
+   * // 0
+   * }}}
+   *
+   *  @return The first element of the `Stream`.
    *  @throws Predef.NoSuchElementException if the stream is empty.
    */
   def head: A
 
-  /** A stream consisting of the remaining elements of this stream after the first one.
+  /** A stream consisting of the remaining elements of this stream after the
+   *  first one.
+   *
+   *  Note that this method does not force evaluation of the `Stream` but merely
+   *  returns the lazy result.
+   *
+   *  @return The tail of the `Stream`.
    *  @throws Predef.UnsupportedOperationException if the stream is empty.
    */
   def tail: Stream[A]
@@ -77,7 +231,14 @@ self =>
   def append[B >: A](rest: => TraversableOnce[B]): Stream[B] =
     if (isEmpty) rest.toStream else cons(head, tail append rest)
 
-  /** Forces evaluation of the whole stream and returns it. */
+  /** Forces evaluation of the whole stream and returns it.
+   *
+   * @note Often we use `Stream`s to represent an infinite set or series.  If
+   * that's the case for your particular `Stream` then this function will never
+   * return and will probably crash the VM with an `OutOfMemory` exception.
+   *
+   *  @return The fully realized `Stream`.
+   */
   def force: Stream[A] = {
     var these = this
     while (!these.isEmpty) these = these.tail
@@ -102,6 +263,14 @@ self =>
     loop(this, "")
   }
 
+  /** Returns the length of this `Stream`.
+   *
+   * @note In order to compute the length of the `Stream`, it must first be
+   * fully realized, which could cause the complete evaluation of an infinite
+   * series, assuming that's what your `Stream` represents.
+   *
+   * @return The length of this `Stream`.
+   */
   override def length: Int = {
     var len = 0
     var left = this
@@ -129,12 +298,25 @@ self =>
     loop(this)
   }
 
-  /** Create a new stream which contains all elements of this stream
-   *  followed by all elements of Traversable `that`.
-   *  @note It's subtle why this works. We know that if the target type
-   *  of the Builder That is either a Stream, or one of its supertypes, or undefined,
-   *  then StreamBuilder will be chosen for the implicit.
-   *  we recognize that fact and optimize to get more laziness.
+  /** Create a new stream which contains all elements of this stream followed by
+   * all elements of Traversable `that`.
+   *
+   * @note It's subtle why this works. We know that if the target type of the
+   * [[scala.collection.mutable.Builder]] `That` is either a `Stream`, or one of
+   * its supertypes, or undefined, then `StreamBuilder` will be chosen for the
+   * implicit.  We recognize that fact and optimize to get more laziness.
+   *
+   * @note This method doesn't cause the `Stream` to be fully realized but it
+   * should be noted that using the `++` operator from another collection type
+   * could cause infinite realization of a `Stream`.  For example, referring to
+   * the definition of `fibs` in the preamble, the following would never return:
+   * `List(BigInt(12)) ++ fibs`.
+   *
+   * @tparam B The element type of the returned collection.'''That'''
+   * @param that The [[scala.collection.GenTraversableOnce]] the be contatenated
+   * to this `Stream`.
+   * @return A new collection containing the result of concatenating `this` with
+   * `that`.
    */
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
@@ -149,9 +331,18 @@ self =>
     else super.+:(elem)(bf)
 
   /**
-   * Create a new stream which contains all intermediate results of applying the operator
-   * to subsequent elements left to right.
-   * @note This works because the target type of the Builder That is a Stream.
+   * Create a new stream which contains all intermediate results of applying the
+   * operator to subsequent elements left to right.  `scanLeft` is analogous to
+   * `foldLeft`.
+   *
+   * @note This works because the target type of the
+   * [[scala.collection.mutable.Builder]] `That` is a `Stream`.
+   *
+   * @param z The initial value for the scan.
+   * @param op A function that will apply operations to successive values in the
+   * `Stream` against previous accumulated results.
+   * @return A new collection containing the modifications from the application
+   * of `op`.
    */
   override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     if (isStreamBuilder(bf)) asThat(
@@ -160,12 +351,19 @@ self =>
     )
     else super.scanLeft(z)(op)(bf)
 
-  /** Returns the stream resulting from applying the given function
-   *  `f` to each element of this stream.
+  /** Returns the stream resulting from applying the given function `f` to each
+   * element of this stream.  This returns a lazy `Stream` such that it does not
+   * need to be fully realized.
    *
-   *  @param f function to apply to each element.
-   *  @return  `f(a,,0,,), ..., f(a,,n,,)` if this
-   *           sequence is `a,,0,,, ..., a,,n,,`.
+   * @example {{{
+   * $naturalsEx
+   * naturalsFrom(1).map(_ + 10) take 5 mkString(", ")
+   * // produces: "11, 12, 13, 14, 15"
+   * }}}
+   *
+   * @tparam B The element type of the returned collection '''That'''.
+   * @param f function to apply to each element.
+   * @return  `f(a,,0,,), ..., f(a,,n,,)` if this sequence is `a,,0,,, ..., a,,n,,`.
    */
   override final def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     if (isStreamBuilder(bf)) asThat(
@@ -191,12 +389,37 @@ self =>
     }
   }
 
-  /** Applies the given function `f` to each element of
-   *  this stream, then concatenates the results.
+  /** Applies the given function `f` to each element of this stream, then
+   * concatenates the results.  As with `map` this function does not need to
+   * realize the entire `Stream` but continues to keep it as a lazy `Stream`.
    *
-   *  @param f  the function to apply on each element.
-   *  @param bf $bfinfo
-   *  @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if
+   * @example {{{
+   * // Let's create a Stream of Vectors, each of which contains the
+   * // collection of Fibonacci numbers up to the current value.  We
+   * // can then 'flatMap' that Stream.
+   *
+   * val fibVec: Stream[Vector[Int]] = Vector(0) #:: Vector(0, 1) #:: fibVec.zip(fibVec.tail).map(n => {
+   *   n._2 ++ Vector(n._1.last + n._2.last)
+   * })
+   *
+   * fibVec take 5 foreach println
+   * // prints
+   * // Vector(0)
+   * // Vector(0, 1)
+   * // Vector(0, 1, 1)
+   * // Vector(0, 1, 1, 2)
+   * // Vector(0, 1, 1, 2, 3)
+   *
+   * // If we now want to `flatMap` across that stream by adding 10
+   * // we can see what the series turns into:
+   *
+   * fibVec.flatMap(_.map(_ + 10)) take 15 mkString(", ")
+   * // produces: 10, 10, 11, 10, 11, 11, 10, 11, 11, 12, 10, 11, 11, 12, 13
+   * }}}
+   *
+   * @tparam B The element type of the returned collection '''That'''.
+   * @param f  the function to apply on each element.
+   * @return  `f(a,,0,,) ::: ... ::: f(a,,n,,)` if
    *           this stream is `[a,,0,,, ..., a,,n,,]`.
    */
   override final def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
@@ -221,11 +444,18 @@ self =>
     )
     else super.flatMap(f)(bf)
 
-  /** Returns all the elements of this stream that satisfy the
-   *  predicate `p`. The order of the elements is preserved.
+  /** Returns all the elements of this `Stream` that satisfy the predicate `p`
+   * in a new `Stream` - i.e. it is still a lazy data structure. The order of
+   * the elements is preserved
    *
    *  @param p the predicate used to filter the stream.
    *  @return the elements of this stream satisfying `p`.
+   *
+   * @example {{{
+   * $naturalsEx
+   * naturalsFrom(1)  10 } filter { _ % 5 == 0 } take 10 mkString(", ")
+   * // produces
+   * }}}
    */
   override def filter(p: A => Boolean): Stream[A] = {
     // optimization: drop leading prefix of elems for which f returns false
@@ -275,13 +505,15 @@ self =>
   override def iterator: Iterator[A] = new StreamIterator(self)
 
   /** Apply the given function `f` to each element of this linear sequence
-   *  (while respecting the order of the elements).
+   * (while respecting the order of the elements).
    *
-   *  @param f the treatment to apply to each element.
-   *  @note  Overridden here as final to trigger tail-call optimization, which replaces
-   *         'this' with 'tail' at each iteration. This is absolutely necessary
-   *         for allowing the GC to collect the underlying stream as elements are
-   *         consumed.
+   *  @param f The treatment to apply to each element.
+   *  @note  Overridden here as final to trigger tail-call optimization, which
+   *  replaces 'this' with 'tail' at each iteration. This is absolutely
+   *  necessary for allowing the GC to collect the underlying stream as elements
+   *  are consumed.
+   *  @note  This function will force the realization of the entire stream
+   *  unless the `f` throws an exception.
    */
   @tailrec
   override final def foreach[B](f: A => B) {
@@ -291,8 +523,13 @@ self =>
     }
   }
 
-  /** Stream specialization of foldLeft which allows GC to collect
-   *  along the way.
+  /** Stream specialization of foldLeft which allows GC to collect along the
+   * way.
+   *
+   * @tparam B The type of value being accumulated.
+   * @param z The initial value seeded into the function `op`.
+   * @param op The operation to perform on successive elements of the `Stream`.
+   * @return The accumulated value from successive applications of `op`.
    */
   @tailrec
   override final def foldLeft[B](z: B)(op: (B, A) => B): B = {
@@ -302,6 +539,10 @@ self =>
 
   /** Stream specialization of reduceLeft which allows GC to collect
    *  along the way.
+   *
+   * @tparam B The type of value being accumulated.
+   * @param f The operation to perform on successive elements of the `Stream`.
+   * @return The accumulated value from successive applications of `f`.
    */
   override final def reduceLeft[B >: A](f: (B, A) => B): B = {
     if (this.isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
@@ -316,25 +557,56 @@ self =>
     }
   }
 
-  /** Returns all the elements of this stream that satisfy the
-   *  predicate `p`. The order of the elements is preserved.
+  /** Returns all the elements of this stream that satisfy the predicate `p`
+   * returning of [[scala.Tuple2]] of `Stream`s obeying the partition predicate
+   * `p`. The order of the elements is preserved.
    *
-   *  @param p the predicate used to filter the stream.
-   *  @return the elements of this stream satisfying `p`.
+   * @param p the predicate used to filter the stream.
+   * @return the elements of this stream satisfying `p`.
+   *
+   * @example {{{
+   * $naturalsEx
+   * val parts = naturalsFrom(1) partition { _ % 2 == 0 }
+   * parts._1 take 10 mkString ", "
+   * // produces: "2, 4, 6, 8, 10, 12, 14, 16, 18, 20"
+   * parts._2 take 10 mkString ", "
+   * // produces: "1, 3, 5, 7, 9, 11, 13, 15, 17, 19"
+   * }}}
+   *
    */
   override def partition(p: A => Boolean): (Stream[A], Stream[A]) = (filter(p(_)), filterNot(p(_)))
 
-  /** Returns a stream formed from this stream and the specified stream
-   *  `that` by associating each element of the former with the element at
-   *  the same position in the latter.
+  /** Returns a stream formed from this stream and the specified stream `that`
+   * by associating each element of the former with the element at the same
+   * position in the latter.
    *
-   *  If one of the two streams is longer than the other, its remaining
-   *  elements are ignored.
+   * If one of the two streams is longer than the other, its remaining elements
+   * are ignored.
    *
-   *  @return     `Stream({a,,0,,,b,,0,,}, ...,
-   *              {a,,min(m,n),,,b,,min(m,n),,)}` when
-   *              `Stream(a,,0,,, ..., a,,m,,)
-   *              zip Stream(b,,0,,, ..., b,,n,,)` is invoked.
+   * The return type of this function may not be obvious.  The lazy aspect of
+   * the returned value is different than that of `partition`.  In `partition`
+   * we get back a [[scala.Tuple2]] of two lazy `Stream`s whereas here we get
+   * back a single lazy `Stream` of [[scala.Tuple2]]s where the
+   * [[scala.Tuple2]]'s type signature is `(A1, B)`.
+   *
+   * @tparam A1 The type of the first parameter of the zipped tuple
+   * @tparam B The type of the second parameter of the zipped tuple
+   * @tparam That The type of the returned `Stream`.
+   * @return `Stream({a,,0,,,b,,0,,}, ...,
+   *         {a,,min(m,n),,,b,,min(m,n),,)}` when
+   *         `Stream(a,,0,,, ..., a,,m,,)
+   *         zip Stream(b,,0,,, ..., b,,n,,)` is invoked.
+   *
+   * @example {{{
+   * $naturalsEx
+   * naturalsFrom(1) zip naturalsFrom(2) zip take 5 foreach println
+   * // prints
+   * // (1,2)
+   * // (2,3)
+   * // (3,4)
+   * // (4,5)
+   * // (5,6)
+   * }}}
    */
   override final def zip[A1 >: A, B, That](that: collection.GenIterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
@@ -344,8 +616,27 @@ self =>
     )
     else super.zip(that)(bf)
 
-  /** Zips this iterable with its indices. `s.zipWithIndex` is equivalent to
-   *  `s zip s.indices`
+  /** Zips this iterable with its indices. `s.zipWithIndex` is equivalent to `s
+   * zip s.indices`.
+   *
+   * This method is much like `zip` in that it returns a single lazy `Stream` of
+   * [[scala.Tuple2]].
+   *
+   * @tparam A1 The type of the first element of the [[scala.Tuple2]] in the
+   * resulting stream.
+   * @tparam That The type of the resulting `Stream`.
+   * @return `Stream({a,,0,,,0}, ..., {a,,n,,,n)}`
+   *
+   * @example {{{
+   * $naturalsEx
+   * (naturalsFrom(1) zipWithIndex) take 5 foreach println
+   * // prints
+   * // (1,0)
+   * // (2,1)
+   * // (3,2)
+   * // (4,3)
+   * // (5,4)
+   * }}}
    */
   override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Stream[A], (A1, Int), That]): That =
     this.zip[A1, Int, That](Stream.from(0))
@@ -356,6 +647,14 @@ self =>
    *  the method `toString()`) are separated by the string `sep`. The method will
    *  not force evaluation of undefined elements. A tail of such elements will be
    * represented by a `"?"` instead.
+   *
+   * @param b The [[collection.mutable.StringBuilder]] factory to which we need
+   * to add the string elements.
+   * @param start The prefix of the resulting string (e.g. "Stream(")
+   * @param sep The separator between elements of the resulting string (e.g. ",")
+   * @param end The end of the resulting string (e.g. ")")
+   * @return The original [[collection.mutable.StringBuilder]] containing the
+   * resulting string.
    */
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     def loop(pre: String, these: Stream[A]) {
@@ -381,11 +680,24 @@ self =>
 
   override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
 
-  /** Returns the `n` first elements of this stream, or else the whole
-   *  stream, if it has less than `n` elements.
+  /** Returns the `n` first elements of this `Stream` as another `Stream`, or
+   * else the whole `Stream`, if it has less than `n` elements.
    *
-   *  @param n the number of elements to take.
-   *  @return the `n` first elements of this stream.
+   * The result of `take` is, again, a `Stream` meaning that it also does not
+   * make any needless evaluations of the `Stream` itself, delaying that until
+   * the usage of the resulting `Stream`.
+   *
+   * @param n the number of elements to take.
+   * @return the `n` first elements of this stream.
+   *
+   * @example {{{
+   * $naturalsEx
+   * scala> naturalsFrom(5) take 5
+   * res1: scala.collection.immutable.Stream[Int] = Stream(5, ?)
+   *
+   * scala> naturalsFrom(5) take 5 mkString ", "
+   * // produces: "5, 6, 7, 8, 9"
+   * }}}
    */
   override def take(n: Int): Stream[A] =
     if (n <= 0 || isEmpty) Stream.empty
@@ -397,10 +709,17 @@ self =>
     else tail drop n-1
 
   /** A substream starting at index `from` and extending up to (but not including)
-   *  index `until`.
+   *  index `until`.  This returns a `Stream` that is lazily evaluated.
    *
-   *  @param start   The index of the first element of the returned subsequence
-   *  @param end     The index of the element following the returned subsequence
+   * @param start   The index of the first element of the returned subsequence
+   * @param end     The index of the element following the returned subsequence
+   * @return A new string containing the elements requested from `start` until
+   * `end`.
+   *
+   * @example {{{
+   * naturalsFrom(0) slice(50, 60) mkString ", "
+   * // produces: "50, 51, 52, 53, 54, 55, 56, 57, 58, 59"
+   * }}}
    */
   override def slice(from: Int, until: Int): Stream[A] = {
     val lo = from max 0
@@ -409,6 +728,10 @@ self =>
   }
 
   /** The stream without its last element.
+   *
+   * @return A new `Stream` containing everything but the last element.  If your
+   * `Stream` represents an infinite series, this method will not return.
+   *
    *  @throws `Predef.UnsupportedOperationException` if the stream is empty.
    */
   override def init: Stream[A] =
@@ -417,7 +740,13 @@ self =>
     else cons(head, tail.init)
 
   /** Returns the rightmost `n` elements from this iterable.
+   *
+   * @note Take serious caution here.  If the `Stream` represents an infinite
+   * series then this function ''will not return''.  The right most elements of
+   * an infinite series takes an infinite amount of time to produce.
+   *
    *  @param n the number of elements to take
+   *  @return The last `n` elements from this `Stream`.
    */
   override def takeRight(n: Int): Stream[A] = {
     var these: Stream[A] = this
@@ -429,21 +758,41 @@ self =>
     these
   }
 
-  // there's nothing we can do about dropRight, so we just keep the definition in LinearSeq
+  // there's nothing we can do about dropRight, so we just keep the definition
+  // in LinearSeq
 
-  /** Returns the longest prefix of this stream whose elements satisfy
-   *  the predicate `p`.
+  /** Returns the longest prefix of this `Stream` whose elements satisfy the
+   * predicate `p`.
    *
-   *  @param p the test predicate.
+   * @param p the test predicate.
+   * @return A new `Stream` representing the values that satisfy the predicate
+   * `p`.
+   *
+   * @example {{{
+   + naturalsFrom(0) takeWhile { _ < 5 } mkString ", "
+   * produces: "0, 1, 2, 3, 4"
+   * }}}
    */
   override def takeWhile(p: A => Boolean): Stream[A] =
     if (!isEmpty && p(head)) cons(head, tail takeWhile p)
     else Stream.Empty
 
-  /** Returns the longest suffix of this iterable whose first element
-   *  does not satisfy the predicate `p`.
+  /** Returns the a `Stream` representing the longest suffix of this iterable
+   * whose first element does not satisfy the predicate `p`.
    *
-   *  @param p the test predicate.
+   * @note This method realizes the entire `Stream` beyond the truth value of
+   * the predicate `p`.
+   *
+   * @param p the test predicate.
+   * @return A new `Stream` representing the results of applying `p` to the
+   * oringal `Stream`.
+   *
+   * @example {{{
+   * // Assume we have a Stream that takes the first 20 natural numbers
+   * def naturalsLt50(i: Int): Stream[Int] = i #:: { if (i < 20) naturalsLt50(i * + 1) else Stream.Empty }
+   * naturalsLt50(0) dropWhile { _ < 10 }
+   * // produces: "10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20"
+   * }}}
    */
   override def dropWhile(p: A => Boolean): Stream[A] = {
     var these: Stream[A] = this
@@ -451,15 +800,50 @@ self =>
     these
   }
 
-  /** Builds a new stream from this stream in which any duplicates (wrt to ==) removed.
-   *  Among duplicate elements, only the first one is retained in the result stream
+  /** Builds a new stream from this stream in which any duplicates (wrt to ==)
+   * have been removed.  Among duplicate elements, only the first one is
+   * retained in the resulting `Stream`.
+   *
+   * @return A new `Stream` representing the result of applying distinctness to
+   * the original `Stream`.
+   * @example {{{
+   * // Creates a Stream where every element is duplicated
+   * def naturalsFrom(i: Int): Stream[Int] = i #:: { i #:: naturalsFrom(i + 1) }
+   * naturalsFrom(1) take 6 mkString ", "
+   * // produces: "1, 1, 2, 2, 3, 3"
+   * (naturalsFrom(1) distinct) take 6 mkString ", "
+   * // produces: "1, 2, 3, 4, 5, 6"
+   * }}}
    */
   override def distinct: Stream[A] =
     if (isEmpty) this
     else cons(head, tail.filter(head !=).distinct)
 
   /** Returns a new sequence of given length containing the elements of this
-   *  sequence followed by zero or more occurrences of given elements.
+   * sequence followed by zero or more occurrences of given elements.
+   *
+   * @tparam B The type of the value to pad with.
+   * @tparam That The type contained within the resulting `Stream`.
+   * @param len The number of elements to pad into the `Stream`.
+   * @param elem The value of the type `B` to use for padding.
+   * @return A new `Stream` representing the collection with values padding off
+   * to the end. If your `Stream` represents an infinite series, this method will
+   * not return.
+   * @example {{{
+   * def naturalsFrom(i: Int): Stream[Int] = i #:: { if (i < 5) naturalsFrom(i + 1) else Stream.Empty }
+   * naturalsFrom(1) padTo(10, 0) foreach println
+   * // prints
+   * // 1
+   * // 2
+   * // 3
+   * // 4
+   * // 5
+   * // 0
+   * // 0
+   * // 0
+   * // 0
+   * // 0
+   * }}}
    */
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     def loop(len: Int, these: Stream[A]): Stream[B] =
@@ -471,6 +855,24 @@ self =>
   }
 
   /** A list consisting of all elements of this list in reverse order.
+   *
+   * @note This function must realize the entire `Stream` in order to perform
+   * this operation so if your `Stream` represents an infinite sequence then
+   * this function will never return.
+   *
+   * @return A new `Stream` containing the representing of the original `Stream`
+   * in reverse order.
+   *
+   * @example {{{
+   * def naturalsFrom(i: Int): Stream[Int] = i #:: { if (i < 5) naturalsFrom(i + 1) else Stream.Empty }
+   * (naturalsFrom(1) reverse) foreach println
+   * // prints
+   * // 5
+   * // 4
+   * // 3
+   * // 2
+   * // 1
+   * }}}
    */
   override def reverse: Stream[A] = {
     var result: Stream[A] = Stream.Empty
@@ -484,6 +886,18 @@ self =>
     result
   }
 
+  /** Evaluates and concatenates all elements within the `Stream` into a new
+   * flattened `Stream`.
+   *
+   * @tparam B The type of the elements of the resulting `Stream`.
+   * @return A new `Stream` of type `B` of the flattened elements of `this`
+   * `Stream`.
+   * @example {{{
+   * val sov: Stream[Vector[Int]] = Vector(0) #:: Vector(0, 0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
+   * sov flatten take 10 mkString ", "
+   * // produces: "0, 0, 0, 0, 0, 0, 0, 0, 0, 0"
+   * }}}
+   */
   override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ GenTraversableOnce[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
       if (!t.isEmpty)
