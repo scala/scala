@@ -27,8 +27,8 @@ trait IterableProxyLike[+A, +Repr <: IterableLike[A, Repr] with Iterable[A]]
     with TraversableProxyLike[A, Repr] {
   override def iterator: Iterator[A] = self.iterator
   override def grouped(size: Int): Iterator[Repr] = self.grouped(size)
-  override def sliding[B >: A](size: Int): Iterator[Repr] = self.sliding(size)
-  override def sliding[B >: A](size: Int, step: Int): Iterator[Repr] = self.sliding(size, step)
+  override def sliding(size: Int): Iterator[Repr] = self.sliding(size)
+  override def sliding(size: Int, step: Int): Iterator[Repr] = self.sliding(size, step)
   override def takeRight(n: Int): Repr = self.takeRight(n)
   override def dropRight(n: Int): Repr = self.dropRight(n)
   override def zip[A1 >: A, B, That](that: GenIterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = self.zip[A1, B, That](that)(bf)

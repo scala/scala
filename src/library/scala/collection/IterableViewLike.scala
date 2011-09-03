@@ -110,7 +110,7 @@ trait IterableViewLike[+A,
   override def grouped(size: Int): Iterator[This] =
     self.iterator grouped size map (x => newForced(x).asInstanceOf[This])
 
-  override def sliding[B >: A](size: Int, step: Int): Iterator[This] =
+  override def sliding(size: Int, step: Int): Iterator[This] =
     self.iterator.sliding(size, step) map (x => newForced(x).asInstanceOf[This])
 
   override def stringPrefix = "IterableView"

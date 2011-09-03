@@ -172,8 +172,8 @@ self =>
    *          last and the only element will be truncated if there are
    *          fewer elements than size.
    */
-  def sliding[B >: A](size: Int): Iterator[Repr] = sliding(size, 1)
-  def sliding[B >: A](size: Int, step: Int): Iterator[Repr] =
+  def sliding(size: Int): Iterator[Repr] = sliding(size, 1)
+  def sliding(size: Int, step: Int): Iterator[Repr] =
     for (xs <- iterator.sliding(size, step)) yield {
       val b = newBuilder
       b ++= xs

@@ -27,8 +27,8 @@ trait IterableMethods[+A, +This <: IterableLike[A, This] with Iterable[A]] exten
   def dropRight(n: Int): Iterable[A]
   def grouped(size: Int): Iterator[Iterable[A]]
   def sameElements[B >: A](that: GenIterable[B]): Boolean
-  def sliding[B >: A](size: Int): Iterator[Iterable[A]]
-  def sliding[B >: A](size: Int, step: Int): Iterator[Iterable[A]]
+  def sliding(size: Int): Iterator[Iterable[A]]
+  def sliding(size: Int, step: Int): Iterator[Iterable[A]]
   def takeRight(n: Int): Iterable[A]
   def zipAll[B, A1 >: A, That](that: GenIterable[B], e1: A1, e2: B)(implicit bf: CanBuildFrom[This, (A1, B), That]): That
   def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[This, (A1, Int), That]): That
