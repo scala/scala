@@ -101,8 +101,12 @@ abstract class SymbolTable extends api.Universe
     try op
     finally phase = current
   }
+
   final def afterPhase[T](ph: Phase)(op: => T): T =
     atPhase(ph.next)(op)
+
+  final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+    if (target != null && phase.id > target.id) atPhase(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {

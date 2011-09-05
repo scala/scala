@@ -29,11 +29,13 @@ trait Loaders { self: SymbolTable =>
 //        sym setInfo ptpe
 //      }
 //    }
+
     override def complete(sym: Symbol) = {
       info("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
-      unpickleClass(clazz, module, jClass.forName(clazz.fullName))
+      atPhaseNotLaterThan(picklerPhase) {
+        unpickleClass(clazz, module, jClass.forName(clazz.fullName))
 //      } catch {
 //        case ex: ClassNotFoundException => makePackage()
 //        case ex: NoClassDefFoundError => makePackage()
@@ -48,6 +50,7 @@ trait Loaders { self: SymbolTable =>
           // the clause above and load a collection class such as collection.Iterable.
           // You'll see an error that class `parallel` has the wrong name.
 //      }
+      }
     }
     override def load(sym: Symbol) = complete(sym)
   }
