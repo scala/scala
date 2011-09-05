@@ -2,8 +2,8 @@ t278.scala:5: error: overloaded method value a with alternatives:
   => C.this.A => Unit <and>
   => () => Unit
  does not take type parameters
-  a[A]
-  ^
+  println(a[A])
+          ^
 t278.scala:4: error: method a is defined twice
   def a = (p:A) => ()
       ^

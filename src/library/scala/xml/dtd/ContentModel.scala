@@ -52,7 +52,6 @@ object ContentModel extends WordExp {
       sb append sep
       buildString(z, sb)
     }
-    sb
   }
 
   def buildString(c: ContentModel, sb: StringBuilder): StringBuilder = c match {

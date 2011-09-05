@@ -1,0 +1,7 @@
+stmt-expr-discard.scala:3: error: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    + 2
+    ^
+stmt-expr-discard.scala:4: error: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    - 4
+      ^
+two errors found

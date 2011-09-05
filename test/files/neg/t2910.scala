@@ -29,6 +29,7 @@ object Test {
   {
     lazy val f: Int = x
     val x: Int = f
+    println(x)
   }
   {
     lazy val f: Int = g

@@ -397,11 +397,9 @@ trait MarkupParsers {
     def xScalaPatterns: List[Tree] = escapeToScala(parser.seqPatterns(), "pattern")
 
     def reportSyntaxError(pos: Int, str: String) = parser.syntaxError(pos, str)
-    def reportSyntaxError(str: String) = {
+    def reportSyntaxError(str: String) {
       reportSyntaxError(curOffset, "in XML literal: " + str)
-      val result = ch
-      nextch
-      result
+      nextch()
     }
 
     /** '<' xPattern  ::= Name [S] { xmlPattern | '{' pattern3 '}' } ETag

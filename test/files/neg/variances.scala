@@ -29,7 +29,7 @@ object Covariant {
         def b2a(b : B) : A
         def doit(b : B) = setA(b2a(b))
       }
-      ()
+      println("")
     }
   }
   class Foo3[+A] {

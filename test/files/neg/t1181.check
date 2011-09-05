@@ -1,4 +1,8 @@
+t1181.scala:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+     case (Nil, Nil) => map
+                        ^
 t1181.scala:9: error: missing parameter type
      _ => buildMap(map.updated(keyList.head, valueList.head), keyList.tail, valueList.tail)
      ^
+one warning found
 one error found

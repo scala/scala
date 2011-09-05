@@ -928,7 +928,7 @@ trait Namers { self: Analyzer =>
         // is more compact than: def foo[T, T2](a: T, x: T2)(implicit w: ComputeT2[T, T2])
         // moreover, the latter is not an encoding of the former, which hides type inference of T2, so you can specify T while T2 is purely computed
         val checkDependencies: TypeTraverser = new TypeTraverser {
-          def traverse(tp: Type) = {
+          def traverse(tp: Type) {
             tp match {
               case SingleType(_, sym) =>
                 if (sym.owner == meth && sym.isValueParameter && !(okParams contains sym))
@@ -941,7 +941,6 @@ trait Namers { self: Analyzer =>
               case _ =>
                 mapOver(tp)
             }
-            this
           }
         }
         for(vps <- vparamSymss) {

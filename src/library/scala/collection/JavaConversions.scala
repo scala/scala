@@ -678,18 +678,19 @@ object JavaConversions {
           }
         }
 
-        def remove() = prev match {
-          case Some(k) =>
-            underlying match {
-              case mm: mutable.Map[A, _] =>
-                val v = mm remove k.asInstanceOf[A]
-                prev = None
-                v
-              case _ =>
-                throw new UnsupportedOperationException("remove")
-            }
-          case _ =>
-            throw new IllegalStateException("next must be called at least once before remove")
+        def remove() {
+          prev match {
+            case Some(k) =>
+              underlying match {
+                case mm: mutable.Map[A, _] =>
+                  mm remove k.asInstanceOf[A]
+                  prev = None
+                case _ =>
+                  throw new UnsupportedOperationException("remove")
+              }
+            case _ =>
+              throw new IllegalStateException("next must be called at least once before remove")
+          }
         }
       }
     }

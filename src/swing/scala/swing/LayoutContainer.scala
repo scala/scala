@@ -61,7 +61,6 @@ trait LayoutContainer extends Container.Wrapper {
       val (v, msg) = areValid(l)
       if (!v) throw new IllegalArgumentException(msg)
       add(c, l)
-      this
     }
     def get(c: Component) = Option(constraintsFor(c))
     override def size = peer.getComponentCount

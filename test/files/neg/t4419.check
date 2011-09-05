@@ -1,4 +1,4 @@
 t4419.scala:2: error: forward reference extends over definition of value b
-  { val b = a; val a = 1 }
+  { val b = a; val a = 1 ; println(a) }
             ^
 one error found

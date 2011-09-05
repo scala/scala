@@ -9,8 +9,7 @@ abstract class ManagedSeqStrict[+A]
 {
     override def companion: GenericCompanion[ManagedSeqStrict] = null
 
-    override def foreach[U](f: A => U): Unit =
-        null
+    override def foreach[U](f: A => U): Unit = ()
 }
 
 trait ManagedSeq[+A, +Coll]

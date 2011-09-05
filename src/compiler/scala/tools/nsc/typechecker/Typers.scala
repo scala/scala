@@ -2165,6 +2165,20 @@ trait Typers extends Modes with Adaptations {
                   if (treeInfo.isSelfConstrCall(result) && result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
                     error(stat.pos, "called constructor's definition must precede calling constructor's definition")
                 }
+                result match {
+                  case EmptyTree | Literal(Constant(()))  => ()
+                  case _ =>
+                    if (treeInfo isPureExpr result) {
+                      val sym = result.symbol
+                      if (sym != null && (sym.isModule || sym.isLazy)) {
+                        debuglog("'Pure' but side-effecting expression in statement position: " + result)
+                      }
+                      else context.warning(stat.pos,
+                        "a pure expression does nothing in statement position; " +
+                        "you may be omitting necessary parentheses"
+                      )
+                    }
+                }
                 result
               }
           }

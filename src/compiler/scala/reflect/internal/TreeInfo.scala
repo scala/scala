@@ -68,6 +68,10 @@ abstract class TreeInfo {
   }
 
   /** Is tree a stable and pure expression?
+   *  !!! Clarification on what is meant by "pure" here would be appreciated.
+   *  This implementation allows both modules and lazy vals, which are pure in
+   *  the sense that they always return the same result, but which are also
+   *  side effecting.  So for now, "pure" != "not side effecting".
    */
   def isPureExpr(tree: Tree): Boolean = tree match {
     case EmptyTree
@@ -77,6 +81,10 @@ abstract class TreeInfo {
       true
     case Ident(_) =>
       tree.symbol.isStable
+    // this case is mostly to allow expressions like -5 and +7, but any
+    // member of an anyval should be safely pure
+    case Select(Literal(const), name) =>
+      const.isAnyVal && (const.tpe.member(name) != NoSymbol)
     case Select(qual, _) =>
       tree.symbol.isStable && isPureExpr(qual)
     case TypeApply(fn, _) =>

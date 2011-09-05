@@ -5,5 +5,5 @@ class A[-S](y : S) {
 object Test extends App {
   val a = new A(1)
   val b = a : A[Nothing]
-  b.f.x
+  println(b.f.x)
 }

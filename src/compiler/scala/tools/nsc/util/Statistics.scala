@@ -71,7 +71,6 @@ abstract class StatisticsInfo {
 
   def countNodes(tree: Tree, counts: ClassCounts) {
     for (t <- tree) counts(t.getClass) += 1
-    counts
   }
 
   def showRelative(base: Long)(value: Long) =
