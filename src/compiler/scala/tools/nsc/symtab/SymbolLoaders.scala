@@ -82,8 +82,10 @@ abstract class SymbolLoaders {
   /**
    * A lazy type that completes itself by calling parameter doComplete.
    * Any linked modules/classes or module classes are also initialized.
+   * Todo: consider factoring out behavior from TopClassCompleter/SymbolLoader into
+   * supertrait SymLoader
    */
-  abstract class SymbolLoader extends LazyType {
+  abstract class SymbolLoader extends SymLoader {
 
     /** Load source or class file for `root`, return */
     protected def doComplete(root: Symbol): Unit
@@ -105,6 +107,7 @@ abstract class SymbolLoaders {
         case _ => ()
       })
     }
+
     override def complete(root: Symbol) : Unit = {
       def signalError(ex: Exception) {
         ok = false

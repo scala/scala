@@ -3880,6 +3880,9 @@ trait Typers extends Modes with Adaptations {
             else if (settings.exposeEmptyPackage.value && checkEmptyPackage())
               log("Allowing empty package member " + name + " due to settings.")
             else {
+              val lastTry = missingHook(RootClass, name)
+              if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
+
               if (settings.debug.value) {
                 log(context.imports)//debug
               }

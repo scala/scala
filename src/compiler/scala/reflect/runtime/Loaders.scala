@@ -20,7 +20,7 @@ trait Loaders { self: SymbolTable =>
    *  by unpickling information from the corresponding Java class. If no Java class
    *  is found, a package is created instead.
    */
-  class TopClassCompleter(clazz: Symbol, module: Symbol) extends LazyType {
+  class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader {
 //    def makePackage() {
 //      println("wrong guess; making package "+clazz)
 //      val ptpe = newPackageType(module.moduleClass)
@@ -85,18 +85,24 @@ trait Loaders { self: SymbolTable =>
     }
   }
 
+  def invalidClassName(name: Name) = {
+    val dp = name pos '$'
+    0 < dp && dp < (name.length - 1)
+  }
+
   class PackageScope(pkgClass: Symbol) extends Scope {
+    assert(pkgClass.isType)
     private var negatives = mutable.Set[Name]()
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)
       if (e != null)
         e
-      else if (negatives contains name)
+      else if (invalidClassName(name) || (negatives contains name))
         null
       else try {
         jClass.forName(pkgClass.fullName + "." + name)
         val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-        info("created "+module+"/"+module.moduleClass+" in "+pkgClass+", scope = "+(this map (_.name)))
+        info("created "+module+"/"+module.moduleClass+" in "+pkgClass)
         lookupEntry(name)
       } catch {
         case (_: ClassNotFoundException) | (_: NoClassDefFoundError) =>

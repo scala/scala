@@ -195,12 +195,12 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         val name  = readNameRef()
         val owner = if (atEnd) definitions.RootClass else readSymbolRef()
 
+        def adjust(sym: Symbol) = if (tag == EXTref) sym else sym.moduleClass
+
         def fromName(name: Name) = name.toTermName match {
           case nme.ROOT     => definitions.RootClass
           case nme.ROOTPKG  => definitions.RootPackage
-          case _            =>
-            val s = owner.info.decl(name)
-            if (tag == EXTref) s else s.moduleClass
+          case _            => adjust(owner.info.decl(name))
         }
         def nestedObjectSymbol: Symbol = {
           // If the owner is overloaded (i.e. a method), it's not possible to select the
@@ -227,7 +227,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             // (3) Try as a nested object symbol.
             nestedObjectSymbol orElse {
               // (4) Otherwise, fail.
-              errorMissingRequirement(name, owner)
+              adjust(errorMissingRequirement(name, owner))
             }
           }
         }
@@ -819,9 +819,9 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
       missingHook(owner, name) orElse {
-        throw new MissingRequirementError(
+        MissingRequirementError.notFound(
             "reference " + (if (name.isTypeName) "type " else "value ") +
-            name.decode + " of " + owner.tpe.widen)
+            name.decode + " of " + owner.tpe.widen + "/" +owner.tpe.typeSymbol.ownerChain)
     }
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.

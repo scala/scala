@@ -47,9 +47,9 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       markAbsent(ErrorType)
       if (settings.debug.value) ex.printStackTrace()
       val msg = ex.getMessage()
-      throw new MissingRequirementError(
-        if (msg eq null) "reflection error while loading " + clazz.name
-        else "error while loading " + clazz.name + ", " + msg)
+      MissingRequirementError.signal(
+        (if (msg eq null) "reflection error while loading " + clazz.name
+         else "error while loading " + clazz.name) + ", " + msg)
     }
     try {
       info("unpickling " + clazz + " " + module) //debug
@@ -145,6 +145,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         module.moduleClass setInfo new LazyPolyType(List())
       }
     }
+
     override def complete(sym: Symbol): Unit = {
       load(sym)
       completeRest()
@@ -168,14 +169,12 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       def enter(sym: Symbol, mods: Int) =
         (if (jModifier.isStatic(mods)) module.moduleClass else clazz).info.decls enter sym
 
+      for (jinner <- jclazz.getDeclaredClasses) {
+        println("... entering "+jinner)
+        enter(jclassAsScala(jinner, clazz), jinner.getModifiers)
+      }
+
       pendingLoadActions = { () =>
-
-        println("entering members of "+jclazz)
-
-        for (jinner <- jclazz.getDeclaredClasses) {
-          println("... entering "+jinner)
-          enter(jclassAsScala(jinner, clazz), jinner.getModifiers)
-        }
 
         for (jfield <- jclazz.getDeclaredFields)
           enter(jfieldAsScala(jfield), jfield.getModifiers)
@@ -475,6 +474,9 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val resulttpe = typeToScala(jmeth.getGenericReturnType)
     setMethType(meth, tparams, paramtpes, resulttpe)
     copyAnnotations(meth, jmeth)
+    if ((jmeth.getModifiers & JAVA_ACC_VARARGS) != 0) {
+      meth.setInfo(arrayToRepeated(meth.info))
+    }
     meth
   }
 

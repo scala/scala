@@ -45,7 +45,7 @@ abstract class ICodeReader extends ClassfileParser {
 
     classPath.findSourceFile(name) match {
       case Some(classFile) => parse(classFile, cls)
-      case _               => throw new MissingRequirementError("Could not find bytecode for " + cls)
+      case _               => MissingRequirementError.notFound("Could not find bytecode for " + cls)
     }
 
     (staticCode, instanceCode)

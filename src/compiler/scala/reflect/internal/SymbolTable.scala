@@ -147,12 +147,37 @@ abstract class SymbolTable extends api.Universe
     }
   }
 
+  /** Convert array parameters denoting a repeated parameter of a Java method
+   *  to `JavaRepeatedParamClass` types.
+   */
+  def arrayToRepeated(tp: Type): Type = tp match {
+    case MethodType(params, rtpe) =>
+      val formals = tp.paramTypes
+      assert(formals.last.typeSymbol == definitions.ArrayClass)
+      val method = params.last.owner
+      val elemtp = formals.last.typeArgs.head match {
+        case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.ObjectClass) =>
+          t1 // drop intersection with Object for abstract types in varargs. UnCurry can handle them.
+        case t =>
+          t
+      }
+      val newParams = method.newSyntheticValueParams(
+        formals.init :+ appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp)))
+      MethodType(newParams, rtpe)
+    case PolyType(tparams, rtpe) =>
+      PolyType(tparams, arrayToRepeated(rtpe))
+  }
+
+  abstract class SymLoader extends LazyType {
+    def fromSource = false
+  }
+
   /** if there's a `package` member object in `pkgClass`, enter its members into it. */
   def openPackageModule(pkgClass: Symbol) {
 
     val pkgModule = pkgClass.info.decl(nme.PACKAGEkw)
     def fromSource = pkgModule.rawInfo match {
-      case ltp: LazyType => ltp.fromSource
+      case ltp: SymLoader => ltp.fromSource
       case _ => false
     }
     if (pkgModule.isModule && !fromSource) {

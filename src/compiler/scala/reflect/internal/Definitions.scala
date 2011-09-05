@@ -670,7 +670,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       else {
         if (settings.debug.value) { log(sym.info); log(sym.info.members) }//debug
         missingHook(owner, name) orElse {
-          throw new MissingRequirementError((if (path.isTermName) "object " else "class ")+path)
+          MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path)
         }
       }
     }

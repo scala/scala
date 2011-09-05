@@ -1146,6 +1146,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** A class for this-types of the form <sym>.this.type
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType {
+    assert(sym.isClass)
     //assert(sym.isClass && !sym.isModuleClass || sym.isRoot, sym)
     override def isTrivial: Boolean = sym.isPackageClass
     override def isNotNull = true
@@ -2759,7 +2760,6 @@ A type's typeSymbol should never be inspected directly.
   /** A class representing an as-yet unevaluated type.
    */
   abstract class LazyType extends Type {
-    def fromSource = false
     override def isComplete: Boolean = false
     override def complete(sym: Symbol)
     override def safeToString = "<?>"

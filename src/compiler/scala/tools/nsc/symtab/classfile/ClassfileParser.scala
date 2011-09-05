@@ -437,7 +437,7 @@ abstract class ClassfileParser {
     def loadClassSymbol(name: Name) = {
       val s = name.toString
       val file = global.classPath findSourceFile s getOrElse {
-        throw new MissingRequirementError("class " + s)
+        MissingRequirementError.notFound("class " + s)
       }
       val completer = new global.loaders.ClassfileLoader(file)
       var owner: Symbol = definitions.RootClass
@@ -671,27 +671,6 @@ abstract class ClassfileParser {
         getScope(jflags).enter(sym)
       }
     }
-  }
-
-  /** Convert array parameters denoting a repeated parameter of a Java method
-   *  to `JavaRepeatedParamClass` types.
-   */
-  private def arrayToRepeated(tp: Type): Type = tp match {
-    case MethodType(params, rtpe) =>
-      val formals = tp.paramTypes
-      assert(formals.last.typeSymbol == definitions.ArrayClass)
-      val method = params.last.owner
-      val elemtp = formals.last.typeArgs.head match {
-        case RefinedType(List(t1, t2), _) if (t1.typeSymbol.isAbstractType && t2.typeSymbol == definitions.ObjectClass) =>
-          t1 // drop intersection with Object for abstract types in varargs. UnCurry can handle them.
-        case t =>
-          t
-      }
-      val newParams = method.newSyntheticValueParams(
-        formals.init :+ appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp)))
-      MethodType(newParams, rtpe)
-    case PolyType(tparams, rtpe) =>
-      PolyType(tparams, arrayToRepeated(rtpe))
   }
 
   private def sigToType(sym: Symbol, sig: Name): Type = {

@@ -1817,7 +1817,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     override def toString = compose(
       kindString,
-      if (hasMeaninglessName) owner.nameString else nameString
+      if (hasMeaninglessName) owner.decodedName + idString else nameString
     )
 
     /** String representation of location.
