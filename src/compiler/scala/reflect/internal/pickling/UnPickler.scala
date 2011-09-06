@@ -819,7 +819,6 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
       missingHook(owner, name) orElse {
-        new Error().printStackTrace()
         MissingRequirementError.notFound(
             "reference " + (if (name.isTypeName) "type " else "value ") +
             name.decode + " of " + owner.tpe.widen + "/" +owner.tpe.typeSymbol.ownerChain + "/" + owner.info.members)
