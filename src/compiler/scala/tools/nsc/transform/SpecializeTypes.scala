@@ -346,6 +346,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case ExistentialType(_, res)     => specializedTypeVars(res)
     case AnnotatedType(_, tp, _)     => specializedTypeVars(tp)
     case TypeBounds(lo, hi)          => specializedTypeVars(List(lo, hi))
+    case RefinedType(parents, _)     => parents flatMap specializedTypeVars toSet
     case _                           => Set()
   }
 
