@@ -212,9 +212,7 @@ dl.attributes > dd {
 }
 
 #template .values > h3 {
-  background-color: #315479; /* grayish blue */
-  background: url("valuemembersbg.gif");
-  background-repeat:repeat-x;
+  background: #2C475C url("valuemembersbg.gif") repeat-x bottom left;  /* grayish blue */
   height: 18px;
 }
 
@@ -223,31 +221,18 @@ dl.attributes > dd {
 }
 
 #template .types > h3 {
-  background-color: #316555; /* green */
-  background: url("typebg.gif");
-  background-repeat:repeat-x;
+  background: #316555 url("typebg.gif") repeat-x bottom left;  /* green */
   height: 18px;
 }
 
 #constructors > h3 {
-  background-color: #333;
-  background: url("constructorsbg.gif");
-  background-repeat:repeat-x;
+  background: #4f504f url("constructorsbg.gif") repeat-x bottom left; /* gray */
   height: 18px;
 }
 
 #inheritedMembers > div.parent > h3 {
-  background-color: #dadada;
-/*  border:1px solid #6f6f6f;
-  border-left:0;
-  border-right:0;*/
-  background: url("constructorsbg.gif");
-  background-repeat:repeat-x;
+  background: #dadada url("constructorsbg.gif") repeat-x bottom left; /* gray */
   height: 17px;
-/*  margin-top: 10px;*/
-/*  color: black;
-  text-shadow: white 0px 1px 0px;
-  font-weight: normal;8*/
   font-style: italic;
   font-size: 12pt;
 }
@@ -595,13 +580,11 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #textfilter > .input > input {
-	height: 21px;
+	height: 20px;
 	padding: 1px;
  	font-weight: bold;
 	color: #000000;
-	background-color: white;
-        background: url("filterboxbarbg.png");
-        background-repeat:repeat-x;
+        background: #ffffff url("filterboxbarbg.png") repeat-x top left;
         width: 100%;
 }
 
@@ -664,7 +647,7 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel > div > ol#linearization > li.in > span{
-  color: #4C4C4C;
+  color: #404040;
   float: left;
   padding: 1px 0 1px 10px;
   background: url(selected.png) no-repeat;
@@ -689,7 +672,7 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel > div > ol > li.in > span{
-  color: #4C4C4C;
+  color: #404040;
   float: left;
   padding: 1px 0 1px 10px;
   background: url(selected.png) no-repeat;
@@ -705,7 +688,7 @@ div.fullcomment dl.paramcmts > dd {
 }
 
 #mbrsel > div > ol > li.out > span{
-  color: #4B4B4B;
+  color: #747474;
 /*  background-color: #999; */
   float: left;
   padding: 1px 0 1px 10px;

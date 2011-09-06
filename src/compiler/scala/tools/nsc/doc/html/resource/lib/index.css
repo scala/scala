@@ -85,13 +85,11 @@ h1 {
 }
 
 #textfilter > .input > input {
-	height: 21px;
+	height: 20px;
 	padding: 1px;
  	font-weight: bold;
 	color: #000000;
-	background-color: white;
-        background: url("filterboxbarbg.png");
-        background-repeat:repeat-x;
+        background: #ffffff url("filterboxbarbg.png") repeat-x bottom left;
         width: 100%;
 }
 
