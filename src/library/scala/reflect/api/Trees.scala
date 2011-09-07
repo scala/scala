@@ -231,8 +231,8 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     }
   }
 
-  @inline def containsErrorCheck(ts: List[Tree]): Some[Boolean] = Some(ts.exists(_.containsError()))
-  @inline def containsErrorCheck(t: Tree): Some[Boolean] = Some(t.containsError())
+  @inline final def containsErrorCheck(ts: List[Tree]): Some[Boolean] = Some(ts.exists(_.containsError()))
+  @inline final def containsErrorCheck(t: Tree): Some[Boolean] = Some(t.containsError())
 
   trait AbsErrorTree extends Tree {
     def emit(): Unit

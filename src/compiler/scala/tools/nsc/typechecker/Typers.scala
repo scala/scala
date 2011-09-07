@@ -179,16 +179,6 @@ trait Typers extends Modes with Adaptations {
     def context1 = context
 
     @inline
-    private def logErrorTree(t: Tree, buffer: List[ErrorTree]) = {
-      t match {
-        case et: ErrorTree =>
-          et::buffer
-        case _ =>
-          buffer
-      }
-    }
-
-    @inline
     private def wrapInBlock(errTree: Tree, original: Tree): Tree = Block(errTree, original) setType ErrorType
 
 
@@ -331,7 +321,7 @@ trait Typers extends Modes with Adaptations {
               error(pos, "methods with `*`-parameters cannot be converted to function values");
             */
             if (restpe.isDependent)
-              pending = logErrorTree(DependentMethodTpeConversionToFunctionError(pos, tpe), pending)
+              pending = DependentMethodTpeConversionToFunctionError(pos, tpe)::pending
             checkParamsConvertible(pos, restpe)
           case _ =>
         }
@@ -1230,11 +1220,11 @@ trait Typers extends Modes with Adaptations {
               case Apply(_, _) =>
                 val sarg = treeInfo.firstArgument(scall)
                 if (sarg != EmptyTree && supertpe.typeSymbol != firstParent)
-                  pending = logErrorTree(ConstrArgsInTraitParentTpeError(sarg, firstParent), pending)
+                  pending = ConstrArgsInTraitParentTpeError(sarg, firstParent)::pending
                 if (!supertparams.isEmpty) supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos.focus
               case _ =>
                 if (!supertparams.isEmpty)
-                  pending = logErrorTree(MissingTypeArgumentsParentTpeError(supertpt), pending)
+                  pending = MissingTypeArgumentsParentTpeError(supertpt)::pending
             }
 
             (cstats1, treeInfo.preSuperFields(templ.body)).zipped map {
@@ -1242,7 +1232,7 @@ trait Typers extends Modes with Adaptations {
             }
           case _ =>
             if (!supertparams.isEmpty)
-              pending = logErrorTree(MissingTypeArgumentsParentTpeError(supertpt), pending)
+              pending = MissingTypeArgumentsParentTpeError(supertpt)::pending
         }
 /* experimental: early types as type arguments
         val hasEarlyTypes = templ.body exists (treeInfo.isEarlyTypeDef)
@@ -1283,27 +1273,27 @@ trait Typers extends Modes with Adaptations {
           val psym = parent.tpe.typeSymbol.initialize
           checkClassType(parent, false, true) match {
             case t@Some(err) =>
-              pending = logErrorTree(err, pending)
+              pending = err::pending
             case _ =>
           }
           if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.typeSymbol))
-                pending = logErrorTree(ParentSuperSubclassError(parent.pos, superclazz, ps.head.typeSymbol, psym), pending)
+                pending = ParentSuperSubclassError(parent.pos, superclazz, ps.head.typeSymbol, psym)::pending
             } else {
-              pending = logErrorTree(ParentNotATraitMixinError(parent.pos, psym), pending)
+              pending = ParentNotATraitMixinError(parent.pos, psym)::pending
             }
           }
           if (psym.isFinal)
-            pending = logErrorTree(ParentFinalInheritanceError(parent.pos, psym), pending)
+            pending = ParentFinalInheritanceError(parent.pos, psym)::pending
 
           if (psym.isSealed && !phase.erasedTypes) {
             // AnyVal is sealed, but we have to let the value classes through manually
             if (context.unit.source.file == psym.sourceFile || isValueClass(context.owner))
               psym addChild context.owner
             else
-              pending = logErrorTree(ParentSealedInheritanceError(parent.pos, psym), pending)
+              pending = ParentSealedInheritanceError(parent.pos, psym)::pending
           }
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
@@ -1315,11 +1305,11 @@ trait Typers extends Modes with Adaptations {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
             //Console.println(List.fromArray(context.owner.info.closure));//DEBUG
-            pending = logErrorTree(ParentSelfTypeConformanceError(parent.pos, selfType, parent), pending)
+            pending = ParentSelfTypeConformanceError(parent.pos, selfType, parent)::pending
             if (settings.explaintypes.value) explainTypes(selfType, parent.tpe.typeOfThis)
           }
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
-            pending = logErrorTree(ParentInheritedTwiceError(parent.pos, psym), pending)
+            pending = ParentInheritedTwiceError(parent.pos, psym)::pending
         }
       }
       if (parents.forall(!_.containsError())) {
@@ -1647,21 +1637,21 @@ trait Typers extends Modes with Adaptations {
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1) match {
         case Some(cyclic) =>
-          pending = logErrorTree(cyclic, pending)
+          pending = cyclic::pending
         case _ =>
       }
       if (sym.hasAnnotation(definitions.VolatileAttr)) {
         if (!sym.isMutable)
-          pending = logErrorTree(VolatileValueError(vdef), pending)
+          pending = VolatileValueError(vdef)::pending
         else if (sym.isFinal)
-          pending = logErrorTree(FinalVolatileVarError(vdef), pending)
+          pending = FinalVolatileVarError(vdef)::pending
       }
       val rhs1 =
         if (tpt1.containsError()) {
           vdef.rhs
         } else if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
-            pending = logErrorTree(LocalVarUninitializedError(vdef), pending)
+            pending = LocalVarUninitializedError(vdef)::pending
           vdef.rhs
         } else {
           val tpt2 = if (sym.hasDefault) {
@@ -1840,6 +1830,12 @@ trait Typers extends Modes with Adaptations {
      *  @return     ...
      */
     def typedDefDef(ddef: DefDef): DefDef = {
+      def logErrorTree(t: Tree, errs: List[ErrorTree]) =
+        t match {
+          case errTree: ErrorTree => errTree::errs
+          case _ => errs
+        }
+
       val meth = ddef.symbol
       var pending: List[ErrorTree] = List()
 
@@ -1864,7 +1860,7 @@ trait Typers extends Modes with Adaptations {
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe)) {
-          pending = logErrorTree(StarParamNotLastError(vparam1), pending)
+          pending = StarParamNotLastError(vparam1)::pending
         }
 
       var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
@@ -1876,7 +1872,7 @@ trait Typers extends Modes with Adaptations {
       }
       checkNonCyclic(ddef, tpt1) match {
         case Some(cylic) =>
-          pending = logErrorTree(cylic, pending)
+          pending = cylic::pending
         case _ =>
       }
       ddef.tpt.setType(tpt1.tpe)
@@ -1887,7 +1883,7 @@ trait Typers extends Modes with Adaptations {
               (!meth.owner.isClass ||
                meth.owner.isModuleClass ||
                meth.owner.isAnonOrRefinementClass))
-            pending = logErrorTree(InvalidConstructorDefError(ddef), pending)
+            pending = InvalidConstructorDefError(ddef)::pending
           typed(ddef.rhs)
         } else {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
@@ -1906,14 +1902,14 @@ trait Typers extends Modes with Adaptations {
 
       if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasDefaultFlag) && isRepeatedParamType(ps.last.tpe)))
-        pending = logErrorTree(StarWithDefaultError(meth), pending)
+        pending = StarWithDefaultError(meth)::pending
 
       if (phase.id <= currentRun.typerPhase.id) {
         val allParams = meth.paramss.flatten
         for (p <- allParams) {
           for (n <- p.deprecatedParamName) {
             if (allParams.exists(p1 => p1.name == n || (p != p1 && p1.deprecatedParamName.exists(_ == n))))
-              pending = logErrorTree(DeprecatedParamNameError(p, n), pending)
+              pending = DeprecatedParamNameError(p, n)::pending
           }
         }
       }
@@ -2084,7 +2080,7 @@ trait Typers extends Modes with Adaptations {
       // verify no _* except in last position
       var pending: List[ErrorTree] = List()
       for (Apply(_, xs) <- cdef.pat ; x <- xs dropRight 1 ; if treeInfo isStar x)
-        pending = logErrorTree(StarPositionInPatternError(x.pos), pending)
+        pending = StarPositionInPatternError(x.pos)::pending
 
       val pat0 = typedPattern(cdef.pat, pattpe)
       val pat1: Tree = pending match {
@@ -2813,9 +2809,8 @@ trait Typers extends Modes with Adaptations {
       var hasError: Boolean = false
       var pending: List[ErrorTree] = List()
 
-      @inline
       def reportAnnotationError(errTree: ErrorTree) = {
-        pending = logErrorTree(errTree, pending)
+        pending = errTree::pending
         hasError = true
         annotationError
       }
@@ -3128,7 +3123,7 @@ trait Typers extends Modes with Adaptations {
             if (sym.isAliasType && containsLocal(tp)) apply(tp.normalize)
             else {
               if (pre.isVolatile)
-                pending = logErrorTree(InferTypeWithVolatileTypeSelectionError(tree, tp), pending)
+                pending = InferTypeWithVolatileTypeSelectionError(tree, tp)::pending
               mapOver(tp)
             }
           case _ =>
@@ -3145,7 +3140,7 @@ trait Typers extends Modes with Adaptations {
               localSyms += sym
               remainingSyms += sym
             } else {
-              pending = logErrorTree(AbstractExistentiallyOverParamerizedTpeError(tree, tp), pending)
+              pending = AbstractExistentiallyOverParamerizedTpeError(tree, tp)::pending
             }
           }
         }
@@ -3188,7 +3183,7 @@ trait Typers extends Modes with Adaptations {
       var pending: List[ErrorTree] = List()
       for (vd @ ValDef(_, _, _, _) <- tree.whereClauses)
         if (vd.symbol.tpe.isVolatile)
-          pending = logErrorTree(AbstractionFromVolatileTypeError(vd), pending)
+          pending = AbstractionFromVolatileTypeError(vd)::pending
       val tpt1 = typedType(tree.tpt, mode)
       val (typeParams, tpe) = existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)
       val tt = TypeTree(ExistentialType(typeParams, tpe)) setOriginal tree
