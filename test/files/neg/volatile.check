@@ -1,7 +1,4 @@
-volatile.scala:11: error: Inferred type C.this.D with C.this.E#T contains type selection from volatile type C.this.D with C.this.E
+volatile.scala:11: error: Inferred type C.this.D with C.this.E#T contains type selection from volatile type C.this.D with C.this.E#T
    var sneak = { () => y.x }
                          ^
-volatile.scala:11: error: Inferred type () => C.this.D with C.this.E#T contains type selection from volatile type C.this.D with C.this.E
-   var sneak = { () => y.x }
-                    ^
-two errors found
+one error found

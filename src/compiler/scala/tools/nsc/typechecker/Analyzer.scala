@@ -22,6 +22,7 @@ trait Analyzer extends AnyRef
             with Unapplies
             with NamesDefaults
             with TypeDiagnostics
+            with ErrorTrees
 {
   val global : Global
   import global._

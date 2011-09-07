@@ -135,21 +135,6 @@ trait TypeDiagnostics {
   def alternativesString(tree: Tree) =
     alternatives(tree) map (x => "  " + methodTypeErrorString(x)) mkString ("", " <and>\n", "\n")
 
-  def missingParameterTypeMsg(fun: Tree, vparam: ValDef, pt: Type) = {
-    def anonMessage = (
-      "\nThe argument types of an anonymous function must be fully known. (SLS 8.5)" +
-      "\nExpected type was: " + pt.toLongString
-    )
-    val suffix =
-      if (!vparam.mods.isSynthetic) ""
-      else " for expanded function" + (fun match {
-        case Function(_, Match(_, _)) => anonMessage
-        case _                        => " " + fun
-      })
-
-    "missing parameter type" + suffix
-  }
-
   def treeSymTypeMsg(tree: Tree): String = {
     val sym               = tree.symbol
     def hasParams         = tree.tpe.paramSectionCount > 0
@@ -166,34 +151,6 @@ trait TypeDiagnostics {
     else if (sym.isModule) moduleMessage
     else if (sym.name == nme.apply) applyMessage
     else defaultMessage
-  }
-
-  def notEnoughArgumentsMsg(fun: Tree, missing: List[Symbol]): String = {
-    val suffix = {
-      if (missing.isEmpty) ""
-      else {
-        val keep = missing take 3 map (_.name)
-        ".\nUnspecified value parameter%s %s".format(
-          if (missing.tail.isEmpty) "" else "s",
-          if (missing drop 3 nonEmpty) (keep :+ "...").mkString(", ")
-          else keep.mkString("", ", ", ".")
-        )
-      }
-    }
-
-    "not enough arguments for " + treeSymTypeMsg(fun) + suffix
-  }
-
-  def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
-    def asParams(xs: List[Any]) = xs.mkString("(", ", ", ")")
-
-    def resType   = if (pt isWildcard) "" else " with expected result type " + pt
-    def allTypes  = (alternatives(tree) flatMap (_.paramTypes)) ++ argtpes :+ pt
-    def locals    = alternatives(tree) flatMap (_.typeParams)
-
-    withDisambiguation(locals, allTypes: _*) {
-      treeSymTypeMsg(tree) + msg + asParams(argtpes) + resType
-    }
   }
 
   def disambiguate(ss: List[String]) = ss match {
@@ -405,8 +362,10 @@ trait TypeDiagnostics {
   trait TyperDiagnostics {
     self: Typer =>
 
-    private def contextError(pos: Position, msg: String) = context.error(pos, msg)
-    private def contextError(pos: Position, err: Throwable) = context.error(pos, err)
+    private def contextError(pos: Position, msg: String) { contextError(context, pos, msg) }
+    private def contextError(context0: Analyzer#Context, pos: Position, msg: String) { context0.error(pos, msg) }
+    private def contextError(pos: Position, err: Throwable) { contextError(context, pos, err) }
+    private def contextError(context0: Analyzer#Context, pos: Position, err: Throwable) { context0.error(pos, err) }
 
     object checkDead {
       private var expr: Symbol = NoSymbol
@@ -440,15 +399,19 @@ trait TypeDiagnostics {
       }
     }
 
-    def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
-    def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
+    private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
+    private def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
 
     /** Returns Some(msg) if the given tree is untyped apparently due
      *  to a cyclic reference, and None otherwise.
      */
-    def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
+    private def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
       case ValDef(_, _, tpt, _) if tpt.tpe == null        => "recursive "+sym+" needs type"
       case DefDef(_, _, _, _, tpt, _) if tpt.tpe == null  => List(cyclicAdjective(sym), sym, "needs result type") mkString " "
+    }
+
+    def reportTypeError(pos: Position, ex: TypeError) {
+      reportTypeError(context, pos, ex)
     }
 
     /** Report a type error.
@@ -456,20 +419,26 @@ trait TypeDiagnostics {
      *  @param pos0   The position where to report the error
      *  @param ex     The exception that caused the error
      */
-    def reportTypeError(pos: Position, ex: TypeError) {
+    def reportTypeError(context0: Analyzer#Context, pos: Position, ex: TypeError) {
       if (ex.pos == NoPosition) ex.pos = pos
-      if (!context.reportGeneralErrors) throw ex
+      if (!context0.reportGeneralErrors) throw ex
       if (settings.debug.value) ex.printStackTrace()
 
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
-          contextError(ex.pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
+          contextError(context0, ex.pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
 
           if (sym == ObjectClass)
             throw new FatalError("cannot redefine root "+sym)
         case _ =>
-          contextError(ex.pos, ex)
+          contextError(context0, ex.pos, ex)
       }
     }
+
+    def emitAllErrorTrees(tree: Tree, context: Context) =
+      errorTreesFinder(tree).foreach(_.emit(context))
+
+    def findAllNestedErrors(trees: List[Tree]): List[ErrorTree] =
+      trees.map(errorTreesFinder(_)).flatten
   }
 }

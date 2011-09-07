@@ -304,7 +304,9 @@ trait NamesDefaults { self: Analyzer =>
       // `fun` is typed. `namelessArgs` might be typed or not, if they are types are kept.
       case Apply(fun, namelessArgs) =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
-        if (transformedFun.isErroneous) setError(tree)
+        // Is it safe to replace containsError() with containsErrorOrIsErrorTyped()?
+        if (transformedFun.containsError()) transformedFun
+        else if (transformedFun.isErroneous) NullErrorTree
         else {
           assert(isNamedApplyBlock(transformedFun), transformedFun)
           val NamedApplyInfo(qual, targs, vargss, blockTyper) =
@@ -313,8 +315,7 @@ trait NamesDefaults { self: Analyzer =>
 
           // type the application without names; put the arguments in definition-site order
           val typedApp = doTypedApply(tree, funOnly, reorderArgs(namelessArgs, argPos), mode, pt)
-
-          if (typedApp.tpe.isError) setError(tree)
+          if (typedApp.containsErrorOrIsErrorTyped()) typedApp
           else typedApp match {
             // Extract the typed arguments, restore the call-site evaluation order (using
             // ValDef's in the block), change the arguments to these local values.
@@ -439,7 +440,6 @@ trait NamesDefaults { self: Analyzer =>
    * after named ones.
    */
   def removeNames(typer: Typer)(args: List[Tree], params: List[Symbol]): (List[Tree], Array[Int]) = {
-    import typer.infer.errorTree
 
     // maps indicies from (order written by user) to (order of definition)
     val argPos = (new Array[Int](args.length)) map (x => -1)
@@ -457,10 +457,10 @@ trait NamesDefaults { self: Analyzer =>
             // treat the arg as an assignment of type Unit
             Assign(a.lhs, rhs).setPos(arg.pos)
           } else {
-            errorTree(arg, "unknown parameter name: "+ name)
+            UnknwonParameterNameNamesDefaultError(arg, name)
           }
         } else if (argPos contains pos) {
-          errorTree(arg, "parameter specified twice: "+ name)
+          DoubleParamNamesDefaultError(arg, name)
         } else {
           // for named arguments, check whether the assignment expression would
           // typecheck. if it does, report an ambiguous error.
@@ -481,26 +481,20 @@ trait NamesDefaults { self: Analyzer =>
           val reportAmbiguousErrors = typer.context.reportAmbiguousErrors
           typer.context.reportAmbiguousErrors = false
 
-          var variableNameClash = false
           val typedAssign = try {
             typer.silent(_.typed(arg, subst(paramtpe)))
           } catch {
             // `silent` only catches and returns TypeErrors which are not
             // CyclicReferences.  Fix for #3685
+
+            // Returning CyclicReference error trees is problematic
+            // so we stay with throwing exceptions
             case cr @ CyclicReference(sym, info) if sym.name == param.name =>
               if (sym.isVariable || sym.isGetter && sym.accessed.isVariable) {
                 // named arg not allowed
-                variableNameClash = true
-                typer.context.error(sym.pos,
-                  "%s definition needs %s because '%s' is used as a named argument in its body.".format(
-                    "variable",   // "method"
-                    "type",       // "result type"
-                    sym.name
-                  )
-                )
-                typer.infer.setError(arg)
+                NameClashError(sym, arg)
               }
-              else cr
+              else NullErrorTree
           }
 
           def applyNamedArg = {
@@ -513,28 +507,27 @@ trait NamesDefaults { self: Analyzer =>
           }
 
           val res = typedAssign match {
-            case _: TypeError => applyNamedArg
-
+            case err: NameClashError =>
+              err
+            case _: TypeError =>
+              // TODO: is should be safe to remove this case after error trees are fully implemented
+              applyNamedArg
+            case t: Tree if t.containsErrorOrIsErrorTyped() =>
+              // containsErrorOrIsErrorTyped() needed because of for instance #4041
+              applyNamedArg
             case t: Tree =>
-              if (t.isErroneous && !variableNameClash) {
-                applyNamedArg
-              } else if (t.isErroneous) {
-                t // name clash with variable. error was already reported above.
-              } else {
-                // This throws an exception which is caught in `tryTypedApply` (as it
-                // uses `silent`) - unfortunately, tryTypedApply recovers from the
-                // exception if you use errorTree(arg, ...) and conforms is allowed as
-                // a view (see tryImplicit in Implicits) because it tries to produce a
-                // new qualifier (if the old one was P, the new one will be
-                // conforms.apply(P)), and if that works, it pretends nothing happened.
-                //
-                // To make sure tryTypedApply fails, we would like to pass EmptyTree
-                // instead of arg, but can't do that because eventually setType(ErrorType)
-                // is called, and EmptyTree can only be typed NoType.  Thus we need to
-                // disable conforms as a view...
-                errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
-                               "name of the method and the name of a variable currently in scope.")
-              }
+              // This throws an exception which is caught in `tryTypedApply` (as it
+              // uses `silent`) - unfortunately, tryTypedApply recovers from the
+              // exception if you use errorTree(arg, ...) and conforms is allowed as
+              // a view (see tryImplicit in Implicits) because it tries to produce a
+              // new qualifier (if the old one was P, the new one will be
+              // conforms.apply(P)), and if that works, it pretends nothing happened.
+              //
+              // To make sure tryTypedApply fails, we would like to pass EmptyTree
+              // instead of arg, but can't do that because eventually setType(ErrorType)
+              // is called, and EmptyTree can only be typed NoType.  Thus we need to
+              // disable conforms as a view...
+              AmbiguousReferenceInNamesDefaultError(arg, name)
           }
 
           typer.context.reportAmbiguousErrors = reportAmbiguousErrors
@@ -546,8 +539,9 @@ trait NamesDefaults { self: Analyzer =>
       case _ =>
         argPos(index) = index
         if (positionalAllowed) arg
-        else errorTree(arg, "positional after named argument.")
+        else PositionalAfterNamedNamesDefaultError(arg)
     }
+
     (namelessArgs, argPos)
   }
 

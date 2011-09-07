@@ -17,9 +17,12 @@ import scala.reflect.internal.Flags.TRAIT
 trait Trees extends reflect.internal.Trees { self: Global =>
 
   // --- additional cases --------------------------------------------------------
-
   /** Only used during parsing */
-  case class Parens(args: List[Tree]) extends Tree
+  case class Parens(args: List[Tree]) extends Tree {
+    protected def initErrorCheck {
+      hasErrorTree = containsErrorCheck(args)
+    }
+  }
 
   /** Documented definition, eliminated by analyzer */
   case class DocDef(comment: DocComment, definition: Tree)
@@ -29,6 +32,10 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     override def isDef = definition.isDef
     override def isTerm = definition.isTerm
     override def isType = definition.isType
+
+    protected def initErrorCheck {
+      hasErrorTree = containsErrorCheck(definition)
+    }
   }
 
 
@@ -36,14 +43,26 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    *  eliminated by typecheck (doTypedApply)
    */
   case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
-       extends TermTree
+       extends TermTree {
+    protected def initErrorCheck {
+      hasErrorTree = containsErrorCheck(List(lhs, rhs))
+    }
+  }
 
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends TermTree with RefTree { }
+       extends TermTree with RefTree {
+    protected def initErrorCheck {
+      hasErrorTree = containsErrorCheck(qualifier)
+    }
+  }
 
   /** emitted by typer, eliminated by refchecks */
-  case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
+  case class TypeTreeWithDeferredRefCheck()(val check: () => Either[AbsErrorTree, TypeTree]) extends TypTree {
+    protected def initErrorCheck {
+      hasErrorTree = Some(false)
+    }
+  }
 
   // --- factory methods ----------------------------------------------------------
 

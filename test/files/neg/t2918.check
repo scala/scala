@@ -1,7 +1,7 @@
-t2918.scala:2: error: cyclic aliasing or subtyping involving type A
-  def g[X, A[X] <: A[X]](x: A[X]) = x 
-           ^
 t2918.scala:2: error: A does not take type parameters
-  def g[X, A[X] <: A[X]](x: A[X]) = x 
+  def g[X, A[X] <: A[X]](x: A[X]) = x
                             ^
+t2918.scala:2: error: cyclic aliasing or subtyping involving type A
+  def g[X, A[X] <: A[X]](x: A[X]) = x
+           ^
 two errors found
