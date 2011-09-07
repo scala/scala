@@ -74,10 +74,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     /** Returns a new scope with the same content as this one. */
-    def cloneScope: Scope = mkScope(this.toList)
-
-    /** Returns a new scope of the same class as this one, with initial elements `decls` */
-    def mkScope(decls: List[Symbol] = Nil): Scope = new Scope(decls)
+    def cloneScope: Scope = new Scope(this.toList)
 
     /** is the scope empty? */
     override def isEmpty: Boolean = elems eq null
@@ -299,7 +296,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
     override def filter(p: Symbol => Boolean): Scope =
-      if (!(toList forall p)) mkScope(toList filter p) else this
+      if (!(toList forall p)) new Scope(toList filter p) else this
 
     override def mkString(start: String, sep: String, end: String) =
       toList.map(_.defString).mkString(start, sep, end)
@@ -313,6 +310,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** Create new scope for the members of package `pkg` */
   def newPackageScope(pkgClass: Symbol): Scope = new Scope
+
+  /** Transform scope of members of `owner` using operation `op`
+   *  This is overridden by the reflective compiler to avoid creating new scopes for packages
+   */
+  def scopeTransform(owner: Symbol)(op: => Scope): Scope = op
 
   def newScopeWith(elems: Symbol*) = {
     val scope = newScope

@@ -64,24 +64,25 @@ abstract class Flatten extends InfoTransform {
         typeRef(sym.toplevelClass.owner.thisType, sym, Nil)
       case ClassInfoType(parents, decls, clazz) =>
         var parents1 = parents
-        val decls1 = decls.mkScope()
-        if (clazz.isPackageClass) {
-          atPhase(phase.next)(decls foreach (decls1 enter _))
-        }
-        else {
-          val oldowner = clazz.owner
-          atPhase(phase.next)(oldowner.info)
-          parents1 = parents mapConserve (this)
+        val decls1 = scopeTransform(clazz) {
+          val decls1 = new Scope()
+          if (clazz.isPackageClass) {
+            atPhase(phase.next)(decls foreach (decls1 enter _))
+          } else {
+            val oldowner = clazz.owner
+            atPhase(phase.next)(oldowner.info)
+            parents1 = parents mapConserve (this)
 
-          for (sym <- decls) {
-            if (sym.isTerm && !sym.isStaticModule) {
-              decls1 enter sym
-              if (sym.isModule)
-                sym.moduleClass setFlag LIFTED
+            for (sym <- decls) {
+              if (sym.isTerm && !sym.isStaticModule) {
+                decls1 enter sym
+                if (sym.isModule)
+                  sym.moduleClass setFlag LIFTED
+              } else if (sym.isClass)
+                liftSymbol(sym)
             }
-            else if (sym.isClass)
-              liftSymbol(sym)
           }
+          decls1
         }
         ClassInfoType(parents1, decls1, clazz)
       case MethodType(params, restp) =>

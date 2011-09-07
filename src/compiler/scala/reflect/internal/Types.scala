@@ -3411,7 +3411,7 @@ A type's typeSymbol should never be inspected directly.
       val elems = scope.toList
       val elems1 = mapOver(elems)
       if (elems1 eq elems) scope
-      else scope.mkScope(elems1)
+      else new Scope(elems1)
     }
 
     /** Map this function over given list of symbols */

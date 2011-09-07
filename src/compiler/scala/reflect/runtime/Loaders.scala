@@ -114,12 +114,10 @@ trait Loaders { self: SymbolTable =>
           null
       }
     }
-    override def mkScope(decls: List[Symbol]) = {
-      val result = new PackageScope(pkgClass)
-      decls foreach (result enter)
-      result
-    }
   }
 
   override def newPackageScope(pkgClass: Symbol) = new PackageScope(pkgClass)
+
+  override def scopeTransform(owner: Symbol)(op: => Scope): Scope =
+    if (owner.isPackageClass) owner.info.decls else op
 }
