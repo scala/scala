@@ -41,6 +41,13 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     ""
   )
 
+  val docfooter = StringSetting (
+    "-doc-footer",
+    "footer",
+    "A footer on every ScalaDoc page, by default the EPFL/Typesafe copyright notice. Can be overridden with a custom footer.",
+    ""
+  )
+
   val docUncompilable = StringSetting (
     "-doc-no-compile",
     "path",
@@ -81,7 +88,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
-    docformat, doctitle, docversion, docUncompilable, docsourceurl, docgenerator
+    docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 }

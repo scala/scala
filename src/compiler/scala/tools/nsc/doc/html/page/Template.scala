@@ -168,7 +168,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       </div>
 
       <div id="tooltip" ></div>
-      <div id="footer">Scala programming documentation. Copyright (c) 2003-2011 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
+
+      {
+        if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
+          <div id="footer">Scala programming documentation. Copyright (c) 2003-2011 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
+        else
+          <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
+      }
+
 
     </body>
   }
