@@ -106,6 +106,9 @@ class Scaladoc extends ScalaMatchingTask {
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
 
+  /** The document footer of the generated HTML documentation. */
+  private var docfooter: Option[String] = None
+
   /** The document version, to be added to the title. */
   private var docversion: Option[String] = None
 
@@ -302,6 +305,14 @@ class Scaladoc extends ScalaMatchingTask {
    */
   def setDoctitle(input: String) {
     doctitle = Some(input)
+  }
+
+  /** Sets the <code>docfooter</code> attribute.
+   *
+   *  @param input The value of <code>docfooter</code>.
+   */
+  def setDocfooter(input: String) {
+    docfooter = Some(input)
   }
 
   /** Set the <code>addparams</code> info attribute.
@@ -523,6 +534,7 @@ class Scaladoc extends ScalaMatchingTask {
     if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
     if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
+    if (!docfooter.isEmpty) docSettings.docfooter.value = decodeEscapes(docfooter.get)
     if (!docversion.isEmpty) docSettings.docversion.value = decodeEscapes(docversion.get)
     if (!docsourceurl.isEmpty) docSettings.docsourceurl.value =decodeEscapes(docsourceurl.get)
     if (!docUncompilable.isEmpty) docSettings.docUncompilable.value = decodeEscapes(docUncompilable.get)

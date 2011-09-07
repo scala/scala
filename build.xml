@@ -1409,6 +1409,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/library"
       doctitle="Scala Standard Library"
       docversion="${version.number}"
+      docfooter="epfl" 
       docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
