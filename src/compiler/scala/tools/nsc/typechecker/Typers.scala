@@ -381,7 +381,7 @@ trait Typers extends Modes with Adaptations {
         hiddenSymbols = List()
         val tp1 = apply(tree.tpe)
         if (hiddenSymbols.isEmpty) tree setType tp1
-        else if (hiddenSymbols exists (_.isErroneous)) HiddenSymbolWithError(tree) //setError(tree)
+        else if (hiddenSymbols exists (_.isErroneous)) HiddenSymbolWithError(tree)
         else if (isFullyDefined(pt)) tree setType pt //todo: eliminate
         else if (tp1.typeSymbol.isAnonymousClass) // todo: eliminate
           check(owner, scope, pt, tree setType tp1.typeSymbol.classBound)
@@ -668,10 +668,6 @@ trait Typers extends Modes with Adaptations {
         case ex: TypeError =>
           // TODO: when move to error trees is complete we should
           // be able to just drop this case
-
-          // probably not, since we use it for Unit/List[Tree] as well.
-          // This method in theory will be eliminated/simplified once we are done
-          // with the transformation
           stopCounter(rawTypeFailed, rawTypeStart)
           stopCounter(findMemberFailed, findMemberStart)
           stopCounter(subtypeFailed, subtypeStart)
@@ -1108,7 +1104,7 @@ trait Typers extends Modes with Adaptations {
      */
     def adaptToMemberWithArgs(tree: Tree, qual: Tree, name: Name, mode: Int): Tree = {
       def onError(reportError: => Tree): Tree = {
-        // last change effort
+        // last ditch effort
         context.tree match {
           case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty => // try handling the arguments
             // println("typing args: "+args)
@@ -1688,7 +1684,6 @@ trait Typers extends Modes with Adaptations {
           } else tpt1.tpe
           newTyper(typer1.context.make(vdef, sym)).transformedOrTyped(vdef.rhs, EXPRmode | BYVALmode, tpt2)
         }
-      // flush all pending erros
       val rhs2 = if (pending.nonEmpty) {
         PendingErrors(pending.reverse)
       } else rhs1
@@ -1900,11 +1895,10 @@ trait Typers extends Modes with Adaptations {
 
       if (meth.isPrimaryConstructor && meth.isClassConstructor &&
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors) {
-        // Handle new error trees
-        val pending0 = computeParamAliases(meth.owner, vparamss1, rhs1)
-
-        if (pending0.nonEmpty) {
-          pending = pending0 ::: pending
+        computeParamAliases(meth.owner, vparamss1, rhs1) match {
+          case Nil => ()
+          case pending0 =>
+            pending = pending0 ::: pending
         }
       }
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
