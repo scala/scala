@@ -858,9 +858,11 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     }
 
     val pre = stabilizedType(tree)
+
     val ownerTpe = tree.tpe match {
       case analyzer.ImportType(expr) => expr.tpe
       case null => pre
+      case MethodType(List(), rtpe) => rtpe
       case _ => tree.tpe
     }
 
