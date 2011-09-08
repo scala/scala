@@ -440,9 +440,14 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
    *  elements of the $coll.
    */
   override def hashCode() = {
-    val h = new util.MurmurHash[A](Seq.hashSeed)
-    seq.foreach(h)
-    h.hash
+    import util.MurmurHash3._
+    var n = 0
+    var h = Seq.hashSeed
+    seq foreach {
+      x => h = mix(h, x.##)
+      n += 1
+    }
+    finalizeHash(h, n)
   }
 
   /** The equals method for arbitrary sequences. Compares this sequence to

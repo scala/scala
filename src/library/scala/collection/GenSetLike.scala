@@ -143,6 +143,6 @@ extends GenIterableLike[A, Repr]
   // Calling map on a set drops duplicates: any hashcode collisions would
   // then be dropped before they can be added.
   // Hash should be symmetric in set entries, but without trivial collisions.
-  override def hashCode() = util.MurmurHash.symmetricHash(seq, Set.hashSeed)
+  override def hashCode() = util.MurmurHash3.symmetricHash(seq, Set.hashSeed)
 
 }

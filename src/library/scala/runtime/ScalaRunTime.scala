@@ -174,30 +174,7 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
-  def _hashCode(x: Product): Int = {
-    import scala.util.MurmurHash._
-    val arr =  x.productArity
-    // Case objects have the hashCode inlined directly into the
-    // synthetic hashCode method, but this method should still give
-    // a correct result if passed a case object.
-    if (arr == 0) {
-      x.productPrefix.hashCode
-    }
-    else {
-      var h = startHash(arr)
-      var c = startMagicA
-      var k = startMagicB
-      var i = 0
-      while (i < arr) {
-        val elem = x.productElement(i)
-        h = extendHash(h, elem.##, c, k)
-        c = nextMagicA(c)
-        k = nextMagicB(k)
-        i += 1
-      }
-      finalizeHash(h)
-    }
-  }
+  def _hashCode(x: Product): Int = scala.util.MurmurHash3.productHash(x)
 
   /** A helper for case classes. */
   def typedProductIterator[T](x: Product): Iterator[T] = {
