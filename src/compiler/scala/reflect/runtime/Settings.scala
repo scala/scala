@@ -19,6 +19,7 @@ class Settings extends internal.settings.MutableSettings {
     v = x
   }
 
+  val overrideObjects = new BooleanSetting(false)
   val debug = new BooleanSetting(false)
   val YdepMethTpes = new BooleanSetting(false)
   val Ynotnull = new BooleanSetting(false)

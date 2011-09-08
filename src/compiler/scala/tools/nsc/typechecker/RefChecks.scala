@@ -204,6 +204,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
      *     overrides some other member.
      */
     private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false) {
+      val self = clazz.thisType
+      def classBoundAsSeen(tp: Type) = {
+        tp.typeSymbol.classBound.asSeenFrom(self, tp.typeSymbol.owner)
+      }
 
       case class MixinOverrideError(member: Symbol, msg: String)
 
@@ -223,8 +227,17 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
       }
 
-      val self = clazz.thisType
+      def isConformingObjectOverride(tp1: Type, tp2: Type) = {
+        tp1.typeSymbol.isModuleClass && tp2.typeSymbol.isModuleClass && {
+          val cb1 = classBoundAsSeen(tp1)
+          val cb2 = classBoundAsSeen(tp2)
 
+          (cb1 <:< cb2) && {
+            log("Allowing %s to override %s because %s <:< %s".format(tp1, tp2, cb1, cb2))
+            true
+          }
+        }
+      }
       def isAbstractTypeWithoutFBound(sym: Symbol) = // (part of DEVIRTUALIZE)
         sym.isAbstractType && !sym.isFBounded
 
@@ -248,10 +261,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           rtp1 <:< rtp2
         case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
           rtp1 <:< rtp2
-        case (TypeRef(_, sym, _),  _) if (sym.isModuleClass) =>
+        case (TypeRef(_, sym, _),  _) if sym.isModuleClass =>
           overridesType(NullaryMethodType(tp1), tp2)
         case _ =>
-          tp1 <:< tp2
+          (tp1 <:< tp2) || isConformingObjectOverride(tp1, tp2)
       }
 
       /** Check that all conditions for overriding `other` by `member`
@@ -260,24 +273,43 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol) {
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
         def isRootOrNone(sym: Symbol) = sym == RootClass || sym == NoSymbol
+        def objectOverrideErrorMsg = (
+          "overriding " + other.fullLocationString + " with " + member.fullLocationString + ":\n" +
+          "an overriding object must conform to the overridden object's class bound" +
+          analyzer.foundReqMsg(classBoundAsSeen(member.tpe), classBoundAsSeen(other.tpe))
+        )
+
+        def overrideErrorMsg(msg: String): String = {
+          val isConcreteOverAbstract =
+            (other.owner isSubClass member.owner) && other.isDeferred && !member.isDeferred
+          val addendum =
+            if (isConcreteOverAbstract)
+              ";\n (Note that %s is abstract,\n  and is therefore overridden by concrete %s)".format(
+                infoStringWithLocation(other),
+                infoStringWithLocation(member)
+              )
+            else ""
+
+          "overriding %s;\n %s %s%s".format(
+            infoStringWithLocation(other), infoString(member), msg, addendum
+          )
+        }
+        def emitOverrideError(fullmsg: String) {
+          if (member.owner == clazz) unit.error(member.pos, fullmsg)
+          else mixinOverrideErrors += new MixinOverrideError(member, fullmsg)
+        }
 
         def overrideError(msg: String) {
-          if (noErrorType) {
-            val fullmsg =
-              "overriding "+infoStringWithLocation(other)+";\n "+
-              infoString(member)+" "+msg+
-              (if ((other.owner isSubClass member.owner) && other.isDeferred && !member.isDeferred)
-                ";\n (Note that "+infoStringWithLocation(other)+" is abstract,"+
-               "\n  and is therefore overridden by concrete "+infoStringWithLocation(member)+")"
-               else "")
-            if (member.owner == clazz) unit.error(member.pos, fullmsg)
-            else mixinOverrideErrors += new MixinOverrideError(member, fullmsg)
-          }
+          if (noErrorType)
+            emitOverrideError(overrideErrorMsg(msg))
         }
 
         def overrideTypeError() {
           if (noErrorType) {
-            overrideError("has incompatible type")
+            emitOverrideError(
+              if (member.isModule && other.isModule) objectOverrideErrorMsg
+              else overrideErrorMsg("has incompatible type")
+            )
           }
         }
 
@@ -331,11 +363,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
           if (!isOverrideAccessOK) {
             overrideAccessError()
-          } else if (other.isClass || other.isModule) {
-            overrideError("cannot be used here - classes and objects cannot be overridden");
-          } else if (!other.isDeferred && (member.isClass || member.isModule)) {
-            overrideError("cannot be used here - classes and objects can only override abstract types");
-          } else if (other hasFlag FINAL) { // (1.2)
+          } else if (other.isClass) {
+            overrideError("cannot be used here - class definitions cannot be overridden");
+          } else if (!other.isDeferred && member.isClass) {
+            overrideError("cannot be used here - classes can only override abstract types");
+          } else if (other.isFinal) { // (1.2)
             overrideError("cannot override final member");
           } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE | SYNTHETIC))) { // (1.3), SYNTHETIC because of DEVIRTUALIZE
             overrideError("needs `override' modifier");
@@ -1006,9 +1038,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         else if (isWarnable) {
           if (isNew(qual)) // new X == y
             nonSensibleWarning("a fresh object", false)
-          else if (isNew(args.head) && (receiver.isFinal || isReferenceOp))   // object X ; X == new Y
+          else if (isNew(args.head) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
             nonSensibleWarning("a fresh object", false)
-          else if (receiver.isFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+          else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
             if (isEitherNullable)
               nonSensible("non-null ", false)
             else

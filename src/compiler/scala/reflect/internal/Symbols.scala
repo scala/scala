@@ -90,20 +90,31 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       newMethod(pos, name).setFlag(LABEL)
     final def newConstructor(pos: Position) =
       newMethod(pos, nme.CONSTRUCTOR)
-    final def newModule(pos: Position, name: TermName, clazz: ClassSymbol) =
-      new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
-        .setModuleClass(clazz)
-    final def newModule(name: TermName, clazz: Symbol, pos: Position = NoPosition) =
-      new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
-        .setModuleClass(clazz.asInstanceOf[ClassSymbol])
-    final def newModule(pos: Position, name: TermName) = {
-      val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
-      m.setModuleClass(new ModuleClassSymbol(m))
+
+    private def finishModule(m: ModuleSymbol, clazz: ClassSymbol): ModuleSymbol = {
+      // Top-level objects can be automatically marked final, but others
+      // must be explicitly marked final if overridable objects are enabled.
+      val flags = if (isPackage || !settings.overrideObjects.value) MODULE | FINAL else MODULE
+      m setFlag flags
+      m setModuleClass clazz
+      m
     }
-    final def newPackage(pos: Position, name: TermName) = {
+    private def finishModule(m: ModuleSymbol): ModuleSymbol =
+      finishModule(m, new ModuleClassSymbol(m))
+
+    final def newModule(pos: Position, name: TermName, clazz: ClassSymbol): ModuleSymbol =
+      finishModule(new ModuleSymbol(this, pos, name), clazz)
+
+    final def newModule(name: TermName, clazz: Symbol, pos: Position = NoPosition): ModuleSymbol =
+      newModule(pos, name, clazz.asInstanceOf[ClassSymbol])
+
+    final def newModule(pos: Position, name: TermName): ModuleSymbol =
+      finishModule(new ModuleSymbol(this, pos, name))
+
+    final def newPackage(pos: Position, name: TermName): ModuleSymbol = {
       assert(name == nme.ROOT || isPackageClass)
       val m = newModule(pos, name).setFlag(JAVA | PACKAGE)
-      m.moduleClass.setFlag(JAVA | PACKAGE)
+      m.moduleClass setFlag (JAVA | PACKAGE)
       m
     }
     final def newThisSym(pos: Position) =
@@ -522,8 +533,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isPackageClass || isModuleClass && isStatic
 
     /** Is this symbol effectively final? I.e, it cannot be overridden */
-    final def isEffectivelyFinal: Boolean = isFinal || isTerm && (
-      hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE))
+    final def isEffectivelyFinal: Boolean = (
+         isFinal
+      || hasModuleFlag && !settings.overrideObjects.value
+      || isTerm && (
+             isPrivate
+          || isLocal
+          || owner.isClass && owner.isEffectivelyFinal
+      )
+    )
 
     /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
     final def isLocal: Boolean = owner.isTerm
@@ -2314,7 +2332,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private var module: Symbol = null
     def this(module: TermSymbol) = {
       this(module.owner, module.pos, module.name.toTypeName)
-      setFlag(module.getFlag(ModuleToClassFlags) | MODULE | FINAL)
+      setFlag(module.getFlag(ModuleToClassFlags) | MODULE)
       sourceModule = module
     }
     override def sourceModule = module

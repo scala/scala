@@ -243,7 +243,7 @@ class Flags extends ModifierFlags {
   final val ConstrFlags: Long   = JAVA
 
   /** Module flags inherited by their module-class */
-  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA
+  final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA | FINAL
 
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER

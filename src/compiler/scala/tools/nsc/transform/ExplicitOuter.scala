@@ -150,7 +150,7 @@ abstract class ExplicitOuter extends InfoTransform
         val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
         decls1 enter (clazz.newOuterAccessor(clazz.pos) setInfo MethodType(Nil, restpe))
         if (hasOuterField(clazz)) { //2
-          val access = if (clazz.isFinal) PRIVATE | LOCAL else PROTECTED
+          val access = if (clazz.isEffectivelyFinal) PRIVATE | LOCAL else PROTECTED
           decls1 enter (
             clazz.newValue(clazz.pos, nme.OUTER_LOCAL)
             setFlag (SYNTHETIC | PARAMACCESSOR | access)
@@ -215,7 +215,7 @@ abstract class ExplicitOuter extends InfoTransform
       val outerFld =
         if (outerAcc.owner == currentClass &&
             base.tpe =:= currentClass.thisType &&
-            outerAcc.owner.isFinal)
+            outerAcc.owner.isEffectivelyFinal)
           outerField(currentClass) suchThat (_.owner == currentClass)
         else
           NoSymbol

@@ -93,7 +93,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   // Experimental Extensions
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions.") .
-                          withPostSetHook(set => List(YdepMethTpes, YmethodInfer) foreach (_.value = set.value)) //YvirtClasses,
+                          withPostSetHook(set => List(YdepMethTpes, YmethodInfer, overrideObjects) foreach (_.value = set.value)) //YvirtClasses,
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
@@ -108,6 +108,7 @@ trait ScalaSettings extends AbsScalaSettings
   /**
    * -Y "Private" settings
    */
+  val overrideObjects = BooleanSetting ("-Yoverride-objects", "Allow member objects to be overridden.")
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options.")
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")

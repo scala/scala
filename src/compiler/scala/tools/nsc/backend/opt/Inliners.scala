@@ -139,13 +139,18 @@ abstract class Inliners extends SubComponent {
           icodes.load(concreteMethod.enclClass)
 
         def isAvailable = icodes available concreteMethod.enclClass
-        def isCandidate = isClosureClass(receiver) || concreteMethod.isEffectivelyFinal || receiver.isFinal
+        def isCandidate = (
+             isClosureClass(receiver)
+          || concreteMethod.isEffectivelyFinal
+          || receiver.isEffectivelyFinal
+        )
         def isApply     = concreteMethod.name == nme.apply
-        def isCountable = !(isClosureClass(receiver)
-                || isApply
-                || isMonadicMethod(concreteMethod)
-                || receiver.enclosingPackage == definitions.RuntimePackage
-                )   // only count non-closures
+        def isCountable = !(
+             isClosureClass(receiver)
+          || isApply
+          || isMonadicMethod(concreteMethod)
+          || receiver.enclosingPackage == definitions.RuntimePackage
+        )   // only count non-closures
 
         debuglog("Treating " + i
               + "\n\treceiver: " + receiver
@@ -260,8 +265,12 @@ abstract class Inliners extends SubComponent {
      */
     def lookupImplFor(sym: Symbol, clazz: Symbol): Symbol = {
       // TODO: verify that clazz.superClass is equivalent here to clazz.tpe.parents(0).typeSymbol (.tpe vs .info)
-      def needsLookup = (clazz != NoSymbol) && (clazz != sym.owner) && !sym.isEffectivelyFinal && clazz.isFinal
-
+      def needsLookup = (
+           (clazz != NoSymbol)
+        && (clazz != sym.owner)
+        && !sym.isEffectivelyFinal
+        && clazz.isEffectivelyFinal
+      )
       def lookup(clazz: Symbol): Symbol = {
         // println("\t\tlooking up " + meth + " in " + clazz.fullName + " meth.owner = " + meth.owner)
         if (sym.owner == clazz || isBottomType(clazz)) sym

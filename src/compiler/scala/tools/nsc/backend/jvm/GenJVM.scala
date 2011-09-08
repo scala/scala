@@ -1901,7 +1901,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     // avoid breaking proxy software which depends on subclassing, we avoid
     // insisting on their finality in the bytecode.
     val finalFlag = (
-         ((sym.rawflags & Flags.FINAL) != 0)
+         ((sym.rawflags & (Flags.FINAL | Flags.MODULE)) != 0)
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
     )

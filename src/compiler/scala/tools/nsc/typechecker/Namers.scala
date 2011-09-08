@@ -93,7 +93,7 @@ trait Namers { self: Analyzer =>
       else 0l
 
     def moduleClassFlags(moduleFlags: Long) =
-      (moduleFlags & ModuleToClassFlags) | FINAL | inConstructorFlag
+      (moduleFlags & ModuleToClassFlags) | inConstructorFlag
 
     def updatePosFlags(sym: Symbol, pos: Position, flags: Long): Symbol = {
       debuglog("overwriting " + sym)
@@ -244,9 +244,9 @@ trait Namers { self: Analyzer =>
     /** Enter a module symbol. The tree parameter can be either a module definition
      *  or a class definition */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
-      // .pos, mods.flags | MODULE | FINAL, name
+      // .pos, mods.flags | MODULE, name
       var m: Symbol = context.scope.lookup(tree.name)
-      val moduleFlags = tree.mods.flags | MODULE | FINAL
+      val moduleFlags = tree.mods.flags | MODULE
       if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
