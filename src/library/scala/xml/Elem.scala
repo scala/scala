@@ -8,18 +8,17 @@
 
 package scala.xml
 
-/** This singleton object contains the apply and unapplySeq methods for
+/** This singleton object contains the `apply` and `unapplySeq` methods for
  *  convenient construction and deconstruction. It is possible to deconstruct
  *  any `Node` instance (that is not a `SpecialNode` or a `Group`) using the
  *  syntax `case Elem(prefix, label, attribs, scope, child @ _*) => ...`
  *
  *  Copyright 2008 Google Inc. All Rights Reserved.
- *
  *  @author Burak Emir <bqe@google.com>
  */
 object Elem {
   def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
-    new Elem(prefix,label,attributes,scope,child:_*)
+    new Elem(prefix, label, attributes, scope, child:_*)
 
   def unapplySeq(n: Node) = n match {
     case _: SpecialNode | _: Group  => None
@@ -36,8 +35,8 @@ object Elem {
  *  @param scope the scope containing the namespace bindings
  *  @param child the children of this node
  *
- * Copyright 2008 Google Inc. All Rights Reserved.
- * @author Burak Emir <bqe@google.com>
+ *  Copyright 2008 Google Inc. All Rights Reserved.
+ *  @author Burak Emir <bqe@google.com>
  */
 class Elem(
   override val prefix: String,
@@ -60,10 +59,12 @@ extends Node with Serializable
   //  setting namespace scope if necessary
   //  cleaning adjacent text nodes if necessary
 
-  override def basisForHashCode: Seq[Any] = prefix :: label :: attributes :: child.toList
+  override protected def basisForHashCode: Seq[Any] =
+    prefix :: label :: attributes :: child.toList
 
-  /** Returns a new element with updated attributes, resolving namespace uris from this element's scope.
-   *  See MetaData.update for details.
+  /** Returns a new element with updated attributes, resolving namespace uris
+   *  from this element's scope. See MetaData.update for details.
+   *
    *  @param  updates MetaData with new and updated attributes
    *  @return a new symbol with updated attributes
    */

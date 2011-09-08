@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.xml
 
 /** A hack to group XML nodes in one node for output.
@@ -21,11 +20,13 @@ final case class Group(val nodes: Seq[Node]) extends Node {
     case x: Group => true
     case _        => false
   }
+
   override def strict_==(other: Equality) = other match {
     case Group(xs)  => nodes sameElements xs
     case _          => false
   }
-  override def basisForHashCode = nodes
+
+  override protected def basisForHashCode = nodes
 
   /** Since Group is very much a hack it throws an exception if you
    *  try to do anything with it.

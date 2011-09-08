@@ -13,8 +13,8 @@ package scala.xml
  * @author Burak Emir
  * @param text the text contained in this node, may not contain "--"
  */
-case class Comment(commentText: String) extends SpecialNode
-{
+case class Comment(commentText: String) extends SpecialNode {
+
   def label = "#REM"
   override def text = ""
   final override def doCollectNamespaces = false
@@ -26,5 +26,5 @@ case class Comment(commentText: String) extends SpecialNode
   /** Appends &quot;<!-- text -->&quot; to this string buffer.
    */
   override def buildString(sb: StringBuilder) =
-    sb append ("<!--" + commentText + "-->")
+    sb append "<!--" append commentText append "-->"
 }

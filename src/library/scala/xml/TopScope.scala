@@ -13,8 +13,8 @@ package scala.xml
  *  for the &quot;xml&quot; prefix which is bound to
  *  &quot;http://www.w3.org/XML/1998/namespace&quot;
  */
-object TopScope extends NamespaceBinding(null, null, null)
-{
+object TopScope extends NamespaceBinding(null, null, null) {
+
   import XML.{ xml, namespace }
 
   override def getURI(prefix1: String): String =
@@ -24,6 +24,7 @@ object TopScope extends NamespaceBinding(null, null, null)
     if (uri1 == namespace) xml else null
 
   override def toString() = ""
+
   override def buildString(stop: NamespaceBinding) = ""
   override def buildString(sb: StringBuilder, ignore: NamespaceBinding) = {}
 }

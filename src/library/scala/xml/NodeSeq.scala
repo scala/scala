@@ -60,11 +60,14 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
 
     !these.hasNext && !those.hasNext
   }
-  def basisForHashCode: Seq[Any] = theSeq
+
+  protected def basisForHashCode: Seq[Any] = theSeq
+
   override def canEqual(other: Any) = other match {
     case _: NodeSeq   => true
     case _            => false
   }
+
   override def strict_==(other: Equality) = other match {
     case x: NodeSeq => (length == x.length) && (theSeq sameElements x.theSeq)
     case _          => false

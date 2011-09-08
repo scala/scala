@@ -75,7 +75,8 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent] {
     }
 
     // this is a dummy to satisfy MarkupHandler's API
-    // memory usage optimization return one <ignore/> for top level to satisfy MarkupParser.document() otherwise NodeSeq.Empty
+    // memory usage optimization return one <ignore/> for top level to satisfy
+    // MarkupParser.document() otherwise NodeSeq.Empty
     private var ignoreWritten = false
     final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
       if (level == 1 && !ignoreWritten) {ignoreWritten = true; <ignore/> } else NodeSeq.Empty
@@ -111,7 +112,7 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   val MaxQueueSize = -1
 
   def interruptibly[T](body: => T): Option[T] = try Some(body) catch {
-    case _: InterruptedException    => Thread.currentThread.interrupt() ; None
+    case _: InterruptedException    => Thread.currentThread.interrupt(); None
     case _: ClosedChannelException  => None
   }
 
@@ -133,12 +134,14 @@ trait ProducerConsumerIterator[T >: Null] extends Iterator[T] {
   // consumer/iterator interface - we need not synchronize access to buffer
   // because we required there to be only one consumer.
   def hasNext = !eos && (buffer != null || fillBuffer)
+
   def next() = {
     if (eos) throw new NoSuchElementException("ProducerConsumerIterator")
     if (buffer == null) fillBuffer
 
     drainBuffer
   }
+
   def available() = isElement(buffer) || isElement(queue.peek)
 
   private def drainBuffer() = {

@@ -168,7 +168,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   }
   private def createNewPath(getter: () => Option[Path], setter: (Option[Path]) => Unit) = {
     if (getter().isEmpty)
-      setter(Some(new Path(getProject())))
+      setter(Some(new Path(getProject)))
 
     getter().get.createPath()
   }
@@ -381,7 +381,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @return The destination as a file. */
   protected def getDestination: File =
     if (destination.isEmpty) buildError("Member 'destination' is empty.")
-    else existing(getProject().resolveFile(destination.get.toString))
+    else existing(getProject resolveFile destination.get.toString)
 
   /** Gets the value of the `sourcepath` attribute in a
    *  Scala-friendly form.
@@ -416,14 +416,14 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @param name A relative or absolute path to the file as a string.
    *  @return     A file created from the name. */
   protected def nameToFile(name: String): File =
-    existing(getProject().resolveFile(name))
+    existing(getProject resolveFile name)
 
   /** Tests if a file exists and prints a warning in case it doesn't. Always
    *  returns the file, even if it doesn't exist.
    *  @param file A file to test for existance.
    *  @return     The same file. */
   protected def existing(file: File): File = {
-    if (!file.exists())
+    if (!file.exists)
       log("Element '" + file.toString + "' does not exist.",
           Project.MSG_WARN)
     file
@@ -433,7 +433,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @param path A path to convert.
    *  @return     A string-representation of the path like `a.jar:b.jar`. */
   protected def asString(path: List[File]): String =
-    path.map(asString).mkString(File.pathSeparator)
+    path.map(asString) mkString File.pathSeparator
 
   /** Transforms a file into a Scalac-readable string.
    *  @param path A file to convert.
@@ -447,9 +447,9 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   protected def newSettings(error: String=>Unit): Settings =
     new Settings(error)
+
   protected def newGlobal(settings: Settings, reporter: Reporter) =
     new Global(settings, reporter)
-
 
 /*============================================================================*\
 **                           The big execute method                           **
@@ -473,13 +473,25 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     var javaOnly = true
 
     def getOriginFiles(originDir: File) = {
-      val includedFiles = getDirectoryScanner(originDir).getIncludedFiles()
-      val javaFiles = includedFiles filter (_ endsWith ".java")
-      val scalaFiles = {
+      val scanner = getDirectoryScanner(originDir)
+      val includedFiles = scanner.getIncludedFiles
+      val includedJavaFiles = includedFiles filter (_ endsWith ".java")
+      val includedScalaFiles = {
         val xs = includedFiles filter (_ endsWith ".scala")
         if (force) xs
         else new SourceFileScanner(this).restrict(xs, originDir, destination.get, mapper)
       }
+
+      val excludedFiles = scanner.getExcludedFiles
+      val excludedJavaFiles = excludedFiles filter (_ endsWith ".java")
+      val excludedScalaFiles = {
+        val xs = excludedFiles filter (_ endsWith ".scala")
+        if (force) xs
+        else new SourceFileScanner(this).restrict(xs, originDir, destination.get, mapper)
+      }
+
+      val javaFiles = includedJavaFiles diff excludedJavaFiles
+      val scalaFiles = includedScalaFiles diff excludedScalaFiles
 
       javaOnly = javaOnly && (scalaFiles.length == 0)
       val list = (scalaFiles ++ javaFiles).toList
@@ -590,7 +602,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
       // Write all settings to a temporary file
       def writeSettings() : File = {
-        def escapeArgument(arg : String) = if(arg.matches(".*\\s.*")) ('"' + arg + '"') else arg
+        def escapeArgument(arg : String) = if (arg matches ".*\\s.*") '"' + arg + '"' else arg
         val file = File.createTempFile("scalac-ant-",".args")
         file.deleteOnExit()
         val out = new PrintWriter(new BufferedWriter(new FileWriter(file)))

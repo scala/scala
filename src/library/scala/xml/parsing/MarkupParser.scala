@@ -52,7 +52,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   // variables, values
   //
 
-  var curInput: Source = input
+  protected var curInput: Source = input
 
   // See ticket #3720 for motivations.
   private class WithLookAhead(underlying: Source) extends Source {
@@ -249,7 +249,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       case _:EntityRef => // todo: fix entities, shouldn't be "special"
         reportSyntaxError("no entity references allowed here");
       case s:SpecialNode =>
-        if (s.toString().trim().length > 0) //non-empty text nodes not allowed
+        if (s.toString.trim().length > 0) //non-empty text nodes not allowed
           elemCount += 2
       case m:Node =>
         elemCount += 1
@@ -266,7 +266,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   }
 
   /** append Unicode character to name buffer*/
-  protected def putChar(c: Char) = cbuf.append(c)
+  protected def putChar(c: Char) = cbuf append c
 
   /** As the current code requires you to call nextch once manually
    *  after construction, this method formalizes that suboptimal reality.
@@ -276,13 +276,14 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     this
   }
 
-  def ch_returning_nextch = { val res = ch ; nextch ; res }
-  def mkProcInstr(position: Int, name: String, text: String): NodeSeq =
-    handle.procInstr(position, name, text)
+  protected def ch_returning_nextch: Char = { val res = ch; nextch(); res }
 
-  def mkAttributes(name: String, pscope: NamespaceBinding) =
+  def mkAttributes(name: String, pscope: NamespaceBinding): AttributesType =
     if (isNameStart (ch)) xAttributes(pscope)
     else (Null, pscope)
+
+  def mkProcInstr(position: Int, name: String, text: String): ElementType =
+    handle.procInstr(position, name, text)
 
   /** this method tells ch to get the next character when next called */
   def nextch() {
@@ -577,17 +578,17 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    *
    *  precondition: `xEmbeddedBlock == false` (we are not in a scala block)
    */
-  def xText: String = {
-    var exit = false;
+  private def xText: String = {
+    var exit = false
     while (! exit) {
-      putChar(ch);
-      val opos = pos;
-      nextch;
+      putChar(ch)
+      val opos = pos
+      nextch
 
       exit = eof || ( ch == '<' ) || ( ch == '&' )
     }
-    val str = cbuf.toString();
-    cbuf.length = 0;
+    val str = cbuf.toString
+    cbuf.length = 0
     str
   }
 
@@ -627,7 +628,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       nextch
     }
     nextch
-    val str = cbuf.toString()
+    val str = cbuf.toString
     cbuf.length = 0
     str
   }
@@ -796,7 +797,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
           cbuf.append(ch)
         nextch
       }
-      val atpe = cbuf.toString()
+      val atpe = cbuf.toString
       cbuf.length = 0
 
       val defdecl: DefaultDecl = ch match {
@@ -880,7 +881,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     val notat = xName
     xSpace
     val extID = if (ch == 'S') {
-      externalID();
+      externalID()
     }
     else if (ch == 'P') {
       /** PublicID (without system, only used in NOTATION) */
@@ -893,7 +894,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
         systemLiteral()
       else
         null;
-      new PublicID(pubID, sysID);
+      new PublicID(pubID, sysID)
     } else {
       reportSyntaxError("PUBLIC or SYSTEM expected");
       sys.error("died parsing notationdecl")

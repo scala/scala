@@ -8,11 +8,11 @@
 
 package scala.xml
 
-/**
- * This object provides methods ...
+/** This singleton object contains the `unapplySeq` method for
+ *  convenient deconstruction.
  *
- * @author  Burak Emir
- * @version 1.0
+ *  @author  Burak Emir
+ *  @version 1.0
  */
 object Node {
   /** the constant empty attribute sequence */
@@ -129,7 +129,10 @@ abstract class Node extends NodeSeq {
     case x: Node    => true
     case _          => false
   }
-  override def basisForHashCode: Seq[Any] = prefix :: label :: attributes :: nonEmptyChildren.toList
+
+  override protected def basisForHashCode: Seq[Any] =
+    prefix :: label :: attributes :: nonEmptyChildren.toList
+
   override def strict_==(other: Equality) = other match {
     case _: Group => false
     case x: Node  =>

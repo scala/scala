@@ -37,18 +37,22 @@ case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBindin
     if (_uri == uri) prefix else parent getPrefix _uri
 
   override def toString(): String = sbToString(buildString(_, TopScope))
+
   override def canEqual(other: Any) = other match {
     case _: NamespaceBinding  => true
     case _                    => false
   }
+
   override def strict_==(other: Equality) = other match {
     case x: NamespaceBinding  => (prefix == x.prefix) && (uri == x.uri) && (parent == x.parent)
     case _                    => false
   }
+
   def basisForHashCode: Seq[Any] = List(prefix, uri, parent)
 
   def buildString(stop: NamespaceBinding): String = sbToString(buildString(_, stop))
-  def buildString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
+
+  def buildString(sb: StringBuilder, stop: NamespaceBinding) {
     if (this eq stop) return    // contains?
 
     val s = " xmlns%s=\"%s\"".format(

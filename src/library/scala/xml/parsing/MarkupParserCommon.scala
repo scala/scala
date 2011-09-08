@@ -176,7 +176,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    */
   def ch: Char
   def nextch(): Unit
-  def ch_returning_nextch: Char
+  protected def ch_returning_nextch: Char
   def eof: Boolean
 
   // def handle: HandleType
@@ -212,7 +212,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     else xHandleError(ch, "whitespace expected")
 
   /** Apply a function and return the passed value */
-  def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
+  def returning[T](x: T)(f: T => Unit): T = { f(x); x }
 
   /** Execute body with a variable saved and restored after execution */
   def saving[A, B](getter: A, setter: A => Unit)(body: => B): B = {

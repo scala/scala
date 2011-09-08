@@ -139,7 +139,7 @@ abstract class MetaData extends Iterable[MetaData] with Equality with Serializab
     case m: MetaData  => this.asAttrMap == m.asAttrMap
     case _            => false
   }
-  def basisForHashCode: Seq[Any] = List(this.asAttrMap)
+  protected def basisForHashCode: Seq[Any] = List(this.asAttrMap)
 
   /** Returns an iterator on attributes */
   def iterator: Iterator[MetaData] = Iterator.single(this) ++ next.iterator
@@ -194,17 +194,17 @@ abstract class MetaData extends Iterable[MetaData] with Equality with Serializab
   final def get(uri: String, scope: NamespaceBinding, key: String): Option[Seq[Node]] =
     Option(apply(uri, scope, key))
 
-  def toString1(): String = sbToString(toString1)
+  protected def toString1(): String = sbToString(toString1)
 
   // appends string representations of single attribute to StringBuilder
-  def toString1(sb: StringBuilder): Unit
+  protected def toString1(sb: StringBuilder): Unit
 
   override def toString(): String = sbToString(buildString)
 
   def buildString(sb: StringBuilder): StringBuilder = {
-    sb.append(' ')
+    sb append ' '
     toString1(sb)
-    next.buildString(sb)
+    next buildString sb
   }
 
   /**

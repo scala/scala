@@ -66,7 +66,8 @@ object Equality {
 import Equality._
 
 trait Equality extends scala.Equals {
-  def basisForHashCode: Seq[Any]
+  protected def basisForHashCode: Seq[Any]
+
   def strict_==(other: Equality): Boolean
   def strict_!=(other: Equality) = !strict_==(other)
 
