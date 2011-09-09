@@ -37,7 +37,7 @@ abstract class TreeBrowsers {
   def create(): SwingBrowser = new SwingBrowser();
 
   trait ValidTree extends Tree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(false)
     }
   }

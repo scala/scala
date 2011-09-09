@@ -10,7 +10,7 @@ trait ErrorTrees {
 
     def emit(context: Context): Unit
     def emit(): Unit = emit(typer.context.asInstanceOf[Context])
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(true)
     }
     def exception: TypeError = null // Once we get rid of all thrown type errors (apart from cyclic), remove

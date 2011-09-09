@@ -318,7 +318,7 @@ abstract class Power(
 
   class RichReplString(s: String) {
     // pretty print the string
-    def pp { intp.prettyPrint(s) }
+    def pp() { intp.prettyPrint(s) }
     // make an url out of the string
     def u: URL = (
       if (s contains ":") new URL(s)
@@ -333,7 +333,7 @@ abstract class Power(
   }
   class RichReplURL(url: URL)(implicit codec: Codec) {
     def slurp(): String = io.Streamable.slurp(url)
-    def pp { intp prettyPrint slurp() }
+    def pp() { intp prettyPrint slurp() }
   }
 
   protected trait Implicits1 {

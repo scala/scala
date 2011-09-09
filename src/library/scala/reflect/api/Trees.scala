@@ -222,7 +222,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     // more testing
     //protected var hasErrorTree: List[ErrorTree] = null
     protected var hasErrorTree: Option[Boolean] = None
-    protected def initErrorCheck: Unit
+    protected def initErrorCheck(): Unit
 
     def containsError(): Boolean = {
       if (hasErrorTree.isEmpty)
@@ -279,7 +279,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
       if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
     override def isEmpty = true
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(false)
     }
   }
@@ -308,7 +308,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     def name = pid.name
     def mods = Modifiers()
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(stats)
     }
   }
@@ -323,7 +323,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class ClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template)
        extends ImplDef {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(tparams ++ List(impl))
     }
   }
@@ -333,7 +333,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
        extends ImplDef {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(impl)
     }
   }
@@ -350,7 +350,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    *  vals only in having the MUTABLE flag set in their Modifiers.)
    */
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(tpt, rhs))
     }
   }
@@ -359,7 +359,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(tparams ++ vparamss.flatten ++ List(tpt, rhs))
     }
   }
@@ -368,7 +368,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class TypeDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(tparams ++ List(rhs))
     }
   }
@@ -389,7 +389,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(params ++ List(rhs))
     }
   }
@@ -412,7 +412,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class Import(expr: Tree, selectors: List[ImportSelector])
        extends SymTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(expr)
     }
   }
@@ -437,7 +437,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     //      def bar  // owner is local dummy
     //   }
     // System.err.println("TEMPLATE: " + parents)
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(self::parents:::body)
     }
   }
@@ -445,7 +445,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Block of expressions (semicolon separated expressions) */
   case class Block(stats: List[Tree], expr: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(stats ++ List(expr))
     }
   }
@@ -455,7 +455,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class CaseDef(pat: Tree, guard: Tree, body: Tree)
        extends Tree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(pat, guard, body))
     }
   }
@@ -465,7 +465,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class Alternative(trees: List[Tree])
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(trees)
     }
   }
@@ -473,7 +473,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Repetition of pattern, eliminated by explicitouter */
   case class Star(elem: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(elem)
     }
   }
@@ -485,14 +485,14 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class Bind(name: Name, body: Tree)
        extends DefTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(body)
     }
   }
 
   case class UnApply(fun: Tree, args: List[Tree])
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(fun::args)
     }
   }
@@ -501,7 +501,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class ArrayValue(elemtpt: Tree, elems: List[Tree])
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(elemtpt::elems)
     }
   }
@@ -509,7 +509,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Anonymous function, eliminated by analyzer */
   case class Function(vparams: List[ValDef], body: Tree)
        extends TermTree with SymTree  {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(vparams ++ List(body))
     }
   }
@@ -519,7 +519,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Assignment */
   case class Assign(lhs: Tree, rhs: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(lhs, rhs))
     }
   }
@@ -527,7 +527,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Conditional expression */
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(cond, thenp, elsep))
     }
   }
@@ -545,7 +545,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class Match(selector: Tree, cases: List[CaseDef])
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(selector::cases)
     }
   }
@@ -553,7 +553,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Return expression */
   case class Return(expr: Tree)
        extends TermTree with SymTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(expr)
     }
   }
@@ -561,7 +561,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
 
   case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(block::catches ++ List(finalizer))
     }
   }
@@ -569,7 +569,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Throw expression */
   case class Throw(expr: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(expr)
     }
   }
@@ -580,7 +580,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    *  @param tpt    a class type
    */
   case class New(tpt: Tree) extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(tpt)
     }
   }
@@ -588,7 +588,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Type annotation, eliminated by explicit outer */
   case class Typed(expr: Tree, tpt: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(expr, tpt))
     }
   }
@@ -611,7 +611,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(fun::args)
     }
   }
@@ -622,7 +622,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     override def symbol: Symbol = fun.symbol
     override def symbol_=(sym: Symbol) { fun.symbol = sym }
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(fun::args)
     }
   }
@@ -639,7 +639,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class ApplyDynamic(qual: Tree, args: List[Tree])
        extends TermTree with SymTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(qual::args)
     }
   }
@@ -652,7 +652,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     override def symbol: Symbol = qual.symbol
     override def symbol_=(sym: Symbol) { qual.symbol = sym }
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(qual)
     }
   }
@@ -660,7 +660,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Self reference */
   case class This(qual: TypeName)
         extends TermTree with SymTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       // TODO should check qual name, symbol?
       hasErrorTree = Some(false)
     }
@@ -671,14 +671,14 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Designator <qualifier> . <name> */
   case class Select(qualifier: Tree, name: Name)
        extends RefTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(qualifier)
     }
   }
 
   /** Identifier <name> */
   case class Ident(name: Name) extends RefTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(false)
     }
   }
@@ -690,7 +690,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
         extends TermTree {
     assert(value ne null)
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(false)
     }
   }
@@ -704,7 +704,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    *  an AnnotatedType.
    */
   case class Annotated(annot: Tree, arg: Tree) extends Tree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(annot, arg))
     }
   }
@@ -713,7 +713,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class SingletonTypeTree(ref: Tree)
         extends TypTree {
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(ref)
     }
   }
@@ -721,7 +721,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** Type selection <qualifier> # <name>, eliminated by RefCheck */
   case class SelectFromTypeTree(qualifier: Tree, name: TypeName)
        extends TypTree with RefTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(qualifier)
     }
   }
@@ -730,7 +730,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class CompoundTypeTree(templ: Template)
        extends TypTree {
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(templ)
     }
   }
@@ -741,7 +741,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     override def symbol: Symbol = tpt.symbol
     override def symbol_=(sym: Symbol) { tpt.symbol = sym }
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(tpt::args)
     }
   }
@@ -749,7 +749,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class TypeBoundsTree(lo: Tree, hi: Tree)
        extends TypTree {
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(lo, hi))
     }
   }
@@ -757,7 +757,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
        extends TypTree {
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(tpt::whereClauses)
     }
   }
@@ -800,7 +800,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
       setType(tp)
     }
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(errorCause != null)
     }
   }

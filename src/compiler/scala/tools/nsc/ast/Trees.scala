@@ -19,7 +19,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(args)
     }
   }
@@ -33,7 +33,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     override def isTerm = definition.isTerm
     override def isType = definition.isType
 
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(definition)
     }
   }
@@ -44,7 +44,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    */
   case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
        extends TermTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(List(lhs, rhs))
     }
   }
@@ -52,14 +52,14 @@ trait Trees extends reflect.internal.Trees { self: Global =>
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
        extends TermTree with RefTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = containsErrorCheck(qualifier)
     }
   }
 
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => Either[AbsErrorTree, TypeTree]) extends TypTree {
-    protected def initErrorCheck {
+    protected def initErrorCheck() {
       hasErrorTree = Some(false)
     }
   }
