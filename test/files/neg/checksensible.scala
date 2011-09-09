@@ -19,7 +19,7 @@ class RefEqTest {
   null eq new AnyRef
 }
 
-// 11 warnings
+// 13 warnings
 class EqEqValTest {
   var c = 0
 
@@ -29,7 +29,8 @@ class EqEqValTest {
   1 == "abc"
   1 == ("abc": Any) // doesn't warn because an Any may be a boxed Int
   1 == (1: Any)     // as above
-  "abc" == 1        // doesn't generally warn since String defines an equals method, but can chatty warn
+  "abc" == 1        // warns because the lub of String and Int is Any
+  Some(1) == 1      // as above
 
   new AnyRef == 1
   1 == new AnyRef                 // doesn't warn because it could be...

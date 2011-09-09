@@ -28,64 +28,70 @@ checksensible.scala:27: error: comparing values of types Int and Unit using `=='
 checksensible.scala:29: error: comparing values of types Int and java.lang.String using `==' will always yield false
   1 == "abc"
     ^
-checksensible.scala:34: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:32: error: java.lang.String and Int are unrelated: they will most likely never compare equal
+  "abc" == 1        // warns because the lub of String and Int is Any
+        ^
+checksensible.scala:33: error: Some[Int] and Int are unrelated: they will most likely never compare equal
+  Some(1) == 1      // as above
+          ^
+checksensible.scala:35: error: comparing a fresh object using `==' will always yield false
   new AnyRef == 1
              ^
-checksensible.scala:37: error: comparing values of types Int and java.lang.Boolean using `==' will always yield false
+checksensible.scala:38: error: comparing values of types Int and java.lang.Boolean using `==' will always yield false
   1 == (new java.lang.Boolean(true))
     ^
-checksensible.scala:39: error: comparing values of types Int and Boolean using `!=' will always yield true
+checksensible.scala:40: error: comparing values of types Int and Boolean using `!=' will always yield true
   1 != true
     ^
-checksensible.scala:40: error: comparing values of types Unit and Boolean using `==' will always yield false
+checksensible.scala:41: error: comparing values of types Unit and Boolean using `==' will always yield false
   () == true
      ^
-checksensible.scala:41: error: comparing values of types Unit and Unit using `==' will always yield true
+checksensible.scala:42: error: comparing values of types Unit and Unit using `==' will always yield true
   () == ()
      ^
-checksensible.scala:42: error: comparing values of types Unit and Unit using `==' will always yield true
+checksensible.scala:43: error: comparing values of types Unit and Unit using `==' will always yield true
   () == println
      ^
-checksensible.scala:44: error: comparing values of types Int and Unit using `!=' will always yield true
+checksensible.scala:45: error: comparing values of types Int and Unit using `!=' will always yield true
   (1 != println)
      ^
-checksensible.scala:45: error: comparing values of types Int and Symbol using `!=' will always yield true
+checksensible.scala:46: error: comparing values of types Int and Symbol using `!=' will always yield true
   (1 != 'sym)
      ^
-checksensible.scala:51: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:52: error: comparing a fresh object using `==' will always yield false
   ((x: Int) => x + 1) == null
                       ^
-checksensible.scala:52: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:53: error: comparing a fresh object using `==' will always yield false
   Bep == ((_: Int) + 1)
       ^
-checksensible.scala:54: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:55: error: comparing a fresh object using `==' will always yield false
   new Object == new Object
              ^
-checksensible.scala:55: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:56: error: comparing a fresh object using `==' will always yield false
   new Object == "abc"
              ^
-checksensible.scala:56: error: comparing a fresh object using `!=' will always yield true
+checksensible.scala:57: error: comparing a fresh object using `!=' will always yield true
   new Exception() != new Exception()
                   ^
-checksensible.scala:59: error: comparing values of types Int and Null using `==' will always yield false
+checksensible.scala:60: error: comparing values of types Int and Null using `==' will always yield false
   if (foo.length == null) "plante" else "plante pas"
                  ^
-checksensible.scala:64: error: comparing values of types Bip and Bop using `==' will always yield false
+checksensible.scala:65: error: comparing values of types Bip and Bop using `==' will always yield false
   (x1 == x2)
       ^
-checksensible.scala:74: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
+checksensible.scala:75: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
   c3 == z1
      ^
-checksensible.scala:75: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
+checksensible.scala:76: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
   z1 == c3
      ^
-checksensible.scala:76: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
+checksensible.scala:77: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
   z1 != c3
      ^
-checksensible.scala:77: error: comparing values of types EqEqRefTest.this.C3 and java.lang.String using `!=' will always yield true
+checksensible.scala:78: error: comparing values of types EqEqRefTest.this.C3 and java.lang.String using `!=' will always yield true
   c3 != "abc"
      ^
-checksensible.scala:88: error: comparing values of types Unit and Int using `!=' will always yield true
+checksensible.scala:89: error: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-30 errors found
+32 errors found

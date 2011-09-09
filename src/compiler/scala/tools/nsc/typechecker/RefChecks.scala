@@ -966,10 +966,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           case _ => false
         }
         def underlyingClass(tp: Type): Symbol = {
-          var sym = tp.widen.typeSymbol
-          while (sym.isAbstractType)
-            sym = sym.info.bounds.hi.widen.typeSymbol
-          sym
+          val sym = tp.widen.typeSymbol
+          if (sym.isAbstractType) underlyingClass(sym.info.bounds.hi)
+          else sym
         }
         val actual   = underlyingClass(args.head.tpe)
         val receiver = underlyingClass(qual.tpe)
@@ -1009,8 +1008,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def nonSensible(pre: String, alwaysEqual: Boolean) =
           nonSensibleWarning(pre+"values of types "+typesString, alwaysEqual)
 
-        def unrelatedTypes() =
-          unit.warning(pos, typesString + " are unrelated: should not compare equal")
+        def unrelatedTypes() = {
+          val msg = if (name == nme.EQ || name == nme.eq)
+                      "never compare equal" else "always compare unequal"
+          unit.warning(pos, typesString + " are unrelated: they will most likely " + msg)
+        }
 
         if (nullCount == 2)
           nonSensible("", true)  // null == null
@@ -1047,13 +1049,14 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               nonSensible("", false)
           }
         }
-        // Warning on types without a parental relationship.  Uncovers a lot of
-        // bugs, but not always right to warn.
-        if (false) {
-          if (nullCount == 0 && possibleNumericCount < 2 && !(receiver isSubClass actual) && !(actual isSubClass receiver))
+
+        if (nullCount == 0 && possibleNumericCount < 2) {
+          if (actual isSubClass receiver) ()
+          else if (receiver isSubClass actual) ()
+          // warn only if they have no common supertype below Object
+          else if (ObjectClass.tpe <:< global.lub(List(actual.tpe, receiver.tpe)))
             unrelatedTypes()
         }
-
       case _ =>
     }
 
