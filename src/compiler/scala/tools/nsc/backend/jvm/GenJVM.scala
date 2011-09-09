@@ -210,12 +210,38 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val emitLines  = debugLevel >= 2
     val emitVars   = debugLevel >= 3
 
+    /** For given symbol return a symbol corresponding to a class that should be declared as inner class.
+     *
+     *  For example:
+     *  class A {
+     *    class B
+     *    object C
+     *  }
+     *
+     *  then method will return NoSymbol for A, the same symbol for A.B (corresponding to A$B class) and A$C$ symbol
+     *  for A.C.
+     */
+    private def innerClassSymbolFor(s: Symbol): Symbol =
+      if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
+
     override def javaName(sym: Symbol): String = {
-      val isInner = sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass
-      // TODO: something atPhase(currentRun.flattenPhase.prev) which accounts for
-      // being nested in parameterized classes (if we're going to selectively flatten.)
-      if (isInner && !innerClassBuffer(sym))
-        innerClassBuffer += sym
+      /**
+       * Checks if given symbol corresponds to inner class/object and add it to innerClassBuffer
+       *
+       * Note: This method is called recursively thus making sure that we add complete chain
+       * of inner class all until root class.
+       */
+      def collectInnerClass(s: Symbol): Unit = {
+        // TODO: something atPhase(currentRun.flattenPhase.prev) which accounts for
+        // being nested in parameterized classes (if we're going to selectively flatten.)
+        val x = innerClassSymbolFor(s)
+        val isInner = x.isClass && !x.rawowner.isPackageClass
+        if (isInner) {
+          innerClassBuffer += x
+          collectInnerClass(x.rawowner)
+        }
+      }
+      collectInnerClass(sym)
 
       super.javaName(sym)
     }
@@ -736,13 +762,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
           null
         else
-          innerSym.rawname.toString
+          innerSym.rawname + innerSym.moduleSuffix
 
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase.next) {
-        for (sym <- List(clasz.symbol, clasz.symbol.linkedClassOfClass) ; m <- sym.info.decls ; if m.isClass)
-          if (!innerClassBuffer(m))
-            innerClassBuffer += m
+        for (sym <- List(clasz.symbol, clasz.symbol.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
+          innerClassBuffer += m
       }
 
       val allInners = innerClassBuffer.toList
