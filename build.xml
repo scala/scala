@@ -617,7 +617,7 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${build-quick.dir}/classes/continuations-plugin"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="aux.libs"/>
       </compilationpath>
     </scalacfork>
     <copy
@@ -1129,7 +1129,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/continuations-plugin"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
+        <path refid="aux.libs"/>
       </compilationpath>
     </scalacfork>
     <copy
