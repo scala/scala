@@ -171,6 +171,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (settings.debug.value && (settings.log containsPhase globalPhase))
       inform("[log " + phase + "] " + msg)
   }
+  // Warnings issued only under -Ydebug.  For messages which should reach
+  // developer ears, but are not adequately actionable by users.
+  @inline final override def debugwarn(msg: => String) {
+    if (settings.debug.value)
+      warning(msg)
+  }
+
   private def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (currentTime - start) + "ms"
 

@@ -284,9 +284,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         for (member <- mixinClass.info.decls) {
           if (isConcreteAccessor(member)) {
             if (isOverriddenAccessor(member, clazz.info.baseClasses)) {
-              if (settings.debug.value)
-                println("!!! is overridden val: "+member)
-            } else {
+              debugwarn("!!! is overridden val: "+member.fullLocationString)
+            }
+            else {
               // mixin field accessors
               val member1 = addMember(
                 clazz,

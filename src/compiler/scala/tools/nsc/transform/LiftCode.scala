@@ -409,6 +409,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
      *  would only emerge under more complicated conditions such as #3855.
      *  I'll try to figure it all out, but if someone who already knows the
      *  whole story wants to fill it in, that too would be great.
+     *
+     *  XXX I found this had been cut and pasted between LiftCode and UnCurry,
+     *  and seems to be running in both.
      */
     private val freeLocalsTraverser = new Traverser {
       var currentMethod: Symbol = NoSymbol
@@ -430,7 +433,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
         /** A method call with a by-name parameter represents escape. */
         case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
           traverse(fn)
-          (fn.symbol.paramss.head, args).zipped foreach { (param, arg) =>
+          for ((param, arg) <- treeInfo.zipMethodParamsAndArgs(tree)) {
             if (param.tpe != null && isByNameParamType(param.tpe))
               withEscaping(traverse(arg))
             else

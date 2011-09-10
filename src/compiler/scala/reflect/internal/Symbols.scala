@@ -871,7 +871,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
     catch {
       case ex: CyclicReference =>
-        if (settings.debug.value) println("... trying to complete "+this)
+        debugwarn("... hit cycle trying to complete " + this.fullLocationString)
         throw ex
     }
 

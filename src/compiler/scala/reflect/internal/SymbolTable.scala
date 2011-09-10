@@ -33,7 +33,8 @@ abstract class SymbolTable extends api.Universe
   def abort(): Nothing = throw new Error()
 
   /** Override with final implementation for inlining. */
-  def debuglog(msg: => String): Unit = if (settings.debug.value) log(msg)
+  def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
+  def debugwarn(msg: => String): Unit = if (settings.debug.value) Console.println(msg)
 
   /** Are we compiling for Java SE? */
   // def forJVM: Boolean
