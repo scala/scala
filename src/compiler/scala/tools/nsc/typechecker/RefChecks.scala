@@ -1054,8 +1054,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           if (actual isSubClass receiver) ()
           else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object
-          else if (ObjectClass.tpe <:< global.lub(List(actual.tpe, receiver.tpe)))
-            unrelatedTypes()
+          else {
+            val common = global.lub(List(actual.tpe, receiver.tpe))
+            if (common.typeSymbol == ScalaObjectClass || (ObjectClass.tpe <:< common))
+              unrelatedTypes()
+          }
         }
       case _ =>
     }

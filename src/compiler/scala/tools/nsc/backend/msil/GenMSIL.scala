@@ -1263,7 +1263,7 @@ abstract class GenMSIL extends SubComponent {
               i += 1
             }
             val defaultTarget = labels(branches(i))
-            if (next != defaultTarget)
+            if (next != branches(i))
               mcode.Emit(OpCodes.Br, defaultTarget)
 
           case JUMP(whereto) =>
