@@ -2134,7 +2134,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      * If typeParams is nonEmpty, calling tpe may hide errors or
      * introduce spurious ones. (For example, when deriving a type from
-     * the symbol of a type argument that must be higher-kinded.) As far
+     * the symbol of a type argument that may be higher-kinded.) As far
      * as I can tell, it only makes sense to call tpe in conjunction
      * with a substitution that replaces the generated dummy type
      * arguments by their actual types.

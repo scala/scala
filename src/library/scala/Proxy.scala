@@ -27,11 +27,10 @@ trait Proxy {
 
   override def hashCode: Int = self.hashCode
   override def equals(that: Any): Boolean = that match {
-    case null       => false
-    case x: Equals  => (x canEqual self) && (x equals self)
-    case x          => (x equals self)
+    case null      => false
+    case x: AnyRef => (x eq this) || (x eq self.asInstanceOf[AnyRef]) || (x equals self)
   }
-  override def toString: String = self.toString
+  override def toString = "" + self
 }
 
 object Proxy {
