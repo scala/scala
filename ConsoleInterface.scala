@@ -14,8 +14,8 @@ class ConsoleInterface
 	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger)
 	{
 		val options = args.toList
-		lazy val interpreterSettings = xsbt.MakeSettings(options, log)
-		val compilerSettings = xsbt.MakeSettings(options, log)
+		lazy val interpreterSettings = MakeSettings.sync(options, log)
+		val compilerSettings = MakeSettings.sync(options, log)
 		
 		if(!bootClasspathString.isEmpty)
 			compilerSettings.bootclasspath.value = bootClasspathString
@@ -60,5 +60,19 @@ object MakeSettings
 			command.settings
 		else
 			throw new InterfaceCompileFailed(Array(), Array(), command.usageMsg)
+	}
+
+	def sync(options: List[String], log: Logger) =
+	{
+		val settings = apply(options, log)
+
+		// -Yrepl-sync is only in 2.9.1+
+		final class Compat {
+			def Yreplsync = settings.BooleanSetting("-Yrepl-sync", "For compatibility only.")
+		}
+		implicit def compat(s: Settings): Compat = new Compat
+
+		settings.Yreplsync.value = true
+		settings
 	}
 }
