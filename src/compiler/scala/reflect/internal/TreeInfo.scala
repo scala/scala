@@ -116,7 +116,14 @@ abstract class TreeInfo {
    */
   def zipMethodParamsAndArgs(t: Tree): List[(Symbol, Tree)] = t match {
     case Apply(fn, args) =>
-      val params = fn.symbol.paramss(applyDepth(fn))
+      val depth  = applyDepth(fn)
+      // There could be applies which go beyond the parameter list(s),
+      // being applied to the result of the method call.
+      val params = (
+        if (depth < fn.symbol.paramss.size) fn.symbol.paramss(depth)
+        else if (fn.symbol.paramss.isEmpty) Nil
+        else fn.symbol.paramss.last
+      )
       val plen   = params.length
       val alen   = args.length
       def fail() = {
