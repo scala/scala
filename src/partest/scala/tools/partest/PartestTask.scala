@@ -6,24 +6,56 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
 package scala.tools
 package partest
 
 import scala.actors.Actor._
 import scala.util.Properties.setProp
-import scala.tools.nsc.io.{ Directory, Path => SPath }
+
+import ant.sabbus.CompilationPathProperty
+import nsc.io.{ Directory, Path => SPath }
 import nsc.util.ClassPath
 import util.PathResolver
-import scala.tools.ant.sabbus.CompilationPathProperty
 
 import java.io.File
 import java.lang.reflect.Method
 
-import org.apache.tools.ant.Task
+import org.apache.tools.ant.{BuildException, Task}
 import org.apache.tools.ant.types.{Path, Reference, FileSet}
 
+/** An Ant task to execute the Scala test suite (NSC).
+ *
+ *  This task can take the following parameters as attributes:
+ *  - `srcdir`,
+ *  - `classpath`,
+ *  - `classpathref`,
+ *  - `showlog`,
+ *  - `showdiff`,
+ *  - `erroronfailed`,
+ *  - `javacmd`,
+ *  - `javaccmd`,
+ *  - `scalacopts`,
+ *  - `timeout`,
+ *  - `debug`,
+ *  - `junitreportdir`.
+ *
+ *  It also takes the following parameters as nested elements:
+ *  - `compilationpath`.
+ *  - `postests`,
+ *  - `negtests`,
+ *  - `runtests`,
+ *  - `jvmtests`,
+ *  - `residenttests`,
+ *  - `buildmanagertests`,
+ *  - `shootouttests`,
+ *  - `scalaptests`,
+ *  - `scalachecktests`,
+ *  - `specializedtests`,
+ *  - `presentationtests`,
+ *  - `scripttests`.
+ *
+ * @author Philippe Haller, Stephane Micheloud
+ */
 class PartestTask extends Task with CompilationPathProperty {
 
   def addConfiguredPosTests(input: FileSet) {
@@ -74,11 +106,18 @@ class PartestTask extends Task with CompilationPathProperty {
     presentationFiles = Some(input)
   }
 
+/*============================================================================*\
+**                             Properties setters                             **
+\*============================================================================*/
 
+  /** Sets the `srcdir` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `srcdir`. */
   def setSrcDir(input: String) {
     srcDir = Some(input)
   }
 
+  /** Sets the `classpath` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `classpath`. */
   def setClasspath(input: Path) {
     if (classpath.isEmpty)
       classpath = Some(input)
@@ -91,46 +130,67 @@ class PartestTask extends Task with CompilationPathProperty {
     classpath.get.createPath()
   }
 
+  /** Sets the `classpathref` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `classpathref`. */
   def setClasspathref(input: Reference) {
     createClasspath().setRefid(input)
   }
 
+  /** Sets the `showlog` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `showlog`. */
   def setShowLog(input: Boolean) {
     showLog = input
   }
 
+  /** Sets the `showdiff` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `showdiff`. */
   def setShowDiff(input: Boolean) {
     showDiff = input
   }
 
+  /** Sets the `erroronfailed` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `erroronfailed`. */
   def setErrorOnFailed(input: Boolean) {
     errorOnFailed = input
   }
 
+  /** Sets the `javacmd` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `javacmd`. */
   def setJavaCmd(input: File) {
     javacmd = Some(input)
   }
 
+  /** Sets the `javaccmd` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `javaccmd`. */
   def setJavacCmd(input: File) {
     javaccmd = Some(input)
   }
 
+  /** Sets the `scalacopts` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `scalacopts`. */
   def setScalacOpts(opts: String) {
     scalacOpts = Some(opts)
   }
 
+  /** Sets the `timeout` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `timeout`. */
   def setTimeout(delay: String) {
     timeout = Some(delay)
   }
 
+  /** Sets the `debug` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `debug`. */
   def setDebug(input: Boolean) {
     debug = input
   }
 
+  /** Sets the `junitreportdir` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `junitreportdir`. */
   def setJUnitReportDir(input: File) {
     jUnitReportDir = Some(input)
   }
 
+  /** The class path to use for this compilation. */
   private var classpath: Option[Path] = None
   private var srcDir: Option[String] = None
   private var javacmd: Option[File] = None
@@ -156,42 +216,36 @@ class PartestTask extends Task with CompilationPathProperty {
   private var jUnitReportDir: Option[File] = None
   private var debug = false
 
-  def fileSetToDir(fs: FileSet) = Directory(fs getDir getProject)
-  def fileSetToArray(fs: FileSet): Array[SPath] = {
-    val root = fileSetToDir(fs)
-    (fs getDirectoryScanner getProject).getIncludedFiles map (root / _)
-  }
+  private def fileSetToDir(fs: FileSet) = Directory(fs getDir getProject)
 
   private def getFiles(fileSet: Option[FileSet]): Array[File] = fileSet match {
-    case None     => Array()
-    case Some(fs) => fileSetToArray(fs) filterNot (_ hasExtension "log") map (_.jfile)
+    case None =>
+      Array()
+    case Some(fs) =>
+      val sFiles: Array[SPath] = {
+        val root = fileSetToDir(fs)
+        (fs getDirectoryScanner getProject).getIncludedFiles map (root / _)
+      }
+      def shouldExclude(p: SPath) = (p hasExtension "log") || (p.name startsWith ".")
+      sFiles filterNot (shouldExclude(_)) map (_.jfile)
+  }
+
+  private def getDirs(fileSet: Option[FileSet]): Array[File] = fileSet match {
+    case None =>
+      Array()
+    case Some(fs) =>
+      val sDirectories: Array[SPath] = {
+        val root = fileSetToDir(fs)
+        (fs getDirectoryScanner getProject).getIncludedDirectories map (root / _)
+      }
+      def shouldExclude(p: SPath) = (p hasExtension "obj") || (p.name startsWith ".")
+      sDirectories filterNot (shouldExclude(_)) map (_.jfile)
   }
 
   private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] = fileSet match {
     case None     => Array()
-    case Some(fs) =>
-      def shouldExclude(name: String) = (name endsWith ".obj") || (name startsWith ".")
-      // println("----> " + fileSet)
-
-      val fileTests = getFiles(Some(fs)) filterNot (x => shouldExclude(x.getName))
-      val dirResult = getDirs(Some(fs))  filterNot (x => shouldExclude(x.getName))
-      // println("dirs: " + dirResult.toList)
-      // println("files: " + fileTests.toList)
-
-      dirResult ++ fileTests
+    case Some(fs) => getFiles(fileSet) ++ getDirs(fileSet)
   }
-
-  private def getDirs(fileSet: Option[FileSet]): Array[File] = fileSet match {
-    case None     => Array()
-    case Some(fs) =>
-      def shouldExclude(name: String) = (name endsWith ".obj") || (name startsWith ".")
-
-      val dirTests: Iterator[SPath] = fileSetToDir(fs).dirs filterNot (x => shouldExclude(x.name))
-      val dirResult = dirTests.toList.toArray map (_.jfile)
-
-      dirResult
-  }
-
 
   private def getPosFiles          = getFilesAndDirs(posFiles)
   private def getNegFiles          = getFilesAndDirs(negFiles)
@@ -206,11 +260,19 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getSpecializedFiles  = getFiles(specializedFiles)
   private def getPresentationFiles = getDirs(presentationFiles)
 
-  override def execute() {
+  protected def initialize() {
     if (isPartestDebug || debug) {
       setProp("partest.debug", "true")
       nest.NestUI._verbose = true
     }
+
+    // Tests if all mandatory attributes are set and valid.
+    //if (srcDir.isEmpty)
+    //  throw new BuildException("Attribute 'srcdir' is not set.", getLocation)
+  }
+
+  override def execute() {
+    initialize()
 
     srcDir foreach (x => setProp("partest.srcdir", x))
 
@@ -265,16 +327,21 @@ class PartestTask extends Task with CompilationPathProperty {
         val (succs, fails) = resultsToStatistics(results)
 
         val failed: Iterable[String] = results collect {
-          case (path, 1)    => path + " [FAILED]"
-          case (path, 2)    => path + " [TIMOUT]"
+          case (path, 1) => path + " [FAILED]"
+          case (path, 2) => path + " [TIMOUT]"
         }
 
         // create JUnit Report xml files if directory was specified
         jUnitReportDir foreach { d =>
-          d.mkdir
+          d.mkdir()
 
           val report = testReport(name, results, succs, fails)
+/*@XML*/
           scala.xml.XML.save(d.getAbsolutePath+"/"+name+".xml", report)
+/*XML@*/
+/*@NOXML
+          util.XML.save(d.getAbsolutePath+"/"+name+".xml", report)
+XMLNO@*/
         }
 
         (succs, fails, failed)
@@ -297,6 +364,7 @@ class PartestTask extends Task with CompilationPathProperty {
 
     f(msg)
   }
+/*@XML*/ // NB. This code DOES rely on Scala native XML support.
   def oneResult(res: (String, Int)) =
     <testcase name={res._1}>{
   	  res._2 match {
@@ -313,4 +381,37 @@ class PartestTask extends Task with CompilationPathProperty {
   	    results.map(oneResult(_))
   	  }
     </testsuite>
+/*XML@*/
+/*@NOXML // NB. This code DOES NOT rely on Scala native XML support.
+  private def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) = {
+    val root = util.XML.newDocument()
+
+    def testCase(res: (String, Int)) = {
+      val testcaseElem = root createElement "testcase"
+      testcaseElem.setAttribute("name", res._1)
+      val text = res._2 match {
+        case 0 => null
+        case 1 => "Test failed"
+        case 2 => "Test timed out"
+      }
+      if (text != null) {
+        val failureElem = root createElement "failure"
+        failureElem.setAttribute("message", text)
+        testcaseElem appendChild failureElem
+      }
+      testcaseElem
+    }
+
+    val testsuiteElem = root createElement "testsuite"
+    testsuiteElem.setAttribute("name", kind)
+    testsuiteElem.setAttribute("tests", (succs+fails).toString)
+    testsuiteElem.setAttribute("failures", fails.toString)
+    root appendChild testsuiteElem
+
+    testsuiteElem appendChild (root createElement "properties")
+    results foreach (res => testsuiteElem appendChild testCase(res))
+
+    root
+  }
+XMLNO@*/
 }
