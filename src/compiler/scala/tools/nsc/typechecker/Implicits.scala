@@ -606,11 +606,8 @@ trait Implicits {
               case Apply(TypeApply(fun, args), _) => typedTypeApply(itree2, EXPRmode, fun, args) // t2421c
               case t                              => t
             }
-            if (checked.containsError()) {
-              // TODO: for the moment workaround for situations where we get errortrees
-              val res = errorTreesFinder(checked)
-              res.foreach(t => t.emit(context))
-            }
+            if (checked.containsError())
+              return SearchFailure
             val result = new SearchResult(checked, subst)
             incCounter(foundImplicits)
             printInference("[typedImplicit1] SearchResult: " + result)

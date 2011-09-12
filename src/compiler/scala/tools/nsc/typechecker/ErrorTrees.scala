@@ -19,10 +19,6 @@ trait ErrorTrees {
     printName(this)
   }
 
-  trait InteractiveErrorTree extends ErrorTree {
-    def retrieveEmitted: Tree
-  }
-
   trait ContextError {
     def errMsg: String
     def errPos: Position
@@ -377,25 +373,6 @@ trait ErrorTrees {
       def emit(context: Context) { }
     }
 
-    case class NotAMemberInteractive(originalTree: Tree)
-      extends TreeForwarder(originalTree) with InteractiveErrorTree  {
-
-      private[this] var newTree = originalTree
-
-      def emit(context: Context) {
-        def copyTree = {
-            val tree1 = originalTree match {
-              case Select(qual, name) => treeCopy.Select(originalTree, qual, name)
-              case SelectFromTypeTree(qual, name) => treeCopy.SelectFromTypeTree(originalTree, qual, name)
-            }
-            tree1
-          }
-        newTree = copyTree
-      }
-
-      def retrieveEmitted = newTree
-    }
-
     case class NotAMemberError(sel: Tree, qual: Tree, name: Name)
       extends TreeForwarder(sel) with ErrorTree with ContextError {
 
@@ -734,9 +711,12 @@ trait ErrorTrees {
     case class ErroneousFunInTypeApplyError(fun: Tree, args: List[Tree])
       extends TreeForwarder(fun) with ErrorTree {
 
+      var errorCache: scala.collection.mutable.ListBuffer[ErrorTree] = null
+
       def emit(context: Context) {
-        val all = errorTreesFinder(fun) ++ args.map(arg => errorTreesFinder(arg)).flatten
-        all.foreach(_.emit(context))
+        if (errorCache == null)
+          errorCache = errorTreesFinder(fun) ++ args.map(arg => errorTreesFinder(arg)).flatten
+        errorCache.foreach(_.emit(context))
       }
     }
 

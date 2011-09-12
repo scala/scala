@@ -818,13 +818,8 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     // if tree consists of just x. or x.fo where fo is not yet a full member name
     // ignore the selection and look in just x.
     tree match {
-      case Select(qual, name) if tree.tpe == ErrorType => tree = qual
-      case ierr: analyzer.InteractiveErrorTree =>
-        ierr.emit(context)
-        ierr.retrieveEmitted match {
-          case Select(qual, name) => tree = qual
-          case _ =>
-        }
+      case Select(qual, name) if tree.tpe == ErrorType =>
+        tree = qual
       case _ =>
     }
 
