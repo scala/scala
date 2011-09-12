@@ -41,7 +41,6 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `logphase`,
  *  - `debuginfo`,
  *  - `addparams`,
- *  - `scalacdebugging`,
  *  - `deprecation`,
  *  - `optimise`,
  *  - `unchecked`,
@@ -57,7 +56,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `bootclasspath`,
  *  - `extdirs`.
  *
- * @author Gilles Dubochet, Stephane Micheloud
+ *  @author Gilles Dubochet, Stephane Micheloud
  */
 class Scalac extends ScalaMatchingTask with ScalacShared {
 
@@ -181,7 +180,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 \*============================================================================*/
 
 
-  /** Sets the srcdir attribute. Used by [[http://ant.apache.org Ant]].
+  /** Sets the `srcdir` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `origin`. */
   def setSrcdir(input: Path) {
     origin = setOrAppend(origin, input)
@@ -213,7 +212,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   def createCompilerPath: Path = createNewPath(compilerPath _, p => compilerPath = p)
 
-  /** Sets the `compilerpathref` attribute. Used by Ant.
+  /** Sets the `compilerpathref` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `compilerpathref`. */
   def setCompilerPathRef(input: Reference) {
     createCompilerPath.setRefid(input)
@@ -263,7 +262,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   def setBootclasspathref(input: Reference) =
     createBootclasspath().setRefid(input)
 
-  /** Sets the external extensions path attribute. Used by Ant.
+  /** Sets the external extensions path attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `extdirs`. */
   def setExtdirs(input: Path) =
     extdirs = setOrAppend(extdirs, input)
@@ -277,40 +276,40 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   def setExtdirsref(input: Reference) =
     createExtdirs().setRefid(input)
 
-  /** Sets the `encoding` attribute. Used by Ant.
+  /** Sets the `encoding` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `encoding`. */
   def setEncoding(input: String): Unit =
     encoding = Some(input)
 
-  /** Sets the `target` attribute. Used by Ant.
+  /** Sets the `target` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `target`. */
   def setTarget(input: String): Unit =
     if (Target.isPermissible(input)) backend = Some(input)
     else buildError("Unknown target '" + input + "'")
 
-  /** Sets the `force` attribute. Used by Ant.
+  /** Sets the `force` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `force`. */
   def setForce(input: Boolean) { force = input }
 
-  /** Sets the `fork` attribute. Used by Ant.
+  /** Sets the `fork` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `fork`. */
   def setFork(input : Boolean) { fork = input }
   /**
-   * Sets the `jvmargs` attribute.  Used by Ant.
+   * Sets the `jvmargs` attribute.  Used by [[http://ant.apache.org Ant]].
    * @param input The value for `jvmargs`
    */
   def setJvmargs(input : String) {
     jvmArgs = Some(input)
   }
 
-  /** Sets the logging level attribute. Used by Ant.
+  /** Sets the logging level attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `logging`. */
   def setLogging(input: String) {
     if (LoggingLevel.isPermissible(input)) logging = Some(input)
     else buildError("Logging level '" + input + "' does not exist.")
   }
 
-  /** Sets the `logphase` attribute. Used by Ant.
+  /** Sets the `logphase` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `logPhase`. */
   def setLogPhase(input: String) {
     logPhase = input.split(",").toList.flatMap { s: String =>
@@ -349,8 +348,8 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     unchecked = Flag toBoolean input orElse buildError("Unknown unchecked flag '" + input + "'")
   }
 
-  /** Sets the `force` attribute. Used by Ant.
-   *  @param input The value for `force`. */
+  /** Sets the `failonerror` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value for `failonerror`. */
   def setFailonerror(input: Boolean) { failonerror = input }
 
   /** Set the `scalacdebugging` info attribute. If set to
@@ -473,25 +472,13 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     var javaOnly = true
 
     def getOriginFiles(originDir: File) = {
-      val scanner = getDirectoryScanner(originDir)
-      val includedFiles = scanner.getIncludedFiles
-      val includedJavaFiles = includedFiles filter (_ endsWith ".java")
-      val includedScalaFiles = {
+      val includedFiles = getDirectoryScanner(originDir).getIncludedFiles
+      val javaFiles = includedFiles filter (_ endsWith ".java")
+      val scalaFiles = {
         val xs = includedFiles filter (_ endsWith ".scala")
         if (force) xs
         else new SourceFileScanner(this).restrict(xs, originDir, destination.get, mapper)
       }
-
-      val excludedFiles = scanner.getExcludedFiles
-      val excludedJavaFiles = excludedFiles filter (_ endsWith ".java")
-      val excludedScalaFiles = {
-        val xs = excludedFiles filter (_ endsWith ".scala")
-        if (force) xs
-        else new SourceFileScanner(this).restrict(xs, originDir, destination.get, mapper)
-      }
-
-      val javaFiles = includedJavaFiles diff excludedJavaFiles
-      val scalaFiles = includedScalaFiles diff excludedScalaFiles
 
       javaOnly = javaOnly && (scalaFiles.length == 0)
       val list = (scalaFiles ++ javaFiles).toList
