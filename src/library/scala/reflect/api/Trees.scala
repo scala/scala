@@ -6,7 +6,6 @@
 package scala.reflect
 package api
 
-import java.io.{PrintWriter, StringWriter}
 import scala.collection.mutable.ListBuffer
 
 //import scala.tools.nsc.util.{ FreshNameCreator, HashSet, SourceFile }
