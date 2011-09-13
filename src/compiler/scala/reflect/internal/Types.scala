@@ -5822,10 +5822,18 @@ A type's typeSymbol should never be inspected directly.
           }
         } else {
           val args = (sym.typeParams, argss.transpose).zipped map { (tparam, as) =>
-              if (depth == 0)
-                if (tparam.variance == variance) AnyClass.tpe
+              if (depth == 0) {
+                if (tparam.variance == variance) {
+                  // Take the intersection of the upper bounds of the type parameters
+                  // rather than falling all the way back to "Any", otherwise we end up not
+                  // conforming to bounds.
+                  val bounds0 = sym.typeParams map (_.info.bounds.hi) filterNot (_.typeSymbol == AnyClass)
+                  if (bounds0.isEmpty) AnyClass.tpe
+                  else intersectionType(bounds0)
+                }
                 else if (tparam.variance == -variance) NothingClass.tpe
                 else NoType
+              }
               else {
                 if (tparam.variance == variance) lub(as, decr(depth))
                 else if (tparam.variance == -variance) glb(as, decr(depth))
