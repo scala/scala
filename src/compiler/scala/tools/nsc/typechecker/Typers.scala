@@ -4852,10 +4852,9 @@ trait Typers extends Modes with Adaptations {
     // have to report missing errors (if any)
     def computeType(tree: Tree, pt: Type): Type = {
       val tree1 = typed(tree, pt)
-      if (tree1.containsError()) {
-        assert(errorTreesFinder(tree1).isEmpty, "All type errors have been reported during computation of type")
+      if (tree1.containsError())
         ErrorType
-      } else {
+      else {
         transformed(tree) = tree1
         val (tpe, errs) = packedType(tree1, context.owner)
         try {
@@ -4863,7 +4862,6 @@ trait Typers extends Modes with Adaptations {
           tpe
         } catch {
           case _: TypeError =>
-            assert(false, "No type errors can be thrown after type was computed")
             ErrorType
         }
       }
