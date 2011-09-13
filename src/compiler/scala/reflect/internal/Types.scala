@@ -235,6 +235,14 @@ trait Types extends api.Types { self: SymbolTable =>
     override def withoutAnnotations = maybeRewrap(underlying.withoutAnnotations)
   }
 
+  case object UnmappableTree extends TermTree {
+    override def toString = "<unmappable>"
+    protected def initErrorCheck() { hasErrorTree = Some(false) }
+    super.tpe_=(NoType)
+    override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
+  }
+  object UnmappableAnnotation extends AnnotationInfo(NoType, Nil, Nil)
+
   /** The base class for all types */
   abstract class Type extends AbsType {
 
@@ -1405,7 +1413,6 @@ trait Types extends api.Types { self: SymbolTable =>
           }
         case None => updateCache()
       }
-
     }
 
     override def baseType(sym: Symbol): Type = {
@@ -2092,29 +2099,21 @@ A type's typeSymbol should never be inspected directly.
 
     override def boundSyms = immutable.Set[Symbol](params ++ resultType.boundSyms: _*)
 
-    // AM to TR: #dropNonContraintAnnotations
     // this is needed for plugins to work correctly, only TypeConstraint annotations are supposed to be carried over
     // TODO: this should probably be handled in a more structured way in adapt -- remove this map in resultType and watch the continuations tests fail
-    object dropNonContraintAnnotations extends TypeMap {
-      override val dropNonConstraintAnnotations = true
+    private object dropAnnotations extends TypeMap with KeepOnlyTypeConstraints {
       def apply(x: Type) = mapOver(x)
     }
 
     override def resultType(actuals: List[Type]) =
-      if (isTrivial) dropNonContraintAnnotations(resultType)
-      else {
-        if (sameLength(actuals, params)) {
-          val idm = new InstantiateDependentMap(params, actuals)
-          val res = idm(resultType)
-          // println("resultTypeDep "+(params, actuals, resultType, idm.existentialsNeeded, "\n= "+ res))
-          existentialAbstraction(idm.existentialsNeeded, res)
-        } else {
-          // Thread.dumpStack()
-          // println("resultType "+(params, actuals, resultType))
-          if (phase.erasedTypes) resultType
-          else existentialAbstraction(params, resultType)
-        }
+      if (isTrivial) dropAnnotations(resultType)
+      else if (sameLength(actuals, params)) {
+        val idm = new InstantiateDependentMap(params, actuals)
+        val res = idm(resultType)
+        existentialAbstraction(idm.existentialsNeeded, res)
       }
+      else if (phase.erasedTypes) resultType
+      else existentialAbstraction(params, resultType)
 
     // implicit args can only be depended on in result type: TODO this may be generalised so that the only constraint is dependencies are acyclic
     def approximate: MethodType = MethodType(params, resultApprox)
@@ -3035,18 +3034,14 @@ A type's typeSymbol should never be inspected directly.
           case _ => super.mapOver(tp)
         }
 
-        override def mapOver(tree: Tree) =
-          tree match {
-            case tree:Ident if tree.tpe.isStable =>
-              // Do not discard the types of existential ident's.
-              // The symbol of the Ident itself cannot be listed
-              // in the existential's parameters, so the
-              // resulting existential type would be ill-formed.
-              Some(tree)
-
-            case _ =>
-              super.mapOver(tree)
-          }
+        // Do not discard the types of existential ident's. The
+        // symbol of the Ident itself cannot be listed in the
+        // existential's parameters, so the resulting existential
+        // type would be ill-formed.
+        override def mapOver(tree: Tree) = tree match {
+          case Ident(_) if tree.tpe.isStable => tree
+          case _                             => super.mapOver(tree)
+        }
       }
       val tpe1 = extrapolate(tpe)
       var tparams0 = tparams
@@ -3249,29 +3244,35 @@ A type's typeSymbol should never be inspected directly.
       inst.safeToString
   }
 
+  trait AnnotationFilter extends TypeMap {
+    def keepAnnotation(annot: AnnotationInfo): Boolean
+
+    override def mapOver(annot: AnnotationInfo) =
+      if (keepAnnotation(annot)) super.mapOver(annot)
+      else UnmappableAnnotation
+  }
+
+  trait KeepOnlyTypeConstraints extends AnnotationFilter {
+    // filter keeps only type constraint annotations
+    def keepAnnotation(annot: AnnotationInfo) = annot.atp.typeSymbol isNonBottomSubClass TypeConstraintClass
+  }
+
   /** A prototype for mapping a function over all possible types
    */
   abstract class TypeMap extends Function1[Type, Type] {
-    // deferred inherited: def apply(tp: Type): Type
+    def apply(tp: Type): Type
 
     /** The variance relative to start. If you want variances to be significant, set
-     *  variance = 1
+     *    variance = 1
      *  at the top of the typemap.
      */
     var variance = 0
 
-    /** Should this map drop annotations that are not
-     *  type-constraint annotations?
-     */
-    val dropNonConstraintAnnotations = false
-
-    /** Check whether two lists have elements that are eq-equal */
-    def allEq[T <: AnyRef](l1: List[T], l2: List[T]) =
-      (l1 corresponds l2)(_ eq _)
-
-    // #3731: return sym1 for which holds: pre bound sym.name to sym and pre1 now binds sym.name to sym1, conceptually exactly the same symbol as sym
-    // the selection of sym on pre must be updated to the selection of sym1 on pre1,
-    // since sym's info was probably updated by the TypeMap to yield a new symbol sym1 with transformed info
+    // #3731: return sym1 for which holds: pre bound sym.name to sym and
+    // pre1 now binds sym.name to sym1, conceptually exactly the same
+    // symbol as sym.  The selection of sym on pre must be updated to the
+    // selection of sym1 on pre1, since sym's info was probably updated
+    // by the TypeMap to yield a new symbol, sym1 with transformed info.
     // @returns sym1
     protected def coevolveSym(pre: Type, pre1: Type, sym: Symbol): Symbol =
       if((pre ne pre1) && sym.isAliasType) // only need to rebind type aliases here, as typeRef already handles abstract types (they are allowed to be rebound more liberally)
@@ -3425,58 +3426,42 @@ A type's typeSymbol should never be inspected directly.
       }
       if (!change) origSyms // fast path in case nothing changes due to map
       else { // map is not the identity --> do cloning properly
-        val clonedSyms = origSyms map (_.cloneSymbol)
-        val clonedInfos = clonedSyms map (_.info.substSym(origSyms, clonedSyms))
+        val clonedSyms       = origSyms map (_.cloneSymbol)
+        val clonedInfos      = clonedSyms map (_.info.substSym(origSyms, clonedSyms))
         val transformedInfos = clonedInfos mapConserve (this)
-        (clonedSyms, transformedInfos).zipped map (_ setInfo _)
 
+        (clonedSyms, transformedInfos).zipped foreach (_ setInfo _)
         clonedSyms
       }
     }
 
-
-    def mapOverAnnotations(annots: List[AnnotationInfo])
-    : List[AnnotationInfo] = {
-      val newAnnots = annots.flatMap(mapOver(_))
-      if (allEq(newAnnots, annots))
-        annots
-      else
-        newAnnots
-    }
-
-    def mapOver(annot: AnnotationInfo): Option[AnnotationInfo] = {
+    def mapOver(annot: AnnotationInfo): AnnotationInfo = {
       val AnnotationInfo(atp, args, assocs) = annot
-
-      if (dropNonConstraintAnnotations &&
-          !(atp.typeSymbol isNonBottomSubClass TypeConstraintClass))
-        return None
-
-      val atp1 = mapOver(atp)
+      val atp1  = mapOver(atp)
       val args1 = mapOverAnnotArgs(args)
       // there is no need to rewrite assocs, as they are constants
 
-      if ((args eq args1) && (atp eq atp1))
-        Some(annot)
-      else if (sameLength(args1, args))
-        Some(AnnotationInfo(atp1, args1, assocs).setPos(annot.pos))
-      else
-        None
+      if ((args eq args1) && (atp eq atp1)) annot
+      else if (args1.isEmpty && args.nonEmpty) UnmappableAnnotation  // some annotation arg was unmappable
+      else AnnotationInfo(atp1, args1, assocs) setPos annot.pos
+    }
+
+    def mapOverAnnotations(annots: List[AnnotationInfo]): List[AnnotationInfo] = {
+      val annots1 = annots mapConserve mapOver
+      if (annots1 eq annots) annots
+      else annots1 filterNot (_ eq UnmappableAnnotation)
     }
 
     /** Map over a set of annotation arguments.  If any
      *  of the arguments cannot be mapped, then return Nil.  */
     def mapOverAnnotArgs(args: List[Tree]): List[Tree] = {
-      val args1 = args flatMap (x => mapOver(x))
-      if (!sameLength(args1, args))
-        Nil
-      else if (allEq(args, args1))
-        args
-      else
-        args1
+      val args1 = args mapConserve mapOver
+      if (args1 contains UnmappableTree) Nil
+      else args1
     }
 
-    def mapOver(tree: Tree): Option[Tree] =
-      Some(mapOver(tree, ()=>return None))
+    def mapOver(tree: Tree): Tree =
+      mapOver(tree, () => return UnmappableTree)
 
     /** Map a tree that is part of an annotation argument.
      *  If the tree cannot be mapped, then invoke giveup().
@@ -3498,11 +3483,6 @@ A type's typeSymbol should never be inspected directly.
           tree1.shallowDuplicate.setType(tpe1)
       }
     }
-  }
-
-  /** A type map that always returns the input type unchanged */
-  object IdentityTypeMap extends TypeMap {
-    def apply(tp: Type) = tp
   }
 
   abstract class TypeTraverser extends TypeMap {
@@ -3577,9 +3557,7 @@ A type's typeSymbol should never be inspected directly.
   def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
 
   /** A map to compute the asSeenFrom method  */
-  class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap {
-    override val dropNonConstraintAnnotations = true
-
+  class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
     var capturedParams: List[Symbol] = List()
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
@@ -3889,9 +3867,8 @@ A type's typeSymbol should never be inspected directly.
       else mapOver(tp)
   }
 
-  class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends TypeMap {
+  class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
     private val actualsIndexed = actuals.toIndexedSeq
-    override val dropNonConstraintAnnotations = true
 
     object ParamWithActual {
       def unapply(sym: Symbol): Option[Type] = {
@@ -3908,7 +3885,7 @@ A type's typeSymbol should never be inspected directly.
           val res = typeRef(arg, sym, targs)
           if(res.typeSymbolDirect isAliasType) res.dealias
           else tp1
-        case tp1 => tp1 // don't return the original `tp`, which may be different from `tp1`, due to `dropNonConstraintAnnotations`
+        case tp1 => tp1 // don't return the original `tp`, which may be different from `tp1`, due to dropping annotations
       }
 
     def existentialsNeeded: List[Symbol] = existSyms.filter(_ ne null).toList
@@ -4015,7 +3992,7 @@ A type's typeSymbol should never be inspected directly.
         if (t.symbol == sym)
           result = true
       }
-      Some(arg)
+      arg
     }
   }
 
@@ -4028,10 +4005,10 @@ A type's typeSymbol should never be inspected directly.
       }
     }
     override def mapOver(arg: Tree) = {
-      for (t <- arg) {
+      for (t <- arg)
         traverse(t.tpe)
-      }
-      Some(arg)
+
+      arg
     }
   }
 

@@ -976,28 +976,18 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  primitive type losing the annotation.
    */
   private def subst(env: TypeEnv, tpe: Type): Type = {
-    class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) {
+    class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) with AnnotationFilter {
+      def keepAnnotation(annot: AnnotationInfo) = annot.atp.typeSymbol != uncheckedVarianceClass
+
       override def mapOver(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, clazz) =>
           val parents1  = parents mapConserve this
-          val declsList = decls.toList
-          val decls1    = mapOver(declsList)
+          val decls1    = mapOver(decls)
 
-          if ((parents1 eq parents) && (decls1 eq declsList)) tp
-          else ClassInfoType(parents1, new Scope(decls1), clazz)
-
-        case AnnotatedType(annots, atp, selfsym) =>
-          val annots1 = mapOverAnnotations(annots)
-          val atp1    = this(atp)
-
-          if ((annots1 eq annots) && (atp1 eq atp)) tp
-          else if (annots1.isEmpty) atp1
-          else if (atp1 eq atp) AnnotatedType(annots1, atp1, selfsym)
-          else annots1.filter(_.atp.typeSymbol != uncheckedVarianceClass) match {
-            case Nil      => atp1
-            case annots2  => AnnotatedType(annots2, atp1, selfsym)
-          }
-        case _ => super.mapOver(tp)
+          if ((parents1 eq parents) && (decls1 eq decls)) tp
+          else ClassInfoType(parents1, decls1, clazz)
+        case _ =>
+          super.mapOver(tp)
       }
     }
     val (keys, values) = env.toList.unzip
