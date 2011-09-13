@@ -1615,7 +1615,8 @@ DISTRIBUTION
 ============================================================================ -->
   
   <target name="dist.start" depends="docs.done, pack.done">
-    <property name="dist.dir" value="${dists.dir}/scala-${version.number}"/>
+    <property name="dist.name" value="scala-${version.number}"/>
+    <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
   </target>
     
   <target name="dist.base" depends="dist.start">

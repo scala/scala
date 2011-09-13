@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.tools.ant.sabbus
 
 import java.io.File
@@ -57,7 +56,7 @@ class Settings {
 
   private var optimiseBf: Boolean = false
   def optimise = optimiseBf
-  def optimise_=(b: Boolean): Unit = { optimiseBf = b }
+  def optimise_=(b: Boolean) { optimiseBf = b }
 
   private var moreBf: Option[String] = None
   def more = moreBf.get

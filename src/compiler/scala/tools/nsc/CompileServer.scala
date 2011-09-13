@@ -29,9 +29,7 @@ class StandardCompileServer extends SocketServer {
   var shutdown = false
   var verbose = false
 
-  val versionMsg = "Fast Scala compiler " +
-    Properties.versionString + " -- " +
-    Properties.copyrightString
+  val versionMsg = "Fast " + Properties.versionMsg
 
   val MaxCharge = 0.8
 
@@ -175,8 +173,9 @@ object CompileServer extends StandardCompileServer {
   /** A directory holding redirected output */
   private lazy val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
 
-  private def redirect(setter: PrintStream => Unit, filename: String): Unit =
+  private def redirect(setter: PrintStream => Unit, filename: String) {
     setter(new PrintStream((redirectDir / filename).createFile().bufferedOutput()))
+  }
 
   def main(args: Array[String]) {
     val debug = args contains "-v"
@@ -190,10 +189,10 @@ object CompileServer extends StandardCompileServer {
     redirect(System.setErr, "scala-compile-server-err.log")
     System.err.println("...starting server on socket "+port+"...")
     System.err.flush()
-    compileSocket.setPort(port)
+    compileSocket setPort port
     run()
 
-    compileSocket.deletePort(port)
-    sys.exit(0)
+    compileSocket deletePort port
+    sys exit 0
   }
 }

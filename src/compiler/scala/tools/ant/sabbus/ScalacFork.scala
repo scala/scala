@@ -6,38 +6,65 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala.tools.ant
 package sabbus
 
-import java.io.File
-import java.io.FileWriter
+import java.io.{ File, FileWriter }
 import org.apache.tools.ant.Project
 import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }
 import scala.tools.nsc.io
 import scala.tools.nsc.util.ScalaClassLoader
 
+/** An Ant task to compile with the new Scala compiler (NSC).
+ *
+ *  This task can take the following parameters as attributes:
+ *  - `srcdir` (mandatory),
+ *  - `failonerror`,
+ *  - `timeout`,
+ *  - `jvmargs`,
+ *  - `argfile`.
+ *
+ *  It also takes the following parameters as nested elements:
+ *  - `src` (for `srcdir`),
+ *  - `classpath`,
+ *  - `sourcepath`,
+ *  - `bootclasspath`,
+ *  - `extdirs`.
+ *
+ *  @author Gilles Dubochet
+ */
 class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
+
   private def originOfThis: String =
     ScalaClassLoader.originOfClass(classOf[ScalacFork]) map (_.toString) getOrElse "<unknown>"
 
+  /** Sets the `srcdir` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `sourceDir`. */
   def setSrcdir(input: File) {
     sourceDir = Some(input)
   }
 
+  /** Sets the `failonerror` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `failOnError`. */
   def setFailOnError(input: Boolean) {
     failOnError = input
   }
 
+  /** Sets the `timeout` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `timeout`. */
   def setTimeout(input: Long) {
     timeout = Some(input)
   }
 
+  /** Sets the `jvmargs` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `jvmArgs`. */
   def setJvmArgs(input: String) {
     jvmArgs = Some(input)
   }
 
+  /** Sets the `argfile` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `argfile`. */
   def setArgfile(input: File) {
     argfile = Some(input)
   }
