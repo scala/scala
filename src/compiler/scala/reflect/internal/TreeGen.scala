@@ -71,12 +71,12 @@ abstract class TreeGen {
       if (clazz.isEffectiveRoot) EmptyTree
       else mkAttributedThis(clazz)
     case SingleType(pre, sym) =>
-      applyIfNoArgs(mkAttributedStableRef(pre, sym))
+      mkApplyIfNeeded(mkAttributedStableRef(pre, sym))
     case TypeRef(pre, sym, args) =>
       if (sym.isRoot) {
         mkAttributedThis(sym)
       } else if (sym.isModuleClass) {
-        applyIfNoArgs(mkAttributedRef(pre, sym.sourceModule))
+        mkApplyIfNeeded(mkAttributedRef(pre, sym.sourceModule))
       } else if (sym.isModule || sym.isClass) {
         assert(phase.erasedTypes, tpe)
         mkAttributedThis(sym)
@@ -106,8 +106,8 @@ abstract class TreeGen {
   /** If this is a reference to a method with an empty
    *  parameter list, wrap it in an apply.
    */
-  private def applyIfNoArgs(qual: Tree) = qual.tpe match {
-    case MethodType(Nil, restpe) => Apply(qual, Nil) setType restpe
+  def mkApplyIfNeeded(qual: Tree) = qual.tpe match {
+    case MethodType(Nil, restpe) => atPos(qual.pos)(Apply(qual, Nil) setType restpe)
     case _                       => qual
   }
 

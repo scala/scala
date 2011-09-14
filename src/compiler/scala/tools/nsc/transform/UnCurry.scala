@@ -544,17 +544,18 @@ abstract class UnCurry extends InfoTransform
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(): Tree = {
-        def needsParens = tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType] // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the whole tree is a polymorphic nullary method application
-        def repair = {
-          if (!tree.tpe.isInstanceOf[MethodType]) // i.e., it's a NullaryMethodType
-            tree.tpe = MethodType(Nil, tree.tpe.resultType) // TODO_NMT: I think the original `tree.tpe` was wrong, since that would set the method's resulttype to PolyType(Nil, restp) instead of restp
-
-          atPos(tree.pos)(Apply(tree, Nil) setType tree.tpe.resultType)
+        // TODO_NMT: verify that the inner tree of a type-apply also gets parens if the
+        // whole tree is a polymorphic nullary method application
+        def removeNullary() = tree.tpe match {
+          case MethodType(_, _)           => tree
+          case tp                         => tree setType MethodType(Nil, tp.resultType)
         }
-
-        if (needsParens) repair
-        else if (tree.isType) TypeTree(tree.tpe) setPos tree.pos
-        else tree
+        if (tree.symbol.isMethod && !tree.tpe.isInstanceOf[PolyType])
+          gen.mkApplyIfNeeded(removeNullary())
+        else if (tree.isType)
+          TypeTree(tree.tpe) setPos tree.pos
+        else
+          tree
       }
 
       tree match {
