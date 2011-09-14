@@ -83,15 +83,6 @@ abstract class UnCurry extends InfoTransform
     private lazy val serialVersionUIDAnnotation =
       AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
-    /** Set of mutable local variables that are free in some inner method. */
-    private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
-
-    override def transformUnit(unit: CompilationUnit) {
-      freeMutableVars.clear()
-      freeLocalsTraverser(unit.body)
-      super.transformUnit(unit)
-    }
-
     private var nprinted = 0
 
     override def transform(tree: Tree): Tree = try { //debug
@@ -468,12 +459,11 @@ abstract class UnCurry extends InfoTransform
               super.transform(tree)
             }
           }
-
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol
           // a local variable that is mutable and free somewhere later should be lifted
           // as lambda lifting (coming later) will wrap 'rhs' in an Ref object.
-          if (!sym.owner.isSourceMethod || (sym.isVariable && freeMutableVars(sym)))
+          if (!sym.owner.isSourceMethod)
             withNeedLift(true) { super.transform(tree) }
           else
             super.transform(tree)
@@ -735,61 +725,6 @@ abstract class UnCurry extends InfoTransform
 
           // add the method to `newMembers`
           newMembers += forwtree
-      }
-    }
-
-    /**
-     * PP: There is apparently some degree of overlap between the CAPTURED
-     *  flag and the role being filled here.  I think this is how this was able
-     *  to go for so long looking only at DefDef and Ident nodes, as bugs
-     *  would only emerge under more complicated conditions such as #3855.
-     *  I'll try to figure it all out, but if someone who already knows the
-     *  whole story wants to fill it in, that too would be great.
-     *
-     *  XXX I found this had been cut and pasted between LiftCode and UnCurry,
-     *  and seems to be running in both.
-     */
-    val freeLocalsTraverser = new Traverser {
-      var currentMethod: Symbol = NoSymbol
-      var maybeEscaping = false
-
-      def withEscaping(body: => Unit) {
-        val saved = maybeEscaping
-        maybeEscaping = true
-        try body
-        finally maybeEscaping = saved
-      }
-
-      override def traverse(tree: Tree) = tree match {
-        case DefDef(_, _, _, _, _, _) =>
-          val lastMethod = currentMethod
-          currentMethod = tree.symbol
-          try super.traverse(tree)
-          finally currentMethod = lastMethod
-        /** A method call with a by-name parameter represents escape. */
-        case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
-          traverse(fn)
-          for ((param, arg) <- treeInfo.zipMethodParamsAndArgs(tree)) {
-            if (param.tpe != null && isByNameParamType(param.tpe))
-              withEscaping(traverse(arg))
-            else
-              traverse(arg)
-          }
-        /** The rhs of a closure represents escape. */
-        case Function(vparams, body) =>
-          vparams foreach traverse
-          withEscaping(traverse(body))
-
-        /**
-         * The appearance of an ident outside the method where it was defined or
-         *  anytime maybeEscaping is true implies escape.
-         */
-        case Ident(_) =>
-          val sym = tree.symbol
-          if (sym.isVariable && sym.owner.isMethod && (maybeEscaping || sym.owner != currentMethod))
-            assert(false, "Failure to lift " + sym + " in "+sym.owner+" in unit "+unit); freeMutableVars += sym
-        case _ =>
-          super.traverse(tree)
       }
     }
   }
