@@ -105,7 +105,7 @@ abstract class ICodeReader extends ClassfileParser {
         if (sym == NoSymbol) {
           log("Could not find symbol for " + name + ": " + tpe)
           log(owner.info.member(name).tpe + " : " + tpe)
-          if (name.toString() == "toMap")
+          if (name.toString == "toMap")
             tpe = pool.getType(dummySym, ch)
           if (field)
             sym = owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE | javaToScalaFlags(jflags))

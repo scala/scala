@@ -84,7 +84,7 @@ trait Patterns extends ast.TreeDSL {
     def isSwitchable = cond(const.tag) { case ByteTag | ShortTag | IntTag | CharTag => true }
     def intValue = const.intValue
     override def description = {
-      val s = if (value == null) "null" else value.toString()
+      val s = if (value == null) "null" else value.toString
       "Lit(%s)".format(s)
     }
   }
@@ -387,7 +387,7 @@ trait Patterns extends ast.TreeDSL {
     def name: Name
     override def sufficientType = tpe.narrow
     override def simplify(pv: PatternVar) = this.rebindToEqualsCheck()
-    override def description = name.toString()
+    override def description = name.toString
   }
 
   sealed trait UnapplyPattern extends Pattern {
@@ -469,9 +469,9 @@ trait Patterns extends ast.TreeDSL {
       case _          => super.equals(other)
     }
     override def hashCode() = boundTree.hashCode()
-    def description = super.toString()
+    def description = super.toString
 
-    final override def toString() = description
+    final override def toString = description
 
     def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
   }

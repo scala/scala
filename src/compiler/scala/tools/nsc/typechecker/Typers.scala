@@ -1479,7 +1479,7 @@ trait Typers extends Modes with Adaptations {
           }
           if (!forMSIL && (value.hasAnnotation(BeanPropertyAttr) ||
               value.hasAnnotation(BooleanBeanPropertyAttr))) {
-            val nameSuffix = name.toString().capitalize
+            val nameSuffix = name.toString.capitalize
             val beanGetterName =
               (if (value.hasAnnotation(BooleanBeanPropertyAttr)) "is" else "get") +
               nameSuffix

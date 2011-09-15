@@ -78,8 +78,12 @@ trait Names extends api.Names {
     while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
     n = n.next;
     if (n eq null) {
-      n = new TermName(nc, len, h)
+      // The logic order here is future-proofing against the possibility
+      // that name.toString will become an eager val, in which case the call
+      // to enterChars cannot follow the construction of the TermName.
+      val ncStart = nc
       enterChars(cs, offset, len)
+      n = new TermName(ncStart, len, h)
     }
     n
   }
@@ -144,6 +148,10 @@ trait Names extends api.Names {
 
     /** @return the string representation of this name */
     final override def toString(): String = new String(chrs, index, len)
+    // Should we opt to make toString into a val to avoid the creation
+    // of 750,000 copies of x$1, here's the line.
+    // final override val toString = new String(chrs, index, len)
+
     def debugString() = NameTransformer.decode(toString) + (if (isTypeName) "!" else "")
 
     /** Write to UTF8 representation of this name to given character array.
@@ -335,7 +343,7 @@ trait Names extends api.Names {
 
     /** Replace operator symbols by corresponding $op_name. */
     def encode: Name = {
-      val str = toString()
+      val str = toString
       val res = NameTransformer.encode(str)
       if (res == str) this
       else if (isTypeName) newTypeName(res)
@@ -347,7 +355,7 @@ trait Names extends api.Names {
 
     /** Replace $op_name by corresponding operator symbol. */
     def decode: String = (
-      NameTransformer.decode(toString()) +
+      NameTransformer.decode(toString) +
       (if (nameDebug && isTypeName) "!" else ""))//debug
 
     def isOperatorName: Boolean = decode != toString

@@ -413,7 +413,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case LITERALlong    => Constant(readLong(len))
         case LITERALfloat   => Constant(intBitsToFloat(readLong(len).toInt))
         case LITERALdouble  => Constant(longBitsToDouble(readLong(len)))
-        case LITERALstring  => Constant(readNameRef().toString())
+        case LITERALstring  => Constant(readNameRef().toString)
         case LITERALnull    => Constant(null)
         case LITERALclass   => Constant(readTypeRef())
         case LITERALenum    => Constant(readSymbolRef())

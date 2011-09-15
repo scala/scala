@@ -474,7 +474,7 @@ abstract class GenMSIL extends SubComponent {
         // "Clone": if the code is non-portable, "Clone" is defined, not "clone"
         // TODO: improve condition (should override AnyRef.clone)
         if (iclass.methods.forall(m => {
-          !((m.symbol.name.toString() != "clone" || m.symbol.name.toString() != "Clone") &&
+          !((m.symbol.name.toString != "clone" || m.symbol.name.toString != "Clone") &&
             m.symbol.tpe.paramTypes.length != 0)
         })) {
           debuglog("auto-generating cloneable method for " + sym)
@@ -1615,7 +1615,7 @@ abstract class GenMSIL extends SubComponent {
         if (sym.isNestedClass) sym.simpleName
         else sym.fullName
        } else
-         sym.simpleName.toString().trim()) + suffix
+         sym.simpleName.toString.trim()) + suffix
     }
 
 

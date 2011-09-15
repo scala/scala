@@ -197,7 +197,7 @@ object ShowPickled extends Names {
       tag match {
         case TERMname =>
           out.print(" ")
-          out.print(newTermName(buf.bytes, buf.readIndex, len).toString())
+          out.print(newTermName(buf.bytes, buf.readIndex, len).toString)
           buf.readIndex = end
         case TYPEname =>
           out.print(" ")

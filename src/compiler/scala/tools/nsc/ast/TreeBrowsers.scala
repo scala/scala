@@ -44,12 +44,12 @@ abstract class TreeBrowsers {
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
   case class ProgramTree(units: List[UnitTree]) extends ValidTree {
-    override def toString(): String = "Program"
+    override def toString: String = "Program"
   }
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
   case class UnitTree(unit: CompilationUnit) extends ValidTree {
-    override def toString(): String = unit.toString()
+    override def toString: String = unit.toString
   }
 
   /**
@@ -206,7 +206,7 @@ abstract class TreeBrowsers {
                                         row: Int, hasFocus: Boolean) = {
             val (cls, name) = TreeInfo.treeName(value.asInstanceOf[Tree])
             if (name != EMPTY)
-              cls + "[" + name.toString() + "]"
+              cls + "[" + name + "]"
             else
               cls
         }
@@ -214,7 +214,7 @@ abstract class TreeBrowsers {
 
       jTree.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
         def valueChanged(e: javax.swing.event.TreeSelectionEvent): Unit = {
-          textArea.setText(e.getPath().getLastPathComponent().toString())
+          textArea.setText(e.getPath().getLastPathComponent().toString)
           infoPanel.update(e.getPath().getLastPathComponent())
         }
       })
@@ -336,21 +336,21 @@ abstract class TreeBrowsers {
             str.append(t.symbol.tpe).append("\n")
             buf = new StringWriter()
             TypePrinter.toDocument(t.symbol.tpe).format(getWidth() / getColumnWidth(), buf)
-            str.append(buf.toString())
+            str.append(buf.toString)
           }
           str.append("\n\nSymbol info: \n")
           TreeInfo.symbolTypeDoc(t).format(getWidth() / getColumnWidth(), buf)
-          str.append(buf.toString())
+          str.append(buf.toString)
           str.append("\n\nSymbol Attributes: \n").append(TreeInfo.symbolAttributes(t))
           str.append("\ntree.tpe: ")
           if (t.tpe ne null) {
-            str.append(t.tpe.toString()).append("\n")
+            str.append(t.tpe.toString).append("\n")
             buf = new StringWriter()
             TypePrinter.toDocument(t.tpe).format(getWidth() / getColumnWidth(), buf)
-            str.append(buf.toString())
+            str.append(buf.toString)
           }
       }
-      setText(str.toString())
+      setText(str.toString)
     }
   }
 
@@ -366,7 +366,7 @@ abstract class TreeBrowsers {
         ("Program", EMPTY)
 
       case UnitTree(unit) =>
-        ("CompilationUnit", unit.toString())
+        ("CompilationUnit", unit.toString)
 
       case DocDef(comment, definition) =>
         ("DocDef", EMPTY)
@@ -447,7 +447,7 @@ abstract class TreeBrowsers {
         ("Apply", EMPTY)
 
       case Super(qualif, mix) =>
-        ("Super", "mix: " + mix.toString())
+        ("Super", "mix: " + mix)
 
       case This(qualifier) =>
         ("This", qualifier)
@@ -717,7 +717,7 @@ abstract class TreeBrowsers {
       case SingleType(pre, sym) =>
         Document.group(
           Document.nest(4, "SingleType(" :/:
-                      toDocument(pre) :: ", " :/: sym.name.toString() :: ")")
+                      toDocument(pre) :: ", " :/: sym.name.toString :: ")")
         )
 
       case ConstantType(value) =>
@@ -727,7 +727,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4, "TypeRef(" :/:
                         toDocument(pre) :: ", " :/:
-                        sym.name.toString() + sym.idString :: ", " :/:
+                        sym.name.toString + sym.idString :: ", " :/:
                         "[ " :: toDocument(args) ::"]" :: ")")
         )
 
@@ -748,7 +748,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4,"ClassInfoType(" :/:
                         toDocument(parents) :: ", " :/:
-                        clazz.name.toString() + clazz.idString :: ")")
+                        clazz.name.toString + clazz.idString :: ")")
         )
 
       case MethodType(params, result) =>
@@ -798,7 +798,7 @@ abstract class TreeBrowsers {
                         toDocument(thistpe) :/: ", " :/:
                         toDocument(supertpe) ::")"))
       case _ =>
-        sys.error("Unknown case: " + t.toString() +", "+ t.getClass)
+        sys.error("Unknown case: " + t.toString +", "+ t.getClass)
     }
   }
 

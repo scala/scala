@@ -85,7 +85,7 @@ trait Picklers { self: Global =>
   implicit lazy val position: Pickler[Position] = transparentPosition | rangePosition | offsetPosition | noPosition
 
   implicit lazy val namePickler: Pickler[Name] =
-    pkl[String] .wrapped {
+    pkl[String] .wrapped[Name] {
       str => if ((str.length > 1) && (str endsWith "!")) newTypeName(str.init) else newTermName(str)
     } {
       name => if (name.isTypeName) name.toString+"!" else name.toString
