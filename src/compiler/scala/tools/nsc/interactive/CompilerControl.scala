@@ -167,7 +167,9 @@ trait CompilerControl { self: Global =>
   def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
     postWorkItem(new AskScopeCompletionItem(pos, response))
 
-  /** Asks to do unit corresponding to given source file on present and subsequent type checking passes */
+  /** Asks to do unit corresponding to given source file on present and subsequent type checking passes.
+   *  If the file is in the 'crashedFiles' ignore list it is removed and typechecked normally.
+   */
   def askToDoFirst(source: SourceFile) =
     postWorkItem(new AskToDoFirstItem(source))
 
@@ -330,7 +332,10 @@ trait CompilerControl { self: Global =>
   }
 
   class AskToDoFirstItem(val source: SourceFile) extends WorkItem {
-    def apply() = moveToFront(List(source))
+    def apply() = {
+      moveToFront(List(source))
+      enableIgnoredFile(source.file)
+    }
     override def toString = "dofirst "+source
 
     def raiseMissing() = ()

@@ -48,7 +48,6 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     else NullLogger
 
   import log.logreplay
-  debugLog("interactive compiler from 20 Feb")
   debugLog("logger: " + log.getClass + " writing to " + (new java.io.File(logName)).getAbsolutePath)
   debugLog("classpath: "+classPath)
 
@@ -160,6 +159,25 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   /** A list giving all files to be typechecked in the order they should be checked.
    */
   protected var allSources: List[SourceFile] = List()
+
+  private var lastException: Option[Throwable] = None
+
+  /** A list of files that crashed the compiler. They will be ignored during background
+   *  compilation until they are removed from this list.
+   */
+  private var ignoredFiles: Set[AbstractFile] = Set()
+
+  /** Flush the buffer of sources that are ignored during background compilation. */
+  def clearIgnoredFiles() {
+    ignoredFiles = Set()
+  }
+
+  /** Remove a crashed file from the ignore buffer. Background compilation will take it into account
+   *  and errors will be reported against it. */
+  def enableIgnoredFile(file: AbstractFile) {
+    ignoredFiles -= file
+    debugLog("Removed crashed file %s. Still in the ignored buffer: %s".format(file, ignoredFiles))
+  }
 
   /** The currently active typer run */
   private var currentTyperRun: TyperRun = _
@@ -440,12 +458,33 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     }
 
     // ensure all loaded units are typechecked
-    for (s <- allSources; unit <- getUnit(s)) {
-      if (!unit.isUpToDate) typeCheck(unit)
-      else debugLog("already up to date: "+unit)
-      for (r <- waitLoadedTypeResponses(unit.source))
-        r set unit.body
-      serviceParsedEntered()
+    for (s <- allSources; if !ignoredFiles(s.file); unit <- getUnit(s)) {
+      try {
+        if (!unit.isUpToDate)
+          if (unit.problems.isEmpty)
+            typeCheck(unit)
+          else debugLog("%s has syntax errors. Skipped typechecking".format(unit))
+        else debugLog("already up to date: "+unit)
+        for (r <- waitLoadedTypeResponses(unit.source))
+          r set unit.body
+        serviceParsedEntered()
+      } catch {
+        case ex: FreshRunReq => throw ex // propagate a new run request
+
+        case ex =>
+          println("[%s]: exception during background compile: ".format(unit.source) + ex)
+          ex.printStackTrace()
+          for (r <- waitLoadedTypeResponses(unit.source)) {
+            r.raise(ex)
+          }
+          serviceParsedEntered()
+
+          lastException = Some(ex)
+          ignoredFiles += unit.source.file
+          println("[%s] marking unit as crashed (crashedFiles: %s)".format(unit, ignoredFiles))
+
+          reporter.error(unit.body.pos, "Presentation compiler crashed while type checking this file: %s".format(ex.toString()))
+      }
     }
 
     // clean out stale waiting responses
@@ -890,6 +929,8 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
         if (unit.isUpToDate) {
           debugLog("already typed");
           response set unit.body
+        } else if (ignoredFiles(source.file)) {
+          response.raise(lastException.getOrElse(CancelException))
         } else if (onSameThread) {
           getTypedTree(source, forceReload = false, response)
         } else {
