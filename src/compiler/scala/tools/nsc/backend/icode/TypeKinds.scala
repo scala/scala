@@ -150,12 +150,8 @@ trait TypeKinds { self: ICodes =>
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)
 
-      if (front.isEmpty) tp
-      else if (rest.isEmpty) front.head   // all parents are interfaces
-      else rest.head match {
-        case AnyRefClass | ObjectClass  => tp
-        case x                          => x
-      }
+      if (front.isEmpty || rest.isEmpty || rest.head.typeSymbol == ObjectClass) tp
+      else rest.head
     }
 
     def isIntLub = (
