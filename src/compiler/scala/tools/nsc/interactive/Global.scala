@@ -461,7 +461,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     for (s <- allSources; if !ignoredFiles(s.file); unit <- getUnit(s)) {
       try {
         if (!unit.isUpToDate)
-          if (unit.problems.isEmpty)
+          if (unit.problems.isEmpty || !settings.YpresentationStrict.value)
             typeCheck(unit)
           else debugLog("%s has syntax errors. Skipped typechecking".format(unit))
         else debugLog("already up to date: "+unit)
