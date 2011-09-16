@@ -3,7 +3,6 @@ package interactive
 package tests.core
 
 import scala.tools.nsc.util.Position
-
 import scala.tools.nsc.interactive.tests.core._
 
 /** Set of core test definitions that are executed for each test run. */
@@ -76,22 +75,27 @@ private[tests] trait CoreTestDefs
       askAllSources(marker) { pos =>
         askTypeAt(pos)(NullReporter)
       } { (pos, tree) =>
-        reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + ((pos.line, pos.column)) + " " + pos.source.file.name)
-        val r = new Response[Position]
-        val sourceFile = sourceFiles.find(tree.symbol.sourceFile.path == _.path) match {
-          case Some(source) =>
-            compiler.askLinkPos(tree.symbol, source, r)
-            r.get match {
-              case Left(pos) =>
-                withResponseDelimiter {
-                  reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + (pos.line, pos.column) + " " + tree.symbol.sourceFile.name)
-                }
-              case Right(ex) =>
-                ex.printStackTrace()
-            }
-          case None =>
-            reporter.println("[error] could not locate sourcefile `" + tree.symbol.sourceFile.name + "`." +
-              "Hint: Does the looked up definition come form a binary?")
+        if(tree.symbol == compiler.NoSymbol) {
+          reporter.println("\nNo symbol is associated with tree: "+tree)
+        }
+        else {
+          reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + ((pos.line, pos.column)) + " " + pos.source.file.name)
+          val r = new Response[Position]
+          val sourceFile = sourceFiles.find(tree.symbol.sourceFile.path == _.path) match {
+            case Some(source) =>
+              compiler.askLinkPos(tree.symbol, source, r)
+              r.get match {
+                case Left(pos) =>
+                  withResponseDelimiter {
+                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + (pos.line, pos.column) + " " + tree.symbol.sourceFile.name)
+                  }
+                case Right(ex) =>
+                  ex.printStackTrace()
+              }
+            case None =>
+              reporter.println("[error] could not locate sourcefile `" + tree.symbol.sourceFile.name + "`." +
+                "Hint: Does the looked up definition come form a binary?")
+          }
         }
       }
     }
