@@ -1343,7 +1343,7 @@ trait Typers extends Modes with Adaptations {
               case _ => newinfo
             }
           }
-          Some(FinitiaryError(tparam))
+          Some(FinitaryError(tparam))
         } else None
       ).flatten
     }
@@ -2830,7 +2830,7 @@ trait Typers extends Modes with Adaptations {
         if (const == null) {
           Left(AnnotationNotAConstantError(tr))
         } else if (const.value == null)
-          Left(AnnotationArgNulError(tr))
+          Left(AnnotationArgNullError(tr))
         else
           Right(LiteralAnnotArg(const))
       }
@@ -3587,12 +3587,10 @@ trait Typers extends Modes with Adaptations {
               case _                                  => Nil
             })
             // Get correct posiition for the error
-            val (ePos, firstToReport) = {
-                val firstError = quickErrorTreeFinder(treeWithError)
-                (firstError.pos, firstError)
-              }
-
+            val firstToReport = quickErrorTreeFinder(treeWithError)
+            val ePos = firstToReport.pos
             def errorInResult(tree: Tree) = treesInResult(tree) exists (_.pos == ePos)
+
             val retry = (ePos != null) && (fun :: tree :: args exists errorInResult)
             if (settings.errortrees.value)
               println("[ErrorTree retry] " + retry + " with " + treeWithError + " " + firstToReport.exception)

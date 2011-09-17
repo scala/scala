@@ -457,7 +457,7 @@ trait NamesDefaults { self: Analyzer =>
             // treat the arg as an assignment of type Unit
             Assign(a.lhs, rhs).setPos(arg.pos)
           } else {
-            UnknwonParameterNameNamesDefaultError(arg, name)
+            UnknownParameterNameNamesDefaultError(arg, name)
           }
         } else if (argPos contains pos) {
           DoubleParamNamesDefaultError(arg, name)
