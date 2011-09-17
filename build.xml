@@ -221,9 +221,10 @@ INITIALISATION
     <condition property="os.win">
       <os family="windows"/>
     </condition>
-    
+
     <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="svn.number" failifexecutionfails="false" />
-    <!-- some default in case something went wrong getting the revision -->
+	<exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="svn.number" failifexecutionfails="false" />
+	<!-- some default in case something went wrong getting the revision -->
     <property name="svn.number" value="0"/>
 
     <property name="init.avail" value="yes"/>

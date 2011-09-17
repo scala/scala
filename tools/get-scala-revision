@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Usage: get-scala-rev [dir]
+# Usage: get-scala-revision [dir]
 # Figures out current scala revision of an svn checkout or
 # a git-svn mirror (or a git clone.)
 #
