@@ -1,0 +1,18 @@
+This is the documentation for the Scala standard library.
+
+Parts of the standard library are imported by default into all Scala source files: the [[scala]] package, and
+the contents of the [[scala.Predef]] object. In turn, these imports bring in parts of other packages throughout
+the standard library.
+
+The standard library is composed of the following fundamental packages:
+
+  - scala.[[scala.actors]] - A Erlang-style concurrency framework.
+  - scala.[[scala.collection]] - A powerful collections (data structures) framework with higher order functions for manipulation. Both [[scala.collection.mutable]] and [[scala.collection.immutable]] variants of most collection types exist, with the immutable collections being the default. Automatic parallelisation of manipulation operations is possible through the use of the [[scala.collection.parallel]] collection types.
+  - scala.[[scala.concurrent]] - Simplified execution of functions in separate threads.
+  - scala.[[scala.io]] - IO abstractions.
+  - scala.[[scala.math]] - Arbitrary precision numeric types and basic math functions.
+  - scala.[[scala.swing]] - UI toolkit, provides scala abstractions around the Java Swing toolkit.
+  - scala.[[scala.sys]] - Interaction with other processes and the operating system.
+  - scala.util.[[scala.util.matching]] - Text pattern matching using regular expressions.
+  - scala.util.[[scala.util.parsing]] - Framework for constructing parse trees. Includes a parser combinator library.
+  - scala.[[scala.xml]] - XML parsing, DOM manipulation and serialization.

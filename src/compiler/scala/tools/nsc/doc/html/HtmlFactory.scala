@@ -99,6 +99,8 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     copyResource("lib/selected2.png")
     copyResource("lib/unselected.png")
 
+    copyResource("lib/rootdoc.txt")
+
     new page.Index(universe, index) writeFor this
     new page.IndexScript(universe, index) writeFor this
 

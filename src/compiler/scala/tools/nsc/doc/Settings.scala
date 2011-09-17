@@ -81,6 +81,12 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "scala.tools.nsc.doc.html.Doclet"
   )
 
+  val docRootContent = PathSetting (
+    "-doc-root-content",
+    "The file from which the root package documentation should be imported.",
+    ""
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.

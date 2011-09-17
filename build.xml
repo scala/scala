@@ -592,6 +592,7 @@ QUICK BUILD (QUICK)
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
         <include name="**/*.gif"/>        
+        <include name="**/*.txt"/>        
       </fileset>
     </copy>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
@@ -1414,7 +1415,8 @@ DOCUMENTATION
       docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
-      classpathref="pack.classpath">
+      classpathref="pack.classpath"
+      docRootContent="${build-docs.dir}/library/lib/rootdoc.txt"> 
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>

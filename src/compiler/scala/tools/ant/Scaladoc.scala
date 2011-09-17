@@ -42,6 +42,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `addparams`,
  *  - `deprecation`,
  *  - `docgenerator`,
+ *  - `docrootcontent`,
  *  - `unchecked`.
  *
  *  It also takes the following parameters as nested elements:
@@ -94,6 +95,9 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** The fully qualified name of a doclet class, which will be used to generate the documentation. */
   private var docgenerator: Option[String] = None
+
+  /** The file from which the documentation content of the root package will be taken */
+  private var docrootcontent: Option[File] = None
 
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
@@ -271,6 +275,16 @@ class Scaladoc extends ScalaMatchingTask {
    */
   def setDocgenerator(input: String) {
     docgenerator = Some(input)
+  }
+
+  /**
+   * Sets the `docrootcontent` attribute.
+   *
+   * @param input The file from which the documentation content of the root
+   * package will be taken.
+   */
+  def setDocrootcontent(input : File) {
+    docrootcontent = Some(input)
   }
 
   /** Sets the `docversion` attribute.
@@ -532,6 +546,7 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get
+    if (!docrootcontent.isEmpty) docSettings.docRootContent.value = docrootcontent.get.getAbsolutePath()
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
 
     docSettings processArgumentString addParams
