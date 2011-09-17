@@ -345,7 +345,7 @@ div.members > ol > li:last-child {
 .cmt {}
 
 .cmt p {
-/*	margin: 0.7em 0;*/
+	margin: 0.7em 0;
 }
 
 .cmt p:first-child {
@@ -552,8 +552,8 @@ div.fullcommenttop dl.paramcmts > dd,
 div.fullcomment dl.paramcmts > dd {
   display: block;
   padding-left: 10px;
-  float: left;
   margin-bottom: 5px;
+  margin-left: 70px;
 }
 
 /* Members filter tool */

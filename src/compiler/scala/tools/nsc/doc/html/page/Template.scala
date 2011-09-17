@@ -29,7 +29,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     </xml:group>
 
   val valueMembers =
-    tpl.methods ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
+    tpl.methods.filterNot(_.isBridge) ++ tpl.values ++ tpl.templates.filter(x => x.isObject || x.isPackage) sorted
 
   val (absValueMembers, nonAbsValueMembers) =
     valueMembers partition (_.isAbstract)
