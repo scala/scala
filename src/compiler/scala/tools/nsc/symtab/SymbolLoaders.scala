@@ -108,7 +108,7 @@ abstract class SymbolLoaders {
       })
     }
 
-    override def complete(root: Symbol) : Unit = {
+    override def complete(root: Symbol) {
       def signalError(ex: Exception) {
         ok = false
         if (settings.debug.value) ex.printStackTrace()

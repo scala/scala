@@ -132,7 +132,9 @@ trait ProcessCreation {
     * apply(<x> {dxPath.absolutePath} --dex --output={classesDexPath.absolutePath} {classesMinJarPath.absolutePath}</x>)
     * }}}
     */
+  /*@XML*/
   def apply(command: scala.xml.Elem): ProcessBuilder  = apply(command.text.trim)
+  /*XML@*/
 
   /** Create a [[scala.sys.process.ProcessBuilder]] from a `Boolean`. This can be
     * to force an exit value.
@@ -205,7 +207,9 @@ trait ProcessImplicits {
   implicit def urlToProcess(url: URL): URLBuilder                         = apply(url)
 
   /** Implicitly convert a [[scala.xml.Elem]] into a [[scala.sys.process.ProcessBuilder]] */
+  /*@XML*/
   implicit def xmlToProcess(command: scala.xml.Elem): ProcessBuilder      = apply(command)
+  /*XML@*/
 
   /** Implicitly convert a `String` into a [[scala.sys.process.ProcessBuilder]] */
   implicit def stringToProcess(command: String): ProcessBuilder           = apply(command)

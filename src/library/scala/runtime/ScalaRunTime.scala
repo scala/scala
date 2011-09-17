@@ -8,13 +8,15 @@
 
 package scala.runtime
 
-import scala.reflect.ClassManifest
 import scala.collection.{ Seq, IndexedSeq, TraversableView }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
-import scala.xml.{ Node, MetaData }
 import scala.util.control.ControlThrowable
+/*@XML*/
+import scala.xml.{ Node, MetaData }
+/*XML@*/
+
 import java.lang.Double.doubleToLongBits
 import java.lang.reflect.{ Modifier, Method => JMethod }
 
@@ -278,8 +280,10 @@ object ScalaRunTime {
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
+      /*@XML*/
       // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
       case _: Node | _: MetaData => true
+      /*XML@*/
       // Range/NumericRange have a custom toString to avoid walking a gazillion elements
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
@@ -334,6 +338,7 @@ object ScalaRunTime {
       case _: StackOverflowError | _: UnsupportedOperationException | _: AssertionError => "" + arg
     }
   }
+
   /** stringOf formatted for use in a repl result. */
   def replStringOf(arg: Any, maxElements: Int): String = {
     val s  = stringOf(arg, maxElements)

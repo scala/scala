@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2011 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.tools.nsc
 package typechecker
 
@@ -7,6 +12,9 @@ import scala.collection.{ mutable, immutable }
 
 /** Duplicate trees and re-type check them, taking care to replace
  *  and create fresh symbols for new local definitions.
+ *
+ *  @author  Iulian Dragos
+ *  @version 1.0
  */
 abstract class Duplicators extends Analyzer {
   import global._
@@ -155,7 +163,6 @@ abstract class Duplicators extends Analyzer {
       stats foreach invalidate
     }
 
-
     def retypedMethod(ddef: DefDef, oldThis: Symbol, newThis: Symbol): Tree = {
       oldClassOwner = oldThis
       newClassOwner = newThis
@@ -209,6 +216,7 @@ abstract class Duplicators extends Analyzer {
           log("fixing tpe: " + tree.tpe + " with sym: " + tree.tpe.typeSymbol)
           ttree.tpe = fixType(ttree.tpe)
           ttree
+
         case Block(stats, res) =>
           log("invalidating block")
           invalidate(stats)

@@ -41,8 +41,8 @@ trait Namers { self: Analyzer =>
     }
   }
 
-  private class NormalNamer(context : Context) extends Namer(context)
-  def newNamer(context : Context) : Namer = new NormalNamer(context)
+  private class NormalNamer(context: Context) extends Namer(context)
+  def newNamer(context: Context): Namer = new NormalNamer(context)
 
   // In the typeCompleter (templateSig) of a case class (resp it's module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
@@ -948,7 +948,7 @@ trait Namers { self: Analyzer =>
         else MethodType(params, restpe)
       }
 
-      def thisMethodType(restpe: Type) =  {
+      def thisMethodType(restpe: Type) = {
         import scala.collection.mutable.ListBuffer
         val okParams = ListBuffer[Symbol]()
         // can we relax these restrictions? see test/files/pos/depmet_implicit_oopsla_session_2.scala and neg/depmet_try_implicit.scala for motivation

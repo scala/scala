@@ -98,8 +98,9 @@ abstract class ReplTokens {
       SUBTYPE    -> Subtype,
       SUPERTYPE  -> Supertype,
       TRUE       -> True,
-      VIEWBOUND  -> ViewBound,
+      VIEWBOUND  -> ViewBound/*@XML*/,
       XMLSTART   -> "<xmlstart>"
+/*XML@*/
     )
   }
   def isAlphaId(t: ReplToken) = t match {

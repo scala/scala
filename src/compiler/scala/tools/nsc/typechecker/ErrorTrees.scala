@@ -1,6 +1,15 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2011 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.tools.nsc
 package typechecker
 
+/**
+ *  @author  Hubert Plociniczak
+ *  @version 1.0
+ */
 trait ErrorTrees {
   self: Analyzer =>
 
@@ -17,7 +26,7 @@ trait ErrorTrees {
     printName(this)
   }
 
-  trait ContextError {
+  protected trait ContextError {
     def errMsg: String
     def errPos: Position
     def emit(context: Context) = context.error(errPos, errMsg)
@@ -50,7 +59,7 @@ trait ErrorTrees {
 
   object quickErrorTreeFinder extends Traverser {
     import scala.collection.mutable
-    var found: Option[ErrorTree] = None
+    private var found: Option[ErrorTree] = None
     override def traverse(t: Tree) {
       if (!found.isDefined)
         t match {
@@ -60,14 +69,14 @@ trait ErrorTrees {
             super.traverse(t)
         }
     }
-    def apply(t: Tree) = {
+    def apply(t: Tree): ErrorTree = {
       found = None
       traverse(t)
       found.get
     }
   }
 
-  abstract class TreeForwarder(forwardTo: Tree) extends Tree {
+  protected abstract class TreeForwarder(forwardTo: Tree) extends Tree {
     override def pos       = forwardTo.pos
     override def hasSymbol = forwardTo.hasSymbol
     override def symbol    = forwardTo.symbol
@@ -190,7 +199,6 @@ trait ErrorTrees {
       def errMsg = "reassignment to val"
       def errPos = tree.pos
     }
-
 
     // typedIdent
     case class AmbiguousIdentError(tree: Tree, name: Name, msg: String)
@@ -736,7 +744,6 @@ trait ErrorTrees {
       }
     }
 
-
     // Extends ErrorTreeWithPrettyPrinter to pass presentation/ping-pong test case
     case class ApplyWithoutArgsError(tree: Tree, fun: Tree)
       extends TreeForwarder(tree) with ErrorTreeWithPrettyPrinter with ErrorTree {
@@ -911,7 +918,6 @@ trait ErrorTrees {
       def errPos = pos0
     }
 
-
     // TODO needs test case
     // cases where we do not necessairly return trees
     case class DependentMethodTpeConversionToFunctionError(pos0: Position, tp: Type)
@@ -1066,7 +1072,6 @@ trait ErrorTrees {
           context.error(tree.pos, "constructor cannot be instantiated to expected type" +
                   foundReqMsg(restpe, pt))
       }
-
     }
 
     case class NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type],
@@ -1077,7 +1082,6 @@ trait ErrorTrees {
         if (!tree.isErroneous)
           context.error(tree.pos, applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
       }
-
     }
 
     case class AmbiguousMethodAlternativeError(tree: Tree, pre: Type, best: Symbol,
@@ -1154,7 +1158,6 @@ trait ErrorTrees {
         foundReqMsg(polyType(undetparams, skipImplicit(tree.tpe)), pt)
       def errPos = tree.pos
     }
-
 
     //checkCheckable
     case class TypePatternOrIsInstanceTestError(pos0: Position, tp: Type)
@@ -1236,7 +1239,6 @@ trait ErrorTrees {
   case class PendingErrors(pending0: List[ErrorTree])
     extends ErrorTree {
     assert(pending0.length != 0, "pending exceptions cannot be empty")
-
 
     def emit(context: Context) {
       // Try to report each, here we dont' care
