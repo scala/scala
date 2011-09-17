@@ -11,6 +11,8 @@ import scala.util.matching.Regex
 
 import symtab.Flags
 
+import io._
+
 import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
@@ -332,6 +334,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       val pack =
         if (bSym == RootPackage)
           new RootPackageImpl(bSym) {
+            override lazy val comment =
+              if(settings.docRootContent.isDefault) None
+              else {
+                import Streamable._
+                Path(settings.docRootContent.value) match {
+                  case f : File => {
+                    val rootComment = closing(f.inputStream)(is => parse(slurp(is), "", NoPosition))
+                    Some(rootComment)
+                  }
+                  case _ => None
+                }
+              }
             override val name = "root"
             override def inTemplate = this
             override def toRoot = this :: Nil
