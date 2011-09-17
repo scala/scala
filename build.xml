@@ -206,10 +206,10 @@ INITIALISATION
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
        This is to facilitate testing new command line options which do not yet exist in starr. -->
-	  <property name="scalac.args.quickonly" value=""/>
-	
+    <property name="scalac.args.quickonly" value=""/>
+
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-	  <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
     <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
     <!-- This is the start time for the distribution -->
@@ -223,8 +223,8 @@ INITIALISATION
     </condition>
 
     <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="svn.number" failifexecutionfails="false" />
-	<exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="svn.number" failifexecutionfails="false" />
-	<!-- some default in case something went wrong getting the revision -->
+    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="svn.number" failifexecutionfails="false" />
+    <!-- some default in case something went wrong getting the revision -->
     <property name="svn.number" value="0"/>
 
     <property name="init.avail" value="yes"/>
@@ -1165,7 +1165,7 @@ BOOTSTRAPPING BUILD (STRAP)
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
-	<pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/library"/>
       </compilationpath>
     </scalacfork>
   </target>
