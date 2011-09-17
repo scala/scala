@@ -237,7 +237,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   case object UnmappableTree extends TermTree {
     override def toString = "<unmappable>"
-    protected def initErrorCheck() { hasErrorTree = Some(false) }
+    protected def errorSubtrees = Nil
     super.tpe_=(NoType)
     override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
   }

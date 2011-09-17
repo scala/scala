@@ -7,12 +7,10 @@ trait ErrorTrees {
   import global._
 
   trait ErrorTree extends AbsErrorTree {
-
     def emit(context: Context): Unit
     def emit(): Unit = emit(typer.context.asInstanceOf[Context])
-    protected def initErrorCheck() {
-      hasErrorTree = Some(true)
-    }
+    protected def errorSubtrees = Nil
+    override def containsError() = true
     def exception: TypeError = null // Once we get rid of all thrown type errors (apart from cyclic), remove
     var reported = false
     override def tpe = ErrorType

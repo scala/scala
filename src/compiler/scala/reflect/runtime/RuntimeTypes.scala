@@ -11,9 +11,7 @@ trait RuntimeTypes extends Universe with api.RuntimeTypes {
   // case class Literal(x: Any),
   // once calls to the deprecated factory Literal(x: Any) has been eliminated from all code.
   case class FreeValue(any: Any) extends Tree {
-    protected def initErrorCheck() {
-      hasErrorTree = Some(false)
-    }
+    protected def errorSubtrees = Nil
   }
 
   case class InstanceRefSymbol(value: AnyRef) extends TermSymbol(NoSymbol, NoPosition, nme.EMPTY)

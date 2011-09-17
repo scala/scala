@@ -33,13 +33,10 @@ abstract class TreeBrowsers {
 
   val borderSize = 10
 
-
   def create(): SwingBrowser = new SwingBrowser();
 
   trait ValidTree extends Tree {
-    protected def initErrorCheck() {
-      hasErrorTree = Some(false)
-    }
+    protected def errorSubtrees: List[Tree] = Nil
   }
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
