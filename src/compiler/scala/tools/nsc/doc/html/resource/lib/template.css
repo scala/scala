@@ -345,7 +345,7 @@ div.members > ol > li:last-child {
 .cmt {}
 
 .cmt p {
-	margin: 0.7em 0;
+/*	margin: 0.7em 0;*/
 }
 
 .cmt p:first-child {
@@ -535,6 +535,10 @@ div.fullcomment .comment:last-child {
   margin-bottom: 0;
 }
 
+div.fullcommenttop dl.paramcmts {
+  margin-bottom: 0.8em;
+  padding-bottom: 0.8em;
+}
 
 div.fullcommenttop dl.paramcmts > dt,
 div.fullcomment dl.paramcmts > dt {
