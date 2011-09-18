@@ -11,7 +11,7 @@
 package scala
 
 /** `Char`, a 16-bit unsigned integer (equivalent to Java's `char` primitive type) is a
- *  subtype of [[scala.AnyVal]], meaning that instances of `Char` are not
+ *  subtype of [[scala.AnyVal]]. Instances of `Char` are not
  *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Char]] => [[scala.runtime.RichChar]]

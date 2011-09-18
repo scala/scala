@@ -11,7 +11,7 @@
 package scala
 
 /** `Float`, a 32-bit IEEE-754 floating point number (equivalent to Java's `float` primitive type) is a
- *  subtype of [[scala.AnyVal]], meaning that instances of `Float` are not
+ *  subtype of [[scala.AnyVal]]. Instances of `Float` are not
  *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Float]] => [[scala.runtime.RichFloat]]

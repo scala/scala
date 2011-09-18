@@ -11,7 +11,7 @@
 package scala
 
 /** `Byte`, a 8-bit signed integer (equivalent to Java's `byte` primitive type) is a
- *  subtype of [[scala.AnyVal]], meaning that instances of `Byte` are not
+ *  subtype of [[scala.AnyVal]]. Instances of `Byte` are not
  *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.Byte]] => [[scala.runtime.RichByte]]

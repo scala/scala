@@ -262,7 +262,7 @@ package scala
 
   def classDocTemplate = ("""
 /** `@name@`@representation@ (equivalent to Java's `@javaequiv@` primitive type) is a
- *  subtype of [[scala.AnyVal]], meaning that instances of `@name@` are not
+ *  subtype of [[scala.AnyVal]]. Instances of `@name@` are not
  *  represented by an object in the underlying runtime system.
  *
  *  There is an implicit conversion from [[scala.@name@]] => [[scala.runtime.Rich@name@]]
@@ -436,9 +436,10 @@ def getClass(): Class[Boolean] = sys.error("stub")
   }
   object U extends AnyValRep("Unit", None, "void") {
     override def classDoc = """
-/** `Unit` (equivalent to Java's `void` type) is a subtype of [[scala.AnyVal]], meaning that
- *  it is not represented by an object in the underlying runtime system. There is
- *  only one value of type `Unit`: `()`.
+/** `Unit` is a subtype of [[scala.AnyVal]]. There is only one value of type
+ *  `Unit`, `()`, and it is not represented by any object in the underlying
+ *  runtime system. A method with return type `Unit` is analogous to a Java
+ *  method which is declared `void`.
  */
 """
     def classLines  = List(
