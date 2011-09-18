@@ -17,31 +17,59 @@ import annotation.migration
 
 /** `Parsers` is a component that ''provides'' generic parser combinators.
  *
- *  It ''requires'' the type of the elements these parsers should parse
+ *  There are two abstract members that must be defined in order to
+ *  produce parsers: the type `Elem` and
+ *  [[scala.util.parsing.combinator.Parsers.Parser]]. There are helper
+ *  methods that produce concrete `Parser` implementations -- see ''primitive
+ *  parser'' below.
+ *
+ *  A `Parsers` may define multiple `Parser` instances, which are combined
+ *  to produced the desired parser.
+ *
+ *  The type of the elements these parsers should parse must be defined
+ *  by declaring `Elem`
  *  (each parser is polymorphic in the type of result it produces).
  *
  *  There are two aspects to the result of a parser:
  *  1. success or failure
  *  1. the result.
  *
- *  A `Parser[T]` provides both kinds of information.
+ *  A [[scala.util.parsing.combinator.Parsers.Parser]] produces both kinds of information,
+ *  by returning a [[scala.util.parsing.combinator.Parsers.ParseResult]] when its `apply`
+ *  method is called on an input.
  *
  *  The term ''parser combinator'' refers to the fact that these parsers
  *  are constructed from primitive parsers and composition operators, such
- *  as sequencing, alternation, optionality, repetition, lifting, and so on.
+ *  as sequencing, alternation, optionality, repetition, lifting, and so on. For example,
+ *  given `p1` and `p2` of type [[scala.util.parsing.combinator.Parsers.Parser]]:
+ *
+ *  {{{
+ *  p1 ~ p2 // sequencing: must match p1 followed by p2
+ *  p1 | p2 // alternation: must match either p1 or p2, with preference given to p1
+ *  p1.?    // optionality: may match p1 or not
+ *  p1.*    // repetition: matches any number of repetitions of p1
+ *  }}}
+ *
+ *  These combinators are provided as methods on [[scala.util.parsing.combinator.Parsers.Parser]],
+ *  or as methods taking one or more `Parsers` and returning a `Parser` provided in
+ *  this class.
  *
  *  A ''primitive parser'' is a parser that accepts or rejects a single
  *  piece of input, based on a certain criterion, such as whether the
  *  input...
- *  - is equal to some given object,
- *  - satisfies a certain predicate,
- *  - is in the domain of a given partial function, ...
+ *  - is equal to some given object (see method `accept`),
+ *  - satisfies a certain predicate (see method `acceptIf`),
+ *  - is in the domain of a given partial function (see method `acceptMatch`)
+ *  - or other conditions, by using one of the other methods available, or subclassing `Parser`
  *
- *  Even more primitive parsers always produce the same result, irrespective of the input.
+ *  Even more primitive parsers always produce the same result, irrespective of the input. See
+ *  methods `success`, `err` and `failure` as examples.
  *
- * @author Martin Odersky
- * @author Iulian Dragos
- * @author Adriaan Moors
+ *  @see [[scala.util.parsing.combinator.RegexParsers]] and other known subclasses for practical examples.
+ *
+ *  @author Martin Odersky
+ *  @author Iulian Dragos
+ *  @author Adriaan Moors
  */
 trait Parsers {
   /** the type of input elements the provided parsers consume (When consuming
@@ -372,10 +400,14 @@ trait Parsers {
      *
      *  ''From: G. Hutton. Higher-order functions for parsing. J. Funct. Program., 2(3):323--343, 1992.''
      *
-     * @param fq a function that, given the result from this parser, returns
-     *        the second parser to be applied
-     * @return a parser that succeeds if this parser succeeds (with result `x`)
-     *         and if then `fq(x)` succeeds
+     *  @example {{{
+     *  def perlRE = "m" ~> (".".r into (separator => """[^%s]*""".format(separator).r <~ separator))
+     *  }}}
+     *
+     *  @param fq a function that, given the result from this parser, returns
+     *         the second parser to be applied
+     *  @return a parser that succeeds if this parser succeeds (with result `x`)
+     *          and if then `fq(x)` succeeds
      */
     def into[U](fq: T => Parser[U]): Parser[U] = flatMap(fq)
 
@@ -484,16 +516,44 @@ trait Parsers {
    */
   def accept[U](expected: String, f: PartialFunction[Elem, U]): Parser[U] = acceptMatch(expected, f)
 
+  /** A parser matching input elements that satisfy a given predicate.
+   *
+   *  `acceptIf(p)(el => "Unexpected "+el)` succeeds if the input starts with an element `e` for which `p(e)` is true.
+   *
+   *  @param  err    A function from the received element into an error message.
+   *  @param  p      A predicate that determines which elements match.
+   *  @return        A parser for elements satisfying p(e).
+   */
   def acceptIf(p: Elem => Boolean)(err: Elem => String): Parser[Elem] = Parser { in =>
     if (p(in.first)) Success(in.first, in.rest)
     else Failure(err(in.first), in)
   }
 
+  /** The parser that matches an element in the domain of the partial function `f`.
+   *
+   *  If `f` is defined on the first element in the input, `f` is applied
+   *  to it to produce this parser's result.
+   *
+   *  Example: The parser `acceptMatch("name", {case Identifier(n) => Name(n)})`
+   *          accepts an `Identifier(n)` and returns a `Name(n)`
+   *
+   *  @param expected a description of the kind of element this parser expects (for error messages)
+   *  @param f a partial function that determines when this parser is successful and what its output is
+   *  @return A parser that succeeds if `f` is applicable to the first element of the input,
+   *          applying `f` to it to produce the result.
+   */
   def acceptMatch[U](expected: String, f: PartialFunction[Elem, U]): Parser[U] = Parser{ in =>
     if (f.isDefinedAt(in.first)) Success(f(in.first), in.rest)
     else Failure(expected+" expected", in)
   }
 
+  /** A parser that matches only the given [[scala.collection.Iterable]] collection of elements `es`.
+   *
+   *  `acceptSeq(es)` succeeds if the input subsequently provides the elements in the iterable `es`.
+   *
+   *  @param  es the list of expected elements
+   *  @return a Parser that recognizes a specified list of elements
+   */
   def acceptSeq[ES <% Iterable[Elem]](es: ES): Parser[List[Elem]] =
     es.foldRight[Parser[List[Elem]]](success(Nil)){(x, pxs) => accept(x) ~ pxs ^^ mkList}
 
@@ -518,6 +578,10 @@ trait Parsers {
    */
   def success[T](v: T) = Parser{ in => Success(v, in) }
 
+  /** A helper method that turns a `Parser` into one that will
+   *  print debugging information to stdout before and after
+   *  being applied.
+   */
   def log[T](p: => Parser[T])(name: String): Parser[T] = Parser{ in =>
     println("trying "+ name +" at "+ in)
     val r = p(in)
@@ -755,7 +819,22 @@ trait Parsers {
     }
   }
 
+  /** Given a concatenation with a repetition (list), move the concatenated element into the list */
   def mkList[T] = (_: ~[T, List[T]]) match { case x ~ xs => x :: xs }
+
+  /** A wrapper over sequence of matches.
+   *
+   *  Given `p1: Parser[A]` and `p2: Parser[B]`, a parser composed with
+   *  `p1 ~ p2` will have type `Parser[~[A, B]]`. The successful result
+   *  of the parser can be extracted from this case class.
+   *
+   *  It also enables pattern matching, so something like this is possible:
+   *
+   *  {{{
+   *  def concat(p1: Parser[String], p2: Parser[String]): Parser[String] =
+   *    p1 ~ p2 ^^ { case a ~ b => a + b }
+   *  }}}
+   */
   case class ~[+a, +b](_1: a, _2: b) {
     override def toString = "("+ _1 +"~"+ _2 +")"
   }

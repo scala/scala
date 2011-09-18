@@ -14,6 +14,44 @@ import scala.util.matching.Regex
 import scala.util.parsing.input._
 import scala.collection.immutable.PagedSeq
 
+/** The ''most important'' differences between `RegexParsers` and
+ *  [[scala.util.parsing.combinator.Parsers]] are:
+ *
+ *  - `Elem` is defined to be [[scala.Char]]
+ *  - There's an implicit conversion from [[java.lang.String]] to `Parser[String]`,
+ *    so that string literals can be used as parser combinators.
+ *  - There's an implicit conversion from [[scala.util.matching.Regex]] to `Parser[String]`,
+ *    so that regex expressions can be used as parser combinators.
+ *  - The parsing methods call the method `skipWhitespace` (defaults to `true`) and, if true,
+ *    skip any whitespace before before each parser is called.
+ *  - Protected val `whiteSpace` returns a regex that identifies whitespace.
+ *
+ *  For example, this creates a very simple calculator receiving `String` input:
+ *
+ *  {{{
+ *  object Calculator extends RegexParsers {
+ *    def number: Parser[Double] = """\d+(\.\d*)?""".r ^^ { _.toDouble }
+ *    def factor: Parser[Double] = number | "(" ~> expr <~ ")"
+ *    def term  : Parser[Double] = factor ~ rep( "*" ~ factor | "/" ~ factor) ^^ {
+ *      case number ~ list => (number /: list) {
+ *        case (x, "*" ~ y) => x * y
+ *        case (x, "/" ~ y) => x / y
+ *      }
+ *    }
+ *    def expr  : Parser[Double] = term ~ rep("+" ~ log(term)("Plus term") | "-" ~ log(term)("Minus term")) ^^ {
+ *      case number ~ list => list.foldLeft(number) { // same as before, using alternate name for /:
+ *        case (x, "+" ~ y) => x + y
+ *        case (x, "-" ~ y) => x - y
+ *      }
+ *    }
+ *
+ *    def apply(input: String): Double = parseAll(expr, input) match {
+ *      case Success(result, _) => result
+ *      case failure : NoSuccess => scala.sys.error(failure.msg)
+ *    }
+ *  }
+ *  }}}
+ */
 trait RegexParsers extends Parsers {
 
   type Elem = Char
@@ -22,6 +60,15 @@ trait RegexParsers extends Parsers {
 
   def skipWhitespace = whiteSpace.toString.length > 0
 
+  /** Method called to handle whitespace before parsers.
+   *
+   *  It checks `skipWhitespace` and, if true, skips anything
+   *  matching `whiteSpace` starting from the current offset.
+   *
+   *  @param source  The input being parsed.
+   *  @param offset  The offset into `source` from which to match.
+   *  @return        The offset to be used for the next parser.
+   */
   protected def handleWhiteSpace(source: java.lang.CharSequence, offset: Int): Int =
     if (skipWhitespace)
       (whiteSpace findPrefixMatchOf (source.subSequence(offset, source.length))) match {
