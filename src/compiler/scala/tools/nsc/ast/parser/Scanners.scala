@@ -10,7 +10,9 @@ import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
+/*@XML*/
 import scala.xml.Utility.{ isNameStart }
+/*XML@*/
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
  */
@@ -297,6 +299,7 @@ trait Scanners extends ScannersCommon {
           putChar(ch)
           nextChar()
           getIdentRest()  // scala-mode: wrong indent for multi-line case blocks
+/*@XML*/
         case '<' => // is XMLSTART?
           val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
           nextChar()
@@ -308,8 +311,9 @@ trait Scanners extends ScannersCommon {
               putChar('<')
               getOperatorRest()
           }
+/*XML@*/
         case '~' | '!' | '@' | '#' | '%' |
-             '^' | '*' | '+' | '-' | /*'<' | */
+             '^' | '*' | '+' | '-' | /*'<' | */ /*@NOXML '<' | XMLNO@*/
              '>' | '?' | ':' | '=' | '&' |
              '|' | '\\' =>
           putChar(ch)
@@ -489,7 +493,7 @@ trait Scanners extends ScannersCommon {
     def inLastOfStat(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
-           TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
+           TYPE /*@XML*/| XMLSTART /*XML@*/ | RPAREN | RBRACKET | RBRACE =>
         true
       case _ =>
         false
@@ -497,10 +501,10 @@ trait Scanners extends ScannersCommon {
 
 // Identifiers ---------------------------------------------------------------
 
-    private def getBackquotedIdent(): Unit = {
+    private def getBackquotedIdent() {
       nextChar()
       if (getStringLit('`')) {
-        finishNamed();
+        finishNamed()
         if (name.length == 0) syntaxError("empty quoted identifier")
         token = BACKQUOTED_IDENT
       }
@@ -1006,7 +1010,9 @@ trait Scanners extends ScannersCommon {
     case COMMA => "','"
     case CASECLASS => "case class"
     case CASEOBJECT => "case object"
+/*@XML*/
     case XMLSTART => "$XMLSTART$<"
+/*XML@*/
     case _ =>
       (token2name get token) match {
         case Some(name) => "'" + name + "'"

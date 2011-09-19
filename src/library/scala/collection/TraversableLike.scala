@@ -9,7 +9,7 @@
 package scala.collection
 
 import generic._
-import mutable.{ Builder, ListBuffer }
+import mutable.{ Builder }
 import annotation.{tailrec, migration, bridge}
 import annotation.unchecked.{ uncheckedVariance => uV }
 import parallel.ParIterable
@@ -193,8 +193,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b.result
   }
 
-  /** As with `++`, returns a new collection containing the elements from the left operand followed by the
-   *  elements from the right operand.
+  /** As with `++`, returns a new collection containing the elements from the
+   *  left operand followed by the elements from the right operand.
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.
    *
@@ -223,9 +223,6 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @param bf     $bfinfo
    *  @return       a new collection of type `That` which contains all elements
    *                of this $coll followed by all elements of `that`.
-   *
-   *  @return       a new $coll which contains all elements of this $coll
-   *                followed by all elements of `that`.
    */
   def ++:[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
     (that ++ seq)(breakOut)
@@ -423,7 +420,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
 
   /** Optionally selects the first element.
    *  $orderDependent
-   *  @return  the first element of this $coll if it is nonempty, `None` if it is empty.
+   *  @return  the first element of this $coll if it is nonempty,
+   *           `None` if it is empty.
    */
   def headOption: Option[A] = if (isEmpty) None else Some(head)
 
@@ -452,7 +450,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
 
   /** Optionally selects the last element.
    *  $orderDependent
-   *  @return  the last element of this $coll$ if it is nonempty, `None` if it is empty.
+   *  @return  the last element of this $coll$ if it is nonempty,
+   *           `None` if it is empty.
    */
   def lastOption: Option[A] = if (isEmpty) None else Some(last)
 
@@ -486,7 +485,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     }
     else sliceWithKnownDelta(n, Int.MaxValue, -n)
 
-  def slice(from: Int, until: Int): Repr = sliceWithKnownBound(math.max(from, 0), until)
+  def slice(from: Int, until: Int): Repr =
+    sliceWithKnownBound(math.max(from, 0), until)
 
   // Precondition: from >= 0, until > 0, builder already configured for building.
   private[this] def sliceInternal(from: Int, until: Int, b: Builder[A, Repr]): Repr = {
@@ -615,8 +615,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
   /** Converts this $coll to a string.
    *
    *  @return   a string representation of this collection. By default this
-   *            string consists of the `stringPrefix` of this $coll,
-   *            followed by all elements separated by commas and enclosed in parentheses.
+   *            string consists of the `stringPrefix` of this $coll, followed
+   *            by all elements separated by commas and enclosed in parentheses.
    */
   override def toString = mkString(stringPrefix + "(", ", ", ")")
 
@@ -670,8 +670,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @param p   the predicate used to test elements.
    *  @return    an object of class `WithFilter`, which supports
    *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
-   *             All these operations apply to those elements of this $coll which
-   *             satisfy the predicate `p`.
+   *             All these operations apply to those elements of this $coll
+   *             which satisfy the predicate `p`.
    */
   def withFilter(p: A => Boolean): FilterMonadic[A, Repr] = new WithFilter(p)
 
@@ -719,8 +719,10 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
      *
      *  @usecase def flatMap[B](f: A => TraversableOnce[B]): $Coll[B]
      *
-     *  @return       a new $coll resulting from applying the given collection-valued function
-     *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
+     *  @return       a new $coll resulting from applying the given
+     *                collection-valued function `f` to each element of the
+     *                outer $coll that satisfies predicate `p` and concatenating
+     *                the results.
      */
     def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
       val b = bf(repr)

@@ -78,9 +78,12 @@ trait MarkupParsers {
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
     def nextch() { input.nextChar() }
-    def ch_returning_nextch = { val result = ch; input.nextChar(); result }
 
-    def mkProcInstr(position: Position, name: String, text: String): Tree =
+    protected def ch_returning_nextch: Char = {
+      val result = ch; input.nextChar(); result
+    }
+
+    def mkProcInstr(position: Position, name: String, text: String): ElementType =
       parser.symbXMLBuilder.procInstr(position, name, text)
 
     var xEmbeddedBlock = false
@@ -286,7 +289,7 @@ trait MarkupParsers {
     /** parse character data.
      *  precondition: xEmbeddedBlock == false (we are not in a scala block)
      */
-    def xText: String = {
+    private def xText: String = {
       assert(!xEmbeddedBlock, "internal error: encountered embedded block")
       val buf = new StringBuilder
       def done = buf.toString

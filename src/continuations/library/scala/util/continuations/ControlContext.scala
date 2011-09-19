@@ -1,6 +1,13 @@
-// $Id$
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2010-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
 package scala.util.continuations
+
 import annotation.{ Annotation, StaticAnnotation, TypeConstraint }
 
 /** This annotation is used to mark a parameter as part of a continuation
@@ -121,7 +128,7 @@ final class ControlContext[+A,-B,+C](val fun: (A => B, Exception => B) => C, val
 
   /**
    * Maps and flattens this `ControlContext` with another `ControlContext` generated from the current state.
-   * @note:  The resulting comuptation is still the type `C`.
+   * @note   The resulting comuptation is still the type `C`.
    * @tparam A1 The new type of the contained state.
    * @tparam B1 The new type of the state after the stored continuation has executed.
    * @tparam C1 The result type of the nested `ControlContext`.  Because the nested `ControlContext` is executed within

@@ -1,5 +1,10 @@
-// $Id$
-
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2010-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
 package scala.util
 
@@ -25,10 +30,11 @@ package scala.util
  *     }
  * }}}
  *
- * The `reset` is provided by this package and delimits the extent of the transformation.
- * The `ask` is a function that will be defined below. Its effect is to issue a prompt
- * and then suspend execution awaiting user input. Once the user provides an input value,
- * execution of the suspended block resumes.
+ * The `reset` is provided by this package and delimits the extent of the
+ * transformation. The `ask` is a function that will be defined below. Its
+ * effect is to issue a prompt and then suspend execution awaiting user input.
+ * Once the user provides an input value, execution of the suspended block
+ * resumes.
  *
  * {{{
  *   val sessions = new HashMap[UUID, Int=>Unit]
@@ -43,43 +49,45 @@ package scala.util
  * }}}
  *
  * The type of `ask` includes a `@cps` annotation which drives the transformation.
- * The type signature `Int @cps[Unit]` means that `ask` should be used in a context
- * requiring an `Int`, but actually it will suspend and return `Unit`.
+ * The type signature `Int @cps[Unit]` means that `ask` should be used in a
+ * context requiring an `Int`, but actually it will suspend and return `Unit`.
  *
- * The computation leading up to the first `ask` is executed normally. The remainder
- * of the reset block is wrapped into a closure that is passed as the parameter `k` to
- * the `shift` function, which can then decide whether and how to execute the
- * continuation. In this example, the continuation is stored in a sessions map for
- * later execution. This continuation includes a second call to `ask`, which is treated
- * likewise once the execution resumes.
+ * The computation leading up to the first `ask` is executed normally. The
+ * remainder of the reset block is wrapped into a closure that is passed as
+ * the parameter `k` to the `shift` function, which can then decide whether
+ * and how to execute the continuation. In this example, the continuation is
+ * stored in a sessions map for later execution. This continuation includes a
+ * second call to `ask`, which is treated likewise once the execution resumes.
  *
  * <h2>CPS Annotation</h2>
  *
- * The aforementioned `@cps[A]` annotation is an alias for the more general `@cpsParam[B,C]`
- * where `B=C`. The type `A @cpsParam[B,C]` describes a term which yields a value of type `A` within
- * an evaluation context producing a value of type `B`. After the CPS transformation, this return
- * type is modified to `C`.
+ * The aforementioned `@cps[A]` annotation is an alias for the more general
+ * `@cpsParam[B,C]` where `B=C`. The type `A @cpsParam[B,C]` describes a term
+ * which yields a value of type `A` within an evaluation context producing a
+ * value of type `B`. After the CPS transformation, this return type is
+ * modified to `C`.
  *
- * The `@cpsParam` annotations are introduced by `shift` blocks, and propagate via the return
- * types to the dynamically enclosing context. The propagation stops upon reaching a `reset`
- * block.
+ * The `@cpsParam` annotations are introduced by `shift` blocks, and propagate
+ * via the return types to the dynamically enclosing context. The propagation
+ * stops upon reaching a `reset` block.
  */
 
 package object continuations {
 
   /** An annotation that denotes a type is part of a continuation context.
-   * `@cps[A]` is shorthand for `cpsParam[A,A]`.
-   * @tparam A  The return type of the continuation context.
+   *  `@cps[A]` is shorthand for `cpsParam[A,A]`.
+   *  @tparam A  The return type of the continuation context.
    */
   type cps[A] = cpsParam[A,A]
 
   /** An annotation that denotes a type is part of a side effecting continuation context.
-    * `@suspendable` is shorthand notation for `@cpsParam[Unit,Unit]` or `@cps[Unit]`.
-    */
+   *  `@suspendable` is shorthand notation for `@cpsParam[Unit,Unit]` or `@cps[Unit]`.
+   */
   type suspendable = cps[Unit]
 
   /**
-   * The `shift` function captures the remaining computation in a `reset` block and passes it to a closure provided by the user.
+   * The `shift` function captures the remaining computation in a `reset` block
+   * and passes it to a closure provided by the user.
    *
    * For example:
    * {{{
@@ -106,9 +114,9 @@ package object continuations {
    *     `reset` block.  This is passed as a function `A => B`.
    *   - The return is the return value of the `ControlContext` which is
    *     generated from this inversion.
-   * @note:  Must be invoked in the context of a call to `reset`  This context
-   *   May not be far up the stack, but a call to reset is needed to eventually
-   *   remove the `@cps` annotations from types.
+   * @note  Must be invoked in the context of a call to `reset`  This context
+   *        may not be far up the stack, but a call to reset is needed to
+   *        eventually remove the `@cps` annotations from types.
    */
   def shift[A,B,C](fun: (A => B) => C): A @cpsParam[B,C] = {
     throw new NoSuchMethodException("this code has to be compiled with the Scala continuations plugin enabled")
@@ -147,7 +155,6 @@ package object continuations {
     shiftUnit[A,B,B](x)
   }
 
-
   def shiftUnit[A,B,C>:B](x: A): A @cpsParam[B,C] = {
     throw new NoSuchMethodException("this code has to be compiled with the Scala continuations plugin enabled")
   }
@@ -162,6 +169,7 @@ package object continuations {
   def shiftUnitR[A,B](x: A): ControlContext[A,B,B] = {
     new ControlContext(null, x)
   }
+
   /**
    * Captures a computation into a `ControlContext`.
    * @param fun  The function which accepts the inverted computation and returns
