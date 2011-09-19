@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#
+
+$(dirname $BASH_SOURCE)/../build/pack/bin/scala scala.tools.nsc.util.ProxyReportRunner "$@"

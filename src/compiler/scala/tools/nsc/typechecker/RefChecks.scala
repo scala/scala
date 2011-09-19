@@ -82,6 +82,28 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     if (sym.hasAccessBoundary) "" + sym.privateWithin.name else ""
   )
 
+  def overridesTypeInPrefix(tp1: Type, tp2: Type, prefix: Type): Boolean = (tp1.normalize, tp2.normalize) match {
+    case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) =>
+      rtp1 <:< rtp2
+    case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
+      rtp1 <:< rtp2
+    case (TypeRef(_, sym, _),  _) if sym.isModuleClass =>
+      overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix)
+    case _ =>
+      def classBoundAsSeen(tp: Type) = tp.typeSymbol.classBound.asSeenFrom(prefix, tp.typeSymbol.owner)
+
+      (tp1 <:< tp2) || (  // object override check
+        tp1.typeSymbol.isModuleClass && tp2.typeSymbol.isModuleClass && {
+          val cb1 = classBoundAsSeen(tp1)
+          val cb2 = classBoundAsSeen(tp2)
+          (cb1 <:< cb2) && {
+            log("Allowing %s to override %s because %s <:< %s".format(tp1, tp2, cb1, cb2))
+            true
+          }
+        }
+      )
+  }
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
@@ -227,17 +249,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
       }
 
-      def isConformingObjectOverride(tp1: Type, tp2: Type) = {
-        tp1.typeSymbol.isModuleClass && tp2.typeSymbol.isModuleClass && {
-          val cb1 = classBoundAsSeen(tp1)
-          val cb2 = classBoundAsSeen(tp2)
-
-          (cb1 <:< cb2) && {
-            log("Allowing %s to override %s because %s <:< %s".format(tp1, tp2, cb1, cb2))
-            true
-          }
-        }
-      }
       def isAbstractTypeWithoutFBound(sym: Symbol) = // (part of DEVIRTUALIZE)
         sym.isAbstractType && !sym.isFBounded
 
@@ -256,21 +267,12 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
          else "")
       }
 
-      def overridesType(tp1: Type, tp2: Type): Boolean = (tp1.normalize, tp2.normalize) match {
-        case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) =>
-          rtp1 <:< rtp2
-        case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
-          rtp1 <:< rtp2
-        case (TypeRef(_, sym, _),  _) if sym.isModuleClass =>
-          overridesType(NullaryMethodType(tp1), tp2)
-        case _ =>
-          (tp1 <:< tp2) || isConformingObjectOverride(tp1, tp2)
-      }
-
       /** Check that all conditions for overriding `other` by `member`
        *  of class `clazz` are met.
        */
-      def checkOverride(clazz: Symbol, member: Symbol, other: Symbol) {
+      def checkOverride(member: Symbol, other: Symbol) {
+        def memberTp = self.memberType(member)
+        def otherTp  = self.memberType(other)
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
         def isRootOrNone(sym: Symbol) = sym == RootClass || sym == NoSymbol
         def objectOverrideErrorMsg = (
@@ -400,6 +402,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
         }
 
+
+
         def checkOverrideTypes() {
           if (other.isAliasType) {
             //if (!member.typeParams.isEmpty) (1.5)  @MAT
@@ -449,13 +453,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             other.cookJavaRawInfo() // #2454
             val memberTp = self.memberType(member)
             val otherTp = self.memberType(other)
-            if (!overridesType(memberTp, otherTp)) { // 8
+            if (!overridesTypeInPrefix(memberTp, otherTp, self)) { // 8
               overrideTypeError()
               explainTypes(memberTp, otherTp)
             }
 
             if (member.isStable && !otherTp.isVolatile) {
-	          if (memberTp.isVolatile)
+	            if (memberTp.isVolatile)
                 overrideError("has a volatile type; cannot override a member with non-volatile type")
               else memberTp.normalize.resultType match {
                 case rt: RefinedType if !(rt =:= otherTp) && !(checkedCombinations contains rt.parents) =>
@@ -474,7 +478,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       val opc = new overridingPairs.Cursor(clazz)
       while (opc.hasNext) {
         //Console.println(opc.overriding/* + ":" + opc.overriding.tpe*/ + " in "+opc.overriding.fullName + " overrides " + opc.overridden/* + ":" + opc.overridden.tpe*/ + " in "+opc.overridden.fullName + "/"+ opc.overridden.hasFlag(DEFERRED));//debug
-        if (!opc.overridden.isClass) checkOverride(clazz, opc.overriding, opc.overridden);
+        if (!opc.overridden.isClass) checkOverride(opc.overriding, opc.overridden);
 
         opc.next
       }

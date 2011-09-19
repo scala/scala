@@ -1615,6 +1615,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
     /** Equivalent to allOverriddenSymbols.nonEmpty, but more efficient. */
+    // !!! When if ever will this answer differ from .isOverride?
+    // How/where is the OVERRIDE flag managed, as compared to how checks
+    // based on type membership will evaluate?
     def isOverridingSymbol = owner.isClass && (
       owner.ancestors exists (cls => matchingSymbol(cls, owner.thisType) != NoSymbol)
     )
