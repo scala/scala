@@ -1241,6 +1241,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
          (otherSym != NoSymbol)
+      && !otherSym.isProtected
       && !otherSym.isTypeParameterOrSkolem
       && !otherSym.isExistentiallyBound
       && (otherSym isLessAccessibleThan memberSym)

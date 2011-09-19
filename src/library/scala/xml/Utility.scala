@@ -258,14 +258,8 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param attribHashCode
    * @param children
    */
-  def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) = {
-    val h = new util.MurmurHash[Node](pre.##)
-    h.append(label.##)
-    h.append(attribHashCode)
-    h.append(scpeHash)
-    children.foreach(h)
-    h.hash
-  }
+  def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) =
+    scala.util.MurmurHash3.traversableHash(label +: attribHashCode +: scpeHash +: children, pre.##)
 
   def appendQuoted(s: String): String = sbToString(appendQuoted(s, _))
 

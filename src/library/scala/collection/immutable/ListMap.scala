@@ -115,7 +115,7 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
     new Iterator[(A,B)] {
       var self: ListMap[A,B] = ListMap.this
       def hasNext = !self.isEmpty
-      def next: (A,B) =
+      def next(): (A,B) =
         if (!hasNext) throw new NoSuchElementException("next on empty iterator")
         else { val res = (self.key, self.value); self = self.next; res }
     }.toList.reverseIterator

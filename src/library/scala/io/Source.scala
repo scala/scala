@@ -228,7 +228,7 @@ abstract class Source extends Iterator[Char] {
 
   /** Returns next character.
    */
-  def next: Char = positioner.next
+  def next(): Char = positioner.next
 
   class Positioner(encoder: Position) {
     def this() = this(RelaxedPosition)
@@ -245,7 +245,7 @@ abstract class Source extends Iterator[Char] {
     /** default col increment for tabs '\t', set to 4 initially */
     var tabinc = 4
 
-    def next: Char = {
+    def next(): Char = {
       ch = iter.next
       pos = encoder.encode(cline, ccol)
       ch match {
@@ -268,7 +268,7 @@ abstract class Source extends Iterator[Char] {
   }
   object RelaxedPositioner extends Positioner(RelaxedPosition) { }
   object NoPositioner extends Positioner(Position) {
-    override def next: Char = iter.next
+    override def next(): Char = iter.next
   }
   def ch = positioner.ch
   def pos = positioner.pos

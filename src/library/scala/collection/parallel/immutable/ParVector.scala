@@ -114,8 +114,8 @@ private[immutable] class LazyParVectorCombiner[T] extends Combiner[T, ParVector[
     this
   }
 
-  def clear = {
-    vectors.clear
+  def clear() = {
+    vectors.clear()
     vectors += new VectorBuilder[T]
     sz = 0
   }

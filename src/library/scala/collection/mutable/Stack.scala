@@ -26,11 +26,8 @@ object Stack extends SeqFactory[Stack] {
   class StackBuilder[A] extends Builder[A, Stack[A]] {
     val lbuff = new ListBuffer[A]
     def +=(elem: A) = { lbuff += elem; this }
-    def clear = lbuff.clear
-    def result = {
-      val lst = lbuff.result
-      new Stack(lst)
-    }
+    def clear() = lbuff.clear()
+    def result = new Stack(lbuff.result)
   }
 
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

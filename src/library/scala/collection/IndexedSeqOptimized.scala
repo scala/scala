@@ -222,7 +222,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
   def reverseIterator: Iterator[A] = new Iterator[A] {
     private var i = self.length
     def hasNext: Boolean = 0 < i
-    def next: A =
+    def next(): A =
       if (0 < i) {
         i -= 1
         self(i)

@@ -58,7 +58,7 @@ class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, 
 
   def last: Char = if (bp > start + 2) buf(bp - 2) else ' ' // XML literals
 
-  def next: Char = {
+  def next(): Char = {
     //cline = nextline
     //ccol = nextcol
     val buf = this.buf.asInstanceOf[collection.mutable.WrappedArray[Char]].array

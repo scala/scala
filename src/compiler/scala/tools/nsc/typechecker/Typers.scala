@@ -1099,9 +1099,13 @@ trait Typers extends Modes with Adaptations {
           case Apply(tree1, args) if (tree1 eq tree) && args.nonEmpty => // try handling the arguments
             // println("typing args: "+args)
             silent(_.typedArgs(args, mode)) match {
-              case args: List[Tree] if args.forall(!_.containsError()) =>
-                adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
-              case _ =>
+              case xs: List[_]  =>
+                val args = xs.asInstanceOf[List[Tree]]
+                if (args exists (_.containsError()))
+                  reportError
+                else
+                  adaptToArguments(qual, name, args, WildcardType)
+              case _            =>
                 reportError
             }
           case _ =>

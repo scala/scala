@@ -449,8 +449,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
       var fieldList = List[String]()
       for (f <- clasz.fields if f.symbol.hasGetter;
-	         val g = f.symbol.getter(c.symbol);
-	         val s = f.symbol.setter(c.symbol);
+	         g = f.symbol.getter(c.symbol);
+	         s = f.symbol.setter(c.symbol);
 	         if g.isPublic && !(f.symbol.name startsWith "$"))  // inserting $outer breaks the bean
         fieldList = javaName(f.symbol) :: javaName(g) :: (if (s != NoSymbol) javaName(s) else null) :: fieldList
       val methodList =

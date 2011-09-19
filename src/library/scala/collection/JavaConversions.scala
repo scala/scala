@@ -465,8 +465,8 @@ object JavaConversions {
    * @return A Scala mutable ConcurrentMap view of the argument.
    */
   implicit def asScalaConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
-    case cmw: ConcurrentMapWrapper[A, B] => cmw.underlying
-    case _ => new JConcurrentMapWrapper(m)
+    case cmw: ConcurrentMapWrapper[a, b] => cmw.underlying
+    case _                               => new JConcurrentMapWrapper(m)
   }
 
   /**
@@ -585,7 +585,7 @@ object JavaConversions {
       elems.seq.foreach(ins.add(_))
     }
     def remove(i: Int) = underlying.remove(i)
-    def clear = underlying.clear
+    def clear() = underlying.clear()
     def result = this
   }
 
@@ -600,8 +600,8 @@ object JavaConversions {
       def remove = prev match {
         case Some(e) =>
           underlying match {
-            case ms: mutable.Set[A] =>
-              ms remove e.asInstanceOf[A]
+            case ms: mutable.Set[a] =>
+              ms remove e
               prev = None
             case _ =>
               throw new UnsupportedOperationException("remove")
@@ -682,8 +682,8 @@ object JavaConversions {
           prev match {
             case Some(k) =>
               underlying match {
-                case mm: mutable.Map[A, _] =>
-                  mm remove k.asInstanceOf[A]
+                case mm: mutable.Map[a, _] =>
+                  mm remove k
                   prev = None
                 case _ =>
                   throw new UnsupportedOperationException("remove")

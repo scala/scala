@@ -539,8 +539,9 @@ import Flags._
         ;
       case Literal(_) =>
         ;
-      case TypeTree() =>
-        ;
+      // commented out to eliminate warning - this file destined for removal anyway
+      // case TypeTree() =>
+      //   ;
       case SingletonTypeTree(ref) =>
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>

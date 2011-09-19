@@ -219,7 +219,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
       var e = lookupEntry(name)
       def hasNext: Boolean = e ne null
-      def next: Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
+      def next(): Symbol = { val r = e.sym; e = lookupNextEntry(e); r }
     }
 
     /** lookup a symbol entry matching given name.

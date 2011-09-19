@@ -8,8 +8,6 @@
 
 package scala.collection.parallel.mutable
 
-
-
 import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.ArrayBuffer
@@ -18,12 +16,8 @@ import scala.collection.parallel.TaskSupport
 import scala.collection.parallel.unsupportedop
 import scala.collection.parallel.Combiner
 
-
-
 /** An array combiner that uses a chain of arraybuffers to store elements. */
-trait ResizableParArrayCombiner[T]
-extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
-{
+trait ResizableParArrayCombiner[T] extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]] {
 //self: EnvironmentPassingCombiner[T, ParArray[T]] =>
   import collection.parallel.tasksupport._
 
@@ -40,8 +34,7 @@ extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
 
     new ParArray(arrayseq)
   } else { // optimisation if there is only 1 array
-    val pa = new ParArray(new ExposedArraySeq[T](chain(0).internalArray, size))
-    pa
+    new ParArray(new ExposedArraySeq[T](chain(0).internalArray, size))
   }
 
   override def toString = "ResizableParArrayCombiner(" + size + "): " //+ chain
@@ -88,9 +81,7 @@ extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
     }
     def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(size, parallelismLevel)
   }
-
 }
-
 
 object ResizableParArrayCombiner {
   def apply[T](c: ArrayBuffer[ExposedArrayBuffer[T]]): ResizableParArrayCombiner[T] = {
@@ -98,15 +89,3 @@ object ResizableParArrayCombiner {
   }
   def apply[T](): ResizableParArrayCombiner[T] = apply(new ArrayBuffer[ExposedArrayBuffer[T]] += new ExposedArrayBuffer[T])
 }
-
-
-
-
-
-
-
-
-
-
-
-

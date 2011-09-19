@@ -514,7 +514,7 @@ object Regex {
     }
 
     /** The next matched substring of `source` */
-    def next: String = {
+    def next(): String = {
       if (!hasNext) throw new NoSuchElementException
       nextSeen = false
       matcher.group

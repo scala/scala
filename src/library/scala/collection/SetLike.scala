@@ -213,7 +213,7 @@ self =>
     idxs(len) = elms.size
 
     def hasNext = _hasNext
-    def next: This = {
+    def next(): This = {
       if (!hasNext) Iterator.empty.next
 
       val buf = self.newBuilder

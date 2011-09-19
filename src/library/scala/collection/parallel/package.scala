@@ -190,7 +190,7 @@ package parallel {
 
     def size = sz
 
-    def clear = {
+    def clear() = {
       buckets = new Array[UnrolledBuffer[Buck]](bucketnumber)
       sz = 0
     }

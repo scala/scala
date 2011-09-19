@@ -136,7 +136,7 @@ import Stream.cons
  *  val it3 = new Iterator[Int] {
  *    var i = -1
  *    def hasNext = true
- *    def next: Int = { i += 1; i }
+ *    def next(): Int = { i += 1; i }
  *  }
  *  loop("Iterator3: ", it3.next, it3)
  *  }}}
@@ -933,7 +933,7 @@ final class StreamIterator[+A](self: Stream[A]) extends Iterator[A] {
 
   private var these = new LazyCell(self)
   def hasNext: Boolean = these.v.nonEmpty
-  def next: A =
+  def next(): A =
     if (isEmpty) Iterator.empty.next
     else {
       val cur    = these.v

@@ -61,7 +61,7 @@ trait AskParse extends AskCommand {
 trait AskReload extends AskCommand {
 
   /** Reload the given source files and wait for them to be reloaded. */
-  def askReload(sources: Seq[SourceFile])(implicit reporter: Reporter): Response[Unit] = {
+  private[tests] def askReload(sources: Seq[SourceFile])(implicit reporter: Reporter): Response[Unit] = {
     val sortedSources = (sources map (_.file.name)).sorted
     reporter.println("reload: " + sortedSources.mkString(", "))
 
@@ -75,7 +75,7 @@ trait AskReload extends AskCommand {
 trait AskCompletionAt extends AskCommand {
   import compiler.Member
 
-  def askCompletionAt(pos: Position)(implicit reporter: Reporter): Response[List[Member]] = {
+  private[tests] def askCompletionAt(pos: Position)(implicit reporter: Reporter): Response[List[Member]] = {
     reporter.println("\naskTypeCompletion at " + pos.source.file.name + ((pos.line, pos.column)))
 
     ask {
@@ -88,7 +88,7 @@ trait AskCompletionAt extends AskCommand {
 trait AskTypeAt extends AskCommand {
   import compiler.Tree
 
-  def askTypeAt(pos: Position)(implicit reporter: Reporter): Response[Tree] = {
+  private[tests] def askTypeAt(pos: Position)(implicit reporter: Reporter): Response[Tree] = {
     reporter.println("\naskType at " + pos.source.file.name + ((pos.line, pos.column)))
 
     ask {
@@ -101,13 +101,13 @@ trait AskTypeAt extends AskCommand {
 trait AskType extends AskCommand {
   import compiler.Tree
 
-  def askType(source: SourceFile, forceReload: Boolean)(implicit reporter: Reporter): Response[Tree] = {
+  private[tests] def askType(source: SourceFile, forceReload: Boolean)(implicit reporter: Reporter): Response[Tree] = {
     ask {
       compiler.askType(source, forceReload, _)
     }
   }
 
-  def askType(sources: Seq[SourceFile], forceReload: Boolean)(implicit reporter: Reporter): Seq[Response[Tree]] = {
+  private[tests] def askType(sources: Seq[SourceFile], forceReload: Boolean)(implicit reporter: Reporter): Seq[Response[Tree]] = {
     for(source <- sources) yield
       askType(source, forceReload)
   }

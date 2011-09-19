@@ -100,7 +100,7 @@ self =>
         val (fp, sp) = buff.splitAt(buff.length / 2)
         Seq(fp, sp) map { b => new ParHashSetIterator(b.iterator, b.length) with SCPI }
     }
-    def next: T = {
+    def next(): T = {
       i += 1
       triter.next
     }
