@@ -26,52 +26,49 @@ abstract class ReachingDefinitions {
    */
   object rdefLattice extends SemiLattice {
     type Definition = (Local, BasicBlock, Int)
-    type Elem = IState[Set[Definition], Stack]
-    type StackPos = Set[(BasicBlock, Int)]
-    type Stack = List[StackPos]
+    type Elem       = IState[ListSet[Definition], Stack]
+    type StackPos   = ListSet[(BasicBlock, Int)]
+    type Stack      = List[StackPos]
 
     private def referenceEqualSet(name: String) = new ListSet[Definition] with ReferenceEquality {
       override def toString = "<" + name + ">"
     }
 
-    val top: Elem = IState(referenceEqualSet("top"), Nil)
+    val top: Elem    = IState(referenceEqualSet("top"), Nil)
     val bottom: Elem = IState(referenceEqualSet("bottom"), Nil)
 
     /** The least upper bound is set inclusion for locals, and pairwise set inclusion for stacks. */
-    def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem =
+    def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem = {
       if (bottom == a) b
       else if (bottom == b) a
-      else {
-        val locals = a.vars ++ b.vars
-        val stack =
-          if (a.stack.isEmpty) b.stack
-          else if (b.stack.isEmpty) a.stack
-          else (a.stack, b.stack).zipped map (_ ++ _)
-
-        IState(locals, stack)
-
-        // val res = IState(locals, stack)
-        // Console.println("\tlub2: " + a + ", " + b)
-        // Console.println("\tis: " + res)
-        // if (res._1 eq bottom._1) (new ListSet[Definition], Nil)
-        // else res
-        // res
-      }
+      else IState(a.vars ++ b.vars,
+        if (a.stack.isEmpty) b.stack
+        else if (b.stack.isEmpty) a.stack
+        else {
+          // !!! These stacks are with some frequency not of the same size.
+          // I can't reverse engineer the logic well enough to say whether this
+          // indicates a problem.  Even if it doesn't indicate a problem,
+          // it'd be nice not to call zip with mismatched sequences because
+          // it makes it harder to spot the real problems.
+          val result = (a.stack, b.stack).zipped map (_ ++ _)
+          if (settings.debug.value && (a.stack.length != b.stack.length))
+            debugwarn("Mismatched stacks in ReachingDefinitions#lub2: " + a.stack + ", " + b.stack + ", returning " + result)
+          result
+        }
+      )
+    }
   }
 
   class ReachingDefinitionsAnalysis extends DataFlowAnalysis[rdefLattice.type] {
     type P = BasicBlock
     val lattice = rdefLattice
-    import lattice.Definition
-    import lattice.Stack
-    import lattice.Elem
-
+    import lattice.{ Definition, Stack, Elem, StackPos }
     var method: IMethod = _
 
-    val gen: mutable.Map[BasicBlock, Set[Definition]] = new mutable.HashMap()
-    val kill: mutable.Map[BasicBlock, Set[Local]]     = new mutable.HashMap()
-    val drops: mutable.Map[BasicBlock, Int]           = new mutable.HashMap()
-    val outStack: mutable.Map[BasicBlock, Stack]      = new mutable.HashMap()
+    val gen      = mutable.Map[BasicBlock, ListSet[Definition]]()
+    val kill     = mutable.Map[BasicBlock, ListSet[Local]]()
+    val drops    = mutable.Map[BasicBlock, Int]()
+    val outStack = mutable.Map[BasicBlock, Stack]()
 
     def init(m: IMethod) {
       this.method = m
@@ -95,16 +92,16 @@ abstract class ReachingDefinitions {
           out(b) = lattice.bottom
         }
         m.exh foreach { e =>
-          in(e.startBlock) = lattice.IState(new ListSet[Definition], List(new ListSet[(BasicBlock, Int)]))
+          in(e.startBlock) = lattice.IState(new ListSet[Definition], List(new StackPos))
         }
       }
     }
 
     import opcodes._
 
-    def genAndKill(b: BasicBlock): (Set[Definition], Set[Local]) = {
-      var genSet: Set[Definition] = new immutable.HashSet
-      var killSet: Set[Local] = new immutable.HashSet
+    def genAndKill(b: BasicBlock): (ListSet[Definition], ListSet[Local]) = {
+      var genSet  = ListSet[Definition]()
+      var killSet = ListSet[Local]()
       for ((i, idx) <- b.toList.zipWithIndex) i match {
         case STORE_LOCAL(local) =>
           killSet = killSet + local
@@ -114,10 +111,9 @@ abstract class ReachingDefinitions {
       (genSet, killSet)
     }
 
-    private def dropsAndGen(b: BasicBlock): (Int, List[Set[(BasicBlock, Int)]]) = {
-      var depth = 0
-      var drops = 0
-      var stackOut: List[Set[(BasicBlock, Int)]] = Nil
+    private def dropsAndGen(b: BasicBlock): (Int, Stack) = {
+      var depth, drops = 0
+      var stackOut: Stack = Nil
 
       for ((instr, idx) <- b.toList.zipWithIndex) {
         instr match {
@@ -131,10 +127,10 @@ abstract class ReachingDefinitions {
             depth -= instr.consumed
         }
         var prod = instr.produced
-        depth = depth + prod
+        depth += prod
         while (prod > 0) {
-          stackOut = collection.immutable.Set((b, idx)) :: stackOut
-          prod = prod - 1
+          stackOut ::= ListSet((b, idx))
+          prod -= 1
         }
       }
 //      Console.println("drops(" + b + ") = " + drops)
@@ -156,14 +152,14 @@ abstract class ReachingDefinitions {
 
     import opcodes._
     import lattice.IState
-    def updateReachingDefinition(b: BasicBlock, idx: Int, rd: Set[Definition]): Set[Definition] = {
+    def updateReachingDefinition(b: BasicBlock, idx: Int, rd: ListSet[Definition]): ListSet[Definition] = {
       val STORE_LOCAL(local) = b(idx)
       var tmp = local
       (rd filter { case (l, _, _) => l != tmp }) + ((tmp, b, idx))
     }
 
     private def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
-      var locals: Set[Definition] = (in.vars filter { case (l, _, _) => !kill(b)(l) }) ++ gen(b)
+      var locals: ListSet[Definition] = (in.vars filter { case (l, _, _) => !kill(b)(l) }) ++ gen(b)
       if (locals eq lattice.bottom.vars) locals = new ListSet[Definition]
       IState(locals, outStack(b) ::: in.stack.drop(drops(b)))
     }
@@ -172,7 +168,8 @@ abstract class ReachingDefinitions {
     def interpret(b: BasicBlock, idx: Int, in: lattice.Elem): Elem = {
       var locals = in.vars
       var stack  = in.stack
-      val instr = b(idx)
+      val instr  = b(idx)
+
       instr match {
         case STORE_LOCAL(l1) =>
           locals = updateReachingDefinition(b, idx, locals)
@@ -185,7 +182,7 @@ abstract class ReachingDefinitions {
 
       var prod = instr.produced
       while (prod > 0) {
-        stack = collection.immutable.Set((b, idx)) :: stack
+        stack ::= ListSet((b, idx))
         prod -= 1
       }
 
@@ -197,7 +194,8 @@ abstract class ReachingDefinitions {
      *  value found below the topmost element of the stack.
      */
     def findDefs(bb: BasicBlock, idx: Int, m: Int, depth: Int): List[(BasicBlock, Int)] = if (idx > 0) {
-      assert(bb.closed)
+      assert(bb.closed, bb)
+
       var instrs = bb.getArray
       var res: List[(BasicBlock, Int)] = Nil
       var i = idx

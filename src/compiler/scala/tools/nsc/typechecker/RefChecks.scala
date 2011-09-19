@@ -844,9 +844,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               }
             }
             validateVariance(pre, variance)
-            validateVarianceArgs(args, variance, sym.typeParams) //@M for higher-kinded typeref, args.isEmpty
+            // @M for higher-kinded typeref, args.isEmpty
             // However, these args respect variances by construction anyway
             // -- the interesting case is in type application, see checkKindBounds in Infer
+            if (args.nonEmpty)
+              validateVarianceArgs(args, variance, sym.typeParams)
           case ClassInfoType(parents, decls, symbol) =>
             validateVariances(parents, variance)
           case RefinedType(parents, decls) =>

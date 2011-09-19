@@ -112,9 +112,6 @@ trait Namers { self: Analyzer =>
       sym
     }
 
-    private def isCopyGetter(meth: Symbol) = {
-      meth.name startsWith (nme.copy + nme.DEFAULT_GETTER_STRING)
-    }
     private def isTemplateContext(context: Context): Boolean = context.tree match {
       case Template(_, _, _) => true
       case Import(_, _) => isTemplateContext(context.outer)
@@ -385,37 +382,66 @@ trait Namers { self: Analyzer =>
 
     private def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
       val sym = tree.symbol
+      def isCopyMethodOrGetter =
+        sym.name == nme.copy || sym.name.startsWith(nme.copy + nme.DEFAULT_GETTER_STRING)
+      def useCompleter = sym.isSynthetic && (
+           !sym.hasDefaultFlag
+        || sym.owner.info.member(nme.copy).isSynthetic
+      )
+
       debuglog("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
       var ltype = namerOf(sym).typeCompleter(tree)
       if (tparams nonEmpty) {
         //@M! TypeDef's type params are handled differently
         //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
         //@M x is only in scope in `A[x <: B]'
-        if(!sym.isAbstractType) //@M TODO: change to isTypeMember ?
+        if (!sym.isAbstractType) //@M TODO: change to isTypeMember ?
           newNamer(context.makeNewScope(tree, sym)).enterSyms(tparams)
 
         ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
         if (sym.isTerm) skolemize(tparams)
       }
+      def copyMethodCompleter(clazz: Symbol) = {
+        // the 'copy' method of case classes needs a special type
+        // completer to make bug0054.scala (and others) work. the copy
+        // method has to take exactly the same parameter types as the
+        // primary constructor.
+        val classTypeParams = clazz.typeParams
+        val constrType      = clazz.primaryConstructor.tpe
+        val subst           = new SubstSymMap(clazz.typeParams, tparams map (_.symbol))
+        val cparamss        = constrType.paramss
 
-      if (sym.name == nme.copy || isCopyGetter(sym)) {
-        // it could be a compiler-generated copy method or one of its default getters
-        setInfo(sym)(mkTypeCompleter(tree)(copySym => {
-          def copyIsSynthetic() = sym.owner.info.member(nme.copy).isSynthetic
-          if (sym.isSynthetic && (!sym.hasDefaultFlag || copyIsSynthetic())) {
-            // the 'copy' method of case classes needs a special type completer to make bug0054.scala (and others)
-            // work. the copy method has to take exactly the same parameter types as the primary constructor.
-            val constrType = copySym.owner.primaryConstructor.tpe
-            val subst = new SubstSymMap(copySym.owner.typeParams, tparams map (_.symbol))
-            for ((params, cparams) <- tree.asInstanceOf[DefDef].vparamss.zip(constrType.paramss);
-                 (param, cparam) <- params.zip(cparams)) {
+        tree match {
+          case DefDef(_, _, _, ps :: psRest, _, _) =>
+            val cs :: csRest = cparamss
+            for ((param, cparam) <- ps zip cs)
               // need to clone the type cparam.tpe??? problem is: we don't have the new owner yet (the new param symbol)
-              param.tpt.setType(subst(cparam.tpe))
+              param.tpt setType subst(cparam.tpe)
+
+            if (psRest.isEmpty && csRest.isEmpty) ()
+            else if (psRest.isEmpty || csRest.isEmpty)
+              debuglog("Skipping mismatched extra param lists: " + psRest + ", " + csRest)
+            else {
+              for ((vparams, cparams) <- psRest zip csRest)
+                for ((param, cparam) <- vparams zip cparams)
+                  param.tpt setType subst(cparam.tpe)
             }
+          case _ => ()
+        }
+      }
+
+      // it could be a compiler-generated copy method or one of its default getters
+      setInfo(sym)(
+        if (isCopyMethodOrGetter) (
+          mkTypeCompleter(tree) { copySym =>
+            if (useCompleter)
+              copyMethodCompleter(copySym.owner)
+
+            ltype complete sym
           }
-          ltype.complete(sym)
-        }))
-      } else setInfo(sym)(ltype)
+        )
+        else ltype
+      )
     }
 
     def enterIfNotThere(sym: Symbol) {

@@ -336,6 +336,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         Set(sym)
       else if (sym == ArrayClass)
         specializedTypeVars(args)
+      else if (args.isEmpty)
+        Set()
       else
         specializedTypeVars(sym.typeParams zip args collect { case (tp, arg) if isSpecialized(tp) => arg })
 
@@ -948,8 +950,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       env
   }
 
-  private def unify(tp1: List[Type], tp2: List[Type], env: TypeEnv, strict: Boolean): TypeEnv =
-    tp1.zip(tp2).foldLeft(env) { (env, args) =>
+  private def unify(tp1: List[Type], tp2: List[Type], env: TypeEnv, strict: Boolean): TypeEnv = {
+    if (tp1.isEmpty || tp2.isEmpty) env
+    else (tp1 zip tp2).foldLeft(env) { (env, args) =>
       if (!strict) unify(args._1, args._2, env, strict)
       else {
         val nenv = unify(args._1, args._2, emptyEnv, strict)
@@ -960,11 +963,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
     }
+  }
 
   /** Map class symbols to the type environments where they were created. */
-  val typeEnv: mutable.Map[Symbol, TypeEnv] = new mutable.HashMap[Symbol, TypeEnv] {
-    override def default(key: Symbol) = emptyEnv
-  }
+  private val typeEnv = mutable.HashMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
 
   /** Apply type bindings in the given environment `env` to all declarations.  */
   private def subst(env: TypeEnv, decls: List[Symbol]): List[Symbol] =

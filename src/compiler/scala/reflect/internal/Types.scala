@@ -1606,12 +1606,15 @@ trait Types extends api.Types { self: SymbolTable =>
         val enterRefs = new TypeMap {
           def apply(tp: Type): Type = {
             tp match {
-              case TypeRef(_, sym, args) =>
-                for ((tparam1, arg) <- sym.info.typeParams zip args)
-                  if (arg contains tparam) {
-                    addRef(NonExpansive, tparam, tparam1)
-                    if (arg.typeSymbol != tparam) addRef(Expansive, tparam, tparam1)
-                  }
+              case TypeRef(_, sym, args) if args.nonEmpty =>
+                if (settings.debug.value && !sameLength(sym.info.typeParams, args))
+                  debugwarn("Mismatched zip in computeRefs(): " + sym.info.typeParams + ", " + args)
+
+                for ((tparam1, arg) <- sym.info.typeParams zip args; if arg contains tparam) {
+                  addRef(NonExpansive, tparam, tparam1)
+                  if (arg.typeSymbol != tparam)
+                    addRef(Expansive, tparam, tparam1)
+                }
               case _ =>
             }
             mapOver(tp)
@@ -1903,6 +1906,8 @@ A type's typeSymbol should never be inspected directly.
 
     /** @pre: sym.info.typeParams.length == typeArgs.length */
     @inline private def betaReduce: Type = {
+      if (settings.debug.value)
+        assert(sym.info.typeParams.length == typeArgs.length, sym.info.typeParams + " and " + typeArgs)
       // isHKSubType0 introduces synthetic type params so that
       // betaReduce can first apply sym.info to typeArgs before calling
       // asSeenFrom.  asSeenFrom then skips synthetic type params, which

@@ -1194,49 +1194,47 @@ trait Typers extends Modes with Adaptations {
         treeInfo.firstConstructor(templ.body) match {
           case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
             // Convert constructor body to block in environment and typecheck it
-            val (preSuperStats, rest) = cstats span (!treeInfo.isSuperConstrCall(_))
-            val (scall, upToSuperStats) =
-              if (rest.isEmpty) (EmptyTree, preSuperStats)
-              else (rest.head, preSuperStats :+ rest.head)
-            val cstats1: List[Tree] = upToSuperStats map (_.duplicate)
-            val cbody1 = scall match {
-              case Apply(_, _) =>
-                treeCopy.Block(cbody, cstats1.init,
-                           if (supertparams.isEmpty) cunit.duplicate
-                           else transformSuperCall(scall))
-              case _ =>
-                treeCopy.Block(cbody, cstats1, cunit.duplicate)
+            val (preSuperStats, superCall) = {
+              val (stats, rest) = cstats span (x => !treeInfo.isSuperConstrCall(x))
+              (stats map (_.duplicate), if (rest.isEmpty) EmptyTree else rest.head.duplicate)
             }
-
+            val cstats1 = if (superCall == EmptyTree) preSuperStats else preSuperStats :+ superCall
+            val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall match {
+              case Apply(_, _) if supertparams.nonEmpty => transformSuperCall(superCall)
+              case _                                    => cunit.duplicate
+            })
             val outercontext = context.outer
+
             assert(clazz != NoSymbol)
             val cscope = outercontext.makeNewScope(constr, outercontext.owner)
             val cbody2 = newTyper(cscope) // called both during completion AND typing.
                 .typePrimaryConstrBody(clazz,
                   cbody1, supertparams, clazz.unsafeTypeParams, vparamss map (_.map(_.duplicate)))
 
-            if (cbody2.containsError()) {
-              val allErrors = errorTreesFinder(cbody2)
-              pending = allErrors.toList:::pending
-            }
+            if (cbody2.containsError())
+              pending = errorTreesFinder(cbody2).toList ::: pending
 
-            scall match {
+            superCall match {
               case Apply(_, _) =>
-                val sarg = treeInfo.firstArgument(scall)
+                val sarg = treeInfo.firstArgument(superCall)
                 if (sarg != EmptyTree && supertpe.typeSymbol != firstParent)
-                  pending = ConstrArgsInTraitParentTpeError(sarg, firstParent)::pending
-                if (!supertparams.isEmpty) supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos.focus
+                  pending ::= ConstrArgsInTraitParentTpeError(sarg, firstParent)
+                if (!supertparams.isEmpty)
+                  supertpt = TypeTree(cbody2.tpe) setPos supertpt.pos.focus
               case _ =>
                 if (!supertparams.isEmpty)
-                  pending = MissingTypeArgumentsParentTpeError(supertpt)::pending
+                  pending ::= MissingTypeArgumentsParentTpeError(supertpt)
             }
 
-            (cstats1, treeInfo.preSuperFields(templ.body)).zipped map {
-              (ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe
-            }
+            val preSuperVals = treeInfo.preSuperFields(templ.body)
+            if (preSuperVals.isEmpty && preSuperStats.nonEmpty)
+              debugwarn("Wanted to zip empty presuper val list with " + preSuperStats)
+            else
+              (preSuperStats, preSuperVals).zipped map { case (ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe }
+
           case _ =>
             if (!supertparams.isEmpty)
-              pending = MissingTypeArgumentsParentTpeError(supertpt)::pending
+              pending ::= MissingTypeArgumentsParentTpeError(supertpt)
         }
 /* experimental: early types as type arguments
         val hasEarlyTypes = templ.body exists (treeInfo.isEarlyTypeDef)

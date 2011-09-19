@@ -74,8 +74,8 @@ abstract class DeadCodeElimination extends SubComponent {
     def dieCodeDie(m: IMethod) {
       if (m.code ne null) {
         log("dead code elimination on " + m);
-        dropOf.clear
-        m.code.blocks.clear
+        dropOf.clear()
+        m.code.blocks.clear()
         accessedLocals = m.params.reverse
         m.code.blocks ++= linearizer.linearize(m)
         collectRDef(m)
@@ -91,7 +91,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** collect reaching definitions and initial useful instructions for this method. */
     def collectRDef(m: IMethod): Unit = if (m.code ne null) {
-      defs = immutable.HashMap.empty; worklist.clear; useful.clear;
+      defs = immutable.HashMap.empty; worklist.clear(); useful.clear();
       rdef.init(m);
       rdef.run;
 

@@ -102,6 +102,35 @@ abstract class TreeInfo {
       false
   }
 
+  def zipMethodParamsAndArgs(params: List[Symbol], args: List[Tree]): List[(Symbol, Tree)] = {
+    val plen   = params.length
+    val alen   = args.length
+    def fail() = {
+      global.debugwarn(
+        "Mismatch trying to zip method parameters and argument list:\n" +
+        "  params = " + params + "\n" +
+        "    args = " + args + "\n"
+      )
+      params zip args
+    }
+
+    if (plen == alen) params zip args
+    else if (params.isEmpty) fail
+    else if (isVarArgsList(params)) {
+      val plenInit = plen - 1
+      if (alen == plenInit) {
+        if (alen == 0) Nil        // avoid calling mismatched zip
+        else params.init zip args
+      }
+      else if (alen < plenInit) fail
+      else {
+        val front = params.init zip (args take plenInit)
+        val back  = args drop plenInit map (a => (params.last, a))
+        front ++ back
+      }
+    }
+    else fail
+  }
 
   /**
    * Selects the correct parameter list when there are nested applications.
@@ -124,34 +153,7 @@ abstract class TreeInfo {
         else if (fn.symbol.paramss.isEmpty) Nil
         else fn.symbol.paramss.last
       )
-      val plen   = params.length
-      val alen   = args.length
-      def fail() = {
-        global.debugwarn(
-          "Mismatch trying to zip method parameters and argument list:\n" +
-          "  params = " + params + "\n" +
-          "    args = " + args + "\n" +
-          "    tree = " + t
-        )
-        params zip args
-      }
-
-      if (plen == alen) params zip args
-      else if (params.isEmpty) fail
-      else if (isVarArgsList(params)) {
-        val plenInit = plen - 1
-        if (alen == plenInit) {
-          if (alen == 0) Nil        // avoid calling mismatched zip
-          else params.init zip args
-        }
-        else if (alen < plenInit) fail
-        else {
-          val front = params.init zip (args take plenInit)
-          val back  = args drop plenInit map (a => (params.last, a))
-          front ++ back
-        }
-      }
-      else fail
+      zipMethodParamsAndArgs(params, args)
     case _  => Nil
   }
 
