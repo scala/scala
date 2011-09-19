@@ -78,8 +78,8 @@ trait LowPriorityCodecImplicits {
 }
 
 object Codec extends LowPriorityCodecImplicits {
-  final val ISO8859 = Charset forName "ISO-8859-1"
-  final val UTF8    = Charset forName "UTF-8"
+  final val ISO8859: Codec = new Codec(Charset forName "ISO-8859-1")
+  final val UTF8: Codec    = new Codec(Charset forName "UTF-8")
 
   /** Optimistically these two possible defaults will be the same thing.
    *  In practice this is not necessarily true, and in fact Sun classifies
@@ -100,7 +100,7 @@ object Codec extends LowPriorityCodecImplicits {
   @migration(2, 9, "This method was previously misnamed `toUTF8`. Converts from Array[Byte] to Array[Char].")
   def fromUTF8(bytes: Array[Byte]): Array[Char] = {
     val bbuffer = java.nio.ByteBuffer wrap bytes
-    val cbuffer = UTF8 decode bbuffer
+    val cbuffer = UTF8.charSet decode bbuffer
     val chars = new Array[Char](cbuffer.remaining())
     cbuffer get chars
 
@@ -110,7 +110,7 @@ object Codec extends LowPriorityCodecImplicits {
   @migration(2, 9, "This method was previously misnamed `fromUTF8`. Converts from character sequence to Array[Byte].")
   def toUTF8(cs: CharSequence): Array[Byte] = {
     val cbuffer = java.nio.CharBuffer wrap cs
-    val bbuffer = UTF8 encode cbuffer
+    val bbuffer = UTF8.charSet encode cbuffer
     val bytes = new Array[Byte](bbuffer.remaining())
     bbuffer get bytes
 
