@@ -39,6 +39,8 @@ class Mirror extends Universe with RuntimeTypes with api.Mirror {
   def staticClass(name: String): Symbol = definitions.getClass(newTypeName(name))
   def staticModule(name: String): Symbol = definitions.getModule(newTermName(name))
 
+  def freeVar(name: String, info: Type, value: Any) = new FreeVar(name, info, value)
+
  /** Selects type symbol with given name from the defined members of prefix type
    */
   def selectType(owner: Symbol, name: String): Symbol =

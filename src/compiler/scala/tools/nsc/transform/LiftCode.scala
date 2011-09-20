@@ -97,21 +97,28 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
       private val localSyms = mutable.ArrayBuffer[Symbol]()
       private val symIndex = mutable.HashMap[Symbol, Int]()
+      private var localClasses = Set[Symbol]()
       private val typeTree = mutable.HashMap[Type, Tree]()
       private val typeTreeCount = mutable.HashMap[Tree, Int]()
 
       /** Generate tree of the form
        *
-       *    { val $localSyms = Array(sym1, ..., symN)
-       *      localSyms(1).setInfo(tpe1)
+       *    { val $mr = scala.reflect.runtime.Mirror
+       *      val $memo = new scala.reflext.runtime.Memoizer
+       *      $local1 = new TypeSymbol(owner1, NoPosition, name1)
        *      ...
-       *      localSyms(N).setInfo(tpeN)
+       *      $localN = new TermSymbol(ownerN, NoPositiion, nameN)
+       *      $local1.setInfo(tpe1)
+       *      ...
+       *      $localN.setInfo(tpeN)
+       *      $localN.setAnnotations(annotsN)
        *      rtree
        *    }
        *
        *  where
        *
-       *   - `symI` are the symbols defined locally in `tree`
+       *   - `$localI` are free type symbols in the environment, as well as local symbols
+       *      of refinement types.
        *   - `tpeI` are the info's of `symI`
        *   - `rtree` is code that generates `tree` at runtime, maintaining all attributes.
        */
@@ -130,6 +137,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
       }
 
       // helper methods
+
+      private def localName(sym: Symbol) = localPrefix + symIndex(sym)
 
       private def call(fname: String, args: Tree*): Tree =
         Apply(termPath(fname), args.toList)
@@ -178,7 +187,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
       private def reifySymRef(sym: Symbol): Tree = {
         symIndex get sym match {
           case Some(idx) =>
-            Ident(localPrefix + symIndex(sym))
+            Ident(localName(sym))
           case None =>
             if (sym.isStatic)
               mirrorCall(if (sym.isType) "staticClass" else "staticModule", reify(sym.fullName))
@@ -192,10 +201,15 @@ abstract class LiftCode extends Transform with TypingTransformers {
                 else mirrorCall("selectTerm", rowner, rname, reify(sym.tpe))
               }
             else {
-              println("Late local: "+sym)
-              assert(!sym.isParameter, sym+"/"+sym.owner+"/"+sym.owner.info+"/"+sym.paramPos)
-              registerLocalSymbol(sym)
-              reifySymRef(sym)
+              if (sym.isTerm) {
+                println("Free: "+sym)
+                mirrorCall("freeVar", reify(sym.name.toString), reify(sym.tpe), Ident(sym))
+              } else {
+                println("Late local: "+sym)
+                assert(!sym.isParameter, sym+"/"+sym.owner+"/"+sym.owner.info+"/"+sym.paramPos)
+                registerLocalSymbol(sym)
+                reifySymRef(sym)
+              }
             }
         }
       }
@@ -209,7 +223,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
             List(List(reify(sym.owner), reify(sym.pos), reify(sym.name))))
         if (sym.flags != 0L)
           rsym = Apply(Select(rsym, "setFlag"), List(Literal(Constant(sym.flags))))
-        ValDef(NoMods, localPrefix + symIndex(sym), TypeTree(), rsym)
+        ValDef(NoMods, localName(sym), TypeTree(), rsym)
       }
 
       /** Generate code to add type and annotation info to a reified symbol
@@ -268,17 +282,23 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
       /** Reify a tree */
       private def reifyTree(tree: Tree): Tree = tree match {
-        case tree @ This(_) if !(symIndex isDefinedAt tree.symbol) =>
-          reifyFree(tree)
-        case tree @ Ident(_) if !(symIndex isDefinedAt tree.symbol) =>
+        case EmptyTree =>
+          reifyCaseObject(tree)
+        case ClassDef(_, _, _, _) =>
+          localClasses += tree.symbol
+          reifyCaseClassInstance(tree)
+        case tree @ This(_) if !(localClasses contains tree.symbol) =>
           reifyFree(tree)
         case _ =>
-          var rtree = reifyCaseClassInstance(tree.asInstanceOf[Product])
+//        var rtree =
+          reifyCaseClassInstance(tree.asInstanceOf[Product])
+/*
           if (tree.isDef || tree.isInstanceOf[Function])
             registerLocalSymbol(tree.symbol)
           if (tree.hasSymbol)
             rtree = Apply(Select(rtree, "setSymbol"), List(reifySymRef(tree.symbol)))
           Apply(Select(rtree, "setType"), List(reifyType(tree.tpe)))
+*/
       }
 
       /** Reify a free reference. The result will be either a mirror reference
@@ -287,8 +307,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
       private def reifyFree(tree: Tree): Tree =
         if (tree.symbol.hasFlag(MODULE) && tree.symbol.isStatic)
           reify(termPath(tree.symbol.fullName))
-        else
-          mirrorCall("Literal", tree)
+        else // make an Ident to a freeVar
+          mirrorCall("Ident", reifySymRef(tree.symbol))
 
       /** Reify an arbitary value */
       private def reify(value: Any): Tree = {

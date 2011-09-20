@@ -54,10 +54,10 @@ final class ClosureTest {
   }
 }
 
-object TestInt extends testing.Benchmark {
+object TestInt extends scala.testing.Benchmark {
   def run() = (new IntTest).run()
 }
 
-object TestClosure extends testing.Benchmark {
+object TestClosure extends scala.testing.Benchmark {
   def run() = (new ClosureTest).run()
 }

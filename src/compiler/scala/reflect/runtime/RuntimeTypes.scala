@@ -5,13 +5,15 @@ import collection.mutable.ListBuffer
 
 trait RuntimeTypes extends Universe with api.RuntimeTypes {
 
-  def freeValue(x: Any): Tree = FreeValue(x)
+  case class FreeVar(_name: TermName, _tpe: Type, value: Any) extends TermSymbol(definitions.RootClass, NoPosition, _name) {
+    setInfo(_tpe)
 
-  // to do: replace with generalized
-  // case class Literal(x: Any),
-  // once calls to the deprecated factory Literal(x: Any) has been eliminated from all code.
-  case class FreeValue(any: Any) extends Tree {
-    protected def errorSubtrees = Nil
+    override def hashCode = value.hashCode
+
+    override def equals(other: Any): Boolean = other match {
+      case FreeVar(_, _, value1) => value.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]
+      case _ => false
+    }
   }
 
   case class InstanceRefSymbol(value: AnyRef) extends TermSymbol(NoSymbol, NoPosition, nme.EMPTY)
