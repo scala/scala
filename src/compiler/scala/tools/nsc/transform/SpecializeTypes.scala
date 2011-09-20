@@ -1241,12 +1241,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           if (findSpec(tpt.tpe).typeSymbol ne tpt.tpe.typeSymbol) {
+            // the ctor can be specialized
             log("** instantiated specialized type: " + findSpec(tpt.tpe))
-            atPos(tree.pos)(
-              localTyper.typed(
-                Apply(
-                  Select(New(TypeTree(findSpec(tpt.tpe))), nme.CONSTRUCTOR),
-                  transformTrees(args))))
+            try {
+              atPos(tree.pos)(
+                localTyper.typed(
+                  Apply(
+                    Select(New(TypeTree(findSpec(tpt.tpe))), nme.CONSTRUCTOR),
+                    transformTrees(args))))
+            } catch {
+              case te: TypeError =>
+                reporter.error(tree.pos, te.msg)
+                super.transform(tree)
+            }
           } else super.transform(tree)
 
         case TypeApply(Select(qual, name), targs)

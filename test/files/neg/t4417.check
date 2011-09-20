@@ -1,0 +1,7 @@
+t4417.scala:11: error: constructor Pixel$mcD$sp in class Pixel$mcD$sp cannot be accessed in object Pixel
+ Access to protected constructor Pixel$mcD$sp not permitted because
+ enclosing object Pixel is not a subclass of 
+ class Pixel$mcD$sp where target is defined
+  def apply(v: Double): Pixel1d = new Pixel1d(v)
+                                  ^
+one error found
