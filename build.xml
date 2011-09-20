@@ -276,7 +276,7 @@ INITIALISATION
       <pathelement location="${build-strap.dir}/classes/library"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
       <path refid="lib.extra"/>
-    </path>  
+    </path>
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>    
   </target>
 
@@ -289,7 +289,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       <available file="${build-locker.dir}/all.complete"/>
     </condition>
   </target>
-  
+
   <target name="locker.pre-lib" depends="locker.start" unless="locker.available">
     <condition property="locker.lib.needed">
       <not><available file="${build-locker.dir}/library.complete"/></not>
@@ -591,8 +591,8 @@ QUICK BUILD (QUICK)
         <include name="**/*.properties"/>
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
-        <include name="**/*.gif"/>        
-        <include name="**/*.txt"/>        
+        <include name="**/*.gif"/>
+        <include name="**/*.txt"/>
       </fileset>
     </copy>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
@@ -1104,7 +1104,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <include name="**/*.properties"/>
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
-        <include name="**/*.gif"/>        
+        <include name="**/*.gif"/>
         <include name="**/*.txt"/>
        </fileset>
     </copy>
@@ -1617,12 +1617,12 @@ BOOTRAPING TEST AND TEST SUITE
 <!-- ===========================================================================
 DISTRIBUTION
 ============================================================================ -->
-  
+
   <target name="dist.start" depends="docs.done, pack.done">
     <property name="dist.name" value="scala-${version.number}"/>
     <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
   </target>
-    
+
   <target name="dist.base" depends="dist.start">
     <mkdir dir="${dist.dir}/lib"/>
     <copy toDir="${dist.dir}/lib">
@@ -1864,7 +1864,7 @@ POSITIONS
       <param name="test.tests.srcs" value="${partest.dir}/files/neg"/>
     </antcall>
   </target>
-  
+
   <target name="test.positions.sub">
     <echo message="Validating positions for: ${test.srcs}"/>
     <if>
@@ -1907,7 +1907,7 @@ POSITIONS
       </path>
     </foreach>
   </target>
-  
+
 <!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->

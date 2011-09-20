@@ -12,12 +12,13 @@ import xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.tools.util.StringOps.splitWhere
 
-/** This class builds instance of <code>Tree</code> that represent XML.
+/** This class builds instance of `Tree` that represent XML.
  *
- * Note from martin: This needs to have its position info reworked. I don't understand exactly
- * what's done here. To make validation pass, I set many positions to be transparent. Not sure this
- * is a good idea for navigating XML trees in the IDE< but it's the best I can do right now. If someone
- * who understands this part better wants to give it a shot, please do!
+ *  Note from martin: This needs to have its position info reworked. I don't
+ *  understand exactly what's done here. To make validation pass, I set many
+ *  positions to be transparent. Not sure this is a good idea for navigating
+ *  XML trees in the IDE but it's the best I can do right now. If someone
+ *  who understands this part better wants to give it a shot, please do!
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -26,9 +27,9 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   val global: Global
   import global._
 
-  var isPattern: Boolean = _
+  private[parser] var isPattern: Boolean = _
 
-  trait XMLTypeNames extends TypeNames {
+  private trait XMLTypeNames extends TypeNames {
     val _Comment: NameType             = "Comment"
     val _Elem: NameType                = "Elem"
     val _EntityRef: NameType           = "EntityRef"
@@ -43,7 +44,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     val _UnprefixedAttribute: NameType = "UnprefixedAttribute"
   }
 
-  trait XMLTermNames extends TermNames {
+  private trait XMLTermNames extends TermNames {
     val _Null: NameType     = "Null"
     val __Elem: NameType    = "Elem"
     val __Text: NameType    = "Text"
