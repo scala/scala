@@ -17,7 +17,7 @@ class StoreReporter extends Reporter {
   class Info(val pos: Position, val msg: String, val severity: Severity) {
     override def toString() = "pos: " + pos + " " + msg + " " + severity
   }
-  val infos = new mutable.HashSet[Info]
+  val infos = new mutable.LinkedHashSet[Info]
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     if (!force) {
       infos += new Info(pos, msg, severity)

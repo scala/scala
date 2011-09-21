@@ -42,7 +42,6 @@ Export-Package:
  scala.reflect.internal,
  scala.reflect.internal.settings,
  scala.reflect.runtime,
- scala.reflect.std,
  scala.reflect.internal.transform,
  ch.epfl.lamp.compiler.msil,
  ch.epfl.lamp.compiler.msil.emit,
