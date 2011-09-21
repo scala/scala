@@ -2770,6 +2770,11 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "LazyType"
   }
 
+  class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType {
+    override def safeToString =
+      (if (typeParams.isEmpty) "" else typeParamsString(this)) + super.safeToString
+  }
+
 // Creators ---------------------------------------------------------------
 
   /** Rebind symbol `sym` to an overriding member in type `pre`. */
