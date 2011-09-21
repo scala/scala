@@ -2236,6 +2236,17 @@ trait Typers extends Modes with Adaptations {
       case Some(imp1: Import) => imp1
       case None => log("unhandled import: "+imp+" in "+unit); imp
     }
+    private def isWarnablePureExpression(tree: Tree) = tree match {
+      case EmptyTree | Literal(Constant(())) => false
+      case _                                 =>
+        !tree.containsErrorOrIsErrorTyped() && (treeInfo isPureExpr tree) && {
+          val sym = tree.symbol
+          (sym == null) || !(sym.isModule || sym.isLazy) || {
+            debuglog("'Pure' but side-effecting expression in statement position: " + tree)
+            false
+          }
+        }
+    }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
@@ -2270,22 +2281,11 @@ trait Typers extends Modes with Adaptations {
                     else result
                   } else result
 
-                result1 match {
-                  case EmptyTree | Literal(Constant(()))  => result1
-                  case tree if tree.containsError() => result1
-                  case tree =>
-                    if (treeInfo isPureExpr result1) {
-                      val sym = result1.symbol
-                      if (sym != null && (sym.isModule || sym.isLazy)) {
-                        debuglog("'Pure' but side-effecting expression in statement position: " + result1)
-                      }
-                      else context.warning(stat.pos,
-                        "a pure expression does nothing in statement position; " +
-                        "you may be omitting necessary parentheses"
-                      )
-                    }
-                    result1
-                }
+                if (isWarnablePureExpression(result1)) context.warning(stat.pos,
+                  "a pure expression does nothing in statement position; " +
+                  "you may be omitting necessary parentheses"
+                )
+                result1
               }
           }
       }
