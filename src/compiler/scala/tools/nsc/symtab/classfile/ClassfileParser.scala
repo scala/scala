@@ -908,7 +908,7 @@ abstract class ClassfileParser {
                 case None =>
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
-            debuglog("" + sym + "; annotations = " + sym.rawAnnotations)
+            // debuglog("" + sym + "; annotations = " + sym.rawAnnotations)
           } else
             in.skip(attrLen)
 

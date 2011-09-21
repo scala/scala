@@ -19,7 +19,6 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree {
-    protected def errorSubtrees = args
   }
 
   /** Documented definition, eliminated by analyzer */
@@ -30,28 +29,22 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     override def isDef = definition.isDef
     override def isTerm = definition.isTerm
     override def isType = definition.isType
-
-    protected def errorSubtrees = List(definition)
   }
-
 
   /** Either an assignment or a named argument. Only appears in argument lists,
    *  eliminated by typecheck (doTypedApply)
    */
   case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
        extends TermTree {
-    protected def errorSubtrees = List(lhs, rhs)
   }
 
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
        extends TermTree with RefTree {
-    protected def errorSubtrees = List(qualifier)
   }
 
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => Either[AbsErrorTree, TypeTree]) extends TypTree {
-    protected def errorSubtrees = Nil
   }
 
   // --- factory methods ----------------------------------------------------------
@@ -160,8 +153,10 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       traverser.traverse(lhs); traverser.traverse(rhs)
     case SelectFromArray(qualifier, selector, erasure) =>
       traverser.traverse(qualifier)
-    case TypeTreeWithDeferredRefCheck() => // TODO: should we traverse the wrapped tree?
-      // (and rewrap the result? how to update the deferred check? would need to store wrapped tree instead of returning it from check)
+    case TypeTreeWithDeferredRefCheck() =>
+      // TODO: should we traverse the wrapped tree?
+      // (and rewrap the result? how to update the deferred check?
+      // would need to store wrapped tree instead of returning it from check)
     case _ => super.xtraverse(traverser, tree)
   }
 
@@ -255,6 +250,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       tree.symbol = NoSymbol
     }
     override def traverse(tree: Tree): Unit = {
+      tree.resetErrorBits() // !!! Not sure whether this is right (or matters.)
       tree match {
         case _: DefTree | Function(_, _) | Template(_, _, _) =>
           resetDef(tree)

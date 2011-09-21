@@ -36,7 +36,6 @@ abstract class TreeBrowsers {
   def create(): SwingBrowser = new SwingBrowser();
 
   trait ValidTree extends Tree {
-    protected def errorSubtrees: List[Tree] = Nil
   }
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
