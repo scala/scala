@@ -25,6 +25,7 @@ abstract class SymbolTable extends api.Universe
                               with TreePrinters
                               with Positions
                               with TypeDebugging
+                              with Importers
                               with Required
 {
   def rootLoader: LazyType
