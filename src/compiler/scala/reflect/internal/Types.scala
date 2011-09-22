@@ -152,12 +152,6 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   val intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
 
-  //private object gen extends {
-  //  val global : Types.this.type = Types.this
-  //} with TreeGen
-
-  //import gen._
-
   /** A proxy for a type (identified by field `underlying`) that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
    *  every operation that is overridden for some kind of types should be forwarded.
@@ -566,7 +560,8 @@ trait Types extends api.Types { self: SymbolTable =>
      *      = Int
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
-      if (!isTrivial && (!phase.erasedTypes || pre.typeSymbol == ArrayClass)) {
+      if (isTrivial || phase.erasedTypes && pre.typeSymbol != ArrayClass) this
+      else {
         incCounter(asSeenFromCount)
         val start = startTimer(asSeenFromNanos)
         val m = new AsSeenFromMap(pre.normalize, clazz)
@@ -574,7 +569,7 @@ trait Types extends api.Types { self: SymbolTable =>
         val result = existentialAbstraction(m.capturedParams, tp)
         stopTimer(asSeenFromNanos, start)
         result
-      } else this
+      }
 
     /** The info of `sym`, seen as a member of this type.
      *
@@ -667,8 +662,6 @@ trait Types extends api.Types { self: SymbolTable =>
          else isSubType(this, that, AnyDepth))
       }
     }
-
-
 
     /** Is this type a subtype of that type in a pattern context?
      *  Any type arguments on the right hand side are replaced with
@@ -2085,7 +2078,7 @@ A type's typeSymbol should never be inspected directly.
    */
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type {
-    override def isTrivial: Boolean = isTrivial0
+    override def isTrivial: Boolean = isTrivial0 && (resultType eq resultType.withoutAnnotations)
     private lazy val isTrivial0 =
       resultType.isTrivial && params.forall{p => p.tpe.isTrivial &&  (
         !settings.YdepMethTpes.value || !(params.exists(_.tpe.contains(p)) || resultType.contains(p)))
@@ -2103,20 +2096,13 @@ A type's typeSymbol should never be inspected directly.
 
     override def boundSyms = immutable.Set[Symbol](params ++ resultType.boundSyms: _*)
 
-    // this is needed for plugins to work correctly, only TypeConstraint annotations are supposed to be carried over
-    // TODO: this should probably be handled in a more structured way in adapt -- remove this map in resultType and watch the continuations tests fail
-    private object dropAnnotations extends TypeMap with KeepOnlyTypeConstraints {
-      def apply(x: Type) = mapOver(x)
-    }
-
     override def resultType(actuals: List[Type]) =
-      if (isTrivial) dropAnnotations(resultType)
+      if (isTrivial || phase.erasedTypes) resultType
       else if (sameLength(actuals, params)) {
         val idm = new InstantiateDependentMap(params, actuals)
         val res = idm(resultType)
         existentialAbstraction(idm.existentialsNeeded, res)
       }
-      else if (phase.erasedTypes) resultType
       else existentialAbstraction(params, resultType)
 
     // implicit args can only be depended on in result type: TODO this may be generalised so that the only constraint is dependencies are acyclic
@@ -2146,27 +2132,15 @@ A type's typeSymbol should never be inspected directly.
     override def isJava = true
   }
 
-  case class NullaryMethodType(override val resultType: Type) extends Type {
-    // AM to TR: #dropNonContraintAnnotations
-    // change isTrivial to the commented version and watch continuations-run/t3225.scala fail
-    // isTrivial implies asSeenFrom is bypassed, since it's supposed to be the identity map
-    // it's not really the identity due to dropNonContraintAnnotations
-    override def isTrivial: Boolean = false //resultType.isTrivial -- `false` to make continuations plugin work (so that asSeenFromMap drops non-constrain annotations even when type doesn't change otherwise)
-    override def prefix: Type = resultType.prefix
-    override def narrow: Type = resultType.narrow
-    override def finalResultType: Type = resultType.finalResultType
-    override def termSymbol: Symbol = resultType.termSymbol
-    override def typeSymbol: Symbol = resultType.typeSymbol
-    override def parents: List[Type] = resultType.parents
-    override def decls: Scope = resultType.decls
-    override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
-    override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
-    override def baseClasses: List[Symbol] = resultType.baseClasses
-    override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
-    override def boundSyms = resultType.boundSyms
-    override def isVolatile = resultType.isVolatile
-    override def safeToString: String = "=> "+ resultType
-    override def kind = "NullaryMethodType"
+  case class NullaryMethodType(override val resultType: Type) extends SimpleTypeProxy {
+    override def underlying        = resultType
+    override def isTrivial         = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
+    override def paramSectionCount = 0
+    override def paramss           = Nil
+    override def params            = Nil
+    override def paramTypes        = Nil
+    override def safeToString      = "=> " + resultType
+    override def kind              = "NullaryMethodType"
   }
 
   object NullaryMethodType extends NullaryMethodTypeExtractor
