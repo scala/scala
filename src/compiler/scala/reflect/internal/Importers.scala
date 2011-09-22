@@ -63,7 +63,7 @@ trait Importers { self: SymbolTable =>
                 new TypeSymbol(myowner, mypos, myname.toTypeName)
             }
             symMap(sym) = mysym
-            mysym setFlag sym.flags
+            mysym setFlag sym.flags | Flags.LOCKED
             mysym setInfo {
               val mytypeParams = sym.typeParams map importSymbol
               new LazyPolyType(mytypeParams) {
@@ -77,9 +77,10 @@ trait Importers { self: SymbolTable =>
                 }
               }
             }
+            mysym resetFlag Flags.LOCKED
           } // end doImport
 
-          if (myowner.isClass && !myowner.isRefinementClass && sym.owner.info.decl(sym.name).exists) {
+          if (myowner.isClass && !myowner.isRefinementClass && !(myowner hasFlag Flags.LOCKED) && sym.owner.info.decl(sym.name).exists) {
             // symbol is in class scope, try to find equivalent one in local scope
             if (sym.isOverloaded)
               myowner.newOverloaded(myowner.thisType, sym.alternatives map importSymbol)
@@ -93,18 +94,26 @@ trait Importers { self: SymbolTable =>
                   } else {
                     existing filter (!_.isMethod)
                   }
-                assert(!existing.isOverloaded)
+                assert(!existing.isOverloaded,
+                    "import failure: cannot determine unique overloaded method alternative from\n "+
+                    (existing.alternatives map (_.defString) mkString "\n")+"\n that matches "+sym+":"+sym.tpe)
               }
               if (existing.exists) existing
               else {
                 val mysym = doImport
+                assert(myowner.info.decls.lookup(myname) == NoSymbol, myname+" "+myowner.info.decl(myname).exists)
                 myowner.info.decls enter mysym
                 mysym
               }
             }
-          } else if (sym.isTypeParameter && sym.paramPos >= 0)
+          } else if (sym.isTypeParameter && sym.paramPos >= 0 && !(myowner hasFlag Flags.LOCKED)) {
+            assert(myowner.typeParams.length > sym.paramPos,
+                "import failure: cannot determine parameter "+sym+" (#"+sym.paramPos+") in "+
+                myowner+typeParamsString(myowner.rawInfo)+"\n original symbol was: "+
+                sym.owner+from.typeParamsString(sym.owner.info))
+            println(myowner.rawInfo)
             myowner.typeParams(sym.paramPos)
-          else
+          } else
             doImport
         }
       symMap getOrElseUpdate (sym, importOrRelink)
