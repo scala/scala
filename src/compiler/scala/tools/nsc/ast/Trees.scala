@@ -250,7 +250,9 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       tree.symbol = NoSymbol
     }
     override def traverse(tree: Tree): Unit = {
-      tree.resetErrorBits() // !!! Not sure whether this is right (or matters.)
+      //tree.resetErrorBits()
+        // [Martin] I believe the commented statement above not right. errorBits reflect the invariant that a subtree is an ErrorTree.
+        // THhat's unaffected by resetAttrs.
       tree match {
         case _: DefTree | Function(_, _) | Template(_, _, _) =>
           resetDef(tree)
