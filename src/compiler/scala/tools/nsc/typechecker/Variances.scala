@@ -71,11 +71,9 @@ trait Variances {
       varianceInType(pre)(tparam)
     case TypeRef(pre, sym, args) =>
       if (sym == tparam) COVARIANT
-      else varianceInType(pre)(tparam) & {
-        // @PP to @AM: please give this a higher dose of correctness.
-        val actualArgs = if (args.isEmpty) sym.typeParams map (_.typeConstructor) else args
-        varianceInArgs(actualArgs, sym.typeParams)(tparam)
-      }
+      // tparam cannot occur in tp's args if tp is a type constructor (those don't have args)
+      else if (tp.isHigherKinded) varianceInType(pre)(tparam)
+      else varianceInType(pre)(tparam) & varianceInArgs(args, sym.typeParams)(tparam)
     case TypeBounds(lo, hi) =>
       flip(varianceInType(lo)(tparam)) & varianceInType(hi)(tparam)
     case RefinedType(parents, defs) =>
