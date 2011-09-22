@@ -340,8 +340,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     override def erasedTypes: Boolean = isErased
     private val isFlat = prev.name == "flatten" || prev.flatClasses
     override def flatClasses: Boolean = isFlat
-    // private val isDevirtualized = prev.name == "devirtualize" || prev.devirtualized
-    // override def devirtualized: Boolean = isDevirtualized  // (part of DEVIRTUALIZE)
     private val isSpecialized = prev.name == "specialize" || prev.specialized
     override def specialized: Boolean = isSpecialized
     private val isRefChecked = prev.name == "refchecks" || prev.refChecked

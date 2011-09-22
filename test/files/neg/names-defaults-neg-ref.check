@@ -10,7 +10,7 @@ The members with defaults are defined in class C and class B.
 class C extends B {
       ^
 names-defaults-neg-ref.scala:21: error: overriding method bar$default$1 in class B of type => String;
- method bar$default$1 has incompatible type
+ method bar$default$1 needs `override' modifier
   def bar(i: Int = 129083) = i
           ^
 four errors found

@@ -773,13 +773,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  be set if PRIVATE is currently set.
      */
     final def setNotFlag(flag: Int) = if (hasFlag(flag)) setFlag((flag: @annotation.switch) match {
-      case FINAL     => notFINAL
       case PRIVATE   => notPRIVATE
-      case DEFERRED  => notDEFERRED
       case PROTECTED => notPROTECTED
-      case ABSTRACT  => notABSTRACT
       case OVERRIDE  => notOVERRIDE
-      case METHOD    => notMETHOD
       case _         => abort("setNotFlag on invalid flag: " + flag)
     })
 

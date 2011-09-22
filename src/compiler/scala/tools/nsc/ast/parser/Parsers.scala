@@ -2021,7 +2021,7 @@ self =>
               in.nextToken()
             case _ =>
               if (mods.flags != Flags.PARAMACCESSOR) accept(VAL)
-              if (!caseParam) mods |= Flags.PRIVATE | Flags.LOCAL
+              if (!caseParam) mods |= Flags.PrivateLocal
           }
           if (caseParam) mods |= Flags.CASEACCESSOR
         }

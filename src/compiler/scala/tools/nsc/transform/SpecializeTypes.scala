@@ -17,6 +17,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** the name of the phase: */
   val phaseName: String = "specialize"
 
+  /** The following flags may be set by this phase: */
+  override def phaseNewFlags: Long = notPRIVATE | lateFINAL
+
   /** This phase changes base classes. */
   override def changesBaseClasses = true
   override def keepsTypeParams = true

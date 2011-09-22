@@ -20,7 +20,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   val phaseName: String = "mixin"
 
   /** The phase might set the following new flags: */
-  override def phaseNewFlags: Long = lateMODULE | notABSTRACT
+  override def phaseNewFlags: Long = lateMODULE | notOVERRIDE
 
   /** This map contains a binding (class -> info) if
    *  the class with this info at phase mixinPhase has been treated for mixin composition
@@ -160,7 +160,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         //   println("before erasure: "+ (field.info))
         // }
         clazz.newMethod(field.pos, nme.getterName(field.name))
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED |
+          .setFlag(field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED |
                      (if (field.isMutable) 0 else STABLE))
           .setInfo(MethodType(List(), field.info)) // TODO preserve pre-erasure info?
       }
@@ -171,7 +171,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         //println("creating new setter for "+field+field.locationString+(field hasFlag MUTABLE))
         val setterName = nme.getterToSetter(nme.getterName(field.name))
         val setter = clazz.newMethod(field.pos, setterName)
-          .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
+          .setFlag(field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED)
         setter.setInfo(MethodType(setter.newSyntheticValueParams(List(field.info)), UnitClass.tpe))  // TODO preserve pre-erasure info?
         if (needsExpandedSetterName(field)) {
           //println("creating expanded setter from "+field)
@@ -320,7 +320,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                     sym.updateInfo(member.tpe.resultType) // info at current phase
                     addMember(clazz,
                               sym
-                                setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
+                                setFlag (PrivateLocal | member.getFlag(MUTABLE | LAZY))
                                 setFlag (if (!member.hasStableFlag) MUTABLE else 0)
                                 setAnnotations accessed.annotations)
                 }
@@ -708,10 +708,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
           }
 
-          bitmapOperation(field,
-            {sym.addAnnotation(AnnotationInfo(TransientAttr.tpe, Nil, Nil)); sym.setFlag(PRIVATE | LOCAL)},
-            sym.setFlag(PRIVATE | LOCAL),
-            sym.setFlag(if (checkinitField) (PRIVATE | LOCAL) else PROTECTED))
+          // What's going on here, why is setFlag called three times?
+          bitmapOperation(
+            field,
+            { sym.addAnnotation(AnnotationInfo(TransientAttr.tpe, Nil, Nil)); sym.setFlag(PrivateLocal) },
+            sym setFlag PrivateLocal,
+            sym setFlag (if (checkinitField) PrivateLocal else PROTECTED)
+          )
 
           clazz0.info.decls.enter(sym)
           if (clazz0 == clazz)

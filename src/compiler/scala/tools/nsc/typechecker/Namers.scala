@@ -1409,7 +1409,7 @@ trait Namers { self: Analyzer =>
       }
 
       if (sym.isConstructor) {
-        if (sym.hasFlag(OVERRIDE | ABSOVERRIDE))
+        if (sym.isAnyOverride)
           context.error(sym.pos, "`override' modifier not allowed for constructors")
         if (sym.isImplicit)
           context.error(sym.pos, "`implicit' modifier not allowed for constructors")
@@ -1424,9 +1424,9 @@ trait Namers { self: Analyzer =>
       if (sym.hasFlag(ABSTRACT) && !sym.isClass)
         context.error(sym.pos, "`abstract' modifier can be used only for classes; " +
           "\nit should be omitted for abstract members")
-      if (sym.hasFlag(OVERRIDE | ABSOVERRIDE) && !sym.hasFlag(TRAIT) && sym.isClass)
+      if (sym.isAnyOverride && !sym.hasFlag(TRAIT) && sym.isClass)
         context.error(sym.pos, "`override' modifier not allowed for classes")
-      if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
+      if (sym.isAbstractOverride && !sym.owner.isTrait)
         context.error(sym.pos, "`abstract override' modifier only allowed for members of traits")
       if (sym.isLazy && sym.hasFlag(PRESUPER))
         context.error(sym.pos, "`lazy' definitions may not be initialized early")

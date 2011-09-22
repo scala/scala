@@ -1442,7 +1442,7 @@ trait Typers extends Modes with Adaptations {
 
         if (value.isLazy) List(stat)
         else {
-          val vdef = treeCopy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
+          val vdef = treeCopy.ValDef(stat, mods | PrivateLocal, nme.getterToLocal(name), tpt, rhs)
           val getterDef = atPos(vdef.pos.focus) {
             if (isDeferred) {
               val r = DefDef(getter, EmptyTree)

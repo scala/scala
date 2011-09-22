@@ -28,7 +28,7 @@ abstract class ExplicitOuter extends InfoTransform
   import Debug.TRACE
 
   /** The following flags may be set by this phase: */
-  override def phaseNewFlags: Long = notPRIVATE | notPROTECTED | lateFINAL
+  override def phaseNewFlags: Long = notPROTECTED
 
   /** the name of the phase: */
   val phaseName: String = "explicitouter"
@@ -150,7 +150,7 @@ abstract class ExplicitOuter extends InfoTransform
         val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
         decls1 enter (clazz.newOuterAccessor(clazz.pos) setInfo MethodType(Nil, restpe))
         if (hasOuterField(clazz)) { //2
-          val access = if (clazz.isEffectivelyFinal) PRIVATE | LOCAL else PROTECTED
+          val access = if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED
           decls1 enter (
             clazz.newValue(clazz.pos, nme.OUTER_LOCAL)
             setFlag (SYNTHETIC | PARAMACCESSOR | access)

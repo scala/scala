@@ -530,7 +530,7 @@ abstract class TreeBuilder {
     require(cases.nonEmpty)
 
     val selectorName = freshTermName()
-    val valdef = atPos(selector.pos)(ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), selectorName, TypeTree(), selector))
+    val valdef = atPos(selector.pos)(ValDef(Modifiers(PrivateLocal | SYNTHETIC), selectorName, TypeTree(), selector))
     val nselector = Ident(selectorName)
 
     def loop(cds: List[CaseDef]): Match = {
@@ -579,7 +579,7 @@ abstract class TreeBuilder {
           val tmp = freshTermName()
           val firstDef =
             atPos(matchExpr.pos) {
-              ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC | (mods.flags & LAZY)),
+              ValDef(Modifiers(PrivateLocal | SYNTHETIC | (mods.flags & LAZY)),
                      tmp, TypeTree(), matchExpr)
             }
           var cnt = 0

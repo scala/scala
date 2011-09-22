@@ -151,8 +151,8 @@ trait HasFlags {
   def isInterface = hasFlag(INTERFACE)
 
   // Newly introduced based on having a reasonably obvious clean translation.
-  def isPrivateLocal   = hasAllFlags(PRIVATE | LOCAL)
-  def isProtectedLocal = hasAllFlags(PROTECTED | LOCAL)
+  def isPrivateLocal   = hasAllFlags(PrivateLocal)
+  def isProtectedLocal = hasAllFlags(ProtectedLocal)
   def isParamAccessor  = hasFlag(PARAMACCESSOR)
   def isCaseAccessor   = hasFlag(CASEACCESSOR)
   def isSuperAccessor  = hasFlag(SUPERACCESSOR)
@@ -174,7 +174,7 @@ trait HasFlags {
 
   // Dropped isTerm condition because flag isn't overloaded.
   def isAbstractOverride = hasFlag(ABSOVERRIDE)
-
+  def isAnyOverride = hasFlag(OVERRIDE | ABSOVERRIDE)
   def isDefaultInit = hasFlag(DEFAULTINIT)
 
   // Disambiguating: DEFAULTPARAM, TRAIT

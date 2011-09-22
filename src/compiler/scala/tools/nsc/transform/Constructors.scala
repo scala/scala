@@ -466,7 +466,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             closureClass.setInfo(new ClassInfoType(closureParents, new Scope, closureClass))
 
             val outerField = closureClass.newValue(impl.pos, nme.OUTER)
-              .setFlag(PRIVATE | LOCAL | PARAMACCESSOR)
+              .setFlag(PrivateLocal | PARAMACCESSOR)
               .setInfo(clazz.tpe)
 
             val applyMethod = closureClass.newMethod(impl.pos, nme.apply)
