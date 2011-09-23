@@ -1,25 +1,6 @@
 t2641.scala:18: error: illegal cyclic reference involving trait ManagedSeq
         with TraversableViewLike[A, ManagedSeqStrict[A], ManagedSeq[A]]
                                                          ^
-t2641.scala:24: error: something is wrong (wrong class file?): trait ManagedSeq with type parameters [A,Coll] gets applied to arguments [], phase = typer
-  trait Transformed[+B] extends ManagedSeq[B, Coll] with super.Transformed[B]
-        ^
-t2641.scala:26: error: something is wrong (wrong class file?): trait ManagedSeq with type parameters [A,Coll] gets applied to arguments [], phase = namer
-  trait Sliced extends Transformed[A] with super.Sliced {
-               ^
-t2641.scala:27: error: value managedIterator is not a member of ManagedSeq
-    override def managedIterator = self.managedIterator slice (from, until)
-                                        ^
-t2641.scala:26: error: illegal inheritance; superclass Any
- is not a subclass of the superclass ManagedSeqStrict
- of the mixin trait Transformed
-  trait Sliced extends Transformed[A] with super.Sliced {
-                       ^
-t2641.scala:26: error: illegal inheritance; superclass Any
- is not a subclass of the superclass Object
- of the mixin trait Sliced
-  trait Sliced extends Transformed[A] with super.Sliced {
-                                                 ^
 t2641.scala:16: error: illegal inheritance;
  self-type ManagedSeq does not conform to ManagedSeqStrict[A]'s selftype ManagedSeqStrict[A]
         extends ManagedSeqStrict[A]
@@ -32,4 +13,23 @@ t2641.scala:16: error: illegal inheritance;
  self-type ManagedSeq does not conform to ScalaObject's selftype ScalaObject
         extends ManagedSeqStrict[A]
         ^
+t2641.scala:24: error: something is wrong (wrong class file?): trait ManagedSeq with type parameters [A,Coll] gets applied to arguments [], phase = typer
+  trait Transformed[+B] extends ManagedSeq[B, Coll] with super.Transformed[B]
+        ^
+t2641.scala:26: error: something is wrong (wrong class file?): trait ManagedSeq with type parameters [A,Coll] gets applied to arguments [], phase = namer
+  trait Sliced extends Transformed[A] with super.Sliced {
+               ^
+t2641.scala:26: error: illegal inheritance; superclass Any
+ is not a subclass of the superclass ManagedSeqStrict
+ of the mixin trait Transformed
+  trait Sliced extends Transformed[A] with super.Sliced {
+                       ^
+t2641.scala:26: error: illegal inheritance; superclass Any
+ is not a subclass of the superclass Object
+ of the mixin trait Sliced
+  trait Sliced extends Transformed[A] with super.Sliced {
+                                                 ^
+t2641.scala:27: error: value managedIterator is not a member of ManagedSeq
+    override def managedIterator = self.managedIterator slice (from, until)
+                                        ^
 9 errors found

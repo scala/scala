@@ -65,26 +65,13 @@ trait Namers { self: Analyzer =>
     classAndNamerOfModule.clear
   }
 
-  abstract class Namer(val context: Context) extends NamerErrorTrees {
+  abstract class Namer(val context: Context) {
 
     val typer = newTyper(context)
 
     def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
-      if (mods.hasAccessBoundary) {
-        val symOrError = typer.qualifyingClass(tree, mods.privateWithin, true) match {
-          case Left(err) =>
-            try {
-              err.emit(context)
-            } catch {
-              case _: TypeError =>
-                assert(false, "qualifying class info can fail but cannot throw type errors")
-            }
-            NoSymbol
-          case Right(sym) =>
-            sym
-        }
-        sym.privateWithin = symOrError
-      }
+      if (mods.hasAccessBoundary)
+        sym.privateWithin = typer.qualifyingClass(tree, mods.privateWithin, true)
       sym
     }
 
@@ -161,7 +148,6 @@ trait Namers { self: Analyzer =>
 
     private def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
 
-    // TODO: make it into error trees
     private def doubleDefError(pos: Position, sym: Symbol) {
       val s1 = if (sym.isModule) "case class companion " else ""
       val s2 = if (sym.isSynthetic) "(compiler-generated) " + s1 else ""
@@ -674,18 +660,10 @@ trait Namers { self: Analyzer =>
         case _ =>
       }
       sym.setInfo(if (sym.isJavaDefined) RestrictJavaArraysMap(tp) else tp)
-      if ((sym.isAliasType || sym.isAbstractType) && !sym.isParameter) {
-        val check = typer.checkNonCyclic(tree.pos, tp)
-        if (check.isDefined) {
-          sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
-                                 // adding setters and getters --> bug798
-          try {
-            check.get.emit(context)
-          } catch {
-            case _: TypeError => assert(false, "Type errors cannot be thrown in type completers")
-          }
-        }
-      }
+      if ((sym.isAliasType || sym.isAbstractType) && !sym.isParameter &&
+          !typer.checkNonCyclic(tree.pos, tp))
+        sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
+                               // adding setters and getters --> bug798
       debuglog("defined " + sym);
       validate(sym)
     }
@@ -851,14 +829,7 @@ trait Namers { self: Analyzer =>
 
       }
 */
-      var parents0 = typer.parentTypes(templ)
-      try {
-        parents0.foreach(p => if (p.containsError()) typer.emitAllErrorTrees(p, context))
-      } catch {
-        case _: TypeError =>
-          assert(false, "parent types cannot throw type errors")
-      }
-      val parents = parents0 map checkParent
+      var parents = typer.parentTypes(templ) map checkParent
       enterSelf(templ.self)
       val decls = new Scope
 //      for (etdef <- earlyTypes) decls enter etdef.symbol
@@ -1342,10 +1313,7 @@ trait Namers { self: Analyzer =>
 
             case Import(expr, selectors) =>
               val expr1 = typer.typedQualifier(expr)
-              val stable = typer.checkStable(expr1)
-              if (stable.containsError())
-                typer.emitAllErrorTrees(stable, context)
-
+              typer checkStable expr1
               if (expr1.symbol != null && expr1.symbol.isRootPackage)
                 context.error(tree.pos, "_root_ cannot be imported")
 
@@ -1361,10 +1329,7 @@ trait Namers { self: Analyzer =>
         } catch {
           case ex: TypeError =>
             //Console.println("caught " + ex + " in typeSig")
-            // TODO: once ErrorTrees are implemented we should be able
-            // to get rid of this catch and simply report the error
-            // (maybe apart from cyclic errors)
-            TypeSigError(tree, ex).emit(context)
+            typer.reportTypeError(tree.pos, ex)
             ErrorType
         }
       result match {

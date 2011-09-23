@@ -1190,15 +1190,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
     /* Check whether argument types conform to bounds of type parameters */
     private def checkBounds(pre: Type, owner: Symbol, tparams: List[Symbol], argtps: List[Type], pos: Position): Unit =
-      try typer.infer.checkBounds(pos, pre, owner, tparams, argtps, "") match {
-        case Some(err) => err.emit(typer.context)
-        case _ => ()
-      }
+      try typer.infer.checkBounds(pos, pre, owner, tparams, argtps, "")
       catch {
         case ex: TypeError =>
-          // checkBounds no longer throws errors (apart from Cyclic ones)
-          // so maybe it is safe to remove/simplify this catch?
-          unit.error(pos, ex.getMessage())
+          unit.error(pos, ex.getMessage());
           if (settings.explaintypes.value) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
             (argtps, bounds).zipped map ((targ, bound) => explainTypes(bound.lo, targ))
@@ -1356,13 +1351,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         case tpt@TypeTree() =>
           if(tpt.original != null) {
             tpt.original foreach {
-              case dc@TypeTreeWithDeferredRefCheck() =>
-                dc.check() match {
-                  case Left(err) =>
-                    err.emit()
-                  case Right(t) =>
-                    applyRefchecksToAnnotations(t) // #2416
-                }
+              case dc@TypeTreeWithDeferredRefCheck() => applyRefchecksToAnnotations(dc.check()) // #2416
               case _ =>
             }
           }
@@ -1526,11 +1515,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             if(tpt.original != null) {
               tpt.original foreach {
                 case dc@TypeTreeWithDeferredRefCheck() =>
-                  dc.check() match {
-                    case Left(err) => err.emit()
-                    case Right(tree) => transform(tree) // #2416 -- only call transform to do refchecks, but discard results
-                      // tpt has the right type if the deferred checks are ok
-                  }
+                  transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results
+                  // tpt has the right type if the deferred checks are ok
                 case _ =>
               }
             }
@@ -1606,7 +1592,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         result
       } catch {
         case ex: TypeError =>
-          if (settings.debug.value) ex.printStackTrace()
+          if (settings.debug.value) ex.printStackTrace();
           unit.error(tree.pos, ex.getMessage())
           tree
       } finally {

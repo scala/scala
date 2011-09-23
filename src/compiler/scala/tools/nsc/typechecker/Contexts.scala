@@ -193,7 +193,7 @@ trait Contexts { self: Analyzer =>
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
       registerContext(c.asInstanceOf[analyzer.Context])
-      // debuglog("Created context: " + this + " ==> " + c)
+      debuglog("Created context: " + this + " ==> " + c)
       c
     }
 
@@ -282,12 +282,6 @@ trait Contexts { self: Analyzer =>
       if (reportGeneralErrors) unitError(pos, msg1)
       else throw new TypeError(pos, msg1)
     }
-
-/*!!!    def errorTree(pos: Position, msg: String): ErrorTree = {
-      error(pos, msg)
-      ErrorTree(msg) setPos pos
-    }
-    */
 
     def warning(pos:  Position, msg: String) = {
       if (reportGeneralErrors) unit.warning(pos, msg)

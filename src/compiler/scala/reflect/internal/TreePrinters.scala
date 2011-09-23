@@ -405,8 +405,7 @@ trait TreePrinters { self: SymbolTable =>
 // SelectFromArray.
 //          case SelectFromArray(qualifier, name, _) =>
 //          print(qualifier); print(".<arr>"); print(symName(tree, name))
-        case err: ErrorTreeWithPrettyPrinter =>
-          print(err.toString())
+
 
         case tree =>
           xprintRaw(this, tree)

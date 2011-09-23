@@ -41,7 +41,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     import CODE._
 
     val localTyper = newTyper(
-      if (reporter.hasErrors || templ.containsError()) context makeSilent false else context
+      if (reporter.hasErrors) context makeSilent false else context
     )
     def accessorTypes = clazz.caseFieldAccessors map (_.tpe.finalResultType)
     def accessorLub     = global.weakLub(accessorTypes)._1

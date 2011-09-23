@@ -59,11 +59,10 @@ abstract class Pickler extends SubComponent {
         }
       }
       // If there are any erroneous types in the tree, then we will crash
-      // when we pickle it: so let's report an error instead.  We know next
+      // when we pickle it: so let's report an erorr instead.  We know next
       // to nothing about what happened, but our supposition is a lot better
       // than "bad type: <error>" in terms of explanatory power.
       for (t <- unit.body ; if t.isErroneous) {
-        debugwarn("Error tree " + t.id + " reached pickler: " + t.summaryString)
         unit.error(t.pos, "erroneous or inaccessible type")
         return
       }
