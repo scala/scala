@@ -24,7 +24,9 @@ trait ToolBoxes extends { self: Universe =>
     lazy val exporter = importer.reverse
 
     def typeCheck(tree: Tree, expectedType: Type = WildcardType): Tree = {
-      new compiler.Run
+      println("typing "+tree+", pt = "+expectedType)
+      val run = new compiler.Run
+      compiler.phase = run.refchecksPhase
       val ctree: compiler.Tree = importer.importTree(tree)
       val pt: compiler.Type = importer.importType(expectedType)
       val ttree: compiler.Tree = compiler.typer.typed(ctree, compiler.analyzer.EXPRmode, pt)

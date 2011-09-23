@@ -80,7 +80,9 @@ trait Importers { self: SymbolTable =>
             mysym resetFlag Flags.LOCKED
           } // end doImport
 
-          if (myowner.isClass && !myowner.isRefinementClass && !(myowner hasFlag Flags.LOCKED) && sym.owner.info.decl(sym.name).exists) {
+          if (sym.isModuleClass) {
+            importSymbol(sym.sourceModule).moduleClass
+          } else if (myowner.isClass && !myowner.isRefinementClass && !(myowner hasFlag Flags.LOCKED) && sym.owner.info.decl(sym.name).exists) {
             // symbol is in class scope, try to find equivalent one in local scope
             if (sym.isOverloaded)
               myowner.newOverloaded(myowner.thisType, sym.alternatives map importSymbol)
@@ -98,10 +100,10 @@ trait Importers { self: SymbolTable =>
                     "import failure: cannot determine unique overloaded method alternative from\n "+
                     (existing.alternatives map (_.defString) mkString "\n")+"\n that matches "+sym+":"+sym.tpe)
               }
-              if (existing.exists) existing
+              if (existing != NoSymbol) existing
               else {
                 val mysym = doImport
-                assert(myowner.info.decls.lookup(myname) == NoSymbol, myname+" "+myowner.info.decl(myname).exists)
+                assert(myowner.info.decls.lookup(myname) == NoSymbol, myname+" "+myowner.info.decl(myname)+" "+existing)
                 myowner.info.decls enter mysym
                 mysym
               }

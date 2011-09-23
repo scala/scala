@@ -1,5 +1,6 @@
 import reflect.runtime.Mirror.ToolBox
 import scala.tools.nsc.reporters._
+import scala.tools.nsc.Settings
 
 object Test extends App {
   def foo[T](ys: List[T]) = {
@@ -9,14 +10,9 @@ object Test extends App {
   val code = foo(List(2))
   val tree = code.tree.asInstanceOf[scala.reflect.runtime.Mirror.Tree]
   val targetType = code.manifest.tpe.asInstanceOf[scala.reflect.runtime.Mirror.Type]
-  val reporter = new StoreReporter
+  val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter, args mkString " ")
   val ttree = toolbox.typeCheck(tree, targetType)
-  if (reporter.infos.nonEmpty) {
-    reporter.infos foreach println
-    println("compilaton failed")
-  } else {
-    println("result = "+ttree)
-  }
+  println("result = "+ttree)
 }
 
