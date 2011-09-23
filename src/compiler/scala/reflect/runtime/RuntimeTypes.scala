@@ -5,17 +5,6 @@ import collection.mutable.ListBuffer
 
 trait RuntimeTypes extends Universe with api.RuntimeTypes {
 
-  case class FreeVar(_name: TermName, _tpe: Type, value: Any) extends TermSymbol(definitions.RootClass, NoPosition, _name) {
-    setInfo(_tpe)
-
-    override def hashCode = value.hashCode
-
-    override def equals(other: Any): Boolean = other match {
-      case FreeVar(_, _, value1) => value.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]
-      case _ => false
-    }
-  }
-
   case class InstanceRefSymbol(value: AnyRef) extends TermSymbol(NoSymbol, NoPosition, nme.EMPTY)
   object InstanceRefSymbol extends InstanceRefSymbolExtractor
 

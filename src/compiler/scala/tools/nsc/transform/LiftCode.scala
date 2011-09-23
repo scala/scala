@@ -97,7 +97,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
       private val localSyms = mutable.ArrayBuffer[Symbol]()
       private val symIndex = mutable.HashMap[Symbol, Int]()
-      private var localClasses = Set[Symbol]()
+      private var boundSyms = Set[Symbol]()
       private val typeTree = mutable.HashMap[Type, Tree]()
       private val typeTreeCount = mutable.HashMap[Tree, Int]()
 
@@ -181,6 +181,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
       private def isLocatable(sym: Symbol) =
         sym.isPackageClass || sym.owner.isClass || sym.isParameter && sym.paramPos >= 0
+
+      private def isFree(sym: Symbol) =
+        !(symIndex contains sym)
 
       /** Reify a reference to a symbol
        */
@@ -284,13 +287,12 @@ abstract class LiftCode extends Transform with TypingTransformers {
       private def reifyTree(tree: Tree): Tree = tree match {
         case EmptyTree =>
           reifyCaseObject(tree)
-        case ClassDef(_, _, _, _) =>
-          localClasses += tree.symbol
-          reifyCaseClassInstance(tree)
-        case tree @ This(_) if !(localClasses contains tree.symbol) =>
+        case tree @ This(_) if !(boundSyms contains tree.symbol) =>
+          reifyFree(tree)
+        case tree @ Ident(_) if !(boundSyms contains tree.symbol) =>
           reifyFree(tree)
         case _ =>
-//        var rtree =
+          if (tree.isDef) boundSyms += tree.symbol
           reifyCaseClassInstance(tree.asInstanceOf[Product])
 /*
           if (tree.isDef || tree.isInstanceOf[Function])

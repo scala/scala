@@ -2348,6 +2348,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def sourceModule_=(module: Symbol) { this.module = module }
   }
 
+  class FreeVar(name: TermName, tpe: Type, val value: Any) extends TermSymbol(definitions.RootClass, NoPosition, name) {
+    setInfo(tpe)
+
+    override def hashCode = value.hashCode
+
+    override def equals(other: Any): Boolean = other match {
+      case that: FreeVar => this.value.asInstanceOf[AnyRef] eq that.value.asInstanceOf[AnyRef]
+      case _ => false
+    }
+  }
+
   /** An object representing a missing symbol */
   object NoSymbol extends Symbol(null, NoPosition, nme.NO_NAME) {
     setInfo(NoType)

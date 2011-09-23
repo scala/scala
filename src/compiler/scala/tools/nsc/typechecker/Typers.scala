@@ -3683,8 +3683,10 @@ trait Typers extends Modes with Adaptations {
             return makeErrorTree
 
           if (!qual.tpe.widen.isErroneous) {
-            val lastTry = missingHook(qual.tpe.typeSymbol, name)
-            if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
+            if ((mode & QUALmode) != 0) {
+              val lastTry = missingHook(qual.tpe.typeSymbol, name)
+              if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
+            }
             notAMemberError(tree.pos, qual, name)
           }
 
@@ -3880,9 +3882,10 @@ trait Typers extends Modes with Adaptations {
             else if (settings.exposeEmptyPackage.value && checkEmptyPackage())
               log("Allowing empty package member " + name + " due to settings.")
             else {
-              val lastTry = missingHook(RootClass, name)
-              if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
-
+              if ((mode & QUALmode) != 0) {
+                val lastTry = missingHook(RootClass, name)
+                if (lastTry != NoSymbol) return typed1(tree setSymbol lastTry, mode, pt)
+              }
               if (settings.debug.value) {
                 log(context.imports)//debug
               }
