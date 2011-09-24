@@ -6,24 +6,23 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.{ mutable, immutable }
+import mutable.ListBuffer
 import symtab.Flags._
 
-/** This phase adds super accessors for all super calls that
- *  either appear in a trait or have as a target a member of some outer class.
- *  It also replaces references to parameter accessors with aliases by super
- *  references to these aliases.
- *  The phase also checks that symbols accessed from super are not abstract,
- *  or are overridden by an abstract override.
- *  Finally, the phase also mangles the names of class-members which are private
- *  up to an enclosing non-package class, in order to avoid overriding conflicts.
+/** This phase adds super accessors for all super calls that either
+ *  appear in a trait or have as a target a member of some outer class.
+ *  It also replaces references to parameter accessors with aliases
+ *  by super references to these aliases. The phase also checks that
+ *  symbols accessed from super are not abstract, or are overridden by
+ *  an abstract override. Finally, the phase also mangles the names
+ *  of class-members which are private up to an enclosing non-package
+ *  class, in order to avoid overriding conflicts.
  *
  *  @author  Martin Odersky
  *  @version 1.0
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
-  // inherits abstract value `global` and class `Phase` from Transform
-
   import global._
   import definitions.{ UnitClass, isRepeatedParamType, isByNameParamType, Any_asInstanceOf }
   import analyzer.{ restrictionError }
@@ -36,10 +35,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
   class SuperAccTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var validCurrentOwner = true
-    private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
+    private val accDefs = mutable.Map[Symbol, ListBuffer[Tree]]()
 
-    private def accDefBuf(clazz: Symbol) =
-      accDefs collectFirst { case (`clazz`, buf) => buf } getOrElse sys.error("no acc def buf for "+clazz)
+    private def storeAccessorDefinition(clazz: Symbol, tree: Tree) = {
+      val buf = accDefs.getOrElse(clazz, sys.error("no acc def buf for "+clazz))
+      buf += typers(clazz) typed tree
+    }
 
     private def transformArgs(params: List[Symbol], args: List[Tree]) = {
       treeInfo.zipMethodParamsAndArgs(params, args) map { case (param, arg) =>
@@ -107,8 +108,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             }
             superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
             //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
-            clazz.info.decls enter superAcc;
-            accDefBuf(clazz) += typers(clazz).typed(DefDef(superAcc, EmptyTree))
+            clazz.info.decls enter superAcc
+            storeAccessorDefinition(clazz, DefDef(superAcc, EmptyTree))
           }
           atPos(sup.pos) {
             Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
@@ -173,17 +174,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           checkCompanionNameClashes(sym)
           super.transform(tree)
         case Template(parents, self, body) =>
-          val ownAccDefs = new ListBuffer[Tree];
-          accDefs = (currentOwner, ownAccDefs) :: accDefs;
+          val ownAccDefs = new ListBuffer[Tree]
+          accDefs(currentOwner) = ownAccDefs
 
           // ugly hack... normally, the following line should not be
           // necessary, the 'super' method taking care of that. but because
           // that one is iterating through parents (and we dont want that here)
           // we need to inline it.
           curTree = tree
-          val body1 = atOwner(currentOwner) { transformTrees(body) }
-          accDefs = accDefs.tail;
-          treeCopy.Template(tree, parents, self, ownAccDefs.toList ::: body1)
+          val body1 = atOwner(currentOwner)(transformTrees(body))
+          accDefs -= currentOwner
+          ownAccDefs ++= body1
+          treeCopy.Template(tree, parents, self, ownAccDefs.toList)
 
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)
@@ -271,19 +273,11 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val sym = tree.symbol
       val clazz = hostForAccessorOf(sym, currentOwner.enclClass)
 
-      /** Return a list of list of types of all value parameter sections. */
-      def allParamTypes(tpe: Type): List[List[Type]] = tpe match {
-        case PolyType(_, restpe) => allParamTypes(restpe)
-        case MethodType(params, res) => params.map(_.tpe) :: allParamTypes(res)
-        case _ => Nil
-      }
-
-
       assert(clazz != NoSymbol, sym)
       debuglog("Decided for host class: " + clazz)
 
-      val accName = nme.protName(sym.originalName)
-      val hasArgs = sym.tpe.paramTypes != Nil
+      val accName    = nme.protName(sym.originalName)
+      val hasArgs    = sym.tpe.paramSectionCount > 0
       val memberType = refChecks.toScalaRepeatedParam(sym.tpe) // fix for #2413
 
       // if the result type depends on the this type of an enclosing class, the accessor
@@ -304,16 +298,20 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
         protAcc.setInfo(accType(protAcc))
         clazz.info.decls.enter(protAcc);
+
         val code = DefDef(protAcc, {
-          val obj = protAcc.paramss.head.head // receiver
-          protAcc.paramss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
-              (fun, pvparams) => {
-                Apply(fun, (pvparams._1, pvparams._2).zipped map (makeArg(_, obj, _)))
-              })
+          val (receiver :: _) :: tail = protAcc.paramss
+          val base: Tree              = Select(Ident(receiver), sym)
+          val allParamTypes           = sym.tpe.paramss map (xs => xs map (_.tpe))
+
+          (tail zip allParamTypes).foldLeft(base) {
+            case (fn, (params, tpes)) =>
+              Apply(fn, params zip tpes map { case (p, tp) => makeArg(p, receiver, tp) })
+          }
         })
 
         debuglog("" + code)
-        accDefBuf(clazz) += typers(clazz).typed(code)
+        storeAccessorDefinition(clazz, code)
       }
       var res: Tree = atPos(tree.pos) {
         if (targs.head == EmptyTree)
@@ -336,33 +334,17 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *
      *  Also, it calls using repeated parameters are ascribed with ': _*'
      */
-    private def makeArg(v: Symbol, obj: Symbol, expectedTpe: Type): Tree = {
-      var res: Tree = Ident(v)
-      val sym = obj.tpe.typeSymbol
-      var ownerClass: Symbol = NoSymbol
-
-      val isDependentType = expectedTpe match {
-        case TypeRef(path, _, _) =>
-          ownerClass = thisTypeOfPath(path)
-          if (sym.isSubClass(ownerClass)) true else false
-        case _ => false
+    private def makeArg(v: Symbol, obj: Symbol, pt: Type): Tree = {
+      // owner class
+      val clazz = pt match {
+        case TypeRef(pre, _, _) => thisTypeOfPath(pre)
+        case _                  => NoSymbol
       }
-      if (isRepeatedParamType(v.info)) {
-        res = gen.wildcardStar(res)
-        log("adapted to wildcard star: " + res)
-      }
-      if (isDependentType) {
-        val preciseTpe = expectedTpe.asSeenFrom(singleType(NoPrefix, obj), ownerClass) //typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
-        TypeApply(Select(res, Any_asInstanceOf),
-                  List(TypeTree(preciseTpe)))
-      } else res
-    }
-
-    /** For a path-dependent type, return the this type. */
-    private def thisTypeOfPath(path: Type): Symbol = path match {
-      case ThisType(outerSym)  => outerSym
-      case SingleType(rest, _) => thisTypeOfPath(rest)
-      case _ => NoSymbol
+      val result = gen.paramToArg(v)
+      if (clazz != NoSymbol && (obj.tpe.typeSymbol isSubClass clazz)) // path-dependent type
+        gen.mkAsInstanceOf(result, pt.asSeenFrom(singleType(NoPrefix, obj), clazz))
+      else
+        result
     }
 
     /** Add an accessor for field, if needed, and return a selection tree for it .
@@ -381,7 +363,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                                    UnitClass.tpe))
         clazz.info.decls.enter(protAcc)
         val code = DefDef(protAcc, {
-          val obj :: value :: Nil = protAcc.paramss.head;
+          val obj :: value :: Nil = protAcc.paramss.head
           atPos(tree.pos) {
             Assign(
               Select(Ident(obj), field.name),
@@ -389,10 +371,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
         })
         debuglog("" + code)
-        accDefBuf(clazz) += typers(clazz).typed(code)
+        storeAccessorDefinition(clazz, code)
       }
-      var res: Tree = atPos(tree.pos) { Select(This(clazz), protAcc) }
-      res
+      atPos(tree.pos)(Select(This(clazz), protAcc))
     }
 
     /** Does `sym` need an accessor when accessed from `currentOwner`?
@@ -462,16 +443,21 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       else referencingClass
     }
 
+    /** For a path-dependent type, return the this type. */
+    private def thisTypeOfPath(path: Type): Symbol = path match {
+      case ThisType(outerSym)  => outerSym
+      case SingleType(rest, _) => thisTypeOfPath(rest)
+      case _                   => NoSymbol
+    }
+
     /** Is 'tpe' the type of a member of an enclosing class? */
     private def isThisType(tpe: Type): Boolean = tpe match {
-      case ThisType(sym) => (sym.isClass && !sym.isPackageClass)
-      case TypeRef(pref, _, _) => isThisType(pref)
-      case SingleType(pref, _) => isThisType(pref)
-      case RefinedType(parents, defs) =>
-        parents.exists(isThisType(_))
-      case AnnotatedType(_, tp, _) =>
-        isThisType(tp)
-      case _ => false
+      case ThisType(sym)           => sym.isClass && !sym.isPackageClass
+      case TypeRef(pre, _, _)      => isThisType(pre)
+      case SingleType(pre, _)      => isThisType(pre)
+      case RefinedType(parents, _) => parents exists isThisType
+      case AnnotatedType(_, tp, _) => isThisType(tp)
+      case _                       => false
     }
   }
 }
