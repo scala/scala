@@ -1794,6 +1794,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isTrait) "trait"
       else if (isClass) "class"
       else if (isType) "type"
+      else if (isInstanceOf[FreeVar]) "free variable"
       else if (isTerm && isLazy) "lazy value"
       else if (isVariable) "variable"
       else if (isClassConstructor) "constructor"

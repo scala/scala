@@ -67,4 +67,8 @@ package object util {
     bs.toString()
   }
   def stackTraceString(ex: Throwable): String = stringFromWriter(ex printStackTrace _)
+
+  lazy val trace = new SimpleTracer(System.out)
+  lazy val errtrace = new SimpleTracer(System.err)
+
 }

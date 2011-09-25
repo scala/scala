@@ -18,72 +18,81 @@ trait Importers { self: SymbolTable =>
     def importPosition(pos: from.Position): Position = NoPosition
 
     def importSymbol(sym: from.Symbol): Symbol = {
-      def importOrRelink: Symbol =
-        if (sym == null)
-          null
-        else if (sym.getClass == NoSymbol.getClass)
-          NoSymbol
-        else if (sym.isRoot)
-          definitions.RootClass
-        else {
-          val myowner = importSymbol(sym.owner)
-          val mypos = importPosition(sym.pos)
-          val myname = importName(sym.name)
-
-          def doImport: Symbol = {
-            val mysym = sym match {
-              case x: from.MethodSymbol =>
-                val mysym = new MethodSymbol(myowner, mypos, myname)
-                mysym.referenced = importSymbol(x.referenced)
-                mysym
-              case x: from.ModuleSymbol =>
-                new ModuleSymbol(myowner, mypos, myname)
-              case x: from.FreeVar =>
-                new FreeVar(importName(x.name), importType(x.tpe), x.value)
-              case x: from.TermSymbol =>
-                new TermSymbol(myowner, mypos, myname)
-              case x: from.TypeSkolem =>
-                new TypeSkolem(myowner, mypos, myname.toTypeName, x.unpackLocation match {
-                  case null => null
-                  case y: from.Tree => importTree(y)
-                  case y: from.Symbol => importSymbol(y)
-                })
-/*
+      def doImport(sym: from.Symbol): Symbol = {
+        val myowner = importSymbol(sym.owner)
+        val mypos = importPosition(sym.pos)
+        val myname = importName(sym.name)
+        def linkReferenced(mysym: TermSymbol, x: from.TermSymbol, op: from.Symbol => Symbol): Symbol = {
+          println("link referenced " + mysym + " " + x.referenced)
+          symMap(x) = mysym
+          mysym.referenced = op(x.referenced)
+          mysym
+        }
+        val mysym = sym match {
+          case x: from.MethodSymbol =>
+            linkReferenced(new MethodSymbol(myowner, mypos, myname), x, importSymbol)
+          case x: from.ModuleSymbol =>
+            linkReferenced(new ModuleSymbol(myowner, mypos, myname), x, doImport)
+          case x: from.FreeVar =>
+            new FreeVar(importName(x.name), importType(x.tpe), x.value)
+          case x: from.TermSymbol =>
+            linkReferenced(new TermSymbol(myowner, mypos, myname), x, importSymbol)
+          case x: from.TypeSkolem =>
+            new TypeSkolem(myowner, mypos, myname.toTypeName, x.unpackLocation match {
+              case null => null
+              case y: from.Tree => importTree(y)
+              case y: from.Symbol => importSymbol(y)
+            })
+          /*
               case x: from.ModuleClassSymbol =>
                 val mysym = new ModuleClassSymbol(myowner, mypos, myname.toTypeName)
                 mysym.sourceModule = importSymbol(x.sourceModule)
                 mysym
 */
-              case x: from.ClassSymbol =>
-                val mysym = new ClassSymbol(myowner, mypos, myname.toTypeName)
-                if (sym.thisSym != sym) {
-                  mysym.typeOfThis = importType(sym.typeOfThis)
-                  mysym.thisSym.name = importName(sym.thisSym.name)
-                }
-                mysym
-              case x: from.TypeSymbol =>
-                new TypeSymbol(myowner, mypos, myname.toTypeName)
+          case x: from.ClassSymbol =>
+            val mysym = new ClassSymbol(myowner, mypos, myname.toTypeName)
+            if (sym.thisSym != sym) {
+              mysym.typeOfThis = importType(sym.typeOfThis)
+              mysym.thisSym.name = importName(sym.thisSym.name)
             }
-            symMap(sym) = mysym
-            mysym setFlag sym.flags | Flags.LOCKED
-            mysym setInfo {
-              val mytypeParams = sym.typeParams map importSymbol
-              new LazyPolyType(mytypeParams) {
-                override def complete(s: Symbol) {
-                  val result = sym.info match {
-                    case from.PolyType(_, res) => res
-                    case result => result
-                  }
-                  s setInfo polyType(mytypeParams, importType(result))
-                  s setAnnotations (sym.annotations map importAnnotationInfo)
-                }
+            mysym
+          case x: from.TypeSymbol =>
+            new TypeSymbol(myowner, mypos, myname.toTypeName)
+        }
+        symMap(sym) = mysym
+        mysym setFlag sym.flags | Flags.LOCKED
+        mysym setInfo {
+          val mytypeParams = sym.typeParams map doImport
+          new LazyPolyType(mytypeParams) {
+            override def complete(s: Symbol) {
+              val result = sym.info match {
+                case from.PolyType(_, res) => res
+                case result => result
               }
+              s setInfo polyType(mytypeParams, importType(result))
+              s setAnnotations (sym.annotations map importAnnotationInfo)
             }
-            mysym resetFlag Flags.LOCKED
-          } // end doImport
+          }
+        }
+        mysym resetFlag Flags.LOCKED
+      } // end doImport
 
+      def importOrRelink: Symbol =
+        if (sym == null)
+          null
+        else if (sym == from.NoSymbol)
+          NoSymbol
+        else if (sym.isRoot)
+          definitions.RootClass
+        else {
+          val myowner = importSymbol(sym.owner)
+          val myname = importName(sym.name)
           if (sym.isModuleClass) {
-            importSymbol(sym.sourceModule).moduleClass
+            assert(sym.sourceModule != NoSymbol, sym)
+            val mymodule = importSymbol(sym.sourceModule)
+            assert(mymodule != NoSymbol, sym)
+            assert(mymodule.moduleClass != NoSymbol, mymodule)
+            mymodule.moduleClass
           } else if (myowner.isClass && !myowner.isRefinementClass && !(myowner hasFlag Flags.LOCKED) && sym.owner.info.decl(sym.name).exists) {
             // symbol is in class scope, try to find equivalent one in local scope
             if (sym.isOverloaded)
@@ -93,7 +102,7 @@ trait Importers { self: SymbolTable =>
               if (existing.isOverloaded) {
                 existing =
                   if (sym.isMethod) {
-                    val localCopy = doImport
+                    val localCopy = doImport(sym)
                     existing filter (_.tpe matches localCopy.tpe)
                   } else {
                     existing filter (!_.isMethod)
@@ -104,7 +113,7 @@ trait Importers { self: SymbolTable =>
               }
               if (existing != NoSymbol) existing
               else {
-                val mysym = doImport
+                val mysym = doImport(sym)
                 assert(myowner.info.decls.lookup(myname) == NoSymbol, myname+" "+myowner.info.decl(myname)+" "+existing)
                 myowner.info.decls enter mysym
                 mysym
@@ -118,7 +127,7 @@ trait Importers { self: SymbolTable =>
             println(myowner.rawInfo)
             myowner.typeParams(sym.paramPos)
           } else
-            doImport
+            doImport(sym)
         }
       symMap getOrElseUpdate (sym, importOrRelink)
     }
