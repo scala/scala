@@ -1,11 +1,14 @@
 /* NSC -- new Scala compiler
- * Copyright LAMP/EPFL
+ * Copyright 2005-2011 LAMP/EPFL
  * @author Stephane Micheloud
- * @author Gilles Dubochet
  */
 
 package scala.man1
 
+/**
+ *  @author Gilles Dubochet
+ *  @version 1.0
+ */
 object scaladoc extends Command {
   import _root_.scala.tools.docutil.ManPage._
 
@@ -141,7 +144,7 @@ object scaladoc extends Command {
 
   def manpage = new Document {
     title = command
-    date = "2 June 2010"
+    date = "June 2010"
     author = "Gilles Dubochet"
     version = "2.0"
     sections = List(

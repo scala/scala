@@ -5,6 +5,10 @@
 
 package scala.man1
 
+/**
+ *  @author Stephane Micheloud
+ *  @version 1.0
+ */
 trait Command {
   import _root_.scala.tools.docutil.ManPage._
 
@@ -22,6 +26,9 @@ trait Command {
 
   protected def CmdOption(opt: String): AbstractText =
     Mono(Bold(NDash & opt) & " ")
+
+  protected def CmdOptionBound(opt: String, params: AbstractText) =
+    Mono(Bold(NDash & opt) & params & " ")
 
   protected def CmdOptionLong(opt: String, params: AbstractText) =
     Mono(Bold(NDash & NDash & opt) & " " & params & " ")
@@ -47,11 +54,6 @@ trait Command {
   def bugs = Section("REPORTING BUGS",
 
     "Report bugs to " & Mono("https://issues.scala-lang.org/") & ".")
-
-  //private val df = new java.text.SimpleDateFormat("MMM d, yyyy")
-  //private val rightNow = new java.util.Date()
-
-  def lastModified: String = "April 18, 2007" // df.format(rightNow)
 
   def manpage: Document
 }

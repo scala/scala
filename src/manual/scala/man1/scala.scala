@@ -5,6 +5,10 @@
 
 package scala.man1
 
+/**
+ *  @author Stephane Micheloud
+ *  @version 1.0
+ */
 object scala extends Command {
   import _root_.scala.tools.docutil.ManPage._
 
@@ -32,23 +36,23 @@ object scala extends Command {
         Link(Bold("scalac") & "(1)", "scalac.html") & "."),
 
       Definition(
-        Mono("-howtorun:") & Argument("how"),
+        CmdOptionBound("howtorun:", Argument("how")),
         "How to execute " & Argument("torun") & ", if it is present. " &
         "Options for " & Argument("how") & " are " & Mono("guess") &
         " (the default), " & Mono("script") & ", and " & Mono("object") &
         "."),
 
       Definition(
-        Mono("-i"),
+        CmdOption("i"),
         "Requests that a file be pre-loaded.  It is only " &
         "meaningful for interactive shells."),
 
       Definition(
-        Mono("-e"),
+        CmdOption("e"),
         "Requests that its argument be executed as Scala code."),
 
       Definition(
-        Mono("-savecompiled"),
+        CmdOption("savecompiled"),
         "Save this compiled version of scripts in order to speed up " &
         "later executions of the same script.  When running a script, " &
         "save the compiled version of in a file with the same name as the " &
@@ -57,11 +61,11 @@ object scala extends Command {
         "will be used if it is newer than the script file."),
 
       Definition(
-        Mono("-nocompdaemon"),
-        "Do not use the " & Bold("fsc") & " offline compiler."),
+        CmdOption("nocompdaemon"),
+        "Do not use the " & MBold("fsc") & " offline compiler."),
 
       Definition(
-        Mono("-D") & Argument("property=value"),
+        CmdOptionBound("D", "property=value"),
         "Set a Java system property.  If no value is specified, " &
         "then the property is set to the empty string."),
 
@@ -75,8 +79,8 @@ object scala extends Command {
 
   val description = Section("DESCRIPTION",
 
-    "The "&MBold(command)&" utility runs Scala code using a Java runtime "&
-    "environment.  The Scala code to run is " &
+    "The " & MBold(command) & " utility runs Scala code using a Java " &
+    "runtime environment.  The Scala code to run is " &
     "specified in one of three ways:",
 
     NumberedList(
@@ -253,7 +257,7 @@ object scala extends Command {
 
   def manpage = new Document {
     title = command
-    date = lastModified
+    date = "April 2007"
     author = "Stephane Micheloud"
     version = "0.5"
     sections = List(

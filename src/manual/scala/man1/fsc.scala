@@ -5,11 +5,14 @@
 
 package scala.man1
 
+/**
+ *  @author Lex Spoon
+ *  @version 1.0
+ */
 object fsc extends Command {
   import _root_.scala.tools.docutil.ManPage._
 
   protected def cn = new Error().getStackTrace()(0).getClassName()
-  override def lastModified = "January 18, 2007"
 
   val name = Section("NAME",
 
@@ -63,8 +66,8 @@ object fsc extends Command {
           "is not needed.  Note that the hostname must be for a host that shares " &
           "the same filesystem."),
         Definition(
-          CmdOption("J", Argument("flag")),
-          "Pass <flag> directly to the Java VM for the compilation daemon.")
+          CmdOptionBound("J", Argument("flag")),
+          "Pass " & Mono(Argument("flag")) & " directly to the Java VM for the compilation daemon.")
     ))
 
   val example = Section("EXAMPLE",
@@ -146,7 +149,7 @@ object fsc extends Command {
 
   def manpage = new Document {
     title = command
-    date = lastModified
+    date = "January 2007"
     author = "Lex Spoon"
     version = "0.4"
     sections = List(
