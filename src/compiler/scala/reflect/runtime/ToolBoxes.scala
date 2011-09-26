@@ -23,15 +23,21 @@ trait ToolBoxes extends { self: Universe =>
 
     lazy val exporter = importer.reverse
 
-    def typeCheck(tree: Tree, expectedType: Type = WildcardType): Tree = {
+    def typeCheck(tree: reflect.mirror.Tree, expectedType: reflect.mirror.Type): reflect.mirror.Tree = {
       println("typing "+tree+", pt = "+expectedType)
       val run = new compiler.Run
       compiler.phase = run.refchecksPhase
-      val ctree: compiler.Tree = importer.importTree(tree)
-      val pt: compiler.Type = importer.importType(expectedType)
+      val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
+      val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
       val ttree: compiler.Tree = compiler.typer.typed(ctree, compiler.analyzer.EXPRmode, pt)
-      exporter.importTree(ttree)
+      exporter.importTree(ttree).asInstanceOf[reflect.mirror.Tree]
+    }
+
+    def typeCheck(tree: reflect.mirror.Tree): reflect.mirror.Tree =
+      typeCheck(tree, WildcardType.asInstanceOf[reflect.mirror.Type])
+
+    def show(tree: reflect.mirror.Tree): String = {
+      importer.importTree(tree.asInstanceOf[Tree]).toString
     }
   }
-
 }
