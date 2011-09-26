@@ -67,7 +67,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       emptyEnv ++ (sym.info.typeParams zip args filter (kv => isSpecialized(kv._1)))
     }
 
-    /** Is typeenv `t1` included in `t2`? All type variables in `t1`
+    /** Does typeenv `t1` include `t2`? All type variables in `t1`
      *  are defined in `t2` and:
      *  - are bound to the same type, or
      *  - are an AnyRef specialization and `t2` is bound to a subtype of AnyRef
@@ -147,6 +147,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   /** Symbol is a method that should be forwarded to 't' */
   case class Forward(t: Symbol) extends SpecializedInfo {
+    def target = t
+  }
+
+  /** Symbol is a specialized abstract method, either specialized or original. The original `t` is abstract. */
+  case class Abstract(t: Symbol) extends SpecializedInfo {
     def target = t
   }
 
@@ -301,7 +306,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     loop(keys map concreteTypes) map (keys zip _ toMap)
   }
 
-  /** Does the given tpe need to be specialized in the environment 'env'?
+  /** Does the given 'sym' need to be specialized in the environment 'env'?
    *  Specialization is needed for
    *    - members with specialized type parameters found in the given environment
    *    - constructors of specialized classes
@@ -587,13 +592,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             log("conflicting env for " + m + " env: " + env)
         }
         else if (m.isDeferred) { // abstract methods
-          val specMember = enterMember(m.cloneSymbol(cls)).setFlag(SPECIALIZED).resetFlag(DEFERRED)
-          debuglog("deferred " + specMember.fullName + " is forwarded")
+          val specMember = enterMember(m.cloneSymbol(cls)).setFlag(SPECIALIZED).setFlag(DEFERRED)
+          debuglog("deferred " + specMember.fullName + " remains abstract")
 
-          info(specMember) = new Forward(specMember) {
-            override def target = m.owner.info.member(specializedName(m, env))
-          }
-
+          info(specMember) = new Abstract(specMember)
+          // was: new Forward(specMember) {
+          //   override def target = m.owner.info.member(specializedName(m, env))
+          // }
         } else if (m.isMethod && !m.hasAccessorFlag) { // other concrete methods
           // log("other concrete " + m)
           forwardToOverload(m)
@@ -812,15 +817,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     )
   }
 
-  /** For each method m that overrides inherited method m', add a special
+  /** For each method m that overrides an inherited method m', add a special
    *  overload method `om` that overrides the corresponding overload in the
    *  superclass. For the following example:
    *
    *  class IntFun extends Function1[Int, Int] {
-   *     def apply(x: Int): Int = ..
+   *    def apply(x: Int): Int = ..
    *  }
    *
-   *  this method will return List('apply$spec$II')
+   *  this method will return List('apply$mcII$sp')
    */
   private def specialOverrides(clazz: Symbol): List[Symbol] = {
     /** Return the overridden symbol in syms that needs a specialized overriding symbol,
@@ -1431,6 +1436,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 Assign(gen.mkAttributedRef(target), Ident(vparamss.head.head.symbol))
               log("specialized accessor: " + target + " -> " + rhs1)
               localTyper.typed(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
+
+            case Abstract(targ) =>
+              log("abstract: " + targ)
+              val DefDef(mods, name, tparams, vparamss, tpt, rhs) = tree
+              val t = treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
+              localTyper.typed(t)
           }
 
         case ValDef(mods, name, tpt, rhs) if symbol.hasFlag(SPECIALIZED) && !symbol.isParamAccessor =>
