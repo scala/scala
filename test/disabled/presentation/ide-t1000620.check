@@ -1,0 +1,37 @@
+reload: A.scala, B.scala
+
+askTypeCompletion at B.scala(6,6)
+================================================================================
+[response] aksTypeCompletion at (6,6)
+retrieved 36 members
+`method !=(x$1: Any)Boolean`
+`method !=(x$1: AnyRef)Boolean`
+`method ##()Int`
+`method +(other: String)java.lang.String`
+`method ->[B](y: B)(a.A, B)`
+`method ==(x$1: Any)Boolean`
+`method ==(x$1: AnyRef)Boolean`
+`method asInstanceOf[T0]=> T0`
+`method clone()java.lang.Object`
+`method ensuring(cond: Boolean)a.A`
+`method ensuring(cond: Boolean, msg: => Any)a.A`
+`method ensuring(cond: a.A => Boolean)a.A`
+`method ensuring(cond: a.A => Boolean, msg: => Any)a.A`
+`method eq(x$1: AnyRef)Boolean`
+`method equals(x$1: Any)Boolean`
+`method finalize()Unit`
+`method formatted(fmtstr: String)String`
+`method hashCode()Int`
+`method isInstanceOf[T0]=> Boolean`
+`method ne(x$1: AnyRef)Boolean`
+`method notify()Unit`
+`method notifyAll()Unit`
+`method synchronized[T0](x$1: T0)T0`
+`method toString()java.lang.String`
+`method wait()Unit`
+`method wait(x$1: Long)Unit`
+`method wait(x$1: Long, x$2: Int)Unit`
+`method →[B](y: B)(a.A, B)`
+`value selfAny`
+`value xa.A`
+================================================================================
