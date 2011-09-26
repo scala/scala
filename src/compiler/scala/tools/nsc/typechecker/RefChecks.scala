@@ -287,6 +287,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
                 infoStringWithLocation(other),
                 infoStringWithLocation(member)
               )
+            else if (settings.debug.value)
+              analyzer.foundReqMsg(member.tpe, other.tpe)
             else ""
 
           "overriding %s;\n %s %s%s".format(

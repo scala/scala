@@ -24,7 +24,7 @@ trait ParallelMatching extends ast.TreeDSL
   self: ExplicitOuter =>
 
   import global.{ typer => _, _ }
-  import definitions.{ AnyRefClass, NothingClass, IntClass, BooleanClass, SomeClass, getProductArgs, productProj }
+  import definitions.{ AnyRefClass, NothingClass, IntClass, BooleanClass, SomeClass, OptionClass, getProductArgs, productProj }
   import CODE._
   import Types._
   import Debug._
@@ -355,24 +355,26 @@ trait ParallelMatching extends ast.TreeDSL
       lazy val unapplyResult: PatternVar =
         scrut.createVar(unMethod.tpe, Apply(unTarget, scrut.id :: trailing) setType _.tpe)
 
-      lazy val cond: Tree =
-        if (unapplyResult.tpe.isBoolean) unapplyResult.ident
-        else if (unapplyResult.tpe.typeSymbol == SomeClass) TRUE
-        else NOT(unapplyResult.ident DOT nme.isEmpty)
+      lazy val cond: Tree = unapplyResult.tpe.normalize match {
+        case TypeRef(_, BooleanClass, _)  => unapplyResult.ident
+        case TypeRef(_, SomeClass, _)     => TRUE
+        case _                            => NOT(unapplyResult.ident DOT nme.isEmpty)
+      }
 
       lazy val failure =
         mkFail(zipped.tail filterNot (x => SameUnapplyPattern(x._1)) map { case (pat, r) => r insert pat })
 
       private def doSuccess: (List[PatternVar], List[PatternVar], List[Row]) = {
         // pattern variable for the unapply result of Some(x).get
-        lazy val pv = scrut.createVar(
-          unMethod.tpe typeArgs 0,
-          _ => fn(ID(unapplyResult.lhs), nme.get)
-        )
+        def unMethodTypeArg = unMethod.tpe.baseType(OptionClass).typeArgs match {
+          case Nil      => log("No type argument for unapply result! " + unMethod.tpe) ; NoType
+          case arg :: _ => arg
+        }
+        lazy val pv = scrut.createVar(unMethodTypeArg, _ => fn(ID(unapplyResult.lhs), nme.get))
         def tuple = pv.lhs
 
         // at this point it's Some[T1,T2...]
-        lazy val tpes  = getProductArgs(tuple.tpe).get
+        lazy val tpes  = getProductArgs(tuple.tpe)
 
         // one pattern variable per tuple element
         lazy val tuplePVs =

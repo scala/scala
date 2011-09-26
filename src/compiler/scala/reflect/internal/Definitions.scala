@@ -420,6 +420,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ProductClass   = mkArityArray("Product", MaxProductArity)
     lazy val FunctionClass  = mkArityArray("Function", MaxFunctionArity, 0)
     lazy val AbstractFunctionClass = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
+    lazy val isProductNClass = ProductClass.toSet
 
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = isTupleType(tp, false)
@@ -454,11 +455,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def productProj(n: Int,   j: Int): Symbol = productProj(ProductClass(n), j)
 
       /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
-      def isExactProductType(tp: Type): Boolean = cond(tp.normalize) {
-        case TypeRef(_, sym, elems) =>
-          val len = elems.length
-          len <= MaxProductArity && sym == ProductClass(len)
-      }
+      def isExactProductType(tp: Type): Boolean = isProductNClass(tp.typeSymbol)
 
       def productType(elems: List[Type]) = {
         if (elems.isEmpty) UnitClass.tpe
@@ -472,15 +469,16 @@ trait Definitions extends reflect.api.StandardDefinitions {
         }
       }
 
-    /** if tpe <: ProductN[T1,...,TN], returns Some((T1,...,TN)) else None */
-    def getProductArgs(tpe: Type): Option[List[Type]] =
-      tpe.baseClasses collectFirst { case x if isExactProductType(x.tpe) => tpe.baseType(x).typeArgs }
+    /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
+    def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNClass match {
+      case Some(x)  => tpe.baseType(x).typeArgs
+      case _        => Nil
+    }
 
-    def unapplyUnwrap(tpe:Type) = (tpe match {
-      case PolyType(_,MethodType(_, res)) => res
-      case MethodType(_, res)             => res
-      case tpe                            => tpe
-    }).normalize
+    def unapplyUnwrap(tpe:Type) = tpe.finalResultType.normalize match {
+      case RefinedType(p :: _, _) => p.normalize
+      case tp                     => tp
+    }
 
     def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
     def functionType(formals: List[Type], restpe: Type) = {
@@ -752,6 +750,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
+
+    /** Is the symbol that of a parent which is added during parsing? */
+    lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
 
     private lazy val scalaValueClassesSet = ScalaValueClasses.toSet
     private lazy val boxedValueClassesSet = boxedClass.values.toSet + BoxedUnitClass

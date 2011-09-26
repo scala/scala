@@ -2675,7 +2675,7 @@ self =>
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
       /** A synthetic ProductN parent for case classes. */
       def extraCaseParents = (
-        if (settings.Xexperimental.value && mods.isCase) {
+        if (mods.isCase) {
           val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
           if (arity == 0) Nil
           else List(
