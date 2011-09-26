@@ -1506,20 +1506,8 @@ abstract class GenICode extends SubComponent  {
      * @param elseCtx target context if the comparison yields false
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Unit = {
-      def getTempLocal: Local = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) match {
-        case Some(local) => local
-        case None =>
-          val local = ctx.makeLocal(l.pos, AnyRefClass.typeConstructor, nme.EQEQ_LOCAL_VAR)
-          //assert(!l.pos.source.isEmpty, "bad position, unit = "+unit+", tree = "+l+", pos = "+l.pos.source)
-          // Note - I commented these out because they were crashing the test case in ticket #2426
-          // (and I have also had to comment them out at various times while working on equality.)
-          // I don't know what purpose they are serving but it would be nice if they didn't have to
-          // crash the compiler.
-          // assert(l.pos.source == unit.source)
-          // assert(r.pos.source == unit.source)
-          local.start = (l.pos).line
-          local.end   = (r.pos).line
-          local
+      def getTempLocal = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) getOrElse {
+        ctx.makeLocal(l.pos, AnyRefClass.typeConstructor, nme.EQEQ_LOCAL_VAR)
       }
 
       /** True if the equality comparison is between values that require the use of the rich equality
@@ -1571,8 +1559,6 @@ abstract class GenICode extends SubComponent  {
         } else {
           val eqEqTempLocal = getTempLocal
           var ctx1 = genLoad(l, ctx, ObjectReference)
-
-          // dicey refactor section
           lazy val nonNullCtx = ctx1.newBlock
 
           // l == r -> if (l eq null) r eq null else l.equals(r)
