@@ -24,7 +24,7 @@ trait ToolBoxes extends { self: Universe =>
     lazy val exporter = importer.reverse
 
     def typeCheck(tree: reflect.mirror.Tree, expectedType: reflect.mirror.Type): reflect.mirror.Tree = {
-      println("typing "+tree+", pt = "+expectedType)
+      if (compiler.settings.verbose.value) println("typing "+tree+", pt = "+expectedType)
       val run = new compiler.Run
       compiler.phase = run.refchecksPhase
       val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
@@ -36,8 +36,13 @@ trait ToolBoxes extends { self: Universe =>
     def typeCheck(tree: reflect.mirror.Tree): reflect.mirror.Tree =
       typeCheck(tree, WildcardType.asInstanceOf[reflect.mirror.Type])
 
-    def show(tree: reflect.mirror.Tree): String = {
-      importer.importTree(tree.asInstanceOf[Tree]).toString
+    def showAttributed(tree: reflect.mirror.Tree): String = {
+      val saved = compiler.settings.printtypes.value
+      try {
+        compiler.settings.printtypes.value = true
+        importer.importTree(tree.asInstanceOf[Tree]).toString
+      } finally
+        compiler.settings.printtypes.value = saved
     }
   }
 }

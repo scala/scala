@@ -35,7 +35,7 @@ trait Loaders { self: SymbolTable =>
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
       atPhaseNotLaterThan(picklerPhase) {
-        unpickleClass(clazz, module, jClass.forName(clazz.fullName))
+        unpickleClass(clazz, module, javaClass(clazz.fullName))
 //      } catch {
 //        case ex: ClassNotFoundException => makePackage()
 //        case ex: NoClassDefFoundError => makePackage()
@@ -102,16 +102,21 @@ trait Loaders { self: SymbolTable =>
         e
       else if (invalidClassName(name) || (negatives contains name))
         null
-      else try {
-        jClass.forName(pkgClass.fullName + "." + name)
-        val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-        info("created "+module+"/"+module.moduleClass+" in "+pkgClass)
-        lookupEntry(name)
-      } catch {
-        case (_: ClassNotFoundException) | (_: NoClassDefFoundError) =>
-          info("*** not found : "+pkgClass.fullName + "." + name)
-          negatives += name
-          null
+      else {
+        val path =
+          if (pkgClass.isEmptyPackageClass) name.toString
+          else pkgClass.fullName + "." + name
+        try {
+          javaClass(path)
+          val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
+          info("created "+module+"/"+module.moduleClass+" in "+pkgClass)
+          lookupEntry(name)
+        } catch {
+          case (_: ClassNotFoundException) | (_: NoClassDefFoundError) =>
+            info("*** not found : "+path)
+            negatives += name
+            null
+        }
       }
     }
   }

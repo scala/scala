@@ -712,8 +712,7 @@ trait Typers extends Modes with Adaptations {
      *  (11) Widen numeric literals to their expected type, if necessary
      *  (12) When in mode EXPRmode, convert E to { E; () } if expected type is scala.Unit.
      *  (13) When in mode EXPRmode, apply AnnotationChecker conversion if expected type is annotated.
-     *  (14) When in more EXPRmode, convert E to Code.lift(E) if expected type is Code[_]
-     *  (15) When in mode EXPRmode, apply a view
+     *  (14) When in mode EXPRmode, apply a view
      *  If all this fails, error
      */
     protected def adapt(tree: Tree, mode: Int, pt: Type, original: Tree = EmptyTree): Tree = {
@@ -972,8 +971,6 @@ trait Typers extends Modes with Adaptations {
                       new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
                   }
                 }
-                if (isCodeType(pt) && !isCodeType(tree.tpe) && !tree.tpe.isError)
-                  return adapt(lifted(tree), mode, pt, original)
               }
               if (settings.debug.value) {
                 log("error tree = " + tree)

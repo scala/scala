@@ -32,6 +32,12 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val global: JavaToScala.this.type = self
   }
 
+  /** Paul: It seems the default class loader does not pick up root classes, whereas the system classloader does.
+   *  Can you check with your newly acquired classloader fu whether this implementation makes sense?
+   */
+  def javaClass(path: String): jClass[_] =
+    jClass.forName(path, false, java.lang.ClassLoader.getSystemClassLoader)
+
 
   /**
    * Generate types for top-level Scala root class and root companion object
@@ -170,7 +176,6 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
         (if (jModifier.isStatic(mods)) module.moduleClass else clazz).info.decls enter sym
 
       for (jinner <- jclazz.getDeclaredClasses) {
-        println("... entering "+jinner)
         enter(jclassAsScala(jinner, clazz), jinner.getModifiers)
       }
 
@@ -223,10 +228,10 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       methodToScala(jclazz.getEnclosingMethod) orElse constrToScala(jclazz.getEnclosingConstructor)
     else if (jclazz.isPrimitive || jclazz.isArray)
       ScalaPackageClass
-    else {
-      assert(jclazz.getPackage != null, jclazz)
+    else if (jclazz.getPackage != null)
       packageToScala(jclazz.getPackage)
-    }
+    else
+      EmptyPackageClass
   }
 
   /**
@@ -305,7 +310,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  this one bypasses the cache.
    */
   def makeScalaPackage(fullname: String): Symbol = {
-    println("make scala pkg "+fullname)
+    info("make scala pkg "+fullname)
     val split = fullname lastIndexOf '.'
     val owner = if (split > 0) packageNameToScala(fullname take split) else RootClass
     assert(owner.isModuleClass, owner+" when making "+fullname)
@@ -318,7 +323,6 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       owner.info.decls enter pkg
     } else if (!pkg.isPackage)
       throw new ReflectError(pkg+" is not a package")
-    println(" = "+pkg+"/"+pkg.moduleClass)
     pkg.moduleClass
   }
 

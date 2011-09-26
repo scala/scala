@@ -23,7 +23,6 @@ trait Importers { self: SymbolTable =>
         val mypos = importPosition(sym.pos)
         val myname = importName(sym.name)
         def linkReferenced(mysym: TermSymbol, x: from.TermSymbol, op: from.Symbol => Symbol): Symbol = {
-          println("link referenced " + mysym + " " + x.referenced)
           symMap(x) = mysym
           mysym.referenced = op(x.referenced)
           mysym
@@ -124,7 +123,6 @@ trait Importers { self: SymbolTable =>
                 "import failure: cannot determine parameter "+sym+" (#"+sym.paramPos+") in "+
                 myowner+typeParamsString(myowner.rawInfo)+"\n original symbol was: "+
                 sym.owner+from.typeParamsString(sym.owner.info))
-            println(myowner.rawInfo)
             myowner.typeParams(sym.paramPos)
           } else
             doImport(sym)

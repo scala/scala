@@ -8,9 +8,11 @@ import java.lang.reflect.Array
  */
 class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxes with api.Mirror {
 
+  definitions.init()
+
   import definitions._
 
-  def classWithName(name: String): Symbol = classToScala(java.lang.Class.forName(name))
+  def classWithName(name: String): Symbol = classToScala(javaClass(name))
   def getClass(obj: AnyRef): Symbol = classToScala(obj.getClass)
   def getType(obj: AnyRef): Type = typeToScala(obj.getClass)
   // to do add getClass/getType for instances of primitive types, probably like this:

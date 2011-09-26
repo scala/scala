@@ -298,10 +298,12 @@ abstract class LiftCode extends Transform with TypingTransformers {
       private def reifyTree(tree: Tree): Tree = tree match {
         case EmptyTree =>
           reifyCaseObject(tree)
-        case tree @ This(_) if !(boundSyms contains tree.symbol) =>
+        case This(_) if !(boundSyms contains tree.symbol) =>
           reifyFree(tree)
-        case tree @ Ident(_) if !(boundSyms contains tree.symbol) =>
+        case Ident(_) if !(boundSyms contains tree.symbol) =>
           reifyFree(tree)
+        case TypeTree() if (tree.tpe != null) =>
+          mirrorCall("TypeTree", reifyType(tree.tpe))
         case _ =>
           if (tree.isDef) boundSyms += tree.symbol
           reifyCaseClassInstance(tree.asInstanceOf[Product])
