@@ -212,7 +212,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     }
   }
 
-  private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
+  def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
   // only refer to type params that will actually make it into the sig, this excludes:
   // * higher-order type parameters (aka !sym.owner.isTypeParameterOrSkolem)
