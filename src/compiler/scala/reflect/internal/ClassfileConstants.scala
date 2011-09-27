@@ -321,7 +321,7 @@ object ClassfileConstants {
   final val impdep1       = 0xfe
   final val impdep2       = 0xff
 
-  def toScalaFlags(flags: Int, isClass: Boolean): Long = {
+  def toScalaFlags(flags: Int, isClass: Boolean = false, isField: Boolean = false): Long = {
     import Flags._
     var res = 0l
     if ((flags & JAVA_ACC_PRIVATE) != 0)
@@ -340,8 +340,9 @@ object ClassfileConstants {
     if ((flags & JAVA_ACC_STATIC) != 0)
       res = res | STATIC
     if (isClass && ((res & DEFERRED) != 0L))
-        res = res & ~DEFERRED | ABSTRACT
-
+      res = res & ~DEFERRED | ABSTRACT
+    if (isField && (res & FINAL) == 0L)
+      res = res | MUTABLE
     res | JAVA
   }
 }

@@ -60,7 +60,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
           try {
             printTypings = reifyDebug
             debugTrace("transformed = ") {
-              transform(localTyper.typedPos(tree.pos)(codify(tree)))
+              localTyper.typedPos(tree.pos)(codify(super.transform(tree)))
             }
           } finally printTypings = saved
         case ValDef(mods, name, tpt, rhs) if (freeMutableVars(sym)) => // box mutable variables that are accessed from a local closure

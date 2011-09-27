@@ -451,7 +451,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   private def jfieldAsScala(jfield: jField): Symbol = fieldCache.toScala(jfield) {
     val field = sOwner(jfield).newValue(NoPosition, newTermName(jfield.getName))
-      .setFlag(toScalaFlags(jfield.getModifiers, isClass = false) | JAVA)
+      .setFlag(toScalaFlags(jfield.getModifiers, isField = true) | JAVA)
       .setInfo(typeToScala(jfield.getGenericType))
     fieldCache enter (jfield, field)
     copyAnnotations(field, jfield)
@@ -471,7 +471,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private def jmethodAsScala(jmeth: jMethod): Symbol = methodCache.toScala(jmeth) {
     val clazz = sOwner(jmeth)
     val meth = clazz.newMethod(NoPosition, newTermName(jmeth.getName))
-      .setFlag(toScalaFlags(jmeth.getModifiers, isClass = false) | JAVA)
+      .setFlag(toScalaFlags(jmeth.getModifiers) | JAVA)
     methodCache enter (jmeth, meth)
     val tparams = jmeth.getTypeParameters.toList map createTypeParameter
     val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
@@ -494,7 +494,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     // [Martin] Note: I know there's a lot of duplication wrt jmethodAsScala, but don't think it's worth it to factor this out.
     val clazz = sOwner(jconstr)
     val constr = clazz.newMethod(NoPosition, nme.CONSTRUCTOR)
-      .setFlag(toScalaFlags(jconstr.getModifiers, isClass = false) | JAVA)
+      .setFlag(toScalaFlags(jconstr.getModifiers) | JAVA)
     constructorCache enter (jconstr, constr)
     val tparams = jconstr.getTypeParameters.toList map createTypeParameter
     val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala
