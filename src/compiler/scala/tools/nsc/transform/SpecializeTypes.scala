@@ -1494,7 +1494,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     private def duplicateBody(tree: DefDef, source: Symbol) = {
       val symbol = tree.symbol
       val meth   = addBody(tree, source)
-      debuglog("now typing: " + meth + " in " + symbol.owner.fullName)
 
       val d = new Duplicator
       d.retyped(
