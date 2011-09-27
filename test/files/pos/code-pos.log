@@ -1,6 +1,0 @@
-code.scala:16: error: type mismatch;
- found   : reflect.runtime.Mirror.Tree
- required: reflect.package.mirror.Tree
-  val ttree = toolbox.typeCheck(tree, targetType)
-                                ^
-one error found
