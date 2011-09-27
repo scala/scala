@@ -106,16 +106,14 @@ trait Loaders { self: SymbolTable =>
         val path =
           if (pkgClass.isEmptyPackageClass) name.toString
           else pkgClass.fullName + "." + name
-        try {
-          javaClass(path)
+        if (isJavaClass(path)) {
           val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
           info("created "+module+"/"+module.moduleClass+" in "+pkgClass)
           lookupEntry(name)
-        } catch {
-          case (_: ClassNotFoundException) | (_: NoClassDefFoundError) =>
-            info("*** not found : "+path)
-            negatives += name
-            null
+        } else {
+          info("*** not found : "+path)
+          negatives += name
+          null
         }
       }
     }

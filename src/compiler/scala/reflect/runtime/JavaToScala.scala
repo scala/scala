@@ -38,6 +38,15 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   def javaClass(path: String): jClass[_] =
     jClass.forName(path, false, java.lang.ClassLoader.getSystemClassLoader)
 
+  /** Does `path` correspond to a Java class with that fully qualified name? */
+  def isJavaClass(path: String): Boolean =
+    try {
+      javaClass(path)
+      true
+    } catch {
+      case (_: ClassNotFoundException) | (_: NoClassDefFoundError) =>
+      false
+    }
 
   /**
    * Generate types for top-level Scala root class and root companion object

@@ -12,7 +12,8 @@ trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava
    *  <owner>.<name>, otherwise return NoSymbol
    */
   override def missingHook(owner: Symbol, name: Name): Symbol =
-    if (name.isTermName && owner.hasPackageFlag)
+    if (name.isTermName && owner.hasPackageFlag &&
+        !(owner.isRoot && isJavaClass(name.toString))) // top-level classes go into empty package, not root
       makeScalaPackage(if (owner.isRoot) name.toString else owner.fullName+"."+name).sourceModule
     else {
       info("*** missing: "+name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)
