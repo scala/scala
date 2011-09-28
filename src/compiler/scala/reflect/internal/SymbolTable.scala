@@ -97,17 +97,17 @@ abstract class SymbolTable extends api.Universe
     (currentRunId << 8) + pid
 
   /** Perform given operation at given phase. */
-  final def atPhase[T](ph: Phase)(op: => T): T = {
+  @inline final def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase
     phase = ph
     try op
     finally phase = current
   }
 
-  final def afterPhase[T](ph: Phase)(op: => T): T =
+  @inline final def afterPhase[T](ph: Phase)(op: => T): T =
     atPhase(ph.next)(op)
 
-  final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+  @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (target != null && phase.id > target.id) atPhase(target)(op) else op
 
   final def isValid(period: Period): Boolean =

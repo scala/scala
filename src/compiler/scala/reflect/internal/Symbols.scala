@@ -999,7 +999,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     protected def doCookJavaRawInfo(): Unit
 
-
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself,
      *  excluding parameters.
@@ -1008,42 +1007,37 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeConstructor: Type =
       abort("typeConstructor inapplicable for " + this)
 
+    /** The logic approximately boils down to finding the phase following
+     *  the most recent of namer, typer, or erasure.
+     */
+    private def unsafeTypeParamPhase = {
+      var ph = phase
+      while (ph.prev.keepsTypeParams)
+        ph = ph.prev
+      if (ph ne phase) {  // Can anyone comment as to what this condition accomplishes?
+        ph = ph.next
+        debuglog("checking unsafeTypeParams(" + this + ") at: " + phase + " reading at: " + ph)
+      }
+      ph
+    }
     /** The type parameters of this symbol, without ensuring type completion.
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
     def unsafeTypeParams: List[Symbol] =
-      if (isMonomorphicType) List()
-      else {
-        val current = phase
-        try {
-          while ((phase.prev ne NoPhase) && phase.prev.keepsTypeParams) phase = phase.prev
-          if (phase ne current) phase = phase.next
-          if (settings.debug.value && settings.verbose.value && (phase ne current))
-            log("checking unsafeTypeParams(" + this + ") at: " + current + " reading at: " + phase)
-          rawInfo.typeParams
-        } finally {
-          phase = current
-        }
-      }
+      if (isMonomorphicType) Nil
+      else atPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
 
     /** The type parameters of this symbol.
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
     def typeParams: List[Symbol] =
-      if (isMonomorphicType)
-        List()
+      if (isMonomorphicType) Nil
       else {
-        if (validTo == NoPeriod) {
-          val current = phase
-          try {
-            phase = phaseOf(infos.validFrom)
-            rawInfo.load(this)
-          } finally {
-            phase = current
-          }
-        }
+        if (validTo == NoPeriod)
+          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
+
         rawInfo.typeParams
       }
 
