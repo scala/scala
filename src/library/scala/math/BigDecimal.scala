@@ -225,11 +225,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
 
   /** Addition of BigDecimals
    */
-  def +  (that: BigDecimal): BigDecimal = this.bigDecimal.add(that.bigDecimal, mc)
+  def +  (that: BigDecimal): BigDecimal = this.bigDecimal.add(that.bigDecimal)
 
   /** Subtraction of BigDecimals
    */
-  def -  (that: BigDecimal): BigDecimal = this.bigDecimal.subtract(that.bigDecimal, mc)
+  def -  (that: BigDecimal): BigDecimal = this.bigDecimal.subtract(that.bigDecimal)
 
   /** Multiplication of BigDecimals
    */
@@ -243,14 +243,14 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  divideToIntegralValue and the remainder.
    */
   def /% (that: BigDecimal): (BigDecimal, BigDecimal) =
-    this.bigDecimal.divideAndRemainder(that.bigDecimal, mc) match {
+    this.bigDecimal.divideAndRemainder(that.bigDecimal) match {
       case Array(q, r)  => (q, r)
     }
 
   /** Divide to Integral value.
    */
   def quot (that: BigDecimal): BigDecimal =
-    this.bigDecimal.divideToIntegralValue(that.bigDecimal, mc)
+    this.bigDecimal.divideToIntegralValue(that.bigDecimal)
 
   /** Returns the minimum of this and that
    */
@@ -262,7 +262,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
 
   /** Remainder after dividing this by that.
    */
-  def remainder (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
+  def remainder (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal)
 
   /** Remainder after dividing this by that.
    */
@@ -274,11 +274,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
 
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
-  def unary_- : BigDecimal = this.bigDecimal.negate(mc)
+  def unary_- : BigDecimal = this.bigDecimal.negate()
 
   /** Returns the absolute value of this BigDecimal
    */
-  def abs: BigDecimal = this.bigDecimal abs mc
+  def abs: BigDecimal = this.bigDecimal abs
 
   /** Returns the sign of this BigDecimal, i.e.
    *   -1 if it is less than 0,
