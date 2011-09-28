@@ -151,12 +151,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
 // Override checking ------------------------------------------------------------
 
-    def hasRepeatedParam(tp: Type): Boolean = tp match {
-      case MethodType(formals, restpe) => isScalaVarArgs(formals) || hasRepeatedParam(restpe)
-      case PolyType(_, restpe)         => hasRepeatedParam(restpe)
-      case _                           => false
-    }
-
     /** Add bridges for vararg methods that extend Java vararg methods
      */
     def addVarargBridges(clazz: Symbol): List[Tree] = {
@@ -1100,14 +1094,13 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
      */
     private def eliminateModuleDefs(tree: Tree): List[Tree] = {
       val ModuleDef(mods, name, impl) = tree
-      val sym = tree.symbol
-
-      val classSym        = sym.moduleClass
-      val cdef            = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
+      val sym      = tree.symbol
+      val classSym = sym.moduleClass
+      val cdef     = ClassDef(mods | MODULE, name.toTypeName, Nil, impl) setSymbol classSym setType NoType
 
       def findOrCreateModuleVar() = localTyper.typedPos(tree.pos) {
         lazy val createModuleVar = gen.mkModuleVarDef(sym)
-        sym.owner.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
+        sym.enclClass.info.decl(nme.moduleVarName(sym.name.toTermName)) match {
           // In case we are dealing with local symbol then we already have
           // to correct error with forward reference
           case NoSymbol => createModuleVar
@@ -1117,7 +1110,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       def createStaticModuleAccessor() = atPhase(phase.next) {
         val method = (
           sym.owner.newMethod(sym.pos, sym.name.toTermName)
-          setFlag (sym.flags | STABLE) resetFlag MODULE setInfo NullaryMethodType(sym.moduleClass.tpe)
+            setFlag (sym.flags | STABLE)
+            resetFlag MODULE
+            setInfo NullaryMethodType(sym.moduleClass.tpe)
         )
         sym.owner.info.decls enter method
         localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym))
@@ -1180,8 +1175,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         else {
           val lazySym = tree.symbol.lazyAccessorOrSelf
           if (lazySym.isLocal && index <= currentLevel.maxindex) {
-            if (settings.debug.value)
-              Console.println(currentLevel.refsym)
+            debuglog("refsym = " + currentLevel.refsym)
             unit.error(currentLevel.refpos, "forward reference extends over definition of " + lazySym)
           }
           List(tree1)
