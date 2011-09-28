@@ -39,6 +39,14 @@ trait SyntheticMethods extends ast.TreeDSL {
   private object util {
     private type CM[T] = ClassManifest[T]
 
+    lazy val IteratorModule = getModule("scala.collection.Iterator")
+    lazy val Iterator_apply = getMember(IteratorModule, nme.apply)
+    def iteratorOfType(tp: Type) = appliedType(IteratorClass.typeConstructor, List(tp))
+
+    def ValOrDefDef(sym: Symbol, body: Tree) =
+      if (sym.isLazy) ValDef(sym, body)
+      else DefDef(sym, body)
+
     /** To avoid unchecked warnings on polymorphic classes.
      */
     def clazzTypeToTest(clazz: Symbol) = clazz.tpe.normalize match {
@@ -103,7 +111,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     private def finishMethod(method: Symbol, f: Symbol => Tree): Tree = {
       setMethodFlags(method)
       clazz.info.decls enter method
-      logResult("finishMethod")(localTyper typed DefDef(method, f(method)))
+      logResult("finishMethod")(localTyper typed ValOrDefDef(method, f(method)))
     }
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
@@ -193,6 +201,23 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def accessors = clazz.caseFieldAccessors
     def arity     = accessors.size
+    // If this is ProductN[T1, T2, ...], accessorLub is the lub of T1, T2, ..., .
+    // !!! Hidden behind -Xexperimental due to bummer type inference bugs.
+    // Refining from Iterator[Any] leads to types like
+    //
+    //    Option[Int] { def productIterator: Iterator[String] }
+    //
+    // appearing legitimately, but this breaks invariant places
+    // like Manifests and Arrays which are not robust and infer things
+    // which they shouldn't.
+    val accessorLub  = (
+      if (opt.experimental)
+        global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
+          case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
+          case tp                                            => tp
+        }
+      else AnyClass.tpe
+    )
 
     def forwardToRuntime(method: Symbol): Tree =
       forwardMethod(method, getMember(ScalaRunTimeModule, "_" + method.name toTermName))(This(clazz) :: _)
@@ -207,28 +232,14 @@ trait SyntheticMethods extends ast.TreeDSL {
         !m0.isDeferred && !m0.isSynthetic && (typeInClazz(m0) matches typeInClazz(meth))
       }
     }
-
+    def readConstantValue[T](name: String, default: T = null.asInstanceOf[T]): T = {
+      clazzMember(name.toTermName).info match {
+        case NullaryMethodType(ConstantType(Constant(value))) => value.asInstanceOf[T]
+        case _                                                => default
+      }
+    }
     def productIteratorMethod = {
-      // If this is ProductN[T1, T2, ...], accessorLub is the lub of T1, T2, ..., .
-      val accessorLub  = (
-        if (opt.experimental)
-          global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
-            case RefinedType(parents, decls) if !decls.isEmpty => RefinedType(parents, EmptyScope)
-            case tp                                            => tp
-          }
-        else AnyClass.tpe
-      )
-      // !!! Hidden behind -Xexperimental due to bummer type inference bugs.
-      // Refining from Iterator[Any] leads to types like
-      //
-      //    Option[Int] { def productIterator: Iterator[String] }
-      //
-      // appearing legitimately, but this breaks invariant places
-      // like Manifests and Arrays which are not robust and infer things
-      // which they shouldn't.
-      val iteratorType = typeRef(NoPrefix, IteratorClass, List(accessorLub))
-
-      createMethod(nme.productIterator, iteratorType)(_ =>
+      createMethod(nme.productIterator, iteratorOfType(accessorLub))(_ =>
         gen.mkMethodCall(ScalaRunTimeModule, "typedProductIterator", List(accessorLub), List(This(clazz)))
       )
     }
@@ -241,13 +252,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree =
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
-    def productElementNameMethod = perElementMethod(nme.productElement, StringClass.tpe)(x => LIT(x.name.toString))
-
-    /** The equality method for case modules:
-     *    def equals(that: Any) = this eq that
-     */
-    def equalsModuleMethod: Tree =
-      createMethod(Object_equals)(m => This(clazz) ANY_EQ methodArg(m, 0))
+    // def productElementNameMethod = perElementMethod(nme.productElementName, StringClass.tpe)(x => LIT(x.name.toString))
 
     /** The canEqual method for case classes.
      *    def canEqual(that: Any) = that.isInstanceOf[This]
@@ -328,7 +333,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       List(
         Product_productPrefix   -> (() => constantNullary(nme.productPrefix, clazz.name.decode)),
         Product_productArity    -> (() => constantNullary(nme.productArity, arity)),
-        Product_productElement  -> (() => perElementMethod(nme.productElement, AnyClass.tpe)(Ident)),
+        Product_productElement  -> (() => perElementMethod(nme.productElement, accessorLub)(Ident)),
         Product_iterator        -> (() => productIteratorMethod),
         Product_canEqual        -> (() => canEqualMethod)
         // This is disabled pending a reimplementation which doesn't add any
@@ -346,7 +351,27 @@ trait SyntheticMethods extends ast.TreeDSL {
     def caseObjectMethods = productMethods ++ Seq(
       Object_hashCode -> (() => constantMethod(nme.hashCode_, clazz.name.decode.hashCode)),
       Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode))
+      // Not needed, as reference equality is the default.
+      // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ methodArg(m, 0)))
     )
+
+    def addReadResolve() {
+      /** If you serialize a singleton and then deserialize it twice,
+       *  you will have two instances of your singleton, unless you implement
+       *  the readResolve() method (see http://www.javaworld.com/javaworld/
+       *  jw-04-2003/jw-0425-designpatterns_p.html)
+       */
+      if (clazz.isSerializable && !hasConcreteImpl(nme.readResolve)) {
+        // Aha, I finally decoded the original comment.
+        // This method should be generated as private, but apparently if it is, then
+        // it is name mangled afterward.  (Wonder why that is.) So it's only protected.
+        // For sure special methods like "readResolve" should not be mangled.
+        ts += createMethod(nme.readResolve, Nil, ObjectClass.tpe) { m =>
+          m setFlag PRIVATE
+          REF(clazz.sourceModule)
+        }
+      }
+    }
 
     def synthesize() = {
       if (clazz.isCase) {
@@ -356,31 +381,12 @@ trait SyntheticMethods extends ast.TreeDSL {
         for ((m, impl) <- methods ; if !hasOverridingImplementation(m))
           ts += impl()
       }
-
-      /** If you serialize a singleton and then deserialize it twice,
-       *  you will have two instances of your singleton, unless you implement
-       *  the readResolve() method (see http://www.javaworld.com/javaworld/
-       *  jw-04-2003/jw-0425-designpatterns_p.html)
-       */
-      if (clazz.isModuleClass) {
-        // Only nested objects inside objects should get readResolve automatically.
-        // Otherwise, after de-serialization we get null references for lazy accessors
-        // (nested object -> lazy val + class def) since the bitmap gets serialized but
-        // the moduleVar not.
-        def needsReadResolve =
-          !hasConcreteImpl(nme.readResolve) && clazz.isSerializable && clazz.owner.isModuleClass
-
-        if (needsReadResolve) {
-          // PP: To this day I really can't figure out what this next comment is getting at:
-          // the !!! normally means there is something broken, but if so, what is it?
-          //
-          // !!! the synthetic method "readResolve" should be private, but then it is renamed !!!
-          ts += createMethod(nme.readResolve, Nil, ObjectClass.tpe) { m =>
-            m setFlag PROTECTED
-            REF(clazz.sourceModule)
-          }
-        }
-      }
+      // Only nested objects inside objects should get readResolve automatically.
+      // Otherwise, after de-serialization we get null references for lazy accessors
+      // (nested object -> lazy val + class def) since the bitmap gets serialized but
+      // the moduleVar not.
+      if (clazz.isModuleClass && clazz.owner.isModuleClass)
+        addReadResolve()
     }
 
     try synthesize()

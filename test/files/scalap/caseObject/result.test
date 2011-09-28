@@ -7,5 +7,4 @@ case object CaseObject extends java.lang.Object with scala.ScalaObject with scal
   def canEqual(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }
   override def hashCode() : scala.Int = { /* compiled code */ }
   override def toString() : java.lang.String = { /* compiled code */ }
-  protected def readResolve() : java.lang.Object = { /* compiled code */ }
 }
