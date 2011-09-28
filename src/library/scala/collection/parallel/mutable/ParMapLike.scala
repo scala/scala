@@ -14,6 +14,8 @@ package mutable
 import collection.generic._
 import collection.mutable.Builder
 import collection.mutable.Cloneable
+import collection.generic.Growable
+import collection.generic.Shrinkable
 
 
 
@@ -34,8 +36,10 @@ trait ParMapLike[K,
                  +Sequential <: collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Sequential]]
 extends collection.GenMapLike[K, V, Repr]
    with collection.parallel.ParMapLike[K, V, Repr, Sequential]
-   with Cloneable[Repr] {
-
+   with Growable[(K, V)]
+   with Shrinkable[K]
+   with Cloneable[Repr]
+{
   // note: should not override toMap
 
   def put(key: K, value: V): Option[V]

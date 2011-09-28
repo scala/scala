@@ -16,9 +16,8 @@ import scala.collection.mutable.Set
 import scala.collection.mutable.Builder
 import scala.collection.mutable.Cloneable
 import scala.collection.GenSetLike
-
-
-
+import scala.collection.generic.Growable
+import scala.collection.generic.Shrinkable
 
 
 
@@ -38,6 +37,8 @@ trait ParSetLike[T,
 extends GenSetLike[T, Repr]
    with collection.parallel.ParIterableLike[T, Repr, Sequential]
    with collection.parallel.ParSetLike[T, Repr, Sequential]
+   with Growable[T]
+   with Shrinkable[T]
    with Cloneable[Repr]
 {
 self =>
