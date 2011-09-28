@@ -28,7 +28,7 @@ trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava
   }
 
   def info(msg: => String) =
-    if (true || settings.verbose.value) println("[reflect-compiler] "+msg)
+    if (settings.verbose.value) println("[reflect-compiler] "+msg)
 
   def debugInfo(msg: => String) =
     if (settings.debug.value) info(msg)

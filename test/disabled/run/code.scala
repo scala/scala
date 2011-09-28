@@ -26,6 +26,16 @@ object Test extends App {
   titi()
   tata()
   new baz.A(args)
+
+  def show() {
+    def foo[T](ys: List[T]) = {
+      val fun: reflect.Code[Int => Int] = x => x + ys.length
+      CodeTest(fun, args)
+    }
+    foo(List(1, 2, 3))
+  }
+
+  show()
 }
 
 package baz {
@@ -37,8 +47,6 @@ package baz {
   }
 
 }
-
-
 
 
 
