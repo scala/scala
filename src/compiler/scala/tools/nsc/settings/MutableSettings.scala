@@ -361,7 +361,8 @@ class MutableSettings(val errorFn: String => Unit)
     parser: String => Option[Int])
   extends Setting(name, descr) {
     type T = Int
-    v = default
+    protected var v: Int = default
+    override def value: Int = v
 
     // not stable values!
     val IntMin = Int.MinValue
@@ -418,7 +419,8 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr) {
     type T = Boolean
-    v = false
+    protected var v: Boolean = false
+    override def value: Boolean = v
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
@@ -434,7 +436,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr) {
     type T = List[String]
-    v = Nil
+    protected var v: T = Nil
 
     def tryToSet(args: List[String]) = args match {
       case x :: xs if x startsWith prefix =>
@@ -455,7 +457,7 @@ class MutableSettings(val errorFn: String => Unit)
     val default: String)
   extends Setting(name, descr) {
     type T = String
-    v = default
+    protected var v: T = default
 
     def tryToSet(args: List[String]) = args match {
       case Nil      => errorAndValue("missing argument", None)
@@ -505,7 +507,7 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String)
   extends Setting(name, descr) {
     type T = List[String]
-    v = Nil
+    protected var v: T = Nil
     def appendToValue(str: String) { value ++= List(str) }
 
     def tryToSet(args: List[String]) = {
@@ -532,7 +534,7 @@ class MutableSettings(val errorFn: String => Unit)
     val default: String)
   extends Setting(name, descr + choices.mkString(" (", ",", ") default:" + default)) {
     type T = String
-    v = default
+    protected var v: T = default
     def indexOfChoice: Int = choices indexOf value
 
     private def usageErrorMessage = {
@@ -573,7 +575,7 @@ class MutableSettings(val errorFn: String => Unit)
     private[nsc] def this(name: String, descr: String) = this(name, descr, "")
 
     type T = List[String]
-    v = Nil
+    protected var v: T = Nil
     override def value = if (v contains "all") List("all") else super.value
     private lazy val (numericValues, stringValues) =
       value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))

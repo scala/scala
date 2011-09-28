@@ -12,10 +12,12 @@ package settings
 abstract class MutableSettings extends AbsSettings {
 
   type Setting <: SettingValue
+  type BooleanSetting <: Setting { type T = Boolean }
+  type IntSetting <: Setting { type T = Int }
 
   // basically this is a value which remembers if it's been modified
   trait SettingValue extends AbsSettingValue {
-    protected var v: T = _
+    protected var v: T
     protected var setByUser: Boolean = false
 
     def postSetHook(): Unit = ()
@@ -29,15 +31,15 @@ abstract class MutableSettings extends AbsSettings {
     }
   }
 
-  def overrideObjects: SettingValue { type T = Boolean }
-  def printtypes: SettingValue { type T = Boolean }
-  def debug: SettingValue { type T = Boolean }
-  def YdepMethTpes: SettingValue { type T = Boolean }
-  def Ynotnull: SettingValue { type T = Boolean }
-  def explaintypes: SettingValue { type T = Boolean }
-  def verbose: SettingValue { type T = Boolean }
-  def uniqid: SettingValue { type T = Boolean }
-  def Xprintpos: SettingValue { type T = Boolean }
-  def Yrecursion: SettingValue { type T = Int }
-  def maxClassfileName: SettingValue { type T = Int }
+  def overrideObjects: BooleanSetting
+  def printtypes: BooleanSetting
+  def debug: BooleanSetting
+  def YdepMethTpes: BooleanSetting
+  def Ynotnull: BooleanSetting
+  def explaintypes: BooleanSetting
+  def verbose: BooleanSetting
+  def uniqid: BooleanSetting
+  def Xprintpos: BooleanSetting
+  def Yrecursion: IntSetting
+  def maxClassfileName: IntSetting
 }
