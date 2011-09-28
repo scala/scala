@@ -67,16 +67,17 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
          else "error while loading " + clazz.name) + ", " + msg)
     }
     try {
-      info("unpickling " + clazz + " " + module) //debug
       markAbsent(NoType)
       val ssig = jclazz.getAnnotation(classOf[scala.reflect.ScalaSignature])
       if (ssig != null) {
+        info("unpickling Scala "+clazz + " and " + module+ ", owner = " + clazz.owner)
         val bytes = ssig.bytes.getBytes
         val len = ByteCodecs.decode(bytes)
         unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
       } else {
         val slsig = jclazz.getAnnotation(classOf[scala.reflect.ScalaLongSignature])
         if (slsig != null) {
+          info("unpickling Scala "+clazz + " and " + module + " with long Scala signature")
           val byteSegments = slsig.bytes map (_.getBytes)
           val lens = byteSegments map ByteCodecs.decode
           val bytes = Array.ofDim[Byte](lens.sum)
@@ -87,7 +88,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
           }
           unpickler.unpickle(bytes, 0, clazz, module, jclazz.getName)
         } else { // class does not have a Scala signature; it's a Java class
-          info("no sig found for " + jclazz) //debug
+          info("translating reflection info for Java " + jclazz) //debug
           initClassModule(clazz, module, new FromJavaClassCompleter(clazz, module, jclazz))
         }
       }
@@ -142,7 +143,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType {
     override def load(sym: Symbol) = {
-      info("completing from Java " + sym + "/" + clazz.fullName)//debug
+      debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
       assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
       val flags = toScalaFlags(jclazz.getModifiers, isClass = true)
       clazz setFlag (flags | JAVA)
@@ -319,7 +320,6 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  this one bypasses the cache.
    */
   def makeScalaPackage(fullname: String): Symbol = {
-    info("make scala pkg "+fullname)
     val split = fullname lastIndexOf '.'
     val owner = if (split > 0) packageNameToScala(fullname take split) else RootClass
     assert(owner.isModuleClass, owner+" when making "+fullname)
@@ -330,6 +330,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       pkg.moduleClass setInfo new LazyPackageType
       pkg setInfo pkg.moduleClass.tpe
       owner.info.decls enter pkg
+      info("made Scala "+pkg)
     } else if (!pkg.isPackage)
       throw new ReflectError(pkg+" is not a package")
     pkg.moduleClass

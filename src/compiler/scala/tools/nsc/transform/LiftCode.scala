@@ -193,7 +193,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
           case Some(idx) =>
             Ident(localName(sym))
           case None =>
-            if (sym.isModuleClass)
+            if (sym == NoSymbol)
+              mirrorSelect("NoSymbol")
+            else  if (sym.isModuleClass)
               Select(reifySymRef(sym.sourceModule), "moduleClass")
             else if (sym.isStatic && sym.isClass)
               mirrorCall("staticClass", reify(sym.fullName))
@@ -320,10 +322,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
        *  to a global value, or else a mirror Literal.
        */
       private def reifyFree(tree: Tree): Tree =
-        if (tree.symbol.isStaticModule)
-          reify(termPath(tree.symbol.fullName))
-        else // make an Ident to a freeVar
-          mirrorCall("Ident", reifySymRef(tree.symbol))
+        mirrorCall("Ident", reifySymRef(tree.symbol))
 
       /** Reify an arbitary value */
       private def reify(value: Any): Tree = {

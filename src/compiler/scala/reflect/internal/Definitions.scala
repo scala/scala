@@ -666,7 +666,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       val point = path lastPos('.', len - 1)
       val owner =
         if (point > 0) getModuleOrClass(path.toTermName, point)
-        else if (path.isTypeName) EmptyPackageClass
         else RootClass
       val name = path subName (point + 1, len)
       val sym = owner.info member name

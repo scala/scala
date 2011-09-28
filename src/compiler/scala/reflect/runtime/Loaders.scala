@@ -31,7 +31,7 @@ trait Loaders { self: SymbolTable =>
 //    }
 
     override def complete(sym: Symbol) = {
-      info("completing "+sym+"/"+clazz.fullName)
+      debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
       atPhaseNotLaterThan(picklerPhase) {
@@ -108,10 +108,10 @@ trait Loaders { self: SymbolTable =>
           else pkgClass.fullName + "." + name
         if (isJavaClass(path)) {
           val (clazz, module) = createClassModule(pkgClass, name.toTypeName, new TopClassCompleter(_, _))
-          info("created "+module+"/"+module.moduleClass+" in "+pkgClass)
+          debugInfo("created "+module+"/"+module.moduleClass+" in "+pkgClass)
           lookupEntry(name)
         } else {
-          info("*** not found : "+path)
+          debugInfo("*** not found : "+path)
           negatives += name
           null
         }
