@@ -55,11 +55,13 @@ extends Set[A]
   def contains(elem: A): Boolean = containsEntry(elem)
 
   def += (elem: A): this.type = { addEntry(elem); this }
+
   def -= (elem: A): this.type = { removeEntry(elem); this }
 
   override def par = new ParHashSet(hashTableContents)
 
   override def add(elem: A): Boolean = addEntry(elem)
+
   override def remove(elem: A): Boolean = removeEntry(elem).isDefined
 
   override def clear() = clearTable()
