@@ -10,7 +10,7 @@ object Test extends App {
   }
   CodeTest(foo(List(2)), args)
   CodeTest({() => val e = Element("someName"); e}, args)
-  CodeTest({() => val e = InnerElement("someName"); e}, args) // (does not work yet)
+//  CodeTest({() => val e = InnerElement("someName"); e}, args) // (does not work yet)
   def titi() = {
     var truc = 0
     CodeTest(() => {
@@ -25,6 +25,17 @@ object Test extends App {
   }
   titi()
   tata()
+  new baz.A(args)
+}
+
+package baz {
+
+  case class BazElement(name: String) { }
+
+  class A(args: Array[String]) {
+    CodeTest(() => new baz.BazElement("someName"), args)
+  }
+
 }
 
 
