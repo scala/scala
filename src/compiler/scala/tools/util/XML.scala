@@ -6,6 +6,9 @@
 package scala.tools
 package util
 
+// Dummy interface to fool ant.
+sealed trait XML
+
 /** The object `XML` provides minimal XML support for creating, loading
  *  and saving XML documents (see eg. [[scala.tools.ant.ScalaBazaar]],
  *  [[scala.tools.nsc.plugins.PluginDescription]] and
