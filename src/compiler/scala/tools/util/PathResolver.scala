@@ -205,10 +205,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def userClassPath = (
       if (!settings.classpath.isDefault)
         settings.classpath.value
-      else sys.props("CLASSPATH") match {
-        case null   => "."
-        case cp     => cp
-      }
+      else sys.env.getOrElse("CLASSPATH", ".")
     )
 
     import context._
