@@ -131,14 +131,15 @@ abstract class LiftCode extends Transform with TypingTransformers {
       private def isLocatable(sym: Symbol) =
         sym.isPackageClass || sym.owner.isClass || sym.isTypeParameter && sym.paramPos >= 0
 
-      private def registerReifiableSymbol(sym: Symbol): Unit = {
-        sym.owner.ownersIterator.find(!isLocatable(_)) match {
-          case Some(outer) => registerReifiableSymbol(outer)
-          case None =>
+      private def registerReifiableSymbol(sym: Symbol): Unit =
+        if (!(symIndex contains sym)) {
+          sym.owner.ownersIterator.find(!isLocatable(_)) match {
+            case Some(outer) => registerReifiableSymbol(outer)
+            case None =>
+          }
+          symIndex(sym) = reifiableSyms.length
+          reifiableSyms += sym
         }
-        symIndex(sym) = reifiableSyms.length
-        reifiableSyms += sym
-      }
 
       // helper methods
 

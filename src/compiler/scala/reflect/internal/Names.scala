@@ -76,7 +76,7 @@ trait Names extends api.Names {
     val h = hashValue(cs, offset, len) & HASH_MASK
     var n = termHashtable(h)
     while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
-    n = n.next;
+      n = n.next
     if (n eq null) {
       // The logic order here is future-proofing against the possibility
       // that name.toString will become an eager val, in which case the call
