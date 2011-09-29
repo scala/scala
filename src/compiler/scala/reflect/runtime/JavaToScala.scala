@@ -36,7 +36,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  Can you check with your newly acquired classloader fu whether this implementation makes sense?
    */
   def javaClass(path: String): jClass[_] =
-    jClass.forName(path, false, java.lang.ClassLoader.getSystemClassLoader)
+    jClass.forName(path, false, getClass.getClassLoader)
 
   /** Does `path` correspond to a Java class with that fully qualified name? */
   def isJavaClass(path: String): Boolean =
