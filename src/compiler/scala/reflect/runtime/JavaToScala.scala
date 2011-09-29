@@ -23,6 +23,18 @@ import internal.ClassfileConstants._
 import internal.pickling.UnPickler
 import collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
+import scala.tools.nsc.util.ScalaClassLoader
+import scala.tools.nsc.util.ScalaClassLoader._
+
+class MultiCL(parent: ScalaClassLoader, others: ScalaClassLoader*) extends java.lang.ClassLoader(parent) {
+  override def findClass(name: String): jClass[_] = {
+    for (cl <- others) {
+      try   { return cl.findClass(name) }
+      catch { case _: ClassNotFoundException => () }
+    }
+    super.findClass(name)
+  }
+}
 
 trait JavaToScala extends ConversionUtil { self: SymbolTable =>
 
@@ -36,7 +48,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  Can you check with your newly acquired classloader fu whether this implementation makes sense?
    */
   def javaClass(path: String): jClass[_] =
-    jClass.forName(path, false, getClass.getClassLoader)
+    jClass.forName(path, false, new MultiCL(getClass.getClassLoader, java.lang.ClassLoader.getSystemClassLoader))
 
   /** Does `path` correspond to a Java class with that fully qualified name? */
   def isJavaClass(path: String): Boolean =
