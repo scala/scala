@@ -221,7 +221,7 @@ class ScalaBazaar extends Task with ScalaTask {
       log("Element '" + file.toString + "' does not exist.", Project.MSG_WARN)
     file
   }
-/*@XML*/
+
   private def writeFile(file: File, content: String) {
     if (file.exists && !file.canWrite)
       buildError("File " + file + " is not writable")
@@ -231,15 +231,6 @@ class ScalaBazaar extends Task with ScalaTask {
       writer.close()
     }
   }
-/*XML@*/
-/*@NOXML
-  private def writeFile(file: File, node: util.XML.Node) {
-    if (file.exists && !file.canWrite)
-      buildError("File " + file + " is not writable")
-    else
-      util.XML.save(file.getPath, node)
-  }
-XMLNO@*/
 
 /******************************************************************************\
 **                           The big execute method                           **
@@ -252,12 +243,7 @@ XMLNO@*/
     if (name.isEmpty) buildError("Attribute 'name' is not set.")
     if (version.isEmpty) buildError("Attribute 'version' is not set.")
 
-/*@NOXML
-    val advertDoc = util.XML.newDocument()
-XMLNO@*/
-
     val pack = {
-/*@XML*/ // NB. This code DOES rely on Scala native XML support.
       <package>
         <name>{name.get}</name>
         <version>{version.get}</version>{
@@ -273,42 +259,12 @@ XMLNO@*/
           else Nil
         }
       </package>
-/*XML@*/
-/*@NOXML // NB. This code DOES NOT rely on Scala native XML support.
-      val packageElem = advertDoc createElement "package"
-
-      val nameElem = advertDoc createElement "name"
-      nameElem appendChild (advertDoc createTextNode name.get)
-      packageElem appendChild nameElem
-
-      val versionElem = advertDoc createElement "version"
-      versionElem appendChild (advertDoc createTextNode version.get)
-      packageElem appendChild versionElem
-
-      if (!depends.isEmpty) {
-        val dependsElem = advertDoc createElement "depends"
-        for (depend <- depends) {
-          val depNameElem = advertDoc createElement "name"
-          depNameElem appendChild (advertDoc createTextNode depend)
-          dependsElem appendChild depNameElem
-        }
-        packageElem appendChild dependsElem
-      }
-      if (!desc.isEmpty) {
-        val descElem = advertDoc createElement "description"
-        descElem appendChild (advertDoc createTextNode desc.get)
-        packageElem appendChild descElem
-      }
-
-      packageElem
-XMLNO@*/
     }
 
     log("Creating package '" + name.get + "'")
 
     // Creates the advert file
     val advert = {
-/*@XML*/ // NB. This code DOES rely on Scala native XML support.
       <availablePackage>
         {pack}
         {link match {
@@ -316,31 +272,10 @@ XMLNO@*/
           case Some(str) => <link>{str}</link>
         }}
       </availablePackage>
-/*XML@*/
-/*@NOXML // NB. This code DOES NOT rely on Scala native XML support.
-      val availPackageElem = advertDoc createElement "availablePackage"
-      availPackageElem appendChild pack
-      advertDoc appendChild availPackageElem
-      val text = link match {
-        case None => "INSERT LINK HERE"
-        case Some(str) => str
-      }
-      val linkElem = advertDoc createElement "link"
-      linkElem appendChild (advertDoc createTextNode text)
-      availPackageElem appendChild linkElem
-
-      advertDoc
-XMLNO@*/
     }
 
-/*@XML*/
     if (!adfile.isEmpty)
       writeFile(getAdfile, advert.toString)
-/*XML@*/
-/*@NOXML
-    if (!adfile.isEmpty)
-      writeFile(getAdfile, advertDoc)
-XMLNO@*/
 
     // Checks for new files and creates the ZIP
 

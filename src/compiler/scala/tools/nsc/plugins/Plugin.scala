@@ -13,12 +13,7 @@ import java.util.zip.ZipException
 
 import scala.collection.mutable
 import mutable.ListBuffer
-/*@XML*/
 import scala.xml.XML
-/*XML@*/
-/*@NOXML
-import scala.tools.util.XML
-XMLNO@*/
 
 /** Information about a plugin loaded from a jar file.
  *

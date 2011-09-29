@@ -54,7 +54,7 @@ import org.apache.tools.ant.types.{Path, Reference, FileSet}
  *  - `presentationtests`,
  *  - `scripttests`.
  *
- * @author Philippe Haller, Stephane Micheloud
+ * @author Philippe Haller
  */
 class PartestTask extends Task with CompilationPathProperty {
 
@@ -336,12 +336,7 @@ class PartestTask extends Task with CompilationPathProperty {
           d.mkdir()
 
           val report = testReport(name, results, succs, fails)
-/*@XML*/
           scala.xml.XML.save(d.getAbsolutePath+"/"+name+".xml", report)
-/*XML@*/
-/*@NOXML
-          util.XML.save(d.getAbsolutePath+"/"+name+".xml", report)
-XMLNO@*/
         }
 
         (succs, fails, failed)
@@ -364,7 +359,6 @@ XMLNO@*/
 
     f(msg)
   }
-/*@XML*/ // NB. This code DOES rely on Scala native XML support.
   def oneResult(res: (String, Int)) =
     <testcase name={res._1}>{
   	  res._2 match {
@@ -381,37 +375,4 @@ XMLNO@*/
   	    results.map(oneResult(_))
   	  }
     </testsuite>
-/*XML@*/
-/*@NOXML // NB. This code DOES NOT rely on Scala native XML support.
-  private def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) = {
-    val root = util.XML.newDocument()
-
-    def testCase(res: (String, Int)) = {
-      val testcaseElem = root createElement "testcase"
-      testcaseElem.setAttribute("name", res._1)
-      val text = res._2 match {
-        case 0 => null
-        case 1 => "Test failed"
-        case 2 => "Test timed out"
-      }
-      if (text != null) {
-        val failureElem = root createElement "failure"
-        failureElem.setAttribute("message", text)
-        testcaseElem appendChild failureElem
-      }
-      testcaseElem
-    }
-
-    val testsuiteElem = root createElement "testsuite"
-    testsuiteElem.setAttribute("name", kind)
-    testsuiteElem.setAttribute("tests", (succs+fails).toString)
-    testsuiteElem.setAttribute("failures", fails.toString)
-    root appendChild testsuiteElem
-
-    testsuiteElem appendChild (root createElement "properties")
-    results foreach (res => testsuiteElem appendChild testCase(res))
-
-    root
-  }
-XMLNO@*/
 }

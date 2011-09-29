@@ -146,10 +146,8 @@ object Tokens extends Tokens {
   final val LBRACE = 94
   final val RBRACE = 95
 
-/*@XML*/
   /** XML mode */
   final val XMLSTART = 96
-/*XML@*/
 
   /** for IDE only */
   final val COMMENT = 97

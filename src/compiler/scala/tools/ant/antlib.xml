@@ -11,10 +11,8 @@
              classname="scala.tools.ant.ScalaTool"/>
     <taskdef name="sbaz"
              classname="scala.tools.ant.ScalaBazaar"/>
-    <!--@XML-->
     <taskdef name="scaladoc"
              classname="scala.tools.ant.Scaladoc"/>
-    <!--XML@-->
     <taskdef name="scalatool"
              classname="scala.tools.ant.ScalaTool"/>
     <taskdef name="same"

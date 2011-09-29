@@ -10,7 +10,7 @@ import javac._
 
 /** An nsc sub-component.
  */
-abstract class SyntaxAnalyzer extends SubComponent with Parsers /*@XML*/ with MarkupParsers /*XML@*/ with Scanners with JavaParsers with JavaScanners {
+abstract class SyntaxAnalyzer extends SubComponent with Parsers with MarkupParsers with Scanners with JavaParsers with JavaScanners {
 
   val phaseName = "parser"
 

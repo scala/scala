@@ -114,10 +114,8 @@ object Predef extends LowPriorityImplicits {
   def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
-  /*@XML*/
   // Apparently needed for the xml library
   val $scope = scala.xml.TopScope
-  /*XML@*/
 
   // Deprecated
 
