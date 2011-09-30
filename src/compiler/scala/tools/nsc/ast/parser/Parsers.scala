@@ -2667,7 +2667,7 @@ self =>
           else List(
             AppliedTypeTree(
               productConstrN(arity),
-              vparamss.head map (vd => vd.tpt)
+              vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
             )
           )
         }
