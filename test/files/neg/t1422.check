@@ -1,4 +1,4 @@
 t1422.scala:1: error: private[this] not allowed for case class parameters
-case class A(private[this] val foo:String)
+case class A(private[this] val foo:String) { }
                                ^
 one error found

@@ -1,1 +1,1 @@
-case class A(private[this] val foo:String)
+case class A(private[this] val foo:String) { }

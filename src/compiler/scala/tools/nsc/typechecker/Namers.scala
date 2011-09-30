@@ -497,25 +497,30 @@ trait Namers { self: Analyzer =>
             finish
 
           case vd @ ValDef(mods, name, tp, rhs) =>
-            if ((!context.owner.isClass ||
-                 (mods.isPrivateLocal && !mods.isCaseAccessor) ||
-                 name.startsWith(nme.OUTER) ||
-                 context.unit.isJava) &&
-                 !mods.isLazy) {
-              val vsym = owner.newValue(tree.pos, name).setFlag(mods.flags);
-              if(context.unit.isJava) setPrivateWithin(tree, vsym, mods) // #3663 -- for Scala fields we assume private[this]
+            val needsNoAccessors = !mods.isLazy && (
+                 !context.owner.isClass
+              || (mods.isPrivateLocal && !mods.isCaseAccessor)
+              || name.startsWith(nme.OUTER)
+              || context.unit.isJava
+            )
+
+            if (needsNoAccessors) {
+              val vsym = owner.newValue(tree.pos, name).setFlag(mods.flags)
+              if (context.unit.isJava) setPrivateWithin(tree, vsym, mods) // #3663 -- for Scala fields we assume private[this]
               tree.symbol = enterInScope(vsym)
               finish
-            } else {
-              val mods1 =
-            	  if (mods.isPrivateLocal && !mods.isLazy) {
-                    context.error(tree.pos, "private[this] not allowed for case class parameters")
-                    mods &~ LOCAL
-                  } else mods
+            }
+            else {
+              val mods1 = (
+                if (mods.isPrivateLocal && !mods.isLazy) {
+                  context.error(tree.pos, "private[this] not allowed for case class parameters")
+                  mods &~ LOCAL
+                }
+                else mods
+              )
               // add getter and possibly also setter
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
-              // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
               val getter = enterAccessorMethod(tree, name, getterFlags(mods1.flags), mods1)
               setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
               if (mods1.isMutable) {
@@ -529,7 +534,7 @@ trait Namers { self: Analyzer =>
                 } else {
                   val vsym =
                     if (!context.owner.isClass) {
-                      assert(mods1.isLazy)   // if not a field, it has to be a lazy val
+                      assert(mods1.isLazy, mods1)   // if not a field, it has to be a lazy val
                       owner.newValue(tree.pos, name + "$lzy" ).setFlag((mods1.flags | MUTABLE) & ~IMPLICIT)
                     } else {
                       val mFlag = if (mods1.isLazy) MUTABLE else 0
