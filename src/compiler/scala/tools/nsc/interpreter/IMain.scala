@@ -25,7 +25,6 @@ import Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.{ cond, condOpt }
 import scala.util.control.Exception.{ ultimately }
-import scala.reflect.NameTransformer
 import IMain._
 
 /** An interpreter for Scala code.

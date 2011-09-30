@@ -13,7 +13,6 @@ import comment._
 import xml.{XML, NodeSeq}
 import xml.dtd.{DocType, PublicID}
 import scala.collection._
-import scala.reflect.NameTransformer
 import java.nio.channels.Channels
 
 /** An html page that is part of a Scaladoc site.

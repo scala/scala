@@ -6,7 +6,6 @@
 package scala.reflect
 package internal
 
-import scala.reflect.NameTransformer
 import scala.io.Codec
 import java.security.MessageDigest
 

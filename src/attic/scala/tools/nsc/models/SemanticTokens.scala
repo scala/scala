@@ -14,7 +14,6 @@ import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.{Flags, Names}
 import scala.tools.nsc.symtab.Flags.DEFERRED
 import scala.tools.nsc.util.{BatchSourceFile, SourceFile}
-import scala.reflect.NameTransformer
 
 class SemanticTokens(val compiler: Global) {
   import compiler._
@@ -160,7 +159,7 @@ class SemanticTokens(val compiler: Global) {
       else new Info(symbol)
 
     abstract class Semantic(val symbol: Symbol) extends Actual {
-      val name = NameTransformer.decode(symbol.name.toString).trim()
+      val name = symbol.name.decode.toString.trim
       assert(symbol != NoSymbol)
       def myOuter = Process.this
 
@@ -503,7 +502,7 @@ class SemanticTokens(val compiler: Global) {
       //Thread.dumpStack()
     }
     else if (term != NoSymbol) {
-      val name = NameTransformer.decode(term.name.toString).trim()
+      val name = term.name.decode.toString.trim
       val buf = unit.source.asInstanceOf[BatchSourceFile].content
       val cs = name.toChars
       var idx = 0

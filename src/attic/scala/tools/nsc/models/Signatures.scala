@@ -10,7 +10,6 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.{Global => Compiler}
 import scala.tools.nsc.symtab.{Flags, Names}
 import scala.tools.nsc.util.{ Position, SourceFile }
-import scala.reflect.NameTransformer
 
 /** This class ...
  *

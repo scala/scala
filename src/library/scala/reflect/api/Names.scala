@@ -12,6 +12,16 @@ trait Names {
     def isTypeName: Boolean
     def toTermName: TermName
     def toTypeName: TypeName
+
+    /** Replace all occurrences of $op_names in this name by corresponding operator symbols.
+     *  Example: `foo_+=` becomes `foo_$plus$eq`.
+     */
+    def decode: String
+
+    /** Replace all occurrences of operator symbols in this name by corresponding $op_names.
+     *  Example: `foo_$plus$eq` becomes `foo_+=`
+     */
+    def encode: Name
   }
 
   def newTermName(s: String): TermName

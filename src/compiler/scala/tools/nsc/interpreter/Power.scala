@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.reflect.{ NameTransformer, AnyValManifest }
+import scala.reflect.AnyValManifest
 import scala.collection.{ mutable, immutable }
 import scala.util.matching.Regex
 import scala.tools.nsc.util.{ BatchSourceFile }

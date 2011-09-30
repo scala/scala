@@ -8,7 +8,6 @@ package interpreter
 
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.cond
-import scala.reflect.NameTransformer
 import scala.reflect.internal.Chars
 
 trait MemberHandlers {
@@ -67,7 +66,7 @@ trait MemberHandlers {
     def name: Name      = member.name
     def mods: Modifiers = member.mods
     def keyword         = member.keyword
-    def prettyName      = NameTransformer.decode(name)
+    def prettyName      = name.decode
 
     override def definesImplicit = member.mods.isImplicit
     override def definesTerm: Option[TermName] = Some(name.toTermName) filter (_ => name.isTermName)
