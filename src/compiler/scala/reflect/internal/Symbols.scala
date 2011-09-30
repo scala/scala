@@ -1007,17 +1007,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeConstructor: Type =
       abort("typeConstructor inapplicable for " + this)
 
-    /** The logic approximately boils down to finding the phase following
-     *  the most recent of namer, typer, or erasure.
+    /** The logic approximately boils down to finding the most recent phase
+     *  which immediately follows any of namer, typer, or erasure.
      */
     private def unsafeTypeParamPhase = {
       var ph = phase
       while (ph.prev.keepsTypeParams)
         ph = ph.prev
-      if (ph ne phase) {  // Can anyone comment as to what this condition accomplishes?
-        ph = ph.next
+
+      if (ph ne phase)
         debuglog("checking unsafeTypeParams(" + this + ") at: " + phase + " reading at: " + ph)
-      }
+
       ph
     }
     /** The type parameters of this symbol, without ensuring type completion.
