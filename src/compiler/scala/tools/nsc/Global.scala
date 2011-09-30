@@ -997,24 +997,24 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         return
       }
 
-      val startTime = currentTime
-      reporter.reset();
-      {
-        val first :: rest = sources
-        val unit = new CompilationUnit(first)
-        addUnit(unit)
-        checkDeprecatedSettings(unit)
+      compileUnits(sources map (new CompilationUnit(_)), firstPhase)
+    }
 
-        for (source <- rest)
-          addUnit(new CompilationUnit(source))
-      }
-      globalPhase = firstPhase
-
+    /** Compile list of units, starting with phase `fromPhase`
+     */
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
+      units foreach addUnit
       if (opt.profileAll) {
         inform("starting CPU profiling on compilation run")
         profiler.startProfiling()
       }
-      while (globalPhase != terminalPhase && !reporter.hasErrors) {
+      val startTime = currentTime
+
+      reporter.reset()
+      checkDeprecatedSettings(unitbuf.head)
+      globalPhase = firstPhase
+
+     while (globalPhase != terminalPhase && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
 
