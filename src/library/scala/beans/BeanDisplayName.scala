@@ -7,13 +7,12 @@
 \*                                                                      */
 
 
-package scala.reflect
+package scala.beans
 
-/** Provides a short description that will be included when generating
- *  bean information. This annotation can be attached to the bean itself,
- *  or to any member.
+/** Provides a display name when generating bean information. This
+ *  annotation can be attached to the bean itself, or to any member.
  *
  *  @author Ross Judson (rjudson@managedobjects.com)
  */
-class BeanDescription(val description: String) extends annotation.Annotation
+class BeanDisplayName(val name: String) extends annotation.Annotation
 

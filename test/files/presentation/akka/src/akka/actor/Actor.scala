@@ -9,7 +9,7 @@ import akka.util.Helpers.{ narrow, narrowSilently }
 import akka.util.ListenerManagement
 import akka.AkkaException
 
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import akka.util.{ ReflectiveAccess, Duration }
 import akka.remoteinterface.RemoteSupport
 import akka.japi.{ Creator, Procedure }

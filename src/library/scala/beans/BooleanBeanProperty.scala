@@ -5,9 +5,14 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.annotation.target
 
-/**
- * Consult the documentation in package [[scala.annotation.target]].
+package scala.beans
+
+import meta._
+
+/** This annotation has the same functionality as
+ *  `scala.beans.BeanProperty`, but the generated Bean getter will be
+ *  named `isFieldName` instead of `getFieldName`.
  */
-final class setter extends annotation.StaticAnnotation
+@field
+class BooleanBeanProperty extends annotation.StaticAnnotation

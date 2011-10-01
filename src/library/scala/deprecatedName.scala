@@ -8,7 +8,7 @@
 
 package scala
 
-import annotation.target._
+import beans.meta._
 
 /**
  * An annotation that designates the name of the parameter to which it is

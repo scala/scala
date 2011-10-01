@@ -7,7 +7,7 @@
 \*                                                                      */
 
 
-package scala.reflect
+package scala.beans
 
 /** Provides some simple runtime processing necessary to create
  *  JavaBean descriptors for Scala entities. The compiler creates

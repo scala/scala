@@ -6,9 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect
+package scala.beans
 
-import annotation.target._
+import meta._
 
 /** When attached to a field, this annotation adds a setter and a getter
  *  method following the Java Bean convention. For example:
@@ -22,7 +22,7 @@ import annotation.target._
  *    def getStatus: String = this.status
  *  }}}
  *  For fields of type `Boolean`, if you need a getter named `isStatus`,
- *  use the `scala.reflect.BooleanBeanProperty` annotation instead.
+ *  use the `scala.beans.BooleanBeanProperty` annotation instead.
  */
 @field
 class BeanProperty extends annotation.StaticAnnotation

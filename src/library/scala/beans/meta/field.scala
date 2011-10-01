@@ -5,16 +5,9 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+package scala.beans.meta
 
-package scala.reflect
-
-/** This annotation indicates that a JavaBean-compliant `BeanInfo` class
- *  should be generated for this annotated Scala class.
- *
- *  - A `'''val'''` becomes a read-only property.
- *  - A `'''var'''` becomes a read-write property.
- *  - A `'''def'''` becomes a method.
- *
- *  @author Ross Judson (rjudson@managedobjects.com)
+/**
+ * Consult the documentation in package [[scala.beans.meta]].
  */
-class BeanInfo extends annotation.Annotation
+final class field extends annotation.StaticAnnotation

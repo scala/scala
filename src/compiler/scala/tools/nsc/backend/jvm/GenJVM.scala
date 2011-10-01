@@ -180,10 +180,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
-    val BeanInfoAttr     = definitions.getClass("scala.reflect.BeanInfo")
-    val BeanInfoSkipAttr = definitions.getClass("scala.reflect.BeanInfoSkip")
-    val BeanDisplayNameAttr = definitions.getClass("scala.reflect.BeanDisplayName")
-    val BeanDescriptionAttr = definitions.getClass("scala.reflect.BeanDescription")
+    val BeanInfoAttr     = definitions.getClass("scala.beans.BeanInfo")
+    val BeanInfoSkipAttr = definitions.getClass("scala.beans.BeanInfoSkip")
+    val BeanDisplayNameAttr = definitions.getClass("scala.beans.BeanDisplayName")
+    val BeanDescriptionAttr = definitions.getClass("scala.beans.BeanDescription")
 
     lazy val CloneableClass  = definitions.getClass("java.lang.Cloneable")
     lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
@@ -443,7 +443,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
       val beanInfoClass = fjbgContext.JClass(javaFlags(c.symbol),
             javaName(c.symbol) + "BeanInfo",
-            "scala/reflect/ScalaBeanInfo",
+            "scala/beans/ScalaBeanInfo",
             JClass.NO_INTERFACES,
             c.cunit.source.toString)
 
@@ -497,7 +497,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
       // invoke the superclass constructor, which will do the
       // necessary java reflection and create Method objects.
-      jcode.emitINVOKESPECIAL("scala/reflect/ScalaBeanInfo", "<init>", conType)
+      jcode.emitINVOKESPECIAL("scala/beans/ScalaBeanInfo", "<init>", conType)
       jcode.emitRETURN()
 
       // write the bean information class file.

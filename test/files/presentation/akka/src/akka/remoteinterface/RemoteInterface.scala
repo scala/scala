@@ -10,7 +10,7 @@ import akka.util._
 import akka.dispatch.CompletableFuture
 import akka.AkkaException
 
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap

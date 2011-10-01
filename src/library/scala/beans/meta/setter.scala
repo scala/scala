@@ -5,9 +5,9 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.annotation.target
+package scala.beans.meta
 
 /**
- * Consult the documentation in package [[scala.annotation.target]].
+ * Consult the documentation in package [[scala.beans.meta]].
  */
-final class getter extends annotation.StaticAnnotation
+final class setter extends annotation.StaticAnnotation

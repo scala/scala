@@ -5,9 +5,16 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
-package scala.annotation.target
 
-/**
- * Consult the documentation in package [[scala.annotation.target]].
+package scala.beans
+
+/** This annotation indicates that a JavaBean-compliant `BeanInfo` class
+ *  should be generated for this annotated Scala class.
+ *
+ *  - A `'''val'''` becomes a read-only property.
+ *  - A `'''var'''` becomes a read-write property.
+ *  - A `'''def'''` becomes a method.
+ *
+ *  @author Ross Judson (rjudson@managedobjects.com)
  */
-final class beanGetter extends annotation.StaticAnnotation
+class BeanInfo extends annotation.Annotation

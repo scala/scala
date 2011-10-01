@@ -606,8 +606,8 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
   }
 
   private class J2SENames extends JavaNames {
-    final val BeanProperty: TypeName        = "scala.reflect.BeanProperty"
-    final val BooleanBeanProperty: TypeName = "scala.reflect.BooleanBeanProperty"
+    final val BeanProperty: TypeName        = "scala.beans.BeanProperty"
+    final val BooleanBeanProperty: TypeName = "scala.beans.BooleanBeanProperty"
     final val Code: TypeName                = "scala.reflect.Code"
     final val JavaSerializable: TypeName    = "java.io.Serializable"
   }

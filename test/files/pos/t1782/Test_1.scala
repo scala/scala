@@ -10,7 +10,7 @@ class Provider
   @Ann(Days.Friday) def someMethod() = ()
 
   // #2103
-  @scala.reflect.BeanProperty
+  @scala.beans.BeanProperty
   @Ann(value = Days.Sunday)
   val t2103 = "test"
 }

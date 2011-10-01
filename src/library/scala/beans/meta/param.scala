@@ -5,14 +5,9 @@
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
+package scala.beans.meta
 
-
-package scala.reflect
-
-/** Provides a display name when generating bean information. This
- *  annotation can be attached to the bean itself, or to any member.
- *
- *  @author Ross Judson (rjudson@managedobjects.com)
+/**
+ * Consult the documentation in package [[scala.beans.meta]].
  */
-class BeanDisplayName(val name: String) extends annotation.Annotation
-
+final class param extends annotation.StaticAnnotation
