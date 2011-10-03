@@ -403,7 +403,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val isCandidate = (
            sym.isProtected
         && sym.isJavaDefined
-        && !sym.definedInPackage
+        && !sym.isDefinedInPackage
         && !accessibleThroughSubclassing
         && (sym.owner.enclosingPackageClass != currentOwner.enclosingPackageClass)
         && (sym.owner.enclosingPackageClass == packageAccessBoundry(sym))

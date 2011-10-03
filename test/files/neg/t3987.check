@@ -1,6 +1,7 @@
 t3987.scala:11: error: type mismatch;
  found   : Gox
  required: Test.GoxZed
+    (which expands to)  t#Zed forSome { type t <: Gox }
     val y: GoxZed = x
                     ^
 one error found

@@ -335,8 +335,8 @@ trait Implicits {
                                pre1: String, pre2: String, trailer: String) =
       if (!info1.tpe.isErroneous && !info2.tpe.isErroneous) {
         val coreMsg =
-          pre1+" "+info1.sym+info1.sym.locationString+" of type "+info1.tpe+"\n "+
-          pre2+" "+info2.sym+info2.sym.locationString+" of type "+info2.tpe+"\n "+
+          pre1+" "+info1.sym.fullLocationString+" of type "+info1.tpe+"\n "+
+          pre2+" "+info2.sym.fullLocationString+" of type "+info2.tpe+"\n "+
           trailer
         error(tree.pos,
           if (isView) {
@@ -408,7 +408,7 @@ trait Implicits {
                  if (!(pt.isErroneous))
                    context.unit.error(
                      tree.pos, "diverging implicit expansion for type "+pt+"\nstarting with "+
-                     info.sym+info.sym.locationString)
+                     info.sym.fullLocationString)
                  SearchFailure
                } else {
                  throw DivergentImplicit
@@ -545,7 +545,7 @@ trait Implicits {
           SearchFailure
         else if (!hasMatchingSymbol(itree1))
           fail("candidate implicit %s is shadowed by other implicit %s".format(
-            info.sym + info.sym.locationString, itree1.symbol + itree1.symbol.locationString))
+            info.sym.fullLocationString, itree1.symbol.fullLocationString))
         else {
           val tvars = undetParams map freshVar
 

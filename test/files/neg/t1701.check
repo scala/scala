@@ -1,4 +1,4 @@
-t1701.scala:1: error: java.lang.Cloneable does not take type parameters
+t1701.scala:1: error: Cloneable does not take type parameters
 class A extends java.lang.Cloneable[String, Option, Int]
                           ^
 one error found

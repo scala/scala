@@ -3,11 +3,11 @@ compiling Set(A.scala, B.scala, C.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(class A -> List(Changed(Definition(A.x))[method x changed from (i: Int)java.lang.String to (i: java.lang.String)java.lang.String flags: <method>]))
-invalidate B.scala because inherited method changed [Changed(Definition(A.x))[method x changed from (i: Int)java.lang.String to (i: java.lang.String)java.lang.String flags: <method>]]
-invalidate C.scala because inherited method changed [Changed(Definition(A.x))[method x changed from (i: Int)java.lang.String to (i: java.lang.String)java.lang.String flags: <method>]]
+Changes: Map(class A -> List(Changed(Definition(A.x))[method x changed from (i: Int)String to (i: String)String flags: <method>]))
+invalidate B.scala because inherited method changed [Changed(Definition(A.x))[method x changed from (i: Int)String to (i: String)String flags: <method>]]
+invalidate C.scala because inherited method changed [Changed(Definition(A.x))[method x changed from (i: Int)String to (i: String)String flags: <method>]]
 compiling Set(B.scala, C.scala)
-C.scala:2: error: overriding method x in class A of type (i: String)java.lang.String;
+C.scala:2: error: overriding method x in class A of type (i: String)String;
  method x needs `override' modifier
   def x(s: String) = s+"5"
       ^

@@ -1,6 +1,6 @@
 patmat-type-check.scala:22: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
- required: java.lang.String
+ required: String
   def f1 = "bob".reverse match { case Seq('b', 'o', 'b') => true } // fail
                                          ^
 patmat-type-check.scala:23: error: scrutinee is incompatible with pattern type;

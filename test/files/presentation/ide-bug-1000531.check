@@ -8,7 +8,7 @@ retrieved 121 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ++[B >: B](that: => scala.collection.GenTraversableOnce[B])Iterator[B]`
 `method ->[B](y: B)(java.util.Iterator[B], B)`
 `method /:[B](z: B)(op: (B, B) => B)B`
@@ -21,8 +21,8 @@ retrieved 121 members
 `method addString(b: StringBuilder, start: String, sep: String, end: String)StringBuilder`
 `method aggregate[B](z: B)(seqop: (B, B) => B, combop: (B, B) => B)B`
 `method asInstanceOf[T0]=> T0`
-`method buffered=> java.lang.Object with scala.collection.BufferedIterator[B]`
-`method clone()java.lang.Object`
+`method buffered=> Object with scala.collection.BufferedIterator[B]`
+`method clone()Object`
 `method collectFirst[B](pf: PartialFunction[B,B])Option[B]`
 `method collect[B](pf: PartialFunction[B,B])Iterator[B]`
 `method contains(elem: Any)Boolean`
@@ -75,9 +75,9 @@ retrieved 121 members
 `method nonEmpty=> Boolean`
 `method notify()Unit`
 `method notifyAll()Unit`
-`method padTo[A1 >: B](len: Int, elem: A1)java.lang.Object with Iterator[A1]`
+`method padTo[A1 >: B](len: Int, elem: A1)Object with Iterator[A1]`
 `method partition(p: B => Boolean)(Iterator[B], Iterator[B])`
-`method patch[B >: B](from: Int, patchElems: Iterator[B], replaced: Int)java.lang.Object with Iterator[B]`
+`method patch[B >: B](from: Int, patchElems: Iterator[B], replaced: Int)Object with Iterator[B]`
 `method product[B >: B](implicit num: Numeric[B])B`
 `method reduceLeftOption[B >: B](op: (B, B) => B)Option[B]`
 `method reduceLeft[B >: B](op: (B, B) => B)B`
@@ -109,15 +109,15 @@ retrieved 121 members
 `method toSeq=> Seq[B]`
 `method toSet[B >: B]=> scala.collection.immutable.Set[B]`
 `method toStream=> scala.collection.immutable.Stream[B]`
-`method toString()java.lang.String`
+`method toString()String`
 `method toTraversable=> Traversable[B]`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method withFilter(p: B => Boolean)Iterator[B]`
-`method zipAll[B, A1 >: B, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1)java.lang.Object with Iterator[(A1, B1)]`
-`method zipWithIndex=> java.lang.Object with Iterator[(B, Int)]{def idx: Int; def idx_=(x$1: Int): Unit}`
-`method zip[B](that: Iterator[B])java.lang.Object with Iterator[(B, B)]`
+`method zipAll[B, A1 >: B, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1)Object with Iterator[(A1, B1)]`
+`method zipWithIndex=> Object with Iterator[(B, Int)]{def idx: Int; def idx_=(x$1: Int): Unit}`
+`method zip[B](that: Iterator[B])Object with Iterator[(B, B)]`
 `method →[B](y: B)(java.util.Iterator[B], B)`
 `value selfAny`
 `value xjava.util.Iterator[B]`

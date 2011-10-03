@@ -1,5 +1,5 @@
 implicits.scala:38: error: type mismatch;
- found   : test2.HSome[java.lang.String,test2.HMap]
+ found   : test2.HSome[String,test2.HMap]
  required: Int
   foo(set)
       ^

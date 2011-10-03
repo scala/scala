@@ -66,19 +66,19 @@ m: (x: String)String @Annot(x)
 scala> 
 
 scala> val three = "three"
-three: java.lang.String = three
+three: String = three
 
 scala> val three2 = m(three:three.type)  // should change x to three
 three2: String @Annot(three) = three
 
 scala> var four = "four"
-four: java.lang.String = four
+four: String = four
 
 scala> val four2 = m(four) // should have an existential bound
-four2: java.lang.String @Annot(x) forSome { val x: java.lang.String } = four
+four2: String @Annot(x) forSome { val x: String } = four
 
 scala> val four3 = four2   // should have the same type as four2
-four3: java.lang.String @Annot(x) forSome { val x: java.lang.String } = four
+four3: String @Annot(x) forSome { val x: String } = four
 
 scala> val stuff = m("stuff") // should not crash
 stuff: String @Annot("stuff") = stuff
@@ -100,7 +100,7 @@ scala> def m = {
   val y : String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
-m: java.lang.String @Annot(x) forSome { val x: java.lang.String }
+m: String @Annot(x) forSome { val x: String }
 
 scala> 
 
@@ -113,7 +113,7 @@ scala> def n(y: String) = {
   }
   m("stuff".stripMargin)
 } // x should be existentially bound
-n: (y: String)java.lang.String @Annot(x) forSome { val x: String }
+n: (y: String)String @Annot(x) forSome { val x: String }
 
 scala> 
 
@@ -130,7 +130,7 @@ Companions must be defined together; you may wish to use :paste mode for this.
 scala> 
 
 scala> val y = a.x // should drop the annotation
-y: java.lang.String = hello
+y: String = hello
 
 scala> 
 

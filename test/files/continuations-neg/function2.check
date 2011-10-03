@@ -1,6 +1,6 @@
 function2.scala:11: error: type mismatch;
  found   : () => Int
- required: () => Int @util.continuations.package.cps[Int]
+ required: () => Int @util.continuations.cps[Int]
     val g: () => Int @cps[Int] = f
                                  ^
 one error found

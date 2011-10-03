@@ -3,7 +3,7 @@ t1878.scala:3: error: _* may only come last
                                  ^
 t1878.scala:3: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
- required: java.lang.String
+ required: String
   val err1 = "" match { case Seq(f @ _*, ',') => f }
                                 ^
 t1878.scala:9: error: _* may only come last

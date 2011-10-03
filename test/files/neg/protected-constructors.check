@@ -19,7 +19,7 @@ protected-constructors.scala:15: error: class Foo3 in object Ding cannot be acce
  object Ding in package dingus where target is defined
     class Bar3 extends Ding.Foo3("abc")
                             ^
-protected-constructors.scala:15: error: too many arguments for constructor Object: ()java.lang.Object
+protected-constructors.scala:15: error: too many arguments for constructor Object: ()Object
     class Bar3 extends Ding.Foo3("abc")
                ^
 5 errors found

@@ -52,7 +52,7 @@ scala> val x = dingus
                ^
 
 scala> val x = "dingus"
-x: java.lang.String = dingus
+x: String = dingus
 
 scala> x.length
 res2: Int = 6

@@ -142,12 +142,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val EmptyPackage       = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
     lazy val EmptyPackageClass  = EmptyPackage.moduleClass
 
-    lazy val JavaLangPackage    = getModule(sn.JavaLang)
-    lazy val ScalaPackage       = getModule("scala")
-    lazy val ScalaPackageClass  = ScalaPackage.tpe.typeSymbol
+    lazy val JavaLangPackage      = getModule(sn.JavaLang)
+    lazy val JavaLangPackageClass = JavaLangPackage.moduleClass
+    lazy val ScalaPackage         = getModule(nme.scala_)
+    lazy val ScalaPackageClass    = ScalaPackage.moduleClass
 
     lazy val RuntimePackage       = getModule("scala.runtime")
-    lazy val RuntimePackageClass  = RuntimePackage.tpe.typeSymbol
+    lazy val RuntimePackageClass  = RuntimePackage.moduleClass
 
     // convenient one-argument parameter lists
     lazy val anyparam     = List(AnyClass.typeConstructor)
@@ -221,7 +222,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val BridgeClass                = getClass("scala.annotation.bridge")
 
     // fundamental reference classes
-    lazy val ScalaObjectClass           = getClass("scala.ScalaObject")
+    lazy val ScalaObjectClass           = getMember(ScalaPackageClass, tpnme.ScalaObject)
     lazy val PartialFunctionClass       = getClass("scala.PartialFunction")
     lazy val SymbolClass                = getClass("scala.Symbol")
     lazy val StringClass                = getClass(sn.String)
@@ -233,9 +234,17 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // fundamental modules
     lazy val SysPackage = getPackageObject("scala.sys")
       def Sys_error    = getMember(SysPackage, nme.error)
+
+    // Modules whose members are in the default namespace
+    lazy val UnqualifiedModules = List(PredefModule, ScalaPackage, JavaLangPackage)
+    // Those modules and their module classes
+    lazy val UnqualifiedOwners  = UnqualifiedModules.toSet ++ UnqualifiedModules.map(_.moduleClass)
+
     lazy val PredefModule: Symbol = getModule("scala.Predef")
-    lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
-      def Predef_AnyRef = getMember(PredefModule, "AnyRef") // used by the specialization annotation
+    lazy val PredefModuleClass = PredefModule.moduleClass
+      // Note: this is not the type alias AnyRef, it's a val defined in Predef
+      // used by the @specialize annotation.
+      def Predef_AnyRef = getMember(PredefModule, tpnme.AnyRef.toTermName)
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)

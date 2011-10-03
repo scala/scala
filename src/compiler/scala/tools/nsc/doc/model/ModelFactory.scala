@@ -39,7 +39,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       "memberSym " + memberSym + " templateSym " + templateSym + " encls = " +
       closestPackage(memberSym) + ", " + closestPackage(templateSym)
     )
-    memberSym.inDefaultNamespace || (closestPackage(memberSym) == closestPackage(templateSym))
+    memberSym.isOmittablePrefix || (closestPackage(memberSym) == closestPackage(templateSym))
   }
 
   private lazy val noSubclassCache = Set(AnyClass, AnyRefClass, ObjectClass, ScalaObjectClass)

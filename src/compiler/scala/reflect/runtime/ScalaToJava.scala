@@ -43,7 +43,7 @@ trait ScalaToJava extends ConversionUtil { self: SymbolTable =>
     else if (clazz == ArrayClass)
       noClass
     else if (clazz.owner.isPackageClass)
-      javaClass(clazz.fullName)
+      javaClass(clazz.javaClassName)
     else if (clazz.owner.isClass)
       classToJava(clazz.owner)
         .getDeclaredClasses

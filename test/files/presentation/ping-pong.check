@@ -7,12 +7,12 @@ retrieved 38 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(Pong, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
 `method asInstanceOf[T0]=> T0`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method ensuring(cond: Boolean)Pong`
 `method ensuring(cond: Boolean, msg: => Any)Pong`
 `method ensuring(cond: Pong => Boolean)Pong`
@@ -28,12 +28,12 @@ retrieved 38 members
 `method notifyAll()Unit`
 `method poke()Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(Pong, B)`
-`value namejava.lang.String`
+`value nameString`
 `value pingPing`
 `value selfAny`
 `value xPong`
@@ -46,12 +46,12 @@ retrieved 38 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(Ping, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
 `method asInstanceOf[T0]=> T0`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method ensuring(cond: Boolean)Ping`
 `method ensuring(cond: Boolean, msg: => Any)Ping`
 `method ensuring(cond: Ping => Boolean)Ping`
@@ -63,13 +63,13 @@ retrieved 38 members
 `method hashCode()Int`
 `method isInstanceOf[T0]=> Boolean`
 `method loop=> Unit`
-`method name=> java.lang.String`
+`method name=> String`
 `method ne(x$1: AnyRef)Boolean`
 `method notify()Unit`
 `method notifyAll()Unit`
 `method poke=> Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
@@ -94,5 +94,5 @@ def poke: Unit = Ping.this.pong.poke()
 askType at PingPong.scala(17,10)
 ================================================================================
 [response] askTypeAt at (17,10)
-private[this] val name: java.lang.String = "pong"
+private[this] val name: String = "pong"
 ================================================================================

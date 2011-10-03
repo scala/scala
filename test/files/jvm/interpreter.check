@@ -35,8 +35,9 @@ four: anotherint = 4
 
 scala> val bogus: anotherint = "hello"
 <console>:8: error: type mismatch;
- found   : java.lang.String("hello")
+ found   : String("hello")
  required: anotherint
+    (which expands to)  Int
        val bogus: anotherint = "hello"
                                ^
 
@@ -73,7 +74,7 @@ fish: S = fish
 scala> // Test that arrays pretty print nicely.
 
 scala> val arr = Array("What's", "up", "doc?") 
-arr: Array[java.lang.String] = Array(What's, up, doc?)
+arr: Array[String] = Array(What's, up, doc?)
 
 scala> // Test that arrays pretty print nicely, even when we give them type Any
 
@@ -263,7 +264,7 @@ scala> xs filter (_ == 2)
 res4: Array[_] = Array(2)
 
 scala> xs map (_ => "abc")
-res5: Array[java.lang.String] = Array(abc, abc)
+res5: Array[String] = Array(abc, abc)
 
 scala> xs map (x => x)
 res6: scala.collection.mutable.ArraySeq[_] = ArraySeq(1, 2)
@@ -322,7 +323,7 @@ scala> """
 hello
 there
 """
-res9: java.lang.String = 
+res9: String = 
 "
 hello
 there
@@ -368,7 +369,7 @@ scala>
 scala> 
 plusOne: (x: Int)Int
 res0: Int = 6
-res1: java.lang.String = after reset
+res1: String = after reset
 <console>:8: error: not found: value plusOne
               plusOne(5) // should be undefined now
               ^

@@ -1157,7 +1157,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
       else if (sym.isAnonOrRefinementClass) "this."
-      else if (sym.printWithoutPrefix) ""
+      else if (sym.isOmittablePrefix) ""
       else if (sym.isModuleClass) sym.fullName + "."
       else sym.nameString + ".this."
     override def safeToString: String =
@@ -1220,8 +1220,9 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def termSymbol = sym
     override def prefix: Type = pre
-    override def prefixString: String =
-      if ((sym.isEmptyPackage || sym.isInterpreterWrapper || sym.isPredefModule || sym.isScalaPackage) && !settings.debug.value) ""
+    override def prefixString =
+      if (sym.isPackageObjectOrClass) pre.prefixString
+      else if (sym.isOmittablePrefix) ""
       else pre.prefixString + sym.nameString + "."
     override def kind = "SingleType"
   }
@@ -2050,8 +2051,10 @@ A type's typeSymbol should never be inspected directly.
     override def prefixString = "" + (
       if (settings.debug.value)
         super.prefixString
-      else if (sym.printWithoutPrefix)
+      else if (sym.isOmittablePrefix)
         ""
+      else if (sym.isPackageObjectOrClass)
+        sym.owner.fullName + "."
       else if (sym.isPackageClass)
         sym.fullName + "."
       else if (isStable && nme.isSingletonName(sym.name))
@@ -4080,7 +4083,7 @@ A type's typeSymbol should never be inspected directly.
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          debuglog("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          debuglog("ADAPT1 pre = "+pre+", sym = "+sym.fullLocationString+", rebind = "+rebind0.fullLocationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
@@ -4089,11 +4092,8 @@ A type's typeSymbol should never be inspected directly.
           debuglog(
             "ADAPT2 pre = " + pre +
             ", bcs.head = " + bcs.head +
-            ", sym = " + sym+sym.locationString +
-            ", rebind = " + rebind0 + (
-              if (rebind0 == NoSymbol) ""
-              else rebind0.locationString
-            )
+            ", sym = " + sym.fullLocationString +
+            ", rebind = " + rebind0.fullLocationString
           )
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)

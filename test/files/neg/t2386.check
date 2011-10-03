@@ -1,4 +1,4 @@
-t2386.scala:2: error: could not find implicit value for evidence parameter of type scala.reflect.ClassManifest[Array[_ >: java.lang.String with Int]]
+t2386.scala:2: error: could not find implicit value for evidence parameter of type scala.reflect.ClassManifest[Array[_ >: String with Int]]
   val a = Array(Array(1, 2), Array("a","b"))
                ^
 one error found

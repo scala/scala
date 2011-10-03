@@ -163,15 +163,15 @@ You may wish to define A as +A instead. (SLS 4.5)
                                  ^
 found-req-variance.scala:100: error: type mismatch;
  found   : Set[String]
- required: Set[java.lang.CharSequence]
-Note: String <: java.lang.CharSequence, but trait Set is invariant in type A.
-You may wish to investigate a wildcard type such as `_ <: java.lang.CharSequence`. (SLS 3.2.10)
+ required: Set[CharSequence]
+Note: String <: CharSequence, but trait Set is invariant in type A.
+You may wish to investigate a wildcard type such as `_ <: CharSequence`. (SLS 3.2.10)
     foo(s)
         ^
 found-req-variance.scala:104: error: type mismatch;
  found   : Misc.Trippy[String,String,String]
- required: Misc.Trippy[java.lang.Object,java.lang.Object,java.lang.Object]
-Note: String <: java.lang.Object, but class Trippy is invariant in type T2.
+ required: Misc.Trippy[Object,Object,Object]
+Note: String <: Object, but class Trippy is invariant in type T2.
 You may wish to define T2 as +T2 instead. (SLS 4.5)
   def g1 = Set[Trippy[AnyRef, AnyRef, AnyRef]]() + new Trippy[String, String, String]
                                                    ^

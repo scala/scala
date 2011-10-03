@@ -9,6 +9,6 @@
 <<-- class foo.bar.Bippy.Boppity.Boo after phase 'typer' -->>
   def showdefTestMemberClass3: Int
 <<-- object foo.bar.Bippy after phase 'typer' -->>
-  def showdefTestMemberObject2: java.lang.String
+  def showdefTestMemberObject2: String
 <<-- object foo.bar.Bippy.Boppity.Boo after phase 'typer' -->>
-  def showdefTestMemberObject1: java.lang.String
+  def showdefTestMemberObject1: String

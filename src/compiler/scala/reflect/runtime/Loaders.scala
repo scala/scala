@@ -35,7 +35,7 @@ trait Loaders { self: SymbolTable =>
       assert(sym == clazz || sym == module || sym == module.moduleClass)
 //      try {
       atPhaseNotLaterThan(picklerPhase) {
-        unpickleClass(clazz, module, javaClass(clazz.fullName))
+        unpickleClass(clazz, module, javaClass(clazz.javaClassName))
 //      } catch {
 //        case ex: ClassNotFoundException => makePackage()
 //        case ex: NoClassDefFoundError => makePackage()

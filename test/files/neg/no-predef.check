@@ -8,7 +8,7 @@ no-predef.scala:3: error: type mismatch;
  required: scala.Long
   def f2 = new java.lang.Long(5) : Long
            ^
-no-predef.scala:4: error: value map is not a member of java.lang.String
+no-predef.scala:4: error: value map is not a member of String
   def f3 = "abc" map (_ + 1)
                  ^
 three errors found

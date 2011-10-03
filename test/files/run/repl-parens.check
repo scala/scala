@@ -66,7 +66,7 @@ scala> 55 ; () => 5
 res13: () => Int = <function0>
 
 scala> () => { class X ; new X }
-res14: () => java.lang.Object with ScalaObject = <function0>
+res14: () => Object with ScalaObject = <function0>
 
 scala> 
 

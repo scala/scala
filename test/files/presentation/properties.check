@@ -3,27 +3,28 @@ reload: properties.scala
 askTypeCompletion at properties.scala(29,33)
 ================================================================================
 [response] aksTypeCompletion at (29,33)
-retrieved 48 members
+retrieved 49 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
-`method ->[B](y: B)(properties.Property[java.lang.String], B)`
+`method +(other: String)String`
+`method ->[B](y: B)(properties.Property[String], B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
-`method apply()java.lang.String`
+`method _1=> String`
+`method apply()String`
 `method asInstanceOf[T0]=> T0`
 `method canEqual(that: Any)Boolean`
-`method clone()java.lang.Object`
-`method ensuring(cond: Boolean)properties.Property[java.lang.String]`
-`method ensuring(cond: Boolean, msg: => Any)properties.Property[java.lang.String]`
-`method ensuring(cond: properties.Property[java.lang.String] => Boolean)properties.Property[java.lang.String]`
-`method ensuring(cond: properties.Property[java.lang.String] => Boolean, msg: => Any)properties.Property[java.lang.String]`
+`method clone()Object`
+`method ensuring(cond: Boolean)properties.Property[String]`
+`method ensuring(cond: Boolean, msg: => Any)properties.Property[String]`
+`method ensuring(cond: properties.Property[String] => Boolean)properties.Property[String]`
+`method ensuring(cond: properties.Property[String] => Boolean, msg: => Any)properties.Property[String]`
 `method eq(x$1: AnyRef)Boolean`
 `method equals(x$1: Any)Boolean`
 `method finalize()Unit`
 `method formatted(fmtstr: String)String`
-`method get(newGetter: java.lang.String => java.lang.String)properties.Property[java.lang.String]`
+`method get(newGetter: String => String)properties.Property[String]`
 `method hashCode()Int`
 `method isInstanceOf[T0]=> Boolean`
 `method ne(x$1: AnyRef)Boolean`
@@ -32,47 +33,48 @@ retrieved 48 members
 `method productArity=> Int`
 `method productElement(n: Int)Any`
 `method productIterator=> Iterator[Any]`
-`method productPrefix=> java.lang.String`
-`method set(newSetter: java.lang.String => java.lang.String)properties.Property[java.lang.String]`
+`method productPrefix=> String`
+`method set(newSetter: String => String)properties.Property[String]`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
-`method update(newValue: java.lang.String)Unit`
+`method toString()String`
+`method update(newValue: String)Unit`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method →[B](y: B)(properties.Property[java.lang.String], B)`
-`value initjava.lang.String`
+`method →[B](y: B)(properties.Property[String], B)`
+`value initString`
 `value selfAny`
-`value xproperties.Property[java.lang.String]`
-`variable getterjava.lang.String => java.lang.String`
-`variable setterjava.lang.String => java.lang.String`
-`variable valuejava.lang.String`
+`value xproperties.Property[String]`
+`variable getterString => String`
+`variable setterString => String`
+`variable valueString`
 ================================================================================
 
 askTypeCompletion at properties.scala(29,67)
 ================================================================================
 [response] aksTypeCompletion at (29,67)
-retrieved 48 members
+retrieved 49 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
-`method ->[B](y: B)(properties.Property[java.lang.String], B)`
+`method +(other: String)String`
+`method ->[B](y: B)(properties.Property[String], B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
-`method apply()java.lang.String`
+`method _1=> String`
+`method apply()String`
 `method asInstanceOf[T0]=> T0`
 `method canEqual(that: Any)Boolean`
-`method clone()java.lang.Object`
-`method ensuring(cond: Boolean)properties.Property[java.lang.String]`
-`method ensuring(cond: Boolean, msg: => Any)properties.Property[java.lang.String]`
-`method ensuring(cond: properties.Property[java.lang.String] => Boolean)properties.Property[java.lang.String]`
-`method ensuring(cond: properties.Property[java.lang.String] => Boolean, msg: => Any)properties.Property[java.lang.String]`
+`method clone()Object`
+`method ensuring(cond: Boolean)properties.Property[String]`
+`method ensuring(cond: Boolean, msg: => Any)properties.Property[String]`
+`method ensuring(cond: properties.Property[String] => Boolean)properties.Property[String]`
+`method ensuring(cond: properties.Property[String] => Boolean, msg: => Any)properties.Property[String]`
 `method eq(x$1: AnyRef)Boolean`
 `method equals(x$1: Any)Boolean`
 `method finalize()Unit`
 `method formatted(fmtstr: String)String`
-`method get(newGetter: java.lang.String => java.lang.String)properties.Property[java.lang.String]`
+`method get(newGetter: String => String)properties.Property[String]`
 `method hashCode()Int`
 `method isInstanceOf[T0]=> Boolean`
 `method ne(x$1: AnyRef)Boolean`
@@ -81,21 +83,21 @@ retrieved 48 members
 `method productArity=> Int`
 `method productElement(n: Int)Any`
 `method productIterator=> Iterator[Any]`
-`method productPrefix=> java.lang.String`
-`method set(newSetter: java.lang.String => java.lang.String)properties.Property[java.lang.String]`
+`method productPrefix=> String`
+`method set(newSetter: String => String)properties.Property[String]`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
-`method update(newValue: java.lang.String)Unit`
+`method toString()String`
+`method update(newValue: String)Unit`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
-`method →[B](y: B)(properties.Property[java.lang.String], B)`
-`value initjava.lang.String`
+`method →[B](y: B)(properties.Property[String], B)`
+`value initString`
 `value selfAny`
-`value xproperties.Property[java.lang.String]`
-`variable getterjava.lang.String => java.lang.String`
-`variable setterjava.lang.String => java.lang.String`
-`variable valuejava.lang.String`
+`value xproperties.Property[String]`
+`variable getterString => String`
+`variable setterString => String`
+`variable valueString`
 ================================================================================
 
 askTypeCompletion at properties.scala(45,10)
@@ -105,12 +107,12 @@ retrieved 36 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(properties.User, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
 `method asInstanceOf[T0]=> T0`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method ensuring(cond: Boolean)properties.User`
 `method ensuring(cond: Boolean, msg: => Any)properties.User`
 `method ensuring(cond: properties.User => Boolean)properties.User`
@@ -125,13 +127,13 @@ retrieved 36 members
 `method notify()Unit`
 `method notifyAll()Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(properties.User, B)`
-`value firstnameproperties.Property[java.lang.String]`
-`value lastnameproperties.Property[java.lang.String]`
+`value firstnameproperties.Property[String]`
+`value lastnameproperties.Property[String]`
 `value selfAny`
 `value xproperties.User`
 ================================================================================

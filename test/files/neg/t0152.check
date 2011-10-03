@@ -1,6 +1,6 @@
 t0152.scala:10: error: illegal inheritance;
  object boom inherits different type instances of class Value:
-Value[Int] and Value[java.lang.String]
+Value[Int] and Value[String]
  object boom extends Value[java.lang.String]("foo") with PlusOne
         ^
 one error found

@@ -25,10 +25,10 @@ checksensible.scala:26: error: comparing values of types Unit and Int using `=='
 checksensible.scala:27: error: comparing values of types Int and Unit using `==' will always yield false
   0 == (c = 1)
     ^
-checksensible.scala:29: error: comparing values of types Int and java.lang.String using `==' will always yield false
+checksensible.scala:29: error: comparing values of types Int and String using `==' will always yield false
   1 == "abc"
     ^
-checksensible.scala:32: error: java.lang.String and Int are unrelated: they will most likely never compare equal
+checksensible.scala:32: error: String and Int are unrelated: they will most likely never compare equal
   "abc" == 1        // warns because the lub of String and Int is Any
         ^
 checksensible.scala:33: error: Some[Int] and Int are unrelated: they will most likely never compare equal
@@ -37,7 +37,7 @@ checksensible.scala:33: error: Some[Int] and Int are unrelated: they will most l
 checksensible.scala:35: error: comparing a fresh object using `==' will always yield false
   new AnyRef == 1
              ^
-checksensible.scala:38: error: comparing values of types Int and java.lang.Boolean using `==' will always yield false
+checksensible.scala:38: error: comparing values of types Int and Boolean using `==' will always yield false
   1 == (new java.lang.Boolean(true))
     ^
 checksensible.scala:40: error: comparing values of types Int and Boolean using `!=' will always yield true
@@ -88,7 +88,7 @@ checksensible.scala:76: error: comparing values of types EqEqRefTest.this.Z1 and
 checksensible.scala:77: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
   z1 != c3
      ^
-checksensible.scala:78: error: comparing values of types EqEqRefTest.this.C3 and java.lang.String using `!=' will always yield true
+checksensible.scala:78: error: comparing values of types EqEqRefTest.this.C3 and String using `!=' will always yield true
   c3 != "abc"
      ^
 checksensible.scala:89: error: comparing values of types Unit and Int using `!=' will always yield true

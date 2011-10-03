@@ -16,7 +16,7 @@ retrieved 62 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(callccInterpreter.type, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
@@ -24,7 +24,7 @@ retrieved 62 members
 `method apply(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[callccInterpreter.Value]`
 `method asInstanceOf[T0]=> T0`
 `method callCC[A](h: A => callccInterpreter.M[A] => callccInterpreter.M[A])callccInterpreter.M[A]`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method ensuring(cond: Boolean)callccInterpreter.type`
 `method ensuring(cond: Boolean, msg: => Any)callccInterpreter.type`
 `method ensuring(cond: callccInterpreter.type => Boolean)callccInterpreter.type`
@@ -42,10 +42,10 @@ retrieved 62 members
 `method ne(x$1: AnyRef)Boolean`
 `method notify()Unit`
 `method notifyAll()Unit`
-`method showM(m: callccInterpreter.M[callccInterpreter.Value])java.lang.String`
+`method showM(m: callccInterpreter.M[callccInterpreter.Value])String`
 `method synchronized[T0](x$1: T0)T0`
 `method test(t: callccInterpreter.Term)String`
-`method toString()java.lang.String`
+`method toString()String`
 `method unitM[A](a: A)callccInterpreter.M[A]`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
@@ -79,7 +79,7 @@ def id[A >: Nothing <: Any]: A => A = ((x: A) => x)
 askType at CallccInterpreter.scala(17,25)
 ================================================================================
 [response] askTypeAt at (17,25)
-def showM(m: callccInterpreter.M[callccInterpreter.Value]): java.lang.String = m.in.apply(callccInterpreter.this.id[callccInterpreter.Value]).toString()
+def showM(m: callccInterpreter.M[callccInterpreter.Value]): String = m.in.apply(callccInterpreter.this.id[callccInterpreter.Value]).toString()
 ================================================================================
 
 askType at CallccInterpreter.scala(50,30)

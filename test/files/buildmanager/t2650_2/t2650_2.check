@@ -8,6 +8,7 @@ invalidate B.scala because inherited method changed [Changed(Definition(A.S))[ty
 compiling Set(B.scala)
 B.scala:3: error: type mismatch;
  found   : B.this.S
+    (which expands to)  Long
  required: Int
   def y: Int = x
                ^

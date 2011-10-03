@@ -1,4 +1,4 @@
-tcpoly_variance.scala:6: error: overriding method str in class A of type => m[java.lang.Object];
+tcpoly_variance.scala:6: error: overriding method str in class A of type => m[Object];
  method str has incompatible type
  override def str: m[String]  = sys.error("foo") // since x in m[x] is invariant, ! m[String] <: m[Object]
               ^

@@ -15,12 +15,12 @@ retrieved 43 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(akka.routing.Routing.type, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
 `method asInstanceOf[T0]=> T0`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method dispatcherActor(routing: akka.routing.Routing.PF[Any,akka.actor.ActorRef])akka.actor.ActorRef`
 `method dispatcherActor(routing: akka.routing.Routing.PF[Any,akka.actor.ActorRef], msgTransformer: Any => Any)akka.actor.ActorRef`
 `method ensuring(cond: Boolean)akka.routing.Routing.type`
@@ -41,7 +41,7 @@ retrieved 43 members
 `method notify()Unit`
 `method notifyAll()Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
@@ -62,7 +62,7 @@ retrieved 129 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(akka.actor.ActorRef, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
@@ -72,7 +72,7 @@ retrieved 129 members
 `method actorInstance=> java.util.concurrent.atomic.AtomicReference[akka.actor.Actor]`
 `method asInstanceOf[T0]=> T0`
 `method channel=> akka.actor.Channel[Any]`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method compareTo(other: akka.actor.ActorRef)Int`
 `method dispatcher=> akka.dispatch.MessageDispatcher`
 `method dispatcher_=(md: akka.dispatch.MessageDispatcher)Unit`
@@ -95,14 +95,14 @@ retrieved 129 members
 `method getHomeAddress()java.net.InetSocketAddress`
 `method getId()String`
 `method getLifeCycle()akka.config.Supervision.LifeCycle`
-`method getLinkedActors()java.util.Map[akka.actor.package.Uuid,akka.actor.ActorRef]`
+`method getLinkedActors()java.util.Map[akka.actor.Uuid,akka.actor.ActorRef]`
 `method getMailboxSize()Int`
 `method getReceiveTimeout()Option[Long]`
 `method getSender()Option[akka.actor.ActorRef]`
 `method getSenderFuture()Option[akka.dispatch.CompletableFuture[Any]]`
 `method getSupervisor()akka.actor.ActorRef`
 `method getTimeout()Long`
-`method getUuid()akka.actor.package.Uuid`
+`method getUuid()akka.actor.Uuid`
 `method handleTrapExit(dead: akka.actor.ActorRef, reason: Throwable)Unit`
 `method hashCode()Int`
 `method homeAddress=> Option[java.net.InetSocketAddress]`
@@ -116,7 +116,7 @@ retrieved 129 members
 `method isShutdown=> Boolean`
 `method isUnstarted=> Boolean`
 `method link(actorRef: akka.actor.ActorRef)Unit`
-`method linkedActors=> java.util.Map[akka.actor.package.Uuid,akka.actor.ActorRef]`
+`method linkedActors=> java.util.Map[akka.actor.Uuid,akka.actor.ActorRef]`
 `method mailbox=> AnyRef`
 `method mailboxSize=> Int`
 `method mailbox_=(value: AnyRef)AnyRef`
@@ -125,7 +125,7 @@ retrieved 129 members
 `method notifyAll()Unit`
 `method postMessageToMailbox(message: Any, senderOption: Option[akka.actor.ActorRef])Unit`
 `method postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[akka.actor.ActorRef], senderFuture: Option[akka.dispatch.CompletableFuture[T]])akka.dispatch.CompletableFuture[T]`
-`method registerSupervisorAsRemoteActor=> Option[akka.actor.package.Uuid]`
+`method registerSupervisorAsRemoteActor=> Option[akka.actor.Uuid]`
 `method reply(message: Any)Unit`
 `method replySafe(message: AnyRef)Boolean`
 `method replyUnsafe(message: AnyRef)Unit`
@@ -162,10 +162,10 @@ retrieved 129 members
 `method supervisor=> Option[akka.actor.ActorRef]`
 `method supervisor_=(sup: Option[akka.actor.ActorRef])Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method unlink(actorRef: akka.actor.ActorRef)Unit`
-`method uuid=> akka.actor.package.Uuid`
-`method uuid_=(uid: akka.actor.package.Uuid)Unit`
+`method uuid=> akka.actor.Uuid`
+`method uuid_=(uid: akka.actor.Uuid)Unit`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
@@ -173,7 +173,7 @@ retrieved 129 members
 `value selfAny`
 `value xakka.actor.ActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
-`variable _uuidakka.actor.package.Uuid`
+`variable _uuidakka.actor.Uuid`
 `variable currentMessageakka.dispatch.MessageInvocation`
 `variable faultHandlerakka.config.Supervision.FaultHandlingStrategy`
 `variable hotswapscala.collection.immutable.Stack[PartialFunction[Any,Unit]]`
@@ -193,7 +193,7 @@ retrieved 129 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(akka.actor.ActorRef, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
@@ -203,7 +203,7 @@ retrieved 129 members
 `method actorInstance=> java.util.concurrent.atomic.AtomicReference[akka.actor.Actor]`
 `method asInstanceOf[T0]=> T0`
 `method channel=> akka.actor.Channel[Any]`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method compareTo(other: akka.actor.ActorRef)Int`
 `method dispatcher=> akka.dispatch.MessageDispatcher`
 `method dispatcher_=(md: akka.dispatch.MessageDispatcher)Unit`
@@ -226,14 +226,14 @@ retrieved 129 members
 `method getHomeAddress()java.net.InetSocketAddress`
 `method getId()String`
 `method getLifeCycle()akka.config.Supervision.LifeCycle`
-`method getLinkedActors()java.util.Map[akka.actor.package.Uuid,akka.actor.ActorRef]`
+`method getLinkedActors()java.util.Map[akka.actor.Uuid,akka.actor.ActorRef]`
 `method getMailboxSize()Int`
 `method getReceiveTimeout()Option[Long]`
 `method getSender()Option[akka.actor.ActorRef]`
 `method getSenderFuture()Option[akka.dispatch.CompletableFuture[Any]]`
 `method getSupervisor()akka.actor.ActorRef`
 `method getTimeout()Long`
-`method getUuid()akka.actor.package.Uuid`
+`method getUuid()akka.actor.Uuid`
 `method handleTrapExit(dead: akka.actor.ActorRef, reason: Throwable)Unit`
 `method hashCode()Int`
 `method homeAddress=> Option[java.net.InetSocketAddress]`
@@ -247,7 +247,7 @@ retrieved 129 members
 `method isShutdown=> Boolean`
 `method isUnstarted=> Boolean`
 `method link(actorRef: akka.actor.ActorRef)Unit`
-`method linkedActors=> java.util.Map[akka.actor.package.Uuid,akka.actor.ActorRef]`
+`method linkedActors=> java.util.Map[akka.actor.Uuid,akka.actor.ActorRef]`
 `method mailbox=> AnyRef`
 `method mailboxSize=> Int`
 `method mailbox_=(value: AnyRef)AnyRef`
@@ -256,7 +256,7 @@ retrieved 129 members
 `method notifyAll()Unit`
 `method postMessageToMailbox(message: Any, senderOption: Option[akka.actor.ActorRef])Unit`
 `method postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[akka.actor.ActorRef], senderFuture: Option[akka.dispatch.CompletableFuture[T]])akka.dispatch.CompletableFuture[T]`
-`method registerSupervisorAsRemoteActor=> Option[akka.actor.package.Uuid]`
+`method registerSupervisorAsRemoteActor=> Option[akka.actor.Uuid]`
 `method reply(message: Any)Unit`
 `method replySafe(message: AnyRef)Boolean`
 `method replyUnsafe(message: AnyRef)Unit`
@@ -293,10 +293,10 @@ retrieved 129 members
 `method supervisor=> Option[akka.actor.ActorRef]`
 `method supervisor_=(sup: Option[akka.actor.ActorRef])Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method unlink(actorRef: akka.actor.ActorRef)Unit`
-`method uuid=> akka.actor.package.Uuid`
-`method uuid_=(uid: akka.actor.package.Uuid)Unit`
+`method uuid=> akka.actor.Uuid`
+`method uuid_=(uid: akka.actor.Uuid)Unit`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
@@ -304,7 +304,7 @@ retrieved 129 members
 `value selfAny`
 `value xakka.actor.ActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
-`variable _uuidakka.actor.package.Uuid`
+`variable _uuidakka.actor.Uuid`
 `variable currentMessageakka.dispatch.MessageInvocation`
 `variable faultHandlerakka.config.Supervision.FaultHandlingStrategy`
 `variable hotswapscala.collection.immutable.Stack[PartialFunction[Any,Unit]]`
@@ -324,7 +324,7 @@ retrieved 129 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
-`method +(other: String)java.lang.String`
+`method +(other: String)String`
 `method ->[B](y: B)(akka.actor.ScalaActorRef, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
@@ -334,7 +334,7 @@ retrieved 129 members
 `method actorInstance=> java.util.concurrent.atomic.AtomicReference[akka.actor.Actor]`
 `method asInstanceOf[T0]=> T0`
 `method channel=> akka.actor.Channel[Any]`
-`method clone()java.lang.Object`
+`method clone()Object`
 `method compareTo(other: akka.actor.ActorRef)Int`
 `method dispatcher=> akka.dispatch.MessageDispatcher`
 `method dispatcher_=(md: akka.dispatch.MessageDispatcher)Unit`
@@ -357,14 +357,14 @@ retrieved 129 members
 `method getHomeAddress()java.net.InetSocketAddress`
 `method getId()String`
 `method getLifeCycle()akka.config.Supervision.LifeCycle`
-`method getLinkedActors()java.util.Map[akka.actor.package.Uuid,akka.actor.ActorRef]`
+`method getLinkedActors()java.util.Map[akka.actor.Uuid,akka.actor.ActorRef]`
 `method getMailboxSize()Int`
 `method getReceiveTimeout()Option[Long]`
 `method getSender()Option[akka.actor.ActorRef]`
 `method getSenderFuture()Option[akka.dispatch.CompletableFuture[Any]]`
 `method getSupervisor()akka.actor.ActorRef`
 `method getTimeout()Long`
-`method getUuid()akka.actor.package.Uuid`
+`method getUuid()akka.actor.Uuid`
 `method handleTrapExit(dead: akka.actor.ActorRef, reason: Throwable)Unit`
 `method hashCode()Int`
 `method homeAddress=> Option[java.net.InetSocketAddress]`
@@ -378,7 +378,7 @@ retrieved 129 members
 `method isShutdown=> Boolean`
 `method isUnstarted=> Boolean`
 `method link(actorRef: akka.actor.ActorRef)Unit`
-`method linkedActors=> java.util.Map[akka.actor.package.Uuid,akka.actor.ActorRef]`
+`method linkedActors=> java.util.Map[akka.actor.Uuid,akka.actor.ActorRef]`
 `method mailbox=> AnyRef`
 `method mailboxSize=> Int`
 `method mailbox_=(value: AnyRef)AnyRef`
@@ -387,7 +387,7 @@ retrieved 129 members
 `method notifyAll()Unit`
 `method postMessageToMailbox(message: Any, senderOption: Option[akka.actor.ActorRef])Unit`
 `method postMessageToMailboxAndCreateFutureResultWithTimeout[T](message: Any, timeout: Long, senderOption: Option[akka.actor.ActorRef], senderFuture: Option[akka.dispatch.CompletableFuture[T]])akka.dispatch.CompletableFuture[T]`
-`method registerSupervisorAsRemoteActor=> Option[akka.actor.package.Uuid]`
+`method registerSupervisorAsRemoteActor=> Option[akka.actor.Uuid]`
 `method reply(message: Any)Unit`
 `method replySafe(message: AnyRef)Boolean`
 `method replyUnsafe(message: AnyRef)Unit`
@@ -424,10 +424,10 @@ retrieved 129 members
 `method supervisor=> Option[akka.actor.ActorRef]`
 `method supervisor_=(sup: Option[akka.actor.ActorRef])Unit`
 `method synchronized[T0](x$1: T0)T0`
-`method toString()java.lang.String`
+`method toString()String`
 `method unlink(actorRef: akka.actor.ActorRef)Unit`
-`method uuid=> akka.actor.package.Uuid`
-`method uuid_=(uid: akka.actor.package.Uuid)Unit`
+`method uuid=> akka.actor.Uuid`
+`method uuid_=(uid: akka.actor.Uuid)Unit`
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
@@ -435,7 +435,7 @@ retrieved 129 members
 `value selfAny`
 `value xakka.actor.ScalaActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
-`variable _uuidakka.actor.package.Uuid`
+`variable _uuidakka.actor.Uuid`
 `variable currentMessageakka.dispatch.MessageInvocation`
 `variable faultHandlerakka.config.Supervision.FaultHandlingStrategy`
 `variable hotswapscala.collection.immutable.Stack[PartialFunction[Any,Unit]]`

@@ -7,7 +7,7 @@ Changes: Map(object A -> List(Changed(Definition(A.x))[method x changed from (i:
 invalidate B.scala because it references changed definition [Changed(Definition(A.x))[method x changed from (i: Function0)Unit to (i: Function0)Unit flags: <method>]]
 compiling Set(B.scala)
 B.scala:2: error: type mismatch;
- found   : java.lang.String("3")
+ found   : String("3")
  required: () => String
   val x = A.x("3")
               ^
