@@ -340,18 +340,13 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     /** If you serialize a singleton and then deserialize it twice,
-     *  you will have two instances of your singleton, unless you implement
-     *  the readResolve() method (see http://www.javaworld.com/javaworld/
-     *  jw-04-2003/jw-0425-designpatterns_p.html)
+     *  you will have two instances of your singleton unless you implement
+     *  readResolve.  Here it is implemented for all objects which have
+     *  no implementation and which are marked serializable (which is true
+     *  for all case objects.)
      */
-
-    // Only nested objects inside objects should get readResolve automatically.
-    // Otherwise, after de-serialization we get null references for lazy accessors
-    // (nested object -> lazy val + class def) since the bitmap gets serialized but
-    // the moduleVar not.
     def needsReadResolve = (
          clazz.isModuleClass
-      && clazz.owner.isModuleClass
       && clazz.isSerializable
       && !hasConcreteImpl(nme.readResolve)
     )

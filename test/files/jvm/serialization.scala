@@ -526,29 +526,22 @@ class Outer extends Serializable {
 object Test7 {
   val x = new Outer
   x.Inner // initialize
-  try {
-    val y:Outer = read(write(x))
-    if (y.Inner == null)
-      println("Inner object is null")
-  }
-  catch {
-  case e: Exception =>
-    println("Error in Test7: " + e)
-  }
-
+  val y:Outer = read(write(x))
+  if (y.Inner == null)
+    println("Inner object is null")
 }
-
 
 // Verify that transient lazy vals don't get serialized
 class WithTransient extends Serializable {
   @transient lazy val a1 = 1
   @transient private lazy val a2 = 2
   @transient object B extends Serializable
+  @transient private object C extends Serializable
 
   def test = {
     println(a1)
     println(a2)
-    if (B == null)
+    if (B == null || C == null)
      println("Transient nested object failed to serialize properly")
   }
 }
