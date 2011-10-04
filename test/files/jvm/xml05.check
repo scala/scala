@@ -1,0 +1,11 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> <city name="San Jos&eacute;"/>
+res0: scala.xml.Elem = <city name="San Jos&eacute;"></city>
+
+scala> 
+
+scala> 
