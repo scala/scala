@@ -7,6 +7,7 @@ package scala.tools.partest
 package nest
 
 import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
+import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.{ ClassPath, FakePos }
 import scala.tools.util.PathResolver
@@ -33,7 +34,10 @@ abstract class SimpleCompiler {
 
 class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
-    new Global(settings, reporter)
+    if (settings.Yrangepos.value)
+      new Global(settings, reporter) with RangePositions
+    else
+      new Global(settings, reporter)
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global =
     newGlobal(settings, new ExtConsoleReporter(settings, new PrintWriter(logWriter)))
