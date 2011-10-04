@@ -1602,12 +1602,13 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <target name="test.scaladoc" depends="pack.done">
-    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}">
+    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}"
+             showlog="yes">
       <compilationpath>
         <path refid="pack.classpath"/>
       </compilationpath>
       <scalachecktests dir="test/scaladoc/scala">
-        <include name="*.scala"/>
+        <include name="**/*.scala"/>
       </scalachecktests>
     </partest>
   </target>

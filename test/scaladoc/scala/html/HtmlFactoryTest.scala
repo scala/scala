@@ -372,4 +372,35 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  {
+    val files = createTemplates("basic.scala")
+    println(files)
+
+    property("class") = files.get("com/example/p1/Clazz.html") match {
+      case Some(node: scala.xml.Node) => {
+        property("implicit convertion") =
+          node.toString contains "<span class=\"modifier\">implicit </span>"
+        true
+      }
+      case _ => false
+    }
+    property("package") = files.get("com/example/p1/package.html") != None
+
+    property("package object") = files("com/example/p1/package.html") match {
+      case node: scala.xml.Node =>
+        node.toString contains "com.example.p1.package#packageObjectMethod"
+      case _ => false
+    }
+
+    property("lower bound") = files("com/example/p1/LowerBound.html") match {
+      case node: scala.xml.Node => true
+      case _ => false
+    }
+
+    property("upper bound") = files("com/example/p1/UpperBound.html") match {
+      case node: scala.xml.Node => true
+      case _ => false
+    }
+  }
 }
