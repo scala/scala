@@ -34,79 +34,62 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
       <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
 
-  val body =
-    <body>
-      <div id="library">
-        <img class='class icon' src={ relativeLinkTo{List("class.png", "lib")} }/>
-        <img class='trait icon' src={ relativeLinkTo{List("trait.png", "lib")} }/>
-        <img class='object icon' src={ relativeLinkTo{List("object.png", "lib")} }/>
-        <img class='package icon' src={ relativeLinkTo{List("package.png", "lib")} }/>
-      </div>
-      { browser }
-      <div id="content" class="ui-layout-center">
-        <iframe name="template" src={ relativeLinkTo{List("package.html")} }/>
-      </div>
-    </body>
+  val body = {
+    val engine =
+      new TemplateEngine(XML.load(resourceStream("template/index.html")))
+    engine.render("root" -> packageElem(universe.rootPackage))
+  }
 
-  def browser =
-    <div id="browser" class="ui-layout-west">
-      <div class="ui-west-center">
-      <div id="filter"></div>
-      <div class="pack" id="tpl">{
-        def packageElem(pack: model.Package): NodeSeq = {
-          <xml:group>
-            { if (!pack.isRootPackage)
-                <a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a>
-              else NodeSeq.Empty
-            }
-            <ol class="templates">{
-              val tpls: Map[String, Seq[DocTemplateEntity]] =
-                (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
+  def packageElem(pack: model.Package): NodeSeq = {
+    <xml:group>{
+      if (!pack.isRootPackage)
+        <a class="tplshow" href={ relativeLinkTo(pack) } target="template">{ pack.qualifiedName }</a>
+      else NodeSeq.Empty
+    }<ol class="templates">{
+      val tpls: Map[String, Seq[DocTemplateEntity]] =
+        (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
 
-              val placeholderSeq: NodeSeq = <div class="placeholder"></div>
+      val placeholderSeq: NodeSeq = <div class="placeholder"></div>
 
-              def createLink(entity: DocTemplateEntity, includePlaceholder: Boolean, includeText: Boolean) = {
-                val entityType = docEntityKindToString(entity)
-                val linkContent = (
-                  { if (includePlaceholder) placeholderSeq else NodeSeq.Empty }
-                  ++
-                  { if (includeText) <span class="tplLink">{ Text(packageQualifiedName(entity)) }</span> else NodeSeq.Empty }
-                )
-                <a class="tplshow" href={ relativeLinkTo(entity) } target="template"><span class={ entityType }>({ Text(entityType) })</span>{ linkContent }</a>
+      def createLink(entity: DocTemplateEntity, includePlaceholder: Boolean, includeText: Boolean) = {
+        val entityType = docEntityKindToString(entity)
+        val linkContent = (
+          { if (includePlaceholder) placeholderSeq else NodeSeq.Empty }
+          ++
+          { if (includeText) <span class="tplLink">{ Text(packageQualifiedName(entity)) }</span> else NodeSeq.Empty }
+        )
+          <a class="tplshow" href={ relativeLinkTo(entity) } target="template"><span class={ entityType }>({ Text(entityType) })</span>{ linkContent }</a>
+      }
+
+      for (tn <- tpls.keySet.toSeq sortBy (_.toLowerCase)) yield {
+        val entities = tpls(tn)
+        val row = (entities find (e => e.isPackage || e.isObject), entities find (e => e.isTrait || e.isClass))
+
+          val itemContents = row match {
+            case (Some(obj), None) => createLink(obj, includePlaceholder = true, includeText = true)
+
+            case (maybeObj, Some(template)) =>
+              val firstLink = maybeObj match {
+                case Some(obj) => createLink(obj, includePlaceholder = false, includeText = false)
+                case None => placeholderSeq
               }
 
-              for (tn <- tpls.keySet.toSeq sortBy (_.toLowerCase)) yield {
-                val entities = tpls(tn)
-                val row = (entities find (e => e.isPackage || e.isObject), entities find (e => e.isTrait || e.isClass))
+            firstLink ++ createLink(template, includePlaceholder = false, includeText = true)
 
-                val itemContents = row match {
-                  case (Some(obj), None) => createLink(obj, includePlaceholder = true, includeText = true)
+            case _ => // FIXME: this default case should not be necessary. For some reason AnyRef is not a package, object, trait, or class
+              val entry = entities.head
+            placeholderSeq ++ createLink(entry, includePlaceholder = false, includeText = true)
+          }
 
-                  case (maybeObj, Some(template)) =>
-                    val firstLink = maybeObj match {
-                      case Some(obj) => createLink(obj, includePlaceholder = false, includeText = false)
-                      case None => placeholderSeq
-                    }
-
-                    firstLink ++ createLink(template, includePlaceholder = false, includeText = true)
-
-                  case _ => // FIXME: this default case should not be necessary. For some reason AnyRef is not a package, object, trait, or class
-                    val entry = entities.head
-                    placeholderSeq ++ createLink(entry, includePlaceholder = false, includeText = true)
-                }
-
-                <li title={ entities.head.qualifiedName }>{ itemContents }</li>
-              }
-            }</ol>
-            <ol class="packages"> {
-              for (sp <- pack.packages sortBy (_.name.toLowerCase)) yield
-                <li class="pack" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
-            }</ol>
-          </xml:group>
-        }
-        packageElem(universe.rootPackage)
-      }</div></div><script src="index.js"></script>
-    </div>
+        <li title={ entities.head.qualifiedName }>{ itemContents }</li>
+      }
+    }</ol>
+    <ol class="packages"> {
+      for (sp <- pack.packages sortBy (_.name.toLowerCase)) yield
+        <li class="pack" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
+    }</ol>
+    </xml:group>
+  }
 
   def packageQualifiedName(ety: DocTemplateEntity): String =
     if (ety.inTemplate.isPackage) ety.name

@@ -5,6 +5,23 @@ import scala.tools.nsc.doc
 import scala.tools.nsc.doc.html.page.Index
 import java.net.URLClassLoader
 
+object XMLUtil {
+  import scala.xml._
+
+  def stripGroup(seq: Node): Node = {
+    seq match {
+      case group: Group => {
+        <div class="group">{ group.nodes.map(stripGroup _) }</div>
+      }
+      case e: Elem => {
+        val child = e.child.map(stripGroup _)
+        Elem(e.prefix, e.label, e.attributes, e.scope, child : _*)
+      }
+      case _ => seq
+    }
+  }
+}
+
 object Test extends Properties("Index") {
 
   def getClasspath = {
@@ -71,10 +88,10 @@ object Test extends Properties("Index") {
       case None => false
     }
   }
-  property("browser contants a script element") = {
+  property("body contants a script element") = {
     createIndex("src/compiler/scala/tools/nsc/doc/html/page/Index.scala") match {
       case Some(index) =>
-        (index.browser \ "script").size == 1
+        (XMLUtil.stripGroup(index.body) \\ "script").size == 1
 
       case None => false
     }

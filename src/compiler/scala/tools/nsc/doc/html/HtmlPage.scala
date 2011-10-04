@@ -28,18 +28,25 @@ abstract class HtmlPage extends Page { thisPage =>
   /** The body of this page. */
   def body: NodeSeq
 
+  def resourceStream(path: String) =
+    getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + path)
+
   def writeFor(site: HtmlFactory) {
     val doctype =
       DocType("html", PublicID("-//W3C//DTD XHTML 1.1//EN", "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"), Nil)
-    val html =
-      <html>
-        <head>
-          <title>{ title }</title>
-          <meta http-equiv="content-type" content={ "text/html; charset=" + site.encoding }/>
-          { headers }
-        </head>
-        { body }
-      </html>
+    val html = {
+      val engine =
+        new TemplateEngine(XML.load(resourceStream("template/htmlpage.html")))
+
+      engine.render(
+        "meta-encoding" -> <meta http-equiv="content-type" content={
+          "text/html; charset=" + site.encoding
+        }/>,
+        "title" -> title,
+        "headers" -> headers,
+        "body" -> body
+      )
+    }
     val fos = createFileOutputStream(site)
     val w = Channels.newWriter(fos.getChannel, site.encoding)
     try {
