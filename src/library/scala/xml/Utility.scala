@@ -364,14 +364,14 @@ object Utility extends AnyRef with parsing.TokenTests {
             c = it.next
           }
           val ref = rfb.toString()
-          rfb.clear()
+          rfb.setLength(0)
           unescape(ref,sb) match {
             case null =>
-              if (sb.length > 0) {  // flush buffer
+              if (sb.length > 0) {          // flush buffer
                 nb += Text(sb.toString())
-                sb.clear()
+                sb.setLength(0)
               }
-              nb += EntityRef(ref) // add entityref
+              nb += EntityRef(sb.toString()) // add entityref
             case _ =>
           }
         }
