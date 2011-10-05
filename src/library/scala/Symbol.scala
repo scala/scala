@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
 /** This class provides a simple way to get unique objects for equal strings.
@@ -29,6 +27,8 @@ final class Symbol private (val name: String) extends Serializable {
 
   @throws(classOf[java.io.ObjectStreamException])
   private def readResolve(): Any = Symbol.apply(name)
+  override def hashCode = name.hashCode()
+  override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
 }
 
 object Symbol extends UniquenessCache[String, Symbol]
