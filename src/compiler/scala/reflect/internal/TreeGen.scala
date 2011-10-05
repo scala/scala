@@ -177,9 +177,9 @@ abstract class TreeGen {
       mkAttributedIdent(sym)
     else {
       val pkgQualifier =
-        if (sym != null && sym.owner.isPackageObjectClass && sym.owner.owner == qual.tpe.typeSymbol) {
+        if (sym != null && sym.owner.isPackageObjectClass && sym.effectiveOwner == qual.tpe.typeSymbol) {
           val obj = sym.owner.sourceModule
-          Select(qual, nme.PACKAGEkw) setSymbol obj setType singleType(qual.tpe, obj)
+          Select(qual, nme.PACKAGE) setSymbol obj setType singleType(qual.tpe, obj)
         }
         else qual
 

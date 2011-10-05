@@ -395,9 +395,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
     final def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
 
-    def isPackageObjectOrClass = (name.toTermName == nme.PACKAGEkw) && owner.isPackageClass
-    final def isPackageObject = isModule && isPackageObjectOrClass
-    final def isPackageObjectClass = isModuleClass && isPackageObjectOrClass
+    // A package object or its module class
+    final def isPackageObjectOrClass = name == nme.PACKAGE || name == tpnme.PACKAGE
+    final def isPackageObject        = name == nme.PACKAGE && owner.isPackageClass
+    final def isPackageObjectClass   = name == tpnme.PACKAGE && owner.isPackageClass
+
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def isJavaInterface = isJavaDefined && isTrait
     final def needsFlatClasses: Boolean = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
@@ -405,13 +407,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // In java.lang, Predef, or scala package/package object
     def isInDefaultNamespace = UnqualifiedOwners(effectiveOwner)
 
-    /** If this is a package object or package object class, its owner: otherwise this.
-     */
-    final def skipPackageObject: Symbol = if (isPackageObjectClass) owner else this
-
     /** The owner, skipping package objects.
      */
     def effectiveOwner = owner.skipPackageObject
+
+    /** If this is a package object or its implementing class, its owner: otherwise this.
+     */
+    final def skipPackageObject: Symbol = if (isPackageObjectOrClass) owner else this
 
     /** If this is a constructor, its owner: otherwise this.
      */
@@ -451,8 +453,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
          info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass)
       || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
     )
-    def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def hasBridgeAnnotation = hasAnnotation(BridgeClass)
+    def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion  = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName = getAnnotation(DeprecatedNameAttr) flatMap (_ symbolArg 0)
@@ -731,6 +733,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def decodedName: String = stripNameString(NameTransformer.decode(encodedName))
 
+    /** Either "$" or "" depending on whether this is a module class.
+     */
     def moduleSuffix: String = (
       if (hasModuleFlag && !isMethod && !isImplClass && !isJavaDefined) nme.MODULE_SUFFIX_STRING
       else ""
@@ -763,7 +767,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     private def stripNameString(s: String) =
       if (settings.debug.value) s
-      else s.replaceAllLiterally(".package", "").trim
+      else s stripSuffix nme.LOCAL_SUFFIX_STRING
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
@@ -1798,8 +1802,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasMeaninglessName = (
          isSetterParameter        // x$1
       || isClassConstructor       // this
-      || isPackageObjectOrClass   // package
       || isRefinementClass        // <refinement>
+      || (name == nme.PACKAGE)    // package
     )
 
     /** String representation of symbol's simple name.

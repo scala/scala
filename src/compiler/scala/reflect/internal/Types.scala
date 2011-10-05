@@ -796,7 +796,6 @@ trait Types extends api.Types { self: SymbolTable =>
 
     protected def objectPrefix = "object "
     protected def packagePrefix = "package "
-
     def trimPrefix(str: String) = str stripPrefix objectPrefix stripPrefix packagePrefix
 
     /** The string representation of this type used as a prefix */
@@ -1220,10 +1219,11 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def termSymbol = sym
     override def prefix: Type = pre
-    override def prefixString =
-      if (sym.isPackageObjectOrClass) pre.prefixString
-      else if (sym.isOmittablePrefix) ""
+    override def prefixString = (
+      if (sym.skipPackageObject.isOmittablePrefix) ""
+      else if (sym.isPackageObjectOrClass) pre.prefixString
       else pre.prefixString + sym.nameString + "."
+    )
     override def kind = "SingleType"
   }
 
@@ -1241,7 +1241,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
-    override def prefixString = thistpe.prefixString.replaceAll("""this\.$""", "super.")
+    override def prefixString = thistpe.prefixString.replaceAll("""\bthis\.$""", "super.")
     override def narrow: Type = thistpe.narrow
     override def kind = "SuperType"
   }
@@ -1999,64 +1999,63 @@ A type's typeSymbol should never be inspected directly.
     override def baseClasses: List[Symbol] = thisInfo.baseClasses
 
     // override def isNullable: Boolean = sym.info.isNullable
+    private def preString = (
+      // ensure that symbol is not a local copy with a name coincidence
+      if (!settings.debug.value && shorthands(sym.fullName) && sym.ownerChain.forall(_.isClass)) ""
+      else pre.prefixString
+    )
+    private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
+    private def refinementString = (
+      if (sym.isStructuralRefinement) (
+        decls filter (sym => sym.isPossibleInRefinement && sym.isPublic)
+          map (_.defString)
+          mkString(" {", "; ", "}")
+      )
+      else ""
+    )
 
-    override def safeToString: String = {
-      if (!settings.debug.value) {
-        this match {
-          case TypeRef(_, RepeatedParamClass, arg :: _) => return arg + "*"
-          case TypeRef(_, ByNameParamClass, arg :: _)   => return "=> " + arg
-          case _ =>
-            if (isFunctionType(this)) {
-              val targs = normalize.typeArgs
-              // Aesthetics: printing Function1 as T => R rather than (T) => R
-              val paramlist = targs.init match {
-                case Nil      => "()"
-                case x :: Nil => "" + x
-                case xs       => xs.mkString("(", ", ", ")")
-              }
-              return paramlist + " => " + targs.last
-            }
-            else if (isTupleTypeOrSubtype(this))
-              return normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
-            else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic)) {
-              val normed = normalize;
-              if (normed ne this) return normed.toString
-            }
+    private def finishPrefix(rest: String) = (
+      if (sym.isPackageClass) packagePrefix + rest
+      else if (sym.isModuleClass) objectPrefix + rest
+      else if (!sym.isInitialized) rest
+      else if (sym.isAnonymousClass && !phase.erasedTypes)
+        thisInfo.parents.mkString("", " with ", refinementString)
+      else if (sym.isRefinementClass) "" + thisInfo
+      else rest
+    )
+    private def customToString = this match {
+      case TypeRef(_, RepeatedParamClass, arg :: _) => arg + "*"
+      case TypeRef(_, ByNameParamClass, arg :: _)   => "=> " + arg
+      case _ =>
+        if (isFunctionType(this)) {
+          val targs = normalize.typeArgs
+          // Aesthetics: printing Function1 as T => R rather than (T) => R
+          val paramlist = targs.init match {
+            case Nil      => "()"
+            case x :: Nil => "" + x
+            case xs       => xs.mkString("(", ", ", ")")
+          }
+          paramlist + " => " + targs.last
         }
-      }
-      val monopart =
-        if (!settings.debug.value &&
-            (shorthands contains sym.fullName) &&
-            (sym.ownerChain forall (_.isClass))) // ensure that symbol is not a local copy with a name coincidence
-          sym.name.toString
+        else if (isTupleTypeOrSubtype(this))
+          normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
+        else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic) && (normalize ne this))
+          "" + normalize
         else
-          pre.prefixString + sym.nameString
-
-      var str = monopart + (if (args.isEmpty) "" else args.mkString("[", ",", "]"))
-      if (sym.isPackageClass)
-        packagePrefix + str
-      else if (sym.isModuleClass)
-        objectPrefix + str
-      else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
-        thisInfo.parents.mkString(" with ") + {
-          if (sym.isStructuralRefinement)
-            decls filter (sym => sym.isPossibleInRefinement && sym.isPublic) map (_.defString) mkString("{", "; ", "}")
-          else ""
-        }
-      else if (sym.isRefinementClass && sym.isInitialized)
-        thisInfo.toString
-      else str
+          ""
     }
-
+    override def safeToString = {
+      val custom = if (settings.debug.value) "" else customToString
+      if (custom != "") custom
+      else finishPrefix(preString + sym.nameString + argsString)
+    }
     override def prefixString = "" + (
       if (settings.debug.value)
         super.prefixString
       else if (sym.isOmittablePrefix)
         ""
-      else if (sym.isPackageObjectOrClass)
-        sym.owner.fullName + "."
-      else if (sym.isPackageClass)
-        sym.fullName + "."
+      else if (sym.isPackageClass || sym.isPackageObjectOrClass)
+        sym.skipPackageObject.fullName + "."
       else if (isStable && nme.isSingletonName(sym.name))
         nme.dropSingletonName(sym.name) + "."
       else

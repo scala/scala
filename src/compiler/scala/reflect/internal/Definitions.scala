@@ -157,21 +157,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // private parameter conveniences
     private def booltype    = BooleanClass.typeConstructor
-    private def boolparam   = List(booltype)
-    private def bytetype    = ByteClass.typeConstructor
-    private def byteparam   = List(bytetype)
-    private def shorttype   = ShortClass.typeConstructor
-    private def shortparam  = List(shorttype)
     private def inttype     = IntClass.typeConstructor
-    private def intparam    = List(inttype)
-    private def longtype    = LongClass.typeConstructor
-    private def longparam   = List(longtype)
-    private def floattype   = FloatClass.typeConstructor
-    private def floatparam  = List(floattype)
-    private def doubletype  = DoubleClass.typeConstructor
-    private def doubleparam = List(doubletype)
-    private def chartype    = CharClass.typeConstructor
-    private def charparam   = List(chartype)
     private def stringtype  = StringClass.typeConstructor
 
     // top types
@@ -244,7 +230,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val PredefModuleClass = PredefModule.moduleClass
       // Note: this is not the type alias AnyRef, it's a val defined in Predef
       // used by the @specialize annotation.
-      def Predef_AnyRef = getMember(PredefModule, tpnme.AnyRef.toTermName)
+      def Predef_AnyRef = getMember(PredefModule, nme.AnyRef)
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
@@ -527,8 +513,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _                                    => NoType
     }
 
-    def seqType(arg: Type)    = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
-    def arrayType(arg: Type)  = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))
+    def seqType(arg: Type)    = appliedType(SeqClass.typeConstructor, List(arg))
+    def arrayType(arg: Type)  = appliedType(ArrayClass.typeConstructor, List(arg))
     def byNameType(arg: Type) = appliedType(ByNameParamClass.typeConstructor, List(arg))
 
     def ClassType(arg: Type) =
@@ -648,7 +634,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       getPackageObject(fullname).companionClass
 
     def getPackageObject(fullname: Name): Symbol =
-      getModuleOrClass(fullname.toTermName).info.member(newTermName("package"))
+      getModule(fullname).info member nme.PACKAGE
 
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname.toTermName)
