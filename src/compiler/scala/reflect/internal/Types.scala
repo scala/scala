@@ -3642,17 +3642,20 @@ A type's typeSymbol should never be inspected directly.
             else {
               def throwError = abort("" + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
 
-              def instParam(ps: List[Symbol], as: List[Type]): Type =
-                if (ps.isEmpty) throwError
-                else if (sym eq ps.head)
-                  // @M! don't just replace the whole thing, might be followed by type application
-                  appliedType(as.head, args mapConserve (this)) // @M: was as.head
-                else instParam(ps.tail, as.tail);
               val symclazz = sym.owner
               if (symclazz == clazz && !pre.isInstanceOf[TypeVar] && (pre.widen.typeSymbol isNonBottomSubClass symclazz)) {
                 // have to deconst because it may be a Class[T].
                 pre.baseType(symclazz).deconst match {
                   case TypeRef(_, basesym, baseargs) =>
+                    def instParam(ps: List[Symbol], as: List[Type]): Type =
+                      if (ps.isEmpty) {
+                        settings.uniqid.value = true
+                        println("confused with params: " + sym + " in " + sym.owner + " not in " + ps + " of " + basesym)
+                        throwError
+                      } else if (sym eq ps.head)
+                        // @M! don't just replace the whole thing, might be followed by type application
+                        appliedType(as.head, args mapConserve (this)) // @M: was as.head
+                      else instParam(ps.tail, as.tail);
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
                     if (sameLength(basesym.typeParams, baseargs)) {
                       instParam(basesym.typeParams, baseargs)
@@ -3666,7 +3669,8 @@ A type's typeSymbol should never be inspected directly.
                   case ExistentialType(tparams, qtpe) =>
                     capturedParams = capturedParams union tparams
                     toInstance(qtpe, clazz)
-                  case _ =>
+                  case t =>
+                    println("bad type: "+t)
                     throwError
                 }
               } else toInstance(base(pre, clazz).prefix, clazz.owner)
