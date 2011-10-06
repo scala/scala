@@ -9,7 +9,7 @@ package html
 package page
 
 import model._
-import scala.xml.{ NodeSeq, Text, XML }
+import scala.xml.{ NodeSeq, Text, XML, UnprefixedAttribute }
 
 class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
@@ -538,10 +538,21 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         {
           val nameHtml = {
             val value = if (mbr.isConstructor) tpl.name else mbr.name
-            if (mbr.deprecation.isDefined)
+            val span = if (mbr.deprecation.isDefined)
               <span class={"name deprecated"} title={"Deprecated: "+bodyToStr(mbr.deprecation.get)}>{ value }</span>
             else
               <span class={"name"}>{ value }</span>
+            val encoded = scala.reflect.NameTransformer.encode(value)
+            if (encoded != value) {
+              span % new UnprefixedAttribute("title",
+                                             "gt4s: " + encoded +
+                                             span.attribute("title").map(
+                                               node => ". " + node
+                                             ).getOrElse(""),
+                                             scala.xml.Null)
+            } else {
+              span
+            }
           }
           if (!nameLink.isEmpty)
             <a href={nameLink}>{nameHtml}</a>
