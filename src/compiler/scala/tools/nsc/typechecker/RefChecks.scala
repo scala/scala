@@ -762,6 +762,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
       /** Validate variance of info of symbol `base` */
       private def validateVariance(base: Symbol) {
+        // A flag for when we're in a refinement, meaning method parameter types
+        // need to be checked.
+        var inRefinement = false
 
         def varianceString(variance: Int): String =
           if (variance == 1) "covariant"
@@ -845,12 +848,17 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             validateVariances(parents, variance)
           case RefinedType(parents, decls) =>
             validateVariances(parents, variance)
+            val saved = inRefinement
+            inRefinement = true
             for (sym <- decls)
               validateVariance(sym.info, if (sym.isAliasType) NoVariance else variance)
+            inRefinement = saved
           case TypeBounds(lo, hi) =>
             validateVariance(lo, -variance)
             validateVariance(hi, variance)
           case MethodType(formals, result) =>
+            if (inRefinement)
+              validateVariances(formals map (_.tpe), -variance)
             validateVariance(result, variance)
           case NullaryMethodType(result) =>
             validateVariance(result, variance)
@@ -887,9 +895,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           // ModuleDefs need not be considered because they have been eliminated already
           case ValDef(_, _, _, _) =>
             validateVariance(tree.symbol)
-          case DefDef(_, _, tparams, vparamss, tpt, rhs) =>
+          case DefDef(_, _, tparams, vparamss, _, _) =>
             validateVariance(tree.symbol)
-            traverseTrees(tparams); traverseTreess(vparamss)
+            traverseTrees(tparams)
+            traverseTreess(vparamss)
           case Template(_, _, _) =>
             super.traverse(tree)
           case _ =>

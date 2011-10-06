@@ -1,0 +1,7 @@
+t5060.scala:2: error: covariant type T occurs in contravariant position in type => Object with ScalaObject{def contains(x: T): Unit} of value foo0
+  val foo0 = {
+      ^
+t5060.scala:6: error: covariant type T occurs in contravariant position in type => Object with ScalaObject{def contains(x: T): Unit} of method foo1
+  def foo1 = {
+      ^
+two errors found
