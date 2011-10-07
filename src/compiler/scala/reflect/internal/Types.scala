@@ -3647,15 +3647,37 @@ A type's typeSymbol should never be inspected directly.
                 // have to deconst because it may be a Class[T].
                 pre.baseType(symclazz).deconst match {
                   case TypeRef(_, basesym, baseargs) =>
-                    def instParam(ps: List[Symbol], as: List[Type]): Type =
+
+                   def instParam(ps: List[Symbol], as: List[Type]): Type =
                       if (ps.isEmpty) {
-                        settings.uniqid.value = true
-                        println("confused with params: " + sym + " in " + sym.owner + " not in " + ps + " of " + basesym)
-                        throwError
+                        if (forInteractive) {
+                          val saved = settings.uniqid.value
+                          try {
+                            settings.uniqid.value = true
+                            println("*** stale type parameter: " + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
+                            println("*** confused with params: " + sym + " in " + sym.owner + " not in " + ps + " of " + basesym)
+                            println("*** stacktrace = ")
+                            new Error().printStackTrace()
+                          } finally settings.uniqid.value = saved
+                          instParamRelaxed(basesym.typeParams, baseargs)
+                        } else throwError
                       } else if (sym eq ps.head)
                         // @M! don't just replace the whole thing, might be followed by type application
                         appliedType(as.head, args mapConserve (this)) // @M: was as.head
-                      else instParam(ps.tail, as.tail);
+                      else instParam(ps.tail, as.tail)
+
+                    /** Relaxed version of instParams which matches on names not symbols.
+                     *  This is a last fallback in interactive mode because races in calls
+                     *  from the IDE to the compiler may in rare cases lead to symbols referring
+                     *  to type parameters that are no longer current.
+                     */
+                    def instParamRelaxed(ps: List[Symbol], as: List[Type]): Type =
+                      if (ps.isEmpty) throwError
+                      else if (sym.name == ps.head.name)
+                        // @M! don't just replace the whole thing, might be followed by type application
+                        appliedType(as.head, args mapConserve (this)) // @M: was as.head
+                      else instParamRelaxed(ps.tail, as.tail)
+
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
                     if (sameLength(basesym.typeParams, baseargs)) {
                       instParam(basesym.typeParams, baseargs)
@@ -3670,7 +3692,6 @@ A type's typeSymbol should never be inspected directly.
                     capturedParams = capturedParams union tparams
                     toInstance(qtpe, clazz)
                   case t =>
-                    println("bad type: "+t)
                     throwError
                 }
               } else toInstance(base(pre, clazz).prefix, clazz.owner)
