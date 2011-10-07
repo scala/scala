@@ -222,6 +222,11 @@ object Predef extends LowPriorityImplicits {
   }
   implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
+  /** `???` can be used for marking methods that remain to be implemented.
+   *  @throws  A `NotImplementedError`
+   */
+  def ??? : Nothing = throw new NotImplementedError
+
   // tupling ------------------------------------------------------------
 
   type Pair[+A, +B] = Tuple2[A, B]
