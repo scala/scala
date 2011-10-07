@@ -187,11 +187,12 @@ trait CompilerControl { self: Global =>
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.
    *  In both cases, set response to parsed (and possibly typechecked) tree.
+   *  @param keepSrcLoaded If set to `true`, source file will be kept as a loaded unit afterwards.
    */
-  def askStructure(source: SourceFile, response: Response[Tree]) = {
+  def askStructure(keepSrcLoaded: Boolean)(source: SourceFile, response: Response[Tree]) = {
     getUnit(source) match {
       case Some(_) => askLoadedTyped(source, response)
-      case None => askParsedEntered(source, false, response)
+      case None => askParsedEntered(source, keepSrcLoaded, response)
     }
   }
 
