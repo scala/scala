@@ -2121,11 +2121,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
     override def sourceModule = module
     private var implicitMembersCacheValue: List[Symbol] = List()
-    private var implicitMembersCacheKey: Type = NoType
+    private var implicitMembersCacheKey1: Type = NoType
+    private var implicitMembersCacheKey2: ScopeEntry = null
     def implicitMembers: List[Symbol] = {
       val tp = info
-      if (implicitMembersCacheKey ne tp) {
-        implicitMembersCacheKey = tp
+      if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
+        implicitMembersCacheKey1 = tp
+        implicitMembersCacheKey2 = tp.decls.elems
         implicitMembersCacheValue = tp.implicitMembers
       }
       implicitMembersCacheValue
