@@ -1963,12 +1963,14 @@ A type's typeSymbol should never be inspected directly.
             if (isFunctionType(this)) {
               val targs = normalize.typeArgs
               // Aesthetics: printing Function1 as T => R rather than (T) => R
-              val paramlist = targs.init match {
-                case Nil      => "()"
-                case x :: Nil => "" + x
-                case xs       => xs.mkString("(", ", ", ")")
-              }
-              return paramlist + " => " + targs.last
+              // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
+              // from (T1, T2) => R.
+              return (targs match {
+                case in :: out :: Nil if !isTupleTypeOrSubtype(in)  =>
+                  "" + in + " => " + out
+                case xs =>
+                  xs.init.mkString("(", ", ", ")") + " => " + xs.last
+              })
             }
             else if (isTupleTypeOrSubtype(this))
               return normalize.typeArgs.mkString("(", ", ", if (hasLength(normalize.typeArgs, 1)) ",)" else ")")
