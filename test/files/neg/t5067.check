@@ -1,0 +1,6 @@
+t5067.scala:3: error: type mismatch;
+ found   : ((Int, Int)) => Int
+ required: (Int, Int) => Int
+  override def tupled: (Int, Int) => Int = super.tupled
+                                                 ^
+one error found
