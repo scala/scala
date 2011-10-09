@@ -154,14 +154,6 @@ trait ProcessCreation {
     * [[scala.sys.process.ProcessBuilder.Source]], which can then be
     * piped to something else.
     *
-    * This will concatenate the output of all sources.
-    */
-  def cat(file: Source, files: Source*): ProcessBuilder = cat(file +: files)
-
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a non-empty sequence
-    * of [[scala.sys.process.ProcessBuilder.Source]], which can then be
-    * piped to something else.
-    *
     * This will concatenate the output of all sources. For example:
     *
     * {{{
@@ -175,6 +167,14 @@ trait ProcessCreation {
     * val build = new File("project/build.properties")
     * cat(spde, dispatch, build) #| "grep -i scala" !
     * }}}
+    */
+  def cat(file: Source, files: Source*): ProcessBuilder = cat(file +: files)
+
+  /** Create a [[scala.sys.process.ProcessBuilder]] from a non-empty sequence
+    * of [[scala.sys.process.ProcessBuilder.Source]], which can then be
+    * piped to something else.
+    *
+    * This will concatenate the output of all sources.
     */
   def cat(files: Seq[Source]): ProcessBuilder = {
     require(files.nonEmpty)
