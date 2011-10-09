@@ -54,6 +54,7 @@ abstract class InteractiveTest
   extends AskParse
   with AskShutdown
   with AskReload
+  with AskLoadedTyped
   with PresentationCompilerInstance
   with CoreTestDefs
   with InteractiveTestSettings { self =>
@@ -83,11 +84,6 @@ abstract class InteractiveTest
     loadSources()
     runTests()
     shutdown()
-
-    // this is actually needed to force exit on test completion.
-    // Note: May be a bug on either the testing framework or (less likely)
-    // 			 the presentation compiler
-    sys.exit(0)
   }
 
   /** Load all sources before executing the test. */
@@ -118,7 +114,12 @@ abstract class InteractiveTest
   }
 
   /** shutdown the presentation compiler. */
-  private def shutdown() {
+  protected def shutdown() {
     askShutdown()
+
+    // this is actually needed to force exit on test completion.
+    // Note: May be a bug on either the testing framework or (less likely)
+    //           the presentation compiler
+    sys.exit(0)
   }
 }

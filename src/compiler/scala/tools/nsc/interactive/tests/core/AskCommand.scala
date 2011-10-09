@@ -61,7 +61,7 @@ trait AskParse extends AskCommand {
 trait AskReload extends AskCommand {
 
   /** Reload the given source files and wait for them to be reloaded. */
-  private[tests] def askReload(sources: Seq[SourceFile])(implicit reporter: Reporter): Response[Unit] = {
+  protected def askReload(sources: Seq[SourceFile])(implicit reporter: Reporter): Response[Unit] = {
     val sortedSources = (sources map (_.file.name)).sorted
     reporter.println("reload: " + sortedSources.mkString(", "))
 
@@ -113,3 +113,14 @@ trait AskType extends AskCommand {
   }
 }
 
+
+trait AskLoadedTyped extends AskCommand {
+  import compiler.Tree
+
+  protected def askLoadedTyped(source: SourceFile)(implicit reporter: Reporter): Response[Tree] = {
+    ask {
+      compiler.askLoadedTyped(source, _)
+    }
+  }
+
+}
