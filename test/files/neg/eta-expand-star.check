@@ -1,0 +1,4 @@
+eta-expand-star.scala:6: error: too many arguments for method apply: (v1: Seq[T])Unit in trait Function1
+    g(1, 2)
+     ^
+one error found

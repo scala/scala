@@ -3092,7 +3092,7 @@ A type's typeSymbol should never be inspected directly.
   // Or false for Seq[A] => Seq[A]
   //   (It will rewrite A* everywhere but method parameters.)
   //   This is the specified behavior.
-  private final val etaExpandKeepsStar = true
+  protected def etaExpandKeepsStar = false
 
   object dropRepeatedParamType extends TypeMap {
     def apply(tp: Type): Type = tp match {

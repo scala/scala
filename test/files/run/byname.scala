@@ -36,13 +36,13 @@ def testVarargs(x: Int*) = x.reduceLeft((x: Int, y: Int) => x + y)
 test("varargs", 4, testVarargs(1, 2, 1))
 
 val testVarargsR = testVarargs _
-test("varargs r", 4, testVarargsR(1, 2, 1))
+test("varargs r", 4, testVarargsR(Seq(1, 2, 1)))
 
 def testAll(x: Int, y: => Int, z: Int*) = x + y + z.size
 test("all", 5, testAll(1, 2, 22, 23))
 
 val testAllR = testAll _
-test("all r", 7, testAllR(2, 3, 34, 35))
+test("all r", 7, testAllR(2, 3, Seq(34, 35)))
 
 val testAllS: (Int, =>Int, Int*) => Int = testAll _
 test("all s", 8, testAllS(1, 5, 78, 89))
@@ -73,7 +73,7 @@ def testCVV(a: Int*)(z: String, b: Int*) = a.size + b.size
 test("cvv", 3, testCVV(1, 2)("", 8))
 
 val testCVVR = testCVV _
-test("cvv r", 3, testCVVR(1)("", 8, 9))
+test("cvv r", 3, testCVVR(Seq(1))("", Seq(8, 9)))
 
 val testCVVRS: (String, Int*) => Int = testCVV(2, 3)
 test("cvv rs", 4, testCVVRS("", 5, 6))

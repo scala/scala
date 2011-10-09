@@ -300,6 +300,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def lubDebug      = (sys.props contains "scalac.debug.lub")
   }
 
+  // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
+  // clunky.  It is often difficult to have a setting influence something without having
+  // to create it on that side.  For this one my strategy is a constant def at the file
+  // where I need it, and then an override in Global with the setting.
+  override protected val etaExpandKeepsStar = settings.etaExpandKeepsStar.value
+
   // True if -Xscript has been set, indicating a script run.
   def isScriptRun = opt.script.isDefined
 
