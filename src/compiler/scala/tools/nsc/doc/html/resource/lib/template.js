@@ -34,9 +34,12 @@ $(document).ready(function(){
         $("#textfilter input").attr("value", "");
         filter();
     });
-    $(document).keydown(function() {
-        if (document.activeElement != $("#textfilter input")[0])
-            $("#textfilter input").focus();
+    $(document).keydown(function(event) {
+        if(!event.altKey && !event.ctrlKey &&
+           (event.keyCode == 27 || (event.keyCode >= 48 && event.keyCode <= 90)) &&
+           document.activeElement != $("#textfilter input")[0]) {
+               $("#textfilter input").focus();
+        }
     });
     $("#textfilter input").focus();
 
