@@ -45,7 +45,9 @@ abstract class Tokens {
 }
 
 object Tokens extends Tokens {
-  final val SYMBOLLIT = 7
+  final val STRINGPART = 7
+  final val SYMBOLLIT = 8
+  final val STRINGFMT = 9
   def isLiteral(code: Int) =
     code >= CHARLIT && code <= SYMBOLLIT
 
@@ -57,7 +59,7 @@ object Tokens extends Tokens {
 
   @switch def canBeginExpression(code: Int) = code match {
     case IDENTIFIER|BACKQUOTED_IDENT|USCORE       => true
-    case LBRACE|LPAREN|LBRACKET|COMMENT|STRINGLIT => true
+    case LBRACE|LPAREN|LBRACKET|COMMENT           => true
     case IF|DO|WHILE|FOR|NEW|TRY|THROW            => true
     case NULL|THIS|TRUE|FALSE                     => true
     case code                                     => isLiteral(code)
