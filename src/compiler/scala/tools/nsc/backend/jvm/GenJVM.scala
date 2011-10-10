@@ -36,8 +36,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
     SerializableClass, StringClass, ClassClass, FunctionClass,
     DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
-    TransientAttr, CloneableAttr, RemoteAttr,
-    hasJavaMainMethod
+    TransientAttr, CloneableAttr, RemoteAttr, JavaCloneableClass,
+    RemoteInterfaceClass, RemoteExceptionClass, hasJavaMainMethod
   }
 
   val phaseName = "jvm"
@@ -185,15 +185,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val BeanDisplayNameAttr = definitions.getClass("scala.beans.BeanDisplayName")
     val BeanDescriptionAttr = definitions.getClass("scala.beans.BeanDescription")
 
-    lazy val annotationInterfaces = List(
-      SerializableAttr -> SerializableClass.tpe,
-      CloneableAttr    -> CloneableClass.tpe,
-      RemoteAttr       -> RemoteInterface.tpe
-    )
-
-    lazy val CloneableClass  = definitions.getClass("java.lang.Cloneable")
-    lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
-    lazy val RemoteException = definitions.getClass("java.rmi.RemoteException").tpe
+    // Additional interface parents based on annotations and other cues
+    def newParentForAttr(attr: Symbol): Option[Type] = attr match {
+      case SerializableAttr => Some(SerializableClass.tpe)
+      case CloneableAttr    => Some(JavaCloneableClass.tpe)
+      case RemoteAttr       => Some(RemoteInterfaceClass.tpe)
+      case _                => None
+    }
 
     val versionPickle = {
       val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
@@ -317,17 +315,13 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       innerClassBuffer.clear()
 
       val name    = javaName(c.symbol)
-      val parents = {
+      val superClass :: superInterfaces = {
         val parents0 = c.symbol.info.parents match {
           case Nil  => List(ObjectClass.tpe)
           case ps   => ps
         }
-        val newInterfaces = annotationInterfaces collect {
-          case (annot, tpe) if c.symbol hasAnnotation annot => tpe
-        }
-        parents0 ++ newInterfaces distinct
+        parents0 ++ c.symbol.annotations.flatMap(ann => newParentForAttr(ann.symbol)) distinct
       }
-      val superClass :: superInterfaces = parents
       val ifaces = superInterfaces match {
         case Nil => JClass.NO_INTERFACES
         case _   => mkArray(superInterfaces map (x => javaName(x.typeSymbol)))
@@ -886,11 +880,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
       val needsAnnotation = (
-           !(meth.throwsAnnotations contains RemoteException)
+           !(meth.throwsAnnotations contains RemoteExceptionClass)
         && (isRemoteClass || (meth hasAnnotation RemoteAttr) && jmethod.isPublic)
       )
       if (needsAnnotation) {
-        val c   = Constant(RemoteException)
+        val c   = Constant(RemoteExceptionClass.tpe)
         val arg = Literal(c) setType c.tpe
         meth.addAnnotation(ThrowsClass, arg)
       }

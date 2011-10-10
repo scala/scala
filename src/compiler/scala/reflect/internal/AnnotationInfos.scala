@@ -28,7 +28,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
     /** Symbols of any @throws annotations on this symbol.
      */
-    def throwsAnnotations() = annotations collect {
+    def throwsAnnotations(): List[Symbol] = annotations collect {
       case AnnotationInfo(tp, Literal(Constant(tpe: Type)) :: Nil, _) if tp.typeSymbol == ThrowsClass => tpe.typeSymbol
     }
 

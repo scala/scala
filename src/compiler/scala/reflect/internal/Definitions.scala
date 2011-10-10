@@ -247,6 +247,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val SerializableClass     = getClass("scala.Serializable")
     lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
     lazy val ComparableClass       = getClass("java.lang.Comparable")
+    lazy val JavaCloneableClass    = getClass("java.lang.Cloneable")
+    lazy val RemoteInterfaceClass  = getClass("java.rmi.Remote")
+    lazy val RemoteExceptionClass  = getClass("java.rmi.RemoteException")
 
     lazy val RepeatedParamClass = newCovariantPolyClass(
       ScalaPackageClass,
@@ -625,6 +628,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val GetterTargetClass          = getMetaAnnotation("getter")
     lazy val ParamTargetClass           = getMetaAnnotation("param")
     lazy val SetterTargetClass          = getMetaAnnotation("setter")
+
 
     private def getMetaAnnotation(name: String) = getClass("scala.annotation.meta." + name)
     def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
