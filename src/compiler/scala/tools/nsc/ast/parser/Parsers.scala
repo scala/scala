@@ -1130,7 +1130,7 @@ self =>
     private def stringOp(t: Tree, op: TermName) = {
       val str = in.strVal
       in.nextToken()
-      if (str.isEmpty) t
+      if (str.length == 0) t
       else atPos(t.pos.startOrPoint) {
         Apply(Select(t, op), List(Literal(Constant(str))))
       }

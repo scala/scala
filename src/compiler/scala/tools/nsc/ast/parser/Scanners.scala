@@ -599,7 +599,7 @@ trait Scanners extends ScannersCommon {
       getLitChars('}', '"', ' ', '\t')
       if (ch == '}') {
         setStrVal()
-        if (!strVal.isEmpty) strVal = "%" + strVal
+        if (strVal.length > 0) strVal = "%" + strVal
         token = STRINGFMT
       } else {
         syntaxError("unclosed format string")
