@@ -9,21 +9,21 @@
 package scala.annotation
 
 package object target {
-  @deprecated("Use `@scala.beans.meta.beanGetter` instead", "2.10.0")
-  type beanGetter = scala.beans.meta.beanGetter
+  @deprecated("Use `@scala.annotation.meta.beanGetter` instead", "2.10.0")
+  type beanGetter = scala.annotation.meta.beanGetter
 
-  @deprecated("Use `@scala.beans.meta.beanSetter` instead", "2.10.0")
-  type beanSetter = scala.beans.meta.beanSetter
+  @deprecated("Use `@scala.annotation.meta.beanSetter` instead", "2.10.0")
+  type beanSetter = scala.annotation.meta.beanSetter
 
-  @deprecated("Use `@scala.beans.meta.field` instead", "2.10.0")
-  type field = scala.beans.meta.field
+  @deprecated("Use `@scala.annotation.meta.field` instead", "2.10.0")
+  type field = scala.annotation.meta.field
 
-  @deprecated("Use `@scala.beans.meta.getter` instead", "2.10.0")
-  type getter = scala.beans.meta.getter
+  @deprecated("Use `@scala.annotation.meta.getter` instead", "2.10.0")
+  type getter = scala.annotation.meta.getter
 
-  @deprecated("Use `@scala.beans.meta.param` instead", "2.10.0")
-  type param = scala.beans.meta.param
+  @deprecated("Use `@scala.annotation.meta.param` instead", "2.10.0")
+  type param = scala.annotation.meta.param
 
-  @deprecated("Use `@scala.beans.meta.setter` instead", "2.10.0")
-  type setter = scala.beans.meta.setter
+  @deprecated("Use `@scala.annotation.meta.setter` instead", "2.10.0")
+  type setter = scala.annotation.meta.setter
 }

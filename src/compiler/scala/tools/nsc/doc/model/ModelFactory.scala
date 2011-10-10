@@ -421,10 +421,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   /** */
   def makeAnnotation(annot: AnnotationInfo): Annotation = {
-    val aSym = annot.atp.typeSymbol
+    val aSym = annot.symbol
     new EntityImpl(aSym, makeTemplate(aSym.owner)) with Annotation {
       lazy val annotationClass =
-        makeTemplate(annot.atp.typeSymbol)
+        makeTemplate(annot.symbol)
       val arguments = { // lazy
         def noParams = annot.args map { _ => None }
         val params: List[Option[ValueParam]] = annotationClass match {

@@ -8,7 +8,7 @@
 
 package scala
 
-import beans.meta._
+import annotation.meta._
 
 /** An annotation that designates that a definition is deprecated.
  *  Access to the member then generates a deprecated warning.

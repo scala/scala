@@ -183,30 +183,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ThrowableClass                 = getClass(sn.Throwable)
     lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
 
-    // annotations
-    lazy val AnnotationClass            = getClass("scala.annotation.Annotation")
-    lazy val ClassfileAnnotationClass   = getClass("scala.annotation.ClassfileAnnotation")
-    lazy val StaticAnnotationClass      = getClass("scala.annotation.StaticAnnotation")
-    lazy val uncheckedStableClass       = getClass("scala.annotation.unchecked.uncheckedStable")
-    lazy val uncheckedVarianceClass     = getClass("scala.annotation.unchecked.uncheckedVariance")
-    lazy val UncheckedClass             = getClass("scala.unchecked")
-    lazy val ThrowsClass                = getClass("scala.throws")
-    lazy val TailrecClass               = getClass("scala.annotation.tailrec")
-    lazy val SwitchClass                = getClass("scala.annotation.switch")
-    lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
-    lazy val ImplicitNotFoundClass      = getClass("scala.annotation.implicitNotFound")
-    lazy val VarargsClass               = getClass("scala.annotation.varargs")
-    lazy val FieldTargetClass           = getClass("scala.beans.meta.field")
-    lazy val GetterTargetClass          = getClass("scala.beans.meta.getter")
-    lazy val SetterTargetClass          = getClass("scala.beans.meta.setter")
-    lazy val BeanGetterTargetClass      = getClass("scala.beans.meta.beanGetter")
-    lazy val BeanSetterTargetClass      = getClass("scala.beans.meta.beanSetter")
-    lazy val ParamTargetClass           = getClass("scala.beans.meta.param")
-    lazy val ScalaInlineClass           = getClass("scala.inline")
-    lazy val ScalaNoInlineClass         = getClass("scala.noinline")
-    lazy val SpecializedClass           = getClass("scala.specialized")
-    lazy val BridgeClass                = getClass("scala.annotation.bridge")
-
     // fundamental reference classes
     lazy val ScalaObjectClass           = getMember(ScalaPackageClass, tpnme.ScalaObject)
     lazy val PartialFunctionClass       = getClass("scala.PartialFunction")
@@ -256,6 +232,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ArrowAssocClass  = getClass("scala.Predef.ArrowAssoc")
     lazy val StringAdd_+      = getMember(StringAddClass, nme.PLUS)
     lazy val NotNullClass     = getClass("scala.NotNull")
+    lazy val ScalaNumberClass           = getClass("scala.math.ScalaNumber")
+    lazy val TraitSetterAnnotationClass = getClass("scala.runtime.TraitSetter")
     lazy val DelayedInitClass = getClass("scala.DelayedInit")
       def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
       // a dummy value that communicates that a delayedInit call is compiler-generated
@@ -606,22 +584,59 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def BoxedUnit_UNIT = getMember(BoxedUnitModule, "UNIT")
       def BoxedUnit_TYPE = getMember(BoxedUnitModule, "TYPE")
 
-    // special attributes
-    lazy val BeanPropertyAttr: Symbol           = getClass(sn.BeanProperty)
-    lazy val BooleanBeanPropertyAttr: Symbol    = getClass(sn.BooleanBeanProperty)
-    lazy val CloneableAttr: Symbol              = getClass("scala.cloneable")
-    lazy val DeprecatedAttr: Symbol             = getClass("scala.deprecated")
-    lazy val DeprecatedNameAttr: Symbol         = getClass("scala.deprecatedName")
-    lazy val MigrationAnnotationClass: Symbol   = getClass("scala.annotation.migration")
-    lazy val NativeAttr: Symbol                 = getClass("scala.native")
-    lazy val RemoteAttr: Symbol                 = getClass("scala.remote")
-    lazy val ScalaNumberClass: Symbol           = getClass("scala.math.ScalaNumber")
-    lazy val ScalaStrictFPAttr: Symbol          = getClass("scala.annotation.strictfp")
-    lazy val SerialVersionUIDAttr: Symbol       = getClass("scala.SerialVersionUID")
-    lazy val SerializableAttr: Symbol           = getClass("scala.annotation.serializable") // @serializable is deprecated
-    lazy val TraitSetterAnnotationClass: Symbol = getClass("scala.runtime.TraitSetter")
-    lazy val TransientAttr: Symbol              = getClass("scala.transient")
-    lazy val VolatileAttr: Symbol               = getClass("scala.volatile")
+    // Annotation base classes
+    lazy val AnnotationClass            = getClass("scala.annotation.Annotation")
+    lazy val ClassfileAnnotationClass   = getClass("scala.annotation.ClassfileAnnotation")
+    lazy val StaticAnnotationClass      = getClass("scala.annotation.StaticAnnotation")
+
+    // Annotations
+    lazy val BridgeClass                = getClass("scala.annotation.bridge")
+    lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
+    lazy val ImplicitNotFoundClass      = getClass("scala.annotation.implicitNotFound")
+    lazy val MigrationAnnotationClass   = getClass("scala.annotation.migration")
+    lazy val ScalaStrictFPAttr          = getClass("scala.annotation.strictfp")
+    lazy val SerializableAttr           = getClass("scala.annotation.serializable") // @serializable is deprecated
+    lazy val SwitchClass                = getClass("scala.annotation.switch")
+    lazy val TailrecClass               = getClass("scala.annotation.tailrec")
+    lazy val VarargsClass               = getClass("scala.annotation.varargs")
+    lazy val uncheckedStableClass       = getClass("scala.annotation.unchecked.uncheckedStable")
+    lazy val uncheckedVarianceClass     = getClass("scala.annotation.unchecked.uncheckedVariance")
+
+    lazy val BeanPropertyAttr           = getClass(sn.BeanProperty)
+    lazy val BooleanBeanPropertyAttr    = getClass(sn.BooleanBeanProperty)
+    lazy val CloneableAttr              = getClass("scala.cloneable")
+    lazy val DeprecatedAttr             = getClass("scala.deprecated")
+    lazy val DeprecatedNameAttr         = getClass("scala.deprecatedName")
+    lazy val NativeAttr                 = getClass("scala.native")
+    lazy val RemoteAttr                 = getClass("scala.remote")
+    lazy val ScalaInlineClass           = getClass("scala.inline")
+    lazy val ScalaNoInlineClass         = getClass("scala.noinline")
+    lazy val SerialVersionUIDAttr       = getClass("scala.SerialVersionUID")
+    lazy val SpecializedClass           = getClass("scala.specialized")
+    lazy val ThrowsClass                = getClass("scala.throws")
+    lazy val TransientAttr              = getClass("scala.transient")
+    lazy val UncheckedClass             = getClass("scala.unchecked")
+    lazy val VolatileAttr               = getClass("scala.volatile")
+
+    // Meta-annotations
+    lazy val BeanGetterTargetClass      = getMetaAnnotation("beanGetter")
+    lazy val BeanSetterTargetClass      = getMetaAnnotation("beanSetter")
+    lazy val FieldTargetClass           = getMetaAnnotation("field")
+    lazy val GetterTargetClass          = getMetaAnnotation("getter")
+    lazy val ParamTargetClass           = getMetaAnnotation("param")
+    lazy val SetterTargetClass          = getMetaAnnotation("setter")
+
+    private def getMetaAnnotation(name: String) = getClass("scala.annotation.meta." + name)
+    def isMetaAnnotation(sym: Symbol): Boolean = metaAnnotations(sym) || (
+      // Trying to allow for deprecated locations
+      sym.isAliasType && isMetaAnnotation(sym.info.typeSymbol)
+    )
+
+    lazy val metaAnnotations = Set(
+      FieldTargetClass, ParamTargetClass,
+      GetterTargetClass, SetterTargetClass,
+      BeanGetterTargetClass, BeanSetterTargetClass
+    )
 
     lazy val AnnotationDefaultAttr: Symbol = {
       val attr = newClass(RuntimePackageClass, tpnme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))

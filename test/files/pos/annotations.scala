@@ -79,7 +79,7 @@ class C extends T with BeanF {
 
 trait T {
   @scala.beans.BeanProperty var f = "nei"
-  @scala.reflect.BooleanBeanProperty var g = false
+  @scala.beans.BooleanBeanProperty var g = false
 }
 
 trait BeanF {

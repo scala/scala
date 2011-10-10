@@ -869,7 +869,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             validateVariances(tparams map (_.info), variance)
             validateVariance(result, variance)
           case AnnotatedType(annots, tp, selfsym) =>
-            if (!(annots exists (_.atp.typeSymbol.isNonBottomSubClass(uncheckedVarianceClass))))
+            if (!annots.exists(_ matches uncheckedVarianceClass))
               validateVariance(tp, variance)
         }
 

@@ -146,7 +146,12 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     final val String: NameType          = "String"
     final val Throwable: NameType       = "Throwable"
 
-    // Annotation types
+    // Annotation simple names, used in Namer
+    final val BeanPropertyAnnot: NameType = "BeanProperty"
+    final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
+    final val bridgeAnnot: NameType = "bridge"
+
+    // Classfile Attributes
     final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
     final val BridgeATTR: NameType                 = "Bridge"
     final val ClassfileAnnotationATTR: NameType    = "RuntimeInvisibleAnnotations" // RetentionPolicy.CLASS. Currently not used (Apr 2009).

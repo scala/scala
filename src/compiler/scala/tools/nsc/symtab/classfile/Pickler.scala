@@ -108,7 +108,7 @@ abstract class Pickler extends SubComponent {
 
     private def staticAnnotations(annots: List[AnnotationInfo]) =
       annots filter(ann =>
-        ann.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass)
+        ann.symbol isNonBottomSubClass definitions.StaticAnnotationClass)
 
     // Phase 1 methods: Populate entries/index ------------------------------------
 

@@ -1,4 +1,4 @@
-package scala.beans
+package scala.annotation
 
 /**
  * When defining a field, the Scala compiler creates up to four accessors
@@ -18,7 +18,7 @@ package scala.beans
  * end up on the parameter, not on any other entity. Annotations on fields
  * by default only end up on the field.
  *
- * The meta-annotations in package `scala.beans.meta` are used
+ * The meta-annotations in package `scala.annotation.meta` are used
  * to control where annotations on fields and class parameters are copied.
  * This is done by annotating either the annotation type or the annotation
  * class with one or several of the meta-annotations in this package.

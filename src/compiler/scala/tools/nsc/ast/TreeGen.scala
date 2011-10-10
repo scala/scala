@@ -71,7 +71,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
       setFlag (MODULEVAR)
     )
 
-    mval.addAnnotation(AnnotationInfo(VolatileAttr.tpe, Nil, Nil))
+    mval addAnnotation VolatileAttr
     if (mval.owner.isClass) {
       mval setFlag (PrivateLocal | SYNTHETIC)
       mval.owner.info.decls.enter(mval)

@@ -11,6 +11,34 @@ import pickling.ByteCodecs
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
+  import definitions.{ ThrowsClass, isMetaAnnotation }
+
+  // Common annotation code between Symbol and Type.
+  // For methods altering the annotation list, on Symbol it mutates
+  // the Symbol's field directly.  For Type, a new AnnotatedType is
+  // created which wraps the original type.
+  trait Annotatable[Self] {
+    self: Self =>
+
+    /** The annotations on this type. */
+    def annotations: List[AnnotationInfo]                     // Annotations on this type.
+    def setAnnotations(annots: List[AnnotationInfo]): Self    // Replace annotations with argument list.
+    def withAnnotations(annots: List[AnnotationInfo]): Self   // Add annotations to this type.
+    def withoutAnnotations: Self                              // Remove all annotations from this type.
+
+    /** Symbols of any @throws annotations on this symbol.
+     */
+    def throwsAnnotations() = annotations collect {
+      case AnnotationInfo(tp, Literal(Constant(tpe: Type)) :: Nil, _) if tp.typeSymbol == ThrowsClass => tpe.typeSymbol
+    }
+
+    /** Test for, get, or remove an annotation */
+    def hasAnnotation(cls: Symbol) = annotations exists (_ matches cls)
+    def getAnnotation(cls: Symbol) = annotations find (_ matches cls)
+    def removeAnnotation(cls: Symbol): Self =
+      if (hasAnnotation(cls)) setAnnotations(annotations filterNot (_ matches cls))
+      else this
+  }
 
   /** Arguments to classfile annotations (which are written to
    *  bytecode as java annotations) are either:
@@ -90,7 +118,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
   extends AnnotationInfoBase {
 
     // Classfile annot: args empty. Scala annot: assocs empty.
-    assert(args.isEmpty || assocs.isEmpty)
+    assert(args.isEmpty || assocs.isEmpty, atp)
 
     private var rawpos: Position = NoPosition
     def pos = rawpos
@@ -99,7 +127,45 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
       this
     }
 
-    lazy val isTrivial: Boolean = atp.isTrivial && !(args exists (_.exists(_.isInstanceOf[This]))) // see annotationArgRewriter
+    /** Annotations annotating annotations are confusing so I drew
+     *  an example.  Given the following code:
+     *
+     *  class A {
+     *    @(deprecated @setter) @(inline @getter)
+     *    var x: Int = 0
+     *  }
+     *
+     *  For the setter `x_=` in A, annotations contains one AnnotationInfo =
+     *    List(deprecated @setter)
+     *  The single AnnotationInfo in that list, i.e. `@(deprecated @setter)`, has metaAnnotations =
+     *    List(setter)
+     *
+     *  Similarly, the getter `x` in A has an @inline annotation, which has
+     *  metaAnnotations = List(getter).
+     */
+    def symbol = atp.typeSymbol
+
+    /** These are meta-annotations attached at the use site; they
+     *  only apply to this annotation usage.  For instance, in
+     *    `@(deprecated @setter @field) val ...`
+     *  metaAnnotations = List(setter, field).
+     */
+    def metaAnnotations: List[AnnotationInfo] = atp match {
+      case AnnotatedType(metas, _, _) => metas
+      case _                          => Nil
+    }
+
+    /** The default kind of members to which this annotation is attached.
+     *  For instance, for scala.deprecated defaultTargets =
+     *    List(getter, setter, beanGetter, beanSetter).
+     */
+    def defaultTargets = symbol.annotations map (_.symbol) filter isMetaAnnotation
+    // Test whether the typeSymbol of atp conforms to the given class.
+    def matches(clazz: Symbol) = symbol isNonBottomSubClass clazz
+    // All subtrees of all args are considered.
+    def hasArgWhich(p: Tree => Boolean) = args exists (_ exists p)
+
+    lazy val isTrivial: Boolean = atp.isTrivial && !hasArgWhich(_.isInstanceOf[This]) // see annotationArgRewriter
 
     override def toString: String = atp +
       (if (!args.isEmpty) args.mkString("(", ", ", ")") else "") +
@@ -109,8 +175,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     def isErroneous = atp.isErroneous || args.exists(_.isErroneous)
 
     /** Check whether any of the arguments mention a symbol */
-    def refsSymbol(sym: Symbol) =
-      args.exists(_.exists(_.symbol == sym))
+    def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
 
     /** Change all ident's with Symbol "from" to instead use symbol "to" */
     def substIdentSyms(from: Symbol, to: Symbol) = {
@@ -145,4 +210,6 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    */
   case class LazyAnnotationInfo(annot: () => AnnotationInfo)
   extends AnnotationInfoBase
+
+  object UnmappableAnnotation extends AnnotationInfo(NoType, Nil, Nil)
 }

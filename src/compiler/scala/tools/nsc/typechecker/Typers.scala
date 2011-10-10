@@ -1490,36 +1490,21 @@ trait Typers extends Modes with Adaptations {
 
     /**
      * The annotations amongst `annots` that should go on a member of class
-     * `memberClass` (field, getter, setter, beanGetter, beanSetter, param)
-     * If 'keepClean' is true, annotations without any meta-annotation are kept
+     * `annotKind` (one of: field, getter, setter, beanGetter, beanSetter, param)
+     * If 'keepClean' is true, annotations without any meta-annotations are kept.
      */
-    protected def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol, keepClean: Boolean = false) = {
-
-      def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
-        // either one of the meta-annotations matches the `memberClass`
-        metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
-        // else, if there is no `target` meta-annotation at all, use the default case
-        (metaAnnots.forall(ann => {
-          val annClass = ann.atp.typeSymbol
-          annClass != FieldTargetClass && annClass != GetterTargetClass &&
-          annClass != SetterTargetClass && annClass != BeanGetterTargetClass &&
-          annClass != BeanSetterTargetClass && annClass != ParamTargetClass
-        }) && orElse)
+    protected def memberAnnots(annots: List[AnnotationInfo], annotKind: Symbol, keepClean: Boolean = false) = {
+      annots filter { ann =>
+        // There are no meta-annotation arguments attached to `ann`
+        if (ann.metaAnnotations.isEmpty) {
+          // A meta-annotation matching `annotKind` exists on `ann`'s definition.
+          (ann.defaultTargets contains annotKind) ||
+          // `ann`'s definition has no meta-annotations, and `keepClean` is true.
+          (ann.defaultTargets.isEmpty && keepClean)
+        }
+        // There are meta-annotation arguments, and one of them matches `annotKind`
+        else ann.metaAnnotations exists (_ matches annotKind)
       }
-
-      // there was no meta-annotation on `ann`. Look if the class annotations of
-      // `ann` has a `target` annotation, otherwise put `ann` only on fields.
-      def noMetaAnnot(ann: AnnotationInfo) = {
-        hasMatching(ann.atp.typeSymbol.annotations, keepClean)
-      }
-
-      annots.filter(ann => ann.atp match {
-        // the annotation type has meta-annotations, e.g. @(foo @getter)
-        case AnnotatedType(metaAnnots, _, _) =>
-          hasMatching(metaAnnots, noMetaAnnot(ann))
-        // there are no meta-annotations, e.g. @foo
-        case _ => noMetaAnnot(ann)
-      })
     }
 
     protected def enterSyms(txt: Context, trees: List[Tree]) = {

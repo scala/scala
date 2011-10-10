@@ -35,6 +35,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
     type AccessBoundaryType = Name
     type AnnotationType     = Tree
 
+    def hasAnnotationNamed(name: TypeName) = {
+      annotations exists {
+        case Apply(Select(New(Ident(`name`)), _), _)     => true
+        case Apply(Select(New(Select(_, `name`)), _), _) => true
+        case _                                           => false
+      }
+    }
+
     def hasAccessBoundary = privateWithin != tpnme.EMPTY
     def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
     def hasFlag(flag: Long) = (flag & flags) != 0L

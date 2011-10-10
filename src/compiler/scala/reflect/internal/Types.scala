@@ -234,11 +234,9 @@ trait Types extends api.Types { self: SymbolTable =>
     super.tpe_=(NoType)
     override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
   }
-  object UnmappableAnnotation extends AnnotationInfo(NoType, Nil, Nil)
 
   /** The base class for all types */
-  abstract class Type extends AbsType {
-
+  abstract class Type extends AbsType with Annotatable[Type] {
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
      */
@@ -1000,24 +998,14 @@ trait Types extends api.Types { self: SymbolTable =>
       skolems
     }
 
-    /** Return the annotations on this type. */
+    // Implementation of Annotatable for all types but AnnotatedType, which
+    // overrides these.
     def annotations: List[AnnotationInfo] = Nil
+    def withoutAnnotations: Type = this
+    def setAnnotations(annots: List[AnnotationInfo]): Type  = annotatedType(annots, this)
+    def withAnnotations(annots: List[AnnotationInfo]): Type = annotatedType(annots, this)
 
-    /** Test for the presence of an annotation */
-    def hasAnnotation(clazz: Symbol) = annotations exists { _.atp.typeSymbol == clazz }
-
-    /** Add an annotation to this type */
-    def withAnnotation(annot: AnnotationInfo) = withAnnotations(List(annot))
-
-    /** Add a number of annotations to this type */
-    def withAnnotations(annots: List[AnnotationInfo]): Type =
-      annots match {
-        case Nil => this
-        case _ => AnnotatedType(annots, this, NoSymbol)
-      }
-
-    /** Remove any annotations from this type */
-    def withoutAnnotations = this
+    final def withAnnotation(annot: AnnotationInfo): Type = withAnnotations(List(annot))
 
     /** Remove any annotations from this type and from any
      *  types embedded in this type. */
@@ -2653,35 +2641,31 @@ A type's typeSymbol should never be inspected directly.
                            override val selfsym: Symbol)
   extends RewrappingTypeProxy {
 
-    assert(!annotations.isEmpty)
+    assert(!annotations.isEmpty, "" + underlying)
 
-    override protected def rewrap(tp: Type) = AnnotatedType(annotations, tp, selfsym)
+    override protected def rewrap(tp: Type) = copy(underlying = tp)
 
     override def isTrivial: Boolean = isTrivial0
-    private lazy val isTrivial0 = underlying.isTrivial && (annotations forall (_.isTrivial))
+    private lazy val isTrivial0 = underlying.isTrivial && annotations.forall(_.isTrivial)
 
-    override def safeToString: String = {
-      val attString =
-        if (annotations.isEmpty)
-          ""
-        else
-          annotations.mkString(" @", " @", "")
+    override def safeToString = annotations.mkString(underlying + " @", " @", "")
 
-      underlying + attString
-    }
+    override def setAnnotations(annots: List[AnnotationInfo]): Type =
+      if (annots.isEmpty) withoutAnnotations
+      else copy(annotations = annots)
 
     /** Add a number of annotations to this type */
     override def withAnnotations(annots: List[AnnotationInfo]): Type =
-      copy(annots:::this.annotations)
+      if (annots.isEmpty) this
+      else copy(annots ::: this.annotations)
 
     /** Remove any annotations from this type */
     override def withoutAnnotations = underlying.withoutAnnotations
 
     /** Set the self symbol */
-    override def withSelfsym(sym: Symbol) =
-      AnnotatedType(annotations, underlying, sym)
+    override def withSelfsym(sym: Symbol) = copy(selfsym = sym)
 
-    /** Drop the annotations on the bounds, unless but the low and high
+    /** Drop the annotations on the bounds, unless the low and high
      *  bounds are exactly tp.
      */
     override def bounds: TypeBounds = underlying.bounds match {
@@ -2711,7 +2695,14 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "AnnotatedType"
   }
 
-  object AnnotatedType extends AnnotatedTypeExtractor
+  /** Creator for AnnotatedTypes.  It returns the underlying type if annotations.isEmpty
+   *  rather than walking into the assertion.
+   */
+  def annotatedType(annots: List[AnnotationInfo], underlying: Type, selfsym: Symbol = NoSymbol): Type =
+    if (annots.isEmpty) underlying
+    else AnnotatedType(annots, underlying, selfsym)
+
+  object AnnotatedType extends AnnotatedTypeExtractor { }
 
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
@@ -3241,7 +3232,7 @@ A type's typeSymbol should never be inspected directly.
 
   trait KeepOnlyTypeConstraints extends AnnotationFilter {
     // filter keeps only type constraint annotations
-    def keepAnnotation(annot: AnnotationInfo) = annot.atp.typeSymbol isNonBottomSubClass TypeConstraintClass
+    def keepAnnotation(annot: AnnotationInfo) = annot matches TypeConstraintClass
   }
 
   /** A prototype for mapping a function over all possible types

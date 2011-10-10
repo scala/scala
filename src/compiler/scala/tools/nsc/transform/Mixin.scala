@@ -519,7 +519,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             }
           } else {
             if (currentOwner.isTrait && sym.isSetter && !atPhase(currentRun.picklerPhase)(sym.isDeferred)) {
-              sym.addAnnotation(AnnotationInfo(TraitSetterAnnotationClass.tpe, List(), List()))
+              sym.addAnnotation(TraitSetterAnnotationClass)
             }
             tree
           }
@@ -705,13 +705,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         def createBitmap: Symbol = {
           val sym = clazz0.newVariable(clazz0.pos, bitmapName).setInfo(IntClass.tpe)
           atPhase(currentRun.typerPhase) {
-            sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
+            sym addAnnotation VolatileAttr
           }
 
           // What's going on here, why is setFlag called three times?
           bitmapOperation(
             field,
-            { sym.addAnnotation(AnnotationInfo(TransientAttr.tpe, Nil, Nil)); sym.setFlag(PrivateLocal) },
+            { sym.addAnnotation(TransientAttr); sym.setFlag(PrivateLocal) },
             sym setFlag PrivateLocal,
             sym setFlag (if (checkinitField) PrivateLocal else PROTECTED)
           )

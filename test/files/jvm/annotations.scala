@@ -94,7 +94,7 @@ object Test4 {
   }
   class Foo8(@SourceAnnotation("constructor val") val n: Int) {}
   class Foo9 {
-    import scala.beans.meta._
+    import scala.annotation.meta._
     import scala.beans.BeanProperty
     @(SourceAnnotation @getter)("http://apple.com") val x = 0
     @BeanProperty @(SourceAnnotation @beanSetter)("http://uppla.com") var y = 0
@@ -103,8 +103,8 @@ object Test4 {
     @BeanProperty @myAnn("http://eppli.com") var z = 0
   }
   class Foo10(@SourceAnnotation("on param 1") val name: String)
-  class Foo11(@(SourceAnnotation @scala.beans.meta.field)("on param 2") val name: String)
-  class Foo12(@(SourceAnnotation @scala.beans.meta.setter)("on param 3") var name: String)
+  class Foo11(@(SourceAnnotation @scala.annotation.meta.field)("on param 2") val name: String)
+  class Foo12(@(SourceAnnotation @scala.annotation.meta.setter)("on param 3") var name: String)
   def run {
     import java.lang.annotation.Annotation
     import java.lang.reflect.AnnotatedElement
@@ -183,7 +183,7 @@ object Test5 {
 
 object Test6 {
   import scala.beans.BeanProperty
-  import scala.reflect.BooleanBeanProperty
+  import scala.beans.BooleanBeanProperty
   class C(@BeanProperty var text: String)
   class D(@BooleanBeanProperty var prop: Boolean) {
     @BeanProperty val m: Int = if (prop) 1 else 2

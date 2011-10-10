@@ -558,7 +558,7 @@ trait Namers { self: Analyzer =>
             finishWith(tparams)
           case DefDef(mods, name, tparams, _, _, _) =>
             tree.symbol = enterNewMethod(tree, name, mods.flags, mods, tree.pos)
-            if (mods.annotations.exists(ann => isAnn(ann, "bridge")))
+            if (mods hasAnnotationNamed tpnme.bridgeAnnot)
               tree.symbol setFlag BRIDGE
             finishWith(tparams)
           case TypeDef(mods, name, tparams, _) =>
@@ -602,18 +602,11 @@ trait Namers { self: Analyzer =>
     def enterAccessorMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers): TermSymbol =
       enterNewMethod(tree, name, flags, mods, tree.pos.focus)
 
-    def isAnn(ann: Tree, demand: String) = ann match {
-      case Apply(Select(New(Ident(name)), _), _) =>
-        name.toString == demand
-      case Apply(Select(New(Select(pre, name)), _), _) =>
-        name.toString == demand
-      case _ => false
-    }
-
     private def addBeanGetterSetter(vd: ValDef, getter: Symbol) {
       val ValDef(mods, name, tpt, _) = vd
-      val hasBP = mods.annotations.exists(isAnn(_, "BeanProperty"))
-      val hasBoolBP = mods.annotations.exists(isAnn(_, "BooleanBeanProperty"))
+      val hasBP     = mods hasAnnotationNamed tpnme.BeanPropertyAnnot
+      val hasBoolBP = mods hasAnnotationNamed tpnme.BooleanBeanPropertyAnnot
+
       if ((hasBP || hasBoolBP) && !forMSIL) {
         if (!name(0).isLetter)
           context.error(vd.pos, "`BeanProperty' annotation can be applied "+
@@ -1266,9 +1259,9 @@ trait Namers { self: Analyzer =>
               LazyAnnotationInfo(() => typer.typedAnnotation(ann))
             }
             if (!ainfos.isEmpty)
-              annotated.setAnnotations(ainfos)
+              annotated.setRawAnnotations(ainfos)
             if (annotated.isTypeSkolem)
-              annotated.deSkolemize.setAnnotations(ainfos)
+              annotated.deSkolemize.setRawAnnotations(ainfos)
           case _ =>
         }
       }
