@@ -120,11 +120,6 @@ abstract class TreeBuilder {
   private def getVariables(tree: Tree): List[(Name, Tree, Position)] =
     new GetVarTraverser apply tree
 
-  private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
-    val tupString = "Tuple" + trees.length
-    Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
-  }
-
   def byNameApplication(tpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(tpnme.BYNAME_PARAM_CLASS_NAME), List(tpe))
   def repeatedApplication(tpe: Tree): Tree =
@@ -132,6 +127,11 @@ abstract class TreeBuilder {
 
   def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
     ImportSelector(name, nameOffset, name, nameOffset)
+
+  private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
+    val tupString = "Tuple" + trees.length
+    Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
+  }
 
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
     case Nil => Literal(Constant())
