@@ -469,7 +469,8 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
           r set unit.body
         serviceParsedEntered()
       } catch {
-        case ex: FreshRunReq => throw ex // propagate a new run request
+        case ex: FreshRunReq => throw ex           // propagate a new run request
+        case ShutdownReq     => throw ShutdownReq  // propagate a shutdown request
 
         case ex =>
           println("[%s]: exception during background compile: ".format(unit.source) + ex)
