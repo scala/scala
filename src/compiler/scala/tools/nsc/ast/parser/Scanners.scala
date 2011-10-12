@@ -142,6 +142,7 @@ trait Scanners extends ScannersCommon {
       if (docBuffer ne null) docBuffer.append(c)
     }
 
+    protected def foundComment(value: String, start: Int, end: Int) = ()
     protected def foundDocComment(value: String, start: Int, end: Int) = ()
 
     private class TokenData0 extends TokenData
@@ -486,6 +487,8 @@ trait Scanners extends ScannersCommon {
           if (buildingDocComment)
             foundDocComment(comment.toString, offset, charOffset - 2)
         }
+
+        foundComment(comment.toString, offset, charOffset - 2)
         true
       } else {
         false
@@ -1142,6 +1145,11 @@ trait Scanners extends ScannersCommon {
           false
         }
       }
+    }
+
+    override def foundComment(value: String, start: Int, end: Int) {
+      val pos = new RangePosition(unit.source, start, start, end)
+      unit.comment(pos, value)
     }
 
     override def foundDocComment(value: String, start: Int, end: Int) {
