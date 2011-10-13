@@ -503,12 +503,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val extraSpecializedMixins = specializedParents(clazz.info.parents.map(applyContext))
         if (extraSpecializedMixins.nonEmpty)
           debuglog("specializeClass on " + clazz + " founds extra specialized mixins: " + extraSpecializedMixins.mkString(", "))
-        // If the class being specialized has a self-type, we have to propagate
-        // that information to the specialized subclasses or it vanishes.
-        if (clazz.thisSym ne clazz) {
-          cls.typeOfThis = applyContext(clazz.typeOfThis)
-          log("Rewriting self-type in specialized class: " + clazz.typeOfThis + " => " + cls.typeOfThis)
-        }
+
         val infoType = ClassInfoType(parents ::: extraSpecializedMixins, decls1, cls)
         if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
