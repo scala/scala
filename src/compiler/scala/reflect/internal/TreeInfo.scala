@@ -60,18 +60,20 @@ abstract class TreeInfo {
        | DefDef(_, _, _, _, _, _) =>
       true
     case ValDef(mods, _, _, rhs) =>
-      !mods.isMutable && isPureExpr(rhs)
+      !mods.isMutable && isExprSafeToInline(rhs)
     case _ =>
       false
   }
 
-  /** Is tree a stable and pure expression?
-   *  !!! Clarification on what is meant by "pure" here would be appreciated.
-   *  This implementation allows both modules and lazy vals, which are pure in
-   *  the sense that they always return the same result, but which are also
-   *  side effecting.  So for now, "pure" != "not side effecting".
+  /** Is tree an expression which can be inlined without affecting program semantics?
+   *
+   *  Note that this is not called "isExprSafeToInline" since purity (lack of side-effects)
+   *  is not the litmus test.  References to modules and lazy vals are side-effecting,
+   *  both because side-effecting code may be executed and because the first reference
+   *  takes a different code path than all to follow; but they are safe to inline
+   *  because the expression result from evaluating them is always the same.
    */
-  def isPureExpr(tree: Tree): Boolean = tree match {
+  def isExprSafeToInline(tree: Tree): Boolean = tree match {
     case EmptyTree
        | This(_)
        | Super(_, _)
@@ -84,23 +86,26 @@ abstract class TreeInfo {
     case Select(Literal(const), name) =>
       const.isAnyVal && (const.tpe.member(name) != NoSymbol)
     case Select(qual, _) =>
-      tree.symbol.isStable && isPureExpr(qual)
+      tree.symbol.isStable && isExprSafeToInline(qual)
     case TypeApply(fn, _) =>
-      isPureExpr(fn)
+      isExprSafeToInline(fn)
     case Apply(fn, List()) =>
       /* Note: After uncurry, field accesses are represented as Apply(getter, Nil),
        * so an Apply can also be pure.
        * However, before typing, applications of nullary functional values are also
        * Apply(function, Nil) trees. To prevent them from being treated as pure,
        * we check that the callee is a method. */
-      fn.symbol.isMethod && !fn.symbol.isLazy && isPureExpr(fn)
+      fn.symbol.isMethod && !fn.symbol.isLazy && isExprSafeToInline(fn)
     case Typed(expr, _) =>
-      isPureExpr(expr)
+      isExprSafeToInline(expr)
     case Block(stats, expr) =>
-      (stats forall isPureDef) && isPureExpr(expr)
+      (stats forall isPureDef) && isExprSafeToInline(expr)
     case _ =>
       false
   }
+
+  @deprecated("Use isExprSafeToInline instead", "2.10.0")
+  def isPureExpr(tree: Tree) = isExprSafeToInline(tree)
 
   def zipMethodParamsAndArgs(params: List[Symbol], args: List[Tree]): List[(Symbol, Tree)] = {
     val plen   = params.length

@@ -64,7 +64,7 @@ trait EtaExpansion { self: Analyzer =>
      */
     def liftoutPrefix(tree: Tree): Tree = {
       def liftout(tree: Tree): Tree =
-        if (treeInfo.isPureExpr(tree)) tree
+        if (treeInfo.isExprSafeToInline(tree)) tree
         else {
           val vname: Name = freshName()
           // Problem with ticket #2351 here

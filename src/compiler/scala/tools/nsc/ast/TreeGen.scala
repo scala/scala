@@ -206,7 +206,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
    */
   def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree = {
     var used = false
-    if (treeInfo.isPureExpr(expr)) {
+    if (treeInfo.isExprSafeToInline(expr)) {
       within(() => if (used) expr.duplicate else { used = true; expr })
     }
     else {
@@ -223,7 +223,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     val used = new Array[Boolean](exprs.length)
     var i = 0
     for (expr <- exprs) {
-      if (treeInfo.isPureExpr(expr)) {
+      if (treeInfo.isExprSafeToInline(expr)) {
         exprs1 += {
           val idx = i
           () => if (used(idx)) expr.duplicate else { used(idx) = true; expr }

@@ -195,7 +195,7 @@ abstract class UnCurry extends InfoTransform
 
     /** Undo eta expansion for parameterless and nullary methods */
     def deEta(fun: Function): Tree = fun match {
-      case Function(List(), Apply(expr, List())) if treeInfo.isPureExpr(expr) =>
+      case Function(List(), Apply(expr, List())) if treeInfo.isExprSafeToInline(expr) =>
         if (expr hasSymbolWhich (_.isLazy))
           fun
         else
@@ -477,7 +477,7 @@ abstract class UnCurry extends InfoTransform
 
         case Apply(Select(Function(vparams, body), nme.apply), args) =>
 //        if (List.forall2(vparams, args)((vparam, arg) => treeInfo.isAffineIn(body) ||
-//                                        treeInfo.isPureExpr(arg))) =>
+//                                        treeInfo.isExprSafeToInline(arg))) =>
           // perform beta-reduction; this helps keep view applications small
           println("beta-reduce2: "+tree)
           withNeedLift(true) {
