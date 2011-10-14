@@ -1,15 +1,25 @@
 t2213.scala:9: error: class C needs to be abstract, since:
-value y in class A of type Int is not defined
-value x in class A of type Int is not defined
-method g in class A of type => Int is not defined
-method f in class A of type => Int is not defined
+it has 4 unimplemented members.
+/** As seen from class C, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  def f: Int = ???
+  def g: Int = ???
+  val x: Int = ???
+  val y: Int = ???
+
 class C extends A {}
       ^
 t2213.scala:11: error: object creation impossible, since:
-value y in class A of type Int is not defined
-value x in class A of type Int is not defined
-method g in class A of type => Int is not defined
-method f in class A of type => Int is not defined
+it has 4 unimplemented members.
+/** As seen from object Q, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  def f: Int = ???
+  def g: Int = ???
+  val x: Int = ???
+  val y: Int = ???
+
 object Q extends A { }
        ^
 two errors found

@@ -1,0 +1,99 @@
+abstract-report2.scala:3: error: class Foo needs to be abstract, since:
+it has 12 unimplemented members.
+/** As seen from class Foo, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  def add(x$1: Int): Boolean = ???
+  def addAll(x$1: java.util.Collection[_ <: Int]): Boolean = ???
+  def clear(): Unit = ???
+  def contains(x$1: Any): Boolean = ???
+  def containsAll(x$1: java.util.Collection[_]): Boolean = ???
+  def isEmpty(): Boolean = ???
+  def iterator(): java.util.Iterator[Int] = ???
+  def remove(x$1: Any): Boolean = ???
+  def removeAll(x$1: java.util.Collection[_]): Boolean = ???
+  def retainAll(x$1: java.util.Collection[_]): Boolean = ???
+  def size(): Int = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
+
+class Foo extends Collection[Int]
+      ^
+abstract-report2.scala:5: error: class Bar needs to be abstract, since:
+it has 12 unimplemented members.
+/** As seen from class Bar, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  def add(x$1: List[_ <: String]): Boolean = ???
+  def addAll(x$1: java.util.Collection[_ <: List[_ <: String]]): Boolean = ???
+  def clear(): Unit = ???
+  def contains(x$1: Any): Boolean = ???
+  def containsAll(x$1: java.util.Collection[_]): Boolean = ???
+  def isEmpty(): Boolean = ???
+  def iterator(): java.util.Iterator[List[_ <: String]] = ???
+  def remove(x$1: Any): Boolean = ???
+  def removeAll(x$1: java.util.Collection[_]): Boolean = ???
+  def retainAll(x$1: java.util.Collection[_]): Boolean = ???
+  def size(): Int = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
+
+class Bar extends Collection[List[_ <: String]]
+      ^
+abstract-report2.scala:7: error: class Baz needs to be abstract, since:
+it has 12 unimplemented members.
+/** As seen from class Baz, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  def add(x$1: T): Boolean = ???
+  def addAll(x$1: java.util.Collection[_ <: T]): Boolean = ???
+  def clear(): Unit = ???
+  def contains(x$1: Any): Boolean = ???
+  def containsAll(x$1: java.util.Collection[_]): Boolean = ???
+  def isEmpty(): Boolean = ???
+  def iterator(): java.util.Iterator[T] = ???
+  def remove(x$1: Any): Boolean = ???
+  def removeAll(x$1: java.util.Collection[_]): Boolean = ???
+  def retainAll(x$1: java.util.Collection[_]): Boolean = ???
+  def size(): Int = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
+
+class Baz[T] extends Collection[T]
+      ^
+abstract-report2.scala:11: error: class Dingus needs to be abstract, since:
+it has 23 unimplemented members.
+/** As seen from class Dingus, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  // Members declared in java.util.Collection
+  def add(x$1: String): Boolean = ???
+  def addAll(x$1: java.util.Collection[_ <: String]): Boolean = ???
+  def clear(): Unit = ???
+  def contains(x$1: Any): Boolean = ???
+  def containsAll(x$1: java.util.Collection[_]): Boolean = ???
+  def iterator(): java.util.Iterator[String] = ???
+  def remove(x$1: Any): Boolean = ???
+  def removeAll(x$1: java.util.Collection[_]): Boolean = ???
+  def retainAll(x$1: java.util.Collection[_]): Boolean = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
+  
+  // Members declared in scala.collection.GenTraversableOnce
+  def isTraversableAgain: Boolean = ???
+  def toIterator: Iterator[(Set[Int], String)] = ???
+  def toStream: Stream[(Set[Int], String)] = ???
+  
+  // Members declared in scala.math.Ordering
+  def compare(x: List[Int],y: List[Int]): Int = ???
+  
+  // Members declared in scala.collection.TraversableOnce
+  def copyToArray[B >: (Set[Int], String)](xs: Array[B],start: Int,len: Int): Unit = ???
+  def exists(p: ((Set[Int], String)) => Boolean): Boolean = ???
+  def find(p: ((Set[Int], String)) => Boolean): Option[(Set[Int], String)] = ???
+  def forall(p: ((Set[Int], String)) => Boolean): Boolean = ???
+  def foreach[U](f: ((Set[Int], String)) => U): Unit = ???
+  def hasDefiniteSize: Boolean = ???
+  def isEmpty: Boolean = ???
+  def seq: scala.collection.TraversableOnce[(Set[Int], String)] = ???
+  def toTraversable: Traversable[(Set[Int], String)] = ???
+
+class Dingus extends Bippy[String, Set[Int], List[Int]]
+      ^
+four errors found

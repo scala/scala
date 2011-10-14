@@ -247,7 +247,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       def infoStringWithLocation(sym: Symbol) = infoString0(sym, true)
 
       def infoString0(sym: Symbol, showLocation: Boolean) = {
-        val sym1 = analyzer.underlying(sym)
+        val sym1 = analyzer.underlyingSymbol(sym)
         sym1.toString() +
         (if (showLocation)
           sym1.locationString +
@@ -516,32 +516,63 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         )
 
         // 2. Check that only abstract classes have deferred members
-        def checkNoAbstractMembers() = {
+        def checkNoAbstractMembers(): Unit = {
           // Avoid spurious duplicates: first gather any missing members.
-          def memberList = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
+          def memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
           val (missing, rest) = memberList partition (m => m.isDeferred && !ignoreDeferred(m))
-          // Group missing members by the underlying symbol.
-          val grouped = missing groupBy (analyzer underlying _ name)
+          // Group missing members by the name of the underlying symbol,
+          // to consolidate getters and setters.
+          val grouped = missing groupBy (sym => analyzer.underlyingSymbol(sym).name)
+          val missingMethods = grouped.toList map {
+            case (name, sym :: Nil) => sym
+            case (name, syms)       => syms.sortBy(!_.isGetter).head
+          }
+
+          def stubImplementations: List[String] = {
+            // Grouping missing methods by the declaring class
+            val regrouped = missingMethods.groupBy(_.owner).toList
+            def membersStrings(members: List[Symbol]) =
+              members.sortBy("" + _.name) map (m => m.defStringSeenAs(clazz.tpe memberType m) + " = ???")
+
+            if (regrouped.tail.isEmpty)
+              membersStrings(regrouped.head._2)
+            else (regrouped.sortBy("" + _._1.name) flatMap {
+              case (owner, members) =>
+                ("// Members declared in " + owner.fullName) +: membersStrings(members) :+ ""
+            }).init
+          }
+
+          // If there are numerous missing methods, we presume they are aware of it and
+          // give them a nicely formatted set of method signatures for implementing.
+          if (missingMethods.size > 1) {
+            abstractClassError(false, "it has " + missingMethods.size + " unimplemented members.")
+            val preface =
+              """|/** As seen from %s, the missing signatures are as follows.
+                 | *  For convenience, these are usable as stub implementations.
+                 | */
+                 |""".stripMargin.format(clazz)
+            abstractErrors += stubImplementations.map("  " + _ + "\n").mkString(preface, "", "")
+            return
+          }
 
           for (member <- missing) {
             def undefined(msg: String) = abstractClassError(false, infoString(member) + " is not defined" + msg)
-            val underlying = analyzer.underlying(member)
+            val underlying = analyzer.underlyingSymbol(member)
 
             // Give a specific error message for abstract vars based on why it fails:
             // It could be unimplemented, have only one accessor, or be uninitialized.
             if (underlying.isVariable) {
+              val isMultiple = grouped.getOrElse(underlying.name, Nil).size > 1
+
               // If both getter and setter are missing, squelch the setter error.
-              val isMultiple = grouped(underlying.name).size > 1
-              // TODO: messages shouldn't be spread over two files, and varNotice is not a clear name
               if (member.isSetter && isMultiple) ()
               else undefined(
                 if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
                 else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
-                else analyzer.varNotice(member)
+                else analyzer.abstractVarMessage(member)
               )
             }
             else if (underlying.isMethod) {
-
               // If there is a concrete method whose name matches the unimplemented
               // abstract method, and a cursory examination of the difference reveals
               // something obvious to us, let's make it more obvious to them.
@@ -622,7 +653,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
                 abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
-                                   " which is not implemented in a subclass"+analyzer.varNotice(decl))
+                                   " which is not implemented in a subclass"+analyzer.abstractVarMessage(decl))
               }
             }
           }

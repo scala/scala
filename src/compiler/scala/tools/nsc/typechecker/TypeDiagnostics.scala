@@ -123,6 +123,14 @@ trait TypeDiagnostics {
       else nameString + " is not a member of " + targetKindString + target + addendum
     )
   }
+
+  /** An explanatory note to be added to error messages
+   *  when there's a problem with abstract var defs */
+  def abstractVarMessage(sym: Symbol): String =
+    if (underlyingSymbol(sym).isVariable)
+      "\n(Note that variables need to be initialized to be defined)"
+    else ""
+
   def notAMemberError(pos: Position, qual: Tree, name: Name) =
     context.error(pos, notAMemberMessage(pos, qual, name))
 
@@ -160,6 +168,24 @@ trait TypeDiagnostics {
 
     "missing parameter type" + suffix
   }
+
+  /** The symbol which the given accessor represents (possibly in part).
+   *  This is used for error messages, where we want to speak in terms
+   *  of the actual declaration or definition, not in terms of the generated setters
+   *  and getters.
+   */
+  def underlyingSymbol(member: Symbol): Symbol =
+    if (!member.hasAccessorFlag) member
+    else if (!member.isDeferred) member.accessed
+    else {
+      val getter = if (member.isSetter) member.getter(member.owner) else member
+      val flags  = if (getter.setter(member.owner) != NoSymbol) DEFERRED | MUTABLE else DEFERRED
+
+      ( getter.owner.newValue(getter.pos, getter.name.toTermName)
+          setInfo getter.tpe.resultType
+          setFlag flags
+      )
+    }
 
   def treeSymTypeMsg(tree: Tree): String = {
     val sym               = tree.symbol

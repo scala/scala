@@ -1403,7 +1403,7 @@ trait Namers { self: Analyzer =>
           !context.tree.isInstanceOf[ExistentialTypeTree] &&
           (!sym.owner.isClass || sym.owner.isModuleClass || sym.owner.isAnonymousClass)) {
             context.error(sym.pos,
-              "only classes can have declared but undefined members" + varNotice(sym))
+              "only classes can have declared but undefined members" + abstractVarMessage(sym))
             sym.resetFlag(DEFERRED)
         }
       }
@@ -1455,21 +1455,8 @@ trait Namers { self: Analyzer =>
     }
   }
 
-  /** The symbol that which this accessor represents (possibly in part).
-   *  This is used for error messages, where we want to speak in terms
-   *  of the actual declaration or definition, not in terms of the generated setters
-   *  and getters */
-  def underlying(member: Symbol): Symbol =
-    if (member.hasAccessorFlag) {
-      if (member.isDeferred) {
-        val getter = if (member.isSetter) member.getter(member.owner) else member
-        val result = getter.owner.newValue(getter.pos, getter.name.toTermName)
-          .setInfo(getter.tpe.resultType)
-          .setFlag(DEFERRED)
-        if (getter.setter(member.owner) != NoSymbol) result.setFlag(MUTABLE)
-        result
-      } else member.accessed
-    } else member
+  @deprecated("Use underlyingSymbol instead", "2.10.0")
+  def underlying(member: Symbol): Symbol = underlyingSymbol(member)
 
   /**
    * Finds the companion module of a class symbol. Calling .companionModule
@@ -1506,12 +1493,5 @@ trait Namers { self: Analyzer =>
     if (sym.isTerm) companionClassOf(sym, context)
     else if (sym.isClass) companionModuleOf(sym, context)
     else NoSymbol
-
-  /** An explanatory note to be added to error messages
-   *  when there's a problem with abstract var defs */
-  def varNotice(sym: Symbol): String =
-    if (underlying(sym).isVariable)
-      "\n(Note that variables need to be initialized to be defined)"
-    else ""
 }
 

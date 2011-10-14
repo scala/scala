@@ -1,0 +1,24 @@
+abstract-report.scala:1: error: class Unimplemented needs to be abstract, since:
+it has 12 unimplemented members.
+/** As seen from class Unimplemented, the missing signatures are as follows.
+ *  For convenience, these are usable as stub implementations.
+ */
+  // Members declared in scala.collection.GenTraversableOnce
+  def isTraversableAgain: Boolean = ???
+  def toIterator: Iterator[String] = ???
+  def toStream: Stream[String] = ???
+  
+  // Members declared in scala.collection.TraversableOnce
+  def copyToArray[B >: String](xs: Array[B],start: Int,len: Int): Unit = ???
+  def exists(p: String => Boolean): Boolean = ???
+  def find(p: String => Boolean): Option[String] = ???
+  def forall(p: String => Boolean): Boolean = ???
+  def foreach[U](f: String => U): Unit = ???
+  def hasDefiniteSize: Boolean = ???
+  def isEmpty: Boolean = ???
+  def seq: scala.collection.TraversableOnce[String] = ???
+  def toTraversable: Traversable[String] = ???
+
+class Unimplemented extends TraversableOnce[String] { }
+      ^
+one error found

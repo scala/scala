@@ -293,7 +293,7 @@ trait Infer {
             else
               ptBlock("because of an internal error (no accessible symbol)",
                 "sym.ownerChain"                -> sym.ownerChain,
-                "underlying(sym)"               -> underlying(sym),
+                "underlyingSymbol(sym)"         -> underlyingSymbol(sym),
                 "pre"                           -> pre,
                 "site"                          -> site,
                 "tree"                          -> tree,
@@ -312,7 +312,7 @@ trait Infer {
           } catch {
             case ex: MalformedType =>
               if (settings.debug.value) ex.printStackTrace
-              val sym2 = underlying(sym1)
+              val sym2 = underlyingSymbol(sym1)
               val itype = pre.memberType(sym2)
               new AccessError(tree, sym, pre,
                           "\n because its instance type "+itype+
@@ -1870,7 +1870,7 @@ trait Infer {
       // @PP: It is improbable this logic shouldn't be in use elsewhere as well.
       private def location = if (sym.isClassConstructor) context.enclClass.owner else pre.widen
       def emit(): Tree = {
-        val realsym = underlying(sym)
+        val realsym = underlyingSymbol(sym)
         errorTree(tree, realsym.fullLocationString + " cannot be accessed in " + location + explanation)
       }
     }
