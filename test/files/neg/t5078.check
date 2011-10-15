@@ -1,0 +1,13 @@
+t5078.scala:7: error: an unapply method must accept a single argument.
+    val Foo(x1) = 1
+        ^
+t5078.scala:7: error: recursive value x1 needs type
+    val Foo(x1) = 1
+           ^
+t5078.scala:8: error: an unapply method must accept a single argument.
+    val Foo2(y2) = 2
+        ^
+t5078.scala:8: error: recursive value y2 needs type
+    val Foo2(y2) = 2
+            ^
+four errors found

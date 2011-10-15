@@ -2588,7 +2588,7 @@ trait Typers extends Modes with Adaptations {
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
 
-          def freshArgType(tp: Type): (Type, List[Symbol]) = (tp: @unchecked) match {
+          def freshArgType(tp: Type): (Type, List[Symbol]) = tp match {
             case MethodType(param :: _, _) =>
               (param.tpe, Nil)
             case PolyType(tparams, restype) =>
@@ -2596,6 +2596,9 @@ trait Typers extends Modes with Adaptations {
               (freshArgType(restype)._1.substSym(tparams, tparams1), tparams1)
             case OverloadedType(_, _) =>
               error(fun.pos, "cannot resolve overloaded unapply")
+              (ErrorType, Nil)
+            case _ =>
+              error(fun.pos, "an unapply method must accept a single argument.")
               (ErrorType, Nil)
           }
 
