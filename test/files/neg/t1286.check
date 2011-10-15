@@ -1,7 +1,9 @@
-a.scala:1: error: Companions 'object Foo' and 'trait Foo' must be defined in same file
+a.scala:1: error: Companions 'object Foo' and 'trait Foo' must be defined in same file:
+  Found in files/neg/t1286/b.scala and files/neg/t1286/a.scala
 trait Foo {
       ^
-b.scala:1: error: Companions 'trait Foo' and 'object Foo' must be defined in same file
+b.scala:1: error: Companions 'trait Foo' and 'object Foo' must be defined in same file:
+  Found in files/neg/t1286/a.scala and files/neg/t1286/b.scala
 object Foo extends Foo {
        ^
 two errors found

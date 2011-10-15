@@ -89,6 +89,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   /** Returns the path of this abstract file. */
   def path: String
 
+  /** Returns the path of this abstract file in a canonical form. */
+  def canonicalPath: String = if (file == null) path else file.getCanonicalPath
+
   /** Checks extension case insensitively. */
   def hasExtension(other: String) = extension == other.toLowerCase
   private lazy val extension: String = Path.extension(name)

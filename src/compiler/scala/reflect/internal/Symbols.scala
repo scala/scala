@@ -1446,8 +1446,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         (this.sourceFile == that.sourceFile) || {
           // recognize companion object in separate file and fail, else compilation
           // appears to succeed but highly opaque errors come later: see bug #1286
-          if (this.sourceFile.path != that.sourceFile.path)
-            throw InvalidCompanions(this, that)
+          if (this.sourceFile.path != that.sourceFile.path) {
+            // The cheaper check can be wrong: do the expensive normalization
+            // before failing.
+            if (this.sourceFile.canonicalPath != that.sourceFile.canonicalPath)
+              throw InvalidCompanions(this, that)
+          }
 
           false
         }
@@ -2404,8 +2408,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // printStackTrace() // debug
   }
 
-  case class InvalidCompanions(sym1: Symbol, sym2: Symbol)
-  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file") {
+  case class InvalidCompanions(sym1: Symbol, sym2: Symbol) extends Throwable(
+    "Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file:\n" +
+    "  Found in " + sym1.sourceFile.canonicalPath + " and " + sym2.sourceFile.canonicalPath
+  ) {
       override def toString = getMessage
   }
 
