@@ -44,7 +44,7 @@ abstract class Any {
    *
    *  @return   the hash code value for this object.
    */
-  def hashCode: Int
+  def hashCode(): Int
 
   /** Returns a string representation of the object.
    *
@@ -52,11 +52,11 @@ abstract class Any {
    *
    *  @return a string representation of the object.
    */
-  def toString: String
+  def toString(): String
 
   /** Returns the runtime class representation of the object.
    *
-   *  @return a class object corresponding to the static type of the receiver
+   *  @return a class object corresponding to the runtime type of the receiver.
    */
   def getClass(): Class[_]
 
@@ -84,7 +84,7 @@ abstract class Any {
    *
    *  @return   a hash value consistent with ==
    */
-  final def ## : Int = sys.error("##")
+  final def ##(): Int = sys.error("##")
 
   /** Test whether the dynamic type of the receiver object is `T0`.
    *
