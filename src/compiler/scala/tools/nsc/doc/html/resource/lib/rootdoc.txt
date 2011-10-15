@@ -1,18 +1,27 @@
 This is the documentation for the Scala standard library.
 
-Parts of the standard library are imported by default into all Scala source files: the [[scala]] package, and
-the contents of the [[scala.Predef]] object. In turn, these imports bring in parts of other packages throughout
-the standard library.
+== Package structure ==
 
-The standard library is composed of the following fundamental packages:
+The [[scala]] package contains core types.
 
-  - scala.[[scala.actors]] - A Erlang-style concurrency framework.
-  - scala.[[scala.collection]] - A powerful collections (data structures) framework with higher order functions for manipulation. Both [[scala.collection.mutable]] and [[scala.collection.immutable]] variants of most collection types exist, with the immutable collections being the default. Automatic parallelisation of manipulation operations is possible through the use of the [[scala.collection.parallel]] collection types.
-  - scala.[[scala.concurrent]] - Simplified execution of functions in separate threads.
-  - scala.[[scala.io]] - IO abstractions.
-  - scala.[[scala.math]] - Arbitrary precision numeric types and basic math functions.
-  - scala.[[scala.swing]] - UI toolkit, provides scala abstractions around the Java Swing toolkit.
+scala.[[scala.collection]] and its subpackages contain a collections framework with higher-order functions for manipulation. Both [[scala.collection.immutable]] and [[scala.collection.mutable]] data structures are available, with immutable as the default. The [[scala.collection.parallel]] collections provide automatic parallel operation.
+
+Other important packages include:
+
+  - scala.[[scala.actors]] - Concurrency framework inspired by Erlang.
+  - scala.[[scala.io]] - Input and output.
+  - scala.[[scala.math]] - Basic math functions and additional numeric types.
   - scala.[[scala.sys]] - Interaction with other processes and the operating system.
-  - scala.util.[[scala.util.matching]] - Text pattern matching using regular expressions.
-  - scala.util.[[scala.util.parsing]] - Framework for constructing parse trees. Includes a parser combinator library.
-  - scala.[[scala.xml]] - XML parsing, DOM manipulation and serialization.
+  - scala.util.[[scala.util.matching]] - Pattern matching in text using regular expressions.
+  - scala.util.parsing.[[scala.util.parsing.combinator]] - Composable combinators for parsing.
+  - scala.[[scala.xml]] - XML parsing, manipulation, and serialization.
+
+Many other packages exist.  See the complete list on the left.
+
+== Automatic imports ==
+
+Identifiers in the scala package and the [[scala.Predef]] object are always in scope by default.
+
+Some of these identifiers are type aliases provided as shortcuts to commonly used classes.  For example, List is an alias for scala.collection.immutable.[[scala.collection.immutable.List]].
+
+Other aliases refer to classes providing by the underlying platform.  For example, on the JVM, String is an alias for java.lang.String.
