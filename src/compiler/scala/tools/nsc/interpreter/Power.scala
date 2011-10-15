@@ -140,7 +140,7 @@ abstract class Power(
   private def initImports = List(
     "scala.tools.nsc._",
     "scala.collection.JavaConverters._",
-    "global.{ error => _, _ }",
+    "intp.global.{ error => _, _ }",
     "definitions.{ getClass => _, _ }",
     "power.Implicits._",
     "power.rutil._"
