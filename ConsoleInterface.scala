@@ -11,7 +11,7 @@ import scala.tools.nsc.util.ClassPath
 
 class ConsoleInterface
 {
-	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger)
+	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, cleanupCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger)
 	{
 		val options = args.toList
 		lazy val interpreterSettings = MakeSettings.sync(options, log)
@@ -46,6 +46,12 @@ class ConsoleInterface
 			
 				if(!initialCommands.isEmpty)
 					interpreter.interpret(initialCommands)
+			}
+			override def closeInterpreter()
+			{
+				if(!cleanupCommands.isEmpty)
+					interpreter.interpret(cleanupCommands)
+				super.closeInterpreter()
 			}
 		}
 		loop.main(if(loader eq null) compilerSettings else interpreterSettings)
