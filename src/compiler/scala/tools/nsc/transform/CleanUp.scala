@@ -347,7 +347,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         /* ### CALLING THE APPLY ### */
         def callAsReflective(paramTypes: List[Type], resType: Type): Tree = {
-          val evalFn: Tree => Tree = qual1 => {
+          gen.evalOnce(qual, currentOwner, unit) { qual1 =>
             /* Some info about the type of the method being called. */
             val methSym       = ad.symbol
             val boxedResType  = toBoxedType(resType)      // Int -> Integer
@@ -382,7 +382,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
             /* Some info about the argument at the call site. */
             val qualSym           = qual.tpe.typeSymbol
-            val args              = qual1 :: params
+            val args              = qual1() :: params
             def isDefinitelyArray = (qualSym == ArrayClass)
             def isMaybeArray      = (qualSym == ObjectClass) || isDefinitelyArray
             def isMaybeBoxed      = platform isMaybeBoxed qualSym
@@ -404,11 +404,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             /** Normal non-Array call */
             def genDefaultCall = {
               // reflective method call machinery
-              val invokeName  = MethodClass.tpe member nme.invoke_                                // reflect.Method.invoke(...)
-              def cache       = safeREF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))   // cache Symbol
-              def lookup      = Apply(cache, List(qual1 GETCLASS))                                // get Method object from cache
-              def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                     // args for invocation
-              def invocation  = (lookup DOT invokeName)(qual1, invokeArgs)                        // .invoke(qual1, ...)
+              val invokeName  = MethodClass.tpe member nme.invoke_                                  // reflect.Method.invoke(...)
+              def cache       = safeREF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)) // cache Symbol
+              def lookup      = Apply(cache, List(qual1() GETCLASS))                                // get Method object from cache
+              def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                       // args for invocation
+              def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
               // exception catching machinery
               val invokeExc   = currentOwner.newValue(ad.pos, mkTerm("")) setInfo InvocationTargetExceptionClass.tpe
@@ -423,7 +423,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
             def genValueCallWithTest = {
               val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
-              IF (test(qual1)) THEN genValueCall(operator) ELSE genDefaultCall
+              IF (test(qual1())) THEN genValueCall(operator) ELSE genDefaultCall
             }
 
             /** A native Array call. */
@@ -442,7 +442,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
              *  so we have to generate both kinds of code.
              */
             def genArrayCallWithTest =
-              IF ((qual1 GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
+              IF ((qual1() GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
 
             localTyper typed (
               if (isMaybeBoxed && isJavaValueMethod) genValueCallWithTest
@@ -451,7 +451,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               else genDefaultCall
             )
           }
-          evalFn(qual)
         }
 
         if (settings.refinementMethodDispatch.value == "invoke-dynamic") {
