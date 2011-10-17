@@ -375,7 +375,7 @@ trait Namers { self: Analyzer =>
         || sym.owner.info.member(nme.copy).isSynthetic
       )
 
-      debuglog("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
+      debuglog("entered " + sym + " in " + context.owner)
       var ltype = namerOf(sym).typeCompleter(tree)
       if (tparams nonEmpty) {
         //@M! TypeDef's type params are handled differently
@@ -644,7 +644,7 @@ trait Namers { self: Analyzer =>
 // --- Lazy Type Assignment --------------------------------------------------
 
     def typeCompleter(tree: Tree) = mkTypeCompleter(tree) { sym =>
-      debuglog("defining " + sym + flagsToString(sym.flags)+sym.locationString)
+      debuglog("defining " + flagsToString(sym.flags) + " " + sym.fullLocationString)
       val tp = typeSig(tree)
       tp match {
         case TypeBounds(lo, hi) =>

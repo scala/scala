@@ -129,11 +129,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
      *  less than the whole tree.
      */
     def summaryString: String = tree match {
-      case Select(qual, name) => qual.summaryString + "." + name
+      case Select(qual, name) => qual.summaryString + "." + name.decode
       case Ident(name)        => name.longString
-      case t: DefTree         => t.shortClass + " " + t.name
-      case t: RefTree         => t.shortClass + " " + t.name.longString
-      case t                  => t.shortClass
+      case Literal(const)     => "Literal(" + const + ")"
+      case t: DefTree         => t.shortClass + " `" + t.name.decode + "`"
+      case t: RefTree         => t.shortClass + " `" + t.name.longString + "`"
+      case t                  =>
+        t.shortClass + (
+          if (t.symbol != null && t.symbol != NoSymbol) " " + t.symbol
+          else ""
+        )
     }
   }
 

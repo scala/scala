@@ -193,7 +193,7 @@ trait Contexts { self: Analyzer =>
       c.retyping = this.retyping
       c.openImplicits = this.openImplicits
       registerContext(c.asInstanceOf[analyzer.Context])
-      debuglog("Created context: " + this + " ==> " + c)
+      debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
     }
 

@@ -189,6 +189,7 @@ trait Position {
     if (source == null) this else source.positionInUltimateSource(this)
 
   def dbgString = toString
+  def safeLine = try line catch { case _: UnsupportedOperationException => -1 }
 
   def show: String = "["+toString+"]"
 }
