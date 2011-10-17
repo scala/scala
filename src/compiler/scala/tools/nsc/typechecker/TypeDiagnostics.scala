@@ -451,6 +451,10 @@ trait TypeDiagnostics {
 
     private def contextError(pos: Position, msg: String) = context.error(pos, msg)
     private def contextError(pos: Position, err: Throwable) = context.error(pos, err)
+    private def contextWarning(pos: Position, msg: String) = context.unit.warning(pos, msg)
+
+    def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
+      contextWarning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
 
     object checkDead {
       private var expr: Symbol = NoSymbol

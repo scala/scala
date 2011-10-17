@@ -2682,17 +2682,19 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      /** A synthetic ProductN parent for case classes. */
-      def extraCaseParents = (
+      /** Extra parents for case classes. */
+      def caseParents() = (
         if (mods.isCase) {
           val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
-          if (arity == 0) Nil
-          else List(
-            AppliedTypeTree(
-              productConstrN(arity),
-              vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
+          productConstr :: serializableConstr :: {
+            if (arity == 0) Nil
+            else List(
+              AppliedTypeTree(
+                productConstrN(arity),
+                vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
+              )
             )
-          )
+          }
         }
         else Nil
       )
@@ -2719,10 +2721,7 @@ self =>
             if (!isInterface(mods, body) && !isScalaArray(name)) parents0 :+ scalaScalaObjectConstr
             else if (parents0.isEmpty) List(scalaAnyRefConstr)
             else parents0
-          ) ++ (
-            if (mods.isCase) List(productConstr, serializableConstr) ++ extraCaseParents
-            else Nil
-          )
+          ) ++ caseParents()
           Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
         }
       }

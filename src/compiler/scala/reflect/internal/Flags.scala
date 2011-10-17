@@ -220,11 +220,27 @@ class Flags extends ModifierFlags {
   /** The two bridge flags */
   final val BRIDGES = BRIDGE | VBRIDGE
 
+  /** When a symbol for a field is created, only these flags survive
+   *  from Modifiers.  Others which may be applied at creation time are:
+   *  PRIVATE, LOCAL.
+   */
   final val FieldFlags: Long =
     MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
 
-  final val VarianceFlags       = COVARIANT | CONTRAVARIANT
-  final val ConstrFlags: Long   = JAVA
+  /** When a symbol for a default getter is created, it inherits these
+   *  flags from the method with the default.  Other flags applied at creation
+   *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE.
+   */
+  final val DefaultGetterFlags: Long =
+    PRIVATE | PROTECTED | FINAL
+
+  /** When a symbol for a method parameter is created, only these flags survive
+   *  from Modifiers.  Others which may be applied at creation time are:
+   *  SYNTHETIC.
+   */
+  final val ValueParameterFlags: Long = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
+  final val VarianceFlags             = COVARIANT | CONTRAVARIANT
+  final val ConstrFlags: Long         = JAVA
 
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA | FINAL

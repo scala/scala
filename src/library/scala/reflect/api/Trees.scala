@@ -94,8 +94,22 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
      */
     def setType(tp: Type): this.type = { rawtpe = tp; this }
 
-    /** Like `setType`, but if this is a previously empty TypeTree
-     *  that fact is remembered so that resetType will snap back.
+    /** Like `setType`, but if this is a previously empty TypeTree that
+     *  fact is remembered so that resetAllAttrs will snap back.
+     *
+     *  @PP: Attempting to elaborate on the above, I find: If defineType
+     *  is called on a TypeTree whose type field is null or NoType,
+     *  this is recorded as "wasEmpty = true". That value is used in
+     *  ResetAttrsTraverser, which nulls out the type field of TypeTrees
+     *  for which wasEmpty is true, leaving the others alone.
+     *
+     *  resetAllAttrs is used in situations where some speculative
+     *  typing of a tree takes place, fails, and the tree needs to be
+     *  returned to its former state to try again. So according to me:
+     *  using `defineType` instead of `setType` is how you communicate
+     *  that the type being set does not depend on any previous state,
+     *  and therefore should be abandoned if the current line of type
+     *  inquiry doesn't work out.
      */
     def defineType(tp: Type): this.type = setType(tp)
 

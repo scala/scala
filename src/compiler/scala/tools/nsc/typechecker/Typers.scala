@@ -1132,7 +1132,6 @@ trait Typers extends Modes with Adaptations {
       if (templ.parents.isEmpty) List()
       else try {
         val clazz = context.owner
-
         // Normalize supertype and mixins so that supertype is always a class, not a trait.
         var supertpt = typedTypeConstructor(templ.parents.head)
         val firstParent = supertpt.tpe.typeSymbol
@@ -1254,7 +1253,6 @@ trait Typers extends Modes with Adaptations {
      *  </ul>
      */
     def validateParentClasses(parents: List[Tree], selfType: Type) {
-
       def validateParentClass(parent: Tree, superclazz: Symbol) {
         if (!parent.tpe.isError) {
           val psym = parent.tpe.typeSymbol.initialize
@@ -1367,26 +1365,27 @@ trait Typers extends Modes with Adaptations {
      *  @return     ...
      */
     def typedModuleDef(mdef: ModuleDef): Tree = {
-      //Console.println("sourcefile of " + mdef.symbol + "=" + mdef.symbol.sourceFile)
-//      attributes(mdef)
       // initialize all constructors of the linked class: the type completer (Namer.methodSig)
       // might add default getters to this object. example: "object T; class T(x: Int = 1)"
       val linkedClass = companionClassOf(mdef.symbol, context)
       if (linkedClass != NoSymbol)
-        for (c <- linkedClass.info.decl(nme.CONSTRUCTOR).alternatives)
-          c.initialize
-      val clazz = mdef.symbol.moduleClass
-      val maybeAddSerializable = (l: List[Tree]) =>
-        if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) l
-        else {
-          clazz.makeSerializable()
-          l :+ (TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
-        }
+        linkedClass.info.decl(nme.CONSTRUCTOR).alternatives foreach (_.initialize)
+
+      val clazz     = mdef.symbol.moduleClass
       val typedMods = removeAnnotations(mdef.mods)
-      assert(clazz != NoSymbol)
-      val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope))
-        .typedTemplate(mdef.impl, maybeAddSerializable(parentTypes(mdef.impl)))
-      val impl2 = typerAddSyntheticMethods(impl1, clazz, context)
+      assert(clazz != NoSymbol, mdef)
+
+      val typer0 = newTyper(context.make(mdef.impl, clazz, new Scope))
+      val impl1  = typer0.typedTemplate(mdef.impl, {
+        parentTypes(mdef.impl) ++ (
+          if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) Nil
+          else {
+            clazz.makeSerializable()
+            List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
+          }
+        )
+      })
+      val impl2  = typerAddSyntheticMethods(impl1, clazz, context)
 
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
     }
@@ -1464,7 +1463,7 @@ trait Typers extends Modes with Adaptations {
               nameSuffix
             val beanGetter = value.owner.info.decl(beanGetterName)
             if (beanGetter == NoSymbol) {
-              // the namer decides wether to generate these symbols or not. at that point, we don't
+              // the namer decides whether to generate these symbols or not. at that point, we don't
               // have symbolic information yet, so we only look for annotations named "BeanProperty".
               unit.error(stat.pos, "implementation limitation: the BeanProperty annotation cannot be used in a type alias or renamed import")
             }
@@ -1602,9 +1601,7 @@ trait Typers extends Modes with Adaptations {
           val tpt2 = if (sym.hasDefault) {
             // When typechecking default parameter, replace all type parameters in the expected type by Wildcard.
             // This allows defining "def foo[T](a: T = 1)"
-            val tparams =
-              if (sym.owner.isConstructor) sym.owner.owner.info.typeParams
-              else sym.owner.tpe.typeParams
+            val tparams = sym.owner.skipConstructor.info.typeParams
             val subst = new SubstTypeMap(tparams, tparams map (_ => WildcardType)) {
               override def matches(sym: Symbol, sym1: Symbol) =
                 if (sym.isSkolem) matches(sym.deSkolemize, sym1)
@@ -3944,13 +3941,12 @@ trait Typers extends Modes with Adaptations {
           if (sameLength(tparams, args)) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
             val args1 =
-              if(!tpt1.symbol.rawInfo.isComplete)
+              if (!tpt1.symbol.rawInfo.isComplete)
                 args mapConserve (typedHigherKindedType(_, mode))
                 // if symbol hasn't been fully loaded, can't check kind-arity
-              else map2Conserve(args, tparams) {
-                (arg, tparam) =>
-                  typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
-                  //@M! the polytype denotes the expected kind
+              else map2Conserve(args, tparams) { (arg, tparam) =>
+                //@M! the polytype denotes the expected kind
+                typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
               }
             val argtypes = args1 map (_.tpe)
 
@@ -3965,7 +3961,7 @@ trait Typers extends Modes with Adaptations {
               case _ =>
             }}
             val original = treeCopy.AppliedTypeTree(tree, tpt1, args1)
-            val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal  original
+            val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal original
             if(tpt1.tpe.isInstanceOf[PolyType]) // did the type application (performed by appliedType) involve an unchecked beta-reduction?
               TypeTreeWithDeferredRefCheck(){ () =>
                 // wrap the tree and include the bounds check -- refchecks will perform this check (that the beta reduction was indeed allowed) and unwrap
