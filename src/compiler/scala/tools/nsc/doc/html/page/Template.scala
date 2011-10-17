@@ -9,7 +9,7 @@ package html
 package page
 
 import model._
-import scala.xml.{ NodeSeq, Text, XML, UnprefixedAttribute }
+import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
 
 class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
@@ -63,115 +63,121 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
     }
 
-    val bodyClass = if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value"
-
-    val icon = tpl.companion match {
-      case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
-        <a href={relativeLinkTo(companion)} title="Go to companion"><img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/></a>
-      case _ =>
-        <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
-    }
-
-    val b = <body onload={ "sh_highlightDocument('../lib/', '.min.js');" }>
-    </body>
-
-    val order = if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
-      <div id="order">
-        <span class="filtertype">Ordering</span>
-        <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" }
+          onload={ "sh_highlightDocument('../lib/', '.min.js');" }>
+      <div id="definition">
+        {
+          tpl.companion match {
+            case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
+              <a href={relativeLinkTo(companion)} title="Go to companion"><img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/></a>
+            case _ =>
+              <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
+        }}
+        { owner }
+        <h1>{ displayName }</h1>
       </div>
 
-    val ancestors = if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
-      <div id="ancestors">
-        <span class="filtertype">Inherited</span>
-        <ol>
-          <li class="hideall out"><span>Hide All</span></li>
-          <li class="showall in"><span>Show all</span></li>
-        </ol>
-        <ol id="linearization">{
-          (tpl :: tpl.linearizationTemplates) map { wte =>
-            <li class="in" name={ wte.qualifiedName }><span>{
-              wte.name
-            }</span></li> }
-        }</ol>
+      { signature(tpl, true) }
+      { memberToCommentHtml(tpl, true) }
+
+      <div id="mbrsel">
+        <div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>
+        { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
+            <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+            </div>
+        }
+        { if (tpl.linearizationTemplates.isEmpty) NodeSeq.Empty else
+            <div id="ancestors">
+              <span class="filtertype">Inherited</span>
+              <ol><li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li></ol>
+              <ol id="linearization">{
+                (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }><span>{ wte.name }</span></li> }
+              }</ol>
+            </div>
+        }
+        {
+          <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+        }
       </div>
 
-    val constructorsElem = if (constructors.isEmpty) NodeSeq.Empty else
-      <div id="constructors" class="members">
-        <h3>Instance Constructors</h3>
-        <ol>{ constructors map (memberToHtml(_)) }</ol>
+      <div id="template">
+        <div id="allMembers">
+        { if (constructors.isEmpty) NodeSeq.Empty else
+            <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol>{ constructors map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (typeMembers.isEmpty) NodeSeq.Empty else
+            <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol>{ typeMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (absValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol>{ absValueMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (concValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="values" class="values members">
+              <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
+              <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
+        { if (deprValueMembers.isEmpty) NodeSeq.Empty else
+            <div id="values" class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol>{ deprValueMembers map (memberToHtml(_)) }</ol>
+            </div>
+        }
+        </div>
+
+        <div id="inheritedMembers">
+        {
+          NodeSeq fromSeq (for ((superTpl, superType) <- (tpl.linearizationTemplates zip tpl.linearizationTypes)) yield
+            <div class="parent" name={ superTpl.qualifiedName }>
+              <h3>Inherited from {
+                if (tpl.universe.settings.useStupidTypes.value)
+                  superTpl match {
+                    case dtpl: DocTemplateEntity =>
+                      val sig = signature(dtpl, false, true) \ "_"
+                      sig
+                    case tpl: TemplateEntity =>
+                      tpl.name
+                  }
+                else
+                  typeToHtml(superType, true)
+              }</h3>
+            </div>
+          )
+        }
+        </div>
+
       </div>
 
-    val types = if (typeMembers.isEmpty) NodeSeq.Empty else
-      <div id="types" class="types members">
-        <h3>Type Members</h3>
-        <ol>{ typeMembers map (memberToHtml(_)) }</ol>
-      </div>
+      <div id="tooltip" ></div>
 
-    val abstructValues = if (absValueMembers.isEmpty) NodeSeq.Empty else
-      <div id="values" class="values members">
-        <h3>Abstract Value Members</h3>
-        <ol>{ absValueMembers map (memberToHtml(_)) }</ol>
-      </div>
-
-    val concreteValues = if (concValueMembers.isEmpty) NodeSeq.Empty else
-      <div id="values" class="values members">
-        <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
-        <ol>{ concValueMembers map (memberToHtml(_)) }</ol>
-      </div>
-
-    val deprecatedValues = if (deprValueMembers.isEmpty) NodeSeq.Empty else
-      <div id="values" class="values members">
-        <h3>Deprecated Value Members</h3>
-        <ol>{ deprValueMembers map (memberToHtml(_)) }</ol>
-      </div>
-
-    val inheritedMembers = NodeSeq fromSeq (
-      for ((superTpl, superType) <- (tpl.linearizationTemplates zip tpl.linearizationTypes)) yield
-      <div class="parent" name={ superTpl.qualifiedName }>
-        <h3>Inherited from {
-          if (tpl.universe.settings.useStupidTypes.value)
-            superTpl match {
-              case dtpl: DocTemplateEntity =>
-                val sig = signature(dtpl, false, true) \ "_"
-              sig
-              case tpl: TemplateEntity =>
-                tpl.name
-            }
-          else
-            typeToHtml(superType, true)
-        }</h3>
-      </div>
-    )
-
-    val footer = {
-      val setting = tpl.universe.settings.docfooter.value
-      if (Set("epfl", "EPFL").contains(setting)) {
-        <div id="footer">Scala programming documentation. Copyright (c) 2003-2011 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
-      } else {
-        <div id="footer"> { setting } </div>
+      {
+        if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
+          <div id="footer">Scala programming documentation. Copyright (c) 2003-2011 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://typesafe.com" target="_top">Typesafe</a>.</div>
+        else
+          <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }
-    }
 
-    val engine =
-      new TemplateEngine(XML.load(resourceStream("template/template.html")))
-    engine.render(
-      "bodyClass" -> (if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value"),
-      "signature" -> signature(tpl, true),
-      "comment" ->  memberToCommentHtml(tpl, true),
-      "icon" -> icon,
-      "owner" -> owner,
-      "displayName" -> displayName,
-      "order" -> order,
-      "ancestors" -> ancestors,
-      "constructors" -> constructorsElem,
-      "types" -> types,
-      "abstructValues" -> abstructValues,
-      "concreteValues" -> concreteValues,
-      "deprecatedValues" -> deprecatedValues,
-      "comment" -> memberToCommentHtml(tpl, true),
-      "footer" -> footer
-    )
+
+    </body>
   }
 
   def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
