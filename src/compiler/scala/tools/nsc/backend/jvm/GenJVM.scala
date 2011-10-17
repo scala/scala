@@ -880,8 +880,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
       val needsAnnotation = (
-           !(meth.throwsAnnotations contains RemoteExceptionClass)
-        && (isRemoteClass || (meth hasAnnotation RemoteAttr) && jmethod.isPublic)
+        (isRemoteClass || (meth hasAnnotation RemoteAttr) && jmethod.isPublic)
+          && !(meth.throwsAnnotations contains RemoteExceptionClass)
       )
       if (needsAnnotation) {
         val c   = Constant(RemoteExceptionClass.tpe)
