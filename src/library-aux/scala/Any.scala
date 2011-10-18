@@ -14,7 +14,7 @@ package scala
 abstract class Any {
   /** Compares the receiver object (`this`) with the argument object (`that`) for equivalence.
    *
-   *  The default implementations of this method is an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]:
+   *  Any implementation of this method should be an [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]:
    *
    *  - It is reflexive: for any instance `x` of type `Any`, `x.equals(x)` should return `true`.
    *  - It is symmetric: for any instances `x` and `y` of type `Any`, `x.equals(y)` should return `true` if and
@@ -61,6 +61,7 @@ abstract class Any {
   def getClass(): Class[_]
 
   /** Test two objects for equality.
+   *  The expression `x == that` is equivalent to `if (x eq null) that eq null else x.equals(that)`.
    *
    *  @param  that  the object to compare against this object for equality.
    *  @return       `true` if the receiver object is equivalent to the argument; `false` otherwise.

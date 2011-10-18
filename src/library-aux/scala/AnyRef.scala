@@ -13,7 +13,9 @@ package scala
  */
 trait AnyRef extends Any {
 
-  /** The equality method for reference types.  See equals in [[scala.Any]].
+  /** The equality method for reference types.  Default implementation delegates to `eq`.
+   *
+   *  See also `equals` in [[scala.Any]].
    *
    *  @param  that    the object to compare against this object for equality.
    *  @return         `true` if the receiver object is equivalent to the argument; `false` otherwise.
