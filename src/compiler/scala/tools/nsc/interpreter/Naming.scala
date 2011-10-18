@@ -45,10 +45,11 @@ trait Naming {
       sys.props.getOrElse("scala.repl.naming." + name, default)
 
     // Prefixes used in repl machinery.  Default to $line, $read, etc.
-    def line  = propOr("line")
-    def read  = propOr("read")
-    def eval  = propOr("eval")
-    def print = propOr("print")
+    def line   = propOr("line")
+    def read   = propOr("read")
+    def eval   = propOr("eval")
+    def print  = propOr("print")
+    def result = propOr("result")
 
     // The prefix for unnamed results: by default res0, res1, etc.
     def res   = propOr("res", "res")  // INTERPRETER_VAR_PREFIX

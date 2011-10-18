@@ -690,6 +690,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
     val printName   = sessionNames.print
+    val resultName  = sessionNames.result
 
     class LineExceptional(ex: Throwable) extends Exceptional(ex) {
       private def showReplInternal = isettings.showInternalStackTraces
@@ -755,7 +756,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     var evalCaught: Option[Throwable] = None
     lazy val evalClass = load(evalPath)
-    lazy val evalValue = callEither(evalName) match {
+    lazy val evalValue = callEither(resultName) match {
       case Left(ex)      => evalCaught = Some(ex) ; None
       case Right(result) => Some(result)
     }
@@ -881,10 +882,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         else handlers.last.definesTerm match {
           case Some(vname) if typeOf contains vname =>
             """
-            |lazy val $result = {
+            |lazy val %s = {
             |  %s
             |  %s
-            |}""".stripMargin.format(lineRep.printName, fullPath(vname))
+            |}""".stripMargin.format(lineRep.resultName, lineRep.printName, fullPath(vname))
           case _  => ""
         }
       // first line evaluates object to make sure constructor is run
