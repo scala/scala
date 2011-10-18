@@ -784,12 +784,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)
 
-    /** If symbol is a value class, return the value class, with the exception
-     *  that BoxedUnit remains BoxedUnit.  If not a value class, NoSymbol.
+    /** If symbol is a value class (boxed or not), return the unboxed
+     *  value class.  Otherwise, NoSymbol.
      */
     def unboxedValueClass(sym: Symbol): Symbol =
       if (isValueClass(sym)) sym
-      else if (sym == BoxedUnitClass) sym
+      else if (sym == BoxedUnitClass) UnitClass
       else boxedClass.map(_.swap).getOrElse(sym, NoSymbol)
 
     /** Is type's symbol a numeric value class? */

@@ -1017,7 +1017,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
 
         /** Symbols which limit the warnings we can issue since they may be value types */
-        val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, SerializableClass)
+        val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
 
         // Whether def equals(other: Any) is overridden
         def isUsingDefaultEquals      = {
@@ -1035,6 +1035,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
+        def isSpecial(s: Symbol) = isValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
@@ -1088,7 +1089,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
         }
 
-        if (nullCount == 0 && possibleNumericCount < 2) {
+        // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
+        if (nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           if (actual isSubClass receiver) ()
           else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object

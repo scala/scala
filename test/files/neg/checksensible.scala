@@ -32,6 +32,9 @@ class EqEqValTest {
   "abc" == 1        // warns because the lub of String and Int is Any
   Some(1) == 1      // as above
 
+  true == new java.lang.Boolean(true) // none of these should warn
+  new java.lang.Boolean(true) == true
+
   new AnyRef == 1
   1 == new AnyRef                 // doesn't warn because it could be...
   1 == (new java.lang.Integer(1)) // ...something like this
@@ -41,6 +44,9 @@ class EqEqValTest {
   () == true
   () == ()
   () == println
+  () == scala.runtime.BoxedUnit.UNIT // these should warn for always being true/false
+  scala.runtime.BoxedUnit.UNIT != ()
+  (scala.runtime.BoxedUnit.UNIT: java.io.Serializable) != () // shouldn't warn
 
   (1 != println)
   (1 != 'sym)

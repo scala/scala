@@ -34,64 +34,70 @@ checksensible.scala:32: error: String and Int are unrelated: they will most like
 checksensible.scala:33: error: Some[Int] and Int are unrelated: they will most likely never compare equal
   Some(1) == 1      // as above
           ^
-checksensible.scala:35: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:38: error: comparing a fresh object using `==' will always yield false
   new AnyRef == 1
              ^
-checksensible.scala:38: error: comparing values of types Int and Boolean using `==' will always yield false
+checksensible.scala:41: error: comparing values of types Int and Boolean using `==' will always yield false
   1 == (new java.lang.Boolean(true))
     ^
-checksensible.scala:40: error: comparing values of types Int and Boolean using `!=' will always yield true
+checksensible.scala:43: error: comparing values of types Int and Boolean using `!=' will always yield true
   1 != true
     ^
-checksensible.scala:41: error: comparing values of types Unit and Boolean using `==' will always yield false
+checksensible.scala:44: error: comparing values of types Unit and Boolean using `==' will always yield false
   () == true
      ^
-checksensible.scala:42: error: comparing values of types Unit and Unit using `==' will always yield true
+checksensible.scala:45: error: comparing values of types Unit and Unit using `==' will always yield true
   () == ()
      ^
-checksensible.scala:43: error: comparing values of types Unit and Unit using `==' will always yield true
+checksensible.scala:46: error: comparing values of types Unit and Unit using `==' will always yield true
   () == println
      ^
-checksensible.scala:45: error: comparing values of types Int and Unit using `!=' will always yield true
+checksensible.scala:47: error: comparing values of types Unit and scala.runtime.BoxedUnit using `==' will always yield true
+  () == scala.runtime.BoxedUnit.UNIT // these should warn for always being true/false
+     ^
+checksensible.scala:48: error: comparing values of types scala.runtime.BoxedUnit and Unit using `!=' will always yield false
+  scala.runtime.BoxedUnit.UNIT != ()
+                               ^
+checksensible.scala:51: error: comparing values of types Int and Unit using `!=' will always yield true
   (1 != println)
      ^
-checksensible.scala:46: error: comparing values of types Int and Symbol using `!=' will always yield true
+checksensible.scala:52: error: comparing values of types Int and Symbol using `!=' will always yield true
   (1 != 'sym)
      ^
-checksensible.scala:52: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:58: error: comparing a fresh object using `==' will always yield false
   ((x: Int) => x + 1) == null
                       ^
-checksensible.scala:53: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:59: error: comparing a fresh object using `==' will always yield false
   Bep == ((_: Int) + 1)
       ^
-checksensible.scala:55: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:61: error: comparing a fresh object using `==' will always yield false
   new Object == new Object
              ^
-checksensible.scala:56: error: comparing a fresh object using `==' will always yield false
+checksensible.scala:62: error: comparing a fresh object using `==' will always yield false
   new Object == "abc"
              ^
-checksensible.scala:57: error: comparing a fresh object using `!=' will always yield true
+checksensible.scala:63: error: comparing a fresh object using `!=' will always yield true
   new Exception() != new Exception()
                   ^
-checksensible.scala:60: error: comparing values of types Int and Null using `==' will always yield false
+checksensible.scala:66: error: comparing values of types Int and Null using `==' will always yield false
   if (foo.length == null) "plante" else "plante pas"
                  ^
-checksensible.scala:65: error: comparing values of types Bip and Bop using `==' will always yield false
+checksensible.scala:71: error: comparing values of types Bip and Bop using `==' will always yield false
   (x1 == x2)
       ^
-checksensible.scala:75: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
+checksensible.scala:81: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
   c3 == z1
      ^
-checksensible.scala:76: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
+checksensible.scala:82: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
   z1 == c3
      ^
-checksensible.scala:77: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
+checksensible.scala:83: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
   z1 != c3
      ^
-checksensible.scala:78: error: comparing values of types EqEqRefTest.this.C3 and String using `!=' will always yield true
+checksensible.scala:84: error: comparing values of types EqEqRefTest.this.C3 and String using `!=' will always yield true
   c3 != "abc"
      ^
-checksensible.scala:89: error: comparing values of types Unit and Int using `!=' will always yield true
+checksensible.scala:95: error: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-32 errors found
+34 errors found
