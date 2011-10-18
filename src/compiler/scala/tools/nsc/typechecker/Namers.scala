@@ -333,6 +333,16 @@ trait Namers { self: Analyzer =>
       val m = companionModuleOf(tree.symbol, context)
       // @luc: not sure why "currentRun.compiles(m)" is needed, things breaks
       // otherwise. documentation welcome.
+      //
+      // @PP: I tried to reverse engineer said documentation.  The only tests
+      // which fail are buildmanager tests, as follows.  Given A.scala:
+      //   case class Foo()
+      // If you recompile A.scala, the Changes Map is
+      //   Map(class Foo -> Nil, object Foo -> Nil)
+      // But if you remove the 'currentRun.compiles(m)' condition, it is
+      //   Map(class Foo -> Nil)
+      // What exactly this implies and whether this is a sensible way to
+      // enforce it, I don't know.
       if (m != NoSymbol && currentRun.compiles(m)) m
       else enterSyntheticSym(creator)
     }
