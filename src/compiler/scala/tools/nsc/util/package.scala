@@ -26,17 +26,30 @@ package object util {
 
   def freqrank[T](xs: Traversable[(T, Int)]): List[(Int, T)] = xs.toList map (_.swap) sortBy (-_._1)
 
-  /** Execute code and then wait for all Threads created during its
-   *  execution to complete.
+  /** Execute code and then wait for all non-daemon Threads
+   *  created and begun during its execution to complete.
    */
   def waitingForThreads[T](body: => T) = {
-    val ts1        = sys.allThreads()
-    val result     = body
-    val ts2        = sys.allThreads()
-    val newThreads = ts2.toSet -- ts1 filterNot (_.isDaemon())
+    val (result, created) = trackingThreads(body)
+    val threads = created filterNot (_.isDaemon)
 
-    newThreads foreach (_.join())
+    // As long as there are non-daemon, live threads (the latter
+    // condition should exclude shutdown hooks) we will wait.
+    while (threads exists (_.isAlive))
+      threads filter (_.isAlive) foreach (_.join())
+
     result
+  }
+
+  /** Executes the code and returns the result and any threads
+   *  which were created during its execution.
+   */
+  def trackingThreads[T](body: => T): (T, Seq[Thread]) = {
+    val ts1    = sys.allThreads()
+    val result = body
+    val ts2    = sys.allThreads()
+
+    (result, ts2 filterNot (ts1 contains _))
   }
 
   /** Given a function and a block of code, evaluates code block,
