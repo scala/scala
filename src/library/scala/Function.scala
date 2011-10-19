@@ -39,7 +39,7 @@ object Function {
    *                f returns `Some(_)` and undefined where `f` returns `None`.
    *  @see [[scala.PartialFunction#lift]]
    */
-  def unlift[T, R](f: T => Option[R]): PartialFunction[T, R] = new PartialFunction[T, R] {
+  def unlift[T, R](f: T => Option[R]): PartialFunction[T, R] = new runtime.AbstractPartialFunction[T, R] {
     def apply(x: T): R = f(x).get
     def isDefinedAt(x: T): Boolean = f(x).isDefined
     override def lift: T => Option[R] = f

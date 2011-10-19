@@ -36,7 +36,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
    *           takes `x` to `this(x)` where `this` is defined, and to `that(x)` where it is not.
    */
   def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] =
-    new PartialFunction[A1, B1] {
+    new runtime.AbstractPartialFunction[A1, B1] {
     def isDefinedAt(x: A1): Boolean =
       PartialFunction.this.isDefinedAt(x) || that.isDefinedAt(x)
     def apply(x: A1): B1 =
@@ -51,7 +51,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
    *   @return a partial function with the same domain as this partial function, which maps
    *           arguments `x` to `k(this(x))`.
    */
-  override def andThen[C](k: B => C) : PartialFunction[A, C] = new PartialFunction[A, C] {
+  override def andThen[C](k: B => C) : PartialFunction[A, C] = new runtime.AbstractPartialFunction[A, C] {
     def isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
     def apply(x: A): C = k(PartialFunction.this.apply(x))
   }
@@ -82,7 +82,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
  *  @since   2.8
  */
 object PartialFunction {
-  private[this] final val empty_pf = new PartialFunction[Any, Nothing] {
+  private[this] final val empty_pf: PartialFunction[Any, Nothing] = new runtime.AbstractPartialFunction[Any, Nothing] {
     def isDefinedAt(x: Any) = false
     def apply(x: Any): Nothing = sys.error("undefined")
     override def orElse[A1, B1](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = that

@@ -14,7 +14,7 @@ import scala.reflect.OptManifest
  *  example instances are in the companion object, but in general
  *  either IntFromString will suffice or you'll want custom transformers.
  */
-abstract class FromString[+T](implicit m: OptManifest[T]) extends PartialFunction[String, T] {
+abstract class FromString[+T](implicit m: OptManifest[T]) extends scala.runtime.AbstractPartialFunction[String, T] {
   def apply(s: String): T
   def isDefinedAt(s: String): Boolean = true
   def zero: T = apply("")

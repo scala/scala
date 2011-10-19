@@ -229,8 +229,8 @@ object Exception {
   private def wouldMatch(x: Throwable, classes: collection.Seq[Class[_]]): Boolean =
     classes exists (_ isAssignableFrom x.getClass)
 
-  private def pfFromExceptions(exceptions: Class[_]*) =
-    new PartialFunction[Throwable, Nothing] {
+  private def pfFromExceptions(exceptions: Class[_]*): PartialFunction[Throwable, Nothing] =
+    new scala.runtime.AbstractPartialFunction[Throwable, Nothing] {
       def apply(x: Throwable) = throw x
       def isDefinedAt(x: Throwable) = wouldMatch(x, exceptions)
     }
