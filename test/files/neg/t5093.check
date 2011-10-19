@@ -1,0 +1,10 @@
+t5093.scala:2: error: illegal cyclic reference involving type C
+  def f[C[X] <: C[X]](l: C[_]) = l.x
+                                 ^
+t5093.scala:2: error: cyclic aliasing or subtyping involving type C
+  def f[C[X] <: C[X]](l: C[_]) = l.x
+        ^
+t5093.scala:2: error: C does not take type parameters
+  def f[C[X] <: C[X]](l: C[_]) = l.x
+                         ^
+three errors found

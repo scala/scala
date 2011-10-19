@@ -1772,7 +1772,13 @@ trait Types extends api.Types { self: SymbolTable =>
         val symInfo = sym.info
         if (thisInfoCache == null || (symInfo ne symInfoCache)) {
           symInfoCache = symInfo
-          thisInfoCache = transformInfo(symInfo)
+          thisInfoCache = transformInfo(symInfo) match {
+            // If a subtyping cycle is not detected here, we'll likely enter an infinite
+            // loop before a sensible error can be issued.  SI-5093 is one example.
+            case x: SubType if x.supertype eq this =>
+              throw new TypeError("illegal cyclic reference involving " + sym)
+            case tp => tp
+          }
         }
         thisInfoCache
       }
