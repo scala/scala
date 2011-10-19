@@ -80,8 +80,7 @@ trait NameManglers {
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
-    /** !!! Foo$class$1 is an implClassName, I think.  */
-    def isImplClassName(name: Name)         = name endsWith IMPL_CLASS_SUFFIX
+    def isImplClassName(name: Name)         = stripAnonNumberSuffix(name) endsWith IMPL_CLASS_SUFFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
     def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
     def isLoopHeaderLabel(name: Name)       = (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)
@@ -157,6 +156,26 @@ trait NameManglers {
       val p = name.pos(DEFAULT_GETTER_STRING)
       if (p < name.length) name.subName(0, p)
       else name
+    }
+
+    /** !!! I'm putting this logic in place because I can witness
+     *  trait impls get lifted and acquiring names like 'Foo$class$1'
+     *  while clearly still being what they were. It's only being used on
+     *  isImplClassName. However, it's anyone's guess how much more
+     *  widely this logic actually ought to be applied. Anything which
+     *  tests for how a name ends is a candidate for breaking down once
+     *  something is lifted from a method.
+     *
+     *  TODO: resolve this significant problem.
+     */
+    def stripAnonNumberSuffix(name: Name): Name = {
+      val str = "" + name
+      if (str == "" || !str.endChar.isDigit) name
+      else {
+        val idx = name.lastPos('$')
+        if (idx < 0 || str.substring(idx + 1).exists(c => !c.isDigit)) name
+        else name.subName(0, idx)
+      }
     }
 
     def stripModuleSuffix(name: Name): Name = (

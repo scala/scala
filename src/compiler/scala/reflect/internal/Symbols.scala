@@ -1317,8 +1317,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The symbol accessed by this accessor function, but with given owner type. */
     final def accessed(ownerTp: Type): Symbol = {
-      assert(hasAccessorFlag)
-      ownerTp.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name))
+      assert(hasAccessorFlag, this)
+      ownerTp decl nme.getterToLocal(getterName)
     }
 
     /** The module corresponding to this module class (note that this
@@ -1348,6 +1348,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** If this is a lazy value, the lazy accessor; otherwise this symbol. */
     def lazyAccessorOrSelf: Symbol = if (isLazy) lazyAccessor else this
+
+    /** If this is an accessor, the accessed symbol.  Otherwise, this symbol. */
+    def accessedOrSelf: Symbol = if (hasAccessorFlag) accessed else this
 
     /** For an outer accessor: The class from which the outer originates.
      *  For all other symbols: NoSymbol
@@ -1646,10 +1649,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The getter of this value or setter definition in class `base`, or NoSymbol if
      *  none exists.
      */
-    final def getter(base: Symbol): Symbol = {
-      val getterName = if (isSetter) nme.setterToGetter(name) else nme.getterName(name)
-      base.info.decl(getterName) filter (_.hasAccessorFlag)
-    }
+    final def getter(base: Symbol): Symbol = base.info.decl(getterName) filter (_.hasAccessorFlag)
+
+    def getterName = if (isSetter) nme.setterToGetter(name) else nme.getterName(name)
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
     final def setter(base: Symbol): Symbol = setter(base, false)

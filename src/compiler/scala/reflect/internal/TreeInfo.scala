@@ -17,7 +17,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isVarArgsList, ThrowableClass }
+  import definitions.{ isVarArgsList, isCastSymbol, ThrowableClass }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -301,6 +301,15 @@ abstract class TreeInfo {
   def isWildcardStarArg(tree: Tree): Boolean = tree match {
     case Typed(_, Ident(tpnme.WILDCARD_STAR)) => true
     case _                                  => false
+  }
+
+  /** If this tree represents a type application (after unwrapping
+   *  any applies) the first type argument.  Otherwise, EmptyTree.
+   */
+  def firstTypeArg(tree: Tree): Tree = tree match {
+    case Apply(fn, _)            => firstTypeArg(fn)
+    case TypeApply(_, targ :: _) => targ
+    case _                       => EmptyTree
   }
 
   /** Does this argument list end with an argument of the form <expr> : _* ? */

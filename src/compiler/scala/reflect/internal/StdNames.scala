@@ -361,23 +361,15 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
           mkName(simple, div == '.') :: segments(rest, assumeTerm)
       }
     }
-    private def bitmapName(n: Int, suffix: String): TermName =
-      newTermName(BITMAP_PREFIX + suffix + n)
 
-    /** The name of bitmaps for initialized (public or protected) lazy vals. */
-    def bitmapName(n: Int): TermName = bitmapName(n, "")
+    def newBitmapName(bitmapPrefix: Name, n: Int) = bitmapPrefix append ("" + n)
 
-    /** The name of bitmaps for initialized transient lazy vals. */
-    def bitmapNameForTransient(n: Int): TermName = bitmapName(n, "trans$")
-
-    /** The name of bitmaps for initialized private lazy vals. */
-    def bitmapNameForPrivate(n: Int): TermName = bitmapName(n, "priv$")
-
-    /** The name of bitmaps for checkinit values */
-    def bitmapNameForCheckinit(n: Int): TermName = bitmapName(n, "init$")
-
-    /** The name of bitmaps for checkinit values that have transient flag*/
-    def bitmapNameForCheckinitTransient(n: Int): TermName = bitmapName(n, "inittrans$")
+    val BITMAP_PREFIX: String                = "bitmap$"
+    val BITMAP_NORMAL: NameType              = BITMAP_PREFIX + ""           // initialization bitmap for public/protected lazy vals
+    val BITMAP_TRANSIENT: NameType           = BITMAP_PREFIX + "trans$"     // initialization bitmap for transient lazy vals
+    val BITMAP_PRIVATE: NameType             = BITMAP_PREFIX + "priv$"      // initialization bitmap for private lazy vals
+    val BITMAP_CHECKINIT: NameType           = BITMAP_PREFIX + "init$"      // initialization bitmap for checkinit values
+    val BITMAP_CHECKINIT_TRANSIENT: NameType = BITMAP_PREFIX + "inittrans$" // initialization bitmap for transient checkinit values
 
     /** The expanded name of `name` relative to this class `base` with given `separator`
      */
@@ -391,7 +383,6 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val ROOTPKG: TermName       = "_root_"
 
     /** Base strings from which synthetic names are derived. */
-    val BITMAP_PREFIX               = "bitmap$"
     val CHECK_IF_REFUTABLE_STRING   = "check$ifrefutable$"
     val DEFAULT_GETTER_STRING       = "$default$"
     val DO_WHILE_PREFIX             = "doWhile$"

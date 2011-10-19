@@ -933,26 +933,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if isSpecialized(sym1) =>
-      log("Unify - basic case: " + tp1 + ", " + tp2)
+      debuglog("Unify - basic case: " + tp1 + ", " + tp2)
       if (isValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
         env + ((sym1, tp2))
       else
         if (strict) throw UnifyError else env
     case (TypeRef(_, sym1, args1), TypeRef(_, sym2, args2)) =>
-      log("Unify TypeRefs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
+      debuglog("Unify TypeRefs: " + tp1 + " and " + tp2 + " with args " + (args1, args2) + " - ")
       if (strict && args1.length != args2.length) throw UnifyError
       val e = unify(args1, args2, env, strict)
-      log("unified to: " + e)
+      debuglog("unified to: " + e)
       e
     case (TypeRef(_, sym1, _), _) if sym1.isTypeParameterOrSkolem =>
       env
     case (MethodType(params1, res1), MethodType(params2, res2)) =>
       if (strict && params1.length != params2.length) throw UnifyError
-      log("Unify MethodTypes: " + tp1 + " and " + tp2)
+      debuglog("Unify MethodTypes: " + tp1 + " and " + tp2)
       unify(res1 :: (params1 map (_.tpe)), res2 :: (params2 map (_.tpe)), env, strict)
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       if (strict && tparams1.length != tparams2.length) throw UnifyError
-      log("Unify PolyTypes: " + tp1 + " and " + tp2)
+      debuglog("Unify PolyTypes: " + tp1 + " and " + tp2)
       unify(res1, res2, env, strict)
     case (PolyType(_, res), other) =>
       unify(res, other, env, strict)
@@ -965,7 +965,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case (AnnotatedType(_, tp1, _), tp2)        => unify(tp2, tp1, env, strict)
     case (ExistentialType(_, res1), _)          => unify(tp2, res1, env, strict)
     case _ =>
-      log("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
+      debuglog("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
       env
   }
 
@@ -977,7 +977,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val nenv = unify(args._1, args._2, emptyEnv, strict)
         if (env.keySet intersect nenv.keySet isEmpty) env ++ nenv
         else {
-          log("could not unify: u(" + args._1 + ", " + args._2 + ") yields " + nenv + ", env: " + env)
+          debuglog("could not unify: u(" + args._1 + ", " + args._2 + ") yields " + nenv + ", env: " + env)
           throw UnifyError
         }
       }
@@ -1216,14 +1216,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       (treeType =:= memberType) || { // anyref specialization
         memberType match {
           case PolyType(_, resTpe) =>
-            log("Conformance for anyref - polytype with result type: " + resTpe + " and " + treeType + "\nOrig. sym.: " + origSymbol)
+            debuglog("Conformance for anyref - polytype with result type: " + resTpe + " and " + treeType + "\nOrig. sym.: " + origSymbol)
             try {
               val e = unify(origSymbol.tpe, memberType, emptyEnv, true)
-              log("obtained env: " + e)
+              debuglog("obtained env: " + e)
               e.keySet == env.keySet
             } catch {
               case _ =>
-                log("Could not unify.")
+                debuglog("Could not unify.")
                 false
             }
           case _ => false
