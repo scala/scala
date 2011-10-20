@@ -2568,6 +2568,7 @@ A type's typeSymbol should never be inspected directly.
       // would be pointless. In this case, each check we perform causes us to lose specificity: in
       // the end the best we'll do is the least specific type we tested against, since the typevar
       // does not see these checks as "probes" but as requirements to fulfill.
+      // TODO: the `suspended` flag can be used to poke around with leaving a trace
       //
       // So the strategy used here is to test first the type, then the direct parents, and finally
       // to fall back on the individual base types. This warrants eventual re-examination.

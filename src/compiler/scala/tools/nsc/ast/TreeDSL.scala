@@ -68,7 +68,7 @@ trait TreeDSL {
       /** Note - calling ANY_== in the matcher caused primitives to get boxed
        *  for the comparison, whereas looking up nme.EQ does not.  See #3570 for
        *  an example of how target.tpe can be non-null, yet it claims not to have
-       *  a mmeber called nme.EQ.  Not sure if that should happen, but we can be
+       *  a member called nme.EQ.  Not sure if that should happen, but we can be
        *  robust by dragging in Any regardless.
        */
       def MEMBER_== (other: Tree)   = {

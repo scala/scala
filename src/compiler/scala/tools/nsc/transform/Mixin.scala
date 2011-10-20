@@ -1135,7 +1135,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
      */
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol
-
+      // assert(tree.tpe ne null, tree.getClass +" : "+ tree +" in "+ localTyper.context.tree)
       // change every node type that refers to an implementation class to its
       // corresponding interface, unless the node's symbol is an implementation class.
       if (tree.tpe.typeSymbol.isImplClass && ((sym eq null) || !sym.isImplClass))

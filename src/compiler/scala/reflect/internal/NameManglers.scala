@@ -72,7 +72,6 @@ trait NameManglers {
     val LOCALDUMMY_PREFIX             = "<local "   // owner of local blocks
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
-    val SELECTOR_DUMMY                = "<unapply-selector>"
     val SETTER_SUFFIX                 = encode("_=")
     val SINGLETON_SUFFIX              = ".type"
     val SUPER_PREFIX_STRING           = "super$"

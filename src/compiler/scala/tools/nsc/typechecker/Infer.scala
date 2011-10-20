@@ -640,21 +640,22 @@ trait Infer {
      *    type parameters that are inferred as `scala.Nothing` and that are not covariant in <code>restpe</code> are taken to be undetermined
      */
     def adjustTypeArgs(tparams: List[Symbol], tvars: List[TypeVar], targs: List[Type], restpe: Type = WildcardType): AdjustedTypeArgs.Result  = {
-      @inline def notCovariantIn(tparam: Symbol, restpe: Type) =
-        (varianceInType(restpe)(tparam) & COVARIANT) == 0  // tparam occurred non-covariantly (in invariant or contravariant position)
+      @inline def keep(targ: Type, tparam: Symbol) = (
+          targ.typeSymbol != NothingClass // definitely not retracting, it's not Nothing!
+          || (!restpe.isWildcard && (varianceInType(restpe)(tparam) & COVARIANT) != 0)) // occured covariantly --> don't retract
 
-      (tparams, tvars, targs).zipped.map{ (tparam, tvar, targ) =>
-        if (targ.typeSymbol == NothingClass &&
-            (restpe.isWildcard || notCovariantIn(tparam, restpe))) {
-          tparam -> None
-        } else {
-          tparam -> Some(
-            if      (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
-            else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
-            else if (targ.typeSymbol.isModuleClass || (opt.experimental && tvar.constr.avoidWiden)) targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
-            else targ.widen
-          )
-        }
+      @inline def adjusted(targ: Type, tvar: TypeVar) =
+        if (targ.typeSymbol == RepeatedParamClass)
+          targ.baseType(SeqClass)
+        else if (targ.typeSymbol == JavaRepeatedParamClass)
+          targ.baseType(ArrayClass)
+        else if (targ.typeSymbol.isModuleClass || (opt.experimental && tvar.constr.avoidWiden))
+          targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
+        else
+          targ.widen
+
+      (tparams, tvars, targs).zipped.map { (tparam, tvar, targ) =>
+        tparam -> (if(keep(targ, tparam)) Some(adjusted(targ, tvar)) else None)
       }(collection.breakOut)
     }
 

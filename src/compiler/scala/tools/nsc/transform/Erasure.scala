@@ -476,7 +476,8 @@ abstract class Erasure extends AddInterfaces
             else BLOCK(tree, UNIT)
           case x          =>
             assert(x != ArrayClass)
-            Apply(unboxMethod(pt.typeSymbol), tree) setType pt
+            // don't `setType pt` the Apply tree, as the Apply's fun won't be typechecked if the Apply tree already has a type
+            Apply(unboxMethod(pt.typeSymbol), tree)
         })
     }
 

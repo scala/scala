@@ -279,7 +279,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)
-        super.traverse(t)
+        super.traverse(t) // TODO: bug? shouldn't the traverse be outside of the if?
       }
     }
   }
@@ -320,12 +320,15 @@ trait Trees extends api.Trees { self: SymbolTable =>
     "subst[%s, %s](%s)".format(fromStr, toStr, (from, to).zipped map (_ + " -> " + _) mkString ", ")
   }
 
+  // NOTE: if symbols in `from` occur multiple times in the `tree` passed to `transform`,
+  // the resulting Tree will be a graph, not a tree... this breaks all sorts of stuff,
+  // notably concerning the mutable aspects of Trees (such as setting their .tpe)
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(_) =>
         def subst(from: List[Symbol], to: List[Tree]): Tree =
           if (from.isEmpty) tree
-          else if (tree.symbol == from.head) to.head
+          else if (tree.symbol == from.head) to.head.shallowDuplicate // TODO: does it ever make sense *not* to perform a shallowDuplicate on `to.head`?
           else subst(from.tail, to.tail);
         subst(from, to)
       case _ =>
