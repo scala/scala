@@ -32,4 +32,5 @@ class Settings extends internal.settings.MutableSettings {
   val printtypes = new BooleanSetting(false)
   val Yrecursion = new IntSetting(0)
   val maxClassfileName = new IntSetting(255)
+  val Xexperimental = new BooleanSetting(false)
 }

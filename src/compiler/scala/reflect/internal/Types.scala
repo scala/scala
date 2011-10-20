@@ -2396,6 +2396,23 @@ A type's typeSymbol should never be inspected directly.
     /** The variable's skolemization level */
     val level = skolemizationLevel
 
+    // were we compared to skolems at a higher skolemizationLevel?
+    // EXPERIMENTAL: will never be true unless settings.Xexperimental.value
+    private var encounteredHigherLevel = false
+
+    // set `encounteredHigherLevel` if sym.asInstanceOf[TypeSkolem].level > level
+    private def updateEncounteredHigherLevel(sym: Symbol): Unit =
+      sym match {
+        case ts: TypeSkolem if ts.level > level => encounteredHigherLevel = true
+        case _ =>
+      }
+
+    // if we were compared against later typeskolems, repack the existential,
+    // because skolems are only compatible if they were created at the same level
+    private def repackExistential(tp: Type): Type = if(!encounteredHigherLevel) tp
+      else existentialAbstraction((tp filter {t => t.typeSymbol.isExistentiallyBound}) map (_.typeSymbol), tp)
+
+
     /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
      *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
      *
@@ -2422,7 +2439,7 @@ A type's typeSymbol should never be inspected directly.
     def setInst(tp: Type) {
 //      assert(!(tp containsTp this), this)
       undoLog record this
-      constr.inst = tp
+      constr.inst = repackExistential(tp)
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
@@ -2545,20 +2562,20 @@ A type's typeSymbol should never be inspected directly.
         checkSubtype(tp, origin)
       else if (constr.instValid)  // type var is already set
         checkSubtype(tp, constr.inst)
-      else
-        // isRelatable checks for type skolems which cannot be understood at this level
-        isRelatable(tp) && (
-          unifySimple || unifyFull(tp) || (
-            // only look harder if our gaze is oriented toward Any
-            isLowerBound && (
-              (tp.parents exists unifyFull) || (
-                // @PP: Is it going to be faster to filter out the parents we just checked?
-                // That's what's done here but I'm not sure it matters.
-                tp.baseTypeSeq.toList.tail filterNot (tp.parents contains _) exists unifyFull
-              )
+      else isRelatable(tp) && {
+        // registerSkolemizationLevel checks for type skolems which cannot be understood at this level
+        registerSkolemizationLevel(tp)
+        unifySimple || unifyFull(tp) || (
+          // only look harder if our gaze is oriented toward Any
+          isLowerBound && (
+            (tp.parents exists unifyFull) || (
+              // @PP: Is it going to be faster to filter out the parents we just checked?
+              // That's what's done here but I'm not sure it matters.
+              tp.baseTypeSeq.toList.tail filterNot (tp.parents contains _) exists unifyFull
             )
           )
         )
+      }
     }
 
     def registerTypeEquality(tp: Type, typeVarLHS: Boolean): Boolean = {
@@ -2570,6 +2587,7 @@ A type's typeSymbol should never be inspected directly.
       if (suspended) tp =:= origin
       else if (constr.instValid) checkIsSameType(tp)
       else isRelatable(tp) && {
+        registerSkolemizationLevel(tp)
         val newInst = wildcardToTypeVarMap(tp)
         if (constr.isWithinBounds(newInst)) {
           setInst(tp)
@@ -2592,17 +2610,31 @@ A type's typeSymbol should never be inspected directly.
       registerBound(bound, false)
     }
 
-    /** Can this variable be related in a constraint to type `tp`?
-     *  This is not the case if `tp` contains type skolems whose
-     *  skolemization level is higher than the level of this variable.
-     */
-    def isRelatable(tp: Type): Boolean =
+     /** Can this variable be related in a constraint to type `tp`?
+      *  This is not the case if `tp` contains type skolems whose
+      *  skolemization level is higher than the level of this variable.
+      *
+      * EXPERIMENTAL: always say we're relatable, track whether we need to deal with the consquences (registerSkolemizationLevel)
+      */
+    def isRelatable(tp: Type): Boolean = (settings.Xexperimental.value ||
       !tp.exists { t =>
         t.typeSymbol match {
           case ts: TypeSkolem => ts.level > level
           case _ => false
         }
-      }
+      })
+
+    /** When comparing to types containing skolems, remember the highest level of skolemization
+     *
+     * If that highest level is higher than our initial skolemizationLevel,
+     * we can't re-use those skolems as the solution of this typevar,
+     * so repack them in a fresh existential.
+     */
+    def registerSkolemizationLevel(tp: Type): Unit = if (settings.Xexperimental.value) {
+      // don't care about the result, just stop as soon as encounteredHigherLevel == true,
+      // which means we'll need to repack our constr.inst into a fresh existential
+      encounteredHigherLevel || tp.exists { t => updateEncounteredHigherLevel(t.typeSymbol); encounteredHigherLevel }
+    }
 
     override val isHigherKinded = typeArgs.isEmpty && params.nonEmpty
 

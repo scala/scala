@@ -41,4 +41,5 @@ abstract class MutableSettings extends AbsSettings {
   def Xprintpos: BooleanSetting
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
+  def Xexperimental: BooleanSetting
 }
