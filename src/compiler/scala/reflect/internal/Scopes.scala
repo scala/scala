@@ -33,6 +33,10 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     e
   }
 
+  object Scope {
+    def unapplySeq(decls: Scope): Some[Seq[Symbol]] = Some(decls.toList)
+  }
+
   class Scope(initElems: ScopeEntry) extends Iterable[Symbol] {
 
     var elems: ScopeEntry = initElems
