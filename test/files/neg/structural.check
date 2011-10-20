@@ -1,9 +1,6 @@
 structural.scala:47: error: Parameter type in structural refinement may not refer to the type of that refinement (self type)
   val s1 = new { def f(p: this.type): Unit = () }
                      ^
-structural.scala:19: error: illegal dependent method type
-    def f9[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): D }) = x.m[Tata](null) //fail
-                        ^
 structural.scala:10: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
     def f1[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: A): Object; val x: A }) = x.m[Tata](x.x) //fail
                                                          ^
@@ -28,4 +25,4 @@ structural.scala:49: error: Parameter type in structural refinement may not refe
 structural.scala:52: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
   def s3[U >: Null <: Object](p: { def f(p: U): Unit; def u: U }) = ()
                                        ^
-10 errors found
+9 errors found

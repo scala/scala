@@ -89,14 +89,11 @@ trait Erasure {
         case mt @ MethodType(params, restpe) =>
           MethodType(
             cloneSymbols(params) map (p => p.setInfo(apply(p.tpe))),
-            if (restpe.typeSymbol == UnitClass)
-              erasedTypeRef(UnitClass)
-            else if (settings.YdepMethTpes.value)
-              // this replaces each typeref that refers to an argument
-              // by the type `p.tpe` of the actual argument p (p in params)
-              apply(mt.resultType(params map (_.tpe)))
-            else
-              apply(restpe))
+            if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
+            // else if (!settings.YdepMethTpes.value) apply(restpe)
+            // this replaces each typeref that refers to an argument
+            // by the type `p.tpe` of the actual argument p (p in params)
+            else apply(mt.resultType(params map (_.tpe))))
         case RefinedType(parents, decls) =>
           apply(mergeParents(parents))
         case AnnotatedType(_, atp, _) =>

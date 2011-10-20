@@ -1459,15 +1459,11 @@ trait Namers { self: Analyzer =>
           this(p.info)
         // can only refer to symbols in earlier parameter sections
         // (if the extension is enabled)
-        if (opt.dependentMethodTypes)
-          okParams ++= vps
+        okParams ++= vps
       }
     }
-    private def errorAddendum = (
-      if (opt.dependentMethodTypes)
-        ": parameter appears in the type of another parameter in the same section or an earlier one"
-      else ""
-    )
+    private def errorAddendum =
+      ": parameter appears in the type of another parameter in the same section or an earlier one"
   }
 
   @deprecated("Use underlyingSymbol instead", "2.10.0")

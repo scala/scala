@@ -267,7 +267,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     // behavior
-    def dependentMethodTypes = settings.YdepMethTpes.value
 
     // debugging
     def checkPhase = wasActive(settings.check)
