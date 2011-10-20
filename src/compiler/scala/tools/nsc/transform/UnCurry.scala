@@ -281,6 +281,31 @@ abstract class UnCurry extends InfoTransform
                 if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
                 else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
               )
+            case Apply(Apply(TypeApply(Select(tgt, n), targs), args_scrut), args_pm) if opt.virtPatmat && (n == nme.runOrElse) => // TODO: check tgt.tpe.typeSymbol isNonBottomSubclass MatchingStrategyClass
+              object noOne extends Transformer {
+                override val treeCopy = newStrictTreeCopier // must duplicate everything
+                val one = tgt.tpe member "caseResult".toTermName
+                override def transform(tree: Tree): Tree = tree match {
+                  case Apply(fun, List(a)) if fun.symbol == one =>
+                    // blow one's argument away since all we want to know is whether the match succeeds or not
+                    // (the alternative, making `one` CBN, would entail moving away from Option)
+                    val zero = // must use subtyping (no need for equality thanks to covariance), as otherwise we miss types like `Any with Int`
+                      if (UnitClass.tpe <:< a.tpe)         Literal(Constant())
+                      else if (BooleanClass.tpe <:< a.tpe) Literal(Constant(false))
+                      else if (FloatClass.tpe <:< a.tpe)   Literal(Constant(0.0f))
+                      else if (DoubleClass.tpe <:< a.tpe)  Literal(Constant(0.0d))
+                      else if (ByteClass.tpe <:< a.tpe)    Literal(Constant(0.toByte))
+                      else if (ShortClass.tpe <:< a.tpe)   Literal(Constant(0.toShort))
+                      else if (IntClass.tpe <:< a.tpe)     Literal(Constant(0))
+                      else if (LongClass.tpe <:< a.tpe)    Literal(Constant(0L))
+                      else if (CharClass.tpe <:< a.tpe)    Literal(Constant(0.toChar))
+                      else NULL AS a.tpe // must cast, at least when a.tpe <:< NothingClass.tpe
+                    Apply(fun.duplicate, List(zero))
+                  case _ =>
+                    super.transform(tree)
+                }
+              }
+              substTree(Apply(Apply(TypeApply(Select(tgt.duplicate, tgt.tpe.member("isSuccess".toTermName)), targs map (_.duplicate)), args_scrut map (_.duplicate)), args_pm map (noOne.transform)))
           })
         }
 
