@@ -509,6 +509,29 @@ abstract class ExplicitOuter extends InfoTransform
           matchTranslation(mch)
 
         case _ =>
+          if (opt.experimental) { // this turned out to be expensive, hence the hacky `if` and `return`
+            tree match {
+              // for patmatvirtualiser
+              // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
+              // TODO remove the synthetic `<outer>` method from outerFor??
+              case Apply(eqsel@Select(eqapp@Apply(sel@Select(base, outerAcc), Nil), eq), args)  if outerAcc == nme.OUTER_SYNTH =>
+                val outerFor = sel.symbol.owner.toInterface // TODO: toInterface necessary?
+                val acc = outerAccessor(outerFor)
+                if(acc == NoSymbol) {
+                  // println("WARNING: no outer for "+ outerFor)
+                  return transform(TRUE) // urgh... drop condition if there's no accessor
+                } else {
+                  // println("(base, acc)= "+(base, acc))
+                  val outerSelect = localTyper typed Apply(Select(base, acc), Nil)
+                  // achieves the same as: localTyper typed atPos(tree.pos)(outerPath(base, base.tpe.typeSymbol, outerFor.outerClass))
+                  // println("(b, tpsym, outerForI, outerFor, outerClass)= "+ (base, base.tpe.typeSymbol, outerFor, sel.symbol.owner, outerFor.outerClass))
+                  // println("outerSelect = "+ outerSelect)
+                  return transform(treeCopy.Apply(tree, treeCopy.Select(eqsel, outerSelect, eq), args))
+                }
+              case _ =>
+            }
+          }
+
           if (settings.Xmigration28.value) tree match {
             case TypeApply(fn @ Select(qual, _), args) if fn.symbol == Object_isInstanceOf || fn.symbol == Any_isInstanceOf =>
               if (isArraySeqTest(qual.tpe, args.head.tpe))

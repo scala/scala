@@ -183,6 +183,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val MODULE_INSTANCE_FIELD: NameType = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                 = "$outer"
     val OUTER_LOCAL: NameType           = "$outer " // note the space
+    val OUTER_SYNTH: NameType           = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
     val SELF: NameType                  = "$this"
     val SPECIALIZED_INSTANCE: NameType  = "specInstance$"
     val STAR: NameType                  = "*"
