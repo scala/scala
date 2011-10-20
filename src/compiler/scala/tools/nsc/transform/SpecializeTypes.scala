@@ -1496,11 +1496,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     private def reskolemize(tparams: List[TypeDef]): (List[Symbol], List[Symbol]) = {
-      val tparams1 = tparams map (_.symbol)
-      localTyper.namer.skolemize(tparams)
-      (tparams1, tparams map (_.symbol))
+      val saved = tparams map (_.symbol)
+      localTyper skolemizeTypeParams tparams
+      (saved, tparams map (_.symbol))
     }
-
 
     private def duplicateBody(tree: DefDef, source: Symbol) = {
       val symbol = tree.symbol

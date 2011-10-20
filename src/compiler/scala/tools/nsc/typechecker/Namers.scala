@@ -311,16 +311,6 @@ trait Namers { self: Analyzer =>
       }
       namer
     }
-
-    /** Replace type parameters with their TypeSkolems, which can later
-     *  be deskolemized to the original type param. (A skolem is a
-     *  representation of a bound variable when viewed inside its scope)
-     *  !!!Adriaan: this does not work for hk types.
-     */
-    def skolemize(tparams: List[TypeDef]) {
-      // Creating the instance side-effects the trees.
-      new LazySkolemCompleter(tparams)
-    }
     def applicableTypeParams(owner: Symbol): List[Symbol] =
       if (owner.isTerm || owner.isPackageClass) Nil
       else applicableTypeParams(owner.owner) ::: owner.typeParams
@@ -409,70 +399,61 @@ trait Namers { self: Analyzer =>
       noDuplicates(selectors map (_.rename), "appears twice as a target of a renaming")
     }
 
-    protected def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
-      val sym = tree.symbol
-      def isCopyMethodOrGetter =
-        sym.name == nme.copy || sym.name.startsWith(nme.copy + nme.DEFAULT_GETTER_STRING)
-      def useCompleter = sym.isSynthetic && (
-           !sym.hasDefaultFlag
-        || sym.owner.info.member(nme.copy).isSynthetic
-      )
-
-      debuglog("entered " + sym + " in " + owner)
-      var ltype = namerOf(sym).typeCompleter(tree)
-      if (tparams nonEmpty) {
+    def completerOf(tree: Tree, tparams: List[TypeDef]): TypeCompleter = {
+      val sym  = tree.symbol
+      val mono = namerOf(sym) typeCompleter tree
+      if (tparams.isEmpty) mono
+      else {
         //@M! TypeDef's type params are handled differently
         //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
         //@M x is only in scope in `A[x <: B]'
         if (!sym.isAbstractType) //@M TODO: change to isTypeMember ?
           newNamer(context.makeNewScope(tree, sym)).enterSyms(tparams)
 
-        ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
-        if (sym.isTerm) skolemize(tparams)
+        new PolyTypeCompleter(tparams, mono, tree, context) //@M
       }
-      def copyMethodCompleter(clazz: Symbol) = {
-        // the 'copy' method of case classes needs a special type
-        // completer to make bug0054.scala (and others) work. the copy
-        // method has to take exactly the same parameter types as the
-        // primary constructor.
-        val classTypeParams = clazz.typeParams
-        val constrType      = clazz.primaryConstructor.tpe
+    }
+
+    protected def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
+      val sym      = tree.symbol
+      log("entered " + sym.fullLocationString)
+
+      sym setInfo completerOf(tree, tparams)
+    }
+    protected def enterCopyMethodOrGetter(tree: Tree, tparams: List[TypeDef]) {
+      val sym          = tree.symbol
+      val lazyType     = completerOf(tree, tparams)
+      def useCompleter = sym.isSynthetic && (
+           !sym.hasDefaultFlag
+        || sym.owner.info.member(nme.copy).isSynthetic
+      )
+      def completeCopyMethod(clazz: Symbol) {
+        // the 'copy' method of case classes needs a special type completer to make
+        // bug0054.scala (and others) work. the copy method has to take exactly the same
+        // parameter types as the primary constructor.
+        val constructorType = clazz.primaryConstructor.tpe
         val subst           = new SubstSymMap(clazz.typeParams, tparams map (_.symbol))
-        val cparamss        = constrType.paramss
+        val vparamss        = tree match { case x: DefDef => x.vparamss ; case _ => Nil }
+        val cparamss        = constructorType.paramss
 
-        tree match {
-          case DefDef(_, _, _, ps :: psRest, _, _) =>
-            val cs :: csRest = cparamss
-            for ((param, cparam) <- ps zip cs)
-              // need to clone the type cparam.tpe???
-              // problem is: we don't have the new owner yet (the new param symbol)
-              param.tpt setType subst(cparam.tpe)
-
-            if (psRest.isEmpty && csRest.isEmpty) ()
-            else if (psRest.isEmpty || csRest.isEmpty)
-              debuglog("Skipping mismatched extra param lists: " + psRest + ", " + csRest)
-            else {
-              for ((vparams, cparams) <- psRest zip csRest)
-                for ((param, cparam) <- vparams zip cparams)
-                  param.tpt setType subst(cparam.tpe)
-            }
-          case _ => ()
+        for ((vparams, cparams) <- vparamss zip cparamss) {
+          for ((param, cparam) <- vparams zip cparams) {
+            // need to clone the type cparam.tpe???
+            // problem is: we don't have the new owner yet (the new param symbol)
+            param.tpt setType subst(cparam.tpe)
+          }
         }
       }
+      sym setInfo {
+        mkTypeCompleter(tree) { copySym =>
+          if (useCompleter)
+            completeCopyMethod(copySym.owner)
 
-      // it could be a compiler-generated copy method or one of its default getters
-      setInfo(sym)(
-        if (isCopyMethodOrGetter) (
-          mkTypeCompleter(tree) { copySym =>
-            if (useCompleter)
-              copyMethodCompleter(copySym.owner)
-
-            ltype complete sym
-          }
-        )
-        else ltype
-      )
+          lazyType complete sym
+        }
+      }
     }
+
 
     def enterIfNotThere(sym: Symbol) {
       val scope = context.scope
@@ -495,7 +476,16 @@ trait Namers { self: Analyzer =>
       tree.symbol = enterNewMethod(tree, name, mods.flags, mods, tree.pos)
       if (mods hasAnnotationNamed tpnme.bridgeAnnot)
         tree.symbol setFlag BRIDGE
-      enterSymFinishWith(tree, tparams)
+
+      val isCopyOrGetter = (
+           (name == nme.copy)
+        || (tree.symbol.name.startsWith(nme.copy + nme.DEFAULT_GETTER_STRING))
+      )
+
+      if (isCopyOrGetter)
+        enterCopyMethodOrGetter(tree, tparams)
+      else
+        enterSymFinishWith(tree, tparams)
     }
 
     def enterValDef(vd: ValDef) {
@@ -1427,31 +1417,17 @@ trait Namers { self: Analyzer =>
 
   /** A class representing a lazy type with known type parameters.
    */
-  class PolyTypeCompleter(tparams: List[Tree], restp: TypeCompleter, owner: Tree, ownerSym: Symbol, ctx: Context) extends LockingTypeCompleter {
-    override val typeParams: List[Symbol]= tparams map (_.symbol) //@M
-    override val tree = restp.tree
+  class PolyTypeCompleter(tparams: List[TypeDef], restp: TypeCompleter, owner: Tree, ctx: Context) extends LockingTypeCompleter {
+    private val ownerSym    = owner.symbol
+    override val typeParams = tparams map (_.symbol) //@M
+    override val tree       = restp.tree
+    if (ownerSym.isTerm)
+      typer skolemizeTypeParams tparams
+
     def completeImpl(sym: Symbol) = {
       if (ownerSym.isAbstractType) //@M an abstract type's type parameters are entered -- TODO: change to isTypeMember ?
-        newNamer(ctx.makeNewScope(owner, ownerSym)).enterSyms(tparams) //@M
-      restp.complete(sym)
-    }
-  }
-
-  /** Creates type skolems for the given list of TypeDefs
-   *  and replaces each TypeDef's symbol with a skolemized one.
-   *  The info of each skolem is this instance of LazySkolemCompleter,
-   *  which performs substitution upon completion.
-   */
-  class LazySkolemCompleter(typedefs: List[TypeDef]) extends LazyType {
-    private[this] val tparams  = typedefs map (_.symbol)
-    private[this] val tskolems = tparams map (_.newTypeSkolem) map (_ setInfo this)
-    // Replace the symbols
-    (typedefs, tskolems).zipped foreach (_.symbol = _)
-
-    override def complete(sym: Symbol) {
-      // The info of a skolem is the skolemized info of the
-      // actual type parameter of the skolem
-      sym setInfo sym.deSkolemize.info.substSym(tparams, tskolems)
+        newNamer(ctx.makeNewScope(owner, ownerSym)) enterSyms tparams //@M
+      restp complete sym
     }
   }
 
