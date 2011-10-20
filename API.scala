@@ -58,6 +58,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private[this] val classLikeCache = new HashMap[(Symbol,Symbol), xsbti.api.ClassLike]
 	private[this] val pending = new HashSet[xsbti.api.Lazy[_]]
 
+	private[this] val emptyStringArray = new Array[String](0)
+
 	// to mitigate "temporary leaks" like that caused by NoPhase in 2.8.0,
 	//   this ensures this class is not retaining objects
 	private def clearCaches()
@@ -345,7 +347,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				else DefinitionType.Module
 			}
 			else DefinitionType.ClassDef
-		new xsbti.api.ClassLike(defType, lzy(selfType(in, c)), lzy(structure(in, struct)), typeParameters(in, c), name, getAccess(c), getModifiers(c), annotations(in, c))
+		new xsbti.api.ClassLike(defType, lzy(selfType(in, c)), lzy(structure(in, struct)), emptyStringArray, typeParameters(in, c), name, getAccess(c), getModifiers(c), annotations(in, c))
 	}
 	private final class TopLevelHandler(sourceFile: File) extends TopLevelTraverser
 	{
