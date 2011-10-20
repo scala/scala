@@ -3303,7 +3303,6 @@ A type's typeSymbol should never be inspected directly.
         variance = -variance
         val result1 = this(result)
         if ((params1 eq params) && (result1 eq result)) tp
-        // for new dependent types: result1.substSym(params, params1)?
         else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
         variance = -variance
@@ -4558,9 +4557,8 @@ A type's typeSymbol should never be inspected directly.
       case mt1: MethodType =>
         tp2 match {
           case mt2: MethodType =>
-            // DEPMETTODO new dependent types: probably fix this, use substSym as done for PolyType
             return isSameTypes(mt1.paramTypes, mt2.paramTypes) &&
-              mt1.resultType =:= mt2.resultType &&
+              mt1.resultType =:= mt2.resultType.substSym(mt2.params, mt1.params) &&
               mt1.isImplicit == mt2.isImplicit
           // note: no case NullaryMethodType(restpe) => return mt1.params.isEmpty && mt1.resultType =:= restpe
           case _ =>
@@ -4913,7 +4911,7 @@ A type's typeSymbol should never be inspected directly.
             val res2 = mt2.resultType
             (sameLength(params1, params2) &&
              matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
-             (res1 <:< res2) &&
+             (res1 <:< res2.substSym(params2, params1)) &&
              mt1.isImplicit == mt2.isImplicit)
           // TODO: if mt1.params.isEmpty, consider NullaryMethodType?
           case _ =>
@@ -5033,9 +5031,9 @@ A type's typeSymbol should never be inspected directly.
       case mt1 @ MethodType(params1, res1) =>
         tp2 match {
           case mt2 @ MethodType(params2, res2) =>
-            sameLength(params1, params2) && // useful pre-screening optimization
+            // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performancewise?)
+            matchesQuantified(params1, params2, res1, res2) &&
             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
-            matchesType(res1, res2, alwaysMatchSimple) &&
             mt1.isImplicit == mt2.isImplicit
           case NullaryMethodType(res2) =>
             if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
