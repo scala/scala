@@ -54,7 +54,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
   private lazy val matchingStrategyTycon = definitions.getClass("scala.MatchingStrategy").typeConstructor
 
-  class MatchTranslator(typer: Typer) { translator =>
+  class MatchTranslator(typer: Typer) {
     import typer._
     import typeDebug.{ ptTree, ptBlock, ptLine }
     private var overrideUnsafe = false
@@ -101,9 +101,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           val scrutSym = freshSym(tree.pos, scrutType)
           // when specified, need to propagate pt explicitly, type inferencer can't handle it
           val optPt = if(!isFullyDefined(pt)) NoType else appliedType(matchingMonadType, List(pt))
-          genRunOrElse(scrut,
+          pmgen.runOrElse(scrut,
                       genFun(scrutSym,
-                            ((cases map Xcase(scrutSym)) ++ List(genZero)) reduceLeft genTypedOrElse(optPt)))
+                            ((cases map Xcase(scrutSym)) ++ List(pmgen.zero)) reduceLeft pmgen.typedOrElse(optPt)))
         case t => t
       }
 
@@ -177,11 +177,11 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     abstract class SingleTreeMaker(extractor: Tree) extends TreeMaker {
       def genFlatMap(tree: Tree) =
-        translator.genFlatMap(extractor, genFunAndSubst(tree)) setPos extractor.pos
+        pmgen.flatMap(extractor, genFunAndSubst(tree)) setPos extractor.pos
     }
 
     abstract class AlternativeTreeMaker(alts: List[Tree]) extends TreeMaker {
-      def genFlatMap(tree: Tree) = genOr(genFunAndSubst(tree), alts) setPos alts.head.pos
+      def genFlatMap(tree: Tree) = pmgen.or(genFunAndSubst(tree), alts) setPos alts.head.pos
     }
 
     // (o => (o(foo), newO)) :: (o => (o(foo), newO')) :: (o => (o(foo), newO'')) :: (o => (o(foo), newO'''))
@@ -233,8 +233,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           // body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
           // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
           val bodyCasted = genAsInstanceOf(body, body.tpe)
-          threadSubstitution(Xpat(scrutSym)(pattern) ++ Xguard(guard))._1.foldRight(genCaseResult(bodyCasted))(_ genFlatMap _) setPos tree.pos
-          // TODO: if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (genOne), so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand
+          threadSubstitution(Xpat(scrutSym)(pattern) ++ Xguard(guard))._1.foldRight(pmgen.caseResult(bodyCasted))(_ genFlatMap _) setPos tree.pos
+          // TODO: if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (pmgen.one), so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand
       }
     }
 
@@ -289,7 +289,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             // val cond = genTypeDirectedEquals(prevBinder, prevBinder.info.widen, extractorParamType) -- this seems to slow down compilation A LOT
             // chain a cast before the actual extractor call
             // need to substitute since binder may be used outside of the next extractor call (say, in the body of the case)
-            res += (List(genTypedGuard(cond, extractorParamType, prevBinder)),
+            res += (List(pmgen.typedGuard(cond, extractorParamType, prevBinder)),
                       { outerSubst: TreeXForm =>
                           val theSubst = typedSubst(List(prevBinder), List(CODE.REF(castedBinder)))
                           def nextSubst(tree: Tree): Tree = outerSubst(theSubst(tree))
@@ -310,7 +310,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         val extractorApply = atPos(pos)(spliceExtractorApply.transform(extractorCallIncludingDummy)) // treegen
 
         val patTree =
-          if(extractorType.finalResultType.typeSymbol == BooleanClass) genGuard(extractorApply)
+          if(extractorType.finalResultType.typeSymbol == BooleanClass) pmgen.guard(extractorApply)
           else extractorApply
 
         // println("patTree= "+ patTree)
@@ -441,7 +441,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
             val cond = genTypeDirectedEquals(prevBinder, prevTp, tpe) // implements the run-time aspects of (§8.2) (typedPattern has already done the necessary type transformations)
 
-            val extractor = atPos(patTree.pos)(genTypedGuard(cond, accumType, prevBinder))
+            val extractor = atPos(patTree.pos)(pmgen.typedGuard(cond, accumType, prevBinder))
 
             res += singleBinderProtoTreeMakerWithTp(patBinder, accumType, unsafe = true, extractor)
 
@@ -487,7 +487,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             val cond = genEquals(patTree, prevBinder)
 
             // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
-            val extractor = atPos(patTree.pos)(genGuard(cond, CODE.REF(prevBinder), prevTp))
+            val extractor = atPos(patTree.pos)(pmgen.guard(cond, CODE.REF(prevBinder), prevTp))
 
             res += singleBinderProtoTreeMakerWithTp(prevBinder, prevTp, unsafe = false, extractor)
 
@@ -505,7 +505,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
               // `one(x) : T` where x is the binder before this pattern, which will be replaced by the binder for the alternative by singleBinderProtoTreeMaker below
               // T is the widened type of the previous binder -- this ascription is necessary to infer a clean type for `or` -- the alternative combinator -- in the presence of existential types
               // see pos/virtpatmat_exist1.scala
-              val one = genOne(CODE.REF(prevBinder), prevBinder.info.widen)
+              val one = pmgen.one(CODE.REF(prevBinder), prevBinder.info.widen)
               atPos(alt.pos)(treeMakers.foldRight (one) (_ genFlatMap _))
             }
 
@@ -542,7 +542,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     def Xguard(guard: Tree): List[ProtoTreeMaker] = {
       if (guard == EmptyTree) List()
       else List(
-        (List(genGuard(guard)),
+        (List(pmgen.guard(guard)),
           { outerSubst =>
             val binder = freshSym(guard.pos, UnitClass.tpe)
             (nestedTree => genFun(binder, outerSubst(nestedTree)), outerSubst) // guard does not bind any variables, so next subst is the current one
@@ -618,7 +618,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         // wrapping in a null check on the scrutinee
         // only check if minimal length is non-trivially satisfied
         val minLenToCheck = if(lastIsStar) 1 else 0
-        if (len >= minLenToCheck) IF ((seqTree(binder) ANY_!= NULL) AND lenOk) THEN then ELSE genZero // treegen
+        if (len >= minLenToCheck) IF ((seqTree(binder) ANY_!= NULL) AND lenOk) THEN then ELSE pmgen.zero // treegen
         else then
       }
 
@@ -794,49 +794,64 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     import CODE._
 
-    // only used below
-    def genTypeApply(tfun: Tree, args: Type*): Tree                       = ( if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree))
-    def genTyped(t: Tree, tp: Type): Tree                                 = ( if(tp == NoType) t else Typed(t, TypeTree(repackExistential(tp)))           )
+    trait MatchingStrategyGen {
+      // methods in MatchingStrategy (the monad companion) -- used directly in translation
+      def runOrElse(scrut: Tree, matcher: Tree): Tree                    = ( (matchingStrategy DOT vpmName.runOrElse)(scrut) APPLY (matcher)        ) // matchingStrategy.runOrElse(scrut)(matcher)
+      def zero: Tree                                                     = ( matchingStrategy DOT vpmName.zero                                      ) // matchingStrategy.zero
+      def one(res: Tree, tp: Type = NoType, oneName: Name = vpmName.one): Tree = ( genTypeApply(matchingStrategy DOT oneName, tp) APPLY (res)         ) // matchingStrategy.one(res)
+      def caseResult(res: Tree, tp: Type = NoType): Tree                 = pmgen.one(res, tp, vpmName.caseResult) // blow this one away for isDefinedAt
+      def or(f: Tree, as: List[Tree]): Tree                              = ( (matchingStrategy DOT vpmName.or)((f :: as): _*)                       ) // matchingStrategy.or(f, as)
+      def typedGuard(cond: Tree, expectedTp: Type, binder: Symbol): Tree = ( pmgen.guard(cond, genAsInstanceOf(REF(binder), expectedTp), expectedTp)        )
+      def cast(expectedTp: Type, binder: Symbol): Tree                   = ( pmgen.typedGuard(genIsInstanceOf(REF(binder), expectedTp), expectedTp, binder) )
+      def guard(t: Tree, then: Tree = UNIT, tp: Type = NoType): Tree     = ( genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (t, then) ) // matchingStrategy.guard(t, then)
+    }
 
-    // methods in MatchingStrategy (the monad companion) -- used directly in translation
-    def genRunOrElse(scrut: Tree, matcher: Tree): Tree                    = ( (matchingStrategy DOT vpmName.runOrElse)(scrut) APPLY (matcher)        ) // matchingStrategy.runOrElse(scrut)(matcher)
-    def genZero: Tree                                                     = ( matchingStrategy DOT vpmName.zero                                      ) // matchingStrategy.zero
-    def genOne(res: Tree, tp: Type = NoType, oneName: Name = vpmName.one): Tree = ( genTypeApply(matchingStrategy DOT oneName, tp) APPLY (res)         ) // matchingStrategy.one(res)
-    def genCaseResult(res: Tree, tp: Type = NoType): Tree                 = genOne(res, tp, vpmName.caseResult) // blow this one away for isDefinedAt
-    def genOr(f: Tree, as: List[Tree]): Tree                              = ( (matchingStrategy DOT vpmName.or)((f :: as): _*)                       ) // matchingStrategy.or(f, as)
-    def genTypedGuard(cond: Tree, expectedTp: Type, binder: Symbol): Tree = ( genGuard(cond, genAsInstanceOf(REF(binder), expectedTp), expectedTp)        )
-    def genCast(expectedTp: Type, binder: Symbol): Tree                   = ( genTypedGuard(genIsInstanceOf(REF(binder), expectedTp), expectedTp, binder) )
-    // def genGuard(t: Tree, then: Tree = UNIT, tp: Type = NoType): Tree     = ( genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (t, then) ) // matchingStrategy.guard(t, then)
+    trait MonadInstGen {
+      // methods in the monad instance -- used directly in translation
+      def flatMap(a: Tree, b: Tree): Tree                                = ( (a DOT vpmName.flatMap)(b)                                             )
+      def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree    = ( (genTyped(thisCase, pt) DOT vpmName.orElse)(genTyped(elseCase, pt))    )
+    }
 
-    // methods in the monad instance -- used directly in translation
-    // def genFlatMap(a: Tree, b: Tree): Tree                                = ( (a DOT vpmName.flatMap)(b)                                             )
-    // def genTypedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree    = ( (genTyped(thisCase, pt) DOT vpmName.orElse)(genTyped(elseCase, pt))    )
+    // when we know we're targetting Option, do some inlining the optimizer won't do
+    // `o.flatMap(f)` becomes `if(o == None) None else f(o.get)`, similarly for orElse and guard
+    // this is a special instance of the advanced inlining optimization that takes a method call on
+    // an object of a type that only has two concrete subclasses, and inlines both bodies, guarded by an if to distinguish the two cases
+    trait MatchingStrategyGenOpt extends MatchingStrategyGen {
+      override def guard(t: Tree, then: Tree = UNIT, tp: Type = NoType): Tree     = IF (t) THEN pmgen.one(then, repackExistential(tp)) ELSE pmgen.zero
+    }
 
-    // TODO: just experimenting to see how much can be gained by the hypothetical optimisation `o.flatMap(f)` to `if(o == None) None else f(o.get)` (but generalised to any sealed hierarchy with only two subclasses)
-    def genGuard(t: Tree, then: Tree = UNIT, tp: Type = NoType): Tree     = IF (t) THEN genOne(then, repackExistential(tp)) ELSE genZero
-    def genFlatMap(opt: Tree, fun: Tree): Tree = fun match {
-      case Function(List(x: ValDef), body) =>
-        val tp = appliedType(matchingMonadType, List(x.symbol.tpe))
-        val vs = freshSym(opt.pos, tp, "o")
-        val isEmpty = tp member vpmName.isEmpty
-        val get = tp member vpmName.get
-        val v = VAL(vs) === opt
+    trait MonadInstGenOpt extends MonadInstGen {
+      override def flatMap(opt: Tree, fun: Tree): Tree = fun match {
+        case Function(List(x: ValDef), body) =>
+          val tp = appliedType(matchingMonadType, List(x.symbol.tpe))
+          val vs = freshSym(opt.pos, tp, "o")
+          val isEmpty = tp member vpmName.isEmpty
+          val get = tp member vpmName.get
+          val v = VAL(vs) === opt
+          BLOCK(
+            v,
+            IF (vs DOT isEmpty) THEN pmgen.zero ELSE typedSubst(List(x.symbol), List(vs DOT get))(body)
+          )
+        case _ => println("huh?")
+          (opt DOT vpmName.flatMap)(fun)
+      }
+      override def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = {
+        val vs = freshSym(thisCase.pos, pt, "o")
+        val isEmpty = pt member vpmName.isEmpty
+        val v = VAL(vs) === genTyped(thisCase, pt)
         BLOCK(
           v,
-          IF (vs DOT isEmpty) THEN genZero ELSE typedSubst(List(x.symbol), List(vs DOT get))(body)
+          IF (vs DOT isEmpty) THEN genTyped(elseCase, pt) ELSE REF(vs)
         )
-      case _ => println("huh?")
-        (opt DOT vpmName.flatMap)(fun)
+      }
     }
-    def genTypedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = {
-      val vs = freshSym(thisCase.pos, pt, "o")
-      val isEmpty = pt member vpmName.isEmpty
-      val v = VAL(vs) === genTyped(thisCase, pt)
-      BLOCK(
-        v,
-        IF (vs DOT isEmpty) THEN genTyped(elseCase, pt) ELSE REF(vs)
-      )
-    }
+
+    lazy val pmgen: MatchingStrategyGen with MonadInstGen =
+      if (matchingMonadType.typeSymbol eq OptionClass) (new MatchingStrategyGenOpt with MonadInstGenOpt {})
+      else (new MatchingStrategyGen with MonadInstGen {})
+
+    def genTypeApply(tfun: Tree, args: Type*): Tree                       = ( if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree))
+    def genTyped(t: Tree, tp: Type): Tree                                 = ( if(tp == NoType) t else Typed(t, TypeTree(repackExistential(tp)))           )
 
     // misc -- used directly in translation
     def genFun(arg: Symbol, body: Tree): Tree                             = ( Function(List(ValDef(arg)), body)                                           )

@@ -509,7 +509,7 @@ abstract class ExplicitOuter extends InfoTransform
           matchTranslation(mch)
 
         case _ =>
-          if (opt.experimental) { // this turned out to be expensive, hence the hacky `if` and `return`
+          if (opt.virtPatmat) { // this turned out to be expensive, hence the hacky `if` and `return`
             tree match {
               // for patmatvirtualiser
               // base.<outer>.eq(o) --> base.$outer().eq(o) if there's an accessor, else the whole tree becomes TRUE
