@@ -1113,7 +1113,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     private def typePrimaryConstrBody(clazz : Symbol, cbody: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]]): Tree = {
       // XXX: see about using the class's symbol....
       enclTparams foreach (sym => context.scope.enter(sym))
-      namer.enterValueParams(context.owner, vparamss)
+      namer.enterValueParams(vparamss)
       typed(cbody)
     }
 
