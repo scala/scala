@@ -1250,7 +1250,7 @@ trait Namers { self: Analyzer =>
       annotate(sym)
       if (sym.isModule) annotate(sym.moduleClass)
 
-      def makeNamer = tree match {
+      def getSig = tree match {
         case ClassDef(_, _, tparams, impl) =>
           newNamer(context.makeNewScope(tree, sym)).classSig(tparams, impl)
 
@@ -1301,7 +1301,7 @@ trait Namers { self: Analyzer =>
       }
 
       val result =
-        try makeNamer
+        try getSig
         catch typeErrorHandler(tree.pos, ErrorType)
 
       result match {
