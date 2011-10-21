@@ -14,6 +14,7 @@ import scala.tools.nsc.util.FreshNameCreator
 import scala.reflect.internal.Flags
 import scala.tools.nsc.util.NoSourceFile
 import java.lang.{Class => jClass}
+import scala.tools.nsc.util.trace
 
 trait ToolBoxes extends { self: Universe =>
 
@@ -46,7 +47,7 @@ trait ToolBoxes extends { self: Universe =>
       }
 
       def compileExpr(expr: Tree, fvs: List[Symbol]): String = {
-        val cdef = wrapInClass(expr, fvs)
+        val cdef = trace("wrapped: ")(wrapInClass(expr, fvs))
         val unit = wrapInCompilationUnit(cdef)
         val run = new Run
         run.compileUnits(List(unit), run.namerPhase)
@@ -78,14 +79,18 @@ trait ToolBoxes extends { self: Universe =>
 
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, getClass.getClassLoader)
 
+    private def importAndTypeCheck(tree: rm.Tree, expectedType: rm.Type): compiler.Tree = {
+      val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
+      val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
+      val run = new compiler.Run
+      compiler.phase = run.refchecksPhase
+      val ttree: compiler.Tree = compiler.typer.typed(ctree, compiler.analyzer.EXPRmode, pt)
+      ttree
+    }
 
     def typeCheck(tree: rm.Tree, expectedType: rm.Type): rm.Tree = {
       if (compiler.settings.verbose.value) println("typing "+tree+", pt = "+expectedType)
-      val run = new compiler.Run
-      compiler.phase = run.refchecksPhase
-      val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
-      val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
-      val ttree: compiler.Tree = compiler.typer.typed(ctree, compiler.analyzer.EXPRmode, pt)
+      val ttree = importAndTypeCheck(tree, expectedType)
       exporter.importTree(ttree).asInstanceOf[rm.Tree]
     }
 
@@ -100,5 +105,12 @@ trait ToolBoxes extends { self: Universe =>
       } finally
         compiler.settings.printtypes.value = saved
     }
+
+    def runExpr(tree: rm.Tree, expectedType: rm.Type): Any = {
+      val ttree = importAndTypeCheck(tree, expectedType)
+      compiler.runExpr(ttree)
+    }
+
+    def runExpr(tree: rm.Tree): Any = runExpr(tree, WildcardType.asInstanceOf[rm.Type])
   }
 }
