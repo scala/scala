@@ -312,6 +312,15 @@ abstract class TreeInfo {
     case _                       => EmptyTree
   }
 
+  /** If this tree has type parameters, those.  Otherwise Nil.
+   */
+  def typeParameters(tree: Tree): List[TypeDef] = tree match {
+    case DefDef(_, _, tparams, _, _, _) => tparams
+    case ClassDef(_, _, tparams, _)     => tparams
+    case TypeDef(_, _, tparams, _)      => tparams
+    case _                              => Nil
+  }
+
   /** Does this argument list end with an argument of the form <expr> : _* ? */
   def isWildcardStarArgList(trees: List[Tree]) =
     trees.nonEmpty && isWildcardStarArg(trees.last)

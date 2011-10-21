@@ -500,43 +500,43 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** A list of all non-private members of this type (defined or inherited) */
     def nonPrivateMembers: List[Symbol] =
-      findMember(nme.ANYNAME, PRIVATE | BRIDGES, 0, false).alternatives
+      findMember(nme.ANYNAME, PRIVATE | BridgeFlags, 0, false).alternatives
 
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
      */
     def nonPrivateMembersAdmitting(admit: Long): List[Symbol] =
-      findMember(nme.ANYNAME, (PRIVATE | BRIDGES) & ~admit, 0, false).alternatives
+      findMember(nme.ANYNAME, (PRIVATE | BridgeFlags) & ~admit, 0, false).alternatives
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
     def implicitMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BRIDGES, IMPLICIT, false).alternatives
+      findMember(nme.ANYNAME, BridgeFlags, IMPLICIT, false).alternatives
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
     def deferredMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BRIDGES, DEFERRED, false).alternatives
+      findMember(nme.ANYNAME, BridgeFlags, DEFERRED, false).alternatives
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, BRIDGES, 0, false)
+    def member(name: Name): Symbol = findMember(name, BridgeFlags, 0, false)
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Bridges are excluded from the result
      */
     def nonPrivateMember(name: Name): Symbol =
-      findMember(name, PRIVATE | BRIDGES, 0, false)
+      findMember(name, PRIVATE | BridgeFlags, 0, false)
 
     /** The non-private member with given name, admitting members with given flags `admit`
      *  an OverloadedSymbol if several exist, NoSymbol if none exist
      */
     def nonPrivateMemberAdmitting(name: Name, admit: Long): Symbol =
-      findMember(name, (PRIVATE | BRIDGES) & ~admit, 0, false)
+      findMember(name, (PRIVATE | BridgeFlags) & ~admit, 0, false)
 
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonLocalMember(name: Name): Symbol =
-      findMember(name, LOCAL | BRIDGES, 0, false)
+      findMember(name, LOCAL | BridgeFlags, 0, false)
 
     /** The least type instance of given class which is a supertype
      *  of this type.  Example:
