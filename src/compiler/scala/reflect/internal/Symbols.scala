@@ -1923,6 +1923,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (owner.isRefinementClass) ExplicitFlags & ~OVERRIDE
       else ExplicitFlags
 
+    def accessString = hasFlagsToString(PRIVATE | PROTECTED | LOCAL)
     def defaultFlagString = hasFlagsToString(defaultFlagMask)
     private def defStringCompose(infoString: String) = compose(
       defaultFlagString,

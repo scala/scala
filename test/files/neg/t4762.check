@@ -1,0 +1,7 @@
+t4762.scala:15: error: private[this] value x in class B shadows mutable x inherited from class A.  Changes to x will not be visible within class B - you may want to give them distinct names.
+    /* (99,99) */  (this.x, this.y),
+                         ^
+t4762.scala:48: error: private[this] value x in class Derived shadows mutable x inherited from class Base.  Changes to x will not be visible within class Derived - you may want to give them distinct names.
+  class Derived( x : Int ) extends Base( x ) { override def toString = x.toString }
+                                                                       ^
+two errors found
