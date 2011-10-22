@@ -710,10 +710,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             treeCopy.DefDef(ctor, mods, name, tparams, vparamss, tpt, newBlock)
           case None =>
             // create new static ctor
-            val staticCtorSym = currentClass.newConstructor(template.pos)
-                                  .setFlag(STATIC)
-                                  .setInfo(UnitClass.tpe)
-            val rhs = Block(newStaticInits.toList, Literal(Constant()))
+            val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
+            val rhs            = Block(newStaticInits.toList, Literal(Constant()))
             val staticCtorTree = DefDef(staticCtorSym, rhs)
             localTyper.typed { atPos(template.pos)(staticCtorTree) }
         }

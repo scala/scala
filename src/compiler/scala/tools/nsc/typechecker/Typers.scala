@@ -1455,8 +1455,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             val setter = getter.setter(value.owner)
             gs.append(setterDef(setter))
           }
-          if (!forMSIL && (value.hasAnnotation(BeanPropertyAttr) ||
-              value.hasAnnotation(BooleanBeanPropertyAttr))) {
+          if (!forMSIL && hasBeanAnnotation(value)) {
             val nameSuffix = name.toString.capitalize
             val beanGetterName =
               (if (value.hasAnnotation(BooleanBeanPropertyAttr)) "is" else "get") +
@@ -3018,6 +3017,20 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
       }
       (new Deskolemizer).substitute()
+    }
+    /** Convert to corresponding type parameters all skolems of method
+     *  parameters which appear in `tparams`.
+     */
+    def deskolemizeTypeParams(tparams: List[Symbol])(tp: Type): Type = {
+      class DeSkolemizeMap extends TypeMap {
+        def apply(tp: Type): Type = tp match {
+          case TypeRef(pre, sym, args) if sym.isTypeSkolem && (tparams contains sym.deSkolemize) =>
+            mapOver(typeRef(NoPrefix, sym.deSkolemize, args))
+          case _ =>
+            mapOver(tp)
+        }
+      }
+      new DeSkolemizeMap mapOver tp
     }
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Int): Tree = {

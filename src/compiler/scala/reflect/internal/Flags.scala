@@ -232,6 +232,13 @@ class Flags extends ModifierFlags {
   final val FieldFlags: Long =
     MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
 
+  /** Masks for getters and setters, where the flags are derived from those
+   *  on the field's modifiers.  Both getters and setters get the ACCESSOR flag.
+   *  Getters of immutable values also get STABLE.
+   */
+  final val GetterFlags = ~(PRESUPER | MUTABLE)
+  final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR)
+
   /** When a symbol for a default getter is created, it inherits these
    *  flags from the method with the default.  Other flags applied at creation
    *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE.

@@ -570,10 +570,7 @@ abstract class ClassfileParser {
              (sflags & INTERFACE) == 0L))
           {
             //Console.println("adding constructor to " + clazz);//DEBUG
-            instanceDefs.enter(
-              clazz.newConstructor(NoPosition)
-              .setFlag(clazz.flags & ConstrFlags)
-              .setInfo(MethodType(List(), clazz.tpe)))
+            instanceDefs enter clazz.newClassConstructor(NoPosition)
           }
         ()
       } :: loaders.pendingLoadActions
