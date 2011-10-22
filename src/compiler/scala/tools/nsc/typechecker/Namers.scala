@@ -687,7 +687,7 @@ trait Namers { self: Analyzer =>
       tree.symbol
     }
     def enterAccessorMethod(tree: MemberDef, name: Name, flags: Long): Symbol = {
-      val sym = owner.newMethod(tree.pos, name.toTermName) setFlag flags
+      val sym = owner.newMethod(tree.pos.focus, name.toTermName) setFlag flags
       setPrivateWithin(tree, sym)
       enterInScope(sym)
     }
