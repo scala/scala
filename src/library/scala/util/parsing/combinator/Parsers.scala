@@ -645,6 +645,7 @@ trait Parsers {
       val p0 = p    // avoid repeatedly re-evaluating by-name parser
       @tailrec def applyp(in0: Input): ParseResult[List[T]] = p0(in0) match {
         case Success(x, rest) => elems += x ; applyp(rest)
+        case e @ Error(_, _)  => e  // still have to propagate error
         case _                => Success(elems.toList, in0)
       }
 
