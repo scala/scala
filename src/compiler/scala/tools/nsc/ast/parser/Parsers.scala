@@ -2687,7 +2687,7 @@ self =>
         if (mods.isCase) {
           val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
           productConstr :: serializableConstr :: {
-            if (arity == 0) Nil
+            if (arity == 0 || settings.YnoProductN.value) Nil
             else List(
               AppliedTypeTree(
                 productConstrN(arity),
