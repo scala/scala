@@ -708,59 +708,45 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
 
   /** Implements CompilerControl.askLinkPos */
   private[interactive] def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
-    def doGetLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
-      informIDE("getLinkPos "+sym+" "+source)
-      respond(response) {
-        val preExisting = unitOfFile isDefinedAt source.file
-        val originalTypeParams = sym.owner.typeParams
-        reloadSources(List(source))
-        parseAndEnter(getUnit(source).get)
-        val owner = sym.owner
-        if (owner.isClass) {
-          val pre = adaptToNewRunMap(ThisType(owner))
-          val newsym = pre.decl(sym.name) filter { alt =>
+    informIDE("getLinkPos "+sym+" "+source)
+    respond(response) {
+      val preExisting = unitOfFile isDefinedAt source.file
+      val originalTypeParams = sym.owner.typeParams
+      reloadSources(List(source))
+      parseAndEnter(getUnit(source).get)
+      val owner = sym.owner
+      if (owner.isClass) {
+        val pre = adaptToNewRunMap(ThisType(owner))
+        val newsym = pre.decl(sym.name) filter { alt =>
           sym.isType || {
             try {
               val tp1 = pre.memberType(alt) onTypeError NoType
               val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, owner.typeParams)
               matchesType(tp1, tp2, false)
             } catch {
-            case ex: Throwable =>
-            println("error in hyperlinking: "+ex)
-            ex.printStackTrace()
-            false
+              case ex: Throwable =>
+                println("error in hyperlinking: "+ex)
+                ex.printStackTrace()
+                false
             }
           }
-          }
-          if (!preExisting) removeUnitOf(source)
-          if (newsym == NoSymbol) {
-            debugLog("link not found "+sym+" "+source+" "+pre)
-            NoPosition
-          } else if (newsym.isOverloaded) {
-            settings.uniqid.value = true
-            debugLog("link ambiguous "+sym+" "+source+" "+pre+" "+newsym.alternatives)
-            NoPosition
-          } else {
-            debugLog("link found for "+newsym+": "+newsym.pos)
-            newsym.pos
-          }
-        } else {
-          debugLog("link not in class "+sym+" "+source+" "+owner)
-          NoPosition
         }
+        if (!preExisting) removeUnitOf(source)
+        if (newsym == NoSymbol) {
+          debugLog("link not found "+sym+" "+source+" "+pre)
+          NoPosition
+        } else if (newsym.isOverloaded) {
+          settings.uniqid.value = true
+          debugLog("link ambiguous "+sym+" "+source+" "+pre+" "+newsym.alternatives)
+          NoPosition
+        } else {
+          debugLog("link found for "+newsym+": "+newsym.pos)
+          newsym.pos
+        }
+      } else {
+        debugLog("link not in class "+sym+" "+source+" "+owner)
+        NoPosition
       }
-    }
-
-    try {
-      reload(List(source), new Response[Unit])
-      doGetLinkPos(sym, source, response)
-    }
-    finally {
-      /* Make sure to unload the `source` file that is supposed to contain
-       * the definition of the symbol referenced by the link (i.e., `sym`).
-       * The source is unloaded for performance reasons, as the more are the loaded
-       * units, the slower is the background compiler. */
-      removeUnitOf(source)
     }
   }
 
