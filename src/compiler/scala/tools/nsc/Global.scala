@@ -1020,7 +1020,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
       reporter.reset()
       checkDeprecatedSettings(unitbuf.head)
-      globalPhase = firstPhase
+      globalPhase = fromPhase
 
      while (globalPhase != terminalPhase && !reporter.hasErrors) {
         val startTime = currentTime
