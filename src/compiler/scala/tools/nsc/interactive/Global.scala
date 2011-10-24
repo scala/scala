@@ -7,8 +7,7 @@ package interactive
 
 import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 import scala.collection.mutable
-import collection.mutable.{ ArrayBuffer, ListBuffer, SynchronizedBuffer }
-import mutable.{LinkedHashMap, SynchronizedMap, SynchronizedSet}
+import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.{ AbstractFile, LogReplay, Logger, NullLogger, Replayer }
@@ -84,10 +83,16 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     }
   }
 
-  /** A list containing all those files that need to be removed
+  /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
    */
-  protected val toBeRemoved = new ArrayBuffer[AbstractFile] with SynchronizedBuffer[AbstractFile]
+  protected val toBeRemoved: mutable.Set[AbstractFile] =
+    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+
+  /** A set containing all those files that need to be removed after a full background compiler run
+   */
+  protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
+    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
 
   class ResponseMap extends MultiHashMap[SourceFile, Response[Tree]] {
     override def += (binding: (SourceFile, Set[Response[Tree]])) = {
@@ -488,6 +493,9 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       }
     }
 
+    // move units removable after this run to the "to-be-removed" buffer
+    toBeRemoved ++= toBeRemovedAfterRun
+
     // clean out stale waiting responses
     cleanAllResponses()
 
@@ -614,6 +622,8 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   private def reloadSource(source: SourceFile) {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
+    toBeRemoved -= source.file
+    toBeRemovedAfterRun -= source.file
     reset(unit)
     //parseAndEnter(unit)
   }
@@ -649,14 +659,20 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
     demandNewCompilerRun()
   }
 
+  /** Arrange for unit to be removed after run, to give a chance to typecheck the unit fully.
+   *  If we do just removeUnit, some problems with default parameters can ensue.
+   *  Calls to this method could probably be replaced by removeUnit once default parameters are handled more robustly.
+   */
+  private def afterRunRemoveUnitOf(source: SourceFile) {
+    toBeRemovedAfterRun += source.file
+  }
 
   /** A fully attributed tree located at position `pos` */
   private def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
-      val result = typedTreeAt(pos)
-      removeUnitOf(pos.source)
-      result
+      try typedTreeAt(pos)
+      finally afterRunRemoveUnitOf(pos.source)
     case Some(unit) =>
       informIDE("typedTreeAt " + pos)
       parseAndEnter(unit)
@@ -708,43 +724,52 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
 
   /** Implements CompilerControl.askLinkPos */
   private[interactive] def getLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) {
-    informIDE("getLinkPos "+sym+" "+source)
-    respond(response) {
-      val preExisting = unitOfFile isDefinedAt source.file
+
+    /** Find position of symbol `sym` in unit `unit`. Pre: `unit is loaded. */
+    def findLinkPos(unit: RichCompilationUnit): Position = {
       val originalTypeParams = sym.owner.typeParams
-      reloadSources(List(source))
-      parseAndEnter(getUnit(source).get)
-      val owner = sym.owner
-      if (owner.isClass) {
-        val pre = adaptToNewRunMap(ThisType(owner))
-        val newsym = pre.decl(sym.name) filter { alt =>
-          sym.isType || {
-            try {
-              val tp1 = pre.memberType(alt) onTypeError NoType
-              val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, owner.typeParams)
-              matchesType(tp1, tp2, false)
-            } catch {
-              case ex: Throwable =>
-                println("error in hyperlinking: "+ex)
-                ex.printStackTrace()
-                false
-            }
+      parseAndEnter(unit)
+      val pre = adaptToNewRunMap(ThisType(sym.owner))
+      val newsym = pre.decl(sym.name) filter { alt =>
+        sym.isType || {
+          try {
+            val tp1 = pre.memberType(alt) onTypeError NoType
+            val tp2 = adaptToNewRunMap(sym.tpe) substSym (originalTypeParams, sym.owner.typeParams)
+            matchesType(tp1, tp2, false)
+          } catch {
+            case ex: Throwable =>
+              println("error in hyperlinking: " + ex)
+              ex.printStackTrace()
+              false
           }
         }
-        if (!preExisting) removeUnitOf(source)
-        if (newsym == NoSymbol) {
-          debugLog("link not found "+sym+" "+source+" "+pre)
-          NoPosition
-        } else if (newsym.isOverloaded) {
-          settings.uniqid.value = true
-          debugLog("link ambiguous "+sym+" "+source+" "+pre+" "+newsym.alternatives)
-          NoPosition
-        } else {
-          debugLog("link found for "+newsym+": "+newsym.pos)
-          newsym.pos
+      }
+      if (newsym == NoSymbol) {
+        debugLog("link not found " + sym + " " + source + " " + pre)
+        NoPosition
+      } else if (newsym.isOverloaded) {
+        settings.uniqid.value = true
+        debugLog("link ambiguous " + sym + " " + source + " " + pre + " " + newsym.alternatives)
+        NoPosition
+      } else {
+        debugLog("link found for " + newsym + ": " + newsym.pos)
+        newsym.pos
+      }
+    }
+
+    informIDE("getLinkPos "+sym+" "+source)
+    respond(response) {
+      if (sym.owner.isClass) {
+        getUnit(source) match {
+          case None =>
+            reloadSources(List(source))
+            try findLinkPos(getUnit(source).get)
+            finally afterRunRemoveUnitOf(source)
+          case Some(unit) =>
+            findLinkPos(unit)
         }
       } else {
-        debugLog("link not in class "+sym+" "+source+" "+owner)
+        debugLog("link not in class "+sym+" "+source+" "+sym.owner)
         NoPosition
       }
     }
