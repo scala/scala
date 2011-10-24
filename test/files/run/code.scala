@@ -36,7 +36,15 @@ object Test extends App {
   }
 
   show()
+
+  def evaltest(x: Int) = {
+    CodeTest.static(() => x + 1, args)
+    CodeTest(() => x + 1, args)
+  }
+
+  println("1+1 = "+evaltest(1))
 }
+
 
 package baz {
 

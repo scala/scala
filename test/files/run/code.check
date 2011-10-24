@@ -1,0 +1,29 @@
+testing: ((x: Int) => x.$plus(ys.length))
+result = ((x: Int) => x.+{(x: <?>)Int}(ys.length{Int}){Int}){Int => Int}
+evaluated = <function1>
+testing: (() => {
+  val e: Element = new Element("someName");
+  e
+})
+result = (() => {
+  val e: Element = new Element{Element}{(name: <?>)Element}("someName"{String("someName")}){Element};
+  e{Element}
+}{Element}){() => Element}
+evaluated = Element(someName)
+testing: (() => truc.elem = 6)
+result = (() => truc.elem{Int} = 6{Int(6)}{Unit}){() => Unit}
+evaluated = null
+testing: (() => truc.elem = truc.elem.$plus(6))
+result = (() => truc.elem{Int} = truc.elem.+{(x: <?>)Int}(6{Int(6)}){Int}{Unit}){() => Unit}
+evaluated = null
+testing: (() => new baz.BazElement("someName"))
+result = (() => new baz.BazElement{baz.BazElement}{(name: <?>)baz.BazElement}("someName"{String("someName")}){baz.BazElement}){() => baz.BazElement}
+evaluated = BazElement(someName)
+testing: ((x: Int) => x.$plus(ys.length))
+result = ((x: Int) => x.+{(x: <?>)Int}(ys.length{Int}){Int}){Int => Int}
+evaluated = <function1>
+static: 2
+testing: (() => x.$plus(1))
+result = (() => x.+{(x: <?>)Int}(1{Int(1)}){Int}){() => Int}
+evaluated = 2
+1+1 = 2
