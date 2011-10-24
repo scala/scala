@@ -55,7 +55,7 @@ abstract class SourceFile {
  */
 object NoSourceFile extends SourceFile {
   def content                   = Array()
-  def file                      = null    // TODO: push NPE-defense out another level or two
+  def file                      = NoFile
   def isLineBreak(idx: Int)     = false
   def isSelfContained           = true
   def length                    = -1
@@ -63,6 +63,8 @@ object NoSourceFile extends SourceFile {
   def lineToOffset(index : Int) = -1
   override def toString = "NoSourceFile"
 }
+
+object NoFile extends VirtualFile("<no file>", "<no file>")
 
 object ScriptSourceFile {
   /** Length of the script header from the given content, if there is one.
