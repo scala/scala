@@ -58,7 +58,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = gen.mkAttributedQualifier(tpe, termSym)
 
-  def picklerPhase: Phase = currentRun.picklerPhase
+  def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
   // platform specific elements
 

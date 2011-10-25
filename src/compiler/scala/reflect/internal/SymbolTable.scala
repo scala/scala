@@ -108,7 +108,7 @@ abstract class SymbolTable extends api.Universe
     atPhase(ph.next)(op)
 
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
-    if (target != null && phase.id > target.id) atPhase(target)(op) else op
+    if (target != NoPhase && phase.id > target.id) atPhase(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
