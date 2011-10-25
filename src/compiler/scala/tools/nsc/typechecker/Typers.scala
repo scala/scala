@@ -77,6 +77,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
   // that are turned private by typedBlock
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
+  private def isPastTyper = phase.id > currentRun.typerPhase.id
+
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation {
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine }
@@ -157,7 +159,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      */
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree = {
       debuglog("infer view from "+from+" to "+to)//debug
-      if (phase.id > currentRun.typerPhase.id) EmptyTree
+      if (isPastTyper) EmptyTree
       else from match {
         case MethodType(_, _) => EmptyTree
         case OverloadedType(_, _) => EmptyTree
@@ -235,7 +237,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       def errorNotClass(found: AnyRef) = error(tpt.pos, "class type required but "+found+" found")
       def check(tpe: Type): Unit = tpe.normalize match {
         case TypeRef(pre, sym, _) if sym.isClass && !sym.isRefinementClass =>
-          if (stablePrefix && phase.id <= currentRun.typerPhase.id) {
+          if (stablePrefix && !isPastTyper) {
             if (!pre.isStable)
               error(tpt.pos, "type "+pre+" is not a stable prefix")
             // A type projection like X#Y can get by the stable check if the
@@ -326,7 +328,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     }
 
     def checkStarPatOK(pos: Position, mode: Int) =
-      if ((mode & STARmode) == 0 && phase.id <= currentRun.typerPhase.id)
+      if ((mode & STARmode) == 0 && !isPastTyper)
         error(pos, "star patterns must correspond with varargs parameters")
 
     /** Check that type of given tree does not contain local or private
@@ -980,8 +982,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 typeErrorTree(tree, tree.tpe, pt)
               } catch {
                 case ex: TypeError =>
-                  if (phase.id > currentRun.typerPhase.id &&
-                    pt.existentialSkolems.nonEmpty) {
+                  if (isPastTyper && pt.existentialSkolems.nonEmpty) {
                     // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
                     // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
                     // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
@@ -1030,7 +1031,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       var qtpe = qual.tpe.widen
       if (qual.isTerm &&
           ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
-          phase.id <= currentRun.typerPhase.id && !qtpe.isError &&
+          !isPastTyper && !qtpe.isError &&
           qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType &&
           !qual.isInstanceOf[ApplyImplicitView] && // don't chain views
           context.implicitsEnabled) { // don't try to adapt a top-level type that's the subject of an implicit search
@@ -1349,7 +1350,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           "subclassing Classfile does not\n"+
           "make your annotation visible at runtime.  If that is what\n"+
           "you want, you must write the annotation class in Java.")
-      if (phase.id <= currentRun.typerPhase.id) {
+      if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionModuleOf(clazz, context)
           if (m != NoSymbol)
@@ -1557,7 +1558,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
       val body =
-        if (phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
+        if (!isPastTyper && !reporter.hasErrors)
           templ.body flatMap addGetterSetter
         else templ.body
       val body1 = typedStats(body, templ.symbol)
@@ -1593,7 +1594,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
       val rhs1 =
         if (vdef.rhs.isEmpty) {
-          if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
+          if (sym.isVariable && sym.owner.isTerm && !isPastTyper)
             error(vdef.pos, "local variables must be initialized")
           vdef.rhs
         } else {
@@ -1771,7 +1772,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       reenterValueParams(ddef.vparamss)
 
       // for `val` and `var` parameter, look at `target` meta-annotation
-      if (phase.id <= currentRun.typerPhase.id && meth.isPrimaryConstructor) {
+      if (!isPastTyper && meth.isPrimaryConstructor) {
         for (vparams <- ddef.vparamss; vd <- vparams) {
           if (vd.mods.isParamAccessor) {
             val sym = vd.symbol
@@ -1806,17 +1807,16 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
 
-      if (meth.isPrimaryConstructor && meth.isClassConstructor &&
-          phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
+      if (meth.isPrimaryConstructor && meth.isClassConstructor && !isPastTyper && !reporter.hasErrors)
         computeParamAliases(meth.owner, vparamss1, rhs1)
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
         rhs1 = checkDead(rhs1)
 
-      if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
+      if (!isPastTyper && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasDefaultFlag) && isRepeatedParamType(ps.last.tpe)))
         error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
 
-      if (phase.id <= currentRun.typerPhase.id) {
+      if (!isPastTyper) {
         val allParams = meth.paramss.flatten
         for (p <- allParams) {
           for (n <- p.deprecatedParamName) {
@@ -1879,7 +1879,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     }
 
     def typedLabelDef(ldef: LabelDef): LabelDef = {
-      if (!nme.isLoopHeaderLabel(ldef.symbol.name) || phase.id > currentRun.typerPhase.id) {
+      if (!nme.isLoopHeaderLabel(ldef.symbol.name) || isPastTyper) {
         val restpe = ldef.symbol.tpe.resultType
         val rhs1 = typed(ldef.rhs, restpe)
         ldef.params foreach (param => param.tpe = param.symbol.tpe)
@@ -3076,8 +3076,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             checkClassType(args.head, true, false)
             atPos(tree.pos) { gen.mkClassOf(targs.head) }
           } else {
-            if (phase.id <= currentRun.typerPhase.id &&
-                fun.symbol == Any_isInstanceOf && !targs.isEmpty)
+            if (!isPastTyper && fun.symbol == Any_isInstanceOf && !targs.isEmpty)
               checkCheckable(tree.pos, targs.head, "")
             val resultpe = restpe.instantiateTypeParams(tparams, targs)
             //@M substitution in instantiateParams needs to be careful!
@@ -3294,7 +3293,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           val selector1 = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
           var cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
 
-          if (phase.id > currentRun.typerPhase.id || !opt.virtPatmat) {
+          if (isPastTyper || !opt.virtPatmat) {
             val (owntype, needAdapt) = ptOrLub(cases1 map (_.tpe))
             if (needAdapt) {
               cases1 = cases1 map (adaptCase(_, owntype))
@@ -3507,16 +3506,17 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 case mt: MethodType => mt.isImplicit
                 case _ => false
               }
-              val res =
-                if (phase.id <= currentRun.typerPhase.id &&
-                    fun2.isInstanceOf[Select] &&
-                    !isImplicitMethod(fun2.tpe) &&
-                    ((fun2.symbol eq null) || !fun2.symbol.isConstructor) &&
-                    (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) {
-                      tryTypedApply(fun2, args)
-                    } else {
-                      doTypedApply(tree, fun2, args, mode, pt)
-                    }
+              val useTry = (
+                   !isPastTyper
+                && fun2.isInstanceOf[Select]
+                && !isImplicitMethod(fun2.tpe)
+                && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
+                && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
+              )
+              val res = (
+                if (useTry) tryTypedApply(fun2, args)
+                else doTypedApply(tree, fun2, args, mode, pt)
+              )
             /*
               if (fun2.hasSymbol && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
                 res.tpe = res.tpe.notNull
@@ -3766,7 +3766,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           val result = stabilize(tree2, pre2, mode, pt)
 
           def isPotentialNullDeference() = {
-            phase.id <= currentRun.typerPhase.id &&
+            !isPastTyper &&
             !sym.isConstructor &&
             !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull &&
             !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
@@ -4414,7 +4414,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
 //      for (t <- tree1.tpe) assert(t != WildcardType)
 //      if ((mode & TYPEmode) != 0) println("type: "+tree1+" has type "+tree1.tpe)
-        if (phase.id <= currentRun.typerPhase.id) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
+        if (!isPastTyper) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
         result
       } catch {
         case ex: TypeError =>
