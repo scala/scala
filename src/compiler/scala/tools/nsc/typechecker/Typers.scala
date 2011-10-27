@@ -2315,6 +2315,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
       // TODO_NMT: check the assumption that args nonEmpty
+      def errTree = setError(treeCopy.Apply(tree, fun0, args))
+      def errorTree(msg: String) = { error(tree.pos, msg); errTree }
+
       var fun = fun0
       if (fun.hasSymbol && fun.symbol.isOverloaded) {
         // remove alternatives with wrong number of parameters without looking at types.
@@ -2414,22 +2417,21 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           def tryNamesDefaults: Tree = {
             val lencmp = compareLengths(args, formals)
 
-            if (mt.isErroneous) setError(tree)
+            if (mt.isErroneous) errTree
             else if (inPatternMode(mode))
               // #2064
-              errorTree(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
+              errorTree("wrong number of arguments for "+ treeSymTypeMsg(fun))
             else if (lencmp > 0) {
-              tryTupleApply getOrElse errorTree(tree, "too many arguments for "+treeSymTypeMsg(fun))
+              tryTupleApply getOrElse errorTree("too many arguments for "+treeSymTypeMsg(fun))
             } else if (lencmp == 0) {
               // we don't need defaults. names were used, so this application is transformed
               // into a block (@see transformNamedApplication in NamesDefaults)
               val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
               if (namelessArgs exists (_.isErroneous)) {
-                setError(tree)
+                errTree
               } else if (!isIdentity(argPos) && !sameLength(formals, params))
                 // !isIdentity indicates that named arguments are used to re-order arguments
-                errorTree(tree, "when using named arguments, the vararg parameter "+
-                                "has to be specified exactly once")
+                errorTree("when using named arguments, the vararg parameter has to be specified exactly once")
               else if (isIdentity(argPos) && !isNamedApplyBlock(fun)) {
                 // if there's no re-ordering, and fun is not transformed, no need to transform
                 // more than an optimization, e.g. important in "synchronized { x = update-x }"
@@ -2443,7 +2445,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               // calls to the default getters. Example:
               //  foo[Int](a)()  ==>  foo[Int](a)(b = foo$qual.foo$default$2[Int](a))
               val fun1 = transformNamedApplication(Typer.this, mode, pt)(fun, x => x)
-              if (fun1.isErroneous) setError(tree)
+              if (fun1.isErroneous) errTree
               else {
                 assert(isNamedApplyBlock(fun1), fun1)
                 val NamedApplyInfo(qual, targs, previousArgss, _) = context.namedApplyBlockInfo.get._2
@@ -2460,17 +2462,17 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 val lencmp2 = compareLengths(allArgs, formals)
 
                 if (!sameLength(allArgs, args) && callToCompanionConstr(context, funSym)) {
-                  errorTree(tree, "module extending its companion class cannot use default constructor arguments")
+                  errorTree("module extending its companion class cannot use default constructor arguments")
                 } else if (lencmp2 > 0) {
                   removeNames(Typer.this)(allArgs, params) // #3818
-                  setError(tree)
+                  errTree
                 } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   val note = "Error occurred in an application involving default arguments."
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
-                  tryTupleApply getOrElse errorTree(tree, notEnoughArgumentsMsg(fun, missing))
+                  tryTupleApply getOrElse errorTree(notEnoughArgumentsMsg(fun, missing))
                 }
               }
             }
@@ -2555,7 +2557,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 arg1
               }
               val args1 = (args, formals).zipped map typedArgToPoly
-              if (args1 exists (_.tpe.isError)) setError(tree)
+              if (args1 exists (_.tpe.isError)) errTree
               else {
                 debuglog("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info)) //debug
                 // define the undetparams which have been fixed by this param list, replace the corresponding symbols in "fun"
@@ -2621,7 +2623,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           // setType null is necessary so that ref will be stabilized; see bug 881
           val fun1 = typedPos(fun.pos)(Apply(Select(fun setType null, unapp), List(arg)))
 
-          if (fun1.tpe.isErroneous) setError(tree)
+          if (fun1.tpe.isErroneous) errTree
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
@@ -2637,13 +2639,13 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               UnApply(fun1, args1) setPos tree.pos setType itype
             }
             else {
-              errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+              errorTree("wrong number of arguments for "+treeSymTypeMsg(fun))
             }
           }
 
 /* --- end unapply  --- */
         case _ =>
-          errorTree(tree, fun.tpe+" does not take parameters")
+          errorTree(fun.tpe+" does not take parameters")
       }
     }
 
@@ -3091,7 +3093,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
         }
       case ErrorType =>
-        setError(tree)
+        setError(treeCopy.TypeApply(tree, fun, args))
       case _ =>
         errorTree(tree, treeSymTypeMsg(fun)+" does not take type parameters.")
     }
@@ -3483,7 +3485,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               }
             }
             reportTypeError(tree.pos, ex)
-            setError(tree)
+            setError(treeCopy.Apply(tree, fun, args))
         }
       }
 
@@ -3513,10 +3515,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 && ((fun2.symbol eq null) || !fun2.symbol.isConstructor)
                 && (mode & (EXPRmode | SNDTRYmode)) == EXPRmode
               )
-              val res = (
+              val res =
                 if (useTry) tryTypedApply(fun2, args)
                 else doTypedApply(tree, fun2, args, mode, pt)
-              )
+
             /*
               if (fun2.hasSymbol && fun2.symbol.isConstructor && (mode & EXPRmode) != 0) {
                 res.tpe = res.tpe.notNull
