@@ -286,6 +286,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
           case t @ RefinedType(parents, decls) =>
             registerReifiableSymbol(tpe.typeSymbol)
             mirrorFactoryCall(t, reify(parents), reify(decls), reify(t.typeSymbol))
+          case t @ ClassInfoType(parents, decls, clazz) =>
+            registerReifiableSymbol(clazz)
+            mirrorFactoryCall(t, reify(parents), reify(decls), reify(t.typeSymbol))
           case t @ ExistentialType(tparams, underlying) =>
             reifyTypeBinder(t, tparams, underlying)
           case t @ PolyType(tparams, underlying) =>
