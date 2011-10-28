@@ -52,8 +52,8 @@ abstract class Reporter {
   def hasWarnings       = WARNING.count > 0
 
   def    info(pos: Position, msg: String, force: Boolean) { info0(pos, msg,    INFO, force) }
-  def warning(pos: Position, msg: String                ) { info0(pos, msg, WARNING, false) }
-  def   error(pos: Position, msg: String                ) { info0(pos, msg,   ERROR, false) }
+  def warning(pos: Position, msg: String                ) { withoutTruncating(info0(pos, msg, WARNING, false)) }
+  def   error(pos: Position, msg: String                ) { withoutTruncating(info0(pos, msg,   ERROR, false)) }
   def incompleteInputError(pos: Position, msg: String   ) {
     if (incompleteHandled) incompleteHandler(pos, msg)
     else error(pos, msg)
