@@ -523,9 +523,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           // Group missing members by the name of the underlying symbol,
           // to consolidate getters and setters.
           val grouped = missing groupBy (sym => analyzer.underlyingSymbol(sym).name)
-          val missingMethods = grouped.toList map {
-            case (name, sym :: Nil) => sym
-            case (name, syms)       => syms.sortBy(!_.isGetter).head
+          val missingMethods = grouped.toList flatMap {
+            case (name, syms) =>
+              if (syms exists (_.isSetter)) syms filterNot (_.isGetter)
+              else syms
           }
 
           def stubImplementations: List[String] = {
