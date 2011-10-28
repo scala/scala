@@ -50,6 +50,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       flags & mask,
       if (hasAccessBoundary) privateWithin.toString else ""
     )
+    def defaultFlagString = hasFlagsToString(-1L)
     def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
       if (flags1 == flags) this
@@ -79,7 +80,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
       Modifiers(flags, privateWithin, f(annotations)) setPositions positions
 
-    override def toString = "Modifiers(%s, %s, %s)".format(hasFlagsToString(-1L), annotations mkString ", ", positions)
+    override def toString = "Modifiers(%s, %s, %s)".format(defaultFlagString, annotations mkString ", ", positions)
   }
 
   def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())

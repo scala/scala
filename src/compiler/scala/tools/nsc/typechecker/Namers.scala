@@ -107,24 +107,27 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    private def owner       = context.owner
+    protected def owner       = context.owner
     private def contextFile = context.unit.source.file
-    private def isInJava    = context.unit.isJava
     private def typeErrorHandler[T](pos: Position, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
         typer.reportTypeError(pos, ex)
         alt
     }
-    private def hasNoAccessors(vd: ValDef) = {
-      val ValDef(mods, name, _, _) = vd
-
-      !mods.isLazy && (
-           !owner.isClass
-        || (mods.isPrivateLocal && !mods.isCaseAccessor)
-        || (name startsWith nme.OUTER)
-        || isInJava
-      )
-    }
+    // PRIVATE | LOCAL are fields generated for primary constructor arguments
+    // @PP: ...or fields declared as private[this].  PARAMACCESSOR marks constructor arguments.
+    // Neither gets accessors so the code is as far as I know still correct.
+    def noEnterGetterSetter(vd: ValDef) = !vd.mods.isLazy && (
+         !owner.isClass
+      || (vd.mods.isPrivateLocal && !vd.mods.isCaseAccessor)
+      || (vd.name startsWith nme.OUTER)
+      || (context.unit.isJava)
+    )
+    def noFinishGetterSetter(vd: ValDef) = (
+         vd.mods.isPrivateLocal
+      || vd.symbol.isModuleVar
+      || vd.symbol.isLazy
+    )
 
     def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
       if (!sym.isPrivateLocal && mods.hasAccessBoundary)
@@ -556,38 +559,12 @@ trait Namers extends MethodSynthesis {
     }
 
     def enterValDef(tree: ValDef) {
-      val ValDef(mods, name, tp, rhs) = tree
-
-      if (hasNoAccessors(tree))
+      if (noEnterGetterSetter(tree))
         assignAndEnterFinishedSymbol(tree)
-      else {
-        if (mods.isPrivateLocal && !mods.isLazy)
-          context.error(tree.pos, "private[this] not allowed for case class parameters")
-        if (nme.isSetterName(name))
-          context.error(tree.pos, "Names of vals or vars may not end in `_='")
-
-        // add getter and possibly also setter
-        val getter = enterGetter(tree)
-        if (mods.isMutable)
-          enterSetter(tree)
-
-        tree.symbol = (
-          if (mods.isDeferred) getter setPos tree.pos       // unfocus getter position, no separate value
-          else if (mods.isLazy) enterLazyVal(tree) setLazyAccessor getter
-          else enterStrictVal(tree)
-        )
-
-        if (!forMSIL)
-          addBeanGetterSetter(tree, getter.owner)
-      }
+      else
+        enterGetterSetter(tree)
     }
-
-    def enterPackage(tree: PackageDef) {
-      val sym = assignSymbol(tree)
-      newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
-    }
-
-    def enterLazyVal(tree: ValDef): TermSymbol = {
+    def enterLazyVal(tree: ValDef, lazyAccessor: Symbol): TermSymbol = {
       // If the owner is not a class, this is a lazy val from a method,
       // with no associated field.  It has an accessor with $lzy appended to its name and
       // its flags are set differently.  The implicit flag is reset because otherwise
@@ -597,7 +574,7 @@ trait Namers extends MethodSynthesis {
         if (owner.isClass) createFieldSymbol(tree)
         else owner.newValue(tree.pos, tree.name + "$lzy") setFlag tree.mods.flags resetFlag IMPLICIT
       )
-      enterValSymbol(tree, sym setFlag MUTABLE)
+      enterValSymbol(tree, sym setFlag MUTABLE setLazyAccessor lazyAccessor)
     }
     def enterStrictVal(tree: ValDef): TermSymbol = {
       enterValSymbol(tree, createFieldSymbol(tree))
@@ -606,7 +583,10 @@ trait Namers extends MethodSynthesis {
       enterInScope(sym)
       sym setInfo namerOf(sym).monoTypeCompleter(tree)
     }
-
+    def enterPackage(tree: PackageDef) {
+      val sym = assignSymbol(tree)
+      newNamer(context.make(tree, sym.moduleClass, sym.info.decls)) enterSyms tree.stats
+    }
     def enterTypeDef(tree: TypeDef) = assignAndEnterFinishedSymbol(tree)
 
     def enterDefDef(tree: DefDef): Unit = tree match {
@@ -668,49 +648,10 @@ trait Namers extends MethodSynthesis {
       this.context
     }
 
-    def enterSetter(tree: ValDef) = Setter(tree).enterAccessor()
-    def enterGetter(tree: ValDef) = Getter(tree).enterAccessor()
     def enterSyntheticSym(tree: Tree): Symbol = {
       enterSym(tree)
       context.unit.synthetics(tree.symbol) = tree
       tree.symbol
-    }
-
-    private def addBeanGetterSetter(tree: ValDef, inClazz: Symbol) {
-      val ValDef(mods, name, tpt, _) = tree
-      val hasBP     = mods hasAnnotationNamed tpnme.BeanPropertyAnnot
-      val hasBoolBP = mods hasAnnotationNamed tpnme.BooleanBeanPropertyAnnot
-
-      if (hasBP || hasBoolBP) {
-        if (!name(0).isLetter)
-          context.error(tree.pos, "`BeanProperty' annotation can be applied only to fields that start with a letter")
-        else if (mods.isPrivate)
-          // avoids name clashes with private fields in traits
-          context.error(tree.pos, "`BeanProperty' annotation can be applied only to non-private fields")
-        else {
-          val flags            = mods.flags & BeanPropertyFlags
-          val beanName         = name.toString.capitalize
-          val getterName: Name = if (hasBoolBP) "is" + beanName else "get" + beanName
-          val getterMods       = Modifiers(flags, mods.privateWithin, Nil) setPositions mods.positions
-
-          // TODO: unify with the other accessor creations
-          // BeanGetter(getterTree).enterAccessor()
-          enterSyntheticSym {
-            atPos(tree.pos.focus) {
-              DefDef(getterMods, getterName, Nil, List(Nil), tpt.duplicate,
-                if (mods.isDeferred) EmptyTree
-                else Select(This(inClazz), name)
-              )
-            }
-          }
-
-          // can't use "enterSyntheticSym", because the parameter type is not yet
-          // known. instead, uses the same machinery as for the non-bean setter:
-          // create and enter the symbol here, add the tree in Typer.addGettterSetter.
-          if (mods.isMutable)
-            BeanSetter(tree).enterAccessor()
-        }
-      }
     }
 
 // --- Lazy Type Assignment --------------------------------------------------
@@ -1004,8 +945,7 @@ trait Namers extends MethodSynthesis {
               if (vparam.tpt.isEmpty) {
                 val paramtpe = pps.head.tpe
                 vparam.symbol setInfo paramtpe
-                vparam.tpt defineType paramtpe
-                vparam.tpt setPos vparam.pos.focus
+                vparam.tpt defineType paramtpe setPos vparam.pos.focus
               }
               pps = pps.tail
             }
