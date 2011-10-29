@@ -11,13 +11,13 @@ object sort2 {
       def gtPivot(x: Int) = x > pivot
       def eqPivot(x: Int) = x == pivot
       sort(a filter lePivot) :::
-           sort(a filter eqPivot) :::
+           (a filter eqPivot) :::
            sort(a filter gtPivot)
     }
   }
 
   def main(args: Array[String]) {
-    val xs = List(6, 2, 8, 5, 1)
+    val xs = List(6, 2, 8, 5, 1, 8)
     println(xs)
     println(sort(xs))
   }
