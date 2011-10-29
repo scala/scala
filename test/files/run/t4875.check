@@ -1,0 +1,17 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.Code
+import scala.reflect.Code
+
+scala> def codeOf[A](code: Code[A]) = code
+codeOf: [A](code: scala.reflect.Code[A])scala.reflect.Code[A]
+
+scala> codeOf((x: Iterable[_]) => throw new Exception)
+res0: scala.reflect.Code[Iterable[_] => Nothing] = Code(manifest = scala.Function1[scala.collection.Iterable[Any], Nothing])
+
+scala> 
+
+scala> 
