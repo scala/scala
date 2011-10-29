@@ -346,12 +346,16 @@ abstract class ExplicitOuter extends InfoTransform
      *  @pre mixinClass is an inner class
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
-      val outerAcc = outerAccessor(mixinClass) overridingSymbol currentClass
-      assert(outerAcc != NoSymbol)
-      val path =
-        if (mixinClass.owner.isTerm) THIS(mixinClass.owner.enclClass)
-        else gen.mkAttributedQualifier(currentClass.thisType baseType mixinClass prefix)
-
+      val outerAcc    = outerAccessor(mixinClass) overridingSymbol currentClass
+      def mixinPrefix = currentClass.thisType baseType mixinClass prefix;
+      assert(outerAcc != NoSymbol, "No outer accessor for inner mixin " + mixinClass + " in " + currentClass)
+      // I added the mixinPrefix.typeArgs.nonEmpty condition to address the
+      // crash in SI-4970.  I feel quite sure this can be improved.
+      val path = (
+        if (mixinClass.owner.isTerm) gen.mkAttributedThis(mixinClass.owner.enclClass)
+        else if (mixinPrefix.typeArgs.nonEmpty) gen.mkAttributedThis(mixinPrefix.typeSymbol)
+        else gen.mkAttributedQualifier(mixinPrefix)
+      )
       localTyper typed {
         (DEF(outerAcc) withPos currentClass.pos) === {
           // Need to cast for nested outer refs in presence of self-types. See ticket #3274.

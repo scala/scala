@@ -64,44 +64,47 @@ abstract class TreeGen {
    *  termSym as the Ident's symbol.  In that case, termSym must
    *  not be NoSymbol.
    */
-  def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = tpe match {
-    case NoPrefix =>
-      EmptyTree
-    case ThisType(clazz) =>
-      if (clazz.isEffectiveRoot) EmptyTree
-      else mkAttributedThis(clazz)
-    case SingleType(pre, sym) =>
-      mkApplyIfNeeded(mkAttributedStableRef(pre, sym))
-    case TypeRef(pre, sym, args) =>
-      if (sym.isRoot) {
-        mkAttributedThis(sym)
-      } else if (sym.isModuleClass) {
-        mkApplyIfNeeded(mkAttributedRef(pre, sym.sourceModule))
-      } else if (sym.isModule || sym.isClass) {
-        assert(phase.erasedTypes, tpe)
-        mkAttributedThis(sym)
-      } else if (sym.isType) {
-        assert(termSym != NoSymbol, tpe)
-        mkAttributedIdent(termSym) setType tpe
-      } else {
-        mkAttributedRef(pre, sym)
-      }
+  def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = {
+    def failMessage = "mkAttributedQualifier(" + tpe + ", " + termSym + ")"
+    tpe match {
+      case NoPrefix =>
+        EmptyTree
+      case ThisType(clazz) =>
+        if (clazz.isEffectiveRoot) EmptyTree
+        else mkAttributedThis(clazz)
+      case SingleType(pre, sym) =>
+        mkApplyIfNeeded(mkAttributedStableRef(pre, sym))
+      case TypeRef(pre, sym, args) =>
+        if (sym.isRoot) {
+          mkAttributedThis(sym)
+        } else if (sym.isModuleClass) {
+          mkApplyIfNeeded(mkAttributedRef(pre, sym.sourceModule))
+        } else if (sym.isModule || sym.isClass) {
+          assert(phase.erasedTypes, failMessage)
+          mkAttributedThis(sym)
+        } else if (sym.isType) {
+          assert(termSym != NoSymbol, failMessage)
+          mkAttributedIdent(termSym) setType tpe
+        } else {
+          mkAttributedRef(pre, sym)
+        }
 
-    case ConstantType(value) =>
-      Literal(value) setType tpe
+      case ConstantType(value) =>
+        Literal(value) setType tpe
 
-    case AnnotatedType(_, atp, _) =>
-      mkAttributedQualifier(atp)
+      case AnnotatedType(_, atp, _) =>
+        mkAttributedQualifier(atp)
 
-    case RefinedType(parents, _) =>
-      // I am unclear whether this is reachable, but
-      // the following implementation looks logical -Lex
-      val firstStable = parents.find(_.isStable)
-      assert(!firstStable.isEmpty, tpe)
-      mkAttributedQualifier(firstStable.get)
+      case RefinedType(parents, _) =>
+        // I am unclear whether this is reachable, but
+        // the following implementation looks logical -Lex
+        val firstStable = parents.find(_.isStable)
+        assert(!firstStable.isEmpty, failMessage + " parents = " + parents)
+        mkAttributedQualifier(firstStable.get)
 
-    case _ =>
-      abort("bad qualifier: " + tpe)
+      case _ =>
+        abort("bad qualifier received: " + failMessage)
+    }
   }
   /** If this is a reference to a method with an empty
    *  parameter list, wrap it in an apply.
