@@ -28,7 +28,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
   }
 
   private[mutable] def growArray(x: Array[AnyRef]) = {
-    val y = new Array[AnyRef](x.length * 2)
+    val y = new Array[AnyRef](math.max(x.length * 2, 1))
     Array.copy(x, 0, y, 0, x.length)
     y
   }
