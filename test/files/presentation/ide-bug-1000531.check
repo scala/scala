@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] aksTypeCompletion at (6,12)
-retrieved 121 members
+retrieved 122 members
 `class GroupedIteratorIterator[B]#GroupedIterator`
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
@@ -119,6 +119,7 @@ retrieved 121 members
 `method zipWithIndex=> Object with Iterator[(B, Int)]{def idx: Int; def idx_=(x$1: Int): Unit}`
 `method zip[B](that: Iterator[B])Object with Iterator[(B, B)]`
 `method →[B](y: B)(java.util.Iterator[B], B)`
+`value __leftOfArrowjava.util.Iterator[B]`
+`value __resultOfEnsuringjava.util.Iterator[B]`
 `value selfAny`
-`value xjava.util.Iterator[B]`
 ================================================================================

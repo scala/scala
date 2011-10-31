@@ -3,7 +3,7 @@ reload: CallccInterpreter.scala
 askTypeCompletion at CallccInterpreter.scala(51,38)
 ================================================================================
 [response] aksTypeCompletion at (51,38)
-retrieved 62 members
+retrieved 63 members
 `class AddcallccInterpreter.Add`
 `class AppcallccInterpreter.App`
 `class CcccallccInterpreter.Ccc`
@@ -57,11 +57,12 @@ retrieved 62 members
 `type AnswercallccInterpreter.Answer`
 `type EnvironmentcallccInterpreter.Environment`
 `type NamecallccInterpreter.Name`
+`value __leftOfArrowcallccInterpreter.type`
+`value __resultOfEnsuringcallccInterpreter.type`
 `value selfAny`
 `value term0callccInterpreter.App`
 `value term1callccInterpreter.App`
 `value term2callccInterpreter.Add`
-`value xcallccInterpreter.type`
 ================================================================================
 
 askType at CallccInterpreter.scala(14,21)

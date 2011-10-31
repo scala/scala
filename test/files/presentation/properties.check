@@ -3,7 +3,7 @@ reload: properties.scala
 askTypeCompletion at properties.scala(29,33)
 ================================================================================
 [response] aksTypeCompletion at (29,33)
-retrieved 49 members
+retrieved 50 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -42,9 +42,10 @@ retrieved 49 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(properties.Property[String], B)`
+`value __leftOfArrowproperties.Property[String]`
+`value __resultOfEnsuringproperties.Property[String]`
 `value initString`
 `value selfAny`
-`value xproperties.Property[String]`
 `variable getterString => String`
 `variable setterString => String`
 `variable valueString`
@@ -53,7 +54,7 @@ retrieved 49 members
 askTypeCompletion at properties.scala(29,67)
 ================================================================================
 [response] aksTypeCompletion at (29,67)
-retrieved 49 members
+retrieved 50 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -92,9 +93,10 @@ retrieved 49 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(properties.Property[String], B)`
+`value __leftOfArrowproperties.Property[String]`
+`value __resultOfEnsuringproperties.Property[String]`
 `value initString`
 `value selfAny`
-`value xproperties.Property[String]`
 `variable getterString => String`
 `variable setterString => String`
 `variable valueString`
@@ -103,7 +105,7 @@ retrieved 49 members
 askTypeCompletion at properties.scala(45,10)
 ================================================================================
 [response] aksTypeCompletion at (45,10)
-retrieved 36 members
+retrieved 37 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -132,10 +134,11 @@ retrieved 36 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(properties.User, B)`
+`value __leftOfArrowproperties.User`
+`value __resultOfEnsuringproperties.User`
 `value firstnameproperties.Property[String]`
 `value lastnameproperties.Property[String]`
 `value selfAny`
-`value xproperties.User`
 ================================================================================
 
 askType at properties.scala(18,28)

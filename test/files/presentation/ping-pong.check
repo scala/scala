@@ -3,7 +3,7 @@ reload: PingPong.scala
 askTypeCompletion at PingPong.scala(10,23)
 ================================================================================
 [response] aksTypeCompletion at (10,23)
-retrieved 38 members
+retrieved 39 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -33,16 +33,17 @@ retrieved 38 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(Pong, B)`
+`value __leftOfArrowPong`
+`value __resultOfEnsuringPong`
 `value nameString`
 `value pingPing`
 `value selfAny`
-`value xPong`
 ================================================================================
 
 askTypeCompletion at PingPong.scala(19,20)
 ================================================================================
 [response] aksTypeCompletion at (19,20)
-retrieved 38 members
+retrieved 39 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -74,15 +75,16 @@ retrieved 38 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(Ping, B)`
+`value __leftOfArrowPing`
+`value __resultOfEnsuringPing`
 `value pongPong`
 `value selfAny`
-`value xPing`
 ================================================================================
 
 askType at PingPong.scala(8,10)
 ================================================================================
 [response] askTypeAt at (8,10)
-def loop: Unit = poke()
+def loop: Unit = Ping.this.poke()
 ================================================================================
 
 askType at PingPong.scala(10,10)
