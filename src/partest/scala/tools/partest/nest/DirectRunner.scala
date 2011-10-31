@@ -3,6 +3,8 @@
  * @author Philipp Haller
  */
 
+// $Id$
+
 package scala.tools.partest
 package nest
 
@@ -52,10 +54,10 @@ trait DirectRunner {
     val groupSize = (kindFiles.length / numActors) + 1
 
     val consFM = new ConsoleFileManager
-    import consFM.{ latestCompFile, latestLibFile, latestActorsFile, latestPartestFile }
+    import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
     val scalacheckURL = PathSettings.scalaCheck.toURL
     val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
-      List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestActorsFile.toURI.toURL, latestPartestFile.toURI.toURL)
+      List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL)
     )
     Output.init()
 
