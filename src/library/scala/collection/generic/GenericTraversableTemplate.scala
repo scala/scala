@@ -94,13 +94,13 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
   /** Converts this $coll of triples into three collections of the first, second,
    *  and third element of each triple.
    *
-   *  @param A1     the type of the first member of the element triples
-   *  @param A2     the type of the second member of the element triples
-   *  @param A3     the type of the third member of the element triples
-   *  @param asPair an implicit conversion which asserts that the element type
-   *                of this $coll is a triple.
-   *  @return       a triple ${coll}s, containing the first, second, respectively
-   *                third member of each element triple of this $coll.
+   *  @param A1        the type of the first member of the element triples
+   *  @param A2        the type of the second member of the element triples
+   *  @param A3        the type of the third member of the element triples
+   *  @param asTriple  an implicit conversion which asserts that the element type
+   *                   of this $coll is a triple.
+   *  @return          a triple ${coll}s, containing the first, second, respectively
+   *                   third member of each element triple of this $coll.
    */
   def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)): (CC[A1], CC[A2], CC[A3]) = {
     val b1 = genericBuilder[A1]
