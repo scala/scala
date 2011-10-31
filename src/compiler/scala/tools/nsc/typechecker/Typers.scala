@@ -3271,10 +3271,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }}
 
         val tp = tpt1.tpe
-        val sym = tp.typeSymbol
+        val sym = tp.typeSymbol.initialize
         if (sym.isAbstractType || sym.hasAbstractFlag)
           error(tree.pos, sym + " is abstract; cannot be instantiated")
-        else if (!(  tp == sym.initialize.thisSym.tpe // when there's no explicit self type -- with (#3612) or without self variable
+        else if (!(  tp == sym.thisSym.tpe // when there's no explicit self type -- with (#3612) or without self variable
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
                   || narrowRhs(tp) <:< tp.typeOfThis
                   || phase.erasedTypes

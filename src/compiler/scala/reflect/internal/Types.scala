@@ -3342,12 +3342,16 @@ A type's typeSymbol should never be inspected directly.
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
         //val args1 = args mapConserve this(_)
-        val args1 = if (args.isEmpty) args
-                    else {
-                      val tparams = sym.typeParams
-                      if (tparams.isEmpty) args
-                      else mapOverArgs(args, tparams)
-                    }
+        val args1 =
+          if (args.isEmpty)
+            args
+          else if (variance == 0) // fast & safe path: don't need to look at typeparams
+            args mapConserve this
+          else {
+            val tparams = sym.typeParams
+            if (tparams.isEmpty) args
+            else mapOverArgs(args, tparams)
+          }
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1)
       case ThisType(_) => tp
@@ -3394,7 +3398,7 @@ A type's typeSymbol should never be inspected directly.
         if (bounds1 eq bounds) tp
         else BoundedWildcardType(bounds1.asInstanceOf[TypeBounds])
       case rtp @ RefinedType(parents, decls) =>
-        val parents1 = parents mapConserve (this)
+        val parents1 = parents mapConserve this
         val decls1 = mapOver(decls)
         //if ((parents1 eq parents) && (decls1 eq decls)) tp
         //else refinementOfClass(tp.typeSymbol, parents1, decls1)
@@ -3441,7 +3445,7 @@ A type's typeSymbol should never be inspected directly.
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+    protected final def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
       map2Conserve(args, tparams) { (arg, tparam) =>
         val v = variance
         if (tparam.isContravariant) variance = -variance
