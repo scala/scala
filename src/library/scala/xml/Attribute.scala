@@ -64,6 +64,17 @@ abstract trait Attribute extends MetaData {
     (next(arg, scope, key) == null) && (next wellformed scope)
   }
 
+  /** Returns an iterator on attributes */
+  override def iterator: Iterator[MetaData] = {
+    if (value == null) next.iterator
+    else Iterator.single(this) ++ next.iterator
+  }
+
+  override def size: Int = {
+    if (value == null) next.size
+    else 1 + next.size
+  }
+
   /** Appends string representation of only this attribute to stringbuffer.
    */
   def toString1(sb: StringBuilder) {

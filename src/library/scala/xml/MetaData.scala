@@ -139,10 +139,6 @@ abstract class MetaData extends Iterable[MetaData] with Equality with Serializab
   }
   def basisForHashCode: Seq[Any] = List(this.asAttrMap)
 
-  /** Returns an iterator on attributes */
-  def iterator: Iterator[MetaData] = Iterator.single(this) ++ next.iterator
-  override def size: Int = 1 + iterator.length
-
   /** filters this sequence of meta data */
   override def filter(f: MetaData => Boolean): MetaData =
     if (f(this)) copy(next filter f)
