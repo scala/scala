@@ -201,7 +201,14 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   }
 
   class Transformer extends super.Transformer {
-    def transformUnit(unit: CompilationUnit) { unit.body = transform(unit.body) }
+    def transformUnit(unit: CompilationUnit) {
+      try unit.body = transform(unit.body)
+      catch {
+        case ex: Exception =>
+          println("unhandled exception while transforming "+unit)
+          throw ex
+      }
+    }
   }
 
   override protected def xtransform(transformer: super.Transformer, tree: Tree): Tree = tree match {
