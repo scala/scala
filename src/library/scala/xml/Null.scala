@@ -20,6 +20,7 @@ import scala.collection.Iterator
  */
 case object Null extends MetaData {
   override def iterator = Iterator.empty
+  override def size = 0
   override def append(m: MetaData, scope: NamespaceBinding = TopScope): MetaData = m
   override def filter(f: MetaData => Boolean): MetaData = this
 
