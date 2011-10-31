@@ -207,7 +207,7 @@ object NumericRange {
     else {
       val diff      = num.minus(end, start)
       val jumps     = num.toLong(num.quot(diff, step))
-      val remainder = num.toLong(num.rem(diff, step))
+      val remainder = num.rem(diff, step)
       val longCount = jumps + (
         if (!isInclusive && zero == remainder) 0 else 1
       )
