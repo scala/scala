@@ -1993,7 +1993,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 //        }
         var body = typed(fun.body, respt)
         val formals = vparamSyms map (_.tpe)
-        val restpe = packedType(body, fun.symbol).deconst
+        val restpe = packedType(body, fun.symbol).deconst.resultType
         val funtpe = typeRef(clazz.tpe.prefix, clazz, formals :+ restpe)
 //        body = checkNoEscaping.locals(context.scope, restpe, body)
         val fun1 = treeCopy.Function(fun, vparams, body).setType(funtpe)
