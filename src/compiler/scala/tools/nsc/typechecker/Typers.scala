@@ -1277,7 +1277,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             if (context.unit.source.file == psym.sourceFile || isValueClass(context.owner))
               psym addChild context.owner
             else
-              error(parent.pos, "illegal inheritance from sealed "+psym+": " + context.unit.source.file + " != " + psym.sourceFile)
+              error(parent.pos, "illegal inheritance from sealed "+psym+": " + context.unit.source.file.canonicalPath + " != " + psym.sourceFile.canonicalPath)
           }
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&

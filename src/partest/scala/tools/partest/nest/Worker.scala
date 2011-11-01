@@ -578,6 +578,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
           val dir      = file.getParentFile
 
           // diff is contents of logFile
+          fileManager.mapFile(logFile, replaceSlashes(dir, _))
           diffCheck(compareOutput(dir, logFile))
         })
 
