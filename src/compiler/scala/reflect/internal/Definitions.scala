@@ -647,6 +647,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       val attr = newClass(RuntimePackageClass, tpnme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))
       // This attribute needs a constructor so that modifiers in parsed Java code make sense
       attr.info.decls enter attr.newClassConstructor(NoPosition)
+      attr
     }
 
     def getPackageObjectClass(fullname: Name): Symbol =
