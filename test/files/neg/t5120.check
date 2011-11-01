@@ -1,0 +1,12 @@
+t5120.scala:11: error: type mismatch;
+ found   : Object
+ required: _1
+    List(str, other) foreach (_.x1 = new AnyRef)
+                                     ^
+t5120.scala:25: error: type mismatch;
+ found   : Thread
+ required: h.T
+    (which expands to)  _2
+  List(str, num).foreach(h => h.f1 = new Thread())
+                                     ^
+two errors found

@@ -2841,7 +2841,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
-        else containsDef(owner, sym) || isRawParameter(sym)
+        else containsDef(owner, sym) || isRawParameter(sym) || ((sym hasFlag EXISTENTIAL) && (sym hasFlag CAPTURED)) // todo refine this
       def containsLocal(tp: Type): Boolean =
         tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
       val normalizeLocals = new TypeMap {

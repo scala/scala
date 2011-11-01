@@ -560,11 +560,19 @@ trait Types extends api.Types { self: SymbolTable =>
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
       if (isTrivial || phase.erasedTypes && pre.typeSymbol != ArrayClass) this
       else {
+//        scala.tools.nsc.util.trace.when(pre.isInstanceOf[ExistentialType])("X "+this+".asSeenfrom("+pre+","+clazz+" = ") {
         incCounter(asSeenFromCount)
         val start = startTimer(asSeenFromNanos)
         val m = new AsSeenFromMap(pre.normalize, clazz)
         val tp = m apply this
-        val result = existentialAbstraction(m.capturedParams, tp)
+        val tp1 = existentialAbstraction(m.capturedParams, tp)
+        val result: Type =
+          if (m.capturedSkolems.isEmpty) tp1
+          else {
+            val captured = cloneSymbols(m.capturedSkolems)
+            captured foreach (_ setFlag CAPTURED)
+            tp1.substSym(m.capturedSkolems, captured)
+          }
         stopTimer(asSeenFromNanos, start)
         result
       }
@@ -3606,6 +3614,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A map to compute the asSeenFrom method  */
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
+    var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
@@ -3679,7 +3688,7 @@ A type's typeSymbol should never be inspected directly.
                 pre1
               }
             } else {
-              toPrefix(base(pre, clazz).prefix, clazz.owner);
+              toPrefix(base(pre, clazz).prefix, clazz.owner)
             }
           toPrefix(pre, clazz)
         case SingleType(pre, sym) =>
@@ -3752,7 +3761,7 @@ A type's typeSymbol should never be inspected directly.
                         " gets applied to arguments "+baseargs.mkString("[",",","]")+", phase = "+phase)
                     }
                   case ExistentialType(tparams, qtpe) =>
-                    capturedParams = capturedParams union tparams
+                    capturedSkolems = capturedSkolems union tparams
                     toInstance(qtpe, clazz)
                   case t =>
                     throwError
