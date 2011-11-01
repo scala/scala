@@ -29,7 +29,7 @@ private[tests] trait CoreTestDefs
         askCompletionAt(pos)
       } { (pos, members) =>
         withResponseDelimiter {
-          reporter.println("[response] aksTypeCompletion at (%s,%s)".format(pos.line, pos.column))
+          reporter.println("[response] aksTypeCompletion at " + format(pos))
           // we skip getClass because it changed signature between 1.5 and 1.6, so there is no
           // universal check file that we can provide for this to work
           reporter.println("retrieved %d members".format(members.size))
@@ -55,7 +55,7 @@ private[tests] trait CoreTestDefs
         askTypeAt(pos)
       } { (pos, tree) =>
         withResponseDelimiter {
-          reporter.println("[response] askTypeAt at " + (pos.line, pos.column))
+          reporter.println("[response] askTypeAt at " + format(pos))
           compiler.ask(() => reporter.println(tree))
         }
       }
@@ -79,7 +79,7 @@ private[tests] trait CoreTestDefs
           reporter.println("\nNo symbol is associated with tree: "+tree)
         }
         else {
-          reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + ((pos.line, pos.column)) + " " + pos.source.file.name)
+          reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + tree.symbol.sourceFile.name)
           val r = new Response[Position]
           val sourceFile = sourceFiles.find(tree.symbol.sourceFile.path == _.path) match {
             case Some(source) =>
@@ -87,7 +87,7 @@ private[tests] trait CoreTestDefs
               r.get match {
                 case Left(pos) =>
                   withResponseDelimiter {
-                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + (pos.line, pos.column) + " " + tree.symbol.sourceFile.name)
+                    reporter.println("[response] found askHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + tree.symbol.sourceFile.name)
                   }
                 case Right(ex) =>
                   ex.printStackTrace()
