@@ -2258,6 +2258,9 @@ trait Typers { self: Analyzer =>
     }
 
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
+      def errTree = setError(treeCopy.Apply(tree, fun0, args))
+      def errorTree(msg: String) = { error(tree.pos, msg); errTree }
+
       var fun = fun0
       if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
         // remove alternatives with wrong number of parameters without looking at types.
@@ -2350,24 +2353,23 @@ trait Typers { self: Analyzer =>
            *  and defaults is ruled out by typedDefDef.
            */
           def tryNamesDefaults: Tree = {
-            if (mt.isErroneous) setError(tree)
+            if (mt.isErroneous) errTree
             else if ((mode & PATTERNmode) != 0)
               // #2064
-              errorTree(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
+              errorTree("wrong number of arguments for "+ treeSymTypeMsg(fun))
             else if (args.length > formals.length) {
               tryTupleApply.getOrElse {
-                errorTree(tree, "too many arguments for "+treeSymTypeMsg(fun))
+                errorTree("too many arguments for "+treeSymTypeMsg(fun))
               }
             } else if (args.length == formals.length) {
               // we don't need defaults. names were used, so this application is transformed
               // into a block (@see transformNamedApplication in NamesDefaults)
               val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
               if (namelessArgs exists (_.isErroneous)) {
-                setError(tree)
+                errTree
               } else if (!isIdentity(argPos) && (formals.length != params.length))
                 // !isIdentity indicates that named arguments are used to re-order arguments
-                errorTree(tree, "when using named arguments, the vararg parameter "+
-                                "has to be specified exactly once")
+                errorTree("when using named arguments, the vararg parameter has to be specified exactly once")
               else if (isIdentity(argPos) && !isNamedApplyBlock(fun)) {
                 // if there's no re-ordering, and fun is not transformed, no need to transform
                 // more than an optimization, e.g. important in "synchronized { x = update-x }"
@@ -2381,7 +2383,7 @@ trait Typers { self: Analyzer =>
               // calls to the default getters. Example:
               //  foo[Int](a)()  ==>  foo[Int](a)(b = foo$qual.foo$default$2[Int](a))
               val fun1 = transformNamedApplication(Typer.this, mode, pt)(fun, x => x)
-              if (fun1.isErroneous) setError(tree)
+              if (fun1.isErroneous) errTree
               else {
                 assert(isNamedApplyBlock(fun1), fun1)
                 val NamedApplyInfo(qual, targs, previousArgss, _) = context.namedApplyBlockInfo.get._2
@@ -2396,7 +2398,7 @@ trait Typers { self: Analyzer =>
                 val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, params, fun.pos.focus, context)
                 val funSym = fun1 match { case Block(_, expr) => expr.symbol }
                 if (allArgs.length != args.length && callToCompanionConstr(context, funSym)) {
-                  errorTree(tree, "module extending its companion class cannot use default constructor arguments")
+                  errorTree("module extending its companion class cannot use default constructor arguments")
                 } else if (allArgs.length == formals.length) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   val note = "Error occurred in an application involving default arguments."
@@ -2411,7 +2413,7 @@ trait Typers { self: Analyzer =>
                         val sOpt = if (missing.length > 1) "s" else ""
                         ".\nUnspecified value parameter"+ sOpt +" "+ missingStr
                       }
-                    errorTree(tree, "not enough arguments for "+treeSymTypeMsg(fun) + suffix)
+                    errorTree("not enough arguments for "+treeSymTypeMsg(fun) + suffix)
                   }
                 }
               }
@@ -2497,7 +2499,7 @@ trait Typers { self: Analyzer =>
                 arg1
               }
               val args1 = (args, formals).zipped map typedArgToPoly
-              if (args1 exists (_.tpe.isError)) setError(tree)
+              if (args1 exists (_.tpe.isError)) errTree
               else {
                 if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info)) //debug
                 // define the undetparams which have been fixed by this param list, replace the corresponding symbols in "fun"
@@ -2594,7 +2596,7 @@ trait Typers { self: Analyzer =>
           }
 
           val fun1 = typed(fun1untyped)
-          if (fun1.tpe.isErroneous) setError(tree)
+          if (fun1.tpe.isErroneous) errTree
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
@@ -2606,13 +2608,13 @@ trait Typers { self: Analyzer =>
               arg.tpe = oldArgType
               UnApply(fun1, args1) setPos tree.pos setType itype
             } else {
-              errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
+              errorTree("wrong number of arguments for "+treeSymTypeMsg(fun))
             }
           }
 
 /* --- end unapply  --- */
         case _ =>
-          errorTree(tree, fun+" of type "+fun.tpe+" does not take parameters")
+          errorTree(fun+" of type "+fun.tpe+" does not take parameters")
       }
     }
 
@@ -3012,7 +3014,7 @@ trait Typers { self: Analyzer =>
           errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
         }
       case ErrorType =>
-        setError(tree)
+        setError(treeCopy.TypeApply(tree, fun, args))
       case _ =>
         errorTree(tree, treeSymTypeMsg(fun)+" does not take type parameters.")
     }
@@ -3351,7 +3353,7 @@ trait Typers { self: Analyzer =>
             } else printTyping("no second try for "+fun+" and "+args+" because error not in result:"+ex.pos+"!="+tree.pos)
 
             reportTypeError(tree.pos, ex)
-            setError(tree)
+            setError(treeCopy.Apply(tree, fun, args))
         }
       }
 
