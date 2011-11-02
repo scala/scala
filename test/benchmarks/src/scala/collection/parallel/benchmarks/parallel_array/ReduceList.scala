@@ -32,7 +32,7 @@ extends Resettable[List[Int]](sz, p, what, ListCreator, new Array[Any](_), class
   def companion = ReduceList
   override def repetitionsPerRun = 10
   override val runs = 15
-
+  
   def runpar = pa.reduce(ListOps.redop)
   def runseq = sequentialReduce(ListOps.redop, sz, List[Int]())
   def runjsr = jsrarr.reduce(ListOps.reducer, List[Int]())

@@ -14,10 +14,10 @@ object PlusPlus extends Companion {
 class PlusPlus(sz: Int, p: Int, what: String)
 extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
   def companion = PlusPlus
-
+  
   val thatarr = new Array[Cont](sz)
   val thatpa = new ParArray[Cont](sz)
-
+  
   def runpar = pa ++ thatpa
   def runseq = arr ++ thatarr
   def comparisonMap = collection.Map()

@@ -10,7 +10,7 @@ object ScanMedium extends Companion {
   def apply(sz: Int, parallelism: Int, what: String) = new ScanMedium(sz, parallelism, what)
   override def comparisons = List("jsr")
   override def defaultSize = 5000
-
+  
   val op = (a: Cont, b: Cont) => {
     operation(a, b)
   }
@@ -35,7 +35,7 @@ extends Resettable[Cont](sz, p, what, new Cont(_), new Array[Any](_), classOf[Co
   def companion = ScanMedium
   override def repetitionsPerRun = 50
   override val runs = 12
-
+  
   def runpar = pa.scan(new Cont(0))(ScanMedium.op)
   def runseq = sequentialScan(new Cont(0), ScanMedium.op, sz)
   def runjsr = jsrarr.cumulate(new extra166y.Ops.Reducer[Cont] {

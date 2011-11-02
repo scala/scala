@@ -1,0 +1,3 @@
+object Test extends Application {
+  for(n <- List(300,600,900,1200)) sieve.main(Array(n.toString)) 
+}

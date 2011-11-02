@@ -1,0 +1,6 @@
+object Test extends Application {
+  for(n <- List(25000,250000,2500000)) {
+    System.setIn(new java.io.FileInputStream(System.getProperty("partest.cwd")+"/revcomp-input"+n+".txt"))
+    revcomp.main(Array(n.toString)) 
+  }
+}

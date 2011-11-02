@@ -12,7 +12,7 @@ import collection.mutable.HashMap
 trait IntInit extends Bench {
   var hashmap: HashMap[Int, Int] = null
   var hashtrie: HashTrie[Int, Int] = null
-
+  
   reset
   def reset = runWhat match {
     case "hashmap" => initHashMap

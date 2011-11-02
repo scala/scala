@@ -19,7 +19,7 @@ class SA(val settings: Settings) extends Base {
             SD
         ) :::  settings.f(
             SC
-        )
+        )    
 }
 
 object SC extends Factory {

@@ -13,14 +13,14 @@ object Test {
     println(classOf[Long])
     println(classOf[Float])
     println(classOf[Double])
-
+    
     println("Class types")
     println(classOf[SomeClass])
     println(classOf[List[Array[Float]]])
     println(classOf[(String, Map[Int, String])])
 
     println("Arrays:")
-    println(classOf[Array[Unit]])
+    println(classOf[Array[Unit]])    
     println(classOf[Array[Int]])
     println(classOf[Array[Double]])
     println(classOf[Array[List[String]]])

@@ -12,7 +12,7 @@ extends Resettable[Cont](sz, p, what, (i: Int) => new Cont(i),  new Array[Any](_
 with HavingResult[Boolean] {
   def companion = SameElementsLong
   override def repetitionsPerRun = 400
-
+  
   val same = {
     val p = new collection.parallel.mutable.ParArray[Cont](sz)
     for (i <- 0 until sz) p(i) = what match {
@@ -21,7 +21,7 @@ with HavingResult[Boolean] {
     }
     p
   }
-
+  
   def runpar = runresult = pa.sameElements(same)
   def runseq = runresult = sequentialSameElements(same, sz)
   override def comparisonMap = collection.Map()

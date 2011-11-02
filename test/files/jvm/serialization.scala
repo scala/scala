@@ -295,7 +295,7 @@ object Test3_mutable {
     ab1 ++= List("one", "two")
     val _ab1: ArrayBuffer[String] = read(write(ab1))
     check(ab1, _ab1)
-
+    
     // ArrayBuilder
     val abu1 = ArrayBuilder.make[Long]
     val _abu1: ArrayBuilder[ClassManifest[Long]] = read(write(abu1))
@@ -304,12 +304,12 @@ object Test3_mutable {
     val abu2 = ArrayBuilder.make[Float]
     val _abu2: ArrayBuilder[ClassManifest[Float]] = read(write(abu2))
     check(abu2, _abu2)
-
+    
     // ArraySeq
     val aq1 = ArraySeq(1, 2, 3)
     val _aq1: ArraySeq[Int] = read(write(aq1))
     check(aq1, _aq1)
-
+    
     // ArrayStack
     val as1 = new ArrayStack[Int]
     as1 ++= List(20, 2, 3).iterator
@@ -537,7 +537,7 @@ class WithTransient extends Serializable {
   @transient private lazy val a2 = 2
   @transient object B extends Serializable
   @transient private object C extends Serializable
-
+    
   def test = {
     println(a1)
     println(a2)
@@ -583,50 +583,50 @@ object Test {
 // Test classes in package "scala.collection.parallel" and subpackages
 object Test9_parallel {
   import scala.collection.parallel._
-
+  
   try {
     println()
-
+    
     // UnrolledBuffer
     val ub = new collection.mutable.UnrolledBuffer[String]
     ub ++= List("one", "two")
     val _ub: collection.mutable.UnrolledBuffer[String] = read(write(ub))
     check(ub, _ub)
-
+    
     // mutable.ParArray
     val pa = mutable.ParArray("abc", "def", "etc")
     val _pa: mutable.ParArray[String] = read(write(pa))
     check(pa, _pa)
-
+    
     // mutable.ParHashMap
     val mpm = mutable.ParHashMap(1 -> 2, 2 -> 4)
     val _mpm: mutable.ParHashMap[Int, Int] = read(write(mpm))
     check(mpm, _mpm)
-
+    
     // mutable.ParHashSet
     val mps = mutable.ParHashSet(1, 2, 3)
     val _mps: mutable.ParHashSet[Int] = read(write(mps))
     check(mps, _mps)
-
+    
     // immutable.ParRange
     val pr1 = immutable.ParRange(0, 4, 1, true)
     val _pr1: immutable.ParRange = read(write(pr1))
     check(pr1, _pr1)
-
+    
     val pr2 = immutable.ParRange(0, 4, 1, false)
     val _pr2: immutable.ParRange = read(write(pr2))
     check(pr2, _pr2)
-
+    
     // immutable.ParHashMap
     val ipm = immutable.ParHashMap(5 -> 1, 10 -> 2)
     val _ipm: immutable.ParHashMap[Int, Int] = read(write(ipm))
     check(ipm, _ipm)
-
+    
     // immutable.ParHashSet
     val ips = immutable.ParHashSet("one", "two")
     val _ips: immutable.ParHashSet[String] = read(write(ips))
     check(ips, _ips)
-
+    
   } catch {
     case e: Exception =>
       println("Error in Test5_parallel: " + e)

@@ -9,7 +9,7 @@ import org.scalacheck.ConsoleReporter.testStatsEx
 import Function.tupled
 
 object CheckEither extends Properties("Either") {
-  implicit def arbitraryEither[X, Y](implicit xa: Arbitrary[X], ya: Arbitrary[Y]): Arbitrary[Either[X, Y]] =
+  implicit def arbitraryEither[X, Y](implicit xa: Arbitrary[X], ya: Arbitrary[Y]): Arbitrary[Either[X, Y]] = 
     Arbitrary[Either[X, Y]](oneOf(arbitrary[X].map(Left(_)), arbitrary[Y].map(Right(_))))
 
   val prop_either1 = forAll((n: Int) => Left(n).fold(x => x, b => error("fail")) == n)
@@ -20,7 +20,7 @@ object CheckEither extends Properties("Either") {
     case Left(a) => e.swap.right.get == a
     case Right(b) => e.swap.left.get == b
   })
-
+  
   val prop_isLeftRight = forAll((e: Either[Int, Int]) => e.isLeft != e.isRight)
 
   object CheckLeftProjection {
@@ -36,7 +36,7 @@ object CheckEither extends Properties("Either") {
 
     val prop_exists = forAll((e: Either[Int, Int]) =>
       e.left.exists(_ % 2 == 0) == (e.isLeft && e.left.get % 2 == 0))
-
+  
     val prop_flatMapLeftIdentity = forAll((e: Either[Int, Int], n: Int, s: String) => {
       def f(x: Int) = if(x % 2 == 0) Left(s) else Right(s)
       Left(n).left.flatMap(f(_)) == f(n)})
@@ -116,7 +116,7 @@ object CheckEither extends Properties("Either") {
   }
 
   val prop_Either_left = forAll((n: Int) => Left(n).left.get == n)
-
+  
   val prop_Either_right = forAll((n: Int) => Right(n).right.get == n)
 
   val prop_Either_joinLeft = forAll((e: Either[Either[Int, Int], Int]) => e match {
@@ -129,12 +129,12 @@ object CheckEither extends Properties("Either") {
     case Right(ee) => e.joinRight == ee
   })
 
-  val prop_Either_reduce = forAll((e: Either[Int, Int]) =>
+  val prop_Either_reduce = forAll((e: Either[Int, Int]) => 
     e.merge == (e match {
       case Left(a) => a
       case Right(a) => a
     }))
-
+    
   /** Hard to believe I'm "fixing" a test to reflect B before A ... */
   val prop_Either_cond = forAll((c: Boolean, a: Int, b: Int) =>
     Either.cond(c, a, b) == (if(c) Right(a) else Left(b)))
@@ -169,19 +169,19 @@ object CheckEither extends Properties("Either") {
       ("Right.prop_seq", CheckRightProjection.prop_seq),
       ("Right.prop_option", CheckRightProjection.prop_option),
       ("prop_Either_left", prop_Either_left),
-      ("prop_Either_right", prop_Either_right),
+      ("prop_Either_right", prop_Either_right),      
       ("prop_Either_joinLeft", prop_Either_joinLeft),
-      ("prop_Either_joinRight", prop_Either_joinRight),
-      ("prop_Either_reduce", prop_Either_reduce),
+      ("prop_Either_joinRight", prop_Either_joinRight),      
+      ("prop_Either_reduce", prop_Either_reduce),      
       ("prop_Either_cond", prop_Either_cond)
     )
-
+  
   for ((label, prop) <- tests) {
     property(label) = prop
   }
-
+  
   import org.scalacheck.{ Test => STest }
-
+  
   def runTests() = {
     STest.checkProperties(STest.Params(testCallback = ConsoleReporter(0)), this)
   }

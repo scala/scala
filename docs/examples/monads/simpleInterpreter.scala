@@ -22,7 +22,7 @@ object simpleInterpreter {
   trait Value;
   case object Wrong extends Value {
    override def toString() = "wrong"
-  }
+  } 
   case class Num(n: Int) extends Value {
     override def toString() = n.toString();
   }
@@ -61,7 +61,7 @@ object simpleInterpreter {
 		      yield c
   }
 
-  def test(t: Term): String =
+  def test(t: Term): String = 
     showM(interp(t, List()));
 
   val term0 = App(Lam("x", Add(Var("x"), Var("x"))), Add(Con(10), Con(11)));

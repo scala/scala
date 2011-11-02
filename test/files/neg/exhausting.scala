@@ -3,7 +3,7 @@ object Test {
   case object Bar1 extends Foo[Int]
   case object Bar2 extends Foo[String]
   case object Bar3 extends Foo[Any]
-
+  
   def ex1[T](xs: List[T]) = xs match {
     case ys: List[_]  => "ok"
   }
@@ -16,7 +16,7 @@ object Test {
   def ex3[T](xx: (Foo[T], Foo[T])) = xx match {
     case (_: Foo[_], _: Foo[_]) => ()
   }
-
+  
   def fail1[T](xs: List[T]) = xs match {
     case Nil            => "ok"
     case x :: y :: Nil  => "ok"
@@ -38,8 +38,8 @@ object Test {
     case (Bar2, Bar3) => ()
     case (Bar3, _) => ()
   }
-
+  
   def main(args: Array[String]): Unit = {
-
+    
   }
 }

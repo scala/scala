@@ -1,0 +1,3 @@
+object Test extends Application {
+  for(n <- List(25000,250000,2500000)) fasta.main(Array(n.toString)) 
+}

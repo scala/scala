@@ -10,7 +10,7 @@ object Test extends SecurityTest {
   val s = new S
   // lazy val TestKey = sys.SystemProperties.noTraceSupression.key
   // def hitPerm() = new Throwable with scala.util.control.ControlThrowable { }
-  //
+  // 
   // var throwing = false
   // override def propertyCheck(p: PropertyPermission): Unit = {
   //   if (p.getName == TestKey) {
@@ -19,21 +19,21 @@ object Test extends SecurityTest {
   //       throwIt(p)
   //   }
   // }
-  //
+  // 
   // hitPerm()
   // securityOn()
   // hitPerm()
-  //
+  // 
   // throwing = true
   //
-  // val caught =
+  // val caught = 
   //   try   { hitPerm() ; false }
   //   catch { case _: AccessControlException => true }
-  //
+  // 
   // assert(caught, "Should have incurred exception.")
   // throwing = false
   // hitPerm()
-  //
+  // 
   // val xs = new Traversable[Int] { def foreach[U](f: Int => U) = 1 to 3 foreach f }
   // xs foreach println
 }

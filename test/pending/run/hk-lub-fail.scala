@@ -30,7 +30,7 @@ object Test {
   val tps   = List(quux1, quux2) map (_.tpe)
   val test  = EmptyPackageClass.tpe.member(newTermName("Test"))
   val f     = test.tpe.member(newTypeName("F")).tpe
-
+  
   val fn    = f.normalize.asInstanceOf[ExistentialType]
   val fn2   = fn.underlying.asInstanceOf[TypeRef]
 */

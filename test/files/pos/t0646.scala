@@ -2,7 +2,7 @@ object xfor {
 
   import scala.xml.NodeSeq
 
-    val books =
+    val books = 
     <bks>
       <title>Blabla</title>
       <title>Blubabla</title>
@@ -13,7 +13,7 @@ object xfor {
     case t @ Seq(<title>Blabla</title>) => t
   }
 
-  //val n: NodeSeq = new NodeSeq { val theSeq = books.child }
+  //val n: NodeSeq = new NodeSeq { val theSeq = books.child } 
   //n match {
   //  case t @ <title>Blabla</title> => t
   //}

@@ -12,10 +12,10 @@ trait BuildInfoEnvironment {
     // use the project's Logger for any properties-related logging
     def log = self.log
 
-    // the properties file will be read/stored
+    // the properties file will be read/stored 
     def envBackingPath = buildInfoEnvironmentLocation
     // define some properties
     lazy val lastCompilerVersion: Property[String] = propertyOptional[String]("")
-  }
+  } 
 
 }

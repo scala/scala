@@ -50,7 +50,7 @@ object Pi extends App {
 
     // create the workers
     val workers = Vector.fill(nrOfWorkers)(actorOf[Worker]./*!*/start())
-
+    
     // wrap them with a load-balancing router
     val router = Routing./*!*/loadBalancerActor(CyclicIterator(workers))./*!*/start()
 

@@ -25,4 +25,4 @@ object SafeNodeSeq {
 
     })) case _ => None }
 
-}
+} 

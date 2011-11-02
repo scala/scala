@@ -12,7 +12,7 @@ extends Resettable[Cont](sz, p, what, (i: Int) => new Cont(i),  new Array[Any](_
 with HavingResult[Int] {
   def companion = DiffHalf
   override def repetitionsPerRun = 400
-
+  
   val similar = {
     val p = new collection.parallel.mutable.ParArray[Cont](sz)
     for (i <- 0 until sz) p(i) = what match {
@@ -21,11 +21,11 @@ with HavingResult[Int] {
     }
     p.drop(p.size / 2)
   }
-
+  
   def runpar = runresult = pa.diff(similar).size
   def runseq = runresult = sequentialDiff(similar, sz).size
   override def comparisonMap = collection.Map()
-
+  
   val corr = (a: Cont, b: Cont) => a.in == b.in
 }
 

@@ -32,7 +32,7 @@ trait Scaladoc {
   }
   lazy val classpath ={
     (antJar +++ jlineJar +++ msilJar +++ fjbgJar +++ forkJoinJar +++ outputLibraryJar +++ outputCompilerJar  +++ outputPartestJar +++ outputScalapJar ).get
-
+    
   }
   lazy val scaladoc = task(maybeFork(generateScaladoc, "Error generating scaladoc")) dependsOn pack
 

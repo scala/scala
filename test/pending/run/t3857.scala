@@ -8,6 +8,6 @@ object Test extends SigTest {
   def main(args: Array[String]): Unit = {
     show[ScalaGeneric]()
     show[ScalaGeneric2Trait]()
-    show[ScalaGeneric2]()
+    show[ScalaGeneric2]()    
   }
 }

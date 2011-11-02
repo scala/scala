@@ -19,15 +19,15 @@ class ScalaSBTBuilder(val info: ProjectInfo)
    *  incremental build, which means sbt doesn't get used at all, so this is better.)
    */
   System.setProperty("sbt.intransitive", "true")
-
+  
   // Required by BasicDependencyProject
   def fullUnmanagedClasspath(config: Configuration) = unmanagedClasspath
 
   override def dependencies: Iterable[Project] = (
-    info.dependencies ++
-    locker.dependencies ++
-    quick.dependencies ++
-    strap.dependencies ++
+    info.dependencies ++ 
+    locker.dependencies ++ 
+    quick.dependencies ++ 
+    strap.dependencies ++ 
     libs.dependencies
   )
   override def shouldCheckOutputDirectories = false
@@ -52,11 +52,11 @@ class ScalaSBTBuilder(val info: ProjectInfo)
   lazy val pasta         = quick.pasta.describedAs(pastaTaskDescription)
   lazy val stabilityTest = strap.stabilityTest.describedAs(stabilityTestTaskDescription)
   lazy val test          = quick.externalPartest.describedAs(partestTaskDescription)
-
+  
   // Non-standard names for tasks chosen earlier which I point at the standard ones.
   lazy val build = compile
   lazy val partest = test
-
+  
   // Top level variables
 
   /**
@@ -73,7 +73,7 @@ class ScalaSBTBuilder(val info: ProjectInfo)
     }
     def getVersion: String = projectVersion.value.toString takeWhile (_ != '-') mkString
     def getRevision: Int   = new SVN(info.projectPath) getRevisionNumber
-
+    
     getVersion+".r"+getRevision+"-b"+getTimeString
   }
 
@@ -115,11 +115,11 @@ class ScalaSBTBuilder(val info: ProjectInfo)
         }
         else action
       }
-
+    
     def deleteLock = FileUtilities.clean(lockFile, log)
     def createLock = {
       log.info("locking "+name)
-      FileUtilities.touch(lockFile, log)
+      FileUtilities.touch(lockFile, log)      
     }
 
     /**
@@ -156,13 +156,13 @@ class ScalaSBTBuilder(val info: ProjectInfo)
 
     override lazy val packingDestination: Path = outputRootPath /"palo"
 
-    override lazy val libraryWS = {
+    override lazy val libraryWS = { 
         new WrapperStep(libraryConfig :: Nil) with WrapperPackaging {
           lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName, jarContent)
          }
      }
      override val minimalCompilation = true
-     override lazy val pluginsWS: WrapperStep = new WrapperStep(Nil)
+     override lazy val pluginsWS: WrapperStep = new WrapperStep(Nil)   
      override lazy val toolsWS = new WrapperStep(Nil)
   }
 
@@ -175,20 +175,20 @@ class ScalaSBTBuilder(val info: ProjectInfo)
           with Packer with ScalaTools with Scaladoc {
 
     override lazy val nextLayer = Some(strap)
-
+            
 
     lazy val instantiationCompilerJar = previous.compilerOutput
     lazy val instantiationLibraryJar = previous.libraryOutput
 
 
     override lazy val packingDestination: Path = outputRootPath/ "pack"
-
+    
     override def libraryToCopy = jlineJar :: Nil
     override def compilerAdditionalJars = msilJar :: fjbgJar :: Nil
     override def libraryAdditionalJars = forkJoinJar :: Nil
-
+    
     override def cleaningList = packedStarrOutput :: super.cleaningList
-
+    
 
     override lazy val libraryWS = new WrapperStep(libraryConfig :: actorsConfig :: dbcConfig :: swingConfig :: Nil) with Packaging {
         def jarContent = List(libraryConfig , actorsConfig, continuationLibraryConfig).map(_.outputDirectory ##)
@@ -213,9 +213,9 @@ class ScalaSBTBuilder(val info: ProjectInfo)
       createJar(compilerConfig.starrPackagingConfig, log)
     }
     lazy val pasta = task {
-      createNewStarrJar
+      createNewStarrJar    
     }.dependsOn(build)
-
+    
     lazy val newStarr = task {
       val files = (packedStarrOutput ##) * "*.jar"
       FileUtilities.copy(files.get, lib, true, log) match {
@@ -233,7 +233,7 @@ class ScalaSBTBuilder(val info: ProjectInfo)
     lazy val binQuick = tools(layerOutput / "bin", quickBinClasspath).dependsOn(finishLayer)
     lazy val binPack = tools(packingDestination / "bin", packBinClasspath).dependsOn(pack)
   }
-
+  
 
   /**
    * Definition of what is specific to the strap layer
@@ -246,7 +246,7 @@ class ScalaSBTBuilder(val info: ProjectInfo)
 
     override lazy val libraryWS = new WrapperStep(libraryConfig :: actorsConfig :: dbcConfig :: swingConfig :: Nil) with WrapperPackaging {
         lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName, Set())
-
+          
          }
 
     override lazy val toolsWS = new WrapperStep(scalacheckConfig :: scalapConfig :: partestConfig :: Nil)
@@ -260,7 +260,7 @@ class ScalaSBTBuilder(val info: ProjectInfo)
 
     lazy val stabilityTest = task {
       log.warn("Stability test must be run on a clean build in order to yield correct results.")
-      compare
+      compare   
     }.dependsOn(finishLayer)
   }
 
@@ -270,8 +270,8 @@ class ScalaSBTBuilder(val info: ProjectInfo)
   class LibsBuilder(val info: ProjectInfo) extends ScalaBuildProject with ReflectiveProject with Compilation with BuildInfoEnvironment {
     override def dependencies = info.dependencies
     override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java" ||AdditionalResources.basicFilter) // Support of triggered execution at project level
-
-
+    
+    
     def buildInfoEnvironmentLocation: Path = outputRootPath / ("build-"+name+".properties")
 
     def instantiationCompilerJar: Path = locker.compilerOutput
@@ -285,13 +285,13 @@ class ScalaSBTBuilder(val info: ProjectInfo)
       val required = "1.6"
       if (version.startsWith(required)) None else Some("Incompatible java version : required "+required)
     }
-
-
+    
+    
     private def simpleBuild(step: CompilationStep with Packaging)= task {
       import Packer._
       compile(step) orElse createJar(step, log)
     }.dependsOn(locker.finishLayer)
-
+    
     private def copyJar(step: CompilationStep with Packaging, name: String) = task {
       FileUtilities.copyFile(step.packagingConfig.jarDestination, lib/name, log)
     }
@@ -309,18 +309,18 @@ class ScalaSBTBuilder(val info: ProjectInfo)
       override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java", ".svn")
       def dependencies = Seq()
       def options = Seq()
-      override def javaOptions = Seq("-target","1.5","-source","1.5","-g")
+      override def javaOptions = Seq("-target","1.5","-source","1.5","-g")          
       lazy val packagingConfig = new PackagingConfiguration(libsDestination/forkjoinJarName, List(outputDirectory ##))
     }
-
+  
     lazy val fjbgConfig =  new CompilationStep("fjbg", pathLayout, log) with Packaging {
       def label = "new fjbg library"
-      override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java", ".svn")
+      override def sources: PathFinder  = sourceRoots.descendentsExcept("*.java", ".svn")      
       def dependencies = Seq()
       def options = Seq()
       override def javaOptions = Seq("-target","1.5","-source","1.4","-g")
       lazy val packagingConfig = new PackagingConfiguration(libsDestination/fjbgJarName, List(outputDirectory ##))
-
+      
     }
 
     lazy val msilConfig =  new CompilationStep("msil", pathLayout, log) with Packaging {
@@ -329,9 +329,9 @@ class ScalaSBTBuilder(val info: ProjectInfo)
       def dependencies = Seq()
       override def classpath = super.classpath +++ quick.libraryOutput
       def options = Seq()
-      override def javaOptions = Seq("-target","1.5","-source","1.4","-g")
+      override def javaOptions = Seq("-target","1.5","-source","1.4","-g")      
       lazy val packagingConfig = new PackagingConfiguration(libsDestination/msilJarName, List(outputDirectory ##))
-
+      
     }
 
     def cleaningList = layerOutput :: layerEnvironment.envBackingPath :: Nil
@@ -339,7 +339,7 @@ class ScalaSBTBuilder(val info: ProjectInfo)
     def  cleanFiles = FileUtilities.clean(cleaningList, true, log)
 
     lazy val clean: Task = task {cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
-
+    
   }
 }
 object ScalaSBTBuilder {

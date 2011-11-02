@@ -22,13 +22,13 @@ class Bar extends Foo {
   @transient protected var first: Any = null
   def size = a
   @transient var second: Any = null
-
+    
   def checkMember { first }
-
+    
   private def writeObject(out: java.io.ObjectOutputStream) {
     serializeTo(out)
   }
-
+  
   private def readObject(in: java.io.ObjectInputStream) {
     first = null
     init(in)
@@ -40,7 +40,7 @@ object Test {
     val in = new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(bytes))
     in.readObject.asInstanceOf[A]
   }
-
+  
   private def toBytes(o: AnyRef): Array[Byte] = {
     val bos = new java.io.ByteArrayOutputStream
     val out = new java.io.ObjectOutputStream(bos)
@@ -49,7 +49,7 @@ object Test {
     bos.toByteArray
   }
 
-
+    
   def main(args: Array[String]) {
     val a1 = new Bar()
     val serialized:Array[Byte] = toBytes(a1)

@@ -17,7 +17,7 @@ with HavingResult[Int] {
   def companion = DropMany
   override def repetitionsPerRun = 400
   runresult = -1
-
+  
   def runpar = runresult = pa.drop(pa.size / 2).size
   def runseq = runresult = sequentialDrop(sz / 2, sz).size
   def comparisonMap = collection.Map()

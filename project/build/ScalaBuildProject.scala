@@ -3,10 +3,10 @@ import ScalaBuildProject._
 
 
 abstract class ScalaBuildProject extends Project {
-  lazy val projectRoot = info.projectPath
+  lazy val projectRoot = info.projectPath  
   lazy val layerOutput = outputRootPath / name
   lazy val pathLayout = new PathLayout(projectRoot, layerOutput)
-
+  
   lazy val manifestPath = projectRoot/"META-INF"/"MANIFEST.MF"
 
   lazy val lib = projectRoot / "lib"

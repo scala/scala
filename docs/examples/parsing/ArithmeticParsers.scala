@@ -2,7 +2,7 @@ package examples.parsing
 
 import scala.util.parsing.combinator1.syntactical.StandardTokenParsers
 
-object ArithmeticParsers extends StandardTokenParsers {
+object ArithmeticParsers extends StandardTokenParsers {   
   lexical.delimiters ++= List("(", ")", "+", "-", "*", "/")
 
   def expr: Parser[Any] = term ~ rep("+" ~ term | "-" ~ term)
@@ -16,11 +16,11 @@ object ArithmeticParsers extends StandardTokenParsers {
   }
 }
 
-object ArithmeticParsers1 extends StandardTokenParsers {
+object ArithmeticParsers1 extends StandardTokenParsers {   
   lexical.delimiters ++= List("(", ")", "+", "-", "*", "/")
 
   val reduceList: Int ~ List[String ~ Int] => Int = {
-    case i ~ ps => (i /: ps)(reduce)
+    case i ~ ps => (i /: ps)(reduce) 
   }
 
   def reduce(x: Int, r: String ~ Int) = (r: @unchecked) match {
@@ -45,11 +45,11 @@ class Expr
 case class BinOp(op: String, l: Expr, r: Expr) extends Expr
 case class Num(n: Int) extends Expr
 
-object ArithmeticParsers2 extends StandardTokenParsers {
+object ArithmeticParsers2 extends StandardTokenParsers {   
   lexical.delimiters ++= List("(", ")", "+", "-", "*", "/")
 
   val reduceList: Expr ~ List[String ~ Expr] => Expr = {
-    case i ~ ps => (i /: ps)(reduce)
+    case i ~ ps => (i /: ps)(reduce) 
   }
 
   def reduce(l: Expr, r: String ~ Expr) = BinOp(r._1, l, r._2)

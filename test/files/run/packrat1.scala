@@ -21,15 +21,15 @@ object Test extends App{
 }
 
 object grammars extends StandardTokenParsers with PackratParsers{
-
+  
   def extractResult(r : ParseResult[_]) = r match {
     case Success(a,_) => a
     case NoSuccess(a,_) => a
   }
-
+  
   lexical.delimiters ++= List("+","-","*","/","(",")")
   lexical.reserved ++= List("Hello","World")
-
+  
   /****
    * term = term + fact | term - fact | fact
    * fact = fact * num  | fact / num  | num
@@ -39,7 +39,7 @@ object grammars extends StandardTokenParsers with PackratParsers{
  val term: PackratParser[Int] = (term~("+"~>fact) ^^ {case x~y => x+y}
            |term~("-"~>fact) ^^ {case x~y => x-y}
            |fact)
-
+  
  val fact: PackratParser[Int] = (fact~("*"~>numericLit) ^^ {case x~y => x*y.toInt}
            |fact~("/"~>numericLit) ^^ {case x~y => x/y.toInt}
            |"("~>term<~")"

@@ -14,7 +14,7 @@ import collection.mutable.HashMap
 
 class Construct(val size: Int, val parallelism: Int, val runWhat: String) extends Bench {
   def reset {}
-
+  
   def runpar = throw new UnsupportedOperationException
   def runseq = throw new UnsupportedOperationException
   def runhashmap = {
@@ -25,7 +25,7 @@ class Construct(val size: Int, val parallelism: Int, val runWhat: String) extend
     var hashtrie = new HashTrie[Int, Int]
     for (i <- 0 until size) hashtrie += ((i, i))
   }
-
+  
   def companion = Construct
   def comparisonMap = Map("hashmap" -> runhashmap _, "hashtrie" -> runhashtrie _)
 }

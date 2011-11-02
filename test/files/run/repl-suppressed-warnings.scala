@@ -20,7 +20,7 @@ object o {
   }
   case class DingDangDoobie(ding: Int, dang: Int, doobie: Double)
   case class Dongoo
-  @serializable case class Heyooooo
+  @serializable case class Heyooooo 
 
   @deprecated("I'm an ironic deprecation warning") def f0 = 5 // where's this disappearing?
   def f1 = Double.Epsilon   // and this?

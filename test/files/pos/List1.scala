@@ -17,7 +17,7 @@ object lists {
     def isEmpty = false;
     def head = x;
     def tail = xs;
-  }
+  } 
 
   def foo = {
     val intnil = Nil[Int];

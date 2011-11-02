@@ -12,7 +12,7 @@ extends Resettable[Cont](sz, p, what, (i: Int) => new Cont(i),  new Array[Any](_
 with HavingResult[Int] {
   def companion = IndexWhere
   override def repetitionsPerRun = 400
-
+  
   def runpar = runresult = pa.indexWhere(IndexWhere.pred2, 0)
   def runseq = runresult = sequentialIndexWhere(IndexWhere.pred2, 0, sz)
   override def comparisonMap = collection.Map()
@@ -22,7 +22,7 @@ object IndexWhere extends Companion {
   def benchName = "index-where";
   def apply(sz: Int, p: Int, what: String) = new IndexWhere(sz, p, what)
   override def comparisons = List()
-
+  
   val pred = (c: Cont) => {
     var in = c.in
     var i = 2

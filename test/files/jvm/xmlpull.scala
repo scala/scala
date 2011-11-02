@@ -5,7 +5,7 @@ import scala.io.Source
 object Test {
 
   val src = Source.fromString("<hello><world/>!</hello>")
-
+ 
   def main(args: Array[String]) {
     var er = new XMLEventReader(src)
     er.next match {
@@ -28,4 +28,4 @@ object Test {
     //println("6")
   }
 }
-
+ 

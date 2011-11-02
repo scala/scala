@@ -36,26 +36,26 @@ object Test {
       val z = ax \ "@{the namespace from outer space}foo"
       assert((ax \ "@{the namespace from outer space}foo") xml_== "baz")
       assert((cx \ "@{the namespace from outer space}foo") xml_== "baz")
-
+ 
       try {
         ax \ "@"
         assert(false)
       } catch {
-        case _: IllegalArgumentException =>
+        case _: IllegalArgumentException => 
       }
       try {
         ax \ "@{"
         assert(false)
       } catch {
-        case _: IllegalArgumentException =>
+        case _: IllegalArgumentException => 
       }
       try {
         ax \ "@{}"
         assert(false)
       } catch {
-        case _: IllegalArgumentException =>
+        case _: IllegalArgumentException => 
       }
-
+ 
     }
   }
 

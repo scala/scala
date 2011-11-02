@@ -2,7 +2,7 @@ import java.security._
 
 object Test {
   trait Bar { def bar: Unit }
-
+  
   object Mgr extends SecurityManager {
     override def checkPermission(perm: Permission) = perm match {
       case _: java.lang.RuntimePermission                                                   => ()
@@ -11,11 +11,11 @@ object Test {
       case _                                                                                => super.checkPermission(perm)
     }
   }
-
+  
   def t1() = {
     val p = Runtime.getRuntime().exec("ls");
     type Destroyable = { def destroy() : Unit }
-    def doDestroy( obj : Destroyable ) : Unit = obj.destroy();
+    def doDestroy( obj : Destroyable ) : Unit = obj.destroy(); 
     doDestroy( p );
   }
   def t2() = {
@@ -27,12 +27,12 @@ object Test {
     val structural = b.asInstanceOf[{ def bar: Unit }]
     structural.bar
   }
-
+  
   def main(args: Array[String]) {
     // figuring this will otherwise break on windows
     try t1()
     catch { case _: java.io.IOException => () }
-
+    
     t2()
   }
 }

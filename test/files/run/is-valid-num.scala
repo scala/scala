@@ -1,7 +1,7 @@
 object Test {
   def x = BigInt("10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
   def y = BigDecimal("" + (Short.MaxValue + 1) + ".0")
-
+  
   def l1 = Int.MaxValue.toLong + 1
   def l2 = Int.MinValue.toLong - 1
 

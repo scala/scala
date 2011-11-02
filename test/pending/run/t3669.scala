@@ -1,5 +1,5 @@
 trait MyTrait[T <: { var id: U }, U] {
-  def test(t: T): T = {
+  def test(t: T): T = { 
     val v: U = t.id
     t.id = v
     t

@@ -1,5 +1,5 @@
 object HashSpeedTest {
-
+  
   import System.{ nanoTime => now }
 
   def time[A](f: => A) = {
@@ -7,7 +7,7 @@ object HashSpeedTest {
     val ans = f
     (ans, now - t0)
   }
-
+  
   def ptime[A](f: => A) = {
     val (ans, dt) = time(f)
     printf("Elapsed: %.3f\n", dt * 1e-9)
@@ -40,17 +40,17 @@ object HashSpeedTest {
 
   // If you have MurmurHash3 installed, uncomment below (and in main)
   import scala.util.{ MurmurHash3 => MH3 }
-
+  
   val justCountString: String => Unit = str => {
     var s, i = 0
     while (i < str.length) { s += str.charAt(i); i += 1 }
     HashHist.add(s)
   }
-
+  
   val defaultHashString: String => Unit = str => HashHist.add(str.hashCode)
-
+  
   val murmurHashString: String => Unit = str => HashHist.add(MH3.stringHash(str))
-
+  
   def makeCharStrings = {
     val a = new Array[Byte](4)
     val buffer = new collection.mutable.ArrayBuffer[String]
@@ -77,7 +77,7 @@ object HashSpeedTest {
     }
     buffer.toArray
   }
-
+  
   def hashCharStrings(ss: Array[String], hash: String => Unit) {
     var i = 0
     while (i < ss.length) {
@@ -91,9 +91,9 @@ object HashSpeedTest {
     lli.foreach(_.foreach(s += _))
     HashHist.add(s)
   }
-
+  
   def defaultHashList: List[List[Int]] => Unit = lli => HashHist.add(lli.hashCode)
-
+  
   def makeBinaryLists = {
     def singleLists(depth: Int): List[List[Int]] = {
       if (depth <= 0) List(Nil)
@@ -132,7 +132,7 @@ object HashSpeedTest {
     }
     buffer.toArray
   }
-
+  
   def hashBinaryLists(ls: Array[List[List[Int]]], hash: List[List[Int]] => Unit) {
     var i = 0
     while (i < ls.length) {
@@ -146,9 +146,9 @@ object HashSpeedTest {
     si.foreach(s += _)
     HashHist.add(s)
   }
-
+  
   def defaultHashSets: Set[Int] => Unit = si => HashHist.add(si.hashCode)
-
+  
   def makeIntSets = {
     def sets(depth: Int): List[Set[Int]] = {
       if (depth <= 0) List(Set.empty[Int])
@@ -159,7 +159,7 @@ object HashSpeedTest {
     }
     sets(20).toArray
   }
-
+  
   def hashIntSets(ss: Array[Set[Int]], hash: Set[Int] => Unit) {
     var i = 0
     while (i < ss.length) {
@@ -169,7 +169,7 @@ object HashSpeedTest {
   }
 
   def defaultHashTuples: (Product with Serializable) => Unit = p => HashHist.add(p.hashCode)
-
+  
   def makeNestedTuples = {
     val basic = Array(
       (0, 0),
@@ -199,7 +199,7 @@ object HashSpeedTest {
       (for (i <- basic; j <- basic; k <- basic; l <- basic; m <- basic) yield (i, j, k, l, m)) ++
       (for (i <- basic; j <- basic; k <- basic; l <- basic; m <- basic) yield (i, (j, (k, (l, m)))))
   }
-
+  
   def hashNestedTuples(ts: Array[Product with Serializable], hash: (Product with Serializable) => Unit) {
     var i = 0
     while (i < ts.length) {

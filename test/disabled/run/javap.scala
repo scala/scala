@@ -14,7 +14,7 @@ object Test {
       (line startsWith "private") || (line startsWith "public")
     } foreach println
   }
-
+  
   def main(args: Array[String]): Unit = {
     run("")
     run("-v")

@@ -17,7 +17,7 @@ class Combine(val size: Int, val parallelism: Int, val runWhat: String) extends 
   for (i <- size until 2 * size) thattrie += ((i, i))
   val thatmap = new HashMap[Int, Int]
   for (i <- size until 2 * size) thatmap += ((i, i))
-
+  
   def runpar = throw new UnsupportedOperationException
   def runseq = runhashtrie
   def runhashtrie = {

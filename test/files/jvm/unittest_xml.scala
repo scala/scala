@@ -24,8 +24,8 @@ object Test {
       var x: MetaData         = Null
       var s: NamespaceBinding = TopScope
 
-      // testing method def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node]
-      //                def apply(k:String): Seq[Node]
+      // testing method def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node] 
+      //                def apply(k:String): Seq[Node] 
 
       assert(null == x("za://foo.com", s, "bar" ), "absent element (prefixed) 1")
       assert(null == x("bar"), "absent element (unprefix) 1")
@@ -53,8 +53,8 @@ object Test {
       val z =  <foo bar="gar"/>
       val z2 = <foo/>
 
-      assert(Text("gar") == domatch(z), "attribute extractor 1")
-      assert(new Atom(3) == domatch(z2), "attribute extractor 2")
+      assert(Text("gar") == domatch(z), "attribute extractor 1") 
+      assert(new Atom(3) == domatch(z2), "attribute extractor 2") 
 
     }
   }

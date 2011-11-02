@@ -7,7 +7,7 @@ object Test {
     AttributeWithOptionTest()
     AttributeOutputTest()
   }
-
+  
   object UnprefixedAttributeTest {
     def apply() {
       val x = new UnprefixedAttribute("foo","bar", Null)
@@ -15,13 +15,13 @@ object Test {
       println(Text("bar") == x("foo"))
       println(None == x.get("no_foo"))
       println(null == x("no_foo"))
-
+      
       val y = x.remove("foo")
       println(Null == y)
 
       val z = new UnprefixedAttribute("foo", null:NodeSeq, x)
       println(None == z.get("foo"))
-
+      
       var appended = x append x append x append x
       var len = 0; while (appended ne Null) {
         appended = appended.next

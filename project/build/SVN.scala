@@ -14,7 +14,7 @@ class SVN(root: Path) {
    * It assumes that svn or git is installed on the running computer. Return 0 if it was not
    * able to found the revision number
    */
-  def getRevisionNumber: Int = getSvn orElse getGit getOrElse 0
+  def getRevisionNumber: Int = getSvn orElse getGit getOrElse 0  
   def getSvn: Option[Int] = {
     /** Doing this the hard way trying to suppress the svn error message
      *  on stderr.  Could not figure out how to do it simply in sbt.
@@ -22,15 +22,15 @@ class SVN(root: Path) {
     val pb = new java.lang.ProcessBuilder("svn", "info")
     pb directory root.asFile
     pb redirectErrorStream true
-
+    
     Process(pb).lines_! foreach {
       case GitSvnRegex(rev) => return Some(rev.toInt)
       case _                => ()
     }
     None
   }
-
-  def getGit: Option[Int] =
+   
+  def getGit: Option[Int] =    
     try   { Some(Process(GitSvnRevTool.toString, root).!!.trim.toInt) }
     catch { case _: Exception => None }
 }

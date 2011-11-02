@@ -3,7 +3,7 @@ object Test extends App {
 
   trait A
   trait B
-
+  
   inferredType(new A with B)
 
   val name = new A with B

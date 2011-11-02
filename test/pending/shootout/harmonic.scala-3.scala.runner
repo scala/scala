@@ -1,0 +1,3 @@
+object Test extends Application {
+  for(n <- List(6000000,8000000,10000000)) harmonic.main(Array(n.toString)) 
+}

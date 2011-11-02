@@ -16,7 +16,7 @@ object Test extends App {
 
   val c = new Node {
     def label = "hello"
-    override def hashCode() =
+    override def hashCode() = 
       Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child);
     def child = Elem(null, "world", e, sc);
     //def attributes = e;
@@ -35,8 +35,8 @@ object Test extends App {
   val x2p = XML.load(i)
 
   assert(x2p == Elem(null, "book"  , e, sc,
-                     Elem(null, "author", e, sc,Text("Peter Buneman")),
-                     Elem(null, "author", e, sc,Text("Dan Suciu")),
+                     Elem(null, "author", e, sc,Text("Peter Buneman")), 
+                     Elem(null, "author", e, sc,Text("Dan Suciu")), 
                      Elem(null, "title" , e, sc,Text("Data on ze web"))))
 
   val xmlFile2 = "<bib><book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book><book><author>John Mitchell</author><title>Foundations of Programming Languages</title></book></bib>";
@@ -49,11 +49,11 @@ object Test extends App {
 
   assert(parsedxml1 \ "world"  sameElements List(Elem(null,"world", e, sc)))
 
-  assert(
+  assert( 
       (parsedxml2 \ "_") sameElements List(
         Elem(null,"book", e, sc,
-             Elem(null,"author", e, sc, Text("Peter Buneman")),
-             Elem(null,"author", e, sc, Text("Dan Suciu")),
+             Elem(null,"author", e, sc, Text("Peter Buneman")), 
+             Elem(null,"author", e, sc, Text("Dan Suciu")), 
              Elem(null,"title" , e, sc, Text("Data on ze web"))),
         Elem(null,"book",e,sc,
              Elem(null,"author",e,sc,Text("John Mitchell")),
@@ -61,11 +61,11 @@ object Test extends App {
   )
   assert((parsedxml2 \ "author").isEmpty)
 
-  assert(
+  assert( 
       (parsedxml2 \ "book") sameElements List(
         Elem(null,"book",e,sc,
-             Elem(null,"author", e, sc, Text("Peter Buneman")),
-             Elem(null,"author", e, sc, Text("Dan Suciu")),
+             Elem(null,"author", e, sc, Text("Peter Buneman")), 
+             Elem(null,"author", e, sc, Text("Dan Suciu")), 
              Elem(null,"title" , e, sc, Text("Data on ze web"))),
         Elem(null,"book",e,sc,
              Elem(null,"author", e, sc, Text("John Mitchell")),
@@ -73,20 +73,20 @@ object Test extends App {
       )
   )
 
-  assert(
+  assert( 
     (parsedxml2 \ "_" \ "_") sameElements List(
-      Elem(null,"author", e, sc, Text("Peter Buneman")),
-      Elem(null,"author", e, sc, Text("Dan Suciu")),
+      Elem(null,"author", e, sc, Text("Peter Buneman")), 
+      Elem(null,"author", e, sc, Text("Dan Suciu")), 
       Elem(null,"title" , e, sc, Text("Data on ze web")),
       Elem(null,"author", e, sc, Text("John Mitchell")),
       Elem(null,"title" , e, sc, Text("Foundations of Programming Languages"))
     )
   )
 
-  assert(
+  assert( 
       (parsedxml2 \ "_" \ "author") sameElements List(
-        Elem(null,"author", e, sc, Text("Peter Buneman")),
-        Elem(null,"author", e, sc, Text("Dan Suciu")),
+        Elem(null,"author", e, sc, Text("Peter Buneman")), 
+        Elem(null,"author", e, sc, Text("Dan Suciu")), 
         Elem(null,"author", e, sc, Text("John Mitchell"))
       )
   )
@@ -95,15 +95,15 @@ object Test extends App {
 
   Console.println("xpath \\\\ DESCENDANTS");
 
-  assert(
+  assert( 
       (parsedxml2 \\ "author") sameElements List(
-        Elem(null,"author", e, sc, Text("Peter Buneman")),
-        Elem(null,"author", e, sc, Text("Dan Suciu")),
+        Elem(null,"author", e, sc, Text("Peter Buneman")), 
+        Elem(null,"author", e, sc, Text("Dan Suciu")), 
         Elem(null,"author", e, sc, Text("John Mitchell"))
       )
  )
 
-  assert(
+  assert( 
       (parsedxml2 \\ "title") sameElements List(
         Elem(null,"title", e, sc, Text("Data on ze web")),
         Elem(null,"title", e, sc, Text("Foundations of Programming Languages")))
@@ -114,19 +114,19 @@ object Test extends App {
     (parsedxml2 \\ "book" ){ n:Node => (n \ "title") xml_== "Data on ze web" }
   )
 
-  assert(
+  assert( 
       ((new NodeSeq { val theSeq = List( parsedxml2 ) }) \\ "_") sameElements List(
         Elem(null,"bib",e,sc,
              Elem(null,"book",e,sc,
-                  Elem(null, "author", e, sc, Text("Peter Buneman")),
-                  Elem(null, "author", e, sc, Text("Dan Suciu")),
+                  Elem(null, "author", e, sc, Text("Peter Buneman")), 
+                  Elem(null, "author", e, sc, Text("Dan Suciu")), 
                   Elem(null, "title" , e, sc, Text("Data on ze web"))),
              Elem(null,"book",e,sc,
                   Elem(null,"author",e,sc,Text("John Mitchell")),
                   Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))),
         Elem(null,"book",e,sc,
-             Elem(null,"author",e,sc,Text("Peter Buneman")),
-             Elem(null,"author",e,sc,Text("Dan Suciu")),
+             Elem(null,"author",e,sc,Text("Peter Buneman")), 
+             Elem(null,"author",e,sc,Text("Dan Suciu")), 
              Elem(null,"title",e,sc,Text("Data on ze web"))),
         Elem(null,"author",e,sc,Text("Peter Buneman")),
         Elem(null,"author",e,sc,Text("Dan Suciu")),

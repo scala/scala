@@ -27,11 +27,11 @@ class B {
   	    outarr
   	  }
 
-  def spanForSentence(x : String,picktext : String) =
+  def spanForSentence(x : String,picktext : String) = 
     if(x == "\n\n"){
       <br/><br/>
     }else{
-      <span class='clicksentence' style={if(x == picktext) "background-color: yellow" else ""}>{x}</span>
+      <span class='clicksentence' style={if(x == picktext) "background-color: yellow" else ""}>{x}</span>    		
     }
 
   def selectableSentences(text : String, picktext : String) = {

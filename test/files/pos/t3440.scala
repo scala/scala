@@ -9,7 +9,7 @@ object test {
   case object Int16 extends SampleFormat1 {
     def readerFactory = error("")
   }
-
+	
   (new {}: Any) match {
    case 8   => Int8
    case 16  => Int16

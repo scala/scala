@@ -52,14 +52,14 @@ object anonymousFunctions {
 }
 
 object anonymousClasses {
-  //InnerClass:
+  //InnerClass: 
   // public abstract #_= #_ of #_; //Foo=class anonymousClasses$Foo of class anonymousClasses$
   // public abstract #_= #_ of #_; //Foo$class=class anonymousClasses$Foo$class of class anonymousClasses$
   trait Foo {
     def foo() { println("foo"); }
     override def toString = getClass.getName
   }
-  //InnerClass:
+  //InnerClass: 
   // public final #_; //class anonymousClasses$$anon$1 of class anonymousClasses$
   val x = new Foo() {
     override def foo() { println("foo (overriden)"); }
@@ -105,7 +105,7 @@ trait Test2 {
   def printClass(cls: Class[_]) {
     println("\n[[ "+cls.getName+" ]]");
     try { printInnerClasses(cls) }
-    catch { case e: Exception => println(e) }
+    catch { case e: Exception => println(e) }    
   }
 }
 

@@ -12,7 +12,7 @@ extends Resettable[Cont](sz, p, what, (i: Int) => new Cont(i),  new Array[Any](_
 with HavingResult[Int] {
   def companion = SegmentLength
   override def repetitionsPerRun = 400
-
+  
   def runpar = runresult = pa.segmentLength(SegmentLength.pred2, 0)
   def runseq = runresult = sequentialSegmentLength(SegmentLength.pred2, 0, sz)
   override def comparisonMap = collection.Map()
@@ -22,7 +22,7 @@ object SegmentLength extends Companion {
   def benchName = "segment-length";
   def apply(sz: Int, p: Int, what: String) = new SegmentLength(sz, p, what)
   override def comparisons = List()
-
+  
   val pred = (c: Cont) => {
     var in = c.in
     var i = 2

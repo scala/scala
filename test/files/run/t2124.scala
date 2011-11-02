@@ -9,7 +9,7 @@ object Test {
 
     println(new RuleTransformer(new RewriteRule {
 
-        override def transform(n: Node): NodeSeq = {
+        override def transform(n: Node): NodeSeq = { 
           val result = n match {
           case <t>{_*}</t> => <q/>
 

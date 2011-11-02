@@ -1,5 +1,5 @@
 object Test {
-
+  
   def f(s: String) = {
     <entry>
     {
@@ -8,7 +8,7 @@ object Test {
     }
     </entry>
   }
-
+  
   def main(args: Array[String]): Unit = {
     println(f("a,b,c"))
   }

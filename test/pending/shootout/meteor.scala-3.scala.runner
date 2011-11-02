@@ -1,0 +1,3 @@
+object Test extends Application {
+  for(n <- List(0)) meteor.main(Array(n.toString)) 
+}

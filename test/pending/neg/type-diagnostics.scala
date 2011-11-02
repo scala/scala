@@ -7,5 +7,5 @@ object TooManyParens {
   // Unspecified value parameter elem.
   //   def f = Map(1 -> 2).keySet()
   //                             ^
-
+  
 }

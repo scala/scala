@@ -1,10 +1,10 @@
 /** This a consequence of the current type checking algorithm, where bounds
  *  are checked only after variables are instantiated. I believe this will change once we go to contraint-based type inference. Assigning low priority until then.
- *
+ * 
  *
  */
 class SomeClass(val intValue:Int)
-class MyClass[T <: SomeClass](val myValue:T)
+class MyClass[T <: SomeClass](val myValue:T) 
 
 object Test extends Application {
   def myMethod(i:MyClass[_]) {

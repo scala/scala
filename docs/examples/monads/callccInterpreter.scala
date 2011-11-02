@@ -14,7 +14,7 @@ object callccInterpreter {
 
   def showM(m: M[Value]): String = (m in id).toString();
 
-  def callCC[A](h: (A => M[A]) => M[A]) =
+  def callCC[A](h: (A => M[A]) => M[A]) = 
     M[A](c => h(a => M[A](d => c(a))) in c);
 
   type Name = String;
@@ -30,7 +30,7 @@ object callccInterpreter {
   trait Value;
   case object Wrong extends Value {
    override def toString() = "wrong"
-  }
+  } 
   case class Num(n: Int) extends Value {
     override def toString() = n.toString();
   }
@@ -70,7 +70,7 @@ object callccInterpreter {
     case Ccc(x, t) => callCC(k => interp(t, Pair(x, Fun(k)) :: e))
   }
 
-  def test(t: Term): String =
+  def test(t: Term): String = 
     showM(interp(t, List()));
 
   val term0 = App(Lam("x", Add(Var("x"), Var("x"))), Add(Con(10), Con(11)));

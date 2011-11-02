@@ -17,7 +17,7 @@ with HavingResult[Int] {
   def companion = SliceMany
   override def repetitionsPerRun = 200
   runresult = -1
-
+  
   def runpar = runresult = pa.slice(pa.size / 4, pa.size * 3 / 4).size
   def runseq = runresult = sequentialSlice(sz / 4, sz * 3 / 4, sz).size
   def comparisonMap = collection.Map()

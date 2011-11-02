@@ -30,7 +30,7 @@ object Scalatest {
     s.start()
     s
   }
-
+    
 
   /** Execute cmd, wait for the process to end and pipe it's output to stdout */
   def exec(cmd: String) {
@@ -50,12 +50,12 @@ object Scalatest {
 // Test correct java signatures for anonymous classes. Enclosing method attributes should
 // allow javac to see the type parameters in foo. See #3249.
 
-class A[U] {
+class A[U] { 
    def bar[B](x : => B) = x
    def foo[C](c : C) : C = bar(c)
 }
 
-object B {
+object B { 
    def bar[B](x : => B) = x
    def foo[C](c : C) : C = {
      class InnerB(x: C)

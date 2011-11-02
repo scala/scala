@@ -36,7 +36,7 @@ object Test extends App {
   //           else
   //             o9
   //         })
-  //
+  //     
   //       def isDefinedAt(x_1: (String, Option[Int])): Boolean = MatchingStrategy.OptionMatchingStrategy.isSuccess[(String, Option[Int]), (String, Int)](x_1)(
   //         (x1: (String, Option[Int])) => {
   //           val o9: Option[(String, Int)] = ({

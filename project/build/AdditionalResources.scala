@@ -9,7 +9,7 @@ import AdditionalResources._
  */
 trait AdditionalResources {
   self : BasicLayer  =>
-
+  
    def writeProperties: Option[String] = {
       def write0(steps: List[Step]): Option[String] = steps match {
         case x :: xs => x match {
@@ -29,18 +29,18 @@ object AdditionalResources {
    * A FileFilter that defines what are the files that will be copied
    */
   lazy val basicFilter =  "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.properties" | "*.swf" | "*.png"
-  implicit def stringToGlob(s: String): NameFilter = GlobFilter(s)
+  implicit def stringToGlob(s: String): NameFilter = GlobFilter(s)  
 }
 
 trait ResourcesToCopy {
   self : CompilationStep =>
-
+  
   def getResources(from: Path, filter: FileFilter): PathFinder = (from ##)** filter
   def getResources(from: Path): PathFinder = getResources(from, AdditionalResources.basicFilter)
-
+  
   def copyDestination: Path
   def filesToCopy: PathFinder
-
+  
   def copy = {
     log.info("Copying files for "+name)
     try   { FileUtilities.copy(filesToCopy.get, copyDestination, log) }
@@ -59,12 +59,12 @@ trait PropertiesToWrite {
   def writeProperties: Option[String] ={
     import java.io._
     import java.util.Properties
-
+    
     val properties = new Properties
 
-    def insert(list: List[(String, String)]): Unit =
+    def insert(list: List[(String, String)]): Unit = 
      list foreach { case (k, v) => properties.setProperty(k, v) }
-
+    
     try {
       insert(propertyList)
       val destFile = propertyDestination.asFile

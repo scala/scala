@@ -5,11 +5,11 @@ import scala.xml.transform._
 object Test {
 
   val sampleXml = <xml:group><p><lost/><t><s><r></r></s></t></p></xml:group>
-
+  
   def main(args: scala.Array[String]) {
     println(new RuleTransformer(new RewriteRule {
 
-        override def transform(n: Node): NodeSeq = {
+        override def transform(n: Node): NodeSeq = { 
 
           val result = n match {
 

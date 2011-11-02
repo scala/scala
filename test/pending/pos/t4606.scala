@@ -1,9 +1,9 @@
 object t4606 {
   class A(var x: Int)
   class B(x: Int) extends A(x)
-  trait C { self: B =>
-    def foo = x
-    def bar = self.x
+  trait C { self: B => 
+    def foo = x 
+    def bar = self.x 
     def baz = {
       val b: B = self
       b.x

@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+# 
 # Checks if UTF-8 output makes it through unmangled.
 
 cygwin=false;
@@ -9,7 +9,7 @@ esac
 
 SOURCE="$0";
 if $cygwin; then
-    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ;
+    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; 
 then
         format=mixed
     else

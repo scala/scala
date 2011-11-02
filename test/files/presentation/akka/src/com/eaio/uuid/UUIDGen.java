@@ -73,7 +73,7 @@ public final class UUIDGen {
      * The last time value. Used to remove duplicate UUIDs.
      */
     private static long lastTime = Long.MIN_VALUE;
-
+    
     /**
      * The cached MAC address.
      */
@@ -232,11 +232,11 @@ public final class UUIDGen {
     public static long newTime() {
         return createTime(System.currentTimeMillis());
     }
-
+    
     /**
      * Creates a new time field from the given timestamp. Note that even identical
      * values of <code>currentTimeMillis</code> will produce different time fields.
-     *
+     * 
      * @param currentTimeMillis the timestamp
      * @return a new time value
      * @see UUID#getTime()
@@ -271,10 +271,10 @@ public final class UUIDGen {
         return time;
 
     }
-
+    
     /**
      * Returns the MAC address. Not guaranteed to return anything.
-     *
+     * 
      * @return the MAC address, may be <code>null</code>
      */
     public static String getMACAddress() {

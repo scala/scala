@@ -17,7 +17,7 @@ with HavingResult[Int] {
   def companion = TakeMany
   override def repetitionsPerRun = 400
   runresult = -1
-
+  
   def runpar = runresult = pa.take(pa.size / 2).size
   def runseq = runresult = sequentialTake(sz / 2, sz).size
   def comparisonMap = collection.Map()
