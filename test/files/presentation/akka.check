@@ -10,7 +10,7 @@ retrieved 0 members
 askTypeCompletion at pi.scala(55,25)
 ================================================================================
 [response] aksTypeCompletion at (55,25)
-retrieved 43 members
+retrieved 44 members
 `class Broadcastakka.routing.Routing.Broadcast`
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
@@ -48,14 +48,15 @@ retrieved 43 members
 `method →[B](y: B)(akka.routing.Routing.type, B)`
 `trait RoutingMessageakka.routing.Routing.RoutingMessage`
 `type PFakka.routing.Routing.PF`
+`value __leftOfArrowakka.routing.Routing.type`
+`value __resultOfEnsuringakka.routing.Routing.type`
 `value selfAny`
-`value xakka.routing.Routing.type`
 ================================================================================
 
 askTypeCompletion at pi.scala(55,73)
 ================================================================================
 [response] aksTypeCompletion at (55,73)
-retrieved 129 members
+retrieved 130 members
 `method !!![T](message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])akka.dispatch.Future[T]`
 `method !!(message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])Option[Any]`
 `method !(message: Any)(implicit sender: Option[akka.actor.ActorRef])Unit`
@@ -170,8 +171,9 @@ retrieved 129 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(akka.actor.ActorRef, B)`
+`value __leftOfArrowakka.actor.ActorRef`
+`value __resultOfEnsuringakka.actor.ActorRef`
 `value selfAny`
-`value xakka.actor.ActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
 `variable _uuidakka.actor.Uuid`
 `variable currentMessageakka.dispatch.MessageInvocation`
@@ -186,7 +188,7 @@ retrieved 129 members
 askTypeCompletion at pi.scala(65,15)
 ================================================================================
 [response] aksTypeCompletion at (65,15)
-retrieved 129 members
+retrieved 130 members
 `method !!![T](message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])akka.dispatch.Future[T]`
 `method !!(message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])Option[Any]`
 `method !(message: Any)(implicit sender: Option[akka.actor.ActorRef])Unit`
@@ -301,8 +303,9 @@ retrieved 129 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(akka.actor.ActorRef, B)`
+`value __leftOfArrowakka.actor.ActorRef`
+`value __resultOfEnsuringakka.actor.ActorRef`
 `value selfAny`
-`value xakka.actor.ActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
 `variable _uuidakka.actor.Uuid`
 `variable currentMessageakka.dispatch.MessageInvocation`
@@ -317,7 +320,7 @@ retrieved 129 members
 askTypeCompletion at pi.scala(74,46)
 ================================================================================
 [response] aksTypeCompletion at (74,46)
-retrieved 129 members
+retrieved 130 members
 `method !!![T](message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])akka.dispatch.Future[T]`
 `method !!(message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])Option[Any]`
 `method !(message: Any)(implicit sender: Option[akka.actor.ActorRef])Unit`
@@ -432,8 +435,9 @@ retrieved 129 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method →[B](y: B)(akka.actor.ScalaActorRef, B)`
+`value __leftOfArrowakka.actor.ScalaActorRef`
+`value __resultOfEnsuringakka.actor.ScalaActorRef`
 `value selfAny`
-`value xakka.actor.ScalaActorRef`
 `variable _statusakka.actor.ActorRefInternals.StatusType`
 `variable _uuidakka.actor.Uuid`
 `variable currentMessageakka.dispatch.MessageInvocation`
@@ -470,12 +474,12 @@ askHyperlinkPos for `Actor` at (24,28) pi.scala
 
 askHyperlinkPos for `reply` at (36,18) pi.scala
 ================================================================================
-[response] found askHyperlinkPos for `reply` at (1382,7) ActorRef.scala
+[response] found askHyperlinkPos for `reply` at <no position> ActorRef.scala
 ================================================================================
 
-askHyperlinkPos for `nrOfResults_$eq` at (73,19) pi.scala
+askHyperlinkPos for `nrOfResults` at (73,19) pi.scala
 ================================================================================
-[response] found askHyperlinkPos for `nrOfResults_$eq` at (48,9) pi.scala
+[response] found askHyperlinkPos for `nrOfResults` at (48,9) pi.scala
 ================================================================================
 
 askHyperlinkPos for `latch` at (86,11) pi.scala

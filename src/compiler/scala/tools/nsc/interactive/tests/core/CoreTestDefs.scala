@@ -79,7 +79,7 @@ private[tests] trait CoreTestDefs
           reporter.println("\nNo symbol is associated with tree: "+tree)
         }
         else {
-          reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + tree.symbol.sourceFile.name)
+          reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + pos.source.file.name)
           val r = new Response[Position]
           val sourceFile = sourceFiles.find(tree.symbol.sourceFile.path == _.path) match {
             case Some(source) =>

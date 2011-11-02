@@ -33,7 +33,7 @@ object Pi extends App {
 
     def receive /*?*/ = {
       case Work(start, nrOfElements) =>
-        self reply/*#*/ Result(calculatePiFor(start, nrOfElements)) // perform the work
+        self reply/*#*/ Result(calculatePiFor(start, nrOfElements)) // perform the work // TODO: this currently returns wrong position for the symbol
     }
   }
 
