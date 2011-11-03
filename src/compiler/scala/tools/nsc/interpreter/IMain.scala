@@ -8,11 +8,7 @@ package interpreter
 
 import Predef.{ println => _, _ }
 import util.{ Set => _, _ }
-import scala.collection.{ mutable, immutable }
 import scala.sys.BooleanProp
-import Exceptional.unwrap
-import ScalaClassLoader.URLClassLoader
-import symtab.Flags
 import io.VirtualDirectory
 import scala.tools.nsc.io.AbstractFile
 import reporters._
@@ -23,7 +19,6 @@ import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional, Indenter }
 import ScalaClassLoader.URLClassLoader
 import Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.{ cond, condOpt }
 import scala.util.control.Exception.{ ultimately }
 import IMain._
 
@@ -257,14 +252,17 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def setExecutionWrapper(code: String) = _executionWrapper = code
   def clearExecutionWrapper() = _executionWrapper = ""
 
-  lazy val lineManager = createLineManager()
+  private var _lineManager: Line.Manager = createLineManager()
+  def lineManager = _lineManager
 
   /** interpreter settings */
   lazy val isettings = new ISettings(this)
 
   /** Create a line manager.  Overridable.  */
   protected def createLineManager(): Line.Manager =
-    if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager
+    createLineManager(classLoader)
+  protected def createLineManager(loader: ClassLoader): Line.Manager =
+    if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager(loader)
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -298,6 +296,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def resetClassLoader() = {
     repldbg("Setting new classloader: was " + _classLoader)
     _classLoader = makeClassLoader()
+    _lineManager = createLineManager(_classLoader)
   }
   def classLoader: AbstractFileClassLoader = {
     if (_classLoader == null)

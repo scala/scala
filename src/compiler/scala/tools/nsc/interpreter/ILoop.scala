@@ -93,11 +93,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   class ILoopInterpreter extends IMain(settings, out) {
+    outer =>
+
     override lazy val formatting = new Formatting {
       def prompt = ILoop.this.prompt
     }
     override protected def createLineManager(): Line.Manager =
-      if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager {
+      if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager(outer.classLoader) {
         override def onRunaway(line: Line[_]): Unit = {
           val template = """
             |// She's gone rogue, captain! Have to take her out!

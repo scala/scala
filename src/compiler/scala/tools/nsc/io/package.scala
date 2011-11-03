@@ -25,9 +25,10 @@ package object io {
   def spawnFn[T](f: () => T): Future[T]       = spawn(f())
 
   // Create, start, and return a daemon thread
-  def daemonize(body: => Unit): Thread = {
+  def daemonize(body: => Unit): Thread = newThread(_ setDaemon true)(body)
+  def newThread(f: Thread => Unit)(body: => Unit): Thread = {
     val thread = new Thread(runnable(body))
-    thread setDaemon true
+    f(thread)
     thread.start
     thread
   }

@@ -464,5 +464,16 @@ extends ClassPath[T] {
 class JavaClassPath(
   containers: IndexedSeq[ClassPath[AbstractFile]],
   context: JavaContext)
-extends MergedClassPath[AbstractFile](containers, context) {
+extends MergedClassPath[AbstractFile](containers, context) { }
+
+object JavaClassPath {
+  def fromURLs(urls: Seq[URL], context: JavaContext): JavaClassPath = {
+    val containers = {
+      for (url <- urls ; f = AbstractFile getURL url ; if f != null) yield
+        new DirectoryClassPath(f, context)
+    }
+    new JavaClassPath(containers.toIndexedSeq, context)
+  }
+  def fromURLs(urls: Seq[URL]): JavaClassPath =
+    fromURLs(urls, ClassPath.DefaultJavaContext)
 }

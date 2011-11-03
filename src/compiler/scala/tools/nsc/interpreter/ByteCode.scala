@@ -9,7 +9,7 @@ package interpreter
 import java.lang.reflect
 import java.util.concurrent.ConcurrentHashMap
 import util.ScalaClassLoader
-import ScalaClassLoader.getSystemLoader
+import ScalaClassLoader.appLoader
 import scala.reflect.NameTransformer._
 
 object ByteCode {
@@ -17,7 +17,7 @@ object ByteCode {
    *  that the compiler will bootstrap, we have to use reflection.
    */
   private lazy val DECODER: Option[AnyRef] =
-    for (clazz <- getSystemLoader.tryToLoadClass[AnyRef]("scala.tools.scalap.Decode$")) yield
+    for (clazz <- appLoader.tryToLoadClass[AnyRef]("scala.tools.scalap.Decode$")) yield
       clazz.getField(MODULE_INSTANCE_NAME).get(null)
 
   private def decoderMethod(name: String, args: JClass*): Option[reflect.Method] = {

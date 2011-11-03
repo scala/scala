@@ -11,7 +11,7 @@ package scala.tools.scalap
 
 import scala.tools.scalap.scalax.rules.scalasig._
 import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.nsc.util.ScalaClassLoader.getSystemLoader
+import scala.tools.nsc.util.ScalaClassLoader.appLoader
 import scala.reflect.internal.pickling.ByteCodecs
 
 import ClassFileParser.{ ConstValueIndex, Annotation }
@@ -31,7 +31,7 @@ object Decode {
   /** Return the classfile bytes representing the scala sig classfile attribute.
    *  This has been obsoleted by the switch to annotations.
    */
-  def scalaSigBytes(name: String): Option[Array[Byte]] = scalaSigBytes(name, getSystemLoader())
+  def scalaSigBytes(name: String): Option[Array[Byte]] = scalaSigBytes(name, appLoader)
   def scalaSigBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
     val bytes = classLoader.classBytes(name)
     val reader = new ByteArrayReader(bytes)
@@ -41,7 +41,7 @@ object Decode {
 
   /** Return the bytes representing the annotation
    */
-  def scalaSigAnnotationBytes(name: String): Option[Array[Byte]] = scalaSigAnnotationBytes(name, getSystemLoader())
+  def scalaSigAnnotationBytes(name: String): Option[Array[Byte]] = scalaSigAnnotationBytes(name, appLoader)
   def scalaSigAnnotationBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
     val bytes     = classLoader.classBytes(name)
     val byteCode  = ByteCode(bytes)
@@ -67,7 +67,7 @@ object Decode {
     }
 
     for {
-      clazz <- getSystemLoader.tryToLoadClass[AnyRef](outer)
+      clazz <- appLoader.tryToLoadClass[AnyRef](outer)
       ssig <- ScalaSigParser.parse(clazz)
     }
     yield {
@@ -89,7 +89,7 @@ object Decode {
    */
   private[scala] def typeAliases(pkg: String) = {
     for {
-      clazz <- getSystemLoader.tryToLoadClass[AnyRef](pkg + ".package")
+      clazz <- appLoader.tryToLoadClass[AnyRef](pkg + ".package")
       ssig <- ScalaSigParser.parse(clazz)
     }
     yield {

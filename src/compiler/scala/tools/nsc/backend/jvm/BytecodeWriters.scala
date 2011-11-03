@@ -67,7 +67,7 @@ trait BytecodeWriters {
 
     def emitJavap(bytes: Array[Byte], javapFile: io.File) {
       val pw    = javapFile.printWriter()
-      val javap = new Javap(ScalaClassLoader.getSystemLoader(), pw) {
+      val javap = new Javap(ScalaClassLoader.appLoader, pw) {
         override def findBytes(path: String): Array[Byte] = bytes
       }
 

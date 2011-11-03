@@ -18,7 +18,7 @@ import Line._
  *  waits on a condition indicating that either the line has
  *  completed or failed.
  */
-class Line[+T](val code: String, body: => T) {
+class Line[+T](val code: String, classLoader: ClassLoader, body: => T) {
   private var _state: State      = Running
   private var _result: Any       = null
   private var _caught: Throwable = null
@@ -37,18 +37,17 @@ class Line[+T](val code: String, body: => T) {
   // private because it should be called by the manager.
   private def cancel() = if (running) setState(Cancelled)
 
-  // This is where the line thread is created and started.
-  private val _thread = io.daemonize {
-    try {
-      _result = body
-      setState(Done)
-    }
-    catch {
-      case x =>
-        _caught = x
-        setState(Threw)
-    }
+  private def runAndSetState[T](body: => T) {
+    var ex: Throwable = null
+
+    try     { _result = body }
+    catch   { case t => ex = t }
+    finally { setState( if (ex == null) Done else Threw ) }
   }
+
+  // This is where the line thread is created and started.
+  private val _thread: Thread =
+    io.newThread(_ setContextClassLoader classLoader)(runAndSetState(body))
 
   def state     = _state
   def thread    = _thread
@@ -76,7 +75,7 @@ object Line {
   case object Cancelled extends State
   case object Done extends State
 
-  class Manager {
+  class Manager(classLoader: ClassLoader) {
     /** Override to add behavior for runaway lines.  This method will
      *  be called if a line thread is still running five seconds after
      *  it has been cancelled.
@@ -91,7 +90,7 @@ object Line {
       _current = None
     }
     def set[T](code: String)(body: => T) = {
-      val line = new Line(code, body)
+      val line = new Line(code, classLoader, body)
       _current = Some(line)
       line
     }

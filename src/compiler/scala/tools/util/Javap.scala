@@ -14,7 +14,7 @@ import scala.tools.nsc.io.{ File, NullPrintStream }
 import Javap._
 
 class Javap(
-  val loader: ScalaClassLoader = ScalaClassLoader.getSystemLoader(),
+  val loader: ScalaClassLoader = ScalaClassLoader.appLoader,
   val printWriter: PrintWriter = new PrintWriter(System.out, true)
 ) {
 
@@ -79,7 +79,7 @@ object Javap {
   val Env     = "sun.tools.javap.JavapEnvironment"
   val Printer = "sun.tools.javap.JavapPrinter"
 
-  def isAvailable(cl: ScalaClassLoader = ScalaClassLoader.getSystemLoader()) =
+  def isAvailable(cl: ScalaClassLoader = ScalaClassLoader.appLoader) =
     cl.tryToInitializeClass[AnyRef](Env).isDefined
 
   // "documentation"

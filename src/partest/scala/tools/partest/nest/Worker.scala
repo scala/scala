@@ -400,8 +400,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
    */
   def runTests(files: List[File])(topcont: Map[String, Int] => Unit) {
     val compileMgr = new CompileManager(fileManager)
-    if (kind == "scalacheck") fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
-
+    // if (kind == "scalacheck")
+    fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
     filesRemaining = files
 
     // You don't default "succeeded" to true.

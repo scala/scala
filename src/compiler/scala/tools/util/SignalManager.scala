@@ -32,7 +32,7 @@ import scala.util.Random
  *  }}}
  */
 class SignalManager(classLoader: ScalaClassLoader) {
-  def this() = this(ScalaClassLoader.getSystemLoader)
+  def this() = this(ScalaClassLoader.appLoader)
   private val illegalArgHandler: PartialFunction[Throwable, Boolean] = {
     case x if unwrap(x).isInstanceOf[IllegalArgumentException] => false
   }
