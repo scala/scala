@@ -2823,6 +2823,17 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         res
       }
 
+    def isCapturedExistential(sym: Symbol) =
+      ((sym hasFlag EXISTENTIAL) && (sym hasFlag CAPTURED)) // todo refine this
+
+    def packCaptured(tpe: Type): Type = {
+      val captured = mutable.Set[Symbol]()
+      for (tp <- tpe)
+        if (isCapturedExistential(tp.typeSymbol))
+          captured += tp.typeSymbol
+      existentialAbstraction(captured.toList, tpe)
+    }
+
     /** convert skolems to existentials */
     def packedType(tree: Tree, owner: Symbol): Type = {
       def defines(tree: Tree, sym: Symbol) =
@@ -2841,7 +2852,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
-        else containsDef(owner, sym) || isRawParameter(sym) || ((sym hasFlag EXISTENTIAL) && (sym hasFlag CAPTURED)) // todo refine this
+        else containsDef(owner, sym) || isRawParameter(sym) || isCapturedExistential(sym)
       def containsLocal(tp: Type): Boolean =
         tp exists (t => isLocal(t.typeSymbol) || isLocal(t.termSymbol))
       val normalizeLocals = new TypeMap {
@@ -3198,7 +3209,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
         } else {
           val selector1 = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-          var cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
+          var cases1 = typedCases(tree, cases, packCaptured(selector1.tpe.widen), pt)
 
           if (isPastTyper || !opt.virtPatmat) {
             val (owntype, needAdapt) = ptOrLub(cases1 map (_.tpe))
