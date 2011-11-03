@@ -26,6 +26,7 @@ trait HasClassPath {
 trait ScalaClassLoader extends JClassLoader {
   /** Override to see classloader activity traced */
   protected def trace: Boolean = false
+  val classLoaderUniqId = "Cl#" + System.identityHashCode(this)
 
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
@@ -50,13 +51,13 @@ trait ScalaClassLoader extends JClassLoader {
 
   override def findClass(name: String) = {
     val result = super.findClass(name)
-    if (trace) println("findClass(%s) = %s".format(name, result))
+    // if (trace) println("findClass(%s) = %s".format(name, result))
     result
   }
 
   override def loadClass(name: String, resolve: Boolean) = {
     val result = super.loadClass(name, resolve)
-    if (trace) println("loadClass(%s, %s) = %s".format(name, resolve, result))
+    // if (trace) println("loadClass(%s, %s) = %s".format(name, resolve, result))
     result
   }
 
@@ -93,6 +94,7 @@ trait ScalaClassLoader extends JClassLoader {
     case null => Nil
     case p    => p.loaderChain
   })
+  override def toString = classLoaderUniqId
 }
 
 /** Methods for obtaining various classloaders.
@@ -160,7 +162,7 @@ object ScalaClassLoader {
       classloaderURLs :+= url
       super.addURL(url)
     }
-    override def toString = urls.mkString("URLClassLoader(\n  ", "\n  ", "\n)\n")
+    def toLongString = urls.mkString("URLClassLoader(id=" + classLoaderUniqId + "\n  ", "\n  ", "\n)\n")
   }
 
   def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader =

@@ -120,7 +120,7 @@ trait ToolBoxes extends { self: Universe =>
 
     lazy val exporter = importer.reverse
 
-    lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, getClass.getClassLoader)
+    lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, defaultReflectiveClassLoader)
 
     private def importAndTypeCheck(tree: rm.Tree, expectedType: rm.Type): compiler.Tree = {
       // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
