@@ -2426,17 +2426,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def originalEnclosingMethod = this
   }
 
-  def cloneSymbols[T <: Symbol](syms: List[T]): List[T] = {
-    val syms1 = syms map (_.cloneSymbol.asInstanceOf[T])
-    for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
-    syms1
+  private def cloneAndSubstInfos[T <: Symbol](syms: List[T])(f: T => Symbol): List[T] = {
+    val syms1 = syms map (s => f(s).asInstanceOf[T])
+    syms1 map (sym1 => sym1 setInfo sym1.info.substSym(syms, syms1))
   }
 
-  def cloneSymbols[T <: Symbol](syms: List[T], owner: Symbol): List[T] = {
-    val syms1 = syms map (_.cloneSymbol(owner).asInstanceOf[T])
-    for (sym1 <- syms1) sym1.setInfo(sym1.info.substSym(syms, syms1))
-    syms1
-  }
+  def cloneSymbols[T <: Symbol](syms: List[T]): List[T] =
+    cloneAndSubstInfos(syms)(_.cloneSymbol)
+
+  def cloneSymbols[T <: Symbol](syms: List[T], owner: Symbol): List[T] =
+    cloneAndSubstInfos(syms)(_ cloneSymbol owner)
 
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)

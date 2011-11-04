@@ -66,7 +66,7 @@ trait Implicits {
 
     val result = new ImplicitSearch(tree, pt, isView, context.makeImplicit(reportAmbiguous)).bestImplicit
     printInference("[inferImplicit] result: " + result)
-    context.undetparams = context.undetparams filterNot result.subst.fromContains
+    context.undetparams = context.undetparams filterNot result.subst.from.contains
 
     stopTimer(implicitNanos, start)
     stopCounter(rawTypeImpl, rawTypeStart)

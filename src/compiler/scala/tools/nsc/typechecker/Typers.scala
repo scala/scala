@@ -1027,30 +1027,39 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
     }
 
+    private def isAdaptableWithView(qual: Tree) = {
+      val qtpe = qual.tpe.widen
+      (    !isPastTyper
+        && qual.isTerm
+        && ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue)
+        && !qtpe.isError
+        && qtpe.typeSymbol != NullClass
+        && qtpe.typeSymbol != NothingClass
+        && qtpe != WildcardType
+        && !qual.isInstanceOf[ApplyImplicitView] // don't chain views
+        && context.implicitsEnabled
+        // Elaborating `context.implicitsEnabled`:
+        // don't try to adapt a top-level type that's the subject of an implicit search
+        // this happens because, if isView, typedImplicit tries to apply the "current" implicit value to
+        // a value that needs to be coerced, so we check whether the implicit value has an `apply` method.
+        // (If we allow this, we get divergence, e.g., starting at `conforms` during ant quick.bin)
+        // Note: implicit arguments are still inferred (this kind of "chaining" is allowed)
+      )
+    }
+
     def adaptToMember(qual: Tree, searchTemplate: Type): Tree = {
-      var qtpe = qual.tpe.widen
-      if (qual.isTerm &&
-          ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
-          !isPastTyper && !qtpe.isError &&
-          qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType &&
-          !qual.isInstanceOf[ApplyImplicitView] && // don't chain views
-          context.implicitsEnabled) { // don't try to adapt a top-level type that's the subject of an implicit search
-                                      // this happens because, if isView, typedImplicit tries to apply the "current" implicit value to
-                                      // a value that needs to be coerced, so we check whether the implicit value has an `apply` method
-                                     // (if we allow this, we get divergence, e.g., starting at `conforms` during ant quick.bin)
-                                     // note: implicit arguments are still inferred (this kind of "chaining" is allowed)
-        if (qtpe.normalize.isInstanceOf[ExistentialType]) {
-          qtpe = qtpe.normalize.skolemizeExistential(context.owner, qual) // open the existential
-          qual setType qtpe
+      if (isAdaptableWithView(qual)) {
+        qual.tpe.widen.normalize match {
+          case et: ExistentialType =>
+            qual setType et.skolemizeExistential(context.owner, qual) // open the existential
+          case _ =>
         }
-        val coercion = inferView(qual, qual.tpe, searchTemplate, true)
-        if (coercion != EmptyTree)
-          typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
-        else
-          qual
-      } else {
-        qual
+        inferView(qual, qual.tpe, searchTemplate, true) match {
+          case EmptyTree  => qual
+          case coercion   => typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+        }
       }
+      else qual
     }
 
     /** Try to apply an implicit conversion to `qual` to that it contains
@@ -1569,29 +1578,24 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         if (!superClazz.isJavaDefined) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (sameLength(superParamAccessors, superArgs)) {
-            (superParamAccessors, superArgs).zipped map { (superAcc, superArg) =>
-              superArg match {
-                case Ident(name) =>
-                  if (vparamss.exists(_.exists(_.symbol == superArg.symbol))) {
-                    var alias = superAcc.initialize.alias
-                    if (alias == NoSymbol)
-                      alias = superAcc.getter(superAcc.owner)
-                    if (alias != NoSymbol &&
-                        superClazz.info.nonPrivateMember(alias.name) != alias)
-                      alias = NoSymbol
-                    if (alias != NoSymbol) {
-                      var ownAcc = clazz.info.decl(name).suchThat(_.isParamAccessor)
-                      if ((ownAcc hasFlag ACCESSOR) && !ownAcc.isDeferred)
-                        ownAcc = ownAcc.accessed
-                      if (!ownAcc.isVariable && !alias.accessed.isVariable) {
-                        debuglog("" + ownAcc + " has alias "+alias + alias.locationString) //debug
-                        ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
-                      }
-                    }
+            for ((superAcc, superArg @ Ident(name)) <- superParamAccessors zip superArgs) {
+              if (vparamss.exists(_.exists(_.symbol == superArg.symbol))) {
+                var alias = superAcc.initialize.alias
+                if (alias == NoSymbol)
+                  alias = superAcc.getter(superAcc.owner)
+                if (alias != NoSymbol &&
+                    superClazz.info.nonPrivateMember(alias.name) != alias)
+                  alias = NoSymbol
+                if (alias != NoSymbol) {
+                  var ownAcc = clazz.info.decl(name).suchThat(_.isParamAccessor)
+                  if ((ownAcc hasFlag ACCESSOR) && !ownAcc.isDeferred)
+                    ownAcc = ownAcc.accessed
+                  if (!ownAcc.isVariable && !alias.accessed.isVariable) {
+                    debuglog("" + ownAcc + " has alias "+alias.fullLocationString) //debug
+                    ownAcc.asInstanceOf[TermSymbol].setAlias(alias)
                   }
-                case _ =>
+                }
               }
-              ()
             }
           }
         }
@@ -1601,7 +1605,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     /** Check if a structurally defined method violates implementation restrictions.
      *  A method cannot be called if it is a non-private member of a refinement type
      *  and if its parameter's types are any of:
-     *    - this.type
+     *    - the self-type of the refinement
      *    - a type member of the refinement
      *    - an abstract type declared outside of the refinement.
      */
@@ -1730,7 +1734,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
         }
       }
-
       if (meth.isStructuralRefinementMember)
         checkMethodStructuralCompatible(meth)
 

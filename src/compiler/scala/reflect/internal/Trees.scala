@@ -340,7 +340,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends Traverser {
     val typeSubst = new SubstTypeMap(from, to)
-    def fromContains = typeSubst.fromContains
     def isEmpty = from.isEmpty && to.isEmpty
 
     override def traverse(tree: Tree) {
