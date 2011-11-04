@@ -161,7 +161,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
   protected final def Value(i: Int, name: String): Value = new Val(i, name)
 
   private def populateNameMap() {
-    val fields = getClass.getDeclaredFields
+    val fields = getClass.getFields
     def isValDef(m: JMethod) = fields exists (fd => fd.getName == m.getName && fd.getType == m.getReturnType)
 
     // The list of possible Value methods: 0-args which return a conforming type
