@@ -61,7 +61,7 @@ trait ILoopInit {
     }
   }
   protected def removeSigIntHandler() {
-    SignalManager("INT") = null
+    squashAndLog("removeSigIntHandler")(SignalManager("INT") = null)
   }
 
   private val initLock = new java.util.concurrent.locks.ReentrantLock()

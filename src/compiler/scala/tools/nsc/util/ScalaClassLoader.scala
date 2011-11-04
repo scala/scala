@@ -26,7 +26,11 @@ trait HasClassPath {
 trait ScalaClassLoader extends JClassLoader {
   /** Override to see classloader activity traced */
   protected def trace: Boolean = false
-  val classLoaderUniqId = "Cl#" + System.identityHashCode(this)
+  protected lazy val classLoaderUniqueId = "Cl#" + System.identityHashCode(this)
+  protected def classLoaderLog(msg: => String) {
+    if (trace)
+      Console.err.println("[" + classLoaderUniqueId + "] " + msg)
+  }
 
   /** Executing an action with this classloader as context classloader */
   def asContext[T](action: => T): T = {
@@ -51,13 +55,13 @@ trait ScalaClassLoader extends JClassLoader {
 
   override def findClass(name: String) = {
     val result = super.findClass(name)
-    // if (trace) println("findClass(%s) = %s".format(name, result))
+    classLoaderLog("findClass(%s) = %s".format(name, result))
     result
   }
 
   override def loadClass(name: String, resolve: Boolean) = {
     val result = super.loadClass(name, resolve)
-    // if (trace) println("loadClass(%s, %s) = %s".format(name, resolve, result))
+    classLoaderLog("loadClass(%s, %s) = %s".format(name, resolve, result))
     result
   }
 
@@ -94,7 +98,7 @@ trait ScalaClassLoader extends JClassLoader {
     case null => Nil
     case p    => p.loaderChain
   })
-  override def toString = classLoaderUniqId
+  override def toString = classLoaderUniqueId
 }
 
 /** Methods for obtaining various classloaders.
@@ -146,6 +150,11 @@ object ScalaClassLoader {
   }
   def setContext(cl: JClassLoader) =
     Thread.currentThread.setContextClassLoader(cl)
+  def savingContextLoader[T](body: => T): T = {
+    val saved = contextLoader
+    try body
+    finally setContext(saved)
+  }
 
   class URLClassLoader(urls: Seq[URL], parent: JClassLoader)
       extends JURLClassLoader(urls.toArray, parent)
@@ -162,7 +171,7 @@ object ScalaClassLoader {
       classloaderURLs :+= url
       super.addURL(url)
     }
-    def toLongString = urls.mkString("URLClassLoader(id=" + classLoaderUniqId + "\n  ", "\n  ", "\n)\n")
+    def toLongString = urls.mkString("URLClassLoader(id=" + classLoaderUniqueId + "\n  ", "\n  ", "\n)\n")
   }
 
   def fromURLs(urls: Seq[URL], parent: ClassLoader = null): URLClassLoader =

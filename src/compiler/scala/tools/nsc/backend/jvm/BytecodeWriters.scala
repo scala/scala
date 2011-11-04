@@ -10,7 +10,7 @@ import ch.epfl.lamp.fjbg._
 import java.io.{ DataOutputStream, OutputStream, File => JFile }
 import scala.tools.nsc.io._
 import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.util.Javap
+import scala.tools.util.JavapClass
 import java.util.jar.{ JarEntry, JarOutputStream, Attributes }
 import Attributes.Name
 
@@ -67,7 +67,7 @@ trait BytecodeWriters {
 
     def emitJavap(bytes: Array[Byte], javapFile: io.File) {
       val pw    = javapFile.printWriter()
-      val javap = new Javap(ScalaClassLoader.appLoader, pw) {
+      val javap = new JavapClass(ScalaClassLoader.appLoader, pw) {
         override def findBytes(path: String): Array[Byte] = bytes
       }
 

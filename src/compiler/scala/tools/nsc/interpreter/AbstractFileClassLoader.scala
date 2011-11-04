@@ -20,11 +20,6 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     with ScalaClassLoader
 {
   // private val defined = mutable.Map[String, Class[_]]()
-  private def cllog(msg: => String) {
-    if (trace)
-      println("[" + classLoaderUniqId + "] " + msg)
-  }
-
   override protected def trace =
     sys.props contains "scala.debug.classloader"
 
@@ -57,12 +52,12 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     case file => file.toByteArray
   }
   override def loadClass(name: String, resolve: Boolean) = {
-    cllog("load " + name + ".")
+    classLoaderLog("load " + name + ".")
     super.loadClass(name, resolve)
   }
   override def findClass(name: String): JClass = {
     val bytes = classBytes(name)
-    cllog("find %s: %s".format(name,
+    classLoaderLog("find %s: %s".format(name,
       if (bytes.isEmpty) "failed."
       else bytes.size + " bytes."
     ))

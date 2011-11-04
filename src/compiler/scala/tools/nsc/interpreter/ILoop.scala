@@ -19,6 +19,8 @@ import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import interpreter._
 import io.{ File, Sources }
 import scala.reflect.NameTransformer._
+import util.ScalaClassLoader._
+import scala.tools.util._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -82,13 +84,23 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Record a command for replay should the user request a :replay */
   def addReplay(cmd: String) = replayCommandStack ::= cmd
 
+  def savingReplayStack[T](body: => T): T = {
+    val saved = replayCommandStack
+    try body
+    finally replayCommandStack = saved
+  }
+  def savingReader[T](body: => T): T = {
+    val saved = in
+    try body
+    finally in = saved
+  }
+
   /** Close the interpreter and set the var to null. */
   def closeInterpreter() {
     if (intp ne null) {
-      intp.close
+      intp.close()
       intp = null
       removeSigIntHandler()
-      Thread.currentThread.setContextClassLoader(originalClassLoader)
     }
   }
 
@@ -228,6 +240,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
+    nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
+    // nullary("reset", "reset the interpreter, forgetting session values but retaining session types", replay),
     shCommand,
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "<expr>", "display the type of an expression without evaluating it", typeCommand),
@@ -359,7 +373,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  protected def newJavap() = new Javap(intp.classLoader, new IMain.ReplStrippingWriter(intp)) {
+  protected def newJavap() = new JavapClass(intp.classLoader, new IMain.ReplStrippingWriter(intp)) {
     override def tryClass(path: String): Array[Byte] = {
       val hd :: rest = path split '.' toList;
       // If there are dots in the name, the first segment is the
@@ -387,9 +401,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       }
     }
   }
-  private lazy val javap =
-    try newJavap()
-    catch { case _: Exception => null }
+  private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())
 
   // Still todo: modules.
   private def typeCommand(line: String): Result = {
@@ -505,7 +517,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
        |[y/n]
     """.trim.stripMargin
 
-  private val crashRecovery: PartialFunction[Throwable, Unit] = {
+  private val crashRecovery: PartialFunction[Throwable, Boolean] = {
     case ex: Throwable =>
       if (settings.YrichExes.value) {
         val sources = implicitly[Sources]
@@ -529,6 +541,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           if (fn()) replay()
           else echo("\nAbandoning crashed session.")
       }
+      true
   }
 
   /** The main read-eval-print loop for the repl.  It calls
@@ -553,38 +566,55 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         case _                          => true
       }
     }
-
-    while (true) {
-      try if (!processLine(readOneLine())) return
-      catch crashRecovery
+    def innerLoop() {
+      if ( try processLine(readOneLine()) catch crashRecovery )
+        innerLoop()
     }
+    innerLoop()
   }
 
   /** interpret all lines from a specified file */
   def interpretAllFrom(file: File) {
-    val oldIn = in
-    val oldReplay = replayCommandStack
-
-    try file applyReader { reader =>
-      in = SimpleReader(reader, out, false)
-      echo("Loading " + file + "...")
-      loop()
-    }
-    finally {
-      in = oldIn
-      replayCommandStack = oldReplay
+    savingReader {
+      savingReplayStack {
+        file applyReader { reader =>
+          in = SimpleReader(reader, out, false)
+          echo("Loading " + file + "...")
+          loop()
+        }
+      }
     }
   }
 
-  /** create a new interpreter and replay all commands so far */
+  /** create a new interpreter and replay the given commands */
   def replay() {
-    closeInterpreter()
-    createInterpreter()
-    for (cmd <- replayCommands) {
+    reset()
+    if (replayCommandStack.isEmpty)
+      echo("Nothing to replay.")
+    else for (cmd <- replayCommands) {
       echo("Replaying: " + cmd)  // flush because maybe cmd will have its own output
       command(cmd)
       echo("")
     }
+  }
+  def resetCommand() {
+    echo("Resetting interpreter state.")
+    if (replayCommandStack.nonEmpty) {
+      echo("Forgetting this session history:\n")
+      replayCommands foreach echo
+      echo("")
+      replayCommandStack = Nil
+    }
+    if (intp.namedDefinedTerms.nonEmpty)
+      echo("Forgetting all expression results and named terms: " + intp.namedDefinedTerms.mkString(", "))
+    if (intp.definedTypes.nonEmpty)
+      echo("Forgetting defined types: " + intp.definedTypes.mkString(", "))
+
+    reset()
+  }
+  def reset() {
+    intp.reset()
+    unleashAndSetPhase()
   }
 
   /** fork a shell and run a command */
@@ -632,10 +662,20 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
   def enablePowerMode(isDuringInit: Boolean) = {
     replProps.power setValue true
-    power.unleash()
-    intp.beSilentDuring(phaseCommand("typer"))
-    if (isDuringInit) asyncMessage(power.banner)
-    else echo(power.banner)
+    unleashAndSetPhase()
+    asyncEcho(isDuringInit, power.banner)
+  }
+  private def unleashAndSetPhase() {
+    if (isReplPower) {
+      power.unleash()
+      // Set the phase to "typer"
+      intp beSilentDuring phaseCommand("typer")
+    }
+  }
+
+  def asyncEcho(async: Boolean, msg: => String) {
+    if (async) asyncMessage(msg)
+    else echo(msg)
   }
 
   def verbosity() = {
@@ -792,7 +832,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         SimpleReader()
     }
   }
-  def process(settings: Settings): Boolean = {
+  def process(settings: Settings): Boolean = savingContextLoader {
     this.settings = settings
     createInterpreter()
 
@@ -925,7 +965,7 @@ object ILoop {
     if (assertion) break[T](args.toList)
 
   // start a repl, binding supplied args
-  def break[T: Manifest](args: List[NamedParam]): Unit = {
+  def break[T: Manifest](args: List[NamedParam]): Unit = savingContextLoader {
     val msg = if (args.isEmpty) "" else "  Binding " + args.size + " value%s.".format(
       if (args.size == 1) "" else "s"
     )

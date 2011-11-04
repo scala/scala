@@ -6,6 +6,9 @@
 package scala.tools.nsc
 package interpreter
 
+import util.Exceptional.unwrap
+import util.stackTraceString
+
 trait ReplConfig {
   lazy val replProps = new ReplProps
 
@@ -27,6 +30,21 @@ trait ReplConfig {
   private[nsc] def repldbg(msg: => String)    = if (isReplDebug) echo(msg)
   private[nsc] def repltrace(msg: => String)  = if (isReplTrace) echo(msg)
   private[nsc] def replinfo(msg: => String)   = if (isReplInfo)  echo(msg)
+
+  private[nsc] def logAndDiscard[T](label: String, alt: => T): PartialFunction[Throwable, T] = {
+    case t =>
+      repldbg(label + ": " + unwrap(t))
+      repltrace(stackTraceString(unwrap(t)))
+      alt
+  }
+  private[nsc] def substituteAndLog[T](alt: => T)(body: => T): T =
+    substituteAndLog("" + alt, alt)(body)
+  private[nsc] def substituteAndLog[T](label: String, alt: => T)(body: => T): T = {
+    try body
+    catch logAndDiscard(label, alt)
+  }
+  private[nsc] def squashAndLog(label: String)(body: => Unit): Unit =
+    substituteAndLog(label, ())(body)
 
   def isReplTrace: Boolean = replProps.trace
   def isReplDebug: Boolean = replProps.debug || isReplTrace

@@ -13,10 +13,26 @@ import java.io.{ InputStream, PrintWriter, ByteArrayInputStream, FileNotFoundExc
 import scala.tools.nsc.io.{ File, NullPrintStream }
 import Javap._
 
-class Javap(
+trait Javap {
+  def loader: ScalaClassLoader
+  def printWriter: PrintWriter
+  def apply(args: Seq[String]): List[JpResult]
+  def tryFile(path: String): Option[Array[Byte]]
+  def tryClass(path: String): Array[Byte]
+}
+
+object NoJavap extends Javap {
+  def loader: ScalaClassLoader                   = getClass.getClassLoader
+  def printWriter: PrintWriter                   = new PrintWriter(System.err, true)
+  def apply(args: Seq[String]): List[JpResult]   = Nil
+  def tryFile(path: String): Option[Array[Byte]] = None
+  def tryClass(path: String): Array[Byte]        = Array()
+}
+
+class JavapClass(
   val loader: ScalaClassLoader = ScalaClassLoader.appLoader,
   val printWriter: PrintWriter = new PrintWriter(System.out, true)
-) {
+) extends Javap {
 
   lazy val parser = new JpOptions
 
@@ -87,7 +103,7 @@ object Javap {
   type FakePrinter = AnyRef
 
   def apply(path: String): Unit      = apply(Seq(path))
-  def apply(args: Seq[String]): Unit = new Javap() apply args foreach (_.show())
+  def apply(args: Seq[String]): Unit = new JavapClass() apply args foreach (_.show())
 
   sealed trait JpResult {
     type ResultType
