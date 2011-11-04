@@ -22,9 +22,5 @@ object Command
 	}
 	
 	def getWarnFatal(settings: Settings): Boolean =
-	{
-		implicit def compat27(settings: Settings): SettingsCompat = new SettingsCompat
-		class SettingsCompat { def Xwarnfatal = this; def value = false }
 		settings.Xwarnfatal.value
-	}
 }
