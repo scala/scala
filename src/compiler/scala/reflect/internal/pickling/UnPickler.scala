@@ -819,10 +819,15 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
     protected def errorMissingRequirement(name: Name, owner: Symbol): Symbol =
       missingHook(owner, name) orElse {
+        val what = if (name.isTypeName) "type" else "value"
         MissingRequirementError.notFound(
-            "reference " + (if (name.isTypeName) "type " else "value ") +
-            name.decode + " of " + owner.tpe.widen + "/" +owner.tpe.typeSymbol.ownerChain + "/" + owner.info.members)
-    }
+          "while unpickling %s, reference %s %s of %s/%s/%s".format(
+            filename,
+            what, name.decode, owner.tpe.widen,
+            owner.tpe.typeSymbol.ownerChain,
+            owner.info.members.mkString("\n  ", "\n  ", ""))
+        )
+      }
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type) {} // can't do it; need a compiler for that.
 
