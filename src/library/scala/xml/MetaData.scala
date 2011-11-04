@@ -17,7 +17,6 @@ import scala.collection.Iterator
  * @author Burak Emir <bqe@google.com>
  */
 object MetaData {
-
   /**
    * appends all attributes from new_tail to attribs, without attempting to
    * detect or remove duplicates. The method guarantees that all attributes
@@ -26,8 +25,8 @@ object MetaData {
    *
    * Duplicates can be removed with `normalize`.
    */
-  @tailrec
-  def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
+  @tailrec  // temporarily marked final so it will compile under -Xexperimental
+  final def concatenate(attribs: MetaData, new_tail: MetaData): MetaData =
     if (attribs eq Null) new_tail
     else concatenate(attribs.next, attribs copy new_tail)
 
