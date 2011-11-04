@@ -99,7 +99,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       def prompt = ILoop.this.prompt
     }
     override protected def createLineManager(): Line.Manager =
-      if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager(outer.classLoader) {
+      if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager(parentClassLoader) {
         override def onRunaway(line: Line[_]): Unit = {
           val template = """
             |// She's gone rogue, captain! Have to take her out!
