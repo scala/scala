@@ -13,6 +13,10 @@ object Test extends ReplTest {
     |new BippyBungus
     |class BippyBungus() { def f = 5 }
     |{ new BippyBungus ; x1 }
-    |:javap BippyBungus
   """.stripMargin
+
+    // would be nice if we could count on javap being present
+    // but no
+    //
+    // |:javap BippyBungus
 }
