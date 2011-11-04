@@ -237,12 +237,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   /** whether to bind the lastException variable */
   private var bindExceptions = true
   /** takes AnyRef because it may be binding a Throwable or an Exceptional */
-  private def withLastExceptionLock[T](body: => T): T = {
+  private def withLastExceptionLock[T](body: => T, alt: => T): T = {
     assert(bindExceptions, "withLastExceptionLock called incorrectly.")
     bindExceptions = false
 
     try     beQuietDuring(body)
-    catch   logAndDiscard("bindLastException", null.asInstanceOf[T])
+    catch   logAndDiscard("bindLastException", alt)
     finally bindExceptions = true
   }
 
@@ -708,7 +708,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         throw t
 
       val unwrapped = unwrap(t)
-      withLastExceptionLock {
+      withLastExceptionLock[String]({
         if (opt.richExes) {
           val ex = new LineExceptional(unwrapped)
           bind[Exceptional]("lastException", ex)
@@ -718,7 +718,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           bind[Throwable]("lastException", unwrapped)
           util.stackTraceString(unwrapped)
         }
-      }
+      }, "" + unwrapped)
     }
 
     // TODO: split it out into a package object and a regular

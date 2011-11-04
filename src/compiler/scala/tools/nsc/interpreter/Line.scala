@@ -19,11 +19,11 @@ import Line._
  *  completed or failed.
  */
 class Line[+T](val code: String, classLoader: ClassLoader, body: => T) {
-  private var _state: State      = Running
-  private var _result: Any       = null
-  private var _caught: Throwable = null
-  private val lock               = new ReentrantLock()
-  private val finished           = lock.newCondition()
+  private var _state: State              = Running
+  private var _result: Option[Any]       = None
+  private var _caught: Option[Throwable] = None
+  private val lock                       = new ReentrantLock()
+  private val finished                   = lock.newCondition()
 
   private def withLock[T](body: => T) = {
     lock.lock()
@@ -38,11 +38,8 @@ class Line[+T](val code: String, classLoader: ClassLoader, body: => T) {
   private def cancel() = if (running) setState(Cancelled)
 
   private def runAndSetState[T](body: => T) {
-    var ex: Throwable = null
-
-    try     { _result = body }
-    catch   { case t => ex = t }
-    finally { setState( if (ex == null) Done else Threw ) }
+    try     {           _result = Some(body) ; setState(Done)  }
+    catch   { case t => _caught = Some(t)    ; setState(Threw) }
   }
 
   // This is where the line thread is created and started.
@@ -56,8 +53,11 @@ class Line[+T](val code: String, classLoader: ClassLoader, body: => T) {
   def success   = _state == Done
   def running   = _state == Running
 
-  def caught() = { await() ; _caught }
-  def get()    = { await() ; _result }
+  def caught() = { await() ; _caught.orNull }
+  def get()    = {
+    await()
+    _result getOrElse sys.error("Called get with no result.  Code: " + code)
+  }
   def await()  = withLock { while (running) finished.await() }
 }
 

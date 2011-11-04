@@ -1,0 +1,25 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> sys.SystemProperties.traceSourcePath setValue ""
+res0: String = null
+
+scala> def f = sys.error("hi mom")
+f: Nothing
+
+scala> f
+[package.error] (package.scala:27)
+(access lastException for the full trace)
+
+scala> lastException.show
+/* The repl internal portion of the stack trace is elided. */
+[package.error] (package.scala:27)
+[.f] (<console>:7)
+[.<init>] (<console>:9)
+[.<clinit>] (<console>:-1)
+
+scala> 
+
+scala> 

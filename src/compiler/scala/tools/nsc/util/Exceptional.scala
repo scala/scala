@@ -27,7 +27,7 @@ class Exceptional(val ex: Throwable)(implicit prefs: ScalaPrefs) {
 
   /** The result of this will be printed before a context trace. */
   def contextPrelude: String =
-    if (isScanDone) ""
+    if (isScanDone || prefs.codeSources.isEmpty) ""
     else "/* Still scanning source path: there may be more momentarily. */\n"
 
   /** Frames with surrounding context. */
