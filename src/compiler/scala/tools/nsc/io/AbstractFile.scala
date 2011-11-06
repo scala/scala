@@ -152,7 +152,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   @throws(classOf[IOException])
   def toByteArray: Array[Byte] = {
     val in = input
-    var rest = sizeOption.get
+    var rest = sizeOption.getOrElse(0)
     val arr = new Array[Byte](rest)
     while (rest > 0) {
       val res = in.read(arr, arr.length - rest, rest)
