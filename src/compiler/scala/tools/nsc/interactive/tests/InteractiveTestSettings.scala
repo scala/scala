@@ -15,7 +15,7 @@ trait InteractiveTestSettings extends TestSettings with PresentationCompilerInst
   /** Character delimiter for comments in .opts file */
   private final val CommentStartDelimiter = "#"
 
-  private final val TestOptionsFileExtension = "opts"
+  private final val TestOptionsFileExtension = "flags"
 
   /** Prepare the settings object. Load the .opts file and adjust all paths from the
    *  Unix-like syntax to the platform specific syntax. This is necessary so that a
