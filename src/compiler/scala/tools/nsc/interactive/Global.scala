@@ -153,6 +153,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
   protected[interactive] def getUnit(s: SourceFile): Option[RichCompilationUnit] = {
     toBeRemoved.synchronized {
       for (f <- toBeRemoved) {
+        informIDE("removed: "+s)
         unitOfFile -= f
         allSources = allSources filter (_.file != f)
       }
@@ -730,7 +731,7 @@ class Global(settings: Settings, reporter: Reporter, projectName: String = "")
       val originalTypeParams = sym.owner.typeParams
       parseAndEnter(unit)
       val pre = adaptToNewRunMap(ThisType(sym.owner))
-      val newsym = pre.decl(sym.name) filter { alt =>
+      val newsym = pre.typeSymbol.info.decl(sym.name) filter { alt =>
         sym.isType || {
           try {
             val tp1 = pre.memberType(alt) onTypeError NoType

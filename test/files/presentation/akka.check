@@ -474,7 +474,7 @@ askHyperlinkPos for `Actor` at (24,28) pi.scala
 
 askHyperlinkPos for `reply` at (36,18) pi.scala
 ================================================================================
-[response] found askHyperlinkPos for `reply` at <no position> ActorRef.scala
+[response] found askHyperlinkPos for `reply` at (1382,7) ActorRef.scala
 ================================================================================
 
 askHyperlinkPos for `nrOfResults` at (73,19) pi.scala
