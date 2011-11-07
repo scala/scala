@@ -42,7 +42,8 @@ import parallel.mutable.ParArray
  */
 @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A](override protected val initialSize: Int)
-  extends Buffer[A]
+  extends AbstractBuffer[A]
+     with Buffer[A]
      with GenericTraversableTemplate[A, ArrayBuffer]
      with BufferLike[A, ArrayBuffer[A]]
      with IndexedSeqOptimized[A, ArrayBuffer[A]]

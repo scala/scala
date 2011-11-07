@@ -35,7 +35,8 @@ import scala.collection.parallel.mutable.ParHashMap
  */
 @SerialVersionUID(1L)
 class HashMap[A, B] private[collection] (contents: HashTable.Contents[A, DefaultEntry[A, B]])
-extends Map[A, B]
+extends AbstractMap[A, B]
+   with Map[A, B]
    with MapLike[A, B, HashMap[A, B]]
    with HashTable[A, DefaultEntry[A, B]]
    with CustomParallelizable[(A, B), ParHashMap[A, B]]
@@ -105,14 +106,14 @@ extends Map[A, B]
   }
 
   /* Override to avoid tuple allocation */
-  override def keysIterator: Iterator[A] = new Iterator[A] {
+  override def keysIterator: Iterator[A] = new AbstractIterator[A] {
     val iter    = entriesIterator
     def hasNext = iter.hasNext
     def next()  = iter.next.key
   }
 
   /* Override to avoid tuple allocation */
-  override def valuesIterator: Iterator[B] = new Iterator[B] {
+  override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
     val iter    = entriesIterator
     def hasNext = iter.hasNext
     def next()  = iter.next.value

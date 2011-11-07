@@ -108,3 +108,5 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }
 
+/** Explicit instantiation of the `Traversable` trait to reduce class file size in subclasses. */
+private[scala] abstract class AbstractTraversable[+T] extends Traversable[T]

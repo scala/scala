@@ -37,7 +37,8 @@ import collection.parallel.mutable.ParHashSet
  */
 @SerialVersionUID(1L)
 class HashSet[A] private[collection] (contents: FlatHashTable.Contents[A])
-extends Set[A]
+extends AbstractSet[A]
+   with Set[A]
    with GenericSetTemplate[A, HashSet]
    with SetLike[A, HashSet[A]]
    with FlatHashTable[A]

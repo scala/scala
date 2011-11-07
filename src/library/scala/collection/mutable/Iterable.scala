@@ -36,3 +36,5 @@ object Iterable extends TraversableFactory[Iterable] {
   def newBuilder[A]: Builder[A, Iterable[A]] = new ArrayBuffer
 }
 
+/** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
+private[scala] abstract class AbstractIterable[A] extends scala.collection.AbstractIterable[A] with Iterable[A]

@@ -143,7 +143,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     if (n < 0 || n > size) Iterator.empty
     else new CombinationsItr(n)
 
-  private class PermutationsItr extends Iterator[Repr] {
+  private class PermutationsItr extends AbstractIterator[Repr] {
     private[this] val (elms, idxs) = init()
     private var _hasNext = true
 
@@ -190,7 +190,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] with GenSeqLike[A, Repr] 
     }
   }
 
-  private class CombinationsItr(n: Int) extends Iterator[Repr] {
+  private class CombinationsItr(n: Int) extends AbstractIterator[Repr] {
     // generating all nums such that:
     // (1) nums(0) + .. + nums(length-1) = n
     // (2) 0 <= nums(i) <= cnts(i), where 0 <= i <= cnts.length-1
@@ -690,18 +690,18 @@ object SeqLike {
     case iso: IndexedSeq[_] =>
       // Already optimized for indexing--use original (or custom view of original)
       if (forward && n0==0 && n1==W.length) iso.asInstanceOf[IndexedSeq[B]]
-      else if (forward) new IndexedSeq[B] {
+      else if (forward) new AbstractSeq[B] with IndexedSeq[B] {
         val length = n1 - n0
         def apply(x: Int) = iso(n0 + x).asInstanceOf[B]
       }
-      else new IndexedSeq[B] {
+      else new AbstractSeq[B] with IndexedSeq[B] {
         def length = n1 - n0
         def apply(x: Int) = iso(n1 - 1 - x).asInstanceOf[B]
       }
     case _ =>
       // W is probably bad at indexing.  Pack in array (in correct orientation)
       // Would be marginally faster to special-case each direction
-      new IndexedSeq[B] {
+      new AbstractSeq[B] with IndexedSeq[B] {
         private[this] val Warr = new Array[AnyRef](n1-n0)
         private[this] val delta = if (forward) 1 else -1
         private[this] val done = if (forward) n1-n0 else -1

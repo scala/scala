@@ -86,3 +86,6 @@ object Map extends MutableMapFactory[Map] {
     override def withDefaultValue(d: B): mutable.Map[A, B] = new WithDefault[A, B](underlying, x => d)
   }
 }
+
+/** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
+private[scala] abstract class AbstractMap[A, B] extends scala.collection.AbstractMap[A, B] with Map[A, B]

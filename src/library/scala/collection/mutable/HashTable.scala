@@ -162,7 +162,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** An iterator returning all entries.
    */
-  protected def entriesIterator: Iterator[Entry] = new Iterator[Entry] {
+  protected def entriesIterator: Iterator[Entry] = new AbstractIterator[Entry] {
     val iterTable = table
     var idx       = lastPopulatedIndex
     var es        = iterTable(idx)

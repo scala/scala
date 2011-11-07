@@ -30,7 +30,8 @@ import collection.parallel.immutable.ParHashSet
  *  @define coll immutable hash set
  */
 @SerialVersionUID(2L)
-class HashSet[A] extends Set[A]
+class HashSet[A] extends AbstractSet[A]
+                    with Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
                     with CustomParallelizable[A, ParHashSet[A]]

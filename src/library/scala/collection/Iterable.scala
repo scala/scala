@@ -49,3 +49,6 @@ object Iterable extends TraversableFactory[Iterable] {
 
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 }
+
+/** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
+private[scala] abstract class AbstractIterable[+T] extends AbstractTraversable[T] with Iterable[T]

@@ -52,7 +52,8 @@ object Vector extends SeqFactory[Vector] {
  *  @define willNotTerminateInf
  */
 final class Vector[+A](private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
-extends IndexedSeq[A]
+extends AbstractSeq[A]
+   with IndexedSeq[A]
    with GenericTraversableTemplate[A, Vector]
    with IndexedSeqLike[A, Vector[A]]
    with VectorPointer[A @uncheckedVariance]
@@ -90,7 +91,7 @@ override def companion: GenericCompanion[Vector] = Vector
 
   // can still be improved
   override /*SeqLike*/
-  def reverseIterator: Iterator[A] = new Iterator[A] {
+  def reverseIterator: Iterator[A] = new AbstractIterator[A] {
     private var i = self.length
     def hasNext: Boolean = 0 < i
     def next(): A =
@@ -636,7 +637,10 @@ override def companion: GenericCompanion[Vector] = Vector
 }
 
 
-class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with VectorPointer[A @uncheckedVariance] {
+class VectorIterator[+A](_startIndex: Int, _endIndex: Int)
+extends AbstractIterator[A]
+   with Iterator[A]
+   with VectorPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31

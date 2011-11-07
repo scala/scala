@@ -45,7 +45,11 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(301002838095710379L)
-class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Serializable {
+class ListMap[A, +B]
+extends AbstractMap[A, B]
+   with Map[A, B]
+   with MapLike[A, B, ListMap[A, B]]
+  with Serializable {
 
   override def empty = ListMap.empty
 
@@ -112,7 +116,7 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Se
   /** Returns an iterator over key-value pairs.
    */
   def iterator: Iterator[(A,B)] =
-    new Iterator[(A,B)] {
+    new AbstractIterator[(A,B)] {
       var self: ListMap[A,B] = ListMap.this
       def hasNext = !self.isEmpty
       def next(): (A,B) =

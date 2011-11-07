@@ -58,7 +58,7 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
     s
   }
 
-  def iterator = new Iterator[Int] {
+  def iterator: Iterator[Int] = new AbstractIterator[Int] {
     private var current = 0
     private val end = nwords * WordLength
     def hasNext: Boolean = {

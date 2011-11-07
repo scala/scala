@@ -41,3 +41,5 @@ object Seq extends SeqFactory[Seq] {
   def newBuilder[A]: Builder[A, Seq[A]] = immutable.Seq.newBuilder[A]
 }
 
+/** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
+private[scala] abstract class AbstractSeq[+T] extends AbstractIterable[T] with Seq[T]

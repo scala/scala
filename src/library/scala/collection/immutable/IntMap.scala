@@ -83,7 +83,7 @@ object IntMap {
 import IntMap._
 
 // Iterator over a non-empty IntMap.
-private[immutable] abstract class IntMapIterator[V, T](it : IntMap[V]) extends Iterator[T]{
+private[immutable] abstract class IntMapIterator[V, T](it : IntMap[V]) extends AbstractIterator[T] {
 
   // Basically this uses a simple stack to emulate conversion over the tree. However
   // because we know that Ints are at least 32 bits we can have at most 32 IntMap.Bins and
@@ -155,7 +155,11 @@ import IntMap._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap[T]] {
+sealed abstract class IntMap[+T]
+extends AbstractMap[Int, T]
+   with Map[Int, T]
+   with MapLike[Int, T, IntMap[T]] {
+
   override def empty: IntMap[T] = IntMap.Nil;
 
   override def toList = {

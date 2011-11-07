@@ -159,7 +159,7 @@ self =>
 
   /** The implementation class of the set returned by `keySet`.
    */
-  protected class DefaultKeySet extends Set[A] {
+  protected class DefaultKeySet extends AbstractSet[A] {
     def contains(key : A) = self.contains(key)
     def iterator = keysIterator
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
@@ -172,7 +172,7 @@ self =>
    *
    *  @return an iterator over all keys.
    */
-  def keysIterator: Iterator[A] = new Iterator[A] {
+  def keysIterator: Iterator[A] = new AbstractIterator[A] {
     val iter = self.iterator
     def hasNext = iter.hasNext
     def next() = iter.next._1
@@ -194,7 +194,7 @@ self =>
 
   /** The implementation class of the iterable returned by `values`.
    */
-  protected class DefaultValuesIterable extends Iterable[B] {
+  protected class DefaultValuesIterable extends AbstractIterable[B] {
     def iterator = valuesIterator
     override def size = self.size
     override def foreach[C](f: B => C) = self.valuesIterator foreach f
@@ -204,7 +204,7 @@ self =>
    *
    *  @return an iterator over all values that are associated with some key in this map.
    */
-  def valuesIterator: Iterator[B] = new Iterator[B] {
+  def valuesIterator: Iterator[B] = new AbstractIterator[B] {
     val iter = self.iterator
     def hasNext = iter.hasNext
     def next() = iter.next._2
@@ -226,7 +226,7 @@ self =>
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
-  def filterKeys(p: A => Boolean): Map[A, B] = new DefaultMap[A, B] {
+  def filterKeys(p: A => Boolean): Map[A, B] = new AbstractMap[A, B] with DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def iterator = self.iterator.filter(kv => p(kv._1))
     override def contains(key: A) = self.contains(key) && p(key)
@@ -238,7 +238,7 @@ self =>
    *  @return a map view which maps every key of this map
    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
    */
-  def mapValues[C](f: B => C): Map[A, C] = new DefaultMap[A, C] {
+  def mapValues[C](f: B => C): Map[A, C] = new AbstractMap[A, C] with DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
     def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
     override def size = self.size

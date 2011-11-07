@@ -34,7 +34,8 @@ import annotation.{migration, bridge}
  */
 @cloneable
 class PriorityQueue[A](implicit val ord: Ordering[A])
-      extends Iterable[A]
+   extends AbstractIterable[A]
+      with Iterable[A]
       with GenericOrderedTraversableTemplate[A, PriorityQueue]
       with IterableLike[A, PriorityQueue[A]]
       with Growable[A]
@@ -43,7 +44,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
 {
   import ord._
 
-  private final class ResizableArrayAccess[A] extends ResizableArray[A] {
+  private final class ResizableArrayAccess[A] extends AbstractSeq[A] with ResizableArray[A] {
     @inline def p_size0 = size0
     @inline def p_size0_=(s: Int) = size0 = s
     @inline def p_array = array
@@ -169,7 +170,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *
    *  @return  an iterator over all elements sorted in descending order.
    */
-  override def iterator: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new AbstractIterator[A] {
     private var i = 1
     def hasNext: Boolean = i < resarr.p_size0
     def next(): A = {
@@ -201,7 +202,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
     revq
   }
 
-  def reverseIterator = new Iterator[A] {
+  def reverseIterator: Iterator[A] = new AbstractIterator[A] {
     private var i = resarr.p_size0 - 1
     def hasNext: Boolean = i >= 1
     def next(): A = {

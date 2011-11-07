@@ -63,7 +63,8 @@ object ListSet extends ImmutableSetFactory[ListSet] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class ListSet[A] extends Set[A]
+class ListSet[A] extends AbstractSet[A]
+                    with Set[A]
                     with GenericSetTemplate[A, ListSet]
                     with SetLike[A, ListSet[A]]
                     with Serializable{ self =>
@@ -112,7 +113,7 @@ class ListSet[A] extends Set[A]
    *  @throws Predef.NoSuchElementException
    *  @return the new iterator
    */
-  def iterator: Iterator[A] = new Iterator[A] {
+  def iterator: Iterator[A] = new AbstractIterator[A] {
     var that: ListSet[A] = self
     def hasNext = that.nonEmpty
     def next: A =

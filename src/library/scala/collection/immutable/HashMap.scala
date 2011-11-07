@@ -31,7 +31,8 @@ import parallel.immutable.ParHashMap
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(2L)
-class HashMap[A, +B] extends Map[A,B]
+class HashMap[A, +B] extends AbstractMap[A, B]
+                        with Map[A, B]
                         with MapLike[A, B, HashMap[A, B]]
                         with Serializable
                         with CustomParallelizable[(A, B), ParHashMap[A, B]]

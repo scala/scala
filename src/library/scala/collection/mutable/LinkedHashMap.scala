@@ -45,7 +45,8 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
  *  @define orderDependentFold
  */
 @SerialVersionUID(1L)
-class LinkedHashMap[A, B] extends Map[A, B]
+class LinkedHashMap[A, B] extends AbstractMap[A, B]
+                             with Map[A, B]
                              with MapLike[A, B, LinkedHashMap[A, B]]
                              with HashTable[A, LinkedEntry[A, B]]
                              with Serializable {
@@ -99,7 +100,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
   def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
   def -=(key: A): this.type = { remove(key); this }
 
-  def iterator: Iterator[(A, B)] = new Iterator[(A, B)] {
+  def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next =
@@ -107,7 +108,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
       else Iterator.empty.next
   }
 
-  override def keysIterator: Iterator[A] = new Iterator[A] {
+  override def keysIterator: Iterator[A] = new AbstractIterator[A] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next =
@@ -115,7 +116,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
       else Iterator.empty.next
   }
 
-  override def valuesIterator: Iterator[B] = new Iterator[B] {
+  override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next =

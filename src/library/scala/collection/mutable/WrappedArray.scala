@@ -31,7 +31,8 @@ import scala.collection.parallel.mutable.ParArray
  *  @define willNotTerminateInf
  */
 abstract class WrappedArray[T]
-extends IndexedSeq[T]
+extends AbstractSeq[T]
+    with IndexedSeq[T]
     with ArrayLike[T, WrappedArray[T]]
     with CustomParallelizable[T, ParArray[T]]
 {

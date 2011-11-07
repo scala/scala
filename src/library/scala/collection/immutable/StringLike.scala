@@ -106,7 +106,7 @@ self =>
    *  - `LF` - line feed   (`0x0A` hex)
    *  - `FF` - form feed   (`0x0C` hex)
    */
-  def linesWithSeparators: Iterator[String] = new Iterator[String] {
+  def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
     val str = self.toString
     private val len = str.length
     private var index = 0

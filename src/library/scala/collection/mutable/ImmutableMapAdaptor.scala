@@ -25,7 +25,9 @@ import annotation.migration
  *  @since   1
  */
 class ImmutableMapAdaptor[A, B](protected var imap: immutable.Map[A, B])
-extends Map[A, B] with Serializable
+extends AbstractMap[A, B]
+   with Map[A, B]
+   with Serializable
 {
 
   override def size: Int = imap.size

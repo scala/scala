@@ -163,7 +163,7 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
     else None
   }
 
-  override def iterator: Iterator[A] = new Iterator[A] {
+  override def iterator: Iterator[A] = new AbstractIterator[A] {
     var elems = self
     def hasNext = elems.nonEmpty
     def next = {

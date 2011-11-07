@@ -43,7 +43,8 @@ object Stack extends SeqFactory[Stack] {
  */
 @SerialVersionUID(1976480595012942526L)
 class Stack[+A] protected (protected val elems: List[A])
-                    extends LinearSeq[A]
+                 extends AbstractSeq[A]
+                    with LinearSeq[A]
                     with GenericTraversableTemplate[A, Stack]
                     with LinearSeqOptimized[A, Stack[A]]
                     with Serializable {

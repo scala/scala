@@ -47,7 +47,7 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
   override protected[this] def toCollection(repr: Repr): LinearSeq[A] = repr.asInstanceOf[LinearSeq[A]]
 
   override /*IterableLike*/
-  def iterator: Iterator[A] = new Iterator[A] {
+  def iterator: Iterator[A] = new AbstractIterator[A] {
     var these = self
     def hasNext: Boolean = !these.isEmpty
     def next(): A =

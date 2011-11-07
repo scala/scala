@@ -42,3 +42,6 @@ object Seq extends SeqFactory[Seq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
 }
+
+/** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
+private[scala] abstract class AbstractSeq[A] extends scala.collection.AbstractSeq[A] with Seq[A]

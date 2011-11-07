@@ -107,6 +107,9 @@ trait TraversableViewLike[+A,
     override def toString = viewToString
   }
 
+  /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
+  private[collection] abstract class AbstractTransformed[+B] extends Transformed[B]
+
   trait EmptyView extends Transformed[Nothing] with super.EmptyView
 
   /** A fall back which forces everything into a vector and then applies an operation
@@ -155,14 +158,14 @@ trait TraversableViewLike[+A,
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
-  protected def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
-  protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with Mapped[B]
-  protected def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
-  protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with Filtered
-  protected def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
-  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
-  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
+  protected def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
+  protected def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
+  protected def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
+  protected def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
+  protected def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
+  protected def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with AbstractTransformed[A] with Sliced
+  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
+  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
 
   protected def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
   protected def newDropped(n: Int): Transformed[A] = newSliced(SliceInterval(n, Int.MaxValue))

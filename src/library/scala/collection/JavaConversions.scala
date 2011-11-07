@@ -524,12 +524,12 @@ object JavaConversions {
     def asJava = new IteratorWrapper(underlying)
   }
 
-  case class JIteratorWrapper[A](underlying: ju.Iterator[A]) extends Iterator[A] {
+  case class JIteratorWrapper[A](underlying: ju.Iterator[A]) extends AbstractIterator[A] with Iterator[A] {
     def hasNext = underlying.hasNext
     def next() = underlying.next
   }
 
-  case class JEnumerationWrapper[A](underlying: ju.Enumeration[A]) extends Iterator[A] {
+  case class JEnumerationWrapper[A](underlying: ju.Enumeration[A]) extends AbstractIterator[A] with Iterator[A] {
     def hasNext = underlying.hasMoreElements
     def next() = underlying.nextElement
   }
@@ -538,12 +538,12 @@ object JavaConversions {
                 extends ju.AbstractCollection[A]
                    with IterableWrapperTrait[A] { }
 
-  case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends Iterable[A] {
+  case class JIterableWrapper[A](underlying: jl.Iterable[A]) extends AbstractIterable[A] with Iterable[A] {
     def iterator = underlying.iterator
     def newBuilder[B] = new mutable.ArrayBuffer[B]
   }
 
-  case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends Iterable[A] {
+  case class JCollectionWrapper[A](underlying: ju.Collection[A]) extends AbstractIterable[A] with Iterable[A] {
     def iterator = underlying.iterator
     override def size = underlying.size
     override def isEmpty = underlying.isEmpty
@@ -572,7 +572,7 @@ object JavaConversions {
     override def remove(i: Int) = underlying remove i
   }
 
-  case class JListWrapper[A](val underlying: ju.List[A]) extends mutable.Buffer[A] {
+  case class JListWrapper[A](val underlying: ju.List[A]) extends mutable.AbstractBuffer[A] with mutable.Buffer[A] {
     def length = underlying.size
     override def isEmpty = underlying.isEmpty
     override def iterator: Iterator[A] = underlying.iterator
@@ -625,7 +625,10 @@ object JavaConversions {
   }
 
   case class JSetWrapper[A](underlying: ju.Set[A])
-  extends mutable.Set[A] with mutable.SetLike[A, JSetWrapper[A]] {
+  extends mutable.AbstractSet[A]
+     with mutable.Set[A]
+     with mutable.SetLike[A, JSetWrapper[A]] {
+
     override def size = underlying.size
 
     def iterator = underlying.iterator
@@ -746,7 +749,7 @@ object JavaConversions {
       if (r != null) Some(r) else None
     }
 
-    def iterator = new Iterator[(A, B)] {
+    def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
       def next() = { val e = ui.next(); (e.getKey, e.getValue) }
@@ -758,7 +761,10 @@ object JavaConversions {
   }
 
   case class JMapWrapper[A, B](val underlying : ju.Map[A, B])
-  extends JMapWrapperLike[A, B, JMapWrapper[A, B]] {
+  extends mutable.AbstractMap[A, B]
+     with mutable.Map[A, B]
+     with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
+
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
@@ -786,7 +792,11 @@ object JavaConversions {
   }
 
   case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B])
-  extends JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with mutable.ConcurrentMap[A, B] {
+  extends mutable.AbstractMap[A, B]
+     with mutable.Map[A, B]
+     with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]]
+     with mutable.ConcurrentMap[A, B] {
+
     override def get(k: A) = {
       val v = underlying get k
       if (v != null) Some(v)
@@ -840,7 +850,8 @@ object JavaConversions {
   }
 
   case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B])
-  extends mutable.Map[A, B] {
+  extends mutable.AbstractMap[A, B]
+     with mutable.Map[A, B] {
 
     override def size: Int = underlying.size
 
@@ -870,7 +881,10 @@ object JavaConversions {
   }
 
   case class JPropertiesWrapper(underlying: ju.Properties)
-  extends mutable.Map[String, String] with mutable.MapLike[String, String, JPropertiesWrapper] {
+  extends mutable.AbstractMap[String, String]
+     with mutable.Map[String, String]
+     with mutable.MapLike[String, String, JPropertiesWrapper] {
+
     override def size = underlying.size
 
     def get(k: String) = {
@@ -893,7 +907,7 @@ object JavaConversions {
       if (r != null) Some(r.asInstanceOf[String]) else None
     }
 
-    def iterator = new Iterator[(String, String)] {
+    def iterator: Iterator[(String, String)] = new AbstractIterator[(String, String)] {
       val ui = underlying.entrySet.iterator
       def hasNext = ui.hasNext
       def next() = {

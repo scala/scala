@@ -38,7 +38,7 @@ trait ArrayLike[A, +Repr] extends IndexedSeqOptimized[A, Repr] { self =>
    *
    *  @return    An possibly nested indexed sequence of consisting of all the elements of the array.
    */
-  def deep: scala.collection.IndexedSeq[Any] = new scala.collection.IndexedSeq[Any] {
+  def deep: scala.collection.IndexedSeq[Any] = new scala.collection.AbstractSeq[Any] with scala.collection.IndexedSeq[Any] {
     def length = self.length
     def apply(idx: Int): Any = self.apply(idx) match {
       case x: AnyRef if x.getClass.isArray => WrappedArray.make(x).deep

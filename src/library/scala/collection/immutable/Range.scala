@@ -41,7 +41,8 @@ import annotation.bridge
  */
 @SerialVersionUID(7618862778670199309L)
 class Range(val start: Int, val end: Int, val step: Int)
-extends IndexedSeq[Int]
+extends collection.AbstractSeq[Int]
+   with IndexedSeq[Int]
    with collection.CustomParallelizable[Int, ParRange]
    with Serializable
 {

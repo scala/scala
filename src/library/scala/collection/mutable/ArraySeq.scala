@@ -41,7 +41,8 @@ import parallel.mutable.ParArray
  */
 @SerialVersionUID(1530165946227428979L)
 class ArraySeq[A](override val length: Int)
-extends IndexedSeq[A]
+extends AbstractSeq[A]
+   with IndexedSeq[A]
    with GenericTraversableTemplate[A, ArraySeq]
    with IndexedSeqOptimized[A, ArraySeq[A]]
    with CustomParallelizable[A, ParArray[A]]

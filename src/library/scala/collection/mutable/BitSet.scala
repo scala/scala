@@ -33,7 +33,8 @@ import BitSetLike.{LogWL, updateArray}
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(8483111450368547763L)
-class BitSet(protected var elems: Array[Long]) extends Set[Int]
+class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
+                                                  with Set[Int]
                                                   with scala.collection.BitSet
                                                   with BitSetLike[BitSet]
                                                   with SetLike[Int, BitSet]

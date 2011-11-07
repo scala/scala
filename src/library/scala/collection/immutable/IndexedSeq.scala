@@ -31,7 +31,7 @@ trait IndexedSeq[+A] extends Seq[A]
  *  @define Coll IndexedSeq
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
-  class Impl[A](buf: ArrayBuffer[A]) extends IndexedSeq[A] with Serializable {
+  class Impl[A](buf: ArrayBuffer[A]) extends AbstractSeq[A] with IndexedSeq[A] with Serializable {
     def length = buf.length
     def apply(idx: Int) = buf.apply(idx)
   }

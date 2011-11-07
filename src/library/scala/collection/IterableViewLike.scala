@@ -42,6 +42,9 @@ trait IterableViewLike[+A,
     override def toString = viewToString
   }
 
+  /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
+  private[collection] abstract class AbstractTransformed[+B] extends super[TraversableViewLike].Transformed[B] with Transformed[B]
+
   trait EmptyView extends Transformed[Nothing] with super[TraversableViewLike].EmptyView with super[GenIterableViewLike].EmptyView
 
   trait Forced[B] extends super[TraversableViewLike].Forced[B] with super[GenIterableViewLike].Forced[B] with Transformed[B]
@@ -69,20 +72,20 @@ trait IterableViewLike[+A,
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
-  protected def newZipped[B](that: GenIterable[B]): Transformed[(A, B)] = new { val other = that } with Zipped[B]
+  protected def newZipped[B](that: GenIterable[B]): Transformed[(A, B)] = new { val other = that } with AbstractTransformed[(A, B)] with Zipped[B]
   protected def newZippedAll[A1 >: A, B](that: GenIterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new {
     val other: GenIterable[B] = that
     val thisElem = _thisElem
     val thatElem = _thatElem
-  } with ZippedAll[A1, B]
-  protected override def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with Forced[B]
-  protected override def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with Appended[B]
-  protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with Mapped[B]
-  protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with FlatMapped[B]
-  protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with Filtered
-  protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with Sliced
-  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with DroppedWhile
-  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with TakenWhile
+  } with AbstractTransformed[(A1, B)] with ZippedAll[A1, B]
+  protected override def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
+  protected override def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
+  protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
+  protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
+  protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
+  protected override def newSliced(_endpoints: SliceInterval): Transformed[A] = new { val endpoints = _endpoints } with AbstractTransformed[A] with Sliced
+  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with DroppedWhile
+  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with TakenWhile
 
   // After adding take and drop overrides to IterableLike, these overrides (which do nothing
   // but duplicate the implementation in TraversableViewLike) had to be added to prevent the

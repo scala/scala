@@ -8,6 +8,7 @@
 
 package scala.collection.mutable
 
+import collection.AbstractIterator
 import collection.Iterator
 import collection.generic._
 import annotation.tailrec
@@ -41,7 +42,8 @@ import annotation.tailrec
  */
 @SerialVersionUID(1L)
 class UnrolledBuffer[T](implicit val manifest: ClassManifest[T])
-extends collection.mutable.Buffer[T]
+extends collection.mutable.AbstractBuffer[T]
+   with collection.mutable.Buffer[T]
    with collection.mutable.BufferLike[T, UnrolledBuffer[T]]
    with GenericClassManifestTraversableTemplate[T, UnrolledBuffer]
    with collection.mutable.Builder[T, UnrolledBuffer[T]]
@@ -102,7 +104,7 @@ extends collection.mutable.Buffer[T]
     sz = 0
   }
 
-  def iterator = new Iterator[T] {
+  def iterator: Iterator[T] = new AbstractIterator[T] {
     var pos: Int = -1
     var node: Unrolled[T] = headptr
     scan()

@@ -38,7 +38,8 @@ import generic._
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(-8144992287952814767L)
-class DoubleLinkedList[A]() extends LinearSeq[A]
+class DoubleLinkedList[A]() extends AbstractSeq[A]
+                            with LinearSeq[A]
                             with GenericTraversableTemplate[A, DoubleLinkedList]
                             with DoubleLinkedListLike[A, DoubleLinkedList[A]]
                             with Serializable {

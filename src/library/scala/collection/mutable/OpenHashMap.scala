@@ -48,7 +48,8 @@ object OpenHashMap {
  *  @define willNotTerminateInf
  */
 class OpenHashMap[Key, Value](initialSize : Int)
-extends Map[Key, Value]
+extends AbstractMap[Key, Value]
+   with Map[Key, Value]
    with MapLike[Key, Value, OpenHashMap[Key, Value]] {
 
   import OpenHashMap.OpenEntry
@@ -175,7 +176,7 @@ extends Map[Key, Value]
    *
    *  @return   the iterator
    */
-  def iterator = new Iterator[(Key, Value)]{
+  def iterator: Iterator[(Key, Value)] = new AbstractIterator[(Key, Value)] {
     var index = 0
     val initialModCount = modCount
 

@@ -53,7 +53,8 @@ object Stack extends SeqFactory[Stack] {
  */
 @cloneable
 class Stack[A] private (var elems: List[A])
-extends Seq[A]
+extends AbstractSeq[A]
+   with Seq[A]
    with SeqLike[A, Stack[A]]
    with GenericTraversableTemplate[A, Stack]
    with Cloneable[Stack[A]]

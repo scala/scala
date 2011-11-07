@@ -24,7 +24,8 @@ import immutable.StringLike
  */
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(private val underlying: JavaStringBuilder)
-      extends java.lang.CharSequence
+      extends AbstractSeq[Char]
+         with java.lang.CharSequence
          with IndexedSeq[Char]
          with StringLike[StringBuilder]
          with Builder[Char, String]

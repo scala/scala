@@ -28,7 +28,7 @@ import mutable.{Builder, StringBuilder}
  *  @define Coll WrappedString
  *  @define coll wrapped string
  */
-class WrappedString(val self: String) extends IndexedSeq[Char] with StringLike[WrappedString] {
+class WrappedString(val self: String) extends AbstractSeq[Char] with IndexedSeq[Char] with StringLike[WrappedString] {
 
   override protected[this] def thisCollection: WrappedString = this
   override protected[this] def toCollection(repr: WrappedString): WrappedString = repr
