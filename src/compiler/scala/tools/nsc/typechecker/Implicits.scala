@@ -305,7 +305,7 @@ trait Implicits {
         case NoPrefix =>
           0
         case SingleType(pre, sym) =>
-          if (sym.isPackage) 0 else complexity(tp.widen)
+          if (sym.isPackage) 0 else complexity(tp.normalize.widen)
         case TypeRef(pre, sym, args) =>
           complexity(pre) + sum(args map complexity) + 1
         case RefinedType(parents, _) =>
