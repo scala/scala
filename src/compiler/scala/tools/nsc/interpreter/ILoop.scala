@@ -107,23 +107,24 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   class ILoopInterpreter extends IMain(settings, out) {
     outer =>
 
+    private class ThreadStoppingLineManager extends Line.Manager(parentClassLoader) {
+      override def onRunaway(line: Line[_]): Unit = {
+        val template = """
+          |// She's gone rogue, captain! Have to take her out!
+          |// Calling Thread.stop on runaway %s with offending code:
+          |// scala> %s""".stripMargin
+
+        echo(template.format(line.thread, line.code))
+        // XXX no way to suppress the deprecation warning
+        line.thread.stop()
+        in.redrawLine()
+      }
+    }
     override lazy val formatting = new Formatting {
       def prompt = ILoop.this.prompt
     }
     override protected def createLineManager(): Line.Manager =
-      if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager(parentClassLoader) {
-        override def onRunaway(line: Line[_]): Unit = {
-          val template = """
-            |// She's gone rogue, captain! Have to take her out!
-            |// Calling Thread.stop on runaway %s with offending code:
-            |// scala> %s""".stripMargin
-
-          echo(template.format(line.thread, line.code))
-          // XXX no way to suppress the deprecation warning
-          line.thread.stop()
-          in.redrawLine()
-        }
-      }
+      new ThreadStoppingLineManager
 
     override protected def parentClassLoader =
       settings.explicitParentLoader.getOrElse( classOf[ILoop].getClassLoader )

@@ -24,13 +24,15 @@ abstract class DirectTest extends App {
   def testOutput = io.Directory(sys.props("partest.output"))
 
   // override to add additional settings with strings
-  def extraSettings: String = ""
+  def extraSettings = ""
   // a default Settings object
   def settings: Settings = newSettings(extraSettings)
   // a custom Settings object
   def newSettings(argString: String) = {
     val s = new Settings
-    s processArgumentString (argString + " " + debugSettings)
+    val args = argString + " " + debugSettings
+    log("newSettings: args = '" + args + "'")
+    s processArgumentString args
     s
   }
   // compile the code, optionally first adding to the settings
@@ -46,8 +48,10 @@ abstract class DirectTest extends App {
   catch { case t => println(t) ; sys.exit(1) }
 
   /** Debugger interest only below this line **/
-  protected val isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")
+  protected def isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")
   protected def debugSettings = sys.props.getOrElse("partest.debug.settings", "")
 
-  final def log(msg: => Any) { if (isDebug) Console println msg }
+  final def log(msg: => Any) {
+    if (isDebug) Console.err println msg
+  }
 }

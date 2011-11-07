@@ -22,6 +22,10 @@ abstract class ReplTest extends DirectTest {
     s.Xnojline.value = true
     transformSettings(s)
   }
-  def eval() = ILoop.runForTranscript(code, settings).lines drop 1
+  def eval() = {
+    val s = settings
+    log("eval(): settings = " + s)
+    ILoop.runForTranscript(code, s).lines drop 1
+  }
   def show() = eval() foreach println
 }

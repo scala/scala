@@ -8,6 +8,7 @@ package interpreter
 
 import Predef.{ println => _, _ }
 import util.{ Set => _, _ }
+import java.net.URL
 import scala.sys.BooleanProp
 import io.VirtualDirectory
 import scala.tools.nsc.io.AbstractFile
@@ -21,6 +22,19 @@ import Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
 import scala.util.control.Exception.{ ultimately }
 import IMain._
+import java.util.concurrent.Future
+
+/** directory to save .class files to */
+private class ReplVirtualDirectory(out: JPrintWriter) extends VirtualDirectory("(memory)", None) {
+  private def pp(root: AbstractFile, indentLevel: Int) {
+    val spaces = "    " * indentLevel
+    out.println(spaces + root.name)
+    if (root.isDirectory)
+      root.toList sortBy (_.name) foreach (x => pp(x, indentLevel + 1))
+  }
+  // print the contents hierarchically
+  def show() = pp(this, 0)
+}
 
 /** An interpreter for Scala code.
  *
@@ -57,16 +71,32 @@ import IMain._
 class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports {
   imain =>
 
+  /** Leading with the eagerly evaluated.
+   */
+  val virtualDirectory: VirtualDirectory            = new ReplVirtualDirectory(out) // "directory" for classfiles
   private var currentSettings: Settings             = initialSettings
   private[nsc] var printResults                     = true      // whether to print result lines
   private[nsc] var totalSilence                     = false     // whether to print anything
   private var _initializeComplete                   = false     // compiler is initialized
-  private var _classLoader: AbstractFileClassLoader = null      // active classloader
-  private var _isInitialized: () => Boolean         = null      // set up initialization future
+  private var _isInitialized: Future[Boolean]       = null      // set up initialization future
   private var bindExceptions                        = true      // whether to bind the lastException variable
   private var _executionWrapper                     = ""        // code to be wrapped around all lines
-  private var _lineManager: Line.Manager            = createLineManager()
 
+  /** We're going to go to some trouble to initialize the compiler asynchronously.
+   *  It's critical that nothing call into it until it's been initialized or we will
+   *  run into unrecoverable issues, but the perceived repl startup time goes
+   *  through the roof if we wait for it.  So we initialize it with a future and
+   *  use a lazy val to ensure that any attempt to use the compiler object waits
+   *  on the future.
+   */
+  private var _classLoader: AbstractFileClassLoader = null                              // active classloader
+  private var _lineManager: Line.Manager            = null                              // logic for individual lines
+  private val _compiler: Global                     = newCompiler(settings, reporter)   // our private compiler
+
+  def compilerClasspath: Seq[URL] = (
+    if (isInitializeComplete) global.classPath.asURLs
+    else new PathResolver(settings).result.asURLs  // the compiler's classpath
+  )
   def settings = currentSettings
   def savingSettings[T](fn: Settings => Unit)(body: => T): T = {
     val saved = currentSettings
@@ -108,29 +138,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   import formatting._
   import reporter.{ printMessage, withoutTruncating }
 
-  /** directory to save .class files to */
-  val virtualDirectory = new VirtualDirectory("(memory)", None) {
-    private def pp(root: io.AbstractFile, indentLevel: Int) {
-      val spaces = "    " * indentLevel
-      out.println(spaces + root.name)
-      if (root.isDirectory)
-        root.toList sortBy (_.name) foreach (x => pp(x, indentLevel + 1))
-    }
-    // print the contents hierarchically
-    def show() = pp(this, 0)
-  }
-
   // This exists mostly because using the reporter too early leads to deadlock.
   private def echo(msg: String) { Console println msg }
-
-  /** We're going to go to some trouble to initialize the compiler asynchronously.
-   *  It's critical that nothing call into it until it's been initialized or we will
-   *  run into unrecoverable issues, but the perceived repl startup time goes
-   *  through the roof if we wait for it.  So we initialize it with a future and
-   *  use a lazy val to ensure that any attempt to use the compiler object waits
-   *  on the future.
-   */
-  private val _compiler: Global = newCompiler(settings, reporter)
   private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
   private def _initialize() = {
     try {
@@ -141,13 +150,15 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     catch AbstractOrMissingHandler()
   }
   // argument is a thunk to execute after init is done
-  def initialize(postInitSignal: => Unit): Unit = synchronized {
-    if (_isInitialized == null)
-      _isInitialized = scala.concurrent.ops future {
-        val result = _initialize()
-        postInitSignal
-        result
+  def initialize(postInitSignal: => Unit) {
+    synchronized {
+      if (_isInitialized == null) {
+        _isInitialized = io.spawn {
+          try _initialize()
+          finally postInitSignal
+        }
       }
+    }
   }
   def initializeSynchronous(): Unit = {
     if (!isInitializeComplete) {
@@ -167,7 +178,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         initialize(())
       }
       // blocks until it is ; false means catastrophic failure
-      if (_isInitialized()) _compiler
+      if (_isInitialized.get()) _compiler
       else null
     }
   }
@@ -241,17 +252,14 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def executionWrapper = _executionWrapper
   def setExecutionWrapper(code: String) = _executionWrapper = code
   def clearExecutionWrapper() = _executionWrapper = ""
-
   def lineManager = _lineManager
 
   /** interpreter settings */
   lazy val isettings = new ISettings(this)
 
   /** Create a line manager.  Overridable.  */
-  protected def createLineManager(): Line.Manager =
-    createLineManager(classLoader)
-  protected def createLineManager(loader: ClassLoader): Line.Manager =
-    if (ReplPropsKludge.noThreadCreation(settings)) null else new Line.Manager(loader)
+  protected def noLineManager = ReplPropsKludge.noThreadCreation(settings)
+  protected def createLineManager(): Line.Manager = new Line.Manager(_classLoader)
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -264,9 +272,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   /** Parent classloader.  Overridable. */
   protected def parentClassLoader: ClassLoader =
     settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
-
-  /** the compiler's classpath, as URL's */
-  lazy val compilerClasspath = global.classPath.asURLs
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command
@@ -283,39 +288,42 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   */
   def resetClassLoader() = {
     repldbg("Setting new classloader: was " + _classLoader)
-    _classLoader = makeClassLoader()
-    _lineManager = createLineManager(_classLoader)
+    _classLoader = null
+    ensureClassLoader()
+  }
+  final def ensureClassLoader() {
+    if (_classLoader == null) {
+      _classLoader = makeClassLoader()
+      _lineManager = if (noLineManager) null else createLineManager()
+    }
   }
   def classLoader: AbstractFileClassLoader = {
-    if (_classLoader == null)
-      resetClassLoader()
-
+    ensureClassLoader()
     _classLoader
   }
-  private def makeClassLoader(): AbstractFileClassLoader = {
-    val parent =
-      if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
-      else                            new URLClassLoader(compilerClasspath, parentClassLoader)
+  private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(virtualDirectory, parent) {
+    private[IMain] var traceClassLoading = isReplTrace
+    override protected def trace = super.trace || traceClassLoading
 
-    new AbstractFileClassLoader(virtualDirectory, parent) {
-      private[IMain] var traceClassLoading = isReplTrace
-      override protected def trace = traceClassLoading
-
-      /** Overridden here to try translating a simple name to the generated
-       *  class name if the original attempt fails.  This method is used by
-       *  getResourceAsStream as well as findClass.
-       */
-      override protected def findAbstractFile(name: String): AbstractFile = {
-        super.findAbstractFile(name) match {
-          // deadlocks on startup if we try to translate names too early
-          case null if isInitializeComplete =>
-            generatedName(name) map (x => super.findAbstractFile(x)) orNull
-          case file                         =>
-            file
-        }
+    /** Overridden here to try translating a simple name to the generated
+     *  class name if the original attempt fails.  This method is used by
+     *  getResourceAsStream as well as findClass.
+     */
+    override protected def findAbstractFile(name: String): AbstractFile = {
+      super.findAbstractFile(name) match {
+        // deadlocks on startup if we try to translate names too early
+        case null if isInitializeComplete =>
+          generatedName(name) map (x => super.findAbstractFile(x)) orNull
+        case file                         =>
+          file
       }
     }
   }
+  private def makeClassLoader(): AbstractFileClassLoader =
+    new TranslatingClassLoader(parentClassLoader match {
+      case null   => ScalaClassLoader fromURLs compilerClasspath
+      case p      => new URLClassLoader(compilerClasspath, p)
+    })
 
   def getInterpreterClassLoader() = classLoader
 
