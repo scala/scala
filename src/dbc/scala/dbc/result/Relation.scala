@@ -14,7 +14,9 @@ package result
 
 /** An ISO-9075:2003 (SQL) table. This is equivalent to a relation in the
  * relational model. */
-@deprecated(DbcIsDeprecated, "2.9.0") abstract class Relation extends AnyRef with Iterable[Tuple] {
+@deprecated(DbcIsDeprecated, "2.9.0") abstract class Relation
+extends collection.AbstractIterable[Tuple]
+   with Iterable[Tuple] {
 
   /** The statement that generated this relation. */
   def statement: scala.dbc.statement.Relation
@@ -56,7 +58,7 @@ package result
    * <h3>Caution</h3> A Relation only has one single iterator, due to limitations
    * in DBMS. This means that if this method is called multiple times, all returned
    * iterators will share the same state. */
-  def iterator: Iterator[Tuple] = new Iterator[Tuple] {
+  def iterator: Iterator[Tuple] = new collection.AbstractIterator[Tuple] {
     protected val result: java.sql.ResultSet = Relation.this.sqlResult
     def hasNext: Boolean = resultNext
     private var resultNext = result.next()

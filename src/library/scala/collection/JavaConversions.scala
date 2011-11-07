@@ -761,10 +761,7 @@ object JavaConversions {
   }
 
   case class JMapWrapper[A, B](val underlying : ju.Map[A, B])
-  extends mutable.AbstractMap[A, B]
-     with mutable.Map[A, B]
-     with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
-
+  extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
@@ -792,11 +789,7 @@ object JavaConversions {
   }
 
   case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B])
-  extends mutable.AbstractMap[A, B]
-     with mutable.Map[A, B]
-     with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]]
-     with mutable.ConcurrentMap[A, B] {
-
+  extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with mutable.ConcurrentMap[A, B] {
     override def get(k: A) = {
       val v = underlying get k
       if (v != null) Some(v)
@@ -850,9 +843,7 @@ object JavaConversions {
   }
 
   case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B])
-  extends mutable.AbstractMap[A, B]
-     with mutable.Map[A, B] {
-
+  extends mutable.AbstractMap[A, B] with mutable.Map[A, B] {
     override def size: Int = underlying.size
 
     def get(k: A) = {

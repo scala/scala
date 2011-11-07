@@ -23,7 +23,10 @@ import java.security.AccessControlException
  *  @version 2.9
  *  @since   2.9
  */
-class SystemProperties extends mutable.Map[String, String] {
+class SystemProperties
+extends mutable.AbstractMap[String, String]
+   with mutable.Map[String, String] {
+
   override def empty = new SystemProperties
   override def default(key: String): String = null
 

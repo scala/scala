@@ -109,4 +109,4 @@ object Traversable extends TraversableFactory[Traversable] { self =>
 }
 
 /** Explicit instantiation of the `Traversable` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractTraversable[+T] extends Traversable[T]
+private[scala] abstract class AbstractTraversable[+A] extends Traversable[A]

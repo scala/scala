@@ -8,6 +8,7 @@
 
 package scala.util.parsing.ast
 
+import scala.collection.AbstractIterable
 import scala.collection.mutable
 
 //DISCLAIMER: this code is highly experimental!
@@ -83,7 +84,7 @@ trait Binders extends AbstractSyntax with Mappable {
    *  For example: `[x, y]!1` represents the scope with `id` `1` and binder elements `x` and `y`.
    *  (`id` is solely used for this textual representation.)
    */
-  class Scope[binderType <: NameElement] extends Iterable[binderType]{
+  class Scope[binderType <: NameElement] extends AbstractIterable[binderType] with Iterable[binderType] {
     private val substitution: mutable.Map[binderType, Element] =
       new mutable.LinkedHashMap[binderType, Element] // a LinkedHashMap is ordered by insertion order -- important!
 

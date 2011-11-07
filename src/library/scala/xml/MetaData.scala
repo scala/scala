@@ -10,7 +10,7 @@ package scala.xml
 
 import Utility.sbToString
 import annotation.tailrec
-import scala.collection.Iterator
+import scala.collection.{ AbstractIterable, Iterator }
 
 /**
  * Copyright 2008 Google Inc. All Rights Reserved.
@@ -72,7 +72,12 @@ object MetaData {
  *  Copyright 2008 Google Inc. All Rights Reserved.
  *  @author Burak Emir <bqe@google.com>
  */
-abstract class MetaData extends Iterable[MetaData] with Equality with Serializable {
+abstract class MetaData
+extends AbstractIterable[MetaData]
+   with Iterable[MetaData]
+   with Equality
+   with Serializable {
+
   /** Updates this MetaData with the MetaData given as argument. All attributes that occur in updates
    *  are part of the resulting MetaData. If an attribute occurs in both this instance and
    *  updates, only the one in updates is part of the result (avoiding duplicates). For prefixed

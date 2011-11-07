@@ -190,7 +190,7 @@ abstract class Source extends Iterator[Char] {
 
   private def lineNum(line: Int): String = getLines() drop (line - 1) take 1 mkString
 
-  class LineIterator() extends AbstractIterator[String] {
+  class LineIterator extends AbstractIterator[String] with Iterator[String] {
     private[this] val sb = new StringBuilder
 
     lazy val iter: BufferedIterator[Char] = Source.this.iter.buffered

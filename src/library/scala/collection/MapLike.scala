@@ -159,7 +159,7 @@ self =>
 
   /** The implementation class of the set returned by `keySet`.
    */
-  protected class DefaultKeySet extends AbstractSet[A] {
+  protected class DefaultKeySet extends AbstractSet[A] with Set[A] {
     def contains(key : A) = self.contains(key)
     def iterator = keysIterator
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
@@ -194,7 +194,7 @@ self =>
 
   /** The implementation class of the iterable returned by `values`.
    */
-  protected class DefaultValuesIterable extends AbstractIterable[B] {
+  protected class DefaultValuesIterable extends AbstractIterable[B] with Iterable[B] {
     def iterator = valuesIterator
     override def size = self.size
     override def foreach[C](f: B => C) = self.valuesIterator foreach f

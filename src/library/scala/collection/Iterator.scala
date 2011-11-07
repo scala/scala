@@ -822,7 +822,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *
    *  Typical uses can be achieved via methods `grouped` and `sliding`.
    */
-  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends AbstractIterator[Seq[B]] {
+  class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int)
+  extends AbstractIterator[Seq[B]]
+     with Iterator[Seq[B]] {
+
     require(size >= 1 && step >= 1, "size=%d and step=%d, but both must be positive".format(size, step))
 
     private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
@@ -1109,4 +1112,4 @@ trait Iterator[+A] extends TraversableOnce[A] {
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractIterator[+T] extends Iterator[T]
+private[scala] abstract class AbstractIterator[+A] extends Iterator[A]
