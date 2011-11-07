@@ -57,7 +57,16 @@ import IMain._
 class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends Imports {
   imain =>
 
-  private var currentSettings: Settings = initialSettings
+  private var currentSettings: Settings             = initialSettings
+  private[nsc] var printResults                     = true      // whether to print result lines
+  private[nsc] var totalSilence                     = false     // whether to print anything
+  private var _initializeComplete                   = false     // compiler is initialized
+  private var _classLoader: AbstractFileClassLoader = null      // active classloader
+  private var _isInitialized: () => Boolean         = null      // set up initialization future
+  private var bindExceptions                        = true      // whether to bind the lastException variable
+  private var _executionWrapper                     = ""        // code to be wrapped around all lines
+  private var _lineManager: Line.Manager            = createLineManager()
+
   def settings = currentSettings
   def savingSettings[T](fn: Settings => Unit)(body: => T): T = {
     val saved = currentSettings
@@ -99,9 +108,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   import formatting._
   import reporter.{ printMessage, withoutTruncating }
 
-  private[nsc] var printResults: Boolean = true   // whether to print result lines
-  private[nsc] var totalSilence: Boolean = false  // whether to print anything
-
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None) {
     private def pp(root: io.AbstractFile, indentLevel: Int) {
@@ -125,7 +131,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
    *  on the future.
    */
   private val _compiler: Global = newCompiler(settings, reporter)
-  private var _initializeComplete = false
   private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
   private def _initialize() = {
     try {
@@ -135,9 +140,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
     catch AbstractOrMissingHandler()
   }
-
-  // set up initialization future
-  private var _isInitialized: () => Boolean = null
   // argument is a thunk to execute after init is done
   def initialize(postInitSignal: => Unit): Unit = synchronized {
     if (_isInitialized == null)
@@ -226,8 +228,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def quietRun[T](code: String) = beQuietDuring(interpret(code))
 
-  /** whether to bind the lastException variable */
-  private var bindExceptions = true
   /** takes AnyRef because it may be binding a Throwable or an Exceptional */
   private def withLastExceptionLock[T](body: => T, alt: => T): T = {
     assert(bindExceptions, "withLastExceptionLock called incorrectly.")
@@ -238,13 +238,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     finally bindExceptions = true
   }
 
-  /** A string representing code to be wrapped around all lines. */
-  private var _executionWrapper: String = ""
   def executionWrapper = _executionWrapper
   def setExecutionWrapper(code: String) = _executionWrapper = code
   def clearExecutionWrapper() = _executionWrapper = ""
 
-  private var _lineManager: Line.Manager = createLineManager()
   def lineManager = _lineManager
 
   /** interpreter settings */
@@ -284,7 +281,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private var _classLoader: AbstractFileClassLoader = null
   def resetClassLoader() = {
     repldbg("Setting new classloader: was " + _classLoader)
     _classLoader = makeClassLoader()
