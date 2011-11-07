@@ -8,7 +8,7 @@
 
 package scala.xml
 
-import collection.{ mutable, immutable, generic, SeqLike }
+import collection.{ mutable, immutable, generic, SeqLike, AbstractSeq }
 import mutable.{ Builder, ListBuffer }
 import generic.{ CanBuildFrom }
 
@@ -38,7 +38,7 @@ object NodeSeq {
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] with Equality {
+abstract class NodeSeq extends AbstractSeq[Node] with immutable.Seq[Node] with SeqLike[Node, NodeSeq] with Equality {
   import NodeSeq.seqToNodeSeq // import view magic for NodeSeq wrappers
 
   /** Creates a list buffer as builder for this class */

@@ -10,7 +10,7 @@ package scala.io
 
 import java.io.{ InputStream, BufferedReader, InputStreamReader, PushbackReader }
 import Source.DefaultBufSize
-import scala.collection.Iterator
+import scala.collection.{ Iterator, AbstractIterator }
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -40,7 +40,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     map (_.toChar)
   )
 
-  class BufferedLineIterator extends Iterator[String] {
+  class BufferedLineIterator extends AbstractIterator[String] with Iterator[String] {
     // Don't want to lose a buffered char sitting in iter either. Yes,
     // this is ridiculous, but if I can't get rid of Source, and all the
     // Iterator bits are designed into Source, and people create Sources

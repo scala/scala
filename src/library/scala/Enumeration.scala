@@ -8,7 +8,7 @@
 
 package scala
 
-import scala.collection.{ mutable, immutable, generic, SetLike }
+import scala.collection.{ mutable, immutable, generic, SetLike, AbstractSet }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
 import scala.reflect.NameTransformer._
 import java.util.regex.Pattern
@@ -235,7 +235,11 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
    *
    *  @param ids The set of ids of values, organized as a `SortedSet`.
    */
-  class ValueSet private[Enumeration] (val ids: immutable.SortedSet[Int]) extends Set[Value] with SetLike[Value, ValueSet] {
+  class ValueSet private[Enumeration] (val ids: immutable.SortedSet[Int])
+  extends AbstractSet[Value]
+     with Set[Value]
+     with SetLike[Value, ValueSet] {
+
     override def empty = ValueSet.empty
     def contains(v: Value) = ids contains (v.id)
     def + (value: Value) = new ValueSet(ids + value.id)

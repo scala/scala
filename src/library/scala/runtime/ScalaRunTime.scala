@@ -8,7 +8,7 @@
 
 package scala.runtime
 
-import scala.collection.{ Seq, IndexedSeq, TraversableView }
+import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
@@ -178,7 +178,7 @@ object ScalaRunTime {
 
   /** A helper for case classes. */
   def typedProductIterator[T](x: Product): Iterator[T] = {
-    new Iterator[T] {
+    new AbstractIterator[T] {
       private var c: Int = 0
       private val cmax = x.productArity
       def hasNext = c < cmax

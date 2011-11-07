@@ -35,7 +35,7 @@ trait Product extends Equals {
   /** An iterator over all the elements of this product.
    *  @return     in the default implementation, an `Iterator[Any]`
    */
-  def productIterator: Iterator[Any] = new Iterator[Any] {
+  def productIterator: Iterator[Any] = new collection.AbstractIterator[Any] {
     private var c: Int = 0
     private val cmax = productArity
     def hasNext = c < cmax
