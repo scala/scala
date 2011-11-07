@@ -58,7 +58,7 @@ trait Compilation {
       }
 
       /**
-       * When we finishe to compile a step we want to jar if necessary in order to
+       * When we finishe to compile a step we want to jar if necessary in order to 
        * be able to load plugins for the associated library
        */
       def earlyPackaging(step: CompilationStep): Option[String] = step match {

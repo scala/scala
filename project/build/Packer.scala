@@ -7,14 +7,14 @@ import FileUtilities._
 
 
 object Packer {
-
+ 
   /**
    * A filter that exclude files that musn't be in a jar file.
    */
   // We must exclude the manifest because we generate it automatically, and when we add multiples other jars, they could have
   // also a manifest files each, resulting in conflicts for the FileUtilities.jar(..) method
   def jarPattern(path: PathFinder) = path.descendentsExcept(AllPassFilter, (".*" - ".") || HiddenFileFilter || new ExactFilter("MANIFEST.MF")).get
-
+  
   def createJar(j: Packaging, log: Logger): Option[String] = createJar(j.packagingConfig, log, jarPattern _, true)
   def createJar(j: PackagingConfiguration, log: Logger): Option[String] = createJar(j, log, jarPattern _, true)
 
@@ -26,7 +26,7 @@ object Packer {
     def pack0(content: Iterable[Path])= jar(content.flatMap(filter(_)), j.jarDestination, j.manifest, false, log)
 
     j.jarsToInclude match {
-      case Nil => pack0(j.content)
+      case Nil => pack0(j.content)      
       case list if addIncludedLibs => {
         withTemporaryDirectory(log) { tmp: File =>
            val tmpPath = Path.fromFile(tmp)
@@ -41,7 +41,7 @@ object Packer {
        }
       }
       case _ => pack0(j.content)
-
+      
     }
   }
 
@@ -53,9 +53,9 @@ object Packer {
  */
 trait Packer {
   self: BasicLayer =>
-
+  
   def libraryToCopy: List[Path] = Nil
-
+   
   /**
    * The actual pack task.
    */
@@ -72,7 +72,7 @@ trait Packer {
       }
 
      def copy0 ={
-       copyFile(manifestPath,packingDestination/"META-INF"/"MANIFEST.MF", log) orElse {
+       copyFile(manifestPath,packingDestination/"META-INF"/"MANIFEST.MF", log) orElse { 
        copy(libraryToCopy, packingDestination , true, true, log) match {
           case Right(_) => None
           case Left(e) => Some(e)
@@ -91,7 +91,7 @@ class PackagingConfiguration(val jarDestination: Path, val content: Iterable[Pat
 }
 
 trait Packaging extends Step {
-    def packagingConfig: PackagingConfiguration
+    def packagingConfig: PackagingConfiguration 
 }
 
 trait WrapperPackaging extends Packaging {
@@ -106,7 +106,7 @@ trait WrapperPackaging extends Packaging {
       }
     }
     getContent(dependencies.toList, Nil)
-  }
+  }  
 }
 
 /**

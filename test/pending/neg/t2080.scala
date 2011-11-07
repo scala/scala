@@ -14,4 +14,4 @@ object C extends B {
  }
  override def f(x : T) : T = { x.g; x }
 }
-//It compiles without errors, but T in B and T in C are completely unrelated types.
+//It compiles without errors, but T in B and T in C are completely unrelated types. 

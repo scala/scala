@@ -2,7 +2,7 @@
 // Reported by:   extempore   Owned by:   odersky
 // Priority:  normal  Component:  Compiler
 // Keywords:    Cc:   paulp@…
-// Fixed in version:
+// Fixed in version:  
 // Description
 
 scala> def foo() = { println("foo") ; 5 }

@@ -8,7 +8,7 @@ class C extends T[Char] {
 object Test {
   val c1: Class[_] = classOf[T[_]]
   val c2: Class[_] = classOf[C]
-
+  
   val c1m = c1.getMethods.toList filter (_.getName == "f") map (_.getGenericReturnType.toString)
   val c2m = c2.getMethods.toList filter (_.getName == "f") map (_.getGenericReturnType.toString)
 

@@ -9,8 +9,8 @@ object Main extends App {
                 case None     => 99
             }
         }
-
+        
     println (x (Foo (None))) // prints 99
     println (x (Foo (Some ("foo")))) // prints 42
-
+        
 }

@@ -65,7 +65,7 @@ object semaphore {
         println("b1");
         Thread.sleep(1 + random.nextInt(100));
         println("b2")
-      } )
+      } ) 
     } >;
   }
 }

@@ -11,11 +11,11 @@ class ReverseMap(sz: Int, p: Int, what: String)
 extends Resettable[Cont](sz, p, what, (i: Int) => new Cont(i),  new Array[Any](_), classOf[Cont]) {
   def companion = ReverseMap
   override def repetitionsPerRun = 100
-
+  
   def runpar = pa.reverseMap(compl)
   def runseq = sequentialReverseMap(compl, sz)
   override def comparisonMap = collection.Map()
-
+  
   val id = (c: Cont) => c
   val compl = (c: Cont) => {
     var in = c.in

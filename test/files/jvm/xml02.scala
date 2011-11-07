@@ -31,26 +31,26 @@ object Test extends TestConsoleMain {
       val z = ax \ "@{the namespace from outer space}foo"
       assertTrue("@six",   (ax \ "@{the namespace from outer space}foo") xml_== "baz")
       assertTrue("@eight", (cx \ "@{the namespace from outer space}foo") xml_== "baz")
-
+ 
       try {
         ax \ "@"
         assertTrue("wrong1", false)
       } catch {
-        case _: IllegalArgumentException =>
+        case _: IllegalArgumentException => 
       }
       try {
         ax \ "@{"
         assertTrue("wrong2", false)
       } catch {
-        case _: IllegalArgumentException =>
+        case _: IllegalArgumentException => 
       }
       try {
         ax \ "@{}"
         assertTrue("wrong3", false)
       } catch {
-        case _: IllegalArgumentException =>
+        case _: IllegalArgumentException => 
       }
-
+ 
     }
   }
 

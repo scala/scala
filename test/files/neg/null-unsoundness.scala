@@ -12,4 +12,4 @@ object Test extends A with App {
   type A = C
   y = 42
 }
-
+  

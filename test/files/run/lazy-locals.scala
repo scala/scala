@@ -163,18 +163,18 @@ object Test extends App {
 
   // see #1589
   object NestedLazyVals {
-    lazy val x = {
+    lazy val x = { 
       lazy val y = { println("forcing y"); 42; }
       println("forcing x")
-      y
+      y 
     }
-
+    
     val x1 = 5 + { lazy val y = 10 ; y }
-
+    
     println(x)
     println(x1)
   }
-
+  
   trait TNestedLazyVals {
     lazy val x = { lazy val y = 42; y }
   }

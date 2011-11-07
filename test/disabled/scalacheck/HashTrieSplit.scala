@@ -14,7 +14,7 @@ object Test {
   def main(args: Array[String]) {
     doesSplitOk
   }
-
+  
   def doesSplitOk = {
     val sz = 2000
     var ht = new parallel.immutable.ParHashMap[Int, Int]

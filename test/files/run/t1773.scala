@@ -7,6 +7,6 @@ object Test extends App
     <a>{""}</a>,
     <a>{ if (true) "" else "I like turtles" }</a>
   )
-
+  
   for (x1 <- xs; x2 <- xs) assert (x1 xml_== x2)
 }

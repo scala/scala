@@ -1,5 +1,5 @@
 package test
-class T {
+class T {    
   def foo[T <: String](x: T): T = x
   def bar[T](x: T): T = x
   class Inner {

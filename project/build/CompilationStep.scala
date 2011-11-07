@@ -14,7 +14,7 @@ abstract class CompilationStep(val name: String, val pathConfig: PathConfig, log
 
   // Utility methods (for quick access, ...)
   final def srcDir = pathConfig.sources
-
+  
   // Methods required for the compilation
   def log: Logger = logger
   final def sourceRoots : PathFinder = pathConfig.sources

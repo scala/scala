@@ -1,7 +1,7 @@
 import java.io.StringReader
 import org.xml.sax.InputSource
 
-import scala.testing.SUnit._
+import scala.testing.SUnit._ 
 import scala.util.logging._
 import scala.xml._
 
@@ -18,7 +18,7 @@ object Test extends App with Assert {
 
   val c = new Node {
     def label = "hello"
-    override def hashCode() =
+    override def hashCode() = 
       Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child);
     def child = Elem(null, "world", e, sc);
     //def attributes = e;
@@ -37,8 +37,8 @@ object Test extends App with Assert {
   val x2p = XML.load(i)
 
   assertEqualsXML(x2p, Elem(null, "book"  , e, sc,
-                        Elem(null, "author", e, sc,Text("Peter Buneman")),
-                        Elem(null, "author", e, sc,Text("Dan Suciu")),
+                        Elem(null, "author", e, sc,Text("Peter Buneman")), 
+                        Elem(null, "author", e, sc,Text("Dan Suciu")), 
                         Elem(null, "title" , e, sc,Text("Data on ze web"))));
 
   val xmlFile2 = "<bib><book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book><book><author>John Mitchell</author><title>Foundations of Programming Languages</title></book></bib>";
@@ -61,13 +61,13 @@ object Test extends App with Assert {
   };
   */
 
-  assertSameElementsXML(
-      parsedxml2 \ "_" ,
-
+  assertSameElementsXML( 
+      parsedxml2 \ "_" , 
+      
       List(
         Elem(null,"book", e, sc,
-             Elem(null,"author", e, sc, Text("Peter Buneman")),
-             Elem(null,"author", e, sc, Text("Dan Suciu")),
+             Elem(null,"author", e, sc, Text("Peter Buneman")), 
+             Elem(null,"author", e, sc, Text("Dan Suciu")), 
              Elem(null,"title" , e, sc, Text("Data on ze web"))),
         Elem(null,"book",e,sc,
              Elem(null,"author",e,sc,Text("John Mitchell")),
@@ -75,13 +75,13 @@ object Test extends App with Assert {
   );
   assertEquals( (parsedxml2 \ "author").length, 0 );
 
-  assertSameElementsXML(
-      parsedxml2 \ "book",
-
+  assertSameElementsXML( 
+      parsedxml2 \ "book", 
+      
       List(
         Elem(null,"book",e,sc,
-             Elem(null,"author", e, sc, Text("Peter Buneman")),
-             Elem(null,"author", e, sc, Text("Dan Suciu")),
+             Elem(null,"author", e, sc, Text("Peter Buneman")), 
+             Elem(null,"author", e, sc, Text("Dan Suciu")), 
              Elem(null,"title" , e, sc, Text("Data on ze web"))),
         Elem(null,"book",e,sc,
              Elem(null,"author", e, sc, Text("John Mitchell")),
@@ -89,49 +89,49 @@ object Test extends App with Assert {
       )
   );
 
-  assertSameElementsXML(
+  assertSameElementsXML( 
 
       parsedxml2 \ "_" \ "_",
 
     List(
-      Elem(null,"author", e, sc, Text("Peter Buneman")),
-      Elem(null,"author", e, sc, Text("Dan Suciu")),
+      Elem(null,"author", e, sc, Text("Peter Buneman")), 
+      Elem(null,"author", e, sc, Text("Dan Suciu")), 
       Elem(null,"title" , e, sc, Text("Data on ze web")),
       Elem(null,"author", e, sc, Text("John Mitchell")),
       Elem(null,"title" , e, sc, Text("Foundations of Programming Languages"))
     )
   );
 
-  assertSameElementsXML(
+  assertSameElementsXML( 
 
       parsedxml2 \ "_" \ "author",
 
       List(
-        Elem(null,"author", e, sc, Text("Peter Buneman")),
-        Elem(null,"author", e, sc, Text("Dan Suciu")),
+        Elem(null,"author", e, sc, Text("Peter Buneman")), 
+        Elem(null,"author", e, sc, Text("Dan Suciu")), 
         Elem(null,"author", e, sc, Text("John Mitchell"))
       )
-
+    
   );
 
   assertSameElementsXML( (parsedxml2 \ "_" \ "_" \ "author"), List() );
 
   Console.println("xpath \\\\ DESCENDANTS");
 
-  assertSameElementsXML(
+  assertSameElementsXML( 
 
       parsedxml2 \\ "author",
 
       List(
-        Elem(null,"author", e, sc, Text("Peter Buneman")),
-        Elem(null,"author", e, sc, Text("Dan Suciu")),
+        Elem(null,"author", e, sc, Text("Peter Buneman")), 
+        Elem(null,"author", e, sc, Text("Dan Suciu")), 
         Elem(null,"author", e, sc, Text("John Mitchell"))
       )
 
  );
 
 
-  assertSameElementsXML(
+  assertSameElementsXML( 
 
       parsedxml2 \\ "title",
 
@@ -145,22 +145,22 @@ object Test extends App with Assert {
     (parsedxml2 \\ "book" ){ n:Node => (n \ "title") xml_== "Data on ze web" }
   );
 
-  assertEqualsXML(
+  assertEqualsXML( 
 
       (new NodeSeq { val theSeq = List( parsedxml2 ) }) \\ "_",
 
       List(
         Elem(null,"bib",e,sc,
              Elem(null,"book",e,sc,
-                  Elem(null, "author", e, sc, Text("Peter Buneman")),
-                  Elem(null, "author", e, sc, Text("Dan Suciu")),
+                  Elem(null, "author", e, sc, Text("Peter Buneman")), 
+                  Elem(null, "author", e, sc, Text("Dan Suciu")), 
                   Elem(null, "title" , e, sc, Text("Data on ze web"))),
              Elem(null,"book",e,sc,
                   Elem(null,"author",e,sc,Text("John Mitchell")),
                   Elem(null,"title",e,sc,Text("Foundations of Programming Languages")))),
         Elem(null,"book",e,sc,
-             Elem(null,"author",e,sc,Text("Peter Buneman")),
-             Elem(null,"author",e,sc,Text("Dan Suciu")),
+             Elem(null,"author",e,sc,Text("Peter Buneman")), 
+             Elem(null,"author",e,sc,Text("Dan Suciu")), 
              Elem(null,"title",e,sc,Text("Data on ze web"))),
         Elem(null,"author",e,sc,Text("Peter Buneman")),
         //Text("Peter Buneman"),
@@ -196,7 +196,7 @@ object Test extends App with Assert {
 
     // val uup = <xml:unparsed>&<<>""^%@$!#</xml:unparsed>
     // assertTrue(uup == "&<<>\"\"^%@$!#")
-    // test unicode escapes backslash u
+    // test unicode escapes backslash u 
 
   println("attribute value normalization")
   val xmlAttrValueNorm = "<personne id='p0003' nom='&#x015e;ahingöz' />";

@@ -10,7 +10,7 @@ object ScanLight extends Companion {
   def apply(sz: Int, parallelism: Int, what: String) = new ScanLight(sz, parallelism, what)
   override def comparisons = List("jsr")
   override def defaultSize = 40000
-
+  
   val op = (a: Cont, b: Cont) => {
     operation(a, b)
   }
@@ -26,7 +26,7 @@ extends Resettable[Cont](sz, p, what, new Cont(_), new Array[Any](_), classOf[Co
   def companion = ScanLight
   override def repetitionsPerRun = 50
   override val runs = 12
-
+  
   def runpar = pa.scan(new Cont(0))(ScanLight.op)
   def runseq = sequentialScan(new Cont(0), ScanLight.op, sz)
   def runjsr = jsrarr.cumulate(new extra166y.Ops.Reducer[Cont] {

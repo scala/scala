@@ -35,5 +35,5 @@ object Test extends A with B {
   }
 }
 
-object Test2 extends A2 with B2
+object Test2 extends A2 with B2 
 

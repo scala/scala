@@ -16,7 +16,7 @@ class TemplatePlugin(val global: Global) extends Plugin {
 
   /** A short description of the plugin, read from the properties file */
   val description = PluginProperties.pluginDescription
-
+  
   /** @todo A description of the plugin's options */
   override val optionsHelp = Some(
     "  -P:"+ name +":option     sets some option for this plugin")

@@ -250,7 +250,7 @@ object rwlock {
     def endRead = er.send
     def endWrite = ew.send
 
-    private def Reading(nr: int, nw: int): unit =
+    private def Reading(nr: int, nw: int): unit = 
       if (nr == 0 && nw == 0)
         choice (
           sr * (x => Reading(1, 0)),
@@ -264,7 +264,7 @@ object rwlock {
         choice (
           sr * (x => Reading(nr + 1, 0)),
           er * (x => Reading(nr - 1, 0)),
-          ww * (x => Reading(nr, 1))
+          ww * (x => Reading(nr, 1))        
         )
       else if (nr != 0 && nw != 0)
         choice (

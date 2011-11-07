@@ -1,4 +1,4 @@
-/** process tests.
+/** process tests. 
  */
 
 import java.io.{ File, FileNotFoundException, IOException, InputStream, OutputStream, FileInputStream }
@@ -11,7 +11,7 @@ import scala.tools.nsc.io.{ File => SFile }
 /** This has scrounged bits of sbt to flesh it out enough to run.
  */
 package processtest {
-
+  
   object exit
   {
     def fn(code: Int) = System.exit(code)
@@ -77,7 +77,7 @@ object IO {
 
 class ProcessSpecification extends Properties("Process I/O") {
 	implicit val exitCodeArb: Arbitrary[Array[Byte]] = Arbitrary(Gen.choose(0, 10) flatMap { size =>
-	  Gen.resize(size, Arbitrary.arbArray[Byte].arbitrary)
+	  Gen.resize(size, Arbitrary.arbArray[Byte].arbitrary) 
 	})
 
 	/*property("Correct exit code") = forAll( (exitCode: Byte) => checkExit(exitCode))

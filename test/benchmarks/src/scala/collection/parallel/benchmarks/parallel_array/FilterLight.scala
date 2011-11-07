@@ -9,12 +9,12 @@ object FilterLight extends Companion {
   def apply(sz: Int, parallelism: Int, what: String) = new FilterLight(sz, parallelism, what)
   override def comparisons = List("jsr")
   override def defaultSize = 10000
-
+  
   val pred = (a: Cont) => check(a.in)
   val predjsr = new extra166y.Ops.Predicate[Cont] {
     def op(a: Cont) = check(a.in)
   }
-
+  
   def check(n: Int) = {
     var res = n
 //    var i = 1
@@ -33,7 +33,7 @@ with HavingResult[Int] {
   override def repetitionsPerRun = 250
   override val runs = 30
   runresult = -1
-
+  
   def runpar = runresult = pa.filter(FilterLight.pred).size
   def runseq = runresult = sequentialFilter(FilterLight.pred, sz).size
   def runjsr = runresult = { jsrarr.withFilter(FilterLight.predjsr).all.size }

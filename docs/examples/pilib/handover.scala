@@ -32,7 +32,7 @@ object handoverRecursive {
    * Control center.
    */
   def Control(talk1: Chan[unit], switch1: Switch,
-              gain1: Switch, lose1: Switch,
+              gain1: Switch, lose1: Switch, 
               talk2: Chan[unit], switch2: Switch,
               gain2: Switch, lose2: Switch): unit
   = {
@@ -108,7 +108,7 @@ object handoverCast {
   def Car(talk: Chan[Any], switch: Chan[Any]): unit =
     choice (
       switch * (o => {
-        val Pair(t,s) = o.asInstanceOf[Pair[Chan[Any],Chan[Any]]];
+        val Pair(t,s) = o.asInstanceOf[Pair[Chan[Any],Chan[Any]]]; 
         Car(t, s)
       }),
       talk(()) * ( {
@@ -122,7 +122,7 @@ object handoverCast {
   * Control center.
   */
   def Control(talk1: Chan[Any], switch1: Chan[Any],
-              gain1: Chan[Any], lose1: Chan[Any],
+              gain1: Chan[Any], lose1: Chan[Any], 
               talk2: Chan[Any], switch2: Chan[Any],
               gain2: Chan[Any], lose2: Chan[Any]): unit
   = {

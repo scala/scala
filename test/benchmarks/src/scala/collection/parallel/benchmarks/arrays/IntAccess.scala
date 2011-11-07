@@ -17,10 +17,10 @@ object IntAccess extends BenchCompanion {
 class IntAccess(sz: Int, p: Int, what: String)
 extends Resetting(n => n, sz, p, what) with UnknownManif[Int] {
   def companion = IntAccess
-
+  
   def runseq {}
   def runpar {}
-
+  
   def runany = {
     var i = 0
     while (i < sz) {
@@ -28,7 +28,7 @@ extends Resetting(n => n, sz, p, what) with UnknownManif[Int] {
       i += 1
     }
   }
-
+  
   def runcast = {
     var i = 0
     while (i < sz) {
@@ -36,7 +36,7 @@ extends Resetting(n => n, sz, p, what) with UnknownManif[Int] {
       i += 1
     }
   }
-
+  
   def runmanif = {
     var i = 0
     while (i < sz) {
@@ -45,12 +45,12 @@ extends Resetting(n => n, sz, p, what) with UnknownManif[Int] {
       i += 1
     }
   }
-
+  
   def op(a: Int) = a < 0
-
+  
   def comparisonMap = collection.Map("any" -> runany _, "cast" -> runcast _,
                                      "manif" -> runmanif _, "unknown" -> rununknown _)
-
+  
 }
 
 

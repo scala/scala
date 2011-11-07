@@ -5,25 +5,25 @@ package examples.parsing.lambda
  *
  * @author Miles Sabin (adapted slightly by Adriaan Moors)
  */
-trait TestSyntax
+trait TestSyntax 
 {
-  trait Term
-
+  trait Term 
+  
   case class Unit extends Term
   {
     override def toString = "unit"
   }
-
+  
   case class Lit(n: int) extends Term
   {
     override def toString = n.toString
   }
-
+  
   case class Bool(b: boolean) extends Term
   {
     override def toString = b.toString
   }
-
+  
   case class Name(name: String) extends Term
   {
     override def toString = name
@@ -33,27 +33,27 @@ trait TestSyntax
   {
     def value = n
   }
-
+  
   case class Lam(n: Name, l: Term) extends Term
   {
     override def toString = "(\\ "+n+" -> "+l+")"
-  }
-
+  } 
+  
   case class App(t1: Term, t2: Term) extends Term
   {
     override def toString = "("+t1+" "+t2+")"
-  }
-
+  } 
+  
   case class Let(n: Name, t1: Term, t2: Term) extends Term
   {
     override def toString = "let "+n+" = "+t1+" in "+t2
   }
-
+  
   case class If(c: Term, t1: Term, t2: Term) extends Term
   {
     override def toString = "if "+c+" then "+t1+" else "+t2
   }
-
+  
   trait PrimTerm extends Term
   {
     def apply(n: Lit) : Term
@@ -68,7 +68,7 @@ trait TestSyntax
   {
     def apply(x: Lit) = new PrimTerm { def apply(y: Lit) = Lit(x.n-y.n) }
   }
-
+  
   case class PrimMultiply extends PrimTerm
   {
     def apply(x: Lit) = new PrimTerm { def apply(y: Lit) = Lit(x.n*y.n) }

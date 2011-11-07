@@ -14,7 +14,7 @@ object Test {
       }
     }
   }
-
+  
   class FatActor extends Actor {
     def act() {
       fat = new Array[Int](fatness)

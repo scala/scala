@@ -9,7 +9,7 @@ class SumLight(sz: Int, p: Int, what: String)
 extends Resettable[Int](sz, p, what, (i: Int) => i,  new Array[Any](_), classOf[Int]) {
   def companion = SumLight
   override def repetitionsPerRun = 500
-
+  
   def runpar = pa.sum
   def runseq = sequentialSum(sz)
   override def comparisonMap = collection.Map()

@@ -17,7 +17,7 @@ case class Foo(x: Int)
 // [Not checkable: packageobjects]
 // [Now checking: typer]
 // [Now checking: superaccessors]
-// work/fail7.scala:1: error:
+// work/fail7.scala:1: error: 
 // **** ERROR DURING INTERNAL CHECKING ****
 // method canEqual is defined twice
 // case class Foo(x: Int)
@@ -51,7 +51,7 @@ case class Foo(x: Int)
 // 4) Checking constructors:
 //
 // [Now checking: constructors]
-// work/fail7.scala:1: error:
+// work/fail7.scala:1: error: 
 // **** ERROR DURING INTERNAL CHECKING ****
 // value x in class Foo cannot be accessed in Foo
 //  because of an internal error (no accessible symbol):

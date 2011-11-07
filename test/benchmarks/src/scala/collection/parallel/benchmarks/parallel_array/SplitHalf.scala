@@ -17,7 +17,7 @@ with HavingResult[Int] {
   def companion = SplitHalf
   override def repetitionsPerRun = 300
   runresult = -1
-
+  
   def runpar = runresult = pa.splitAt(pa.size / 2)._1.size
   def runseq = runresult = sequentialSplitAtOpt(sz / 2, sz)._1.size
   def comparisonMap = collection.Map()

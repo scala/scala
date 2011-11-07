@@ -8,18 +8,18 @@ import ScalaBuildProject._
  * @author Grégory Moix
  */
 abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, previousLayer: Option[BasicLayer])
-        extends ScalaBuildProject
+        extends ScalaBuildProject 
            with ReflectiveProject
-           with AdditionalResources
+           with AdditionalResources 
            with LayerCompilation
-           with BuildInfoEnvironment
+           with BuildInfoEnvironment 
            with ForkSBT {
   layer =>
-
+  
   // All path values must be lazy in order to avoid initialization issues (sbt way of doing things)
 
   def buildInfoEnvironmentLocation: Path = outputRootPath / ("build-"+name+".properties")
-
+  
   val forkProperty = "scala.sbt.forked"
   def isDebug  = info.logger atLevel Level.Debug
   def isForked = System.getProperty(forkProperty) != null
@@ -30,13 +30,13 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
 
   lazy val copyright = property[String]
   lazy val partestVersionNumber = property[Version]
-
+  
   lazy val nextLayer: Option[BasicLayer] = None
-  def packingDestination : Path = layerOutput / "pack"
+  def packingDestination : Path = layerOutput / "pack"  
   lazy val libsDestination = packingDestination/ "lib"
   lazy val packedStarrOutput = outputRootPath / "pasta"
   lazy val requiredPluginsDirForCompilation = layerOutput / "misc" / "scala-devel" / "plugins"
-
+  
   def compilerAdditionalJars: List[Path] = Nil
   def libraryAdditionalJars: List[Path] = Nil
 
@@ -54,7 +54,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
   def buildLayer = externalCompilation orElse writeProperties
 
   lazy val build = compile
-
+  
   lazy val compile = task(buildLayer) dependsOn startLayer
 
   /**
@@ -64,7 +64,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
    * is finished.
    */
   lazy val finishLayer: ManagedTask = task(None) dependsOn compile
-
+  
   def cleaningList = List(
     layerOutput,
     layerEnvironment.envBackingPath,
@@ -76,7 +76,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
   // We use super.task, so cleaning is done in every case, even when locked
   lazy val clean: Task = nextLayer match {
     case Some(next)   => super.task(cleanFiles) dependsOn next.clean
-    case _            => super.task(cleanFiles)
+    case _            => super.task(cleanFiles)    
   }
   lazy val cleanBuild = task(cleanFiles orElse buildLayer) dependsOn startLayer
 
@@ -91,13 +91,13 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
   def outputCompilerJar = compilerConfig.packagingConfig.jarDestination
   def outputLibraryJar  = libraryWS.packagingConfig.jarDestination
   def outputPartestJar  = partestConfig.packagingConfig.jarDestination
-  def outputScalapJar   = scalapConfig.packagingConfig.jarDestination
+  def outputScalapJar   = scalapConfig.packagingConfig.jarDestination 
   def scalapOutput      = scalapConfig.outputDirectory
   def swingOutput       = swingConfig.outputDirectory
   def swingSrcDir       = swingConfig.srcDir
 
   // CONFIGURATION OF THE COMPILATION STEPS
-
+   
  /**
    *  Configuration of the core library compilation
    */
@@ -109,7 +109,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
 
     def copyDestination = outputDirectory
     def filesToCopy = getResources(srcDir)
-
+    
     def propertyDestination = outputDirectory / "library.properties"
     def propertyList = ("version.number",versionNumber) :: ("copyright.string", copyright.value) :: Nil
   }
@@ -139,7 +139,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
       new PackagingConfiguration(libsDestination / compilerJarName, List(outputDirectory ##), manifest , compilerAdditionalJars)
     }
     lazy val starrPackagingConfig = new PackagingConfiguration(packedStarrOutput/compilerJarName, List(outputDirectory ##))
-
+    
   }
 
   //// ADDTIONNAL LIBRARIES ////
@@ -161,7 +161,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
     def label = "["+layer.name+"] dbc library"
     def options: Seq[String] = Seq()
     def dependencies = libraryConfig :: Nil
-
+    
     lazy val packagingConfig = new PackagingConfiguration(
       libsDestination / dbcJarName,
       List(outputDirectory ##)
@@ -207,7 +207,7 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
     def dependencies = libraryConfig :: compilerConfig :: Nil
 
     val decoderProperties = (srcDir ## ) / "decoder.properties"
-
+      
     lazy val packagingConfig = new PackagingConfiguration(
       libsDestination / scalapJarName,
       List(outputDirectory ##, decoderProperties)
@@ -231,9 +231,9 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
       ("version.number", partestVersionNumber.value.toString),
       ("copyright.string", copyright.value)
     )
-
-    lazy val packagingConfig = new PackagingConfiguration(libsDestination / partestJarName, List(outputDirectory ##))
-
+    
+    lazy val packagingConfig = new PackagingConfiguration(libsDestination / partestJarName, List(outputDirectory ##))    
+    
   }
 
   ///// PLUGINS CONFIGURATION ////////
@@ -243,9 +243,9 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
       def projectRoot: Path = pathLayout.projectRoot
       def sources: Path     = pathLayout.srcDir / "continuations" / "plugin"
       def analysis: Path    = pathLayout.analysisOutput / "continuations" / "plugin"
-      def output: Path      = pathLayout.classesOutput / "continuations" / "plugin"
+      def output: Path      = pathLayout.classesOutput / "continuations" / "plugin"     
     }
-
+        
     new CompilationStep("continuation-plugin", config, log) with ResourcesToCopy with EarlyPackaging {
       def label = "["+layer.name+"] continuation plugin"
       def dependencies = libraryConfig :: compilerConfig :: Nil
@@ -270,9 +270,9 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
        def projectRoot: Path = pathLayout.projectRoot
        def sources: Path     = pathLayout.srcDir / "continuations" / "library"
        def analysis: Path    = pathLayout.analysisOutput / "continuations" / "library"
-       def output: Path      = pathLayout.classesOutput / "continuations" / "library"
+       def output: Path      = pathLayout.classesOutput / "continuations" / "library"     
      }
-
+    
     new CompilationStep("continuation-library", config, log) {
       def label = "["+layer.name+"] continuation library"
       def dependencies = libraryConfig :: compilerConfig :: continuationPluginConfig :: Nil
@@ -287,10 +287,10 @@ abstract class BasicLayer(val info: ProjectInfo, val versionNumber: String, prev
 
   // Grouping compilation steps
   def minimalCompilation = false // It must be true for locker because we do not need to compile everything
-
+  
   def libraryWS: WrapperStep with Packaging
   def toolsWS: WrapperStep
 
-  lazy val pluginsWS = new WrapperStep(continuationPluginConfig :: continuationLibraryConfig :: Nil)
+  lazy val pluginsWS = new WrapperStep(continuationPluginConfig :: continuationLibraryConfig :: Nil) 
   lazy val allSteps  = new WrapperStep(libraryWS :: compilerConfig :: pluginsWS :: toolsWS :: Nil)
 }

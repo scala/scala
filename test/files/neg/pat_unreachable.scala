@@ -8,7 +8,7 @@ object Test extends App {
     case Seq(x, y, _*) => x::y::Nil
     case Seq(x, y) => List(x, y)
   }
-
+  
   def not_unreachable(xs:Seq[Char]) = xs match {
     case Seq(x, y, _*) => x::y::Nil
     case Seq(x) => List(x)

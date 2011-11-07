@@ -12,7 +12,7 @@ extends Resettable[Cont](sz, p, what, (i: Int) => new Cont(i),  new Array[Any](_
 with HavingResult[Int] {
   def companion = RemoveDuplicates
   override def repetitionsPerRun = 400
-
+  
   def runpar = runresult = pa.distinct.size
   def runseq = runresult = sequentialRemoveDuplicates(size).size
   override def comparisonMap = collection.Map()

@@ -16,12 +16,12 @@ object IntOps {
   val reducer = new extra166y.Ops.Reducer[IntWrap] {
     def op(a: IntWrap, b: IntWrap) = primereduce(a, b)
   }
-
+  
   def primereduce(a: IntWrap, b: IntWrap) = {
     val check = (checkPrime(a.num), checkPrime(b.num))
     if (a.num > b.num) a else b
   }
-
+  
   def checkPrime(n: Int) = {
     var isPrime = true
     var i = 2
@@ -38,7 +38,7 @@ class ReducePrime(sz: Int, p: Int, what: String)
 extends Resettable[IntWrap](sz, p, what, IntWrapCreator, new Array[Any](_), classOf[IntWrap])
 with HavingResult[IntWrap] {
   def companion = ReducePrime
-
+  
   def runseq = runresult = sequentialReduce(IntOps.op, sz, new IntWrap(0))
   def runpar = runresult = pa.reduce(IntOps.op)
   def runjsr = runresult = jsrarr.reduce(IntOps.reducer, new IntWrap(0))

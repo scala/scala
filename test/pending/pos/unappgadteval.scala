@@ -21,30 +21,30 @@ object Suc { def unapply(a: Suc) = true }
 class Suc() extends Term[Int => Int]
 
 // Environments :
-abstract class Env {
+abstract class Env { 
   def apply[a](v: Var[a]): a
   def extend[a](v: Var[a], x : a) = new Env {
-    def apply[b](w: Var[b]): b = w match {
+    def apply[b](w: Var[b]): b = w match { 
       case _ : v.type => x // v eq w, hence a = b
       case _ => Env.this.apply(w)
     }}
 }
 
-object empty extends Env {
-  def apply[a](x: Var[a]): a = throw new Error("not found : "+x.name)
+object empty extends Env { 
+  def apply[a](x: Var[a]): a = throw new Error("not found : "+x.name) 
 }
 
 object Test {
   val v1 = new Var[util.Random]("random")
   val v2 = new Var[Int]("Int")
   val v3 = new Var[List[String]]("list")
-
+  
   val anEnv = (empty
     .extend(v1, new util.Random)
     .extend(v2, 58)
     .extend(v3, Nil)
   )
-
+  
   def eval[a](t: Term[a], env : Env): a = t match {
     // First three work
     case v : Var[b]         => env(v)                     // a = b
@@ -54,9 +54,9 @@ object Test {
     // Next one fails like:
     //
     // found   : (Int) => Int
-    // required: a
+    // required: a    
     case i @ Suc()          => { (y: Int) => y + 1 }      // a = Int => Int
-
+    
     // Next one fails like:
     //
     // error: '=>' expected but '[' found.
@@ -64,11 +64,11 @@ object Test {
     //                 ^
     case f @ Lam[b,c](x, e) => { (y: b) => eval(e, env.extend(x, y)) }  // a = b=>c
   }
-
+  
   val f1 = () => eval(v1, anEnv)
   val f2 = () => eval(v2, anEnv)
   val f3 = () => eval(v3, anEnv)
-
+  
   def main(args: Array[String]): Unit = {
     println(f1())
     println(f2())

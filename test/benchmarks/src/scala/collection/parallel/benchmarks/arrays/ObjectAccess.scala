@@ -17,10 +17,10 @@ object ObjectAccess extends BenchCompanion {
 class ObjectAccess(sz: Int, p: Int, what: String)
 extends Resetting(Dummy(_), sz, p, what) with UnknownManif[Dummy] {
   def companion = ObjectAccess
-
+  
   def runseq {}
   def runpar {}
-
+  
   def runany = {
     var i = 0
     while (i < sz) {
@@ -29,7 +29,7 @@ extends Resetting(Dummy(_), sz, p, what) with UnknownManif[Dummy] {
       i += 1
     }
   }
-
+  
   def runcast = {
     var i = 0
     while (i < sz) {
@@ -37,7 +37,7 @@ extends Resetting(Dummy(_), sz, p, what) with UnknownManif[Dummy] {
       i += 1
     }
   }
-
+  
   def rungenericcast = {
     var i = 0
     while (i < sz) {
@@ -45,7 +45,7 @@ extends Resetting(Dummy(_), sz, p, what) with UnknownManif[Dummy] {
       i += 1
     }
   }
-
+  
   def runmanif = {
     var i = 0
     while (i < sz) {
@@ -54,10 +54,10 @@ extends Resetting(Dummy(_), sz, p, what) with UnknownManif[Dummy] {
       i += 1
     }
   }
-
+  
   def comparisonMap = collection.Map("any" -> runany _, "cast" -> runcast _, "gencast" -> rungenericcast _,
                                      "manif" -> runmanif _, "unknown" -> rununknown _)
-
+  
 }
 
 

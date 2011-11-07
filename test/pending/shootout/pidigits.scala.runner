@@ -1,0 +1,3 @@
+object Test extends Application {
+  for(n <- List(600,800,1000)) pidigits.main(Array(n.toString)) 
+}

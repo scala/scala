@@ -19,24 +19,24 @@ extends Resettable[Cont](sz, p, what, new Cont(_), new Array[Any](_), classOf[Co
   def companion = ReduceLight
   override def repetitionsPerRun = 350
   override val runs = 20
-
+  
   def runpar = {
     pa.reduce(Cont.op)
 //    updatePar
   }
-
+  
   def runjsr = {
     jsrarr.reduce(Cont.reducer, new Cont(0))
 //    updateJsr
   }
-
+  
   def runseq = {
     sequentialReduce(Cont.op, sz, new Cont(0))
 //    updateSeq
   }
-
+  
   override def comparisonMap = collection.Map("jsr" -> runjsr _)
-
+  
 }
 
 

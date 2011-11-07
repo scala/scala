@@ -35,7 +35,7 @@ object Client {
       react {
         case result: Int =>
           println("result received: " + result)
-          Predef.exit(0)
+          Predef.exit(0)        
       }
     }
   }

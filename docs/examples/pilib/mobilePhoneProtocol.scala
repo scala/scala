@@ -21,7 +21,7 @@ object mobilePhoneProtocol {
   case class HoCom()  extends Message; // handover complete
   case class HoFail() extends Message; // handover fail
   case class ChRel()  extends Message; // release
-  case class Voice(s: String) extends Message; // voice
+  case class Voice(s: String) extends Message; // voice 
   case class Channel(n: Chan[Message]) extends Message; // channel
 
   def MobileSystem(in: Chan[String], out: Chan[String]): unit = {
@@ -144,9 +144,9 @@ object mobilePhoneProtocol {
   }
 
   //***************** Entry function ******************//
-
+  
   def main(args: Array[String]): unit = {
-
+    
     def Producer(n: Int, put: Chan[String]): unit = {
       Thread.sleep(1 + random.nextInt(1000));
       val msg = "object " + n;
@@ -154,14 +154,14 @@ object mobilePhoneProtocol {
       System.out.println("Producer gave " + msg);
       Producer(n + 1, put)
     }
-
+    
     def Consumer(get: Chan[String]): unit = {
       Thread.sleep(1 + random.nextInt(1000));
       val msg = get.read;
       System.out.println("Consumer took " + msg);
       Consumer(get)
     }
-
+    
     val put = new Chan[String];
     val get = new Chan[String];
     spawn < Producer(0, put) | Consumer(get) | MobileSystem(put, get) >

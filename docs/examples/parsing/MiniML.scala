@@ -3,7 +3,7 @@ package examples.parsing
 import scala.util.parsing.combinator1.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator1.syntactical.StandardTokenParsers
 
-object MiniML extends StandardTokenParsers {
+object MiniML extends StandardTokenParsers {   
   lexical.delimiters += ("(", ")", ".", "=")
   lexical.reserved += ("lambda", "let", "in")
 
@@ -30,7 +30,7 @@ case class Lambda(x: String, expr: Expr) extends Expr
 case class Apply(fun: Expr, arg: Expr) extends Expr
 case class Var(x: String) extends Expr
 
-object MiniML1 extends StandardTokenParsers {
+object MiniML1 extends StandardTokenParsers {   
   lexical.delimiters += ("(", ")", ".", "=")
   lexical.reserved += ("lambda", "let", "in")
 
@@ -41,7 +41,7 @@ object MiniML1 extends StandardTokenParsers {
   )
   def simpleExpr: Parser[Expr] = (
     ident                                    ^^ { Var }
-  | "(" ~> expr <~ ")"
+  | "(" ~> expr <~ ")"                       
   )
 
   def main(args: Array[String]) {

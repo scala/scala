@@ -1,8 +1,8 @@
 object Msg {
   trait T
-
+  
   trait TSeq
-
+  
   object TSeq {
     implicit def fromSeq(s: Seq[T]): TSeq = error("stub")
   }

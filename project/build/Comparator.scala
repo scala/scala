@@ -26,21 +26,21 @@ object Comparator {
 
 
       val originPaths = filter(origin).get
-
+      
       val bufferSize = 1024
       val originBuffer = new Array[Byte](bufferSize)
       val destBuffer = new Array[Byte](bufferSize)
-
+      
       for (originPath <- originPaths.filter(! _.isDirectory)){
         log.debug("origin :" + originPath.absolutePath)
         val destPath = getMappedPath(originPath, dest)
         log.debug("dest   :" + destPath.absolutePath)
-        var equalNow = true
+        var equalNow = true      
         val originFile = originPath.asFile
         val destFile = destPath.asFile
 
         if (originFile.canRead && destFile.canRead) {
-
+        
         val originStream = new FileInputStream(originFile)
         val destStream = new FileInputStream(destFile)
         var originRemaining = originStream.read(originBuffer)
@@ -63,7 +63,7 @@ object Comparator {
 
       }
       else reportMissing(originFile)
-
+       
       }
       if(allEqualNow) None else Some("There were differences between "+origin.absolutePath+ " and "+ dest.absolutePath)
     }

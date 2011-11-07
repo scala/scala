@@ -14,7 +14,7 @@ import collection.mutable.HashMap
 
 class MultipleCombine(val size: Int, val parallelism: Int, val runWhat: String) extends Bench with IntInit {
   var combines = 10
-
+  
   var thattries = new Array[HashTrie[Int, Int]](combines)
   def initTries = for (r <- 0 until combines) {
     var thattrie = new HashTrie[Int, Int]
@@ -22,7 +22,7 @@ class MultipleCombine(val size: Int, val parallelism: Int, val runWhat: String) 
     thattries(r) = thattrie
   }
   initTries
-
+  
   val thatmaps = new Array[HashMap[Int, Int]](10)
   def initMaps = for (r <- 0 until combines) {
     var thatmap = new HashMap[Int, Int]
@@ -30,7 +30,7 @@ class MultipleCombine(val size: Int, val parallelism: Int, val runWhat: String) 
     thatmaps(r) = thatmap
   }
   initMaps
-
+  
   override def repetitionsPerRun = 25
   def runpar = throw new UnsupportedOperationException
   def runseq = runhashtrie

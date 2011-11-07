@@ -3,9 +3,9 @@ package scala.collection.parallel.benchmarks.parallel_array
 
 
 trait SequentialOps[T] {
-
+  
   var arr: Array[Any] = null
-
+  
   def sequentialReduce(op: (T, T) => T, sz: Int, init: T) = {
     var i = 0
     val until = sz
@@ -16,7 +16,7 @@ trait SequentialOps[T] {
     }
     sum
   }
-
+  
   def sequentialScan(z: T, op: (T, T) => T, sz: Int) = {
     var outarr = new Array[Any](sz + 1)
     outarr(0) = z
@@ -31,7 +31,7 @@ trait SequentialOps[T] {
       j += 1
     }
   }
-
+  
   def sequentialCount(pred: T => Boolean, sz: Int) = {
     var i = 0
     val until = sz
@@ -42,7 +42,7 @@ trait SequentialOps[T] {
     }
     sum
   }
-
+  
   def sequentialForeach[U](f: T => U, sz: Int) = {
     var i = 0
     val until = sz
@@ -52,7 +52,7 @@ trait SequentialOps[T] {
       i += 1
     }
   }
-
+  
   def sequentialSum[U >: T](sz: Int)(implicit num: Numeric[U]) = {
     var i = 0
     val until = sz
@@ -63,7 +63,7 @@ trait SequentialOps[T] {
     }
     sum
   }
-
+  
   def sequentialMin[U >: T](sz: Int)(implicit ord: Ordering[U]) = {
     var i = 1
     val until = sz
@@ -75,12 +75,12 @@ trait SequentialOps[T] {
     }
     min
   }
-
+  
   def sequentialForall(pred: T => Boolean, sz: Int) = {
     var i = 0
     val until = sz
     var all = true
-    while (i < until) {
+    while (i < until) { 
       if (pred(arr(i).asInstanceOf[T])) i += 1
       else {
         all = false
@@ -94,7 +94,7 @@ trait SequentialOps[T] {
     var i = 0
     val until = sz
     var some = false
-    while (i < until) {
+    while (i < until) { 
       if (pred(arr(i).asInstanceOf[T])) {
         some = true
         i = until
@@ -102,12 +102,12 @@ trait SequentialOps[T] {
     }
     some
   }
-
+  
   def sequentialFind(pred: T => Boolean, sz: Int) = {
     var i = 0
     val until = sz
     var opt: Option[T] = None
-    while (i < until) {
+    while (i < until) { 
       if (pred(arr(i).asInstanceOf[T])) {
         opt = Some(arr(i).asInstanceOf[T])
         i = until
@@ -115,7 +115,7 @@ trait SequentialOps[T] {
     }
     opt
   }
-
+  
   def sequentialFilter(pred: T => Boolean, sz: Int) = {
     var i = 0
     val buff = new collection.mutable.ArrayBuffer[T]
@@ -128,7 +128,7 @@ trait SequentialOps[T] {
     buff.copyToArray(resarr, 0)
     resarr
   }
-
+  
   def sequentialPartition(pred: T => Boolean, sz: Int) = {
     var i = 0
     val btrue = new collection.mutable.ArrayBuffer[T]
@@ -145,7 +145,7 @@ trait SequentialOps[T] {
     bfalse.copyToArray(resfalse, 0)
     (restrue, resfalse)
   }
-
+  
   def sequentialTakeOpt(n: Int, sz: Int) = {
     var i = 0
     val until = if (n < sz) n else sz
@@ -172,7 +172,7 @@ trait SequentialOps[T] {
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialDrop(n: Int, sz: Int) = {
     var i = n
     val b = new collection.mutable.ArrayBuffer[T]
@@ -186,7 +186,7 @@ trait SequentialOps[T] {
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialSlice(from: Int, until: Int, sz: Int) = {
     var i = from
     val b = new collection.mutable.ArrayBuffer[T]
@@ -200,7 +200,7 @@ trait SequentialOps[T] {
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialSplitAtOpt(n: Int, sz: Int) = {
     var i = 0
     val before = new Array[Any](n)
@@ -209,7 +209,7 @@ trait SequentialOps[T] {
     Array.copy(arr, n, after, 0, sz - n)
     (before, after)
   }
-
+  
   def sequentialSplitAt(n: Int, sz: Int) = {
     var i = 0
     val before = new collection.mutable.ArrayBuffer[T]
@@ -227,7 +227,7 @@ trait SequentialOps[T] {
     after.copyToArray(resaft, 0)
     (resbef, resaft)
   }
-
+  
   def sequentialTakeWhile(p: T => Boolean, sz: Int) = {
     var i = 0
     val b = new collection.mutable.ArrayBuffer[T]
@@ -242,7 +242,7 @@ trait SequentialOps[T] {
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialSpan(p: T => Boolean, sz: Int) = {
     val bpref = new collection.mutable.ArrayBuffer[T]
     val brest = new collection.mutable.ArrayBuffer[T]
@@ -267,112 +267,112 @@ trait SequentialOps[T] {
     brest.copyToArray(resrest, 0)
     (respref, resrest)
   }
-
+  
   def sequentialMap(f: T => T, sz: Int) = {
     val b = new collection.mutable.ArrayBuffer[T](sz)
-
+    
     var i = 0
     while (i < sz) {
       b += f(arr(i).asInstanceOf[T])
       i += 1
     }
-
+    
     val res = new Array[Any](sz)
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialMapOpt(f: T => T, sz: Int) = {
     val res = new Array[Any](sz)
-
+    
     var i = 0
     while (i < sz) {
       res(i) = f(arr(i).asInstanceOf[T])
       i += 1
     }
-
+    
     res
   }
-
+  
   def sequentialPartialMap(f: PartialFunction[T, T], sz: Int) = {
     val b = new collection.mutable.ArrayBuffer[T](sz)
-
+    
     var i = 0
     while (i < sz) {
       val elem = arr(i).asInstanceOf[T]
       if (f.isDefinedAt(elem)) b += f(elem)
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialFlatMap(f: T => Traversable[Int], sz: Int) = {
     val b = new collection.mutable.ArrayBuffer[Int](sz)
-
+    
     var i = 0
     while (i < sz) {
       val ts = f(arr(i).asInstanceOf[T])
       for (elem <- ts) b += elem
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
-  }
-
+  }  
+  
   def sequentialCopyToArray(destarr: Array[Any], pos: Int, sz: Int) = {
     Array.copy(arr, 0, destarr, pos, sz)
   }
-
+  
   def sequentialSegmentLength(pred: T => Boolean, from: Int, sz: Int) = {
     var i = from
     var cnt = 0
-
+    
     while (i < sz) {
       if (pred(arr(i).asInstanceOf[T])) {
         cnt += 1
         i += 1
       } else i = sz
     }
-
+    
     cnt
   }
-
+  
   def sequentialIndexWhere(pred: T => Boolean, from: Int, sz: Int) = {
     var i = from
     var pos = -1
-
+    
     while (i < sz) {
       if (pred(arr(i).asInstanceOf[T])) {
         pos = i
         i = sz
       } else i += 1
     }
-
+    
     pos
   }
-
+  
   def sequentialLastIndexWhere(pred: T => Boolean, end: Int, sz: Int) = {
     var i = end
     var pos = -1
-
+    
     while (i >= 0) {
       if (pred(arr(i).asInstanceOf[T])) {
         pos = i
         i = -1
       } else i -= 1
     }
-
+    
     pos
   }
-
+  
   def sequentialReverse(sz: Int) = {
     val res = new Array[Any](sz)
-
+    
     var i = sz - 1
     var j = 0
     while (i >= 0) {
@@ -382,10 +382,10 @@ trait SequentialOps[T] {
     }
     res
   }
-
+  
   def sequentialReverseMap(f: T => T, sz: Int) = {
     val res = new Array[Any](sz)
-
+    
     var i = sz - 1
     var j = 0
     while (i >= 0) {
@@ -395,7 +395,7 @@ trait SequentialOps[T] {
     }
     res
   }
-
+  
   def sequentialSameElements(sq: Seq[T], sz: Int): Boolean = {
     if (sz != sq.length) false
     else {
@@ -409,7 +409,7 @@ trait SequentialOps[T] {
       else false
     }
   }
-
+  
   def sequentialCorresponds(sq: Seq[T], f: (T, T) => Boolean, sz: Int): Boolean = {
     if (sz != sq.length) false
     else {
@@ -423,11 +423,11 @@ trait SequentialOps[T] {
       else false
     }
   }
-
+  
   def sequentialDiff(sq: Seq[T], sz: Int) = {
     val occmap = occurences(sq)
     val b = new collection.mutable.ArrayBuffer[T]
-
+    
     var i = 0
     while (i < sz) {
       val elem = arr(i).asInstanceOf[T]
@@ -435,16 +435,16 @@ trait SequentialOps[T] {
       else occmap(elem) -= 1
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialIntersect(sq: Seq[T], sz: Int) = {
     val occmap = occurences(sq)
     val b = new collection.mutable.ArrayBuffer[T]
-
+    
     var i = 0
     while (i < sz) {
       val elem = arr(i).asInstanceOf[T]
@@ -455,22 +455,22 @@ trait SequentialOps[T] {
       }
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
   }
-
+  
   private def occurences(sq: Seq[T]) = {
     val occmap = new collection.mutable.HashMap[T, Int] { override def default(k: T) = 0 }
     for (elem <- sq.iterator) occmap(elem) += 1
     occmap
   }
-
+  
   def sequentialRemoveDuplicates(sz: Int) = {
     val occ = new collection.mutable.HashSet[T]
     val b = new collection.mutable.ArrayBuffer[T]
-
+    
     var i = 0
     while (i < sz) {
       val elem = arr(i).asInstanceOf[T]
@@ -480,58 +480,58 @@ trait SequentialOps[T] {
       }
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialPatch(from: Int, p: Seq[T], replaced: Int, sz: Int) = {
     val b = new collection.mutable.ArrayBuffer[T]
     b.sizeHint(from + (sz - from - replaced) + p.size)
-
+    
     var i = 0
     while (i < from) {
       b += arr(i).asInstanceOf[T]
       i += 1
     }
-
+    
     val jt = p.iterator
     while (jt.hasNext) b += jt.next
-
+    
     val skipto = from + replaced
     while (i < from + replaced) i += 1
-
+    
     while (i < sz) {
       b += arr(i).asInstanceOf[T]
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
   }
-
+  
   def sequentialPadTo(tosize: Int, elem: T, sz: Int) = {
     val b = new collection.mutable.ArrayBuffer[T]
     b.sizeHint(tosize)
-
+    
     var i = 0
     while (i < sz) {
       b += arr(i).asInstanceOf[T]
       i += 1
     }
-
+    
     while (i < tosize) {
       b += elem
       i += 1
     }
-
+    
     val res = new Array[Any](b.size)
     b.copyToArray(res, 0)
     res
   }
-
+  
 }
 
 

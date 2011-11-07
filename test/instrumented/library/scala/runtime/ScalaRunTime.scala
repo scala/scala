@@ -25,17 +25,17 @@ import java.lang.reflect.{ Modifier, Method => JMethod }
  */
 object ScalaRunTime {
   def isArray(x: AnyRef): Boolean = isArray(x, 1)
-  def isArray(x: Any, atLevel: Int): Boolean =
+  def isArray(x: Any, atLevel: Int): Boolean = 
     x != null && isArrayClass(x.asInstanceOf[AnyRef].getClass, atLevel)
 
   private def isArrayClass(clazz: Class[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
-  def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
-
+  def isValueClass(clazz: Class[_]) = clazz.isPrimitive() 
+  
   var arrayApplyCount = 0
   var arrayUpdateCount = 0
-
+  
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = {
     arrayApplyCount += 1
@@ -85,7 +85,7 @@ object ScalaRunTime {
     case x: Array[Boolean] => x.length
     case x: Array[Unit]    => x.length
     case null => throw new NullPointerException
-  }
+  }    
 
   def array_clone(xs: AnyRef): AnyRef = xs match {
     case x: Array[AnyRef]  => ArrayRuntime.cloneArray(x)
@@ -122,7 +122,7 @@ object ScalaRunTime {
     }
     arr
   }
-
+  
   // Java bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4071957
   // More background at ticket #2318.
   def ensureAccessible(m: JMethod): JMethod = {
@@ -130,10 +130,10 @@ object ScalaRunTime {
       try m setAccessible true
       catch { case _: SecurityException => () }
     }
-    m
+    m    
   }
 
-  def checkInitialized[T <: AnyRef](x: T): T =
+  def checkInitialized[T <: AnyRef](x: T): T = 
     if (x == null) throw new UninitializedError else x
 
   abstract class Try[+A] {
@@ -143,9 +143,9 @@ object ScalaRunTime {
 
   def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
     private var result: A = _
-    private var exception: Throwable =
+    private var exception: Throwable = 
       try   { run() ; null }
-      catch {
+      catch { 
         case e: ControlThrowable  => throw e  // don't catch non-local returns etc
         case e: Throwable         => e
       }
@@ -167,7 +167,7 @@ object ScalaRunTime {
 
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
-
+  
   def _hashCode(x: Product): Int = {
     import scala.util.MurmurHash._
     val arr =  x.productArity
@@ -187,7 +187,7 @@ object ScalaRunTime {
 
   /** Fast path equality method for inlining; used when -optimise is set.
    */
-  @inline def inlinedEquals(x: Object, y: Object): Boolean =
+  @inline def inlinedEquals(x: Object, y: Object): Boolean = 
     if (x eq y) true
     else if (x eq null) false
     else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.equalsNumObject(x.asInstanceOf[java.lang.Number], y)
@@ -198,20 +198,20 @@ object ScalaRunTime {
     case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
     case _                                              => false
   }
-
+  
   // hashcode -----------------------------------------------------------
   //
   // Note that these are the implementations called by ##, so they
   // must not call ## themselves.
-
+ 
   @inline def hash(x: Any): Int =
     if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
     else x.hashCode
-
+  
   @inline def hash(dv: Double): Int = {
     val iv = dv.toInt
     if (iv == dv) return iv
-
+    
     val lv = dv.toLong
     if (lv == dv) return lv.hashCode
 
@@ -221,7 +221,7 @@ object ScalaRunTime {
   @inline def hash(fv: Float): Int = {
     val iv = fv.toInt
     if (iv == fv) return iv
-
+    
     val lv = fv.toLong
     if (lv == fv) return lv.hashCode
     else fv.hashCode
@@ -236,9 +236,9 @@ object ScalaRunTime {
   @inline def hash(x: Char): Int = x.toInt
   @inline def hash(x: Boolean): Int = x.hashCode
   @inline def hash(x: Unit): Int = 0
-
+  
   @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
-
+  
   /** XXX Why is there one boxed implementation in here? It would seem
    *  we should have all the numbers or none of them.
    */
@@ -263,15 +263,15 @@ object ScalaRunTime {
    * called on null and (b) depending on the apparent type of an
    * array, toString may or may not print it in a human-readable form.
    *
-   * @param arg the value to stringify
+   * @param arg the value to stringify 
    * @return a string representation of <code>arg</code>
    *
-   */
+   */  
   def stringOf(arg: Any): String = stringOf(arg, scala.Int.MaxValue)
-  def stringOf(arg: Any, maxElements: Int): String = {
+  def stringOf(arg: Any, maxElements: Int): String = {    
     def isScalaClass(x: AnyRef) =
       Option(x.getClass.getPackage) exists (_.getName startsWith "scala.")
-
+    
     def isTuple(x: AnyRef) =
       x.getClass.getName matches """^scala\.Tuple(\d+).*"""
 
@@ -315,13 +315,13 @@ object ScalaRunTime {
 
     // The try/catch is defense against iterables which aren't actually designed
     // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
-    val s =
+    val s = 
       try inner(arg)
-      catch {
+      catch { 
         case _: StackOverflowError | _: UnsupportedOperationException => arg.toString
       }
-
+        
     val nl = if (s contains "\n") "\n" else ""
-    nl + s + "\n"
+    nl + s + "\n"    
   }
 }

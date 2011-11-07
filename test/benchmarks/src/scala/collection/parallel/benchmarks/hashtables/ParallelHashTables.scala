@@ -13,18 +13,18 @@ import scala.collection.parallel.mutable.ParHashMap
 
 
 trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHashMap[K, V]] {
-
+  
   def nameOfCollection = "mutable.ParHashMap"
   def comparisonMap = collection.mutable.Map()
   val forkJoinPool = new scala.concurrent.forkjoin.ForkJoinPool
-
+  
   object Map2 extends IterableBenchCompanion {
     override def defaultSize = 40000
     override def comparisons = List("jhashtable")
     def benchName = "map2";
     def apply(sz: Int, p: Int, w: String) = new Map2(sz, p, w)
   }
-
+  
   class Map2(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     var result: Int = 0
@@ -56,13 +56,13 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
       println("Size of last result: " + result)
     }
   }
-
+  
   object FlatMap2 extends IterableBenchCompanion {
     override def defaultSize = 5000
     def benchName = "flatmap2";
     def apply(sz: Int, p: Int, w: String) = new FlatMap2(sz, p, w)
   }
-
+  
   class FlatMap2(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     def comparisonMap = collection.Map()
@@ -70,15 +70,15 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
     def runseq = this.seqcoll.flatMap(operators.flatmapper)
     def runpar = this.parcoll.flatMap(operators.flatmapper)
     def companion = FlatMap2
-  }
-
+  }  
+    
   object HeavyMap extends IterableBenchCompanion {
     override def defaultSize = 5000
     override def comparisons = List()
     def benchName = "heavy-map";
     def apply(sz: Int, p: Int, w: String) = new HeavyMap(sz, p, w)
   }
-
+  
   class HeavyMap(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     var result: Int = 0
@@ -93,14 +93,14 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
     def companion = HeavyMap
     override def repetitionsPerRun = 50
   }
-
+  
   object Reduce2 extends IterableBenchCompanion {
     override def defaultSize = 50000
     override def comparisons = List()
     def benchName = "reduce2";
     def apply(sz: Int, p: Int, w: String) = new Reduce2(sz, p, w)
   }
-
+  
   class Reduce2(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     def comparisonMap = collection.Map()
@@ -108,14 +108,14 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
     def runpar = this.parcoll.reduce(operators.mediumreducer)
     def companion = Reduce2
   }
-
+  
   object Foreach extends IterableBenchCompanion {
     override def defaultSize = 50000
     override def comparisons = List()
     def benchName = "foreach";
     def apply(sz: Int, p: Int, w: String) = new Foreach(sz, p, w)
   }
-
+  
   class Foreach(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     def comparisonMap = collection.Map()
@@ -123,7 +123,7 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
     def runpar = this.parcoll.pforeach(operators.foreachFun)
     def companion = Foreach
   }
-
+  
 }
 
 
@@ -131,16 +131,16 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
 
 
 object RefParHashTableBenches extends ParHashTableBenches[Dummy, Dummy] {
-
+  
   type DPair = (Dummy, Dummy);
-
+  
   object ForeachSet extends IterableBenchCompanion {
     override def defaultSize = 50000
     override def comparisons = List()
     def benchName = "foreach-set";
     def apply(sz: Int, p: Int, w: String) = new ForeachSet(sz, p, w)
   }
-
+  
   class ForeachSet(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     val array = new Array[Int](size)
@@ -148,14 +148,14 @@ object RefParHashTableBenches extends ParHashTableBenches[Dummy, Dummy] {
     def runseq = for (p <- this.seqcoll) array(p._1.in) += 1
     def runpar = this.parcoll.pforeach { p => array(p._1.in) += 1 }
     def companion = ForeachSet
-
+    
     override def onEnd {
       for (i <- 0 until array.length) {
         assert(array(i) == repetitionsPerRun * runs)
       }
     }
   }
-
+  
   object operators extends Operators[DPair] {
     def gcd(a: Int, b: Int): Int = {
       val result = if (b == 0) a else {
@@ -214,13 +214,13 @@ object RefParHashTableBenches extends ParHashTableBenches[Dummy, Dummy] {
       dp._1.dummy
     }
   }
-
+  
   def createSequential(sz: Int, p: Int) = {
     val ht = new collection.mutable.HashMap[Dummy, Dummy]
     for (i <- 0 until sz) ht += ((new Dummy(i), new Dummy(i)))
     ht
   }
-
+  
   def createParallel(sz: Int, p: Int) = {
     val phm = new ParHashMap[Dummy, Dummy]
     for (i <- 0 until sz) phm += ((new Dummy(i), new Dummy(i)))
@@ -228,5 +228,5 @@ object RefParHashTableBenches extends ParHashTableBenches[Dummy, Dummy] {
     collection.parallel.tasksupport.environment = forkJoinPool
     phm
   }
-
+  
 }

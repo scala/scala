@@ -6,7 +6,7 @@ package scala.collection.parallel.benchmarks.arrays
 trait UnknownManif[T] {
   def manifarray: Array[T]
   def size: Int
-
+  
   def rununknown {
     val arr = manifarray
     val sz = size
@@ -17,7 +17,7 @@ trait UnknownManif[T] {
       i += 1
     }
   }
-
+  
   def op(d: Any) {}
 }
 

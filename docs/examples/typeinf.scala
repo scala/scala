@@ -69,14 +69,14 @@ object typeInfer {
     case Tycon(k, ts) => (List[Tyvar]() /: ts) ((tvs, t) => tvs union tyvars(t))
   }
 
-  def tyvars(ts: TypeScheme): List[Tyvar] =
+  def tyvars(ts: TypeScheme): List[Tyvar] = 
     tyvars(ts.tpe) diff ts.tyvars;
 
   def tyvars(env: Env): List[Tyvar] =
     (List[Tyvar]() /: env) ((tvs, nt) => tvs union tyvars(nt._2))
 
   def mgu(t: Type, u: Type, s: Subst): Subst = Pair(s(t), s(u)) match {
-    case Pair(Tyvar(a), Tyvar(b)) if (a == b) =>
+    case Pair(Tyvar(a), Tyvar(b)) if (a == b) => 
       s
     case Pair(Tyvar(a), _) if !(tyvars(u) contains a) =>
       s.extend(Tyvar(a), u)
@@ -181,7 +181,7 @@ object typeInfer {
         yield Lam(x, t): Term )
       |||
       ( for (
-          letid <- id if letid == "let";
+          letid <- id if letid == "let"; 
           x <- ident;
           _ <- wschr('=');
           t <- term;

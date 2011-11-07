@@ -229,7 +229,7 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
-
+  
   property("Trac #4420 - no whitespace at end of line") = {
     val files = createTemplates("Trac4420.scala")
 
@@ -247,7 +247,7 @@ object Test extends Properties("HtmlFactory") {
     val lines = """
         |type Bar = AnyRef { type Dingus <: T forSome { type T <: String } }
         |type Foo = AnyRef { ... /* 3 definitions in type refinement */ }
-        |def g (x: T forSome { type T <: String }): String
+        |def g (x: T forSome { type T <: String }): String 
         |def h (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
         |def hh (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
         |def j (x: Int): Bar

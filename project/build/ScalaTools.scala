@@ -159,7 +159,7 @@ trait ScalaTools {
     val fsc = new ToolConfiguration("fsc", destination,"scala.tools.nsc.CompileClient", "",defaultJavaFlags, "", classpath)
     val scalap = new ToolConfiguration("scalap",destination, "scala.tools.scalap.Main", "",defaultJavaFlags, "", classpath)
 
-
+    
     val toolList = scala :: scalac :: scaladoc :: fsc :: scalap :: Nil
 
     def process(list: List[ToolConfiguration]): Option[String] = list match {

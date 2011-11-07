@@ -16,7 +16,7 @@ object Test extends Properties("Index") {
     val morepaths = Thread.currentThread.getContextClassLoader.getParent.asInstanceOf[URLClassLoader].getURLs.map(_.getPath)
     (paths ++ morepaths).mkString(java.io.File.pathSeparator)
   }
-
+  
   val docFactory = {
     val settings = new doc.Settings({Console.err.println(_)})
 
@@ -27,9 +27,9 @@ object Test extends Properties("Index") {
 
     new doc.DocFactory(reporter, settings)
   }
-
+  
   val indexModelFactory = doc.model.IndexModelFactory
-
+  
   def createIndex(path: String): Option[Index] = {
 
     val maybeUniverse = {

@@ -4,7 +4,7 @@ trait PimpedType[X] {
 
 trait Tuples {
 
-
+  
 trait Tuple15W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O] extends PimpedType[Tuple15[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple15[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15)}
@@ -13,7 +13,7 @@ trait Tuple15W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O] extends PimpedType[T
 
 implicit def ToTuple15W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O)): Tuple15W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O] = new { val value = t } with Tuple15W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O]
 
-
+  
 trait Tuple16W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P] extends PimpedType[Tuple16[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple16[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16)}
@@ -22,7 +22,7 @@ trait Tuple16W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P] extends PimpedTyp
 
 implicit def ToTuple16W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P)): Tuple16W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P] = new { val value = t } with Tuple16W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P]
 
-
+  
 trait Tuple17W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q] extends PimpedType[Tuple17[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple17[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17)}
@@ -31,7 +31,7 @@ trait Tuple17W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q] extends Pimped
 
 implicit def ToTuple17W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q)): Tuple17W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q] = new { val value = t } with Tuple17W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q]
 
-
+  
 trait Tuple18W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R] extends PimpedType[Tuple18[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple18[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18)}
@@ -40,7 +40,7 @@ trait Tuple18W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R] extends Pim
 
 implicit def ToTuple18W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R)): Tuple18W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R] = new { val value = t } with Tuple18W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R]
 
-
+  
 trait Tuple19W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S] extends PimpedType[Tuple19[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple19[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19)}
@@ -49,7 +49,7 @@ trait Tuple19W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S] extends 
 
 implicit def ToTuple19W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S)): Tuple19W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S] = new { val value = t } with Tuple19W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S]
 
-
+  
 trait Tuple20W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T] extends PimpedType[Tuple20[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple20[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20)}
@@ -58,7 +58,7 @@ trait Tuple20W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T] exten
 
 implicit def ToTuple20W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T)): Tuple20W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T] = new { val value = t } with Tuple20W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T]
 
-
+  
 trait Tuple21W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U] extends PimpedType[Tuple21[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple21[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21)}
@@ -67,7 +67,7 @@ trait Tuple21W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U] ex
 
 implicit def ToTuple21W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U](t: (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U)): Tuple21W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U] = new { val value = t } with Tuple21W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U]
 
-
+  
 trait Tuple22W[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V] extends PimpedType[Tuple22[A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V]] {
   def fold[Z](f: => (A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V) => Z): Z = {import value._; f(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22)}
   def toIndexedSeq[Z](implicit ev: value.type <:< Tuple22[Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z]): IndexedSeq[Z] = {val zs = ev(value); import zs._; IndexedSeq(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22)}

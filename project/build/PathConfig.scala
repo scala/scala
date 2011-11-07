@@ -1,6 +1,6 @@
 import sbt._
 
-/**
+/** 
   * An abstract class for grouping all different paths that are needed to
   * compile the a CompilationStep
   * @author Grégory Moix
@@ -21,7 +21,7 @@ trait SimpleOutputLayout {
   def outputDir: Path
   lazy val classesOutput = outputDir / PathConfig.classes
   lazy val analysisOutput = outputDir / PathConfig.analysis
-
+  
 }
 
 class PathLayout(val projectRoot: Path, val outputDir: Path) extends SimpleOutputLayout {

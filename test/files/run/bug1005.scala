@@ -10,7 +10,7 @@ object Test
   object FromPoly{
     def main(args : Array[String]) = (new Bar[AnyRef](Array[AnyRef]("Halp!"))).bar
   }
-
+  
   def main(args: Array[String]): Unit = {
     println(FromMono main null mkString)
     println(FromPoly main null mkString)

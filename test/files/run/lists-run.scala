@@ -12,7 +12,7 @@ import testing.SUnit._
  */
 object Test extends TestConsoleMain {
   def suite = new TestSuite(
-    Test_multiset, // multiset operations: union, intersect, diff
+    Test_multiset, // multiset operations: union, intersect, diff 
     Test1, //count, exists, filter, ..
     Test2, //#468
     Test3, //#1691
@@ -63,7 +63,7 @@ object Test_multiset extends TestCase("multiset") with Assert {
     assertEquals("vs_diff_xs", List(3, 2), vs diff xs)
     assertTrue("xs_subset_vs", isSubListOf(xs -- vs, xs diff vs))
 
-    // tests adapted from Thomas Jung
+    // tests adapted from Thomas Jung 
     assertTrue(
       "be symmetric after sorting", {
         def sort(zs: List[Int]) = zs sort ( _ > _ )
@@ -73,7 +73,7 @@ object Test_multiset extends TestCase("multiset") with Assert {
       "obey min cardinality", {
         def cardinality[A](zs: List[A], e: A): Int = zs count (e == _)
         val intersection = xs intersect ys
-        xs forall (e => cardinality(intersection, e) == (cardinality(xs, e)
+        xs forall (e => cardinality(intersection, e) == (cardinality(xs, e) 
 min cardinality(ys, e)))
       })
     assertTrue(
@@ -149,7 +149,7 @@ object Test2 extends TestCase("t0468") with Assert {
   override def runTest {
     val xs1 = List(1, 2, 3)
     val xs2 = List(0)
-
+ 
     val ys1 = xs1 ::: List(4)
     assertEquals("check_:::", List(1, 2, 3, 4), ys1)
 

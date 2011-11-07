@@ -78,7 +78,7 @@ object HashSpeedTest {
       i += 1
     }
   }
-
+  
   def justCountList: List[List[Int]] => Unit = lli => {
     var s = 0
     lli.foreach(_.foreach(s += _))

@@ -11,7 +11,7 @@ object Test extends Application {
 }
 
 // This code prints 1. If we remove comment, then it will print 4.
-// Moreover following code prints 3 (which is most strange thing):
+// Moreover following code prints 3 (which is most strange thing): 
 
 object Test2 extends Application {
   class A

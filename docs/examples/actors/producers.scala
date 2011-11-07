@@ -6,13 +6,13 @@ import scala.actors.Actor._
 abstract class Producer[T] {
 
   /** A signal that the next value should be produced. */
-  private val Next = new Object
+  private val Next = new Object 
 
   /** A label for an undefined state of the iterators. */
   private val Undefined = new Object
 
   /** A signal to stop the coordinator. */
-  private val Stop = new Object
+  private val Stop = new Object 
 
   protected def produce(x: T) {
     coordinator ! Some(x)
@@ -53,10 +53,10 @@ abstract class Producer[T] {
   }
 
   private val producer: Actor = actor {
-    receive {
-      case Next =>
+    receive { 
+      case Next => 
         produceValues
-        coordinator ! None
+        coordinator ! None 
     }
   }
 }
@@ -70,7 +70,7 @@ object producers extends Application {
   def tree = node(node(node(3), 4, node(6)), 8, node(node(9), 10, node(11)))
 
   class PreOrder(n: Tree) extends Producer[Int] {
-    def produceValues = traverse(n)
+    def produceValues = traverse(n) 
     def traverse(n: Tree) {
       if (n != null) {
         produce(n.elem)
@@ -81,7 +81,7 @@ object producers extends Application {
   }
 
   class PostOrder(n: Tree) extends Producer[Int] {
-    def produceValues = traverse(n)
+    def produceValues = traverse(n) 
     def traverse(n: Tree) {
       if (n != null) {
         traverse(n.left)
@@ -92,7 +92,7 @@ object producers extends Application {
   }
 
   class InOrder(n: Tree) extends Producer[Int] {
-    def produceValues = traverse(n)
+    def produceValues = traverse(n) 
     def traverse(n: Tree) {
       if (n != null) {
         traverse(n.left)

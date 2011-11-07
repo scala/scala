@@ -5,7 +5,7 @@ import scala.tools.partest._
 class Runner(num: Int, reps: Int) extends TestUtil {
   var dummy = 0
   val range = Array.range(0, num)
-
+  
   def iteratorSlice = {
     def it = range.iterator.slice(num - 2, num)
     for (i <- 1 to reps)
