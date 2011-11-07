@@ -1,4 +1,4 @@
-class Automaton[@specialized(Double) W,State] {
+class Automaton[@specialized(Double) W,State] { 
 
   def finalWeight(s: State): W = error("todo");
 

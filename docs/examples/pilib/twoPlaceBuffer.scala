@@ -16,7 +16,7 @@ object twoPlaceBuffer extends Application {
 
     def B1(x: A): Unit = choice (
       out(x) * (B0),
-      in * (y => B2(x, y))
+      in * (y => B2(x, y)) 
     )
 
     def B2(x: A, y: A): Unit = choice (

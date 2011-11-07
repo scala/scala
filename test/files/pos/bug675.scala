@@ -7,7 +7,7 @@ trait T {
   }
   trait X {
     def foo : Foo = FOO_0;
-  }
+  }  
 }
 
 object Test extends Application {
@@ -15,5 +15,5 @@ object Test extends Application {
   val x = new t.X{}
   Console.println(x.foo)
 }
-
-
+  
+  

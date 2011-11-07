@@ -4,9 +4,9 @@ import util.stringFromStream
 // Testing "scripts" without the platform delights which accompany actual scripts.
 object Scripts {
 
-  val test1 =
-"""#!/bin/sh
-  exec scala $0 $@
+  val test1 = 
+"""#!/bin/sh 
+  exec scala $0 $@ 
 !#
 
 println("statement 1")
@@ -29,7 +29,7 @@ val x = "line 6"
 val y = "line 7"
 val z "line 8""""
 
-  val output2 =
+  val output2 = 
 """bob.scala:8: error: '=' expected but string literal found.
 val z "line 8"
       ^
@@ -41,10 +41,10 @@ two errors found"""
 
 object Test {
   import Scripts._
-
+  
   def settings = new GenericRunnerSettings(println _)
   settings.nocompdaemon.value = true
-
+  
   def runScript(code: String): String =
     stringFromStream(stream =>
       Console.withOut(stream) {
@@ -53,7 +53,7 @@ object Test {
         }
       }
     )
-
+  
   val tests: List[(String, String)] = List(
     test1 -> output1,
     test2 -> output2
@@ -67,14 +67,14 @@ object Test {
     case idx  => s drop (idx + 7)
   }
   def toLines(text: String) = lines(text) map stripFilename
-
+  
   def main(args: Array[String]): Unit = {
-    for ((code, expected) <- tests) {
+    for ((code, expected) <- tests) {      
       val out = toLines(runScript(code))
       val exp = toLines(expected)
       val nomatch = out zip exp filter { case (x, y) => x != y }
       val success = out.size == exp.size && nomatch.isEmpty
-
+      
       assert(
         success,
         "Output doesn't match expected:\n" +

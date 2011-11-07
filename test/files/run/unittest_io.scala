@@ -5,7 +5,7 @@ object Test extends TestConsoleMain {
 
   class UTF8Tests extends TestCase("UTF8Codec") {
     import io.UTF8Codec.encode
-
+   
     def runTest {
       assertEquals(new String( encode(0x004D), "utf8"), new String(Array(0x004D.asInstanceOf[Char])))
       assertEquals(new String( encode(0x0430), "utf8"), new String(Array(0x0430.asInstanceOf[Char])))
@@ -31,7 +31,7 @@ object Test extends TestConsoleMain {
       f.copyToBuffer(b)
       assertEquals(s, new String(b.toArray))
 
-      /* todo: same factories for BufferedSource and Source
+      /* todo: same factories for BufferedSource and Source 
        val g = io.BufferedSource.fromBytes(s.getBytes("utf-8"))
        val c = new collection.mutable.ArrayBuffer[Char]()
        g.copyToBuffer(c)

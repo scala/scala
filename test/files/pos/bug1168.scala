@@ -1,5 +1,5 @@
 object Test extends Application {
-
+  
   trait SpecialException {}
 
   try {

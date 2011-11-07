@@ -23,7 +23,7 @@ exec scala -nocompdaemon "$SOURCE" "$@"
 def foo = {
   bar
 }
-
+    
 var x = 1
-
+    
 def bar = 1

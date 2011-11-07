@@ -1,5 +1,5 @@
 class Foo(flag: Boolean) {
-    val classpath =
+    val classpath = 
         if (flag)
             new AClasspath
         else

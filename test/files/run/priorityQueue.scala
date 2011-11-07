@@ -31,21 +31,21 @@ object Test {
     val pq2 = new PriorityQueue[String]
     val pq3 = new PriorityQueue[String]
     val pq4 = new PriorityQueue[String]
-
+    
     val strings = (1 to 20).toList map (i => List.fill((Math.abs(nextInt % 20)) + 1)("x").mkString)
-
+    
     pq1 ++= strings
     pq2 ++= strings.reverse
     for (s <- strings) pq3 += s
     for (s <- strings.reverse) pq4 += s
-
+    
     val pqs = List(pq1, pq2, pq3, pq4, pq1.clone, pq2.clone)
-
+  
     for (queue1 <- pqs ; queue2 <- pqs) {
       assert(queue1 == queue2)
       assert(queue1.max == queue2.max)
     }
-
+    
     assertPriority(pq1)
   }
 
@@ -80,7 +80,7 @@ object Test {
     }
     for (i <- 0 until 100) assert(intpq(i) == (99 - i))
   }
-
+  
   def testTails {
     val pq = new PriorityQueue[Int]
     for (i <- 0 until 10) pq += i * 4321 % 200
@@ -120,9 +120,9 @@ object Test {
   def testInits {
     val pq = new PriorityQueue[Long]
     for (i <- 0 until 20) pq += (i + 313) * 111 % 300
-
+    
     assert(pq.size == 20)
-
+    
     val initpq = pq.init
     assert(initpq.size == 19)
     assertPriorityDestructive(initpq)
@@ -131,19 +131,19 @@ object Test {
   def testFilters {
     val pq = new PriorityQueue[String]
     for (i <- 0 until 100) pq += "Some " + (i * 312 % 200)
-
+    
     val filpq = pq.filter(_.indexOf('0') != -1)
     assertPriorityDestructive(filpq)
   }
 
   def testIntensiveEnqueueDequeue {
     val pq = new PriorityQueue[Int]
-
+    
     testIntensive(1000, pq)
     pq.clear
     testIntensive(200, pq)
   }
-
+  
   def testIntensive(sz: Int, pq: PriorityQueue[Int]) {
     val lst = new collection.mutable.ArrayBuffer[Int] ++ (0 until sz)
     val rand = new util.Random(7)
@@ -161,7 +161,7 @@ object Test {
     pq ++= (0 until 100)
     val droppq = pq.drop(50)
     assertPriority(droppq)
-
+    
     pq.clear
     pq ++= droppq
     assertPriorityDestructive(droppq)
@@ -180,7 +180,7 @@ object Test {
     assertPriority(pq)
 
     pq.clear
-
+    
     pq ++= (1 to 100)
     pq(5) = 200
     assert(pq(0) == 200)
@@ -211,7 +211,7 @@ object Test {
   def testEquality {
     val pq1 = new PriorityQueue[Int]
     val pq2 = new PriorityQueue[Int]
-
+    
     pq1 ++= (0 until 50)
     var i = 49
     while (i >= 0) {
@@ -220,7 +220,7 @@ object Test {
     }
     assert(pq1 == pq2)
     assertPriority(pq2)
-
+    
     pq1 += 100
     assert(pq1 != pq2)
     pq2 += 100
@@ -237,7 +237,7 @@ object Test {
     val pq = new PriorityQueue[Int]
     pq ++= (0 until 100)
     assert(pq.size == 100)
-
+    
     val (p1, p2) = pq.partition(_ < 50)
     assertPriorityDestructive(p1)
     assertPriorityDestructive(p2)
@@ -259,13 +259,13 @@ object Test {
     assert(pq.lastIndexWhere(_ == 9) == 0)
     assert(pq.lastIndexOf(8) == 1)
     assert(pq.lastIndexOf(7) == 2)
-
+    
     pq += 5
     pq += 9
     assert(pq.lastIndexOf(9) == 1)
     assert(pq.lastIndexWhere(_ % 2 == 1) == 10)
     assert(pq.lastIndexOf(5) == 6)
-
+    
     val lst = pq.reverseIterator.toList
     for (i <- 0 until 5) assert(lst(i) == i)
     assert(lst(5) == 5)
@@ -275,13 +275,13 @@ object Test {
     assert(lst(9) == 8)
     assert(lst(10) == 9)
     assert(lst(11) == 9)
-
+    
     pq.clear
     assert(pq.reverseIterator.toList.isEmpty)
-
+    
     pq ++= (50 to 75)
     assert(pq.lastIndexOf(70) == 5)
-
+    
     pq += 55
     pq += 70
     assert(pq.lastIndexOf(70) == 6)
@@ -291,11 +291,11 @@ object Test {
     assert(pq.lastIndexWhere(_ > 54, 21) == 21)
     assert(pq.lastIndexWhere(_ > 69, 5) == 5)
   }
-
+  
   def testReverse {
     val pq = new PriorityQueue[(Int, Int)]
     pq ++= (for (i <- 0 until 10) yield (i, i * i % 10))
-
+    
     assert(pq.reverse.size == pq.reverseIterator.toList.size)
     assert((pq.reverse zip pq.reverseIterator.toList).forall(p => p._1 == p._2))
     assert(pq.reverse.sameElements(pq.reverseIterator.toSeq))
@@ -303,19 +303,19 @@ object Test {
     assert(pq.reverse(1)._1 == pq(8)._1)
     assert(pq.reverse(4)._1 == pq(5)._1)
     assert(pq.reverse(9)._1 == pq(0)._1)
-
+    
     pq += ((7, 7))
     pq += ((7, 9))
     pq += ((7, 8))
     assert(pq.reverse.reverse == pq)
     assert(pq.reverse.lastIndexWhere(_._2 == 6) == 6)
     assertPriorityDestructive(pq.reverse.reverse)
-
+    
     val iq = new PriorityQueue[Int]
     iq ++= (0 until 50)
     assert(iq.reverse == iq.reverseIterator.toSeq)
     assert(iq.reverse.reverse == iq)
-
+    
     iq += 25
     iq += 40
     iq += 10
@@ -324,7 +324,7 @@ object Test {
     assert(iq.reverse.lastIndexWhere(_ == 10) == 11)
     assertPriorityDestructive(iq.reverse.reverse)
   }
-
+  
 }
 
 

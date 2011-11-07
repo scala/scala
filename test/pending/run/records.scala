@@ -16,10 +16,10 @@ object Test {
   val y = new C {
     def f = 2
     def g = " world"
-  }
-
+  } 
+    
   val z: T = y
-
+  
   Console.println(x.f+z.f+", expected = 3")
   Console.println(x.g+z.g+", expected = hello world")
 }

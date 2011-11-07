@@ -20,6 +20,6 @@ object Test extends Application {
   println("a2=" + _toString(a2))
   util.Sorting.stableSort(a2)
   println("a2=" + _toString(a2))
-
+  
   println(a1 deepEquals a3)
 }

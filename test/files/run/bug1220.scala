@@ -1,7 +1,7 @@
 object Test extends Application {
 
   class QSRichIterable[A](self: Iterable[A]) {
-    def filterMap[R](f: PartialFunction[A,R]) =
+    def filterMap[R](f: PartialFunction[A,R]) = 
       self filter (f.isDefinedAt) map f
   }
 

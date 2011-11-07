@@ -1,6 +1,6 @@
-// this test has accompanying .flags file
+// this test has accompanying .flags file 
 //  that contains -Xsqueeze:on
-//
+// 
 object Foo {
   var xyz: (Int, String) = (1, "abc")
   xyz._1 match {

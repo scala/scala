@@ -7,13 +7,13 @@ trait Test1 {
     (i:Int) => i + 5
   }
 }
-
+	
 abstract class Foo {
   override def toString = getClass.getSimpleName
-
+  
   abstract class Bar {
     override def toString = getClass.getSimpleName
-  }
+  } 
 }
 
 object Test extends Application {

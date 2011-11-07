@@ -24,7 +24,7 @@ object Test {
      try {
        Console.println(a.asInstanceOf[RandomAccessSeq.Mutable[_]])
      } catch { case ex : ClassCastException => Console.println("Bad, arrays should be mutable random access seqs") }
-     try {
+     try { 
        Console.println("not expected: " + a.asInstanceOf[List[_]])
      } catch { case ex : ClassCastException => Console.println("Good, arrays are not lists") }
      try {
@@ -38,5 +38,5 @@ object Test {
        Console.println(s.asInstanceOf[Array[Int]].getClass)
      } catch { case ex : ClassCastException => Console.println("Bad, arrays as seqs should still be arrays of int") }
      ()
-   }
+   } 
 }

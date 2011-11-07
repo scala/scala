@@ -17,57 +17,57 @@ object phonebook3 {
 
       import xml.Utility.{trim,trimProper} //removes whitespace nodes, which are annoying in matches
 
-      for( val c <- ch ) yield
+      for( val c <- ch ) yield 
         trimProper(c) match {
 
           // if the node is the particular entry we are looking for, return an updated copy
 
-          case x @ <entry><name>{ Text(Name) }</name>{ ch1 @ _* }</entry> =>
+          case x @ <entry><name>{ Text(Name) }</name>{ ch1 @ _* }</entry> => 
 
             var updated = false;
             val ch2 = for(c <- ch1) yield c match { // does it have the phone number?
 
-              case y @ <phone>{ _* }</phone> if y \ "@where" == Where =>
+              case y @ <phone>{ _* }</phone> if y \ "@where" == Where => 
                 updated = true
                 <phone where={ Where }>{ newPhone }</phone>
-
+              
               case y => y
-
+              
             }
             if( !updated ) { // no, so we add as first entry
-
+            
               <entry>
                 <name>{ Name }</name>
                 <phone where={ Where }>{ newPhone }</phone>
                 { ch1 }
               </entry>
-
+              
             } else {         // yes, and we changed it as we should
-
+              
               <entry>
                 { ch2 }
               </entry>
-
-            }
+        
+            } 
           // end case x @ <entry>...
-
+          
           // other entries are copied without changing them
 
-          case x =>
+          case x =>           
             x
-
+          
         }
     } ; // for ... yield ... returns an Iterator[Node]
-
+    
     // decompose phonebook, apply updates
     phonebook match {
       case <phonebook>{ ch @ _* }</phonebook> =>
         <phonebook>{ copyOrChange( ch.iterator ) }</phonebook>
     }
-
+    
   }
 
-  val pb2 =
+  val pb2 = 
     change( phonebook1.labPhoneBook, "John", "work", "+41 55 555 55 55" );
 
   val pp = new PrettyPrinter( 80, 5 );

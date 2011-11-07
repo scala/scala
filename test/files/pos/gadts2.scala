@@ -9,8 +9,8 @@ object Test {
   final case class NumTerm(val n: Number) extends Term[Number]
 
   def f[a](t: Term[a], c: Cell[a]) {
-    t match {
-      case NumTerm(n) => c.x = MyDouble(1.0)
+    t match {  
+      case NumTerm(n) => c.x = MyDouble(1.0) 
     }
   }
 

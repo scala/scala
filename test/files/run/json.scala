@@ -28,7 +28,7 @@ object Test extends Application {
       case Some(parsed) => println("Passed: " + sortJSON(parsed))
     }
   }
-
+    
   def printJSON(given : String, expected : Any) {
     JSON parseFull given match {
       case None => println("Parse failed for \"%s\"".format(given))
@@ -63,11 +63,11 @@ object Test extends Application {
 
   // The library should recurse into arrays to find objects (ticket #2207)
   printJSON("""[{"a": "team"},{"b": 52}]""", List(Map("a" -> "team"), Map("b" -> 52.0)))
-
+  
   // The library should differentiate between empty maps and lists (ticket #3284)
-  printJSON("{}", Map())
+  printJSON("{}", Map()) 
   printJSON("[]", List())
-
+  
   // Lists should be returned in the same order as specified
   printJSON("[4,1,3,2,6,5,8,7]", List[Double](4,1,3,2,6,5,8,7))
 
@@ -110,7 +110,7 @@ object Test extends Application {
     )
   )
 
-
+  
   printJSON(sample1, sample1Obj)
   println
 
@@ -146,7 +146,7 @@ object Test extends Application {
   // from http://json.org/example.html
   val sample3 = """
 {"web-app": {
-  "servlet": [
+  "servlet": [   
     {
       "servlet-name": "cofaxCDS",
       "servlet-class": "org.cofax.cds.CDSServlet",
@@ -202,7 +202,7 @@ object Test extends Application {
     {
       "servlet-name": "cofaxAdmin",
       "servlet-class": "org.cofax.cds.AdminServlet"},
-
+ 
     {
       "servlet-name": "fileServlet",
       "servlet-class": "org.cofax.cds.FileServlet"},
@@ -229,7 +229,7 @@ object Test extends Application {
     "cofaxAdmin": "/admin/*",
     "fileServlet": "/static/*",
     "cofaxTools": "/tools/*"},
-
+ 
   "taglib": {
     "taglib-uri": "cofax.tld",
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}

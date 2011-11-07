@@ -536,7 +536,7 @@ object Test6 {
 // they would be null (they are treated as lazy vals)
 @serializable
 class Outer {
-
+    
     @serializable
     object Inner
 }
@@ -553,7 +553,7 @@ object Test7 {
   case e: Exception =>
     println("Error in Test7: " + e)
   }
-
+    
 }
 
 //############################################################################

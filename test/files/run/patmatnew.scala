@@ -72,7 +72,7 @@ object Test extends TestConsoleMain {
 
   object SeqUnapply extends TestCase("seqUnapply") {
     case class SFB(i: Int, xs: List[Int])
-    override def runTest() {
+    override def runTest() { 
       List(1,2) match {
         case List(1) => assert(false, "wrong case")
         case List(1,2,xs @ _*) => assert(xs.isEmpty, "not empty")
@@ -104,11 +104,11 @@ object Test extends TestConsoleMain {
         case 0 => 0
       })
       assertEquals("s2", 1, 1 match {
-        case 1 => 1
+        case 1 => 1 
         case _ => 0
       })
       assertEquals("s2boxed", 1, (1:Any) match {
-        case 1 => 1
+        case 1 => 1 
         case _ => 0
       })
       assertEquals("s3", 1, ("hello") match {
@@ -235,7 +235,7 @@ object Test extends TestConsoleMain {
 
     case class Foo() extends Con
     case class Bar(xs:Con*) extends Con
-
+    
     override def runTest() {
       val res = (Bar(Foo()):Con) match {
         case Bar(xs@_*) => xs // this should be optimized away to a pattern Bar(xs)
@@ -246,9 +246,9 @@ object Test extends TestConsoleMain {
   }
 
   object TestSequence06 extends TestCase("sei (not regular) fancy guards / bug#644 ") {
-
+    
     case class A(i: Any)
-
+     
     def doMatch(x: Any, bla: Int) = x match {
       case x:A if (bla==1) => 0
       case A(1) => 1
@@ -273,7 +273,7 @@ object Test extends TestConsoleMain {
     //def doMatch3(xs:List[char]) = xs match {
     //  case List(_*, z, w) => w::Nil
     //}
-    //
+    // 
     // Since the second case should have been unreachable all along,
     // let's just comment this one out.
     //
@@ -299,8 +299,8 @@ object Test extends TestConsoleMain {
       assertEquals(List('c','d'), doMatch6(List('a','b','c','d')))
     }
   }
-
-  object TestSequence08 extends TestCase("backquoted identifiers in pattern") {
+ 
+  object TestSequence08 extends TestCase("backquoted identifiers in pattern") { 
     override def runTest() {
       val xs = List(2, 3)
       val ys = List(1, 2, 3) match {
@@ -318,17 +318,17 @@ object Test extends TestConsoleMain {
         case Stream.Empty => 0
         case Stream.cons(hd, tl) => hd + sum(tl)
       }
-
+    
     val str: Stream[Int] = List(1,2,3).iterator.toStream
 
     def runTest() = assertEquals(sum(str), 6)
   }
-
+  
   class Test1163_Order extends TestCase("bug#1163 order of temps must be preserved") {
     abstract class Function
     case class Var(n: String) extends Function
     case class Const(v: Double) extends Function
-
+    
     def f(): (Function, Function) = {
       (Var("x"): Function, Var("y"): Function) match {
         case (Const(v), Const(w)) => throw new Error
@@ -336,13 +336,13 @@ object Test extends TestConsoleMain {
         case (leftTwo, rightTwo) => (leftTwo, rightTwo) // was giving "y","x"
       }
     }
-
-    def flips(l: List[Int]): Int = (l: @unchecked) match {
+    
+    def flips(l: List[Int]): Int = (l: @unchecked) match { 
       case 1 :: ls => 0
       case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
     }
 
-    def runTest() =  assertEquals("both", (Var("x"),Var("y")), f)
+    def runTest() =  assertEquals("both", (Var("x"),Var("y")), f) 
   }
 
   class TestUnbox extends TestCase("unbox") {
@@ -366,8 +366,8 @@ object Test extends TestConsoleMain {
 	case dq : DoubleQuoteImpl => dq
       }
     }
-
-    trait IfElseMatcher {
+    
+    trait IfElseMatcher { 
       type Node <: NodeImpl
       trait NodeImpl
       trait IfImpl
@@ -375,7 +375,7 @@ object Test extends TestConsoleMain {
         case node : IfImpl => node  // var node is of type Node with IfImpl!
         case _ => null
       }
-    }
+    }    
   }
 
 
@@ -385,7 +385,7 @@ object Test extends TestConsoleMain {
   }
 
   object PersonFather {
-    def unapply(p : Person) : Option[Person]  =
+    def unapply(p : Person) : Option[Person]  = 
       if (p.father == null)
         None
       else
@@ -425,11 +425,11 @@ object Test extends TestConsoleMain {
   object Foo1 {
     class Bar1(val x : String)
     def p(b : Bar1) = Console.println(b.x)
-
+    
     def unapply(s : String) : Option[Bar1] =
       Some(new Bar1(s))
   }
-
+  
   object bug881 extends TestCase("881") {
     override def runTest = {
       "baz" match {
@@ -448,19 +448,19 @@ object Test extends TestConsoleMain {
     case Pair(Some(x),Some(y)) => 3
     case _ => 4
   }
-
+  
   def g1[A](z:Option[List[A]]) = z match {
-    case Some(Nil) => true
-    case Some(x::Nil) => true
+    case Some(Nil) => true    
+    case Some(x::Nil) => true  
     case _ => true
   }
-
+  
   def g2[A](z:Option[List[A]]) = z match {
-    case Some(x::Nil) => true
+    case Some(x::Nil) => true  
     case Some(_) => false
     case _ => true
   }
-
+  
   def h[A](x: (Option[A],Option[A])) = x match {
     case Pair(None,_:Some[_]) => 1
     case Pair(_:Some[_],None ) => 2
@@ -485,20 +485,20 @@ object Test extends TestConsoleMain {
   }
 
   object Bug1270  { // unapply13
-
+  
     class Sync {
       def apply(x: Int): Int = 42
       def unapply(scrut: Any): Option[Int] = None
     }
-
+    
     class Buffer {
       object Get extends Sync
-
+      
       var ps: PartialFunction[Any, Any] = {
-        case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack
+        case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack 
       }
     }
-
+    
     println((new Buffer).ps.isDefinedAt(42))
   }
 
@@ -509,7 +509,7 @@ object Test extends TestConsoleMain {
     trait Row extends Elem
     object Row {
       def unapply(r: Row) = true
-
+      
       def f(elem: Elem) {
         elem match {
           case Bar() => ;
@@ -520,9 +520,9 @@ object Test extends TestConsoleMain {
 /*
   object Feature1196 {
     def f(l: List[Int]) { }
-
+    
     val l: Seq[Int] = List(1, 2, 3)
-
+    
     l match {
       case x @ List(1, _) => f(x) // x needs to get better type List[int] here
     }
@@ -546,9 +546,9 @@ object Test extends TestConsoleMain {
     trait Core { def next : Position = null }
     trait Dir
     val NEXT = new Dir{}
-
+    
     trait Position extends Core
-
+    
     (null:Core, null:Dir) match {
       case (_, NEXT) if true => false // no matter whether NEXT test succeed, cannot throw column because of guard
       case (at2:Position,dir) => true
@@ -573,15 +573,15 @@ object Test extends TestConsoleMain {
         else None
       }
     }
-
+    
     class Buffer {
       val Get = new Sync
-
+      
       val jp: PartialFunction[Any, Any] = {
         case Get(xs) => println(xs) // the argDummy <unapply-selector> should have proper arg.tpe (Int in this case)
       }
     }
-
+    
     println((new Buffer).jp.isDefinedAt(40))
     println((new Buffer).jp.isDefinedAt(42))
   }
@@ -595,7 +595,7 @@ object Test extends TestConsoleMain {
     val s:PartialFunction[Any,Any] = {
       case List(4::xs)                => 1
       case List(5::xs)                => 1
-      case _                if false                               =>
+      case _                if false                               => 
       case List(3::xs) if List(3:Any).forall { g => g.hashCode() > 0 } => 1
     }
       z.isDefinedAt(42)
@@ -644,10 +644,10 @@ object Test extends TestConsoleMain {
 
   // bug#508
 
-  object Bug508 extends TestCase("aladdin #508") {
+  object Bug508 extends TestCase("aladdin #508") { 
     case class Operator(x: Int);
     val EQ = new Operator(2);
-
+    
     def analyze(x: Pair[Operator, Int]) = x match {
       case Pair(EQ, 0) => "0"
       case Pair(EQ, 1) => "1"
@@ -660,35 +660,35 @@ object Test extends TestConsoleMain {
       assertEquals("1", analyze(y)); // should print "1"
       val z = Pair(EQ, 2);
       assertEquals("2", analyze(z)); // should print "2"
-    }
+    }    
   }
 
   // bug#789
-
+  
   object Bug789 extends TestCase("aladdin #789") { // don't do this at home
 
     trait Impl
-
+    
     trait SizeImpl extends Impl { def size = 42 }
-
+    
     trait ColorImpl extends Impl { def color = "red" }
-
+    
     type Both = SizeImpl with ColorImpl
-
+    
     def info(x:Impl) = x match {
       case x:Both      => "size  "+x.size+" color "+x.color // you wish
       case x:SizeImpl  => "!size "+x.size
       case x:ColorImpl => "color "+x.color
       case _           => "n.a."
     }
-
+    
     def info2(x:Impl) = x match {
       case x:SizeImpl with ColorImpl  => "size  "+x.size+" color "+x.color // you wish
       case x:SizeImpl  => "!size "+x.size
       case x:ColorImpl => "color "+x.color
       case _           => "n.a."
     }
-
+    
     override def runTest {
       // make up some class that has a size
       class MyNode extends SizeImpl
@@ -705,7 +705,7 @@ object Test extends TestConsoleMain {
       case a: AnyRef if runtime.ScalaRunTime.isArray(a) => "Array"
       case _ => v.toString
     }
-    override def runTest { assertEquals("Array", foo(Array(0))) }
+    override def runTest { assertEquals("Array", foo(Array(0))) } 
   }
 
   // bug#1093 (contribution #460)
@@ -739,7 +739,7 @@ object Test extends TestConsoleMain {
       }
     }
   }
-
+  
   object Ticket2 extends TestCase("#2") { override def runTest {
     val o1 = new Outer_2; val o2 = new Outer_2; val x: Any = o1.Foo(1, 2); val y: Any = o2.Foo(1, 2)
     assertFalse("equals test returns true (but should not)", x equals y)
@@ -758,9 +758,9 @@ object Test extends TestConsoleMain {
   // will cause the test to succeed.
   trait SpecialException extends MyException1
   // trait SpecialException
-
+  
   class MyException2 extends MyException1 with SpecialException
-
+  
   object Ticket11 extends TestCase("#11") {
     override def runTest {
       Array[Throwable](new Exception("abc"),
@@ -781,7 +781,7 @@ object Test extends TestConsoleMain {
   }
 
   // #37
-
+  
   object Ticket37 extends TestCase("#37") {
     def foo() {}
     val (a,b) = { foo(); (2,3) }
@@ -799,7 +799,7 @@ object Test extends TestConsoleMain {
   object Y extends _X {
     val foo = _Foo()
     foo match {
-      case _Bar() =>
+      case _Bar() => 
       case _      => assert(false)
     }
   }
@@ -819,7 +819,7 @@ object Test extends TestConsoleMain {
   sealed abstract class Tree
   case class Node(l: Tree, v: Int, r: Tree) extends Tree
   case object EmptyTree extends Tree
-
+  
   object Ticket335 extends TestCase("#335") { // compile-only
     override def runTest {
       (EmptyTree: Tree @unchecked) match {
@@ -849,7 +849,7 @@ class L(val content: List[Int]) {
 }
 
 object N extends L(Nil) {
-
+    
     override def equals(that: Any): Boolean = {
         val result = (that.isInstanceOf[L] && that.asInstanceOf[L].isEmpty)
         //println("N.equals("+that+") returning "+result)
@@ -887,13 +887,13 @@ override def runTest() {
 }  // end Ticket346
 
   object Ticket495bis { // compile-only
-    def signum(x: Int): Int =
-      x match {
+    def signum(x: Int): Int = 
+      x match { 
         case 0 => 0
         case _ if x < 0 => -1
         case _ if x > 0 => 1
       }
-    def pair_m(x: Int, y: Int) =
+    def pair_m(x: Int, y: Int) = 
       (x,y) match {
         case (_, 0)  => 0
         case (-1, _) => -1
@@ -903,14 +903,14 @@ override def runTest() {
 
   object Ticket522 { // compile-only
   class Term[X]
-  object App {
+  object App { 
      // i'm hidden
      case class InternalApply[Y,Z](fun:Y=>Z, arg:Y) extends Term[Z]
 
-     def apply[Y,Z](fun:Y=>Z, arg:Y): Term[Z] =
+     def apply[Y,Z](fun:Y=>Z, arg:Y): Term[Z] = 
        new InternalApply[Y,Z](fun,arg)
 
-     def unapply[X](arg: Term[X]): Option[(Y=>Z,Y)] forSome {type Y; type Z} =
+     def unapply[X](arg: Term[X]): Option[(Y=>Z,Y)] forSome {type Y; type Z} = 
          arg match {
            case i:InternalApply[y,z] => Some(i.fun, i.arg)
            case _                    => None
@@ -918,7 +918,7 @@ override def runTest() {
   }
 
   App({x: Int => x}, 5) match {
-    case App(arg, a) =>
+    case App(arg, a) => 
   }
   } // end Ticket522
 

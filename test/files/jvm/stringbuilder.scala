@@ -35,7 +35,7 @@ Scala is a general purpose programming language designed to express common progr
     val j3 = j2; j3 setCharAt (0, j3 charAt 2)
     val s3 = s2; s3(0) = s3(2)
     //println("j3="+j3+", s3="+s3)//debug
-    assertEquals("s3.toString equals j3.toString", true, s3.toString equals j3.toString)
+    assertEquals("s3.toString equals j3.toString", true, s3.toString equals j3.toString)    
  }
 }
 

@@ -12,7 +12,7 @@ import concurrent.SyncVar;
 import concurrent.jolib._;
 
 class Ref[a](init: a) extends Join {
-
+  
   object get extends Synchr[a](this) { case class C() extends SyncVar[a]; }
   object set extends Synchr[unit](this) { case class C(x: a) extends SyncVar[unit]; }
   object state extends Asynchr(this) { case class C(x: a); }
@@ -25,7 +25,7 @@ class Ref[a](init: a) extends Join {
   );
 
   state(state.C(init));
-
+  
   def Get: a = get(get.C());
   def Set(x: a): unit = set(set.C(x));
 }

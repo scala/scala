@@ -2,11 +2,11 @@ import scala.collection.immutable.{Map, TreeMap, ListMap, ListSet, Set}
 import scala.collection.{immutable=>imm, mutable=>mut}
 
 case class HashTreeSet[A](map: imm.Map[A, Unit])
-extends Object
+extends Object 
 with imm.Set[A]
 {
   def this() = this(null)
-
+  
   def size = map.size
   def +(elem: A) = new HashTreeSet(map + elem -> ())
   def -(elem: A) = new HashTreeSet(map - elem)
@@ -20,13 +20,13 @@ abstract class Goal2 {
   type Question
   val question: Question
 
-  type Answer
+  type Answer                        
   def initialAnswer: Answer
 }
 
 
 
-abstract class AbstractRespondersGoal
+abstract class AbstractRespondersGoal 
 extends Goal2 // TYPEFIX -- comment out the extends Goal2
 {
 }
@@ -68,7 +68,7 @@ class RespondersGoalSet
 //      case StaticMethodSelector(method: MethodRef) =>
  case true =>
              new SingleResponderGoal(null, null)
-
+        
 //      case DynamicMethodSelector(signature: MethodSignature) => {
 case false => {
         new RespondersGoal(null, null,null,null)

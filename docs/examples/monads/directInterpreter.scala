@@ -45,11 +45,11 @@ object directInterpreter {
     case App(f, t) => apply(interp(f, e), interp(t, e))
   }
 
-  def test(t: Term): String =
+  def test(t: Term): String = 
     showval(interp(t, List()));
 
   val term0 = App(Lam("x", Add(Var("x"), Var("x"))), Add(Con(10), Con(11)));
 
-  def main(args: Array[String]) =
+  def main(args: Array[String]) = 
     System.out.println(test(term0));
 }

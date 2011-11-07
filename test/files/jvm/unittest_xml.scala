@@ -12,7 +12,7 @@ object Test {
       val hasBar = new HasKeyValue("bar")
 	  x match {
 		//case Node("foo", hasBar(z), _*) => z
-            case Node("foo", md, _*) if !hasBar.unapplySeq(md).isEmpty =>
+            case Node("foo", md, _*) if !hasBar.unapplySeq(md).isEmpty => 
                  md("bar")(0)
 			case _ => new Atom(3)
 	  }
@@ -22,8 +22,8 @@ object Test {
       var x: MetaData         = Null
       var s: NamespaceBinding = TopScope
 
-      // testing method def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node]
-      //                def apply(k:String): Seq[Node]
+      // testing method def apply(uri:String, scp:NamespaceBinding, k:String): Seq[Node] 
+      //                def apply(k:String): Seq[Node] 
 
       assertEquals("absent element (prefixed) 1",  null, x("za://foo.com", s, "bar" ))
       assertEquals("absent element (unprefix) 1",  null, x("bar"))
@@ -51,8 +51,8 @@ object Test {
 	  val z =  <foo bar="gar"/>
 	  val z2 = <foo/>
 
-	 assertEquals("attribute extractor 1", Text("gar"), domatch(z))
-	 assertEquals("attribute extractor 2", new Atom(3), domatch(z2))
+	 assertEquals("attribute extractor 1", Text("gar"), domatch(z)) 
+	 assertEquals("attribute extractor 2", new Atom(3), domatch(z2)) 
 
     }
   }
@@ -61,14 +61,14 @@ object Test {
     def runTest() = {
       assertTrue(Utility.isNameStart('b'))
       assertFalse(Utility.isNameStart(':'))
-
-
+      
+      
     val x = <foo>
                <toomuchws/>
             </foo>
 
     val y = xml.Utility.trim(x)
-
+    
     assertEquals("trim 1 ", 1, y match { case <foo><toomuchws/></foo> => 1 })
 
     val x2 = <foo>
@@ -100,7 +100,7 @@ object Test {
   def main(args:Array[String]) = {
     val ts = new TestSuite(
       new MetaDataTest,
-      new UtilityTest
+      new UtilityTest 
     )
     val tr = new TestResult()
     ts.run(tr)

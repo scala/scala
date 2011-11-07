@@ -21,7 +21,7 @@ object Test {
 
 
     "val a = new A",
-
+    
     """val y = a.y   // should rewrite "this.x" to "a.x" """,
 
 
@@ -77,7 +77,7 @@ object Test {
     """object A { val x = "hello" : String @ rep }""",
     "val y = a.x // should drop the annotation",
 
-    "val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message",
+    "val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message",  
 
     "class Where(condition: Boolean) extends Annotation",
     "val x : Int @Where(self > 0 && self < 100) = 3"

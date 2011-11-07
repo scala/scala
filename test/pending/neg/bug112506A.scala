@@ -7,7 +7,7 @@ trait TypeManagerXXX {
 }
 trait ScalaTyperXXX extends TypeManagerXXX {
   private var typed : Node = null;
-  private val dependMap = new HashMap[String,ListSet[TypedNode]];
+  private val dependMap = new HashMap[String,ListSet[TypedNode]]; 
   override def lookupEntry(name: String): String = {
     val set = dependMap.get(name) match {
     case Some(set) => set;

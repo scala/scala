@@ -54,7 +54,7 @@ object Test {
     var mfs: Symbol = null
     mfs = Symbol("mfsa")
   }
-
+  
   object InnerObject {
     val o1 = 'aaa
     val o2 = 'ddd
@@ -101,7 +101,7 @@ object Test {
     assert(InnerObject.o1 == 'aaa)
     assert(InnerObject.o2 == 'ddd)
   }
-
+  
   def testWithHashMaps {
     val map = new collection.mutable.HashMap[Symbol, Symbol]
     map.put(InnerObject.o1, 'smba)
@@ -110,7 +110,7 @@ object Test {
     assert(map('aaa) == 'smba)
     assert(map('ddd) == 'mfsa)
     assert(map('WeirdKey1) == Symbol("WeirdVal1"))
-
+    
     map.clear
     for (i <- 0 until 100) map.put(Symbol("symKey" + i), Symbol("symVal" + i))
     assert(map(Symbol("symKey15")) == Symbol("symVal15"))
@@ -181,7 +181,7 @@ object Test {
     assert(anon.subsubsymbol == 'symsubsub)
     assert(anon.subsymbol == 'symsub)
     assert(anon.basesymbol == 'symbase)
-
+    
     object nested extends Sub {
       def objsymbol = 'symobj
     }

@@ -4,12 +4,12 @@
     };
 
     def foo[A >: Nothing <: Any, B >: Nothing <: Any, C >: Nothing <: Any]
-      (unapply1: (A) => Option[(B, C)], v: A): Unit =
+      (unapply1: (A) => Option[(B, C)], v: A): Unit = 
          unapply1.apply(v) match {
-           case Some((fst @ _, snd @ _)) =>
+           case Some((fst @ _, snd @ _)) => 
               scala.Predef.println(scala.Tuple2.apply[java.lang.String, java.lang.String]("first: ".+(fst), " second: ".+(snd)))
            case _ => scala.Predef.println(":(")
-    }
+    }           
     Test.this.foo[Test.Foo, String, Int]({
       ((eta$0$1: Test.Foo) => Test.this.Foo.unapply(eta$0$1))
     }, Test.this.Foo.apply("this might be fun", 10));

@@ -9,4 +9,4 @@ object This extends Application {
     def foo() = ()
   }
   val c: C = new D
-}
+}   

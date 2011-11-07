@@ -1,7 +1,7 @@
 package bug785;
 trait ScalaNewTyper {
   private var typed : String = null;
-  trait HasSymbol {
+  trait HasSymbol { 
     protected def foo : Unit = {}
   }
   trait HasArgsTypeParametersImpl extends HasSymbol {

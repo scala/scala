@@ -11,12 +11,12 @@ class Lazy {
 
 // issue 3307
 class Bug3307 {
-  def f[Z](block: String => Z) {
-    block("abc")
+  def f[Z](block: String => Z) { 
+    block("abc") 
   }
-
-  ({ () =>
-    f { implicit x => println(x) } })()
+  
+  ({ () => 
+    f { implicit x => println(x) } })() 
 }
 
 // issue 3301

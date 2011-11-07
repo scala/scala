@@ -7,6 +7,6 @@ object Test {
     def testCoercionThis = baz  // --> error: not found: value baz
     def testCoercionThis = (this: Foo).baz  // --> error: value baz is not a  member of Foo
   }
-
-  class Bar { def baz = System.out.println("baz")}
+  
+  class Bar { def baz = System.out.println("baz")} 
 }

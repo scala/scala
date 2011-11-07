@@ -2,7 +2,7 @@ package examples.parsing
 
 import scala.util.parsing.combinator1.syntactical.StandardTokenParsers
 
-object ListParsers extends StandardTokenParsers {
+object ListParsers extends StandardTokenParsers {   
   lexical.delimiters ++= List("(", ")", ",")
 
   def expr: Parser[Any] = "(" ~ exprs ~ ")" | ident | numericLit
@@ -15,7 +15,7 @@ object ListParsers extends StandardTokenParsers {
   }
 }
 
-object ListParsers1 extends StandardTokenParsers {
+object ListParsers1 extends StandardTokenParsers {   
   lexical.delimiters ++= List("(", ")", ",")
 
   def expr: Parser[Any] = "(" ~> exprs <~ ")" | ident | numericLit

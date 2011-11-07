@@ -8,4 +8,4 @@ object Test extends Application {
   }
 
   empty(L())
-}
+} 

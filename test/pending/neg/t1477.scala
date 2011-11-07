@@ -8,7 +8,7 @@ object Test extends Application {
     type V <: D
     val y: V#T = new B { }
   }
-
+ 
   trait Middle extends C {
     type V <: (D with U)
   }

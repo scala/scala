@@ -20,7 +20,7 @@ object Test extends Application {
 
  val b = new B
  print("b.x=")
- println(b.x)
+ println(b.x) 
  print("b.z=")
- println(b.z)
+ println(b.z) 
 }

@@ -8,7 +8,7 @@ class MyBean {
 }
 
 object Test extends Application {
-
+ 
   val x = new MyBean;
   x.frombulizer = "hello"
 

@@ -8,8 +8,8 @@ object Test extends TestConsoleMain {
   )
 
   class ReadlinesTest extends TestCase("scala.io.Source method getLines()") {
-
-    val src = Source.fromString("""
+    
+    val src = Source.fromString(""" 
 This is a file
 it is split on several lines.
 

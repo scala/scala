@@ -59,7 +59,7 @@ passed ok
               <baz bazValue="8"/>
               <bar value="5" gi='go'/>
             </foo>;
-
+  
     val pelems_1 = for( val x <- p \ "bar"; val y <- p \ "baz" ) yield {
       Text(x.attributes("value").toString + y.attributes("bazValue").toString+ "!")
     };
@@ -68,14 +68,14 @@ passed ok
 
     assertEqualsXML(p \\ "@bazValue", Text("8"))
 
-    val books =
+    val books = 
     <bks>
       <book><title>Blabla</title></book>
       <book><title>Blubabla</title></book>
       <book><title>Baaaaaaalabla</title></book>
     </bks>;
 
-  val reviews =
+  val reviews = 
     <reviews>
       <entry><title>Blabla</title>
       <remarks>
@@ -105,32 +105,32 @@ passed ok
   ));
 
   // example
-  println(
+  println( 
     for (t @ <book><title>Blabla</title></book> <- new NodeSeq { val theSeq = books.child }.toList)
     yield t
   );
-val phoneBook =
+val phoneBook =  
   <phonebook>
       <descr>
-        This is the <b>phonebook</b> of the
+        This is the <b>phonebook</b> of the 
         <a href="http://acme.org">ACME</a> corporation.
       </descr>
       <entry>
-        <name>John</name>
+        <name>John</name> 
         <phone where="work">  +41 21 693 68 67</phone>
         <phone where="mobile">+41 79 602 23 23</phone>
       </entry>
     </phonebook>;
 
 
-val addrBook =
+val addrBook =  
   <addrbook>
       <descr>
-        This is the <b>addressbook</b> of the
+        This is the <b>addressbook</b> of the 
         <a href="http://acme.org">ACME</a> corporation.
       </descr>
       <entry>
-        <name>John</name>
+        <name>John</name> 
         <street> Elm Street</street>
         <city>Dolphin City</city>
       </entry>
@@ -146,7 +146,7 @@ val addrBook =
     </result>
   ));
 
-
+  
   /* namespaces */
    // begin tmp
   println("namespaces")
@@ -168,9 +168,9 @@ val addrBook =
     import scala.xml.dtd.ELEMENTS
     import scala.xml.dtd.ContentModel._
     vtor.setContentModel(
-	  ELEMENTS(
+	  ELEMENTS( 
 	    Sequ(
-		  Letter(ElemName("bar")),
+		  Letter(ElemName("bar")), 
 		  Star(Letter(ElemName("baz"))) )));
 
   }
@@ -178,11 +178,11 @@ val addrBook =
   {
     import scala.xml.dtd.MIXED
     import scala.xml.dtd.ContentModel._
-
+    
     vtor.setContentModel(
       MIXED(
-        Alt(Letter(ElemName("bar")),
-            Letter(ElemName("baz")),
+        Alt(Letter(ElemName("bar")), 
+            Letter(ElemName("baz")), 
             Letter(ElemName("bal")))));
   }
 
@@ -194,20 +194,20 @@ val addrBook =
   vtor.setContentModel(null)
   vtor.setMetaData(List())
   assertEquals(vtor( <foo bar="hello"/> ), false)
-
-  {
-    import scala.xml.dtd._
+  
+  { 
+    import scala.xml.dtd._ 
     vtor setMetaData List(AttrDecl("bar", "CDATA", IMPLIED))
   }
   assertEquals(vtor(<foo href="http://foo.com" bar="hello"/>), false)
   assertEquals(vtor(<foo bar="hello"/>), true)
 
-  {
+  { 
     import scala.xml.dtd._
     vtor.setMetaData(List(AttrDecl("bar","CDATA",REQUIRED)))
   }
   assertEquals( vtor( <foo href="http://foo.com" /> ), false )
   assertEquals( vtor( <foo bar="http://foo.com" /> ), true )
-
+  
   }
 }

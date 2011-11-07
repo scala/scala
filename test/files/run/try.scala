@@ -17,8 +17,8 @@ object Test extends AnyRef with Application {
     Console.println(
       (try { x } catch {
         case _: Error => 1;
-      })
-      +
+      }) 
+      +        
       (try { x } catch {
         case _: Error => 1;
       })
@@ -116,7 +116,7 @@ object Test extends AnyRef with Application {
   }
 
 */
-
+    
   try1;
   try2;
   try3;

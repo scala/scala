@@ -12,7 +12,7 @@ object App extends Application {
   impl.doStuff(null)
 
   val caller = new Caller
-
+  
   // fails with AbstractMethodError
   caller.callDoStuff(impl)
 }

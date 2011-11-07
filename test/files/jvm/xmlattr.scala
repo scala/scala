@@ -3,7 +3,7 @@ import xml.{NodeSeq, Null, Text, UnprefixedAttribute}
 
 object Test extends TestConsoleMain {
   def suite = new TestSuite(UnprefixedAttributeTest, AttributeWithOptionTest)
-
+  
   object UnprefixedAttributeTest extends TestCase("UnprefixedAttribute") with Assert {
     override def runTest {
       var x = new UnprefixedAttribute("foo","bar", Null)
@@ -13,13 +13,13 @@ object Test extends TestConsoleMain {
       assertEquals(Text("bar"), x("foo"))
       assertEquals(None, x.get("no_foo"))
       assertEquals(null, x("no_foo"))
-
+      
       val y = x.remove("foo")
       assertEquals(Null, y)
 
       val z = new UnprefixedAttribute("foo", null:NodeSeq, x)
       assertEquals(None, z.get("foo"))
-
+      
       var appended = x append x append x append x
       var len = 0; while (appended ne Null) {
         appended = appended.next

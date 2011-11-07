@@ -13,7 +13,7 @@ object Test extends TestConsoleMain {
     case class Bar(i:Int)
   }
 
-
+  
   class Test717 extends TestCase("#717 test path of case classes") {
     val foo1 = new Foo(1)
 
@@ -31,7 +31,7 @@ object Test extends TestConsoleMain {
     class Baz
     object Bam
     object Bar
-
+    
     def unapply(s : String) : Option[Bar] = Some(new Bar(s))
   }
 

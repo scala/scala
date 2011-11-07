@@ -16,7 +16,7 @@ object Test extends Application {
         case 'doTiming =>
           val s = sender
           reactWithin(500) {
-            case TIMEOUT =>
+            case TIMEOUT => 
               s ! Timing(System.currentTimeMillis)
           }
       }

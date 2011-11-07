@@ -3,7 +3,7 @@
 object Test {
   import scala.tools.nsc._
   import java.io.{ OutputStream, BufferedReader, StringReader, PrintWriter, Writer, OutputStreamWriter}
-
+  
   val code = """
     def foo = {
       var q: Boolean = false
@@ -21,11 +21,11 @@ object Test {
         else 20
       }
       else 30
-
+    
       (x == 5) || !q || true
     }
-  """
-
+  """  
+  
   class NullOutputStream extends OutputStream { def write(b: Int) { } }
 
   def main(args: Array[String]) {

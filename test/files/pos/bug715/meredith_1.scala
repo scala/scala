@@ -9,7 +9,7 @@ trait XMLRenderer {
       classOf[java.lang.Boolean],
       classOf[java.lang.Integer],
       classOf[java.lang.Float],
-      classOf[java.lang.String]
+      classOf[java.lang.String] 
       // more to come
       )
 
@@ -21,14 +21,14 @@ trait XMLRenderer {
       value match {
 	case null => Text( "null" )
 	case vUnmatched =>
-	  if (value.isInstanceOf[java.lang.Boolean])
+	  if (value.isInstanceOf[java.lang.Boolean]) 
 	    Text( value.asInstanceOf[java.lang.Boolean].toString )
-	  else if (value.isInstanceOf[java.lang.Integer])
+	  else if (value.isInstanceOf[java.lang.Integer]) 
 	    Text( value.asInstanceOf[java.lang.Integer].toString )
-	  else if (value.isInstanceOf[java.lang.Float])
+	  else if (value.isInstanceOf[java.lang.Float]) 
 	    Text( value.asInstanceOf[java.lang.Float].toString )
-    // else if (value.isInstanceOf[T])
-    //   pojo2XML( value.asInstanceOf[T] )
+    // else if (value.isInstanceOf[T]) 
+    //   pojo2XML( value.asInstanceOf[T] ) 
 	  else
 	  <unmatchedType>
 	    <theType>
@@ -57,7 +57,7 @@ trait XMLRenderer {
       null,
       field.getName,
       null,
-      TopScope,
+      TopScope, 
       fldValXML
       )
   }
@@ -73,7 +73,7 @@ trait XMLRenderer {
       null,
       TopScope,
       progeny.asInstanceOf[Array[scala.xml.Node]] : _*
-      )
+      )    
   }
 }
 

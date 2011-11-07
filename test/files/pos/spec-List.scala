@@ -23,8 +23,8 @@ import annotation.tailrec
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed trait List[@specialized +A] extends LinearSeq[A]
-                                  with Product
+sealed trait List[@specialized +A] extends LinearSeq[A] 
+                                  with Product 
                                   with GenericTraversableTemplate[A, List]
                                   with LinearSeqOptimized[A, List[A]] {
   override def companion: GenericCompanion[List] = List
@@ -65,7 +65,7 @@ sealed trait List[@specialized +A] extends LinearSeq[A]
 
   /** <p>
    *    Returns a list resulting from the concatenation of the given
-   *    list <code>prefix</code> and this list.
+   *    list <code>prefix</code> and this list. 
    *  </p>
    *
    *  @param prefix the list to concatenate at the beginning of this list.
@@ -140,7 +140,7 @@ sealed trait List[@specialized +A] extends LinearSeq[A]
   }
 
   // Overridden methods from IterableLike or overloaded variants of such methods
-
+  
   /** Create a new list which contains all elements of this list
    *  followed by all elements of Traversable `that'
    */
@@ -156,7 +156,7 @@ sealed trait List[@specialized +A] extends LinearSeq[A]
    */
   override def toList: List[A] = this
 
-  /** Returns the <code>n</code> first elements of this list, or else the whole
+  /** Returns the <code>n</code> first elements of this list, or else the whole 
    *  list, if it has less than <code>n</code> elements.
 
    *  @param n the number of elements to take.
@@ -216,7 +216,7 @@ sealed trait List[@specialized +A] extends LinearSeq[A]
     }
     loop(drop(n), this)
   }
-
+  
   // dropRight is inherited from Stream
 
   /** Split the list at a given point and return the two parts thus
@@ -302,7 +302,7 @@ sealed trait List[@specialized +A] extends LinearSeq[A]
 
   override def stringPrefix = "List"
 
-  override def toStream : Stream[A] =
+  override def toStream : Stream[A] = 
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
 
@@ -487,10 +487,10 @@ final case class ::[@specialized B](private var hd: B, private[scala] var tl: Li
  *  @version 2.8
  */
 object List extends SeqFactory[List] {
-
+  
   import collection.{Iterable, Seq}
 
-  implicit def builderFactory[A]: CanBuildFrom[Coll, A, List[A]] =
+  implicit def builderFactory[A]: CanBuildFrom[Coll, A, List[A]] = 
     new GenericCanBuildFrom[A] {
       override def apply() = newBuilder[A]
     }
@@ -552,8 +552,8 @@ object List extends SeqFactory[List] {
    *  @return    the concatenation of all the lists
    */
   @deprecated("use `xss.flatten' instead")
-  def flatten[A](xss: List[List[A]]): List[A] = {
-    val b = new ListBuffer[A]
+  def flatten[A](xss: List[List[A]]): List[A] = { 
+    val b = new ListBuffer[A] 
     for (xs <- xss) {
       var xc = xs
       while (!xc.isEmpty) {
@@ -588,7 +588,7 @@ object List extends SeqFactory[List] {
    *  @return a pair of lists.
    */
   @deprecated("use `xs.unzip' instead")
-  def unzip[A,B](xs: Iterable[(A,B)]): (List[A], List[B]) =
+  def unzip[A,B](xs: Iterable[(A,B)]): (List[A], List[B]) = 
       xs.foldRight[(List[A], List[B])]((Nil, Nil)) {
         case ((x, y), (xs, ys)) => (x :: xs, y :: ys)
       }
@@ -598,17 +598,17 @@ object List extends SeqFactory[List] {
    * of <code>Either</code>s.
    */
   @deprecated("use `Either.lefts' instead")
-  def lefts[A, B](es: Iterable[Either[A, B]]) =
+  def lefts[A, B](es: Iterable[Either[A, B]]) = 
     es.foldRight[List[A]](Nil)((e, as) => e match {
       case Left(a) => a :: as
       case Right(_) => as
-    })
-
+    })     
+ 
   /**
    * Returns the <code>Right</code> values in the given<code>Iterable</code> of  <code>Either</code>s.
    */
   @deprecated("use `Either.rights' instead")
-  def rights[A, B](es: Iterable[Either[A, B]]) =
+  def rights[A, B](es: Iterable[Either[A, B]]) = 
     es.foldRight[List[B]](Nil)((e, bs) => e match {
       case Left(_) => bs
       case Right(b) => b :: bs
@@ -739,7 +739,7 @@ object List extends SeqFactory[List] {
   /** Returns the list resulting from applying the given function <code>f</code>
    *  to corresponding elements of the argument lists.
    *  @param f function to apply to each pair of elements.
-   *  @return <code>[f(a0,b0), ..., f(an,bn)]</code> if the lists are
+   *  @return <code>[f(a0,b0), ..., f(an,bn)]</code> if the lists are 
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>n = min(k,l)</code>
    */
@@ -782,7 +782,7 @@ object List extends SeqFactory[List] {
     b.toList
   }
 
-  /** Tests whether the given predicate <code>p</code> holds
+  /** Tests whether the given predicate <code>p</code> holds 
    *  for all corresponding elements of the argument lists.
    *
    *  @param p function to apply to each pair of elements.

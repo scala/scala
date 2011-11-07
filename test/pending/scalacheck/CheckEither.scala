@@ -16,7 +16,7 @@ import org.scalacheck.ConsoleReporter.testStatsEx
 import Function.tupled
 
 object CheckEither {
-  implicit def arbitraryEither[X, Y](implicit xa: Arbitrary[X], ya: Arbitrary[Y]): Arbitrary[Either[X, Y]] =
+  implicit def arbitraryEither[X, Y](implicit xa: Arbitrary[X], ya: Arbitrary[Y]): Arbitrary[Either[X, Y]] = 
     Arbitrary[Either[X, Y]](oneOf(arbitrary[X].map(Left(_)), arbitrary[Y].map(Right(_))))
 
   val prop_either1 = property((n: Int) => Left(n).either(x => x, b => error("fail")) == n)
@@ -27,7 +27,7 @@ object CheckEither {
     case Left(a) => e.swap.right.value == a
     case Right(b) => e.swap.left.value == b
   })
-
+  
   val prop_isLeftRight = property((e: Either[Int, Int]) => e.isLeft != e.isRight)
 
   object CheckLeftProjection {
@@ -50,7 +50,7 @@ object CheckEither {
 
     val prop_exists = property((e: Either[Int, Int]) =>
       e.left.exists(_ % 2 == 0) == (e.isLeft && e.left.value % 2 == 0))
-
+  
     val prop_flatMapLeftIdentity = property((e: Either[Int, Int], n: Int, s: String) => {
       def f(x: Int) = if(x % 2 == 0) Left(s) else Right(s)
       Left(n).left.flatMap(f(_)) == f(n)})
@@ -159,7 +159,7 @@ object CheckEither {
   }
 
   val prop_Either_left = property((n: Int) => Either.left(n).left.value == n)
-
+  
   val prop_Either_right = property((n: Int) => Either.right(n).right.value == n)
 
   val prop_Either_joinLeft = property((e: Either[Either[Int, Int], Int]) => e match {
@@ -172,33 +172,33 @@ object CheckEither {
     case Right(ee) => Either.joinRight(e) == ee
   })
 
-  val prop_Either_lefts = property((es: List[Either[Int, Int]]) =>
+  val prop_Either_lefts = property((es: List[Either[Int, Int]]) => 
     Either.lefts(es) == es.filter(_.isLeft).map(_.left.value))
-
-  val prop_Either_rights = property((es: List[Either[Int, Int]]) =>
+  
+  val prop_Either_rights = property((es: List[Either[Int, Int]]) => 
     Either.rights(es) == es.filter(_.isRight).map(_.right.value))
-
-  val prop_Either_leftRights = property((es: List[Either[Int, Int]]) =>
+  
+  val prop_Either_leftRights = property((es: List[Either[Int, Int]]) => 
     Either.rights(es) == es.filter(_.isRight).map(_.right.value))
-
-  val prop_Either_throws = property((n: Int) =>
+    
+  val prop_Either_throws = property((n: Int) => 
     Either.throws(n) == Right(n) && Either.throws(error("error")).isLeft)
-
-  val prop_Either_throwIt = property((e: Either[Throwable, Int]) =>
+  
+  val prop_Either_throwIt = property((e: Either[Throwable, Int]) => 
     try {
       Either.throwIt(e) == e.right.value
     } catch {
       case (t) => e.isLeft && e.left.value == t
     })
 
-  val prop_Either_reduce = property((e: Either[Int, Int]) =>
+  val prop_Either_reduce = property((e: Either[Int, Int]) => 
     Either.reduce(e) == (e match {
       case Left(a) => a
       case Right(a) => a
     }))
-
+    
   val prop_Either_iif = property((c: Boolean, a: Int, b: Int) =>
-    Either.iif(c, a, b) == (if(c) Right(b) else Left(a)))
+    Either.iif(c, a, b) == (if(c) Right(b) else Left(a))) 
 
   val tests = List(
       ("prop_either1", prop_either1),
@@ -234,20 +234,20 @@ object CheckEither {
       ("Right.prop_seq", CheckRightProjection.prop_seq),
       ("Right.prop_option", CheckRightProjection.prop_option),
       ("prop_Either_left", prop_Either_left),
-      ("prop_Either_right", prop_Either_right),
+      ("prop_Either_right", prop_Either_right),      
       ("prop_Either_joinLeft", prop_Either_joinLeft),
-      ("prop_Either_joinRight", prop_Either_joinRight),
+      ("prop_Either_joinRight", prop_Either_joinRight),      
       ("prop_Either_lefts", prop_Either_lefts),
-      ("prop_Either_rights", prop_Either_rights),
-      ("prop_Either_leftRights", prop_Either_leftRights),
-      ("prop_Either_throws", prop_Either_throws),
-      ("prop_Either_throwIt", prop_Either_throwIt),
-      ("prop_Either_reduce", prop_Either_reduce),
+      ("prop_Either_rights", prop_Either_rights),      
+      ("prop_Either_leftRights", prop_Either_leftRights),      
+      ("prop_Either_throws", prop_Either_throws),      
+      ("prop_Either_throwIt", prop_Either_throwIt),      
+      ("prop_Either_reduce", prop_Either_reduce),      
       ("prop_Either_iif", prop_Either_iif)
     )
-
-  def main(args: Array[String]) =
-    tests foreach (tupled((name, prop) =>
+  
+  def main(args: Array[String]) = 
+    tests foreach (tupled((name, prop) => 
     testStatsEx(name, testReport(check(Params(500, 0, 0, 500, StdRand), prop, propReport)))))
 }
 

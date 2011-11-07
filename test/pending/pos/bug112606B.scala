@@ -5,7 +5,7 @@ trait Test2 {
   def decode(tok : KeywordToken) = tok match {
   // constructor cannot be instantiated to expected type;
   //  found   : Test2.this.Token
-  //  required: Test2.this.KeywordToken
-  case Token("final") => true;
+  //  required: Test2.this.KeywordToken	
+  case Token("final") => true;   
   }
 }

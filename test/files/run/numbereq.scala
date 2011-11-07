@@ -13,25 +13,25 @@ object Test {
       if (x >= Byte.MinValue && x <= Byte.MaxValue) List(new java.lang.Byte(x.toByte)) else Nil,
       if (x >= Char.MinValue && x <= Char.MaxValue) List(new java.lang.Character(x.toChar)) else Nil
     ).flatten
-
+    
     base ::: extras
   }
-
-
+      
+  
   def main(args: Array[String]): Unit = {
     val ints    = (0 to 15).toList map (Short.MinValue >> _)
     val ints2   = ints map (x => -x)
     val ints3   = ints map (_ + 1)
     val ints4   = ints2 map (_ - 1)
-
+    
     val setneg1 = ints map mkNumbers
     val setneg2 = ints3 map mkNumbers
     val setpos1 = ints2 map mkNumbers
     val setpos2 = ints4 map mkNumbers
     val zero = mkNumbers(0)
-
-    val sets = setneg1 ++ setneg2 ++ List(zero) ++ setpos1 ++ setpos2
-
+    
+    val sets = setneg1 ++ setneg2 ++ List(zero) ++ setpos1 ++ setpos2    
+    
     for (set <- sets ; x <- set ; y <- set) {
       // println("'%s' == '%s' (%s == %s) (%s == %s)".format(x, y, x.hashCode, y.hashCode, x.##, y.##))
       assert(x == y, "%s/%s != %s/%s".format(x, x.getClass, y, y.getClass))

@@ -7,9 +7,9 @@ class IterableOps[CC[+B] <: Iterable[B] with GenericTraversableTemplate[B, CC], 
 
 object Test {
 
-  implicit def tupleOfIterableWrapper[CC[+B] <: Iterable[B] with GenericTraversableTemplate[B, CC], A1, A2](tuple: (CC[A1], Iterable[A2]))
+  implicit def tupleOfIterableWrapper[CC[+B] <: Iterable[B] with GenericTraversableTemplate[B, CC], A1, A2](tuple: (CC[A1], Iterable[A2])) 
       = new IterableOps[CC, A1, A2](tuple)
-
+    
   val t = (List(1, 2, 3), List(6, 5, 4))
 
   tupleOfIterableWrapper(t) unzip

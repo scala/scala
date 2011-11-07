@@ -4,5 +4,5 @@ class UnApp[P] {
 
 object Test extends Application {
   val b: UnApp[_] = new UnApp[String]
-  val b(foo) = "foo"
+  val b(foo) = "foo" 
 }

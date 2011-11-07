@@ -87,7 +87,7 @@ object scheduler {
 
   /**
    * A cell is modelled as a function that takes as parameters
-   * input and output channels and which returns nothing.
+   * input and output channels and which returns nothing.  
    */
   type Cell = (Chan[Unit], Chan[Unit]) => Unit
 

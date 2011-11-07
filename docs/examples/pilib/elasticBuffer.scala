@@ -25,7 +25,7 @@ object elasticBuffer {
     /**
      * A buffer cell containing a value, ready to receive (o,r) from the right.
      */
-    def Cl(i: Chan[String], l: MetaChan,
+    def Cl(i: Chan[String], l: MetaChan, 
            o: Chan[String], r: MetaChan, content: String): Unit =
       choice (
         o(content) * (Bl(i,l,o,r)),

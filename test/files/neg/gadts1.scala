@@ -10,9 +10,9 @@ case class NumTerm(val n: Number) extends Term[Number]
 class IntTerm(n: Int) extends NumTerm(n) with Term[Int]
 
 
-def f[a](t:Term[a], c:Cell[a]): Unit =
-  t match {
-    case NumTerm(n) => c.x = Double(1.0)
+def f[a](t:Term[a], c:Cell[a]): Unit = 
+  t match {  
+    case NumTerm(n) => c.x = Double(1.0) 
   }
 
 

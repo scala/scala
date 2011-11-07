@@ -14,7 +14,7 @@ object listParser {
 
   class ListParsers extends Parsers {
     type Elem = Char
-
+    
     lazy val ident = rep1(elem("letter", isLetter), elem("letter or digit", isLetterOrDigit)) ^^ {cs => Id(mkString(cs))}
     lazy val number = chainl1(elem("digit", isDigit) ^^ (_ - '0'), success{(accum: Int, d: Int) => accum * 10 + d}) ^^ Num
     lazy val list = '(' ~> repsep(expr, ',') <~ ')' ^^ Lst

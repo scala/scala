@@ -60,7 +60,7 @@ object Test extends Application {
     }
     time {
       var x = 0
-      for (val i <- (0 to 10000))
+      for (val i <- (0 to 10000)) 
         s get i match {
           case Some(i) => x = x + i
           case None =>
@@ -81,7 +81,7 @@ object Test extends Application {
     }
     time {
       var x = 0
-      for (val i <- (0 to 10000))
+      for (val i <- (0 to 10000)) 
         s get i match {
           case Some(i) => x = x + i
           case None =>

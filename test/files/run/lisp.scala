@@ -12,11 +12,11 @@ class LispTokenizer(s: String) extends Iterator[String] {
     while (i < s.length() && s.charAt(i) <= ' ') i += 1
     i < s.length()
   }
-  def next: String =
+  def next: String = 
     if (hasNext) {
       val start = i
       if (isDelimiter(s charAt i)) i += 1
-      else
+      else 
         do i = i + 1
         while (!isDelimiter(s charAt i))
       s.substring(start, i)

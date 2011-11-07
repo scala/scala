@@ -4,7 +4,7 @@ object Main {
         def ensure(postcondition: a => Boolean): a
     }
 
-    def require[a](precondition: => Boolean)(command: => a): Ensure[a] =
+    def require[a](precondition: => Boolean)(command: => a): Ensure[a] = 
         if (precondition)
             new Ensure[a] {
 	        def ensure(postcondition: a => Boolean): a = {

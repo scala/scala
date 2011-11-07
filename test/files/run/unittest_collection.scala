@@ -6,7 +6,7 @@ object Test {
 
   trait BufferTest extends Assert {
     def doTest(x:Buffer[String]) = {
-      // testing method +=
+      // testing method += 
       x += "one"
       assertEquals("retrieving 'one'", x(0), "one")
       assertEquals("length A ", x.length, 1)
@@ -19,12 +19,12 @@ object Test {
 
       assertEquals("length C ", x.length, 1)
 
-      try { x(1); fail("no exception for removed element") }
+      try { x(1); fail("no exception for removed element") } 
       catch { case i:IndexOutOfBoundsException => }
 
-      try { x.remove(1); fail("no exception for removed element") }
+      try { x.remove(1); fail("no exception for removed element") } 
       catch { case i:IndexOutOfBoundsException => }
-
+      
       x += "two2"
       assertEquals("length D ", x.length, 2)
 
@@ -38,7 +38,7 @@ object Test {
       // clear
       x.clear
       assertEquals("length F ", x.length, 0)
-
+      
       // copyToBuffer
       x += "a"
       x += "b"
@@ -54,7 +54,7 @@ object Test {
     var x: ArrayBuffer[String] = _
 
     override def runTest = { setUp; doTest(x); tearDown }
-
+    
     override def setUp = { x = new scala.collection.mutable.ArrayBuffer }
 
     override def tearDown = { x.clear; x = null }
@@ -90,8 +90,8 @@ object Test {
 
   def main(args:Array[String]) = {
     val ts = new TestSuite(
-      //new TArrayBuffer,
-      new TListBuffer//,
+      //new TArrayBuffer, 
+      new TListBuffer//, 
       //new TBufferProxy
     )
     val tr = new TestResult()
