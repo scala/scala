@@ -281,57 +281,63 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           qual1 => testForNumber(qual1) OR testForBoolean(qual1)
         }
 
+        def postfixTest(name: Name): Option[(String, Tree => Tree)] = {
+          var runtimeTest: Tree => Tree = testForNumber
+          val newName = name match {
+            case nme.UNARY_!  => runtimeTest = testForBoolean ; "takeNot"
+            case nme.UNARY_+  => "positive"
+            case nme.UNARY_-  => "negate"
+            case nme.UNARY_~  => "complement"
+            case nme.toByte   => "toByte"
+            case nme.toShort  => "toShort"
+            case nme.toChar   => "toCharacter"
+            case nme.toInt    => "toInteger"
+            case nme.toLong   => "toLong"
+            case nme.toFloat  => "toFloat"
+            case nme.toDouble => "toDouble"
+            case _            => return None
+          }
+          Some(newName, runtimeTest)
+        }
+        def infixTest(name: Name): Option[(String, Tree => Tree)] = {
+          val (newName, runtimeTest) = name match {
+            case nme.OR   => ("takeOr", testForNumberOrBoolean)
+            case nme.XOR  => ("takeXor", testForNumberOrBoolean)
+            case nme.AND  => ("takeAnd", testForNumberOrBoolean)
+            case nme.EQ   => ("testEqual", testForNumberOrBoolean)
+            case nme.NE   => ("testNotEqual", testForNumberOrBoolean)
+            case nme.ADD  => ("add", testForNumber)
+            case nme.SUB  => ("subtract", testForNumber)
+            case nme.MUL  => ("multiply", testForNumber)
+            case nme.DIV  => ("divide", testForNumber)
+            case nme.MOD  => ("takeModulo", testForNumber)
+            case nme.LSL  => ("shiftSignedLeft", testForNumber)
+            case nme.LSR  => ("shiftLogicalRight", testForNumber)
+            case nme.ASR  => ("shiftSignedRight", testForNumber)
+            case nme.LT   => ("testLessThan", testForNumber)
+            case nme.LE   => ("testLessOrEqualThan", testForNumber)
+            case nme.GE   => ("testGreaterOrEqualThan", testForNumber)
+            case nme.GT   => ("testGreaterThan", testForNumber)
+            case nme.ZOR  => ("takeConditionalOr", testForBoolean)
+            case nme.ZAND => ("takeConditionalAnd", testForBoolean)
+            case _        => return None
+          }
+          Some(newName, runtimeTest)
+        }
+
         /** The Tree => Tree function in the return is necessary to prevent the original qual
          *  from being duplicated in the resulting code.  It may be a side-effecting expression,
          *  so all the test logic is routed through gen.evalOnce, which creates a block like
          *    { val x$1 = qual; if (x$1.foo || x$1.bar) f1(x$1) else f2(x$1) }
          *  (If the compiler can verify qual is safe to inline, it will not create the block.)
          */
-        val getPrimitiveReplacementForStructuralCall: PartialFunction[Name, (Symbol, Tree => Tree)] = {
-          val testsForNumber = Map() ++ List(
-            nme.UNARY_+ -> "positive",
-            nme.UNARY_- -> "negate",
-            nme.UNARY_~ -> "complement",
-            nme.ADD     -> "add",
-            nme.SUB     -> "subtract",
-            nme.MUL     -> "multiply",
-            nme.DIV     -> "divide",
-            nme.MOD     -> "takeModulo",
-            nme.LSL     -> "shiftSignedLeft",
-            nme.LSR     -> "shiftLogicalRight",
-            nme.ASR     -> "shiftSignedRight",
-            nme.LT      -> "testLessThan",
-            nme.LE      -> "testLessOrEqualThan",
-            nme.GE      -> "testGreaterOrEqualThan",
-            nme.GT      -> "testGreaterThan",
-            nme.toByte  -> "toByte",
-            nme.toShort -> "toShort",
-            nme.toChar  -> "toCharacter",
-            nme.toInt   -> "toInteger",
-            nme.toLong  -> "toLong",
-            nme.toFloat -> "toFloat",
-            nme.toDouble-> "toDouble"
+        def getPrimitiveReplacementForStructuralCall(name: Name): Option[(Symbol, Tree => Tree)] = {
+          val opt = (
+            if (params.isEmpty) postfixTest(name)
+            else if (params.tail.isEmpty) infixTest(name)
+            else None
           )
-          val testsForBoolean = Map() ++ List(
-            nme.UNARY_! -> "takeNot",
-            nme.ZOR     -> "takeConditionalOr",
-            nme.ZAND    -> "takeConditionalAnd"
-          )
-          val testsForNumberOrBoolean = Map() ++ List(
-            nme.OR      -> "takeOr",
-            nme.XOR     -> "takeXor",
-            nme.AND     -> "takeAnd",
-            nme.EQ      -> "testEqual",
-            nme.NE      -> "testNotEqual"
-          )
-          def get(name: String) = getMember(BoxesRunTimeClass, name)
-
-          /** Begin partial function. */
-          {
-            case x if testsForNumber contains x           => (get(testsForNumber(x)), testForNumber)
-            case x if testsForBoolean contains x          => (get(testsForBoolean(x)), testForBoolean)
-            case x if testsForNumberOrBoolean contains x  => (get(testsForNumberOrBoolean(x)), testForNumberOrBoolean)
-          }
+          opt map { case (name, fn) => (getMember(BoxesRunTimeClass, name), fn) }
         }
 
         /* ### BOXING PARAMS & UNBOXING RESULTS ### */
@@ -357,7 +363,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             // and the method name should be in the primitive->structural map.
             def isJavaValueMethod = (
               (resType :: paramTypes forall isJavaValueType) && // issue #1110
-              (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name)
+              (getPrimitiveReplacementForStructuralCall(methSym.name).isDefined)
             )
             // Erasure lets Unit through as Unit, but a method returning Any will have an
             // erased return type of Object and should also allow Unit.
@@ -422,8 +428,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             /** A possible primitive method call, represented by methods in BoxesRunTime. */
             def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
             def genValueCallWithTest = {
-              val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
-              IF (test(qual1())) THEN genValueCall(operator) ELSE genDefaultCall
+              getPrimitiveReplacementForStructuralCall(methSym.name) match {
+                case Some((operator, test)) =>
+                  IF (test(qual1())) THEN genValueCall(operator) ELSE genDefaultCall
+                case _ =>
+                  genDefaultCall
+              }
             }
 
             /** A native Array call. */
