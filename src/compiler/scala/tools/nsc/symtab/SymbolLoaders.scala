@@ -79,6 +79,21 @@ abstract class SymbolLoaders {
     enterClassAndModule(root, name, new SourcefileLoader(src))
   }
 
+  /** Initialize symbol `root` from class path representation `classRep`
+   */
+  def initializeFromClassPath(root: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep) {
+    ((classRep.binary, classRep.source) : @unchecked) match {
+      case (Some(bin), Some(src)) if platform.needCompile(bin, src) =>
+        if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
+        global.loaders.enterToplevelsFromSource(root, classRep.name, src)
+      case (None, Some(src)) =>
+        if (settings.verbose.value) inform("[symloader] no class, picked up source file for " + src.path)
+        global.loaders.enterToplevelsFromSource(root, classRep.name, src)
+      case (Some(bin), _) =>
+        global.loaders.enterClassAndModule(root, classRep.name, platform.newClassLoader(bin))
+    }
+  }
+
   /**
    * A lazy type that completes itself by calling parameter doComplete.
    * Any linked modules/classes or module classes are also initialized.
@@ -155,7 +170,7 @@ abstract class SymbolLoaders {
   /**
    * Load contents of a package
    */
-  abstract class PackageLoader[T](classpath: ClassPath[T]) extends SymbolLoader {
+  class PackageLoader(classpath: ClassPath[platform.BinaryRepr]) extends SymbolLoader {
     protected def description = "package loader "+ classpath.name
 
     def enterPackage(root: Symbol, name: String, completer: SymbolLoader) {
@@ -192,88 +207,21 @@ abstract class SymbolLoaders {
       root.info.decls.enter(pkg)
     }
 
-    /**
-     * Tells whether a class with both a binary and a source representation
-     * (found in classpath and in sourcepath) should be re-compiled. Behaves
-     * similar to javac, i.e. if the source file is newer than the classfile,
-     * a re-compile is triggered.
-     */
-    protected def needCompile(bin: T, src: AbstractFile): Boolean
-
-    /**
-     * Tells whether a class should be loaded and entered into the package
-     * scope. On .NET, this method returns `false` for all synthetic classes
-     * (anonymous classes, implementation classes, module classes), their
-     * symtab is encoded in the pickle of another class.
-     */
-    protected def doLoad(cls: classpath.AnyClassRep): Boolean
-
-    protected def newClassLoader(bin: T): SymbolLoader
-
-    protected def newPackageLoader(pkg: ClassPath[T]): SymbolLoader
-
     protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(new Scope(), root))
 
       val sourcepaths = classpath.sourcepaths
-      for (classRep <- classpath.classes if doLoad(classRep)) {
-        ((classRep.binary, classRep.source) : @unchecked) match {
-          case (Some(bin), Some(src)) if needCompile(bin, src) =>
-            if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
-            enterToplevelsFromSource(root, classRep.name, src)
-          case (None, Some(src)) =>
-            if (settings.verbose.value) inform("[symloader] no class, picked up source file for " + src.path)
-            enterToplevelsFromSource(root, classRep.name, src)
-          case (Some(bin), _) =>
-            enterClassAndModule(root, classRep.name, newClassLoader(bin))
-        }
+      for (classRep <- classpath.classes if platform.doLoad(classRep)) {
+        initializeFromClassPath(root, classRep)
       }
 
       for (pkg <- classpath.packages) {
-        enterPackage(root, pkg.name, newPackageLoader(pkg))
+        enterPackage(root, pkg.name, new PackageLoader(pkg))
       }
 
       openPackageModule(root)
     }
-  }
-
-  class JavaPackageLoader(classpath: ClassPath[AbstractFile]) extends PackageLoader(classpath) {
-    protected def needCompile(bin: AbstractFile, src: AbstractFile) =
-      (src.lastModified >= bin.lastModified)
-
-    protected def doLoad(cls: classpath.AnyClassRep) = true
-
-    protected def newClassLoader(bin: AbstractFile) =
-      new ClassfileLoader(bin)
-
-    protected def newPackageLoader(pkg: ClassPath[AbstractFile]) =
-      new JavaPackageLoader(pkg)
-  }
-
-  class NamespaceLoader(classpath: ClassPath[MSILType]) extends PackageLoader(classpath) {
-    protected def needCompile(bin: MSILType, src: AbstractFile) =
-      false // always use compiled file on .net
-
-    protected def doLoad(cls: classpath.AnyClassRep) = {
-      if (cls.binary.isDefined) {
-        val typ = cls.binary.get
-        if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
-          val attrs = typ.GetCustomAttributes(clrTypes.SCALA_SYMTAB_ATTR, false)
-          assert (attrs.length == 1, attrs.length)
-          val a = attrs(0).asInstanceOf[MSILAttribute]
-          // symtab_constr takes a byte array argument (the pickle), i.e. typ has a pickle.
-          // otherwise, symtab_default_constr was used, which marks typ as scala-synthetic.
-          a.getConstructor() == clrTypes.SYMTAB_CONSTR
-        } else true // always load non-scala types
-      } else true // always load source
-    }
-
-    protected def newClassLoader(bin: MSILType) =
-      new MSILTypeLoader(bin)
-
-    protected def newPackageLoader(pkg: ClassPath[MSILType]) =
-      new NamespaceLoader(pkg)
   }
 
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader {

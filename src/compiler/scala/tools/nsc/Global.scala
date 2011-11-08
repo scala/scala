@@ -62,13 +62,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   // platform specific elements
 
-  type ThisPlatform = Platform[_] { val global: Global.this.type }
+  type ThisPlatform = Platform { val global: Global.this.type }
 
   lazy val platform: ThisPlatform =
     if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
     else new { val global: Global.this.type = Global.this } with JavaPlatform
 
-  def classPath: ClassPath[_] = platform.classPath
+  def classPath: ClassPath[platform.BinaryRepr] = platform.classPath
   def rootLoader: LazyType = platform.rootLoader
 
   // sub-components --------------------------------------------------

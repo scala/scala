@@ -6,13 +6,16 @@
 package scala.tools.nsc
 package backend
 
-import ch.epfl.lamp.compiler.msil.{ Type => MSILType }
-import util.MsilClassPath
+import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Attribute => MSILAttribute }
+import util.{ClassPath, MsilClassPath}
 import msil.GenMSIL
+import io.AbstractFile
 
-trait MSILPlatform extends Platform[MSILType] {
+trait MSILPlatform extends Platform {
   import global._
   import definitions.{ ComparatorClass, BoxedNumberClass, getMember }
+
+  type BinaryRepr = MSILType
 
   if (settings.verbose.value)
     inform("[AssemRefs = " + settings.assemrefs.value + "]")
@@ -25,7 +28,8 @@ trait MSILPlatform extends Platform[MSILType] {
   } with GenMSIL
 
   lazy val classPath = MsilClassPath.fromSettings(settings)
-  def rootLoader = new loaders.NamespaceLoader(classPath)
+  def rootLoader = new loaders.PackageLoader(classPath.asInstanceOf[ClassPath[platform.BinaryRepr]])
+    // See discussion in JavaPlatForm for why we need a cast here.
 
   def platformPhases = List(
     genMSIL   // generate .msil files
@@ -33,4 +37,30 @@ trait MSILPlatform extends Platform[MSILType] {
 
   lazy val externalEquals = getMember(ComparatorClass.companionModule, nme.equals_)
   def isMaybeBoxed(sym: Symbol) = sym isNonBottomSubClass BoxedNumberClass
+
+  def newClassLoader(bin: MSILType): loaders.SymbolLoader =
+    new loaders.MSILTypeLoader(bin)
+
+  /**
+   * Tells whether a class should be loaded and entered into the package
+   * scope. On .NET, this method returns `false` for all synthetic classes
+   * (anonymous classes, implementation classes, module classes), their
+   * symtab is encoded in the pickle of another class.
+   */
+  def doLoad(cls: ClassPath[BinaryRepr]#ClassRep): Boolean = {
+    if (cls.binary.isDefined) {
+      val typ = cls.binary.get
+      if (typ.IsDefined(loaders.clrTypes.SCALA_SYMTAB_ATTR, false)) {
+        val attrs = typ.GetCustomAttributes(loaders.clrTypes.SCALA_SYMTAB_ATTR, false)
+        assert(attrs.length == 1, attrs.length)
+        val a = attrs(0).asInstanceOf[MSILAttribute]
+        // symtab_constr takes a byte array argument (the pickle), i.e. typ has a pickle.
+        // otherwise, symtab_default_constr was used, which marks typ as scala-synthetic.
+        a.getConstructor() == loaders.clrTypes.SYMTAB_CONSTR
+      } else true // always load non-scala types
+    } else true // always load source
+  }
+
+  def needCompile(bin: MSILType, src: AbstractFile) =
+    false // always use compiled file on .net
 }

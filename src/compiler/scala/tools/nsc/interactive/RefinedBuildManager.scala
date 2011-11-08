@@ -33,8 +33,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       super.computeInternalPhases
       phasesSet += dependencyAnalysis
     }
-    lazy val _classpath: ClassPath[_] = new NoSourcePathPathResolver(settings).result
-    override def classPath: ClassPath[_] = _classpath
+    lazy val _classpath = new NoSourcePathPathResolver(settings).result
+    override def classPath = _classpath.asInstanceOf[ClassPath[platform.BinaryRepr]]
+       // See discussion in JavaPlatForm for why we need a cast here.
 
     def newRun() = new Run()
   }
