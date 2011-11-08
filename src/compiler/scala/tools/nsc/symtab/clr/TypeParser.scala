@@ -7,6 +7,7 @@ package symtab
 package clr
 
 import java.io.IOException
+import io.MsilFile
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _}
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.UnPickler
@@ -255,7 +256,7 @@ abstract class TypeParser {
     for (ntype <- typ.getNestedTypes() if !(ntype.IsNestedPrivate || ntype.IsNestedAssembly || ntype.IsNestedFamANDAssem)
 				                                 || ntype.IsInterface /* TODO why shouldn't nested ifaces be type-parsed too? */ )
       {
-	val loader = new loaders.MSILTypeLoader(ntype)
+        val loader = new loaders.MsilFileLoader(new MsilFile(ntype))
 	val nclazz = statics.newClass(NoPosition, ntype.Name.toTypeName)
 	val nmodule = statics.newModule(NoPosition, ntype.Name)
 	nclazz.setInfo(loader)

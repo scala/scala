@@ -7,15 +7,13 @@ package scala.tools.nsc
 package symtab
 
 import java.io.IOException
-import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Attribute => MSILAttribute }
-
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import reflect.internal.Flags._
 import reflect.internal.MissingRequirementError
 import util.Statistics._
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.{ AbstractFile, MsilFile }
 
 /** This class ...
  *
@@ -108,7 +106,7 @@ abstract class SymbolLoaders {
     def sourcefile: Option[AbstractFile] = None
 
     /**
-     * Description of the resource (ClassPath, AbstractFile, MSILType)
+     * Description of the resource (ClassPath, AbstractFile, MsilFile)
      * being processed by this loader
      */
     protected def description: String
@@ -239,12 +237,13 @@ abstract class SymbolLoaders {
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
   }
 
-  class MSILTypeLoader(typ: MSILType) extends SymbolLoader {
+  class MsilFileLoader(msilFile: MsilFile) extends SymbolLoader {
+    private def typ = msilFile.msilType
     private object typeParser extends clr.TypeParser {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
 
-    protected def description = "MSILType "+ typ.FullName + ", assembly "+ typ.Assembly.FullName
+    protected def description = "MsilFile "+ typ.FullName + ", assembly "+ typ.Assembly.FullName
     protected def doComplete(root: Symbol) { typeParser.parse(typ, root) }
   }
 

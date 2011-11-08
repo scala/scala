@@ -12,9 +12,8 @@ import java.io.File
 import java.net.URL
 import java.util.StringTokenizer
 import scala.util.Sorting
-
 import scala.collection.mutable
-import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.io.{ AbstractFile, MsilFile }
 import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
 import ClassPath.{ ClassPathContext, isTraitImplementation }
 
@@ -46,14 +45,14 @@ object MsilClassPath {
     new MsilClassPath(assemextdirs.value, assemrefs.value, sourcepath.value, context)
   }
 
-  class MsilContext extends ClassPathContext[MSILType] {
-    def toBinaryName(rep: MSILType) = rep.Name
+  class MsilContext extends ClassPathContext[MsilFile] {
+    def toBinaryName(rep: MsilFile) = rep.msilType.Name
     def newClassPath(assemFile: AbstractFile) = new AssemblyClassPath(MsilClassPath collectTypes assemFile, "", this)
   }
 
-  private def assembleEntries(ext: String, user: String, source: String, context: MsilContext): List[ClassPath[MSILType]] = {
+  private def assembleEntries(ext: String, user: String, source: String, context: MsilContext): List[ClassPath[MsilFile]] = {
     import ClassPath._
-    val etr = new mutable.ListBuffer[ClassPath[MSILType]]
+    val etr = new mutable.ListBuffer[ClassPath[MsilFile]]
     val names = new mutable.HashSet[String]
 
     // 1. Assemblies from -Xassem-extdirs
@@ -93,7 +92,7 @@ object MsilClassPath {
     // 3. Source path
     for (dirName <- expandPath(source, expandStar = false)) {
       val file = AbstractFile.getDirectory(dirName)
-      if (file ne null) etr += new SourcePath[MSILType](file, context)
+      if (file ne null) etr += new SourcePath[MsilFile](file, context)
     }
 
     etr.toList
@@ -104,7 +103,7 @@ import MsilClassPath._
 /**
  * A assembly file (dll / exe) containing classes and namespaces
  */
-class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: MsilContext) extends ClassPath[MSILType] {
+class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: MsilContext) extends ClassPath[MsilFile] {
   def name = {
     val i = namespace.lastIndexOf('.')
     if (i < 0) namespace
@@ -131,7 +130,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
     while (i < types.length && types(i).Namespace.startsWith(namespace)) {
       // CLRTypes used to exclude java.lang.Object and java.lang.String (no idea why..)
       if (types(i).Namespace == namespace)
-        cls += ClassRep(Some(types(i)), None)
+        cls += ClassRep(Some(new MsilFile(types(i))), None)
       i += 1
     }
     cls.toIndexedSeq
@@ -167,4 +166,4 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
  * MSILType values.
  */
 class MsilClassPath(ext: String, user: String, source: String, context: MsilContext)
-extends MergedClassPath[MSILType](MsilClassPath.assembleEntries(ext, user, source, context), context) { }
+extends MergedClassPath[MsilFile](MsilClassPath.assembleEntries(ext, user, source, context), context) { }

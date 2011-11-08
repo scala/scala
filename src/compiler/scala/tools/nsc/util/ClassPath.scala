@@ -249,7 +249,7 @@ abstract class ClassPath[T] {
   // }
 
   /**
-   * Represents classes which can be loaded with a ClassfileLoader/MSILTypeLoader
+   * Represents classes which can be loaded with a ClassfileLoader/MsilFileLoader
    * and / or a SourcefileLoader.
    */
   case class ClassRep(binary: Option[T], source: Option[AbstractFile]) {
