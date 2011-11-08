@@ -10,7 +10,7 @@ retrieved 0 members
 askTypeCompletion at pi.scala(55,25)
 ================================================================================
 [response] aksTypeCompletion at (55,25)
-retrieved 44 members
+retrieved 45 members
 `class Broadcastakka.routing.Routing.Broadcast`
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
@@ -45,6 +45,7 @@ retrieved 44 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> akka.routing.Routing.type`
 `method →[B](y: B)(akka.routing.Routing.type, B)`
 `trait RoutingMessageakka.routing.Routing.RoutingMessage`
 `type PFakka.routing.Routing.PF`
@@ -56,7 +57,7 @@ retrieved 44 members
 askTypeCompletion at pi.scala(55,73)
 ================================================================================
 [response] aksTypeCompletion at (55,73)
-retrieved 130 members
+retrieved 131 members
 `method !!![T](message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])akka.dispatch.Future[T]`
 `method !!(message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])Option[Any]`
 `method !(message: Any)(implicit sender: Option[akka.actor.ActorRef])Unit`
@@ -170,6 +171,7 @@ retrieved 130 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> akka.actor.ActorRef`
 `method →[B](y: B)(akka.actor.ActorRef, B)`
 `value __leftOfArrowakka.actor.ActorRef`
 `value __resultOfEnsuringakka.actor.ActorRef`
@@ -188,7 +190,7 @@ retrieved 130 members
 askTypeCompletion at pi.scala(65,15)
 ================================================================================
 [response] aksTypeCompletion at (65,15)
-retrieved 130 members
+retrieved 131 members
 `method !!![T](message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])akka.dispatch.Future[T]`
 `method !!(message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])Option[Any]`
 `method !(message: Any)(implicit sender: Option[akka.actor.ActorRef])Unit`
@@ -302,6 +304,7 @@ retrieved 130 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> akka.actor.ActorRef`
 `method →[B](y: B)(akka.actor.ActorRef, B)`
 `value __leftOfArrowakka.actor.ActorRef`
 `value __resultOfEnsuringakka.actor.ActorRef`
@@ -320,7 +323,7 @@ retrieved 130 members
 askTypeCompletion at pi.scala(74,46)
 ================================================================================
 [response] aksTypeCompletion at (74,46)
-retrieved 130 members
+retrieved 131 members
 `method !!![T](message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])akka.dispatch.Future[T]`
 `method !!(message: Any, timeout: Long)(implicit sender: Option[akka.actor.ActorRef])Option[Any]`
 `method !(message: Any)(implicit sender: Option[akka.actor.ActorRef])Unit`
@@ -434,6 +437,7 @@ retrieved 130 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> akka.actor.ScalaActorRef`
 `method →[B](y: B)(akka.actor.ScalaActorRef, B)`
 `value __leftOfArrowakka.actor.ScalaActorRef`
 `value __resultOfEnsuringakka.actor.ScalaActorRef`

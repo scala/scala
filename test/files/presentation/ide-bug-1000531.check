@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] aksTypeCompletion at (6,12)
-retrieved 122 members
+retrieved 123 members
 `class GroupedIteratorIterator[B]#GroupedIterator`
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
@@ -115,6 +115,7 @@ retrieved 122 members
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
 `method withFilter(p: B => Boolean)Iterator[B]`
+`method x=> java.util.Iterator[B]`
 `method zipAll[B, A1 >: B, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1)Iterator[(A1, B1)]`
 `method zipWithIndex=> Iterator[(B, Int)]`
 `method zip[B](that: Iterator[B])Iterator[(B, B)]`

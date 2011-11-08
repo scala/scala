@@ -3,7 +3,7 @@ reload: properties.scala
 askTypeCompletion at properties.scala(29,33)
 ================================================================================
 [response] aksTypeCompletion at (29,33)
-retrieved 50 members
+retrieved 51 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -41,6 +41,7 @@ retrieved 50 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> properties.Property[String]`
 `method →[B](y: B)(properties.Property[String], B)`
 `value __leftOfArrowproperties.Property[String]`
 `value __resultOfEnsuringproperties.Property[String]`
@@ -54,7 +55,7 @@ retrieved 50 members
 askTypeCompletion at properties.scala(29,67)
 ================================================================================
 [response] aksTypeCompletion at (29,67)
-retrieved 50 members
+retrieved 51 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -92,6 +93,7 @@ retrieved 50 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> properties.Property[String]`
 `method →[B](y: B)(properties.Property[String], B)`
 `value __leftOfArrowproperties.Property[String]`
 `value __resultOfEnsuringproperties.Property[String]`
@@ -105,7 +107,7 @@ retrieved 50 members
 askTypeCompletion at properties.scala(45,10)
 ================================================================================
 [response] aksTypeCompletion at (45,10)
-retrieved 37 members
+retrieved 38 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -133,6 +135,7 @@ retrieved 37 members
 `method wait()Unit`
 `method wait(x$1: Long)Unit`
 `method wait(x$1: Long, x$2: Int)Unit`
+`method x=> properties.User`
 `method →[B](y: B)(properties.User, B)`
 `value __leftOfArrowproperties.User`
 `value __resultOfEnsuringproperties.User`
