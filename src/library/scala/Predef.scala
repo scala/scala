@@ -214,10 +214,12 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  final class Ensuring[A](val __resultOfEnsuring: A) { // `__resultOfEnsuring` must be a public val to allow inlining
-    // the val used to be called `x`, but now goes by `__resultOfEnsuring`, as that reduces the chances of a user's writing
-    // `foo.__resultOfEnsuring` and being confused why they get an ambiguous implicit conversion error
-    // (`foo.x` used to produce this error since both any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
+  final class Ensuring[A](val __resultOfEnsuring: A) {
+    // `__resultOfEnsuring` must be a public val to allow inlining.
+    // See comments in ArrowAssoc for more.
+    @deprecated("Use __resultOfEnsuring instead", "2.10.0")
+    def x = __resultOfEnsuring
+
     def ensuring(cond: Boolean): A = { assert(cond); __resultOfEnsuring }
     def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); __resultOfEnsuring }
     def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
@@ -244,10 +246,16 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  final class ArrowAssoc[A](val __leftOfArrow: A) {  // `__leftOfArrow` must be a public val to allow inlining
-    // the val used to be called `x`, but now goes by `__leftOfArrow`, as that reduces the chances of a user's writing
-    // `foo.__leftOfArrow` and being confused why they get an ambiguous implicit conversion error
-    // (`foo.x` used to produce this error since both any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
+  final class ArrowAssoc[A](val __leftOfArrow: A) {
+    // `__leftOfArrow` must be a public val to allow inlining. The val
+    // used to be called `x`, but now goes by `__leftOfArrow`, as that
+    // reduces the chances of a user's writing `foo.__leftOfArrow` and
+    // being confused why they get an ambiguous implicit conversion
+    // error. (`foo.x` used to produce this error since both
+    // any2Ensuring and any2ArrowAssoc pimped an `x` onto everything)
+    @deprecated("Use __leftOfArrow instead", "2.10.0")
+    def x = __leftOfArrow
+
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
