@@ -622,7 +622,7 @@ abstract class ClassfileParser {
         // need to give singleton type
         sym setInfo info.narrow
         if (!sym.superClass.isSealed)
-          sym.superClass setFlag (SEALED | ABSTRACT)
+          sym.superClass setFlag SEALED
 
         sym.superClass addChild sym
       }
