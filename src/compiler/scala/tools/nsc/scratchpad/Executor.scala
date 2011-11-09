@@ -36,7 +36,7 @@ object Executor {
     Console.setErr(newOut)
     try {
       val clazz = Class.forName(name+"$")
-      clazz.getField("$MODULE").get(null)
+      clazz.getField("MODULE$").get(null)
     } catch {
       case ex: Throwable =>
         ultimateCause(ex) match {
