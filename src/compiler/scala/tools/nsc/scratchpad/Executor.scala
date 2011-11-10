@@ -15,7 +15,7 @@ object Executor {
   /** Execute module with given name, redirecting all output to given
    *  source inserter. Catch all exceptions and print stacktrace of underlying causes.
    */
-  def execute(name: String, si: SourceInserter) {
+  def execute(name: String, si: SourceInserter, classLoader: ClassLoader = getClass.getClassLoader) {
     val oldSysOut = System.out
     val oldSysErr = System.err
     val oldConsOut = Console.out
@@ -28,7 +28,7 @@ object Executor {
     Console.setOut(newOut)
     Console.setErr(newOut)
     try {
-      singletonInstance(name)
+      singletonInstance(name, classLoader)
     } catch {
       case ex: Throwable =>
         unwrapThrowable(ex) match {
