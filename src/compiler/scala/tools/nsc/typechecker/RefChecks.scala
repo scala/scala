@@ -364,7 +364,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             overrideError("cannot be used here - classes can only override abstract types");
           } else if (other.isFinal) { // (1.2)
             overrideError("cannot override final member");
-          } else if (!other.isDeferred && !member.isAnyOverride) {
+            // synthetic exclusion needed for (at least) default getters.
+          } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) {
             overrideError("needs `override' modifier");
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
