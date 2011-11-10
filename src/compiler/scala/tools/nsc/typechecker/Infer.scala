@@ -649,7 +649,8 @@ trait Infer {
           targ.baseType(SeqClass)
         else if (targ.typeSymbol == JavaRepeatedParamClass)
           targ.baseType(ArrayClass)
-        else if (targ.typeSymbol.isModuleClass || (opt.experimental && tvar.constr.avoidWiden))
+        // checks opt.virtPatmat directly so one need not run under -Xexperimental to use virtpatmat
+        else if (targ.typeSymbol.isModuleClass || ((opt.experimental || opt.virtPatmat) && tvar.constr.avoidWiden))
           targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
         else
           targ.widen
