@@ -9,7 +9,7 @@ import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableExcepti
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
-trait ReflectionUtils {
+object ReflectionUtils {
   // Unwraps some chained exceptions which arise during reflective calls.
   def unwrapThrowable(x: Throwable): Throwable = x match {
     case  _: InvocationTargetException |      // thrown by reflectively invoked method or constructor
@@ -23,7 +23,7 @@ trait ReflectionUtils {
   }
   // Transforms an exception handler into one which will only receive the unwrapped
   // exceptions (for the values of wrap covered in unwrapThrowable.)
-  def unwrapForHandler[T](pf: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
+  def unwrapHandler[T](pf: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
     case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
   }
 

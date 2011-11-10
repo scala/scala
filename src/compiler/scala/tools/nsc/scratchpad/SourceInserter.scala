@@ -21,7 +21,6 @@ object SourceInserter {
     (prefixes mkString "\n").toArray
   }
 }
-
 class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) extends Writer {
 
   private var buf = contents
@@ -57,7 +56,7 @@ class SourceInserter(contents: Array[Char], start: Int = 0, tabInc: Int = 8) ext
 
   private def insertChar(ch: Char) = {
 //  Console.err.print("["+ch+"]")
-    buf(offset) = ch.toChar
+    buf(offset) = ch
     offset += 1
     ch match {
       case LF => col = 0

@@ -11,7 +11,7 @@ import java.lang.reflect.{ Constructor, Modifier, Method }
 import java.io.{ File => JFile }
 import java.net.{ URLClassLoader => JURLClassLoader }
 import java.net.URL
-import scala.reflect.unwrapForHandler
+import scala.reflect.ReflectionUtils.unwrapHandler
 import ScalaClassLoader._
 import scala.util.control.Exception.{ catching }
 // import Exceptional.unwrap
@@ -88,7 +88,7 @@ trait ScalaClassLoader extends JClassLoader {
       throw new NoSuchMethodException(objectName + ".main is not static")
 
     try asContext(method.invoke(null, Array(arguments.toArray: AnyRef): _*)) // !!! : AnyRef shouldn't be necessary
-    catch unwrapForHandler({ case ex => throw ex })
+    catch unwrapHandler({ case ex => throw ex })
   }
 
   /** A list comprised of this classloader followed by all its

@@ -141,9 +141,9 @@ object REPL {
         // Compile instrumented source
         scala.tools.nsc.Main.process(Array(iSourceName, "-verbose", "-d", "/classes"))
         // Run instrumented source, inserting all output into stripped source
-        println("running "+iSimpleName)
+        println("running "+iFullName)
         val si = new SourceInserter(strippedSource.content)
-        Executor.execute(iSimpleName, si)
+        Executor.execute(iFullName, si)
         println("done")
         si.currentContents
       }
