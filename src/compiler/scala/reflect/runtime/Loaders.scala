@@ -90,7 +90,10 @@ trait Loaders { self: SymbolTable =>
 
   def invalidClassName(name: Name) = {
     val dp = name pos '$'
-    0 < dp && dp < (name.length - 1)
+    //it's not clear what's the definition of an invalid class name but
+    //implementation class is certainly a valid class that we would
+    //like to load (grek)
+    0 < dp && dp < (name.length - 1) && !nme.isImplClassName(name)
   }
 
   class PackageScope(pkgClass: Symbol) extends Scope {
