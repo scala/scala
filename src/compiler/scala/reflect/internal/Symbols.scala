@@ -338,6 +338,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isModuleClass        = isClass && hasFlag(MODULE)
     final def isNumericValueClass  = definitions.isNumericValueClass(this)
     final def isOverloaded         = hasFlag(OVERLOADED)
+    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && owner.isClass
     final def isRefinementClass    = isClass && name == tpnme.REFINE_CLASS_NAME
     final def isSourceMethod       = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
     final def isTypeParameter      = isType && isParameter && !isSkolem
@@ -361,9 +362,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol an effective root for fullname string?
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
-
-    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
-    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
 
     /** Term symbols with the exception of static parts of Java classes and packages.
      */
@@ -402,9 +400,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
-    final def isAnonymousClass    = isClass && (name containsName tpnme.ANON_CLASS_NAME)
-    final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
-    final def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
+    final def isAnonymousClass             = isClass && (name containsName tpnme.ANON_CLASS_NAME)
+    final def isAnonymousFunction          = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
+    final def isAnonOrRefinementClass      = isAnonymousClass || isRefinementClass
 
     // A package object or its module class
     final def isPackageObjectOrClass = name == nme.PACKAGE || name == tpnme.PACKAGE
@@ -594,6 +592,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def isStructuralRefinement: Boolean =
       (isClass || isType || isModule) && info.normalize/*.underlying*/.isStructuralRefinement
+
+    final def isStructuralRefinementMember = owner.isStructuralRefinement && isPossibleInRefinement && isPublic
+    final def isPossibleInRefinement       = !isConstructor && !isOverridingSymbol
 
     /** Is this symbol a member of class `clazz`? */
     def isMemberOf(clazz: Symbol) =

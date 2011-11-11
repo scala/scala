@@ -2811,16 +2811,8 @@ A type's typeSymbol should never be inspected directly.
 
   /** Rebind symbol `sym` to an overriding member in type `pre`. */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
-    val owner = sym.owner
-    if (owner.isClass && owner != pre.typeSymbol && !sym.isEffectivelyFinal && !sym.isClass) {
-      //Console.println("rebind "+pre+" "+sym)//DEBUG
-      val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable)
-      if (rebind == NoSymbol) sym
-      else {
-        // Console.println("rebound "+pre+" "+sym+" to "+rebind)//DEBUG
-        rebind
-      }
-    } else sym
+    if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
+    else pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable) orElse sym
   }
 
   /** Convert a `super` prefix to a this-type if `sym` is abstract or final. */
@@ -2886,56 +2878,43 @@ A type's typeSymbol should never be inspected directly.
    *  todo: see how we can clean this up a bit
    */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
-    // type alias selections are rebound in TypeMap ("coevolved", actually -- see #3731)
-    // e.g., when type parameters that are referenced by the alias are instantiated in
-    // the prefix.  See pos/depmet_rebind_typealias.
-    def rebindTR(pre: Type, sym: Symbol) =
-      if (sym.isAbstractType) rebind(pre, sym) else sym
+    // type alias selections are rebound in TypeMap ("coevolved",
+    // actually -- see #3731) e.g., when type parameters that are
+    // referenced by the alias are instantiated in the prefix. See
+    // pos/depmet_rebind_typealias.
 
-    val sym1 = rebindTR(pre, sym)
-
+    val sym1 = if (sym.isAbstractType) rebind(pre, sym) else sym
+    // don't expand cyclical type alias
     // we require that object is initialized, thus info.typeParams instead of typeParams.
-    if (sym1.isAliasType && sameLength(sym1.info.typeParams, args)) {
-      if (sym1.lockOK) TypeRef(pre, sym1, args) // don't expand type alias (cycles checked by lockOK)
-      else throw new TypeError("illegal cyclic reference involving " + sym1)
+    if (sym1.isAliasType && sameLength(sym1.info.typeParams, args) && !sym1.lockOK)
+      throw new TypeError("illegal cyclic reference involving " + sym1)
+
+    val pre1 = pre match {
+      case x: SuperType if sym1.isEffectivelyFinal || sym1.isDeferred =>
+        x.thistpe
+      case _: CompoundType if sym1.isClass =>
+        // sharpen prefix so that it is maximal and still contains the class.
+        pre.parents.reverse dropWhile (_.member(sym1.name) != sym1) match {
+          case Nil         => pre
+          case parent :: _ => parent
+        }
+      case _ => pre
     }
-    else {
-      val pre1 = removeSuper(pre, sym1)
-      if (pre1 ne pre)
-        typeRef(pre1, rebindTR(pre1, sym1), args)
-      else pre match {
-        case _: CompoundType if sym1.isClass =>
-          // sharpen prefix so that it is maximal and still contains the class.
-          pre.parents.reverse dropWhile (_.member(sym1.name) != sym1) match {
-            case Nil         => TypeRef(pre, sym1, args)
-            case parent :: _ => typeRef(parent, sym1, args)
-          }
-        case _ =>
-          TypeRef(pre, sym1, args)
-      }
-    }
+    if (pre eq pre1)                                TypeRef(pre, sym1, args)
+    else if (sym1.isAbstractType && !sym1.isClass)  typeRef(pre1, rebind(pre1, sym1), args)
+    else                                            typeRef(pre1, sym1, args)
   }
 
+  // Optimization to avoid creating unnecessary new typerefs.
   def copyTypeRef(tp: Type, pre: Type, sym: Symbol, args: List[Type]): Type = tp match {
-    case TypeRef(pre0, sym0, args0) =>
-      if ((pre == pre0) && (sym.name == sym0.name)) {
+    case TypeRef(pre0, sym0, _) if (pre0 eq sym0) && sym0.name == sym.name =>
+      if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
+        throw new TypeError("illegal cyclic reference involving " + sym)
 
-        val sym1 = sym
-        // we require that object is initialized, thus info.typeParams instead of typeParams.
-        if (sym1.isAliasType && sameLength(sym1.info.typeParams, args)) {
-          if (sym1.lockOK) TypeRef(pre, sym1, args) // don't expand type alias (cycles checked by lockOK)
-          else throw new TypeError("illegal cyclic reference involving " + sym1)
-        }
-        else {
-          TypeRef(pre, sym1, args)
-        }
-
-      } else
-        typeRef(pre, sym, args)
+      TypeRef(pre, sym, args)
+    case _ =>
+      typeRef(pre, sym, args)
   }
-
-
-
 
   /** The canonical creator for implicit method types */
   def JavaMethodType(params: List[Symbol], resultType: Type): JavaMethodType =
@@ -2944,7 +2923,7 @@ A type's typeSymbol should never be inspected directly.
   /** Create a new MethodType of the same class as tp, i.e. keep JavaMethodType */
   def copyMethodType(tp: Type, params: List[Symbol], restpe: Type): Type = tp match {
     case _: JavaMethodType => JavaMethodType(params, restpe)
-    case _ => MethodType(params, restpe)
+    case _                 => MethodType(params, restpe)
   }
 
   /** A creator for intersection type where intersections of a single type are
