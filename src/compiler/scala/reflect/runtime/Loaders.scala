@@ -88,12 +88,12 @@ trait Loaders { self: SymbolTable =>
     }
   }
 
+  /** Is the given name valid for a top-level class? We exclude names with embedded $-signs, because
+   *  these are nested classes or anonymous classes,
+   */
   def invalidClassName(name: Name) = {
     val dp = name pos '$'
-    //it's not clear what's the definition of an invalid class name but
-    //implementation class is certainly a valid class that we would
-    //like to load (grek)
-    0 < dp && dp < (name.length - 1) && !nme.isImplClassName(name)
+    0 < dp && dp < (name.length - 1)
   }
 
   class PackageScope(pkgClass: Symbol) extends Scope {

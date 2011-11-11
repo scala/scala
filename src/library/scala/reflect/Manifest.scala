@@ -202,7 +202,7 @@ object Manifest {
 
   private class SingletonTypeManifest[T <: AnyRef](value: AnyRef) extends Manifest[T] {
     lazy val erasure = value.getClass
-    override lazy val tpe = mirror.SingleType(mirror.NoPrefix, InstanceRefSymbol(value))
+    override lazy val tpe = mirror.SingleType(mirror.NoPrefix, InstanceRefSymbol(value)) // todo: change to freevar
     override lazy val toString = value.toString + ".type"
   }
 

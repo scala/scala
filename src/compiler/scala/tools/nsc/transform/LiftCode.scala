@@ -86,7 +86,21 @@ abstract class LiftCode extends Transform with TypingTransformers {
       }
     }
 
-    /** todo: Treat embedded Code blocks by merging them into containing block
+    /**
+     *  Given a tree, generate a tree that when exeuted ar tuntime produces the original tree.
+     *  For instance: Given
+     *
+     *   var x = 1; Code(x + 1)
+     *
+     *  The `x + 1` expression is reified to
+     *
+     *  $mr.Apply($mr.Select($mr.Ident($mr.freeVar("x". <Int>, x), "+"), List($mr.Literal($mr.Constant(1))))))
+     *
+     *  Or, the term name 'abc' is reified to:
+     *
+     *  $mr.Apply($mr.Select($mr.Ident("newTermName")), List(Literal(Constant("abc")))))
+     *
+     * todo: Treat embedded Code blocks by merging them into containing block
      *
      */
     class Reifier() {
@@ -105,7 +119,6 @@ abstract class LiftCode extends Transform with TypingTransformers {
       /** Generate tree of the form
        *
        *    { val $mr = scala.reflect.runtime.Mirror
-       *      val $memo = new scala.reflext.runtime.Memoizer
        *      $local1 = new TypeSymbol(owner1, NoPosition, name1)
        *      ...
        *      $localN = new TermSymbol(ownerN, NoPositiion, nameN)
@@ -196,7 +209,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
           case None =>
             if (sym == NoSymbol)
               mirrorSelect("NoSymbol")
-            else  if (sym.isModuleClass)
+            else if (sym.isModuleClass)
               Select(reifySymRef(sym.sourceModule), "moduleClass")
             else if (sym.isStatic && sym.isClass)
               mirrorCall("staticClass", reify(sym.fullName))

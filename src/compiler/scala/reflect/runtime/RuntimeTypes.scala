@@ -5,6 +5,9 @@ import collection.mutable.ListBuffer
 
 trait RuntimeTypes extends Universe with api.RuntimeTypes {
 
+  /** To lift path dependent types into reflection, we use InstanceRefSymbols.
+   *  Two of these are equal if they point to the same object reference. Todo: remove
+   */
   case class InstanceRefSymbol(value: AnyRef) extends TermSymbol(NoSymbol, NoPosition, nme.EMPTY)
   object InstanceRefSymbol extends InstanceRefSymbolExtractor
 

@@ -355,7 +355,8 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       val sym = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
       assert(sym.isType, sym+"/"+jclazz+"/"+sOwner(jclazz)+"/"+jclazz.getSimpleName)
       sym.asInstanceOf[ClassSymbol]
-    } else if (jclazz.isLocalClass) { // local classes not preserved by unpickling - treat as Java
+    } else if (jclazz.isLocalClass || invalidClassName(jclazz.getName)) {
+      // local classes and implementation classes not preserved by unpickling - treat as Java
       jclassAsScala(jclazz)
     } else if (jclazz.isArray) {
       ArrayClass
