@@ -1,3 +1,0 @@
-object Foo {
-  "".toString.leng /*!*/
-}

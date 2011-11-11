@@ -1,0 +1,40 @@
+reload: CompletionOnEmptyArgMethod.scala
+
+askTypeCompletion at CompletionOnEmptyArgMethod.scala(2,17)
+================================================================================
+[response] aksTypeCompletion at (2,17)
+retrieved 37 members
+`method !=(x$1: Any)Boolean`
+`method !=(x$1: AnyRef)Boolean`
+`method ##()Int`
+`method +(other: String)String`
+`method ->[B](y: B)(Foo, B)`
+`method ==(x$1: Any)Boolean`
+`method ==(x$1: AnyRef)Boolean`
+`method asInstanceOf[T0]=> T0`
+`method clone()Object`
+`method ensuring(cond: Boolean)Foo`
+`method ensuring(cond: Boolean, msg: => Any)Foo`
+`method ensuring(cond: Foo => Boolean)Foo`
+`method ensuring(cond: Foo => Boolean, msg: => Any)Foo`
+`method eq(x$1: AnyRef)Boolean`
+`method equals(x$1: Any)Boolean`
+`method finalize()Unit`
+`method foo=> Foo`
+`method formatted(fmtstr: String)String`
+`method hashCode()Int`
+`method isInstanceOf[T0]=> Boolean`
+`method ne(x$1: AnyRef)Boolean`
+`method notify()Unit`
+`method notifyAll()Unit`
+`method synchronized[T0](x$1: T0)T0`
+`method toString()String`
+`method wait()Unit`
+`method wait(x$1: Long)Unit`
+`method wait(x$1: Long, x$2: Int)Unit`
+`method x=> Foo`
+`method →[B](y: B)(Foo, B)`
+`value __leftOfArrowFoo`
+`value __resultOfEnsuringFoo`
+`value selfAny`
+================================================================================
