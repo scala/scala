@@ -42,7 +42,7 @@ package object parallel {
   private[parallel] def getTaskSupport: TaskSupport =
     if (util.Properties.isJavaAtLeast("1.6")) {
       val vendor = util.Properties.javaVmVendor
-      if ((vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinTaskSupport
+      if ((vendor contains "Oracle") || (vendor contains "Sun") || (vendor contains "Apple")) new ForkJoinTaskSupport
       else new ThreadPoolTaskSupport
     } else new ThreadPoolTaskSupport
 
