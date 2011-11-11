@@ -2246,6 +2246,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           // now fixed by using isWeaklyCompatible in exprTypeArgs
           // TODO: understand why exactly -- some types were not inferred anymore (`ant clean quick.bin` failed)
           // (I had expected inferMethodAlternative to pick up the slack introduced by using WildcardType here)
+          //
+          // @PP responds: I changed it to pass WildcardType instead of pt and only one line in
+          // trunk (excluding scalacheck, which had another) failed to compile. It was this line in
+          // Types: "refs = Array(Map(), Map())".  I determined that inference fails if there are at
+          // least two invariant type parameters. See the test case I checked in to help backstop:
+          // pos/isApplicableSafe.scala.
           isApplicableSafe(context.undetparams, followApply(pre.memberType(alt)), argtypes, pt)
         }
         if (sym.isOverloaded) {
