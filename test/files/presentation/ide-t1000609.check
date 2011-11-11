@@ -1,0 +1,6 @@
+reload: NoHyperlinking.scala
+
+askHyperlinkPos for `foo` at (7,10) NoHyperlinking.scala
+================================================================================
+[response] found askHyperlinkPos for `foo` at (2,7) NoHyperlinking.scala
+================================================================================
