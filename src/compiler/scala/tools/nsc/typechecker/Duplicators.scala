@@ -327,7 +327,7 @@ abstract class Duplicators extends Analyzer {
           tree
 
         case _ =>
-          log("default: " + tree + " - " + (if (tree.symbol ne null) tree.symbol.isLazy else ""))
+          log("default: " + tree)
           if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }

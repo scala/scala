@@ -6,10 +6,48 @@
 package scala.tools.nsc
 package transform
 
+
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
 
+
+
 /** Specialize code on types.
+ *
+ *  Make sure you've read the thesis:
+ *
+ *    Iulian Dragos: Compiling Scala for Performance (chapter 4)
+ *
+ *  There are some things worth noting, (possibly) not mentioned there:
+ *  0) Make sure you understand the meaning of various `SpecializedInfo` descriptors
+ *     defined below.
+ *
+ *  1) Specializing traits by introducing bridges in specialized methods
+ *     of the specialized trait may introduce problems during mixin composition.
+ *     Concretely, it may cause cyclic calls and result in a stack overflow.
+ *     See ticket #4351.
+ *     This was solved by introducing an `Abstract` specialized info descriptor.
+ *     Instead of generating a bridge in the trait, an abstract method is generated.
+ *
+ *  2) Specialized private members sometimes have to be switched to protected.
+ *     In some cases, even this is not enough. Example:
+ *
+ *     {{{
+ *       class A[@specialized T](protected val d: T) {
+ *         def foo(that: A[T]) = that.d
+ *       }
+ *     }}}
+ *
+ *     Specialization will generate a specialized class and a specialized method:
+ *
+ *     {{{
+ *       class A$mcI$sp(protected val d: Int) extends A[Int] {
+ *         def foo(that: A[Int]) = foo$mcI$sp(that)
+ *         def foo(that: A[Int]) = that.d
+ *       }
+ *     }}}
+ *
+ *     Above, `A$mcI$sp` cannot access `d`, so the method cannot be typechecked.
  */
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import global._
@@ -786,8 +824,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     def specializeOn(tparams: List[Symbol]): List[Symbol] =
       for (spec0 <- specializations(tparams)) yield {
         val spec = mapAnyRefsInOrigCls(spec0, owner)
-        if (sym.isPrivate)
+        if (sym.isPrivate/* || sym.isProtected*/) {
+          //sym.privateWithin = sym.enclosingPackage
           sym.resetFlag(PRIVATE).setFlag(PROTECTED)
+          log("-->d SETTING PRIVATE WITHIN TO " + sym.enclosingPackage + " for " + sym)
+        }
 
         sym.resetFlag(FINAL)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
@@ -1437,7 +1478,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case fwd @ Forward(_) =>
               log("forward: " + fwd + ", " + ddef)
               val rhs1 = forwardCall(tree.pos, gen.mkAttributedRef(symbol.owner.thisType, fwd.target), vparamss)
-              debuglog("completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
+              log("-->d completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
               localTyper.typed(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
 
             case SpecializedAccessor(target) =>
@@ -1506,6 +1547,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val meth   = addBody(tree, source)
 
       val d = new Duplicator
+      log("-->d DUPLICATING: " + meth)
       d.retyped(
         localTyper.context1.asInstanceOf[d.Context],
         meth,
