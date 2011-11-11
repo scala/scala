@@ -1,0 +1,13 @@
+ambiguous-float-dots2.scala:2: error: malformed floating point number: to be part of a number, a dot must be immediately followed by a digit
+  val x0 = 5.
+           ^
+ambiguous-float-dots2.scala:6: error: malformed floating point number: to be part of a number, a dot must be immediately followed by a digit
+  1.+(2)
+  ^
+ambiguous-float-dots2.scala:7: error: malformed floating point number: to be part of a number, a dot must be immediately followed by a digit
+  1. + 2
+  ^
+ambiguous-float-dots2.scala:3: error: ';' expected but 'val' found.
+  val x1 = 5.f
+  ^
+four errors found

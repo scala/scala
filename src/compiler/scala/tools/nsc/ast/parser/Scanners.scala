@@ -28,6 +28,7 @@ trait ScannersCommon {
     def warning(off: Int, msg: String): Unit
     def error  (off: Int, msg: String): Unit
     def incompleteInputError(off: Int, msg: String): Unit
+    def deprecationWarning(off: Int, msg: String): Unit
   }
 
   def createKeywordArray(keywords: Seq[(Name, Int)], defaultToken: Int): (Int, Array[Int]) = {
@@ -339,7 +340,18 @@ trait Scanners extends ScannersCommon {
           if (ch == 'x' || ch == 'X') {
             nextChar()
             base = 16
-          } else {
+          }
+          else {
+            // !!! Let's deprecate this too, shall we?
+            // Can it really be worth it given the endless supply of newbies
+            // who have no hope whatsoever of intuiting that 012 != 12?
+            // Leading zero meaning octal is a relic of a darker time.
+            //
+            // Pre-fabricated future logic / warning:
+            //
+            // deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
+            // if (!opt.future)
+            //   base = 8
             base = 8
           }
           getNumber()
@@ -797,12 +809,28 @@ trait Scanners extends ScannersCommon {
     /** Convert current strVal, base to double value
     */
     def floatVal(negated: Boolean): Double = {
+
       val limit: Double =
         if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
       try {
         val value: Double = java.lang.Double.valueOf(strVal).doubleValue()
+        def isDeprecatedForm = {
+          val idx = strVal indexOf '.'
+          (idx == strVal.length - 1) || (
+               (idx >= 0)
+            && (idx + 1 < strVal.length)
+            && (!Character.isDigit(strVal charAt (idx + 1)))
+          )
+        }
         if (value > limit)
           syntaxError("floating point number too large")
+        if (isDeprecatedForm) {
+          if (opt.future)
+            syntaxError("malformed floating point number: to be part of a number, a dot must be immediately followed by a digit")
+          else
+            deprecationWarning("This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.")
+        }
+
         if (negated) -value else value
       } catch {
         case _: NumberFormatException =>
@@ -823,7 +851,7 @@ trait Scanners extends ScannersCommon {
     protected def getNumber() {
       def isDigit(c: Char) = java.lang.Character isDigit c
       val base1 = if (base < 10) 10 else base
-        // read 8,9's even if format is octal, produce a malformed number error afterwards.
+      // read 8,9's even if format is octal, produce a malformed number error afterwards.
       while (digit2int(ch, base1) >= 0) {
         putChar(ch)
         nextChar()
@@ -914,6 +942,8 @@ trait Scanners extends ScannersCommon {
     /** generate an error at the current token offset
     */
     def syntaxError(msg: String): Unit = syntaxError(offset, msg)
+
+    def deprecationWarning(msg: String): Unit = deprecationWarning(offset, msg)
 
     /** signal an error where the input ended in the middle of a token */
     def incompleteInputError(msg: String) {
@@ -1091,7 +1121,8 @@ trait Scanners extends ScannersCommon {
     override val decodeUni: Boolean = !settings.nouescape.value
 
     // suppress warnings, throw exception on errors
-    def warning(off: Offset, msg: String): Unit = {}
+    def warning(off: Offset, msg: String): Unit = ()
+    def deprecationWarning(off: Offset, msg: String): Unit = ()
     def error  (off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
   }
@@ -1101,8 +1132,9 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
-    override def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)
+    override def warning(off: Offset, msg: String)              = unit.warning(unit.position(off), msg)
+    override def deprecationWarning(off: Offset, msg: String)   = unit.deprecationWarning(unit.position(off), msg)
+    override def error  (off: Offset, msg: String)              = unit.error(unit.position(off), msg)
     override def incompleteInputError(off: Offset, msg: String) = unit.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
