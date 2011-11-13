@@ -27,8 +27,7 @@ set _LINE_PARAMS=%_LINE_PARAMS% %1
 goto param_loop
 :param_afterloop
 if "%OS%" NEQ "Windows_NT" (
-  echo "Sorry, your version of Windows is too old to run Scala."
-  goto :eof
+  echo "Warning, your version of Windows is not supported.  Attempting to start scala anyway."
 )
 
 @@setlocal
