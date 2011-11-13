@@ -23,5 +23,7 @@ object Test extends ReplTest {
 def foo(x: Int)(y: Int)(z: Int) = x+y+z
 foo(5)(10)(15)+foo(5)(10)(15)
 
+List(1) ++ List('a')
+
   """.trim
 }

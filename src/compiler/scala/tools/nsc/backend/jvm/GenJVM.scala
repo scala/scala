@@ -798,8 +798,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     }
 
     def genMethod(m: IMethod) {
-      if (m.symbol.isStaticConstructor) return
-      if ((m.symbol.name == nme.getClass_) && m.params.isEmpty) return
+      if (m.symbol.isStaticConstructor || definitions.isGetClass(m.symbol)) return
 
       debuglog("Generating method " + m.symbol.fullName)
       method = m

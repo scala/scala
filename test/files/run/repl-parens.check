@@ -77,3 +77,8 @@ scala> foo(5)(10)(15)+foo(5)(10)(15)
 res15: Int = 60
 
 scala> 
+
+scala> List(1) ++ List('a')
+res16: List[AnyVal] = List(1, a)
+
+scala> 

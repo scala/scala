@@ -5615,7 +5615,7 @@ A type's typeSymbol should never be inspected directly.
           for (sym <- lubBase.nonPrivateMembers) {
             // add a refinement symbol for all non-class members of lubBase
             // which are refined by every type in ts.
-            if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
+            if (!sym.isClass && !sym.isConstructor && !isGetClass(sym) && (narrowts forall (t => refines(t, sym))))
               try {
                 val lsym = lubsym(sym)
                 if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lubsym(sym))

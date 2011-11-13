@@ -81,6 +81,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isNumericValueClass(sym: Symbol): Boolean =
       numericWeight contains sym
 
+    def isGetClass(sym: Symbol) =
+      (sym.name == nme.getClass_) && (sym.paramss.isEmpty || sym.paramss.head.isEmpty)
+
     private[Definitions] def fullNameStrings: List[String] = nme.ScalaValueNames map ("scala." + _)
     private[Definitions] lazy val fullValueName: Set[Name] = {
       val values = nme.ScalaValueNames flatMap (x => List(newTypeName("scala." + x), newTermName("scala." + x)))
