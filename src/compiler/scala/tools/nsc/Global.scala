@@ -716,6 +716,34 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   private var curRun: Run = null
   private var curRunId = 0
 
+  /** A hook that lets subclasses of `Global` define whether a package or class should be kept loaded for the
+   *  next compiler run. If the parameter `sym` is a class or object, and `clearOnNextRun(sym)` returns `true`,
+   *  then the symbol is unloaded and reset to its state before the last compiler run. If the parameter `sym` is
+   *  a package, and clearOnNextRun(sym)` returns `true`, the package is recursively searched for
+   *  classes to drop.
+   *
+   *  Example: Let's say I want a compiler that drops all classes corresponding to the current project
+   *  between runs. Then `keepForNextRun` of a toplevel class or object should return `true` if the
+   *  class or object does not form part of the current project, `false` otherwise. For a package,
+   *  clearOnNextRun should return `true` if no class in that package forms part of the current project,
+   *  `false` otherwise.
+   *
+   *  @param    sym A class symbol, object symbol, package, or package class.
+   */
+  def clearOnNextRun(sym: Symbol) = false
+    /* To try out clearOnNext run on the scala.tools.nsc project itself
+     * replace `false` above with the following code
+
+    settings.Xexperimental.value && { sym.isRoot || {
+      sym.fullName match {
+        case "scala" | "scala.tools" | "scala.tools.nsc" => true
+        case _ => sym.owner.fullName.startsWith("scala.tools.nsc")
+      }
+    }}
+
+     * Then, fsc -Xexperimental clears the nsc porject between successive runs of `fsc`.
+     */
+
   /** Remove the current run when not needed anymore. Used by the build
    *  manager to save on the memory foot print. The current run holds on
    *  to all compilation units, which in turn hold on to trees.
@@ -794,6 +822,46 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         else terminal newPhase lastPhase
 
       parserPhase
+    }
+
+    /** Reset all classes contained in current project, as determined by
+     *  the clearOnNextRun hook
+     */
+    def resetProjectClasses(root: Symbol): Unit = try {
+      def unlink(sym: Symbol) =
+        if (sym != NoSymbol) root.info.decls.unlink(sym)
+      if (settings.verbose.value) inform("[reset] recursing in "+root)
+      val toReload = mutable.Set[String]()
+      for (sym <- root.info.decls) {
+        if (sym.isInitialized && clearOnNextRun(sym))
+          if (sym.isPackage) {
+            resetProjectClasses(sym.moduleClass)
+            openPackageModule(sym.moduleClass)
+          } else {
+            unlink(sym)
+            unlink(root.info.decls.lookup(
+              if (sym.isTerm) sym.name.toTypeName else sym.name.toTermName))
+            toReload += sym.fullName
+              // note: toReload could be set twice with the same name
+              // but reinit must happen only once per name. That's why
+              // the following classPath.findClass { ... } code cannot be moved here.
+          }
+      }
+      for (fullname <- toReload)
+        classPath.findClass(fullname) match {
+          case Some(classRep) =>
+            if (settings.verbose.value) inform("[reset] reinit "+fullname)
+            loaders.initializeFromClassPath(root, classRep)
+          case _ =>
+        }
+    } catch {
+      case ex: Throwable =>
+        // this handler should not be nessasary, but it seems that `fsc`
+        // eats exceptions if they appear here. Need to find out the cause for
+        // this and fix it.
+        inform("[reset] exception happened: "+ex);
+        ex.printStackTrace();
+        throw ex
     }
 
     // --------------- Miscellania -------------------------------
@@ -1103,6 +1171,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
       // Clear any sets or maps created via perRunCaches.
       perRunCaches.clearAll()
+
+      // Reset project
+      atPhase(namerPhase) {
+        resetProjectClasses(definitions.RootClass)
+      }
     }
 
     /** Compile list of abstract files. */

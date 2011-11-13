@@ -77,18 +77,18 @@ abstract class SymbolLoaders {
     enterClassAndModule(root, name, new SourcefileLoader(src))
   }
 
-  /** Initialize symbol `root` from class path representation `classRep`
+  /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(root: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[platform.BinaryRepr]#ClassRep) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src)) if platform.needCompile(bin, src) =>
         if (settings.verbose.value) inform("[symloader] picked up newer source file for " + src.path)
-        global.loaders.enterToplevelsFromSource(root, classRep.name, src)
+        global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
       case (None, Some(src)) =>
         if (settings.verbose.value) inform("[symloader] no class, picked up source file for " + src.path)
-        global.loaders.enterToplevelsFromSource(root, classRep.name, src)
+        global.loaders.enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
-        global.loaders.enterClassAndModule(root, classRep.name, platform.newClassLoader(bin))
+        global.loaders.enterClassAndModule(owner, classRep.name, platform.newClassLoader(bin))
     }
   }
 
