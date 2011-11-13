@@ -1,4 +1,4 @@
-#!/bin/bash --posix
+#!/usr/bin/env bash
 #
 ##############################################################################
 # Copyright 2002-2011, LAMP/EPFL
@@ -8,6 +8,17 @@
 # PARTICULAR PURPOSE.
 ##############################################################################
 
+findScalaHome () {
+  # see #2092
+  local SOURCE="${BASH_SOURCE[0]}"
+  while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+  ( cd -P "$( dirname "$SOURCE" )"/.. && pwd )
+}
+execCommand () {
+  [[ -n $SCALA_RUNNER_DEBUG ]] && echo "" && for arg in "$@@"; do echo "$arg"; done && echo "";
+  "$@@"
+}
+
 # Not sure what the right default is here: trying nonzero.
 scala_exit_status=127
 saved_stty=""
@@ -15,7 +26,8 @@ saved_stty=""
 # restore stty settings (echo in particular)
 function restoreSttySettings() {
   if [[ -n $SCALA_RUNNER_DEBUG ]]; then
-    echo "restoring stty: $saved_stty"
+    echo "restoring stty:"
+    echo "$saved_stty"
   fi
     
   stty $saved_stty
@@ -23,10 +35,8 @@ function restoreSttySettings() {
 }
 
 function onExit() {
-  if [[ "$saved_stty" != "" ]]; then
-    restoreSttySettings
-    exit $scala_exit_status
-  fi
+  [[ "$saved_stty" != "" ]] && restoreSttySettings
+  exit $scala_exit_status
 }
 
 # to reenable echo if we are interrupted before completing.
@@ -39,69 +49,60 @@ if [[ ! $? ]]; then
   saved_stty=""
 fi
 if [[ -n $SCALA_RUNNER_DEBUG ]]; then
-  echo "saved stty: $saved_stty"
+  echo "saved stty:"
+  echo "$saved_stty"
 fi
 
-cygwin=false;
-case "`uname`" in
-    CYGWIN*) cygwin=true ;;
-esac
+unset cygwin
+if uname | grep -q ^CYGWIN; then
+  cygwin="$(uname)"
+fi
 
 # Finding the root folder for this Scala distribution
-SOURCE=$0;
-SCRIPT=`basename "$SOURCE"`;
-while [ -h "$SOURCE" ]; do
-    SCRIPT=`basename "$SOURCE"`;
-    LOOKUP=`ls -ld "$SOURCE"`;
-    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
-    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
-        SOURCE=${TARGET:-.};
-    else
-        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
-    fi;
-done;
+SCALA_HOME="$(findScalaHome)"
+SEP=":"
 
-# see #2092
-SCALA_HOME=`dirname "$SOURCE"`
-SCALA_HOME=`cd "$SCALA_HOME"; pwd -P`
-SCALA_HOME=`cd "$SCALA_HOME"/..; pwd`
+# Possible additional command line options
+CYGWIN_OPT=""
+EMACS_OPT=""
+[[ -n "$EMACS" ]] && EMACS_OPT="-Denv.emacs=$EMACS"
 
 # Remove spaces from SCALA_HOME on windows
-if $cygwin; then
-    SCALA_HOME=`cygpath --windows --short-name "$SCALA_HOME"`
-    SCALA_HOME=`cygpath --unix "$SCALA_HOME"`
+if [[ -n "$cygwin" ]]; then
+  SCALA_HOME="$(shome="$(cygpath --windows --short-name "$SCALA_HOME")" ; cygpath --unix "$shome")"
+# elif uname |grep -q ^MINGW; then
+#   SEP=";"
 fi
 
 # Constructing the extension classpath
 TOOL_CLASSPATH="@classpath@"
-if [ -z "$TOOL_CLASSPATH" ] ; then
+if [[ -z "$TOOL_CLASSPATH" ]]; then
     for ext in "$SCALA_HOME"/lib/* ; do
-        if [ -z "$TOOL_CLASSPATH" ] ; then
+        if [[ -z "$TOOL_CLASSPATH" ]]; then
             TOOL_CLASSPATH="$ext"
         else
-            TOOL_CLASSPATH="$TOOL_CLASSPATH:$ext"
+            TOOL_CLASSPATH="${TOOL_CLASSPATH}${SEP}${ext}"
         fi
     done
 fi
 
-CYGWIN_JLINE_TERMINAL=
-if $cygwin; then
-    if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
+if [[ -n "$cygwin" ]]; then
+    if [[ "$OS" = "Windows_NT" ]] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
     else
         format=windows
     fi
-    SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    TOOL_CLASSPATH=`cygpath --path --$format "$TOOL_CLASSPATH"`
+    SCALA_HOME="$(cygpath --$format "$SCALA_HOME")"
+    TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
     case "$TERM" in
         rxvt* | xterm*)
             stty -icanon min 1 -echo
-            CYGWIN_JLINE_TERMINAL="-Djline.terminal=scala.tools.jline.UnixTerminal"
+            CYGWIN_OPT="-Djline.terminal=scala.tools.jline.UnixTerminal"
         ;;
     esac
 fi
 
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="@javaflags@"
+[[ -n "$JAVA_OPTS" ]] || JAVA_OPTS="@javaflags@"
 
 # break out -D and -J options and add them to JAVA_OPTS as well
 # so they reach the underlying JVM in time to do some good.  The
@@ -109,11 +110,21 @@ fi
 declare -a java_args
 declare -a scala_args
 
-# default to the boot classpath for speed.
-CPSELECT="-Xbootclasspath/a:"
-USEJAVACP=false
+# default to the boot classpath for speed, except on cygwin/mingw.
+unset usebootcp
+if [[ -z $cygwin ]]; then
+  usebootcp="true"
+fi
 
-while [ $# -gt 0 ]; do
+classpathArgs () {
+  if [[ -n $usebootcp ]]; then
+    echo "-Xbootclasspath/a:$TOOL_CLASSPATH"
+  else
+    echo "-classpath $TOOL_CLASSPATH"
+  fi
+}
+
+while [[ $# -gt 0 ]]; do
   case "$1" in
     -D*)
       # pass to scala as well: otherwise we lose it sometimes when we
@@ -130,12 +141,19 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     -toolcp)
-      TOOL_CLASSPATH="$TOOL_CLASSPATH:$2"
+      TOOL_CLASSPATH="${TOOL_CLASSPATH}${SEP}${2}"
       shift 2
       ;;
     -nobootcp)
-      CPSELECT="-classpath "
-      USEJAVACP=true
+      unset usebootcp
+      shift
+      ;;
+    -usebootcp)
+      usebootcp="true"
+      shift
+      ;;
+    -debug)
+      SCALA_RUNNER_DEBUG=1
       shift
       ;;
     *)
@@ -148,18 +166,22 @@ done
 # reset "$@@" to the remaining args
 set -- "${scala_args[@@]}"
 
-if [ -z "$JAVACMD" -a -n "$JAVA_HOME" -a -x "$JAVA_HOME/bin/java" ]; then
+if [[ -z "$JAVACMD" && -n "$JAVA_HOME" && -x "$JAVA_HOME/bin/java" ]]; then
     JAVACMD="$JAVA_HOME/bin/java"
 fi
 
-"${JAVACMD:=java}" \
+# note that variables which may intentionally be empty must not
+# be quoted: otherwise an empty string will appear as a command line
+# argument, and java will think that is the program to run.
+execCommand \
+  "${JAVACMD:=java}" \
   $JAVA_OPTS \
   "${java_args[@@]}" \
-  ${CPSELECT}${TOOL_CLASSPATH} \
-  -Dscala.usejavacp="$USEJAVACP" \
+  $(classpathArgs) \
   -Dscala.home="$SCALA_HOME" \
-  -Denv.emacs="$EMACS" \
-  $CYGWIN_JLINE_TERMINAL \
+  -Dscala.usejavacp=true \
+  $EMACS_OPT \
+  $CYGWIN_OPT \
   @properties@ @class@ @toolflags@ "$@@"
 
 # record the exit status lest it be overwritten:

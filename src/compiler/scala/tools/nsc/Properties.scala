@@ -22,4 +22,9 @@ object Properties extends scala.util.PropertiesTrait {
   // derived values
   def isEmacsShell         = propOrEmpty("env.emacs") != ""
   def fileEndings          = fileEndingString.split("""\|""").toList
+
+  // System property java.home is the JRE root.
+  // Environment variable JAVA_HOME is (supposed to be) the jdk root.
+  // We need the latter to find javac, tools.jar, etc.
+  def jdkHome              = envOrElse("JAVA_HOME", javaHome)
 }
