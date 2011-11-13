@@ -281,7 +281,8 @@ abstract class UnCurry extends InfoTransform
                 if (cases exists treeInfo.isDefaultCase) Literal(Constant(true))
                 else Match(substTree(selector.duplicate), (cases map transformCase) :+ defaultCase)
               )
-            case Apply(Apply(TypeApply(Select(tgt, n), targs), args_scrut), args_pm) if opt.virtPatmat && (n == nme.runOrElse) => // TODO: check tgt.tpe.typeSymbol isNonBottomSubclass MatchingStrategyClass
+            // TODO: check tgt.tpe.typeSymbol isNonBottomSubclass MatchingStrategyClass
+            case Apply(Apply(TypeApply(Select(tgt, nme.runOrElse), targs), args_scrut), args_pm) if opt.virtPatmat =>
               object noOne extends Transformer {
                 override val treeCopy = newStrictTreeCopier // must duplicate everything
                 val one = tgt.tpe member "caseResult".toTermName
