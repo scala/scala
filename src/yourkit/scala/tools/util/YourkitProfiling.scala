@@ -26,7 +26,7 @@ class YourkitProfiling extends Profiling {
       return
 
     active = true
-    daemonize(true) {
+    daemonize {
       try {
         controller.startCPUProfiling(ProfilingModes.CPU_SAMPLING, Controller.DEFAULT_FILTERS)
         if (freq.isDefined)
@@ -39,7 +39,7 @@ class YourkitProfiling extends Profiling {
   }
 
   def captureSnapshot() = {
-    daemonize(true)(controller.captureSnapshot(ProfilingModes.SNAPSHOT_WITH_HEAP))
+    daemonize(controller.captureSnapshot(ProfilingModes.SNAPSHOT_WITH_HEAP))
   }
 
   def stopProfiling() = {
