@@ -62,10 +62,12 @@ class Settings {
   def more = moreBf.get
   def more_=(s: String): this.type = { moreBf = Some(s); this }
 
+  private def q(o: AnyRef) = "\"" + o.toString.replace("""\""", """\\""") + "\""
+
   def toArgs: List[String] =
     (if (!gBf.isEmpty) "-g:"+g :: Nil else Nil) :::
     (if (uncheckedBf) "-unchecked" :: Nil else Nil) :::
-    (if (!classpathBf.isEmpty) "-classpath" :: classpath.toString :: Nil else Nil) :::
+    (if (!classpathBf.isEmpty) "-classpath" :: q(classpath) :: Nil else Nil) :::
     (if (!sourcepathBf.isEmpty) "-sourcepath" :: sourcepath.toString :: Nil else Nil) :::
     (if (!sourcedirBf.isEmpty) "-Xsourcedir" :: sourcedir.toString :: Nil else Nil) :::
     (if (!bootclasspathBf.isEmpty) "-bootclasspath" :: bootclasspath.toString :: Nil else Nil) :::
