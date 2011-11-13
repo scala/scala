@@ -38,7 +38,7 @@ call :set_home
 rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
 
-if "%_JAVACMD%"=="" (
+if not defined _JAVACMD (
   if not "%JAVA_HOME%"=="" (
     if exist "%JAVA_HOME%\bin\java.exe" set "_JAVACMD=%JAVA_HOME%\bin\java.exe"
   )
@@ -48,7 +48,7 @@ if "%_JAVACMD%"=="" set _JAVACMD=java
 
 rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
-if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=@javaflags@
+if not defined _JAVA_OPTS set _JAVA_OPTS=@javaflags@
 
 set _TOOL_CLASSPATH=@classpath@
 if "%_TOOL_CLASSPATH%"=="" (
