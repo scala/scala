@@ -32,10 +32,7 @@ import Flags.{ CASE => _, _ }
           d => body)))))(scrut)
 
 TODO:
- - typing of extractorCall subtly broken again: pos/t602.scala
- - typing of indexing (subpatref) gone awry -- possibly due to existentials? pos/t3856.scala
- - stackoverflow with actors: jvm/t3412, jvm/t3412-channel
- - OOM when virtpatmat compiler runs test suite
+ - check test suite (pos/t602.scala, pos/t3856.scala, jvm/t3412, jvm/t3412-channel, ...)
  - optimizer loops on virtpatmat compiler?
 
  - don't orElse a failure case at the end if there's a default case
@@ -179,10 +176,12 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       tree match {
         case CaseDef(pattern, guard, body) =>
           val treeMakers = makeTreeMakers(translatePattern(scrutSym, pattern) ++ translateGuard(guard))
-          // TODO: if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by pmgen.caseResult),
+          // TODO: 1) if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by pmgen.caseResult),
           // so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand?
           // to enable this, probably need to move away from Option to a monad specific to pattern-match,
           // so that we can return Option's from a match without ambiguity whether this indicates failure in the monad, or just some result in the monad
+          // 2) body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
+          // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
           TreeMaker.combine(treeMakers, pmgen.caseResult(body, body.tpe), tree.pos)
       }
 
@@ -343,9 +342,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             (prevBinder, p)
           )
 
-        case Bind(n, p) => // TODO: remove?
-          noFurtherSubPats() // there's no symbol -- something wrong?
-
         /** 8.1.4 Literal Patterns
               A literal pattern L matches any value that is equal (in terms of ==) to the literal L.
               The type of L must conform to the expected type of the pattern.
@@ -387,6 +383,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           def f(x: Any) = x match { case Foo(x, _) | Bar(x) => x } // x is lub of course.
       */
 
+        case Bind(n, p) => // TODO: remove?
+          noFurtherSubPats() // there's no symbol -- something wrong?
+
         // case Star(x)              => // no need to handle this because it's always a wildcard nested in a bind (?)
         // case x: ArrayValue        => // TODO?
         // case x: This              => // TODO?
@@ -402,8 +401,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     def translateGuard(guard: Tree): List[ProtoTreeMaker] = {
       if (guard == EmptyTree) List()
       else List(
-        // TODO: distinguish this tree from more general guards (maybe call those "filter")
-        // the user-supplied guard should not be considered during exhaustiveness/reachable code analysis, the filters should
         ProtoTreeMaker(List(pmgen.guard(guard)),
           { outerSubst =>
             val binder = freshSym(guard.pos, UnitClass.tpe)
@@ -835,6 +832,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def and(a: Tree, b: Tree): Tree                 = a AND b
       def _asInstanceOf(t: Tree, tp: Type): Tree      = gen.mkAsInstanceOf(t, repackExistential(tp), true, false)
+      // TODO: optimize to if (!needsTypeTest(b.info.widen, repackExistential(tp))) REF(b) else ...
       def _asInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkAsInstanceOf(REF(b), repackExistential(tp), true, false)
       def _isInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkIsInstanceOf(REF(b), repackExistential(tp), true, false)
 
@@ -852,13 +850,11 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       def one(res: Tree, tp: Type = NoType, oneName: Name = vpmName.one): Tree = genTypeApply(matchingStrategy DOT oneName, tp) APPLY (res) // matchingStrategy.one(res)
       def or(f: Tree, as: List[Tree]): Tree                              = (matchingStrategy DOT vpmName.or)((f :: as): _*)                 // matchingStrategy.or(f, as)
       def guard(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree     = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard(c, then) -- a user-defined guard
+      // TODO: get rid of the cast when it's unnecessary, but this requires type checking `body` -- maybe this should be one of the optimisations we perform after generating the tree
       def caseResult(res: Tree, tp: Type): Tree                          = (matchingStrategy DOT vpmName.caseResult) (pmgen._asInstanceOf(res, tp)) // matchingStrategy.caseResult(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
 
-      // TODO: get rid of the cast when it's unnecessary, but this requires type checking `body`
-      //       maybe this should be one of the optimisations we perform after generating the tree
-      // body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
-      // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
-      def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard(c, then) -- an internal guard TODO: use different method call so exhaustiveness can distinguish it from user-defined guards
+      // an internal guard TODO: use different method call so exhaustiveness can distinguish it from user-defined guards
+      def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard(c, then)
       def condCast(c: Tree, binder: Symbol, expectedTp: Type): Tree = cond(c, _asInstanceOf(binder, expectedTp), expectedTp)
       def condOpt(c: Tree, then: Tree): Tree                        = IF (c) THEN then ELSE zero
       // def cast(expectedTp: Type, binder: Symbol): Tree           = typedGuard( _isInstanceOf(binder, expectedTp), expectedTp, binder)
