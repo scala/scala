@@ -52,7 +52,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   class MatchTranslator(typer: Typer) extends MatchCodeGen {
     import typer._
     import typeDebug.{ ptTree, ptBlock, ptLine }
-    private var overrideUnsafe = false
 
     def solveContextBound(contextBoundTp: Type): (Tree, Type) = {
       val solSym      = NoSymbol.newTypeParameter(NoPosition, "SolveImplicit$".toTypeName)
@@ -317,7 +316,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           val extractor = atPos(pos)(pmgen.condCast(cond, prevBinder, accumType))
 
           // a typed pattern never has any subtrees
-          noFurtherSubPats(ProtoTreeMaker.singleBinderWithTp(patBinder, accumType, unsafe = true, extractor))
+          noFurtherSubPats(ProtoTreeMaker.singleBinderWithTp(patBinder, accumType, extractor))
 
 
         /** A pattern binder x@p consists of a pattern variable x and a pattern p.
@@ -330,7 +329,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           // TreeMaker with empty list of trees only performs the substitution patBinder --> prevBinder
           // println("rebind "+ patBinder +" to "+ prevBinder)
           withSubPats(List(ProtoTreeMaker(List(), { outerSubst: TreeSubst =>
-              val theSubst = typedSubst(List(patBinder), List(CODE.REF(prevBinder)), unsafe = true)
+              val theSubst = typedSubst(List(patBinder), List(CODE.REF(prevBinder)))
               // println("proto subst of: "+ patBinder)
               def nextSubst(tree: Tree): Tree = outerSubst(theSubst(tree))
               (nestedTree => nextSubst(nestedTree), nextSubst)
@@ -359,7 +358,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
           val extractor = atPos(pos)(pmgen.cond(cond, CODE.REF(prevBinder), prevTp))
 
-          noFurtherSubPats(ProtoTreeMaker.singleBinderWithTp(prevBinder, prevTp, unsafe = false, extractor))
+          noFurtherSubPats(ProtoTreeMaker.singleBinderWithTp(prevBinder, prevTp, extractor))
 
         case Alternative(alts)    =>
           val altTrees = alts map { alt =>
@@ -434,7 +433,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
                   case Span((low0 @ _)) if low0 equals low => true
                 }
               }*/
-          // so... leave undetermined type params floating around if we have to, but forego type-safe substitution when overrideUnsafe
+          // so... leave undetermined type params floating around if we have to
           // (if we don't infer types, uninstantiated type params show up later: pos/sudoku.scala)
           // (see also run/virtpatmat_alts.scala)
           val savedUndets = context.undetparams
@@ -446,7 +445,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
                 // this fails to resolve overloading properly...
                 // Apply(typedOperator(Select(orig, extractor)), List(Ident(nme.SELECTOR_DUMMY))) // no need to set the type of the dummy arg, it will be replaced anyway
 
-                overrideUnsafe = true // all bets are off when you have unbound type params floating around
                 // println("funtpe after = "+ fun.tpe.finalResultType)
                 // println("orig: "+(orig, orig.tpe))
                 val tgt = typed(orig, EXPRmode | QUALmode | POLYmode, HasMember(extractor.name)) // can't specify fun.tpe.finalResultType as the type for the extractor's arg,
@@ -657,42 +655,32 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
     // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
-    def typedSubst(from: List[Symbol], to: List[Tree], unsafe: Boolean = false): TreeSubst = new Transformer with (Tree => Tree) {
-      def apply(tree: Tree): Tree = transform(tree)  // treegen
-      override def transform(tree: Tree): Tree = tree match {
-        case Ident(_) =>
-          def subst(from: List[Symbol], to: List[Tree]): Tree =
-            if (from.isEmpty) tree
-            else if (tree.symbol == from.head) {
-              if(tree.tpe != null && tree.tpe != NoType)
-                // this whole "unsafe" business and the more precise pt are only for debugging (to detect iffy substitutions)
-                // could in principle always assume unsafe and use pt = WildcardType
-                if(overrideUnsafe || unsafe) typed(to.head.shallowDuplicate, EXPRmode, WildcardType)
-                else silent(_.typed(to.head.shallowDuplicate, EXPRmode, tree.tpe.widen), false) match {
-                  case t: Tree => t // if !t.containsError()
-                  case ex => // these should be relatively rare
-                    // not necessarily a bug: e.g., in Node(_, md @ UnprefixedAttribute(_, _, _), _*),
-                    // md.info == UnprefixedAttribute, whereas x._2 : MetaData
-                    // (where x is the binder of the function that'll be flatMap'ed over Node's unapply;
-                    //  the unapply has sig (x: Node) Option[(String, MetaData, Seq[Node])])
-                    // (it's okay because translateExtractorPattern will insert a cast when x._2 is passed to the UnprefixedAttribute extractor)
-                    // println("subst unsafely replacing "+ tree.symbol +": "+ tree.tpe.widen +" by "+ to.head +" in: "+ tree)
-                    typed(to.head.shallowDuplicate, EXPRmode, WildcardType)
-                }
-              else
-                to.head.shallowDuplicate
-            }
-            else subst(from.tail, to.tail);
-          subst(from, to)
-        case _ =>
-          super.transform(tree)
+    def typedSubst(from: List[Symbol], to: List[Tree]): TreeSubst = new Transformer with (Tree => Tree) {
+      override def transform(tree: Tree): Tree = {
+        def subst(from: List[Symbol], to: List[Tree]): Tree =
+          if (from.isEmpty) tree
+          else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate, tree.tpe)
+          else subst(from.tail, to.tail)
+
+        tree match {
+          case Ident(_) => subst(from, to)
+          case _        => super.transform(tree)
+        }
       }
+
+      @inline private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
+        if (origTp == null || origTp == NoType) to
+        // important: only type when actually substing and when original tree was typed
+        // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
+        else typed(to, EXPRmode, WildcardType)
+
+      def apply(tree: Tree): Tree = transform(tree)  // treegen
     }
   }
 
   // the intermediate language -- can we make this rich enough to do analyses on (exhaustivity/reachability), without looking at the concrete trees?
   trait PatternLanguage {
-    def typedSubst(from: List[Symbol], to: List[Tree], unsafe: Boolean = false): TreeSubst
+    def typedSubst(from: List[Symbol], to: List[Tree]): TreeSubst
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x"): Symbol
 
     trait AbsCodeGen {
@@ -721,14 +709,14 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     }
 
     object ProtoTreeMaker {
-      def singleBinder(binderToSubst: Symbol, patTrees: Tree*): ProtoTreeMaker = singleBinderWithTp(binderToSubst, binderToSubst.info.widen, false, patTrees : _*)
-      def singleBinderWithTp(binderToSubst: Symbol, binderType: Type, unsafe: Boolean, patTrees: Tree*): ProtoTreeMaker = {
+      def singleBinder(binderToSubst: Symbol, patTrees: Tree*): ProtoTreeMaker = singleBinderWithTp(binderToSubst, binderToSubst.info.widen, patTrees : _*)
+      def singleBinderWithTp(binderToSubst: Symbol, binderType: Type, patTrees: Tree*): ProtoTreeMaker = {
         assert(patTrees.head.pos != NoPosition, "proto-tree for "+(binderToSubst, patTrees.toList))
 
         ProtoTreeMaker(patTrees.toList,
             { outerSubst: TreeSubst =>
                 val binder = freshSym(patTrees.head.pos, binderType)
-                val theSubst = typedSubst(List(binderToSubst), List(CODE.REF(binder)), unsafe)
+                val theSubst = typedSubst(List(binderToSubst), List(CODE.REF(binder)))
                 // println("theSubst: "+ theSubst)
                 def nextSubst(tree: Tree): Tree = outerSubst(theSubst(tree))
                 (nestedTree => pmgen.fun(binder, nextSubst(nestedTree)), nextSubst)
