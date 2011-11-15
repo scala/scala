@@ -284,4 +284,24 @@ object Manifest {
       override lazy val tpe = mirror.RefinedType((parents map (_.tpe)).toList, newScope)
       override def toString = parents.mkString(" with ")
     }
+
+  /** A generic manifest factory from a reflect.Type. Except where
+   *  mandated by performance considerations, we should replace most
+   *  other manifest factories by this one. There's just one thing
+   *  that needs to be done first: A Manifest's type can refer
+   *  to type variables that are controlled by manifests. In that
+   *  case the reified type needs to contain the type passed in the manifest
+   *  instead of the reference to the manifest. Note that splicing manifests
+   *  into manfifests is completely analogous to splicing code blocks into
+   *  code blocks. Manifest[T] and Code[T] are really the same thing, only one
+   *  works for types, the other for trees.
+   *  Another complication is that once we generate manifests from types, we really
+   *  should have reflection as a standard component shipped with the standard library,
+   *  instead of in scala-compiler.jar.
+   */
+  def apply[T](_tpe: mirror.Type): Manifest[T] = new Manifest[T] {
+    override lazy val tpe = _tpe
+    override def erasure = mirror.typeToClass(_tpe.erasedType)
+    override def toString = _tpe.toString
+  }
 }

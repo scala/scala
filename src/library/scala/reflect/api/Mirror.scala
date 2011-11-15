@@ -5,7 +5,7 @@ package api
  *  runtime entities such as class names and object instances
  *  with a refexive universe.
  */
-trait Mirror extends Universe with RuntimeTypes {
+trait Mirror extends Universe with RuntimeTypes with TreeBuildUtil {
 
   /** The Scala class symbol that has given fully qualified name
    *  @param name  The fully qualified name of the class to be returned
@@ -65,17 +65,15 @@ trait Mirror extends Universe with RuntimeTypes {
    */
   def classToSymbol(clazz: java.lang.Class[_]): Symbol
 
-/*
-   /** Selects term symbol with given name and type from the defined members of prefix type
-   *  @pre   The prefix type
-   *  @name  The name of the selected member
-   *  @tpe   The type of the selected member
+  /** Maps a Scala type to the corresponding Java class object
    */
-  def selectTerm(pre: Type, name: String, tpe: Type) : Symbol
+  def typeToClass(tpe: Type): java.lang.Class[_]
 
-  /** Selects type symbol with given name from the defined members of prefix type
+  /** Maps a Scala symbol to the corresponding Java class object
+   *  @throws ClassNotFoundException if there is no Java class
+   *          corresponding to the given Scala symbol.
+   *  Note: If the Scala symbol is ArrayClass, a ClassNotFound exception is thrown
+   *        because there is no unique Java class corresponding to a Scala generic array
    */
-  def selectType(pre: Type, name: String): Symbol
-
-*/
+  def symbolToClass(sym: Symbol): java.lang.Class[_]
 }

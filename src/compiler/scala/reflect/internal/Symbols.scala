@@ -41,9 +41,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   val originalOwner = perRunCaches.newMap[Symbol, Symbol]()
 
+  abstract class AbsSymbolImpl extends AbsSymbol { this: Symbol =>
+    def newNestedSymbol(pos: Position, name: Name) = name match {
+      case n: TermName => newValue(pos, n)
+      case n: TypeName => newAliasType(pos, n)
+    }
+    def typeSig: Type = info
+    def typeSigIn(site: Type): Type = site.memberInfo(this)
+    def asType: Type = tpe
+    def asTypeIn(site: Type): Type = site.memberType(this)
+    def asTypeConstructor: Type = typeConstructor
+    def setInternalFlags(flag: Long): this.type = { setFlag(flag); this }
+    def setTypeSig(tpe: Type): this.type = { setInfo(tpe); this }
+    def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
+  }
+
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name)
-          extends AbsSymbol
+          extends AbsSymbolImpl
              with HasFlags
              with Annotatable[Symbol] {
 

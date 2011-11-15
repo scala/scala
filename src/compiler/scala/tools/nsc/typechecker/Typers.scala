@@ -368,8 +368,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         val tp1 = apply(tree.tpe)
         if (hiddenSymbols.isEmpty) tree setType tp1
         else if (hiddenSymbols exists (_.isErroneous)) setError(tree)
-        else if (isFullyDefined(pt)) tree setType pt //todo: eliminate
-        else if (tp1.typeSymbol.isAnonymousClass) // todo: eliminate
+        else if (isFullyDefined(pt)) tree setType pt
+        else if (tp1.typeSymbol.isAnonymousClass)
           check(owner, scope, pt, tree setType tp1.typeSymbol.classBound)
         else if (owner == NoSymbol)
           tree setType packSymbols(hiddenSymbols.reverse, tp1)

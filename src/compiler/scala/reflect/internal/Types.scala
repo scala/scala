@@ -235,8 +235,17 @@ trait Types extends api.Types { self: SymbolTable =>
     override def tpe_=(t: Type) = if (t != NoType) throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
   }
 
+  abstract class AbsTypeImpl extends AbsType { this: Type =>
+    def declaration(name: Name): Symbol = decl(name)
+    def nonPrivateDeclaration(name: Name): Symbol = nonPrivateDecl(name)
+    def allDeclarations = decls
+    def allMembers = members
+    def typeArguments = typeArgs
+    def erasedType = transformedType(this)
+  }
+
   /** The base class for all types */
-  abstract class Type extends AbsType with Annotatable[Type] {
+  abstract class Type extends AbsTypeImpl with Annotatable[Type] {
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
      */
@@ -1063,7 +1072,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** A base class for types that represent a single value
    *  (single-types and this-types).
    */
-  abstract class SingletonType extends SubType with SimpleTypeProxy {
+  abstract class SingletonType extends SubType with SimpleTypeProxy with AbsSingletonType {
     def supertype = underlying
     override def isTrivial = false
     override def isStable = true
@@ -1435,7 +1444,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def isHigherKinded = (
       parents.nonEmpty &&
       (parents forall (_.isHigherKinded)) &&
-      !phase.erasedTypes    // @MO to AM: please check this class!
+      !phase.erasedTypes
     )
 
     override def typeParams =

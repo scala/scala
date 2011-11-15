@@ -18,6 +18,7 @@ abstract class SymbolTable extends api.Universe
                               with Constants
                               with BaseTypeSeqs
                               with InfoTransformers
+                              with transform.Transforms
                               with StdNames
                               with AnnotationInfos
                               with AnnotationCheckers

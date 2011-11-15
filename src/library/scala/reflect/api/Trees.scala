@@ -542,8 +542,14 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class Select(qualifier: Tree, name: Name)
        extends RefTree
 
+  def Select(qualifier: Tree, sym: Symbol): Select =
+    Select(qualifier, sym.name) setSymbol sym
+
   /** Identifier <name> */
   case class Ident(name: Name) extends RefTree { }
+
+  def Ident(sym: Symbol): Ident =
+    Ident(sym.name) setSymbol sym
 
   class BackQuotedIdent(name: Name) extends Ident(name)
 

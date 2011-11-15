@@ -38,6 +38,9 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
   override def classToType(jclazz: java.lang.Class[_]): Type = typeToScala(jclazz)
   override def classToSymbol(jclazz: java.lang.Class[_]): Symbol = classToScala(jclazz)
 
+  override def typeToClass(tpe: Type): java.lang.Class[_] = typeToJavaClass(tpe)
+  override def symbolToClass(sym: Symbol): java.lang.Class[_] = classToJava(sym)
+
 }
 
 object Mirror extends Mirror

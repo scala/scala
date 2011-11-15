@@ -331,12 +331,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
    */
   def scopeTransform(owner: Symbol)(op: => Scope): Scope = op
 
-  def newScopeWith(elems: Symbol*) = {
+  def newScopeWith(elems: Symbol*): Scope = {
     val scope = newScope
     elems foreach scope.enter
     scope
   }
-
 
   /** The empty scope (immutable).
    */

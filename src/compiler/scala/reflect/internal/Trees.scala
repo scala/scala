@@ -248,12 +248,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym
 
-  def Select(qualifier: Tree, sym: Symbol): Select =
-    Select(qualifier, sym.name) setSymbol sym
-
-  def Ident(sym: Symbol): Ident =
-    Ident(sym.name) setSymbol sym
-
   /** Block factory that flattens directly nested blocks.
    */
   def Block(stats: Tree*): Block = stats match {

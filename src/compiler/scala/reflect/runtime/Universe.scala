@@ -8,7 +8,7 @@ import internal.{SomePhase, NoPhase, Phase, TreeGen}
  *  It also provides methods to go from Java members to Scala members,
  *  using the code in JavaConversions.
  */
-class Universe extends SymbolTable with internal.transform.Transforms {
+class Universe extends SymbolTable {
 
   type AbstractFileType = AbstractFile
 

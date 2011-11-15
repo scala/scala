@@ -17,7 +17,7 @@ trait UnCurry {
     case _ => false
   }
 
-  protected val uncurry: TypeMap = new TypeMap {
+  val uncurry: TypeMap = new TypeMap {
     def apply(tp0: Type): Type = {
       // tp0.typeSymbolDirect.initialize
       val tp = expandAlias(tp0)

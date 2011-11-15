@@ -1110,7 +1110,7 @@ trait Implicits {
               // a manifest should have been found by normal searchImplicit
               EmptyTree
             }
-          case RefinedType(parents, decls) =>
+          case RefinedType(parents, decls) => // !!! not yet: if !full || decls.isEmpty =>
             // refinement is not generated yet
             if (hasLength(parents, 1)) findManifest(parents.head)
             else if (full) manifestFactoryCall("intersectionType", tp, parents map findSubManifest: _*)
@@ -1119,7 +1119,14 @@ trait Implicits {
             mot(tp1.skolemizeExistential, from, to)
           case _ =>
             EmptyTree
-        }
+/*          !!! the following is almost right, but we have to splice nested manifest
+ *          !!! types into this type. This requires a substantial extension of
+ *          !!! reifiers.
+            val reifier = new liftcode.Reifier()
+            val rtree = reifier.reifyTopLevel(tp1)
+            manifestFactoryCall("apply", tp, rtree)
+*/
+          }
       }
 
       mot(tp, Nil, Nil)

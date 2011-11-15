@@ -417,7 +417,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } with Pickler
 
   // phaseName = "refchecks"
-  object refChecks extends {
+  override object refChecks extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("pickler")
     val runsRightAfter = None
@@ -431,7 +431,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } with LiftCode
 
   // phaseName = "uncurry"
-  object uncurry extends {
+  override object uncurry extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("refchecks", "liftcode")
     val runsRightAfter = None
@@ -459,7 +459,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } with SpecializeTypes
 
   // phaseName = "erasure"
-  object erasure extends {
+  override object erasure extends {
     val global: Global.this.type = Global.this
     val runsAfter = List[String]("explicitouter")
     val runsRightAfter = Some("explicitouter")

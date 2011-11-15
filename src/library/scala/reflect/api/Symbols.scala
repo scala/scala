@@ -103,10 +103,10 @@ trait Symbols { self: Universe =>
      */
     def sourceModule: Symbol
 
-    /** If symbol is an object definition, it's implied associated class,
+    /** If symbol is an object definition, its implied associated class,
      *  otherwise NoSymbol
      */
-    def moduleClass: Symbol
+    def moduleClass: Symbol // needed for LiftCode
 
     /** The top-level class containing this symbol. */
     def toplevelClass: Symbol
@@ -122,6 +122,49 @@ trait Symbols { self: Universe =>
     def isClass        : Boolean
     def isAliasType    : Boolean
     def isAbstractType : Boolean
+
+    /** The type signature of this symbol.
+     *  Note if symbol is a member of a class, one almost always is interested
+     *  in `typeSigIn` with a site type instead.
+     */
+    def typeSig: Type
+
+    /** The type signature of this symbol seen as a member of given type `site`.
+     */
+    def typeSigIn(site: Type): Type
+
+    /** The type constructor corresponding to this type symbol.
+     */
+    def asTypeConstructor: Type  // needed by LiftCode
+
+   /** A type reference that refers to this type symbol
+     *  Note if symbol is a member of a class, one almost always is interested
+     *  in `asTypeIn` with a site type instead.
+     */
+    def asType: Type
+
+    /** A type reference that refers to this type symbol seen as a member of given type `site`.
+     */
+    def asTypeIn(site: Type): Type
+
+    /** A fresh symbol with given position `pos` and name `name` that has
+     *  the current symbol as its owner.
+     */
+    def newNestedSymbol(pos: Position, name: Name): Symbol // needed by LiftCode
+
+    /** Low-level operation to set the symbol's flags
+     *  @return the symbol itself
+     */
+    def setInternalFlags(flags: Long): this.type // needed by LiftCode
+
+    /** Set symbol's type signature to given type
+     *  @return the symbol itself
+     */
+    def setTypeSig(tpe: Type): this.type // needed by LiftCode
+
+    /** Set symbol's annotations to given annotations `annots`.
+     */
+    def setAnnotations(annots: AnnotationInfo*): this.type // needed by LiftCode
   }
 
   val NoSymbol: Symbol
