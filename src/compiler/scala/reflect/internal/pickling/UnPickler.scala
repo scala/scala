@@ -834,15 +834,20 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     def newLazyTypeRef(i: Int): LazyType = new LazyTypeRef(i)
     def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = new LazyTypeRefAndAlias(i, j)
 
+    def toTypeError(e: MissingRequirementError) =
+      new TypeError(e.msg)
+
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
       private val p = phase
-      override def complete(sym: Symbol) : Unit = {
+      override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
         if (p != phase) atPhase(p) (sym setInfo tp)
         else sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
+      } catch {
+        case e: MissingRequirementError => throw toTypeError(e)
       }
       override def load(sym: Symbol) { complete(sym) }
     }
@@ -851,7 +856,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
      *  of completed symbol to symbol at index `j`.
      */
     private class LazyTypeRefAndAlias(i: Int, j: Int) extends LazyTypeRef(i) {
-      override def complete(sym: Symbol) {
+      override def complete(sym: Symbol) = try {
         super.complete(sym)
         var alias = at(j, readSymbol)
         if (alias.isOverloaded) {
@@ -860,6 +865,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           }
         }
         sym.asInstanceOf[TermSymbol].setAlias(alias)
+      } catch {
+        case e: MissingRequirementError => throw toTypeError(e)
       }
     }
   }
