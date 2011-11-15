@@ -834,6 +834,11 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
     def newLazyTypeRef(i: Int): LazyType = new LazyTypeRef(i)
     def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = new LazyTypeRefAndAlias(i, j)
 
+    /** Convert to a type error, that is printed gracefully instead of crashing.
+     *
+     *  Similar in intent to what SymbolLoader does (but here we don't have access to
+     *  error reporting, so we rely on the typechecker to report the error).
+     */
     def toTypeError(e: MissingRequirementError) =
       new TypeError(e.msg)
 
