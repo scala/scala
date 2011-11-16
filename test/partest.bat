@@ -30,6 +30,10 @@ rem We use the value of the JAVACMD environment variable if defined
 set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 
+rem We use the value of the JAVACCMD environment variable if defined
+set _JAVACCMD=%JAVACCMD%
+if "%_JAVACCMD%"=="" set _JAVACCMD=javac
+
 rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
 if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx256M -Xms16M
@@ -53,7 +57,7 @@ if "%_EXTENSION_CLASSPATH%"=="" (
   )
 )
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dpartest.javacmd="%_JAVACMD%" -Dpartest.java_options="%_JAVA_OPTS%" -Dpartest.scalac_options="%_SCALAC_OPTS%" -Dpartest.javac_cmd="%JAVA_HOME%\bin\javac"
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dpartest.javacmd="%_JAVACMD%" -Dpartest.java_options="%_JAVA_OPTS%" -Dpartest.scalac_options="%_SCALAC_OPTS%" -Dpartest.javac_cmd="%_JAVACCMD%"
 
 rem echo %_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" scala.tools.partest.nest.NestRunner %_ARGS%
 %_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" scala.tools.partest.nest.NestRunner %_ARGS%
