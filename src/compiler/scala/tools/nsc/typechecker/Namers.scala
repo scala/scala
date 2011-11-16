@@ -292,7 +292,7 @@ trait Namers extends MethodSynthesis {
      *  the flags to keep.
      */
     private def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
-      val pos         = tree.pos.focus
+      val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val sym         = tree match {
         case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(pos, name.toTypeName)
