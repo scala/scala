@@ -3,7 +3,7 @@ reload: properties.scala
 askTypeCompletion at properties.scala(29,33)
 ================================================================================
 [response] aksTypeCompletion at (29,33)
-retrieved 51 members
+retrieved 50 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -11,7 +11,6 @@ retrieved 51 members
 `method ->[B](y: B)(properties.Property[String], B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
-`method _1=> String`
 `method apply()String`
 `method asInstanceOf[T0]=> T0`
 `method canEqual(that: Any)Boolean`
@@ -55,7 +54,7 @@ retrieved 51 members
 askTypeCompletion at properties.scala(29,67)
 ================================================================================
 [response] aksTypeCompletion at (29,67)
-retrieved 51 members
+retrieved 50 members
 `method !=(x$1: Any)Boolean`
 `method !=(x$1: AnyRef)Boolean`
 `method ##()Int`
@@ -63,7 +62,6 @@ retrieved 51 members
 `method ->[B](y: B)(properties.Property[String], B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
-`method _1=> String`
 `method apply()String`
 `method asInstanceOf[T0]=> T0`
 `method canEqual(that: Any)Boolean`

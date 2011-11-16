@@ -2687,13 +2687,14 @@ self =>
         if (mods.isCase) {
           val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
           productConstr :: serializableConstr :: {
-            if (arity == 0 || settings.YnoProductN.value) Nil
-            else List(
-              AppliedTypeTree(
-                productConstrN(arity),
-                vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
-              )
-            )
+            Nil
+            // if (arity == 0 || settings.YnoProductN.value) Nil
+            // else List(
+            //   AppliedTypeTree(
+            //     productConstrN(arity),
+            //     vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
+            //   )
+            // )
           }
         }
         else Nil
