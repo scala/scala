@@ -8,15 +8,18 @@
 
 package scala.tools.ant
 
-import java.io.{File,PrintWriter,BufferedWriter,FileWriter}
+import java.io.{File, PrintWriter, BufferedWriter, FileWriter}
 
 import org.apache.tools.ant.{ BuildException, Project, AntClassLoader }
 import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
-                                  SourceFileScanner}
+                                  SourceFileScanner, facade}
+import org.apache.tools.ant.util.facade.{FacadeTaskHelper,
+                                  ImplementationSpecificArgument}
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
+import scala.tools.nsc.io.{Path => SPath}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 /** An Ant task to compile with the new Scala compiler (NSC).
@@ -33,6 +36,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `bootclasspathref`,
  *  - `extdirs`,
  *  - `extdirsref`,
+ *  - `dependencyfile`,
  *  - `encoding`,
  *  - `target`,
  *  - `force`,
@@ -41,9 +45,13 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `logphase`,
  *  - `debuginfo`,
  *  - `addparams`,
+ *  - `explaintypes`,
  *  - `deprecation`,
+ *  - `nobootcp`,
+ *  - `nowarn`,
  *  - `optimise`,
  *  - `unchecked`,
+ *  - `usejavacp`,
  *  - `failonerror`,
  *  - `scalacdebugging`,
  *  - `assemname`,
@@ -54,7 +62,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `classpath`,
  *  - `sourcepath`,
  *  - `bootclasspath`,
- *  - `extdirs`.
+ *  - `extdirs`,
+ *  - `compilerarg`.
  *
  *  @author Gilles Dubochet, Stephane Micheloud
  */
@@ -80,10 +89,11 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   /** Defines valid values for properties that refer to compiler phases. */
   object CompilerPhase extends PermissibleValue {
-    val values = List("namer", "typer", "pickler", "uncurry", "tailcalls",
-                      "explicitouter", "erasure", "lambdalift",
-                      "flatten", "constructors", "mixin", "icode", "jvm",
-                      "terminal")
+    val values = List("namer", "typer", "pickler", "refchecks", "liftcode",
+                      "uncurry", "tailcalls", "specialize", "explicitouter",
+                      "erasure", "lazyvals", "lambdalift", "constructors",
+                      "flatten", "mixin", "cleanup", "icode", "inliner",
+                      "closelim", "dce", "jvm", "terminal")
   }
 
   /** Defines valid values for the `target` property. */
@@ -116,6 +126,8 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** The external extensions path to use for this compilation. */
   protected var extdirs: Option[Path] = None
 
+  /** The dependency tracking file. */
+  protected var dependencyfile: Option[String] = None
   /** The character encoding of the files to compile. */
   protected var encoding: Option[String] = None
 
@@ -138,12 +150,20 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   protected var debugInfo: Option[String] = None
   /** Instruct the compiler to use additional parameters */
   protected var addParams: String = ""
+  /** Instruct the compiler to explain type errors in more detail. */
+  protected var explaintypes: Option[Boolean] = None
   /** Instruct the compiler to generate deprecation information. */
   protected var deprecation: Option[Boolean] = None
+  /** Instruct the compiler to not use the boot classpath for the scala jars. */
+  protected var nobootcp: Option[Boolean] = None
+  /** Instruct the compiler to generate no warnings. */
+  protected var nowarn: Option[Boolean] = None
   /** Instruct the compiler to run optimizations. */
   protected var optimise: Option[Boolean] = None
   /** Instruct the compiler to generate unchecked information. */
   protected var unchecked: Option[Boolean] = None
+  /** Instruct the compiler to use `java.class.path` in classpath resolution. */
+  protected var usejavacp: Option[Boolean] = None
   /** Indicates whether compilation errors will fail the build; defaults to true. */
   protected var failonerror: Boolean = true
 
@@ -155,6 +175,9 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** Prints out the files being compiled by the scalac ant task
    *  (not only the number of files). */
   protected var scalacDebugging: Boolean = false
+
+  /** Encapsulates implementation of specific command line arguments. */
+  protected var scalacCompilerArgs = new FacadeTaskHelper("compilerarg")
 
   /** Helpers */
   private def setOrAppend(old: Option[Path], arg: Path): Option[Path] = old match {
@@ -251,8 +274,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     bootclasspath = setOrAppend(bootclasspath, input)
   }
 
-  /** Sets the `bootclasspath` as a nested sourcepath Ant
-   *  parameter.
+  /** Sets the `bootclasspath` as a nested bootclasspath Ant parameter.
    *  @return A source path to be configured. */
   def createBootclasspath(): Path = createNewPath(bootclasspath _, p => bootclasspath = p)
 
@@ -264,10 +286,11 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   /** Sets the external extensions path attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `extdirs`. */
-  def setExtdirs(input: Path) =
+  def setExtdirs(input: Path) {
     extdirs = setOrAppend(extdirs, input)
+  }
 
-  /** Sets the `extdirs` as a nested sourcepath Ant parameter.
+  /** Sets the `extdirs` as a nested extdirs Ant parameter.
    *  @return An extensions path to be configured. */
   def createExtdirs(): Path = createNewPath(extdirs _, p => extdirs = p)
 
@@ -276,10 +299,17 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   def setExtdirsref(input: Reference) =
     createExtdirs().setRefid(input)
 
+  /** Sets the `dependencyfile` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `dependencyfile`. */
+  def setDependencyfile(input: String) {
+    dependencyfile = Some(input)
+  }
+
   /** Sets the `encoding` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `encoding`. */
-  def setEncoding(input: String): Unit =
+  def setEncoding(input: String) {
     encoding = Some(input)
+  }
 
   /** Sets the `target` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `target`. */
@@ -330,10 +360,28 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
    *  @param input The value for `addparams`. */
   def setAddparams(input: String) { addParams = input }
 
+  /** Set the `explaintypes` info attribute.
+   *  @param input One of the flags `yes/no` or `on/off`. */
+  def setExplaintypes(input: String) {
+    explaintypes = Flag toBoolean input orElse buildError("Unknown explaintypes flag '" + input + "'")
+  }
+
   /** Set the `deprecation` info attribute.
    *  @param input One of the flags `yes/no` or `on/off`. */
   def setDeprecation(input: String) {
     deprecation = Flag toBoolean input orElse buildError("Unknown deprecation flag '" + input + "'")
+  }
+
+  /** Set the `nobootcp` info attribute.
+   *  @param input One of the flags `yes/no` or `on/off`. */
+  def setNobootcp(input: String) {
+    nobootcp = Flag toBoolean input orElse buildError("Unknown nobootcp flag '" + input + "'")
+  }
+
+  /** Set the `nowarn` info attribute.
+   *  @param input One of the flags `yes/no` or `on/off`. */
+  def setNowarn(input: String) {
+    nowarn = Flag toBoolean input orElse buildError("Unknown nowarn flag '" + input + "'")
   }
 
   /** Set the `optimise` info attribute.
@@ -348,6 +396,12 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     unchecked = Flag toBoolean input orElse buildError("Unknown unchecked flag '" + input + "'")
   }
 
+  /** Set the `usejavacp` info attribute.
+   *  @param input One of the flags `yes/no` or `on/off`. */
+  def setUsejavacp(input: String) {
+    usejavacp = Flag toBoolean input orElse buildError("Unknown usejavacp flag '" + input + "'")
+  }
+
   /** Sets the `failonerror` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value for `failonerror`. */
   def setFailonerror(input: Boolean) { failonerror = input }
@@ -360,6 +414,14 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   def setAssemname(input: String) { assemname = Some(input) }
   def setAssemrefs(input: String) { assemrefs = Some(input) }
+
+  /** Sets the `compilerarg` as a nested compilerarg Ant parameter.
+   *  @return A compiler argument to be configured. */
+  def createCompilerArg(): ImplementationSpecificArgument = {
+    val arg = new ImplementationSpecificArgument()
+    scalacCompilerArgs addImplementationArgument arg
+    arg
+  }
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -457,7 +519,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** Initializes settings and source files */
   protected def initialize: (Settings, List[File], Boolean) = {
     if (scalacDebugging)
-      log("Base directory is `%s`".format(scala.tools.nsc.io.Path("").normalize))
+      log("Base directory is `%s`".format(SPath("").normalize))
 
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) buildError("Attribute 'srcdir' is not set.")
@@ -522,6 +584,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     if (!bootclasspath.isEmpty)
       settings.bootclasspath.value = asString(getBootclasspath)
     if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
+    if (!dependencyfile.isEmpty) settings.dependencyfile.value = dependencyfile.get
     if (!encoding.isEmpty) settings.encoding.value = encoding.get
     if (!backend.isEmpty) settings.target.value = backend.get
     if (!logging.isEmpty && logging.get == "verbose")
@@ -532,12 +595,21 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     }
     if (!logPhase.isEmpty) settings.log.value = logPhase
     if (!debugInfo.isEmpty) settings.debuginfo.value = debugInfo.get
+    if (!explaintypes.isEmpty) settings.explaintypes.value = explaintypes.get
     if (!deprecation.isEmpty) settings.deprecation.value = deprecation.get
+    if (!nobootcp.isEmpty) settings.nobootcp.value = nobootcp.get
+    if (!nowarn.isEmpty) settings.nowarn.value = nowarn.get
     if (!optimise.isEmpty) settings.XO.value = optimise.get
     if (!unchecked.isEmpty) settings.unchecked.value = unchecked.get
+    if (!usejavacp.isEmpty) settings.usejavacp.value = usejavacp.get
 
     if (!assemname.isEmpty) settings.assemname.value = assemname.get
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
+
+    val jvmargs = scalacCompilerArgs.getArgs filter (_ startsWith "-J")
+    if (!jvmargs.isEmpty) settings.jvmargs.value = jvmargs.toList
+    val defines = scalacCompilerArgs.getArgs filter (_ startsWith "-D")
+    if (!defines.isEmpty) settings.defines.value = defines.toList
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
 
@@ -550,8 +622,8 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     command.settings.dependenciesFile.value match {
       case "none" =>
       case x =>
-        val depFilePath = scala.tools.nsc.io.Path(x)
-        command.settings.dependenciesFile.value = scala.tools.nsc.io.Path(getProject.getBaseDir).normalize resolve depFilePath path
+        val depFilePath = SPath(x)
+        command.settings.dependenciesFile.value = SPath(getProject.getBaseDir).normalize resolve depFilePath path
     }
 
     (command.settings, sourceFiles, javaOnly)
@@ -588,7 +660,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
       java setClassname MainClass
 
       // Write all settings to a temporary file
-      def writeSettings() : File = {
+      def writeSettings(): File = {
         def escapeArgument(arg : String) = if (arg matches ".*\\s.*") '"' + arg + '"' else arg
         val file = File.createTempFile("scalac-ant-",".args")
         file.deleteOnExit()

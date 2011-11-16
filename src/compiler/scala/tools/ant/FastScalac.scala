@@ -8,6 +8,11 @@
 
 package scala.tools.ant
 
+import org.apache.tools.ant.Project
+
+import scala.tools.nsc.Settings
+import scala.tools.nsc.settings.FscSettings
+
 /** An Ant task to compile with the fast Scala compiler (`fsc`).
  *
  *  In addition to the attributes shared with the `Scalac` task, this task
@@ -15,6 +20,8 @@ package scala.tools.ant
  *  - `reset`
  *  - `server`
  *  - `shutdown`
+ *  - `ipv4`
+ *  - `maxIdle`
  *
  *  @author Stephane Micheloud
  */
@@ -25,6 +32,10 @@ class FastScalac extends Scalac {
   private var serverAddr: Option[String] = None
 
   private var shutdownServer: Boolean = false
+
+  private var useIPv4: Boolean = false
+
+  private var idleMinutes: Option[Int] = None
 
 /*============================================================================*\
 **                             Properties setters                             **
@@ -48,64 +59,95 @@ class FastScalac extends Scalac {
    */
   def setShutdown(input: Boolean) { shutdownServer = input }
 
+  /** Sets the `ipv4` attribute. Used by [[http://ant.apache.org Ant]].
+   *
+   *  @param input The value for `ipv4`.
+   */
+  def setIPv4(input: Boolean) { useIPv4 = input }
+
+  /** Sets the `maxIdle` attribute. Used by [[http://ant.apache.org Ant]].
+   *
+   *  @param input The value for `maxIdle`.
+   */
+  def setMaxIdle(input: Int) { if (0 <= input) idleMinutes = Some(input) }
+
 /*============================================================================*\
 **                             The execute method                             **
 \*============================================================================*/
 
+  override protected def newSettings(error: String=>Unit): Settings =
+    new FscSettings(error)
+
   /** Performs the compilation. */
-  override def execute() = {
+  override def execute() {
     val (settings, sourceFiles, javaOnly) = initialize
-    val s = settings
+    if (sourceFiles.isEmpty || javaOnly)
+      return
 
-    if (!sourceFiles.isEmpty && !javaOnly) {
-      def trim(xs: List[String]) = xs filter (x => x.length > 0)
-      val reset = settings.BooleanSetting("-reset", "Reset compile server caches")
-      val shutdown = settings.BooleanSetting("-shutdown", "Shutdown compile server")
+    // initialize fsc specific settings
+    val s = settings.asInstanceOf[FscSettings] // safe (newSettings)
+    s.reset.value = resetCaches
+    if (!serverAddr.isEmpty) s.server.value = serverAddr.get
+    s.shutdown.value = shutdownServer
+    s.preferIPv4.value = useIPv4
+    if (!idleMinutes.isEmpty) s.idleMins.value = idleMinutes.get
 
-      reset.value = resetCaches
-      shutdown.value = shutdownServer
+    val prefixSettings =
+      List(
+        /*scalac*/
+        s.jvmargs, s.defines
+      ) flatMap (_.value)
 
-      /** XXX Since fsc is largely unmaintained, the set of options being
-       *  individually assessed here is likely to bear little relationship to
-       *  the current set of options. Most likely this manifests in confusing
-       *  and very difficult to debug behavior in fsc. We should warn or fix.
-       */
-      val stringSettings =
-        List(s.outdir, s.classpath, s.bootclasspath, s.extdirs, s.encoding) flatMap (x => List(x.name, x.value))
+    val stringSettings =
+      List(
+        /*scalac*/
+        s.bootclasspath, s.classpath, s.extdirs, s.dependencyfile, s.encoding,
+        s.outdir, s.sourcepath,
+        /*fsc*/
+        s.server
+      ) filter (_.value != "") flatMap (x => List(x.name, x.value))
 
-      val serverOption =
-        serverAddr.toList flatMap (x => List("-server", x))  // '-server' option
+    val choiceSettings =
+      List(
+        /*scalac*/
+        s.debuginfo, s.target
+      ) map (x => "%s:%s".format(x.name, x.value))
 
-      val choiceSettings =
-        List(s.debuginfo, s.target) map (x => "%s:%s".format(x.name, x.value))
+    val booleanSettings =
+      List(
+        /*scalac*/
+        s.debug, s.deprecation, s.explaintypes, s.nospecialization, s.nowarn,
+        s.optimise, s.unchecked, s.usejavacp, s.verbose,
+        /*fsc*/
+        s.preferIPv4, s.reset, s.shutdown
+      ) filter (_.value) map (_.name)
 
-      val booleanSettings =
-        List(s.debug, s.deprecation, s.verbose, reset, shutdown) map (x => if (x.value) List(x.name) else Nil) flatten
+    val intSettings =
+      List(
+        /*fsc*/
+        s.idleMins
+      ) filter (x => x.value != x.default) flatMap (x => List(x.name, x.value.toString))
 
-      val phaseSetting = {
-        val s = settings.log
-        if (s.value.isEmpty) Nil
-        else List("%s:%s".format(s.name, s.value.mkString(",")))
-      }
+    val phaseSetting = {
+      val s = settings.log
+      if (s.value.isEmpty) Nil
+      else List("%s:%s".format(s.name, s.value.mkString(",")))
+    }
 
-      val cmdOptions =
-        stringSettings ::: serverOption ::: choiceSettings ::: booleanSettings ::: phaseSetting
+    val cmdOptions =
+      prefixSettings ::: stringSettings ::: choiceSettings ::: booleanSettings ::: intSettings ::: phaseSetting
 
-      val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
-      try {
-        if (scala.tools.nsc.CompileClient.process(args) && failonerror)
-          buildError("Compile failed; see the compiler error output for details.")
-      }
-      catch {
-        case exception: Throwable if exception.getMessage ne null =>
-          exception.printStackTrace()
-          buildError("Compile failed because of an internal compiler error (" +
-            exception.getMessage + "); see the error output for details.")
-        case exception =>
-          exception.printStackTrace()
-          buildError("Compile failed because of an internal compiler error " +
-            "(no error message provided); see the error output for details.")
-      }
+    val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
+    log("FastScalac args="+args.mkString(" "), Project.MSG_DEBUG)
+    try {
+      if (!scala.tools.nsc.CompileClient.process(args) && failonerror)
+        buildError("Compile failed; see the compiler error output for details.")
+    }
+    catch {
+      case ex: Throwable =>
+        ex.printStackTrace()
+        val msg = if (ex.getMessage == null) "no error message provided" else ex.getMessage
+        buildError("Compile failed because of an internal compiler error (" + msg + "); see the error output for details.")
     }
   }
 }
