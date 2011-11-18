@@ -9,6 +9,7 @@ package classfile
 
 import Flags._
 import scala.reflect.generic.PickleFormat._
+import java.io.IOException
 
 /** @author Martin Odersky
  *  @version 1.0
@@ -53,6 +54,17 @@ abstract class UnPickler extends reflect.generic.UnPickler {
     def toTypeError(e: MissingRequirementError) =
       new TypeError(e.msg)
 
+    /** Convert to a type error, that is printed gracefully instead of crashing.
+     *
+     *  Similar in intent to what SymbolLoader does (but here we don't have access to
+     *  error reporting, so we rely on the typechecker to report the error).
+     *
+     *  @note Unlike 2.10, 2.9 may throw either IOException or MissingRequirementError. This
+     *        simply tries to make it more robust.
+     */
+    def toTypeError(e: IOException) =
+      new TypeError(e.getMessage)
+
     /** A lazy type which when completed returns type at index `i`. */
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
@@ -64,6 +76,7 @@ abstract class UnPickler extends reflect.generic.UnPickler {
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))
       } catch {
         case e: MissingRequirementError => throw toTypeError(e)
+        case e: IOException             => throw toTypeError(e)
       }
       override def load(sym: Symbol) { complete(sym) }
     }
@@ -83,6 +96,7 @@ abstract class UnPickler extends reflect.generic.UnPickler {
         sym.asInstanceOf[TermSymbol].setAlias(alias)
       } catch {
         case e: MissingRequirementError => throw toTypeError(e)
+        case e: IOException             => throw toTypeError(e)
       }
     }
   }
