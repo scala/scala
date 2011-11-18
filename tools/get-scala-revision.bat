@@ -14,9 +14,9 @@ if "%OS%" NEQ "Windows_NT" (
 
 set _DIR=
 if "%*"=="" (
-  for /f %%i in ('cd') do set _DIR=%%i
+  for /f "delims=;" %%i in ('cd') do set "_DIR=%%i"
 ) else (
-  set _DIR=%~1
+  set "_DIR=%~1"
 )
 cd %_DIR%
 
