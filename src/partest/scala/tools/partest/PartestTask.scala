@@ -76,7 +76,7 @@ class PartestTask extends Task with CompilationPathProperty {
 
 
   def setSrcDir(input: String) {
-    setProp("partest.srcdir", input)
+    srcDir = Some(input)
   }
 
   def setClasspath(input: Path) {
@@ -96,11 +96,11 @@ class PartestTask extends Task with CompilationPathProperty {
   }
 
   def setShowLog(input: Boolean) {
-    antFileManager.showLog = input
+    showLog = input
   }
 
   def setShowDiff(input: Boolean) {
-    antFileManager.showDiff = input
+    showDiff = input
   }
 
   def setErrorOnFailed(input: Boolean) {
@@ -108,19 +108,19 @@ class PartestTask extends Task with CompilationPathProperty {
   }
 
   def setJavaCmd(input: File) {
-    antFileManager.JAVACMD = input.getAbsolutePath
+    javacmd = Some(input)
   }
 
   def setJavacCmd(input: File) {
-    antFileManager.JAVAC_CMD = input.getAbsolutePath
+    javaccmd = Some(input)
   }
 
   def setScalacOpts(opts: String) {
-    antFileManager.SCALAC_OPTS = opts
+    scalacOpts = Some(opts)
   }
 
   def setTimeout(delay: String) {
-    antFileManager.timeout = delay
+    timeout = Some(delay)
   }
 
   def setDebug(input: Boolean) {
@@ -131,10 +131,13 @@ class PartestTask extends Task with CompilationPathProperty {
     jUnitReportDir = Some(input)
   }
 
-  val antRunner = new scala.tools.partest.nest.AntRunner
-  val antFileManager = antRunner.fileManager
-
   private var classpath: Option[Path] = None
+  private var srcDir: Option[String] = None
+  private var javacmd: Option[File] = None
+  private var javaccmd: Option[File] = None
+  private var showDiff: Boolean = false
+  private var showLog: Boolean = false
+  private var runFailed: Boolean = false
   private var posFiles: Option[FileSet] = None
   private var negFiles: Option[FileSet] = None
   private var runFiles: Option[FileSet] = None
@@ -148,6 +151,8 @@ class PartestTask extends Task with CompilationPathProperty {
   private var specializedFiles: Option[FileSet] = None
   private var presentationFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
+  private var scalacOpts: Option[String] = None
+  private var timeout: Option[String] = None
   private var jUnitReportDir: Option[File] = None
   private var debug = false
 
@@ -202,10 +207,22 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getPresentationFiles = getDirs(presentationFiles)
 
   override def execute() {
+    val opts = getProject().getProperties() get "env.PARTEST_OPTS"
+    if (opts != null && opts.toString != "")
+      opts.toString.split(" ") foreach { propDef =>
+        log("setting system property " + propDef)
+        val kv = propDef split "="
+        val key = kv(0) substring 2
+        val value = kv(1)
+        setProp(key, value)
+      }
+
     if (isPartestDebug || debug) {
       setProp("partest.debug", "true")
       nest.NestUI._verbose = true
     }
+
+    srcDir foreach (x => setProp("partest.srcdir", x))
 
     val classpath = this.compilationPath getOrElse sys.error("Mandatory attribute 'compilationPath' is not set.")
 
@@ -219,9 +236,21 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala library.")
 
+    val antRunner = new scala.tools.partest.nest.AntRunner
+    val antFileManager = antRunner.fileManager
+
+    antFileManager.showDiff = showDiff
+    antFileManager.showLog = showLog
+    antFileManager.failed = runFailed
     antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
     antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
 
+    javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
+    javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
+    scalacOpts foreach (antFileManager.SCALAC_OPTS = _)
+    timeout foreach (antFileManager.timeout = _)
+
+    type TFSet = (Array[File], String, String)
     val testFileSets = List(
       (getPosFiles, "pos", "Compiling files that are expected to build"),
       (getNegFiles, "neg", "Compiling files that are expected to fail"),
@@ -237,7 +266,7 @@ class PartestTask extends Task with CompilationPathProperty {
       (getPresentationFiles, "presentation", "Running presentation compiler test files")
     )
 
-    def runSet(set: (Array[File], String, String)): (Int, Int, Iterable[String]) = {
+    def runSet(set: TFSet): (Int, Int, Iterable[String]) = {
       val (files, name, msg) = set
       if (files.isEmpty) (0, 0, List())
       else {
