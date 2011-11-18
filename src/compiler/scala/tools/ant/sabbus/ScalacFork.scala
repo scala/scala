@@ -23,16 +23,14 @@ import scala.tools.nsc.util.ScalaClassLoader
  *  - `failonerror`,
  *  - `timeout`,
  *  - `jvmargs`,
- *  - `argfile`,
- *  - `params`.
+ *  - `argfile`.
  *
  *  It also takes the following parameters as nested elements:
  *  - `src` (for `srcdir`),
  *  - `classpath`,
  *  - `sourcepath`,
  *  - `bootclasspath`,
- *  - `extdirs`,
- *  - `compilerarg`.
+ *  - `extdirs`.
  *
  *  @author Gilles Dubochet
  */
@@ -101,7 +99,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
     compTarget foreach (settings.target = _)
     compilationPath foreach (settings.classpath = _)
     sourcePath foreach (settings.sourcepath = _)
-    settings.extraParams = extraArgsFlat
+    params foreach (settings.more = _)
 
     if (isMSIL)
       settings.sourcedir = sourceDir
@@ -134,17 +132,10 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
     java setClasspath compilerPath
     java setClassname MainClass
 
-    // Encode scalac/javac args for use in a file to be read back via "@file.txt"
-    def encodeScalacArgsFile(t: Traversable[String]) = t map { s =>
-      if(s.find(c => c <= ' ' || "\"'\\".contains(c)).isDefined)
-        "\"" + s.flatMap(c => (if(c == '"' || c == '\\') "\\" else "") + c ) + "\""
-      else s
-    } mkString "\n"
-
     // dump the arguments to a file and do "java @file"
     val tempArgFile = io.File.makeTemp("scalacfork")
     val tokens = settings.toArgs ++ (includedFiles map (_.getPath))
-    tempArgFile writeAll encodeScalacArgsFile(tokens)
+    tempArgFile writeAll (tokens mkString " ")
 
     val paths = List(Some(tempArgFile.toAbsolute.path), argfile).flatten map (_.toString)
     val res = execWithArgFiles(java, paths)
