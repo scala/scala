@@ -133,7 +133,7 @@ abstract class TailCalls extends Transform {
           label setInfo MethodType(thisParam :: method.tpe.params, method.tpe.finalResultType)
         }
         if (isEligible)
-          label setInfo label.tpe.substSym(method.tpe.typeParams, tparams)
+          label substInfo (method.tpe.typeParams, tparams)
       }
 
       def enclosingType    = method.enclClass.typeOfThis

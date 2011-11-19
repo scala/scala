@@ -400,11 +400,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       /** Create a getter or a setter and enter into `clazz` scope
        */
       def addAccessor(sym: Symbol, name: TermName, flags: Long) = {
-        val m = clazz.newMethod(sym.pos, name)
-          .setFlag(flags & ~LOCAL & ~PRIVATE)
-        m.privateWithin = clazz
-        clazz.info.decls.enter(m)
-        m
+        val m = (
+          clazz.newMethod(sym.pos, name)
+            setFlag (flags & ~LOCAL & ~PRIVATE)
+            setPrivateWithin clazz
+        )
+        clazz.info.decls enter m
       }
 
       def addGetter(sym: Symbol): Symbol = {

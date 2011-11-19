@@ -54,10 +54,9 @@ trait SyntheticMethods extends ast.TreeDSL {
       case tp                                     => tp
     }
 
-    def makeMethodPublic(method: Symbol): Symbol = {
-      method.privateWithin = NoSymbol
-      method resetFlag AccessFlags
-    }
+    def makeMethodPublic(method: Symbol): Symbol = (
+      method setPrivateWithin NoSymbol resetFlag AccessFlags
+    )
 
     def methodArg(method: Symbol, idx: Int): Tree = Ident(method.paramss.head(idx))
 

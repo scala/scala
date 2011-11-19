@@ -999,7 +999,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                     //
                     //   val x = expr
                     context.unit.warning(tree.pos, "recovering from existential Skolem type error in tree \n" + tree + "\nwith type " + tree.tpe + "\n expected type = " + pt + "\n context = " + context.tree)
-                    adapt(tree, mode, pt.subst(pt.existentialSkolems, pt.existentialSkolems map (_ => WildcardType)))
+                    adapt(tree, mode, deriveTypeWithWildcards(pt.existentialSkolems)(pt))
                   } else
                     throw ex
               }
@@ -1650,7 +1650,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               silent(_.typedTypeConstructor(stringParser(repl).typ())) match {
                 case tpt: Tree =>
                   val alias = enclClass.newAliasType(useCase.pos, name.toTypeName)
-                  val tparams = cloneSymbols(tpt.tpe.typeSymbol.typeParams, alias)
+                  val tparams = cloneSymbolsAtOwner(tpt.tpe.typeSymbol.typeParams, alias)
                   alias setInfo typeFun(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
                   context.scope.enter(alias)
                 case _ =>
@@ -1851,23 +1851,23 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               }
               def matchesVisibleMember(member: Symbol) = visibleMembers exists { vis =>
                 (member.name == vis.name) &&
-                (member.tpe <:< vis.tpe.substThis(vis.owner, ThisType(classDef.symbol)))
+                (member.tpe <:< vis.tpe.substThis(vis.owner, classDef.symbol))
               }
               // The block is an anonymous class definitions/instantiation pair
               //   -> members that are hidden by the type of the block are made private
-              ( classDecls filter (member =>
+              val toHide = (
+                classDecls filter (member =>
                      member.isTerm
                   && member.isPossibleInRefinement
                   && member.isPublic
                   && !matchesVisibleMember(member)
+                ) map (member => member
+                  resetFlag (PROTECTED | LOCAL)
+                  setFlag (PRIVATE | SYNTHETIC_PRIVATE)
+                  setPrivateWithin NoSymbol
                 )
-                foreach { member =>
-                  member resetFlag (PROTECTED | LOCAL)
-                  member   setFlag (PRIVATE | SYNTHETIC_PRIVATE)
-                  syntheticPrivates += member
-                  member.privateWithin = NoSymbol
-                }
               )
+              syntheticPrivates ++= toHide
             case _ =>
           }
         }
@@ -2495,18 +2495,18 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (args.length > MaxTupleArity)
             error(fun.pos, "too many arguments for unapply pattern, maximum = "+MaxTupleArity)
 
-          def freshArgType(tp: Type): (Type, List[Symbol]) = tp match {
+          //
+          def freshArgType(tp: Type): (List[Symbol], Type) = tp match {
             case MethodType(param :: _, _) =>
-              (param.tpe, Nil)
-            case PolyType(tparams, restype) =>
-              val tparams1 = cloneSymbols(tparams)
-              (freshArgType(restype)._1.substSym(tparams, tparams1), tparams1)
+              (Nil, param.tpe)
+            case PolyType(tparams, restpe) =>
+              createFromClonedSymbols(tparams, freshArgType(restpe)._2)((ps, t) => ((ps, t)))
             case OverloadedType(_, _) =>
               error(fun.pos, "cannot resolve overloaded unapply")
-              (ErrorType, Nil)
+              (Nil, ErrorType)
             case _ =>
               error(fun.pos, "an unapply method must accept a single argument.")
-              (ErrorType, Nil)
+              (Nil, ErrorType)
           }
 
           val unapp     = unapplyMember(otpe)
@@ -2516,20 +2516,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
           if (!isApplicableSafe(Nil, unappType, List(pt), WildcardType)) {
             //Console.println("UNAPP: need to typetest, arg.tpe = "+arg.tpe+", unappType = "+unappType)
-            val (unappFormal, freeVars) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
-            val context1 = context.makeNewScope(context.tree, context.owner)
-            freeVars foreach context1.scope.enter
+            val (freeVars, unappFormal) = freshArgType(unappType.skolemizeExistential(context.owner, tree))
+            val unapplyContext = context.makeNewScope(context.tree, context.owner)
+            freeVars foreach unapplyContext.scope.enter
 
-            val typer1 = newTyper(context1)
+            val typer1 = newTyper(unapplyContext)
             val pattp  = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
 
             // turn any unresolved type variables in freevars into existential skolems
-            val skolems = freeVars map { fv =>
-              val skolem = new TypeSkolem(context1.owner, fun.pos, fv.name.toTypeName, fv)
-              skolem.setInfo(fv.info.cloneInfo(skolem))
-                .setFlag(fv.flags | EXISTENTIAL).resetFlag(PARAM)
-              skolem
-            }
+            val skolems = freeVars map (fv => newExistentialSkolem(fv, unapplyContext.owner, fv))
             arg.tpe = pattp.substSym(freeVars, skolems)
             argDummy setInfo arg.tpe
           }
@@ -2796,7 +2791,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  also replaced, except for term symbols of an Ident tree, where
      *  only the type of the Ident is changed.
      */
-    protected def existentialTransform(rawSyms: List[Symbol], tp: Type) = {
+    protected def existentialTransform[T](rawSyms: List[Symbol], tp: Type)(creator: (List[Symbol], Type) => T): T = {
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = sym.name match {
           case x: TypeName  => x
@@ -2812,28 +2807,19 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       // tpeHK for when they are: "if a type constructor is expected/allowed,
       // tpeHK must be called instead of tpe."
       val typeParamTypes = typeParams map (_.tpeHK)
-      (
-        typeParams map (tparam => tparam setInfo tparam.info.subst(rawSyms, typeParamTypes)),
-        tp.subst(rawSyms, typeParamTypes)
-      )
+      def doSubst(info: Type) = info.subst(rawSyms, typeParamTypes)
+
+      creator(typeParams map (_ modifyInfo doSubst), doSubst(tp))
     }
 
     /** Compute an existential type from raw hidden symbols `syms` and type `tp`
      */
     def packSymbols(hidden: List[Symbol], tp: Type): Type =
       if (hidden.isEmpty) tp
-      else {
-//          Console.println("original type: "+tp)
-//          Console.println("hidden symbols: "+hidden)
-        val (tparams, tp1) = existentialTransform(hidden, tp)
-//          Console.println("tparams: "+tparams+", result: "+tp1)
-        val res = existentialAbstraction(tparams, tp1)
-//          Console.println("final result: "+res)
-        res
-      }
+      else existentialTransform(hidden, tp)(existentialAbstraction)
 
     def isCapturedExistential(sym: Symbol) =
-      ((sym hasFlag EXISTENTIAL) && (sym hasFlag CAPTURED)) // todo refine this
+      sym hasAllFlags (EXISTENTIAL | CAPTURED)  // todo refine this
 
     def packCaptured(tpe: Type): Type = {
       val captured = mutable.Set[Symbol]()
@@ -2931,12 +2917,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def skolemizeTypeParams(tparams: List[TypeDef]): List[TypeDef] = {
       class Deskolemizer extends LazyType {
         override val typeParams = tparams map (_.symbol)
-        val typeSkolems  = typeParams map (_.newTypeSkolem) map (_ setInfo this)
-        def substitute() = {
-          // Replace the symbols
-          (tparams, typeSkolems).zipped foreach (_.symbol = _)
-          tparams
-        }
+        val typeSkolems  = typeParams map (_.newTypeSkolem setInfo this)
+        // Replace the symbols
+        def substitute() = (tparams, typeSkolems).zipped map (_ setSymbol _)
         override def complete(sym: Symbol) {
           // The info of a skolem is the skolemized info of the
           // actual type parameter of the skolem
@@ -2969,9 +2952,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         if (vd.symbol.tpe.isVolatile)
           error(vd.pos, "illegal abstraction from value with volatile type "+vd.symbol.tpe)
       val tpt1 = typedType(tree.tpt, mode)
-      val (typeParams, tpe) = existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)
-      //println(tpe + ": " + tpe.getClass )
-      TypeTree(ExistentialType(typeParams, tpe)) setOriginal tree
+      existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)((tparams, tp) =>
+        TypeTree(ExistentialType(tparams, tp)) setOriginal tree
+      )
     }
 
     // lifted out of typed1 because it's needed in typedImplicit0
@@ -3059,26 +3042,24 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               if (!settings.selfInAnnots.value)
                 NoSymbol
               else
-                arg1.tpe.selfsym match {
-                  case NoSymbol =>
-                    /* Implementation limitation: Currently this
-                     * can cause cyclical reference errors even
-                     * when the self symbol is not referenced at all.
-                     * Surely at least some of these cases can be
-                     * fixed by proper use of LazyType's.  Lex tinkered
-                     * on this but did not succeed, so is leaving
-                     * it alone for now. Example code with the problem:
-                     *  class peer extends Annotation
-                     *  class NPE[T <: NPE[T] @peer]
-                     *
-                     * (Note: -Yself-in-annots must be on to see the problem)
-                     * */
-                    val sym =
-                      context.owner.newLocalDummy(ann.pos)
-                        .newValue(ann.pos, nme.self)
-                    sym.setInfo(arg1.tpe.withoutAnnotations)
-                    sym
-                  case sym => sym
+                arg1.tpe.selfsym orElse {
+                  /* Implementation limitation: Currently this
+                   * can cause cyclical reference errors even
+                   * when the self symbol is not referenced at all.
+                   * Surely at least some of these cases can be
+                   * fixed by proper use of LazyType's.  Lex tinkered
+                   * on this but did not succeed, so is leaving
+                   * it alone for now. Example code with the problem:
+                   *  class peer extends Annotation
+                   *  class NPE[T <: NPE[T] @peer]
+                   *
+                   * (Note: -Yself-in-annots must be on to see the problem)
+                   * */
+                  ( context.owner
+                      newLocalDummy (ann.pos)
+                      newValue (ann.pos, nme.self)
+                      setInfo (arg1.tpe.withoutAnnotations)
+                  )
                 }
 
             val ainfo = typedAnnotation(ann, annotMode, selfsym)

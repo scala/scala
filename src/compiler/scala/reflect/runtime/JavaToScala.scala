@@ -64,7 +64,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *                   ScalaSignature or ScalaLongSignature annotation.
    */
   def unpickleClass(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
-    def markAbsent(tpe: Type) = List(clazz, module, module.moduleClass) foreach (_ setInfo tpe)
+    def markAbsent(tpe: Type) = setAllInfos(clazz, module, tpe)
     def handleError(ex: Exception) = {
       markAbsent(ErrorType)
       if (settings.debug.value) ex.printStackTrace()
@@ -126,7 +126,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private class TypeParamCompleter(jtvar: jTypeVariable[_ <: GenericDeclaration]) extends LazyType {
     override def load(sym: Symbol) = complete(sym)
     override def complete(sym: Symbol) = {
-      sym setInfo TypeBounds(NothingClass.tpe, glb(jtvar.getBounds.toList map typeToScala map objToAny))
+      sym setInfo TypeBounds.upper(glb(jtvar.getBounds.toList map typeToScala map objToAny))
     }
   }
 

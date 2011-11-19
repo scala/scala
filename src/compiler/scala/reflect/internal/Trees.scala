@@ -332,37 +332,26 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString = substituterString("Symbol", "Tree", from, to)
   }
 
-  class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends Traverser {
-    val typeSubst = new SubstTypeMap(from, to)
-    def isEmpty = from.isEmpty && to.isEmpty
-
+  class TypeMapTreeSubstituter(val typeMap: TypeMap) extends Traverser {
     override def traverse(tree: Tree) {
-      if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
-      if (tree.isDef) {
-        val sym = tree.symbol
-        val info1 = typeSubst(sym.info)
-        if (info1 ne sym.info) sym.setInfo(info1)
-      }
+      if (tree.tpe ne null)
+        tree.tpe = typeMap(tree.tpe)
+      if (tree.isDef)
+        tree.symbol modifyInfo typeMap
+
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+  }
+
+  class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends TypeMapTreeSubstituter(new SubstTypeMap(from, to)) {
+    def isEmpty = from.isEmpty && to.isEmpty
     override def toString() = "TreeTypeSubstituter("+from+","+to+")"
   }
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
-  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends Traverser {
-    val subst = new SubstSymMap(from, to)
-    override def traverse(tree: Tree) {
-      if (tree.tpe ne null) tree.tpe = subst(tree.tpe)
-      if (tree.isDef) {
-        val sym = tree.symbol
-        val info1 = subst(sym.info)
-        if (info1 ne sym.info) sym.setInfo(info1)
-      }
-      super.traverse(tree)
-    }
-    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends TypeMapTreeSubstituter(new SubstSymMap(from, to)) {
     override def toString() = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
   }
 

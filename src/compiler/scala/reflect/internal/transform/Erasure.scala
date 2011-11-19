@@ -88,9 +88,8 @@ trait Erasure {
           apply(restpe)
         case mt @ MethodType(params, restpe) =>
           MethodType(
-            cloneSymbols(params) map (p => p.setInfo(apply(p.tpe))),
+            cloneSymbolsAndModify(params, ErasureMap.this),
             if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
-            // else if (!settings.YdepMethTpes.value) apply(restpe)
             // this replaces each typeref that refers to an argument
             // by the type `p.tpe` of the actual argument p (p in params)
             else apply(mt.resultType(params map (_.tpe))))
@@ -247,7 +246,7 @@ trait Erasure {
       if (sym.isClassConstructor)
         tp match {
           case MethodType(params, TypeRef(pre, sym1, args)) =>
-            MethodType(cloneSymbols(params) map (p => p.setInfo(erasure(sym, p.tpe))),
+            MethodType(cloneSymbolsAndModify(params, erasure(sym, _)),
                        typeRef(erasure(sym, pre), sym1, args))
         }
       else if (sym.name == nme.apply)

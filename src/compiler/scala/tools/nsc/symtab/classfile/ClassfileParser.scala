@@ -1230,9 +1230,7 @@ abstract class ClassfileParser {
 
   class LazyAliasType(alias: Symbol) extends LazyType {
     override def complete(sym: Symbol) {
-      alias.initialize
-      val tparams1 = cloneSymbols(alias.typeParams)
-      sym.setInfo(typeFun(tparams1, alias.tpe.substSym(alias.typeParams, tparams1)))
+      sym setInfo createFromClonedSymbols(alias.initialize.typeParams, alias.tpe)(typeFun)
     }
   }
 

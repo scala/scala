@@ -263,16 +263,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Create a new getter for current symbol (which must be a field)
      */
-    final def newGetter: Symbol = {
-      val getter = owner.newMethod(focusPos(pos), nme.getterName(name)).setFlag(getterFlags(flags))
-      getter.privateWithin = privateWithin
-      getter.setInfo(MethodType(List(), tpe))
-    }
+    final def newGetter: Symbol = (
+      owner.newMethod(focusPos(pos), nme.getterName(name))
+        setFlag getterFlags(flags)
+        setPrivateWithin privateWithin
+        setInfo MethodType(Nil, tpe)
+    )
 
     final def newErrorClass(name: TypeName) = {
-      val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
-      clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz))
-      clazz
+      val clazz = newClass(pos, name)
+      ( clazz
+          setFlag (SYNTHETIC | IS_ERROR)
+          setInfo ClassInfoType(Nil, new ErrorScope(this), clazz)
+      )
     }
 
     final def newErrorSymbol(name: Name): Symbol = name match {
@@ -859,6 +862,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private[this] var _privateWithin: Symbol = _
     def privateWithin = _privateWithin
     def privateWithin_=(sym: Symbol) { _privateWithin = sym }
+    def setPrivateWithin(sym: Symbol): this.type = { privateWithin_=(sym) ; this }
 
     /** Does symbol have a private or protected qualifier set? */
     final def hasAccessBoundary = (privateWithin != null) && (privateWithin != NoSymbol)
@@ -930,9 +934,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** Set initial info. */
-    def setInfo(info: Type): this.type = { info_=(info); this }
-
-    def setInfoOwnerAdjusted(info: Type): this.type = setInfo(info.atOwner(this))
+    def setInfo(info: Type): this.type                      = { info_=(info); this }
+    /** Modifies this symbol's info in place. */
+    def modifyInfo(f: Type => Type): this.type              = setInfo(f(info))
+    /** Substitute second list of symbols for first in current info. */
+    def substInfo(syms0: List[Symbol], syms1: List[Symbol]) = modifyInfo(_.substSym(syms0, syms1))
+    def setInfoOwnerAdjusted(info: Type): this.type         = setInfo(info atOwner this)
 
     /** Set new info valid from start of this phase. */
     final def updateInfo(info: Type): Symbol = {
@@ -1123,7 +1130,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val oldsyms = oldsymbuf.toList
       val newsyms = newsymbuf.toList
       for (sym <- newsyms) {
-        addMember(thistp, tp, sym.setInfo(sym.info.substThis(this, thistp).substSym(oldsyms, newsyms)))
+        addMember(thistp, tp, sym modifyInfo (_ substThisAndSym(this, thistp, oldsyms, newsyms)))
       }
       tp
     }
@@ -1134,11 +1141,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def existentialBound: Type =
       if (this.isClass)
-         polyType(this.typeParams, TypeBounds.upper(this.classBound))
+        polyType(this.typeParams, TypeBounds.upper(this.classBound))
       else if (this.isAbstractType)
-         this.info
+        this.info
       else if (this.isTerm)
-         TypeBounds.upper(intersectionType(List(this.tpe, SingletonClass.tpe)))
+        singletonBounds(this.tpe)
       else
         abort("unexpected alias type: "+this)
 
@@ -1286,9 +1293,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** A clone of this symbol, but with given owner. */
     final def cloneSymbol(owner: Symbol): Symbol = {
       val newSym = cloneSymbolImpl(owner)
-      newSym.privateWithin = privateWithin
-      newSym.setInfo(info.cloneInfo(newSym))
-        .setFlag(this.rawflags).setAnnotations(this.annotations)
+      ( newSym
+          setPrivateWithin privateWithin
+          setInfo (info cloneInfo newSym)
+          setFlag this.rawflags
+          setAnnotations this.annotations
+      )
     }
 
     /** Internal method to clone a symbol's implementation without flags or type. */
@@ -2234,7 +2244,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def cloneSymbolImpl(owner: Symbol): Symbol =
-      new TypeSymbol(owner, pos, name)  //.toTypeName)
+      new TypeSymbol(owner, pos, name)
 
     incCounter(typeSymbolCount)
   }
@@ -2442,16 +2452,80 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def originalEnclosingMethod = this
   }
 
-  private def cloneAndSubstInfos[T <: Symbol](syms: List[T])(f: T => Symbol): List[T] = {
-    val syms1 = syms map (s => f(s).asInstanceOf[T])
-    syms1 map (sym1 => sym1 setInfo sym1.info.substSym(syms, syms1))
+  /** Derives a new list of symbols from the given list by mapping the given
+   *  list across the given function.  Then fixes the info of all the new symbols
+   *  by substituting the new symbols for the original symbols.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    symFn   the function to create new symbols
+   *  @return           the new list of info-adjusted symbols
+   */
+  def deriveSymbols(syms: List[Symbol], symFn: Symbol => Symbol): List[Symbol] = {
+    val syms1 = syms map symFn
+    syms1 map (_ substInfo (syms, syms1))
   }
 
-  def cloneSymbols[T <: Symbol](syms: List[T]): List[T] =
-    cloneAndSubstInfos(syms)(_.cloneSymbol)
+  /** Derives a new Type by first deriving new symbols as in deriveSymbols,
+   *  then performing the same oldSyms => newSyms substitution on `tpe` as is
+   *  performed on the symbol infos in deriveSymbols.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    symFn   the function to create new symbols
+   *  @param    tpe     the prototypical type
+   *  @return           the new symbol-subsituted type
+   */
+  def deriveType(syms: List[Symbol], symFn: Symbol => Symbol)(tpe: Type): Type = {
+    val syms1 = deriveSymbols(syms, symFn)
+    tpe.substSym(syms, syms1)
+  }
+  /** Derives a new Type by instantiating the given list of symbols as
+   *  WildcardTypes.
+   *
+   *  @param    syms    the symbols to replace
+   *  @return           the new type with WildcardType replacing those syms
+   */
+  def deriveTypeWithWildcards(syms: List[Symbol])(tpe: Type): Type = {
+    if (syms.isEmpty) tpe
+    else tpe.instantiateTypeParams(syms, syms map (_ => WildcardType))
+  }
+  /** Convenience functions which derive symbols by cloning.
+   */
+  def cloneSymbols(syms: List[Symbol]): List[Symbol] =
+    deriveSymbols(syms, _.cloneSymbol)
+  def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
+    deriveSymbols(syms, _ cloneSymbol owner)
 
-  def cloneSymbols[T <: Symbol](syms: List[T], owner: Symbol): List[T] =
-    cloneAndSubstInfos(syms)(_ cloneSymbol owner)
+  /** Clone symbols and apply the given function to each new symbol's info.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    infoFn  the function to apply to the infos
+   *  @return           the newly created, info-adjusted symbols
+   */
+  def cloneSymbolsAndModify(syms: List[Symbol], infoFn: Type => Type): List[Symbol] =
+    cloneSymbols(syms) map (_ modifyInfo infoFn)
+
+  /** Functions which perform the standard clone/substituting on the given symbols and type,
+   *  then call the creator function with the new symbols and type as arguments.
+   */
+  def createFromClonedSymbols[T](syms: List[Symbol], tpe: Type)(creator: (List[Symbol], Type) => T): T = {
+    val syms1 = cloneSymbols(syms)
+    creator(syms1, tpe.substSym(syms, syms1))
+  }
+  def createFromClonedSymbolsAtOwner[T](syms: List[Symbol], owner: Symbol, tpe: Type)(creator: (List[Symbol], Type) => T): T = {
+    val syms1 = cloneSymbolsAtOwner(syms, owner)
+    creator(syms1, tpe.substSym(syms, syms1))
+  }
+
+  /** Create a new existential type skolem with the given owner and origin.
+   */
+  def newExistentialSkolem(sym: Symbol, owner: Symbol, origin: AnyRef): TypeSkolem = {
+    val skolem = new TypeSkolem(owner, sym.pos, sym.name.toTypeName, origin)
+    ( skolem
+        setInfo (sym.info cloneInfo skolem)
+        setFlag (sym.flags | EXISTENTIAL)
+        resetFlag PARAM
+    )
+  }
 
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)

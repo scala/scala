@@ -297,8 +297,7 @@ trait Implicits {
         case _ => tp
       }
       def stripped(tp: Type): Type = {
-        val tparams = freeTypeParametersNoSkolems.collect(tp)
-        tp.subst(tparams, tparams map (t => WildcardType))
+        deriveTypeWithWildcards(freeTypeParametersNoSkolems.collect(tp))(tp)
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
       def complexity(tp: Type): Int = tp.normalize match {
@@ -371,11 +370,7 @@ trait Implicits {
 
     /** The type parameters to instantiate */
     val undetParams = if (isView) List() else context.outer.undetparams
-
-    def approximate(tp: Type) =
-      if (undetParams.isEmpty) tp
-      else tp.instantiateTypeParams(undetParams, undetParams map (_ => WildcardType))
-
+    def approximate(tp: Type) = deriveTypeWithWildcards(undetParams)(tp)
     val wildPt = approximate(pt)
 
     /** Try to construct a typed tree from given implicit info with given

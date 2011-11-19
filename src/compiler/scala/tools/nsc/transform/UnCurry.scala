@@ -80,6 +80,12 @@ abstract class UnCurry extends InfoTransform
     private val newMembers = mutable.ArrayBuffer[Tree]()
     private val repeatedParams = mutable.Map[Symbol, List[ValDef]]()
 
+    @inline private def withInPattern[T](value: Boolean)(body: => T): T = {
+      inPattern = value
+      try body
+      finally inPattern = !value
+    }
+
     private lazy val serialVersionUIDAnnotation =
       AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
@@ -513,9 +519,7 @@ abstract class UnCurry extends InfoTransform
           }
 */
         case UnApply(fn, args) =>
-          inPattern = false
-          val fn1 = transform(fn)
-          inPattern = true
+          val fn1 = withInPattern(false)(transform(fn))
           val args1 = transformTrees(fn.symbol.name match {
             case nme.unapply    => args
             case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe))
@@ -543,9 +547,7 @@ abstract class UnCurry extends InfoTransform
           else super.transform(tree)
 
         case CaseDef(pat, guard, body) =>
-          inPattern = true
-          val pat1 = transform(pat)
-          inPattern = false
+          val pat1 = withInPattern(true)(transform(pat))
           treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
 
         case fun @ Function(_, _) =>

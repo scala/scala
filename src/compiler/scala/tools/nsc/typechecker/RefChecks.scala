@@ -1562,14 +1562,11 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             }
 
             val existentialParams = new ListBuffer[Symbol]
-            doTypeTraversal(tree) { // check all bounds, except those that are
-                              // existential type parameters
+            doTypeTraversal(tree) { // check all bounds, except those that are existential type parameters
               case ExistentialType(tparams, tpe) =>
                 existentialParams ++= tparams
               case t: TypeRef =>
-                val exparams = existentialParams.toList
-                val wildcards = exparams map (_ => WildcardType)
-                checkTypeRef(t.subst(exparams, wildcards), tree.pos)
+                checkTypeRef(deriveTypeWithWildcards(existentialParams.toList)(t), tree.pos)
               case _ =>
             }
             tree

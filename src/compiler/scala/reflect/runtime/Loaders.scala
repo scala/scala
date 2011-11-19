@@ -71,11 +71,12 @@ trait Loaders { self: SymbolTable =>
     (clazz, module)
   }
 
-  protected def initClassModule(clazz: Symbol, module: Symbol, completer: LazyType) = {
-    clazz.setInfo(completer)
-    module.setInfo(completer)
-    module.moduleClass.setInfo(completer)
+  protected def setAllInfos(clazz: Symbol, module: Symbol, info: Type) = {
+    List(clazz, module, module.moduleClass) foreach (_ setInfo info)
   }
+
+  protected def initClassModule(clazz: Symbol, module: Symbol, completer: LazyType) =
+    setAllInfos(clazz, module, completer)
 
   /** The type completer for packages.
    */

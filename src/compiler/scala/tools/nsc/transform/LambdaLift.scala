@@ -112,7 +112,7 @@ abstract class LambdaLift extends InfoTransform {
             // would have the signature
             //     closure: (x$1: Int)() => Int
             if (sym.isParameter && sym.owner.info.paramss.exists(_ contains sym))
-              sym.owner.setInfo(sym.owner.info.cloneInfo(sym.owner))
+              sym.owner modifyInfo (_ cloneInfo sym.owner)
           }
           changedFreeVars = true
           debuglog("" + sym + " is free in " + enclosure);
