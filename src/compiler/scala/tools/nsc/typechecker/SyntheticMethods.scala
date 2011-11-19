@@ -282,7 +282,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def equalsClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
       val arg0      = methodArg(m, 0)
       val thatTest  = gen.mkIsInstanceOf(arg0, clazzTypeToTest(clazz), true, false)
-      val thatCast  = arg0 AS_ATTR clazz.tpe
+      val thatCast  = gen.mkCast(arg0, clazz.tpe)
 
       def argsBody: Tree = {
         val otherName = context.unit.freshTermName(clazz.name + "$")

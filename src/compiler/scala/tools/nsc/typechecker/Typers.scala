@@ -1913,12 +1913,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       if (!context.savedTypeBounds.isEmpty) {
         body1.tpe = context.restoreTypeBounds(body1.tpe)
         if (isFullyDefined(pt) && !(body1.tpe <:< pt)) {
-          body1 =
-            typed {
-              atPos(body1.pos) {
-                TypeApply(Select(body1, Any_asInstanceOf), List(TypeTree(pt))) // @M no need for pt.normalize here, is done in erasure
-              }
-            }
+          // @M no need for pt.normalize here, is done in erasure
+          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt))
         }
       }
 //    body1 = checkNoEscaping.locals(context.scope, pt, body1)

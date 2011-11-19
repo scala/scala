@@ -496,7 +496,10 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   }
 
   /** Explicit type application.
-  */
+   *  @PP: All signs point toward it being a requirement that args.nonEmpty,
+   *  but I can't find that explicitly stated anywhere.  Unless your last name
+   *  is odersky, you should probably treat it as true.
+   */
   case class TypeApply(fun: Tree, args: List[Tree])
        extends GenericApply {
     override def symbol: Symbol = fun.symbol

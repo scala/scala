@@ -245,7 +245,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
               def mkNewPolyCache = gen.mkSoftRef(NEW(TypeTree(EmptyMethodCacheClass.tpe)))
               val reflPolyCacheSym: Symbol = addStaticVariableToClass("reflPoly$Cache", SoftReferenceClass.tpe, mkNewPolyCache, false)
-              def getPolyCache = fn(safeREF(reflPolyCacheSym), nme.get) AS_ATTR MethodCacheClass.tpe
+              def getPolyCache = gen.mkCast(fn(safeREF(reflPolyCacheSym), nme.get), MethodCacheClass.tpe)
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
                 { case Pair(reflMethodSym, List(forReceiverSym)) =>
@@ -405,7 +405,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             def fixResult(tree: Tree, mustBeUnit: Boolean = false) =
               if (mustBeUnit || resultSym == UnitClass) BLOCK(tree, REF(BoxedUnit_UNIT))  // boxed unit
               else if (resultSym == ObjectClass) tree                                     // no cast necessary
-              else tree AS_ATTR boxedResType                                              // cast to expected type
+              else gen.mkCast(tree, boxedResType)                                         // cast to expected type
 
             /** Normal non-Array call */
             def genDefaultCall = {

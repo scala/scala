@@ -114,10 +114,7 @@ trait TreeDSL {
        *
        *  See ticket #2168 for one illustration of AS vs. AS_ANY.
        */
-      def AS(tpe: Type)       = TypeApply(Select(target, Any_asInstanceOf), List(TypeTree(tpe)))
-      def AS_ANY(tpe: Type)   = gen.mkAsInstanceOf(target, tpe)
-      def AS_ATTR(tpe: Type)  = gen.mkAttributedCast(target, tpe)
-
+      def AS(tpe: Type)       = gen.mkAsInstanceOf(target, tpe, any = true, wrapInApply = false)
       def IS(tpe: Type)       = gen.mkIsInstanceOf(target, tpe, true)
       def IS_OBJ(tpe: Type)   = gen.mkIsInstanceOf(target, tpe, false)
 

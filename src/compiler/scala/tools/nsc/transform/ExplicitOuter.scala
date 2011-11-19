@@ -359,7 +359,7 @@ abstract class ExplicitOuter extends InfoTransform
       localTyper typed {
         (DEF(outerAcc) withPos currentClass.pos) === {
           // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
-          transformer.transform(path) AS_ANY outerAcc.info.resultType
+          gen.mkCast(transformer.transform(path), outerAcc.info.resultType)
         }
       }
     }

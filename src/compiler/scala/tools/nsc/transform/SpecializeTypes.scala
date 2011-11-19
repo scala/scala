@@ -1084,34 +1084,31 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _ => //log("nope")
   }
 
+  private def unspecializableClass(tp: Type) = (
+       definitions.isRepeatedParamType(tp)  // ???
+    || tp.typeSymbol.isJavaDefined
+    || tp.typeSymbol.isPackageClass
+  )
+
   /** Type transformation. It is applied to all symbols, compiled or loaded.
    *  If it is a 'no-specialization' run, it is applied only to loaded symbols.
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
     if (settings.nospecialization.value && currentRun.compiles(sym)) tpe
-    else tpe match {
-      case PolyType(targs, ClassInfoType(base, decls, clazz))
-              if clazz != RepeatedParamClass
-              && clazz != JavaRepeatedParamClass
-              && !clazz.isJavaDefined =>
-        val parents = base map specializedType
-        debuglog("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
+    else tpe.resultType match {
+      case cinfo @ ClassInfoType(parents, decls, clazz) if !unspecializableClass(cinfo) =>
+        val tparams  = tpe.typeParams
+        if (tparams.isEmpty)
+          atPhase(phase.next)(parents map (_.typeSymbol.info))
 
-        polyType(targs, ClassInfoType(
-          parents,
-          new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz)),
-          clazz)
+        val parents1 = parents map specializedType
+        debuglog("transformInfo %s %s with parents1 %s ph: %s".format(
+          if (tparams.nonEmpty) " (poly)" else "",
+          clazz, parents1, phase)
         )
-      case ClassInfoType(base, decls, clazz) if !clazz.isPackageClass && !clazz.isJavaDefined =>
-        atPhase(phase.next)(base map (_.typeSymbol.info))
-        // side effecting? parents is not used except to log.
-        val parents = base map specializedType
-        debuglog("transformInfo " + clazz + " with parents1: " + parents + " ph: " + phase)
-        ClassInfoType(
-          base map specializedType,
-          new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz)),
-          clazz
-        )
+        val newScope = new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz))
+        // If tparams.isEmpty, this is just the ClassInfoType.
+        polyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>
         tpe
     }
@@ -1292,9 +1289,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         } else None
       }
 
-      def maybeTypeApply(fun: Tree, targs: List[Tree]) =
-        if (targs.isEmpty) fun else TypeApply(fun, targs)
-
       curTree = tree
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -1333,7 +1327,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 "residual: %s, tparams: %s, env: %s".format(residualTargs, symbol.info.typeParams, env))
               )
 
-              val tree1 = maybeTypeApply(Select(qual1, specMember), residualTargs)
+              val tree1 = gen.mkTypeApply(Select(qual1, specMember), residualTargs)
               log("rewrote " + tree + " to " + tree1)
               localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
 

@@ -2986,6 +2986,11 @@ A type's typeSymbol should never be inspected directly.
   /** A creator for type parameterizations that strips empty type parameter lists.
    *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
    *  until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty).
+   *
+   *  PP to AM: I've co-opted this for where I know tparams may well be empty, and
+   *  expecting to get back `tpe` in such cases.  Re being "forgiving" below,
+   *  can we instead say this is the canonical creator for polyTypes which
+   *  may or may not be poly? (It filched the standard "canonical creator" name.)
    */
   def polyType(tparams: List[Symbol], tpe: Type): Type =
     if (tparams nonEmpty) typeFun(tparams, tpe)

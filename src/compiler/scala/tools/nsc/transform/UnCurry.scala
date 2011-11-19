@@ -306,7 +306,7 @@ abstract class UnCurry extends InfoTransform
                       else if (IntClass.tpe <:< a.tpe)     Literal(Constant(0))
                       else if (LongClass.tpe <:< a.tpe)    Literal(Constant(0L))
                       else if (CharClass.tpe <:< a.tpe)    Literal(Constant(0.toChar))
-                      else NULL AS a.tpe // must cast, at least when a.tpe <:< NothingClass.tpe
+                      else gen.mkCast(NULL, a.tpe)         // must cast, at least when a.tpe <:< NothingClass.tpe
                     Apply(fun.duplicate, List(zero))
                   case _ =>
                     super.transform(tree)

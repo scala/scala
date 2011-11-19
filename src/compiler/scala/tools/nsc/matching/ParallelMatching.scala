@@ -24,7 +24,10 @@ trait ParallelMatching extends ast.TreeDSL
   self: ExplicitOuter =>
 
   import global.{ typer => _, _ }
-  import definitions.{ AnyRefClass, NothingClass, IntClass, BooleanClass, SomeClass, OptionClass, getProductArgs, productProj }
+  import definitions.{
+    AnyRefClass, NothingClass, IntClass, BooleanClass, SomeClass, OptionClass,
+    getProductArgs, productProj, Object_eq, Any_asInstanceOf
+  }
   import CODE._
   import Types._
   import Debug._
@@ -132,7 +135,7 @@ trait ParallelMatching extends ast.TreeDSL
 
       def castedTo(headType: Type) =
         if (tpe =:= headType) this
-        else new Scrutinee(createVar(headType, lhs => id AS_ANY lhs.tpe))
+        else new Scrutinee(createVar(headType, lhs => gen.mkAsInstanceOf(id, lhs.tpe)))
 
       override def toString() = "(%s: %s)".format(id, tpe)
     }
@@ -673,7 +676,7 @@ trait ParallelMatching extends ast.TreeDSL
       // the val definition's type, or a casted Ident if not.
       private def newValIdent(lhs: Symbol, rhs: Symbol) =
         if (rhs.tpe <:< lhs.tpe) Ident(rhs)
-        else Ident(rhs) AS lhs.tpe
+        else gen.mkTypeApply(Ident(rhs), Any_asInstanceOf, List(lhs.tpe))
 
       protected def newValDefinition(lhs: Symbol, rhs: Symbol) =
         typer typedValDef ValDef(lhs, newValIdent(lhs, rhs))
@@ -854,10 +857,11 @@ trait ParallelMatching extends ast.TreeDSL
         case ThisType(clazz)  => THIS(clazz)
         case pre              => REF(pre.prefix, pre.termSymbol)
       })
-
       outerAccessor(tpe2test.typeSymbol) match {
         case NoSymbol => ifDebug(cunit.warning(scrut.pos, "no outer acc for " + tpe2test.typeSymbol)) ; cond
-        case outerAcc => cond AND (((scrut AS_ANY tpe2test) DOT outerAcc)() OBJ_EQ theRef)
+        case outerAcc =>
+          val casted = gen.mkAsInstanceOf(scrut, tpe2test, any = true, wrapInApply = true)
+          cond AND ((casted DOT outerAcc)() OBJ_EQ theRef)
       }
     }
   }

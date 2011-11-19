@@ -490,7 +490,7 @@ abstract class Erasure extends AddInterfaces
         log("Attempted to cast to Unit: " + tree)
         tree.duplicate setType pt
       }
-      else tree AS_ATTR pt
+      else gen.mkAttributedCast(tree, pt)
     }
 
     private def isUnboxedValueMember(sym: Symbol) =
@@ -1002,7 +1002,7 @@ abstract class Erasure extends AddInterfaces
             if (isAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
               // insert cast to prevent illegal access error (see #4283)
               // util.trace("insert erasure cast ") (*/
-              treeCopy.Select(tree, qual AS_ATTR qual.tpe.widen, name) //)
+              treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
             } else tree
           } else tree
 
