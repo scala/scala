@@ -1290,7 +1290,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def printAllUnits() {
     print("[[syntax trees at end of " + phase + "]]")
-    atPhase(phase.next) { currentRun.units foreach treePrinter.print }
+    atPhase(phase.next) { currentRun.units foreach (treePrinter.print(_)) }
   }
 
   private def findMemberFromRoot(fullName: Name): Symbol = {

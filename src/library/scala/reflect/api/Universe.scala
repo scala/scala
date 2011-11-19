@@ -8,6 +8,7 @@ abstract class Universe extends Symbols
                            with Names
                            with Trees
                            with Positions
+                           with TreePrinters
                            with AnnotationInfos
                            with StandardDefinitions {
   type Position

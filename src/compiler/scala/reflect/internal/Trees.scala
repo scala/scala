@@ -6,7 +6,6 @@
 package scala.reflect
 package internal
 
-import java.io.{ PrintWriter, StringWriter }
 import Flags._
 import api.Modifier
 
@@ -96,14 +95,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   lazy val NoMods = Modifiers(0)
 
   // --- extension methods --------------------------------------------------------
-
-  override def show(tree: Tree): String = {
-    val buffer = new StringWriter()
-    val printer = newTreePrinter(new PrintWriter(buffer))
-    printer.print(tree)
-    printer.flush()
-    buffer.toString
-  }
 
   implicit def treeOps(tree: Tree): TreeOps = new TreeOps(tree)
 

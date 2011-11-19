@@ -16,10 +16,6 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
 
   type Modifiers <: AbsModifiers
 
-  /** Hook to define what toString means on a tree
-   */
-  def show(tree: Tree): String
-
   abstract class AbsModifiers {
     def hasModifier(mod: Modifier.Value): Boolean
     def allModifiers: Set[Modifier.Value]

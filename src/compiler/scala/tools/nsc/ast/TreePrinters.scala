@@ -16,56 +16,52 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
 
   class TreePrinter(out: PrintWriter) extends super.TreePrinter(out) {
 
-    override def print(tree: Tree) {
-      printPosition(tree)
-      printRaw(
-        if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
-          tree match {
-            case ClassDef(_, _, _, impl @ Template(ps, emptyValDef, body))
-            if (tree.symbol.thisSym != tree.symbol) =>
-              ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
-            case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
-            case ModuleDef(_, _, impl)             => ModuleDef(tree.symbol, impl)
-            case ValDef(_, _, _, rhs)              => ValDef(tree.symbol, rhs)
-            case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss, rhs)
-            case TypeDef(_, _, _, rhs)             => TypeDef(tree.symbol, rhs)
-            case _ => tree
-          }
-        } else tree)
-    }
-
-    def print(unit: CompilationUnit) {
-      print("// Scala source: " + unit.source + "\n")
-      if (unit.body == null) print("<null>")
-      else { print(unit.body); println() }
-
-      println()
-      flush()
+    override def print(args: Any*): Unit = args foreach {
+      case tree: Tree =>
+        printPosition(tree)
+        printTree(
+            if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
+              tree match {
+                case ClassDef(_, _, _, impl @ Template(ps, emptyValDef, body))
+                if (tree.symbol.thisSym != tree.symbol) =>
+                  ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
+                case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
+                case ModuleDef(_, _, impl)             => ModuleDef(tree.symbol, impl)
+                case ValDef(_, _, _, rhs)              => ValDef(tree.symbol, rhs)
+                case DefDef(_, _, _, vparamss, _, rhs) => DefDef(tree.symbol, vparamss, rhs)
+                case TypeDef(_, _, _, rhs)             => TypeDef(tree.symbol, rhs)
+                case _ => tree
+              }
+            } else tree)
+      case unit: CompilationUnit =>
+        print("// Scala source: " + unit.source + "\n")
+        if (unit.body == null) print("<null>")
+        else { print(unit.body); println() }
+        println()
+        out.flush()
+      case arg =>
+        super.print(arg)
     }
   }
 
   // overflow cases missing from TreePrinter in reflect.api
-  override def xprintRaw(treePrinter: super.TreePrinter, tree: Tree) = tree match {
+  override def xprintTree(treePrinter: super.TreePrinter, tree: Tree) = tree match {
     case DocDef(comment, definition) =>
       treePrinter.print(comment.raw)
       treePrinter.println()
       treePrinter.print(definition)
 
     case AssignOrNamedArg(lhs, rhs) =>
-      treePrinter.print(lhs)
-      treePrinter.print(" = ")
-      treePrinter.print(rhs)
+      treePrinter.print(lhs, " = ", rhs)
 
     case TypeTreeWithDeferredRefCheck() =>
       treePrinter.print("<tree with deferred refcheck>")
 
     case SelectFromArray(qualifier, name, _) =>
-      treePrinter.print(qualifier)
-      treePrinter.print(".<arr>")
-      treePrinter.print(treePrinter.symName(tree, name))
+      treePrinter.print(qualifier, ".<arr>", treePrinter.symName(tree, name))
 
     case _ =>
-      super.xprintRaw(treePrinter, tree)
+      super.xprintTree(treePrinter, tree)
   }
 
   /** A tree printer which is stingier about vertical whitespace and unnecessary
@@ -74,7 +70,7 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
   class CompactTreePrinter(out: PrintWriter) extends TreePrinter(out) {
     override def printRow(ts: List[Tree], start: String, sep: String, end: String) {
       print(start)
-      printSeq(ts)(print)(print(sep))
+      printSeq(ts)(print(_))(print(sep))
       print(end)
     }
 
@@ -94,21 +90,21 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
       def maybenot(tvalue: Boolean) = if (tvalue) "" else "!"
 
       print("%s(" format maybenot(t1._2))
-      printRaw(t1._1)
+      printTree(t1._1)
       print(") %s %s(".format(op, maybenot(t2._2)))
-      printRaw(t2._1)
+      printTree(t2._1)
       print(")")
     }
 
-    override def printRaw(tree: Tree): Unit = {
+    override def printTree(tree: Tree): Unit = {
       // routing supercalls through this for debugging ease
-      def s() = super.printRaw(tree)
+      def s() = super.printTree(tree)
 
       tree match {
         // labels used for jumps - does not map to valid scala code
         case LabelDef(name, params, rhs) =>
           print("labeldef %s(%s) = ".format(name, params mkString ","))
-          printRaw(rhs)
+          printTree(rhs)
 
         case Ident(name) =>
           print(decodedSymName(tree, name))
@@ -121,37 +117,37 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
             printLogicalAnd(target -> true, arg -> true)
           else (target, arg) match {
             case (_: Ident, _: Literal | _: Ident)  =>
-              printRaw(target)
+              printTree(target)
               print(" ")
-              printRaw(Ident(method))
+              printTree(Ident(method))
               print(" ")
-              printRaw(arg)
+              printTree(arg)
             case _                        => s()
           }
 
         // target.unary_! ==> !target
         case Select(qualifier, name) if (name.decode startsWith "unary_") =>
           print(name.decode drop 6)
-          printRaw(qualifier)
+          printTree(qualifier)
 
         case Select(qualifier, name) =>
-          printRaw(qualifier)
+          printTree(qualifier)
           print(".")
           print(quotedName(name, true))
 
         // target.toString() ==> target.toString
-        case Apply(fn, Nil)   => printRaw(fn)
+        case Apply(fn, Nil)   => printTree(fn)
 
         // if a Block only continues one actual statement, just print it.
         case Block(stats, expr) =>
           allStatements(tree) match {
-            case List(x)            => printRaw(x)
+            case List(x)            => printTree(x)
             case xs                 => s()
           }
 
         // We get a lot of this stuff
-        case If( IsTrue(), x, _)        => printRaw(x)
-        case If(IsFalse(), _, x)        => printRaw(x)
+        case If( IsTrue(), x, _)        => printTree(x)
+        case If(IsFalse(), _, x)        => printTree(x)
 
         case If(cond,  IsTrue(), elsep)   =>  printLogicalOr(cond -> true, elsep -> true)
         case If(cond, IsFalse(), elsep)   => printLogicalAnd(cond -> false, elsep -> true)
@@ -161,7 +157,7 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
         // If thenp or elsep has only one statement, it doesn't need more than one line.
         case If(cond, thenp, elsep) =>
           def ifIndented(x: Tree) = {
-            indent ; println() ; printRaw(x) ; undent
+            indent ; println() ; printTree(x) ; undent
           }
 
           val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
@@ -169,16 +165,16 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
 
           thenStmts match {
             case List(x: If)  => ifIndented(x)
-            case List(x)      => printRaw(x)
-            case _            => printRaw(thenp)
+            case List(x)      => printTree(x)
+            case _            => printTree(thenp)
           }
 
           if (elseStmts.nonEmpty) {
             print(" else")
             indent ; println()
             elseStmts match {
-              case List(x)  => printRaw(x)
-              case _        => printRaw(elsep)
+              case List(x)  => printTree(x)
+              case _        => printTree(elsep)
             }
             undent ; println()
           }
@@ -192,10 +188,7 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
    *  the natural course of events.
    */
   class SafeTreePrinter(out: PrintWriter) extends TreePrinter(out) {
-    override def print(tree: Tree) {
-      printPosition(tree)
-      printRaw(tree)
-    }
+
     private def default(t: Tree) = t.getClass.getName.reverse.takeWhile(_ != '.').reverse
     private def params(trees: List[Tree]): String = trees map safe mkString ", "
 
@@ -209,7 +202,7 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
       case _                      => "(?: %s)".format(default(tree))
     }
 
-    override def printRaw(tree: Tree) { print(safe(tree)) }
+    override def printTree(tree: Tree) { print(safe(tree)) }
   }
 
   class TreeMatchTemplate {
@@ -286,15 +279,8 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
     }
   }
 
-  private def asStringInternal(t: Tree, f: PrintWriter => TreePrinter): String = {
-    val buffer = new StringWriter()
-    val printer = f(new PrintWriter(buffer))
-    printer.print(t)
-    printer.flush()
-    buffer.toString
-  }
-  def asString(t: Tree): String = asStringInternal(t, newStandardTreePrinter)
-  def asCompactString(t: Tree): String = asStringInternal(t, newCompactTreePrinter)
+  def asString(t: Tree): String = show(t, newStandardTreePrinter)
+  def asCompactString(t: Tree): String = show(t, newCompactTreePrinter)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newStandardTreePrinter(stream: OutputStream): TreePrinter = newStandardTreePrinter(new PrintWriter(stream))

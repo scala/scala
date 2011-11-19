@@ -36,6 +36,9 @@ trait Symbols { self: Universe =>
      */
     def fullName: String
 
+    /** An id number which is unique for all symbols in this universe */
+    def id: Int
+
     /**
      * Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      *
