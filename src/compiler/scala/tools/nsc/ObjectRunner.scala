@@ -11,12 +11,7 @@ import util.ScalaClassLoader
 import java.lang.reflect.InvocationTargetException
 import util.Exceptional.unwrap
 
-/** An object that runs another object specified by name.
- *
- *  @author  Lex Spoon
- *  @version 1.1, 2007/7/13
- */
-object ObjectRunner {
+trait CommonRunner {
   /** Check whether a class with the specified name
    *  exists on the specified class path. */
   def classExists(urls: List[URL], objectName: String): Boolean =
@@ -41,3 +36,10 @@ object ObjectRunner {
     catch { case e => Left(unwrap(e)) }
   }
 }
+
+/** An object that runs another object specified by name.
+ *
+ *  @author  Lex Spoon
+ *  @version 1.1, 2007/7/13
+ */
+object ObjectRunner extends CommonRunner { }

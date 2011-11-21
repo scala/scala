@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+
+set -e
+
+paranamerjar="http://mirrors.ibiblio.org/pub/mirrors/maven2/com/thoughtworks/paranamer/paranamer/2.4/paranamer-2.4.jar"
+build=$(dirname $0)/../../../build/pack
+
+if [[ -n "$SCALA_HOME" ]]; then
+  scala="$SCALA_HOME/bin/scala"
+elif [[ -d $build ]]; then
+  scala=$(cd $build && pwd -P)/bin/scala
+else
+  scala="scala"
+fi
+
+echo "$($scala -version 2>&1)"
+scalac="${scala}c"
+
+[[ -d lib ]] || mkdir lib
+[[ -f lib/paranamer-2.4.jar ]] || ( printf >&2 "Grabbing paranamer jar\n\n" && cd lib && wget --quiet "$paranamerjar" )
+
+rm -rf target && mkdir target
+"$scalac" -d target -cp lib/'*' src/*.scala
+cd target
+
+jar cmf ../resources/MANIFEST.MF bippy.jar bippy
+jar cf dingus.jar dingus
+
+run () {
+  echo ""
+  echo "% $@"
+  "$@"
+}
+
+cat <<EOM
+$(run pwd)
+$(run jar tf bippy.jar)
+$(run jar tf dingus.jar)
+$(run $scala $@ bippy.jar)
+EOM

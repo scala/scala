@@ -13,6 +13,7 @@ import io.{ File, Directory, Path, Jar, AbstractFile, ClassAndJarInfo }
 import scala.tools.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
+import java.net.MalformedURLException
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -110,11 +111,22 @@ object ClassPath {
       case dir  => dir filter (_.isClassContainer) map (x => new java.io.File(dir.file, x.name) getPath) toList
     }
   }
+  /** Expand manifest jar classpath entries: these are either urls, or paths
+   *  relative to the location of the jar.
+   */
+  def expandManifestPath(jarPath: String): List[URL] = {
+    val file = File(jarPath)
+    if (!file.isFile) return Nil
+
+    val baseDir = file.parent
+    new Jar(file).classPathElements map (elem =>
+      specToURL(elem) getOrElse (baseDir / elem).toURL
+    )
+  }
 
   /** A useful name filter. */
   def isTraitImplementation(name: String) = name endsWith "$class.class"
 
-  import java.net.MalformedURLException
   def specToURL(spec: String): Option[URL] =
     try Some(new URL(spec))
     catch { case _: MalformedURLException => None }

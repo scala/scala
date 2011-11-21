@@ -7,12 +7,27 @@ package scala.tools.nsc
 
 import java.net.URL
 import scala.tools.util.PathResolver
-
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
 import interpreter.{ ILoop }
 import GenericRunnerCommand._
+
+object JarRunner extends CommonRunner {
+  def runJar(settings: GenericRunnerSettings, jarPath: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
+    val jar       = new io.Jar(jarPath)
+    val mainClass = jar.mainClass getOrElse sys.error("Cannot find main class for jar: " + jarPath)
+    val jarURLs   = ClassPath expandManifestPath jarPath
+    val urls      = if (jarURLs.isEmpty) File(jarPath).toURL +: settings.classpathURLs else jarURLs
+
+    if (settings.Ylogcp.value) {
+      Console.err.println("Running jar with these URLs as the classpath:")
+      urls foreach println
+    }
+
+    runAndCatch(urls, mainClass, arguments)
+  }
+}
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -56,11 +71,7 @@ class MainGenericRunner {
       case AsScript =>
         ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
       case AsJar    =>
-        ObjectRunner.runAndCatch(
-          File(thingToRun).toURL +: settings.classpathURLs,
-          new io.Jar(thingToRun).mainClass getOrElse sys.error("Cannot find main class for jar: " + thingToRun),
-          command.arguments
-        )
+        JarRunner.runJar(settings, thingToRun, command.arguments)
       case Error =>
         Right(false)
       case _  =>

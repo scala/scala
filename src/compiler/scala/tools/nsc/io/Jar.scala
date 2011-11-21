@@ -40,7 +40,15 @@ class Jar(file: File) extends Iterable[JarEntry] {
 
   lazy val jarFile  = new JarFile(file.jfile)
   lazy val manifest = withJarInput(s => Option(s.getManifest))
+
   def mainClass     = manifest map (f => f(Name.MAIN_CLASS))
+  /** The manifest-defined classpath String if available. */
+  def classPathString: Option[String] =
+    for (m <- manifest ; cp <- m.attrs get Name.CLASS_PATH) yield cp
+  def classPathElements: List[String] = classPathString match {
+    case Some(s)  => s split "\\s+" toList
+    case _        => Nil
+  }
 
   def withJarInput[T](f: JarInputStream => T): T = {
     val in = new JarInputStream(file.inputStream())

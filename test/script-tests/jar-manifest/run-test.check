@@ -1,0 +1,30 @@
+Scala code runner version 2.10.0.r26038-b20111121102734 -- Copyright 2002-2011, LAMP/EPFL
+
+% pwd
+/scala/trunk/test/script-tests/jar-manifest/target
+
+% jar tf bippy.jar
+META-INF/
+META-INF/MANIFEST.MF
+bippy/
+bippy/Runner$$anonfun$main$1.class
+bippy/Runner$$anonfun$main$2.class
+bippy/Runner$$anonfun$main$3.class
+bippy/Runner$.class
+bippy/Runner.class
+
+% jar tf dingus.jar
+META-INF/
+META-INF/MANIFEST.MF
+dingus/
+dingus/Printable.class
+
+% /scala/trunk/build/pack/bin/scala bippy.jar
+1  "Greetings from dingus.jar!"
+2  bippyBingle has parameters: imparametorium, antidisestablish, x
+3  bippyBoo has parameters: quuxParameter
+4
+5  Urls exposed through the classloader:
+6  file:/scala/trunk/test/script-tests/jar-manifest/target/./bippy.jar
+7  file:/scala/trunk/test/script-tests/jar-manifest/target/./dingus.jar
+8  http://mirrors.ibiblio.org/pub/mirrors/maven2/com/thoughtworks/paranamer/paranamer/2.4/paranamer-2.4.jar
