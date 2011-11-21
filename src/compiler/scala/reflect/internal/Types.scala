@@ -4114,29 +4114,41 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  /** A map to compute the most deeply nested owner that contains all the symbols
+  /** The most deeply nested owner that contains all the symbols
    *  of thistype or prefixless typerefs/singletype occurrences in given type.
    */
-  object commonOwnerMap extends TypeMap {
-    var result: Symbol = _
-    def init() = { result = NoSymbol }
-    def apply(tp: Type): Type = {
-      assert(tp ne null)
-      tp.normalize match {
-        case ThisType(sym) =>
-          register(sym)
-        case TypeRef(NoPrefix, sym, args) =>
-          register(sym.owner); args foreach apply
-        case SingleType(NoPrefix, sym) =>
-          register(sym.owner)
-        case _ =>
-          mapOver(tp)
-      }
-      tp
+  private def commonOwner(t: Type): Symbol = commonOwner(t :: Nil)
+
+  /** The most deeply nested owner that contains all the symbols
+   *  of thistype or prefixless typerefs/singletype occurrences in given list
+   *  of types.
+   */
+  private def commonOwner(tps: List[Type]): Symbol = {
+    if (tps.isEmpty) NoSymbol
+    else {
+      commonOwnerMap.result = null
+      tps foreach (commonOwnerMap traverse _)
+      val result = if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
+      debuglog(tps.mkString("commonOwner(", ", ", ") == " + result))
+      result
     }
+  }
+  private object commonOwnerMap extends TypeTraverser {
+    var result: Symbol = _
+
     private def register(sym: Symbol) {
-      while (result != NoSymbol && sym != result && !(sym isNestedIn result))
-        result = result.owner;
+      // First considered type is the trivial result.
+      if ((result eq null) || (sym eq NoSymbol))
+        result = sym
+      else
+        while ((result ne NoSymbol) && (result ne sym) && !(sym isNestedIn result))
+          result = result.owner
+    }
+    def traverse(tp: Type) = tp.normalize match {
+      case ThisType(sym)                => register(sym)
+      case TypeRef(NoPrefix, sym, args) => register(sym.owner) ; args foreach traverse
+      case SingleType(NoPrefix, sym)    => register(sym.owner)
+      case _                            => mapOver(tp)
     }
   }
 
@@ -5811,26 +5823,6 @@ A type's typeSymbol should never be inspected directly.
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
 
     if (ts exists (_.isNotNull)) res.notNull else res
-  }
-
-  /** The most deeply nested owner that contains all the symbols
-   *  of thistype or prefixless typerefs/singletype occurrences in given type.
-   */
-  private def commonOwner(t: Type): Symbol = {
-    commonOwnerMap.init
-    commonOwnerMap.apply(t)
-    commonOwnerMap.result
-  }
-
-  /** The most deeply nested owner that contains all the symbols
-   *  of thistype or prefixless typerefs/singletype occurrences in given list
-   *  of types.
-   */
-  private def commonOwner(tps: List[Type]): Symbol = {
-    // debuglog("computing common owner of types " + tps)//DEBUG
-    commonOwnerMap.init
-    tps foreach { tp => commonOwnerMap.apply(tp); () }
-    commonOwnerMap.result
   }
 
   /** Compute lub (if `variance == 1`) or glb (if `variance == -1`) of given list
