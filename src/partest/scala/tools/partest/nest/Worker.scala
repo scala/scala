@@ -283,10 +283,6 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   /** Runs command redirecting standard out and
    *  error out to output file.
    */
-  def runCommand(command: String, outFile: File): Boolean = {
-    NestUI.verbose("running command:\n"+command)
-    (command #> outFile !) == 0
-  }
   def runCommand(args: Seq[String], outFile: File): Boolean = {
     NestUI.verbose("running command:\n"+args.map("  " + _ + "\n").mkString)
     (Process(args) #> outFile !) == 0
@@ -336,20 +332,17 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     ) ++ extras
 
     val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
-    val cmd = (
-      List(
-        javaCmd,
-        JAVA_OPTS,
-        argString,
+    val cmd = javaCmd +: (
+      (JAVA_OPTS.split(' ') ++ argString.split(' ')).map(_.trim).filter(_ != "") ++ Seq(
         "-classpath",
         join(outDir.toString, classpath)
-      ) ++ propertyOptions ++ List(
+      ) ++ propertyOptions ++ Seq(
         "scala.tools.nsc.MainGenericRunner",
         "-usejavacp",
         "Test",
         "jvm"
       )
-    ) mkString " "
+    )
 
     runCommand(cmd, logFile)
   }
