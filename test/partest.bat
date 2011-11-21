@@ -36,7 +36,7 @@ if "%_JAVACCMD%"=="" set _JAVACCMD=javac
 
 rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
-if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx256M -Xms16M
+if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx1024M -Xms64M
 
 rem We use the value of the SCALAC_OPTS environment variable if defined
 set _SCALAC_OPTS=%SCALAC_OPTS%
