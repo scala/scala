@@ -881,8 +881,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     import CODE._
 
-    // cf. !needsTypeTest from above
-    def typesConform(tp: Type, pt: Type) = (tp eq pt) || (tp <:< pt)
+    def typesConform(tp: Type, pt: Type) = ((tp eq pt) || (tp <:< pt))
 
     trait CommonCodeGen extends AbsCodeGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       def fun(arg: Symbol, body: Tree): Tree          = Function(List(ValDef(arg)), body)
@@ -892,8 +891,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def and(a: Tree, b: Tree): Tree                 = a AND b
 
-      def _asInstanceOf(t: Tree, tp: Type): Tree      = { val tpX = repackExistential(tp)
-        if ((t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tpX))  t //{ println("warning: emitted redundant asInstanceOf: "+(t, t.tpe, tp)); t } //.setType(tpX)
+      // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
+      def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree      = { val tpX = repackExistential(tp)
+        if (!force && (t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tpX))  t //{ println("warning: emitted redundant asInstanceOf: "+(t, t.tpe, tp)); t } //.setType(tpX)
         else gen.mkAsInstanceOf(t, tpX, true, false)
       }
 
@@ -917,7 +917,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       def or(f: Tree, as: List[Tree]): Tree                              = (matchingStrategy DOT vpmName.or)((f :: as): _*)                 // matchingStrategy.or(f, as)
       def guard(c: Tree): Tree                                           = (matchingStrategy DOT vpmName.guard)(c, UNIT) // matchingStrategy.guard(c, then) -- a user-defined guard
       // TODO: get rid of the cast when it's unnecessary, but this requires type checking `body` -- maybe this should be one of the optimisations we perform after generating the tree
-      def caseResult(res: Tree, tp: Type): Tree                          = (matchingStrategy DOT vpmName.caseResult) (_asInstanceOf(res, tp)) // matchingStrategy.caseResult(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
+      def caseResult(res: Tree, tp: Type): Tree                          = (matchingStrategy DOT vpmName.caseResult) (_asInstanceOf(res, tp, force = true)) // matchingStrategy.caseResult(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
 
       // an internal guard TODO: use different method call so exhaustiveness can distinguish it from user-defined guards
       def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard(c, then)
