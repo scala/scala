@@ -1193,10 +1193,11 @@ trait Namers extends MethodSynthesis {
               // need to be lazy, #1782
               LazyAnnotationInfo(() => typer.typedAnnotation(ann))
             }
-            if (!ainfos.isEmpty)
-              annotated.setRawAnnotations(ainfos)
-            if (annotated.isTypeSkolem)
-              annotated.deSkolemize.setRawAnnotations(ainfos)
+            if (ainfos.nonEmpty) {
+              pendingSymbolAnnotations(annotated) = ainfos
+              if (annotated.isTypeSkolem)
+                pendingSymbolAnnotations(annotated.deSkolemize) = ainfos
+            }
           case _ =>
         }
       }

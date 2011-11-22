@@ -1492,15 +1492,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      */
     def typedValDef(vdef: ValDef): ValDef = {
 //      attributes(vdef)
-      val sym = vdef.symbol
+      val sym = vdef.symbol.initialize
       val typer1 = constrTyperIf(sym.isParameter && sym.owner.isConstructor)
       val typedMods = removeAnnotations(vdef.mods)
 
       // complete lazy annotations
       val annots = sym.annotations
-
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
+
       if (sym.hasAnnotation(definitions.VolatileAttr)) {
         if (!sym.isMutable)
           error(vdef.pos, "values cannot be volatile")
@@ -1676,7 +1676,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  @return     ...
      */
     def typedDefDef(ddef: DefDef): DefDef = {
-      val meth = ddef.symbol
+      val meth = ddef.symbol.initialize
 
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
@@ -1753,7 +1753,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     private def typedTypeDef0(tdef: TypeDef): TypeDef = {
       tdef.symbol.initialize
       reenterTypeParams(tdef.tparams)
-      val tparams1 = tdef.tparams mapConserve {typedTypeDef(_)}
+      val tparams1 = tdef.tparams mapConserve typedTypeDef
       val typedMods = removeAnnotations(tdef.mods)
       // complete lazy annotations
       val annots = tdef.symbol.annotations
@@ -2693,11 +2693,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 error(arg.pos, "classfile annotation arguments have to be supplied as named arguments")
                 (nme.ERROR, None)
             }
-
-            for (name <- names) {
-              if (!name.annotations.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List())) &&
-                  !name.hasDefaultFlag)
-                error(ann.pos, "annotation " + annType.typeSymbol.fullName + " is missing argument " + name.name)
+            for (sym <- names) {
+              // make sure the flags are up to date before erroring (jvm/t3415 fails otherwise)
+              sym.initialize
+              if (!sym.hasAnnotation(AnnotationDefaultAttr) && !sym.hasDefaultFlag)
+                error(ann.pos, "annotation " + annType.typeSymbol.fullName + " is missing argument " + sym.name)
             }
 
             if (hasError) annotationError

@@ -1180,41 +1180,57 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ----- annotations ------------------------------------------------------------
 
-    private var rawannots: List[AnnotationInfoBase] = Nil
-    def rawAnnotations = rawannots
+    // null is a marker that they still need to be obtained.
+    private var _annotations: List[AnnotationInfo] = null
+    // Namer has stored the annotations waiting for us to come calling.
+    private def obtainAnnotations() {
+      // .initialize: the type completer of the symbol parses the annotations,
+      // see "def typeSig" in Namers.
+      initialize
+      _annotations = pendingSymbolAnnotations remove this match {
+        case Some(rawAnnots) =>
+          rawAnnots map {
+            case x: LazyAnnotationInfo  => x.annot()
+            case x: AnnotationInfo      => x
+          } filterNot (_.atp.isError)
+        case _ =>
+          Nil
+      }
+    }
+    // Gets _annotations without forcing initialization/obtainment.
+    def rawAnnotations = if (_annotations eq null) Nil else _annotations
+    // Used in namer to check whether annotations were already assigned or not.
+    def hasAssignedAnnotations = (_annotations ne null) && _annotations.nonEmpty
 
-    /* Used in namer to check whether annotations were already assigned or not */
-    def hasAssignedAnnotations = rawannots.nonEmpty
+    @deprecated("This method will be removed", "2.10.0")
+    def setRawAnnotations(annots: List[AnnotationInfoBase]): this.type = {
+      // Just in case this is still in use somewhere.
+      pendingSymbolAnnotations(this) = annots
+      _annotations = null
+      this
+    }
 
     /** After the typer phase (before, look at the definition's Modifiers), contains
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      // .initialize: the type completer of the symbol parses the annotations,
-      // see "def typeSig" in Namers
-      val annots1 = initialize.rawannots map {
-        case x: LazyAnnotationInfo  => x.annot()
-        case x: AnnotationInfo      => x
-      } filterNot (_.atp.isError)
-      rawannots = annots1
-      annots1
+      if (_annotations eq null)
+        obtainAnnotations()
+      _annotations
     }
-
-    def setRawAnnotations(annots: List[AnnotationInfoBase]): this.type = {
-      this.rawannots = annots
+    def setAnnotations(annots: List[AnnotationInfo]): this.type = {
+      _annotations = annots
       this
     }
-    def setAnnotations(annots: List[AnnotationInfo]): this.type =
-      setRawAnnotations(annots)
 
     def withAnnotations(annots: List[AnnotationInfo]): this.type =
-      setRawAnnotations(annots ::: rawannots)
+      setAnnotations(annots ::: rawAnnotations)
 
     def withoutAnnotations: this.type =
-      setRawAnnotations(Nil)
+      setAnnotations(Nil)
 
     def addAnnotation(annot: AnnotationInfo): this.type =
-      setRawAnnotations(annot :: rawannots)
+      setAnnotations(annot :: rawAnnotations)
 
     // Convenience for the overwhelmingly common case
     def addAnnotation(sym: Symbol, args: Tree*): this.type =

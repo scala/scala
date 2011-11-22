@@ -13,6 +13,10 @@ import pickling.ByteCodecs
 trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
   import definitions.{ ThrowsClass, isMetaAnnotation }
 
+  // Annotations which are en route from Modifiers to a Symbol.
+  // They are removed from this map when the Symbol comes to claim them.
+  val pendingSymbolAnnotations = perRunCaches.newMap[Symbol, List[AnnotationInfoBase]]()
+
   // Common annotation code between Symbol and Type.
   // For methods altering the annotation list, on Symbol it mutates
   // the Symbol's field directly.  For Type, a new AnnotatedType is
