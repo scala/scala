@@ -264,8 +264,13 @@ abstract class UnCurry extends InfoTransform
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
         new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
-        def applyMethodDef() = {
-          val body = if (isPartial) gen.mkUncheckedMatch(fun.body) else fun.body
+
+        def missingCaseCall(scrutinee: Tree): Tree = Apply(Select(This(anonClass), nme.missingCase), List(scrutinee))
+
+        def applyMethodDef() = scala.tools.nsc.util.trace("pf "){
+          val body =
+            if (isPartial) gen.mkUncheckedMatch(gen.withDefaultCase(fun.body, missingCaseCall))
+            else fun.body
           DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {

@@ -250,6 +250,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val lift_ : NameType           = "lift"
     val main: NameType             = "main"
     val map: NameType              = "map"
+    val missingCase: NameType      = "missingCase"
     val ne: NameType               = "ne"
     val newArray: NameType         = "newArray"
     val next: NameType             = "next"

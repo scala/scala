@@ -1,3 +1,5 @@
+// According to the spec this code should not be legal.
+// Disabling for now.
 object Main extends App {
 
     case class Foo (field : Option[String])
