@@ -206,7 +206,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           if (needsTypeTest(patBinder.info.widen, extractor.paramType)) {
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
-            // the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well
+            // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
             val treeMaker = TypeTestTreeMaker(patBinder, extractor.paramType, pos)
             (List(treeMaker), treeMaker.nextBinder)
@@ -807,26 +807,31 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     def matchingStrategy: Tree
     def typed(tree: Tree, mode: Int, pt: Type): Tree // implemented in MatchTranslator
 
+    @inline private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
+      if (origTp == null || origTp == NoType) to
+      // important: only type when actually substing and when original tree was typed
+      // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
+      else typed(to, EXPRmode, WildcardType)
+
     // We must explicitly type the trees that we replace inside some other tree, since the latter may already have been typed,
     // and will thus not be retyped. This means we might end up with untyped subtrees inside bigger, typed trees.
-    def typedSubst(from: List[Symbol], to: List[Tree]): Transformer = new Transformer {
-      override def transform(tree: Tree): Tree = {
-        def subst(from: List[Symbol], to: List[Tree]): Tree =
-          if (from.isEmpty) tree
-          else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate, tree.tpe)
-          else subst(from.tail, to.tail)
+    def typedSubst(tree: Tree, from: List[Symbol], to: List[Tree]): Tree = {
+      // according to -Ystatistics 10% of translateMatch's time is spent in this method...
+      // since about half of the typedSubst's end up being no-ops, the check below shaves off 5% of the time spent in typedSubst
+      if (!tree.exists { case i@Ident(_) => from contains i.symbol case _ => false}) tree
+      else (new Transformer {
+        override def transform(tree: Tree): Tree = {
+          def subst(from: List[Symbol], to: List[Tree]): Tree =
+            if (from.isEmpty) tree
+            else if (tree.symbol == from.head) typedIfOrigTyped(to.head.shallowDuplicate, tree.tpe)
+            else subst(from.tail, to.tail)
 
-        tree match {
-          case Ident(_) => subst(from, to)
-          case _        => super.transform(tree)
+          tree match {
+            case Ident(_) => subst(from, to)
+            case _        => super.transform(tree)
+          }
         }
-      }
-
-      @inline private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
-        if (origTp == null || origTp == NoType) to
-        // important: only type when actually substing and when original tree was typed
-        // (don't need to use origTp as the expected type, though, and can't always do this anyway due to unknown type params stemming from polymorphic extractors)
-        else typed(to, EXPRmode, WildcardType)
+      }).transform(tree)
     }
 
     lazy val pmgen: CommonCodeGen with MatchingStrategyGen with MonadInstGen =
@@ -964,7 +969,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
           BLOCK(
             v,
-            IF (vs DOT isEmpty) THEN zero ELSE typedSubst(List(x.symbol), List(vs DOT get)).transform(body)
+            IF (vs DOT isEmpty) THEN zero ELSE typedSubst(body, List(x.symbol), List(vs DOT get))
           )
         case _ => println("huh?")
           (opt DOT vpmName.flatMap)(fun)
