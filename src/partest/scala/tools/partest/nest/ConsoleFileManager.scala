@@ -44,7 +44,7 @@ class ConsoleFileManager extends FileManager {
 
   def this(buildPath: String, rawClasses: Boolean, moreOpts: String) = {
     this(buildPath, rawClasses)
-    SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
+    SCALAC_OPTS = SCALAC_OPTS ++ moreOpts.split(' ').toSeq.filter(_.length > 0)
   }
 
   lazy val srcDir        = PathSettings.srcDir

@@ -1,7 +1,7 @@
 import org.scalacheck._
 import org.scalacheck.Prop._
 
-import java.net.URLClassLoader
+import java.net.{URLClassLoader, URLDecoder}
 
 object XMLUtil {
   import scala.xml._
@@ -31,8 +31,8 @@ object Test extends Properties("HtmlFactory") {
     // this test previously relied on the assumption that the current thread's classloader is an url classloader and contains all the classpaths
     // does partest actually guarantee this? to quote Leonard Nimoy: The answer, of course, is no.
     // this test _will_ fail again some time in the future.
-    val paths = Thread.currentThread.getContextClassLoader.asInstanceOf[URLClassLoader].getURLs.map(_.getPath)
-    val morepaths = Thread.currentThread.getContextClassLoader.getParent.asInstanceOf[URLClassLoader].getURLs.map(_.getPath)
+    val paths = Thread.currentThread.getContextClassLoader.asInstanceOf[URLClassLoader].getURLs.map(u => URLDecoder.decode(u.getPath))
+    val morepaths = Thread.currentThread.getContextClassLoader.getParent.asInstanceOf[URLClassLoader].getURLs.map(u => URLDecoder.decode(u.getPath))
     (paths ++ morepaths).mkString(java.io.File.pathSeparator)
   }
 

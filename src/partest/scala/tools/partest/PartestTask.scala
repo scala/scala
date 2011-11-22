@@ -23,6 +23,7 @@ import java.lang.reflect.Method
 
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{Path, Reference, FileSet}
+import org.apache.tools.ant.types.Commandline.Argument
 
 class PartestTask extends Task with CompilationPathProperty {
 
@@ -115,8 +116,15 @@ class PartestTask extends Task with CompilationPathProperty {
     javaccmd = Some(input)
   }
 
-  def setScalacOpts(opts: String) {
-    scalacOpts = Some(opts)
+  def setScalacOpts(input: String) {
+    val s = input.split(' ').map { s => val a = new Argument; a.setValue(s); a }
+    scalacArgs = Some(scalacArgs.getOrElse(Seq()) ++ s)
+  }
+
+  def createCompilerArg(): Argument = {
+    val a = new Argument
+    scalacArgs = Some(scalacArgs.getOrElse(Seq()) :+ a)
+    a
   }
 
   def setTimeout(delay: String) {
@@ -151,7 +159,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private var specializedFiles: Option[FileSet] = None
   private var presentationFiles: Option[FileSet] = None
   private var errorOnFailed: Boolean = false
-  private var scalacOpts: Option[String] = None
+  private var scalacArgs: Option[Seq[Argument]] = None
   private var timeout: Option[String] = None
   private var jUnitReportDir: Option[File] = None
   private var debug = false
@@ -236,6 +244,11 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala library.")
 
+    def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
+      val parts = a.getParts
+      if(parts eq null) Seq[String]() else parts.toSeq
+    })
+
     val antRunner = new scala.tools.partest.nest.AntRunner
     val antFileManager = antRunner.fileManager
 
@@ -247,7 +260,7 @@ class PartestTask extends Task with CompilationPathProperty {
 
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
-    scalacOpts foreach (antFileManager.SCALAC_OPTS = _)
+    scalacArgsFlat foreach (antFileManager.SCALAC_OPTS = _)
     timeout foreach (antFileManager.timeout = _)
 
     type TFSet = (Array[File], String, String)

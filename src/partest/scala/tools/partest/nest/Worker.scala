@@ -328,7 +328,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Dpartest.testname="+fileBase,
       "-Djavacmd="+javaCmd,
       "-Djavaccmd="+javacCmd,
-      "-Duser.language=en -Duser.country=US"
+      "-Duser.language=en",
+      "-Duser.country=US"
     ) ++ extras
 
     val classpath = if (classpathPrefix != "") join(classpathPrefix, CLASSPATH) else CLASSPATH
@@ -742,11 +743,10 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             val sourcepath = sourcedir.getAbsolutePath+File.separator
             NestUI.verbose("sourcepath: "+sourcepath)
 
-            val argString =
-              "-d "+outDir.getAbsoluteFile.getPath+
-              " -Xresident"+
-              " -sourcepath "+sourcepath
-            val argList = argString split ' ' toList
+            val argList = List(
+              "-d", outDir.getAbsoluteFile.getPath,
+              "-Xresident",
+              "-sourcepath", sourcepath)
 
             // configure input/output files
             val logOut    = new FileOutputStream(logFile)

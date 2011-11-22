@@ -7,7 +7,7 @@ package scala.tools.partest
 
 import scala.tools.nsc._
 import io.Directory
-import util.BatchSourceFile
+import util.{BatchSourceFile, CommandLineParser}
 
 /** A class for testing code which is embedded as a string.
  *  It allows for more complete control over settings, compiler
@@ -24,20 +24,20 @@ abstract class DirectTest extends App {
   def testOutput = io.Directory(sys.props("partest.output"))
 
   // override to add additional settings with strings
-  def extraSettings = ""
+  def extraSettings: String = ""
   // a default Settings object
-  def settings: Settings = newSettings(extraSettings)
+  def settings: Settings = newSettings(CommandLineParser tokenize extraSettings)
   // a custom Settings object
-  def newSettings(argString: String) = {
+  def newSettings(args: List[String]) = {
     val s = new Settings
-    val args = argString + " " + debugSettings
-    log("newSettings: args = '" + args + "'")
-    s processArgumentString args
+    val allArgs = args ++ (CommandLineParser tokenize debugSettings)
+    log("newSettings: allArgs = " + allArgs)
+    s processArguments (allArgs, true)
     s
   }
   // compile the code, optionally first adding to the settings
   def compile(args: String*) = {
-    val settings = newSettings(extraSettings +: args mkString " ")
+    val settings = newSettings((CommandLineParser tokenize extraSettings) ++ args.toList)
     val global   = new Global(settings)
     new global.Run compileSources List(new BatchSourceFile("<partest>", code))
     !global.reporter.hasErrors

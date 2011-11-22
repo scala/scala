@@ -66,7 +66,7 @@ trait FileManager extends FileUtil {
   var showLog = false
   var failed = false
 
-  var SCALAC_OPTS = PartestDefaults.scalacOpts
+  var SCALAC_OPTS = PartestDefaults.scalacOpts.split(' ').toSeq
   var JAVA_OPTS   = PartestDefaults.javaOpts
   var timeout     = PartestDefaults.timeout
   // how can 15 minutes not be enough? What are you doing, run/lisp.scala?

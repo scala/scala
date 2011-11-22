@@ -3,7 +3,7 @@ import org.scalacheck.Prop._
 
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.html.page.IndexScript
-import java.net.URLClassLoader
+import java.net.{URLClassLoader, URLDecoder}
 
 object Test extends Properties("IndexScript") {
 
@@ -11,7 +11,7 @@ object Test extends Properties("IndexScript") {
     val loader = Thread.currentThread.getContextClassLoader
     val paths = loader.asInstanceOf[URLClassLoader].getURLs
     val morepaths = loader.getParent.asInstanceOf[URLClassLoader].getURLs
-    (paths ++ morepaths).map(_.getPath).mkString(java.io.File.pathSeparator)
+    (paths ++ morepaths).map(u => URLDecoder.decode(u.getPath)).mkString(java.io.File.pathSeparator)
   }
 
   val docFactory = {
