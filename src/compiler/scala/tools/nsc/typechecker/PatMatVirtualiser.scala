@@ -892,6 +892,25 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     // an object of a type that only has two concrete subclasses, and inlines both bodies, guarded by an if to distinguish the two cases
     trait MatchingStrategyGenOpt extends MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       override def guard(c: Tree): Tree = condOptimized(c, one(UNIT))
+      override def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = condOptimized(c, one(then, repackExistential(tp)))
+      // override def runOrElse(scrut: Tree, matcher: Tree): Tree = matcher match {
+      //   case Function(List(x: ValDef), body) =>
+      //     val tp      = x.symbol.tpe
+      //     val restp   = appliedType(matchingMonadType, List(pt)) // don't always know pt....
+      //     val isEmpty = restp member vpmName.isEmpty
+      //     val get     = restp member vpmName.get
+      //
+      //     val vs      = freshSym(scrut.pos, tp, "s")
+      //     val vres    = freshSym(scrut.pos, restp, "res")
+      //     val s       = VAL(vs) === scrut
+      //     val res     = VAL(vres) === typedSubst(body, List(x.symbol), List(REF(vs)))
+      //
+      //     BLOCK(
+      //       s,
+      //       res,
+      //       IF (res DOT isEmpty) THEN  ELSE (res DOT get)
+      //     )
+      // }
     }
 
     trait MonadInstGenOpt extends MonadInstGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
