@@ -301,6 +301,10 @@ trait NonTemplateMemberEntity extends MemberEntity {
     * It corresponds to a real member, and provides a simplified, yet compatible signature for that member. */
   def isUseCase: Boolean
 
+  /** If this symbol is a use case, the useCaseOf will contain the member it was derived from, containing the full
+    * signature and the complete parameter descriptions. */
+  def useCaseOf: Option[MemberEntity]
+
   /** Whether this member is a bridge member. A bridge member does only exist for binary compatibility reasons
     * and should not appear in ScalaDoc. */
   def isBridge: Boolean

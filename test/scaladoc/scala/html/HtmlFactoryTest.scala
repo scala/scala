@@ -373,6 +373,21 @@ object Test extends Properties("HtmlFactory") {
     }
   }
 
+  property("Use cases and links should not crash scaladoc") = {
+    createTemplate("SI_4898.scala")
+    true
+  }
+
+  property("Use cases should override their original members - valid until signature is added to html") = {
+    createTemplate("SI_5054.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.contains("A simple comment") &&
+        ! node.toString.contains("a lost parameter")
+      case _ => false
+    }
+  }
+
+  
   {
     val files = createTemplates("basic.scala")
     println(files)
