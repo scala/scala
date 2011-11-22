@@ -12,11 +12,15 @@ trait Types { self: Universe =>
      */
     def typeSymbol: Symbol
 
-   /** The defined or declared members with name `name` in this type;
+    /** The defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
     def declaration(name: Name): Symbol
+
+    /** The collection of declarations in this type
+     */
+    def allDeclarations: Iterable[Symbol]
 
     /** The member with given name, either directly declared or inherited,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -152,10 +156,6 @@ trait Types { self: Universe =>
 
     /** The list of parent types of this compound type */
     def parents: List[Type]
-
-    /** The collection of declarations in this compound type
-     */
-    def allDeclarations: Iterable[Symbol]
   }
 
   /** The type of Scala types, and also Scala type signatures.
