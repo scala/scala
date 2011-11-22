@@ -843,8 +843,18 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     // repack existential types, otherwise they sometimes get unpacked in the wrong location (type inference comes up with an unexpected skolem)
     // TODO: I don't really know why this happens -- maybe because the owner hierarchy changes?
     // the other workaround (besides repackExistential) is to explicitly pass expectedTp as the type argument for the call to guard, but repacking the existential somehow feels more robust
+    // TODO: check if optimization makes a difference, try something else if necessary (cache?)
     def repackExistential(tp: Type): Type = if(tp == NoType) tp
-      else existentialAbstraction((tp filter {t => t.typeSymbol.isExistentiallyBound}) map (_.typeSymbol), tp)
+      else {
+        val existentials = new collection.mutable.ListBuffer[Symbol]
+        tp foreach { t =>
+          val sym = t.typeSymbol
+          if (sym.isExistentiallyBound) existentials += sym
+        }
+        if (existentials isEmpty) tp
+        else existentialAbstraction(existentials toList, tp)
+        // existentialAbstraction((tp filter {t => t.typeSymbol.isExistentiallyBound}) map (_.typeSymbol), tp)
+      }
 
     object vpmName {
       val caseResult = "caseResult".toTermName
@@ -866,6 +876,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     import CODE._
 
+    // cf. !needsTypeTest from above
+    def typesConform(tp: Type, pt: Type) = (tp eq pt) || (tp <:< pt)
+
     trait CommonCodeGen extends AbsCodeGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       def fun(arg: Symbol, body: Tree): Tree          = Function(List(ValDef(arg)), body)
       def tupleSel(binder: Symbol)(i: Int): Tree      = (REF(binder) DOT vpmName.tupleIndex(i)) // make tree that accesses the i'th component of the tuple referenced by binder
@@ -873,10 +886,22 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       def drop(tgt: Tree)(n: Int): Tree               = (tgt DOT vpmName.drop) (LIT(n))
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
       def and(a: Tree, b: Tree): Tree                 = a AND b
-      def _asInstanceOf(t: Tree, tp: Type): Tree      = gen.mkAsInstanceOf(t, repackExistential(tp), true, false)
-      // TODO: optimize to if (!needsTypeTest(b.info.widen, repackExistential(tp))) REF(b) else ...
-      def _asInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkAsInstanceOf(REF(b), repackExistential(tp), true, false)
+
+      def _asInstanceOf(t: Tree, tp: Type): Tree      = { val tpX = repackExistential(tp)
+        if ((t.tpe ne NoType) && t.isTyped && typesConform(t.tpe, tpX))  t //{ println("warning: emitted redundant asInstanceOf: "+(t, t.tpe, tp)); t } //.setType(tpX)
+        else gen.mkAsInstanceOf(t, tpX, true, false)
+      }
+
       def _isInstanceOf(b: Symbol, tp: Type): Tree    = gen.mkIsInstanceOf(REF(b), repackExistential(tp), true, false)
+      // { val tpX = repackExistential(tp)
+      //   if (typesConform(b.info, tpX)) { println("warning: emitted spurious isInstanceOf: "+(b, tp)); TRUE }
+      //   else gen.mkIsInstanceOf(REF(b), tpX, true, false)
+      // }
+
+      def _asInstanceOf(b: Symbol, tp: Type): Tree    = { val tpX = repackExistential(tp)
+        if (typesConform(b.info, tpX)) REF(b) //{ println("warning: emitted redundant asInstanceOf: "+(b, b.info, tp)); REF(b) } //.setType(tpX)
+        else gen.mkAsInstanceOf(REF(b), tpX, true, false)
+      }
     }
 
     trait MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
@@ -887,7 +912,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       def or(f: Tree, as: List[Tree]): Tree                              = (matchingStrategy DOT vpmName.or)((f :: as): _*)                 // matchingStrategy.or(f, as)
       def guard(c: Tree): Tree                                           = (matchingStrategy DOT vpmName.guard)(c, UNIT) // matchingStrategy.guard(c, then) -- a user-defined guard
       // TODO: get rid of the cast when it's unnecessary, but this requires type checking `body` -- maybe this should be one of the optimisations we perform after generating the tree
-      def caseResult(res: Tree, tp: Type): Tree                          = (matchingStrategy DOT vpmName.caseResult) (pmgen._asInstanceOf(res, tp)) // matchingStrategy.caseResult(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
+      def caseResult(res: Tree, tp: Type): Tree                          = (matchingStrategy DOT vpmName.caseResult) (_asInstanceOf(res, tp)) // matchingStrategy.caseResult(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
 
       // an internal guard TODO: use different method call so exhaustiveness can distinguish it from user-defined guards
       def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard(c, then)
@@ -898,7 +923,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     trait MonadInstGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       // methods in the monad instance -- used directly in translation
       def flatMap(a: Tree, b: Tree): Tree                                = (a DOT vpmName.flatMap)(b)
-      def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree    = (genTyped(thisCase, pt) DOT vpmName.orElse)(genTyped(elseCase, pt))
+      def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree    = (genTypeApply(thisCase DOT vpmName.orElse, pt)) APPLY (elseCase)
     }
 
     // when we know we're targetting Option, do some inlining the optimizer won't do
@@ -947,16 +972,16 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       override def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = {
         val vs = freshSym(thisCase.pos, pt, "o")
         val isEmpty = pt member vpmName.isEmpty
-        val v = VAL(vs) === genTyped(thisCase, pt)
+        val v = VAL(vs) === thisCase // genTyped(, pt)
         BLOCK(
           v,
-          IF (vs DOT isEmpty) THEN genTyped(elseCase, pt) ELSE REF(vs)
+          IF (vs DOT isEmpty) THEN elseCase /*genTyped(, pt)*/ ELSE REF(vs)
         )
       }
     }
 
     def genTypeApply(tfun: Tree, args: Type*): Tree                       = if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree)
-    def genTyped(t: Tree, tp: Type): Tree                                 = if(tp == NoType) t else Typed(t, TypeTree(repackExistential(tp)))
+    // def genTyped(t: Tree, tp: Type): Tree                                 = if(tp == NoType) t else Typed(t, TypeTree(repackExistential(tp)))
   }
 }
 
