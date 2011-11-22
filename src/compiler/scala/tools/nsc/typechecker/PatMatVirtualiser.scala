@@ -94,7 +94,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         case Match(scrut, cases) =>
           val scrutType = if(scrut.tpe ne null) repeatedToSeq(elimAnonymousClass(scrut.tpe.widen)) else {error("something wrong during match translation: empty scrutinee"); NoType}
           val scrutSym  = freshSym(tree.pos, scrutType)
-          matchFromCases(scrut, scrutSym, (cases map translateCase(scrutSym)) ++ List(pmgen.zero), repeatedToSeq(pt)) // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
+          combineCases(scrut, scrutSym, (cases map translateCase(scrutSym)) ++ List(pmgen.zero), repeatedToSeq(pt)) // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
         case t => t
       }
 
@@ -179,7 +179,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           // so that we can return Option's from a match without ambiguity whether this indicates failure in the monad, or just some result in the monad
           // 2) body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
           // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
-          TreeMaker.combine(translatePattern(scrutSym, pattern) ++ translateGuard(guard), pmgen.caseResult(body, body.tpe), tree.pos)
+          combineTreeMakers(translatePattern(scrutSym, pattern) ++ translateGuard(guard), pmgen.caseResult(body, body.tpe), tree.pos)
       }
 
     def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
@@ -204,13 +204,12 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         // TODO: extractor.paramType may contain unbound type params (run/t2800, run/t3530)
         val (typeTestTreeMaker, patBinderOrCasted) =
           if (needsTypeTest(patBinder.info.widen, extractor.paramType)) {
-            val castedBinder = freshSym(pos, extractor.paramType, "cp")
             // chain a type-testing extractor before the actual extractor call
             // it tests the type, checks the outer pointer and casts to the expected type
             // the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well
             // (the prefix of the argument passed to the unapply must equal the prefix of the type of the binder)
-
-            (List(TreeMaker.typeTest(patBinder, extractor.paramType, castedBinder)), castedBinder)
+            val treeMaker = TypeTestTreeMaker(patBinder, extractor.paramType, pos)
+            (List(treeMaker), treeMaker.nextBinder)
           } else (Nil, patBinder)
 
         withSubPats(typeTestTreeMaker :+ extractor.treeMaker(patBinderOrCasted, pos), extractor.subBindersAndPatterns: _*)
@@ -265,7 +264,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         // must treat Typed and Bind together -- we need to know the patBinder of the Bind pattern to get at the actual type
         case MaybeBoundTyped(subPatBinder, pt) =>
           // a typed pattern never has any subtrees
-          noFurtherSubPats(TreeMaker.typeAndEqualityTest(patBinder, subPatBinder, pt, pos))
+          noFurtherSubPats(TypeAndEqualityTestTreeMaker(subPatBinder, patBinder, pt, pos))
 
         /** A pattern binder x@p consists of a pattern variable x and a pattern p.
             The type of the variable x is the static type T of the pattern p.
@@ -276,7 +275,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         case Bound(subpatBinder, p)          =>
           // TreeMaker with empty list of trees only performs the substitution subpatBinder --> patBinder
           // println("rebind "+ subpatBinder +" to "+ patBinder)
-          withSubPats(List(TreeMaker.substOnly(List(subpatBinder), List(CODE.REF(patBinder)))),
+          withSubPats(List(SubstOnlyTreeMaker(Substitution(subpatBinder, CODE.REF(patBinder)))),
             // the symbols are markers that may be used to refer to the result of the extractor in which the corresponding tree is nested
             // it's the responsibility of the treemaker to replace this symbol by a reference that
             // selects that result on the function symbol of the flatMap call that binds to the result of this extractor
@@ -293,7 +292,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
               The type of r must conform to the expected type of the pattern.
         **/
         case Literal(Constant(_)) | Ident(_) | Select(_, _) =>
-          noFurtherSubPats(TreeMaker.equalityTest(patBinder, patTree, pos))
+          noFurtherSubPats(EqualityTestTreeMaker(patBinder, patTree, pos))
 
         case Alternative(alts)    =>
           val altTrees = alts map { alt =>
@@ -302,10 +301,10 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             // `one(x) : T` where x is the binder before this pattern, which will be replaced by the binder for the alternative by TreeMaker.singleBinder below
             // T is the widened type of the previous binder -- this ascription is necessary to infer a clean type for `or` -- the alternative combinator -- in the presence of existential types
             // see pos/virtpatmat_exist1.scala
-            TreeMaker.combine(translatePattern(patBinder, alt), pmgen.one(CODE.REF(patBinder), patBinder.info.widen), pos)
+            combineTreeMakers(translatePattern(patBinder, alt), pmgen.one(CODE.REF(patBinder), patBinder.info.widen), pos)
           }
 
-          noFurtherSubPats(TreeMaker.alternatives(patBinder, altTrees : _*))
+          noFurtherSubPats(AlternativesTreeMaker(patBinder, altTrees : _*))
 
       /* TODO: Paul says about future version: I think this should work, and always intended to implement if I can get away with it.
           case class Foo(x: Int, y: String)
@@ -332,7 +331,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     def translateGuard(guard: Tree): List[TreeMaker] =
       if (guard == EmptyTree) List()
-      else List(TreeMaker.guard(guard))
+      else List(GuardTreeMaker(guard))
 
 
 // helper methods: they analyze types and trees in isolation, but they are not (directly) concerned with the structure of the overall translation
@@ -344,6 +343,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // that we need to preserve, so we supply the scrutinee as Ident(nme.SELECTOR_DUMMY),
       // and replace that dummy by a reference to the actual binder in translateExtractorPattern
       def fromCaseClass(fun: Tree, args: List[Tree]): Option[ExtractorCall] = {
+        // TODO: can we rework the typer so we don't have to do all this twice?
         // undo rewrite performed in (5) of adapt
         val orig      = fun match {case tpt: TypeTree => tpt.original case _ => fun}
         val origSym   = orig.symbol
@@ -448,8 +448,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         val subpatRefs = if (subPatBinders isEmpty) Nil else subPatRefs(binder)
 
         lengthGuard(binder) match {
-          case None           => TreeMaker(List(patTreeLifted), binder, subPatBinders, subpatRefs)
-          case Some(lenGuard) => TreeMaker.filtered(patTreeLifted, lenGuard, binder, subPatBinders, subpatRefs)
+          case None           => ExtractorTreeMaker(patTreeLifted, binder, Substitution(subPatBinders, subpatRefs))
+          case Some(lenGuard) => FilteredExtractorTreeMaker(patTreeLifted, lenGuard, binder, Substitution(subPatBinders, subpatRefs))
         }
       }
 
@@ -549,7 +549,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     // TODO: also need to test when erasing pt loses crucial information (and if we can recover it using a manifest)
     def needsTypeTest(tp: Type, pt: Type) = !(tp <:< pt)
     def typeTest(binder: Symbol, pt: Type) = maybeWithOuterCheck(binder, pt)(pmgen._isInstanceOf(binder, pt))
-    def typeTestExtractor(binder: Symbol, pt: Type) = pmgen.condCast(typeTest(binder, pt), binder, pt)
 
     /** Type patterns consist of types, type variables, and wildcards. A type pattern T is of one of the following forms:
         - A reference to a class C, p.C, or T#C.
@@ -577,33 +576,28 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     // generate the tree for the run-time test that follows from the fact that
     // a `scrut` of known type `scrutTp` is expected to have type `expectedTp`
     // uses maybeWithOuterCheck to check the type's prefix
-    def typeAndEqualityTest(scrut: Symbol, expectedTp: Type): Tree = { import CODE._
+    def typeAndEqualityTest(patBinder: Symbol, pt: Type): Tree = { import CODE._
        // TODO: `null match { x : T }` will yield a check that (indirectly) tests whether `null ne null`
        // don't bother (so that we don't end up with the warning "comparing values of types Null and Null using `ne' will always yield false")
       def genEqualsAndInstanceOf(sym: Symbol): Tree
-        = pmgen._equals(REF(sym), scrut) AND pmgen._isInstanceOf(scrut, expectedTp.widen)
+        = pmgen._equals(REF(sym), patBinder) AND pmgen._isInstanceOf(patBinder, pt.widen)
 
       def isRefTp(tp: Type) = tp <:< AnyRefClass.tpe
 
-      val scrutTp = scrut.info.widen
-      def isMatchUnlessNull = isRefTp(expectedTp) && !needsTypeTest(scrutTp, expectedTp)
+      val patBinderTp = patBinder.info.widen
+      def isMatchUnlessNull = isRefTp(pt) && !needsTypeTest(patBinderTp, pt)
 
       // TODO: [SPEC] type test for Array
       // TODO: use manifests to improve tests (for erased types we can do better when we have a manifest)
-      expectedTp match {
+      pt match {
           case SingleType(_, sym) /*this implies sym.isStable*/ => genEqualsAndInstanceOf(sym) // TODO: [SPEC] the spec requires `eq` instead of `==` here
           case ThisType(sym) if sym.isModule                    => genEqualsAndInstanceOf(sym) // must use == to support e.g. List() == Nil
-          case ThisType(sym)                                    => REF(scrut) OBJ_EQ This(sym)
-          case ConstantType(Constant(null)) if isRefTp(scrutTp) => REF(scrut) OBJ_EQ NULL
-          case ConstantType(const)                              => pmgen._equals(Literal(const), scrut)
-          case _ if isMatchUnlessNull                           => maybeWithOuterCheck(scrut, expectedTp)(REF(scrut) OBJ_NE NULL)
-          case _                                                => typeTest(scrut, expectedTp)
+          case ThisType(sym)                                    => REF(patBinder) OBJ_EQ This(sym)
+          case ConstantType(Constant(null)) if isRefTp(patBinderTp) => REF(patBinder) OBJ_EQ NULL
+          case ConstantType(const)                              => pmgen._equals(Literal(const), patBinder)
+          case _ if isMatchUnlessNull                           => maybeWithOuterCheck(patBinder, pt)(REF(patBinder) OBJ_NE NULL)
+          case _                                                => typeTest(patBinder, pt)
         }
-    }
-
-    def typeAndEqualityTestExtractor(patBinder: Symbol, pt: Type): (Tree, Type) = {
-      val accumType = glb(List(patBinder.info.widen, pt))
-      (pmgen.condCast(typeAndEqualityTest(patBinder, pt), patBinder, accumType), accumType)
     }
 
     /** A conservative approximation of which patterns do not discern anything.
@@ -631,11 +625,162 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   }
 
   trait TreeMakers {
+    trait TreeMaker {
+      def substitution: Substitution ={
+        if (currSub eq null) currSub = initialSubstitution
+        currSub
+      }
+
+      protected def initialSubstitution: Substitution
+
+      private[TreeMakers] def addOuterSubstitution(outerSubst: Substitution): TreeMaker = {
+        currSub = outerSubst >> substitution
+        this
+      }
+      private[this] var currSub: Substitution = null
+
+      def chainBefore(next: Tree): Tree
+    }
+
+    case class SubstOnlyTreeMaker(initialSubstitution: Substitution) extends TreeMaker {
+      def chainBefore(next: Tree): Tree = substitution(next)
+    }
+
+    trait FunTreeMaker extends TreeMaker {
+      val nextBinder: Symbol
+      // wrap a Fun (with binder nextBinder) around the next tree (unless nextBinder == NoSymbol) and perform our substitution
+      protected def wrapFunSubst(next: Tree): Tree = pmgen.fun(nextBinder, substitution(next))
+    }
+
+    trait FreshFunTreeMaker extends FunTreeMaker {
+      val pos: Position
+      val nextBinderTp: Type
+      lazy val nextBinder = freshSym(pos, nextBinderTp)
+    }
+
+    trait SingleExtractorTreeMaker extends FunTreeMaker {
+      val extractor: Tree
+      // build Tree that chains `next` after the current extractor
+      def chainBefore(next: Tree): Tree = pmgen.flatMap(extractor, wrapFunSubst(next)) setPos extractor.pos
+    }
+
+    trait SingleBinderTreeMaker extends FunTreeMaker {
+      val prevBinder: Symbol
+      lazy val initialSubstitution = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
+    }
+
+    abstract class SimpleTreeMaker extends SingleExtractorTreeMaker with SingleBinderTreeMaker with FreshFunTreeMaker
+
+    /**
+     * Make a TreeMaker that will result in an extractor call specified by `extractor`
+     * the next TreeMaker (here, we don't know which it'll be) is chained after this one by flatMap'ing
+     * a function with binder `nextBinder` over our extractor's result
+     * the function's body is determined by the next TreeMaker
+     * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
+     */
+    case class ExtractorTreeMaker(extractor: Tree, nextBinder: Symbol, initialSubstitution: Substitution) extends SingleExtractorTreeMaker
+
+    case class FilteredExtractorTreeMaker(extractor: Tree, guard: Tree, nextBinder: Symbol, initialSubstitution: Substitution) extends FunTreeMaker {
+      def chainBefore(next: Tree): Tree =
+        pmgen.flatMap(extractor, wrapFunSubst(pmgen.condOptimized(guard, next))) setPos extractor.pos
+    }
+
+    // need to substitute since binder may be used outside of the next extractor call (say, in the body of the case)
+    case class TypeTestTreeMaker(prevBinder: Symbol, nextBinderTp: Type, pos: Position) extends SimpleTreeMaker {
+      val extractor = pmgen.condCast(typeTest(prevBinder, nextBinderTp), prevBinder, nextBinderTp)
+    }
+
+    // implements the run-time aspects of (§8.2) (typedPattern has already done the necessary type transformations)
+    case class TypeAndEqualityTestTreeMaker(prevBinder: Symbol, patBinder: Symbol, pt: Type, pos: Position) extends SimpleTreeMaker {
+      val nextBinderTp = glb(List(patBinder.info.widen, pt))
+      val extractor = pmgen.condCast(typeAndEqualityTest(patBinder, pt), patBinder, nextBinderTp)
+    }
+
+    // need to substitute to deal with existential types -- TODO: deal with existentials better, don't substitute (see RichClass during quick.comp)
+    case class EqualityTestTreeMaker(prevBinder: Symbol, patTree: Tree, pos: Position) extends SimpleTreeMaker {
+      val nextBinderTp: Type = prevBinder.info.widen
+
+      // NOTE: generate `patTree == patBinder`, since the extractor must be in control of the equals method (also, patBinder may be null)
+      // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
+      val extractor = atPos(pos)(pmgen.cond(pmgen._equals(patTree, prevBinder), CODE.REF(prevBinder), nextBinderTp))
+    }
+
+    case class AlternativesTreeMaker(prevBinder: Symbol, alts: Tree*) extends SingleBinderTreeMaker with FreshFunTreeMaker {
+      val nextBinderTp: Type = prevBinder.info.widen
+      val pos = alts.head.pos
+      def chainBefore(next: Tree): Tree =
+        pmgen.or(wrapFunSubst(next), alts.toList) setPos alts.head.pos
+    }
+
+    case class GuardTreeMaker(guardTree: Tree) extends SingleExtractorTreeMaker {
+      val initialSubstitution: Substitution = EmptySubstitution
+      val nextBinder = freshSym(guardTree.pos, UnitClass.tpe)
+      val extractor = pmgen.guard(guardTree)
+    }
+
+    // combineTreeMakers changes the current substitution's of the tree makers in `treeMakers`
+    def combineTreeMakers(treeMakers: List[TreeMaker], body: Tree, pos: Position): Tree = {
+      // a foldLeft to accumulate the initialSubstitution left-to-right, but written using a map and a var for clarity
+      def propagateSubstitution(treeMakers: List[TreeMaker]): List[TreeMaker] = {
+        var accumSubst: Substitution = EmptySubstitution
+        treeMakers foreach { maker =>
+          // could mutate maker instead, but it doesn't seem to shave much time off of quick.comp
+          maker addOuterSubstitution accumSubst
+          accumSubst = maker.substitution
+        }
+        treeMakers
+      }
+
+      atPos(pos)(propagateSubstitution(treeMakers).foldRight (body) (_ chainBefore _))
+    //   this optimization doesn't give us much
+    //   var accumSubst: Substitution = EmptySubstitution
+    //   var revMakers: List[TreeMaker] = Nil
+    //   treeMakers foreach { maker =>
+    //     accumSubst = accumSubst >> maker.substitution
+    //     maker.substitution = accumSubst
+    //     revMakers ::= maker
+    //   }
+    //
+    //   var accumTree = body
+    //   revMakers foreach { maker =>
+    //     accumTree = maker chainBefore accumTree
+    //   }
+    //
+    //   atPos(pos)(accumTree)
+    }
+
+    def combineCases(scrut: Tree, scrutSym: Symbol, cases: List[Tree], pt: Type): Tree = {
+      // when specified, need to propagate pt explicitly, type inferencer can't handle it
+      val optPt = if(!isFullyDefined(pt)) NoType else appliedType(matchingMonadType, List(pt))
+      pmgen.runOrElse(scrut, pmgen.fun(scrutSym, cases reduceLeft pmgen.typedOrElse(optPt)))
+    }
+
+    object Substitution {
+      def apply(from: Symbol, to: Tree) = new Substitution(List(from), List(to))
+      // requires sameLength(from, to)
+      def apply(from: List[Symbol], to: List[Tree]) =
+        if (from nonEmpty) new Substitution(from, to) else EmptySubstitution
+    }
+
+    class Substitution(val from: List[Symbol], val to: List[Tree]) {
+      def apply(tree: Tree): Tree = typedSubst(tree, from, to)
+      // forall t: Tree. this(other(t)) == (this >> other)(t)
+      def >>(other: Substitution): Substitution = {
+        val (fromFiltered, toFiltered) = (from, to).zipped filter { (f, t) =>  !other.from.contains(f) }
+        new Substitution(other.from ++ fromFiltered, other.to.map(apply) ++ toFiltered) // a quick benchmarking run indicates the `.map(apply)` is not too costly
+      }
+    }
+
+    object EmptySubstitution extends Substitution(Nil, Nil) {
+      override def apply(tree: Tree): Tree = tree
+      override def >>(other: Substitution): Substitution = other
+    }
+
     def matchingMonadType: Type
-    def typedSubst(from: List[Symbol], to: List[Tree]): Transformer
+    def typedSubst(tree: Tree, from: List[Symbol], to: List[Tree]): Tree
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x"): Symbol
-    def typeAndEqualityTestExtractor(patBinder: Symbol, pt: Type): (Tree, Type)
-    def typeTestExtractor(binder: Symbol, pt: Type): Tree
+    def typeAndEqualityTest(patBinder: Symbol, pt: Type): Tree
+    def typeTest(binder: Symbol, pt: Type): Tree
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodeGen { import CODE.UNIT
@@ -650,141 +795,11 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // def cond(c: Tree): Tree = cond(c, UNIT, NoType)
       def cond(c: Tree, then: Tree, tp: Type): Tree
       def condOptimized(c: Tree, then: Tree): Tree
+      def condCast(c: Tree, binder: Symbol, expectedTp: Type): Tree
       def _equals(checker: Tree, binder: Symbol): Tree
     }
+
     def pmgen: AbsCodeGen
-
-
-    object Substitution {
-      // requires sameLength(from, to)
-      def apply(from: List[Symbol], to: List[Tree]) =
-        if (from nonEmpty) new Substitution(from, to) else EmptySubstitution
-    }
-
-    class Substitution(val from: List[Symbol], val to: List[Tree]) {
-      def apply(tree: Tree): Tree = typedSubst(from, to).transform(tree)
-      // forall t: Tree. this(other(t)) == (this >> other)(t)
-      def >>(other: Substitution): Substitution = {
-        new Substitution(other.from ++ from, other.to.map(apply) ++ to) // a quick benchmarking run indicates the `.map(apply)` is not too costly
-      }
-    }
-
-    object EmptySubstitution extends Substitution(Nil, Nil) {
-      override def apply(tree: Tree): Tree = tree
-      override def >>(other: Substitution): Substitution = other
-    }
-
-    // TODO: these factory methods should instantiate different subclasses of TreeMaker,
-    // so analyses and optimizations have the necessary information readily available,
-    // instead of having to (only) analyze the generated tree directly
-    object TreeMaker {
-      /**
-       * Make a TreeMaker that will result in an extractor call specified by `patTrees` (see TreeMaker),
-       * the next TreeMaker (here, we don't know which it'll be) is chained after this one by flatMap'ing
-       * a function with binder `funBinder` over our extractor's result
-       * the function's body is determined by the next TreeMaker
-       * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
-       */
-      def apply(patTrees: List[Tree], funBinder: Symbol, from: List[Symbol] = Nil, to: List[Tree] = Nil): TreeMaker =
-        new StdTreeMakerImpl(Substitution(from, to), patTrees, funBinder)
-
-      def typeTest(patBinder: Symbol, pt: Type, castedBinder: Symbol): TreeMaker = TreeMaker(
-        List(typeTestExtractor(patBinder, pt)),
-        castedBinder,
-        // need to substitute since binder may be used outside of the next extractor call (say, in the body of the case)
-        List(patBinder),
-        List(CODE.REF(castedBinder)))
-
-      def filtered(extractor: Tree, guard: Tree, funBinder: Symbol, from: List[Symbol] = Nil, to: List[Tree] = Nil): TreeMaker =
-        new FilteredTreeMaker(Substitution(from, to), extractor, guard, funBinder)
-
-      def typeAndEqualityTest(patBinder: Symbol, subpatBinder: Symbol, tpe: Type, pos: Position): TreeMaker = {
-        // implements the run-time aspects of (§8.2) (typedPattern has already done the necessary type transformations)
-        val (extractor, accumType) = typeAndEqualityTestExtractor(patBinder, tpe)
-
-        singleBinderWithTp(subpatBinder, accumType, atPos(pos)(extractor))
-      }
-
-      def equalityTest(patBinder: Symbol, patTree: Tree, pos: Position) = {
-        val prevTp = patBinder.info.widen
-
-        // NOTE: generate `patTree == patBinder`, since the extractor must be in control of the equals method (also, patBinder may be null)
-        // equals need not be well-behaved, so don't intersect with pattern's (stabilized) type (unlike MaybeBoundTyped's accumType, where it's required)
-        val extractor = atPos(pos)(pmgen.cond(pmgen._equals(patTree, patBinder), CODE.REF(patBinder), prevTp))
-
-        singleBinderWithTp(patBinder, prevTp, extractor)
-      }
-
-      def alternatives(binderToSubst: Symbol, patTrees: Tree*): TreeMaker =
-        singleBinderWithTp(binderToSubst, binderToSubst.info.widen, patTrees : _*)
-
-      def substOnly(from: List[Symbol], to: List[Tree]): TreeMaker =
-        new StdTreeMakerImpl(Substitution(from, to))
-
-      def guard(guardTree: Tree): TreeMaker = {
-        val binder = freshSym(guardTree.pos, UnitClass.tpe)
-        apply(List(pmgen.guard(guardTree)), binder)
-      }
-
-      def combine(treeMakers: List[TreeMaker], body: Tree, pos: Position) =
-        atPos(pos)(propagateSubstitution(treeMakers).foldRight (body) (_ chainBefore _))
-
-      private def singleBinderWithTp(binderToSubst: Symbol, binderType: Type, patTrees: Tree*): TreeMaker = { // assert(patTrees.head.pos != NoPosition, "tree for "+(binderToSubst, patTrees.toList))
-        val binder = freshSym(patTrees.head.pos, binderType)
-        TreeMaker(patTrees.toList, binder, List(binderToSubst), List(CODE.REF(binder)))
-      }
-
-      // a foldLeft to accumulate the substitution left-to-right, but written using a map and a var for clarity
-      private def propagateSubstitution(treeMakers: List[TreeMaker]): List[TreeMaker] = {
-        var accumSubst: Substitution = EmptySubstitution
-        treeMakers map { maker =>
-          // could mutate maker instead, but it doesn't seem to shave much time off of quick.comp
-          val newMaker = maker withOuterSubstitution accumSubst
-          accumSubst = newMaker.substitution
-          newMaker
-        }
-      }
-    }
-
-    abstract class TreeMaker(val substitution: Substitution, funBinder: Symbol = NoSymbol) {
-      def withOuterSubstitution(outerSubst: Substitution): TreeMaker
-
-      // build Tree that chains `next` after the current extractor
-      def chainBefore(next: Tree): Tree
-
-      // wrap a Fun (with binder funBinder) around the next tree (unless funBinder == NoSymbol) and perform our substitution
-      protected def wrapFunSubst(next: Tree): Tree = funBinder match {
-        case NoSymbol => substitution(next)
-        case b => pmgen.fun(b, substitution(next))
-      }
-    }
-
-    // TODO: factor out in SubstTreeMaker, SingleTreeMaker, AltTreeMaker?
-    class StdTreeMakerImpl(substitution: Substitution, extractors: List[Tree] = Nil, funBinder: Symbol = NoSymbol) extends TreeMaker(substitution, funBinder) {
-      def withOuterSubstitution(outerSubst: Substitution): StdTreeMakerImpl =
-        new StdTreeMakerImpl(outerSubst >> substitution, extractors, funBinder)
-
-      // build Tree that chains `next` after the current extractor
-      def chainBefore(next: Tree): Tree = extractors match {
-        case Nil => wrapFunSubst(next)
-        case List(extractor) => pmgen.flatMap(extractor, wrapFunSubst(next)) setPos extractor.pos
-        case alts => pmgen.or(wrapFunSubst(next), alts) setPos alts.head.pos
-      }
-    }
-
-    class FilteredTreeMaker(substitution: Substitution, extractor: Tree, guard: Tree, funBinder: Symbol) extends TreeMaker(substitution, funBinder) {
-      def withOuterSubstitution(outerSubst: Substitution): FilteredTreeMaker =
-        new FilteredTreeMaker(outerSubst >> substitution, extractor, guard, funBinder)
-
-      def chainBefore(next: Tree): Tree =
-        pmgen.flatMap(extractor, wrapFunSubst(pmgen.condOptimized(guard, next))) setPos extractor.pos
-    }
-
-    def matchFromCases(scrut: Tree, scrutSym: Symbol, cases: List[Tree], pt: Type): Tree = {
-      // when specified, need to propagate pt explicitly, type inferencer can't handle it
-      val optPt = if(!isFullyDefined(pt)) NoType else appliedType(matchingMonadType, List(pt))
-      pmgen.runOrElse(scrut, pmgen.fun(scrutSym, cases reduceLeft pmgen.typedOrElse(optPt)))
-    }
   }
 
   // generate actual trees
