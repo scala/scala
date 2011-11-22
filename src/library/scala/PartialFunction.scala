@@ -25,7 +25,9 @@ trait PartialFunction[-A, +B] extends (A => B) {
    */
   def isDefinedAt(x: A): Boolean
 
-  protected def missingCase[A1 <: A, B1 >: B]: PartialFunction[A1, B1] = PartialFunction.empty
+  //protected def missingCase[A1 <: A, B1 >: B]: PartialFunction[A1, B1] = PartialFunction.empty
+
+  protected def missingCase(x: A): B = throw new MatchError(x)
 
   /** Composes this partial function with a fallback partial function which
    *  gets applied where this partial function is not defined.

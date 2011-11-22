@@ -8,6 +8,8 @@
 
 package scala.runtime
 
+import scala.annotation.unchecked.uncheckedVariance
+
 /** This class provides a default implementation of partial functions
  *  that is used for all partial function literals.
  *  It contains an optimized `orElse` method which supports
@@ -21,18 +23,20 @@ abstract class AbstractPartialFunction[-T1, +R]
     with PartialFunction[T1, R]
     with Cloneable {
 
-  private var fallBack: PartialFunction[_, _] = PartialFunction.empty
+  private var fallBack: PartialFunction[T1 @uncheckedVariance, R @uncheckedVariance] = PartialFunction.empty
 
-  override protected def missingCase[A1 <: T1, B1 >: R]: PartialFunction[A1, B1] = synchronized {
-    fallBack.asInstanceOf[PartialFunction[A1, B1]]
+  override protected def missingCase(x: T1): R = synchronized {
+    fallBack(x)
   }
 
   // Question: Need to ensure that fallBack is overwritten before any access
   // Is the `synchronized` here the right thing to achieve this?
   // Is there a cheaper way?
   def orElseFast[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
-    val result = this.clone.asInstanceOf[AbstractPartialFunction[T1, R]]
-    result.synchronized { result.fallBack = this.fallBack orElse that }
-    result
+    val result = this.clone.asInstanceOf[AbstractPartialFunction[A1, B1]]
+    result.synchronized {
+      result.fallBack = this.fallBack orElse that
+      result
+    }
   }
 }
