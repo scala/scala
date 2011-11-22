@@ -267,7 +267,7 @@ abstract class UnCurry extends InfoTransform
 
         def missingCaseCall(scrutinee: Tree): Tree = Apply(Select(This(anonClass), nme.missingCase), List(scrutinee))
 
-        def applyMethodDef() = scala.tools.nsc.util.trace("pf "){
+        def applyMethodDef() = {
           val body =
             if (isPartial) gen.mkUncheckedMatch(gen.withDefaultCase(fun.body, missingCaseCall))
             else fun.body
