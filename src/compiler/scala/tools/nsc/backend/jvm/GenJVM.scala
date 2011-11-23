@@ -860,7 +860,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
 
       addGenericSignature(jmethod, m.symbol, clasz.symbol)
-      val (excs, others) = splitAnnotations(m.symbol.annotations, ThrowsClass)
+      val (excs, others) = m.symbol.annotations partition (_.symbol == ThrowsClass)
       addExceptionsAttribute(jmethod, excs)
       addAnnotations(jmethod, others)
       addParamAnnotations(jmethod, m.params.map(_.sym.annotations))
@@ -886,16 +886,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         val arg = Literal(c) setType c.tpe
         meth.addAnnotation(ThrowsClass, arg)
       }
-    }
-
-    /** Return a pair of lists of annotations, first one containing all
-     *  annotations for the given symbol, and the rest.
-     */
-    private def splitAnnotations(annotations: List[AnnotationInfo], annotSym: Symbol): (List[AnnotationInfo], List[AnnotationInfo]) = {
-      annotations.partition { a => a match {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == annotSym => true
-        case _ => false
-      }}
     }
 
     private def isClosureApply(sym: Symbol): Boolean = {
@@ -1050,7 +1040,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (!m.isDeferred)
         addGenericSignature(mirrorMethod, m, module)
 
-      val (throws, others) = splitAnnotations(m.annotations, ThrowsClass)
+      val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       addExceptionsAttribute(mirrorMethod, throws)
       addAnnotations(mirrorMethod, others)
       addParamAnnotations(mirrorMethod, m.info.params.map(_.annotations))

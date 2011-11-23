@@ -106,10 +106,6 @@ abstract class Pickler extends SubComponent {
        sym.isParameter ||
        isLocal(sym.owner))
 
-    private def staticAnnotations(annots: List[AnnotationInfo]) =
-      annots filter(ann =>
-        ann.symbol isNonBottomSubClass definitions.StaticAnnotationClass)
-
     // Phase 1 methods: Populate entries/index ------------------------------------
 
     /** Store entry e in index at next available position unless
@@ -156,9 +152,10 @@ abstract class Pickler extends SubComponent {
               }
             putChildren(sym, children.toList sortBy (_.sealedSortName))
           }
-          for (annot <- staticAnnotations(sym.annotations.reverse))
+          for (annot <- sym.annotations filter (ann => ann.isStatic && !ann.isErroneous) reverse)
             putAnnotation(sym, annot)
-        } else if (sym != NoSymbol) {
+        }
+        else if (sym != NoSymbol) {
           putEntry(if (sym.isModuleClass) sym.name.toTermName else sym.name)
           if (!sym.owner.isRoot) putSymbol(sym.owner)
         }
@@ -220,7 +217,7 @@ abstract class Pickler extends SubComponent {
         case AnnotatedType(annotations, underlying, selfsym) =>
           putType(underlying)
           if (settings.selfInAnnots.value) putSymbol(selfsym)
-          putAnnotations(staticAnnotations(annotations))
+          putAnnotations(annotations filter (_.isStatic))
         case _ =>
           throw new FatalError("bad type: " + tp + "(" + tp.getClass + ")")
       }
@@ -616,17 +613,15 @@ abstract class Pickler extends SubComponent {
           else if (c.tag == EnumTag) writeRef(c.symbolValue)
           LITERAL + c.tag // also treats UnitTag, NullTag; no value required
         case AnnotatedType(annotations, tp, selfsym) =>
-          val staticAnnots = staticAnnotations(annotations)
-          if (staticAnnots isEmpty) {
-            writeBody(tp) // write the underlying type if there are no annotations
-          } else {
-            if (settings.selfInAnnots.value && selfsym != NoSymbol)
-              writeRef(selfsym)
-            writeRef(tp)
-            writeRefs(staticAnnots)
-            ANNOTATEDtpe
+          annotations filter (_.isStatic) match {
+            case Nil          => writeBody(tp) // write the underlying type if there are no annotations
+            case staticAnnots =>
+              if (settings.selfInAnnots.value && selfsym != NoSymbol)
+                writeRef(selfsym)
+              writeRef(tp)
+              writeRefs(staticAnnots)
+              ANNOTATEDtpe
           }
-
         // annotations attached to a symbol (i.e. annots on terms)
         case (target: Symbol, annot@AnnotationInfo(_, _, _)) =>
           writeRef(target)

@@ -1181,56 +1181,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ----- annotations ------------------------------------------------------------
 
     // null is a marker that they still need to be obtained.
-    private var _annotations: List[AnnotationInfo] = null
-    // Namer has stored the annotations waiting for us to come calling.
-    private def obtainAnnotations() {
-      // .initialize: the type completer of the symbol parses the annotations,
-      // see "def typeSig" in Namers.
-      initialize
-      _annotations = pendingSymbolAnnotations remove this match {
-        case Some(rawAnnots) =>
-          rawAnnots map {
-            case x: LazyAnnotationInfo  => x.annot()
-            case x: AnnotationInfo      => x
-          } filterNot (_.atp.isError)
-        case _ =>
-          Nil
-      }
-    }
-    // Gets _annotations without forcing initialization/obtainment.
-    def rawAnnotations = if (_annotations eq null) Nil else _annotations
-    // Used in namer to check whether annotations were already assigned or not.
-    def hasAssignedAnnotations = (_annotations ne null) && _annotations.nonEmpty
+    private var _annotations: List[AnnotationInfo] = Nil
 
-    @deprecated("This method will be removed", "2.10.0")
-    def setRawAnnotations(annots: List[AnnotationInfoBase]): this.type = {
-      // Just in case this is still in use somewhere.
-      pendingSymbolAnnotations(this) = annots
-      _annotations = null
-      this
-    }
+    def annotationsString = if (annotations.isEmpty) "" else annotations.mkString("(", ", ", ")")
 
     /** After the typer phase (before, look at the definition's Modifiers), contains
      *  the annotations attached to member a definition (class, method, type, field).
      */
-    def annotations: List[AnnotationInfo] = {
-      if (_annotations eq null)
-        obtainAnnotations()
-      _annotations
-    }
+    def annotations: List[AnnotationInfo] = _annotations
     def setAnnotations(annots: List[AnnotationInfo]): this.type = {
       _annotations = annots
       this
     }
 
     def withAnnotations(annots: List[AnnotationInfo]): this.type =
-      setAnnotations(annots ::: rawAnnotations)
+      setAnnotations(annots ::: annotations)
 
     def withoutAnnotations: this.type =
       setAnnotations(Nil)
 
     def addAnnotation(annot: AnnotationInfo): this.type =
-      setAnnotations(annot :: rawAnnotations)
+      setAnnotations(annot :: annotations)
 
     // Convenience for the overwhelmingly common case
     def addAnnotation(sym: Symbol, args: Tree*): this.type =

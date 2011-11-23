@@ -149,10 +149,10 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
     }
 
     def printAnnotations(tree: Tree) {
-      val annots =
-        if (tree.symbol.hasAssignedAnnotations) tree.symbol.annotations
-        else tree.asInstanceOf[MemberDef].mods.annotations
-
+      val annots = tree.symbol.annotations match {
+        case Nil  => tree.asInstanceOf[MemberDef].mods.annotations
+        case anns => anns
+      }
       annots foreach (annot => print("@"+annot+" "))
     }
 

@@ -74,7 +74,7 @@ trait MethodSynthesis {
     def finishGetterSetter(typer: Typer, stat: Tree): List[Tree] = stat match {
       case vd @ ValDef(mods, name, tpt, rhs) if !noFinishGetterSetter(vd) =>
         // If we don't save the annotations, they seem to wander off.
-        val annotations = stat.symbol.annotations
+        val annotations = stat.symbol.initialize.annotations
         val trees = (
           allValDefDerived(vd)
                   map (acc => atPos(vd.pos.focus)(acc derive annotations))
