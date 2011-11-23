@@ -12,7 +12,7 @@ class ComputeServer(n: Int) {
 
   private val openJobs = new Channel[Job]()
 
-  private def processor(i: Int): Unit = {
+  private def processor(i: Int) {
     while (true) {
       val job = openJobs.read
       println("read a job")
@@ -32,16 +32,17 @@ class ComputeServer(n: Int) {
     () => reply.get
   }
 
-  spawn(replicate(0, n) { processor })
+  //spawn(replicate(0, n) { processor })
+  spawn((0 until n).par foreach { processor })
 }
 
-object computeserver extends Application {
+object computeserver extends App {
 
   def kill(delay: Int) = new java.util.Timer().schedule(
     new java.util.TimerTask {
       override def run() = {
         println("[killed]")
-        System.exit(0)
+        sys exit 0
       }
     },
     delay) // in milliseconds
