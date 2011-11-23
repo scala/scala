@@ -32,11 +32,15 @@ abstract class AbstractPartialFunction[-T1, +R]
   // Question: Need to ensure that fallBack is overwritten before any access
   // Is the `synchronized` here the right thing to achieve this?
   // Is there a cheaper way?
-  def orElseFast[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
+  override def orElseFast[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
     val result = this.clone.asInstanceOf[AbstractPartialFunction[A1, B1]]
     result.synchronized {
-      result.fallBack = this.fallBack orElse that
+      result.fallBack = this.fallBack orElseFast that
       result
     }
   }
+/*
+  def isDefinedAt(x: T1): scala.Boolean = isDefinedAtCurrent(x) || fallBack.isDefinedAt(x)
+  def isDefinedAtCurrent(x: T1): scala.Boolean = false
+*/
 }

@@ -48,6 +48,9 @@ trait PartialFunction[-A, +B] extends (A => B) {
         else that.apply(x)
     }
 
+  def orElseFast[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] =
+    orElse(that)
+
   /**  Composes this partial function with a transformation function that
    *   gets applied to results of this partial function.
    *   @param  k  the transformation function
@@ -90,6 +93,7 @@ object PartialFunction {
     def isDefinedAt(x: Any) = false
     def apply(x: Any): Nothing = throw new MatchError(x)
     override def orElse[A1, B1](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = that
+    override def orElseFast[A1, B1](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = that
     override def lift = (x: Any) => None
   }
   def empty[A, B] : PartialFunction[A, B] = empty_pf

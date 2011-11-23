@@ -216,7 +216,7 @@ abstract class UnCurry extends InfoTransform
 
     /*  Transform a function node (x_1,...,x_n) => body of type FunctionN[T_1, .., T_N, R] to
      *
-     *    class $anon() extends Object() with FunctionN[T_1, .., T_N, R] with ScalaObject {
+     *    class $anon() extends AbstractFunctionN[T_1, .., T_N, R] with Serializable {
      *      def apply(x_1: T_1, ..., x_N: T_n): R = body
      *    }
      *    new $anon()
@@ -225,10 +225,14 @@ abstract class UnCurry extends InfoTransform
      *    body = expr match { case P_i if G_i => E_i }_i=1..n
      *  to:
      *
-     *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
+     *    class $anon() extends AbstractPartialFunction[T, R] with Serializable {
      *      def apply(x: T): R = (expr: @unchecked) match {
-     *        { case P_i if G_i => E_i }_i=1..n
-     *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {
+     *        case P_1 if G_1 => E_1
+     *        ...
+     *        case P_n if G_n => true
+     *        case _ => this.missingCase(x)
+     *      }
+     *      def isDefinedAtCurrent(x: T): boolean = (x: @unchecked) match {
      *        case P_1 if G_1 => true
      *        ...
      *        case P_n if G_n => true
@@ -237,9 +241,10 @@ abstract class UnCurry extends InfoTransform
      *    }
      *    new $anon()
      *
-     *  However, if one of the patterns P_i if G_i is a default pattern, generate instead
+     *  However, if one of the patterns P_i if G_i is a default pattern,
+     *  drop the last default clause in tghe definition of `apply` and generate for `isDefinedAtCurrent` instead
      *
-     *      def isDefinedAt(x: T): boolean = true
+     *      def isDefinedAtCurrent(x: T): boolean = true
      */
     def transformFunction(fun: Function): Tree = {
       val fun1 = deEta(fun)
@@ -274,7 +279,11 @@ abstract class UnCurry extends InfoTransform
           DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {
-          val m = anonClass.newMethod(fun.pos, nme.isDefinedAt) setFlag FINAL
+          val isDefinedAtName = {
+            if (anonClass.info.member(nme.isDefinedAtCurrent) != NoSymbol) nme.isDefinedAtCurrent
+            else nme.isDefinedAt
+          }
+          val m = anonClass.newMethod(fun.pos, isDefinedAtName) setFlag FINAL
           m setInfo MethodType(m newSyntheticValueParams formals, BooleanClass.tpe)
           anonClass.info.decls enter m
           val vparam = fun.vparams.head.symbol
