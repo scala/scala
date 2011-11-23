@@ -94,7 +94,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
       val treetpe =
         if (tree.tpe.typeSymbol.isAnonymousClass) tree.tpe.typeSymbol.classBound
         else tree.tpe
-      New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(treetpe))),
+      New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(treetpe.widen))),
         List(List(arg)))
     }
 
