@@ -301,7 +301,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           log("cps type conversion (has: " + cpsA + "/" + spc + "/" + expr.tpe  + ")")
           log("cps type conversion (expected: " + cpsR.get + "): " + expr)
 
-          if (!expr.tpe.hasAnnotation(MarkerCPSAdaptPlus))
+          if (!hasPlusMarker(expr.tpe))
             unit.warning(tree.pos, "expression " + tree + " is cps-transformed unexpectedly")
 
           try {
@@ -331,9 +331,9 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
       } else {
         // all is well
 
-        if (expr.tpe.hasAnnotation(MarkerCPSAdaptPlus)) {
+        if (hasPlusMarker(expr.tpe)) {
           unit.warning(tree.pos, "expression " + expr + " of type " + expr.tpe + " is not expected to have a cps type")
-          expr.setType(removeAllCPSAnnotations(expr.tpe))
+          expr modifyType removeAllCPSAnnotations
         }
 
         // TODO: sanity check that types agree

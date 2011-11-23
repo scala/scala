@@ -1022,10 +1022,9 @@ trait Types extends api.Types { self: SymbolTable =>
     // overrides these.
     def annotations: List[AnnotationInfo] = Nil
     def withoutAnnotations: Type = this
+    def filterAnnotations(p: AnnotationInfo => Boolean): Type = this
     def setAnnotations(annots: List[AnnotationInfo]): Type  = annotatedType(annots, this)
     def withAnnotations(annots: List[AnnotationInfo]): Type = annotatedType(annots, this)
-
-    final def withAnnotation(annot: AnnotationInfo): Type = withAnnotations(List(annot))
 
     /** Remove any annotations from this type and from any
      *  types embedded in this type. */
@@ -2715,8 +2714,14 @@ A type's typeSymbol should never be inspected directly.
 
     override def safeToString = annotations.mkString(underlying + " @", " @", "")
 
+    override def filterAnnotations(p: AnnotationInfo => Boolean): Type = {
+      val (yes, no) = annotations partition p
+      if (yes.isEmpty) underlying
+      else if (no.isEmpty) this
+      else copy(annotations = yes)
+    }
     override def setAnnotations(annots: List[AnnotationInfo]): Type =
-      if (annots.isEmpty) withoutAnnotations
+      if (annots.isEmpty) underlying
       else copy(annotations = annots)
 
     /** Add a number of annotations to this type */
@@ -2724,7 +2729,11 @@ A type's typeSymbol should never be inspected directly.
       if (annots.isEmpty) this
       else copy(annots ::: this.annotations)
 
-    /** Remove any annotations from this type */
+    /** Remove any annotations from this type.
+     *  TODO - is it allowed to nest AnnotatedTypes? If not then let's enforce
+     *  that at creation.  At the moment if they do ever turn up nested this
+     *  recursively calls withoutAnnotations.
+     */
     override def withoutAnnotations = underlying.withoutAnnotations
 
     /** Set the self symbol */

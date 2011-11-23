@@ -24,6 +24,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     def annotations: List[AnnotationInfo]                     // Annotations on this type.
     def setAnnotations(annots: List[AnnotationInfo]): Self    // Replace annotations with argument list.
     def withAnnotations(annots: List[AnnotationInfo]): Self   // Add annotations to this type.
+    def filterAnnotations(p: AnnotationInfo => Boolean): Self // Retain only annotations meeting the condition.
     def withoutAnnotations: Self                              // Remove all annotations from this type.
 
     /** Symbols of any @throws annotations on this symbol.
@@ -35,9 +36,8 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     /** Test for, get, or remove an annotation */
     def hasAnnotation(cls: Symbol) = annotations exists (_ matches cls)
     def getAnnotation(cls: Symbol) = annotations find (_ matches cls)
-    def removeAnnotation(cls: Symbol): Self =
-      if (hasAnnotation(cls)) setAnnotations(annotations filterNot (_ matches cls))
-      else this
+    def removeAnnotation(cls: Symbol): Self = filterAnnotations(ann => !(ann matches cls))
+    final def withAnnotation(annot: AnnotationInfo): Self = withAnnotations(List(annot))
   }
 
   /** Arguments to classfile annotations (which are written to
@@ -95,6 +95,9 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
   object NestedAnnotArg extends NestedAnnotArgExtractor
 
   object AnnotationInfo extends AnnotationInfoExtractor {
+    def marker(atp: Type): AnnotationInfo =
+      apply(atp, Nil, Nil)
+
     def lazily(lazyInfo: => AnnotationInfo) =
       new LazyAnnotationInfo(lazyInfo)
 
@@ -233,6 +236,12 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
     def argAtIndex(index: Int): Option[Tree] =
       if (index < args.size) Some(args(index)) else None
+
+    override def hashCode = atp.## + args.## + assocs.##
+    override def equals(other: Any) = other match {
+      case x: AnnotationInfo  => (atp == x.atp) && (args == x.args) && (assocs == x.assocs)
+      case _                  => false
+    }
   }
 
   lazy val classfileAnnotArgManifest: ClassManifest[ClassfileAnnotArg] =

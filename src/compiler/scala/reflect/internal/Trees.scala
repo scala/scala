@@ -102,6 +102,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
     def isTyped     = (tree.tpe ne null) && !tree.tpe.isErroneous
 
+    /** Sets the tree's type to the result of the given function.
+     *  If the type is null, it remains null - the function is not called.
+     */
+    def modifyType(f: Type => Type): Tree =
+      if (tree.tpe eq null) tree
+      else tree setType f(tree.tpe)
+
     /** If `pf` is defined for a given subtree, call super.traverse(pf(tree)),
      *  otherwise super.traverse(tree).
      */
