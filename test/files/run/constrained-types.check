@@ -14,7 +14,7 @@ scala> class A {
   val x = "hello"
   val y: Int @Annot(x) = 10
   override def toString = "an A"
-} 
+}
 defined class A
 
 scala> 
@@ -22,7 +22,7 @@ scala>
 scala> val a = new A
 a: A = an A
 
-scala> val y = a.y   // should rewrite "this.x" to "a.x" 
+scala> val y = a.y   // should rewrite "this.x" to "a.x"
 y: Int @Annot(a.x) = 10
 
 scala> var a2 = new A
