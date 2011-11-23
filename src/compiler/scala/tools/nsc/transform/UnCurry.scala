@@ -280,7 +280,7 @@ abstract class UnCurry extends InfoTransform
         }
         def isDefinedAtMethodDef() = {
           val isDefinedAtName = {
-            if (anonClass.info.member(nme.isDefinedAtCurrent) != NoSymbol) nme.isDefinedAtCurrent
+            if (anonClass.info.member(nme._isDefinedAt) != NoSymbol) nme._isDefinedAt
             else nme.isDefinedAt
           }
           val m = anonClass.newMethod(fun.pos, isDefinedAtName) setFlag FINAL

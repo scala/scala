@@ -241,7 +241,7 @@ trait StdNames extends /*reflect.generic.StdNames with*/ NameManglers { self: Sy
     val applyDynamic: NameType     = "applyDynamic"
     val isArray: NameType          = "isArray"
     val isDefinedAt: NameType      = "isDefinedAt"
-    val isDefinedAtCurrent: NameType = "isDefinedAtCurrent"
+    val _isDefinedAt: NameType     = "_isDefinedAt"
     val isEmpty: NameType          = "isEmpty"
     val isInstanceOf_ : NameType   = "isInstanceOf"
     val java: NameType             = "java"
