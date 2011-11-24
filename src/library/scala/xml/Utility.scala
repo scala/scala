@@ -259,7 +259,7 @@ object Utility extends AnyRef with parsing.TokenTests {
    * @param children
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) =
-    scala.util.MurmurHash3.traversableHash(label +: attribHashCode +: scpeHash +: children, pre.##)
+    scala.util.MurmurHash3.orderedHash(label +: attribHashCode +: scpeHash +: children, pre.##)
 
   def appendQuoted(s: String): String = sbToString(appendQuoted(s, _))
 

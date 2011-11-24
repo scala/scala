@@ -37,9 +37,6 @@ trait Map[A, +B] extends Iterable[(A, B)] with GenMap[A, B] with MapLike[A, B, M
  *  @define coll map
  */
 object Map extends MapFactory[Map] {
-
-  private[collection] val hashSeed = "Map".hashCode
-
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */

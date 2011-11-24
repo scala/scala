@@ -48,5 +48,5 @@ final class StringOps(override val repr: String) extends StringLike[String] {
   override def toString = repr
   override def length = repr.length
 
-  def seq = this.iterator
+  def seq = new WrappedString(repr)
 }

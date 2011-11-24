@@ -31,6 +31,7 @@ import annotation.bridge
  *  Unlike iterables, sequences always have a defined order of elements.
  */
 trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Parallelizable[A, parallel.ParSeq[A]] {
+  def seq: Seq[A]
 
   /** Selects an element by its index in the $coll.
    *
@@ -439,16 +440,7 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
   /** Hashcodes for $Coll produce a value from the hashcodes of all the
    *  elements of the $coll.
    */
-  override def hashCode() = {
-    import util.MurmurHash3._
-    var n = 0
-    var h = Seq.hashSeed
-    seq foreach {
-      x => h = mix(h, x.##)
-      n += 1
-    }
-    finalizeHash(h, n)
-  }
+  override def hashCode() = util.MurmurHash3.seqHash(seq)
 
   /** The equals method for arbitrary sequences. Compares this sequence to
    *  some other object.

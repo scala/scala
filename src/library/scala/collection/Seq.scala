@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import generic._
@@ -32,9 +30,6 @@ trait Seq[+A] extends PartialFunction[Int, A]
  *  @define Coll Seq
  */
 object Seq extends SeqFactory[Seq] {
-
-  private[collection] val hashSeed = "Seq".hashCode
-
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 

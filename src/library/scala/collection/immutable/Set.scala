@@ -46,8 +46,6 @@ object Set extends ImmutableSetFactory[Set] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
   override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
-  private val hashSeed = "Set".hashCode
-
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {
     override def size: Int = 0

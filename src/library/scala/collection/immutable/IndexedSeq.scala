@@ -23,6 +23,7 @@ trait IndexedSeq[+A] extends Seq[A]
                     with IndexedSeqLike[A, IndexedSeq[A]] {
   override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
   override def toIndexedSeq[B >: A]: IndexedSeq[B] = this
+  override def seq: IndexedSeq[A] = this
 }
 
 /** $factoryInfo

@@ -41,10 +41,15 @@ import scala.util.control.Breaks._
  *  @tparam A    the element type of the $coll
  *  @tparam Repr the type of the actual $coll containing the elements.
  */
-trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr] { self: Repr =>
+trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr] {
+  self: Repr =>
 
   override protected[this] def thisCollection: LinearSeq[A] = this.asInstanceOf[LinearSeq[A]]
   override protected[this] def toCollection(repr: Repr): LinearSeq[A] = repr.asInstanceOf[LinearSeq[A]]
+
+  def seq: LinearSeq[A]
+
+  override def hashCode() = util.MurmurHash3.seqHash(seq) // TODO - can we get faster via "linearSeqHash" ?
 
   override /*IterableLike*/
   def iterator: Iterator[A] = new AbstractIterator[A] {

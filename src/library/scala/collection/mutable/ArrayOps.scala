@@ -93,7 +93,7 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] with CustomParalleliza
     bb.result
   }
 
-  def seq = this.iterator
+  def seq = thisCollection
 
 }
 

@@ -2,7 +2,6 @@ package scala.util
 
 import java.lang.Integer.{ rotateLeft => rotl }
 
-
 /**
  * An implementation of Austin Appleby's MurmurHash 3 algorithm
  * (MurmurHash3_x86_32).
@@ -22,15 +21,7 @@ import java.lang.Integer.{ rotateLeft => rotl }
  *
  * @see http://code.google.com/p/smhasher
  */
-object MurmurHash3 {
-
-  // Some arbitrary values used as hash seeds
-  final val arraySeed = 0x3c074a61
-  final val stringSeed = 0xf7ca7fd2
-  final val productSeed = 0xcafebabe
-  final val symmetricSeed = 0xb592f7ae
-  final val traversableSeed = 0xe73a8b15
-
+class MurmurHash3 {
   /** Mix in a block of data into an intermediate hash value. */
   final def mix(hash: Int, data: Int): Int = {
     var h = mixLast(hash, data)
@@ -68,7 +59,7 @@ object MurmurHash3 {
   }
 
   /** Compute the hash of a product */
-  final def productHash(x: Product, seed: Int = productSeed): Int = {
+  final def productHash(x: Product, seed: Int): Int = {
     val arr = x.productArity
     // Case objects have the hashCode inlined directly into the
     // synthetic hashCode method, but this method should still give
@@ -88,7 +79,7 @@ object MurmurHash3 {
   }
 
   /** Compute the hash of a string */
-  final def stringHash(str: String, seed: Int = stringSeed): Int = {
+  final def stringHash(str: String, seed: Int): Int = {
     var h = seed
     var i = 0
     while (i + 1 < str.length) {
@@ -102,38 +93,39 @@ object MurmurHash3 {
 
   /** Compute a hash that is symmetric in its arguments - that is a hash
    *  where the order of appearance of elements does not matter.
-   *  This is useful for hashing sets, for example. */
-  final def symmetricHash[T](xs: collection.GenTraversableOnce[T], seed: Int = symmetricSeed): Int = {
+   *  This is useful for hashing sets, for example.
+   */
+  final def unorderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs.seq.foreach { x =>
+    xs foreach { x =>
       val h = x.##
       a += h
       b ^= h
       if (h != 0) c *= h
       n += 1
     }
-
     var h = seed
     h = mix(h, a)
     h = mix(h, b)
     h = mixLast(h, c)
     finalizeHash(h, n)
   }
-
-  /** Compute a hash for a traversable (once). */
-  final def traversableHash[T](xs: collection.GenTraversableOnce[T], seed: Int = traversableSeed): Int = {
+  /** Compute a hash that depends on the order of its arguments.
+   */
+  final def orderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
     var n = 0
     var h = seed
-    xs.seq.foreach { x =>
+    xs foreach { x =>
       h = mix(h, x.##)
       n += 1
     }
     finalizeHash(h, n)
   }
 
-  /** Compute the hash of an array */
-  final def arrayHash[@specialized T](a: Array[T], seed: Int = arraySeed): Int = {
+  /** Compute the hash of an array.
+   */
+  final def arrayHash[@specialized T](a: Array[T], seed: Int): Int = {
     var h = seed
     var i = 0
     while (i < a.length) {
@@ -144,8 +136,9 @@ object MurmurHash3 {
   }
 
   /** Compute the hash of a byte array. Faster than arrayHash, because
-   *  it hashes 4 bytes at once. */
-  final def bytesHash(data: Array[Byte], seed: Int = arraySeed): Int = {
+   *  it hashes 4 bytes at once.
+   */
+  final def bytesHash(data: Array[Byte], seed: Int): Int = {
     var len = data.length
     var h = seed
 
@@ -175,4 +168,68 @@ object MurmurHash3 {
     // Finalization
     finalizeHash(h, data.length)
   }
+}
+
+/**
+ * An instance of MurmurHash3 with predefined seeds for various
+ * classes.  Used by all the scala collections and case classes.
+ */
+object MurmurHash3 extends MurmurHash3 {
+  final val arraySeed       = 0x3c074a61
+  final val stringSeed      = 0xf7ca7fd2
+  final val productSeed     = 0xcafebabe
+  final val symmetricSeed   = 0xb592f7ae
+  final val traversableSeed = 0xe73a8b15
+  final val seqSeed         = "Seq".hashCode
+  final val mapSeed         = "Map".hashCode
+  final val setSeed         = "Set".hashCode
+
+  def arrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, arraySeed)
+  def bytesHash(data: Array[Byte]): Int            = bytesHash(data, arraySeed)
+  def orderedHash(xs: TraversableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
+  def productHash(x: Product): Int                 = productHash(x, productSeed)
+  def stringHash(x: String): Int                   = stringHash(x, stringSeed)
+  def unorderedHash(xs: TraversableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
+
+  /** To offer some potential for optimization.
+   */
+  def seqHash(xs: collection.Seq[_]): Int    = orderedHash(xs, seqSeed)
+  def mapHash(xs: collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
+  def setHash(xs: collection.Set[_]): Int    = unorderedHash(xs, setSeed)
+
+  /** All this trouble and foreach still appears faster.
+   *  Leaving in place in case someone would like to investigate further.
+   */
+  /**
+  def linearSeqHash(xs: collection.LinearSeq[_], seed: Int): Int = {
+    var n = 0
+    var h = seed
+    var elems = xs
+    while (elems.nonEmpty) {
+      h = mix(h, elems.head.##)
+      n += 1
+      elems = elems.tail
+    }
+    finalizeHash(h, n)
+  }
+
+  def indexedSeqHash(xs: collection.IndexedSeq[_], seed: Int): Int = {
+    var n = 0
+    var h = seed
+    val len = xs.length
+    while (n < len) {
+      h = mix(h, xs(n).##)
+      n += 1
+    }
+    finalizeHash(h, n)
+  }
+  */
+
+  @deprecated("Use unorderedHash", "2.10.0")
+  final def symmetricHash[T](xs: collection.GenTraversableOnce[T], seed: Int = symmetricSeed): Int =
+    unorderedHash(xs.seq, seed)
+
+  @deprecated("Use orderedHash", "2.10.0")
+  final def traversableHash[T](xs: collection.GenTraversableOnce[T], seed: Int = traversableSeed): Int =
+    orderedHash(xs.seq, seed)
 }
