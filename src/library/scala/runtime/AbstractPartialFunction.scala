@@ -23,24 +23,30 @@ abstract class AbstractPartialFunction[-T1, +R]
     with PartialFunction[T1, R]
     with Cloneable {
 
-  private var fallBack: PartialFunction[T1 @uncheckedVariance, R @uncheckedVariance] = PartialFunction.empty
+  private var fallBackField: PartialFunction[T1 @uncheckedVariance, R @uncheckedVariance] = _
 
-  override protected def missingCase(x: T1): R = synchronized {
-    fallBack(x)
+  def fallBack: PartialFunction[T1, R] = synchronized {
+    if (fallBackField == null) fallBackField = PartialFunction.empty
+    fallBackField
   }
+
+  override protected def missingCase(x: T1): R = fallBack(x)
 
   // Question: Need to ensure that fallBack is overwritten before any access
   // Is the `synchronized` here the right thing to achieve this?
   // Is there a cheaper way?
-  override def orElseFast[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
+  override def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
     val result = this.clone.asInstanceOf[AbstractPartialFunction[A1, B1]]
     result.synchronized {
-      result.fallBack = this.fallBack orElseFast that
+      result.fallBackField = this.fallBackField orElse that
       result
     }
   }
-/*
-  def isDefinedAt(x: T1): scala.Boolean = isDefinedAtCurrent(x) || fallBack.isDefinedAt(x)
-  def isDefinedAtCurrent(x: T1): scala.Boolean = false
-*/
+
+  def isDefinedAt(x: T1): scala.Boolean = _isDefinedAt(x) || fallBack.isDefinedAt(x)
+  def _isDefinedAt(x: T1): scala.Boolean
+
 }
+
+
+

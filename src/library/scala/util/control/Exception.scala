@@ -232,6 +232,6 @@ object Exception {
   private def pfFromExceptions(exceptions: Class[_]*): PartialFunction[Throwable, Nothing] =
     new scala.runtime.AbstractPartialFunction[Throwable, Nothing] {
       def apply(x: Throwable) = throw x
-      def isDefinedAt(x: Throwable) = wouldMatch(x, exceptions)
+      def _isDefinedAt(x: Throwable) = wouldMatch(x, exceptions)
     }
 }

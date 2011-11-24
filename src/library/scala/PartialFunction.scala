@@ -41,7 +41,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
    */
   def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] =
     new runtime.AbstractPartialFunction[A1, B1] {
-      def isDefinedAt(x: A1): Boolean =
+      def _isDefinedAt(x: A1): Boolean =
         PartialFunction.this.isDefinedAt(x) || that.isDefinedAt(x)
       def apply(x: A1): B1 =
         if (PartialFunction.this.isDefinedAt(x)) PartialFunction.this.apply(x)
@@ -59,7 +59,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
    *           arguments `x` to `k(this(x))`.
    */
   override def andThen[C](k: B => C) : PartialFunction[A, C] = new runtime.AbstractPartialFunction[A, C] {
-    def isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
+    def _isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
     def apply(x: A): C = k(PartialFunction.this.apply(x))
   }
 
@@ -90,7 +90,8 @@ trait PartialFunction[-A, +B] extends (A => B) {
  */
 object PartialFunction {
   private[this] final val empty_pf: PartialFunction[Any, Nothing] = new runtime.AbstractPartialFunction[Any, Nothing] {
-    def isDefinedAt(x: Any) = false
+    def _isDefinedAt(x: Any) = false
+    override def isDefinedAt(x: Any) = false
     def apply(x: Any): Nothing = throw new MatchError(x)
     override def orElse[A1, B1](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = that
     override def orElseFast[A1, B1](that: PartialFunction[A1, B1]): PartialFunction[A1, B1] = that

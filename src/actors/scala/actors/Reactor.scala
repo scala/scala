@@ -39,7 +39,7 @@ private[actors] object Reactor {
   }
 
   val waitingForNone: PartialFunction[Any, Unit] = new scala.runtime.AbstractPartialFunction[Any, Unit] {
-    def isDefinedAt(x: Any) = false
+    def _isDefinedAt(x: Any) = false
     def apply(x: Any) {}
   }
 }

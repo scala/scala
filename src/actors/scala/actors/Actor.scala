@@ -247,7 +247,7 @@ object Actor extends Combinators {
 
   private class RecursiveProxyHandler(a: ReplyReactor, f: PartialFunction[Any, Unit])
           extends scala.runtime.AbstractPartialFunction[Any, Unit] {
-    def isDefinedAt(m: Any): Boolean =
+    def _isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
     def apply(m: Any) {
       if (f.isDefinedAt(m)) f(m)

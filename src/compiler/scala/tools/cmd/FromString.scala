@@ -16,7 +16,7 @@ import scala.reflect.OptManifest
  */
 abstract class FromString[+T](implicit m: OptManifest[T]) extends scala.runtime.AbstractPartialFunction[String, T] {
   def apply(s: String): T
-  def isDefinedAt(s: String): Boolean = true
+  def _isDefinedAt(s: String): Boolean = true
   def zero: T = apply("")
 
   def targetString: String = m.toString
@@ -30,20 +30,20 @@ object FromString {
   /** Path related stringifiers.
    */
   val ExistingFile: FromString[File] = new FromString[File] {
-    override def isDefinedAt(s: String) = toFile(s).isFile
+    override def _isDefinedAt(s: String) = toFile(s).isFile
     def apply(s: String): File =
       if (isDefinedAt(s)) toFile(s)
       else cmd.runAndExit(println("'%s' is not an existing file." format s))
   }
   val ExistingDir: FromString[Directory] = new FromString[Directory] {
-    override def isDefinedAt(s: String) = toDir(s).isDirectory
+    override def _isDefinedAt(s: String) = toDir(s).isDirectory
     def apply(s: String): Directory =
       if (isDefinedAt(s)) toDir(s)
       else cmd.runAndExit(println("'%s' is not an existing directory." format s))
   }
   def ExistingDirRelativeTo(root: Directory) = new FromString[Directory] {
     private def resolve(s: String) = toDir(s) toAbsoluteWithRoot root toDirectory
-    override def isDefinedAt(s: String) = resolve(s).isDirectory
+    override def _isDefinedAt(s: String) = resolve(s).isDirectory
     def apply(s: String): Directory =
       if (isDefinedAt(s)) resolve(s)
       else cmd.runAndExit(println("'%s' is not an existing directory." format resolve(s)))
@@ -65,7 +65,7 @@ object FromString {
   /** Implicit as the most likely to be useful as-is.
    */
   implicit val IntFromString: FromString[Int] = new FromString[Int] {
-    override def isDefinedAt(s: String)   = safeToInt(s).isDefined
+    override def _isDefinedAt(s: String)  = safeToInt(s).isDefined
     def apply(s: String)                  = safeToInt(s).get
     def safeToInt(s: String): Option[Int] = try Some(java.lang.Integer.parseInt(s)) catch { case _: NumberFormatException => None }
   }
