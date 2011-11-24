@@ -1,0 +1,11 @@
+#!/bin/bash
+
+scriptdir=$(dirname $0)
+# TODO - We should probably make sure we don't find this script with which.  Hopefully people don't actually put current directory on their path.
+ant=$(which ant)
+
+pushd $scriptdir
+bash pull-binary-libs.sh
+popd
+
+$ant $@
