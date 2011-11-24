@@ -79,68 +79,20 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       *   thus, you must typecheck the result (and that will in turn translate nested matches)
       *   this could probably optimized... (but note that the matchingStrategy must be solved for each nested patternmatch)
       */
-    def translateMatch(tree: Tree, pt: Type): Tree = {
+    def translateMatch(scrut: Tree, cases: List[CaseDef], pt: Type): Tree = {
       // we don't transform after typers
       // (that would require much more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
       assert(phase.id <= currentRun.typerPhase.id)
 
-      def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-        case TypeRef(_, RepeatedParamClass, args) => appliedType(SeqClass.typeConstructor, args)
-        case _ => tp
-      }
+      val scrutType = repeatedToSeq(elimAnonymousClass(scrut.tpe.widen))
 
-      val xTree = tree match {
-        case Match(scrut, cases) =>
-          val scrutType = if(scrut.tpe ne null) repeatedToSeq(elimAnonymousClass(scrut.tpe.widen)) else {error("something wrong during match translation: empty scrutinee"); NoType}
-          val scrutSym  = freshSym(tree.pos, scrutType)
-          combineCases(scrut, scrutSym, (cases map translateCase(scrutSym)) ++ List(pmgen.zero), repeatedToSeq(pt)) // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
-        case t => t
-      }
+      val scrutSym  = freshSym(scrut.pos, scrutType)
 
-      // println("before fixerupper: "+ xTree)
-      // currentRun.trackerFactory.snapshot()
-      // TODO: do this during tree construction, but that will require tracking the current owner in treemakers
-      // TODO: assign more fine-grained positions
-      // fixes symbol nesting, assigns positions
-      object fixerUpper extends Traverser {
-        currentOwner = context.owner
-
-        override def traverse(t: Tree) {
-          if (t != EmptyTree && t.pos == NoPosition) {
-            t.setPos(tree.pos)
-          }
-          t match {
-            case Function(_, _) if t.symbol == NoSymbol =>
-              t.symbol = currentOwner.newValue(t.pos, nme.ANON_FUN_NAME).setFlag(SYNTHETIC).setInfo(NoType)
-              // println("new symbol for "+ (t, t.symbol.ownerChain))
-            case Function(_, _) if (t.symbol.owner == NoSymbol) || (t.symbol.owner == context.owner) =>
-              // println("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))
-              t.symbol.owner = currentOwner
-            case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == context.owner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
-              // println("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
-              if(d.symbol.isLazy) { // for lazy val's accessor -- is there no tree??
-                assert(d.symbol.lazyAccessor != NoSymbol && d.symbol.lazyAccessor.owner == d.symbol.owner)
-                d.symbol.lazyAccessor.owner = currentOwner
-              }
-              if(d.symbol.moduleClass ne NoSymbol)
-                d.symbol.moduleClass.owner = currentOwner
-
-              d.symbol.owner = currentOwner
-            // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
-            //   println("untouched "+ (t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain))
-            case _ =>
-          }
-          super.traverse(t)
-        }
-      }
-      fixerUpper(xTree) // atPos(tree.pos)(xTree) does not achieve the same effect
-
-      // println("after fixerupper")
-      // currentRun.trackerFactory.snapshot()
-
-      xTree
+      // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
+      fixerUpper(context.owner, scrut.pos)(combineCases(scrut, scrutSym, cases map translateCase(scrutSym), repeatedToSeq(pt)))
     }
+
 
     /**  The translation of `pat if guard => body` has two aspects:
       *     1) the substitution due to the variables bound by patterns
@@ -170,17 +122,9 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       *    a function that will take care of binding and substitution of the next ast (to the right).
       *
       */
-    def translateCase(scrutSym: Symbol)(tree: Tree): Tree =
-      tree match {
-        case CaseDef(pattern, guard, body) =>
-          // TODO: 1) if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by pmgen.caseResult),
-          // so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand?
-          // to enable this, probably need to move away from Option to a monad specific to pattern-match,
-          // so that we can return Option's from a match without ambiguity whether this indicates failure in the monad, or just some result in the monad
-          // 2) body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
-          // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
-          combineTreeMakers(translatePattern(scrutSym, pattern) ++ translateGuard(guard), pmgen.caseResult(body, body.tpe), tree.pos)
-      }
+    def translateCase(scrutSym: Symbol)(caseDef: CaseDef) = caseDef match { case CaseDef(pattern, guard, body) =>
+      (translatePattern(scrutSym, pattern) ++ translateGuard(guard), translateBody(body))
+    }
 
     def translatePattern(patBinder: Symbol, patTree: Tree): List[TreeMaker] = {
       // a list of TreeMakers that encode `patTree`, and a list of arguments for recursive invocations of `translatePattern` to encode its subpatterns
@@ -301,7 +245,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             // `one(x) : T` where x is the binder before this pattern, which will be replaced by the binder for the alternative by TreeMaker.singleBinder below
             // T is the widened type of the previous binder -- this ascription is necessary to infer a clean type for `or` -- the alternative combinator -- in the presence of existential types
             // see pos/virtpatmat_exist1.scala
-            combineTreeMakers(translatePattern(patBinder, alt), pmgen.one(CODE.REF(patBinder), patBinder.info.widen), pos)
+            combineExtractors(translatePattern(patBinder, alt), pmgen.one(CODE.REF(patBinder), patBinder.info.widen))
           }
 
           noFurtherSubPats(AlternativesTreeMaker(patBinder, altTrees : _*))
@@ -330,11 +274,21 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     }
 
     def translateGuard(guard: Tree): List[TreeMaker] =
-      if (guard == EmptyTree) List()
+      if (guard == EmptyTree) Nil
       else List(GuardTreeMaker(guard))
 
+    // TODO: 1) if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by pmgen.caseResult),
+    // so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand?
+    // to enable this, probably need to move away from Option to a monad specific to pattern-match,
+    // so that we can return Option's from a match without ambiguity whether this indicates failure in the monad, or just some result in the monad
+    // 2) body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
+    // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
+    def translateBody(body: Tree): Tree = atPos(body.pos)(pmgen.caseResult(body, body.tpe))
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // helper methods: they analyze types and trees in isolation, but they are not (directly) concerned with the structure of the overall translation
+
     object ExtractorCall {
       def apply(unfun: Tree, args: List[Tree]): ExtractorCall = new ExtractorCall(unfun, args)
 
@@ -624,6 +578,10 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     }
   }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   trait TreeMakers {
     trait TreeMaker {
       def substitution: Substitution ={
@@ -718,8 +676,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       val extractor = pmgen.guard(guardTree)
     }
 
-    // combineTreeMakers changes the current substitution's of the tree makers in `treeMakers`
-    def combineTreeMakers(treeMakers: List[TreeMaker], body: Tree, pos: Position): Tree = {
+    // combineExtractors changes the current substitution's of the tree makers in `treeMakers`
+    def combineExtractors(treeMakers: List[TreeMaker], body: Tree): Tree = {
       // a foldLeft to accumulate the initialSubstitution left-to-right, but written using a map and a var for clarity
       def propagateSubstitution(treeMakers: List[TreeMaker]): List[TreeMaker] = {
         var accumSubst: Substitution = EmptySubstitution
@@ -731,7 +689,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         treeMakers
       }
 
-      atPos(pos)(propagateSubstitution(treeMakers).foldRight (body) (_ chainBefore _))
+      propagateSubstitution(treeMakers).foldRight (body) (_ chainBefore _)
     //   this optimization doesn't give us much
     //   var accumSubst: Substitution = EmptySubstitution
     //   var revMakers: List[TreeMaker] = Nil
@@ -749,10 +707,24 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     //   atPos(pos)(accumTree)
     }
 
-    def combineCases(scrut: Tree, scrutSym: Symbol, cases: List[Tree], pt: Type): Tree = {
-      // when specified, need to propagate pt explicitly, type inferencer can't handle it
-      val optPt = if(!isFullyDefined(pt)) NoType else appliedType(matchingMonadType, List(pt))
-      pmgen.runOrElse(scrut, pmgen.fun(scrutSym, cases reduceLeft pmgen.typedOrElse(optPt)))
+    def combineCases(scrut: Tree, scrutSym: Symbol, cases: List[(List[TreeMaker], Tree)], pt: Type): Tree = {
+      val matcher =
+        if (cases nonEmpty) {
+          // when specified, need to propagate pt explicitly (type inferencer can't handle it)
+          val optPt =
+            if (isFullyDefined(pt)) appliedType(matchingMonadType, List(pt))
+            else NoType
+
+          // map + foldLeft
+          var combinedCases = combineExtractors(cases.head._1, cases.head._2)
+          cases.tail foreach { case (pats, body) =>
+            combinedCases = pmgen.typedOrElse(optPt)(combinedCases, combineExtractors(pats, body))
+          }
+
+          pmgen.fun(scrutSym, combinedCases)
+        } else pmgen.zero
+
+      pmgen.runOrElse(scrut, matcher, scrutSym.info, if (isFullyDefined(pt)) pt else NoType)
     }
 
     object Substitution {
@@ -784,12 +756,13 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodeGen { import CODE.UNIT
-      def runOrElse(scrut: Tree, matcher: Tree): Tree
+      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree
       def flatMap(a: Tree, b: Tree): Tree
       def fun(arg: Symbol, body: Tree): Tree
       def or(f: Tree, as: List[Tree]): Tree
       def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree
       def guard(c: Tree): Tree
+      def zero: Tree
       // TODO: defaults in traits + self types == broken?
       // def guard(c: Tree, then: Tree, tp: Type): Tree
       // def cond(c: Tree): Tree = cond(c, UNIT, NoType)
@@ -845,6 +818,11 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       new TermSymbol(NoSymbol, pos, vpmName.counted(prefix, ctr)) setInfo repackExistential(tp)
     }
 
+    def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
+      case TypeRef(_, RepeatedParamClass, args) => appliedType(SeqClass.typeConstructor, args)
+      case _ => tp
+    }
+
     object vpmName {
       val caseResult = "caseResult".toTermName
       val drop       = "drop".toTermName
@@ -895,7 +873,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     trait MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       // methods in MatchingStrategy (the monad companion) -- used directly in translation
-      def runOrElse(scrut: Tree, matcher: Tree): Tree                    = (matchingStrategy DOT vpmName.runOrElse)(scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
+      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutTp, resTp) APPLY (scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
       def zero: Tree                                                     = matchingStrategy DOT vpmName.zero                                // matchingStrategy.zero
       def one(res: Tree, tp: Type = NoType, oneName: Name = vpmName.one): Tree = genTypeApply(matchingStrategy DOT oneName, tp) APPLY (res) // matchingStrategy.one(res)
       def or(f: Tree, as: List[Tree]): Tree                              = (matchingStrategy DOT vpmName.or)((f :: as): _*)                 // matchingStrategy.or(f, as)
@@ -971,6 +949,48 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
     def genTypeApply(tfun: Tree, args: Type*): Tree                       = if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree)
     // def genTyped(t: Tree, tp: Type): Tree                                 = if(tp == NoType) t else Typed(t, TypeTree(repackExistential(tp)))
+  }
+
+
+  // TODO: do this during tree construction, but that will require tracking the current owner in treemakers
+  // TODO: assign more fine-grained positions
+  // fixes symbol nesting, assigns positions
+  def fixerUpper(origOwner: Symbol, pos: Position) = new Traverser {
+    currentOwner = origOwner
+
+    override def traverse(t: Tree) {
+      if (t != EmptyTree && t.pos == NoPosition) {
+        t.setPos(pos)
+      }
+      t match {
+        case Function(_, _) if t.symbol == NoSymbol =>
+          t.symbol = currentOwner.newValue(t.pos, nme.ANON_FUN_NAME).setFlag(SYNTHETIC).setInfo(NoType)
+          // println("new symbol for "+ (t, t.symbol.ownerChain))
+        case Function(_, _) if (t.symbol.owner == NoSymbol) || (t.symbol.owner == origOwner) =>
+          // println("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))
+          t.symbol.owner = currentOwner
+        case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
+          // println("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
+          if(d.symbol.isLazy) { // for lazy val's accessor -- is there no tree??
+            assert(d.symbol.lazyAccessor != NoSymbol && d.symbol.lazyAccessor.owner == d.symbol.owner)
+            d.symbol.lazyAccessor.owner = currentOwner
+          }
+          if(d.symbol.moduleClass ne NoSymbol)
+            d.symbol.moduleClass.owner = currentOwner
+
+          d.symbol.owner = currentOwner
+        // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
+        //   println("untouched "+ (t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain))
+        case _ =>
+      }
+      super.traverse(t)
+    }
+
+    // override def apply
+    // println("before fixerupper: "+ xTree)
+    // currentRun.trackerFactory.snapshot()
+    // println("after fixerupper")
+    // currentRun.trackerFactory.snapshot()
   }
 }
 
