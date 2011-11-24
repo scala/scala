@@ -1250,6 +1250,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isNumericSubClass(that: Symbol): Boolean =
       definitions.isNumericSubClass(this, that)
 
+    final def isWeakSubClass(that: Symbol) =
+      isSubClass(that) || isNumericSubClass(that)
+
 // ------ overloaded alternatives ------------------------------------------------------
 
     def alternatives: List[Symbol] =

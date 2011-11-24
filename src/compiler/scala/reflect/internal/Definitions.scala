@@ -72,10 +72,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
       clazz
     }
 
-    def isNumericSubClass(sub: Symbol, sup: Symbol) = {
-      val cmp = for (w1 <- numericWeight get sub ; w2 <- numericWeight get sup) yield w2 % w1
-      cmp exists (_ == 0)
-    }
+    def isNumericSubClass(sub: Symbol, sup: Symbol) = (
+         (numericWeight contains sub)
+      && (numericWeight contains sup)
+      && (numericWeight(sup) % numericWeight(sub) == 0)
+    )
 
     /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol): Boolean =

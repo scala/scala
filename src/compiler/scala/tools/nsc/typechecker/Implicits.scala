@@ -93,6 +93,24 @@ trait Implicits {
 
   private val ManifestSymbols = Set(PartialManifestClass, FullManifestClass, OptManifestClass)
 
+  /** Map all type params in given list to WildcardType
+   *  @param   tparams  The list of type parameters to map
+   *  @param   tp  The type in which to do the mapping
+   */
+  private def tparamsToWildcards(tparams: List[Symbol], tp: Type) =
+    if (tparams.isEmpty) tp
+    else tp.instantiateTypeParams(tparams, tparams map (_ => WildcardType))
+
+  /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
+   * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate DebruijnIndex types
+   * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
+   * so we have to approximate (otherwise it is excluded a priori).
+   */
+  private def depoly(tp: Type): Type = tp match {
+    case PolyType(tparams, restpe) => tparamsToWildcards(tparams, ApproximateDependentMap(restpe))
+    case _                         => ApproximateDependentMap(tp)
+  }
+
   /** The result of an implicit search
    *  @param  tree    The tree representing the implicit
    *  @param  subst   A substituter that represents the undetermined type parameters
@@ -119,6 +137,10 @@ trait Implicits {
       tpeCache
     }
 
+    def isCyclicOrErroneous =
+      try containsError(tpe)
+      catch { case _: CyclicReference => true }
+
     var useCountArg: Int = 0
     var useCountView: Int = 0
 
@@ -135,9 +157,15 @@ trait Implicits {
         tp.isError
     }
 
-    def isCyclicOrErroneous =
-      try containsError(tpe)
-      catch { case _: CyclicReference => true }
+    /** Todo reconcile with definition of stability given in Types.scala */
+    private def isStable(tp: Type): Boolean = tp match {
+     case TypeRef(pre, sym, _) =>
+       sym.isPackageClass ||
+       sym.isModuleClass && isStable(pre) /*||
+       sym.isAliasType && isStable(tp.normalize)*/
+     case _ => tp.isStable
+    }
+    def isStablePrefix = isStable(pre)
 
     override def equals(other: Any) = other match {
       case that: ImplicitInfo =>
@@ -225,8 +253,7 @@ trait Implicits {
    *  @param isView           We are looking for a view
    *  @param context0         The context used for the implicit search
    */
-  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context)
-    extends Typer(context0) {
+  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context) extends Typer(context0) {
       printTyping(
         ptBlock("new ImplicitSearch",
           "tree"        -> tree,
@@ -256,23 +283,8 @@ trait Implicits {
         } else isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
       }
     }
-
-    /** Map all type params in given list to WildcardType
-     *  @param   tp  The type in which to do the mapping
-     *  @param   tparams  The list of type parameters to map
-     */
-    private def tparamsToWildcards(tp: Type, tparams: List[Symbol]) =
-      tp.instantiateTypeParams(tparams, tparams map (t => WildcardType))
-
-    /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
-     * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate DebruijnIndex types
-     * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
-     * so we have to approximate (otherwise it is excluded a priori).
-     */
-    private def depoly(tp: Type): Type = tp match {
-      case PolyType(tparams, restpe) => tparamsToWildcards(ApproximateDependentMap(restpe), tparams)
-      case _ => ApproximateDependentMap(tp)
-    }
+    def isPlausiblyCompatible(tp: Type, pt: Type) = checkCompatibility(fast = true, tp, pt)
+    def normSubType(tp: Type, pt: Type) = checkCompatibility(fast = false, tp, pt)
 
     /** Does type `dtor` dominate type `dted`?
      *  This is the case if the stripped cores `dtor1` and `dted1` of both types are
@@ -370,6 +382,8 @@ trait Implicits {
 
     /** The type parameters to instantiate */
     val undetParams = if (isView) List() else context.outer.undetparams
+
+    /** The expected type with all undetermined type parameters replaced with wildcards. */
     def approximate(tp: Type) = deriveTypeWithWildcards(undetParams)(tp)
     val wildPt = approximate(pt)
 
@@ -409,15 +423,6 @@ trait Implicits {
        }
     }
 
-    /** Todo reconcile with definition of stability given in Types.scala */
-    private def isStable(tp: Type): Boolean = tp match {
-     case TypeRef(pre, sym, _) =>
-       sym.isPackageClass ||
-       sym.isModuleClass && isStable(pre) /*||
-       sym.isAliasType && isStable(tp.normalize)*/
-     case _ => tp.isStable
-    }
-
     /** Does type `tp` match expected type `pt`
      *  This is the case if either `pt` is a unary function type with a
      *  HasMethodMatching type as result, and `tp` is a unary function
@@ -426,7 +431,7 @@ trait Implicits {
      *  or otherwise if `tp` is compatible with `pt`.
      *  This method is performance critical: 5-8% of typechecking time.
      */
-    private def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) = {
+    private def matchesPt(tp: Type, pt: Type, undet: List[Symbol]): Boolean = {
       val start = startTimer(matchesPtNanos)
       val result = normSubType(tp, pt) || isView && {
         pt match {
@@ -439,6 +444,9 @@ trait Implicits {
       stopTimer(matchesPtNanos, start)
       result
     }
+    private def matchesPt(info: ImplicitInfo): Boolean = (
+      info.isStablePrefix && matchesPt(depoly(info.tpe), wildPt, Nil)
+    )
 
     private def matchesPtView(tp: Type, ptarg: Type, ptres: Type, undet: List[Symbol]): Boolean = tp match {
       case MethodType(p :: _, restpe) if p.isImplicit => matchesPtView(restpe, ptarg, ptres, undet)
@@ -459,25 +467,93 @@ trait Implicits {
        }
      }
 
+    /** Capturing the overlap between isPlausiblyCompatible and normSubType.
+     *  This is a faithful translation of the code which was there, but it
+     *  seems likely the methods are intended to be even more similar than
+     *  they are: perhaps someone more familiar with the intentional distinctions
+     *  can examine the now much smaller concrete implementations below.
+     */
+    private def checkCompatibility(fast: Boolean, tp0: Type, pt0: Type): Boolean = {
+      @tailrec def loop(tp: Type, pt: Type): Boolean = tp match {
+        case mt @ MethodType(params, restpe) =>
+          if (mt.isImplicit)
+            loop(restpe, pt)
+          else pt match {
+            case tr @ TypeRef(pre, sym, args) =>
+              if (sym.isAliasType) loop(tp, pt.normalize)
+              else if (sym.isAbstractType) loop(tp, pt.bounds.lo)
+              else {
+                val len = args.length - 1
+                hasLength(params, len) &&
+                sym == FunctionClass(len) && {
+                  var ps = params
+                  var as = args
+                  if (fast) {
+                    while (ps.nonEmpty && as.nonEmpty) {
+                      if (!isPlausiblySubType(as.head, ps.head.tpe))
+                        return false
+                      ps = ps.tail
+                      as = as.tail
+                    }
+                  } else {
+                    while (ps.nonEmpty && as.nonEmpty) {
+                      if (!(as.head <:< ps.head.tpe))
+                        return false
+                      ps = ps.tail
+                      as = as.tail
+                    }
+                  }
+                  ps.isEmpty && as.nonEmpty && {
+                    val lastArg = as.head
+                    as.tail.isEmpty && loop(restpe, lastArg)
+                  }
+                }
+              }
+
+            case _            => if (fast) false else tp <:< pt
+          }
+        case NullaryMethodType(restpe)  => loop(restpe, pt)
+        case PolyType(_, restpe)        => loop(restpe, pt)
+        case ExistentialType(_, qtpe)   => if (fast) loop(qtpe, pt) else normalize(tp) <:< pt // is !fast case needed??
+        case _                          => if (fast) isPlausiblySubType(tp, pt) else tp <:< pt
+      }
+      loop(tp0, pt0)
+    }
+
+    /** This expresses more cleanly in the negative: there's a linear path
+     *  to a final true or false.
+     */
+    private def isPlausiblySubType(tp1: Type, tp2: Type) = !isImpossibleSubType(tp1, tp2)
+    private def isImpossibleSubType(tp1: Type, tp2: Type) = tp1.normalize.widen match {
+      case tr1 @ TypeRef(_, sym1, _) =>
+        // We can only rule out a subtype relationship if the left hand
+        // side is a class, else we may not know enough.
+        sym1.isClass && (tp2.normalize.widen match {
+          case TypeRef(_, sym2, _) =>
+             sym2.isClass && !(sym1 isWeakSubClass sym2)
+          case RefinedType(parents, decls) =>
+            decls.nonEmpty &&
+            tr1.member(decls.head.name) == NoSymbol
+          case _ => false
+        })
+      case _ => false
+    }
+
     private def typedImplicit0(info: ImplicitInfo, ptChecked: Boolean): SearchResult = {
       incCounter(plausiblyCompatibleImplicits)
       printTyping(
         ptBlock("typedImplicit0",
           "info.name" -> info.name,
-          "info.tpe"  -> depoly(info.tpe),
           "ptChecked" -> ptChecked,
           "pt"        -> wildPt,
           "orig"      -> ptBlock("info",
-            "matchesPt"             -> matchesPt(depoly(info.tpe), wildPt, Nil),
             "undetParams"           -> undetParams,
-            "isPlausiblyCompatible" -> isPlausiblyCompatible(info.tpe, wildPt),
-            "info.pre"              -> info.pre,
-            "isStable"              -> isStable(info.pre)
+            "info.pre"              -> info.pre
           ).replaceAll("\\n", "\n  ")
         )
       )
 
-      if (ptChecked || matchesPt(depoly(info.tpe), wildPt, Nil) && isStable(info.pre))
+      if (ptChecked || matchesPt(info))
         typedImplicit1(info)
       else
         SearchFailure
@@ -610,14 +686,6 @@ trait Implicits {
       }
     }
 
-    /** Is `sym` the standard conforms method in Predef?
-     *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def`
-     *  which does a member lookup (it can't be a lazy val because we might reload Predef
-     *  during resident compilations).
-     */
-    private def isConformsMethod(sym: Symbol) =
-      sym.name == nme.conforms && sym.owner == PredefModule.moduleClass
-
     /** Should implicit definition symbol `sym` be considered for applicability testing?
      *  This is the case if one of the following holds:
      *   - the symbol's type is initialized
@@ -666,17 +734,23 @@ trait Implicits {
      */
     class ImplicitComputation(iss: Infoss, shadowed: util.HashSet[Name]) {
       private var best: SearchResult = SearchFailure
+      private def isShadowed(name: Name) = (
+           (shadowed != null)
+        && (shadowed(name) || nonImplicitSynonymInScope(name))
+      )
+      private def isIneligible(info: ImplicitInfo) = (
+           info.isCyclicOrErroneous
+        || isView && isConforms(info.sym)
+        || isShadowed(info.name)
+      )
 
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
-      def survives(info: ImplicitInfo): Boolean = {
-        !info.isCyclicOrErroneous &&
-        !(isView && isConformsMethod(info.sym)) &&
-        isPlausiblyCompatible(info.tpe, wildPt) &&        // <--- cheaper than matchesPt
-        matchesPt(depoly(info.tpe), wildPt, Nil) &&
-        isStable(info.pre) &&
-        (shadowed == null || (!shadowed(info.name) && !nonImplicitSynonymInScope(info.name)))
-      }
+      def survives(info: ImplicitInfo) = (
+           !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
+        && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
+        && matchesPt(info)                          // stable and matches expected type
+      )
       /** The implicits that are not valid because they come later in the source and
        *  lack an explicit result type. Used for error diagnostics only.
        */
@@ -685,6 +759,15 @@ trait Implicits {
       /** Tests for validity and updates invalidImplicits by side effect when false.
        */
       private def checkValid(sym: Symbol) = isValid(sym) || { invalidImplicits += sym ; false }
+
+      /** Is `sym` the standard conforms method in Predef?
+       *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def`
+       *  which does a member lookup (it can't be a lazy val because we might reload Predef
+       *  during resident compilations).
+       */
+      private def isConforms(sym: Symbol) = (
+        (sym.name == nme.conforms) && (sym.owner == PredefModule.moduleClass)
+      )
 
       /** Preventing a divergent implicit from terminating implicit search,
        *  so that if there is a best candidate it can still be selected.

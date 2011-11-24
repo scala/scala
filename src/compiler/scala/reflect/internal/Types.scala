@@ -5559,9 +5559,15 @@ A type's typeSymbol should never be inspected directly.
         isSubType(tp1, tp2)
     }
 
-  def isNumericSubType(tp1: Type, tp2: Type) =
-    isNumericValueType(tp1) && isNumericValueType(tp2) &&
-    isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
+  /** The isNumericValueType tests appear redundant, but without them
+   *  test/continuations-neg/function3.scala goes into an infinite loop.
+   *  (Even if the calls are to typeSymbolDirect.)
+   */
+  def isNumericSubType(tp1: Type, tp2: Type) = (
+       isNumericValueType(tp1)
+    && isNumericValueType(tp2)
+    && isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
+  )
 
   private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
   private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
