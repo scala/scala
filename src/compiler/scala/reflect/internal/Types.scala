@@ -90,6 +90,8 @@ trait Types extends api.Types { self: SymbolTable =>
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
 
+  protected val enableTypeVarExperimentals = settings.Xexperimental.value
+
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
@@ -2398,6 +2400,30 @@ A type's typeSymbol should never be inspected directly.
       new TypeVar(origin, constr, args, params)
   }
 
+  // TODO: I don't really know why this happens -- maybe because
+  // the owner hierarchy changes? the other workaround (besides
+  // repackExistential) is to explicitly pass expectedTp as the type
+  // argument for the call to guard, but repacking the existential
+  // somehow feels more robust
+  //
+  // TODO: check if optimization makes a difference, try something else
+  // if necessary (cache?)
+
+  /** Repack existential types, otherwise they sometimes get unpacked in the
+   *  wrong location (type inference comes up with an unexpected skolem)
+   */
+  def repackExistential(tp: Type): Type = (
+    if (tp == NoType) tp
+    else existentialAbstraction(existentialsInType(tp), tp)
+  )
+  def containsExistential(tpe: Type) =
+    tpe exists (_.typeSymbol.isExistentiallyBound)
+
+  def existentialsInType(tpe: Type) = (
+    for (tp <- tpe ; if tp.typeSymbol.isExistentiallyBound) yield
+      tp.typeSymbol
+  )
+
   /** A class representing a type variable: not used after phase `typer`.
    *
    *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
@@ -2423,22 +2449,15 @@ A type's typeSymbol should never be inspected directly.
     /** The variable's skolemization level */
     val level = skolemizationLevel
 
+    // When comparing to types containing skolems, remember the highest level
+    // of skolemization. If that highest level is higher than our initial
+    // skolemizationLevel, we can't re-use those skolems as the solution of this
+    // typevar, which means we'll need to repack our constr.inst into a fresh
+    // existential.
     // were we compared to skolems at a higher skolemizationLevel?
-    // EXPERIMENTAL: will never be true unless settings.Xexperimental.value
+    // EXPERIMENTAL: value will not be considered unless enableTypeVarExperimentals is true
     private var encounteredHigherLevel = false
-
-    // set `encounteredHigherLevel` if sym.asInstanceOf[TypeSkolem].level > level
-    private def updateEncounteredHigherLevel(sym: Symbol): Unit =
-      sym match {
-        case ts: TypeSkolem if ts.level > level => encounteredHigherLevel = true
-        case _ =>
-      }
-
-    // if we were compared against later typeskolems, repack the existential,
-    // because skolems are only compatible if they were created at the same level
-    private def repackExistential(tp: Type): Type = if(!encounteredHigherLevel) tp
-      else existentialAbstraction((tp filter {t => t.typeSymbol.isExistentiallyBound}) map (_.typeSymbol), tp)
-
+    private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
 
     /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
      *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
@@ -2466,7 +2485,9 @@ A type's typeSymbol should never be inspected directly.
     def setInst(tp: Type) {
 //      assert(!(tp containsTp this), this)
       undoLog record this
-      constr.inst = repackExistential(tp)
+      // if we were compared against later typeskolems, repack the existential,
+      // because skolems are only compatible if they were created at the same level
+      constr.inst = if (shouldRepackType) repackExistential(tp) else tp
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
@@ -2593,8 +2614,6 @@ A type's typeSymbol should never be inspected directly.
       else if (constr.instValid)  // type var is already set
         checkSubtype(tp, constr.inst)
       else isRelatable(tp) && {
-        // registerSkolemizationLevel checks for type skolems which cannot be understood at this level
-        registerSkolemizationLevel(tp)
         unifySimple || unifyFull(tp) || (
           // only look harder if our gaze is oriented toward Any
           isLowerBound && (
@@ -2617,12 +2636,8 @@ A type's typeSymbol should never be inspected directly.
       if (suspended) tp =:= origin
       else if (constr.instValid) checkIsSameType(tp)
       else isRelatable(tp) && {
-        registerSkolemizationLevel(tp)
         val newInst = wildcardToTypeVarMap(tp)
-        if (constr.isWithinBounds(newInst)) {
-          setInst(tp)
-          true
-        } else false
+        (constr isWithinBounds newInst) && { setInst(tp); true }
       }
     }
 
@@ -2636,32 +2651,23 @@ A type's typeSymbol should never be inspected directly.
       registerBound(HasTypeMember(sym.name.toTypeName, tp), false)
     }
 
+    private def isSkolemAboveLevel(tp: Type) = tp.typeSymbol match {
+      case ts: TypeSkolem => ts.level > level
+      case _              => false
+    }
+    // side-effects encounteredHigherLevel
+    private def containsSkolemAboveLevel(tp: Type) =
+      (tp exists isSkolemAboveLevel) && { encounteredHigherLevel = true ; true }
+
      /** Can this variable be related in a constraint to type `tp`?
       *  This is not the case if `tp` contains type skolems whose
       *  skolemization level is higher than the level of this variable.
-      *
-      * EXPERIMENTAL: always say we're relatable, track whether we need to deal with the consquences (registerSkolemizationLevel)
       */
-    def isRelatable(tp: Type): Boolean = (settings.Xexperimental.value ||
-      !tp.exists { t =>
-        t.typeSymbol match {
-          case ts: TypeSkolem => ts.level > level
-          case _ => false
-        }
-      })
-
-    /** When comparing to types containing skolems, remember the highest level of skolemization
-     *
-     * If that highest level is higher than our initial skolemizationLevel,
-     * we can't re-use those skolems as the solution of this typevar,
-     * so repack them in a fresh existential.
-     */
-    def registerSkolemizationLevel(tp: Type): Unit = if (settings.Xexperimental.value) {
-      // don't care about the result, just stop as soon as encounteredHigherLevel == true,
-      // which means we'll need to repack our constr.inst into a fresh existential
-      encounteredHigherLevel || tp.exists { t => updateEncounteredHigherLevel(t.typeSymbol); encounteredHigherLevel }
-    }
-
+    def isRelatable(tp: Type) = (
+         shouldRepackType               // short circuit if we already know we've seen higher levels
+      || !containsSkolemAboveLevel(tp)  // side-effects tracking boolean
+      || enableTypeVarExperimentals     // -Xexperimental: always say we're relatable, track consequences
+    )
     override val isHigherKinded = typeArgs.isEmpty && params.nonEmpty
 
     override def normalize: Type =

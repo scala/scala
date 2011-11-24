@@ -845,22 +845,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       new TermSymbol(NoSymbol, pos, vpmName.counted(prefix, ctr)) setInfo repackExistential(tp)
     }
 
-    // repack existential types, otherwise they sometimes get unpacked in the wrong location (type inference comes up with an unexpected skolem)
-    // TODO: I don't really know why this happens -- maybe because the owner hierarchy changes?
-    // the other workaround (besides repackExistential) is to explicitly pass expectedTp as the type argument for the call to guard, but repacking the existential somehow feels more robust
-    // TODO: check if optimization makes a difference, try something else if necessary (cache?)
-    def repackExistential(tp: Type): Type = if(tp == NoType) tp
-      else {
-        val existentials = new collection.mutable.ListBuffer[Symbol]
-        tp foreach { t =>
-          val sym = t.typeSymbol
-          if (sym.isExistentiallyBound) existentials += sym
-        }
-        if (existentials isEmpty) tp
-        else existentialAbstraction(existentials toList, tp)
-        // existentialAbstraction((tp filter {t => t.typeSymbol.isExistentiallyBound}) map (_.typeSymbol), tp)
-      }
-
     object vpmName {
       val caseResult = "caseResult".toTermName
       val drop       = "drop".toTermName

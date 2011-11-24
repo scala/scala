@@ -3214,7 +3214,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             }
             treeCopy.Match(tree, selector1, cases1) setType owntype
           } else { // don't run translator after typers (see comments in PatMatVirtualiser)
-            def repackExistential(tp: Type): Type = existentialAbstraction((tp filter {t => t.typeSymbol.isExistentiallyBound}) map (_.typeSymbol), tp)
             val (owntype0, needAdapt) = ptOrLub(cases1 map (x => repackExistential(x.tpe)))
             val owntype = elimAnonymousClass(owntype0)
             if (needAdapt) cases1 = cases1 map (adaptCase(_, owntype))
