@@ -2166,14 +2166,24 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def typedArgs(args: List[Tree], mode: Int) =
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
-    def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
-      var newmodes = originalFormals map (tp => if (isByNameParamType(tp)) 0 else BYVALmode)
-      if (isVarArgTypes(originalFormals)) // TR check really necessary?
-        newmodes = newmodes.init ++ List.fill(args.length - originalFormals.length + 1)(STARmode | BYVALmode)
-
-      (args, adaptedFormals, newmodes).zipped map { (arg, formal, m) =>
-        typedArg(arg, mode, m, formal)
+    def typedArgs(args0: List[Tree], mode: Int, formals0: List[Type], adapted0: List[Type]): List[Tree] = {
+      val sticky = onlyStickyModes(mode)
+      def loop(args: List[Tree], formals: List[Type], adapted: List[Type]): List[Tree] = {
+        if (args.isEmpty || adapted.isEmpty) Nil
+        else {
+          // No formals left or * indicates varargs.
+          val isVarArgs = formals.isEmpty || formals.tail.isEmpty && isRepeatedParamType(formals.head)
+          val typedMode = sticky | (
+            if (isVarArgs) STARmode | BYVALmode
+            else if (isByNameParamType(formals.head)) 0
+            else BYVALmode
+          )
+          val tree = typedArg(args.head, mode, typedMode, adapted.head)
+          // formals may be empty, so don't call tail
+          tree :: loop(args.tail, formals drop 1, adapted.tail)
+        }
       }
+      loop(args0, formals0, adapted0)
     }
 
     /** Does function need to be instantiated, because a missing parameter
