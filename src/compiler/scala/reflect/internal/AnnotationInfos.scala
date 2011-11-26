@@ -47,7 +47,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    *  - arrays of constants
    *  - or nested classfile annotations
    */
-  abstract class ClassfileAnnotArg
+  abstract class ClassfileAnnotArg extends Product
 
   /** Represents a compile-time Constant (`Boolean`, `Byte`, `Short`,
    *  `Char`, `Int`, `Long`, `Float`, `Double`, `String`, `java.lang.Class` or
@@ -154,10 +154,17 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    *
    *  `assocs` stores arguments to classfile annotations as name-value pairs.
    */
-  sealed abstract class AnnotationInfo {
+  sealed abstract class AnnotationInfo extends Product3[Type, List[Tree], List[(Name, ClassfileAnnotArg)]] {
     def atp: Type
     def args: List[Tree]
     def assocs: List[(Name, ClassfileAnnotArg)]
+
+    /** Hand rolling Product. */
+    def _1 = atp
+    def _2 = args
+    def _3 = assocs
+    def canEqual(other: Any) = other.isInstanceOf[AnnotationInfo]
+    override def productPrefix = "AnnotationInfo"
 
     // see annotationArgRewriter
     lazy val isTrivial = atp.isTrivial && !hasArgWhich(_.isInstanceOf[This])

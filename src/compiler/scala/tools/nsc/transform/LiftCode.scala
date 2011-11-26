@@ -11,6 +11,7 @@ import Flags._
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.FreshNameCreator
+import scala.runtime.ScalaRunTime.{ isAnyVal, isTuple }
 
 /**
  * Translate expressions of the form reflect.Code.lift(exp)
@@ -33,6 +34,23 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
   def newTransformer(unit: CompilationUnit): Transformer =
     new Codifier(unit)
+
+  private lazy val MirrorMemberNames =
+    ReflectRuntimeMirror.info.nonPrivateMembers filter (_.isTerm) map (_.toString) toSet
+
+  // Would be nice if we could use something like this to check the names,
+  // but it seems that info is unavailable when I need it.
+  private def mirrorFactoryName(value: Any): Option[String] = value match {
+    // Modest (inadequate) sanity check that there's a member by this name.
+    case x: Product if MirrorMemberNames(x.productPrefix) =>
+      Some(x.productPrefix)
+    case _ =>
+      Some(value.getClass.getName split """[$.]""" last) filter MirrorMemberNames
+  }
+  private def isMirrorMemberObject(value: Product) = value match {
+    case NoType | NoPrefix | NoPosition | EmptyTree => true
+    case _                                          => false
+  }
 
   class Codifier(unit: CompilationUnit) extends TypingTransformer(unit) {
 
@@ -231,10 +249,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
     private def registerReifiableSymbol(sym: Symbol): Unit =
       if (!(symIndex contains sym)) {
-        sym.owner.ownersIterator.find(!isLocatable(_)) match {
-          case Some(outer) => registerReifiableSymbol(outer)
-          case None =>
-        }
+        sym.owner.ownersIterator find (x => !isLocatable(x)) foreach registerReifiableSymbol
         symIndex(sym) = reifiableSyms.length
         reifiableSyms += sym
       }
@@ -261,16 +276,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
     private def mkList(args: List[Tree]): Tree =
       scalaFactoryCall("collection.immutable.List", args: _*)
 
-    /**
-     * Reify a case object defined in Mirror
-     */
-    private def reifyCaseObject(value: Product) = mirrorSelect(value.productPrefix)
-
-    /**
-     * Reify an instance of a case class defined in Mirror
-     */
-    private def reifyCaseClassInstance(value: Product) =
-      mirrorFactoryCall(value, (value.productIterator map reify).toList: _*)
+    private def reifyModifiers(m: Modifiers) =
+      mirrorCall("modifiersFromInternalFlags", reify(m.flags), reify(m.privateWithin), reify(m.annotations))
 
     private def reifyAggregate(name: String, args: Any*) =
       scalaFactoryCall(name, (args map reify).toList: _*)
@@ -379,15 +386,12 @@ abstract class LiftCode extends Transform with TypingTransformers {
       if (tsym.isClass && tpe == tsym.typeConstructor && tsym.isStatic)
         Select(reifySymRef(tpe.typeSymbol), "asTypeConstructor")
       else tpe match {
-        case NoType | NoPrefix =>
-          reifyCaseObject(tpe.asInstanceOf[Product])
-        case tpe @ ThisType(clazz) =>
-          if (clazz.isModuleClass && clazz.isStatic) mirrorCall("thisModuleType", reify(clazz.fullName))
-          else reifyCaseClassInstance(tpe)
-        case SuperType(_, _) | SingleType(_, _) | ConstantType(_) |
-          TypeRef(_, _, _) | AnnotatedType(_, _, _) |
-          TypeBounds(_, _) | NullaryMethodType(_) | OverloadedType(_, _) =>
-          reifyCaseClassInstance(tpe.asInstanceOf[Product])
+        case t @ NoType =>
+          reifyMirrorObject(t)
+        case t @ NoPrefix =>
+          reifyMirrorObject(t)
+        case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
+          mirrorCall("thisModuleType", reify(clazz.fullName))
         case t @ RefinedType(parents, decls) =>
           registerReifiableSymbol(tpe.typeSymbol)
           mirrorFactoryCall(t, reify(parents), reify(decls), reify(t.typeSymbol))
@@ -401,14 +405,14 @@ abstract class LiftCode extends Transform with TypingTransformers {
         case t @ MethodType(params, restpe) =>
           reifyTypeBinder(t, params, restpe)
         case _ =>
-          cannotReify(tpe)
+          reifyProductUnsafe(tpe)
       }
     }
 
     /** Reify a tree */
     private def reifyTree(tree: Tree): Tree = tree match {
       case EmptyTree =>
-        reifyCaseObject(tree)
+        reifyMirrorObject(EmptyTree)
       case This(_) if !(boundSyms contains tree.symbol) =>
         reifyFree(tree)
       case Ident(_) if !(boundSyms contains tree.symbol) =>
@@ -416,8 +420,10 @@ abstract class LiftCode extends Transform with TypingTransformers {
       case TypeTree() if (tree.tpe != null) =>
         mirrorCall("TypeTree", reifyType(tree.tpe))
       case _ =>
-        if (tree.isDef) boundSyms += tree.symbol
-        reifyCaseClassInstance(tree.asInstanceOf[Product])
+        if (tree.isDef)
+          boundSyms += tree.symbol
+
+        reifyProduct(tree)
       /*
           if (tree.isDef || tree.isInstanceOf[Function])
             registerReifiableSymbol(tree.symbol)
@@ -434,45 +440,42 @@ abstract class LiftCode extends Transform with TypingTransformers {
     private def reifyFree(tree: Tree): Tree =
       mirrorCall("Ident", reifySymRef(tree.symbol))
 
+    // todo: consider whether we should also reify positions
+    private def reifyPosition(pos: Position): Tree =
+      reifyMirrorObject(NoPosition)
+
+    // !!! we must eliminate these casts.
+    private def reifyProductUnsafe(x: Any): Tree =
+      reifyProduct(x.asInstanceOf[Product])
+    private def reifyProduct(x: Product): Tree =
+      mirrorCall(x.productPrefix, (x.productIterator map reify).toList: _*)
+
+    /**
+     * Reify a case object defined in Mirror
+     */
+    private def reifyMirrorObject(name: String): Tree = mirrorSelect(name)
+    private def reifyMirrorObject(x: Product): Tree   = reifyMirrorObject(x.productPrefix)
+
+    private def isReifiableConstant(value: Any) = value match {
+      case null      => true  // seems pretty reifable to me?
+      case _: String => true
+      case _         => isAnyVal(value)
+    }
+
     /** Reify an arbitary value */
-    private def reify(value: Any): Tree = {
-      value match {
-        case tree: Tree =>
-          reifyTree(tree)
-        case sym: Symbol =>
-          reifySymRef(sym)
-        case tpe: Type =>
-          reifyType(tpe)
-        case xs: List[_] =>
-          scalaFactoryCall("collection.immutable.List", xs map reify: _*)
-        case xs: Array[_] =>
-          scalaFactoryCall("Array", xs map reify: _*)
-        case scope: Scope =>
-          reifyScope(scope)
-        case x: Name =>
-          reifyName(x)
-        case pos: Position => // todo: consider whether we should also reify positions
-          reifyCaseObject(NoPosition)
-        case Constant(_) | AnnotationInfo(_, _, _) =>
-          reifyCaseClassInstance(value.asInstanceOf[Product])
-        case Modifiers(flags, qual, annots) =>
-          mirrorCall("modifiersFromInternalFlags", reify(flags), reify(qual), reify(annots))
-        case arg: ClassfileAnnotArg =>
-          reifyCaseClassInstance(arg.asInstanceOf[Product])
-        case x: Product if x.getClass.getName startsWith "scala.Tuple" =>
-          reifyCaseClassInstance(x)
-        case () => Literal(Constant(()))
-        case x: String => Literal(Constant(x))
-        case x: Boolean => Literal(Constant(x))
-        case x: Byte => Literal(Constant(x))
-        case x: Short => Literal(Constant(x))
-        case x: Char => Literal(Constant(x))
-        case x: Int => Literal(Constant(x))
-        case x: Long => Literal(Constant(x))
-        case x: Float => Literal(Constant(x))
-        case x: Double => Literal(Constant(x))
-        case _ => cannotReify(value)
-      }
+    private def reify(value: Any): Tree = value match {
+      case tree: Tree   => reifyTree(tree)
+      case sym: Symbol  => reifySymRef(sym)
+      case tpe: Type    => reifyType(tpe)
+      case xs: List[_]  => reifyList(xs)
+      case xs: Array[_] => scalaFactoryCall("Array", xs map reify: _*)
+      case scope: Scope => reifyScope(scope)
+      case x: Name      => reifyName(x)
+      case x: Position  => reifyPosition(x)
+      case x: Modifiers => reifyModifiers(x)
+      case _ =>
+        if (isReifiableConstant(value)) Literal(Constant(value))
+        else reifyProductUnsafe(value)
     }
 
     /**
@@ -516,6 +519,6 @@ abstract class LiftCode extends Transform with TypingTransformers {
     }
 
     private def cannotReify(value: Any): Nothing =
-      abort("don't know how to reify " + value + " of class " + value.getClass)
+      abort("don't know how to reify " + value + " of " + value.getClass)
   }
 }

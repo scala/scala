@@ -31,6 +31,12 @@ object ScalaRunTime {
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
+  def isTuple(x: Any) = tupleNames(x.getClass.getName)
+  def isAnyVal(x: Any) = x match {
+    case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
+    case _                                                                                             => false
+  }
+  private val tupleNames = 1 to 22 map ("scala.Tuple" + _) toSet
 
   /** Return the class object representing an unboxed value type,
    *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
@@ -272,9 +278,6 @@ object ScalaRunTime {
   def stringOf(arg: Any, maxElements: Int): String = {
     def isScalaClass(x: AnyRef) =
       Option(x.getClass.getPackage) exists (_.getName startsWith "scala.")
-
-    def isTuple(x: AnyRef) =
-      x.getClass.getName matches """^scala\.Tuple(\d+).*"""
 
     // When doing our own iteration is dangerous
     def useOwnToString(x: Any) = x match {
