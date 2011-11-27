@@ -11,7 +11,7 @@ import java.net.URL
 import java.util.{ Timer, TimerTask }
 
 import scala.tools.nsc.Properties.{ jdkHome, javaHome, propOrElse }
-import scala.util.Properties.{ isWin }
+import scala.util.Properties.{ envOrElse, isWin }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
 import scala.tools.nsc.reporters.ConsoleReporter
@@ -523,7 +523,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
     // Apache Ant 1.6 or newer
     def ant(args: Seq[String], output: File): Boolean = {
-      val antDir = Directory(System.getProperty("ANT_HOME", "/opt/ant/"))
+      val antDir = Directory(envOrElse("ANT_HOME", "/opt/ant/"))
       val antLibDir = Directory(antDir / "lib")
       val antLauncherPath = SFile(antLibDir / "ant-launcher.jar").path
       val antOptions =
