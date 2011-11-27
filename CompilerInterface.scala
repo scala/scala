@@ -20,7 +20,6 @@ class CompilerInterface
 		val reporter = DelegatingReporter(settings, delegate)
 		def noErrors = !reporter.hasErrors && command.ok
 
-		val phasesSet = new scala.collection.mutable.HashSet[Any] // 2.7 compatibility
 		object compiler extends Global(command.settings, reporter)
 		{
 			object dummy // temporary fix for #4426
@@ -32,7 +31,7 @@ class CompilerInterface
 				override val runsBefore = List("terminal")
 				val runsRightAfter = None
 			}
-			with SubComponent with Compat27
+			with SubComponent
 			{
 				val analyzer = new Analyzer(global, callback)
 				def newPhase(prev: Phase) = analyzer.newPhase(prev)
@@ -46,34 +45,26 @@ class CompilerInterface
 				override val runsBefore = List("erasure")
 				val runsRightAfter = Some("typer")
 			}
-			with SubComponent with Compat27
+			with SubComponent
 			{
 				val api = new API(global, callback)
 				def newPhase(prev: Phase) = api.newPhase(prev)
 				def name = phaseName
 			}
 			
-			override lazy val phaseDescriptors = // done this way for compatibility between 2.7 and 2.8
+			override lazy val phaseDescriptors =
 			{
 				phasesSet += sbtAnalyzer
 				phasesSet += apiExtractor
-				val superd = superComputePhaseDescriptors
-				if(superd.contains(sbtAnalyzer))
-					superd
-				else
-				{
-					val typerIndex = superd.indexOf(analyzer.typerFactory)
-					assert(typerIndex >= 0)
-					superd.take(typerIndex+1) ::: apiExtractor :: superd.drop(typerIndex+1) ::: List(sbtAnalyzer)
-				}
+				superComputePhaseDescriptors
 			}
-			private def superComputePhaseDescriptors() = // required because 2.8 makes computePhaseDescriptors private
+			// Required because computePhaseDescriptors is private in 2.8 (changed to protected sometime later).
+			private def superComputePhaseDescriptors() =
 			{
 				val meth = classOf[Global].getDeclaredMethod("computePhaseDescriptors")
 				meth.setAccessible(true)
 				meth.invoke(this).asInstanceOf[List[SubComponent]]
 			}
-			trait Compat27 { val runsBefore: List[String] = Nil }
 		}
 		if(command.shouldStopWithInfo)
 		{
