@@ -8,10 +8,14 @@
 
 package scala.tools.ant
 
-import org.apache.tools.ant.Project
+import org.apache.tools.ant.{AntClassLoader, Project}
+import org.apache.tools.ant.taskdefs.Java
+import org.apache.tools.ant.types.Path
 
 import scala.tools.nsc.Settings
+import scala.tools.nsc.io.File
 import scala.tools.nsc.settings.FscSettings
+import scala.tools.nsc.util.ScalaClassLoader
 
 /** An Ant task to compile with the fast Scala compiler (`fsc`).
  *
@@ -92,12 +96,6 @@ class FastScalac extends Scalac {
     s.preferIPv4.value = useIPv4
     if (!idleMinutes.isEmpty) s.idleMins.value = idleMinutes.get
 
-    val prefixSettings =
-      List(
-        /*scalac*/
-        s.jvmargs, s.defines
-      ) flatMap (_.value)
-
     val stringSettings =
       List(
         /*scalac*/
@@ -111,7 +109,7 @@ class FastScalac extends Scalac {
       List(
         /*scalac*/
         s.debuginfo, s.target
-      ) map (x => "%s:%s".format(x.name, x.value))
+      ) filter (x => x.value != x.default) map (x => "%s:%s".format(x.name, x.value))
 
     val booleanSettings =
       List(
@@ -134,20 +132,61 @@ class FastScalac extends Scalac {
       else List("%s:%s".format(s.name, s.value.mkString(",")))
     }
 
-    val cmdOptions =
-      prefixSettings ::: stringSettings ::: choiceSettings ::: booleanSettings ::: intSettings ::: phaseSetting
+    val fscOptions =
+      stringSettings ::: choiceSettings ::: booleanSettings ::: intSettings ::: phaseSetting
 
-    val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
-    log("FastScalac args="+args.mkString(" "), Project.MSG_DEBUG)
-    try {
-      if (!scala.tools.nsc.CompileClient.process(args) && failonerror)
-        buildError("Compile failed; see the compiler error output for details.")
+    val java = new Java(this)
+    java setFork true
+    // use same default memory options as in fsc script
+    java.createJvmarg() setValue "-Xmx256M"
+    java.createJvmarg() setValue "-Xms32M"
+    val scalacPath: Path = {
+      val path = new Path(getProject)
+      if (compilerPath.isDefined) path add compilerPath.get
+      else getClass.getClassLoader match {
+        case cl: AntClassLoader =>
+          path add new Path(getProject, cl.getClasspath)
+        case _ =>
+          buildError("Compilation failed because of an internal compiler error;"+
+                     " see the error output for details.")
+      }
+      path
     }
-    catch {
-      case ex: Throwable =>
-        ex.printStackTrace()
-        val msg = if (ex.getMessage == null) "no error message provided" else ex.getMessage
-        buildError("Compile failed because of an internal compiler error (" + msg + "); see the error output for details.")
+    java.createJvmarg() setValue ("-Xbootclasspath/a:"+scalacPath)
+    s.jvmargs.value foreach (java.createJvmarg() setValue _)
+
+    val scalaHome: String = try {
+      val url = ScalaClassLoader.originOfClass(classOf[FastScalac]).get
+      File(url.getFile).jfile.getParentFile.getParentFile getAbsolutePath
+    } catch {
+      case _ =>
+        buildError("Compilation failed because of an internal compiler error;"+
+                   " couldn't determine value for -Dscala.home=<value>")
     }
+    java.createJvmarg() setValue "-Dscala.usejavacp=true"
+    java.createJvmarg() setValue ("-Dscala.home="+scalaHome)
+    s.defines.value foreach (java.createJvmarg() setValue _)
+
+    java setClassname "scala.tools.nsc.MainGenericRunner"
+    java.createArg() setValue "scala.tools.nsc.CompileClient"
+
+    // Encode scalac/javac args for use in a file to be read back via "@file.txt"
+    def encodeScalacArgsFile(t: Traversable[String]) = t map { s =>
+      if(s.find(c => c <= ' ' || "\"'\\".contains(c)).isDefined)
+        "\"" + s.flatMap(c => (if(c == '"' || c == '\\') "\\" else "") + c ) + "\""
+      else s
+    } mkString "\n"
+
+    // dump the arguments to a file and do "java @file"
+    val tempArgFile = File.makeTemp("fastscalac")
+    val tokens = fscOptions ++ (sourceFiles map (_.getPath))
+    tempArgFile writeAll encodeScalacArgsFile(tokens)
+
+    val paths = List(Some(tempArgFile.toAbsolute.path), argfile).flatten map (_.toString)
+    val res = execWithArgFiles(java, paths)
+
+    if (failonerror && res != 0)
+      buildError("Compilation failed because of an internal compiler error;"+
+            " see the error output for details.")
   }
 }

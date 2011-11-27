@@ -36,6 +36,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `bootclasspathref`,
  *  - `extdirs`,
  *  - `extdirsref`,
+ *  - `argfile`,
  *  - `dependencyfile`,
  *  - `encoding`,
  *  - `target`,
@@ -126,8 +127,9 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   /** The external extensions path to use for this compilation. */
   protected var extdirs: Option[Path] = None
 
+  protected var argfile: Option[File] = None
   /** The dependency tracking file. */
-  protected var dependencyfile: Option[String] = None
+  protected var dependencyfile: Option[File] = None
   /** The character encoding of the files to compile. */
   protected var encoding: Option[String] = None
 
@@ -229,7 +231,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   }
   /** Sets the `compilerPath` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `compilerPath`. */
-  def setCompilerPath(input : Path) {
+  def setCompilerPath(input: Path) {
     compilerPath = setOrAppend(compilerPath, input)
   }
 
@@ -299,9 +301,15 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
   def setExtdirsref(input: Reference) =
     createExtdirs().setRefid(input)
 
+  /** Sets the `argfile` attribute. Used by [[http://ant.apache.org Ant]].
+   *  @param input The value of `argfile`. */
+  def setArgfile(input: File) {
+    argfile = Some(input)
+  }
+
   /** Sets the `dependencyfile` attribute. Used by [[http://ant.apache.org Ant]].
    *  @param input The value of `dependencyfile`. */
-  def setDependencyfile(input: String) {
+  def setDependencyfile(input: File) {
     dependencyfile = Some(input)
   }
 
@@ -584,7 +592,8 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     if (!bootclasspath.isEmpty)
       settings.bootclasspath.value = asString(getBootclasspath)
     if (!extdirs.isEmpty) settings.extdirs.value = asString(getExtdirs)
-    if (!dependencyfile.isEmpty) settings.dependencyfile.value = dependencyfile.get
+    if (!dependencyfile.isEmpty)
+      settings.dependencyfile.value = asString(dependencyfile.get)
     if (!encoding.isEmpty) settings.encoding.value = encoding.get
     if (!backend.isEmpty) settings.target.value = backend.get
     if (!logging.isEmpty && logging.get == "verbose")
