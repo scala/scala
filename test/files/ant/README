@@ -1,0 +1,42 @@
+README
+======
+
+Test cases in directory test/files/ant/ are executed by invoking an
+Ant script whose name ends with "build.xml" (eg. "fsc001-build.xml").
+
+The Scala Ant tasks fsc/scalac/scaladoc are instantiated from various
+binaries (quick/pack/latest/installed) and are executed with different
+combinations of Ant attributes/elements:
+
+            +---------------------------+--------------------------+
+            |       Attributes          |      Nested elements     |
+------------+---------------------------+--------------------------+
+fsc001      | srcdir,classpath      (1) | compilerarg              |
+fsc002      | srcref,classpathref   (1) | compilerarg              |
+fsc003      |                       (2) | compilerarg,src,include  |
+------------+---------------------------+--------------------------+
+scalac001   | srcdir,classpath      (1) |                          |
+scalac002   | srcref,classpathref   (1) |                          |
+scalac003   |                       (2) | src,include              |
+scalac004   | deprecation,unchecked (3) |                          |
+------------+---------------------------+--------------------------+
+scaladoc    | srcdir,classpathref       |                          |
+------------+---------------------------+--------------------------+
+
+Other attributes:
+(1) includes,destdir
+(2) destdir,classpathref
+(3) srcdir,includes,destdir,classpath
+
+
+The above test cases can also be run from the command prompt using one of
+the following shell commands:
+
+1) For quick/pack/latest binaries (-Dbinary=quick|pack|latest)
+
+$ ant -Dbinary=quick -Dproject.dir=$HOME/workspace/scala -f scalac001-build.xml
+
+2) For installed binaries (-Dbinary=installed)
+
+$ ant -Dbinary=installed -Dinstalled.dir=/opt/scala -f scalac001-build.xml
+

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="scaladoc" default="run">
+<project name="scalac004" default="run">
 
   <import file="${basedir}/imported.xml"/>
 
@@ -11,10 +11,10 @@ BUILD
   <target name="build" depends="init">
     <echo level="verbose" message="build.dir=${build.dir}"/>
     <mkdir dir="${build.dir}"/>
-    <scaladoc
+    <scalac
+      deprecation="yes" unchecked="yes"
       srcdir="${source.dir}"
       includes="**/${ant.project.name}*.scala"
-      deprecation="yes" unchecked="yes"
       destdir="${build.dir}"
       classpathref="build.classpath"
     />

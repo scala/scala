@@ -1,0 +1,24 @@
+
+quick.init:
+
+pack.init:
+
+latest.init:
+
+installed.init:
+
+init:
+
+build:
+    [mkdir] Created dir: [...]/files/ant/scalac004-ant.obj
+   [scalac] Compiling 1 source file to [...]/files/ant/scalac004-ant.obj
+   [scalac] [...]/files/ant/scalac004.scala:9: warning: method exit in object Predef is deprecated: Use sys.exit(status) instead
+   [scalac]     Predef.exit(0) //deprecated in 2.9.0
+   [scalac]            ^
+   [scalac] [...]/files/ant/scalac004.scala:6: warning: match is not exhaustive!
+   [scalac] missing combination            Nil
+   [scalac] 
+   [scalac]     xs match { //(xs: @unchecked) match {
+   [scalac]     ^
+   [scalac] two warnings found
+   [scalac] Compile succeeded with 2 warnings; see the compiler output for details.

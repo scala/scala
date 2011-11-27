@@ -1,0 +1,14 @@
+
+quick.init:
+
+pack.init:
+
+latest.init:
+
+installed.init:
+
+init:
+
+build:
+    [mkdir] Created dir: [...]/files/ant/scalac002-ant.obj
+   [scalac] Compiling 1 source file to [...]/files/ant/scalac002-ant.obj

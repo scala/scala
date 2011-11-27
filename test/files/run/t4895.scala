@@ -1,7 +1,3 @@
-
-
-
-
 object Test {
   
   def checkPar(sz: Int) {

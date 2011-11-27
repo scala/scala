@@ -1,0 +1,14 @@
+
+quick.init:
+
+pack.init:
+
+latest.init:
+
+installed.init:
+
+init:
+
+build:
+    [mkdir] Created dir: [...]/files/ant/fsc003-ant.obj
+      [fsc] Compiling 1 source file to [...]/files/ant/fsc003-ant.obj
