@@ -96,6 +96,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case "scalacheck"   => ScalaCheckTestFile.apply
       case "specialized"  => SpecializedTestFile.apply
       case "presentation" => PresentationTestFile.apply
+      case "ant"          => AntTestFile.apply
     }
     val test: TestFile = testFileFn(files.head, fileManager)
     if (!test.defineSettings(command.settings, out.isEmpty)) {

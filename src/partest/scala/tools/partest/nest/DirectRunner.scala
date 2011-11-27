@@ -24,7 +24,7 @@ trait DirectRunner {
 
   import PartestDefaults.numActors
 
-  def denotesTestFile(arg: String) = Path(arg).hasExtension("scala", "res")
+  def denotesTestFile(arg: String) = Path(arg).hasExtension("scala", "res", "xml")
   def denotesTestDir(arg: String)  = Path(arg).ifDirectory(_.files.nonEmpty) exists (x => x)
   def denotesTestPath(arg: String) = denotesTestDir(arg) || denotesTestFile(arg)
 

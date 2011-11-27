@@ -1559,6 +1559,20 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
+  <target name="test.ant" depends="pack.done">
+    <property name="partest.srcdir" value="files" />
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             srcdir="${partest.srcdir}"
+             scalacopts="${scalac.args.optimise}">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <anttests dir="${partest.dir}/${partest.srcdir}/ant" includes="*build.xml"/>
+    </partest>
+  </target>
+
   <target name="test.suite" depends="pack.done">
     <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
