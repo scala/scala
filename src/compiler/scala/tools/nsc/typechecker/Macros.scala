@@ -7,13 +7,14 @@ trait Macros { self: Analyzer =>
   import global._
   import definitions._
 
-  def macroMethName(name: Name) =
-    newTermName((if (name.isTypeName) "type" else "def") + "macro$" + name)
+  def macroMethName(sym: Symbol) =
+    newTermName((if (sym.name.isTypeName) "type" else "def") + "macro$" +
+                (if (sym.owner.isModuleClass) "obj$" else "cls$") + sym.name)
 
   def macroMeth(mac: Symbol): Symbol = {
     var owner = mac.owner
     if (!owner.isModuleClass) owner = owner.companionModule.moduleClass
-    owner.info.decl(macroMethName(mac.name))
+    owner.info.decl(macroMethName(mac))
   }
 
   /**
@@ -46,20 +47,22 @@ trait Macros { self: Analyzer =>
       Block(List(ValDef(Modifiers(IMPLICIT), "$glob", universeType, Ident("glob"))), tree)
     }
 
-    treeCopy.DefDef(
-      mdef,
-      mods = mdef.mods &~ MACRO,
-      name = mdef.name.toTermName,
-      tparams = List(),
-      vparamss = List(globParam) :: List(thisParam) :: (mdef.tparams map tparamInMacro) ::
-        (mdef.vparamss map (_ map vparamInMacro)),
-      tpt = globTree,
-      wrapImplicit(mdef.rhs))
+    atPos(mdef.pos) {
+      new DefDef( // can't call DefDef here; need to find out why
+        mods = mdef.mods &~ MACRO,
+        name = macroMethName(mdef.symbol),
+        tparams = List(),
+        vparamss = List(globParam) :: List(thisParam) :: (mdef.tparams map tparamInMacro) ::
+          (mdef.vparamss map (_ map vparamInMacro)),
+        tpt = globTree,
+        wrapImplicit(mdef.rhs))
+    }
   }
 
   def addMacroMethods(templ: Template, namer: Namer): Unit = {
     for (ddef @ DefDef(mods, _, _, _, _, _) <- templ.body if mods hasFlag MACRO) {
-      namer.enterSyntheticSym(macroMethDef(ddef))
+      val sym = namer.enterSyntheticSym(util.trace("macro def: ")(macroMethDef(ddef)))
+      println("added to "+namer.context.owner.enclClass+": "+sym)
     }
   }
 

@@ -1676,7 +1676,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      */
     def typedDefDef(ddef: DefDef): DefDef = {
       val meth = ddef.symbol.initialize
-      if (meth.isMacro) return ddef
 
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
@@ -1712,6 +1711,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                meth.owner.isAnonOrRefinementClass))
             error(ddef.pos, "constructor definition not allowed here")
           typed(ddef.rhs)
+        } else if (meth.isMacro) {
+          EmptyTree
         } else {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
@@ -3444,7 +3445,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 // (calling typed1 more than once for the same tree)
                 if (checked ne res) typed { atPos(tree.pos)(checked) }
                 else res
-              } else if (fun2.hasSymbol && fun2.symbol.isMacro)
+              } else if ((mode & FUNmode) == 0 && fun2.hasSymbol && fun2.symbol.isMacro)
                 typed1(macroExpand(res), mode, pt)
               else
                 res

@@ -783,8 +783,11 @@ trait Namers extends MethodSynthesis {
       val typedBody = defnTyper.computeType(tree.rhs, pt)
       val sym       = if (owner.isMethod) owner else tree.symbol
       val typedDefn = widenIfNecessary(sym, typedBody, pt)
+      assignTypeToTree(tree, typedDefn)
+    }
 
-      tree.tpt defineType typedDefn setPos tree.pos.focus
+    private def assignTypeToTree(tree: ValOrDefDef, tpe: Type): Type = {
+      tree.tpt defineType tpe setPos tree.pos.focus
       tree.tpt.tpe
     }
 
@@ -1003,7 +1006,7 @@ trait Namers extends MethodSynthesis {
           if (!tpt.isEmpty) {
             typer.typedType(tpt).tpe
           } else if (meth.isMacro) {
-            AnyClass.tpe
+            assignTypeToTree(ddef, AnyClass.tpe)
           } else {
             // replace deSkolemized symbols with skolemized ones
             // (for resultPt computed by looking at overridden symbol, right?)

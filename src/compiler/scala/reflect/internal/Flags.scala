@@ -220,7 +220,7 @@ class Flags extends ModifierFlags {
 
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags: Long =
-    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR |
+    ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR | MACRO |
     ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC | VBRIDGE | SPECIALIZED
 
   /** The two bridge flags */
@@ -352,7 +352,7 @@ class Flags extends ModifierFlags {
     case             MUTABLE => "<mutable>"                           // (1L << 12)
     case               PARAM => "<param>"                             // (1L << 13)
     case             PACKAGE => "<package>"                           // (1L << 14)
-    case             0x8000L => ""                                    // (1L << 15)
+    case               MACRO => "macro"                               // (1L << 15)
     case         BYNAMEPARAM => "<bynameparam/captured/covariant>"    // (1L << 16)
     case       CONTRAVARIANT => "<contravariant/inconstructor/label>" // (1L << 17)
     case         ABSOVERRIDE => "absoverride"                         // (1L << 18)

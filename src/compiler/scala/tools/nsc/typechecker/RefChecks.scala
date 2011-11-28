@@ -1225,6 +1225,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           List(tree1)
         }
       case Import(_, _) => Nil
+      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) => Nil
       case _            => List(transform(tree))
     }
 
