@@ -458,6 +458,7 @@ class Flags extends ModifierFlags {
     case Modifier.interface => INTERFACE
     case Modifier.mutable => MUTABLE
     case Modifier.parameter => PARAM
+    case Modifier.`macro` => MACRO
     case Modifier.covariant => COVARIANT
     case Modifier.contravariant => CONTRAVARIANT
     case Modifier.preSuper => PRESUPER
@@ -471,6 +472,15 @@ class Flags extends ModifierFlags {
     case Modifier.paramAccessor => PARAMACCESSOR
     case Modifier.bynameParameter => BYNAMEPARAM
   }
+
+  def flagsOfModifiers(mods: List[Modifier.Value]): Long =
+    (mods :\ 0L) { (mod, curr) => curr | flagOfModifier(mod) }
+
+  def modifierOfFlag(flag: Long): Option[Modifier.Value] =
+    Modifier.values find { mod => flagOfModifier(mod) == flag }
+
+  def modifiersOfFlags(flags: Long): List[Modifier.Value] =
+    pickledListOrder map (mask => modifierOfFlag(flags & mask)) flatMap { mod => mod }
 }
 
 object Flags extends Flags { }

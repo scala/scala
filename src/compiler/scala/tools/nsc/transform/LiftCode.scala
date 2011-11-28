@@ -57,6 +57,59 @@ abstract class LiftCode extends Transform with TypingTransformers {
     val reifyDebug = settings.Yreifydebug.value
     val debugTrace = util.trace when reifyDebug
 
+    val reifyCopypaste = settings.Yreifycopypaste.value
+    def printCopypaste(tree: Tree) {
+      import scala.reflect.api.Modifier
+      import scala.reflect.api.Modifier._
+
+      def copypasteModifier(mod: Modifier.Value): String = mod match {
+        case mod @ (
+             `protected` | `private` | `override` |
+             `abstract` | `final` | `sealed` |
+             `implicit` | `lazy` | `macro` |
+             `case` | `trait`) => "`" + mod.toString + "`"
+        case mod => mod.toString
+      }
+
+      for (line <- (tree.toString.split(Properties.lineSeparator) drop 2 dropRight 1)) {
+        var s = line.trim
+        s = s.replace("$mr.", "")
+        s = s.replace(".apply", "")
+        s = s.replace("scala.collection.immutable.", "")
+        s = "List\\[List\\[.*?\\].*?\\]".r.replaceAllIn(s, "List")
+        s = "List\\[.*?\\]".r.replaceAllIn(s, "List")
+        s = s.replace("immutable.this.Nil", "List()")
+        s = s.replace("modifiersFromInternalFlags", "Modifiers")
+        s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
+        s = """Modifiers\((\d+)L, newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
+          val buf = new StringBuffer()
+
+          val flags = m.group(1).toLong
+          var s_flags = Flags.modifiersOfFlags(flags) map copypasteModifier
+          buf.append("Set(" + s_flags.mkString(", ") + ")")
+
+          var privateWithin = m.group(2)
+          buf.append(", " + "newTypeName(\"" + privateWithin + "\")")
+
+          var annotations = m.group(3)
+          buf.append(", " + "List(" + annotations + ")")
+
+          var s = buf.toString
+          if (s.endsWith(", Map()")) s = s.substring(0, s.length - ", Map()".length)
+          if (s.endsWith(", newTypeName(\"\")")) s = s.substring(0, s.length - ", newTypeName(\"\")".length)
+          if (s.endsWith("Set()")) s = s.substring(0, s.length - "Set()".length)
+          "Modifiers(" + s + ")"
+        })
+        s = """setInternalFlags\((\d+)L\)""".r.replaceAllIn(s, m => {
+          val flags = m.group(1).toLong
+          val mods = Flags.modifiersOfFlags(flags) map copypasteModifier
+          "setInternalFlags(flagsOfModifiers(List(" + mods.mkString(", ") + ")))"
+        })
+
+        println(s)
+      }
+    }
+
     /** Set of mutable local variables that are free in some inner method. */
     private val freeMutableVars: mutable.Set[Symbol] = new mutable.HashSet
     private val converted: mutable.Set[Symbol] = new mutable.HashSet // debug
@@ -79,7 +132,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
           try {
             printTypings = reifyDebug
             debugTrace("transformed = ") {
-              localTyper.typedPos(tree.pos)(codify(super.transform(tree)))
+              val result = localTyper.typedPos(tree.pos)(codify(super.transform(tree)))
+              if (reifyCopypaste) printCopypaste(result)
+              result
             }
           } finally printTypings = saved
         case ValDef(mods, name, tpt, rhs) if (freeMutableVars(sym)) => // box mutable variables that are accessed from a local closure
