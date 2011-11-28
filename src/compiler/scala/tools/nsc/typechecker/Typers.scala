@@ -755,7 +755,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
+        if (!meth.isConstructor && !meth.isMacro && isFunctionType(pt)) { // (4.2)
           debuglog("eta-expanding " + tree + ":" + tree.tpe + " to " + pt)
           checkParamsConvertible(tree.pos, tree.tpe)
           val tree0 = etaExpand(context.unit, tree)
@@ -1676,6 +1676,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      */
     def typedDefDef(ddef: DefDef): DefDef = {
       val meth = ddef.symbol.initialize
+      if (meth.isMacro) return ddef
 
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
@@ -2100,13 +2101,14 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               var e1 = scope.lookupNextEntry(e)
               while ((e1 ne null) && e1.owner == scope) {
                 if (!accesses(e.sym, e1.sym) && !accesses(e1.sym, e.sym) &&
-                    (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
+                    (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe) || e.sym.isMacro && e1.sym.isMacro))
                   // default getters are defined twice when multiple overloads have defaults. an
                   // error for this is issued in RefChecks.checkDefaultsInOverloaded
                   if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag &&
                       !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
                     error(e.sym.pos, e1.sym+" is defined twice"+
-                    {if(!settings.debug.value) "" else " in "+unit.toString})
+                    {if(!settings.debug.value) "" else " in "+unit.toString}+
+                    {if (e.sym.isMacro && e1.sym.isMacro) " \n(note that macros cannot be overloaded)" else ""})
                     scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
                   }
                 e1 = scope.lookupNextEntry(e1)
@@ -3442,7 +3444,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 // (calling typed1 more than once for the same tree)
                 if (checked ne res) typed { atPos(tree.pos)(checked) }
                 else res
-              } else res
+              } else if (fun2.hasSymbol && fun2.symbol.isMacro)
+                typed1(macroExpand(res), mode, pt)
+              else
+                res
             case ex: TypeError =>
               fun match {
                 case Select(qual, name)

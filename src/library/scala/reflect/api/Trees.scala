@@ -315,7 +315,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   /** A common base class for ValDefs and DefDefs.
    */
   abstract class ValOrDefDef extends MemberDef {
-    def name: TermName
+    def name: Name // can't be a TermName because macros can be type names.
     def tpt: Tree
     def rhs: Tree
   }
@@ -325,9 +325,10 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
    */
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef
 
-  /** A method definition.
+  /** A method or macro definition.
+   *  @param name   The name of the method or macro. Can be a type name in case this is a type macro
    */
-  case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
+  case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef
 
   /** An abstract type, a type parameter, or a type alias.

@@ -527,6 +527,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // are a case accessor (you can also be a field.)
     def isCaseAccessorMethod = isMethod && isCaseAccessor
 
+    def isMacro = isMethod && hasFlag(MACRO)
+
     /** Does this symbol denote the primary constructor of its enclosing class? */
     final def isPrimaryConstructor =
       isConstructor && owner.primaryConstructor == this
@@ -712,8 +714,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def originalOwnerChain: List[Symbol] = this :: originalOwner.getOrElse(this, rawowner).originalOwnerChain
 
     def enclClassChain: List[Symbol] = {
-      if (this eq NoSymbol) Nil
-      else if (isClass && !isPackageClass) this :: owner.enclClassChain
+      if ((this eq NoSymbol) || isPackageClass) Nil
+      else if (isClass) this :: owner.enclClassChain
       else owner.enclClassChain
     }
 

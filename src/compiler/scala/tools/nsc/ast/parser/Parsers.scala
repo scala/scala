@@ -2408,6 +2408,7 @@ self =>
      *  FunDef ::= FunSig `:' Type `=' Expr
      *           | FunSig [nl] `{' Block `}'
      *           | this ParamClause ParamClauses (`=' ConstrExpr | [nl] ConstrBlock)
+     *           | `macro' FunSig [`:' Type] `=' Expr
      *  FunDcl ::= FunSig [`:' Type]
      *  FunSig ::= id [FunTypeParamClause] ParamClauses
      *  }}}
@@ -2426,34 +2427,45 @@ self =>
         }
       }
       else {
-        var newmods = mods
         val nameOffset = in.offset
         val name = ident()
-        val result = atPos(start, if (name == nme.ERROR) start else nameOffset) {
-          // contextBoundBuf is for context bounded type parameters of the form
-          // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
-          // i.e. (B[T] or T => B)
-          val contextBoundBuf = new ListBuffer[Tree]
-          val tparams = typeParamClauseOpt(name, contextBoundBuf)
-          val vparamss = paramClauses(name, contextBoundBuf.toList, false)
-          newLineOptWhenFollowedBy(LBRACE)
-          var restype = fromWithinReturnType(typedOpt())
-          val rhs =
-            if (isStatSep || in.token == RBRACE) {
-              if (restype.isEmpty) restype = scalaUnitConstr
-              newmods |= Flags.DEFERRED
-              EmptyTree
-            } else if (restype.isEmpty && in.token == LBRACE) {
-              restype = scalaUnitConstr
-              blockExpr()
-            } else {
-              equalsExpr()
-            }
-          DefDef(newmods, name, tparams, vparamss, restype, rhs)
-        }
-        signalParseProgress(result.pos)
-        result
+        if (name == nme.macro_ && isIdent && settings.Xexperimental.value)
+          funDefRest(start, in.offset, mods | Flags.MACRO, ident())
+        else
+          funDefRest(start, nameOffset, mods, name)
       }
+    }
+
+    def funDefRest(start: Int, nameOffset: Int, mods: Modifiers, name: Name): Tree = {
+      val result = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+        val isMacro = mods hasFlag Flags.MACRO
+        val isTypeMacro = isMacro && name.isTypeName
+        var newmods = mods
+        // contextBoundBuf is for context bounded type parameters of the form
+        // [T : B] or [T : => B]; it contains the equivalent implicit parameter type,
+        // i.e. (B[T] or T => B)
+        val contextBoundBuf = new ListBuffer[Tree]
+        val tparams = typeParamClauseOpt(name, contextBoundBuf)
+        val vparamss = paramClauses(name, contextBoundBuf.toList, false)
+        if (!isMacro) newLineOptWhenFollowedBy(LBRACE)
+        var restype = if (isTypeMacro) TypeTree() else fromWithinReturnType(typedOpt())
+        val rhs =
+          if (isMacro)
+            equalsExpr()
+          else if (isStatSep || in.token == RBRACE) {
+            if (restype.isEmpty) restype = scalaUnitConstr
+            newmods |= Flags.DEFERRED
+            EmptyTree
+          } else if (restype.isEmpty && in.token == LBRACE) {
+            restype = scalaUnitConstr
+            blockExpr()
+          } else {
+            equalsExpr()
+          }
+        DefDef(newmods, name, tparams, vparamss, restype, rhs)
+      }
+      signalParseProgress(result.pos)
+      result
     }
 
     /** {{{
@@ -2498,6 +2510,7 @@ self =>
 
     /** {{{
      *  TypeDef ::= type Id [TypeParamClause] `=' Type
+     *            | `macro' FunSig `=' Expr
      *  TypeDcl ::= type Id [TypeParamClause] TypeBounds
      *  }}}
      */
@@ -2506,17 +2519,21 @@ self =>
       newLinesOpt()
       atPos(start, in.offset) {
         val name = identForType()
-        // @M! a type alias as well as an abstract type may declare type parameters
-        val tparams = typeParamClauseOpt(name, null)
-        in.token match {
-          case EQUALS =>
-            in.nextToken()
-            TypeDef(mods, name, tparams, typ())
-          case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
-            TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
-          case _ =>
-            syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
-            EmptyTree
+        if (name == nme.macro_.toTypeName && isIdent && settings.Xexperimental.value) {
+          funDefRest(start, in.offset, mods | Flags.MACRO, identForType())
+        } else {
+          // @M! a type alias as well as an abstract type may declare type parameters
+          val tparams = typeParamClauseOpt(name, null)
+          in.token match {
+            case EQUALS =>
+              in.nextToken()
+              TypeDef(mods, name, tparams, typ())
+            case SUPERTYPE | SUBTYPE | SEMI | NEWLINE | NEWLINES | COMMA | RBRACE =>
+              TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
+            case _ =>
+              syntaxErrorOrIncomplete("`=', `>:', or `<:' expected", true)
+              EmptyTree
+          }
         }
       }
     }

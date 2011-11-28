@@ -243,10 +243,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def ensureAccessibleMethod = getMember(ScalaRunTimeModule, "ensureAccessible")
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
-    lazy val ReflectRuntimeMirror = getModule("scala.reflect.runtime.Mirror")
-      def freeValueMethod = getMember(ReflectRuntimeMirror, "freeValue")
-    lazy val ReflectPackage = getPackageObject("scala.reflect")
-      def Reflect_mirror = getMember(ReflectPackage, "mirror")
 
     // classes with special meanings
     lazy val StringAddClass   = getClass("scala.runtime.StringAdd")
@@ -354,6 +350,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def methodCache_add   = getMember(MethodCacheClass, nme.add_)
 
     // scala.reflect
+    lazy val ReflectApiUniverse = getClass("scala.reflect.api.Universe")
+    lazy val ReflectRuntimeMirror = getModule("scala.reflect.runtime.Mirror")
+      def freeValueMethod = getMember(ReflectRuntimeMirror, "freeValue")
+    lazy val ReflectPackage = getPackageObject("scala.reflect")
+      def Reflect_mirror = getMember(ReflectPackage, "mirror")
+
+
     lazy val PartialManifestClass  = getClass("scala.reflect.ClassManifest")
     lazy val PartialManifestModule = getModule("scala.reflect.ClassManifest")
     lazy val FullManifestClass     = getClass("scala.reflect.Manifest")

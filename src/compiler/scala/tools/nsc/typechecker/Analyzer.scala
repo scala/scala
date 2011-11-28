@@ -20,6 +20,7 @@ trait Analyzer extends AnyRef
             with EtaExpansion
             with SyntheticMethods
             with Unapplies
+            with Macros
             with NamesDefaults
             with TypeDiagnostics
 {
