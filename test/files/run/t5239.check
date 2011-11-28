@@ -1,0 +1,13 @@
+result = 2{Int(2)}
+[[syntax trees at end of typer]]// Scala source: NoSourceFile
+package <empty> {
+  final object __wrapper$1 extends Object {
+    def this(): object __wrapper$1 = {
+      __wrapper$1.super.this();
+      ()
+    };
+    <static> def wrapper(): Int = 2
+  }
+}
+
+evaluated = 2

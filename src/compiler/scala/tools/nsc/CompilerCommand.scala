@@ -11,6 +11,8 @@ import io.File
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], val settings: Settings) {
   def this(arguments: List[String], error: String => Unit) = this(arguments, new Settings(error))
+  def this(arguments: List[String], settings: Settings, error: String => Unit) = this(arguments, settings withErrorFn error)
+
   type Setting = Settings#Setting
 
   /** file extensions of files that the compiler can process */

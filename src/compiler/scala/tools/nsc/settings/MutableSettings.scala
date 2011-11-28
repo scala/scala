@@ -22,6 +22,23 @@ class MutableSettings(val errorFn: String => Unit)
                  with Mutable {
   type ResultOfTryToSet = List[String]
 
+  def withErrorFn(errorFn: String => Unit): MutableSettings = {
+    val settings = new MutableSettings(errorFn)
+    copyInto(settings)
+    settings
+  }
+
+  protected def copyInto(settings: MutableSettings) {
+    allSettings foreach { thisSetting =>
+      val otherSetting = settings.allSettings find { _.name == thisSetting.name }
+      otherSetting foreach { otherSetting =>
+        if (thisSetting.isSetByUser || otherSetting.isSetByUser) {
+          otherSetting.value = thisSetting.value.asInstanceOf[otherSetting.T]
+        }
+      }
+    }
+  }
+
   /** Iterates over the arguments applying them to settings where applicable.
    *  Then verifies setting dependencies are met.
    *

@@ -3,6 +3,7 @@ package runtime
 
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc.reporters.AbstractReporter
 import scala.tools.nsc.ReflectGlobal
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.Global
@@ -109,7 +110,12 @@ trait ToolBoxes extends { self: Universe =>
       }
 
     lazy val compiler: ToolBoxGlobal = {
-      val command = new CompilerCommand(arguments.toList, reporter.error(scala.tools.nsc.util.NoPosition, _))
+      val errorFn: String => Unit = reporter.error(scala.tools.nsc.util.NoPosition, _)
+      val command = reporter match {
+        case reporter: AbstractReporter => new CompilerCommand(arguments.toList, reporter.settings, errorFn)
+        case _ => new CompilerCommand(arguments.toList, errorFn)
+      }
+
       command.settings.outputDirs setSingleOutput virtualDirectory
       new ToolBoxGlobal(command.settings, reporter)
     }
