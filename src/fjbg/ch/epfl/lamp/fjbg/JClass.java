@@ -26,8 +26,6 @@ public class JClass extends JMember {
     protected final String sourceFileName;
     protected final JConstantPool pool;
 
-    protected JBootstrapInvokeDynamic bootstrapClassAttr = null;
-
     public final static String[] NO_INTERFACES = new String[0];
 
     protected final LinkedList/*<JMethod>*/ methods = new LinkedList();
@@ -305,12 +303,6 @@ public class JClass extends JMember {
         dStream.close();
         bStream.close();
         fStream.close();
-    }
-
-    public void setBootstrapClass(String bootstrapClass) {
-    	assert bootstrapClassAttr == null;
-    	bootstrapClassAttr = new JBootstrapInvokeDynamic(context, this, bootstrapClass);
-    	addAttribute(bootstrapClassAttr);
     }
 
     /**

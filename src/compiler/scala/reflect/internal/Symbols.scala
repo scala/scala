@@ -334,6 +334,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isTerm         = false  // to be overridden
     def isType         = false  // to be overridden
     def isClass        = false  // to be overridden
+    def isBottomClass  = false  // to be overridden
     def isAliasType    = false  // to be overridden
     def isAbstractType = false  // to be overridden
     private[scala] def isSkolem = false // to be overridden
@@ -951,6 +952,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def hasRawInfo: Boolean = infos ne null
+    def hasCompleteInfo = hasRawInfo && rawInfo.isComplete
 
     /** Return info without checking for initialization or completing */
     def rawInfo: Type = {
@@ -1236,17 +1238,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       owner == that || owner != NoSymbol && (owner isNestedIn that)
 
     /** Is this class symbol a subclass of that symbol? */
-    final def isNonBottomSubClass(that: Symbol): Boolean =
-      this == that || this.isError || that.isError ||
+    final def isNonBottomSubClass(that: Symbol): Boolean = (
+      (this eq that) || this.isError || that.isError ||
       info.baseTypeIndex(that) >= 0
-
-    final def isSubClass(that: Symbol): Boolean = (
-      isNonBottomSubClass(that) ||
-      this == NothingClass ||
-      this == NullClass &&
-      (that == AnyClass ||
-       that != NothingClass && (that isSubClass ObjectClass))
     )
+
+    /** Overridden in NullClass and NothingClass for custom behavior.
+     */
+    def isSubClass(that: Symbol) = isNonBottomSubClass(that)
+
     final def isNumericSubClass(that: Symbol): Boolean =
       definitions.isNumericSubClass(this, that)
 
@@ -2425,6 +2425,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       unlock()
       validTo = currentPeriod
     }
+    override def isSubClass(that: Symbol) = false
     override def filter(cond: Symbol => Boolean) = this
     override def defString: String = toString
     override def locationString: String = ""

@@ -172,10 +172,26 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyValCompanionClass = getClass("scala.AnyValCompanion") setFlag (SEALED | ABSTRACT | TRAIT)
 
     // bottom types
-    lazy val NullClass            = newClass(ScalaPackageClass, tpnme.Null, anyrefparam) setFlag (ABSTRACT | TRAIT | FINAL)
-    lazy val NothingClass         = newClass(ScalaPackageClass, tpnme.Nothing, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val RuntimeNothingClass  = getClass(ClassfileConstants.SCALA_NOTHING)
     lazy val RuntimeNullClass     = getClass(ClassfileConstants.SCALA_NULL)
+
+    sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
+      locally {
+        this setFlag ABSTRACT | TRAIT | FINAL
+        this setInfo ClassInfoType(List(parent.tpe), new Scope, this)
+        owner.info.decls enter this
+      }
+      final override def isBottomClass = true
+    }
+    final object NothingClass extends BottomClassSymbol(tpnme.Nothing, AnyClass) {
+      override def isSubClass(that: Symbol) = true
+    }
+    final object NullClass extends BottomClassSymbol(tpnme.Null, AnyRefClass) {
+      override def isSubClass(that: Symbol) = (
+           (that eq AnyClass)
+        || (that ne NothingClass) && (that isSubClass ObjectClass)
+      )
+    }
 
     // exceptions and other throwables
     lazy val ClassCastExceptionClass        = getClass("java.lang.ClassCastException")
@@ -350,12 +366,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val ScalaSignatureAnnotation = getClass("scala.reflect.ScalaSignature")
     lazy val ScalaLongSignatureAnnotation = getClass("scala.reflect.ScalaLongSignature")
-
-    // invoke dynamic support
-    lazy val LinkageModule = getModule("java.dyn.Linkage")
-      lazy val Linkage_invalidateCallerClass = getMember(LinkageModule, "invalidateCallerClass")
-    lazy val DynamicDispatchClass = getModule("scala.runtime.DynamicDispatch")
-      lazy val DynamicDispatch_DontSetTarget = getMember(DynamicDispatchClass, "DontSetTarget")
 
     // Option classes
     lazy val OptionClass: Symbol = getClass("scala.Option")

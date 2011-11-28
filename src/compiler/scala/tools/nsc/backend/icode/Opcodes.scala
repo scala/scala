@@ -616,7 +616,6 @@ trait Opcodes { self: ICodes =>
       /** Returns a string representation of this style. */
       override def toString(): String = this match {
         case Dynamic        => "dynamic"
-        case InvokeDynamic  => "invoke-dynamic"
         case Static(false)  => "static-class"
         case Static(true)   => "static-instance"
         case SuperCall(mix) => "super(" + mix + ")"
@@ -625,9 +624,6 @@ trait Opcodes { self: ICodes =>
 
     /** Virtual calls */
     case object Dynamic extends InvokeStyle
-
-    /** InvokeDynamic a la JSR 292 (experimental). */
-    case object InvokeDynamic extends InvokeStyle
 
     /**
      * Special invoke. Static(true) is used for calls to private

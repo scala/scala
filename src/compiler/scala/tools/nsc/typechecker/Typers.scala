@@ -1033,8 +1033,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         && qual.isTerm
         && ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue)
         && !qtpe.isError
-        && qtpe.typeSymbol != NullClass
-        && qtpe.typeSymbol != NothingClass
+        && !qtpe.typeSymbol.isBottomClass
         && qtpe != WildcardType
         && !qual.isInstanceOf[ApplyImplicitView] // don't chain views
         && context.implicitsEnabled
@@ -2190,10 +2189,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  in an argument closure overlaps with an uninstantiated formal?
      */
     def needsInstantiation(tparams: List[Symbol], formals: List[Type], args: List[Tree]) = {
-      def isLowerBounded(tparam: Symbol) = {
-        val losym = tparam.info.bounds.lo.typeSymbol
-        losym != NothingClass && losym != NullClass
-      }
+      def isLowerBounded(tparam: Symbol) = !tparam.info.bounds.lo.typeSymbol.isBottomClass
+
       (formals, args).zipped exists {
         case (formal, Function(vparams, _)) =>
           (vparams exists (_.tpt.isEmpty)) &&

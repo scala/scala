@@ -25,7 +25,7 @@ trait ParallelMatching extends ast.TreeDSL
 
   import global.{ typer => _, _ }
   import definitions.{
-    AnyRefClass, NothingClass, IntClass, BooleanClass, SomeClass, OptionClass,
+    AnyRefClass, IntClass, BooleanClass, SomeClass, OptionClass,
     getProductArgs, productProj, Object_eq, Any_asInstanceOf
   }
   import CODE._

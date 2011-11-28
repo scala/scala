@@ -15,7 +15,7 @@ trait CompletionOutput {
   val global: Global
 
   import global._
-  import definitions.{ NothingClass, AnyClass, isTupleTypeOrSubtype, isFunctionType, isRepeatedParamType }
+  import definitions.{ isTupleTypeOrSubtype, isFunctionType, isRepeatedParamType }
 
   /** Reducing fully qualified noise for some common packages.
    */

@@ -321,7 +321,7 @@ abstract class CopyPropagation {
           out.stack = Unknown :: out.stack.drop(i.consumed)
 
         case CALL_METHOD(method, style) => style match {
-          case Dynamic | InvokeDynamic =>
+          case Dynamic =>
             out = simulateCall(in, method, false)
 
           case Static(onInstance) =>

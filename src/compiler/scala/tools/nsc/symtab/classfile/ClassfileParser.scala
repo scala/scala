@@ -1257,7 +1257,7 @@ abstract class ClassfileParser {
   protected def getScope(flags: Int): Scope =
     if (isStatic(flags)) staticDefs else instanceDefs
 
-   private def setPrivateWithin(sym: Symbol, jflags: Int) {
+  private def setPrivateWithin(sym: Symbol, jflags: Int) {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
       // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
       // apparently occurs when processing v45.3 bytecode.

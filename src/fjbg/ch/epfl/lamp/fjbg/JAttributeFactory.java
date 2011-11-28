@@ -48,7 +48,6 @@ public class JAttributeFactory {
                              Constructor defaultConstructor) {
         this.context = context;
         this.defaultConstructor = defaultConstructor;
-        registerClass("BootstrapInvokeDynamic", JBootstrapInvokeDynamic.class);
         registerClass("Code", JCodeAttribute.class);
         registerClass("ConstantValue", JConstantValueAttribute.class);
         registerClass("EnclosingMethod", JEnclosingMethodAttribute.class);

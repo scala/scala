@@ -75,7 +75,7 @@ trait Erasure {
         case TypeRef(pre, sym, args) =>
           if (sym == ArrayClass)
             if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
-            else if (args.head.typeSymbol == NothingClass || args.head.typeSymbol == NullClass) arrayType(ObjectClass.tpe)
+            else if (args.head.typeSymbol.isBottomClass) arrayType(ObjectClass.tpe)
             else typeRef(apply(pre), sym, args map this)
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
