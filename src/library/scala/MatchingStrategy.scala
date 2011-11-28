@@ -10,6 +10,7 @@ abstract class MatchingStrategy[M[+x]] {
 
   // find the first alternative to successfully flatMap f
   // to avoid code explosion due to alternatives
+  // TODO: should be alts: => M[T]*
   def or[T, U](f: T => M[U], alts: M[T]*) = (alts foldLeft (zero: M[U]))(altFlatMap(f))
 
   def caseResult[T](x: T): M[T] = one(x) // used as a marker to distinguish the RHS of a case (case pat => RHS) and intermediate successes

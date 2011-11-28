@@ -310,27 +310,34 @@ abstract class UnCurry extends InfoTransform
                   case Apply(fun, List(a)) if fun.symbol == one =>
                     // blow one's argument away since all we want to know is whether the match succeeds or not
                     // (the alternative, making `one` CBN, would entail moving away from Option)
-                    val zero = // must use subtyping (no need for equality thanks to covariance), as otherwise we miss types like `Any with Int`
-                      if (UnitClass.tpe <:< a.tpe)         Literal(Constant())
-                      else if (BooleanClass.tpe <:< a.tpe) Literal(Constant(false))
-                      else if (FloatClass.tpe <:< a.tpe)   Literal(Constant(0.0f))
-                      else if (DoubleClass.tpe <:< a.tpe)  Literal(Constant(0.0d))
-                      else if (ByteClass.tpe <:< a.tpe)    Literal(Constant(0.toByte))
-                      else if (ShortClass.tpe <:< a.tpe)   Literal(Constant(0.toShort))
-                      else if (IntClass.tpe <:< a.tpe)     Literal(Constant(0))
-                      else if (LongClass.tpe <:< a.tpe)    Literal(Constant(0L))
-                      else if (CharClass.tpe <:< a.tpe)    Literal(Constant(0.toChar))
-                      else {
-                        val tpA = a.tpe.normalize
-                        if (NullClass.tpe <:< tpA) NULL
-                        else gen.mkCast(NULL, tpA)         // must cast, at least when a.tpe <:< NothingClass.tpe
-                      }
-                    Apply(fun.duplicate, List(zero))
+                    Apply(fun.duplicate, List(gen.mkZeroContravariantAfterTyper(a.tpe)))
                   case _ =>
                     super.transform(tree)
                 }
               }
               substTree(Apply(Apply(TypeApply(Select(tgt.duplicate, tgt.tpe.member("isSuccess".toTermName)), targs map (_.duplicate)), args_scrut map (_.duplicate)), args_pm map (noOne.transform)))
+            // for no-option version of virtpatmat
+            case Block(List(zero: ValDef, x: ValDef, matchRes: ValDef, keepGoing: ValDef, stats@_*), _) if opt.virtPatmat => import CODE._
+              object dropMatchResAssign extends Transformer {
+                // override val treeCopy = newStrictTreeCopier // will duplicate below
+                override def transform(tree: Tree): Tree = tree match {
+                  // don't compute the result of the match -- remove the caseResult block, except for the assignment to keepGoing
+                  case Block(List(matchRes, ass@Assign(keepGoingLhs, falseLit)), zero) if keepGoingLhs.symbol eq keepGoing.symbol =>
+                    Block(List(ass), zero)
+                  case _ =>
+                    super.transform(tree)
+                }
+              }
+              val statsNoMatchRes: List[Tree] = stats map (dropMatchResAssign.transform) toList
+              val idaBlock = Block(
+                zero ::
+                x ::
+                /* drop matchRes def */
+                keepGoing ::
+                statsNoMatchRes,
+                NOT(REF(keepGoing.symbol)) // replace `if (keepGoing) throw new MatchError(...) else matchRes` by `!keepGoing`
+              )
+              substTree(idaBlock.duplicate) // duplicate on block as a whole to ensure valdefs are properly cloned and substed
           })
         }
 
