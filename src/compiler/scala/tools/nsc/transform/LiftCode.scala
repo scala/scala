@@ -226,7 +226,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
             val symClass = symTpe.typeSymbol
             atPhase(phase.next) {
               def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
-                if (isValueClass(symClass)) valueRef(symClass).tpe
+                if (isValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
                 else appliedType(objectRefClass.typeConstructor, List(symTpe))
 
               sym updateInfo (
