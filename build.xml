@@ -390,6 +390,11 @@ LOCAL REFERENCE BUILD (LOCKER)
       <pathelement location="${build-locker.dir}/classes/compiler"/>
       <path refid="aux.libs"/>
     </path>
+    <path id="quick.classpath">
+      <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/compiler"/>
+      <path refid="aux.libs"/>
+    </path>
   </target>
   
   <target name="locker.clean" depends="palo.clean">
@@ -610,7 +615,7 @@ QUICK BUILD (QUICK)
     <mkdir dir="${build-quick.dir}/classes/continuations-plugin"/>
     <scalacfork
       destdir="${build-quick.dir}/classes/continuations-plugin"
-      compilerpathref="locker.classpath"
+      compilerpathref="quick.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/continuations/plugin"
       jvmargs="${scalacfork.jvmargs}">
@@ -633,7 +638,7 @@ QUICK BUILD (QUICK)
     <!-- might split off library part into its own ant target -->
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
+      compilerpathref="quick.classpath"
       params="${scalac.args.quick} -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
@@ -650,7 +655,7 @@ QUICK BUILD (QUICK)
     <mkdir dir="${build-quick.dir}/classes/scalacheck"/>
     <scalacfork
       destdir="${build-quick.dir}/classes/scalacheck"
-      compilerpathref="locker.classpath"
+      compilerpathref="quick.classpath"
       params="${scalac.args.all}"
       srcdir="${src.dir}/scalacheck"
       jvmargs="${scalacfork.jvmargs}">
@@ -673,7 +678,7 @@ QUICK BUILD (QUICK)
     <mkdir dir="${build-quick.dir}/classes/scalap"/>
     <scalacfork
       destdir="${build-quick.dir}/classes/scalap"
-      compilerpathref="locker.classpath"
+      compilerpathref="quick.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/scalap"
       jvmargs="${scalacfork.jvmargs}">
@@ -715,7 +720,7 @@ QUICK BUILD (QUICK)
     </javac>
     <scalacfork
       destdir="${build-quick.dir}/classes/partest"
-      compilerpathref="locker.classpath"
+      compilerpathref="quick.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/partest"
       jvmargs="${scalacfork.jvmargs}">
