@@ -3,7 +3,7 @@ Type :help for more information.
 
 scala> 
 
-scala> scala> 0123
+scala> scala> 999l
 
 // Detected repl transcript paste: ctrl-D to finish.
 
@@ -34,8 +34,8 @@ res10: Int = 12
 
 // Replaying 8 commands from transcript.
 
-scala> 0123
-res0: Int = 83
+scala> 999l
+res0: Long = 999
 
 scala> val res5 = { 123 }
 res5: Int = 123

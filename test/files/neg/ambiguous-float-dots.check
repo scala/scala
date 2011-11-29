@@ -1,13 +1,16 @@
 ambiguous-float-dots.scala:2: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
   val x0 = 5.
            ^
-ambiguous-float-dots.scala:3: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
+ambiguous-float-dots.scala:6: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
   val x1 = 5.f
            ^
-ambiguous-float-dots.scala:6: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
+ambiguous-float-dots.scala:7: error: Treating numbers with a leading zero as octal is deprecated.
+  val y0 = 055
+           ^
+ambiguous-float-dots.scala:11: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
   1.+(2)
   ^
-ambiguous-float-dots.scala:7: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
+ambiguous-float-dots.scala:12: error: This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.
   1. + 2
   ^
-four errors found
+5 errors found

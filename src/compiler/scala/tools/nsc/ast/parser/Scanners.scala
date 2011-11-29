@@ -83,6 +83,7 @@ trait Scanners extends ScannersCommon {
   }
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
+    private def isDigit(c: Char) = java.lang.Character isDigit c
 
     def flush = { charOffset = offset; nextChar(); this }
 
@@ -342,16 +343,14 @@ trait Scanners extends ScannersCommon {
             base = 16
           }
           else {
-            // !!! Let's deprecate this too, shall we?
-            // Can it really be worth it given the endless supply of newbies
-            // who have no hope whatsoever of intuiting that 012 != 12?
-            // Leading zero meaning octal is a relic of a darker time.
-            //
-            // Pre-fabricated future logic / warning:
-            //
-            // deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
-            // if (!opt.future)
-            //   base = 8
+            /** What should leading 0 be in the future? It is potentially dangerous
+             *  to let it be base-10 because of history.  Should it be an error? Is
+             *  there a realistic situation where one would need it?
+             */
+            if (isDigit(ch)) {
+              if (opt.future) syntaxError("Non-zero numbers may not have a leading zero.")
+              else deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
+            }
             base = 8
           }
           getNumber()
@@ -825,10 +824,7 @@ trait Scanners extends ScannersCommon {
         if (value > limit)
           syntaxError("floating point number too large")
         if (isDeprecatedForm) {
-          if (opt.future)
-            syntaxError("malformed floating point number: to be part of a number, a dot must be immediately followed by a digit")
-          else
-            deprecationWarning("This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.")
+          deprecationWarning("This lexical syntax is deprecated.  From scala 2.11, a dot will only be considered part of a number if it is immediately followed by a digit.")
         }
 
         if (negated) -value else value
@@ -849,7 +845,6 @@ trait Scanners extends ScannersCommon {
     /** Read a number into strVal and set base
     */
     protected def getNumber() {
-      def isDigit(c: Char) = java.lang.Character isDigit c
       val base1 = if (base < 10) 10 else base
       // read 8,9's even if format is octal, produce a malformed number error afterwards.
       while (digit2int(ch, base1) >= 0) {
@@ -884,29 +879,36 @@ trait Scanners extends ScannersCommon {
         restOfUncertainToken()
       else {
         val lookahead = lookaheadReader
-        val isDefinitelyNumber =
-          (lookahead.getc(): @switch) match {
-            /** Another digit is a giveaway. */
-            case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
-              true
+        val c = lookahead.getc()
 
-            /** Backquoted idents like 22.`foo`. */
-            case '`' =>
-              return setStrVal()  /** Note the early return */
+        /** As of scala 2.11, it isn't a number unless c here is a digit, so
+         *  opt.future excludes the rest of the logic.
+         */
+        if (opt.future && !isDigit(c))
+          return setStrVal()
 
-            /** These letters may be part of a literal, or a method invocation on an Int */
-            case 'd' | 'D' | 'f' | 'F' =>
-              !isIdentifierPart(lookahead.getc())
+        val isDefinitelyNumber = (c: @switch) match {
+          /** Another digit is a giveaway. */
+          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
+            true
 
-            /** A little more special handling for e.g. 5e7 */
-            case 'e' | 'E' =>
-              val ch = lookahead.getc()
-              !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
+          /** Backquoted idents like 22.`foo`. */
+          case '`' =>
+            return setStrVal()  /** Note the early return */
 
-            case x  =>
-              !isIdentifierStart(x)
-          }
+          /** These letters may be part of a literal, or a method invocation on an Int.
+           */
+          case 'd' | 'D' | 'f' | 'F' =>
+            !isIdentifierPart(lookahead.getc())
 
+          /** A little more special handling for e.g. 5e7 */
+          case 'e' | 'E' =>
+            val ch = lookahead.getc()
+            !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
+
+          case x  =>
+            !isIdentifierStart(x)
+        }
         if (isDefinitelyNumber) restOfNumber()
         else restOfUncertainToken()
       }
