@@ -173,40 +173,44 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           (Nil, tree1, cpsA)
 
-        case If(cond, thenp, elsep) =>
+          case If(cond, thenp, elsep) =>
+            /* possible situations:
+            cps before (cpsA)
+            cps in condition (spc)  <-- synth flag set if *only* here!
+            cps in (one or both) branches */
+            val (condStats, condVal, spc) = transInlineValue(cond, cpsA)
+            val (cpsA2, cpsR2) = if (hasSynthMarker(tree.tpe))
+              (spc, linearize(spc, getAnswerTypeAnn(tree.tpe))) else
+              (None, getAnswerTypeAnn(tree.tpe)) // if no cps in condition, branches must conform to tree.tpe directly
+            val thenVal = transExpr(thenp, cpsA2, cpsR2)
+            val elseVal = transExpr(elsep, cpsA2, cpsR2)
 
-          val (condStats, condVal, spc) = transInlineValue(cond, cpsA)
+            // check that then and else parts agree (not necessary any more, but left as sanity check)
+            if (cpsR.isDefined) {
+              if (elsep == EmptyTree)
+                unit.error(tree.pos, "always need else part in cps code")
+            }
+            if (hasAnswerTypeAnn(thenVal.tpe) != hasAnswerTypeAnn(elseVal.tpe)) {
+              unit.error(tree.pos, "then and else parts must both be cps code or neither of them")
+            }
 
-          val (cpsA2, cpsR2) = (spc, linearize(spc, getAnswerTypeAnn(tree.tpe)))
-//          val (cpsA2, cpsR2) = (None, getAnswerTypeAnn(tree.tpe))
-          val thenVal = transExpr(thenp, cpsA2, cpsR2)
-          val elseVal = transExpr(elsep, cpsA2, cpsR2)
+            (condStats, updateSynthFlag(treeCopy.If(tree, condVal, thenVal, elseVal)), spc)
 
-          // check that then and else parts agree (not necessary any more, but left as sanity check)
-          if (cpsR.isDefined) {
-            if (elsep == EmptyTree)
-              unit.error(tree.pos, "always need else part in cps code")
-          }
-          if (hasAnswerTypeAnn(thenVal.tpe) != hasAnswerTypeAnn(elseVal.tpe)) {
-            unit.error(tree.pos, "then and else parts must both be cps code or neither of them")
-          }
+          case Match(selector, cases) =>
 
-          (condStats, updateSynthFlag(treeCopy.If(tree, condVal, thenVal, elseVal)), spc)
+            val (selStats, selVal, spc) = transInlineValue(selector, cpsA)
+            val (cpsA2, cpsR2) = if (hasSynthMarker(tree.tpe))
+              (spc, linearize(spc, getAnswerTypeAnn(tree.tpe))) else
+              (None, getAnswerTypeAnn(tree.tpe))
 
-        case Match(selector, cases) =>
+            val caseVals = for {
+              cd @ CaseDef(pat, guard, body) <- cases
+              bodyVal = transExpr(body, cpsA2, cpsR2)
+            } yield {
+              treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
+            }
 
-          val (selStats, selVal, spc) = transInlineValue(selector, cpsA)
-          val (cpsA2, cpsR2) = (spc, linearize(spc, getAnswerTypeAnn(tree.tpe)))
-//          val (cpsA2, cpsR2) = (None, getAnswerTypeAnn(tree.tpe))
-
-          val caseVals = for {
-            cd @ CaseDef(pat, guard, body) <- cases
-            bodyVal = transExpr(body, cpsA2, cpsR2)
-          } yield {
-            treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
-          }
-
-          (selStats, updateSynthFlag(treeCopy.Match(tree, selVal, caseVals)), spc)
+            (selStats, updateSynthFlag(treeCopy.Match(tree, selVal, caseVals)), spc)
 
 
         case ldef @ LabelDef(name, params, rhs) =>
