@@ -104,7 +104,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  }
  *  }}}
  *
- *  The are also methods that can be used to replace the patterns
+ *  There are also methods that can be used to replace the patterns
  *  on a text. The substitutions can be simple replacements, or more
  *  complex functions. For example:
  *
