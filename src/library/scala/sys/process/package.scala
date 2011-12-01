@@ -47,8 +47,9 @@ package scala.sys {
     *
     * {{{
     * import java.io.File
+    * import java.net.URL
     * import scala.sys.process._
-    * new File("About.html") #> new File("About_copy.html") !
+    * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
     * }}}
     *
     * One may use a `Process` directly through `ProcessBuilder`'s `run` method, which starts the process in
