@@ -128,7 +128,12 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
    */
   final class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
     private var forced = false
-    private lazy val forcedInfo = try lazyInfo finally forced = true
+    private lazy val forcedInfo =
+      try {
+        val result = lazyInfo 
+        if (result.pos == NoPosition) result setPos pos
+        result
+      } finally forced = true
 
     def atp: Type                               = forcedInfo.atp
     def args: List[Tree]                        = forcedInfo.args
@@ -136,6 +141,8 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
     // We should always be able to print things without forcing them.
     override def toString = if (forced) forcedInfo.toString else "@<?>"
+      
+    override def pos: Position = forcedInfo.pos
   }
 
   /** Typed information about an annotation. It can be attached to either
