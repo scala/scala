@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#
+# by jsuereth and paulp
+
+# always good to fail fast
+set -e
+
+gitignore="$(dirname $0)/.gitignore"
+bootdir="$(dirname $0)/.boot"
+sbtjar="${bootdir}/sbt-launch.jar"
+launchversionfile="${bootdir}/.launchversion"
+sbtversion=0.11.2
+#  sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-snapshots/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+sbturl="http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/$sbtversion/sbt-launch.jar"
+
+# Check the current stored launch version.
+if [[ -f "$launchversionfile" ]]; then
+  storedversion="$(cat $launchversionfile)"
+else
+  storedversion=""
+fi
+
+if [[ ! -d "$bootdir" ]]; then
+  echo "Creating .boot directory for xsbt"
+  pushd $(dirname $0)
+  mkdir $bootdir
+  popd
+fi
+
+if [[ ! -f "$gitignore" ]]; then
+  echo "Creating .gitignore"
+  echo ".gitignore" > "$gitignore"
+fi
+
+for ign in .boot
+do
+  if ! grep -Fq "$ign" "$gitignore"; then
+    echo "Adding $ign to $gitignore."
+    echo "$ign" >> "$gitignore"
+  fi
+done
+
+# TODO - Check version of SBT launch jar in some kind of tag file so we can pull new versions when needed.
+if [[ ! -f "$sbtjar" ]] || [[ "$storedversion" != "$sbtversion" ]]; then
+  if [[ -f "$sbtjar" ]]; then
+    echo "SBT launch is out-of-date.  Removing old version."
+    rm $sbtjar
+  fi
+  echo "Downloading sbt version $sbtversion to $sbtjar ..."
+  echo ""
+  # TODO - Do this after downloading the new JAR file...
+  echo "$sbtversion" >$launchversionfile
+  if [[ $(which curl) ]]; then
+    curl --silent "$sbturl" > "$sbtjar"
+  elif [[ $(which wget) ]]; then
+    pushd $bootdir
+    wget $sbturl 
+    popd
+  else
+    cat <<EOM
+No means of downloading sbt-launch.jar found.   Either:
+ * install curl
+ * install wget
+ * manually download: $sbturl
+        and place at: $sbtjar
+EOM
+  fi
+fi
+
+java $JAVA_OPTS \
+  -XX:+CMSClassUnloadingEnabled \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:MaxPermSize=512m \
+  -Xmx3g -Xms3g -Xss2M \
+  -XX:ReservedCodeCacheSize=200m \
+  -XX:+UseParallelGC \
+  -jar "$sbtjar" "$@"
