@@ -22,13 +22,16 @@ import mutable.{ Builder, SetBuilder }
  */
 @SerialVersionUID(1611436763290191562L)
 abstract class BitSet extends scala.collection.AbstractSet[Int]
-                         with Set[Int]
+                         with SortedSet[Int]
                          with scala.collection.BitSet
                          with BitSetLike[BitSet]
                          with Serializable {
   override def empty = BitSet.empty
 
-  def fromArray(elems: Array[Long]): BitSet = BitSet.fromArray(elems)
+  @deprecated("Use BitSet.fromBitMask[NoCopy] instead of fromArray", "2.10")
+  def fromArray(elems: Array[Long]): BitSet = fromBitMaskNoCopy(elems)
+
+  protected def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
    */
@@ -64,14 +67,38 @@ object BitSet extends BitSetFactory[BitSet] {
   /** The empty bitset */
   val empty: BitSet = new BitSet1(0L)
 
-  /** An adding builder for immutable Sets. */
-  def newBuilder: Builder[Int, BitSet] = new SetBuilder[Int, BitSet](empty)
+  /** A builder that takes advantage of mutable BitSets. */
+  def newBuilder: Builder[Int, BitSet] = new Builder[Int, BitSet] {
+    private[this] val b = new mutable.BitSet
+    def += (x: Int) = { b += x; this }
+    def clear() = b.clear
+    def result() = b.toImmutable
+  }
 
   /** $bitsetCanBuildFrom */
   implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */
-  def fromArray(elems: Array[Long]): BitSet = {
+  @deprecated("Use fromBitMask[NoCopy] instead of fromArray", "2.10")
+  def fromArray(elems: Array[Long]): BitSet = fromBitMaskNoCopy(elems)
+
+  /** A bitset containing all the bits in an array */
+  def fromBitMask(elems: Array[Long]): BitSet = {
+    val len = elems.length
+    if (len == 0) empty
+    else if (len == 1) new BitSet1(elems(0))
+    else if (len == 2) new BitSet2(elems(0), elems(1))
+    else {
+      val a = new Array[Long](len)
+      Array.copy(elems, 0, a, 0, len)
+      new BitSetN(a)
+    }
+  }
+
+  /** A bitset containing all the bits in an array, wrapping the existing
+   *  array without copying.
+   */
+  def fromBitMaskNoCopy(elems: Array[Long]): BitSet = {
     val len = elems.length
     if (len == 0) empty
     else if (len == 1) new BitSet1(elems(0))
@@ -85,7 +112,7 @@ object BitSet extends BitSetFactory[BitSet] {
     protected def updateWord(idx: Int, w: Long): BitSet =
       if (idx == 0) new BitSet1(w)
       else if (idx == 1) new BitSet2(elems, w)
-      else fromArray(updateArray(Array(elems), idx, w))
+      else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
   }
 
   class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
@@ -94,12 +121,18 @@ object BitSet extends BitSetFactory[BitSet] {
     protected def updateWord(idx: Int, w: Long): BitSet =
       if (idx == 0) new BitSet2(w, elems1)
       else if (idx == 1) new BitSet2(elems0, w)
-      else fromArray(updateArray(Array(elems0, elems1), idx, w))
+      else fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
   }
 
+  /** The implementing class for bit sets with elements >= 128 (exceeding
+   *  the capacity of two long values). The constructor wraps an existing
+   *  bit mask without copying, thus exposing a mutable part of the internal
+   *  implementation. Care needs to be taken not to modify the exposed
+   *  array.  
+   */
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected def nwords = elems.length
     protected def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
-    protected def updateWord(idx: Int, w: Long): BitSet = fromArray(updateArray(elems, idx, w))
+    protected def updateWord(idx: Int, w: Long): BitSet = fromBitMaskNoCopy(updateArray(elems, idx, w))
   }
 }
