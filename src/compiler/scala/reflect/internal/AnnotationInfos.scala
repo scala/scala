@@ -142,7 +142,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     // We should always be able to print things without forcing them.
     override def toString = if (forced) forcedInfo.toString else "@<?>"
       
-    override def pos: Position = forcedInfo.pos
+    override def pos: Position = if (forced) forcedInfo.pos else NoPosition
   }
 
   /** Typed information about an annotation. It can be attached to either
