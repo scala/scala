@@ -35,6 +35,8 @@ trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with Sorted
  */
 object SortedSet extends ImmutableSortedSetFactory[SortedSet] {
   /** $sortedSetCanBuildFromInfo */
-  implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = new SortedSetCanBuildFrom[A]
+  def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, SortedSet[A]] = newCanBuildFrom[A]
   def empty[A](implicit ord: Ordering[A]): SortedSet[A] = TreeSet.empty[A]
+  // Force a declaration here so that BitSet's (which does not inherit from SortedSetFactory) can be more specific
+  override implicit def newCanBuildFrom[A](implicit ord : Ordering[A]) : CanBuildFrom[Coll, A, SortedSet[A]] = super.newCanBuildFrom
 }

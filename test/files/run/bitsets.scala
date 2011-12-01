@@ -39,6 +39,48 @@ object TestMutable {
   Console.println
 }
 
+object TestMutable2 {
+  import scala.collection.mutable.BitSet
+  import scala.collection.immutable.TreeSet
+
+  val l0 = 0 to 24 by 2 toList
+  val l1 = (190 to 255 toList) reverse
+  val l2 = (0 to 256 toList)
+  val l3 = (1 to 200 by 2 toList) reverse
+  val t0 = TreeSet(l0: _*)
+  val t1 = TreeSet(l1: _*)
+  val t2 = TreeSet(l2: _*)
+  val t3 = TreeSet(l3: _*)
+  val b0 = BitSet(l0: _*)
+  val b1 = BitSet(l1: _*)
+  val b2 = BitSet(l2: _*)
+  val b3 = BitSet(l3: _*)
+
+  println("m2_m0 = " + b0.toBitMask.toList.map(_.toBinaryString))
+  println("m2_m2 = " + b2.toBitMask.toList.map(_.toHexString))
+  println("m2_m0c = " + (BitSet.fromBitMask(b0.toBitMask) == b0))
+  println("m2_m1c = " + (BitSet.fromBitMask(b1.toBitMask) == b1))
+  println("m2_m2c = " + (BitSet.fromBitMask(b2.toBitMask) == b2))
+  println("m2_m3c = " + (BitSet.fromBitMask(b3.toBitMask) == b3))
+  println("m2_i0 = " + (t0 == b0))
+  println("m2_i1 = " + (t1 == b1))
+  println("m2_i2 = " + (t2 == b2))
+  println("m2_i3 = " + (t3 == b3))
+  println("m2_f0 = " + (t0.from(42) == b0.from(42)))
+  println("m2_f1 = " + (t1.from(42) == b1.from(42)))
+  println("m2_f2 = " + (t2.from(42) == b2.from(42)))
+  println("m2_f3 = " + (t3.from(42) == b3.from(42)))
+  println("m2_t0 = " + (t0.to(195) == b0.to(195)))
+  println("m2_t1 = " + (t1.to(195) == b1.to(195)))
+  println("m2_t2 = " + (t2.to(195) == b2.to(195)))
+  println("m2_t3 = " + (t3.to(195) == b3.to(195)))
+  println("m2_r0 = " + (t0.range(43,194) == b0.range(43,194)))
+  println("m2_r1 = " + (t1.range(43,194) == b1.range(43,194)))
+  println("m2_r2 = " + (t2.range(43,194) == b2.range(43,194)))
+  println("m2_r3 = " + (t3.range(43,194) == b3.range(43,194)))
+  println
+}
+
 object TestImmutable {
   import scala.collection.immutable.BitSet
 
@@ -69,9 +111,52 @@ object TestImmutable {
   Console.println
 }
 
+object TestImmutable2 {
+  import scala.collection.immutable.{BitSet, TreeSet}
+
+  val l0 = 0 to 24 by 2 toList
+  val l1 = (190 to 255 toList) reverse
+  val l2 = (0 to 256 toList)
+  val l3 = (1 to 200 by 2 toList) reverse
+  val t0 = TreeSet(l0: _*)
+  val t1 = TreeSet(l1: _*)
+  val t2 = TreeSet(l2: _*)
+  val t3 = TreeSet(l3: _*)
+  val b0 = BitSet(l0: _*)
+  val b1 = BitSet(l1: _*)
+  val b2 = BitSet(l2: _*)
+  val b3 = BitSet(l3: _*)
+
+  println("i2_m0 = " + b0.toBitMask.toList.map(_.toBinaryString))
+  println("i2_m2 = " + b2.toBitMask.toList.map(_.toHexString))
+  println("i2_m0c = " + (BitSet.fromBitMask(b0.toBitMask) == b0))
+  println("i2_m1c = " + (BitSet.fromBitMask(b1.toBitMask) == b1))
+  println("i2_m2c = " + (BitSet.fromBitMask(b2.toBitMask) == b2))
+  println("i2_m3c = " + (BitSet.fromBitMask(b3.toBitMask) == b3))
+  println("i2_i0 = " + (t0 == b0))
+  println("i2_i1 = " + (t1 == b1))
+  println("i2_i2 = " + (t2 == b2))
+  println("i2_i3 = " + (t3 == b3))
+  println("i2_f0 = " + (t0.from(42) == b0.from(42)))
+  println("i2_f1 = " + (t1.from(42) == b1.from(42)))
+  println("i2_f2 = " + (t2.from(42) == b2.from(42)))
+  println("i2_f3 = " + (t3.from(42) == b3.from(42)))
+  println("i2_t0 = " + (t0.to(195) == b0.to(195)))
+  println("i2_t1 = " + (t1.to(195) == b1.to(195)))
+  println("i2_t2 = " + (t2.to(195) == b2.to(195)))
+  println("i2_t3 = " + (t3.to(195) == b3.to(195)))
+  println("i2_r0 = " + (t0.range(77,194) == b0.range(77,194)))
+  println("i2_r1 = " + (t1.range(77,194) == b1.range(77,194)))
+  println("i2_r2 = " + (t2.range(77,194) == b2.range(77,194)))
+  println("i2_r3 = " + (t3.range(77,194) == b3.range(77,194)))
+  println
+}
+
 object Test extends App {
   TestMutable
+  TestMutable2
   TestImmutable
+  TestImmutable2
 }
 
 //############################################################################
