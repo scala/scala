@@ -164,7 +164,7 @@ Many of these targets offer a variant which runs with -optimise enabled.
 Optimized targets include build-opt, test-opt, dist-opt, fastdist-opt,
 replacestarr-opt, replacelocker-opt, and distpack-opt.
 
-Part V. Contributing to Scala
+Part IV. Contributing to Scala
 --------------------------------------------------------------------------------
 
 If you wish to contribute, you can find all of the necessary information on

@@ -15,7 +15,7 @@ import generic._
 /** A common base class for mutable and immutable bitsets.
  *  $bitsetinfo
  */
-trait BitSet extends Set[Int]
+trait BitSet extends SortedSet[Int]
                 with BitSetLike[BitSet] {
   override def empty: BitSet = BitSet.empty
 }

@@ -624,6 +624,8 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
+  
+  def emptyValDef: ValDef
 
   // ------ traversers, copiers, and transformers ---------------------------------------------
 

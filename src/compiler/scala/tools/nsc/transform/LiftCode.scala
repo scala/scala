@@ -476,6 +476,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
         if (!(boundSyms exists (tt.tpe contains _))) mirrorCall("TypeTree", reifyType(tt.tpe))
         else if (tt.original != null) reify(tt.original)
         else TypeTree()
+      case global.emptyValDef =>
+        mirrorSelect("emptyValDef")
       case _ =>
         if (tree.isDef)
           boundSyms += tree.symbol
