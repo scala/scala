@@ -94,6 +94,29 @@ object Test5 {
   }
 }
 
+object SerializationTest {
+  object Types extends Enumeration { val X, Y = Value }
+  class A extends java.io.Serializable { val types = Types.values }
+  class B extends java.io.Serializable { val types = Set(Types.X, Types.Y) }
+
+  def serialize(obj: AnyRef) = {
+    val baos = new java.io.ByteArrayOutputStream()
+    val oos = new java.io.ObjectOutputStream(baos)
+    oos.writeObject(obj)
+    oos.close()
+    val bais = new java.io.ByteArrayInputStream(baos.toByteArray)
+    val ois = new java.io.ObjectInputStream(bais)
+    val prime = ois.readObject()
+    ois.close()
+    prime
+  }
+
+  def run {
+    serialize(new B())
+    serialize(new A())
+  }
+}
+
 //############################################################################
 // Test code
 
@@ -125,6 +148,7 @@ object Test {
     Console.println;
     Test5.run;
     Console.println;
+    SerializationTest.run;
   }
 }
 
