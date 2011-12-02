@@ -108,6 +108,8 @@ trait Parsers {
 
     def flatMapWithNext[U](f: T => Input => ParseResult[U]): ParseResult[U]
 
+    def filterWithError(p: T => Boolean, error: T => String, position: Input): ParseResult[T]
+
     def append[U >: T](a: => ParseResult[U]): ParseResult[U]
 
     def isEmpty = !successful
@@ -137,6 +139,10 @@ trait Parsers {
     def flatMapWithNext[U](f: T => Input => ParseResult[U]): ParseResult[U]
       = f(result)(next)
 
+    def filterWithError(p: T => Boolean, error: T => String, position: Input): ParseResult[T] =
+      if (p(result)) this
+      else Failure(error(result), position)
+
     def append[U >: T](a: => ParseResult[U]): ParseResult[U] = this
 
     def get: T = result
@@ -160,6 +166,8 @@ trait Parsers {
 
     def flatMapWithNext[U](f: Nothing => Input => ParseResult[U]): ParseResult[U]
       = this
+
+    def filterWithError(p: Nothing => Boolean, error: Nothing => String, position: Input): ParseResult[Nothing] = this
 
     def get: Nothing = sys.error("No result when parsing failed")
   }
@@ -223,6 +231,12 @@ trait Parsers {
 
     def map[U](f: T => U): Parser[U] //= flatMap{x => success(f(x))}
       = Parser{ in => this(in) map(f)}
+
+    def filter(p: T => Boolean): Parser[T]
+      = withFilter(p)
+
+    def withFilter(p: T => Boolean): Parser[T]
+      = Parser{ in => this(in) filterWithError(p, "Input doesn't match filter: "+_, in)}
 
     // no filter yet, dealing with zero is tricky!
 
