@@ -65,6 +65,35 @@ object Test4 {
   }
 }
 
+object Test5 {
+
+  object D1 extends Enumeration(0) {
+    val North, South, East, West = Value;
+  }
+
+  object D2 extends Enumeration(-2) {
+    val North, South, East, West = Value;
+  }
+
+  object WeekDays extends Enumeration  {
+    val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
+  }
+
+  def run {
+    val s1 = D1.ValueSet(D1.North, D1.East)
+    val s2 = D2.North + D2.East
+    println(s1)
+    println(s2)
+    println(s1 + D1.West)
+    println(s2 + D2.West)
+    println(s1.toBitMask.map(_.toBinaryString).toList)
+    println(s2.toBitMask.map(_.toBinaryString).toList)
+    println(D1.ValueSet.fromBitMask(s1.toBitMask))
+    println(D2.ValueSet.fromBitMask(s2.toBitMask))
+    println(WeekDays.values.range(WeekDays.Tue, WeekDays.Sat))
+  }
+}
+
 //############################################################################
 // Test code
 
@@ -93,6 +122,8 @@ object Test {
     check_success("Test2", Test2.run, 5);
     check_success("Test3", Test3.run, 1);
     check_success("Test4", Test4.run, 0);
+    Console.println;
+    Test5.run;
     Console.println;
   }
 }
