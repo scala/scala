@@ -1,0 +1,4 @@
+t2080.scala:12: error: illegal combination of modifiers: abstract and override for: trait T
+ override trait T {
+                ^
+one error found
