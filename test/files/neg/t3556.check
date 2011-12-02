@@ -1,0 +1,4 @@
+t3556.scala:13: error: covariant type CaseDef occurs in contravariant position in type Collects.this.PMat[U] of value pmat
+    def doMatch[U](x: C)(pmat: PMat[U]): U
+                         ^
+one error found
