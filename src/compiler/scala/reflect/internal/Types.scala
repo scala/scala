@@ -4177,8 +4177,9 @@ A type's typeSymbol should never be inspected directly.
       if (phase.flatClasses) {
         sym
       } else if (sym.isModuleClass) {
-        val result = adaptToNewRun(pre, sym.sourceModule).moduleClass
-        assert(result != NoSymbol, sym+" "+sym.sourceModule)
+        val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)
+        val result = sourceModule1.moduleClass
+        assert(result != NoSymbol, sym+" "+sym.sourceModule+" "+sourceModule1)
         result
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
