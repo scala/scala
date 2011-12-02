@@ -563,8 +563,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           if (!nameLink.isEmpty)
             <a href={nameLink}>{nameHtml}</a>
           else nameHtml
-        }
-        {
+        }{
           def tparamsToHtml(mbr: Entity): NodeSeq = mbr match {
             case hk: HigherKinded =>
               val tpss = hk.typeParams
@@ -580,8 +579,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               case _ => NodeSeq.Empty
           }
           tparamsToHtml(mbr)
-        }
-        { if (isReduced) NodeSeq.Empty else {
+        }{
+          if (isReduced) NodeSeq.Empty else {
             def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
               def param0(vl: ValueParam): NodeSeq =
                 // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
