@@ -275,7 +275,9 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
 
   /** A copy of the $coll with an element prepended.
    *
-   * Note that :-ending operators are right associative (see example).
+   * Note that :-ending operators are right associative (see example). If you want
+   * help remembering that, you can use the mnemonic COLon goes on the COLlection side.
+   *
    * Also, the original $coll is not modified, so you will want to capture the result.
    *
    *  Example:
@@ -303,6 +305,9 @@ trait GenSeqLike[+A, +Repr] extends GenIterableLike[A, Repr] with Equals with Pa
   def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** A copy of this $coll with an element appended.
+   *
+   *  To help remember whether you should use `+:` or `:+`, you can use
+   *  the mnemonic COLon goes on the COLlection side.
    *
    *  $willNotTerminateInf
    *  @param  elem   the appended element
