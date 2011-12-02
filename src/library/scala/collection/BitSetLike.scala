@@ -65,7 +65,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     var i = nwords
     while (i > 0) {
       i -= 1
-      s += popCount(word(i))
+      s += java.lang.Long.bitCount(word(i))
     }
     s
   }
@@ -220,16 +220,5 @@ object BitSetLike {
     if (idx < newlen) newelems(idx) = w
     else assert(w == 0L)
     newelems
-  }
-
-  private val pc1: Array[Int] = {
-    def countBits(x: Int): Int = if (x == 0) 0 else x % 2 + countBits(x >>> 1)
-    Array.tabulate(256)(countBits _)
-  }
-
-  private def popCount(w: Long): Int = {
-    def pc2(w: Int) = if (w == 0) 0 else pc1(w & 0xff) + pc1(w >>> 8)
-    def pc4(w: Int) = if (w == 0) 0 else pc2(w & 0xffff) + pc2(w >>> 16)
-    if (w == 0L) 0 else pc4(w.toInt) + pc4((w >>> 32).toInt)
   }
 }
