@@ -211,6 +211,13 @@ extends collection.AbstractSeq[Int]
 
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
 
+  final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
+    val len = length
+    if (len == 0) 0
+    else if (len == 1) head
+    else (len.toLong * (head + last) / 2).toInt
+  }
+
   override def toIterable = this
 
   override def toSeq = this
