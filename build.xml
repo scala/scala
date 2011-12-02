@@ -202,6 +202,8 @@ INITIALISATION
 ============================================================================ -->
 
   <target name="init">
+    <available file="${lib.dir}/scala-library.jar" property="starr.present"/>
+    <fail unless="starr.present" message="Could not find STARR.  Have your run the pull-binary-libs.sh script?"/>
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
