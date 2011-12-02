@@ -1,0 +1,29 @@
+t3481.scala:5: error: type mismatch;
+ found   : String("hello")
+ required: _$1 where type +_$1
+    f[A[Int]]("hello")
+              ^
+t3481.scala:11: error: type mismatch;
+ found   : _$2 where type +_$2
+ required: b.T
+    (which expands to)  _$2
+    def f[T <: B[_]](a: T#T, b: T) = b.m(a)
+                                         ^
+t3481.scala:12: error: type mismatch;
+ found   : String("Hello")
+ required: _$2 where type +_$2
+    f("Hello", new B[Int])
+      ^
+t3481.scala:18: error: type mismatch;
+ found   : String("Hello")
+ required: t3481.ex3.b.T2
+    (which expands to)  _$3
+    b.m("Hello")
+        ^
+t3481.scala:25: error: type mismatch;
+ found   : String("Hello")
+ required: t3481.ex4.Test.b.T2
+    (which expands to)  _$4
+      b.m("Hello")
+          ^
+5 errors found
