@@ -1,30 +1,12 @@
 #!/bin/sh
 #
 # Usage: get-scala-revision [dir]
-# Figures out current scala revision of an svn checkout or
-# a git-svn mirror (or a git clone.)
+# Figures out current scala revision of a git clone.
 #
 # If no dir is given, current working dir is used.
 
-DIR=""
-if [ $# -eq 0 ]; then
-  DIR=`pwd`
-else
-  DIR=$1
-fi
+[[ -n "$1" ]] && cd "$1"
 
-cd $DIR
-
-if [ -d .svn ]; then
-  # 2>&1 to catch also error output (e.g. svn warnings)
-  svn info . 2>&1 | grep ^Revision | sed 's/Revision: //'
-elif [ -d .git ]; then
-  GIT_PAGER=cat
-  # this grabs more than one line because otherwise if you have local
-  # commits which aren't in git-svn it won't see any revision.
-  git log -10 | grep git-svn-id | head -1 | sed 's/[^@]*@\([0-9]*\).*/\1/'
-else
-  echo "${DIR} doesn't appear to be git or svn dir." >&2
-  echo 0
-  exit 1
-fi
+# dev should be a tag at the merge-base of master and the
+# most recent release.
+git describe head --abbrev=7 --match dev

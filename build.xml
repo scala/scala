@@ -232,10 +232,10 @@ INITIALISATION
       <os family="windows"/>
     </condition>
 
-    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="svn.number" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="svn.number" failifexecutionfails="false" />
+    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="git.describe" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="git.describe" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
-    <property name="svn.number" value="0"/>
+    <property name="git.describe" value="-unknown-"/>
 
     <property name="init.avail" value="yes"/>
 
@@ -243,10 +243,11 @@ INITIALISATION
     <property file="${basedir}/build.number"/>
     <property
       name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
+      value="${version.major}.${version.minor}.${version.patch}.${git.describe}"/>
+      
     <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
-    <echo level="info" message="Built ${time.human} from revision ${svn.number} with ${java.vm.name} ${java.version}"/>
+    <echo level="info" message="Built ${time.human} from revision ${git.describe} with ${java.vm.name} ${java.version}"/>
   
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
