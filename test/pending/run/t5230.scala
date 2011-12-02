@@ -14,6 +14,7 @@ object Test extends App {
   val settings = new Settings
   settings.Yreifydebug.value = true
   settings.debug.value = true
+  settings.nospecialization.value = true
 
   val reporter = new ConsoleReporter(settings)
   val toolbox = new ToolBox(reporter)
