@@ -207,8 +207,8 @@ INITIALISATION
 
   <target name="init.starr" if="starr.absent">
     <echo level="warn" message="Downloading bootstrap libs.  (To do this by hand, run ./pull-binary-libs.sh)"/>
-    <exec osfamily="unix" executable="pull-binary-libs.sh" failifexecutionfails="true" />
-    <exec osfamily="windows" executable="pull-binary-libs.sh" failifexecutionfails="true" />
+    <exec osfamily="unix" vmlauncher="false" executable="./pull-binary-libs.sh" failifexecutionfails="true" />
+    <exec osfamily="windows" vmlauncher="false" executable="pull-binary-libs.sh" failifexecutionfails="true" />
   </target>
 
   <target name="init" depends="init.starr">
