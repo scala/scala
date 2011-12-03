@@ -17,13 +17,16 @@ import annotation.tailrec
 trait Contexts { self: Analyzer =>
   import global._
 
-  val NoContext = new Context {
-    override def implicitss: List[List[ImplicitInfo]] = List()
-    outer = this
+  object NoContext extends Context {
+    outer      = this
+    enclClass  = this
+    enclMethod = this
+    
+    override def nextEnclosing(p: Context => Boolean): Context = this
+    override def enclosingContextChain: List[Context] = Nil
+    override def implicitss: List[List[ImplicitInfo]] = Nil
     override def toString = "NoContext"
   }
-  NoContext.enclClass = NoContext
-  NoContext.enclMethod = NoContext
 
   private val startContext = {
     NoContext.make(
@@ -337,7 +340,9 @@ trait Contexts { self: Analyzer =>
     }
 
     def nextEnclosing(p: Context => Boolean): Context =
-      if (this == NoContext || p(this)) this else outer.nextEnclosing(p)
+      if (p(this)) this else outer.nextEnclosing(p)
+
+    def enclosingContextChain: List[Context] = this :: outer.enclosingContextChain
 
     override def toString = "Context(%s@%s unit=%s scope=%s)".format(
       owner.fullName, tree.shortClass, unit, scope.##

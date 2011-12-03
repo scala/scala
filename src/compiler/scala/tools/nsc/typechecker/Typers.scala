@@ -19,6 +19,7 @@ import symtab.Flags._
 import util.Statistics
 import util.Statistics._
 import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
+import scala.tools.util.EditDistance.similarString
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -3752,7 +3753,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           defSym = EmptyPackageClass.tpe.nonPrivateMember(name)
           defSym != NoSymbol
         }
-
+        def startingIdentContext = (
+          // ignore current variable scope in patterns to enforce linearity
+          if ((mode & (PATTERNmode | TYPEPATmode)) == 0) context
+          else context.outer
+        )
         // A symbol qualifies if it exists and is not stale. Stale symbols
         // are made to disappear here. In addition,
         // if we are in a constructor of a pattern, we ignore all definitions
@@ -3768,13 +3773,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         if (defSym == NoSymbol) {
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
-          var cx = context
-          if ((mode & (PATTERNmode | TYPEPATmode)) != 0) {
-            // println("ignoring scope: "+name+" "+cx.scope+" "+cx.outer.scope)
-            // ignore current variable scope in patterns to enforce linearity
-            cx = cx.outer
-          }
-
+          var cx = startingIdentContext
           while (defSym == NoSymbol && cx != NoContext) {
             currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name)
             pre = cx.enclClass.prefix
@@ -3872,7 +3871,26 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               if (inaccessibleSym eq NoSymbol) {
                 // Avoiding some spurious error messages: see SI-2388.
                 if (reporter.hasErrors && (name startsWith tpnme.ANON_CLASS_NAME)) ()
-                else error(tree.pos, "not found: "+decodeWithKind(name, context.owner))
+                else {
+                  val similar = (
+                    // name length check to limit unhelpful suggestions for e.g. "x" and "b1"
+                    if (settings.suggestIdents.value && name.length > 2) {
+                      val allowed = (
+                        startingIdentContext.enclosingContextChain
+                            flatMap (ctx => ctx.scope.toList ++ ctx.imports.flatMap(_.allImportedSymbols))
+                             filter (sym => sym.isTerm == name.isTermName)
+                          filterNot (sym => sym.isPackage || sym.isSynthetic || sym.hasMeaninglessName)
+                      )
+                      val allowedStrings = (
+                        allowed.map("" + _.name).distinct.sorted
+                          filterNot (s => (s contains '$') || (s contains ' '))
+                      )
+                      similarString("" + name, allowedStrings)
+                    }
+                    else ""
+                  )
+                  error(tree.pos, "not found: "+decodeWithKind(name, context.owner) + similar)
+                }
               }
               else new AccessError(
                 tree, inaccessibleSym, context.enclClass.owner.thisType,
