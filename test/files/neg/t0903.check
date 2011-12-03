@@ -1,4 +1,4 @@
-t0903.scala:3: error: reassignment to val
+t0903.scala:3: error: value += is not a member of Int
   x += 1
     ^
 t0903.scala:4: error: reassignment to val

@@ -3457,12 +3457,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     stopTimer(failedOpEqNanos, opeqStart)
                     convertToAssignment(fun, qual1, name, args, ex)
-                  } else {
+                  } 
+                  else {
                     stopTimer(failedApplyNanos, appStart)
-                    if ((qual1.symbol ne null) && qual1.symbol.isValue)
-                      error(tree.pos, "reassignment to val")
-                    else
-                      reportTypeError(fun.pos, ex)
+                    reportTypeError(fun.pos, ex)
                     setError(tree)
                   }
                 case _ =>
