@@ -127,15 +127,9 @@ package object math {
     else if (x > 0) 1.0f
     else x    // NaN
 
-  def signum(x: Long): Long =
-    if (x == 0l) 0l
-    else if (x < 0) -1l
-    else 1l
+  def signum(x: Long): Long = java.lang.Long.signum(x)
 
-  def signum(x: Int): Int =
-    if (x == 0) 0
-    else if (x < 0) -1
-    else 1
+  def signum(x: Int): Int = java.lang.Integer.signum(x)
 
   // -----------------------------------------------------------------------
   // root functions
