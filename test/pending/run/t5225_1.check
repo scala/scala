@@ -1,0 +1,4 @@
+{
+  @transient @volatile var x: Int = 2;
+  ()
+}
