@@ -178,7 +178,6 @@ trait ScalaSettings extends AbsScalaSettings
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val YnoProductN = BooleanSetting ("-Yno-productN", "Do not add ProductN to case classes")
-  val suggestIdents = BooleanSetting("-Ysuggest-idents", "Suggest alternatives for `not found` identifiers")
 
   def stop = stopAfter
 

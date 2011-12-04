@@ -3874,7 +3874,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 else {
                   val similar = (
                     // name length check to limit unhelpful suggestions for e.g. "x" and "b1"
-                    if (settings.suggestIdents.value && name.length > 2) {
+                    if (name.length > 2) {
                       val allowed = (
                         startingIdentContext.enclosingContextChain
                             flatMap (ctx => ctx.scope.toList ++ ctx.imports.flatMap(_.allImportedSymbols))
