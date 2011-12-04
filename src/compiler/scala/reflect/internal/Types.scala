@@ -4174,8 +4174,16 @@ A type's typeSymbol should never be inspected directly.
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (phase.flatClasses) {
         sym
+      } else if (sym == definitions.RootClass) {
+        definitions.RootClass
+      } else if (sym == definitions.RootPackage) {
+        definitions.RootPackage
       } else if (sym.isModuleClass) {
-        adaptToNewRun(pre, sym.sourceModule).moduleClass
+        val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)
+        val result = sourceModule1.moduleClass
+        val msg = "sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
+        assert(result != NoSymbol, msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
+        result
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
