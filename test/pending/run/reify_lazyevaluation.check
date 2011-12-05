@@ -1,0 +1,8 @@
+s     = Susp(?)
+evaluating...
+s()   = 3
+s     = Susp(3)
+2 + s = 5
+sl2   = Susp(?)
+sl2() = Some(3)
+sl2   = Susp(Some(3))
