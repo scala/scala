@@ -23,6 +23,8 @@ import immutable.{List, Nil}
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_29.html "The Scala 2.8                Collections     API"]]
+ *  section on `Mutable Lists` for more information.
  */
 @SerialVersionUID(5938451523372603072L)
 class MutableList[A]

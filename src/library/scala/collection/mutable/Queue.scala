@@ -20,6 +20,8 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_30.html "The Scala 2.8                 Collections     API"]]
+ *  section on `Queues` for more information.
  *
  *  @define Coll mutable.Queue
  *  @define coll mutable queue
