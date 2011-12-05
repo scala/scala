@@ -95,7 +95,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
           buf.append(", " + "List(" + annotations + ")")
 
           var s = buf.toString
-          if (s.endsWith(", Map()")) s = s.substring(0, s.length - ", Map()".length)
+          if (s.endsWith(", List()")) s = s.substring(0, s.length - ", List()".length)
           if (s.endsWith(", newTypeName(\"\")")) s = s.substring(0, s.length - ", newTypeName(\"\")".length)
           if (s.endsWith("Set()")) s = s.substring(0, s.length - "Set()".length)
           "Modifiers(" + s + ")"
