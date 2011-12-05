@@ -25,6 +25,8 @@ import parallel.immutable.ParHashMap
  *  @author  Tiark Rompf
  *  @version 2.8
  *  @since   2.3
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_19.html "The Scala 2.                  8                Collections     API"]]
+ *  section on `Hash Tries` for more information.
  *  @define Coll immutable.HashMap
  *  @define coll immutable hash map
  *  @define mayNotTerminateInf

@@ -21,6 +21,8 @@ import parallel.mutable.ParArray
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_31.html "The Scala 2.8                Collections     API"]]
+ *  section on `Array Sequences` for more information.
  *
  *  @tparam A      type of the elements contained in this array sequence.
  *  @param length  the length of the underlying array.

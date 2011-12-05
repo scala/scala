@@ -17,6 +17,9 @@ import mutable.{ Builder, SetBuilder }
 
 /** A class for immutable bitsets.
  *  $bitsetinfo
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_21.html "The Scala 2.                  8                Collections     API"]]
+ *  section on `Immutable BitSets` for more information.
+ *
  *  @define Coll immutable.BitSet
  *  @define coll immutable bitset
  */
