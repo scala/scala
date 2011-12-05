@@ -1,4 +1,4 @@
-nopredefs.scala:5: error: not found: value Set
+nopredefs.scala:5: error: not found: value Set (similar: Seq)
   val y = Set(3)
           ^
 one error found

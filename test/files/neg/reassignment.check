@@ -1,0 +1,13 @@
+reassignment.scala:2: error: not found: value x
+  x = 5
+  ^
+reassignment.scala:3: error: not found: value y
+  y := 45
+  ^
+reassignment.scala:4: error: not found: value y
+  y += 45
+  ^
+reassignment.scala:6: error: reassignment to val
+  z = 51
+    ^
+four errors found

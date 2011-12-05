@@ -1,0 +1,4 @@
+{
+  def foo(@cloneable x: Int): String = "";
+  ()
+}

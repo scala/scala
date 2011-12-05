@@ -1,4 +1,4 @@
-t2870.scala:1: error: not found: type Jar
+t2870.scala:1: error: not found: type Jar (similar: Jars)
 class Jars(jar: Jar)
                 ^
 t2870.scala:6: error: illegal cyclic reference involving value <import>

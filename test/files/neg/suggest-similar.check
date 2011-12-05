@@ -1,0 +1,10 @@
+suggest-similar.scala:8: error: not found: value flippitx (similar: flippity)
+  flippitx = 123
+  ^
+suggest-similar.scala:9: error: not found: value identiyt (similar: identity)
+  Nil map identiyt
+          ^
+suggest-similar.scala:10: error: not found: type Bingus (similar: Dingus)
+  new Bingus
+      ^
+three errors found

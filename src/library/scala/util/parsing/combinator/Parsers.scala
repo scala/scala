@@ -108,6 +108,8 @@ trait Parsers {
 
     def flatMapWithNext[U](f: T => Input => ParseResult[U]): ParseResult[U]
 
+    def filterWithError(p: T => Boolean, error: T => String, position: Input): ParseResult[T]
+
     def append[U >: T](a: => ParseResult[U]): ParseResult[U]
 
     def isEmpty = !successful
@@ -137,6 +139,10 @@ trait Parsers {
     def flatMapWithNext[U](f: T => Input => ParseResult[U]): ParseResult[U]
       = f(result)(next)
 
+    def filterWithError(p: T => Boolean, error: T => String, position: Input): ParseResult[T] =
+      if (p(result)) this
+      else Failure(error(result), position)
+
     def append[U >: T](a: => ParseResult[U]): ParseResult[U] = this
 
     def get: T = result
@@ -160,6 +166,8 @@ trait Parsers {
 
     def flatMapWithNext[U](f: Nothing => Input => ParseResult[U]): ParseResult[U]
       = this
+
+    def filterWithError(p: Nothing => Boolean, error: Nothing => String, position: Input): ParseResult[Nothing] = this
 
     def get: Nothing = sys.error("No result when parsing failed")
   }
@@ -223,6 +231,12 @@ trait Parsers {
 
     def map[U](f: T => U): Parser[U] //= flatMap{x => success(f(x))}
       = Parser{ in => this(in) map(f)}
+
+    def filter(p: T => Boolean): Parser[T]
+      = withFilter(p)
+
+    def withFilter(p: T => Boolean): Parser[T]
+      = Parser{ in => this(in) filterWithError(p, "Input doesn't match filter: "+_, in)}
 
     // no filter yet, dealing with zero is tricky!
 
@@ -443,6 +457,62 @@ trait Parsers {
      *  @return opt(this)
      */
     def ? = opt(this)
+
+    /** Changes the failure message produced by a parser.
+     *
+     *  This doesn't change the behavior of a parser on neither
+     *  success nor error, just on failure. The semantics are
+     *  slightly different than those obtained by doing `| failure(msg)`,
+     *  in that the message produced by this method will always
+     *  replace the message produced, which is not guaranteed
+     *  by that idiom.
+     *
+     *  For example, parser `p` below will always produce the
+     *  designated failure message, while `q` will not produce
+     *  it if `sign` is parsed but `number` is not.
+     *
+     *  {{{
+     *  def p = sign.? ~ number withFailureMessage  "Number expected!"
+     *  def q = sign.? ~ number | failure("Number expected!")
+     *  }}}
+     *
+     *  @param msg The message that will replace the default failure message.
+     *  @return    A parser with the same properties and different failure message.
+     */
+    def withFailureMessage(msg: String) = Parser{ in =>
+      this(in) match {
+        case Failure(_, next) => Failure(msg, next)
+        case other            => other
+      }
+    }
+
+    /** Changes the error message produced by a parser.
+     * 
+     *  This doesn't change the behavior of a parser on neither
+     *  success nor failure, just on error. The semantics are
+     *  slightly different than those obtained by doing `| error(msg)`,
+     *  in that the message produced by this method will always
+     *  replace the message produced, which is not guaranteed
+     *  by that idiom.
+     *
+     *  For example, parser `p` below will always produce the
+     *  designated error message, while `q` will not produce
+     *  it if `sign` is parsed but `number` is not.
+     *
+     *  {{{
+     *  def p = sign.? ~ number withErrorMessage  "Number expected!"
+     *  def q = sign.? ~ number | error("Number expected!")
+     *  }}}
+     *
+     *  @param msg The message that will replace the default error message.
+     *  @return    A parser with the same properties and different error message.
+     */
+    def withErrorMessage(msg: String) = Parser{ in =>
+      this(in) match {
+        case Error(_, next) => Error(msg, next)
+        case other          => other
+      }
+    }
   }
 
   /** Wrap a parser so that its failures become errors (the `|` combinator

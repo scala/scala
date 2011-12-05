@@ -159,8 +159,10 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
 
   /** As with `++`, returns a new collection containing the elements from the left operand followed by the
    *  elements from the right operand.
+   *
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.
+   *  Mnemonic: the COLon is on the side of the new COLlection type.
    *
    *  Example:
    *  {{{
@@ -195,8 +197,10 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
 
   /** As with `++`, returns a new collection containing the elements from the
    *  left operand followed by the elements from the right operand.
+   *
    *  It differs from `++` in that the right operand determines the type of
    *  the resulting collection rather than the left one.
+   *  Mnemonic: the COLon is on the side of the new COLlection type.
    *
    *  Example:
    *  {{{
