@@ -1,5 +1,7 @@
 import sbt._
 import Keys._
+import com.jsuereth.git.GitKeys.gitRunner
+
 /** This trait stores all the helper methods to generate layers in Scala's layered build. */
 trait Layers extends Build {
   // TODO - Clean this up or use a self-type.
@@ -57,7 +59,7 @@ trait Layers extends Build {
           // TODO - Allow other scalac option settings.
           scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
           classpathOptions := ClasspathOptions.manual,
-          resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged) map Release.generatePropertiesFile("library.properties"),
+          resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("library.properties"),
           referenceScala
       )) :_*)
 
@@ -67,7 +69,7 @@ trait Layers extends Build {
         scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
         resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
         defaultExcludes in unmanagedResources := "*.scala",
-        resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged) map Release.generatePropertiesFile("compiler.properties"),
+        resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("compiler.properties"),
         // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
         // stick with that for now.
         unmanagedResources in Compile <<= (baseDirectory) map {

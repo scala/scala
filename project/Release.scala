@@ -1,5 +1,6 @@
 import sbt._
 import Keys._
+import _root_.com.jsuereth.git.GitRunner
 
 object Release {
 
@@ -65,15 +66,11 @@ object Release {
 
   /** This generates a  properties file, if it does not already exist, with the maximum lastmodified timestamp
     * of any source file. */
-  def generatePropertiesFile(name: String)(baseDirectory: File, version: String, dir: File): Seq[File] = {
+  def generatePropertiesFile(name: String)(baseDirectory: File, version: String, dir: File, git: GitRunner): Seq[File] = {
     val target = dir / name
     // TODO - Regenerate on triggers, like recompilation or something...
-    // TODO - also think about pulling git last-commit for this...
     if (!target.exists) {
-      val ts = getLastModified(baseDirectory)
-      val formatter = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmmss")
-      formatter.setTimeZone(java.util.TimeZone.getTimeZone("GMT"))
-      val fullVersion = version + "." + formatter.format(new java.util.Date(ts))
+      val fullVersion = makeFullVersionString(baseDirectory, version, git)
       makePropertiesFile(target, fullVersion)
     }
     target :: Nil
@@ -83,12 +80,22 @@ object Release {
   def makePropertiesFile(f: File, version: String): Unit =
     IO.write(f, "version.number = "+version+"\ncopyright.string = Copyright 2002-2011, LAMP/EPFL")
 
-  def makeFullVersionString(baseDirectory: File, baseVersion: String) = baseVersion+"."+getLastModified(baseDirectory)
+  def makeFullVersionString(baseDirectory: File, baseVersion: String, git: GitRunner) = baseVersion+"."+getGitRevision(baseDirectory, git)+"."+currentDay
 
-  // TODO - Something that doesn't take so long...
-  def allSourceFiles(baseDirectory: File) = (baseDirectory / "src") ** ("*.scala" | "*.java" )
+  // TODO - do we want this in the build number?
+  def currentDay = (new java.text.SimpleDateFormat("yyyyMMdd'T'HHmmss")) format (new java.util.Date)
 
-  def getLastModified(baseDirectory: File) =
-    allSourceFiles(baseDirectory).get.map(_.lastModified).max
+  def getGitRevision(baseDirectory: File, git: GitRunner) = {
+    object outputStealer extends sbt.Logger {
+      private val stdout = new StringBuilder
+      private val stderr = new StringBuilder
+      def log (level: Level.Value, message: ⇒ String): Unit = stdout append message
+      def success (message: ⇒ String): Unit = ()
+      def trace (t: ⇒ Throwable): Unit = ()
+      def stdoutString = stdout.toString
+    }
+    git("describe", "HEAD", "--abbrev=7", "--match", "dev")(baseDirectory, outputStealer)
+    outputStealer.stdoutString
+  }
   
 }
