@@ -58,12 +58,17 @@ if uname | grep -q ^CYGWIN; then
   cygwin="$(uname)"
 fi
 
+unset mingw
+if uname | grep -q ^MINGW; then
+  mingw="$(uname)"
+fi
+
 # Finding the root folder for this Scala distribution
 SCALA_HOME="$(findScalaHome)"
 SEP=":"
 
 # Possible additional command line options
-CYGWIN_OPT=""
+WINDOWS_OPT=""
 EMACS_OPT=""
 [[ -n "$EMACS" ]] && EMACS_OPT="-Denv.emacs=$EMACS"
 
@@ -94,10 +99,16 @@ if [[ -n "$cygwin" ]]; then
     fi
     SCALA_HOME="$(cygpath --$format "$SCALA_HOME")"
     TOOL_CLASSPATH="$(cygpath --path --$format "$TOOL_CLASSPATH")"
+elif [[ -n "$mingw" ]]; then
+    SCALA_HOME="$(cmd //c echo "$SCALA_HOME")"
+    TOOL_CLASSPATH="$(cmd //c echo "$TOOL_CLASSPATH")"
+fi
+
+if [[ -n "$cygwin$mingw" ]]; then
     case "$TERM" in
         rxvt* | xterm*)
             stty -icanon min 1 -echo
-            CYGWIN_OPT="-Djline.terminal=scala.tools.jline.UnixTerminal"
+            WINDOWS_OPT="-Djline.terminal=scala.tools.jline.UnixTerminal"
         ;;
     esac
 fi
@@ -110,9 +121,10 @@ fi
 declare -a java_args
 declare -a scala_args
 
-# default to the boot classpath for speed, except on cygwin/mingw.
+# default to the boot classpath for speed, except on cygwin/mingw because
+# JLine on Windows requires a custom DLL to be loaded.
 unset usebootcp
-if [[ -z $cygwin ]]; then
+if [[ -z "$cygwin$mingw" ]]; then
   usebootcp="true"
 fi
 
@@ -181,7 +193,7 @@ execCommand \
   -Dscala.home="$SCALA_HOME" \
   -Dscala.usejavacp=true \
   $EMACS_OPT \
-  $CYGWIN_OPT \
+  $WINDOWS_OPT \
   @properties@ @class@ @toolflags@ "$@@"
 
 # record the exit status lest it be overwritten:
