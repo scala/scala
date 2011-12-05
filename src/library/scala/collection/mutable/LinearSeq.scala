@@ -19,6 +19,8 @@ import generic._
  *
  *  @define Coll LinearSeq
  *  @define coll linear sequence
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_29.html "The Scala 2.8 Collections API"]]
+  *  section on `Mutable Lists` for more information.
  */
 trait LinearSeq[A] extends Seq[A]
                            with scala.collection.LinearSeq[A]
