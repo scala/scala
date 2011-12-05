@@ -22,6 +22,8 @@ import collection.parallel.mutable.ParHashSet
  *  @author  Martin Odersky
  *  @version 2.0, 31/12/2006
  *  @since   1
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_34.html "The Scala 2.8 Collections API"]]
+ *  section on `Hash Tables` for more information.
  *
  *  @define Coll mutable.HashSet
  *  @define coll mutable hash set
