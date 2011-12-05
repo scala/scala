@@ -16,7 +16,6 @@ cd %_DIR%
 
 if exist .git\NUL (
   git describe HEAD --abbrev=7 --match dev
-  echo 0
 )
 
 :end
