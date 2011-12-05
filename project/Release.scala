@@ -94,8 +94,12 @@ object Release {
       def trace (t: ⇒ Throwable): Unit = ()
       def stdoutString = stdout.toString
     }
-    git("describe", "HEAD", "--abbrev=7", "--match", "dev")(baseDirectory, outputStealer)
-    outputStealer.stdoutString
+    val result = try {
+      git("describe", "HEAD", "--abbrev=7", "--match", "dev")(baseDirectory, outputStealer)
+    } catch {
+      case t => git("describe", "HEAD", "--abbrev=7", "--always")(baseDirectory, outputStealer)
+    }
+    result.trim
   }
   
 }
