@@ -308,6 +308,18 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     private var innerClassBuffer = mutable.LinkedHashSet[Symbol]()
 
+    /** Drop redundant interfaces (ones which are implemented by some
+     *  other parent) from the immediate parents.  This is important on
+     *  android because there is otherwise an interface explosion.
+     */
+    private def minimizeInterfaces(interfaces: List[Symbol]): List[Symbol] = (
+      interfaces filterNot (int1 =>
+        interfaces exists (int2 =>
+          (int1 ne int2) && (int2 isSubClass int1)
+        )
+      )
+    )
+
     def genClass(c: IClass) {
       clasz = c
       innerClassBuffer.clear()
@@ -322,7 +334,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       }
       val ifaces = superInterfaces match {
         case Nil => JClass.NO_INTERFACES
-        case _   => mkArray(superInterfaces map (x => javaName(x.typeSymbol)))
+        case _   => mkArray(minimizeInterfaces(superInterfaces map (_.typeSymbol)) map javaName)
       }
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
