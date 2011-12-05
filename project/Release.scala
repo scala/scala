@@ -67,10 +67,18 @@ object Release {
   /** This generates a  properties file, if it does not already exist, with the maximum lastmodified timestamp
     * of any source file. */
   def generatePropertiesFile(name: String)(baseDirectory: File, version: String, dir: File, git: GitRunner): Seq[File] = {
-    val target = dir / name
+    // TODO - We can probably clean this up by moving caching bits elsewhere perhaps....
+    val target = dir / name        
     // TODO - Regenerate on triggers, like recompilation or something...
-    if (!target.exists) {
-      val fullVersion = makeFullVersionString(baseDirectory, version, git)
+    val fullVersion = makeFullVersionString(baseDirectory, version, git)
+    def hasSameVersion: Boolean = {
+      val props = new java.util.Properties
+      val in = new java.io.FileInputStream(target)
+      try props.load(in) finally in.close()
+      def withoutDate(s: String): String = s.reverse.dropWhile (_ != '.').reverse
+      withoutDate(fullVersion) == withoutDate(props getProperty "version.number")
+    }
+    if (!target.exists || !hasSameVersion) {
       makePropertiesFile(target, fullVersion)
     }
     target :: Nil
