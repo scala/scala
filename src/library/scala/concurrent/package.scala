@@ -36,8 +36,15 @@ package object concurrent {
     }
   }
   
-  
   def future[T](body: =>T): Future[T] = null // TODO
+  
+  // TODO rename appropriately and make public
+  private[concurrent] def isFutureThrowable(t: Throwable) = t match {
+    case e: Error => false
+    case t: scala.util.control.ControlThrowable => false
+    case i: InterruptException => false
+    case _ => true
+  }
   
 }
 

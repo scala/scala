@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
  *  Futures obtained through combinators have the same exception as the future they were obtained from.
  *  The following throwable objects are treated differently:
  *  - Error - errors are not contained within futures
- *  - NonLocalControlException - not contained within futures
+ *  - scala.util.control.ControlException - not contained within futures
  *  - InterruptedException - not contained within futures
  *
  *  @define forComprehensionExamples
@@ -64,6 +64,7 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
  *  }}}
  */
 trait Future[+T] extends Blockable[T] {
+self =>
   
   /* Callbacks */
   
@@ -79,7 +80,9 @@ trait Future[+T] extends Blockable[T] {
    *  
    *  $multipleCallbacks
    */
-  def onSuccess[U](func: T => U): this.type
+  def onSuccess[U](func: T => U): this.type = onComplete {
+    case Right(v) => func(v)
+  }
   
   /** When this future is completed with a failure (i.e. with a throwable),
    *  apply the provided function to the throwable.
@@ -95,7 +98,9 @@ trait Future[+T] extends Blockable[T] {
    *  
    *  $multipleCallbacks
    */
-  def onFailure[U](func: Throwable => U): this.type
+  def onFailure[U](func: Throwable => U): this.type = onComplete {
+    case Left(t) if isFutureThrowable(t) => func(t)
+  }
   
   /** When this future times out, apply the provided function.
    *  
@@ -104,7 +109,9 @@ trait Future[+T] extends Blockable[T] {
    *  
    *  $multipleCallbacks
    */
-  def onTimeout[U](func: => U): this.type
+  def onTimeout[U](body: =>U): this.type = onComplete {
+    case Left(te: TimeoutException) => body
+  }
   
   /** When this future is completed, either through an exception, a timeout, or a value,
    *  apply the provided function.
@@ -143,9 +150,23 @@ trait Future[+T] extends Blockable[T] {
   
   /* Projections */
   
-  def failed: Future[Exception]
+  def failed: Future[Throwable] = new Future[Throwable] {
+    def onComplete[U](func: Either[Throwable, Throwable] => U) = self.onComplete {
+      case Left(t) => func(Right(t))
+      case Right(v) => // do nothing
+    }
+    def isTimedout = self.isTimedout
+    def timeout = self.timeout
+  }
   
-  def timedout: Future[Timeout]
+  def timedout: Future[TimeoutException] = new Future[TimeoutException] {
+    def onComplete[U](func: Either[Throwable, TimeoutException] => U) = self.onComplete {
+      case Left(te: TimeoutException) => func(Right(te))
+      case _ => // do nothing
+    }
+    def isTimedout = self.isTimedout
+    def timeout = self.timeout
+  }
   
   
   /* Monadic operations */
@@ -209,6 +230,14 @@ trait Future[+T] extends Blockable[T] {
   
 }
 
-class FutureTimeoutException(message: String, cause: Throwable = null) extends Exception(message, cause) {
-  def this(message: String) = this(message, null)
+
+/** A timeout exception.
+ *  
+ *  Futures are failed with a timeout exception when their timeout expires.
+ *  
+ *  Each timeout exception contains an origin future which originally timed out.
+ */
+class TimeoutException(origin: Future[T], message: String, cause: Throwable = null) extends Exception(message, cause) {
+  def this(origin: Future[T], message: String) = this(origin, message, null)
+  def this(origin: Future[T]) = this(origin, "Future timed out.")
 }

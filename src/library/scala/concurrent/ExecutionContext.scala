@@ -1,29 +1,33 @@
 package scala.concurrent
 
+
 import java.util.concurrent.{ Executors, Future => JFuture }
 import scala.util.{ Duration, Timeout }
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
 
-trait ExecutionContext {
 
+trait ExecutionContext {
+  
   protected implicit object CanBlockEvidence extends CanBlock
   
   def execute(task: Runnable): Unit
   
   def makeTask[T](task: () => T)(implicit timeout: Timeout): Task[T]
   
-  def makePromise[T](timeout: Timeout): Promise[T]
+  def makePromise[T](implicit timeout: Timeout): Promise[T]
   
   def blockingCall[T](body: Blockable[T]): T
-
+  
 }
+
 
 trait Task[T] {
-
+  
   def start(): Unit
   def future: Future[T]
-
+  
 }
+
 
 /* DONE: The challenge is to make ForkJoinPromise inherit from RecursiveAction
  * to avoid an object allocation per promise. This requires turning DefaultPromise

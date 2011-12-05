@@ -8,12 +8,42 @@
 
 package scala.concurrent
 
+
+
+/** Promise is an object which can be completed with a value or failed
+ *  with an exception.
+ *
+ *  A promise is assigned a timeout when created. After the timeout expires,
+ *  the promise will be failed with a TimeoutException.
+ *
+ *  @promiseCompletion
+ *  If the promise has already been fulfilled, failed or has timed out,
+ *  calling this method will throw an IllegalStateException.
+ */
 trait Promise[T] {
   def future: Future[T]
   
+  /** Completes the promise with a value.
+   *  
+   *  @param value    The value to complete the promise with.
+   *  
+   *  $promiseCompletion
+   */
   def fulfill(value: T): Unit
+  
+  /** Completes the promise with an exception.
+   *  
+   *  @param t        The throwable to complete the promise with.
+   *  
+   *  $promiseCompletion
+   */
   def fail(t: Throwable): Unit
+  
+  /** The timeout for this promise.
+   */
+  def timeout: Timeout
 }
+
 
 object Promise {
   /*
