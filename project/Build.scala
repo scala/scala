@@ -141,7 +141,7 @@ object ScalaBuild extends Build with Layers {
     //commands += Release.setStarrHome
   )
   // Note: Root project is determined by lowest-alphabetical project that has baseDirectory as file(".").  we use aaa_ to 'win'.
-  lazy val aaa_root = Project("scala", file(".")) settings(projectSettings: _*)
+  lazy val aaa_root = Project("scala", file(".")) settings(projectSettings: _*) settings(ShaResolve.settings: _*)
 
   // External dependencies used for various projects
   lazy val externalDeps: Setting[_] = libraryDependencies <<= (sbtVersion)(v => 
@@ -206,7 +206,7 @@ object ScalaBuild extends Build with Layers {
 
   // Need a report on this...
   // TODO - Resolve STARR from a repo..
-  lazy val STARR = scalaInstance <<= appConfiguration map { app =>
+  lazy val STARR = scalaInstance <<= (appConfiguration, ShaResolve.pullBinaryLibs in ThisBuild) map { (app, _) =>
     val launcher = app.provider.scalaProvider.launcher
     val library  = file("lib/scala-library.jar")
     val compiler = file("lib/scala-compiler.jar")
