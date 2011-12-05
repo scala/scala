@@ -5,8 +5,15 @@
 #
 # If no dir is given, current working dir is used.
 
-[[ -n "$1" ]] && cd "$1"
+[ -n "$1" ] && cd "$1"
 
 # dev should be a tag at the merge-base of master and the
 # most recent release.
-git describe head --abbrev=7 --match dev
+if [ -z $(git tag -l dev) ]; then
+  # no dev tag available - this will generate dev-g<sha>
+  echo "dev-g$(git describe HEAD --abbrev=7 --always)"
+else
+  # dev tag exists - this generates dev-NNNN-g<sha>
+  # where NNNN is the number of commits since dev.
+  git describe HEAD --abbrev=7 --match dev
+fi

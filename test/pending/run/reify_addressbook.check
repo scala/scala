@@ -1,0 +1,30 @@
+<html>
+        <head>
+        <title>
+          My Address Book
+        </title>
+        <style type="text/css"> table { border-right: 1px solid #cccccc; }
+          th { background-color: #cccccc; }
+          td { border-left: 1px solid #acacac; }
+          td { border-bottom: 1px solid #acacac;
+        </style>
+      </head>
+        <body>
+         <table cellspacing="0" cellpadding="2">
+          <tr>
+            <th>Name</th>
+            <th>Age</th>
+          </tr>
+          <tr>
+                <td> Tom </td>
+                <td> 20 </td>
+              </tr><tr>
+                <td> Bob </td>
+                <td> 22 </td>
+              </tr><tr>
+                <td> James </td>
+                <td> 19 </td>
+              </tr>
+        </table>
+        </body>
+      </html>
