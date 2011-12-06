@@ -46,7 +46,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
  *
  *  @author David MacIver
  *  @since  2.7
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_33.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array_stacks "Scala's Collection Library overview"]]
  *  section on `Array Stacks` for more information.
  *
  *  @tparam T    type of the elements contained in this array stack.

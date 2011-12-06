@@ -36,7 +36,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004
  *  @since   1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_20.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#redblack_trees "Scala's Collection Library overview"]]
  *  section on `Red-Black Trees` for more information.
  *
  *  @define Coll immutable.TreeMap
