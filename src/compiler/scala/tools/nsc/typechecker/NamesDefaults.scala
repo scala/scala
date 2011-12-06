@@ -227,7 +227,7 @@ trait NamesDefaults { self: Analyzer =>
         // super constructor calls
         case Select(sp @ Super(_, _), _) if isConstr =>
           // 'moduleQual' fixes #3207. selection of the companion module of the
-          // superclass needs to have the same prefix as the the superclass.
+          // superclass needs to have the same prefix as the superclass.
           blockWithoutQualifier(moduleQual(baseFun.pos, sp.symbol.tpe.parents.head))
 
         // self constructor calls (in secondary constructors)

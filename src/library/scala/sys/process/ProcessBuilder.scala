@@ -42,7 +42,7 @@ import ProcessBuilder._
   *   2. `#&&` conditionally executes the second command if the previous one finished with
   * exit value 0. It mirrors shell's `&&`.
   *   3. `#||` conditionally executes the third command if the exit value of the previous
-  * command is is different than zero. It mirrors shell's `&&`.
+  * command is different than zero. It mirrors shell's `&&`.
   *
   * Not shown here, the equivalent of a shell's `;` would be `###`. The reason for this name is
   * that `;` is a reserved token in Scala.

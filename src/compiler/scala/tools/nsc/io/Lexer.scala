@@ -281,7 +281,7 @@ class Lexer(rd: Reader) {
   /** The current token is a delimiter consisting of given character, reads next token,
    *  otherwise raises an error.
    *  @param  c   the given delimiter character to compare current token with
-   *  @throws MalformedInput  if the the current token `token` is not a delimiter, or
+   *  @throws MalformedInput  if the current token `token` is not a delimiter, or
    *                          consists of a character different from `c`.
    */
   def accept(ch: Char) {
