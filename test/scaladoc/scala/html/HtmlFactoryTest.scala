@@ -141,8 +141,8 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4372.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
-        html.contains("<span class=\"name\" title=\"gt4s: $plus$colon\">+:</span>\n") &&
-          html.contains("<span class=\"name\" title=\"gt4s: $minus$colon\">-:</span>\n") &&
+        html.contains("<span class=\"name\" title=\"gt4s: $plus$colon\">+:</span>") &&
+          html.contains("<span class=\"name\" title=\"gt4s: $minus$colon\">-:</span>") &&
             html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
       }
       case _ => false
@@ -247,11 +247,11 @@ object Test extends Properties("HtmlFactory") {
     val lines = """
         |type Bar = AnyRef { type Dingus <: T forSome { type T <: String } }
         |type Foo = AnyRef { ... /* 3 definitions in type refinement */ }
-        |def g (x: T forSome { type T <: String }): String 
-        |def h (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
-        |def hh (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
-        |def j (x: Int): Bar
-        |def k (): AnyRef { type Dingus <: T forSome { type T <: String } }
+        |def g(x: T forSome { type T <: String }): String
+        |def h(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+        |def hh(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+        |def j(x: Int): Bar
+        |def k(): AnyRef { type Dingus <: T forSome { type T <: String } }
       """.stripMargin.trim.lines map (_.trim)
 
     files("RefinementAndExistentials.html") match {

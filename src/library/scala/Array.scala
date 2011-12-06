@@ -24,7 +24,7 @@ class FallbackArrayBuilding {
    *  Called instead of `Array.newBuilder` if the element type of an array
    *  does not have a class manifest. Note that fallbackBuilder factory
    *  needs an implicit parameter (otherwise it would not be dominated in
-   *  implicit search by `Array.canBuildFrom`). We make sure that that
+   *  implicit search by `Array.canBuildFrom`). We make sure that
    *  implicit search is always successful.
    */
   implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] =
@@ -465,7 +465,7 @@ object Array extends FallbackArrayBuilding {
  *
  *  @author Martin Odersky
  *  @version 1.0
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html#anchor "The Scala 2.8 Collections' API"]]
  *  section on `Array` by Martin Odersky for more information.
  */
 final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {

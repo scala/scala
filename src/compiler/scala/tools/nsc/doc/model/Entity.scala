@@ -376,7 +376,7 @@ trait ParameterEntity extends Entity {
 /** A type parameter to a class, trait, or method. */
 trait TypeParam extends ParameterEntity with HigherKinded {
 
-  /** The variance of this type type parameter. Valid values are "+", "-", and the empty string. */
+  /** The variance of this type parameter. Valid values are "+", "-", and the empty string. */
   def variance: String
 
   /** The lower bound for this type parameter, if it has been defined. */

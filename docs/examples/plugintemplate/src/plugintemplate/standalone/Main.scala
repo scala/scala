@@ -16,7 +16,7 @@ object Main {
     val settings = new Settings
 
     val command = new CompilerCommand(args.toList, settings) {
-      /** The command name that will be printed in in the usage message.
+      /** The command name that will be printed in the usage message.
        *  This is automatically set to the value of 'plugin.commandname' in the
        *  file build.properties.
        */

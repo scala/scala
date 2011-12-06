@@ -3,7 +3,7 @@ import scala.collection.immutable.TreeMap
 
 object Test extends App {
   /* This method converts parsed JSON back into real JSON notation with objects in
-   * sorted-key order. Not required by the spec, but it allows us to to a stable
+   * sorted-key order. Not required by the spec, but it allows us to do a stable
    * toString comparison. */
   def jsonToString(in : Any) : String = in match {
     case l : List[_] => "[" + l.map(jsonToString).mkString(", ") + "]"

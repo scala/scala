@@ -310,7 +310,7 @@ abstract class TreeBuilder {
   *    for (P <- G) E   ==>   G.foreach (P => E)
   *
   *     Here and in the following (P => E) is interpreted as the function (P => E)
-  *     if P is a a variable pattern and as the partial function { case P => E } otherwise.
+  *     if P is a variable pattern and as the partial function { case P => E } otherwise.
   *
   *  2.
   *
