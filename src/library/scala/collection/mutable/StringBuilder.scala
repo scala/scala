@@ -21,7 +21,7 @@ import immutable.StringLike
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.7
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_26.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html# "Scala's Collection Library overview"]]
  *  section on `StringBuilders` for more information.
  */
 @SerialVersionUID(0 - 8525408645367278351L)

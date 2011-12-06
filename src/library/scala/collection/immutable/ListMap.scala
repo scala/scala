@@ -16,7 +16,7 @@ import annotation.{tailrec, bridge}
 
 /** $factoryInfo
  *  @since 1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_22.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list_maps "Scala's Collection Library overview"]]
  *  section on `List Maps` for more information.
  *
  *  @define Coll immutable.ListMap
