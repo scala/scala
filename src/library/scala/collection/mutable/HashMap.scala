@@ -21,7 +21,7 @@ import scala.collection.parallel.mutable.ParHashMap
 /** This class implements mutable maps using a hashtable.
  *
  *  @since 1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_34.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash_tables "Scala's Collection Library overview"]]
  *  section on `Hash Tables` for more information.
  *
  *  @tparam A    the type of the keys contained in this hash map.

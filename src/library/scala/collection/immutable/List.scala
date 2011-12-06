@@ -57,13 +57,9 @@ import annotation.tailrec
  *  @author  Martin Odersky and others
  *  @version 2.8
  *  @since   1.0
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_13.html "The Scala 2..8 Collections API"]]
+ *  @see  [["http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lists" "Scala's Collection Library overview"]]
  *  section on `Lists` for more information.
-
  *
- *  @tparam  A    the type of the list's elements
- *
- *  @define Coll List
  *  @define coll list
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `List[B]` because an implicit of type `CanBuildFrom[List, B, That]`

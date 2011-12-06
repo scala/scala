@@ -20,7 +20,7 @@ import generic._
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_28.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#double_linked_lists "Scala's Collection Library overview"]]
  *  section on `Double Linked Lists` for more information.
 
  *

@@ -23,8 +23,8 @@ import parallel.mutable.ParArray
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html "The Scala 2.8 Collections API"]]
- *  section on `Concrete Mutable Collection Classes` for more information.
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#array_buffers "Scala's Collection Library overview"]]
+ *  section on `Array Buffers` for more information.
 
  *
  *  @tparam A    the type of this arraybuffer's elements.

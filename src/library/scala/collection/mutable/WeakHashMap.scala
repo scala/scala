@@ -23,8 +23,8 @@ import generic._
  *  @tparam B      type of values associated with the keys
  *
  *  @since 2.8
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_34.html "The Scala 2.8 Collections API"]]
- *  section on `Hash Tables` for more information.
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#weak_hash_maps "Scala's Collection Library overview"]]
+ *  section on `Weak Hash Maps` for more information.
  *
  *  @define Coll WeakHashMap
  *  @define coll weak hash map
