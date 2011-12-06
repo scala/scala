@@ -32,7 +32,6 @@ object ScalaBuild extends Build with Layers {
     ),
     organization := "org.scala-lang",
     version := "2.10.0-SNAPSHOT",
-    scalaVersion := "2.10.0-SNAPSHOT",
     pomExtra := <xml:group>
       <inceptionYear>2002</inceptionYear>
         <licenses>
@@ -99,8 +98,7 @@ object ScalaBuild extends Build with Layers {
     </xml:group>
   )
     
-  // maven/ivy settings I pulled from build.sbt to keep it lean and mean
-  // XXX not sure where they go though, please advise or fix
+  // Settings used to make sure publishing goes smoothly.
   def publishSettings: Seq[Setting[_]] = Seq(
     ivyScala ~= ((is: Option[IvyScala]) => is.map(_.copy(checkExplicit = false))),
     pomIncludeRepository := (_ => false),
@@ -152,13 +150,7 @@ object ScalaBuild extends Build with Layers {
   )
 
   // These are setting overrides for most artifacts in the Scala build file.
-  // TODO - what can we move into build.sbt...
-  // @PP: Ha, and here I'm moving stuff out of it.  Clearly I need to 
-  // be educated on the merits of having more stuff in build.sbt.  I think
-  // of it as a good place for items I am frequently changing (logLevel,
-  // compiler options, etc.) and not so good for anything else.  But you
-  // use this stuff a lot more than I do.
-  def settingOverrides: Seq[Setting[_]] = Seq(
+  def settingOverrides: Seq[Setting[_]] = publishSettings ++ Seq(
                              crossPaths := false,
                              publishArtifact in packageDoc := false,
                              publishArtifact in packageSrc := false,

@@ -48,42 +48,41 @@ trait Layers extends Build {
    * Note:  The library and compiler are not *complete* in the sense that they are missing things like "actors" and "fjbg".
    */
   def makeLayer(layer: String, referenceScala: Setting[Task[ScalaInstance]]) : (Project, Project) = {
-    val library = Project(layer + "-library", file("."))  settings( (settingOverrides ++
-      Seq(version := layer,
-          // TODO - use depends on.
-          unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
-          managedClasspath in Compile := Seq(),
-          scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
-          resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
-          defaultExcludes in unmanagedResources := ("*.scala" | "*.java" | "*.disabled"),
-          // TODO - Allow other scalac option settings.
-          scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
-          classpathOptions := ClasspathOptions.manual,
-          resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("library.properties"),
-          referenceScala
-      )) :_*)
+    val library = Project(layer + "-library", file("."))  settings(settingOverrides: _*) settings(
+      version := layer,
+      // TODO - use depends on.
+      unmanagedClasspath in Compile <<= (exportedProducts in forkjoin in Compile).identity,
+      managedClasspath in Compile := Seq(),
+      scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "library"),
+      resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "library"),   
+      defaultExcludes in unmanagedResources := ("*.scala" | "*.java" | "*.disabled"),
+      // TODO - Allow other scalac option settings.
+      scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
+      classpathOptions := ClasspathOptions.manual,
+      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("library.properties"),
+      referenceScala
+    )
 
     // Define the compiler
-    val compiler = Project(layer + "-compiler", file(".")) settings((settingOverrides ++
-      Seq(version := layer,
-        scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
-        resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
-        defaultExcludes in unmanagedResources := "*.scala",
-        resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("compiler.properties"),
-        // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
-        // stick with that for now.
-        unmanagedResources in Compile <<= (baseDirectory) map {
-          (bd) =>
-            val dirs = Seq(bd / "src" / "compiler")
-            dirs.descendentsExcept( ("*.xml" | "*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties" | "*.txt"),"*.scala").get
-        },
-        // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-        unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
-        classpathOptions := ClasspathOptions.manual,
-        externalDeps,
-        referenceScala
-        )
-      ):_*)
+    val compiler = Project(layer + "-compiler", file(".")) settings(settingOverrides:_*) settings(
+      version := layer,
+      scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
+      resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
+      defaultExcludes in unmanagedResources := "*.scala",
+      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("compiler.properties"),
+      // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
+      // stick with that for now.
+      unmanagedResources in Compile <<= (baseDirectory) map {
+        (bd) =>
+          val dirs = Seq(bd / "src" / "compiler")
+          dirs.descendentsExcept( ("*.xml" | "*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties" | "*.txt"),"*.scala").get
+      },
+      // TODO - Use depends on *and* SBT's magic dependency mechanisms...
+      unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
+      classpathOptions := ClasspathOptions.manual,
+      externalDeps,
+      referenceScala
+    )
 
     // Return the generated projects.
     (library, compiler)
