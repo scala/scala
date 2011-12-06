@@ -172,8 +172,8 @@ import Stream.cons
  *  @author Martin Odersky, Matthias Zenger
  *  @version 1.1 08/08/03
  *  @since   2.8
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_14.html "The Scala 2.8 Collections API"]]
-  *  section on `Streams` for more information.
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#streams "Scala's Collection Library overview"]]
+ *  section on `Streams` for more information.
 
  *  @define naturalsEx def naturalsFrom(i: Int): Stream[Int] = i #:: naturalsFrom(i + 1)
  *  @define Coll Stream

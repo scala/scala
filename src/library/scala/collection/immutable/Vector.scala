@@ -35,7 +35,7 @@ object Vector extends SeqFactory[Vector] {
  *  endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not
  *  contiguous, which is good for very large sequences.
  *
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_15.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#vectors "Scala's Collection Library overview"]]
  *  section on `Vectors` for more information.
  *
  *  @tparam A the element type

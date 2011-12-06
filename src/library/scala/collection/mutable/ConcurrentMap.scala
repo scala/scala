@@ -14,7 +14,7 @@ package mutable
  *  $concurrentmapinfo
  *
  *  @since 2.8
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_36.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
  *  section on `Concurrent Maps` for more information.
  *
  *  @tparam A  the key type of the map

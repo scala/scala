@@ -21,7 +21,7 @@ import immutable.{List, Nil, ::}
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_25.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#list_buffers "Scala's Collection Library overview"]]
  *  section on `List Buffers` for more information.
  *
  *  @tparam A    the type of this list buffer's elements.

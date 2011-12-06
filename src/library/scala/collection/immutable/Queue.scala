@@ -27,8 +27,8 @@ import annotation.tailrec
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
  *  @since   1
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_17.html "The Scala 2.8 Collections API"]]
- *  section on `Ummutable Queues` for more information.
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable_queues "Scala's Collection Library overview"]]
+ *  section on `Immutable Queues` for more information.
  *
  *  @define Coll immutable.Queue
  *  @define coll immutable queue
