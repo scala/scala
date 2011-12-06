@@ -887,7 +887,7 @@ opcode(Readonly, CEE_READONLY , "readonly."    , 0xFFFFFE1E, POP_NONE, PUSH_NONE
 	opcode(Bne_Un_S, CEE_BNE_UN_S, "bne.un.s", 0xFFFFFF33, POP_1_1 , PUSH_NONE, INLINE_TARGET_S, FLOW_COND_BRANCH)
 
     /**
-     * Transfers control to a target instruction (short form) if if the the first value is greather
+     * Transfers control to a target instruction (short form) if the first value is greather
      * than the second value, when comparing unsigned integer values or unordered float values.
      */
     final val Bge_Un_S = new OpCode()
@@ -973,7 +973,7 @@ opcode(Readonly, CEE_READONLY , "readonly."    , 0xFFFFFE1E, POP_NONE, PUSH_NONE
 	opcode(Bne_Un, CEE_BNE_UN , "bne.un", 0xFFFFFF40, POP_1_1 , PUSH_NONE, INLINE_TARGET, FLOW_COND_BRANCH)
 
     /**
-     * Transfers control to a target instruction if the the first value is greather than
+     * Transfers control to a target instruction if the first value is greather than
      * the second value, when comparing unsigned integer values or unordered float values.
      */
     final val Bge_Un = new OpCode()

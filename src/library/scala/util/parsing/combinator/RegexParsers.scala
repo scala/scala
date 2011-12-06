@@ -23,7 +23,7 @@ import scala.collection.immutable.PagedSeq
  *  - There's an implicit conversion from [[scala.util.matching.Regex]] to `Parser[String]`,
  *    so that regex expressions can be used as parser combinators.
  *  - The parsing methods call the method `skipWhitespace` (defaults to `true`) and, if true,
- *    skip any whitespace before before each parser is called.
+ *    skip any whitespace before each parser is called.
  *  - Protected val `whiteSpace` returns a regex that identifies whitespace.
  *
  *  For example, this creates a very simple calculator receiving `String` input:

@@ -220,7 +220,7 @@ trait BoundedCapacityStrategy extends CapacityStrategy with BoundedCapacitor
  */
 
 /**
- * The basic filter trait that composes ramp-up and and back-off subfiltering.
+ * The basic filter trait that composes ramp-up and back-off subfiltering.
  */
 trait Filter {
   def rampup(pressure: Int, capacity: Int): Int
