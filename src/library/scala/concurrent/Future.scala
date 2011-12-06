@@ -30,8 +30,6 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
  *  The timeout of the future is:
  *  - if this future was obtained from a task (i.e. by calling `task.future`), the timeout associated with that task
  *  - if this future was obtained from a promise (i.e. by calling `promise.future`), the timeout associated with that promise
- *  - if this future was obtained from a combinator on some other future `g` (e.g. by calling `g.map(_)`), the timeout of `g`
- *  - if this future was obtained from a combinator on multiple futures `g0`, ..., `g1`, the minimum of the timeouts of these futures
  *
  *  @define multipleCallbacks
  *  Multiple callbacks may be registered; there is no guarantee that they will be
@@ -189,7 +187,7 @@ self =>
    *  future (6 / 2) recover { case e: ArithmeticException ⇒ 0 } // result: 3
    *  }}}
    */
-  def recover[U >: T](pf: PartialFunction[Throwable, U])(implicit timeout: Timeout): Future[U] = {
+  def recover[U >: T](pf: PartialFunction[Throwable, U]): Future[U] = {
     val p = newPromise[U]
     
     onComplete {
@@ -214,7 +212,7 @@ self =>
    *  
    *  $forComprehensionExample
    */
-  def map[S](f: T => S)(implicit timeout: Timeout): Future[S] = {
+  def map[S](f: T => S): Future[S] = {
     val p = newPromise[S]
     
     onComplete {
@@ -232,7 +230,7 @@ self =>
    *  
    *  $forComprehensionExample
    */
-  def flatMap[S](f: T => Future[S])(implicit timeout: Timeout): Future[S] = {
+  def flatMap[S](f: T => Future[S]): Future[S] = {
     val p = newPromise[S]
     
     onComplete {
@@ -261,7 +259,7 @@ self =>
    *  block on h // throw a NoSuchElementException
    *  }}}
    */
-  def filter(p: T => Boolean)(implicit timeout: Timeout): Future[T] = {
+  def filter(p: T => Boolean): Future[T] = {
     val p = newPromise[T]
     
     onComplete {
@@ -281,7 +279,6 @@ self =>
  *  
  *  Each timeout exception contains an origin future which originally timed out.
  */
-class TimeoutException(origin: Future[T], message: String, cause: Throwable = null) extends Exception(message, cause) {
-  def this(origin: Future[T], message: String) = this(origin, message, null)
+class TimeoutException(origin: Future[T], message: String) extends java.util.concurrent.TimeoutException(message) {
   def this(origin: Future[T]) = this(origin, "Future timed out.")
 }

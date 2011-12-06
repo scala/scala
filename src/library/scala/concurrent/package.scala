@@ -23,11 +23,32 @@ package object concurrent {
     override protected def initialValue = null
   }
   
+  /** The keyword used to block on a piece of code which potentially blocks.
+   *
+   *  @define mayThrow
+   *  Calling this method may throw the following exceptions:
+   *  - CancellationException - if the computation was cancelled
+   *  - InterruptedException - in the case that a wait within the blockable object was interrupted
+   *  - TimeoutException - in the case that the blockable object timed out
+   */
   object block {
+    
+    /** Blocks on a piece of code.
+     *  
+     *  @param body         A piece of code which contains potentially blocking or long running calls.
+     *  
+     *  $mayThrow
+     */
     def on[T](body: =>T): T = on(new Blockable[T] {
       def block()(implicit cb: CanBlock) = body
     })
     
+    /** Blocks on a blockable object.
+     *  
+     *  @param blockable    An object with a `block` method which runs potentially blocking or long running calls.
+     *  
+     *  $mayThrow
+     */
     def on[T](blockable: Blockable[T]): T = {
       currentExecutionContext.get match {
         case null => blockable.block()(null) // outside

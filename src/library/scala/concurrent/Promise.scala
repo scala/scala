@@ -16,11 +16,14 @@ package scala.concurrent
  *  A promise is assigned a timeout when created. After the timeout expires,
  *  the promise will be failed with a TimeoutException.
  *
- *  @promiseCompletion
+ *  @define promiseCompletion
  *  If the promise has already been fulfilled, failed or has timed out,
  *  calling this method will throw an IllegalStateException.
  */
 trait Promise[T] {
+  
+  /** Future containing the value of this promise.
+   */
   def future: Future[T]
   
   /** Completes the promise with a value.
