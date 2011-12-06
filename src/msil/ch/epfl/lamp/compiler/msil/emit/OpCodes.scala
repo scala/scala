@@ -307,7 +307,7 @@ object OpCodes {
      final val Bne_Un_S = OpCode.Bne_Un_S
 
     /**
-     * Transfers control to a target instruction (short form) if if the the first value is greather
+     * Transfers control to a target instruction (short form) if the first value is greather
      * than the second value, when comparing unsigned integer values or unordered float values.
      */
      final val Bge_Un_S = OpCode.Bge_Un_S
@@ -380,7 +380,7 @@ object OpCodes {
      final val Bne_Un = OpCode.Bne_Un
 
     /**
-     * Transfers control to a target instruction if the the first value is greather than
+     * Transfers control to a target instruction if the first value is greather than
      * the second value, when comparing unsigned integer values or unordered float values.
      */
      final val Bge_Un = OpCode.Bge_Un

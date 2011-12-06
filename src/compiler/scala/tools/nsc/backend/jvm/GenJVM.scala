@@ -486,7 +486,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       // push the class
       jcode emitPUSH javaType(c.symbol).asInstanceOf[JReferenceType]
 
-      // push the the string array of field information
+      // push the string array of field information
       jcode emitPUSH fieldList.length
       jcode emitANEWARRAY strKind
       push(fieldList)
