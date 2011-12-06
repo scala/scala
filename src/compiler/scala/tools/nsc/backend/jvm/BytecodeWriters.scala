@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import ch.epfl.lamp.fjbg._
-import java.io.{ DataOutputStream, OutputStream, File => JFile }
+import java.io.{ DataOutputStream, FileOutputStream, OutputStream, File => JFile }
 import scala.tools.nsc.io._
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.util.JavapClass
@@ -85,7 +85,7 @@ trait BytecodeWriters {
       emitJavap(bytes, javapFile)
     }
   }
-
+  
   trait ClassBytecodeWriter extends BytecodeWriter {
     def writeClass(label: String, jclass: JClass, sym: Symbol) {
       val outfile   = getFile(sym, jclass, ".class")
@@ -94,6 +94,22 @@ trait BytecodeWriters {
       try jclass writeTo outstream
       finally outstream.close()
       informProgress("wrote '" + label + "' to " + outfile)
+    }
+  }
+  
+  trait DumpBytecodeWriter extends BytecodeWriter {
+    val baseDir = Directory(settings.Ydumpclasses.value).createDirectory()
+    
+    abstract override def writeClass(label: String, jclass: JClass, sym: Symbol) {
+      super.writeClass(label, jclass, sym)
+      
+      val pathName = jclass.getName()
+      var dumpFile = pathName.split("[./]").foldLeft(baseDir: Path) (_ / _) changeExtension "class" toFile;
+      dumpFile.parent.createDirectory()
+      val outstream = new DataOutputStream(new FileOutputStream(dumpFile.path))
+      
+      try jclass writeTo outstream
+      finally outstream.close()
     }
   }
 }
