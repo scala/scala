@@ -649,7 +649,11 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     /** Returns all parts of this type which satisfy predicate `p` */
-    def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p).collect(this).toList
+    def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
+    def withFilter(p: Type => Boolean) = new FilterTypeCollector(p) {
+      def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
+      def map[T](f: Type => T): List[T]  = collect(Type.this) map f
+    }
 
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.
@@ -4094,9 +4098,13 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A map to implement the `filter` method. */
-  class FilterTypeCollector(p: Type => Boolean) extends TypeCollector(new ListBuffer[Type]) {
+  class FilterTypeCollector(p: Type => Boolean) extends TypeCollector[List[Type]](Nil) {
+    def withFilter(q: Type => Boolean) = new FilterTypeCollector(tp => p(tp) && q(tp))
+
+    override def collect(tp: Type) = super.collect(tp).reverse
+
     def traverse(tp: Type) {
-      if (p(tp)) result += tp
+      if (p(tp)) result ::= tp
       mapOver(tp)
     }
   }

@@ -69,7 +69,7 @@ abstract class Duplicators extends Analyzer {
    *  tree, except for TypeTrees, are erased prior to type checking. TypeTrees
    *  are fixed by substituting invalid symbols for the new ones.
    */
-  class BodyDuplicator(context: Context) extends Typer(context: Context) {
+  class BodyDuplicator(_context: Context) extends Typer(_context) {
 
     class FixInvalidSyms extends TypeMap {
 

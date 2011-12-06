@@ -422,7 +422,7 @@ trait Namers extends MethodSynthesis {
      *  @return the companion object symbol.
      */
     def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
-      val m = companionModuleOf(cdef.symbol, context)
+      val m = companionSymbolOf(cdef.symbol, context)
       // @luc: not sure why "currentRun.compiles(m)" is needed, things breaks
       // otherwise. documentation welcome.
       //
@@ -855,7 +855,7 @@ trait Namers extends MethodSynthesis {
       // @check: this seems to work only if the type completer of the class runs before the one of the
       // module class: the one from the module class removes the entry from classOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasModuleFlag) {
-        val modClass = companionModuleOf(clazz, context).moduleClass
+        val modClass = companionSymbolOf(clazz, context).moduleClass
         Namers.this.classOfModuleClass get modClass map { cdefRef =>
           val cdef = cdefRef()
 
@@ -1082,7 +1082,7 @@ trait Namers extends MethodSynthesis {
 
             val parentNamer = if (isConstr) {
               val (cdef, nmr) = moduleNamer.getOrElse {
-                val module = companionModuleOf(clazz, context)
+                val module = companionSymbolOf(clazz, context)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
                 classAndNamerOfModule get module match {
