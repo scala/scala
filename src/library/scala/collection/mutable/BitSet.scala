@@ -18,7 +18,7 @@ import BitSetLike.{LogWL, updateArray}
  *
  *  $bitsetinfo
  *
- *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_37.html "The Scala 2.8 Collections API"]]
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_bitsets "Scala's Collection Library overview"]]
  *  section on `Mutable Bitsets` for more information.
  *
  *  @define Coll BitSet

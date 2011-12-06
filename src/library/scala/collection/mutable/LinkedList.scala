@@ -33,7 +33,7 @@ import generic._
   *  @author Martin Odersky
   *  @version 2.8
   *  @since   1
-  *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_27.html "The Scala 2.8 Collections API"]]
+  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#linked_lists "Scala's Collection Library overview"]]
   *  section on `Linked Lists` for more information.
   *
   *  @tparam A     the type of the elements contained in this linked list.
