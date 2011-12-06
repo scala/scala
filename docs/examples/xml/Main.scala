@@ -7,10 +7,11 @@
 \*                                                                      */
 
 
-package scala.xml
-package include.sax
+package examples.xml
 
+import scala.xml._
 import scala.xml.include._
+import scala.xml.include.sax.{ XIncludeFilter, XIncluder }
 import scala.util.control.Exception.{ catching, ignoring }
 import org.xml.sax.XMLReader
 import org.xml.sax.helpers.XMLReaderFactory
