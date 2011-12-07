@@ -145,18 +145,6 @@ self =>
    */
   def isTimedout: Boolean
   
-  /** This `Future`'s timeout.
-   *  
-   *  $futureTimeout
-   */
-  def timeout: Timeout
-  
-  /** This `Future`'s timeout in nanoseconds.
-   *  
-   *  $futureTimeout
-   */
-  def timeoutInNanos = if (timeout.duration.isFinite) timeout.duration.toNanos else Long.MaxValue
-  
   
   /* Projections */
   
@@ -182,7 +170,6 @@ self =>
       this
     }
     def isTimedout = self.isTimedout
-    def timeout = self.timeout
     def block()(implicit canblock: CanBlock) = try {
       val res = self.block()
       throw noSuchElem(res)
@@ -217,7 +204,6 @@ self =>
       this
     }
     def isTimedout = self.isTimedout
-    def timeout = self.timeout
     def block()(implicit canblock: CanBlock) = try {
       val res = self.block()
       throw noSuchElemValue(res)

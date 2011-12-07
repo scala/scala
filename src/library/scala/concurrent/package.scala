@@ -22,7 +22,7 @@ package object concurrent {
   type TimeoutException = java.util.concurrent.TimeoutException
   
   lazy val executionContext =
-    new ForkJoinExecutionContext
+    new default.ExecutionContextImpl
 
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
