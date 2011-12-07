@@ -34,11 +34,18 @@ package scala.math
  */
 trait Ordered[A] extends java.lang.Comparable[A] {
 
-  /** Result of comparing <code>this</code> with operand <code>that</code>.
-   *  returns <code>x</code> where
-   *  <code>x &lt; 0</code>    iff    <code>this &lt; that</code>
-   *  <code>x == 0</code>   iff    <code>this == that</code>
-   *  <code>x &gt; 0</code>    iff    <code>this &gt; that</code>
+  /** Result of comparing `this` with operand `that`.
+   *
+   * Implement this method to determine how instances of A will be sorted.
+   *
+   * Returns `x` where:
+   *
+   *   - `x < 0` when `this < that`
+   *
+   *   - `x == 0` when `this == that`
+   *
+   *   - `x > 0` when  `this > that`
+   *
    */
   def compare(that: A): Int
 

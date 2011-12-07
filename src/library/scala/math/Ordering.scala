@@ -10,26 +10,59 @@ package scala.math
 
 import java.util.Comparator
 
-/** A trait for representing total orderings.  It is important to
- * distinguish between a type that has a total order and a representation
- * of total ordering on some type.  This trait is for the latter.
- *
- * A [[http://en.wikipedia.org/wiki/Total_order|total ordering]]
- * is a binary relation on a type `T` that is also an equivalence relation
- * and partial ordering on values of type `T`.  This relation is exposed as
- * the `compare` method of the `Ordering` trait.
- *
- * This relation must be:
- {{{
-      reflexive:  x == x
-  antisymmetric:  if x <= y && y <= x, then x == y
-     transitive:  if x <= y && y <= z, then x <= z
- }}}
- *
- * @author Geoffrey Washburn
- * @version 0.9.5, 2008-04-15
- * @since 2.7
- */
+/** Ordering is a trait whose instances each represent a strategy for sorting
+  * instances of a type.
+  *
+  * Ordering's companion object defines many implicit objects to deal with
+  * subtypes of AnyVal (e.g. Int, Double), String, and others.
+  *
+  * To sort instances by one or more member variables, you can take advantage
+  * of these built-in orderings using Ordering.by and Ordering.on:
+  *
+  * {{{
+  * import scala.util.Sorting
+  * val pairs = Array(("a", 5, 2), ("c", 3, 1), ("b", 1, 3))
+  *
+  * // sort by 2nd element
+  * Sorting.quickSort(pairs)(Ordering.by[(String, Int, Int), Int](_._2)
+  *
+  * // sort by the 3rd element, then 1st
+  * Sorting.quickSort(pairs)(Ordering[(Int, String)].on[(String, Int, Int)]((_._3, _._1))
+  * }}}
+  *
+  * An Ordering[T] is implemented by specifying compare(a:T, b:T), which
+  * decides how to order to instances a and b. Instances of Ordering[T] can be
+  * used by things like scala.util.Sorting to sort collections like Array[T].
+  *
+  * For example:
+  *
+  * {{{
+  * import scala.util.Sorting
+  *
+  * case class Person(name:String, age:Int)
+  * val people = Array(Person("bob", 30), Person("ann", 32), Person("carl", 19))
+  *
+  * // sort by age
+  * object AgeOrdering extends Ordering[Person] {
+  *   def compare(a:Person, b:Person) = a.age compare b.age
+  * }
+  * Sorting.quickSort(people)(AgeOrdering)
+  * }}}
+  *
+  * This trait and scala.math.Ordered both provide this same functionality, but
+  * in different ways. A type T can be given a single way to order itself by
+  * extending Ordered. Using Ordering, this same type may be sorted in many
+  * other ways. Ordered and Ordering both provide implicits allowing them to be
+  * used interchangeably.
+  *
+  * You can import scala.math.Ordering.Implicits to gain access to other
+  * implicit orderings.
+  *
+  * @author Geoffrey Washburn
+  * @version 0.9.5, 2008-04-15
+  * @since 2.7
+  * @see [[scala.math.Ordered]], [[scala.util.Sorting]]
+  */
 @annotation.implicitNotFound(msg = "No implicit Ordering defined for ${T}.")
 trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable {
   outer =>
