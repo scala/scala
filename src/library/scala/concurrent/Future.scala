@@ -38,12 +38,12 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
  *  @define caughtThrowables
  *  The future may contain a throwable object and this means that the future failed.
  *  Futures obtained through combinators have the same exception as the future they were obtained from.
- *  The following throwable objects are not caught by the future:
+ *  The following throwable objects are not contained in the future:
  *  - Error - errors are not contained within futures
- *  - scala.util.control.ControlException - not contained within futures
+ *  - scala.util.control.ControlThrowable - not contained within futures
  *  - InterruptedException - not contained within futures
  *  
- *  Instead, the future is completed with a NoSuchElementException with one of the exceptions above
+ *  Instead, the future is completed with a ExecutionException with one of the exceptions above
  *  as the cause.
  *
  *  @define forComprehensionExamples
@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
  *  }}}
  *  
  *  is translated to:
- *
+ *  
  *  {{{
  *  f flatMap { (x: Int) => g map { (y: Int) => x + y } }
  *  }}}
@@ -85,8 +85,8 @@ self =>
   }
   
   /** When this future is completed with a failure (i.e. with a throwable),
-   *  apply the provided function to the throwable.
-   *
+   *  apply the provided callback to the throwable.
+   *  
    *  $caughtThrowables
    *  
    *  If the future has already been completed with a failure,
@@ -98,9 +98,8 @@ self =>
    *  
    *  $multipleCallbacks
    */
-  def onFailure[U](callback: Throwable => U): this.type = onComplete {
-    case Left(te: FutureTimeoutException) => callback(te)
-    case Left(t) if isFutureThrowable(t) => callback(t)
+  def onFailure[U](callback: PartialFunction[Throwable, U]): this.type = onComplete {
+    case Left(t) if t.isInstanceOf[FutureTimeoutException] || isFutureThrowable(t) => if (callback.isDefinedAt(t)) callback(t)
     case Right(v) => // do nothing
   }
   
@@ -149,6 +148,9 @@ self =>
   
   /* Projections */
   
+  /** A failed projection of the future.
+   *  
+   */
   def failed: Future[Throwable] = new Future[Throwable] {
     def executionContext = self.executionContext
     def onComplete[U](func: Either[Throwable, Throwable] => U) = {
@@ -169,6 +171,8 @@ self =>
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
   }
   
+  /** A timed out projection of the future.
+   */
   def timedout: Future[FutureTimeoutException] = new Future[FutureTimeoutException] {
     def executionContext = self.executionContext
     def onComplete[U](func: Either[Throwable, FutureTimeoutException] => U) = {
