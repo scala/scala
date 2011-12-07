@@ -182,14 +182,14 @@ self =>
    *
    *  @return the keys of this map as an iterable.
    */
-  @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
+  @migration("`keys` returns `Iterable[A]` rather than `Iterator[A]`.", "2.8.0")
   def keys: Iterable[A] = keySet
 
   /** Collects all values of this map in an iterable collection.
    *
    *  @return the values of this map as an iterable.
    */
-  @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
+  @migration("`values` returns `Iterable[B]` rather than `Iterator[B]`.", "2.8.0")
   def values: Iterable[B] = new DefaultValuesIterable
 
   /** The implementation class of the iterable returned by `values`.

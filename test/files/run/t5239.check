@@ -6,7 +6,7 @@ package <empty> {
       __wrapper$1.super.this();
       ()
     };
-    <static> def wrapper(): Int = 2
+    def wrapper(): Int = 2
   }
 }
 
