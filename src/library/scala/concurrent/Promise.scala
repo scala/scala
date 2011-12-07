@@ -17,12 +17,14 @@ import scala.util.Timeout
 /** Promise is an object which can be completed with a value or failed
  *  with an exception.
  *
- *  A promise is assigned a timeout when created. After the timeout expires,
- *  the promise will be failed with a TimeoutException.
- *
  *  @define promiseCompletion
  *  If the promise has already been fulfilled, failed or has timed out,
  *  calling this method will throw an IllegalStateException.
+ *
+ *  @define allowedThrowables
+ *  If the throwable used to fail this promise is an error, a control exception
+ *  or an interrupted exception, it will be wrapped as a cause within an
+ *  ExecutionException which will fail the promise.
  */
 trait Promise[T] {
   
@@ -42,13 +44,12 @@ trait Promise[T] {
    *  
    *  @param t        The throwable to complete the promise with.
    *  
+   *  $allowedThrowables
+   *  
    *  $promiseCompletion
    */
   def fail(t: Throwable): Unit
   
-  /** The timeout for this promise.
-   */
-  def timeout: Timeout
 }
 
 
