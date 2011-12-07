@@ -21,6 +21,9 @@ package object concurrent {
   type CancellationException = java.util.concurrent.CancellationException
   type TimeoutException = java.util.concurrent.TimeoutException
   
+  lazy val executionContext =
+    new ForkJoinExecutionContext
+
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
   }
@@ -58,8 +61,6 @@ package object concurrent {
       }
     }
   }
-  
-  def future[T](body: =>T): Future[T] = null // TODO
   
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
     case t: Throwable if isFutureThrowable(t) => t
