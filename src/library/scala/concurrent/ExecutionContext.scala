@@ -12,10 +12,11 @@ trait ExecutionContext {
   
   def execute(task: Runnable): Unit
   
-  def task[T](task: () => T)(implicit timeout: Timeout): Task[T]
+  def task[T](task: () => T): Task[T]
   
-  def promise[T](implicit timeout: Timeout): Promise[T]
+  def promise[T]: Promise[T]
   
+  /** Only callable from the tasks running on the same execution context. */
   def blockingCall[T](body: Blockable[T]): T
   
 }
@@ -28,3 +29,8 @@ object ExecutionContext {
   //lazy val forBlocking = new BlockingExecutionContext
 
 }
+
+
+sealed trait CanBlock
+
+

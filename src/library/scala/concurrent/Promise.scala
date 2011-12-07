@@ -10,6 +10,10 @@ package scala.concurrent
 
 
 
+import scala.util.Timeout
+
+
+
 /** Promise is an object which can be completed with a value or failed
  *  with an exception.
  *

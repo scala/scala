@@ -62,14 +62,14 @@ package object concurrent {
   def future[T](body: =>T): Future[T] = null // TODO
   
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
-    case t: Throwable if isFutureThrowable => t
+    case t: Throwable if isFutureThrowable(t) => t
   }
   
   // TODO rename appropriately and make public
   private[concurrent] def isFutureThrowable(t: Throwable) = t match {
     case e: Error => false
     case t: scala.util.control.ControlThrowable => false
-    case i: InterruptException => false
+    case i: InterruptedException => false
     case _ => true
   }
   
@@ -78,16 +78,14 @@ package object concurrent {
 
 package concurrent {
   
-  private[concurrent] trait CanBlock
-  
   /** A timeout exception.
    *  
    *  Futures are failed with a timeout exception when their timeout expires.
    *  
    *  Each timeout exception contains an origin future which originally timed out.
    */
-  class FutureTimeoutException(origin: Future[T], message: String) extends TimeoutException(message) {
-    def this(origin: Future[T]) = this(origin, "Future timed out.")
+  class FutureTimeoutException(origin: Future[_], message: String) extends TimeoutException(message) {
+    def this(origin: Future[_]) = this(origin, "Future timed out.")
   }
   
 }

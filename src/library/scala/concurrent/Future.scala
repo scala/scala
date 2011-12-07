@@ -157,23 +157,51 @@ self =>
   /* Projections */
   
   def failed: Future[Throwable] = new Future[Throwable] {
-    def newPromise[S] = self.newPromise[S]
-    def onComplete[U](func: Either[Throwable, Throwable] => U) = self.onComplete {
-      case Left(t) => func(Right(t))
-      case Right(v) => // do nothing
+    def executionContext = self.executionContext
+    def onComplete[U](func: Either[Throwable, Throwable] => U) = {
+      self.onComplete {
+        case Left(t) => func(Right(t))
+        case Right(v) => func(Left(noSuchElem(v))) // do nothing
+      }
+      this
     }
     def isTimedout = self.isTimedout
     def timeout = self.timeout
+    def block()(implicit canblock: CanBlock) = try {
+      val res = self.block()
+      throw noSuchElem(res)
+    } catch {
+      case t: Throwable => t
+    }
+    private def noSuchElem(v: T) = 
+      new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
   }
   
   def timedout: Future[FutureTimeoutException] = new Future[FutureTimeoutException] {
-    def newPromise[S] = self.newPromise[S]
-    def onComplete[U](func: Either[Throwable, FutureTimeoutException] => U) = self.onComplete {
-      case Left(te: FutureTimeoutException) => func(Right(te))
-      case _ => // do nothing
+    def executionContext = self.executionContext
+    def onComplete[U](func: Either[Throwable, FutureTimeoutException] => U) = {
+      self.onComplete {
+        case Left(te: FutureTimeoutException) => func(Right(te))
+        case Left(t) => func(Left(noSuchElemThrowable(t)))
+        case Right(v) => func(Left(noSuchElemValue(v)))
+      }
+      this
     }
     def isTimedout = self.isTimedout
     def timeout = self.timeout
+    def block()(implicit canblock: CanBlock) = try {
+      val res = self.block() // TODO fix
+      throw noSuchElemValue(res)
+    } catch {
+      case ft: FutureTimeoutException =>
+        ft
+      case t: Throwable =>
+        throw noSuchElemThrowable(t)
+    }
+    private def noSuchElemValue(v: T) =
+      new NoSuchElementException("Future.timedout didn't time out. Instead completed with: " + v)
+    private def noSuchElemThrowable(v: Throwable) =
+      new NoSuchElementException("Future.timedout didn't time out. Instead failed with: " + v)
   }
   
   
@@ -206,9 +234,9 @@ self =>
    *  
    *  Will not be called if the future times out or fails.
    *  
-   *  This method typically registers an `onResult` callback.
+   *  This method typically registers an `onSuccess` callback.
    */
-  def foreach[U](f: T => U): Unit = onResult f
+  def foreach[U](f: T => U): Unit = onSuccess(f)
   
   /** Creates a new future by applying a function to the successful result of
    *  this future. If this future is completed with an exception then the new
@@ -239,8 +267,9 @@ self =>
     
     onComplete {
       case Left(t) => p fail t
-      case Right(f) => f onComplete {
-        p fulfill _
+      case Right(v) => f(v) onComplete {
+        case Left(t) => p fail t
+        case Right(v) => p fulfill v
       }
     }
     
@@ -263,12 +292,12 @@ self =>
    *  block on h // throw a NoSuchElementException
    *  }}}
    */
-  def filter(p: T => Boolean): Future[T] = {
+  def filter(pred: T => Boolean): Future[T] = {
     val p = newPromise[T]
     
     onComplete {
       case Left(t) => p fail t
-      case Right(v) => if (p(v)) p fulfill v else p fail new NoSuchElementException
+      case Right(v) => if (pred(v)) p fulfill v else p fail new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
     }
     
     p.future
