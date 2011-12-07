@@ -38,10 +38,13 @@ import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger,
  *  @define caughtThrowables
  *  The future may contain a throwable object and this means that the future failed.
  *  Futures obtained through combinators have the same exception as the future they were obtained from.
- *  The following throwable objects are treated differently:
+ *  The following throwable objects are not caught by the future:
  *  - Error - errors are not contained within futures
  *  - scala.util.control.ControlException - not contained within futures
  *  - InterruptedException - not contained within futures
+ *  
+ *  Instead, the future is completed with a NoSuchElementException with one of the exceptions above
+ *  as the cause.
  *
  *  @define forComprehensionExamples
  *  Example:
@@ -95,8 +98,9 @@ self =>
    *  
    *  $multipleCallbacks
    */
-  def onFailure[U](func: Throwable => U): this.type = onComplete {
-    case Left(t) if isFutureThrowable(t) => func(t)
+  def onFailure[U](callback: Throwable => U): this.type = onComplete {
+    case Left(te: FutureTimeoutException) => callback(te)
+    case Left(t) if isFutureThrowable(t) => callback(t)
     case Right(v) => // do nothing
   }
   
@@ -107,8 +111,8 @@ self =>
    *  
    *  $multipleCallbacks
    */
-  def onTimeout[U](body: FutureTimeoutException => U): this.type = onComplete {
-    case Left(te: FutureTimeoutException) => body(te)
+  def onTimeout[U](callback: FutureTimeoutException => U): this.type = onComplete {
+    case Left(te: FutureTimeoutException) => callback(te)
     case Right(v) => // do nothing
   }
   
