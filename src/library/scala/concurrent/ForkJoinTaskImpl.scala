@@ -89,7 +89,7 @@ extends RecursiveAction with Task[T] with Future[T] {
     this
   }
   
-  def isTimedout: Boolean = updater.get() match {
+  def isTimedout: Boolean = updater.get(this) match {
     case Failure(ft: FutureTimeoutException) => true
     case _ => false
   }
