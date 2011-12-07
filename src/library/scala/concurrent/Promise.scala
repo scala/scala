@@ -44,12 +44,19 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def fail(t: Throwable): Unit
-  
-  /** The timeout for this promise.
+  def break(t: Throwable): Unit
+
+  /** Wraps a `Throwable` in an `ExecutionException` if necessary.
+   *
+   *  $allowedThrowables
    */
-  def timeout: Timeout
+  protected def wrap(t: Throwable): Throwable = t match {
+    case t: Throwable if isFutureThrowable(t) => t
+    case _ => new ExecutionException(t)
+  }
+
 }
+
 
 
 object Promise {
