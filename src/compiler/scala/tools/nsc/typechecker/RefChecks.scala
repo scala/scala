@@ -1273,8 +1273,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
      *  indicating it has changed semantics between versions.
      */
     private def checkMigration(sym: Symbol, pos: Position) = {
-      for (msg <- sym.migrationMessage)
-        unit.warning(pos, sym.fullLocationString + " has changed semantics:\n" + msg)
+      if (sym.hasMigrationAnnotation)
+        unit.warning(pos, "%s has changed semantics in version %s:\n%s".format(
+          sym.fullLocationString, sym.migrationVersion.get, sym.migrationMessage.get)
+        )
     }
 
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
