@@ -88,7 +88,13 @@ trait ToolBoxes extends { self: Universe =>
       def runExpr(expr: Tree): Any = {
         val etpe = expr.tpe
         val fvs = (expr filter isFree map (_.symbol)).distinct
+        
+        reporter.reset()
         val className = compileExpr(expr, fvs)
+        if (reporter.hasErrors) {
+          throw new Error("reflective compilation has failed")
+        }
+        
         if (settings.debug.value) println("generated: "+className)
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get
