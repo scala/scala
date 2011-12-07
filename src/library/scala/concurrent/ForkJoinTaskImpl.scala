@@ -13,7 +13,7 @@ import scala.annotation.tailrec
  * to avoid an object allocation per promise. This requires turning DefaultPromise
  * into a trait, i.e., removing its constructor parameters.
  */
-private[concurrent] class ForkJoinTaskImpl[T](val executionContext: ForkJoinExecutionContext, val body: () => T, val timeout: Timeout)
+private[concurrent] class ForkJoinTaskImpl[T](val executionContext: ForkJoinExecutionContext, body: => T, val timeout: Timeout)
 extends RecursiveAction with Task[T] with Future[T] {
   
   private val updater = AtomicReferenceFieldUpdater.newUpdater(classOf[ForkJoinTaskImpl[T]], classOf[State[T]], "state")
@@ -46,7 +46,7 @@ extends RecursiveAction with Task[T] with Future[T] {
     var cbs: List[Callback] = null
     
     try {
-      val res = body()
+      val res = body
       processCallbacks(trySucceedState(res), Right(res))
     } catch {
       case t if isFutureThrowable(t) =>
@@ -83,7 +83,9 @@ extends RecursiveAction with Task[T] with Future[T] {
     if (res != null) dispatch(new Runnable {
       override def run() =
         try callback(res)
-        catch handledFutureException
+        catch handledFutureException andThen {
+          t => Console.err.println(t)
+        }
     })
     
     this
@@ -130,7 +132,16 @@ case class Failure[T](throwable: Throwable) extends State[T]
 
 
 private[concurrent] final class ForkJoinExecutionContext extends ExecutionContext {
-  val pool = new ForkJoinPool
+  val pool = {
+    val p = new ForkJoinPool
+    p.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler {
+      def uncaughtException(t: Thread, throwable: Throwable) {
+        Console.err.println(throwable.getMessage)
+        throwable.printStackTrace(Console.err)
+      }
+    })
+    p
+  }
 
   @inline
   private def executeForkJoinTask(task: RecursiveAction) {
@@ -145,7 +156,7 @@ private[concurrent] final class ForkJoinExecutionContext extends ExecutionContex
     executeForkJoinTask(action)
   }
   
-  def task[T](body: () => T): Task[T] = {
+  def task[T](body: => T): Task[T] = {
     new ForkJoinTaskImpl(this, body, Timeout.never)
   }
   
