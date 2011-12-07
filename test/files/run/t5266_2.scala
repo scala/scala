@@ -9,7 +9,7 @@ object Test extends App {
     println(y)
   };
 
-  val reporter = new ConsoleReporter(settings)
+  val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
   val ttree = toolbox.typeCheck(code.tree)
   val evaluated = toolbox.runExpr(ttree)

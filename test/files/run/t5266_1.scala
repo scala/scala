@@ -8,14 +8,7 @@ object Test extends App {
     println(x)
   };
 
-  val settings = new Settings
-  settings.debug.value = true
-  settings.Xshowtrees.value = true
-  settings.Xprint.value = List("typer")
-  settings.printtypes.value = true
-  settings.Ytyperdebug.value = true
-
-  val reporter = new ConsoleReporter(settings)
+  val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
   val ttree = toolbox.typeCheck(code.tree)
   val evaluated = toolbox.runExpr(ttree)
