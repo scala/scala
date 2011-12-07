@@ -108,7 +108,7 @@ self =>
    *  $multipleCallbacks
    */
   def onTimeout[U](body: =>U): this.type = onComplete {
-    case Left(te: TimeoutException) => body
+    case Left(te: FutureTimeoutException) => body
   }
   
   /** When this future is completed, either through an exception, a timeout, or a value,
@@ -124,9 +124,13 @@ self =>
   
   /* Miscellaneous */
   
+  /** The execution context of the future.
+   */
+  def executionContext: ExecutionContext
+  
   /** Creates a new promise.
    */
-  def newPromise[S]: Promise[S]
+  def newPromise[S]: Promise[S] = executionContext promise
   
   /** Tests whether this Future's timeout has expired.
    *
@@ -162,10 +166,10 @@ self =>
     def timeout = self.timeout
   }
   
-  def timedout: Future[TimeoutException] = new Future[TimeoutException] {
+  def timedout: Future[FutureTimeoutException] = new Future[FutureTimeoutException] {
     def newPromise[S] = self.newPromise[S]
-    def onComplete[U](func: Either[Throwable, TimeoutException] => U) = self.onComplete {
-      case Left(te: TimeoutException) => func(Right(te))
+    def onComplete[U](func: Either[Throwable, FutureTimeoutException] => U) = self.onComplete {
+      case Left(te: FutureTimeoutException) => func(Right(te))
       case _ => // do nothing
     }
     def isTimedout = self.isTimedout
@@ -273,12 +277,3 @@ self =>
 }
 
 
-/** A timeout exception.
- *  
- *  Futures are failed with a timeout exception when their timeout expires.
- *  
- *  Each timeout exception contains an origin future which originally timed out.
- */
-class TimeoutException(origin: Future[T], message: String) extends java.util.concurrent.TimeoutException(message) {
-  def this(origin: Future[T]) = this(origin, "Future timed out.")
-}

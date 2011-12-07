@@ -16,8 +16,10 @@ package scala
 /** This package object contains primitives for parallel programming.
  */
 package object concurrent {
-
-  type MessageDispatcher = ExecutionContext // TODO FIXME: change futures to use execution context
+  
+  type ExecutionException = java.util.concurrent.ExecutionException
+  type CancellationException = java.util.concurrent.CancellationException
+  type TimeoutException = java.util.concurrent.TimeoutException
   
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
@@ -59,6 +61,10 @@ package object concurrent {
   
   def future[T](body: =>T): Future[T] = null // TODO
   
+  val handledFutureException: PartialFunction[Throwable, Throwable] = {
+    case t: Throwable if isFutureThrowable => t
+  }
+  
   // TODO rename appropriately and make public
   private[concurrent] def isFutureThrowable(t: Throwable) = t match {
     case e: Error => false
@@ -73,5 +79,15 @@ package object concurrent {
 package concurrent {
   
   private[concurrent] trait CanBlock
+  
+  /** A timeout exception.
+   *  
+   *  Futures are failed with a timeout exception when their timeout expires.
+   *  
+   *  Each timeout exception contains an origin future which originally timed out.
+   */
+  class FutureTimeoutException(origin: Future[T], message: String) extends TimeoutException(message) {
+    def this(origin: Future[T]) = this(origin, "Future timed out.")
+  }
   
 }
