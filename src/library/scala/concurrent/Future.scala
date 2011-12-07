@@ -136,7 +136,7 @@ self =>
    */
   def newPromise[S]: Promise[S] = executionContext promise
   
-  /** Tests whether this Future's timeout has expired.
+  /** Tests whether this `Future`'s timeout has expired.
    *
    *  $futureTimeout
    *  
@@ -145,13 +145,13 @@ self =>
    */
   def isTimedout: Boolean
   
-  /** This future's timeout.
+  /** This `Future`'s timeout.
    *  
    *  $futureTimeout
    */
   def timeout: Timeout
   
-  /** This future's timeout in nanoseconds.
+  /** This `Future`'s timeout in nanoseconds.
    *  
    *  $futureTimeout
    */
@@ -160,8 +160,17 @@ self =>
   
   /* Projections */
   
-  /** A failed projection of the future.
+  /** Returns a failed projection of this future.
    *  
+   *  The failed projection is a future holding a value of type `Throwable`.
+   *  
+   *  It is completed with a value which is the throwable of the original future
+   *  in case the original future is failed.
+   *  
+   *  It is failed with a `NoSuchElementException` if the original future is completed successfully.
+   *  
+   *  Blocking on this future returns a value if the original future is completed with an exception
+   *  and throws a corresponding exception if the original future fails.
    */
   def failed: Future[Throwable] = new Future[Throwable] {
     def executionContext = self.executionContext
@@ -184,7 +193,18 @@ self =>
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
   }
   
-  /** A timed out projection of the future.
+  /** A timed out projection of this future.
+   *  
+   *  The timed out projection is a future holding a value of type `FutureTimeoutException`.
+   *  
+   *  It is completed with a value which is a `FutureTimeoutException` of the original future
+   *  in case the original future is timed out.
+   *  
+   *  It is failed with a `NoSuchElementException` if the original future is completed successfully.
+   *  It is failed with the original exception otherwise.
+   *  
+   *  Blocking on this future returns a value only if the original future timed out, and a
+   *  corresponding exception otherwise.
    */
   def timedout: Future[FutureTimeoutException] = new Future[FutureTimeoutException] {
     def executionContext = self.executionContext
@@ -199,7 +219,7 @@ self =>
     def isTimedout = self.isTimedout
     def timeout = self.timeout
     def block()(implicit canblock: CanBlock) = try {
-      val res = self.block() // TODO fix
+      val res = self.block()
       throw noSuchElemValue(res)
     } catch {
       case ft: FutureTimeoutException =>

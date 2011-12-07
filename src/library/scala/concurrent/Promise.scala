@@ -24,7 +24,7 @@ import scala.util.Timeout
  *  @define allowedThrowables
  *  If the throwable used to fail this promise is an error, a control exception
  *  or an interrupted exception, it will be wrapped as a cause within an
- *  ExecutionException which will fail the promise.
+ *  `ExecutionException` which will fail the promise.
  */
 trait Promise[T] {
   
