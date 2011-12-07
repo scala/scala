@@ -1,5 +1,4 @@
-package scala.swing
-package test
+package examples.swing
 
 object ListViewDemo extends SimpleSwingApplication {
   def top = new MainFrame {
