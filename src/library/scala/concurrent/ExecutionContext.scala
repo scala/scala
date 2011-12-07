@@ -12,9 +12,9 @@ trait ExecutionContext {
   
   def execute(task: Runnable): Unit
   
-  def makeTask[T](task: () => T)(implicit timeout: Timeout): Task[T]
+  def task[T](task: () => T)(implicit timeout: Timeout): Task[T]
   
-  def makePromise[T](implicit timeout: Timeout): Promise[T]
+  def promise[T](implicit timeout: Timeout): Promise[T]
   
   def blockingCall[T](body: Blockable[T]): T
   
