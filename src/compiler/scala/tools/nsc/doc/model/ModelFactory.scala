@@ -119,14 +119,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         else Public()
       }
     }
-    def flags = {
-      val fgs = mutable.ListBuffer.empty[Paragraph]
-      if (sym.isImplicit) fgs += Paragraph(Text("implicit"))
-      if (sym.isSealed) fgs += Paragraph(Text("sealed"))
-      if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
-      if (!sym.isTrait && (sym hasFlag Flags.DEFERRED)) fgs += Paragraph(Text("abstract"))
-      if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
-      fgs.toList
+    def flags = this match { 
+      	// workaround for uninitialized flags in use cases - see SI-5054
+    		case m: NonTemplateMemberEntity if (m.useCaseOf.isDefined) =>
+    			m.useCaseOf.get.flags
+    		case _ =>
+		      val fgs = mutable.ListBuffer.empty[Paragraph]
+		      if (sym.isImplicit) fgs += Paragraph(Text("implicit"))
+		      if (sym.isSealed) fgs += Paragraph(Text("sealed"))
+		      if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
+		      if (!sym.isTrait && (sym hasFlag Flags.DEFERRED)) fgs += Paragraph(Text("abstract"))
+		      if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
+		      fgs.toList    	
     }
     def deprecation =
       if (sym.isDeprecated)
