@@ -40,14 +40,14 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   override def getOrElseUpdate(key: A, default: => B): B = synchronized { super.getOrElseUpdate(key, default) }
   override def transform(f: (A, B) => B): this.type = synchronized[this.type] { super.transform(f) }
   override def retain(p: (A, B) => Boolean): this.type = synchronized[this.type] { super.retain(p) }
-  @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
+  @migration("`values` returns `Iterable[B]` rather than `Iterator[B]`.", "2.8.0")
   override def values: collection.Iterable[B] = synchronized { super.values }
   override def valuesIterator: Iterator[B] = synchronized { super.valuesIterator }
   override def clone(): Self = synchronized { super.clone() }
   override def foreach[U](f: ((A, B)) => U) = synchronized { super.foreach(f) }
   override def apply(key: A): B = synchronized { super.apply(key) }
   override def keySet: collection.Set[A] = synchronized { super.keySet }
-  @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
+  @migration("`keys` returns `Iterable[A]` rather than `Iterator[A]`.", "2.8.0")
   override def keys: collection.Iterable[A] = synchronized { super.keys }
   override def keysIterator: Iterator[A] = synchronized { super.keysIterator }
   override def isEmpty: Boolean = synchronized { super.isEmpty }

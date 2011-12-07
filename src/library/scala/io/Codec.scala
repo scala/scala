@@ -97,7 +97,7 @@ object Codec extends LowPriorityCodecImplicits {
     new Codec(decoder.charset()) { override def decoder = _decoder }
   }
 
-  @migration(2, 9, "This method was previously misnamed `toUTF8`. Converts from Array[Byte] to Array[Char].")
+  @migration("This method was previously misnamed `toUTF8`. Converts from Array[Byte] to Array[Char].", "2.9.0")
   def fromUTF8(bytes: Array[Byte]): Array[Char] = {
     val bbuffer = java.nio.ByteBuffer wrap bytes
     val cbuffer = UTF8.charSet decode bbuffer
@@ -107,7 +107,7 @@ object Codec extends LowPriorityCodecImplicits {
     chars
   }
 
-  @migration(2, 9, "This method was previously misnamed `fromUTF8`. Converts from character sequence to Array[Byte].")
+  @migration("This method was previously misnamed `fromUTF8`. Converts from character sequence to Array[Byte].", "2.9.0")
   def toUTF8(cs: CharSequence): Array[Byte] = {
     val cbuffer = java.nio.CharBuffer wrap cs
     val bbuffer = UTF8.charSet encode cbuffer
