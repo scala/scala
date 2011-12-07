@@ -22,7 +22,7 @@ trait ListenerManagement {
   protected def manageLifeCycleOfListeners: Boolean = true
 
   /**
-   * Adds the <code>listener</code> this this registry's listener list.
+   * Adds the <code>listener</code> this registry's listener list.
    * The <code>listener</code> is started by this method if manageLifeCycleOfListeners yields true.
    */
   def addListener(listener: ActorRef) {
@@ -31,7 +31,7 @@ trait ListenerManagement {
   }
 
   /**
-   * Removes the <code>listener</code> this this registry's listener list.
+   * Removes the <code>listener</code> this registry's listener list.
    * The <code>listener</code> is stopped by this method if manageLifeCycleOfListeners yields true.
    */
   def removeListener(listener: ActorRef) {

@@ -284,7 +284,7 @@ trait Linearizers {
         handler.startBlock +=: lb
       }
 
-      // The first block emitted after a try-catch must be the the one that the try / catch
+      // The first block emitted after a try-catch must be the one that the try / catch
       // blocks jump to (because in msil, these jumps cannot be emitted manually)
       var firstAfter: Option[BasicBlock] = None
 

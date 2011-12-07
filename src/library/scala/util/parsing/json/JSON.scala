@@ -45,7 +45,7 @@ object JSON extends Parser {
   /**
    * Parse the given `JSON` string and return a list of elements. If the
    * string is a `JSON` object it will be a `JSONObject`. If it's a `JSON`
-   * array it will be be a `JSONArray`.
+   * array it will be a `JSONArray`.
    *
    * @param input the given `JSON` string.
    * @return      an optional `JSONType` element.

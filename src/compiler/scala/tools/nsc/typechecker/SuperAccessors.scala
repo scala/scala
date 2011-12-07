@@ -284,7 +284,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 
     /** Add a protected accessor, if needed, and return a tree that calls
-     *  the accessor and returns the the same member. The result is already
+     *  the accessor and returns the same member. The result is already
      *  typed.
      */
     private def makeAccessor(tree: Select, targs: List[Tree]): Tree = {

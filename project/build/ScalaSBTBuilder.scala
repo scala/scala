@@ -351,7 +351,7 @@ object ScalaSBTBuilder {
   val stabilityTestTaskDescription = "run stability testing. It is required to use a clean build (for example, execute the clean-all action) in order to ensure correctness of the result."
   val paloTaskDescription = "create palo"
   val pastaTaskDescription = "create all the jar needed to make a new starr from quick (pasta = packed starr). It does not replace the current library and compiler jars in the libs folder, but the products of the task are instead located in target/pasta"
-  val newStarrTaskDescription = "create a new starr and replace the library and compiler jars in the libs folder. It will keep locker locker locked, meaning that if you want to update locker after updating starr, you must run the 'new-locker' command. It will not automatically run partest and stability testing before replacing."
+  val newStarrTaskDescription = "create a new starr and replace the library and compiler jars in the libs folder. It will keep locker locked, meaning that if you want to update locker after updating starr, you must run the 'new-locker' command. It will not automatically run partest and stability testing before replacing."
   val newLockerTaskDescription = "replace locker. It will build a new locker. It does not automatically rebuild quick."
   val buildForkjoinTaskDescription = "create all the jar needed to make a new forkjoin. It does not replace the current library and compiler jars in the libs folder, but the products of the task are instead located in target/libs."
   val newForkjoinTaskDescription = "create a new forkjoin and replace the corresponding jar in the libs folder."

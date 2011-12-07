@@ -471,7 +471,7 @@ trait ActorRef extends ActorRefShared with java.lang.Comparable[ActorRef] { scal
    * <p/>
    * To be invoked from within the actor itself.
    */
-  @deprecated("Will be removed after 1.1, use use Actor.remote.actorOf instead and then link on success", "1.1")
+  @deprecated("Will be removed after 1.1, use Actor.remote.actorOf instead and then link on success", "1.1")
   def spawnLink(clazz: Class[_ <: Actor]): ActorRef
 
   /**

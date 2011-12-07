@@ -1,4 +1,4 @@
-/** This will run a a loooong time if Set's builder copies a
+/** This will run a loooong time if Set's builder copies a
  *  complete new Set for every element.
  */
 object Test {

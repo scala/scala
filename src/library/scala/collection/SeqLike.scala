@@ -21,7 +21,7 @@ import scala.math.Ordering
  *  @define seqInfo
  *  Sequences are special cases of iterable collections of class `Iterable`.
  *  Unlike iterables, sequences always have a defined order of elements.
- *  Sequences provide a method `apply` for indexing. Indices range from `0` up the the `length` of
+ *  Sequences provide a method `apply` for indexing. Indices range from `0` up to the `length` of
  *  a sequence. Sequences support a number to find occurrences of elements or subsequences, including
  *  `segmentLength`, `prefixLength`, `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`,
  *  `startsWith`, `endsWith`, `indexOfSlice`.

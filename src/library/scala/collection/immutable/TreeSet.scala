@@ -36,6 +36,9 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @author  Martin Odersky
  *  @version 2.0, 02/01/2007
  *  @since   1
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#redblack_trees "Scala's Collection Library overview"]]
+ *  section on `Red-Black Trees` for more information.
+ *
  *  @define Coll immutable.TreeSet
  *  @define coll immutable tree set
  *  @define orderDependent

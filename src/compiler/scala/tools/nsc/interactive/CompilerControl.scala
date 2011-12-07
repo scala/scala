@@ -128,7 +128,7 @@ trait CompilerControl { self: Global =>
   }
 
   /** Sets sync var `response` to the smallest fully attributed tree that encloses position `pos`.
-   *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be be loaded.
+   *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be loaded.
    */
   def askTypeAt(pos: Position, response: Response[Tree]) =
     postWorkItem(new AskTypeAtItem(pos, response))
