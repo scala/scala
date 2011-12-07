@@ -72,13 +72,12 @@ self =>
    *  If the future has already been completed with a value,
    *  this will either be applied immediately or be scheduled asynchronously.
    *  
-   *  Will not be called in case of a timeout.
-   *  
-   *  Will not be called in case of an exception.
+   *  Will not be called in case of an exception (this includes the FutureTimeoutException).
    *  
    *  $multipleCallbacks
    */
   def onSuccess[U](func: T => U): this.type = onComplete {
+    case Left(t) => // do nothing
     case Right(v) => func(v)
   }
   
@@ -90,14 +89,15 @@ self =>
    *  If the future has already been completed with a failure,
    *  this will either be applied immediately or be scheduled asynchronously.
    *  
-   *  Will not be called in case of a timeout.
+   *  Will not be called in case that the future is completed with a value.
    *  
-   *  Will not be called in case of an exception.
+   *  Will be called if the future is completed with a FutureTimeoutException.
    *  
    *  $multipleCallbacks
    */
   def onFailure[U](func: Throwable => U): this.type = onComplete {
     case Left(t) if isFutureThrowable(t) => func(t)
+    case Right(v) => // do nothing
   }
   
   /** When this future times out, apply the provided function.
@@ -107,8 +107,9 @@ self =>
    *  
    *  $multipleCallbacks
    */
-  def onTimeout[U](body: =>U): this.type = onComplete {
-    case Left(te: FutureTimeoutException) => body
+  def onTimeout[U](body: FutureTimeoutException => U): this.type = onComplete {
+    case Left(te: FutureTimeoutException) => body(te)
+    case Right(v) => // do nothing
   }
   
   /** When this future is completed, either through an exception, a timeout, or a value,
