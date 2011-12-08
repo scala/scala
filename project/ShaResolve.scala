@@ -23,8 +23,9 @@ object ShaResolve {
   )
 
   def resolveLibs(dir: File, cacheDir: File, s: TaskStreams): Unit = {
+     val files = (dir / "test" / "files" ** "*.desired.sha1") +++ (dir / "lib" ** "*.desired.sha1")
      for {
-       (file, name) <- dir ** "*.desired.sha1" x relativeTo(dir)
+       (file, name) <- files x relativeTo(dir)
        uri = name.dropRight(13)       
        jar = dir / uri
        if !jar.exists || !isValidSha(file)
