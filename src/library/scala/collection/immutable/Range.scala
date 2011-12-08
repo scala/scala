@@ -74,12 +74,11 @@ extends collection.AbstractSeq[Int]
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
     if (length > 0) {
       val last = this.last
-      var i = start
-      while (i != last) {
-        f(i)
+      var i = start - step
+      do {
         i += step
-      }
-      f(i)
+        f(i)
+      } while (i != last)
     }
   }
 
