@@ -90,10 +90,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @param kv    the key/value mapping to be added
    *  @return      a new map containing mappings of this map and the mapping `kv`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To add an element as a\n"+
-    "side effect to an existing map and return that map itself, use +=."
-  )
+  @migration("`+` creates a new map. Use `+=` to add an element to this map and return that map itself.", "2.8.0")
   def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = clone().asInstanceOf[Map[A, B1]] += kv
 
   /** Creates a new map containing two or more key/value mappings and all the key/value
@@ -106,10 +103,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @param elems the remaining elements to add.
    *  @return      a new map containing mappings of this map and two or more specified mappings.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To add an element as a\n"+
-    "side effect to an existing map and return that map itself, use +=."
-  )
+  @migration("`+` creates a new map. Use `+=` to add an element to this map and return that map itself.", "2.8.0")
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): Map[A, B1] =
     clone().asInstanceOf[Map[A, B1]] += elem1 += elem2 ++= elems
 
@@ -121,10 +115,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @param xs     the traversable object.
    *  @return       a new map containing mappings of this map and those provided by `xs`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To add the elements as a\n"+
-    "side effect to an existing map and return that map itself, use ++=."
-  )
+  @migration("`++` creates a new map. Use `++=` to add an element to this map and return that map itself.", "2.8.0")
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] =
     clone().asInstanceOf[Map[A, B1]] ++= xs.seq
 
@@ -154,10 +145,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @param    key the key to be removed
    *  @return   a new map with all the mappings of this map except that with a key `key`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To remove an element as a\n"+
-    "side effect to an existing map and return that map itself, use -=."
-  )
+  @migration("`-` creates a new map. Use `-=` to remove an element from this map and return that map itself.", "2.8.0")
   override def -(key: A): This = clone() -= key
 
   /** Removes all bindings from the map. After this operation has completed,
@@ -223,10 +211,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @return      a new map containing all the mappings of this map except mappings
    *               with a key equal to `elem1`, `elem2` or any of `elems`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To remove an element as a\n"+
-    "side effect to an existing map and return that map itself, use -=."
-  )
+  @migration("`-` creates a new map. Use `-=` to remove an element from this map and return that map itself.", "2.8.0")
   override def -(elem1: A, elem2: A, elems: A*): This =
     clone() -= elem1 -= elem2 --= elems
 
@@ -237,10 +222,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @return         a new map with all the key/value mappings of this map except mappings
    *                  with a key equal to a key from `xs`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To remove the elements as a\n"+
-    "side effect to an existing map and return that map itself, use --=."
-  )
+  @migration("`--` creates a new map. Use `--=` to remove an element from this map and return that map itself.", "2.8.0")
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
 
   @bridge def --(xs: TraversableOnce[A]): This =  --(xs: GenTraversableOnce[A])

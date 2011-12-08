@@ -575,15 +575,15 @@ object Either {
     }
   }
 
-  /** If the condition is satisfied, return the given `A` in `Left`,
-   *  otherwise, return the given `B` in `Right`.
+  /** If the condition is satisfied, return the given `B` in `Right`,
+   *  otherwise, return the given `A` in `Left`.
    *
    * {{{
    * val userInput: String = ...
    * Either.cond(
    *   userInput.forall(_.isDigit) && userInput.size == 10,
-   *   "The input (%s) does not look like a phone number".format(userInput),
-   *   PhoneNumber(userInput)
+   *   PhoneNumber(userInput),
+   *   "The input (%s) does not look like a phone number".format(userInput)
    * }}}
    */
   def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =

@@ -13,7 +13,6 @@ import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
 
-import annotation.migration
 
 /**
  *  @author  Stephane Micheloud

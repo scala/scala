@@ -1311,7 +1311,11 @@ trait Infer {
                   case TypeRef(_, sym, _) if isLocalBinding(sym) =>
                     ;
                   case _ =>
-                    patternWarning(arg, "non variable type-argument ")
+                    // Want to warn about type arguments, not type parameters. Otherwise we'll
+                    // see warnings about "invisible" types, like: val List(x0) = x1 leading to "non
+                    // variable type-argument A in type pattern List[A]..."
+                    if (!arg.typeSymbol.isTypeParameterOrSkolem)
+                      patternWarning(arg, "non variable type-argument ")
                 }
               }
             }

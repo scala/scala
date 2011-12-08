@@ -390,10 +390,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b.result
   }
 
-  @migration(2, 9,
-    "This scanRight definition has changed in 2.9.\n" +
-    "The previous behavior can be reproduced with scanRight.reverse."
-  )
+  @migration("The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.", "2.9.0")
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     var scanned = List(z)
     var acc = z

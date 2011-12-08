@@ -42,11 +42,10 @@ trait ToolBoxes extends { self: Universe =>
 
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
         val obj = EmptyPackageClass.newModule(NoPosition, nextWrapperModuleName())
-        val minfo = ClassInfoType(List(ObjectClass.tpe), new Scope, obj.moduleClass)
+        val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
         val meth = obj.moduleClass.newMethod(NoPosition, wrapperMethodName)
-        meth setFlag Flags.STATIC
         def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name) setInfo fv.tpe
         meth setInfo MethodType(fvs map makeParam, expr.tpe)
         minfo.decls enter meth
@@ -88,11 +87,19 @@ trait ToolBoxes extends { self: Universe =>
       def runExpr(expr: Tree): Any = {
         val etpe = expr.tpe
         val fvs = (expr filter isFree map (_.symbol)).distinct
+        
+        reporter.reset()
         val className = compileExpr(expr, fvs)
+        if (reporter.hasErrors) {
+          throw new Error("reflective compilation has failed")
+        }
+        
         if (settings.debug.value) println("generated: "+className)
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get
-        val result = jmeth.invoke(null, fvs map (sym => sym.asInstanceOf[FreeVar].value.asInstanceOf[AnyRef]): _*)
+        val jfield = jclazz.getDeclaredFields.find(_.getName == NameTransformer.MODULE_INSTANCE_NAME).get
+        val singleton = jfield.get(null)
+        val result = jmeth.invoke(singleton, fvs map (sym => sym.asInstanceOf[FreeVar].value.asInstanceOf[AnyRef]): _*)
         if (etpe.typeSymbol != FunctionClass(0)) result
         else {
           val applyMeth = result.getClass.getMethod("apply")
