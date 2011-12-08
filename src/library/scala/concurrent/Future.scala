@@ -21,8 +21,8 @@ import scala.collection.mutable.Stack
 //import akka.util.Switch (commented method)
 import java.{ lang ⇒ jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
-
-
+import scala.collection.mutable.Builder
+import scala.collection.generic.CanBuildFrom
 
 /** The trait that represents futures.
  *  
@@ -238,7 +238,7 @@ self =>
     val p = newPromise[U]
     
     onComplete {
-      case Left(t) => if (pf isDefinedAt t) p fulfill pf(t) else p fail t
+      case Left(t) => if (pf isDefinedAt t) p fulfill pf(t) else p break t
       case Right(v) => p fulfill v
     }
     
@@ -263,7 +263,7 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p fail t
+      case Left(t) => p break t
       case Right(v) => p fulfill f(v)
     }
     
@@ -281,9 +281,9 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p fail t
+      case Left(t) => p break t
       case Right(v) => f(v) onComplete {
-        case Left(t) => p fail t
+        case Left(t) => p break t
         case Right(v) => p fulfill v
       }
     }
@@ -311,8 +311,8 @@ self =>
     val p = newPromise[T]
     
     onComplete {
-      case Left(t) => p fail t
-      case Right(v) => if (pred(v)) p fulfill v else p fail new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
+      case Left(t) => p break t
+      case Right(v) => if (pred(v)) p fulfill v else p break new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
     }
     
     p.future
@@ -320,4 +320,30 @@ self =>
   
 }
 
+object Future {
+  
+  def all[T,Coll[_] <: Traversable[_]](fs: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[Future[T]],T,Coll[T]]): Future[Coll[T]] = {
+    val builder = cbf(fs)
+    val p: Promise[Coll[T]] = executionContext.promise[Coll[T]]
+    
+    if (fs.size == 1) fs.head onComplete {
+      case Left(t) => p break t
+      case Right(v) => builder += v
+        p fulfill builder.result
+    } else {
+      val restFutures = all(fs.tail)
+      fs.head onComplete {
+        case Left(t) => p break t
+        case Right(v) => builder += v
+          restFuture onComplete {
+            case Left(t) => p break t
+            case Right(vs) => for (v <- vs) builder += v
+              p fulfill builder.result
+          }
+      }
+    }
+    p.future
 
+  }
+
+}
