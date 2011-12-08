@@ -1,0 +1,9 @@
+t4990-mig-28.scala:2: error: method - in trait BufferLike has changed semantics in version 2.8.0:
+`-` creates a new buffer. Use `-=` to remove an element from this buffer and return that buffer itself.
+  collection.mutable.Buffer(1,2,3,4) - 3 //@migrated in 2.8
+                                     ^
+t4990-mig-28.scala:3: error: method scanRight in trait TraversableLike has changed semantics in version 2.9.0:
+The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.
+  List(1, 2, 3, 4).scanRight(0)(_ + _) //@migrated in 2.9
+                   ^
+two errors found

@@ -19,6 +19,7 @@ trait AbsScalaSettings {
   type PhasesSetting      <: Setting { type T = List[String] }
   type StringSetting      <: Setting { type T = String }
   type PrefixSetting      <: Setting { type T = List[String] }
+  type VersionSetting     <: Setting { type T = Version }
 
   type OutputDirs
   type OutputSetting <: Setting
@@ -32,6 +33,7 @@ trait AbsScalaSettings {
   def PhasesSetting(name: String, descr: String, default: String): PhasesSetting
   def StringSetting(name: String, helpArg: String, descr: String, default: String): StringSetting
   def PrefixSetting(name: String, prefix: String, descr: String): PrefixSetting
+  def VersionSetting(name: String, helpArg: String, descr: String, default: Version): VersionSetting
 
   /** **/
   abstract class SettingGroup(val prefix: String) extends AbsSetting {

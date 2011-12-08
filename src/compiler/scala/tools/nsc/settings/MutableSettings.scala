@@ -228,6 +228,8 @@ class MutableSettings(val errorFn: String => Unit)
     add(new PathSetting(name, descr, default, prepend, append))
   }
   def PrefixSetting(name: String, prefix: String, descr: String): PrefixSetting = add(new PrefixSetting(name, prefix, descr))
+  def VersionSetting(name: String, helpArg: String, descr: String, default: Version) =
+    add(new VersionSetting(name, helpArg, descr, default))
 
   /** A class for holding mappings from source directories to
    *  their output location. This functionality can be accessed
@@ -640,5 +642,62 @@ class MutableSettings(val errorFn: String => Unit)
       if (default == "") name + ":<phases>"
       else name + "[:phases]"
     )
+  }
+
+  class VersionSetting private[nsc] (
+    name: String,
+    helpArg: String,
+    descr: String,
+    val default: Version)
+  extends Setting(name, descr) {
+    type T = Version
+    protected var v: T = default
+
+    private def usageErrorMessage = {
+      "Usage: %s:<%s>\n where <%s> is a version string (default: %s)\n".format(
+        name, helpArg, helpArg, default)
+    }
+    def tryToSet(args: List[String]) = args match {
+      case Nil => value = default; Some(Nil)
+      case List(x) => try {
+                         value = Version(x); Some(Nil)
+                       } catch {
+                         case ex: NumberFormatException =>
+                           errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
+                       }
+
+      case x :: xs => try {
+                         value = Version(x); Some(xs)
+                       } catch {
+                         case ex: NumberFormatException =>
+                           errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
+                       }
+    }
+
+    override def tryToSetColon(args: List[String]) = tryToSet(args)
+
+    def unparse: List[String] =
+      if (value == default) Nil else List(name + ":" + value)
+    override def tryToSetFromPropertyValue(s: String) = tryToSetColon(s::Nil)
+
+    def isSetAndAtLeast(version: String) = isSetByUser && atLeast(version)
+
+    def isSetAndAtMost(version: String) = isSetByUser && atMost(version)
+
+    private def atLeast(version: String) =
+      try {
+        value >= Version(version)
+      } catch {
+        case _ => /* Print a warning ... I have no idea how I would do that. */ false
+      }
+
+    private def atMost(version: String) =
+      try {
+        value <= Version(version)
+      } catch {
+        case _ => /* Print a warning ... I have no idea how I would do that. */ false
+      }
+
+    withHelpSyntax(name + ":<" + helpArg + ">")
   }
 }

@@ -1,1 +1,1 @@
--Xmigration -Xfatal-warnings
+-Xmigration:2.8 -Xfatal-warnings

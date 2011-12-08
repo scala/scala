@@ -536,7 +536,7 @@ abstract class ExplicitOuter extends InfoTransform
             }
           }
 
-          if (settings.Xmigration28.value) tree match {
+          if (settings.Xmigration.isSetAndAtLeast("2.8")) tree match {
             case TypeApply(fn @ Select(qual, _), args) if fn.symbol == Object_isInstanceOf || fn.symbol == Any_isInstanceOf =>
               if (isArraySeqTest(qual.tpe, args.head.tpe))
                 unit.warning(tree.pos, "An Array will no longer match as Seq[_].")

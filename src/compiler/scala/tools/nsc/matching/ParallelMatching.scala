@@ -820,7 +820,7 @@ trait ParallelMatching extends ast.TreeDSL
       // match that's unimportant; so we add an instance check only if there
       // is a binding.
       def bindingWarning() = {
-        if (isBound && settings.Xmigration28.value) {
+        if (isBound && settings.Xmigration.isSetAndAtLeast("2.8")) {
           cunit.warning(scrutTree.pos,
             "A bound pattern such as 'x @ Pattern' now matches fewer cases than the same pattern with no binding.")
         }

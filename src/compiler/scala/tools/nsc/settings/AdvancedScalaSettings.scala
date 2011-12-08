@@ -21,7 +21,7 @@ trait AdvancedScalaSettings {
     val generatephasegraph: StringSetting
     val logimplicits: BooleanSetting
     val mainClass: StringSetting
-    val migration: BooleanSetting
+    val migration: VersionSetting
     val noforwarders: BooleanSetting
     val nojline: BooleanSetting
     val nouescape: BooleanSetting
@@ -44,7 +44,6 @@ trait AdvancedScalaSettings {
     val sourcereader: StringSetting
   }
   // def Xexperimental = X.experimental
-  // def Xmigration28 = X.migration
   // def Xnojline = X.nojline
   // def Xprint = X.print
   // def Xprintpos = X.printpos
