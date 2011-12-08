@@ -297,7 +297,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             case nme.toDouble => "toDouble"
             case _            => return None
           }
-          Some(newName, runtimeTest)
+          Some((newName, runtimeTest))
         }
         def infixTest(name: Name): Option[(String, Tree => Tree)] = {
           val (newName, runtimeTest) = name match {
@@ -322,7 +322,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             case nme.ZAND => ("takeConditionalAnd", testForBoolean)
             case _        => return None
           }
-          Some(newName, runtimeTest)
+          Some((newName, runtimeTest))
         }
 
         /** The Tree => Tree function in the return is necessary to prevent the original qual

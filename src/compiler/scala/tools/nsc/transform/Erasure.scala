@@ -421,7 +421,7 @@ abstract class Erasure extends AddInterfaces
    */
 
   /** The modifier typer which retypes with erased types. */
-  class Eraser(context: Context) extends Typer(context) {
+  class Eraser(_context: Context) extends Typer(_context) {
     private def safeToRemoveUnbox(cls: Symbol): Boolean =
       (cls == definitions.NullClass) || isBoxedValueClass(cls)
 

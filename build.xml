@@ -1688,7 +1688,9 @@ DISTRIBUTION
     </copy>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/examples"/>
     <copy toDir="${dist.dir}/doc/scala-devel-docs/examples">
-      <fileset dir="${docs.dir}/examples"/>
+      <fileset dir="${docs.dir}/examples">
+        <exclude name="**/*.desired.sha1"/>
+      </fileset>
     </copy>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
     <copy toDir="${dist.dir}/doc/scala-devel-docs/tools">

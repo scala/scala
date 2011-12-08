@@ -22,8 +22,8 @@ import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
-class Global(settings: Settings, reporter: Reporter, projectName: String = "")
-  extends scala.tools.nsc.Global(settings, reporter)
+class Global(settings: Settings, _reporter: Reporter, projectName: String = "")
+  extends scala.tools.nsc.Global(settings, _reporter)
      with CompilerControl
      with RangePositions
      with ContextTrees

@@ -189,7 +189,7 @@ trait NamesDefaults { self: Analyzer =>
         if (pre == NoType) {
           None
         } else {
-          val module = companionModuleOf(baseFun.symbol.owner, context)
+          val module = companionSymbolOf(baseFun.symbol.owner, context)
           if (module == NoSymbol) None
           else {
             val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
@@ -414,7 +414,7 @@ trait NamesDefaults { self: Analyzer =>
     if (i > 0) {
       val defGetterName = nme.defaultGetterName(param.owner.name, i)
       if (param.owner.isConstructor) {
-        val mod = companionModuleOf(param.owner.owner, context)
+        val mod = companionSymbolOf(param.owner.owner, context)
         mod.info.member(defGetterName)
       }
       else {
