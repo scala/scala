@@ -111,7 +111,7 @@ pushJarFiles() {
   local user=$2
   local password=$3
   # TODO - ignore target/ and build/
-  local jarFiles=$(find ${basedir} -name "*.jar")
+  local jarFiles="$(find ${basedir}/lib -name "*.jar") $(find ${basedir}/test/files -name "*.jar")"
   for jar in $jarFiles; do
     local valid=$(isJarFileValid $jar)
     if [[ "$valid" != "OK" ]]; then
@@ -141,7 +141,7 @@ pullJarFile() {
 # Argument 1 - The directory to search for *.desired.sha1 files that need to be retrieved.
 pullJarFiles() {
   local basedir=$1
-  local desiredFiles=$(find ${basedir} -name "*${desired_ext}")
+  local desiredFiles="$(find ${basedir}/lib -name *${desired_ext}) $(find ${basedir}/test/files -name *${desired_ext})"
   for sha in $desiredFiles; do
     jar=${sha%$desired_ext}
     local valid=$(isJarFileValid $jar)
