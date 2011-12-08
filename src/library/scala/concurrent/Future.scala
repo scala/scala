@@ -139,9 +139,6 @@ self =>
   /** Tests whether this `Future`'s timeout has expired.
    *
    *  $futureTimeout
-   *  
-   *  Note that an expired Future may still contain a value, or it may be
-   *  completed with a value.
    */
   def isTimedout: Boolean
   
