@@ -2,7 +2,7 @@ package scala.concurrent
 
 
 
-trait Task[T] {
+trait Task[+T] {
   
   def start(): Unit
   

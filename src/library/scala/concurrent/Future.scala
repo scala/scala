@@ -320,30 +320,31 @@ self =>
   
 }
 
+
 object Future {
   
-  def all[T,Coll[_] <: Traversable[_]](fs: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[Future[T]],T,Coll[T]]): Future[Coll[T]] = {
-    val builder = cbf(fs)
+  def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
+    val builder = cbf(futures)
     val p: Promise[Coll[T]] = executionContext.promise[Coll[T]]
     
-    if (fs.size == 1) fs.head onComplete {
+    if (futures.size == 1) futures.head onComplete {
       case Left(t) => p break t
       case Right(v) => builder += v
         p fulfill builder.result
     } else {
-      val restFutures = all(fs.tail)
-      fs.head onComplete {
+      val restFutures = all(futures.tail)
+      futures.head onComplete {
         case Left(t) => p break t
         case Right(v) => builder += v
-          restFuture onComplete {
+          restFutures onComplete {
             case Left(t) => p break t
             case Right(vs) => for (v <- vs) builder += v
               p fulfill builder.result
           }
       }
     }
+    
     p.future
-
   }
 
 }

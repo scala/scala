@@ -23,10 +23,30 @@ package object concurrent {
   
   lazy val executionContext =
     new default.ExecutionContextImpl
-
+  
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
   }
+  
+  val handledFutureException: PartialFunction[Throwable, Throwable] = {
+    case t: Throwable if isFutureThrowable(t) => t
+  }
+  
+  // TODO rename appropriately and make public
+  private[concurrent] def isFutureThrowable(t: Throwable) = t match {
+    case e: Error => false
+    case t: scala.util.control.ControlThrowable => false
+    case i: InterruptedException => false
+    case _ => true
+  }
+  
+  /* concurrency constructs */
+  
+  def future[T](body: =>T): Future[T] =
+    executionContext future body
+  
+  def promise[T]: Promise[T] =
+    executionContext promise
   
   /** The keyword used to block on a piece of code which potentially blocks.
    *
@@ -60,18 +80,6 @@ package object concurrent {
         case x => x.blockingCall(blockable) // inside an execution context thread
       }
     }
-  }
-  
-  val handledFutureException: PartialFunction[Throwable, Throwable] = {
-    case t: Throwable if isFutureThrowable(t) => t
-  }
-  
-  // TODO rename appropriately and make public
-  private[concurrent] def isFutureThrowable(t: Throwable) = t match {
-    case e: Error => false
-    case t: scala.util.control.ControlThrowable => false
-    case i: InterruptedException => false
-    case _ => true
   }
   
 }

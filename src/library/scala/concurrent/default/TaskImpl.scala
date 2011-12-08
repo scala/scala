@@ -248,6 +248,12 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
     new TaskImpl(this, body)
   }
   
+  def future[T](body: => T): Future[T] = {
+    val t = task(body)
+    t.start()
+    t.future
+  }
+  
   def promise[T]: Promise[T] =
     null
   
