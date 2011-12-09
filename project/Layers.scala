@@ -14,8 +14,6 @@ trait Layers extends Build {
   def forkjoin: Project
   /** Reference to Fast-Java-Bytecode-Generator library */
   def fjbg: Project
-  /** Reference to MSIL generator library */
-  def msil: Project
   /** A setting that adds some external dependencies. */
   def externalDeps: Setting[_]
 
@@ -68,6 +66,9 @@ trait Layers extends Build {
       version := layer,
       scalaSource in Compile <<= (baseDirectory) apply (_ / "src" / "compiler"),
       resourceDirectory in Compile <<= baseDirectory apply (_ / "src" / "compiler"),
+      unmanagedSourceDirectories in Compile <+= (baseDirectory) apply (_ / "src" / "msil"),
+      defaultExcludes := ("tests"),
+      javacOptions ++= Seq("-source", "1.4"),
       defaultExcludes in unmanagedResources := "*.scala",
       resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("compiler.properties"),
       // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
@@ -78,7 +79,7 @@ trait Layers extends Build {
           dirs.descendentsExcept( ("*.xml" | "*.html" | "*.gif" | "*.png" | "*.js" | "*.css" | "*.tmpl" | "*.swf" | "*.properties" | "*.txt"),"*.scala").get
       },
       // TODO - Use depends on *and* SBT's magic dependency mechanisms...
-      unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline, msil).map(exportedProducts in Compile in _).join.map(_.flatten),
+      unmanagedClasspath in Compile <<= Seq(forkjoin, library, fjbg, jline).map(exportedProducts in Compile in _).join.map(_.flatten),
       classpathOptions := ClasspathOptions.manual,
       externalDeps,
       referenceScala

@@ -74,7 +74,7 @@ object ScalaBuild extends Build with Layers {
   )
 
   // Collections of projects to run 'compile' on.
-  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg, msil)
+  lazy val compiledProjects = Seq(quickLib, quickComp, continuationsLibrary, actors, swing, dbc, forkjoin, fjbg)
   // Collection of projects to 'package' and 'publish' together.
   lazy val packagedBinaryProjects = Seq(scalaLibrary, scalaCompiler, swing, dbc, continuationsPlugin, jline, scalap)
   lazy val partestRunProjects = Seq(testsuite, continuationsTestsuite)
@@ -179,17 +179,6 @@ object ScalaBuild extends Build with Layers {
   // Forkjoin backport
   lazy val forkjoin = Project("forkjoin", file(".")) settings(settingOverrides : _*)
 
-  // MSIL code generator
-  // TODO - This probably needs to compile in the layers, but Sabbus
-  // had it building against locker, so we'll do worse and build
-  // build against STARR for now.
-  lazy val msilSettings = settingOverrides ++ Seq(
-                            defaultExcludes := ("tests"),
-                            javacOptions ++= Seq("-source", "1.4"),
-                            STARR                         
-                          )
-  lazy val msil = Project("msil", file(".")) settings(msilSettings: _*)
-
   // --------------------------------------------------------------
   //  The magic kingdom.
   //  Layered compilation of Scala.
@@ -203,7 +192,6 @@ object ScalaBuild extends Build with Layers {
     val library  = file("lib/scala-library.jar")
     val compiler = file("lib/scala-compiler.jar")
     val libJars  = (file("lib") * "*.jar").get filterNot Set(library, compiler)
-    
     ScalaInstance("starr", library, compiler, launcher, libJars: _*)
   }
 
@@ -312,12 +300,12 @@ object ScalaBuild extends Build with Layers {
     quickScalaInstance,
     target <<= (baseDirectory, name) apply (_ / "target" / _)
   )
-  lazy val scalaLibrary = Project("scala-library", file(".")) settings(scalaLibArtifactSettings:_*)
+  lazy val scalaLibrary = Project("scala-library", file(".")) settings(publishSettings:_*) settings(scalaLibArtifactSettings:_*)
 
   // --------------------------------------------------------------
   //  Real Compiler Artifact
   // --------------------------------------------------------------
-  lazy val packageScalaBinTask = Seq(quickComp, fjbg, msil).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
+  lazy val packageScalaBinTask = Seq(quickComp, fjbg).map(p => products in p in Compile).join.map(_.flatten).map(productTaskToMapping)
   lazy val scalaBinArtifactSettings : Seq[Setting[_]] = inConfig(Compile)(Defaults.packageTasks(packageBin, packageScalaBinTask)) ++ Seq(
     name := "scala-compiler",
     crossPaths := false,
@@ -328,7 +316,7 @@ object ScalaBuild extends Build with Layers {
     quickScalaInstance,
     target <<= (baseDirectory, name) apply (_ / "target" / _)
   )
-  lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
+  lazy val scalaCompiler = Project("scala-compiler", file(".")) settings(publishSettings:_*) settings(scalaBinArtifactSettings:_*) dependsOn(scalaLibrary)
   lazy val fullQuickScalaReference = makeScalaReference("pack", scalaLibrary, scalaCompiler, fjbg)
 
   // --------------------------------------------------------------
