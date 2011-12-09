@@ -13,17 +13,24 @@ package scala
 
 
 
-/** This package object contains primitives for parallel programming.
+/** This package object contains primitives for concurrent and parallel programming.
  */
 package object concurrent {
   
-  type ExecutionException = java.util.concurrent.ExecutionException
+  type ExecutionException =    java.util.concurrent.ExecutionException
   type CancellationException = java.util.concurrent.CancellationException
-  type TimeoutException = java.util.concurrent.TimeoutException
+  type TimeoutException =      java.util.concurrent.TimeoutException
   
+  /** A global execution environment for executing lightweight tasks.
+   */
   lazy val executionContext =
     new default.ExecutionContextImpl
   
+  /** A global service for scheduling tasks for execution.
+   */
+  lazy val scheduler =
+    new default.SchedulerImpl
+
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
   }
@@ -83,6 +90,7 @@ package object concurrent {
   }
   
 }
+
 
 
 package concurrent {
