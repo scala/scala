@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# publishes nightly build
+
+[[ $# -eq 2 ]] || {
+  cat <<EOM
+Usage: $0 <scala version> <rsync dest>
+EOM
+  exit 0
+}
+
+[[ -d dists/archives ]] || {
+  echo "Can't find build, has it completed? No directory at dists/archives"
+  exit 1
+}
+
+version="$1"
+rsyncDest="$2"
+
+# should not be hardcoded
+mavenSettings="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
+
+echo "Copying nightly build to $rsyncDest"
+# Archive Scala nightly distribution
+rsync -az dists/archives/ "$rsyncDest/distributions"
+# don't publish docs in 2.8.x
+[[ $version == "2.8.x" ]] || rsync -az build/scaladoc/ "$rsyncDest/docs"
+# sbaz
+[[ -d dists/sbaz ]] && rsync -az dists/sbaz/ "$rsyncDest/sbaz"
+# Deploy the maven artifacts on scala-tools.org
+( cd dists/maven/latest && ant deploy.snapshot -Dsettings.file="$mavenSettings" )
