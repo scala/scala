@@ -1,11 +1,15 @@
-#!/bin/sh -e
+#!/usr/bin/env bash
 #
-# Jenkins should run tools/$0 --publish "$ssh_conn:$nightly_dir"
 
-unset rsyncDest
-if [ "$1" == "--publish" ]; then
-  rsyncDest="$2"
-fi
+[[ $# -gt 0 ]] || {
+  echo "Usage: $0 <version> [publish destination]"
+  echo ""
+  exit 0
+}
+
+version="$1"
+shift
+rsyncDest="$1"
 
 # should not be hardcoded
 mavenSettings="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
@@ -20,10 +24,11 @@ ant docscomp
 if [ -n "$rsyncDest" ]; then
   echo "Copying nightly build to $rsyncDest"
   # Archive Scala nightly distribution
-  # Tailing slash is required, otherwise the directory gets synchronized instead of its content
   rsync -az dists/archives/ "$rsyncDest/distributions"
   # SKIP PUBLISHING DOCS IN 2.8.X BRANCH
-  # rsync -az scala/build/scaladoc/ "$rsyncDest/docs"
+  if [[ $version != "2.8.x" ]]; then
+    rsync -az build/scaladoc/ "$rsyncDest/docs"
+  fi
   rsync -az dists/sbaz/ "$rsyncDest/sbaz"
   # Deploy the maven artifacts on scala-tools.org
   ( cd dists/maven/latest && ant deploy.snapshot -Dsettings.file="$mavenSettings" )
