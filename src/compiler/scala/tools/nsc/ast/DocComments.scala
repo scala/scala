@@ -101,7 +101,7 @@ trait DocComments { self: Global =>
     def getUseCases(dc: DocComment) = {
       for (uc <- dc.useCases; defn <- uc.expandedDefs(site)) yield
         (defn,
-         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn, copyFirstPara = true), sym, site),
+         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn), sym, site),
          uc.pos)
     }
     getDocComment(sym) map getUseCases getOrElse List()

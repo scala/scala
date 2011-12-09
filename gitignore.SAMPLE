@@ -2,8 +2,6 @@
 /.gitignore
 /test/files/.gitignore
 
-/.scala_dependencies
-
 # "a" and "a/" to get both file (i.e. symlink) and folder
 /build
 /build/

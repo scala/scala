@@ -378,15 +378,108 @@ object Test extends Properties("HtmlFactory") {
     true
   }
 
-  property("Use cases should override their original members - valid until signature is added to html") = {
-    createTemplate("SI_5054.scala") match {
+  // A piece of the signature - corresponding to the use case
+  def signature(no: Int, modifier: String) = ("""
+    <li visbl="pub" name="SI_5054_q""" + no + """#test" data-isabs="false">
+      <a id="test():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">""" + modifier + """</span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">test</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">[use case]
+      </p>
+    </li>""").replaceAll("\\s+", "")
+  
+  property("Use cases should override their original members") = {
+    createTemplate("SI_5054_q1.scala") match {
       case node: scala.xml.Node =>
-        node.toString.contains("A simple comment") &&
-        ! node.toString.contains("a lost parameter")
+        node.toString.replaceAll("\\s+","").contains(signature(1, ""))
       case _ => false
     }
   }
 
+  property("Use cases should keep their flags - final should not be lost") = {
+    createTemplate("SI_5054_q2.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.replaceAll("\\s+","").contains(signature(2, "final"))
+      case _ => false
+    }
+  }
+  
+  property("Use cases should keep their flags - implicit should not be lost") = {
+    createTemplate("SI_5054_q3.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.replaceAll("\\s+","").contains(signature(3, "implicit"))
+      case _ => false
+    }
+  }
+
+  property("Use cases should keep their flags - real abstract should not be lost") = {
+    createTemplate("SI_5054_q4.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.replaceAll("\\s+","").contains(signature(4, "abstract"))
+      case _ => false
+    }
+  }
+
+  property("Use cases should keep their flags - traits should not be affected") = {
+    createTemplate("SI_5054_q5.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.replaceAll("\\s+","").contains(signature(5, ""))
+      case _ => false
+    }
+  }
+
+  property("Use cases should keep their flags - traits should not be affected") = {
+    createTemplate("SI_5054_q6.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.replaceAll("\\s+","").contains(signature(6, "abstract"))
+      case _ => false
+    }
+  }
+  
+  val useCaseExplanation = """
+   </li><li visbl="pub" name="SI_5054_q7#test" data-isabs="false">
+      <a id="test():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">test</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">[use case] This takes the implicit value in scope.</p><div class="fullcomment">[use case] <div class="comment cmt"><p>This takes the implicit value in scope.</p><p>Example: <code>test()</code></p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>some integer
+   </p></dd></dl></div>
+    </li><li visbl="pub" name="SI_5054_q7#test" data-isabs="false">
+      <a id="test(Int):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">test</span><span class="params">(<span name="explicit">explicit: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">[use case] This takes the explicit value passed.</p><div class="fullcomment">[use case] <div class="comment cmt"><p>This takes the explicit value passed.</p><p>Example: <code>test(3)</code></p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>some integer
+   </p></dd></dl></div>
+    </li>
+  """.replaceAll("\\s+","")
+ 
+  property("Use case individual signature test") = {
+    createTemplate("SI_5054_q7.scala") match {
+      case node: scala.xml.Node =>
+        node.toString.replaceAll("\\s+","").contains(useCaseExplanation)
+      case _ => false
+    }
+  }
   
   {
     val files = createTemplates("basic.scala")
