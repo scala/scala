@@ -16,9 +16,9 @@ set _LINE_TOOLCP=
 
 if "%1%"=="-toolcp" (
     set _LINE_TOOLCP=%2%
-	shift
-	shift
-	goto another_param
+  shift
+  shift
+  goto another_param
 )
 
 set _LINE_PARAMS=%1
@@ -86,3 +86,4 @@ goto :eof
 
 :end
 @@endlocal
+exit /b %errorlevel%
