@@ -40,7 +40,7 @@ object Test extends App {
 
   def testOnSuccessWhenFailed(): Unit = once {
     done =>
-    val f = future {
+    val f = future[Unit] {
       output(3, "hai world")
       done()
       throw new Exception
@@ -52,7 +52,7 @@ object Test extends App {
 
   def testOnFailure(): Unit = once {
     done =>
-    val f = future {
+    val f = future[Unit] {
       output(4, "hai world")
       throw new Exception
     }
@@ -60,7 +60,7 @@ object Test extends App {
       output(4, "onoes")
       done()
     }
-    f onFailure { _ =>
+    f onFailure { case _ =>
       output(4, "kthxbye")
       done()
     }
@@ -68,7 +68,7 @@ object Test extends App {
 
   def testOnFailureWhenSpecialThrowable(num: Int, cause: Throwable): Unit = once {
     done =>
-    val f = future {
+    val f = future[Unit] {
       output(num, "hai world")
       throw cause
     }
@@ -88,7 +88,7 @@ object Test extends App {
 
   def testOnFailureWhenFutureTimeoutException(): Unit = once {
     done =>
-    val f = future {
+    val f = future[Unit] {
       output(8, "hai world")
       throw new FutureTimeoutException(null)
     }
