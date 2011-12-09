@@ -10,8 +10,7 @@ Usage: $0 <version> [opt opt ...]
   Example:   $0 -Xcheckinit -Ycheck:all
 
 Environment variables:
-
-  EXTRA_TARGETS   Additional ant targets to run after nightly
+  extra_ant_targets   Additional ant targets to run after nightly
 
 EOM
   exit 0
@@ -25,5 +24,5 @@ ant all.clean && ./pull-binary-libs.sh
 
 ant $scalaArgs build-opt &&
 ant $scalaArgs nightly &&
-for target in $EXTRA_TARGETS; do ant $target ; done
+for target in $extra_ant_targets; do ant $target ; done
 # [[ -n "$BUILD_DOCSCOMP" ]] && ant docscomp
