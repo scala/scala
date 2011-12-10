@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # publishes nightly build if $publish_to is set in environment.
+# alternate maven settings.xml file given in $maven_settings.
 #
 
 [[ $# -eq 1 ]] || {
@@ -22,9 +23,13 @@ version="$1"
 # should not be hardcoded
 # adds -Dsettings.file= if fixed path is present 
 mavenSettingsOption () {
-  path="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
-  if [[ -f $path ]]; then
-    echo -Dsettings.file="$path"
+  hardcoded_path="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
+  
+  # environment variable
+  if [[ -n $maven_settings ]]; then
+    echo -Dsettings.file="$maven_settings"
+  elif [[ -f $hardcoded_path ]]; then
+    echo -Dsettings.file="$hardcoded_path"
   fi
 }
 
