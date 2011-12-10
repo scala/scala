@@ -1,30 +1,22 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
-# Usage: get-scala-rev [dir]
-# Figures out current scala revision of an svn checkout or
-# a git-svn mirror (or a git clone.)
+# Usage: get-scala-revision [dir]
+# Figures out current scala revision of a git clone.
 #
 # If no dir is given, current working dir is used.
 
-DIR=""
-if [ $# -eq 0 ]; then
-  DIR=`pwd`
-else
-  DIR=$1
-fi
+# not like releases come out so often that we are duty-bound
+# to recalculate this every time.
+# git merge-base v2.9.1 master
+devbase="d6f3184fc8"
 
-cd $DIR
-
-if [ -d .svn ]; then
-  # 2>&1 to catch also error output (e.g. svn warnings)
-  svn info . 2>&1 | grep ^Revision | sed 's/Revision: //'
-elif [ -d .git ]; then
-  GIT_PAGER=cat
-  # this grabs more than one line because otherwise if you have local
-  # commits which aren't in git-svn it won't see any revision.
-  git log -10 | grep git-svn-id | head -1 | sed 's/[^@]*@\([0-9]*\).*/\1/'
-else
-  echo "${DIR} doesn't appear to be git or svn dir." >&2
-  echo 0
-  exit 1
-fi
+# reimplementing git describe hopefully in a way which works
+# without any particular tags, branches, or recent versions of git.
+# this is supposed to generate
+#     dev-NNNN-g<sha>
+# where NNNN is the number of commits since devbase, which
+# is the merge-base of the most recent release and master.
+# Presently hardcoded to reduce uncertainty, v2.9.1/master.
+commits=$(GIT_PAGER=cat git log --oneline $devbase..HEAD | wc -l)
+sha=$(git log -1 --abbrev-commit --abbrev=7 --format="%h")
+printf "dev-%s-g%s\n" $commits $sha
