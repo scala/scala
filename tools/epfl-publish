@@ -20,7 +20,15 @@ version="$1"
 }
 
 # should not be hardcoded
-mavenSettings="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
+# adds -Dsettings.file= if fixed path is present 
+mavenSettingsOption () {
+  path="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
+  if [[ -f $path ]]; then
+    echo -Dsettings.file="$path"
+  fi
+}
+
+mavenSettings=${maven_settings:-findMavenSettings}
 
 if [[ -z $publish_to ]]; then
   echo "Nothing to publish."
@@ -33,5 +41,5 @@ else
   # sbaz
   [[ -d dists/sbaz ]] && rsync -az dists/sbaz/ "$publish_to/sbaz"
   # Deploy the maven artifacts on scala-tools.org
-  ( cd dists/maven/latest && ant deploy.snapshot -Dsettings.file="$mavenSettings" )
+  ( cd dists/maven/latest && ant deploy.snapshot $(mavenSettingsOption) )
 fi
