@@ -1,5 +1,9 @@
-import scala.concurrent.{ executionContext, FutureTimeoutException, ExecutionException, SyncVar }
-import executionContext._
+
+
+
+import scala.concurrent._
+
+
 
 object Test extends App {
 
@@ -60,9 +64,10 @@ object Test extends App {
       output(4, "onoes")
       done()
     }
-    f onFailure { _ =>
-      output(4, "kthxbye")
-      done()
+    f onFailure {
+      case _ =>
+        output(4, "kthxbye")
+        done()
     }
   }
 

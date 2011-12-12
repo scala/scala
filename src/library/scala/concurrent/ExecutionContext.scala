@@ -12,6 +12,8 @@ trait ExecutionContext {
   
   def execute(runnable: Runnable): Unit
   
+  def execute[U](body: () => U): Unit
+  
   def promise[T]: Promise[T]
   
   def future[T](body: Callable[T]): Future[T] = future(body.call())
@@ -19,7 +21,7 @@ trait ExecutionContext {
   def future[T](body: => T): Future[T]
 
   /** Only callable from the tasks running on the same execution context. */
-  def blockingCall[T](body: Blockable[T]): T
+  def blockingCall[T](timeout: Timeout, body: Blockable[T]): T
   
 }
 

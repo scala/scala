@@ -26,11 +26,6 @@ import scala.collection.generic.CanBuildFrom
 
 /** The trait that represents futures.
  *  
- *  @define futureTimeout
- *  The timeout of the future is:
- *  - if this future was obtained from a task (i.e. by calling `task.future`), the timeout associated with that task
- *  - if this future was obtained from a promise (i.e. by calling `promise.future`), the timeout associated with that promise
- *
  *  @define multipleCallbacks
  *  Multiple callbacks may be registered; there is no guarantee that they will be
  *  executed in a particular order.
@@ -75,8 +70,6 @@ self =>
    *  If the future has already been completed with a value,
    *  this will either be applied immediately or be scheduled asynchronously.
    *  
-   *  Will not be called in case of an exception (this includes the FutureTimeoutException).
-   *  
    *  $multipleCallbacks
    */
   def onSuccess[U](func: T => U): this.type = onComplete {
@@ -94,15 +87,14 @@ self =>
    *  
    *  Will not be called in case that the future is completed with a value.
    *  
-   *  Will be called if the future is completed with a FutureTimeoutException.
-   *  
    *  $multipleCallbacks
    */
   def onFailure[U](callback: PartialFunction[Throwable, U]): this.type = onComplete {
-    case Left(t) if t.isInstanceOf[FutureTimeoutException] || isFutureThrowable(t) => if (callback.isDefinedAt(t)) callback(t)
+    case Left(t) if isFutureThrowable(t) => if (callback.isDefinedAt(t)) callback(t)
     case Right(v) => // do nothing
   }
   
+  /* To be removed
   /** When this future times out, apply the provided function.
    *  
    *  If the future has already timed out,
@@ -114,6 +106,7 @@ self =>
     case Left(te: FutureTimeoutException) => callback(te)
     case Right(v) => // do nothing
   }
+  */
   
   /** When this future is completed, either through an exception, a timeout, or a value,
    *  apply the provided function.
@@ -136,11 +129,13 @@ self =>
    */
   def newPromise[S]: Promise[S] = executionContext promise
   
+  /*
   /** Tests whether this `Future`'s timeout has expired.
    *
    *  $futureTimeout
    */
   def isTimedout: Boolean
+  */
   
   
   /* Projections */
@@ -166,7 +161,6 @@ self =>
       }
       this
     }
-    def isTimedout = self.isTimedout
     def block()(implicit canblock: CanBlock) = try {
       val res = self.block()
       throw noSuchElem(res)
@@ -177,6 +171,7 @@ self =>
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
   }
   
+  /*
   /** A timed out projection of this future.
    *  
    *  The timed out projection is a future holding a value of type `FutureTimeoutException`.
@@ -215,7 +210,7 @@ self =>
     private def noSuchElemThrowable(v: Throwable) =
       new NoSuchElementException("Future.timedout didn't time out. Instead failed with: " + v)
   }
-  
+  */
   
   /* Monadic operations */
   

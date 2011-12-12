@@ -244,6 +244,11 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
     executeTask(action)
   }
   
+  def execute[U](body: () => U) {
+    val action = new RecursiveAction { def compute() { body() } }
+    executeTask(action)
+  }
+  
   def task[T](body: => T): Task[T] = {
     new TaskImpl(this, body)
   }
@@ -255,9 +260,10 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   }
   
   def promise[T]: Promise[T] =
-    null
+    null // TODO
   
-  def blockingCall[T](b: Blockable[T]): T = b match {
+  // TODO fix the timeout
+  def blockingCall[T](timeout: Timeout, b: Blockable[T]): T = b match {
     case fj: TaskImpl[_] if fj.executionContext.pool eq pool =>
       fj.block()
     case _ =>

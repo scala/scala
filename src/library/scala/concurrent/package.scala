@@ -12,6 +12,9 @@ package scala
 
 
 
+import scala.util.{ Timeout, Duration }
+
+
 
 /** This package object contains primitives for parallel programming.
  */
@@ -42,43 +45,38 @@ package object concurrent {
   
   /* concurrency constructs */
   
-  def future[T](body: =>T): Future[T] =
-    executionContext future body
+  def future[T](body: =>T)(implicit execCtx: ExecutionContext = executionContext): Future[T] =
+    execCtx future body
   
-  def promise[T]: Promise[T] =
-    executionContext promise
+  def promise[T](implicit execCtx: ExecutionContext = executionContext): Promise[T] =
+    execCtx promise
   
-  /** The keyword used to block on a piece of code which potentially blocks.
+  /** Used to block on a piece of code which potentially blocks.
    *
-   *  @define mayThrow
+   *  @param body         A piece of code which contains potentially blocking or long running calls.
+   *  
    *  Calling this method may throw the following exceptions:
    *  - CancellationException - if the computation was cancelled
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  object block {
-    
-    /** Blocks on a piece of code.
-     *  
-     *  @param body         A piece of code which contains potentially blocking or long running calls.
-     *  
-     *  $mayThrow
-     */
-    def on[T](body: =>T): T = on(new Blockable[T] {
-      def block()(implicit cb: CanBlock) = body
-    })
-    
-    /** Blocks on a blockable object.
-     *  
-     *  @param blockable    An object with a `block` method which runs potentially blocking or long running calls.
-     *  
-     *  $mayThrow
-     */
-    def on[T](blockable: Blockable[T]): T = {
-      currentExecutionContext.get match {
-        case null => blockable.block()(null) // outside
-        case x => x.blockingCall(blockable) // inside an execution context thread
-      }
+  def block[T](timeout: Timeout)(body: =>T): T = block(timeout, new Blockable[T] {
+    def block()(implicit cb: CanBlock) = body
+  })
+  
+  /** Blocks on a blockable object.
+   *  
+   *  @param blockable    An object with a `block` method which runs potentially blocking or long running calls.
+   *  
+   *  Calling this method may throw the following exceptions:
+   *  - CancellationException - if the computation was cancelled
+   *  - InterruptedException - in the case that a wait within the blockable object was interrupted
+   *  - TimeoutException - in the case that the blockable object timed out
+   */
+  def block[T](timeout: Timeout, blockable: Blockable[T]): T = {
+    currentExecutionContext.get match {
+      case null => blockable.block()(null) // outside - TODO - fix timeout case
+      case x => x.blockingCall(timeout, blockable) // inside an execution context thread
     }
   }
   
