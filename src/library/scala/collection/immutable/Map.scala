@@ -47,6 +47,7 @@ trait Map[A, +B] extends Iterable[(A, B)]
   def withDefault[B1 >: B](d: A => B1): immutable.Map[A, B1] = new Map.WithDefault[A, B1](this, d)
 
   /** The same map with a given default value.
+   *  Note: `get`, `contains`, `iterator`, `keys`, etc are not affected by `withDefaultValue`.
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
    *

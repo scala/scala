@@ -67,4 +67,4 @@ goto end
 
 :end
 if "%OS%"=="Windows_NT" @endlocal
-
+exit /b %errorlevel%
