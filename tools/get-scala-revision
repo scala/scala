@@ -17,6 +17,6 @@ devbase="d6f3184fc8"
 # where NNNN is the number of commits since devbase, which
 # is the merge-base of the most recent release and master.
 # Presently hardcoded to reduce uncertainty, v2.9.1/master.
-commits=$(GIT_PAGER=cat git log --oneline $devbase..HEAD | wc -l)
-sha=$(git log -1 --abbrev-commit --abbrev=7 --format="%h")
-printf "dev-%s-g%s\n" $commits $sha
+commits=$(git --no-pager log --pretty=oneline $devbase..HEAD | wc -l)
+sha=$(git rev-list -n 1 HEAD)
+printf "dev-%s-g%s\n" $commits ${sha:0:7}
