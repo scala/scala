@@ -230,8 +230,8 @@ self =>
     val p = newPromise[U]
     
     onComplete {
-      case Left(t) => if (pf isDefinedAt t) p fulfill pf(t) else p break t
-      case Right(v) => p fulfill v
+      case Left(t) => if (pf isDefinedAt t) p success pf(t) else p failure t
+      case Right(v) => p success v
     }
     
     p.future
@@ -255,8 +255,8 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p break t
-      case Right(v) => p fulfill f(v)
+      case Left(t) => p failure t
+      case Right(v) => p success f(v)
     }
     
     p.future
@@ -273,10 +273,10 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p break t
+      case Left(t) => p failure t
       case Right(v) => f(v) onComplete {
-        case Left(t) => p break t
-        case Right(v) => p fulfill v
+        case Left(t) => p failure t
+        case Right(v) => p success v
       }
     }
     
@@ -303,8 +303,8 @@ self =>
     val p = newPromise[T]
     
     onComplete {
-      case Left(t) => p break t
-      case Right(v) => if (pred(v)) p fulfill v else p break new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
+      case Left(t) => p failure t
+      case Right(v) => if (pred(v)) p success v else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
     }
     
     p.future
@@ -320,18 +320,18 @@ object Future {
     val p: Promise[Coll[T]] = executionContext.promise[Coll[T]]
     
     if (futures.size == 1) futures.head onComplete {
-      case Left(t) => p break t
+      case Left(t) => p failure t
       case Right(v) => builder += v
-        p fulfill builder.result
+        p success builder.result
     } else {
       val restFutures = all(futures.tail)
       futures.head onComplete {
-        case Left(t) => p break t
+        case Left(t) => p failure t
         case Right(v) => builder += v
           restFutures onComplete {
-            case Left(t) => p break t
+            case Left(t) => p failure t
             case Right(vs) => for (v <- vs) builder += v
-              p fulfill builder.result
+              p success builder.result
           }
       }
     }

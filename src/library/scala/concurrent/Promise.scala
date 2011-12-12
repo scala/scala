@@ -38,7 +38,7 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def fulfill(value: T): Unit
+  def success(value: T): Unit
   
   /** Completes the promise with an exception.
    *  
@@ -48,7 +48,7 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def break(t: Throwable): Unit
+  def failure(t: Throwable): Unit
 
   /** Wraps a `Throwable` in an `ExecutionException` if necessary.
    *
