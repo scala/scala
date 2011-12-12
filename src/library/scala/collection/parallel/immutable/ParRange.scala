@@ -88,7 +88,7 @@ self =>
     /* accessors */
 
     override def foreach[U](f: Int => U): Unit = {
-      rangeleft.foreach(f)
+      rangeleft.foreach(f.asInstanceOf[Int => Unit])
       ind = len
     }
 
