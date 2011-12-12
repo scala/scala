@@ -7,8 +7,8 @@
 
 # not like releases come out so often that we are duty-bound
 # to recalculate this every time.
-# git merge-base v2.9.1 master
-devbase="d6f3184fc8"
+# git merge-base v2.8.2 v2.9.1 master
+devbase="df13e31bbb"
 
 # reimplementing git describe hopefully in a way which works
 # without any particular tags, branches, or recent versions of git.
@@ -16,7 +16,9 @@ devbase="d6f3184fc8"
 #     dev-NNNN-g<sha>
 # where NNNN is the number of commits since devbase, which
 # is the merge-base of the most recent release and master.
-# Presently hardcoded to reduce uncertainty, v2.9.1/master.
+# Presently hardcoded to reduce uncertainty, v2.8.2/v2.9.1/master.
 commits=$(git --no-pager log --pretty=oneline $devbase..HEAD | wc -l)
 sha=$(git rev-list -n 1 HEAD)
-printf "dev-%s-g%s\n" $commits ${sha:0:7}
+datestr=$(date "+%Y-%m-%d")
+
+printf "rdev-%s-%s-g%s\n" $commits $datestr ${sha:0:7}
