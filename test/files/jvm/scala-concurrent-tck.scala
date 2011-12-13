@@ -22,6 +22,14 @@ trait TestBase {
     sv.take()
   }
   
+  def assert(cond: => Boolean) {
+    try {
+      Predef.assert(cond)
+    } catch {
+      case e => e.printStackTrace()
+    }
+  }
+
 }
 
 
@@ -181,12 +189,35 @@ trait FutureCombinators extends TestBase {
   // recover: stub
   def testRecoverSuccess(): Unit = once {
     done =>
-    done()
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    } recover {
+      case re: RuntimeException =>
+        "recovered"
+    } onSuccess { x =>
+      done()
+      assert(x == "recovered")
+    } onFailure { case any =>
+      done()
+      assert(false)
+    }
   }
 
   def testRecoverFailure(): Unit = once {
     done =>
-    done()
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    } recover {
+      case te: TimeoutException => "timeout"
+    } onSuccess { x =>
+      done()
+      assert(false)
+    } onFailure { case any =>
+      done()
+      assert(any == cause)
+    }
   }
 
   testMapSuccess()
