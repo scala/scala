@@ -91,7 +91,7 @@ private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
    *  
    *  $promiseCompletion
    */
-  def fulfill(value: T): Unit = {
+  def success(value: T): Unit = {
     val cbs = tryCompleteState(Success(value))
     if (cbs == null)
       throw new IllegalStateException
@@ -109,7 +109,7 @@ private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
    *  
    *  $promiseCompletion
    */
-  def break(t: Throwable): Unit = {
+  def failure(t: Throwable): Unit = {
     val wrapped = wrap(t)
     val cbs = tryCompleteState(Failure(wrapped))
     if (cbs == null)
@@ -260,7 +260,7 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   }
   
   def promise[T]: Promise[T] =
-    null // TODO
+    new PromiseImpl[T](this)
   
   // TODO fix the timeout
   def blockingCall[T](timeout: Timeout, b: Blockable[T]): T = b match {

@@ -3,6 +3,7 @@
 
 import scala.concurrent.{
   Future,
+  Promise,
   TimeoutException,
   SyncVar,
   ExecutionException
@@ -13,6 +14,8 @@ import scala.concurrent.{
 trait TestBase {
   
   def future[T](body: =>T): Future[T]
+  
+  def promise[T]: Promise[T]
   
   def once(body: (() => Unit) => Unit) {
     val sv = new SyncVar[Boolean]
@@ -141,7 +144,25 @@ trait FutureProjections extends TestBase {
 
 
 trait Promises extends TestBase {
-  
+
+  def testSuccess(): Unit = once {
+    done =>
+    val p = promise[Int]
+    val f = p.future
+    
+    f.onSuccess { x =>
+      done()
+      assert(x == 5)
+    } onFailure { case any =>
+      done()
+      assert(false)
+    }
+    
+    p.success(5)
+  }
+
+  testSuccess()
+
 }
 
 
@@ -161,6 +182,8 @@ with Exceptions
   
   def future[T](body: =>T) = scala.concurrent.future(body)
   
+  def promise[T] = scala.concurrent.promise[T]
+
 }
 
 
