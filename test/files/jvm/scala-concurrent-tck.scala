@@ -134,7 +134,73 @@ trait FutureCallbacks extends TestBase {
 
 
 trait FutureCombinators extends TestBase {
-  
+
+  // map: stub
+  def testMapSuccess(): Unit = once {
+    done =>
+    done()
+  }
+
+  def testMapFailure(): Unit = once {
+    done =>
+    done()
+  }
+
+  // flatMap: stub
+  def testFlatMapSuccess(): Unit = once {
+    done =>
+    done()
+  }
+
+  def testFlatMapFailure(): Unit = once {
+    done =>
+    done()
+  }
+
+  // filter: stub
+  def testFilterSuccess(): Unit = once {
+    done =>
+    done()
+  }
+
+  def testFilterFailure(): Unit = once {
+    done =>
+    done()
+  }
+
+  // foreach: stub
+  def testForeachSuccess(): Unit = once {
+    done =>
+    done()
+  }
+
+  def testForeachFailure(): Unit = once {
+    done =>
+    done()
+  }
+
+  // recover: stub
+  def testRecoverSuccess(): Unit = once {
+    done =>
+    done()
+  }
+
+  def testRecoverFailure(): Unit = once {
+    done =>
+    done()
+  }
+
+  testMapSuccess()
+  testMapFailure()
+  testFlatMapSuccess()
+  testFlatMapFailure()
+  testFilterSuccess()
+  testFilterFailure()
+  testForeachSuccess()
+  testForeachFailure()
+  testRecoverSuccess()
+  testRecoverFailure()
+
 }
 
 
