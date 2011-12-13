@@ -12,6 +12,7 @@ import scala.concurrent.future
 import scala.concurrent.promise
 import scala.concurrent.await
 
+import scala.util.Duration
 
 
 trait TestBase {
@@ -320,7 +321,7 @@ trait Blocking extends TestBase {
   def testAwaitSuccess(): Unit = once {
     done =>
     val f = future { 0 }
-    await(0, f)
+    await(Duration(500, "ms"), f)
     done()
   }
   
@@ -331,7 +332,7 @@ trait Blocking extends TestBase {
       throw cause
     }
     try {
-      await(0, f)
+      await(Duration(500, "ms"), f)
       assert(false)
     } catch {
       case t =>
@@ -382,7 +383,7 @@ with FutureProjections
 with Promises
 with Exceptions
 {
-  
+  System.exit(0)
 }
 
 
