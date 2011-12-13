@@ -33,7 +33,7 @@ package object concurrent {
    */
   lazy val scheduler =
     new default.SchedulerImpl
-
+  
   private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
     override protected def initialValue = null
   }

@@ -161,11 +161,15 @@ self =>
       }
       this
     }
-    def await(timeout: Timeout)(implicit canblock: CanBlock) = try {
-      val res = self.await(timeout)
-      throw noSuchElem(res)
-    } catch {
-      case t: Throwable => t
+    def await(timeout: Timeout)(implicit canblock: CanBlock): Throwable = {
+      var t: Throwable = null
+      try {
+        val res = self.await(timeout)
+        t = noSuchElem(res)
+      } catch {
+        case t: Throwable => return t
+      }
+      throw t
     }
     private def noSuchElem(v: T) = 
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)

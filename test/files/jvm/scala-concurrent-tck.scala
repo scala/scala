@@ -268,7 +268,7 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     try {
-      println(await(0, f.failed))
+      await(0, f.failed)
       assert(false)
     } catch {
       case nsee: NoSuchElementException => done()
@@ -280,14 +280,38 @@ trait FutureProjections extends TestBase {
   testFailedSuccessOnComplete()
   testFailedSuccessOnFailure()
   testFailedFailureAwait()
-  //testFailedSuccessAwait()
+  testFailedSuccessAwait()
   
 }
 
 
 trait Blocking extends TestBase {
   
-  // TODO
+  def testAwaitSuccess(): Unit = once {
+    done =>
+    val f = future { 0 }
+    await(0, f)
+    done()
+  }
+  
+  def testAwaitFailure(): Unit = once {
+    done =>
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    }
+    try {
+      await(0, f)
+      assert(false)
+    } catch {
+      case t =>
+        assert(t == cause)
+        done()
+    }
+  }
+  
+  testAwaitSuccess()
+  testAwaitFailure()
   
 }
 
