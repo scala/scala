@@ -122,7 +122,7 @@ private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
     }
   }
   
-  def block()(implicit canblock: scala.concurrent.CanBlock): T = getState match {
+  def await(timeout: Timeout)(implicit canblock: scala.concurrent.CanBlock): T = getState match {
     case Success(res) => res
     case Failure(t)   => throw t
     case _ =>
@@ -196,8 +196,8 @@ private[concurrent] class TaskImpl[T](context: ExecutionContextImpl, body: => T)
   def tryCancel(): Unit =
     tryUnfork()
   
-  def block()(implicit canblock: CanBlock): T = {
-    join()
+  def await(timeout: Timeout)(implicit canblock: CanBlock): T = {
+    join() // TODO handle timeout also
     (updater.get(this): @unchecked) match {
       case Success(r) => r
       case Failure(t) => throw t
@@ -263,16 +263,16 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
     new PromiseImpl[T](this)
   
   // TODO fix the timeout
-  def blockingCall[T](timeout: Timeout, b: Blockable[T]): T = b match {
+  def blockingCall[T](timeout: Timeout, b: Awaitable[T]): T = b match {
     case fj: TaskImpl[_] if fj.executionContext.pool eq pool =>
-      fj.block()
+      fj.await(timeout)
     case _ =>
       var res: T = null.asInstanceOf[T]
       @volatile var blockingDone = false
       // TODO add exception handling here!
       val mb = new ForkJoinPool.ManagedBlocker {
         def block() = {
-          res = b.block()(CanBlockEvidence)
+          res = b.await(timeout)(CanBlockEvidence)
           blockingDone = true
           true
         }

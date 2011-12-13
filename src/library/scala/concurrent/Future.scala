@@ -59,7 +59,7 @@ import scala.collection.generic.CanBuildFrom
  *  f flatMap { (x: Int) => g map { (y: Int) => x + y } }
  *  }}}
  */
-trait Future[+T] extends Blockable[T] {
+trait Future[+T] extends Awaitable[T] {
 self =>
   
   /* Callbacks */
@@ -161,8 +161,8 @@ self =>
       }
       this
     }
-    def block()(implicit canblock: CanBlock) = try {
-      val res = self.block()
+    def await(timeout: Timeout)(implicit canblock: CanBlock) = try {
+      val res = self.await(timeout)
       throw noSuchElem(res)
     } catch {
       case t: Throwable => t

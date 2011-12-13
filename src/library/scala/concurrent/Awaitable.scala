@@ -11,12 +11,13 @@ package scala.concurrent
 
 
 import scala.annotation.implicitNotFound
+import scala.util.Timeout
 
 
 
-trait Blockable[+T] {
-  @implicitNotFound(msg = "Blocking must be done by calling `block on b`, where `b` is the Blockable object.")
-  def block()(implicit canblock: CanBlock): T
+trait Awaitable[+T] {
+  @implicitNotFound(msg = "Waiting must be done by calling `await(timeout) b`, where `b` is the `Awaitable` object.")
+  def await(timeout: Timeout)(implicit canblock: CanBlock): T
 }
 
 

@@ -59,7 +59,7 @@ package object concurrent {
     execCtx promise
   
   /** Used to block on a piece of code which potentially blocks.
-   *
+   *  
    *  @param body         A piece of code which contains potentially blocking or long running calls.
    *  
    *  Calling this method may throw the following exceptions:
@@ -67,23 +67,23 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def block[T](timeout: Timeout)(body: =>T): T = block(timeout, new Blockable[T] {
-    def block()(implicit cb: CanBlock) = body
+  def await[T](timeout: Timeout)(body: =>T): T = await(timeout, new Awaitable[T] {
+    def await(timeout: Timeout)(implicit cb: CanBlock) = body
   })
   
   /** Blocks on a blockable object.
    *  
-   *  @param blockable    An object with a `block` method which runs potentially blocking or long running calls.
+   *  @param awaitable    An object with a `block` method which runs potentially blocking or long running calls.
    *  
    *  Calling this method may throw the following exceptions:
    *  - CancellationException - if the computation was cancelled
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def block[T](timeout: Timeout, blockable: Blockable[T]): T = {
+  def await[T](timeout: Timeout, awaitable: Awaitable[T]): T = {
     currentExecutionContext.get match {
-      case null => blockable.block()(null) // outside - TODO - fix timeout case
-      case x => x.blockingCall(timeout, blockable) // inside an execution context thread
+      case null => awaitable.await(timeout)(null) // outside - TODO - fix timeout case
+      case x => x.blockingCall(timeout, awaitable) // inside an execution context thread
     }
   }
   

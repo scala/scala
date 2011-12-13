@@ -8,14 +8,13 @@ import scala.concurrent.{
   SyncVar,
   ExecutionException
 }
+import scala.concurrent.future
+import scala.concurrent.promise
+import scala.concurrent.await
 
 
 
 trait TestBase {
-  
-  def future[T](body: =>T): Future[T]
-  
-  def promise[T]: Promise[T]
   
   def once(body: (() => Unit) => Unit) {
     val sv = new SyncVar[Boolean]
@@ -206,6 +205,90 @@ trait FutureCombinators extends TestBase {
 
 trait FutureProjections extends TestBase {
   
+  def testFailedFailureOnComplete(): Unit = once {
+    done =>
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    }
+    f.failed onComplete {
+      case Right(t) =>
+        assert(t == cause)
+        done()
+      case Left(t) =>
+        assert(false)
+    }
+  }
+  
+  def testFailedFailureOnSuccess(): Unit = once {
+    done =>
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    }
+    f.failed onSuccess {
+      t =>
+      assert(t == cause)
+      done()
+    }
+  }
+  
+  def testFailedSuccessOnComplete(): Unit = once {
+    done =>
+    val f = future { 0 }
+    f.failed onComplete {
+      case Right(t) =>
+        assert(false)
+      case Left(t) =>
+        assert(t.isInstanceOf[NoSuchElementException])
+        done()
+    }
+  }
+  
+  def testFailedSuccessOnFailure(): Unit = once {
+    done =>
+    val f = future { 0 }
+    f.failed onFailure {
+      case nsee: NoSuchElementException =>
+      done()
+    }
+  }
+  
+  def testFailedFailureAwait(): Unit = once {
+    done =>
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    }
+    assert(await(0, f.failed) == cause)
+    done()
+  }
+  
+  def testFailedSuccessAwait(): Unit = once {
+    done =>
+    val f = future { 0 }
+    try {
+      println(await(0, f.failed))
+      assert(false)
+    } catch {
+      case nsee: NoSuchElementException => done()
+    }
+  }
+  
+  testFailedFailureOnComplete()
+  testFailedFailureOnSuccess()
+  testFailedSuccessOnComplete()
+  testFailedSuccessOnFailure()
+  testFailedFailureAwait()
+  //testFailedSuccessAwait()
+  
+}
+
+
+trait Blocking extends TestBase {
+  
+  // TODO
+  
 }
 
 
@@ -246,10 +329,6 @@ with Promises
 with Exceptions
 {
   
-  def future[T](body: =>T) = scala.concurrent.future(body)
-  
-  def promise[T] = scala.concurrent.promise[T]
-
 }
 
 
