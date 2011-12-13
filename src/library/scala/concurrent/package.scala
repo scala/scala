@@ -55,7 +55,7 @@ package object concurrent {
   def future[T](body: =>T)(implicit execCtx: ExecutionContext = executionContext): Future[T] =
     execCtx future body
   
-  def promise[T](implicit execCtx: ExecutionContext = executionContext): Promise[T] =
+  def promise[T]()(implicit execCtx: ExecutionContext = executionContext): Promise[T] =
     execCtx promise
   
   /** Used to block on a piece of code which potentially blocks.

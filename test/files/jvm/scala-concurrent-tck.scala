@@ -320,7 +320,7 @@ trait Promises extends TestBase {
 
   def testSuccess(): Unit = once {
     done =>
-    val p = promise[Int]
+    val p = promise[Int]()
     val f = p.future
     
     f.onSuccess { x =>
