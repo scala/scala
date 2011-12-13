@@ -186,7 +186,6 @@ trait FutureCombinators extends TestBase {
     done()
   }
 
-  // recover: stub
   def testRecoverSuccess(): Unit = once {
     done =>
     val cause = new RuntimeException

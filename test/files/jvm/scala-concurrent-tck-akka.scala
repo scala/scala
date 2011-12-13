@@ -188,15 +188,37 @@ trait FutureCombinators extends TestBase {
     done()
   }
 
-  // recover: stub
   def testRecoverSuccess(): Unit = once {
     done =>
-    done()
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    } recover {
+      case re: RuntimeException =>
+        "recovered"
+    } onSuccess { case x =>
+      done()
+      assert(x == "recovered")
+    } onFailure { case any =>
+      done()
+      assert(false)
+    }
   }
 
   def testRecoverFailure(): Unit = once {
     done =>
-    done()
+    val cause = new RuntimeException
+    val f = future {
+      throw cause
+    } recover {
+      case te: TimeoutException => "timeout"
+    } onSuccess { case x =>
+      done()
+      assert(false)
+    } onFailure { case any =>
+      done()
+      assert(any == cause)
+    }
   }
 
   testMapSuccess()
