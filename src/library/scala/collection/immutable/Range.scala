@@ -71,18 +71,6 @@ extends collection.AbstractSeq[Int]
 
   def isInclusive = false
 
-  @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
-    if (length > 0) {
-      val last = this.last
-      var i = start
-      while (i != last) {
-        f(i)
-        i += step
-      }
-      f(i)
-    }
-  }
-
   override def length: Int = numRangeElements
   override lazy val last: Int =
     if (length == 0) Nil.last
@@ -94,6 +82,83 @@ extends collection.AbstractSeq[Int]
   final def apply(idx: Int): Int = {
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
     locationAfterN(idx)
+  }
+  
+  /** @note Making foreach run as fast as a while loop is a challenge.
+   *  The key elements which I can observe making a difference are:
+   *
+   *   - the inner loop should be as small as possible
+   *   - the inner loop should be monomorphic
+   *   - the inner loop should perform no boxing and no avoidable tests
+   *
+   *  This is achieved by:
+   *
+   *   - keeping initialization logic out of the inner loop
+   *   - dispatching to custom variations based on initial conditions
+   *   - tricking the compiler into always calling Function1#apply$mcVI$sp
+   *
+   *  The last one is important and less than obvious.  Even when foreach
+   *  was specialized on Unit, only Int => Unit arguments benefited from it.
+   *  Other function types would be accepted, but in the absence of full
+   *  specialization the integer argument was boxed on every call.  For example:
+   *  
+       class A {
+         final def f(x: Int): Int = x + 1
+         // Calls Range.foreach, which calls Function1.apply
+         def g1 = 1 until 100 foreach { x => f(x) }
+         // Calls Range.foreach$mVc$sp, which calls Function1.apply$mcVI$sp
+         def g2 = 1 until 100 foreach { x => f(x) ; () }
+       }
+   *
+   *  However! Since the result of the closure is always discarded, we
+   *  simply cast it to Int => Unit, thereby executing the fast version.
+   *  The seemingly looming ClassCastException can never arrive.
+   */
+  @inline final override def foreach[U](f: Int => U) {
+    if (step < 0) {
+      if (isInclusive) foreachDownIn(f.asInstanceOf[Int => Unit])
+      else foreachDownEx(f.asInstanceOf[Int => Unit])
+    }
+    else {
+      if (isInclusive) foreachUpIn(f.asInstanceOf[Int => Unit])
+      else foreachUpEx(f.asInstanceOf[Int => Unit])
+    }
+  }
+
+  /** !!! These methods must be public or they will not be inlined.
+   *  But they are certainly not intended to be part of the API.
+   *  This collision between inlining requirements and access semantics
+   *  is highly unfortunate and must be resolved.
+   *
+   *  Proposed band-aid: an @internal annotation.
+   */
+  @inline final def foreachDownIn(f: Int => Unit) {
+    var i = start
+    while (i >= end) {
+      f(i)
+      i += step
+    }
+  }
+  @inline final def foreachUpIn(f: Int => Unit) {
+    var i = start
+    while (i <= end) {
+      f(i)
+      i += step
+    }
+  }
+  @inline final def foreachDownEx(f: Int => Unit) {
+    var i = start
+    while (i > end) {
+      f(i)
+      i += step
+    }
+  }
+  @inline final def foreachUpEx(f: Int => Unit) {
+    var i = start
+    while (i < end) {
+      f(i)
+      i += step
+    }
   }
 
   /** Creates a new range containing the first `n` elements of this range.
