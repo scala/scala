@@ -26,7 +26,7 @@ object ShaResolve {
      val files = (dir / "test" / "files" ** "*.desired.sha1") +++ (dir / "lib" ** "*.desired.sha1")
      for {
        (file, name) <- (files x relativeTo(dir)).par
-       uri = name.dropRight(13)       
+       uri = name.dropRight(13).replace('\\', '/')       
        jar = dir / uri
        if !jar.exists || !isValidSha(file)
        sha = getShaFromShafile(file)
