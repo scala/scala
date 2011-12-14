@@ -325,7 +325,7 @@ abstract class UnCurry extends InfoTransform
             case Apply(Apply(TypeApply(Select(tgt, nme.runOrElse), targs), args_scrut), args_pm) if opt.virtPatmat =>
               object noOne extends Transformer {
                 override val treeCopy = newStrictTreeCopier // must duplicate everything
-                val one = tgt.tpe member "caseResult".toTermName
+                val one = tgt.tpe member "one".toTermName
                 override def transform(tree: Tree): Tree = tree match {
                   case Apply(fun, List(a)) if fun.symbol == one =>
                     // blow one's argument away since all we want to know is whether the match succeeds or not
@@ -341,7 +341,7 @@ abstract class UnCurry extends InfoTransform
               object dropMatchResAssign extends Transformer {
                 // override val treeCopy = newStrictTreeCopier // will duplicate below
                 override def transform(tree: Tree): Tree = tree match {
-                  // don't compute the result of the match -- remove the caseResult block, except for the assignment to keepGoing
+                  // don't compute the result of the match -- remove the block for the RHS (emitted by pmgen.one), except for the assignment to keepGoing
                   case Block(List(matchRes, ass@Assign(keepGoingLhs, falseLit)), zero) if keepGoingLhs.symbol eq keepGoing.symbol =>
                     Block(List(ass), zero)
                   case _ =>

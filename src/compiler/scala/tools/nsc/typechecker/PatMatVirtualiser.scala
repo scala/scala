@@ -239,16 +239,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           noFurtherSubPats(EqualityTestTreeMaker(patBinder, patTree, pos))
 
         case Alternative(alts)    =>
-          val altTrees = alts map { alt =>
-            // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
-            // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
-            // `one(x) : T` where x is the binder before this pattern, which will be replaced by the binder for the alternative by TreeMaker.singleBinder below
-            // T is the widened type of the previous binder -- this ascription is necessary to infer a clean type for `or` -- the alternative combinator -- in the presence of existential types
-            // see pos/virtpatmat_exist1.scala
-            combineExtractors(propagateSubstitution(translatePattern(patBinder, alt)), pmgen.one(CODE.REF(patBinder), patBinder.info.widen)) // only RHS of actual case should use caseResult, else the optimized codegen breaks
-          }
-
-          noFurtherSubPats(AlternativesTreeMaker(patBinder, altTrees : _*))
+          noFurtherSubPats(AlternativesTreeMaker(patBinder, alts map (translatePattern(patBinder, _)), alts.head.pos))
 
       /* TODO: Paul says about future version: I think this should work, and always intended to implement if I can get away with it.
           case class Foo(x: Int, y: String)
@@ -277,13 +268,13 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       if (guard == EmptyTree) Nil
       else List(GuardTreeMaker(guard))
 
-    // TODO: 1) if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by pmgen.caseResult),
+    // TODO: 1) if we want to support a generalisation of Kotlin's patmat continue, must not hard-wire lifting into the monad (which is now done by pmgen.one),
     // so that user can generate failure when needed -- use implicit conversion to lift into monad on-demand?
     // to enable this, probably need to move away from Option to a monad specific to pattern-match,
     // so that we can return Option's from a match without ambiguity whether this indicates failure in the monad, or just some result in the monad
     // 2) body.tpe is the type of the body after applying the substitution that represents the solution of GADT type inference
     // need the explicit cast in case our substitutions in the body change the type to something that doesn't take GADT typing into account
-    def translateBody(body: Tree, matchPt: Type): Tree = atPos(body.pos)(pmgen.caseResult(body, body.tpe, matchPt))
+    def translateBody(body: Tree, matchPt: Type): Tree = atPos(body.pos)(pmgen.one(body, body.tpe, matchPt))
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -504,16 +495,8 @@ defined class Foo */
       def treeMaker(patBinderOrCasted: Symbol, pos: Position): TreeMaker = {
         // the extractor call (applied to the binder bound by the flatMap corresponding to the previous (i.e., enclosing/outer) pattern)
         val extractorApply = atPos(pos)(spliceApply(patBinderOrCasted))
-
-        val patTreeLifted =
-          if (resultType.typeSymbol == BooleanClass) pmgen.cond(extractorApply)
-          else extractorApply
-
-        val binder     = freshSym(pos, resultInMonad) // can't simplify this when subPatBinders.isEmpty, since UnitClass.tpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
-        lengthGuard(binder) match {
-          case None           => ExtractorTreeMaker(patTreeLifted, binder, Substitution(subPatBinders, subPatRefs(binder)))
-          case Some(lenGuard) => FilteredExtractorTreeMaker(patTreeLifted, lenGuard, binder, Substitution(subPatBinders, subPatRefs(binder)))
-        }
+        val binder         = freshSym(pos, resultInMonad) // can't simplify this when subPatBinders.isEmpty, since UnitClass.tpe is definitely wrong when isSeq, and resultInMonad should always be correct since it comes directly from the extractor's result type
+        ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder, Substitution(subPatBinders, subPatRefs(binder)))(resultType.typeSymbol == BooleanClass)
       }
 
       override protected def seqTree(binder: Symbol): Tree =
@@ -664,6 +647,9 @@ defined class Foo */
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   trait TreeMakers {
+    def inMatchMonad(tp: Type): Type = appliedType(matchingMonadType, List(tp))
+    lazy val optimizingCodeGen       = matchingMonadType.typeSymbol eq OptionClass
+
     abstract class TreeMaker {
       def substitution: Substitution =
         if (currSub eq null) localSubstitution
@@ -681,20 +667,20 @@ defined class Foo */
       }
       private[this] var currSub: Substitution = null
 
-      def chainBefore(next: Tree): Tree
+      // build Tree that chains `next` after the current extractor
+      def chainBefore(next: Tree, pt: Type): Tree
       def treesToHoist: List[Tree] = Nil
     }
 
     case class SubstOnlyTreeMaker(localSubstitution: Substitution) extends TreeMaker {
-      def chainBefore(next: Tree): Tree = substitution(next)
+      def chainBefore(next: Tree, pt: Type): Tree = substitution(next)
     }
 
     abstract class FunTreeMaker extends TreeMaker {
       val nextBinder: Symbol
-      // wrap a Fun (with binder nextBinder) around the next tree (unless nextBinder == NoSymbol) and perform our substitution
-      protected def wrapFunSubst(next: Tree): Tree
-        = pmgen.fun(nextBinder, substitution(next))
 
+      // for CSE (used iff optimizingCodeGen)
+      // TODO: factor this out into a separate TreeMaker that gets created when reuse is detected -- don't mutate treemakers
       var reused: Boolean = false
       def reusedBinders: List[Symbol] = Nil
       override def treesToHoist: List[Tree] = { import CODE._
@@ -710,28 +696,21 @@ defined class Foo */
       lazy val localSubstitution = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
     }
 
-    abstract class SingleExtractorTreeMaker extends FunTreeMaker {
-      val extractor: Tree
-      // build Tree that chains `next` after the current extractor
-      def chainBefore(next: Tree): Tree =
-        pmgen.flatMap(extractor, wrapFunSubst(next)) setPos extractor.pos
-
-    }
-
     // TODO: in the process of shifting optimized code gen into the treemakers: complete and make it conditional in the same way as is happening in pmgen
     abstract class CondTreeMaker extends FreshFunTreeMaker { import CODE._
       val cond: Tree
       val res: Tree
 
+      // for CSE (used iff optimizingCodeGen)
       // must set reused before!
       override lazy val reusedBinders = if(reused) List(freshSym(pos, BooleanClass.tpe, "rc") setFlag MUTABLE, nextBinder setFlag MUTABLE) else Nil
       def storedCond         = reusedBinders(0)
       def storedRes          = reusedBinders(1)
 
-      def chainBefore(next: Tree): Tree =
+      def chainBefore(next: Tree, pt: Type): Tree =
         if (!reused)
           atPos(pos)(pmgen.flatMapCond(cond, res, nextBinder, nextBinderTp, substitution(next)))
-        else {
+        else { // for CSE (used iff optimizingCodeGen)
           IF (cond) THEN BLOCK(
             storedCond === TRUE,
             storedRes  === res,
@@ -740,6 +719,7 @@ defined class Foo */
         }
     }
 
+    // for CSE (used iff optimizingCodeGen)
     case class ReusingCondTreeMaker(dropped_priors: List[(TreeMaker, Option[TreeMaker])]) extends TreeMaker { import CODE._
       lazy val localSubstitution = {
         val (from, to) = dropped_priors.collect {case (dropped: CondTreeMaker, Some(prior: CondTreeMaker)) => (dropped.nextBinder, REF(prior.storedRes))}.unzip
@@ -747,7 +727,7 @@ defined class Foo */
         oldSubs.foldLeft(Substitution(from, to))(_ >> _)
       }
 
-      def chainBefore(next: Tree): Tree = {
+      def chainBefore(next: Tree, pt: Type): Tree = {
         val cond = REF(dropped_priors.reverse.collectFirst{case (_, Some(ctm: CondTreeMaker)) => ctm}.get.storedCond)
 
         IF (cond) THEN BLOCK(
@@ -763,13 +743,20 @@ defined class Foo */
      * the function's body is determined by the next TreeMaker
      * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
      */
-    case class ExtractorTreeMaker(extractor: Tree, nextBinder: Symbol, localSubstitution: Substitution) extends SingleExtractorTreeMaker {
+    case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol, localSubstitution: Substitution)(extractorReturnsBoolean: Boolean) extends FunTreeMaker {
+      def chainBefore(next: Tree, pt: Type): Tree = atPos(extractor.pos)(
+        if (extractorReturnsBoolean) pmgen.flatMapCond(extractor, CODE.UNIT, nextBinder, nextBinder.info.widen, substitution(condAndNext(next)))
+        else pmgen.flatMap(extractor, pmgen.fun(nextBinder, substitution(condAndNext(next))))
+      )
+
+      private def condAndNext(next: Tree): Tree = extraCond map (pmgen.condOptimized(_, next)) getOrElse next
+
       override def toString = "X"+(extractor, nextBinder)
     }
 
     // TODO: allow user-defined unapplyProduct
     case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree], localSubstitution: Substitution) extends TreeMaker { import CODE._
-      def chainBefore(next: Tree): Tree = {
+      def chainBefore(next: Tree, pt: Type): Tree = {
         val nullCheck = REF(prevBinder) OBJ_NE NULL
         val cond = extraCond match {
           case None => nullCheck
@@ -781,11 +768,6 @@ defined class Foo */
       override def toString = "P"+(prevBinder,  extraCond getOrElse "", localSubstitution)
     }
 
-    case class FilteredExtractorTreeMaker(extractor: Tree, guard: Tree, nextBinder: Symbol, localSubstitution: Substitution) extends FunTreeMaker {
-      def chainBefore(next: Tree): Tree =
-        pmgen.flatMap(extractor, wrapFunSubst(pmgen.condOptimized(guard, next))) setPos extractor.pos
-      override def toString = "FX"+(extractor, guard, nextBinder)
-    }
 
     // need to substitute since binder may be used outside of the next extractor call (say, in the body of the case)
     case class TypeTestTreeMaker(prevBinder: Symbol, nextBinderTp: Type, pos: Position) extends CondTreeMaker {
@@ -814,26 +796,56 @@ defined class Foo */
       override def toString = "ET"+(prevBinder, patTree)
     }
 
-    case class AlternativesTreeMaker(prevBinder: Symbol, alts: Tree*) extends FreshFunTreeMaker {
+    case class AlternativesTreeMaker(prevBinder: Symbol, altss: List[List[TreeMaker]], pos: Position) extends FreshFunTreeMaker {
       val nextBinderTp: Type = prevBinder.info.widen
-      val pos = alts.head.pos
-      def chainBefore(next: Tree): Tree =
-        pmgen.or(wrapFunSubst(next), alts.toList) setPos alts.head.pos
+      private def inlineNext(next: Tree) = {
+        var okToInline = true
+        var sizeBudget = 20  // yep, totally arbitrary!
+        object travOkToInline extends Traverser { override def traverse(tree: Tree): Unit = if (sizeBudget >= 0) { sizeBudget -= 1; tree match {
+          case TypeApply(_, _) | Apply(_, _) | Select(_, _)
+             | Block(_, _) | Assign(_, _) | If(_, _, _) | Typed(_, _) => super.traverse(tree) // these are allowed if their subtrees are
+          case EmptyTree | This(_) | New(_) | Literal(_) | Ident(_)   => // these are always ok
+          case _ if tree.isType                                       => // these are always ok
+          case _                                                      => okToInline = false //; println("not inlining: "+ (tree, tree.getClass))
+        }}}
+        travOkToInline.traverse(next)
+        // println("(okToInline, sizeBudget): "+ (okToInline, sizeBudget))
+        okToInline && sizeBudget > 0 // must be strict comparison
+      }
+      def chainBefore(next: Tree, pt: Type): Tree = { import CODE._
+        atPos(pos)(
+          if (inlineNext(next)) {
+            altss map (altTreeMakers =>
+              combineExtractors(propagateSubstitution(altTreeMakers), next.duplicate, pt) // don't substitute prevBinder to nextBinder, beta-reduce application to prevBinder
+            ) reduceLeft pmgen.typedOrElse(pt)
+          } else {
+            val rest = freshSym(pos, functionType(List(nextBinderTp), inMatchMonad(pt)), "rest")
+            // rest.info.member(nme.apply).withAnnotation(AnnotationInfo(ScalaInlineClass.tpe, Nil, Nil))
+
+            // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
+            // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
+            val combinedAlts = altss map (altTreeMakers =>
+              combineExtractors(propagateSubstitution(altTreeMakers), REF(rest) APPLY (REF(prevBinder)), pt)
+            )
+            BLOCK(
+              VAL(rest) === pmgen.fun(nextBinder, substitution(next)),
+              combinedAlts reduceLeft pmgen.typedOrElse(pt)
+            )
+          }
+        )
+      }
     }
 
-    case class GuardTreeMaker(guardTree: Tree) extends /*SingleExtractor*/TreeMaker {
+    case class GuardTreeMaker(guardTree: Tree) extends TreeMaker {
       val localSubstitution: Substitution = EmptySubstitution
-      // val nextBinder = freshSym(guardTree.pos, UnitClass.tpe)
-      // val extractor = pmgen.guard(guardTree)
-      def chainBefore(next: Tree): Tree = { import CODE._
-        IF (guardTree) THEN next ELSE pmgen.zero
-      }
+      def chainBefore(next: Tree, pt: Type): Tree = pmgen.flatMapGuard(guardTree, next)
       override def toString = "G("+ guardTree +")"
     }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // decisions, decisions
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     object Test {
       var currId = 0
     }
@@ -996,11 +1008,10 @@ defined class Foo */
           case tm@TypeTestTreeMaker(prevBinder, nextBinderTp, _)    => TypeCond(binderToUniqueTree(prevBinder), uniqueTp(nextBinderTp))
           case tm@TypeAndEqualityTestTreeMaker(_, patBinder, pt, _) => TypeAndEqualityCond(binderToUniqueTree(patBinder), uniqueTp(pt))
           case tm@EqualityTestTreeMaker(prevBinder, patTree, _)     => EqualityCond(binderToUniqueTree(prevBinder), unique(patTree))
-          case ExtractorTreeMaker(_, _, _)
+          case ExtractorTreeMaker(_, _, _, _)
              | GuardTreeMaker(_)
              | ProductExtractorTreeMaker(_, Some(_), _)             => Havoc
-          case FilteredExtractorTreeMaker(x, g, nb, subst)          => Havoc
-          case AlternativesTreeMaker(_, _*)                         => Havoc // TODO: can do better here
+          case AlternativesTreeMaker(_, _, _)                       => Havoc // TODO: can do better here
           case SubstOnlyTreeMaker(_)                                => Top
         }, tm)
       }
@@ -1047,7 +1058,7 @@ defined class Foo */
                 yield diff).nonEmpty
         }
 
-        val collapsedTreeMakers = if (sharedPrefix.lengthCompare(1) > 0) { // prefix must be longer than one for the optimization to pay off
+        val collapsedTreeMakers = if (sharedPrefix.nonEmpty) { // even sharing prefixes of length 1 brings some benefit (overhead-percentage for compiler: 26->24%, lib: 19->16%)
           for (test <- sharedPrefix; reusedTest <- test.reuses; if reusedTest.treeMaker.isInstanceOf[FunTreeMaker])
             reusedTest.treeMaker.asInstanceOf[FunTreeMaker].reused = true
           // println("sharedPrefix: "+ sharedPrefix)
@@ -1075,7 +1086,9 @@ defined class Foo */
     // calls propagateSubstitution on the treemakers
     def analyzeCases(prevBinder: Symbol, cases: List[(List[TreeMaker], Tree)], pt: Type): List[(List[TreeMaker], Tree)] = {
       cases foreach { case (pats, _) => propagateSubstitution(pats) }
-      doCSE(prevBinder, cases, pt)
+      if (optimizingCodeGen) {
+        doCSE(prevBinder, cases, pt)
+      } else cases
     }
 
     def combineCases(scrut: Tree, scrutSym: Symbol, cases0: List[(List[TreeMaker], Tree)], pt: Type): Tree = {
@@ -1084,15 +1097,15 @@ defined class Foo */
         if (cases0 nonEmpty) {
           // when specified, need to propagate pt explicitly (type inferencer can't handle it)
           val optPt =
-            if (isFullyDefined(pt)) appliedType(matchingMonadType, List(pt))
+            if (isFullyDefined(pt)) inMatchMonad(pt)
             else NoType
 
           val cases = analyzeCases(scrutSym, cases0, pt)
 
           // map + foldLeft
-          var combinedCases = combineExtractors(cases.head._1, cases.head._2)
+          var combinedCases = combineExtractors(cases.head._1, cases.head._2, pt)
           cases.tail foreach { case (pats, body) =>
-            combinedCases = pmgen.typedOrElse(optPt)(combinedCases, combineExtractors(pats, body))
+            combinedCases = pmgen.typedOrElse(optPt)(combinedCases, combineExtractors(pats, body, pt))
           }
 
           toHoist   = (for ((treeMakers, _) <- cases; tm <- treeMakers; hoisted <- tm.treesToHoist) yield hoisted).toList
@@ -1108,9 +1121,13 @@ defined class Foo */
 
     // combineExtractors changes the current substitution's of the tree makers in `treeMakers`
     // requires propagateSubstitution(treeMakers) has been called
-    def combineExtractors(treeMakers: List[TreeMaker], body: Tree): Tree =
-      treeMakers.foldRight (body) (_ chainBefore _)
+    def combineExtractors(treeMakers: List[TreeMaker], body: Tree, pt: Type): Tree =
+      treeMakers.foldRight (body) (_.chainBefore(_, pt))
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// substitution
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     object Substitution {
       def apply(from: Symbol, to: Tree) = new Substitution(List(from), List(to))
@@ -1137,7 +1154,6 @@ defined class Foo */
     }
 
 
-
     def matchingMonadType: Type
     def typedSubst(tree: Tree, from: List[Symbol], to: List[Tree]): Tree
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x"): Symbol
@@ -1149,18 +1165,11 @@ defined class Foo */
       def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree
       def flatMap(a: Tree, b: Tree): Tree
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree
+      def flatMapGuard(cond: Tree, next: Tree): Tree
       def fun(arg: Symbol, body: Tree): Tree
-      def or(f: Tree, as: List[Tree]): Tree
       def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree
-      def guard(c: Tree): Tree
       def zero: Tree
-      def one(res: Tree): Tree
-      // TODO: defaults in traits + self types == broken?
-      // def guard(c: Tree, then: Tree, tp: Type): Tree
-      // def cond(c: Tree): Tree = cond(c, UNIT, NoType)
-      def cond(c: Tree, then: Tree, tp: Type): Tree
       def condOptimized(c: Tree, then: Tree): Tree
-      def condCast(c: Tree, binder: Symbol, expectedTp: Type): Tree
       def _equals(checker: Tree, binder: Symbol): Tree
       def _asInstanceOf(b: Symbol, tp: Type): Tree
       def mkZero(tp: Type): Tree
@@ -1169,10 +1178,115 @@ defined class Foo */
     def pmgen: AbsCodeGen
   }
 
-  // generate actual trees
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// generate actual trees
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   trait MatchCodeGen extends TreeMakers {
-    def matchingStrategy: Tree
-    def typed(tree: Tree, mode: Int, pt: Type): Tree // implemented in MatchTranslator
+    lazy val pmgen: CommonCodeGen with MatchingStrategyGen with MonadInstGen =
+      if (optimizingCodeGen) (new CommonCodeGen with OptimizedCodeGen {})
+      else (new CommonCodeGen with MatchingStrategyGen with MonadInstGen {})
+
+    import CODE._
+
+    trait MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
+      // methods in MatchingStrategy (the monad companion) -- used directly in translation
+      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutTp, resTp) APPLY (scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
+      // *only* used to wrap the RHS of a body (isDefinedAt synthesis relies on this)
+      def one(res: Tree, bodyPt: Type, matchPt: Type): Tree                       = (matchingStrategy DOT vpmName.one) (_asInstanceOf(res, bodyPt, force = true)) // matchingStrategy.one(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
+      def zero: Tree                                                              = matchingStrategy DOT vpmName.zero                                // matchingStrategy.zero
+      def guard(c: Tree, then: Tree, tp: Type): Tree                              = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard[tp](c, then)
+    }
+
+    trait MonadInstGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
+      // methods in the monad instance -- used directly in translation
+      def flatMap(a: Tree, b: Tree): Tree                             = (a DOT vpmName.flatMap)(b)
+      def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = (genTypeApply(thisCase DOT vpmName.orElse, pt)) APPLY (elseCase)
+
+      // TODO: the trees generated by flatMapCond and flatMapGuard may need to be distinguishable by exhaustivity checking -- they aren't right now
+      def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol,
+                      nextBinderTp: Type, next: Tree): Tree           = flatMap(guard(cond, res, nextBinderTp), fun(nextBinder, next))
+      def flatMapGuard(guardTree: Tree, next: Tree): Tree             = flatMapCond(guardTree, CODE.UNIT, freshSym(guardTree.pos, UnitClass.tpe), UnitClass.tpe, next)
+    }
+
+    // when we know we're targetting Option, do some inlining the optimizer won't do
+    // `o.flatMap(f)` becomes `if(o == None) None else f(o.get)`, similarly for orElse and guard
+    // this is a special instance of the advanced inlining optimization that takes a method call on
+    // an object of a type that only has two concrete subclasses, and inlines both bodies, guarded by an if to distinguish the two cases
+    // this trait overrides ALL of the methods of MatchingStrategyGen with MonadInstGen
+    trait OptimizedCodeGen extends CommonCodeGen with MatchingStrategyGen with MonadInstGen {
+      lazy val zeroSym        = freshSym(NoPosition, optionType(NothingClass.tpe), "zero")
+
+      /** Inline runOrElse and get rid of Option allocations
+       *
+       * runOrElse(scrut: scrutTp)(matcher): resTp = matcher(scrut) getOrElse (throw new MatchError(x))
+       * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
+       * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
+       */
+      @inline private def dontStore(tp: Type) = (tp.typeSymbol eq UnitClass) || (tp.typeSymbol eq NothingClass)
+      lazy val keepGoing = freshSym(NoPosition, BooleanClass.tpe, "keepGoing") setFlag MUTABLE
+      lazy val matchRes  = freshSym(NoPosition, AnyClass.tpe, "matchRes") setFlag MUTABLE
+      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type) = matcher match {
+        case Function(List(x: ValDef), body) =>
+          matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
+          if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
+          BLOCK(
+            VAL(zeroSym)   === REF(NoneModule), // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
+            VAL(x.symbol)  === scrut, // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for x.symbol in body -- the owner structure is repaired by fixerUpper
+            VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
+            VAL(keepGoing) === TRUE,
+            body,
+            IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes)
+          )
+      }
+
+      // only used to wrap the RHS of a body
+      override def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = {
+        BLOCK(
+          if (dontStore(matchPt)) res // runOrElse hasn't been called yet, so matchRes.isMutable is irrelevant, also, tp may be a subtype of resTp used in runOrElse...
+          else (REF(matchRes) === res), // _asInstanceOf(res, tp.widen, force = true)
+          REF(keepGoing) === FALSE,
+          zero // to have a nice lub for lubs -- otherwise we'll get a boxed unit here -- TODO: get rid of all those dangling else zero's
+        )
+      }
+
+      override def zero: Tree = REF(zeroSym)
+
+      // guard is only used by flatMapCond and flatMapGuard, which are overridden
+      override def guard(c: Tree, then: Tree, tp: Type): Tree = throw new NotImplementedError("guard is never called by optimizing codegen")
+
+      override def flatMap(opt: Tree, fun: Tree): Tree = fun match {
+        case Function(List(x: ValDef), body) =>
+          val tp      = inMatchMonad(x.symbol.tpe)
+          val vs      = freshSym(opt.pos, tp, "o")
+          val isEmpty = tp member vpmName.isEmpty
+          val get     = tp member vpmName.get
+          val v       = VAL(vs) === opt
+
+          BLOCK(
+            v,
+            IF (vs DOT isEmpty) THEN zero ELSE typedSubst(body, List(x.symbol), List(vs DOT get)) // must be isEmpty and get as we don't control the target of the call (could be the result of a user-defined extractor)
+          )
+        case _ => println("huh?")
+          (opt DOT vpmName.flatMap)(fun)
+      }
+
+      override def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = {
+        BLOCK(
+          thisCase,
+          IF (REF(keepGoing)) THEN elseCase ELSE zero // leave trailing zero for now, otherwise typer adds () anyway
+        )
+      }
+
+      override def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree =
+        IF (cond) THEN BLOCK(
+          VAL(nextBinder) === res,
+          next
+        ) ELSE zero
+
+      override def flatMapGuard(guardTree: Tree, next: Tree): Tree =
+        IF (guardTree) THEN next ELSE zero
+    }
 
     @inline private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
       if (origTp == null || origTp == NoType) to
@@ -1201,10 +1315,6 @@ defined class Foo */
       }).transform(tree)
     }
 
-    lazy val pmgen: CommonCodeGen with MatchingStrategyGen with MonadInstGen =
-      if (matchingMonadType.typeSymbol eq OptionClass) (new CommonCodeGen with OptimizedCodeGen {})
-      else (new CommonCodeGen with MatchingStrategyGen with MonadInstGen {})
-
     var ctr = 0
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") = {ctr += 1;
       // assert(owner ne null)
@@ -1218,34 +1328,33 @@ defined class Foo */
     }
 
     object vpmName {
-      val caseResult = "caseResult".toTermName
-      val drop       = "drop".toTermName
-      val flatMap    = "flatMap".toTermName
-      val get        = "get".toTermName
-      val guard      = "guard".toTermName
-      val isEmpty    = "isEmpty".toTermName
-      val one        = "one".toTermName
-      val or         = "or".toTermName
-      val orElse     = "orElse".toTermName
-      val outer      = "<outer>".toTermName
-      val runOrElse  = "runOrElse".toTermName
-      val zero       = "zero".toTermName
+      val one       = "one".toTermName
+      val drop      = "drop".toTermName
+      val flatMap   = "flatMap".toTermName
+      val get       = "get".toTermName
+      val guard     = "guard".toTermName
+      val isEmpty   = "isEmpty".toTermName
+      val orElse    = "orElse".toTermName
+      val outer     = "<outer>".toTermName
+      val runOrElse = "runOrElse".toTermName
+      val zero      = "zero".toTermName
 
       def counted(str: String, i: Int) = (str+i).toTermName
       def tupleIndex(i: Int) = ("_"+i).toTermName
     }
 
-    import CODE._
 
     def typesConform(tp: Type, pt: Type) = ((tp eq pt) || (tp <:< pt))
 
     trait CommonCodeGen extends AbsCodeGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
-      def fun(arg: Symbol, body: Tree): Tree          = Function(List(ValDef(arg)), body)
-      def tupleSel(binder: Symbol)(i: Int): Tree      = (REF(binder) DOT vpmName.tupleIndex(i)) // make tree that accesses the i'th component of the tuple referenced by binder
-      def index(tgt: Tree)(i: Int): Tree              = tgt APPLY (LIT(i))
-      def drop(tgt: Tree)(n: Int): Tree               = (tgt DOT vpmName.drop) (LIT(n))
+      def fun(arg: Symbol, body: Tree): Tree           = Function(List(ValDef(arg)), body)
+      def genTypeApply(tfun: Tree, args: Type*): Tree  = if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree)
+      def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT vpmName.tupleIndex(i)) // make tree that accesses the i'th component of the tuple referenced by binder
+      def index(tgt: Tree)(i: Int): Tree               = tgt APPLY (LIT(i))
+      def drop(tgt: Tree)(n: Int): Tree                = (tgt DOT vpmName.drop) (LIT(n))
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
-      def and(a: Tree, b: Tree): Tree                 = a AND b
+      def and(a: Tree, b: Tree): Tree                  = a AND b
+      def condOptimized(c: Tree, then: Tree): Tree     = IF (c) THEN then ELSE zero
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
       def _asInstanceOf(t: Tree, tp: Type, force: Boolean = false): Tree      = { val tpX = repackExistential(tp)
@@ -1281,136 +1390,8 @@ defined class Foo */
       }
     }
 
-    trait MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
-      // methods in MatchingStrategy (the monad companion) -- used directly in translation
-      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutTp, resTp) APPLY (scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
-      def zero: Tree                        = matchingStrategy DOT vpmName.zero                                // matchingStrategy.zero
-      def one(res: Tree): Tree              = one(res, NoType)
-      def one(res: Tree, tp: Type = NoType, oneName: Name = vpmName.one): Tree = genTypeApply(matchingStrategy DOT oneName, tp) APPLY (res) // matchingStrategy.one(res)
-      def or(f: Tree, as: List[Tree]): Tree = (matchingStrategy DOT vpmName.or)((f :: as): _*)                 // matchingStrategy.or(f, as)
-      def guard(c: Tree): Tree              = (matchingStrategy DOT vpmName.guard)(c, UNIT) // matchingStrategy.guard(c, then) -- a user-defined guard
-      // TODO: get rid of the cast when it's unnecessary, but this requires type checking `body` -- maybe this should be one of the optimisations we perform after generating the tree
-      def caseResult(res: Tree, bodyPt: Type, matchPt: Type): Tree = (matchingStrategy DOT vpmName.caseResult) (_asInstanceOf(res, bodyPt, force = true)) // matchingStrategy.caseResult(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
-
-      // an internal guard TODO: use different method call so exhaustiveness can distinguish it from user-defined guards
-      def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = genTypeApply((matchingStrategy DOT vpmName.guard), repackExistential(tp)) APPLY (c, then) // matchingStrategy.guard(c, then)
-      def condCast(c: Tree, binder: Symbol, expectedTp: Type): Tree = cond(c, _asInstanceOf(binder, expectedTp), expectedTp)
-      def condOptimized(c: Tree, then: Tree): Tree                  = IF (c) THEN then ELSE zero
-    }
-
-    trait MonadInstGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
-      // methods in the monad instance -- used directly in translation
-      def flatMap(a: Tree, b: Tree): Tree                                = (a DOT vpmName.flatMap)(b)
-      def flatMapCond(condi: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree =
-        flatMap(cond(condi, res, nextBinderTp), fun(nextBinder, next))
-      def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree    = (genTypeApply(thisCase DOT vpmName.orElse, pt)) APPLY (elseCase)
-    }
-
-    // when we know we're targetting Option, do some inlining the optimizer won't do
-    // `o.flatMap(f)` becomes `if(o == None) None else f(o.get)`, similarly for orElse and guard
-    // this is a special instance of the advanced inlining optimization that takes a method call on
-    // an object of a type that only has two concrete subclasses, and inlines both bodies, guarded by an if to distinguish the two cases
-    trait OptimizedCodeGen extends CommonCodeGen with MatchingStrategyGen with MonadInstGen {
-      override def guard(c: Tree): Tree = condOptimized(c, one(UNIT))
-      override def cond(c: Tree, then: Tree = UNIT, tp: Type = NoType): Tree = condOptimized(c, one(then, repackExistential(tp)))
-
-      lazy val zeroSym        = freshSym(NoPosition, optionType(NothingClass.tpe), "zero")
-      override def zero: Tree = REF(zeroSym)
-      override def one(res: Tree, tp: Type = NoType, oneName: Name = vpmName.one): Tree = Apply(genTypeApply(REF(SomeModule), tp), List(res))
-
-
-      /** Inline runOrElse and get rid of Option allocations
-       *
-       * runOrElse(scrut: scrutTp)(matcher): resTp = matcher(scrut) getOrElse (throw new MatchError(x))
-       * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
-       * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
-       */
-      @inline private def dontStore(tp: Type) = (tp.typeSymbol eq UnitClass) || (tp.typeSymbol eq NothingClass)
-      lazy val keepGoing = freshSym(NoPosition, BooleanClass.tpe, "keepGoing") setFlag MUTABLE
-      lazy val matchRes  = freshSym(NoPosition, AnyClass.tpe, "matchRes") setFlag MUTABLE
-      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type) = matcher match {
-        case Function(List(x: ValDef), body) =>
-          matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
-          if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
-          BLOCK(
-            VAL(zeroSym)   === REF(NoneModule), // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
-            VAL(x.symbol)  === scrut, // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for x.symbol in body -- the owner structure is repaired by fixerUpper
-            VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
-            VAL(keepGoing) === TRUE,
-            body,
-            IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes)
-          )
-      }
-
-      override def caseResult(res: Tree, bodyPt: Type, matchPt: Type): Tree = {
-        BLOCK(
-          if (dontStore(matchPt)) res // runOrElse hasn't been called yet, so matchRes.isMutable is irrelevant, also, tp may be a subtype of resTp used in runOrElse...
-          else (REF(matchRes) === res), // _asInstanceOf(res, tp.widen, force = true)
-          REF(keepGoing) === FALSE,
-          zero // to have a nice lub for lubs -- otherwise we'll get a boxed unit here -- TODO: get rid of all those dangling else zero's
-        )
-      }
-
-      override def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = {
-        BLOCK(
-          thisCase,
-          IF (REF(keepGoing)) THEN elseCase ELSE zero // leave trailing zero for now, otherwise typer adds () anyway
-        )
-      }
-
-      /* TODO: make more efficient --
-      val i = 0
-      while(keepGoing && i < alts.length) {
-        val altOpt = @switch i match { case 0 => alt_0 .... case alts.length-1 => alt_N-1 }
-        if (altOpt ne zero) {
-          val alt = altOpt.get
-          nextBody
-        }
-        i += 1
-      }
-      */
-      override def or(next: Tree, alts: List[Tree]): Tree = {
-        val Function(List(nextVD: ValDef), nextBody) = next
-        val thunks   = (REF(ListModule) DOT List_apply) APPLY (alts map (Function(Nil, _)))
-        val alt      = nextVD.symbol
-        val altTp    = alt.info
-        val altThunk = freshSym(alts.head.pos, functionType(List(), optionType(altTp)), "altThunk")
-        val altOpt   = freshSym(alts.head.pos, optionType(altTp), "altOpt")
-        val altGet   = optionType(altTp) member vpmName.get
-
-        (thunks DOT "dropWhile".toTermName) APPLY (Function(List(ValDef(altThunk)),
-           BLOCK(
-             VAL(altOpt) === (REF(altThunk) APPLY ()),
-             IF (REF(altOpt) OBJ_NE zero) THEN BLOCK(VAL(alt) === (REF(altOpt) DOT altGet), nextBody) ENDIF,
-             REF(keepGoing)
-           )))
-      }
-
-      override def flatMap(opt: Tree, fun: Tree): Tree = fun match {
-        case Function(List(x: ValDef), body) =>
-          val tp      = appliedType(matchingMonadType, List(x.symbol.tpe))
-          val vs      = freshSym(opt.pos, tp, "o")
-          val isEmpty = tp member vpmName.isEmpty
-          val get     = tp member vpmName.get
-          val v       = VAL(vs) === opt
-
-          BLOCK(
-            v,
-            IF (vs DOT isEmpty) THEN zero ELSE typedSubst(body, List(x.symbol), List(vs DOT get)) // must be isEmpty and get as we don't control the target of the call (could be the result of a user-defined extractor)
-          )
-        case _ => println("huh?")
-          (opt DOT vpmName.flatMap)(fun)
-      }
-
-      override def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree =
-        IF (cond) THEN BLOCK(
-          VAL(nextBinder) === res,
-          next
-        ) ELSE zero
-    }
-
-    def genTypeApply(tfun: Tree, args: Type*): Tree                       = if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree)
-    // def genTyped(t: Tree, tp: Type): Tree                                 = if(tp == NoType) t else Typed(t, TypeTree(repackExistential(tp)))
+    def matchingStrategy: Tree
+    def typed(tree: Tree, mode: Int, pt: Type): Tree // implemented in MatchTranslator
   }
 
 
