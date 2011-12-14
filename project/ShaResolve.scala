@@ -4,7 +4,7 @@ import Build._
 import Keys._
 import Project.Initialize
 import scala.collection.{ mutable, immutable }
-
+import scala.collection.parallel.CompositeThrowable
 
 
 
@@ -22,7 +22,7 @@ object ShaResolve {
     pullBinaryLibs in ThisBuild <<= (baseDirectory, binaryLibCache, streams) map resolveLibs
   )
 
-  def resolveLibs(dir: File, cacheDir: File, s: TaskStreams): Unit = {
+  def resolveLibs(dir: File, cacheDir: File, s: TaskStreams): Unit = loggingParallelExceptions(s) {
      val files = (dir / "test" / "files" ** "*.desired.sha1") +++ (dir / "lib" ** "*.desired.sha1")
      for {
        (file, name) <- (files x relativeTo(dir)).par
@@ -31,6 +31,13 @@ object ShaResolve {
        if !jar.exists || !isValidSha(file)
        sha = getShaFromShafile(file)
      } pullFile(jar, sha + "/" + uri, cacheDir, s)
+  }
+
+  @inline final def loggingParallelExceptions[U](s: TaskStreams)(f: => U): U = try f catch {
+    case t: CompositeThrowable =>
+      s.log.error("Error during parallel execution, GET READ FOR STACK TRACES!!")
+      t.throwables foreach (t2 => s.log.trace(t2))
+      throw t
   }
 
   def getShaFromShafile(file: File): String = (IO read file split "\\s" headOption) getOrElse error("No SHA found for " + file)
