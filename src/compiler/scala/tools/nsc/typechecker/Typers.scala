@@ -3223,9 +3223,19 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             val owntype = elimAnonymousClass(owntype0)
             if (needAdapt) cases1 = cases1 map (adaptCase(_, owntype))
 
-            val translated = (new MatchTranslator(this)).translateMatch(selector1, cases1, owntype)
-
-            typed1(translated, mode, WildcardType) setType owntype // TODO: get rid of setType owntype -- it should all typecheck
+            (new MatchTranslator(this)).translateMatch(selector1, cases1, owntype) match {
+              case Block(vd :: Nil, tree@Match(selector, cases)) =>
+                val selector1 = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
+                var cases1 = typedCases(tree, cases, packCaptured(selector1.tpe.widen), pt)
+                val (owntype, needAdapt) = ptOrLub(cases1 map (_.tpe))
+                if (needAdapt)
+                  cases1 = cases1 map (adaptCase(_, owntype))
+                typed(Block(vd :: Nil, treeCopy.Match(tree, selector1, cases1) setType owntype))
+              case translated =>
+                // TODO: get rid of setType owntype -- it should all typecheck
+                // must call typed, not typed1, or we overflow the stack when emitting switches
+                typed(translated, mode, WildcardType) setType owntype
+            }
           }
         }
       }
