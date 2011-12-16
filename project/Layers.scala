@@ -57,7 +57,7 @@ trait Layers extends Build {
       // TODO - Allow other scalac option settings.
       scalacOptions in Compile <++= (scalaSource in Compile) map (src => Seq("-sourcepath", src.getAbsolutePath)),
       classpathOptions := ClasspathOptions.manual,
-      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("library.properties"),
+      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner, streams) map Release.generatePropertiesFile("library.properties"),
       referenceScala
     )
 
@@ -70,7 +70,7 @@ trait Layers extends Build {
       defaultExcludes := ("tests"),
       javacOptions ++= Seq("-source", "1.4"),
       defaultExcludes in unmanagedResources := "*.scala",
-      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner) map Release.generatePropertiesFile("compiler.properties"),
+      resourceGenerators in Compile <+= (baseDirectory, version, resourceManaged, gitRunner, streams) map Release.generatePropertiesFile("compiler.properties"),
       // Note, we might be able to use the default task, but for some reason ant was filtering files out.  Not sure what's up, but we'll
       // stick with that for now.
       unmanagedResources in Compile <<= (baseDirectory) map {

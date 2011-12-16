@@ -66,11 +66,11 @@ object Release {
 
   /** This generates a  properties file, if it does not already exist, with the maximum lastmodified timestamp
     * of any source file. */
-  def generatePropertiesFile(name: String)(baseDirectory: File, version: String, dir: File, git: GitRunner): Seq[File] = {
+  def generatePropertiesFile(name: String)(baseDirectory: File, version: String, dir: File, git: GitRunner, s: TaskStreams): Seq[File] = {
     // TODO - We can probably clean this up by moving caching bits elsewhere perhaps....
     val target = dir / name        
     // TODO - Regenerate on triggers, like recompilation or something...
-    val fullVersion = makeFullVersionString(baseDirectory, version, git)
+    val fullVersion = makeFullVersionString(baseDirectory, version, git, s)
     def hasSameVersion: Boolean = {
       val props = new java.util.Properties
       val in = new java.io.FileInputStream(target)
@@ -88,26 +88,28 @@ object Release {
   def makePropertiesFile(f: File, version: String): Unit =
     IO.write(f, "version.number = "+version+"\ncopyright.string = Copyright 2002-2011, LAMP/EPFL")
 
-  def makeFullVersionString(baseDirectory: File, baseVersion: String, git: GitRunner) = baseVersion+"."+getGitRevision(baseDirectory, git)+"."+currentDay
+  def makeFullVersionString(baseDirectory: File, baseVersion: String, git: GitRunner, s: TaskStreams) = baseVersion+"."+getGitRevision(baseDirectory, git, currentDay, s)
 
   // TODO - do we want this in the build number?
   def currentDay = (new java.text.SimpleDateFormat("yyyyMMdd'T'HHmmss")) format (new java.util.Date)
 
-  def getGitRevision(baseDirectory: File, git: GitRunner) = {
-    object outputStealer extends sbt.Logger {
-      private val stdout = new StringBuilder
-      private val stderr = new StringBuilder
-      def log (level: Level.Value, message: ⇒ String): Unit = stdout append message
-      def success (message: ⇒ String): Unit = ()
-      def trace (t: ⇒ Throwable): Unit = ()
-      def stdoutString = stdout.toString
+
+
+  def getGitRevision(baseDirectory: File, git: GitRunner, date: String, s: TaskStreams) = {
+
+    val mergeBase = {
+      // TODO - Cache this value.
+      // git("merge-base","v2.8.2","v2.9.1","master")(baseDirectory, s.log)
+      "df13e31bbb"
     }
-    val result = try {
-      git("describe", "HEAD", "--abbrev=7", "--match", "dev")(baseDirectory, outputStealer)
-    } catch {
-      case t => git("describe", "HEAD", "--abbrev=7", "--always")(baseDirectory, outputStealer)
-    }
-    result.trim
+    // current commit sha
+    val sha =
+     git("rev-list", "-n", "1", "HEAD")(baseDirectory, s.log)
+    
+    val commits =
+     git("--no-pager", "log", "--pretty=oneline", mergeBase +"..HEAD")(baseDirectory, s.log) split "[\r\n]+" size
+    
+    "rdev-%d-%s-g%s" format (commits, date, sha.substring(0,7))
   }
   
 }
