@@ -6,17 +6,17 @@ trait SI_5054_q7 {
    *
    * @param lost a lost parameter
    * @return some integer
-   * @usecase def test(): Int
+   * @usecase def test1(): Int
    *
    * This takes the implicit value in scope.
    *
-   * Example: `test()`
+   * Example: `test1()`
    * 
-   * @usecase def test(explicit: Int): Int
+   * @usecase def test2(explicit: Int): Int
    * 
    * This takes the explicit value passed.
    *
-   * Example: `test(3)`
+   * Example: `test2(3)`
    */
   def test(implicit lost: Int): Int
 }
