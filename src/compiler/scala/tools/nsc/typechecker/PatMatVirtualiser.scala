@@ -1196,12 +1196,19 @@ defined class Foo */
 
       emitSwitch(scrut, scrutSym, casesUnOpt, pt).getOrElse{
         var toHoist = List[Tree]()
-        val matcher =
+        val (matcher, hasDefault) =
           if (casesUnOpt nonEmpty) {
             // when specified, need to propagate pt explicitly (type inferencer can't handle it)
             val optPt =
               if (isFullyDefined(pt)) inMatchMonad(pt)
               else NoType
+
+            // do this check on casesUnOpt, since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
+            // exhaustivity and reachability must be checked before optimization as well
+            val hasDefault = casesUnOpt.nonEmpty && {
+              val nonTrivLast = casesUnOpt.last
+              nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
+            }
 
             val cases =
               if (optimizingCodeGen) optimizeCases(scrutSym, casesUnOpt, pt)
@@ -1212,11 +1219,10 @@ defined class Foo */
 
             toHoist = (for (treeMakers <- cases; tm <- treeMakers; hoisted <- tm.treesToHoist) yield hoisted).toList
 
-            pmgen.fun(scrutSym, combinedCases)
-          } else pmgen.zero
+            (pmgen.fun(scrutSym, combinedCases), hasDefault)
+          } else (pmgen.zero, false)
 
-
-        val expr = pmgen.runOrElse(scrut, matcher, scrutSym.info, if (isFullyDefined(pt)) pt else NoType)
+        val expr = pmgen.runOrElse(scrut, matcher, scrutSym.info, if (isFullyDefined(pt)) pt else NoType, hasDefault)
         if (toHoist isEmpty) expr
         else Block(toHoist, expr)
       }
@@ -1307,7 +1313,7 @@ defined class Foo */
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodeGen { import CODE.UNIT
-      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree
+      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean): Tree
       def flatMap(a: Tree, b: Tree): Tree
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree
       def flatMapGuard(cond: Tree, next: Tree): Tree
@@ -1338,7 +1344,7 @@ defined class Foo */
 
     trait MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       // methods in MatchingStrategy (the monad companion) -- used directly in translation
-      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type): Tree = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutTp, resTp) APPLY (scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
+      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean): Tree = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutTp, resTp) APPLY (scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
       // *only* used to wrap the RHS of a body (isDefinedAt synthesis relies on this)
       def one(res: Tree, bodyPt: Type, matchPt: Type): Tree                       = (matchingStrategy DOT vpmName.one) (_asInstanceOf(res, bodyPt, force = true)) // matchingStrategy.one(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
       def zero: Tree                                                              = matchingStrategy DOT vpmName.zero                                // matchingStrategy.zero
@@ -1373,7 +1379,7 @@ defined class Foo */
       @inline private def dontStore(tp: Type) = (tp.typeSymbol eq UnitClass) || (tp.typeSymbol eq NothingClass)
       lazy val keepGoing = freshSym(NoPosition, BooleanClass.tpe, "keepGoing") setFlag MUTABLE
       lazy val matchRes  = freshSym(NoPosition, AnyClass.tpe, "matchRes") setFlag MUTABLE
-      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type) = matcher match {
+      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean) = matcher match {
         case Function(List(x: ValDef), body) =>
           matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
           if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
@@ -1383,7 +1389,8 @@ defined class Foo */
             VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
             VAL(keepGoing) === TRUE,
             body,
-            IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes)
+            if(hasDefault) REF(matchRes)
+            else (IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes))
           )
       }
 
