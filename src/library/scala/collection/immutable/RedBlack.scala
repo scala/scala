@@ -40,6 +40,7 @@ abstract class RedBlack[A] extends Serializable {
     def upd[B1 >: B](k: A, v: B1): Tree[B1]
     def del(k: A): Tree[B]
     def smallest: NonEmpty[B]
+    def greatest: NonEmpty[B]
     def rng(from: Option[A], until: Option[A]): Tree[B]
     def first : A
     def last : A
@@ -148,6 +149,7 @@ abstract class RedBlack[A] extends Serializable {
     }
 
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
+    def greatest: NonEmpty[B] = if (right.isEmpty) this else right.greatest
 
     def toStream: Stream[(A,B)] = iterator.toStream
 
@@ -262,6 +264,7 @@ abstract class RedBlack[A] extends Serializable {
     def upd[B](k: A, v: B): Tree[B] = RedTree(k, v, Empty, Empty)
     def del(k: A): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
+    def greatest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def iterator: Iterator[(A, Nothing)] = Iterator.empty
     def toStream: Stream[(A,Nothing)] = Stream.empty
 

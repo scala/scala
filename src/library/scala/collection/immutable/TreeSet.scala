@@ -53,6 +53,11 @@ class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
 
   override def stringPrefix = "TreeSet"
 
+  override def head = t.smallest.key
+  override def headOption = if (t.isEmpty) None else Some(head)
+  override def last = t.greatest.key
+  override def lastOption = if (t.isEmpty) None else Some(last)
+
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
   def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)

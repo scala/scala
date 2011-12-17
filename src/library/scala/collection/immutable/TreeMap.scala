@@ -71,6 +71,17 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
   override def lastKey = t.last
   override def compare(k0: A, k1: A): Int = ordering.compare(k0, k1)
 
+  override def head = {
+    val smallest = t.smallest
+    (smallest.key, smallest.value)
+  }
+  override def headOption = if (t.isEmpty) None else Some(head)
+  override def last = {
+    val greatest = t.greatest
+    (greatest.key, greatest.value)
+  }
+  override def lastOption = if (t.isEmpty) None else Some(last)
+
   /** A factory to create empty maps of the same type of keys.
    */
   override def empty: TreeMap[A, B] = TreeMap.empty[A, B](ordering)
