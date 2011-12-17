@@ -82,6 +82,9 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
   }
   override def lastOption = if (t.isEmpty) None else Some(last)
 
+  override def tail = new TreeMap(size - 1, tree.delete(firstKey))
+  override def init = new TreeMap(size - 1, tree.delete(lastKey))
+
   /** A factory to create empty maps of the same type of keys.
    */
   override def empty: TreeMap[A, B] = TreeMap.empty[A, B](ordering)
