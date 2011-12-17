@@ -255,7 +255,7 @@ abstract class RedBlack[A] extends Serializable {
     }
     def first = if (left .isEmpty) key else left.first
     def last  = if (right.isEmpty) key else right.last
-    def count = 1 + left.count + right.count
+    val count = 1 + left.count + right.count
   }
   case object Empty extends Tree[Nothing] {
     def isEmpty = true
