@@ -149,11 +149,9 @@ abstract class RedBlack[A] extends Serializable {
 
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
 
-    def toStream: Stream[(A,B)] =
-      left.toStream ++ Stream((key,value)) ++ right.toStream
+    def toStream: Stream[(A,B)] = iterator.toStream
 
-    def iterator: Iterator[(A, B)] =
-      left.iterator ++ Iterator.single(Pair(key, value)) ++ right.iterator
+    def iterator: Iterator[(A, B)] = new TreeIterator(this)
 
     def foreach[U](f: (A, B) => U) {
       left foreach f
@@ -286,6 +284,34 @@ abstract class RedBlack[A] extends Serializable {
                            override val right: Tree[B]) extends NonEmpty[B] {
     def isBlack = true
   }
+
+  private[this] class TreeIterator[B](tree: NonEmpty[B]) extends Iterator[(A, B)] {
+    import collection.mutable.Stack
+
+    override def hasNext: Boolean = !next.isEmpty
+
+    override def next: (A, B) = next match {
+      case Empty =>
+        throw new NoSuchElementException("next on empty iterator")
+      case tree: NonEmpty[B] =>
+        val result = (tree.key, tree.value)
+        addLeftMostBranchToPath(tree.right)
+        next = if (path.isEmpty) Empty else path.pop()
+        result
+    }
+
+    @annotation.tailrec
+    private[this] def addLeftMostBranchToPath(tree: Tree[B]) {
+      tree match {
+        case Empty =>
+        case tree: NonEmpty[B] =>
+          path.push(tree)
+          addLeftMostBranchToPath(tree.left)
+      }
+    }
+
+    private[this] val path: Stack[NonEmpty[B]] = Stack.empty[NonEmpty[B]]
+    addLeftMostBranchToPath(tree)
+    private[this] var next: Tree[B] = path.pop()
+  }
 }
-
-
