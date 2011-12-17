@@ -107,7 +107,7 @@ class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
    *
    *  @return the new iterator
    */
-  def iterator: Iterator[A] = tree.toStream.iterator map (_._1)
+  def iterator: Iterator[A] = tree.iterator map (_._1)
 
   override def toStream: Stream[A] = tree.toStream map (_._1)
 
