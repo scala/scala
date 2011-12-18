@@ -108,6 +108,19 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
   override def takeRight(n: Int) = drop(size - n)
   override def splitAt(n: Int) = (take(n), drop(n))
 
+  private[this] def countWhile(p: ((A, B)) => Boolean): Int = {
+    var result = 0
+    val it = iterator
+    while (it.hasNext && p(it.next)) result += 1
+    result
+  }
+  override def dropWhile(p: ((A, B)) => Boolean) = drop(countWhile(p))
+  override def takeWhile(p: ((A, B)) => Boolean) = take(countWhile(p))
+  override def span(p: ((A, B)) => Boolean) = {
+    val n = countWhile(p)
+    (take(n), drop(n))
+  }
+
   /** A factory to create empty maps of the same type of keys.
    */
   override def empty: TreeMap[A, B] = TreeMap.empty[A, B](ordering)

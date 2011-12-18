@@ -84,6 +84,19 @@ class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
   override def takeRight(n: Int) = drop(size - n)
   override def splitAt(n: Int) = (take(n), drop(n))
 
+  private[this] def countWhile(p: A => Boolean): Int = {
+    var result = 0
+    val it = iterator
+    while (it.hasNext && p(it.next)) result += 1
+    result
+  }
+  override def dropWhile(p: A => Boolean) = drop(countWhile(p))
+  override def takeWhile(p: A => Boolean) = take(countWhile(p))
+  override def span(p: A => Boolean) = {
+    val n = countWhile(p)
+    (take(n), drop(n))
+  }
+
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
   def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
