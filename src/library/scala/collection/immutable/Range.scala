@@ -51,15 +51,35 @@ extends collection.AbstractSeq[Int]
 {
   override def par = new ParRange(this)
 
-  // This member is designed to enforce conditions:
-  //   (step != 0) && (length <= Int.MaxValue),
-  // but cannot be evaluated eagerly because we have a pattern where ranges
-  // are constructed like:    "x to y by z"
-  // The "x to y" piece should not trigger an exception. So the calculation
-  // is delayed, which means it will not fail fast for those cases where failing
-  // was correct.
-  private lazy val numRangeElements: Int = Range.count(start, end, step, isInclusive)
+  private def gap           = end.toLong - start.toLong
+  private def isExact       = gap % step == 0
+  private def hasStub       = isInclusive || !isExact
+  private def longLength    = gap / step + ( if (hasStub) 1 else 0 )
 
+  // Check cannot be evaluated eagerly because we have a pattern where
+  // ranges are constructed like: "x to y by z" The "x to y" piece
+  // should not trigger an exception. So the calculation is delayed,
+  // which means it will not fail fast for those cases where failing was
+  // correct.
+  override final val isEmpty = (
+       (start > end && step > 0)
+    || (start < end && step < 0)
+    || (start == end && !isInclusive)
+  )
+  final val numRangeElements: Int = {
+    if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
+    else if (isEmpty) 0
+    else {
+      val len = longLength
+      if (len > scala.Int.MaxValue) -1
+      else len.toInt
+    }
+  }
+  final val lastElement     = start + (numRangeElements - 1) * step
+  final val terminalElement = start + numRangeElements * step
+  
+  override def last = if (isEmpty) Nil.last else lastElement
+  
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
@@ -71,93 +91,46 @@ extends collection.AbstractSeq[Int]
 
   def isInclusive = false
 
-  override def length: Int = numRangeElements
-  override lazy val last: Int =
-    if (length == 0) Nil.last
-    else locationAfterN(length - 1)
-
-  final override def isEmpty = length == 0
-
-  @inline
-  final def apply(idx: Int): Int = {
-    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
-    locationAfterN(idx)
+  override def size = length
+  override def length = if (numRangeElements < 0) fail() else numRangeElements
+  
+  private def description = "%d %s %d by %s".format(start, if (isInclusive) "to" else "until", end, step)
+  private def fail() = throw new IllegalArgumentException(description + ": seqs cannot contain more than Int.MaxValue elements.")
+  private def validateMaxLength() {
+    if (numRangeElements < 0)
+      fail()
   }
   
-  /** @note Making foreach run as fast as a while loop is a challenge.
-   *  The key elements which I can observe making a difference are:
-   *
-   *   - the inner loop should be as small as possible
-   *   - the inner loop should be monomorphic
-   *   - the inner loop should perform no boxing and no avoidable tests
-   *
-   *  This is achieved by:
-   *
-   *   - keeping initialization logic out of the inner loop
-   *   - dispatching to custom variations based on initial conditions
-   *   - tricking the compiler into always calling Function1#apply$mcVI$sp
-   *
-   *  The last one is important and less than obvious.  Even when foreach
-   *  was specialized on Unit, only Int => Unit arguments benefited from it.
-   *  Other function types would be accepted, but in the absence of full
-   *  specialization the integer argument was boxed on every call.  For example:
-   *  
-       class A {
-         final def f(x: Int): Int = x + 1
-         // Calls Range.foreach, which calls Function1.apply
-         def g1 = 1 until 100 foreach { x => f(x) }
-         // Calls Range.foreach$mVc$sp, which calls Function1.apply$mcVI$sp
-         def g2 = 1 until 100 foreach { x => f(x) ; () }
-       }
-   *
-   *  However! Since the result of the closure is always discarded, we
-   *  simply cast it to Int => Unit, thereby executing the fast version.
-   *  The seemingly looming ClassCastException can never arrive.
-   */
-  @inline final override def foreach[U](f: Int => U) {
-    if (step < 0) {
-      if (isInclusive) foreachDownIn(f.asInstanceOf[Int => Unit])
-      else foreachDownEx(f.asInstanceOf[Int => Unit])
-    }
-    else {
-      if (isInclusive) foreachUpIn(f.asInstanceOf[Int => Unit])
-      else foreachUpEx(f.asInstanceOf[Int => Unit])
+  def validateRangeBoundaries(f: Int => Any): Boolean = {
+    validateMaxLength()
+
+    start != Int.MinValue || end != Int.MinValue || {
+      var count = 0
+      var num = start
+      while (count < numRangeElements) {
+        f(num)
+        count += 1
+        num += step
+      }
+      false
     }
   }
 
-  /** !!! These methods must be public or they will not be inlined.
-   *  But they are certainly not intended to be part of the API.
-   *  This collision between inlining requirements and access semantics
-   *  is highly unfortunate and must be resolved.
-   *
-   *  Proposed band-aid: an @internal annotation.
-   */
-  @inline final def foreachDownIn(f: Int => Unit) {
-    var i = start
-    while (i >= end) {
-      f(i)
-      i += step
-    }
+  @inline final def apply(idx: Int): Int = {
+    validateMaxLength()
+    if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
+    else start + (step * idx)
   }
-  @inline final def foreachUpIn(f: Int => Unit) {
-    var i = start
-    while (i <= end) {
-      f(i)
-      i += step
-    }
-  }
-  @inline final def foreachDownEx(f: Int => Unit) {
-    var i = start
-    while (i > end) {
-      f(i)
-      i += step
-    }
-  }
-  @inline final def foreachUpEx(f: Int => Unit) {
-    var i = start
-    while (i < end) {
-      f(i)
-      i += step
+  
+  @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
+    if (validateRangeBoundaries(f)) {
+      var i = start
+      val terminal = terminalElement
+      val step = this.step
+      while (i != terminal) {
+        f(i)
+        i += step
+      }
     }
   }
 
@@ -169,8 +142,8 @@ extends collection.AbstractSeq[Int]
    *  @return   a new range consisting of `n` first elements.
    */
   final override def take(n: Int): Range = (
-    if (n <= 0 || length == 0) newEmptyRange(start)
-    else if (n >= length) this
+    if (n <= 0 || isEmpty) newEmptyRange(start)
+    else if (n >= numRangeElements) this
     else new Range.Inclusive(start, locationAfterN(n - 1), step)
   )
 
@@ -182,8 +155,8 @@ extends collection.AbstractSeq[Int]
    *  @return   a new range consisting of all the elements of this range except `n` first elements.
    */
   final override def drop(n: Int): Range = (
-    if (n <= 0 || length == 0) this
-    else if (n >= length) newEmptyRange(end)
+    if (n <= 0 || isEmpty) this
+    else if (n >= numRangeElements) newEmptyRange(end)
     else copy(locationAfterN(n), end, step)
   )
 
@@ -218,7 +191,7 @@ extends collection.AbstractSeq[Int]
     var current = start
     var counted = 0
 
-    while (counted < length && p(current)) {
+    while (counted < numRangeElements && p(current)) {
       counted += 1
       current += step
     }
@@ -226,7 +199,7 @@ extends collection.AbstractSeq[Int]
   }
   // Tests whether a number is within the endpoints, without testing
   // whether it is a member of the sequence (i.e. when step > 1.)
-  private def isWithinBoundaries(elem: Int) = (length > 0) && (
+  private def isWithinBoundaries(elem: Int) = !isEmpty && (
     (step > 0 && start <= elem && elem <= last ) ||
     (step < 0 &&  last <= elem && elem <= start)
   )
@@ -255,21 +228,21 @@ extends collection.AbstractSeq[Int]
    *
    *  $doesNotUseBuilders
    */
-  final override def takeRight(n: Int): Range = drop(length - n)
+  final override def takeRight(n: Int): Range = drop(numRangeElements - n)
 
   /** Creates a new range consisting of the initial `length - n` elements of the range.
    *
    *  $doesNotUseBuilders
    */
-  final override def dropRight(n: Int): Range = take(length - n)
+  final override def dropRight(n: Int): Range = take(numRangeElements - n)
 
   /** Returns the reverse of this range.
    *
    *  $doesNotUseBuilders
    */
   final override def reverse: Range =
-    if (length > 0) new Range.Inclusive(last, start, -step)
-    else this
+    if (isEmpty) this
+    else new Range.Inclusive(last, start, -step)
 
   /** Make range inclusive.
    */
@@ -280,10 +253,9 @@ extends collection.AbstractSeq[Int]
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
 
   final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
-    val len = length
-    if (len == 0) 0
-    else if (len == 1) head
-    else (len.toLong * (head + last) / 2).toInt
+    if (isEmpty) 0
+    else if (numRangeElements == 1) head
+    else (numRangeElements.toLong * (head + last) / 2).toInt
   }
 
   override def toIterable = this
@@ -293,7 +265,7 @@ extends collection.AbstractSeq[Int]
   override def equals(other: Any) = other match {
     case x: Range =>
       (x canEqual this) && (length == x.length) && (
-        (length == 0) ||                      // all empty sequences are equal
+        isEmpty ||                            // all empty sequences are equal
         (start == x.start && last == x.last)  // same length and same endpoints implies equality
       )
     case _ =>
@@ -304,7 +276,7 @@ extends collection.AbstractSeq[Int]
    */
 
   override def toString() = {
-    val endStr = if (length > Range.MAX_PRINT) ", ... )" else ")"
+    val endStr = if (numRangeElements > Range.MAX_PRINT) ", ... )" else ")"
     take(Range.MAX_PRINT).mkString("Range(", ", ", endStr)
   }
 }
@@ -415,3 +387,4 @@ object Range {
 //      super.foreach(f)
   }
 }
+ 
