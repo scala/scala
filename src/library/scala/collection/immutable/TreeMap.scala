@@ -85,6 +85,29 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
   override def tail = new TreeMap(size - 1, tree.delete(firstKey))
   override def init = new TreeMap(size - 1, tree.delete(lastKey))
 
+  override def drop(n: Int) = {
+    if (n <= 0) this
+    else if (n >= size) empty
+    else from(tree.nth(n).key)
+  }
+
+  override def take(n: Int) = {
+    if (n <= 0) empty
+    else if (n >= size) this
+    else until(tree.nth(n).key)
+  }
+
+  override def slice(from: Int, until: Int) = {
+    if (until <= from) empty
+    else if (from <= 0) take(until)
+    else if (until >= size) drop(from)
+    else range(tree.nth(from).key, tree.nth(until).key)
+  }
+
+  override def dropRight(n: Int) = take(size - n)
+  override def takeRight(n: Int) = drop(size - n)
+  override def splitAt(n: Int) = (take(n), drop(n))
+
   /** A factory to create empty maps of the same type of keys.
    */
   override def empty: TreeMap[A, B] = TreeMap.empty[A, B](ordering)

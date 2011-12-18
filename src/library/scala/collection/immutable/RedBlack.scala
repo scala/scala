@@ -45,6 +45,7 @@ abstract class RedBlack[A] extends Serializable {
     def first : A
     def last : A
     def count : Int
+    protected[immutable] def nth(n: Int): NonEmpty[B]
   }
   abstract class NonEmpty[+B] extends Tree[B] with Serializable {
     def isEmpty = false
@@ -256,6 +257,11 @@ abstract class RedBlack[A] extends Serializable {
     def first = if (left .isEmpty) key else left.first
     def last  = if (right.isEmpty) key else right.last
     val count = 1 + left.count + right.count
+    protected[immutable] def nth(n: Int) = {
+      if (n < left.count) left.nth(n)
+      else if (n > left.count) right.nth(n - left.count - 1)
+      else this
+    }
   }
   case object Empty extends Tree[Nothing] {
     def isEmpty = true
@@ -274,6 +280,7 @@ abstract class RedBlack[A] extends Serializable {
     def first = throw new NoSuchElementException("empty map")
     def last = throw new NoSuchElementException("empty map")
     def count = 0
+    protected[immutable] def nth(n: Int) = throw new NoSuchElementException("empty map")
   }
   case class RedTree[+B](override val key: A,
                          override val value: B,
