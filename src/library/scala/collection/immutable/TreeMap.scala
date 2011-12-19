@@ -61,7 +61,7 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack.Tree[A, B])(implicit va
 
   def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
 
-  protected val tree: RedBlack.Tree[A, B] = if (size == 0) Empty() else t
+  protected val tree: RedBlack.Tree[A, B] = if (size == 0) Empty.empty else t
 
   override def rangeImpl(from : Option[A], until : Option[A]): TreeMap[A,B] = {
     val ntree = tree.range(from,until)

@@ -103,7 +103,7 @@ class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
 
   def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
 
-  protected val tree: RedBlack.Tree[A, Unit] = if (size == 0) Empty() else t
+  protected val tree: RedBlack.Tree[A, Unit] = if (size == 0) Empty.empty else t
 
   private def newSet(s: Int, t: RedBlack.Tree[A, Unit]) = new TreeSet[A](s, t)
 
