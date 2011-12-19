@@ -84,12 +84,7 @@ object Test extends Properties("HtmlFactory") {
     val html = scala.stripSuffix(".scala") + ".html"
     createTemplates(scala)(html)
   }
-  
-  /**
-   * See checkTextOnly(scalaFile: String, checks: List[String])
-   */
-  def checkText1(scalaFile: String, check: String, debug: Boolean = true): Boolean = checkText(scalaFile, List(check), debug)
-  
+    
   /**
    * This tests the text without the markup - ex:
    * 
@@ -111,20 +106,31 @@ object Test extends Properties("HtmlFactory") {
    * 
    * NOTE: Comparison is done ignoring all whitespace
    */
-  def checkText(scalaFile: String, checks: List[String], debug: Boolean = true): Boolean = {
+  def checkText(scalaFile: String, debug: Boolean = true)(checks: (Option[String], String, Boolean)*): Boolean = {
     val htmlFile = scalaFile.stripSuffix(".scala") + ".html"    
-    val htmlText = createTemplates(scalaFile)(htmlFile).text.replace('→',' ').replaceAll("\\s+","")
+    val htmlAllFiles = createTemplates(scalaFile)
     var result = true
     
-    for (check <- checks) {
-    	val checkText = check.replace('→',' ').replaceAll("\\s+","")
-    	val checkValue = htmlText.contains(checkText)
-    	if (debug && (!checkValue)) {
-    		Console.err.println("Check failed: ")
-    		Console.err.println("HTML: " + htmlText)
-    		Console.err.println("Check: " + checkText)
-    	}
-  		result &&= checkValue 
+    for ((file, check, expected) <- checks) {
+      // resolve the file to be checked
+      val fileName = file match {
+        case Some(file) => 
+          if (file endsWith ".html")
+            file
+          else
+            file + ".html"
+        case None =>
+          htmlFile
+      }
+      val fileText = htmlAllFiles(htmlFile).text.replace('→',' ').replaceAll("\\s+","")
+      val checkText = check.replace('→',' ').replaceAll("\\s+","")
+      val checkValue = fileText.contains(checkText) == expected
+      if (debug && (!checkValue)) {
+        Console.err.println("Check failed: ")
+        Console.err.println("HTML: " + fileText)
+        Console.err.println("Check: " + checkText)
+      }
+      result &&= checkValue 
     }
     
     result
@@ -428,37 +434,40 @@ object Test extends Properties("HtmlFactory") {
   }
   
   property("Use cases should override their original members") =
-     checkText1("SI_5054_q1.scala", """def test(): Int""") &&
-     !checkText1("SI_5054_q1.scala", """def test(implicit lost: Int): Int""")
-  
+     checkText("SI_5054_q1.scala")(
+       (None,"""def test(): Int""", true),
+       (None,"""def test(implicit lost: Int): Int""", true)
+     )
 
   property("Use cases should keep their flags - final should not be lost") = 
-    checkText1("SI_5054_q2.scala", """final def test(): Int""")
+    checkText("SI_5054_q2.scala")((None, """final def test(): Int""", true))
   
   property("Use cases should keep their flags - implicit should not be lost") = 
-    checkText1("SI_5054_q3.scala", """implicit def test(): Int""")
+    checkText("SI_5054_q3.scala")((None, """implicit def test(): Int""", true))
 
   property("Use cases should keep their flags - real abstract should not be lost") = 
-    checkText1("SI_5054_q4.scala", """abstract def test(): Int""")
+    checkText("SI_5054_q4.scala")((None, """abstract def test(): Int""", true))
 
   property("Use cases should keep their flags - traits should not be affected") = 
-    checkText1("SI_5054_q5.scala", """def test(): Int""")
+    checkText("SI_5054_q5.scala")((None, """def test(): Int""", true))
 
   property("Use cases should keep their flags - traits should not be affected") = 
-    checkText1("SI_5054_q6.scala", """abstract def test(): Int""")
+    checkText("SI_5054_q6.scala")((None, """abstract def test(): Int""", true))
    
   property("Use case individual signature test") = 
-    checkText("SI_5054_q7.scala", List( 
-        """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""",
-        """abstract def test1(): Int [use case] This takes the implicit value in scope."""))
+    checkText("SI_5054_q7.scala")(
+      (None, """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""", true),
+      (None, """abstract def test1(): Int [use case] This takes the implicit value in scope.""", true)
+    )
 
   property("Display correct \"Definition classes\"") = 
-    checkText1("SI_5287.scala", 
-        """def method(): Int
+    checkText("SI_5287.scala")( 
+      (None,
+          """def method(): Int
            [use case] The usecase explanation
            [use case] The usecase explanation
-           Definition Classes SI_5287 SI_5287_B SI_5287_A""", debug=true) 
-           // explanation appears twice, as small comment and full comment
+           Definition Classes SI_5287 SI_5287_B SI_5287_A""", true)
+    )      // the explanation appears twice, as small comment and full comment           
   
   {
     val files = createTemplates("basic.scala")
