@@ -111,9 +111,9 @@ object Test extends Properties("HtmlFactory") {
     val htmlAllFiles = createTemplates(scalaFile)
     var result = true
     
-    for ((file, check, expected) <- checks) {
+    for ((fileHint, check, expected) <- checks) {
       // resolve the file to be checked
-      val fileName = file match {
+      val fileName = fileHint match {
         case Some(file) => 
           if (file endsWith ".html")
             file
@@ -122,7 +122,7 @@ object Test extends Properties("HtmlFactory") {
         case None =>
           htmlFile
       }
-      val fileText = htmlAllFiles(htmlFile).text.replace('→',' ').replaceAll("\\s+","")
+      val fileText = htmlAllFiles(fileName).text.replace('→',' ').replaceAll("\\s+","")
       val checkText = check.replace('→',' ').replaceAll("\\s+","")
       val checkValue = fileText.contains(checkText) == expected
       if (debug && (!checkValue)) {
@@ -436,7 +436,7 @@ object Test extends Properties("HtmlFactory") {
   property("Use cases should override their original members") =
      checkText("SI_5054_q1.scala")(
        (None,"""def test(): Int""", true),
-       (None,"""def test(implicit lost: Int): Int""", true)
+       (None,"""def test(implicit lost: Int): Int""", false)
      )
 
   property("Use cases should keep their flags - final should not be lost") = 
@@ -444,7 +444,7 @@ object Test extends Properties("HtmlFactory") {
   
   property("Use cases should keep their flags - implicit should not be lost") = 
     checkText("SI_5054_q3.scala")((None, """implicit def test(): Int""", true))
-
+ 
   property("Use cases should keep their flags - real abstract should not be lost") = 
     checkText("SI_5054_q4.scala")((None, """abstract def test(): Int""", true))
 
@@ -469,6 +469,119 @@ object Test extends Properties("HtmlFactory") {
            Definition Classes SI_5287 SI_5287_B SI_5287_A""", true)
     )      // the explanation appears twice, as small comment and full comment           
   
+    
+  property("Correct comment inheritance for overriding") = 
+    checkText("implicit-inheritance-override.scala")(
+      (Some("Base"), 
+       """def function[T](arg1: T, arg2: String): Double
+          The base comment.
+          The base comment. And another sentence...
+          T the type of the first argument
+          arg1 The T term comment
+          arg2 The string comment
+          returns The return comment
+          """, true),
+      (Some("DerivedA"), 
+       """def function[T](arg1: T, arg2: String): Double
+          Overriding the comment, the params and returns comments should stay the same.
+          Overriding the comment, the params and returns comments should stay the same.
+          T the type of the first argument
+          arg1 The T term comment
+          arg2 The string comment
+          returns The return comment
+          """, true),
+      (Some("DerivedB"), 
+       """def function[T](arg1: T, arg2: String): Double
+          T the type of the first argument
+          arg1 The overridden T term comment
+          arg2 The overridden string comment
+          returns The return comment
+          """, true),
+      (Some("DerivedC"), 
+       """def function[T](arg1: T, arg2: String): Double
+          T the type of the first argument
+          arg1 The T term comment
+          arg2 The string comment
+          returns The overridden return comment
+          """, true),
+      (Some("DerivedD"), 
+       """def function[T](arg1: T, arg2: String): Double
+          T The overriden type parameter comment
+          arg1 The T term comment
+          arg2 The string comment
+          returns The return comment
+          """, true)
+    )
+    
+  for (useCaseFile <- List("UseCaseInheritance", "UseCaseOverrideInheritance")) {
+    property("Correct comment inheritance for usecases") = 
+      checkText("implicit-inheritance-usecase.scala")(
+        (Some(useCaseFile), 
+         """def missing_arg[T](arg1: T): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The T term comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def missing_targ(arg1: Int, arg2: String): Double
+            [use case]
+            [use case]
+            arg1 The T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_arg1[T](implicit arg1: T, arg2: String): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The overridden T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_targ[T](implicit arg1: T, arg2: String): Double
+            [use case]
+            [use case]
+            T The overridden type parameter comment
+            arg1 The T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_return[T](implicit arg1: T, arg2: String): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The T term comment
+            arg2 The string comment
+            returns The overridden return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def added_arg[T](implicit arg1: T, arg2: String, arg3: Float): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The T term comment
+            arg2 The string comment
+            arg3 The added float comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_comment[T](implicit arg1: T, arg2: String): Double
+            [use case] The overridden comment.
+            [use case] The overridden comment.
+            T The type parameter
+            arg1 The T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true)
+      )    
+  }
+  
+    
   {
     val files = createTemplates("basic.scala")
     //println(files)
