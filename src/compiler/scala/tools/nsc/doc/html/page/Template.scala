@@ -339,6 +339,17 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     }
 
+    val fullSignature: Seq[scala.xml.Node] = mbr match {
+      case ntme: NonTemplateMemberEntity => ntme.useCaseOf match { 
+        case None =>
+          NodeSeq.Empty
+        case Some(fullSig) => {
+          <p> Full Signature: <br/> { memberToHtml(fullSig) } </p>          
+        }
+      }
+      case _ => NodeSeq.Empty
+    }
+    
     val selfType: Seq[scala.xml.Node] = mbr match {
       case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty && !isReduced) =>
         <dt>Self Type</dt>
@@ -458,7 +469,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     }
     // end attributes block vals ---
 
-    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment
+    val attributesInfo = attributes ++ definitionClasses ++ selfType ++ annotations ++ deprecation ++ migration ++ sourceLink ++ mainComment ++ fullSignature 
     val attributesBlock =
       if (attributesInfo.isEmpty)
         NodeSeq.Empty
