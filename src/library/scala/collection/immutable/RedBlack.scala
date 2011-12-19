@@ -18,8 +18,6 @@ package immutable
 @SerialVersionUID(8691885935445612921L)
 abstract class RedBlack[A] extends Serializable {
 
-  implicit val ordering: Ordering[A]
-
   private def blacken[B](t: Tree[B]): Tree[B] = t match {
     case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
     case t => t
@@ -30,18 +28,18 @@ abstract class RedBlack[A] extends Serializable {
   abstract class Tree[+B] extends Serializable {
     def isEmpty: Boolean
     def isBlack: Boolean
-    def lookup(x: A): Tree[B]
-    def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
-    def delete(k: A): Tree[B] = blacken(del(k))
-    def range(from: Option[A], until: Option[A]): Tree[B] = blacken(rng(from, until))
+    def lookup(x: A)(implicit ordering: Ordering[A]): Tree[B]
+    def update[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[B1] = blacken(upd(k, v))
+    def delete(k: A)(implicit ordering: Ordering[A]): Tree[B] = blacken(del(k))
+    def range(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[B] = blacken(rng(from, until))
     def foreach[U](f: (A, B) =>  U)
     def toStream: Stream[(A,B)]
     def iterator: Iterator[(A, B)]
-    def upd[B1 >: B](k: A, v: B1): Tree[B1]
-    def del(k: A): Tree[B]
+    def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[B1]
+    def del(k: A)(implicit ordering: Ordering[A]): Tree[B]
     def smallest: NonEmpty[B]
     def greatest: NonEmpty[B]
-    def rng(from: Option[A], until: Option[A]): Tree[B]
+    def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[B]
     def first : A
     def last : A
     def count : Int
@@ -53,7 +51,7 @@ abstract class RedBlack[A] extends Serializable {
     def value: B
     def left: Tree[B]
     def right: Tree[B]
-    def lookup(k: A): Tree[B] =
+    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[B] =
       if (ordering.lt(k, key)) left.lookup(k)
       else if (ordering.lt(key, k)) right.lookup(k)
       else this
@@ -73,14 +71,14 @@ abstract class RedBlack[A] extends Serializable {
       case _ =>
         mkTree(isBlack, x, xv, a, r)
     }
-    def upd[B1 >: B](k: A, v: B1): Tree[B1] = {
+    def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[B1] = {
       if (ordering.lt(k, key)) balanceLeft(isBlack, key, value, left.upd(k, v), right)
       else if (ordering.lt(key, k)) balanceRight(isBlack, key, value, left, right.upd(k, v))
       else mkTree(isBlack, k, v, left, right)
     }
     // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
     // http://www.cse.unsw.edu.au/~dons/data/RedBlackTree.html
-    def del(k: A): Tree[B] = {
+    def del(k: A)(implicit ordering: Ordering[A]): Tree[B] = {
       def balance(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
         case (RedTree(y, yv, a, b), RedTree(z, zv, c, d)) =>
           RedTree(x, xv, BlackTree(y, yv, a, b), BlackTree(z, zv, c, d))
@@ -162,7 +160,7 @@ abstract class RedBlack[A] extends Serializable {
       right foreach f
     }
 
-    override def rng(from: Option[A], until: Option[A]): Tree[B] = {
+    override def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[B] = {
       if (from == None && until == None) return this
       if (from != None && ordering.lt(key, from.get)) return right.rng(from, until);
       if (until != None && (ordering.lt(until.get,key) || !ordering.lt(key,until.get)))
@@ -266,9 +264,9 @@ abstract class RedBlack[A] extends Serializable {
   case object Empty extends Tree[Nothing] {
     def isEmpty = true
     def isBlack = true
-    def lookup(k: A): Tree[Nothing] = this
-    def upd[B](k: A, v: B): Tree[B] = RedTree(k, v, Empty, Empty)
-    def del(k: A): Tree[Nothing] = this
+    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[Nothing] = this
+    def upd[B](k: A, v: B)(implicit ordering: Ordering[A]): Tree[B] = RedTree(k, v, Empty, Empty)
+    def del(k: A)(implicit ordering: Ordering[A]): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def greatest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def iterator: Iterator[(A, Nothing)] = Iterator.empty
@@ -276,7 +274,7 @@ abstract class RedBlack[A] extends Serializable {
 
     def foreach[U](f: (A, Nothing) => U) {}
 
-    def rng(from: Option[A], until: Option[A]) = this
+    def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]) = this
     def first = throw new NoSuchElementException("empty map")
     def last = throw new NoSuchElementException("empty map")
     def count = 0
