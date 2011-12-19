@@ -16,7 +16,7 @@ package immutable
  *  @since 2.3
  */
 @SerialVersionUID(8691885935445612921L)
-abstract class RedBlack extends Serializable {
+object RedBlack extends Serializable {
 
   private def blacken[A, B](t: Tree[A, B]): Tree[A, B] = t match {
     case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
