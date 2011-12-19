@@ -18,7 +18,7 @@ package immutable
 @SerialVersionUID(8691885935445612921L)
 abstract class RedBlack[A] extends Serializable {
 
-  def isSmaller(x: A, y: A): Boolean
+  implicit val ordering: Ordering[A]
 
   private def blacken[B](t: Tree[B]): Tree[B] = t match {
     case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
@@ -54,8 +54,8 @@ abstract class RedBlack[A] extends Serializable {
     def left: Tree[B]
     def right: Tree[B]
     def lookup(k: A): Tree[B] =
-      if (isSmaller(k, key)) left.lookup(k)
-      else if (isSmaller(key, k)) right.lookup(k)
+      if (ordering.lt(k, key)) left.lookup(k)
+      else if (ordering.lt(key, k)) right.lookup(k)
       else this
     private[this] def balanceLeft[B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[B1], d: Tree[B1])/*: NonEmpty[B1]*/ = l match {
       case RedTree(y, yv, RedTree(x, xv, a, b), c) =>
@@ -74,8 +74,8 @@ abstract class RedBlack[A] extends Serializable {
         mkTree(isBlack, x, xv, a, r)
     }
     def upd[B1 >: B](k: A, v: B1): Tree[B1] = {
-      if (isSmaller(k, key)) balanceLeft(isBlack, key, value, left.upd(k, v), right)
-      else if (isSmaller(key, k)) balanceRight(isBlack, key, value, left, right.upd(k, v))
+      if (ordering.lt(k, key)) balanceLeft(isBlack, key, value, left.upd(k, v), right)
+      else if (ordering.lt(key, k)) balanceRight(isBlack, key, value, left, right.upd(k, v))
       else mkTree(isBlack, k, v, left, right)
     }
     // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
@@ -143,8 +143,8 @@ abstract class RedBlack[A] extends Serializable {
       }
       // RedBlack is neither A : Ordering[A], nor A <% Ordered[A]
       k match {
-        case _ if isSmaller(k, key) => delLeft
-        case _ if isSmaller(key, k) => delRight
+        case _ if ordering.lt(k, key) => delLeft
+        case _ if ordering.lt(key, k) => delRight
         case _ => append(left, right)
       }
     }
@@ -164,8 +164,8 @@ abstract class RedBlack[A] extends Serializable {
 
     override def rng(from: Option[A], until: Option[A]): Tree[B] = {
       if (from == None && until == None) return this
-      if (from != None && isSmaller(key, from.get)) return right.rng(from, until);
-      if (until != None && (isSmaller(until.get,key) || !isSmaller(key,until.get)))
+      if (from != None && ordering.lt(key, from.get)) return right.rng(from, until);
+      if (until != None && (ordering.lt(until.get,key) || !ordering.lt(key,until.get)))
         return left.rng(from, until);
       val newLeft = left.rng(from, None)
       val newRight = right.rng(None, until)
