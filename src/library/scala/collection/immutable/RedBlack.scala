@@ -124,8 +124,8 @@ abstract class RedBlack[A] extends Serializable {
         case _ => RedTree(key, value, left, right.del(k))
       }
       def append(tl: Tree[B], tr: Tree[B]): Tree[B] = (tl, tr) match {
-        case (Empty, t) => t
-        case (t, Empty) => t
+        case (Empty(), t) => t
+        case (t, Empty()) => t
         case (RedTree(x, xv, a, b), RedTree(y, yv, c, d)) =>
           append(b, c) match {
             case RedTree(z, zv, bb, cc) => RedTree(z, zv, RedTree(x, xv, a, bb), RedTree(y, yv, cc, d))
@@ -168,8 +168,8 @@ abstract class RedBlack[A] extends Serializable {
       val newLeft = left.rng(from, None)
       val newRight = right.rng(None, until)
       if ((newLeft eq left) && (newRight eq right)) this
-      else if (newLeft eq Empty) newRight.upd(key, value);
-      else if (newRight eq Empty) newLeft.upd(key, value);
+      else if (newLeft.isEmpty) newRight.upd(key, value);
+      else if (newRight.isEmpty) newLeft.upd(key, value);
       else rebalance(newLeft, newRight)
     }
 
@@ -188,7 +188,7 @@ abstract class RedBlack[A] extends Serializable {
         val next = if (leftMost) zipper.head.left else zipper.head.right
         next match {
           case node: NonEmpty[_] => unzip(node :: zipper, leftMost)
-          case Empty             => zipper
+          case Empty()           => zipper
         }
       }
 
@@ -207,12 +207,12 @@ abstract class RedBlack[A] extends Serializable {
           unzipBoth(left, r.left, leftZipper, r :: rightZipper, smallerDepth)
         case (l @ RedTree(_, _, _, _), _) =>
           unzipBoth(l.right, right, l :: leftZipper, rightZipper, smallerDepth)
-        case (Empty, Empty) =>
+        case (Empty(), Empty()) =>
           (Nil, true, false, smallerDepth)
-        case (Empty, r @ BlackTree(_, _, _, _)) =>
+        case (Empty(), r @ BlackTree(_, _, _, _)) =>
           val leftMost = true
           (unzip(r :: rightZipper, leftMost), false, leftMost, smallerDepth)
-        case (l @ BlackTree(_, _, _, _), Empty) =>
+        case (l @ BlackTree(_, _, _, _), Empty()) =>
           val leftMost = false
           (unzip(l :: leftZipper, leftMost), false, leftMost, smallerDepth)
       }
@@ -261,11 +261,11 @@ abstract class RedBlack[A] extends Serializable {
       else this
     }
   }
-  case object Empty extends Tree[Nothing] {
+  case class Empty() extends Tree[Nothing] {
     def isEmpty = true
     def isBlack = true
     def lookup(k: A)(implicit ordering: Ordering[A]): Tree[Nothing] = this
-    def upd[B](k: A, v: B)(implicit ordering: Ordering[A]): Tree[B] = RedTree(k, v, Empty, Empty)
+    def upd[B](k: A, v: B)(implicit ordering: Ordering[A]): Tree[B] = RedTree(k, v, this, this)
     def del(k: A)(implicit ordering: Ordering[A]): Tree[Nothing] = this
     def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
     def greatest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
@@ -299,19 +299,19 @@ abstract class RedBlack[A] extends Serializable {
     override def hasNext: Boolean = !next.isEmpty
 
     override def next: (A, B) = next match {
-      case Empty =>
+      case Empty() =>
         throw new NoSuchElementException("next on empty iterator")
       case tree: NonEmpty[B] =>
         val result = (tree.key, tree.value)
         addLeftMostBranchToPath(tree.right)
-        next = if (path.isEmpty) Empty else path.pop()
+        next = if (path.isEmpty) Empty() else path.pop()
         result
     }
 
     @annotation.tailrec
     private[this] def addLeftMostBranchToPath(tree: Tree[B]) {
       tree match {
-        case Empty =>
+        case Empty() =>
         case tree: NonEmpty[B] =>
           path.push(tree)
           addLeftMostBranchToPath(tree.left)
