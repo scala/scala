@@ -23,7 +23,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
   def empty[A, B](implicit ord: Ordering[A]) = new TreeMap[A, B]()(ord)
   /** $sortedMapCanBuildFromInfo */
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), TreeMap[A, B]] = new SortedMapCanBuildFrom[A, B]
-  private def make[A, B](s: Int, t: RedBlack[A]#Tree[B])(implicit ord: Ordering[A]) = new TreeMap[A, B](s, t)(ord)
+  private def make[A, B](s: Int, t: RedBlack#Tree[A, B])(implicit ord: Ordering[A]) = new TreeMap[A, B](s, t)(ord)
 }
 
 /** This class implements immutable maps using a tree.
@@ -46,8 +46,8 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit val ordering: Ordering[A])
-  extends RedBlack[A]
+class TreeMap[A, +B](override val size: Int, t: RedBlack#Tree[A, B])(implicit val ordering: Ordering[A])
+  extends RedBlack
      with SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
@@ -60,7 +60,7 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
 
   def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
 
-  protected val tree: RedBlack[A]#Tree[B] = if (size == 0) Empty() else t
+  protected val tree: RedBlack#Tree[A, B] = if (size == 0) Empty() else t
 
   override def rangeImpl(from : Option[A], until : Option[A]): TreeMap[A,B] = {
     val ntree = tree.range(from,until)
@@ -194,7 +194,7 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
    *  @return         the value of the mapping, if it exists
    */
   override def get(key: A): Option[B] = tree.lookup(key) match {
-    case n: NonEmpty[b] => Some(n.value)
+    case n: NonEmpty[_, _] => Some(n.value)
     case _ => None
   }
 

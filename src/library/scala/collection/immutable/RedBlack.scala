@@ -16,46 +16,46 @@ package immutable
  *  @since 2.3
  */
 @SerialVersionUID(8691885935445612921L)
-abstract class RedBlack[A] extends Serializable {
+abstract class RedBlack extends Serializable {
 
-  private def blacken[B](t: Tree[B]): Tree[B] = t match {
+  private def blacken[A, B](t: Tree[A, B]): Tree[A, B] = t match {
     case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
     case t => t
   }
-  private def mkTree[B](isBlack: Boolean, k: A, v: B, l: Tree[B], r: Tree[B]) =
+  private def mkTree[A, B](isBlack: Boolean, k: A, v: B, l: Tree[A, B], r: Tree[A, B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
-  abstract class Tree[+B] extends Serializable {
+  abstract class Tree[A, +B] extends Serializable {
     def isEmpty: Boolean
     def isBlack: Boolean
-    def lookup(x: A)(implicit ordering: Ordering[A]): Tree[B]
-    def update[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[B1] = blacken(upd(k, v))
-    def delete(k: A)(implicit ordering: Ordering[A]): Tree[B] = blacken(del(k))
-    def range(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[B] = blacken(rng(from, until))
+    def lookup(x: A)(implicit ordering: Ordering[A]): Tree[A, B]
+    def update[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(k, v))
+    def delete(k: A)(implicit ordering: Ordering[A]): Tree[A, B] = blacken(del(k))
+    def range(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(rng(from, until))
     def foreach[U](f: (A, B) =>  U)
     def toStream: Stream[(A,B)]
     def iterator: Iterator[(A, B)]
-    def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[B1]
-    def del(k: A)(implicit ordering: Ordering[A]): Tree[B]
-    def smallest: NonEmpty[B]
-    def greatest: NonEmpty[B]
-    def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[B]
+    def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1]
+    def del(k: A)(implicit ordering: Ordering[A]): Tree[A, B]
+    def smallest: NonEmpty[A, B]
+    def greatest: NonEmpty[A, B]
+    def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B]
     def first : A
     def last : A
     def count : Int
-    protected[immutable] def nth(n: Int): NonEmpty[B]
+    protected[immutable] def nth(n: Int): NonEmpty[A, B]
   }
-  abstract class NonEmpty[+B] extends Tree[B] with Serializable {
+  abstract class NonEmpty[A, +B] extends Tree[A, B] with Serializable {
     def isEmpty = false
     def key: A
     def value: B
-    def left: Tree[B]
-    def right: Tree[B]
-    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[B] =
+    def left: Tree[A, B]
+    def right: Tree[A, B]
+    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[A, B] =
       if (ordering.lt(k, key)) left.lookup(k)
       else if (ordering.lt(key, k)) right.lookup(k)
       else this
-    private[this] def balanceLeft[B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[B1], d: Tree[B1])/*: NonEmpty[B1]*/ = l match {
+    private[this] def balanceLeft[B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1])/*: NonEmpty[A, B1]*/ = l match {
       case RedTree(y, yv, RedTree(x, xv, a, b), c) =>
         RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
       case RedTree(x, xv, a, RedTree(y, yv, b, c)) =>
@@ -63,7 +63,7 @@ abstract class RedBlack[A] extends Serializable {
       case _ =>
         mkTree(isBlack, z, zv, l, d)
     }
-    private[this] def balanceRight[B1 >: B](isBlack: Boolean, x: A, xv: B, a: Tree[B1], r: Tree[B1])/*: NonEmpty[B1]*/ = r match {
+    private[this] def balanceRight[B1 >: B](isBlack: Boolean, x: A, xv: B, a: Tree[A, B1], r: Tree[A, B1])/*: NonEmpty[A, B1]*/ = r match {
       case RedTree(z, zv, RedTree(y, yv, b, c), d) =>
         RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
       case RedTree(y, yv, b, RedTree(z, zv, c, d)) =>
@@ -71,15 +71,15 @@ abstract class RedBlack[A] extends Serializable {
       case _ =>
         mkTree(isBlack, x, xv, a, r)
     }
-    def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[B1] = {
+    def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = {
       if (ordering.lt(k, key)) balanceLeft(isBlack, key, value, left.upd(k, v), right)
       else if (ordering.lt(key, k)) balanceRight(isBlack, key, value, left, right.upd(k, v))
       else mkTree(isBlack, k, v, left, right)
     }
     // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
     // http://www.cse.unsw.edu.au/~dons/data/RedBlackTree.html
-    def del(k: A)(implicit ordering: Ordering[A]): Tree[B] = {
-      def balance(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
+    def del(k: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
+      def balance(x: A, xv: B, tl: Tree[A, B], tr: Tree[A, B]) = (tl, tr) match {
         case (RedTree(y, yv, a, b), RedTree(z, zv, c, d)) =>
           RedTree(x, xv, BlackTree(y, yv, a, b), BlackTree(z, zv, c, d))
         case (RedTree(y, yv, RedTree(z, zv, a, b), c), d) =>
@@ -93,11 +93,11 @@ abstract class RedBlack[A] extends Serializable {
         case (a, b) =>
           BlackTree(x, xv, a, b)
       }
-      def subl(t: Tree[B]) = t match {
+      def subl(t: Tree[A, B]) = t match {
         case BlackTree(x, xv, a, b) => RedTree(x, xv, a, b)
         case _ => sys.error("Defect: invariance violation; expected black, got "+t)
       }
-      def balLeft(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
+      def balLeft(x: A, xv: B, tl: Tree[A, B], tr: Tree[A, B]) = (tl, tr) match {
         case (RedTree(y, yv, a, b), c) =>
           RedTree(x, xv, BlackTree(y, yv, a, b), c)
         case (bl, BlackTree(y, yv, a, b)) =>
@@ -106,7 +106,7 @@ abstract class RedBlack[A] extends Serializable {
           RedTree(z, zv, BlackTree(x, xv, bl, a), balance(y, yv, b, subl(c)))
         case _ => sys.error("Defect: invariance violation at "+right)
       }
-      def balRight(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
+      def balRight(x: A, xv: B, tl: Tree[A, B], tr: Tree[A, B]) = (tl, tr) match {
         case (a, RedTree(y, yv, b, c)) =>
           RedTree(x, xv, a, BlackTree(y, yv, b, c))
         case (BlackTree(y, yv, a, b), bl) =>
@@ -116,14 +116,14 @@ abstract class RedBlack[A] extends Serializable {
         case _ => sys.error("Defect: invariance violation at "+left)
       }
       def delLeft = left match {
-        case _: BlackTree[_] => balLeft(key, value, left.del(k), right)
+        case _: BlackTree[_, _] => balLeft(key, value, left.del(k), right)
         case _ => RedTree(key, value, left.del(k), right)
       }
       def delRight = right match {
-        case _: BlackTree[_] => balRight(key, value, left, right.del(k))
+        case _: BlackTree[_, _] => balRight(key, value, left, right.del(k))
         case _ => RedTree(key, value, left, right.del(k))
       }
-      def append(tl: Tree[B], tr: Tree[B]): Tree[B] = (tl, tr) match {
+      def append(tl: Tree[A, B], tr: Tree[A, B]): Tree[A, B] = (tl, tr) match {
         case (Empty(), t) => t
         case (t, Empty()) => t
         case (RedTree(x, xv, a, b), RedTree(y, yv, c, d)) =>
@@ -147,8 +147,8 @@ abstract class RedBlack[A] extends Serializable {
       }
     }
 
-    def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
-    def greatest: NonEmpty[B] = if (right.isEmpty) this else right.greatest
+    def smallest: NonEmpty[A, B] = if (left.isEmpty) this else left.smallest
+    def greatest: NonEmpty[A, B] = if (right.isEmpty) this else right.greatest
 
     def toStream: Stream[(A,B)] = iterator.toStream
 
@@ -160,7 +160,7 @@ abstract class RedBlack[A] extends Serializable {
       right foreach f
     }
 
-    override def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[B] = {
+    override def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = {
       if (from == None && until == None) return this
       if (from != None && ordering.lt(key, from.get)) return right.rng(from, until);
       if (until != None && (ordering.lt(until.get,key) || !ordering.lt(key,until.get)))
@@ -182,23 +182,23 @@ abstract class RedBlack[A] extends Serializable {
     // whether the zipper was traversed left-most or right-most.
 
     // If the trees were balanced, returns an empty zipper
-    private[this] def compareDepth(left: Tree[B], right: Tree[B]): (List[NonEmpty[B]], Boolean, Boolean, Int) = {
+    private[this] def compareDepth(left: Tree[A, B], right: Tree[A, B]): (List[NonEmpty[A, B]], Boolean, Boolean, Int) = {
       // Once a side is found to be deeper, unzip it to the bottom
-      def unzip(zipper: List[NonEmpty[B]], leftMost: Boolean): List[NonEmpty[B]] = {
+      def unzip(zipper: List[NonEmpty[A, B]], leftMost: Boolean): List[NonEmpty[A, B]] = {
         val next = if (leftMost) zipper.head.left else zipper.head.right
         next match {
-          case node: NonEmpty[_] => unzip(node :: zipper, leftMost)
-          case Empty()           => zipper
+          case node: NonEmpty[_, _] => unzip(node :: zipper, leftMost)
+          case Empty()              => zipper
         }
       }
 
       // Unzip left tree on the rightmost side and right tree on the leftmost side until one is
       // found to be deeper, or the bottom is reached
-      def unzipBoth(left: Tree[B],
-                    right: Tree[B],
-                    leftZipper: List[NonEmpty[B]],
-                    rightZipper: List[NonEmpty[B]],
-                    smallerDepth: Int): (List[NonEmpty[B]], Boolean, Boolean, Int) = (left, right) match {
+      def unzipBoth(left: Tree[A, B],
+                    right: Tree[A, B],
+                    leftZipper: List[NonEmpty[A, B]],
+                    rightZipper: List[NonEmpty[A, B]],
+                    smallerDepth: Int): (List[NonEmpty[A, B]], Boolean, Boolean, Int) = (left, right) match {
         case (l @ BlackTree(_, _, _, _), r @ BlackTree(_, _, _, _)) =>
           unzipBoth(l.right, r.left, l :: leftZipper, r :: rightZipper, smallerDepth + 1)
         case (l @ RedTree(_, _, _, _), r @ RedTree(_, _, _, _)) =>
@@ -219,9 +219,9 @@ abstract class RedBlack[A] extends Serializable {
       unzipBoth(left, right, Nil, Nil, 0)
     }
 
-    private[this] def rebalance(newLeft: Tree[B], newRight: Tree[B]) = {
+    private[this] def rebalance(newLeft: Tree[A, B], newRight: Tree[A, B]) = {
       // This is like drop(n-1), but only counting black nodes
-      def  findDepth(zipper: List[NonEmpty[B]], depth: Int): List[NonEmpty[B]] = zipper match {
+      def  findDepth(zipper: List[NonEmpty[A, B]], depth: Int): List[NonEmpty[A, B]] = zipper match {
         case BlackTree(_, _, _, _) :: tail =>
           if (depth == 1) zipper else findDepth(tail, depth - 1)
         case _ :: tail => findDepth(tail, depth)
@@ -243,7 +243,7 @@ abstract class RedBlack[A] extends Serializable {
         } else {
           RedTree(key, value, zipFrom.head, blkNewRight)
         }
-        val zippedTree = zipFrom.tail.foldLeft(union: Tree[B]) { (tree, node) =>
+        val zippedTree = zipFrom.tail.foldLeft(union: Tree[A, B]) { (tree, node) =>
             if (leftMost)
               balanceLeft(node.isBlack, node.key, node.value, tree, node.right)
             else
@@ -261,14 +261,14 @@ abstract class RedBlack[A] extends Serializable {
       else this
     }
   }
-  case class Empty() extends Tree[Nothing] {
+  case class Empty[A]() extends Tree[A, Nothing] {
     def isEmpty = true
     def isBlack = true
-    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[Nothing] = this
-    def upd[B](k: A, v: B)(implicit ordering: Ordering[A]): Tree[B] = RedTree(k, v, this, this)
-    def del(k: A)(implicit ordering: Ordering[A]): Tree[Nothing] = this
-    def smallest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
-    def greatest: NonEmpty[Nothing] = throw new NoSuchElementException("empty map")
+    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[A, Nothing] = this
+    def upd[B](k: A, v: B)(implicit ordering: Ordering[A]): Tree[A, B] = RedTree(k, v, this, this)
+    def del(k: A)(implicit ordering: Ordering[A]): Tree[A, Nothing] = this
+    def smallest: NonEmpty[A, Nothing] = throw new NoSuchElementException("empty map")
+    def greatest: NonEmpty[A, Nothing] = throw new NoSuchElementException("empty map")
     def iterator: Iterator[(A, Nothing)] = Iterator.empty
     def toStream: Stream[(A,Nothing)] = Stream.empty
 
@@ -280,20 +280,20 @@ abstract class RedBlack[A] extends Serializable {
     def count = 0
     protected[immutable] def nth(n: Int) = throw new NoSuchElementException("empty map")
   }
-  case class RedTree[+B](override val key: A,
+  case class RedTree[A, +B](override val key: A,
                          override val value: B,
-                         override val left: Tree[B],
-                         override val right: Tree[B]) extends NonEmpty[B] {
+                         override val left: Tree[A, B],
+                         override val right: Tree[A, B]) extends NonEmpty[A, B] {
     def isBlack = false
   }
-  case class BlackTree[+B](override val key: A,
+  case class BlackTree[A, +B](override val key: A,
                            override val value: B,
-                           override val left: Tree[B],
-                           override val right: Tree[B]) extends NonEmpty[B] {
+                           override val left: Tree[A, B],
+                           override val right: Tree[A, B]) extends NonEmpty[A, B] {
     def isBlack = true
   }
 
-  private[this] class TreeIterator[B](tree: NonEmpty[B]) extends Iterator[(A, B)] {
+  private[this] class TreeIterator[A, B](tree: NonEmpty[A, B]) extends Iterator[(A, B)] {
     import collection.mutable.Stack
 
     override def hasNext: Boolean = !next.isEmpty
@@ -301,7 +301,7 @@ abstract class RedBlack[A] extends Serializable {
     override def next: (A, B) = next match {
       case Empty() =>
         throw new NoSuchElementException("next on empty iterator")
-      case tree: NonEmpty[B] =>
+      case tree: NonEmpty[A, B] =>
         val result = (tree.key, tree.value)
         addLeftMostBranchToPath(tree.right)
         next = if (path.isEmpty) Empty() else path.pop()
@@ -309,17 +309,17 @@ abstract class RedBlack[A] extends Serializable {
     }
 
     @annotation.tailrec
-    private[this] def addLeftMostBranchToPath(tree: Tree[B]) {
+    private[this] def addLeftMostBranchToPath(tree: Tree[A, B]) {
       tree match {
         case Empty() =>
-        case tree: NonEmpty[B] =>
+        case tree: NonEmpty[A, B] =>
           path.push(tree)
           addLeftMostBranchToPath(tree.left)
       }
     }
 
-    private[this] val path: Stack[NonEmpty[B]] = Stack.empty[NonEmpty[B]]
+    private[this] val path: Stack[NonEmpty[A, B]] = Stack.empty[NonEmpty[A, B]]
     addLeftMostBranchToPath(tree)
-    private[this] var next: Tree[B] = path.pop()
+    private[this] var next: Tree[A, B] = path.pop()
   }
 }
