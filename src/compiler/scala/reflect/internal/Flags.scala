@@ -427,8 +427,29 @@ class Flags extends ModifierFlags {
     List(flagsToString(f), pw) filterNot (_ == "") mkString " "
   }
 
-  def flagsToString(flags: Long): String =
-    pickledListOrder map (mask => flagToString(flags & mask)) filterNot (_ == "") mkString " "
+  // List of the raw flags, in pickled order
+  protected final val MaxBitPosition = 62
+
+  def flagsToString(flags: Long): String = {
+    // Fast path for common case
+    if (flags == 0L) "" else {
+      var sb: StringBuilder = null
+      var i = 0
+      while (i <= MaxBitPosition) {
+        val mask = rawFlagPickledOrder(i)
+        if ((flags & mask) != 0L) {
+          val s = flagToString(mask)
+          if (s.length > 0) {
+            if (sb eq null) sb = new StringBuilder append s
+            else if (sb.length == 0) sb append s
+            else sb append " " append s
+          }
+        }
+        i += 1
+      }
+      if (sb eq null) "" else sb.toString
+    }
+  }
 
   def rawFlagsToPickled(flags: Long): Long =
     (flags & ~PKL_MASK) | r2p(flags.toInt & PKL_MASK)
@@ -436,13 +457,13 @@ class Flags extends ModifierFlags {
   def pickledToRawFlags(pflags: Long): Long =
     (pflags & ~PKL_MASK) | p2r(pflags.toInt & PKL_MASK)
 
-  // List of the raw flags, in pickled order
-  protected val pickledListOrder: List[Long] = {
-    val all   = 0 to 62 map (1L << _)
+  protected final val pickledListOrder: List[Long] = {
+    val all   = 0 to MaxBitPosition map (1L << _)
     val front = rawFlags map (_.toLong)
 
     front.toList ++ (all filterNot (front contains _))
   }
+  protected final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 
   def flagOfModifier(mod: Modifier.Value): Long = mod match {
     case Modifier.`protected` => PROTECTED
