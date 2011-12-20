@@ -36,7 +36,7 @@ trait Linearizers {
     var blocks: List[BasicBlock] = Nil
 
     def linearize(m: IMethod): List[BasicBlock] = {
-      val b = m.code.startBlock;
+      val b = m.startBlock;
       blocks = Nil;
 
       run {
@@ -106,7 +106,7 @@ trait Linearizers {
     def linearize(m: IMethod): List[BasicBlock] = {
       blocks = Nil;
 
-      dfs(m.code.startBlock);
+      dfs(m.startBlock);
       m.exh foreach (b => dfs(b.startBlock));
 
       blocks.reverse
@@ -150,14 +150,14 @@ trait Linearizers {
       added.clear;
 
       m.exh foreach (b => rpo(b.startBlock));
-      rpo(m.code.startBlock);
+      rpo(m.startBlock);
 
       // if the start block has predecessors, it won't be the first one
       // in the linearization, so we need to enforce it here
-      if (m.code.startBlock.predecessors eq Nil)
+      if (m.startBlock.predecessors eq Nil)
         blocks
       else
-        m.code.startBlock :: (blocks.filterNot(_ == m.code.startBlock))
+        m.startBlock :: (blocks.filterNot(_ == m.startBlock))
     }
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
@@ -195,7 +195,7 @@ trait Linearizers {
    *  the last instruction being a jump).
    */
   class DumpLinearizer extends Linearizer {
-    def linearize(m: IMethod): List[BasicBlock] = m.code.blocks.toList
+    def linearize(m: IMethod): List[BasicBlock] = m.blocks
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = sys.error("not implemented")
   }
 
@@ -250,7 +250,7 @@ trait Linearizers {
      *  @param frozen blocks can't be moved (fist block of a method, blocks directly following a try-catch)
      */
     def groupBlocks(method: IMethod, blocks: List[BasicBlock], handlers: List[ExceptionHandler], frozen: mutable.HashSet[BasicBlock]) = {
-      assert(blocks.head == method.code.startBlock, method)
+      assert(blocks.head == method.startBlock, method)
 
       // blocks before the try, and blocks for the try
       val beforeAndTry = new ListBuffer[BasicBlock]()

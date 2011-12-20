@@ -21,6 +21,8 @@ trait TypeStacks {
    * stack of the ICode.
    */
   type Rep = List[TypeKind]
+  
+  object NoTypeStack extends TypeStack(Nil) { }
 
   class TypeStack(var types: Rep) {
     if (types.nonEmpty)

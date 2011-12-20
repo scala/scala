@@ -25,7 +25,7 @@ abstract class ICodeReader extends ClassfileParser {
 
   var instanceCode: IClass = null          // the ICode class for the current symbol
   var staticCode:   IClass = null          // the ICode class static members
-  var method: IMethod = _                  // the current IMethod
+  var method: IMethod = NoIMethod          // the current IMethod
 
   val nothingName = newTermName(SCALA_NOTHING)
   val nullName    = newTermName(SCALA_NULL)
@@ -629,7 +629,7 @@ abstract class ICodeReader extends ClassfileParser {
     skipAttributes()
 
     code.toBasicBlock
-    assert(method.code ne null)
+    assert(method.hasCode, method)
     // reverse parameters, as they were prepended during code generation
     method.params = method.params.reverse
 
@@ -692,7 +692,7 @@ abstract class ICodeReader extends ClassfileParser {
         mutable.Map(jmpTargets.toSeq map (_ -> code.newBlock): _*)
 
       val blocks = makeBasicBlocks
-      var otherBlock: BasicBlock = null
+      var otherBlock: BasicBlock = NoBasicBlock
       var disableJmpTarget = false
 
       for ((pc, instr) <- instrs.iterator) {

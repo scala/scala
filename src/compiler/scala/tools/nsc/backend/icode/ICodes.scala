@@ -84,15 +84,16 @@ abstract class ICodes extends AnyRef
 
   def checkValid(m: IMethod) {
     // always slightly dicey to iterate over mutable structures
-    val bs = m.code.blocks.toList
-    for (b <- bs ; if !b.closed) {
-      // Something is leaving open/empty blocks around (see SI-4840) so
-      // let's not kill the deal unless it's nonempty.
-      if (b.isEmpty) {
-        log("!!! Found open but empty block while inlining " + m + ": removing from block list.")
-        m.code removeBlock b
+    m foreachBlock { b =>
+      if (!b.closed) {
+        // Something is leaving open/empty blocks around (see SI-4840) so
+        // let's not kill the deal unless it's nonempty.
+        if (b.isEmpty) {
+          log("!!! Found open but empty block while inlining " + m + ": removing from block list.")
+          m.code removeBlock b
+        }
+        else dumpMethodAndAbort(m, b)
       }
-      else dumpMethodAndAbort(m, b)
     }
   }
 

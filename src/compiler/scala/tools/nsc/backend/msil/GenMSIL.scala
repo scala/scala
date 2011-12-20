@@ -1898,8 +1898,8 @@ abstract class GenMSIL extends SubComponent {
         val sc = iclass.lookupStaticCtor
         if (sc.isDefined) {
           val m = sc.get
-          val oldLastBlock = m.code.blocks.last
-          val lastBlock = m.code.newBlock
+          val oldLastBlock = m.lastBlock
+          val lastBlock = m.newBlock()
           oldLastBlock.replaceInstruction(oldLastBlock.length - 1, JUMP(lastBlock))
           // call object's private ctor from static ctor
           lastBlock.emit(CIL_NEWOBJ(iclass.symbol.primaryConstructor))

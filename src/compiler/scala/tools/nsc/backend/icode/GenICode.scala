@@ -102,7 +102,7 @@ abstract class GenICode extends SubComponent  {
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         debuglog("Entering method " + name)
         val m = new IMethod(tree.symbol)
-        m.sourceFile = unit.source.toString()
+        m.sourceFile = unit.source
         m.returnType = if (tree.symbol.isConstructor) UNIT
                        else toTypeKind(tree.symbol.info.resultType)
         ctx.clazz.addMethod(m)
@@ -1716,7 +1716,7 @@ abstract class GenICode extends SubComponent  {
       do {
         changed = false
         n += 1
-        method.code.blocks foreach prune0
+        method.blocks foreach prune0
       } while (changed)
 
       debuglog("Prune fixpoint reached in " + n + " iterations.");
@@ -1924,7 +1924,7 @@ abstract class GenICode extends SubComponent  {
         val ctx1 = new Context(this) setMethod(m)
         ctx1.labels = mutable.HashMap()
         ctx1.method.code = new Code(m)
-        ctx1.bb = ctx1.method.code.startBlock
+        ctx1.bb = ctx1.method.startBlock
         ctx1.defdef = d
         ctx1.scope = EmptyScope
         ctx1.enterScope
@@ -1932,11 +1932,12 @@ abstract class GenICode extends SubComponent  {
       }
 
       /** Return a new context for a new basic block. */
-      def newBlock: Context = {
+      def newBlock(): Context = {
         val block = method.code.newBlock
         handlers foreach (_ addCoveredBlock block)
         currentExceptionHandlers foreach (_ addBlock block)
-        block.varsInScope = mutable.HashSet() ++= scope.varsInScope
+        block.varsInScope.clear()
+        block.varsInScope ++= scope.varsInScope
         new Context(this) setBasicBlock block
       }
 
