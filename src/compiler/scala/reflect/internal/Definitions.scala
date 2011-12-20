@@ -232,6 +232,16 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
+      
+    /** Is `sym` a member of Predef with the given name?
+     *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
+     *  which does a member lookup (it can't be a lazy val because we might reload Predef
+     *  during resident compilations).
+     */
+    def isPredefMemberNamed(sym: Symbol, name: Name) = (
+      (sym.name == name) && (sym.owner == PredefModule.moduleClass)
+    )
+
     lazy val ConsoleModule: Symbol = getModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")
     lazy val SymbolModule: Symbol = getModule("scala.Symbol")
