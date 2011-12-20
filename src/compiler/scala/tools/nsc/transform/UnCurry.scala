@@ -374,7 +374,9 @@ abstract class UnCurry extends InfoTransform
           assert(toArraySym != NoSymbol)
           def getManifest(tp: Type): Tree = {
             val manifestOpt = localTyper.findManifest(tp, false)
-            if (!manifestOpt.tree.isEmpty) manifestOpt.tree
+            // Don't want bottom types getting any further than this (SI-4024)
+            if (tp.typeSymbol.isBottomClass) getManifest(AnyClass.tpe)
+            else if (!manifestOpt.tree.isEmpty) manifestOpt.tree
             else if (tp.bounds.hi ne tp) getManifest(tp.bounds.hi)
             else localTyper.getManifestTree(tree.pos, tp, false)
           }

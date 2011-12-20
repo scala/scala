@@ -21,27 +21,31 @@ trait Chars {
   final val SU = '\u001A'
 
   /** Convert a character digit to an Int according to given base,
-   *  -1 if no success */
+   *  -1 if no success
+   */
   def digit2int(ch: Char, base: Int): Int = {
-    if ('0' <= ch && ch <= '9' && ch < '0' + base)
-      ch - '0'
-    else if ('A' <= ch && ch < 'A' + base - 10)
-      ch - 'A' + 10
-    else if ('a' <= ch && ch < 'a' + base - 10)
-      ch - 'a' + 10
-    else
-      -1
+    val num = (
+      if (ch <= '9') ch - '0'
+      else if ('a' <= ch && ch <= 'z') ch - 'a' + 10
+      else if ('A' <= ch && ch <= 'Z') ch - 'A' + 10
+      else -1
+    )
+    if (0 <= num && num < base) num else -1
   }
+  /** Buffer for creating '\ u XXXX' strings. */
+  private[this] val char2uescapeArray = Array[Char]('\\', 'u', 0, 0, 0, 0)
 
   /** Convert a character to a backslash-u escape */
   def char2uescape(c: Char): String = {
-    var rest = c.toInt
-    val buf = new StringBuilder
-    for (i <- 1 to 4) {
-      buf ++= (rest % 16).toHexString
-      rest = rest / 16
-    }
-    "\\u" + buf.toString.reverse
+    @inline def hexChar(ch: Int): Char =
+      ( if (ch < 10) '0' else 'A' - 10 ) + ch toChar
+
+    char2uescapeArray(2) = hexChar((c >> 12)     )
+    char2uescapeArray(3) = hexChar((c >>  8) % 16)
+    char2uescapeArray(4) = hexChar((c >>  4) % 16)
+    char2uescapeArray(5) = hexChar((c      ) % 16)
+
+    new String(char2uescapeArray)
   }
 
   /** Is character a line break? */

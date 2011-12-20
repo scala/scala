@@ -1097,6 +1097,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeParams: List[Symbol] =
       if (isMonomorphicType) Nil
       else {
+        // analogously to the "info" getter, here we allow for two completions:
+        //   one: sourceCompleter to LazyType, two: LazyType to completed type
+        if (validTo == NoPeriod)
+          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
         if (validTo == NoPeriod)
           atPhase(phaseOf(infos.validFrom))(rawInfo load this)
 

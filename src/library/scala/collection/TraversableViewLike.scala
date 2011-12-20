@@ -192,6 +192,12 @@ trait TraversableViewLike[+A,
   override def groupBy[K](f: A => K): immutable.Map[K, This] =
     thisSeq groupBy f mapValues (xs => newForced(xs))
 
+  override def unzip[A1, A2](implicit asPair: A => (A1, A2)) =
+    (newMapped(x => asPair(x)._1), newMapped(x => asPair(x)._2))  // TODO - Performance improvements.
+
+  override def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)) =
+    (newMapped(x => asTriple(x)._1), newMapped(x => asTriple(x)._2), newMapped(x => asTriple(x)._3))  // TODO - Performance improvements.
+
   override def toString = viewToString
 }
 

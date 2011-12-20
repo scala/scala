@@ -213,8 +213,7 @@ INITIALISATION
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
        This is to facilitate testing new command line options which do not yet exist in starr. -->
-    <property name="scalac.args.quickonly" value=""/>
-
+  <property name="scalac.args.quickonly" value=""/>
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
     <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
     <!-- Setting-up Ant contrib tasks -->
@@ -233,7 +232,6 @@ INITIALISATION
     <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="git.describe" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
     <property name="git.describe" value="-unknown-"/>
-
     <property name="init.avail" value="yes"/>
 
     <!-- Generating version number -->
@@ -241,7 +239,7 @@ INITIALISATION
     <property
       name="version.number"
       value="${version.major}.${version.minor}.${version.patch}.${git.describe}"/>
-      
+
     <!-- And print-out what we are building -->
     <echo message="       build time: ${time.human}" />
     <echo message="     java version: ${java.vm.name} ${java.version}" />

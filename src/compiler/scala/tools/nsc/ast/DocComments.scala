@@ -99,7 +99,7 @@ trait DocComments { self: Global =>
    */
   def useCases(sym: Symbol, site: Symbol): List[(Symbol, String, Position)] = {
     def getUseCases(dc: DocComment) = {
-      for (uc <- dc.useCases; defn <- uc.expandedDefs(site)) yield
+      for (uc <- dc.useCases; defn <- uc.expandedDefs(sym, site)) yield
         (defn,
          expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn), sym, site),
          uc.pos)
@@ -346,7 +346,7 @@ trait DocComments { self: Global =>
     var defined: List[Symbol] = List() // initialized by Typer
     var aliases: List[Symbol] = List() // initialized by Typer
 
-    def expandedDefs(site: Symbol): List[Symbol] = {
+    def expandedDefs(sym: Symbol, site: Symbol): List[Symbol] = {
 
       def select(site: Type, name: Name, orElse: => Type): Type = {
         val member = site.nonPrivateMember(name)
@@ -424,8 +424,10 @@ trait DocComments { self: Global =>
       }
 
       for (defn <- defined) yield {
-        defn.cloneSymbol.setFlag(Flags.SYNTHETIC).setInfo(
-          substAliases(defn.info).asSeenFrom(site.thisType, defn.owner))
+        val useCase = defn.cloneSymbol
+        useCase.owner = sym.owner
+        useCase.flags = sym.flags
+        useCase.setFlag(Flags.SYNTHETIC).setInfo(substAliases(defn.info).asSeenFrom(site.thisType, sym.owner))
       }
     }
   }
