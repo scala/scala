@@ -7,6 +7,7 @@ package typechecker
 
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
+import scala.tools.util.StringOps.{ ojoin }
 
 object listutil {
   def mexists[T](xss: List[List[T]])(p: T => Boolean) =
@@ -166,8 +167,9 @@ trait MethodSynthesis {
         }
       }
       private def logDerived(result: Tree): Tree = {
-        val id = List(mods.defaultFlagString, basisSym.accurateKindString, basisSym.getterName) filterNot (_ == "") mkString " "
-        log("[+derived] " + id + " (" + derivedSym + ")\n        " + result)
+        log("[+derived] " + ojoin(mods.defaultFlagString, basisSym.accurateKindString, basisSym.getterName.decode)
+          + " (" + derivedSym + ")\n        " + result)
+
         result
       }
       final def derive(initial: List[AnnotationInfo]): Tree = {

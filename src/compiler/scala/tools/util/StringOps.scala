@@ -17,9 +17,10 @@ package util
  *  @version 1.0
  */
 trait StringOps {
-  def onull(s: String)                    = if (s == null) "" else s
-  def oempty(xs: String*)                 = xs filterNot (x => x == null || x == "")
-  def ojoin(xs: Seq[String], sep: String) = oempty(xs: _*) mkString sep
+  def onull(s: String)                            = if (s == null) "" else s
+  def oempty(xs: String*)                         = xs filterNot (x => x == null || x == "")
+  def ojoin(xs: String*): String                  = oempty(xs: _*) mkString " "
+  def ojoin(xs: Seq[String], sep: String): String = oempty(xs: _*) mkString sep
   def ojoinOr(xs: Seq[String], sep: String, orElse: String) = {
     val ys = oempty(xs: _*)
     if (ys.isEmpty) orElse else ys mkString sep
