@@ -26,6 +26,14 @@ object DocStrings {
     if (start < str.length && isIdentifierPart(str charAt start)) skipIdent(str, start + 1)
     else start
 
+  /** Returns index of string `str` following `start` skipping
+   *  sequence of identifier characters.
+   */
+  def skipTag(str: String, start: Int): Int =
+    if (start < str.length && (str charAt start) == '@') skipIdent(str, start + 1)
+    else start
+  
+    
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
    *  a single `*` character or the `/``**` sequence.
@@ -81,7 +89,8 @@ object DocStrings {
       case List() => List()
       case idxs => {
         val idxs2 = mergeUsecaseSections(str, idxs)
-        idxs2 zip (idxs2.tail ::: List(str.length - 2))
+        val idxs3 = mergeInheritdocSections(str, idxs2)
+        idxs3 zip (idxs3.tail ::: List(str.length - 2))
       }
     }
   
@@ -99,6 +108,12 @@ object DocStrings {
         idxs
     }
   }
+  
+  /**
+   * Merge the @inheritdoc sections, as they never make sense on their own
+   */
+  def mergeInheritdocSections(str: String, idxs: List[Int]): List[Int] = 
+    idxs.filterNot(str.substring(_).startsWith("@inheritdoc"))
   
   /** Does interval `iv` start with given `tag`?
    */
@@ -155,4 +170,46 @@ object DocStrings {
       idx
     }
   }
+  
+  /** A map from the section tag to section parameters */
+  def sectionTagMap(str: String, sections: List[(Int, Int)]): Map[String, (Int, Int)] = 
+    Map() ++ {
+      for (section <- sections) yield 
+        extractSectionTag(str, section) -> section    
+    }
+  
+  /** Extract the section tag, treating the section tag as an indentifier */
+  def extractSectionTag(str: String, section: (Int, Int)): String =     
+    str.substring(section._1, skipTag(str, section._1))
+    
+  /** Extract the section parameter */
+  def extractSectionParam(str: String, section: (Int, Int)): String = {
+    assert(str.substring(section._1).startsWith("@param") ||
+           str.substring(section._1).startsWith("@tparam") ||
+           str.substring(section._1).startsWith("@throws"))
+           
+    val start = skipWhitespace(str, skipTag(str, section._1))
+    val finish = skipIdent(str, start)
+    
+    str.substring(start, finish)
+  }
+    
+  /** Extract the section text, except for the tag and comment newlines */
+  def extractSectionText(str: String, section: (Int, Int)): (Int, Int) = {
+    if (str.substring(section._1).startsWith("@param") ||
+        str.substring(section._1).startsWith("@tparam") ||
+        str.substring(section._1).startsWith("@throws"))
+      (skipWhitespace(str, skipIdent(str, skipWhitespace(str, skipTag(str, section._1)))), section._2)
+    else
+      (skipWhitespace(str, skipTag(str, section._1)), section._2)
+  }
+  
+  /** Cleanup section text */
+  def cleanupSectionText(str: String) = {
+    var result = str.trim.replaceAll("\n\\s+\\*\\s+", " \n")
+    while (result.endsWith("\n")) 
+      result = result.substring(0, str.length - 1)
+    result
+  }
+
 }
