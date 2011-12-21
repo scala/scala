@@ -740,7 +740,7 @@ trait Implicits {
       )
       private def isIneligible(info: ImplicitInfo) = (
            info.isCyclicOrErroneous
-        || isView && isConforms(info.sym)
+        || isView && isPredefMemberNamed(info.sym, nme.conforms)
         || isShadowed(info.name)
       )
 
@@ -759,15 +759,6 @@ trait Implicits {
       /** Tests for validity and updates invalidImplicits by side effect when false.
        */
       private def checkValid(sym: Symbol) = isValid(sym) || { invalidImplicits += sym ; false }
-
-      /** Is `sym` the standard conforms method in Predef?
-       *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def`
-       *  which does a member lookup (it can't be a lazy val because we might reload Predef
-       *  during resident compilations).
-       */
-      private def isConforms(sym: Symbol) = (
-        (sym.name == nme.conforms) && (sym.owner == PredefModule.moduleClass)
-      )
 
       /** Preventing a divergent implicit from terminating implicit search,
        *  so that if there is a best candidate it can still be selected.
