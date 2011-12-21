@@ -11,11 +11,10 @@
 package scala.collection
 package immutable
 
-/** A base class containing the implementations for `TreeMaps` and `TreeSets`.
+/** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
  *
  *  @since 2.3
  */
-private[immutable]
 object RedBlack extends Serializable {
 
   private def blacken[A, B](t: Tree[A, B]): Tree[A, B] = t match {
