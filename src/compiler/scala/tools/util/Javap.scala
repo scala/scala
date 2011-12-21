@@ -36,17 +36,21 @@ class JavapClass(
 
   lazy val parser = new JpOptions
 
-  val EnvClass = loader.tryToInitializeClass[FakeEnvironment](Env).orNull
-  val EnvCtr   = EnvClass.getConstructor(List[Class[_]](): _*)
-
+  val EnvClass     = loader.tryToInitializeClass[FakeEnvironment](Env).orNull
   val PrinterClass = loader.tryToInitializeClass[FakePrinter](Printer).orNull
-  val PrinterCtr   = PrinterClass.getConstructor(classOf[InputStream], classOf[PrintWriter], EnvClass)
+  private def failed = (EnvClass eq null) || (PrinterClass eq null)
+
+  val PrinterCtr   = (
+    if (failed) null
+    else PrinterClass.getConstructor(classOf[InputStream], classOf[PrintWriter], EnvClass)
+  )
 
   def findBytes(path: String): Array[Byte] =
     tryFile(path) getOrElse tryClass(path)
 
   def apply(args: Seq[String]): List[JpResult] = {
-    args.toList filterNot (_ startsWith "-") map { path =>
+    if (failed) Nil
+    else args.toList filterNot (_ startsWith "-") map { path =>
       val bytes = findBytes(path)
       if (bytes.isEmpty) new JpError("Could not find class bytes for '%s'".format(path))
       else new JpSuccess(newPrinter(new ByteArrayInputStream(bytes), newEnv(args)))
@@ -54,12 +58,14 @@ class JavapClass(
   }
 
   def newPrinter(in: InputStream, env: FakeEnvironment): FakePrinter =
-    PrinterCtr.newInstance(in, printWriter, env)
+    if (failed) null
+    else PrinterCtr.newInstance(in, printWriter, env)
 
   def newEnv(opts: Seq[String]): FakeEnvironment = {
-    val env: FakeEnvironment = EnvClass.newInstance()
+    lazy val env: FakeEnvironment = EnvClass.newInstance()
 
-    parser(opts) foreach { case (name, value) =>
+    if (failed) null
+    else parser(opts) foreach { case (name, value) =>
       val field = EnvClass getDeclaredField name
       field setAccessible true
       field.set(env, value.asInstanceOf[AnyRef])
