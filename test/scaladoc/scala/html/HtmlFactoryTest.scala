@@ -580,7 +580,85 @@ object Test extends Properties("HtmlFactory") {
             """, true)
       )    
   }
+
+    property("Correct explicit inheritance for override") = 
+    checkText("explicit-inheritance-override.scala")(
+      (Some("InheritDocDerived"), 
+       """def function[T](arg1: T, arg2: String): Double
+          Starting line
+          Starting line
+          The base comment. And another sentence...
+          The base comment. And another sentence...
+          Ending line
+            T       StartT the type of the first argument EndT
+            arg1    Start1 The T term comment End1
+            arg2    Start2 The string comment End2
+            returns StartRet The return comment EndRet
+          Definition Classes InheritDocDerived → InheritDocBase
+          Example:   StartExample function[Int](3, "something") EndExample
+          Version    StartVer 0.0.2 EndVer
+          Since      StartSince 0.0.1 EndSince
+          Exceptions thrown 
+                     SomeException      StartEx if the function is not called with correct parameters EndEx
+                     SomeOtherException StartSOE Should Warn <invalid inheritdoc annotation> EndSOE
+          To do      StartTodo Call mom. And dad! EndTodo
+          Note       StartNote Be careful! EndNote
+          See also   StartSee The Manual EndSee
+       """, true))
+   
+    property("Correct explicit inheritance for usecase") = 
+    checkText("explicit-inheritance-usecase.scala")(
+      (Some("UseCaseInheritDoc"), 
+       """def function[T](arg1: T, arg2: String): Double
+          [use case] Starting line
+          [use case] Starting line
+          The base comment. And another sentence...
+          The base comment. And another sentence...
+          Ending line
+            T       StartT the type of the first argument EndT
+            arg1    Start1 The T term comment End1
+            arg2    Start2 The string comment End2
+            returns StartRet The return comment EndRet
+          Example:   StartExample function[Int](3,"something") EndExample
+          Version    StartVer 0.0.2 EndVer
+          Since      StartSince 0.0.1 EndSince
+          Exceptions thrown 
+                     SomeException      StartEx if the function is not called with correct parameters EndEx
+                     SomeOtherException StartSOE Should Warn <invalid inheritdoc annotation> EndSOE
+          To do      StartTodo Call mom. And dad! EndTodo
+          Note       StartNote Be careful! EndNote
+          See also   StartSee The Manual EndSee
+       """, true))
+
   
+  property("Correct explicit inheritance in corner cases") = 
+    checkText("inheritdoc-corner-cases.scala")(
+      (Some("D"), 
+       """def hello1: Int
+          Inherited: Hello 1 comment
+          Inherited: Hello 1 comment
+          Definition Classes D → A
+       """, true),
+      (Some("D"), 
+       """def hello2: Int
+          Inherited: Hello 2 comment
+          Inherited: Hello 2 comment
+          Definition Classes D → B
+       """, true),
+      (Some("G"), 
+       """def hello1: Int
+          Inherited: Hello 1 comment
+          Inherited: Hello 1 comment
+          Definition Classes G → D → A
+       """, true),
+      (Some("G"), 
+       """def hello2: Int
+          Inherited: Hello 2 comment
+          Inherited: Hello 2 comment
+          Definition Classes G → D → B
+       """, true)
+      // traits E, F and H shouldn't crash scaladoc but we don't need to check the output
+    )
     
   {
     val files = createTemplates("basic.scala")

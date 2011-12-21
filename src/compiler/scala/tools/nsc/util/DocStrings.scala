@@ -84,15 +84,18 @@ object DocStrings {
    *  @usecase or the end of the string, as they might include other sections 
    *  of their own 
    */
-  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
-    findAll(str, 0) (idx => str(idx) == '@' && p(idx)) match {
+  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] = {
+    val indices = findAll(str, 0) (idx => str(idx) == '@' && p(idx)) 
+    val indices2 = mergeUsecaseSections(str, indices)
+    val indices3 = mergeInheritdocSections(str, indices2)
+ 
+    indices3 match {
       case List() => List()
       case idxs => {
-        val idxs2 = mergeUsecaseSections(str, idxs)
-        val idxs3 = mergeInheritdocSections(str, idxs2)
-        idxs3 zip (idxs3.tail ::: List(str.length - 2))
+        idxs zip (idxs.tail ::: List(str.length - 2))
       }
     }
+  }
   
   /**
    * Merge sections following an @usecase into the usecase comment, so they 
