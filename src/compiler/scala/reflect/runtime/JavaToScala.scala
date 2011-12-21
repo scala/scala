@@ -34,8 +34,10 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val global: JavaToScala.this.type = self
   }
 
-  protected def defaultReflectiveClassLoader(): JClassLoader =
-    Thread.currentThread.getContextClassLoader
+  protected def defaultReflectiveClassLoader(): JClassLoader = {
+    val cl = Thread.currentThread.getContextClassLoader
+    if (cl == null) getClass.getClassLoader else cl
+  }
 
   /** Paul: It seems the default class loader does not pick up root classes, whereas the system classloader does.
    *  Can you check with your newly acquired classloader fu whether this implementation makes sense?
