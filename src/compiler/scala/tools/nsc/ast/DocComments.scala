@@ -63,7 +63,7 @@ trait DocComments { self: Global =>
         if (ownComment.indexOf("@inheritdoc") != -1)
           reporter.warning(sym.pos, "The comment for " + sym + 
               " contains @inheritdoc, but no parent comment is available to inherit from.")
-        ownComment
+        ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
       case Some(sc) =>
         if (ownComment == "") sc
         else expandInheritdoc(sc, merge(sc, ownComment, sym), sym)
@@ -251,7 +251,7 @@ trait DocComments { self: Global =>
             case None =>               
               reporter.info(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym + 
                   " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", true)
-              "[...]"
+              "<invalid inheritdoc annotation>"
           }
  
         if (dst.substring(section._1).startsWith("@param")) 
