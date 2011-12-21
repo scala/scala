@@ -1201,8 +1201,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       perRunCaches.clearAll()
 
       // Reset project
-      atPhase(namerPhase) {
-        resetProjectClasses(definitions.RootClass)
+      if (!stopPhase("namer")) {
+        atPhase(namerPhase) {
+          resetProjectClasses(definitions.RootClass)
+        }
       }
     }
 
