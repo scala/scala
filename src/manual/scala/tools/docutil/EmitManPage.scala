@@ -163,10 +163,17 @@ object EmitManPage {
     doc.sections foreach (s => emitSection(s, 1))
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]) = args match{
+    case Array(classname)           => emitManPage(classname)
+    case Array(classname, file, _*) => emitManPage(classname, new java.io.FileOutputStream(file)) 
+    case _                          => sys.exit(1)
+  }
+
+  def emitManPage(classname: String, outStream: java.io.OutputStream = out.out) {
+    if(outStream != out.out) out setOut outStream
     try {
       val cl = this.getClass.getClassLoader()
-      val clasz = cl loadClass args(0)
+      val clasz = cl loadClass classname
       val meth = clasz getDeclaredMethod "manpage"
       val doc = meth.invoke(null).asInstanceOf[Document]
       emitDocument(doc)
@@ -176,10 +183,5 @@ object EmitManPage {
         System.err println "Error in EmitManPage"
         sys.exit(1)
     }
-  }
-
-  def emitManPage(classname: String, outStream: java.io.OutputStream) {
-    out setOut outStream
-    main(Array(classname))
   }
 }
