@@ -232,63 +232,62 @@ trait Trees extends reflect.internal.Trees { self: Global =>
 
   /** resets symbol and tpe fields in a tree, @see ResetAttrsTraverse
    */
-  def resetAllAttrs[A<:Tree](x:A): A = { new ResetAttrsTraverser().traverse(x); x }
-  def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
+//  def resetAllAttrs[A<:Tree](x:A): A = { new ResetAttrsTraverser().traverse(x); x }
+//  def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
+  
+  def resetAllAttrs[A<:Tree](x:A): A = new ResetAttrsTransformer(false).transformPoly(x)
+  def resetLocalAttrs[A<:Tree](x:A): A = new ResetAttrsTransformer(true).transformPoly(x)
 
-  /** A traverser which resets symbol and tpe fields of all nodes in a given tree
-   *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept, and
-   *  (2) This(pkg) nodes, where pkg refers to a package symbol -- their attributes are kept, and
-   *  (3) if a <code>.symbol</code> field refers to a symbol which is defined
-   *  outside the tree, it is also kept.
-   *
-   *  (2) is necessary because some This(pkg) are generated where pkg is not
-   *  an enclosing package.n In that case, resetting the symbol would cause the
-   *  next type checking run to fail. See #3152.
+  /** A transformer which resets symbol and tpe fields of all nodes in a given tree,
+   *  with special treatment of:
+   *    TypeTree nodes: are replaced by their original if it exists, otherwise tpe field is reset
+   *                    to empty if it started out empty or refers to local symbols (which are erased).
+   *    TypeApply nodes: are deleted if type arguments end up reverted to empty
+   *    This(pkg) notes where pkg is a pckage: these are kept.
    *
    *  (bq:) This traverser has mutable state and should be discarded after use
    */
-  private class ResetAttrsTraverser extends Traverser {
-    protected def isLocal(sym: Symbol): Boolean = true
-    protected def resetDef(tree: Tree) {
+  private class ResetAttrsTransformer(localOnly: Boolean) extends Transformer {
+    private val erasedSyms = util.HashSet[Symbol](8)
+    private def resetDef(tree: Tree) {
+      if (tree.symbol != null && tree.symbol != NoSymbol)
+        erasedSyms addEntry tree.symbol
       tree.symbol = NoSymbol
     }
-    override def traverse(tree: Tree): Unit = {
+    override def transform(tree: Tree): Tree = super.transform {
       tree match {
+        case Template(_, _, body) =>
+          body foreach resetDef
+          resetDef(tree)
+          tree.tpe = null
+          tree
         case _: DefTree | Function(_, _) | Template(_, _, _) =>
           resetDef(tree)
           tree.tpe = null
-          tree match {
-            case tree: DefDef => tree.tpt.tpe = null
-            case _ => ()
-          }
+          tree
         case tpt: TypeTree =>
-          if (tpt.wasEmpty) tree.tpe = null
+          if (tpt.original != null)
+            tpt.original
+          else if (tpt.tpe != null && (tpt.wasEmpty || (tpt.tpe exists (tp => erasedSyms contains tp.typeSymbol))))
+            tpt.tpe = null
+          tree
+        case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
+          fn
         case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
-          ;
+          tree
         case EmptyTree =>
-          ;
+          tree
         case _ =>
-          if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
+          if (tree.hasSymbol && (!localOnly || (erasedSyms contains tree.symbol))) 
+            tree.symbol = NoSymbol
           tree.tpe = null
+          tree
       }
-      super.traverse(tree)
     }
-  }
-
-  private class ResetLocalAttrsTraverser extends ResetAttrsTraverser {
-    private val erasedSyms = util.HashSet[Symbol](8)
-    override protected def isLocal(sym: Symbol) = erasedSyms(sym)
-    override protected def resetDef(tree: Tree) {
-      erasedSyms addEntry tree.symbol
-      super.resetDef(tree)
-    }
-    override def traverse(tree: Tree): Unit = tree match {
-      case Template(parents, self, body) =>
-        for (stat <- body)
-          if (stat.isDef) erasedSyms.addEntry(stat.symbol)
-        super.traverse(tree)
-      case _ =>
-        super.traverse(tree)
+    def transformPoly[T <: Tree](x: T): T = {
+      val x1 = transform(x)
+      assert(x.getClass isInstance x1)
+      x1.asInstanceOf[T]
     }
   }
 

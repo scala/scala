@@ -40,6 +40,18 @@ trait ToolBoxes extends { self: Universe =>
 
       private def isFree(t: Tree) = t.isInstanceOf[Ident] && t.symbol.isInstanceOf[FreeVar]
 
+      def typedTopLevelExpr(tree: Tree, pt: Type): Tree = {
+        val ownerClass = EmptyPackageClass.newClass(newTypeName("<expression-owner>"))
+        ownerClass.setInfo(new ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
+        val owner = ownerClass.newLocalDummy(tree.pos)
+        typer.atOwner(tree, owner).typed(tree, analyzer.EXPRmode, pt)
+      }
+      
+      def defOwner(tree: Tree): Symbol = tree find (_.isDef) map (_.symbol) match {
+        case Some(sym) if sym != null && sym != NoSymbol => sym.owner
+        case _ => NoSymbol
+      }
+    
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
         val obj = EmptyPackageClass.newModule(NoPosition, nextWrapperModuleName())
         val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
@@ -49,8 +61,11 @@ trait ToolBoxes extends { self: Universe =>
         def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name) setInfo fv.tpe
         meth setInfo MethodType(fvs map makeParam, expr.tpe)
         minfo.decls enter meth
-        val methdef = DefDef(meth, expr)
-        val objdef = ModuleDef(
+        trace("wrapping ")(defOwner(expr) -> meth)
+        val methdef = DefDef(meth, expr changeOwner (defOwner(expr) -> meth))
+        trace("wrapped: ")(showAttributed(methdef))
+        resetAllAttrs(
+          ModuleDef(
             obj,
             Template(
                 List(TypeTree(ObjectClass.tpe)),
@@ -59,8 +74,7 @@ trait ToolBoxes extends { self: Universe =>
                 List(),
                 List(List()),
                 List(methdef),
-                NoPosition))
-        resetAllAttrs(objdef)
+                NoPosition)))
       }
 
       def wrapInPackage(clazz: Tree): PackageDef =
@@ -106,6 +120,16 @@ trait ToolBoxes extends { self: Universe =>
           applyMeth.invoke(result)
         }
       }
+      
+      def showAttributed(tree: Tree): String = {
+        val saved = settings.printtypes.value
+        try {
+          settings.printtypes.value = true
+          //settings.uniqid.value = true
+          tree.toString
+        } finally
+          compiler.settings.printtypes.value = saved
+      }
     }
 
     lazy val arguments = options.split(" ")
@@ -134,7 +158,7 @@ trait ToolBoxes extends { self: Universe =>
     lazy val exporter = importer.reverse
 
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, defaultReflectiveClassLoader)
-
+    
     private def importAndTypeCheck(tree: rm.Tree, expectedType: rm.Type): compiler.Tree = {
       // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
       // that states that the period must be different from NoPeriod
@@ -142,7 +166,8 @@ trait ToolBoxes extends { self: Universe =>
       compiler.phase = run.refchecksPhase
       val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
       val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
-      val ttree: compiler.Tree = compiler.typer.typed(ctree, compiler.analyzer.EXPRmode, pt)
+//      val typer = compiler.typer.atOwner(ctree, if (owner.isModule) cowner.moduleClass else cowner)
+      val ttree: compiler.Tree = compiler.typedTopLevelExpr(ctree, pt)
       ttree
     }
 
@@ -155,14 +180,8 @@ trait ToolBoxes extends { self: Universe =>
     def typeCheck(tree: rm.Tree): rm.Tree =
       typeCheck(tree, WildcardType.asInstanceOf[rm.Type])
 
-    def showAttributed(tree: rm.Tree): String = {
-      val saved = compiler.settings.printtypes.value
-      try {
-        compiler.settings.printtypes.value = true
-        importer.importTree(tree.asInstanceOf[Tree]).toString
-      } finally
-        compiler.settings.printtypes.value = saved
-    }
+    def showAttributed(tree: rm.Tree): String = 
+      compiler.showAttributed(importer.importTree(tree.asInstanceOf[Tree]))
 
     def runExpr(tree: rm.Tree, expectedType: rm.Type): Any = {
       val ttree = importAndTypeCheck(tree, expectedType)
