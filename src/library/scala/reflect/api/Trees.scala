@@ -625,6 +625,11 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   
+  /** An empty deferred value definition corresponding to:
+   *    val _: _
+   *  This is used as a placeholder in the `self` parameter Template if there is 
+   *  no definition of a self value of self type.
+   */
   def emptyValDef: ValDef
 
   // ------ traversers, copiers, and transformers ---------------------------------------------
