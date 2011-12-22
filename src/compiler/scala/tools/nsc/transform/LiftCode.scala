@@ -476,6 +476,10 @@ abstract class LiftCode extends Transform with TypingTransformers {
         if (!(boundSyms exists (tt.tpe contains _))) mirrorCall("TypeTree", reifyType(tt.tpe))
         else if (tt.original != null) reify(tt.original)
         else mirrorCall("TypeTree")
+      case ta @ TypeApply(hk, ts) =>
+        val thereAreOnlyTTs = ts collect { case t if !t.isInstanceOf[TypeTree] => t } isEmpty;
+        val ttsAreNotEssential = ts collect { case tt: TypeTree => tt } find { tt => tt.original != null } isEmpty;
+        if (thereAreOnlyTTs && ttsAreNotEssential) reifyTree(hk) else reifyProduct(ta)
       case global.emptyValDef =>
         mirrorSelect("emptyValDef")
       case _ =>

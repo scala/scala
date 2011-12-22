@@ -61,9 +61,9 @@ trait ToolBoxes extends { self: Universe =>
         def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name) setInfo fv.tpe
         meth setInfo MethodType(fvs map makeParam, expr.tpe)
         minfo.decls enter meth
-        println("wrapping "+(defOwner(expr) -> meth))
+        trace("wrapping ")(defOwner(expr) -> meth)
         val methdef = DefDef(meth, expr changeOwner (defOwner(expr) -> meth))
-        println("wrapped: "+showAttributed(methdef))
+        trace("wrapped: ")(showAttributed(methdef))
         val objdef = ModuleDef(
             obj,
             Template(
@@ -99,7 +99,6 @@ trait ToolBoxes extends { self: Universe =>
         jclazz.getDeclaredMethods.find(_.getName == name).get
 
       def runExpr(expr: Tree): Any = {
-        settings.Xprint.value = List("typer", "erasure")
         val etpe = expr.tpe
         val fvs = (expr filter isFree map (_.symbol)).distinct
         
