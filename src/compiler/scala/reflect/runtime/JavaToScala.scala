@@ -53,7 +53,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       javaClass(path)
       true
     } catch {
-      case (_: ClassNotFoundException) | (_: NoClassDefFoundError) =>
+      case (_: ClassNotFoundException) | (_: NoClassDefFoundError) | (_: IncompatibleClassChangeError) =>
       false
     }
 
