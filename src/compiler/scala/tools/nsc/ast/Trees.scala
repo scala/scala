@@ -257,10 +257,6 @@ trait Trees extends reflect.internal.Trees { self: Global =>
         case _: DefTree | Function(_, _) | Template(_, _, _) =>
           resetDef(tree)
           tree.tpe = null
-          tree match {
-            case tree: DefDef => tree.tpt.tpe = null
-            case _ => ()
-          }
         case tpt: TypeTree =>
           if (tpt.wasEmpty) tree.tpe = null
         case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
