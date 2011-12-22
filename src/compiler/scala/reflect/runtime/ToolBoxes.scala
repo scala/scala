@@ -64,7 +64,8 @@ trait ToolBoxes extends { self: Universe =>
         trace("wrapping ")(defOwner(expr) -> meth)
         val methdef = DefDef(meth, expr changeOwner (defOwner(expr) -> meth))
         trace("wrapped: ")(showAttributed(methdef))
-        val objdef = ModuleDef(
+        resetAllAttrs(
+          ModuleDef(
             obj,
             Template(
                 List(TypeTree(ObjectClass.tpe)),
@@ -73,8 +74,7 @@ trait ToolBoxes extends { self: Universe =>
                 List(),
                 List(List()),
                 List(methdef),
-                NoPosition))
-        resetAllAttrs(objdef)
+                NoPosition)))
       }
 
       def wrapInPackage(clazz: Tree): PackageDef =
@@ -125,7 +125,7 @@ trait ToolBoxes extends { self: Universe =>
         val saved = settings.printtypes.value
         try {
           settings.printtypes.value = true
-          settings.uniqid.value = true
+          //settings.uniqid.value = true
           tree.toString
         } finally
           compiler.settings.printtypes.value = saved
