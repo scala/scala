@@ -26,6 +26,14 @@ object DocStrings {
     if (start < str.length && isIdentifierPart(str charAt start)) skipIdent(str, start + 1)
     else start
 
+  /** Returns index of string `str` following `start` skipping
+   *  sequence of identifier characters.
+   */
+  def skipTag(str: String, start: Int): Int =
+    if (start < str.length && (str charAt start) == '@') skipIdent(str, start + 1)
+    else start
+  
+    
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
    *  a single `*` character or the `/``**` sequence.
@@ -71,13 +79,45 @@ object DocStrings {
    *  Every section starts with a `@` and extends to the next `@`, or
    *  to the end of the comment string, but excluding the final two
    *  characters which terminate the comment.
+   *  
+   *  Also take usecases into account - they need to expand until the next 
+   *  @usecase or the end of the string, as they might include other sections 
+   *  of their own 
    */
-  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
-    findAll(str, 0) (idx => str(idx) == '@' && p(idx)) match {
+  def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] = {
+    val indices = findAll(str, 0) (idx => str(idx) == '@' && p(idx)) 
+    val indices2 = mergeUsecaseSections(str, indices)
+    val indices3 = mergeInheritdocSections(str, indices2)
+ 
+    indices3 match {
       case List() => List()
-      case idxs => idxs zip (idxs.tail ::: List(str.length - 2))
+      case idxs => {
+        idxs zip (idxs.tail ::: List(str.length - 2))
+      }
     }
-
+  }
+  
+  /**
+   * Merge sections following an @usecase into the usecase comment, so they 
+   * can override the parent symbol's sections 
+   */
+  def mergeUsecaseSections(str: String, idxs: List[Int]): List[Int] = {
+    idxs.find(str.substring(_).startsWith("@usecase")) match {
+      case Some(firstUC) =>
+        val commentSections = idxs.take(idxs.indexOf(firstUC))
+        val usecaseSections = idxs.drop(idxs.indexOf(firstUC)).filter(str.substring(_).startsWith("@usecase"))
+        commentSections ::: usecaseSections
+      case None =>
+        idxs
+    }
+  }
+  
+  /**
+   * Merge the @inheritdoc sections, as they never make sense on their own
+   */
+  def mergeInheritdocSections(str: String, idxs: List[Int]): List[Int] = 
+    idxs.filterNot(str.substring(_).startsWith("@inheritdoc"))
+  
   /** Does interval `iv` start with given `tag`?
    */
   def startsWithTag(str: String, section: (Int, Int), tag: String): Boolean =
@@ -133,4 +173,46 @@ object DocStrings {
       idx
     }
   }
+  
+  /** A map from the section tag to section parameters */
+  def sectionTagMap(str: String, sections: List[(Int, Int)]): Map[String, (Int, Int)] = 
+    Map() ++ {
+      for (section <- sections) yield 
+        extractSectionTag(str, section) -> section    
+    }
+  
+  /** Extract the section tag, treating the section tag as an indentifier */
+  def extractSectionTag(str: String, section: (Int, Int)): String =     
+    str.substring(section._1, skipTag(str, section._1))
+    
+  /** Extract the section parameter */
+  def extractSectionParam(str: String, section: (Int, Int)): String = {
+    assert(str.substring(section._1).startsWith("@param") ||
+           str.substring(section._1).startsWith("@tparam") ||
+           str.substring(section._1).startsWith("@throws"))
+           
+    val start = skipWhitespace(str, skipTag(str, section._1))
+    val finish = skipIdent(str, start)
+    
+    str.substring(start, finish)
+  }
+    
+  /** Extract the section text, except for the tag and comment newlines */
+  def extractSectionText(str: String, section: (Int, Int)): (Int, Int) = {
+    if (str.substring(section._1).startsWith("@param") ||
+        str.substring(section._1).startsWith("@tparam") ||
+        str.substring(section._1).startsWith("@throws"))
+      (skipWhitespace(str, skipIdent(str, skipWhitespace(str, skipTag(str, section._1)))), section._2)
+    else
+      (skipWhitespace(str, skipTag(str, section._1)), section._2)
+  }
+  
+  /** Cleanup section text */
+  def cleanupSectionText(str: String) = {
+    var result = str.trim.replaceAll("\n\\s+\\*\\s+", " \n")
+    while (result.endsWith("\n")) 
+      result = result.substring(0, str.length - 1)
+    result
+  }
+
 }

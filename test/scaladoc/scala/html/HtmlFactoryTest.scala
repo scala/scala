@@ -84,12 +84,7 @@ object Test extends Properties("HtmlFactory") {
     val html = scala.stripSuffix(".scala") + ".html"
     createTemplates(scala)(html)
   }
-  
-  /**
-   * See checkTextOnly(scalaFile: String, checks: List[String])
-   */
-  def checkText1(scalaFile: String, check: String, debug: Boolean = true): Boolean = checkText(scalaFile, List(check), debug)
-  
+    
   /**
    * This tests the text without the markup - ex:
    * 
@@ -111,20 +106,31 @@ object Test extends Properties("HtmlFactory") {
    * 
    * NOTE: Comparison is done ignoring all whitespace
    */
-  def checkText(scalaFile: String, checks: List[String], debug: Boolean = true): Boolean = {
+  def checkText(scalaFile: String, debug: Boolean = true)(checks: (Option[String], String, Boolean)*): Boolean = {
     val htmlFile = scalaFile.stripSuffix(".scala") + ".html"    
-    val htmlText = createTemplates(scalaFile)(htmlFile).text.replace('→',' ').replaceAll("\\s+","")
+    val htmlAllFiles = createTemplates(scalaFile)
     var result = true
     
-    for (check <- checks) {
-    	val checkText = check.replace('→',' ').replaceAll("\\s+","")
-    	val checkValue = htmlText.contains(checkText)
-    	if (debug && (!checkValue)) {
-    		Console.err.println("Check failed: ")
-    		Console.err.println("HTML: " + htmlText)
-    		Console.err.println("Check: " + checkText)
-    	}
-  		result &&= checkValue 
+    for ((fileHint, check, expected) <- checks) {
+      // resolve the file to be checked
+      val fileName = fileHint match {
+        case Some(file) => 
+          if (file endsWith ".html")
+            file
+          else
+            file + ".html"
+        case None =>
+          htmlFile
+      }
+      val fileText = htmlAllFiles(fileName).text.replace('→',' ').replaceAll("\\s+","")
+      val checkText = check.replace('→',' ').replaceAll("\\s+","")
+      val checkValue = fileText.contains(checkText) == expected
+      if (debug && (!checkValue)) {
+        Console.err.println("Check failed: ")
+        Console.err.println("HTML: " + fileText)
+        Console.err.println("Check: " + checkText)
+      }
+      result &&= checkValue 
     }
     
     result
@@ -428,38 +434,232 @@ object Test extends Properties("HtmlFactory") {
   }
   
   property("Use cases should override their original members") =
-     checkText1("SI_5054_q1.scala", """def test(): Int""") &&
-     !checkText1("SI_5054_q1.scala", """def test(implicit lost: Int): Int""")
-  
+     checkText("SI_5054_q1.scala")(
+       (None,"""def test(): Int""", true),
+       (None,"""def test(implicit lost: Int): Int""", false)
+     )
 
   property("Use cases should keep their flags - final should not be lost") = 
-    checkText1("SI_5054_q2.scala", """final def test(): Int""")
+    checkText("SI_5054_q2.scala")((None, """final def test(): Int""", true))
   
   property("Use cases should keep their flags - implicit should not be lost") = 
-    checkText1("SI_5054_q3.scala", """implicit def test(): Int""")
-
+    checkText("SI_5054_q3.scala")((None, """implicit def test(): Int""", true))
+ 
   property("Use cases should keep their flags - real abstract should not be lost") = 
-    checkText1("SI_5054_q4.scala", """abstract def test(): Int""")
+    checkText("SI_5054_q4.scala")((None, """abstract def test(): Int""", true))
 
   property("Use cases should keep their flags - traits should not be affected") = 
-    checkText1("SI_5054_q5.scala", """def test(): Int""")
+    checkText("SI_5054_q5.scala")((None, """def test(): Int""", true))
 
   property("Use cases should keep their flags - traits should not be affected") = 
-    checkText1("SI_5054_q6.scala", """abstract def test(): Int""")
+    checkText("SI_5054_q6.scala")((None, """abstract def test(): Int""", true))
    
   property("Use case individual signature test") = 
-    checkText("SI_5054_q7.scala", List( 
-        """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""",
-        """abstract def test1(): Int [use case] This takes the implicit value in scope."""))
+    checkText("SI_5054_q7.scala")(
+      (None, """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""", true),
+      (None, """abstract def test1(): Int [use case] This takes the implicit value in scope.""", true)
+    )
 
   property("Display correct \"Definition classes\"") = 
-    checkText1("SI_5287.scala", 
-        """def method(): Int
+    checkText("SI_5287.scala")( 
+      (None,
+          """def method(): Int
            [use case] The usecase explanation
            [use case] The usecase explanation
-           Definition Classes SI_5287 SI_5287_B SI_5287_A""", debug=true) 
-           // explanation appears twice, as small comment and full comment
+           Definition Classes SI_5287 SI_5287_B SI_5287_A""", true)
+    )      // the explanation appears twice, as small comment and full comment           
   
+    
+  property("Correct comment inheritance for overriding") = 
+    checkText("implicit-inheritance-override.scala")(
+      (Some("Base"), 
+       """def function[T](arg1: T, arg2: String): Double
+          The base comment.
+          The base comment. And another sentence...
+          T the type of the first argument
+          arg1 The T term comment
+          arg2 The string comment
+          returns The return comment
+          """, true),
+      (Some("DerivedA"), 
+       """def function[T](arg1: T, arg2: String): Double
+          Overriding the comment, the params and returns comments should stay the same.
+          Overriding the comment, the params and returns comments should stay the same.
+          T the type of the first argument
+          arg1 The T term comment
+          arg2 The string comment
+          returns The return comment
+          """, true),
+      (Some("DerivedB"), 
+       """def function[T](arg1: T, arg2: String): Double
+          T the type of the first argument
+          arg1 The overridden T term comment
+          arg2 The overridden string comment
+          returns The return comment
+          """, true),
+      (Some("DerivedC"), 
+       """def function[T](arg1: T, arg2: String): Double
+          T the type of the first argument
+          arg1 The T term comment
+          arg2 The string comment
+          returns The overridden return comment
+          """, true),
+      (Some("DerivedD"), 
+       """def function[T](arg1: T, arg2: String): Double
+          T The overriden type parameter comment
+          arg1 The T term comment
+          arg2 The string comment
+          returns The return comment
+          """, true)
+    )
+    
+  for (useCaseFile <- List("UseCaseInheritance", "UseCaseOverrideInheritance")) {
+    property("Correct comment inheritance for usecases") = 
+      checkText("implicit-inheritance-usecase.scala")(
+        (Some(useCaseFile), 
+         """def missing_arg[T](arg1: T): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The T term comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def missing_targ(arg1: Int, arg2: String): Double
+            [use case]
+            [use case]
+            arg1 The T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_arg1[T](implicit arg1: T, arg2: String): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The overridden T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_targ[T](implicit arg1: T, arg2: String): Double
+            [use case]
+            [use case]
+            T The overridden type parameter comment
+            arg1 The T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_return[T](implicit arg1: T, arg2: String): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The T term comment
+            arg2 The string comment
+            returns The overridden return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def added_arg[T](implicit arg1: T, arg2: String, arg3: Float): Double
+            [use case]
+            [use case]
+            T The type parameter
+            arg1 The T term comment
+            arg2 The string comment
+            arg3 The added float comment
+            returns The return comment
+            """, true),
+        (Some(useCaseFile), 
+         """def overridden_comment[T](implicit arg1: T, arg2: String): Double
+            [use case] The overridden comment.
+            [use case] The overridden comment.
+            T The type parameter
+            arg1 The T term comment
+            arg2 The string comment
+            returns The return comment
+            """, true)
+      )    
+  }
+
+    property("Correct explicit inheritance for override") = 
+    checkText("explicit-inheritance-override.scala")(
+      (Some("InheritDocDerived"), 
+       """def function[T](arg1: T, arg2: String): Double
+          Starting line
+          Starting line
+          The base comment. And another sentence...
+          The base comment. And another sentence...
+          Ending line
+            T       StartT the type of the first argument EndT
+            arg1    Start1 The T term comment End1
+            arg2    Start2 The string comment End2
+            returns StartRet The return comment EndRet
+          Definition Classes InheritDocDerived → InheritDocBase
+          Example:   StartExample function[Int](3, "something") EndExample
+          Version    StartVer 0.0.2 EndVer
+          Since      StartSince 0.0.1 EndSince
+          Exceptions thrown 
+                     SomeException      StartEx if the function is not called with correct parameters EndEx
+                     SomeOtherException StartSOE Should Warn <invalid inheritdoc annotation> EndSOE
+          To do      StartTodo Call mom. And dad! EndTodo
+          Note       StartNote Be careful! EndNote
+          See also   StartSee The Manual EndSee
+       """, true))
+   
+    property("Correct explicit inheritance for usecase") = 
+    checkText("explicit-inheritance-usecase.scala")(
+      (Some("UseCaseInheritDoc"), 
+       """def function[T](arg1: T, arg2: String): Double
+          [use case] Starting line
+          [use case] Starting line
+          The base comment. And another sentence...
+          The base comment. And another sentence...
+          Ending line
+            T       StartT the type of the first argument EndT
+            arg1    Start1 The T term comment End1
+            arg2    Start2 The string comment End2
+            returns StartRet The return comment EndRet
+          Example:   StartExample function[Int](3,"something") EndExample
+          Version    StartVer 0.0.2 EndVer
+          Since      StartSince 0.0.1 EndSince
+          Exceptions thrown 
+                     SomeException      StartEx if the function is not called with correct parameters EndEx
+                     SomeOtherException StartSOE Should Warn <invalid inheritdoc annotation> EndSOE
+          To do      StartTodo Call mom. And dad! EndTodo
+          Note       StartNote Be careful! EndNote
+          See also   StartSee The Manual EndSee
+       """, true))
+
+  
+  property("Correct explicit inheritance in corner cases") = 
+    checkText("inheritdoc-corner-cases.scala")(
+      (Some("D"), 
+       """def hello1: Int
+          Inherited: Hello 1 comment
+          Inherited: Hello 1 comment
+          Definition Classes D → A
+       """, true),
+      (Some("D"), 
+       """def hello2: Int
+          Inherited: Hello 2 comment
+          Inherited: Hello 2 comment
+          Definition Classes D → B
+       """, true),
+      (Some("G"), 
+       """def hello1: Int
+          Inherited: Hello 1 comment
+          Inherited: Hello 1 comment
+          Definition Classes G → D → A
+       """, true),
+      (Some("G"), 
+       """def hello2: Int
+          Inherited: Hello 2 comment
+          Inherited: Hello 2 comment
+          Definition Classes G → D → B
+       """, true)
+      // traits E, F and H shouldn't crash scaladoc but we don't need to check the output
+    )
+    
   {
     val files = createTemplates("basic.scala")
     //println(files)
