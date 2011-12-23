@@ -43,7 +43,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 
     private def transformArgs(params: List[Symbol], args: List[Tree]) = {
-      treeInfo.zipMethodParamsAndArgs(params, args) map { case (param, arg) =>
+      treeInfo.mapMethodParamsAndArgs(params, args) { (param, arg) =>
         if (isByNameParamType(param.tpe))
           withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
         else transform(arg)

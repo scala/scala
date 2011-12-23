@@ -10,8 +10,7 @@ names-defaults-neg.scala:5: error: type mismatch;
 names-defaults-neg.scala:8: error: positional after named argument.
   test1(b = "(*", 23)
                   ^
-names-defaults-neg.scala:13: error: reference to x is ambiguous; it is both, a parameter
-name of the method and the name of a variable currently in scope.
+names-defaults-neg.scala:13: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   test2(x = 1)
           ^
 names-defaults-neg.scala:15: error: not found: value c
@@ -26,8 +25,7 @@ names-defaults-neg.scala:17: error: not found: value m
 names-defaults-neg.scala:18: error: not found: value m
   test7 { m = 1 } // no named arguments in argument block
           ^
-names-defaults-neg.scala:19: error: reference to x is ambiguous; it is both, a parameter
-name of the method and the name of a variable currently in scope.
+names-defaults-neg.scala:19: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   test8(x = 1)
           ^
 names-defaults-neg.scala:22: error: parameter specified twice: a
@@ -118,8 +116,7 @@ names-defaults-neg.scala:93: error: parameter specified twice: b
 names-defaults-neg.scala:98: error: unknown parameter name: m
   f3818(y = 1, m = 1)
                  ^
-names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both, a parameter
-name of the method and the name of a variable currently in scope.
+names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both a method parameter and a variable in scope.
   delay(var2 = 40)
              ^
 names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => a = x$1)
@@ -146,15 +143,13 @@ names-defaults-neg.scala:164: error: variable definition needs type because 'x' 
 names-defaults-neg.scala:167: error: variable definition needs type because 'x' is used as a named argument in its body.
   def u6 { var x = u.f(x = "32") }
                ^
-names-defaults-neg.scala:170: error: reference to x is ambiguous; it is both, a parameter
-name of the method and the name of a variable currently in scope.
+names-defaults-neg.scala:170: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   def u9 { var x: Int = u.f(x = 1) }
                               ^
 names-defaults-neg.scala:177: error: variable definition needs type because 'x' is used as a named argument in its body.
   class u15 { var x = u.f(x = 1) }
                   ^
-names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both, a parameter
-name of the method and the name of a variable currently in scope.
+names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
 one warning found

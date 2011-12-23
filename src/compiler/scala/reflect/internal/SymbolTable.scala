@@ -10,9 +10,11 @@ import scala.collection.{ mutable, immutable }
 import util._
 
 abstract class SymbolTable extends api.Universe
+                              with Collections
                               with Names
                               with Symbols
                               with Types
+                              with Kinds
                               with Scopes
                               with Definitions
                               with Constants

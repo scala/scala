@@ -410,8 +410,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
         }
 
-
-
         def checkOverrideTypes() {
           if (other.isAliasType) {
             //if (!member.typeParams.isEmpty) (1.5)  @MAT
@@ -420,14 +418,14 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             //  overrideError("may not override parameterized type");
             // @M: substSym
 
-            if( !(sameLength(member.typeParams, other.typeParams) && (self.memberType(member).substSym(member.typeParams, other.typeParams) =:= self.memberType(other))) ) // (1.6)
+            if( !(sameLength(member.typeParams, other.typeParams) && (memberTp.substSym(member.typeParams, other.typeParams) =:= otherTp)) ) // (1.6)
               overrideTypeError();
-          } else if (other.isAbstractType) {
+          } 
+          else if (other.isAbstractType) {
             //if (!member.typeParams.isEmpty) // (1.7)  @MAT
             //  overrideError("may not be parameterized");
-
-            val memberTp = self.memberType(member)
             val otherTp = self.memberInfo(other)
+            
             if (!(otherTp.bounds containsType memberTp)) { // (1.7.1)
               overrideTypeError(); // todo: do an explaintypes with bounds here
               explainTypes(_.bounds containsType _, otherTp, memberTp)

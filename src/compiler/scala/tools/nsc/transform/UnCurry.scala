@@ -461,7 +461,7 @@ abstract class UnCurry extends InfoTransform
 
       val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head) else args
 
-      (formals, args1).zipped map { (formal, arg) =>
+      map2(formals, args1) { (formal, arg) =>
         if (!isByNameParamType(formal)) {
           arg
         } else if (isByNameRef(arg)) {
@@ -771,7 +771,7 @@ abstract class UnCurry extends InfoTransform
         case p                        => p.symbol.tpe
       }
       val forwresult = dd.symbol.tpe.finalResultType
-      val forwformsyms = (forwformals, flatparams).zipped map ((tp, oldparam) =>
+      val forwformsyms = map2(forwformals, flatparams)((tp, oldparam) =>
         currentClass.newValueParameter(oldparam.symbol.pos, oldparam.name).setInfo(tp)
       )
       def mono = MethodType(forwformsyms, forwresult)
@@ -789,7 +789,7 @@ abstract class UnCurry extends InfoTransform
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {
-        val locals = (forwsym ARGS, flatparams).zipped map {
+        val locals = map2(forwsym ARGS, flatparams) {
           case (_, fp) if !rpsymbols(fp.symbol) => null
           case (argsym, fp)                     =>
             Block(Nil,
@@ -799,7 +799,7 @@ abstract class UnCurry extends InfoTransform
               )
             )
         }
-        val seqargs = (locals, forwsym ARGS).zipped map {
+        val seqargs = map2(locals, forwsym ARGS) {
           case (null, argsym) => Ident(argsym)
           case (l, _)         => l
         }

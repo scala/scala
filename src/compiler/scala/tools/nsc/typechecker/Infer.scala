@@ -9,7 +9,6 @@ package typechecker
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import scala.util.control.ControlThrowable
-import scala.tools.util.StringOps.{ countAsString, countElementsAsString }
 import symtab.Flags._
 import scala.annotation.tailrec
 
@@ -459,13 +458,14 @@ trait Infer {
       }
       val tvars = tparams map freshVar
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
-        (tparams, tvars).zipped map ((tparam, tvar) =>
+        map2(tparams, tvars)((tparam, tvar) =>
           instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
       else
         tvars map (tvar => WildcardType)
     }
 
     object AdjustedTypeArgs {
+      val Result = collection.mutable.LinkedHashMap
       type Result = collection.mutable.LinkedHashMap[Symbol, Option[Type]]
 
       def unapply(m: Result): Some[(List[Symbol], List[Type])] = Some(toLists(
@@ -508,24 +508,27 @@ trait Infer {
      *    type parameters that are inferred as `scala.Nothing` and that are not covariant in <code>restpe</code> are taken to be undetermined
      */
     def adjustTypeArgs(tparams: List[Symbol], tvars: List[TypeVar], targs: List[Type], restpe: Type = WildcardType): AdjustedTypeArgs.Result  = {
-      @inline def keep(targ: Type, tparam: Symbol) = (
-          targ.typeSymbol != NothingClass // definitely not retracting, it's not Nothing!
-          || (!restpe.isWildcard && (varianceInType(restpe)(tparam) & COVARIANT) != 0)) // occured covariantly --> don't retract
+      val buf = AdjustedTypeArgs.Result.newBuilder[Symbol, Option[Type]]
+      
+      foreach3(tparams, tvars, targs) { (tparam, tvar, targ) =>
+        val retract = (
+              targ.typeSymbol == NothingClass                                         // only retract Nothings
+          && (restpe.isWildcard || (varianceInType(restpe)(tparam) & COVARIANT) == 0) // don't retract covariant occurrences
+        )
 
-      @inline def adjusted(targ: Type, tvar: TypeVar) =
-        if (targ.typeSymbol == RepeatedParamClass)
-          targ.baseType(SeqClass)
-        else if (targ.typeSymbol == JavaRepeatedParamClass)
-          targ.baseType(ArrayClass)
         // checks opt.virtPatmat directly so one need not run under -Xexperimental to use virtpatmat
-        else if (targ.typeSymbol.isModuleClass || ((opt.experimental || opt.virtPatmat) && tvar.constr.avoidWiden))
-          targ  // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
-        else
-          targ.widen
-
-      (tparams, tvars, targs).zipped.map { (tparam, tvar, targ) =>
-        tparam -> (if(keep(targ, tparam)) Some(adjusted(targ, tvar)) else None)
-      }(collection.breakOut)
+        buf += ((tparam,
+          if (retract) None
+          else Some(
+            if (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
+            else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
+            // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
+            else if (targ.typeSymbol.isModuleClass || ((opt.experimental || opt.virtPatmat) && tvar.constr.avoidWiden)) targ
+            else targ.widen
+          )
+        ))
+      }
+      buf.result
     }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
@@ -584,7 +587,7 @@ trait Infer {
         if (!isFullyDefined(tvar)) tvar.constr.inst = NoType
 
       // Then define remaining type variables from argument types.
-      (argtpes, formals).zipped map { (argtpe, formal) =>
+      map2(argtpes, formals) { (argtpe, formal) =>
         val tp1 = argtpe.deconst.instantiateTypeParams(tparams, tvars)
         val pt1 = formal.instantiateTypeParams(tparams, tvars)
 
@@ -756,7 +759,8 @@ trait Infer {
                 typesCompatible(reorderArgs(argtpes1, argPos))
               )
             }
-          } else {
+          }
+          else {
             // not enough arguments, check if applicable using defaults
             val missing = missingParams[Type](argtpes0, params, {
               case NamedType(name, _) => Some(name)
@@ -994,39 +998,13 @@ trait Infer {
       }
     }
 
-
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
-      // @M TODO this method is duplicated all over the place (varianceString)
-      def varStr(s: Symbol): String =
-        if (s.isCovariant) "covariant"
-        else if (s.isContravariant) "contravariant"
-        else "invariant";
-
-      def qualify(a0: Symbol, b0: Symbol): String = if (a0.toString != b0.toString) "" else {
-        if((a0 eq b0) || (a0.owner eq b0.owner)) ""
-        else {
-          var a = a0; var b = b0
-          while (a.owner.name == b.owner.name) { a = a.owner; b = b.owner}
-          if (a.locationString ne "") " (" + a.locationString.trim + ")" else ""
-        }
+      checkKindBounds0(tparams, targs, pre, owner, true) map {
+        case (targ, tparam, kindErrors) =>
+          kindErrors.errorMessage(targ, tparam)
       }
-
-      val errors = checkKindBounds0(tparams, targs, pre, owner, true)
-      val errorMessages = new ListBuffer[String]
-      errors foreach {case (targ, tparam, arityMismatches, varianceMismatches, stricterBounds) => errorMessages +=
-        (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+
-        (for ((a, p) <- arityMismatches)
-          yield a+qualify(a,p)+ " has "+countElementsAsString(a.typeParams.length, "type parameter")+", but "+
-            p+qualify(p,a)+" has "+countAsString(p.typeParams.length)).toList.mkString(", ") +
-        (for ((a, p) <- varianceMismatches)
-          yield a+qualify(a,p)+ " is "+varStr(a)+", but "+
-            p+qualify(p,a)+" is declared "+varStr(p)).toList.mkString(", ") +
-        (for ((a, p) <- stricterBounds)
-          yield a+qualify(a,p)+"'s bounds "+a.info+" are stricter than "+
-            p+qualify(p,a)+"'s declared bounds "+p.info).toList.mkString(", "))
-      }
-      errorMessages.toList
     }
+
     /** Substitute free type variables `undetparams` of polymorphic argument
      *  expression `tree`, given two prototypes `strictPt`, and `lenientPt`.
      *  `strictPt` is the first attempt prototype where type parameters

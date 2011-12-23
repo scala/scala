@@ -30,23 +30,37 @@ object EditDistance {
     if (m == 0) return n
 
     val d = Array.ofDim[Int](n + 1, m + 1)
-    0 to n foreach (x => d(x)(0) = x)
-    0 to m foreach (x => d(0)(x) = x)
+    var i = 0
+    val max = math.max(m, n)
+    while (i <= max) {
+      if (i <= n)
+        d(i)(0) = i
+      if (i <= m)
+        d(0)(i) = i
+      i += 1
+    }
+    i = 1
 
-    for (i <- 1 to n ; s_i = s(i - 1) ; j <- 1 to m) {
-      val t_j   = t(j - 1)
-      val cost  = if (s_i == t_j) 0 else 1
+    while (i <= n) {
+      val s_i = s(i - 1)
+      var j = 1
+      while (j <= m) {
+        val t_j   = t(j - 1)
+        val cost  = if (s_i == t_j) 0 else 1
 
-      val c1 = d(i - 1)(j) + 1
-      val c2 = d(i)(j - 1) + 1
-      val c3 = d(i - 1)(j - 1) + cost
+        val c1 = d(i - 1)(j) + 1
+        val c2 = d(i)(j - 1) + 1
+        val c3 = d(i - 1)(j - 1) + cost
 
-      d(i)(j) = c1 min c2 min c3
+        d(i)(j) = c1 min c2 min c3
 
-      if (transpositions) {
-        if (i > 1 && j > 1 && s(i - 1) == t(j - 2) && s(i - 2) == t(j - 1))
-          d(i)(j) = d(i)(j) min (d(i - 2)(j - 2) + cost)
+        if (transpositions) {
+          if (i > 1 && j > 1 && s(i - 1) == t(j - 2) && s(i - 2) == t(j - 1))
+            d(i)(j) = d(i)(j) min (d(i - 2)(j - 2) + cost)
+        }
+        j += 1
       }
+      i += 1
     }
 
     d(n)(m)

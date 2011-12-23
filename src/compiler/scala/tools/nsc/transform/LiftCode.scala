@@ -202,7 +202,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
         /** A method call with a by-name parameter represents escape. */
         case Apply(fn, args) if fn.symbol.paramss.nonEmpty =>
           traverse(fn)
-          for ((param, arg) <- treeInfo.zipMethodParamsAndArgs(tree)) {
+          treeInfo.foreachMethodParamAndArg(tree) { (param, arg) =>
             if (param.tpe != null && isByNameParamType(param.tpe))
               withEscaping(traverse(arg))
             else
