@@ -163,6 +163,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     if (opt.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
+  // Needs to call error to make sure the compile fails.
+  override def abort(msg: String): Nothing = {
+    error(msg)
+    super.abort(msg)
+  }
+
   @inline final def ifDebug(body: => Unit) {
     if (settings.debug.value)
       body
