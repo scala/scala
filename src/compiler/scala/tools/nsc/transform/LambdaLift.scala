@@ -228,6 +228,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxy(sym: Symbol) = {
       def searchIn(enclosure: Symbol): Symbol = {
+        if (enclosure eq NoSymbol) throw new IllegalArgumentException("Could not find proxy for "+ sym.defString +" in "+ sym.ownerChain +" (currentOwner= "+ currentOwner +" )")
         debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
 
         val ps = (proxies get enclosure.logicallyEnclosingMember).toList.flatten filter (_.name == sym.name)

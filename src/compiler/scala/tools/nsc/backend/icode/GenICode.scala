@@ -1078,6 +1078,7 @@ abstract class GenICode extends SubComponent  {
             }
 
             caseCtx = genLoad(body, tmpCtx, generatedType)
+            // close the block unless it's already been closed by the body, which closes the block if it ends in a jump (which is emitted to have alternatives share their body)
             caseCtx.bb.closeWith(JUMP(afterCtx.bb) setPos caze.pos)
           }
           ctx1.bb.emitOnly(
