@@ -220,7 +220,7 @@ INITIALISATION
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
     <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
-      <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
     <!-- Find out whether we are running on Windows -->
