@@ -692,10 +692,14 @@ trait Definitions extends reflect.api.StandardDefinitions {
       result
     }
 
+    def getClassIfDefined(fullname: String): Symbol =
+      getClassIfDefined(newTypeName(fullname))
     def getClassIfDefined(fullname: Name): Symbol =
       try getClass(fullname.toTypeName)
       catch { case _: MissingRequirementError => NoSymbol }
 
+    def getModuleIfDefined(fullname: String): Symbol =
+      getModuleIfDefined(newTermName(fullname))
     def getModuleIfDefined(fullname: Name): Symbol =
       try getModule(fullname.toTermName)
       catch { case _: MissingRequirementError => NoSymbol }

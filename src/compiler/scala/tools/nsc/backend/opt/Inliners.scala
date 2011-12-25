@@ -248,10 +248,9 @@ abstract class Inliners extends SubComponent {
     }
 
     private def isMonadicMethod(sym: Symbol) = {
-      val (origName, _, _) = nme.splitSpecializedName(sym.name)
-      origName match {
+      nme.unspecializedName(sym.name) match {
         case nme.foreach | nme.filter | nme.withFilter | nme.map | nme.flatMap => true
-        case _ => false
+        case _                                                                 => false
       }
     }
 

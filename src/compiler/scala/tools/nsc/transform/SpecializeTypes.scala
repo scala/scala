@@ -407,7 +407,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def typeParamSubAnyRef(sym: Symbol, cls: Symbol) = (
     anyrefSpecCache.getOrElseUpdate(sym,
-      cls.newTypeParameter(sym.pos, newTypeName(sym.name + "$sp"))
+      cls.newTypeParameter(sym.pos, sym.name append nme.SPECIALIZED_SUFFIX_NAME toTypeName)
         setInfo TypeBounds(sym.info.bounds.lo, AnyRefClass.tpe)
     ).tpe
   )
@@ -1702,10 +1702,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *    - there is a getter for the original (non-specialized) field in the same class
      *    - there is a getter for the specialized field in the same class
      */
-    def initializesSpecializedField(f: Symbol): Boolean =
-      (f.name.endsWith("$sp")
-          && clazz.info.member(nme.originalName(f.name)).isPublic
-          && (clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol))
+    def initializesSpecializedField(f: Symbol) = (
+         (f.name endsWith nme.SPECIALIZED_SUFFIX_NAME)
+      && clazz.info.member(nme.originalName(f.name)).isPublic
+      && clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol
+    )
 
     val argss = paramss map (_ map (x =>
       if (initializesSpecializedField(x.symbol))
@@ -1717,7 +1718,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** Concrete methods that use a specialized type, or override such methods. */
-  private val concreteSpecMethods: mutable.Set[Symbol] = new mutable.HashSet
+  private val concreteSpecMethods = new mutable.HashSet[Symbol]()
 
   /** Add method m to the set of symbols for which we need an implementation tree
    *  in the tree transformer.

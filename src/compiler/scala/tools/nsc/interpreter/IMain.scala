@@ -186,7 +186,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   lazy val compiler: global.type = global
 
   import global._
-  import definitions.{ ScalaPackage, JavaLangPackage, PredefModule, RootClass }
+  import definitions.{
+    ScalaPackage, JavaLangPackage, PredefModule, RootClass,
+    getClassIfDefined, getModuleIfDefined
+  }
 
   private implicit def privateTreeOps(t: Tree): List[Tree] = {
     (new Traversable[Tree] {
@@ -1114,35 +1117,18 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   private def findName(name: Name) = definedSymbols find (_.name == name)
 
-  private def missingOpt(op: => Symbol): Option[Symbol] =
-    try Some(op)
-    catch { case _: MissingRequirementError => None }
-  private def missingWrap(op: => Symbol): Symbol =
-    try op
-    catch { case _: MissingRequirementError => NoSymbol }
-
-  def optCompilerClass(name: String)  = missingOpt(definitions.getClass(name))
-  def optCompilerModule(name: String) = missingOpt(definitions.getModule(name))
-  def getCompilerClass(name: String)  = missingWrap(definitions.getClass(name))
-  def getCompilerModule(name: String) = missingWrap(definitions.getModule(name))
-
   /** Translate a repl-defined identifier into a Symbol.
    */
-  def apply(name: String): Symbol = {
-    val tpname = newTypeName(name)
-    (
-             findName(tpname)
-      orElse findName(tpname.companionName)
-      orElse optCompilerClass(name)
-      orElse optCompilerModule(name)
-      getOrElse NoSymbol
-    )
-  }
+  def apply(name: String): Symbol =
+    types(name) orElse terms(name)
+
   def types(name: String): Symbol = {
-    findName(newTypeName(name)) getOrElse getCompilerClass(name)
+    val tpname = newTypeName(name)
+    findName(tpname) getOrElse getClassIfDefined(tpname)
   }
   def terms(name: String): Symbol = {
-    findName(newTermName(name)) getOrElse getCompilerModule(name)
+    val termname = newTypeName(name)
+    findName(termname) getOrElse getModuleIfDefined(termname)
   }
 
   /** the previous requests this interpreter has processed */

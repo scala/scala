@@ -285,10 +285,11 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         specBuf ++= specializedStats
 
         def specializedAssignFor(sym: Symbol): Option[Tree] =
-          specializedStats.find {
-            case Assign(sel @ Select(This(_), _), rhs) if sel.symbol.hasFlag(SPECIALIZED) =>
-              val (generic, _, _) = nme.splitSpecializedName(nme.localToGetter(sel.symbol.name))
-              generic == nme.localToGetter(sym.name)
+          specializedStats find {
+            case Assign(sel @ Select(This(_), _), rhs) =>
+              (    (sel.symbol hasFlag SPECIALIZED)
+                && (nme.unspecializedName(nme.localToGetter(sel.symbol.name)) == nme.localToGetter(sym.name))
+              )
             case _ => false
           }
 
@@ -378,11 +379,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               EmptyTree)
 
           List(localTyper.typed(tree))
-        } else if (clazz.hasFlag(SPECIALIZED)) {
+        }
+        else if (clazz.hasFlag(SPECIALIZED)) {
           // add initialization from its generic class constructor
-          val (genericName, _, _) = nme.splitSpecializedName(clazz.name)
+          val genericName  = nme.unspecializedName(clazz.name)
           val genericClazz = clazz.owner.info.decl(genericName.toTypeName)
-          assert(genericClazz != NoSymbol)
+          assert(genericClazz != NoSymbol, clazz)
 
           guardedCtorStats.get(genericClazz) match {
             case Some(stats1) => mergeConstructors(genericClazz, stats1, stats)

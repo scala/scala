@@ -306,6 +306,16 @@ trait Names extends api.Names {
       while (start <= last && !startsWith(subname, start)) start += 1
       start <= last
     }
+    final def containsChar(ch: Char): Boolean = {
+      var i = index
+      val max = index + len
+      while (i < max) {
+        if (chrs(i) == ch)
+          return true
+        i += 1
+      }
+      false
+    }
 
     /** Some thoroughly self-explanatory convenience functions.  They
      *  assume that what they're being asked to do is known to be valid.
@@ -320,6 +330,8 @@ trait Names extends api.Names {
     final def stripStart(prefix: String): Name  = subName(prefix.length, len)
     final def stripEnd(suffix: Name): Name      = subName(0, len - suffix.length)
     final def stripEnd(suffix: String): Name    = subName(0, len - suffix.length)
+    
+    def dropRight(n: Int) = subName(0, len - n)
 
     def lastIndexOf(ch: Char) = toChars lastIndexOf ch
 
@@ -349,6 +361,7 @@ trait Names extends api.Names {
       else newTermName(res)
     }
 
+    def append(ch: Char): Name
     def append(suffix: String): Name
     def append(suffix: Name): Name
 
@@ -377,6 +390,7 @@ trait Names extends api.Names {
         n = new TypeName(index, len, h);
       n
     }
+    def append(ch: Char): TermName = append("" + ch)
     def append(suffix: String): TermName = newTermName(this + suffix)
     def append(suffix: Name): TermName = append(suffix.toString)
     def companionName: TypeName = toTypeName
@@ -400,6 +414,7 @@ trait Names extends api.Names {
     }
     def toTypeName: TypeName = this
 
+    def append(ch: Char): TypeName = append("" + ch)
     def append(suffix: String): TypeName = newTypeName(this + suffix)
     def append(suffix: Name): TypeName = append(suffix.toString)
     def companionName: TermName = toTermName

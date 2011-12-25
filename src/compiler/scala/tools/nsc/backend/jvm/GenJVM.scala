@@ -172,7 +172,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val PublicStatic      = ACC_PUBLIC | ACC_STATIC
     val PublicStaticFinal = ACC_PUBLIC | ACC_STATIC | ACC_FINAL
 
-    val StringBuilderClassName = definitions.StringBuilderClass.fullName
+    val StringBuilderClassName = javaName(definitions.StringBuilderClass)
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
     val StringBuilderType = new JObjectType(StringBuilderClassName)

@@ -59,10 +59,10 @@ abstract class Power(
   val intp: IMain
 ) extends SharesGlobal {
   import intp.{
-    beQuietDuring, typeOfExpression, getCompilerClass, getCompilerModule,
-    interpret, parse
+    beQuietDuring, typeOfExpression, interpret, parse
   }
   import global._
+  import definitions.{ getClassIfDefined, getModuleIfDefined }
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -108,7 +108,7 @@ abstract class Power(
   }
 
   class PackageSlurper(pkgName: String) extends SymSlurper {
-    val pkgSymbol = getCompilerModule(pkgName)
+    val pkgSymbol = getModuleIfDefined(pkgName)
     val modClass  = pkgSymbol.moduleClass
 
     /** Looking for dwindling returns */
@@ -185,12 +185,13 @@ abstract class Power(
     // information into the toString method.  Boo.
     private def manifestToType(m: Manifest[_]): Type = m match {
       case x: AnyValManifest[_] =>
-        getCompilerClass("scala." + x).tpe
+        getClassIfDefined("scala." + x).tpe
       case _                             =>
         val name = m.erasure.getName
-        if (name endsWith nme.MODULE_SUFFIX_STRING) getCompilerModule(name dropRight 1).tpe
+        if (name endsWith nme.MODULE_SUFFIX_STRING)
+          getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING).tpe
         else {
-          val sym  = getCompilerClass(name)
+          val sym  = getClassIfDefined(name)
           val args = m.typeArguments
 
           if (args.isEmpty) sym.tpe
@@ -198,7 +199,7 @@ abstract class Power(
         }
     }
 
-    def symbol_ : Symbol = getCompilerClass(erasure.getName)
+    def symbol_ : Symbol = getClassIfDefined(erasure.getName)
     def tpe_ : Type      = manifestToType(man)
     def name_ : Name     = symbol.name
     def companion        = symbol.companionSymbol
@@ -222,7 +223,7 @@ abstract class Power(
     def bts        = info.baseTypeSeq.toList
     def btsmap     = bts map (x => (x, x.decls.toList)) toMap
     def pkgName    = Option(erasure.getPackage) map (_.getName)
-    def pkg        = pkgName map getCompilerModule getOrElse NoSymbol
+    def pkg        = pkgName map getModuleIfDefined getOrElse NoSymbol
     def pkgmates   = pkg.tpe.members
     def pkgslurp   = pkgName match {
       case Some(name) => new PackageSlurper(name) slurp()
@@ -369,8 +370,8 @@ abstract class Power(
   object Implicits extends Implicits2 { }
 
   trait ReplUtilities {
-    def module[T: Manifest] = getCompilerModule(manifest[T].erasure.getName stripSuffix nme.MODULE_SUFFIX_STRING)
-    def clazz[T: Manifest] = getCompilerClass(manifest[T].erasure.getName)
+    def module[T: Manifest] = getModuleIfDefined(manifest[T].erasure.getName stripSuffix nme.MODULE_SUFFIX_STRING)
+    def clazz[T: Manifest] = getClassIfDefined(manifest[T].erasure.getName)
     def info[T: Manifest] = InternalInfo[T]
     def ?[T: Manifest] = InternalInfo[T]
     def url(s: String) = {
