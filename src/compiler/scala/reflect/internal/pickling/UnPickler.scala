@@ -378,7 +378,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           // that it isn't right here. See #4757 for the immediate
           // motivation to fix it.
           val tparams = until(end, readSymbolRef) map (_ setFlag EXISTENTIAL)
-          ExistentialType(tparams, restpe)
+          newExistentialType(tparams, restpe)
 
         case ANNOTATEDtpe =>
           var typeRef = readNat()

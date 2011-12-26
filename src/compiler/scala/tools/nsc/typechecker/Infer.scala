@@ -180,7 +180,7 @@ trait Infer {
     case NullaryMethodType(restpe) =>
       normalize(restpe)
     case ExistentialType(tparams, qtpe) =>
-      ExistentialType(tparams, normalize(qtpe))
+      newExistentialType(tparams, normalize(qtpe))
     case tp1 =>
       tp1 // @MAT aliases already handled by subtyping
   }

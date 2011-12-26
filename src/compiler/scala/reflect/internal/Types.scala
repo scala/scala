@@ -2236,6 +2236,15 @@ A type's typeSymbol should never be inspected directly.
   }
 
   object PolyType extends PolyTypeExtractor
+  
+  /** A creator for existential types which flattens nested existentials.
+   */
+  def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
+    if (quantified.isEmpty) underlying
+    else underlying match {
+      case ExistentialType(qs, restpe) => newExistentialType(quantified ::: qs, restpe)
+      case _                           => ExistentialType(quantified, underlying)
+    }
 
   case class ExistentialType(quantified: List[Symbol],
                              override val underlying: Type) extends RewrappingTypeProxy
@@ -2300,7 +2309,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     override def cloneInfo(owner: Symbol) =
-      createFromClonedSymbolsAtOwner(quantified, owner, underlying)(ExistentialType(_, _))
+      createFromClonedSymbolsAtOwner(quantified, owner, underlying)(newExistentialType)
 
     override def atOwner(owner: Symbol) =
       if (quantified exists (_.owner != owner)) cloneInfo(owner) else this
@@ -2999,7 +3008,7 @@ A type's typeSymbol should never be inspected directly.
       case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
       case TypeRef(pre, sym, _)                           => copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
-      case ExistentialType(tparams, restpe)               => ExistentialType(tparams, appliedType(restpe, args))
+      case ExistentialType(tparams, restpe)               => newExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case RefinedType(parents, decls)                    => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
       case TypeBounds(lo, hi)                             => TypeBounds(appliedType(lo, args), appliedType(hi, args))
@@ -3112,11 +3121,7 @@ A type's typeSymbol should never be inspected directly.
           tparams1 exists { p1 => p1 == p || (p1.info contains p) }
         }
       }
-      if (tparams1.isEmpty) tpe1
-      else tpe1 match {
-        case ExistentialType(tparams2, tpe2) => ExistentialType(tparams1 ::: tparams2, tpe2)
-        case _ => ExistentialType(tparams1, tpe1)
-      }
+      newExistentialType(tparams1, tpe1)
     }
 
   /** Remove any occurrences of type aliases from this type */
@@ -3432,7 +3437,7 @@ A type's typeSymbol should never be inspected directly.
         val tparams1 = mapOver(tparams)
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
-        else ExistentialType(tparams1, result1.substSym(tparams, tparams1))
+        else newExistentialType(tparams1, result1.substSym(tparams, tparams1))
       case OverloadedType(pre, alts) =>
         val pre1 = if (pre.isInstanceOf[ClassInfoType]) pre else this(pre)
         if (pre1 eq pre) tp
@@ -3801,7 +3806,7 @@ A type's typeSymbol should never be inspected directly.
       case PolyType(bs, restp) =>
         createFromClonedSymbols(bs, restp)((ps1, tp1) => PolyType(ps1, renameBoundSyms(tp1)))
       case ExistentialType(bs, restp) =>
-        createFromClonedSymbols(bs, restp)(ExistentialType(_, _))
+        createFromClonedSymbols(bs, restp)(newExistentialType)
       case _ =>
         tp
     }

@@ -2965,7 +2965,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           error(vd.pos, "illegal abstraction from value with volatile type "+vd.symbol.tpe)
       val tpt1 = typedType(tree.tpt, mode)
       existentialTransform(tree.whereClauses map (_.symbol), tpt1.tpe)((tparams, tp) =>
-        TypeTree(ExistentialType(tparams, tp)) setOriginal tree
+        TypeTree(newExistentialType(tparams, tp)) setOriginal tree
       )
     }
 
@@ -4134,7 +4134,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
             else {
               val tparam = context.owner freshExistential "" setInfo TypeBounds.upper(pt)
-              ExistentialType(List(tparam), arrayType(tparam.tpe))
+              newExistentialType(List(tparam), arrayType(tparam.tpe))
             }
           val (expr1, baseClass) = expr0.tpe.typeSymbol match {
             case ArrayClass => (adapt(expr0, onlyStickyModes(mode), subArrayType(pt)), ArrayClass)

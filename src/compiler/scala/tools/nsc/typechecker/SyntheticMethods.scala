@@ -50,7 +50,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     /** To avoid unchecked warnings on polymorphic classes.
      */
     def clazzTypeToTest(clazz: Symbol) = clazz.tpe.normalize match {
-      case TypeRef(_, sym, args) if args.nonEmpty => ExistentialType(sym.typeParams, clazz.tpe)
+      case TypeRef(_, sym, args) if args.nonEmpty => newExistentialType(sym.typeParams, clazz.tpe)
       case tp                                     => tp
     }
 
