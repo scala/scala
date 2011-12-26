@@ -661,7 +661,14 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.plugins.timer" action="total"/>
   </target>
   
-  <target name="quick.scalacheck" depends="quick.plugins">
+  <target name="quick.pre-scalacheck" depends="quick.plugins">
+    <uptodate property="quick.scalacheck.available" targetfile="${build-quick.dir}/scalacheck.complete">
+      <srcfiles dir="${src.dir}/scalacheck"/>
+    </uptodate>
+  </target>
+
+  <target name="quick.scalacheck" depends="quick.pre-scalacheck" unless="quick.scalacheck.available">
+    <stopwatch name="quick.scalacheck.timer"/>
     <mkdir dir="${build-quick.dir}/classes/scalacheck"/>
     <scalacfork
       destdir="${build-quick.dir}/classes/scalacheck"
@@ -675,6 +682,8 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/scalacheck"/>
       </compilationpath>
     </scalacfork>
+    <touch file="${build-quick.dir}/scalacheck.complete" verbose="no"/>
+    <stopwatch name="quick.scalacheck.timer" action="total"/>
   </target>
   
   <target name="quick.pre-scalap" depends="quick.scalacheck">
