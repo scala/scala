@@ -2153,15 +2153,23 @@ A type's typeSymbol should never be inspected directly.
     override def isJava = true
   }
 
-  case class NullaryMethodType(override val resultType: Type) extends SimpleTypeProxy {
-    override def underlying        = resultType
-    override def isTrivial         = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
-    override def paramSectionCount = 0
-    override def paramss           = Nil
-    override def params            = Nil
-    override def paramTypes        = Nil
-    override def safeToString      = "=> " + resultType
-    override def kind              = "NullaryMethodType"
+  case class NullaryMethodType(override val resultType: Type) extends Type {
+    override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
+    override def prefix: Type = resultType.prefix
+    override def narrow: Type = resultType.narrow
+    override def finalResultType: Type = resultType.finalResultType
+    override def termSymbol: Symbol = resultType.termSymbol
+    override def typeSymbol: Symbol = resultType.typeSymbol
+    override def parents: List[Type] = resultType.parents
+    override def decls: Scope = resultType.decls
+    override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
+    override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
+    override def baseClasses: List[Symbol] = resultType.baseClasses
+    override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
+    override def boundSyms = resultType.boundSyms
+    override def isVolatile = resultType.isVolatile
+    override def safeToString: String = "=> "+ resultType
+    override def kind = "NullaryMethodType"
   }
 
   object NullaryMethodType extends NullaryMethodTypeExtractor
