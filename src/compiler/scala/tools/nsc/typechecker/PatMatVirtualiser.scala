@@ -32,9 +32,6 @@ import Flags.{ CASE => _, _ }
           d => body)))))(scrut)
 
 TODO:
- - optimizer loops on virtpatmat compiler?
-
- - don't orElse a failure case at the end if there's a default case
  - implement spec more closely (see TODO's below)
  - fix inlining of methods in nested objects
 
@@ -139,6 +136,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
         // must use type `tp`, which is provided by extractor's result, not the type expected by binder,
         // as b.info may be based on a Typed type ascription, which has not been taken into account yet by the translation
         // (it will later result in a type test when `tp` is not a subtype of `b.info`)
+        // TODO: can we simplify this, together with the Bound case?
         (extractor.subPatBinders, extractor.subPatTypes).zipped foreach { case (b, tp) => b setInfo tp } // println("changing "+ b +" : "+ b.info +" -> "+ tp);
 
         // println("translateExtractorPattern checking parameter type: "+ (patBinder, patBinder.info.widen, extractor.paramType, patBinder.info.widen <:< extractor.paramType))
@@ -215,12 +213,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
             and it binds the variable name to that value.
         **/
         case Bound(subpatBinder, p)          =>
-          // TreeMaker with empty list of trees only performs the substitution subpatBinder --> patBinder
-          // println("rebind "+ subpatBinder +" to "+ patBinder)
-          withSubPats(List(SubstOnlyTreeMaker(Substitution(subpatBinder, CODE.REF(patBinder)))),
-            // the symbols are markers that may be used to refer to the result of the extractor in which the corresponding tree is nested
-            // it's the responsibility of the treemaker to replace this symbol by a reference that
-            // selects that result on the function symbol of the flatMap call that binds to the result of this extractor
+          // replace subpatBinder by patBinder (as if the Bind was not there)
+          withSubPats(List(SubstOnlyTreeMaker(subpatBinder, patBinder)),
             // must be patBinder, as subpatBinder has the wrong info: even if the bind assumes a better type, this is not guaranteed until we cast
             (patBinder, p)
           )
@@ -651,6 +645,9 @@ defined class Foo */
     lazy val optimizingCodeGen       = matchingMonadType.typeSymbol eq OptionClass
 
     abstract class TreeMaker {
+      /** captures the scope and the value of the bindings in patterns
+       * important *when* the substitution happens (can't accumulate and do at once after the full matcher has been constructed)
+       */
       def substitution: Substitution =
         if (currSub eq null) localSubstitution
         else currSub
@@ -668,7 +665,6 @@ defined class Foo */
 
       // build Tree that chains `next` after the current extractor
       def chainBefore(next: Tree, pt: Type): Tree
-      def treesToHoist: List[Tree] = Nil
     }
 
     case class TrivialTreeMaker(tree: Tree) extends TreeMaker {
@@ -682,20 +678,13 @@ defined class Foo */
         atPos(body.pos)(substitution(pmgen.one(body, body.tpe, matchPt))) // since SubstOnly treemakers are dropped, need to do it here
     }
 
-    case class SubstOnlyTreeMaker(localSubstitution: Substitution) extends TreeMaker {
+    case class SubstOnlyTreeMaker(prevBinder: Symbol, nextBinder: Symbol) extends TreeMaker {
+      val localSubstitution = Substitution(prevBinder, CODE.REF(nextBinder))
       def chainBefore(next: Tree, pt: Type): Tree = substitution(next)
     }
 
     abstract class FunTreeMaker extends TreeMaker {
       val nextBinder: Symbol
-
-      // for CSE (used iff optimizingCodeGen)
-      // TODO: factor this out -- don't mutate treemakers
-      var reused: Boolean = false
-      def reusedBinders: List[Symbol] = Nil
-      override def treesToHoist: List[Tree] = { import CODE._
-        reusedBinders map { b => VAL(b) === pmgen.mkZero(b.info) }
-      }
     }
 
     abstract class FreshFunTreeMaker extends FunTreeMaker {
@@ -706,44 +695,12 @@ defined class Foo */
       lazy val localSubstitution = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
     }
 
-    // TODO: factor out optimization-specific stuff into codegen
-    abstract class CondTreeMaker extends FreshFunTreeMaker { import CODE._
+    abstract class CondTreeMaker extends FreshFunTreeMaker {
       val cond: Tree
       val res: Tree
 
-      // for CSE (used iff optimizingCodeGen)
-      // must set reused before!
-      override lazy val reusedBinders = if(reused) List(freshSym(pos, BooleanClass.tpe, "rc") setFlag MUTABLE, nextBinder setFlag MUTABLE) else Nil
-      def storedCond         = reusedBinders(0)
-      def storedRes          = reusedBinders(1)
-
       def chainBefore(next: Tree, pt: Type): Tree =
-        if (!reused)
-          atPos(pos)(pmgen.flatMapCond(cond, res, nextBinder, nextBinderTp, substitution(next)))
-        else { // for CSE (used iff optimizingCodeGen)
-          IF (cond) THEN BLOCK(
-            storedCond === TRUE,
-            storedRes  === res,
-            substitution(next).duplicate // TODO: finer-grained dup'ing
-          ) ELSE pmgen.zero
-        }
-    }
-
-    // for CSE (used iff optimizingCodeGen)
-    case class ReusingCondTreeMaker(dropped_priors: List[(TreeMaker, Option[TreeMaker])]) extends TreeMaker { import CODE._
-      lazy val localSubstitution = {
-        val (from, to) = dropped_priors.collect {case (dropped: CondTreeMaker, Some(prior: CondTreeMaker)) => (dropped.nextBinder, REF(prior.storedRes))}.unzip
-        val oldSubs = dropped_priors.collect {case (dropped: TreeMaker, _) => dropped.substitution}
-        oldSubs.foldLeft(Substitution(from, to))(_ >> _)
-      }
-
-      def chainBefore(next: Tree, pt: Type): Tree = {
-        val cond = REF(dropped_priors.reverse.collectFirst{case (_, Some(ctm: CondTreeMaker)) => ctm}.get.storedCond)
-
-        IF (cond) THEN BLOCK(
-          substitution(next).duplicate // TODO: finer-grained duplication -- MUST duplicate though, or we'll get VerifyErrors since sharing trees confuses lambdalift, and its confusion it emits illegal casts (diagnosed by Grzegorz: checkcast T ; invokevirtual S.m, where T not a subtype of S)
-        ) ELSE pmgen.zero
-      }
+        atPos(pos)(pmgen.flatMapCond(cond, res, nextBinder, nextBinderTp, substitution(next)))
     }
 
     /**
@@ -754,12 +711,13 @@ defined class Foo */
      * in this function's body, and all the subsequent ones, references to the symbols in `from` will be replaced by the corresponding tree in `to`
      */
     case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol, localSubstitution: Substitution)(extractorReturnsBoolean: Boolean) extends FunTreeMaker {
-      def chainBefore(next: Tree, pt: Type): Tree = atPos(extractor.pos)(
-        if (extractorReturnsBoolean) pmgen.flatMapCond(extractor, CODE.UNIT, nextBinder, nextBinder.info.widen, substitution(condAndNext(next)))
-        else pmgen.flatMap(extractor, pmgen.fun(nextBinder, substitution(condAndNext(next))))
-      )
-
-      private def condAndNext(next: Tree): Tree = extraCond map (pmgen.condOptimized(_, next)) getOrElse next
+      def chainBefore(next: Tree, pt: Type): Tree = {
+        val condAndNext = extraCond map (pmgen.condOptimized(_, next)) getOrElse next
+        atPos(extractor.pos)(
+          if (extractorReturnsBoolean) pmgen.flatMapCond(extractor, CODE.UNIT, nextBinder, nextBinder.info.widen, substitution(condAndNext))
+          else pmgen.flatMap(extractor, nextBinder, substitution(condAndNext))
+        )
+      }
 
       override def toString = "X"+(extractor, nextBinder)
     }
@@ -768,10 +726,7 @@ defined class Foo */
     case class ProductExtractorTreeMaker(prevBinder: Symbol, extraCond: Option[Tree], localSubstitution: Substitution) extends TreeMaker { import CODE._
       def chainBefore(next: Tree, pt: Type): Tree = {
         val nullCheck = REF(prevBinder) OBJ_NE NULL
-        val cond = extraCond match {
-          case None => nullCheck
-          case Some(c) => nullCheck AND c
-        }
+        val cond = extraCond map (nullCheck AND _) getOrElse nullCheck
         pmgen.condOptimized(cond, substitution(next))
       }
 
@@ -957,6 +912,8 @@ defined class Foo */
       override def toString = testedPath +" (<: && ==) "+ pt +"#"+ id
     }
 
+//// CSE
+
     /** a flow-sensitive, generalised, common sub-expression elimination
      * reuse knowledge from performed tests
      * the only sub-expressions we consider are the conditions and results of the three tests (type, type&equality, equality)
@@ -1031,7 +988,7 @@ defined class Foo */
              | GuardTreeMaker(_)
              | ProductExtractorTreeMaker(_, Some(_), _)             => Havoc
           case AlternativesTreeMaker(_, _, _)                       => Havoc // TODO: can do better here
-          case SubstOnlyTreeMaker(_)                                => Top
+          case SubstOnlyTreeMaker(_, _)                             => Top
           case BodyTreeMaker(_, _)                                  => Havoc
         }, tm)
       }
@@ -1067,7 +1024,11 @@ defined class Foo */
       // then, collapse these contiguous sequences of reusing tests
       // store the result of the final test and the intermediate results in hoisted mutable variables (TODO: optimize: don't store intermediate results that aren't used)
       // replace each reference to a variable originally bound by a collapsed test by a reference to the hoisted variable
-      testss map { tests =>
+      val reused = new collection.mutable.HashMap[TreeMaker, ReusedCondTreeMaker]
+      var okToCall = false
+      val reusedOrOrig = (tm: TreeMaker) => {assert(okToCall); reused.getOrElse(tm, tm)}
+
+      val res = testss map { tests =>
         var currDeps = Set[Cond]()
         val (sharedPrefix, suffix) = tests span { test =>
           (test.cond eq Top) || (for(
@@ -1079,17 +1040,65 @@ defined class Foo */
         }
 
         val collapsedTreeMakers = if (sharedPrefix.nonEmpty) { // even sharing prefixes of length 1 brings some benefit (overhead-percentage for compiler: 26->24%, lib: 19->16%)
-          for (test <- sharedPrefix; reusedTest <- test.reuses; if reusedTest.treeMaker.isInstanceOf[FunTreeMaker])
-            reusedTest.treeMaker.asInstanceOf[FunTreeMaker].reused = true
+          for (test <- sharedPrefix; reusedTest <- test.reuses) reusedTest.treeMaker match {
+            case reusedCTM: CondTreeMaker => reused(reusedCTM) = ReusedCondTreeMaker(reusedCTM)
+            case _ =>
+          }
+
           // println("sharedPrefix: "+ sharedPrefix)
           for (lastShared <- sharedPrefix.reverse.dropWhile(_.cond eq Top).headOption;
                lastReused <- lastShared.reuses)
-            yield ReusingCondTreeMaker(sharedPrefix map (t => (t.treeMaker, t.reuses map (_.treeMaker)))) :: suffix.map(_.treeMaker)
+            yield ReusingCondTreeMaker(sharedPrefix, reusedOrOrig) :: suffix.map(_.treeMaker)
         } else None
 
         collapsedTreeMakers getOrElse tests.map(_.treeMaker) // sharedPrefix need not be empty (but it only contains Top-tests, which are dropped above)
       }
+      okToCall = true // TODO: remove (debugging)
+
+      res mapConserve (_ mapConserve reusedOrOrig)
     }
+
+    object ReusedCondTreeMaker {
+      def apply(orig: CondTreeMaker) = new ReusedCondTreeMaker(orig.prevBinder, orig.nextBinder, orig.cond, orig.res, orig.pos)
+    }
+    class ReusedCondTreeMaker(prevBinder: Symbol, val nextBinder: Symbol, cond: Tree, res: Tree, pos: Position) extends TreeMaker { import CODE._
+      lazy val localSubstitution        = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
+      lazy val storedCond               = freshSym(pos, BooleanClass.tpe, "rc") setFlag MUTABLE
+      lazy val treesToHoist: List[Tree] = {
+        nextBinder setFlag MUTABLE
+        List(storedCond, nextBinder) map { b => VAL(b) === pmgen.mkZero(b.info) }
+      }
+
+      // TODO: finer-grained duplication
+      def chainBefore(next: Tree, pt: Type): Tree =
+        atPos(pos)(pmgen.flatMapCondStored(cond, storedCond, res, nextBinder, substitution(next).duplicate))
+    }
+
+    case class ReusingCondTreeMaker(sharedPrefix: List[Test], toReused: TreeMaker => TreeMaker) extends TreeMaker { import CODE._
+      lazy val dropped_priors = sharedPrefix map (t => (toReused(t.treeMaker), t.reuses map (test => toReused(test.treeMaker))))
+      lazy val localSubstitution = {
+        val (from, to) = dropped_priors.collect {
+          case (dropped: CondTreeMaker, Some(prior: ReusedCondTreeMaker)) =>
+            (dropped.nextBinder, REF(prior.nextBinder))
+          }.unzip
+        val oldSubs = dropped_priors.collect {
+          case (dropped: TreeMaker, _) =>
+            dropped.substitution
+          }
+        oldSubs.foldLeft(Substitution(from, to))(_ >> _)
+      }
+
+      def chainBefore(next: Tree, pt: Type): Tree = {
+        val cond = REF(dropped_priors.reverse.collectFirst{case (_, Some(ctm: ReusedCondTreeMaker)) => ctm}.get.storedCond)
+
+        IF (cond) THEN BLOCK(
+          substitution(next).duplicate // TODO: finer-grained duplication -- MUST duplicate though, or we'll get VerifyErrors since sharing trees confuses lambdalift, and its confusion it emits illegal casts (diagnosed by Grzegorz: checkcast T ; invokevirtual S.m, where T not a subtype of S)
+        ) ELSE pmgen.zero
+      }
+    }
+
+
+//// DCE
 
     // TODO: non-trivial dead-code elimination
     // e.g., the following match should compile to a simple instanceof:
@@ -1101,18 +1110,7 @@ defined class Foo */
     }
 
 
-    def removeSubstOnly(makers: List[TreeMaker]) = makers filterNot (_.isInstanceOf[SubstOnlyTreeMaker])
-
-    // a foldLeft to accumulate the localSubstitution left-to-right
-    // it drops SubstOnly tree makers, since their only goal in life is to propagate substitutions to the next tree maker, which is fullfilled by propagateSubstitution
-    def propagateSubstitution(treeMakers: List[TreeMaker], initial: Substitution): List[TreeMaker] = {
-      var accumSubst: Substitution = initial
-      treeMakers foreach { maker =>
-        maker incorporateOuterSubstitution accumSubst
-        accumSubst = maker.substitution
-      }
-      removeSubstOnly(treeMakers)
-    }
+//// SWITCHES
 
     object SwitchablePattern { def unapply(pat: Tree) = pat match {
       case Literal(Constant((_: Byte ) | (_: Short) | (_: Int  ) | (_: Char ))) => true // TODO: Java 7 allows strings in switches
@@ -1205,6 +1203,20 @@ defined class Foo */
     def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] =
       doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
 
+
+    def removeSubstOnly(makers: List[TreeMaker]) = makers filterNot (_.isInstanceOf[SubstOnlyTreeMaker])
+
+    // a foldLeft to accumulate the localSubstitution left-to-right
+    // it drops SubstOnly tree makers, since their only goal in life is to propagate substitutions to the next tree maker, which is fullfilled by propagateSubstitution
+    def propagateSubstitution(treeMakers: List[TreeMaker], initial: Substitution): List[TreeMaker] = {
+      var accumSubst: Substitution = initial
+      treeMakers foreach { maker =>
+        maker incorporateOuterSubstitution accumSubst
+        accumSubst = maker.substitution
+      }
+      removeSubstOnly(treeMakers)
+    }
+
     // calls propagateSubstitution on the treemakers
     def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol): Tree = fixerUpper(owner, scrut.pos){
       val casesUnOpt = casesRaw map (propagateSubstitution(_, EmptySubstitution)) // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
@@ -1232,12 +1244,15 @@ defined class Foo */
             val combinedCases =
               cases.map(combineExtractors(_, pt)).reduceLeft(pmgen.typedOrElse(optPt))
 
-            toHoist = (for (treeMakers <- cases; tm <- treeMakers; hoisted <- tm.treesToHoist) yield hoisted).toList
+            toHoist = (
+              for (treeMakers <- cases)
+                yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
+              ).flatten.flatten.toList
 
-            (pmgen.fun(scrutSym, combinedCases), hasDefault)
+            (combinedCases, hasDefault)
           } else (pmgen.zero, false)
 
-        val expr = pmgen.runOrElse(scrut, matcher, scrutSym.info, if (isFullyDefined(pt)) pt else NoType, hasDefault)
+        val expr = pmgen.runOrElse(scrut, scrutSym, matcher, if (isFullyDefined(pt)) pt else NoType, hasDefault)
         if (toHoist isEmpty) expr
         else Block(toHoist, expr)
       }
@@ -1247,8 +1262,6 @@ defined class Foo */
     // requires propagateSubstitution(treeMakers) has been called
     def combineExtractors(treeMakers: List[TreeMaker], pt: Type): Tree =
       treeMakers.foldRight (EmptyTree: Tree) (_.chainBefore(_, pt))
-
-
 
     // TODO: do this during tree construction, but that will require tracking the current owner in treemakers
     // TODO: assign more fine-grained positions
@@ -1328,9 +1341,10 @@ defined class Foo */
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodeGen { import CODE.UNIT
-      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean): Tree
-      def flatMap(a: Tree, b: Tree): Tree
+      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, hasDefault: Boolean): Tree
+      def flatMap(prev: Tree, b: Symbol, next: Tree): Tree
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree
+      def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree
       def flatMapGuard(cond: Tree, next: Tree): Tree
       def fun(arg: Symbol, body: Tree): Tree
       def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree
@@ -1359,7 +1373,8 @@ defined class Foo */
 
     trait MatchingStrategyGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       // methods in MatchingStrategy (the monad companion) -- used directly in translation
-      def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean): Tree = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutTp, resTp) APPLY (scrut) APPLY (matcher)  // matchingStrategy.runOrElse(scrut)(matcher)
+      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, hasDefault: Boolean): Tree
+        = genTypeApply(matchingStrategy DOT vpmName.runOrElse, scrutSym.info, resTp) APPLY (scrut) APPLY (fun(scrutSym, matcher))  // matchingStrategy.runOrElse(scrut)(matcher)
       // *only* used to wrap the RHS of a body (isDefinedAt synthesis relies on this)
       def one(res: Tree, bodyPt: Type, matchPt: Type): Tree                       = (matchingStrategy DOT vpmName.one) (_asInstanceOf(res, bodyPt, force = true)) // matchingStrategy.one(res), like one, but blow this one away for isDefinedAt (since it's the RHS of a case)
       def zero: Tree                                                              = matchingStrategy DOT vpmName.zero                                // matchingStrategy.zero
@@ -1368,13 +1383,14 @@ defined class Foo */
 
     trait MonadInstGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       // methods in the monad instance -- used directly in translation
-      def flatMap(a: Tree, b: Tree): Tree                             = (a DOT vpmName.flatMap)(b)
+      def flatMap(prev: Tree, b: Symbol, next: Tree): Tree            = (prev DOT vpmName.flatMap)(fun(b, next))
       def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = (genTypeApply(thisCase DOT vpmName.orElse, pt)) APPLY (elseCase)
 
       // TODO: the trees generated by flatMapCond and flatMapGuard may need to be distinguishable by exhaustivity checking -- they aren't right now
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol,
-                      nextBinderTp: Type, next: Tree): Tree           = flatMap(guard(cond, res, nextBinderTp), fun(nextBinder, next))
+                      nextBinderTp: Type, next: Tree): Tree           = flatMap(guard(cond, res, nextBinderTp), nextBinder, next)
       def flatMapGuard(guardTree: Tree, next: Tree): Tree             = flatMapCond(guardTree, CODE.UNIT, freshSym(guardTree.pos, UnitClass.tpe), UnitClass.tpe, next)
+      def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree = throw new UnsupportedOperationException("Can't optimize under user-defined monad.")
     }
 
     // when we know we're targetting Option, do some inlining the optimizer won't do
@@ -1394,18 +1410,17 @@ defined class Foo */
       @inline private def dontStore(tp: Type) = (tp.typeSymbol eq UnitClass) || (tp.typeSymbol eq NothingClass)
       lazy val keepGoing = freshSym(NoPosition, BooleanClass.tpe, "keepGoing") setFlag MUTABLE
       lazy val matchRes  = freshSym(NoPosition, AnyClass.tpe, "matchRes") setFlag MUTABLE
-      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean) = {
-        val Function(List(x: ValDef), body) = matcher
+      override def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, hasDefault: Boolean) = {
         matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
         if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
         BLOCK(
-          VAL(zeroSym)   === REF(NoneModule), // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
-          VAL(x.symbol)  === scrut, // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for x.symbol in body -- the owner structure is repaired by fixerUpper
+          VAL(zeroSym)   === REF(NoneModule),       // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
+          VAL(scrutSym)  === scrut,                 // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for scrutSym in `matcher` -- the owner structure is repaired by fixerUpper
           VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
           VAL(keepGoing) === TRUE,
-          body,
+          matcher,
           if(hasDefault) REF(matchRes)
-          else (IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes))
+          else (IF (REF(keepGoing)) THEN MATCHERROR(REF(scrutSym)) ELSE REF(matchRes))
         )
       }
 
@@ -1424,20 +1439,16 @@ defined class Foo */
       // guard is only used by flatMapCond and flatMapGuard, which are overridden
       override def guard(c: Tree, then: Tree, tp: Type): Tree = throw new NotImplementedError("guard is never called by optimizing codegen")
 
-      override def flatMap(opt: Tree, fun: Tree): Tree = fun match {
-        case Function(List(x: ValDef), body) =>
-          val tp      = inMatchMonad(x.symbol.tpe)
-          val vs      = freshSym(opt.pos, tp, "o")
-          val isEmpty = tp member vpmName.isEmpty
-          val get     = tp member vpmName.get
-          val v       = VAL(vs) === opt
+      override def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = {
+        val tp      = inMatchMonad(b.tpe)
+        val prevSym = freshSym(prev.pos, tp, "o")
+        val isEmpty = tp member vpmName.isEmpty
+        val get     = tp member vpmName.get
 
-          BLOCK(
-            v,
-            IF (vs DOT isEmpty) THEN zero ELSE typedSubst(body, List(x.symbol), List(vs DOT get)) // must be isEmpty and get as we don't control the target of the call (could be the result of a user-defined extractor)
-          )
-        case _ => println("huh?")
-          (opt DOT vpmName.flatMap)(fun)
+        BLOCK(
+          VAL(prevSym) === prev,
+          IF (prevSym DOT isEmpty) THEN zero ELSE typedSubst(next, List(b), List(prevSym DOT get)) // must be isEmpty and get as we don't control the target of the call (could be the result of a user-defined extractor)
+        )
       }
 
       override def typedOrElse(pt: Type)(thisCase: Tree, elseCase: Tree): Tree = {
@@ -1450,6 +1461,13 @@ defined class Foo */
       override def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, nextBinderTp: Type, next: Tree): Tree =
         IF (cond) THEN BLOCK(
           VAL(nextBinder) === res,
+          next
+        ) ELSE zero
+
+      override def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree =
+        IF (cond) THEN BLOCK(
+          condSym    === TRUE,
+          nextBinder === res,
           next
         ) ELSE zero
 
