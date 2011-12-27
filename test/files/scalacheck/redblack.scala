@@ -1,3 +1,4 @@
+import collection.immutable._
 import org.scalacheck._
 import Prop._
 import Gen._
@@ -14,11 +15,12 @@ Both children of every red node are black.
 Every simple path from a given node to any of its descendant leaves contains the same number of black nodes.
 */
 
+package scala.collection.immutable {
 abstract class RedBlackTest extends Properties("RedBlack") {
   def minimumSize = 0
   def maximumSize = 5
 
-  import collection.immutable.RedBlack._
+  import RedBlack._
   
   def nodeAt[A](tree: Tree[String, A], n: Int): Option[(String, A)] = if (n < tree.iterator.size && n >= 0)
     Some(tree.iterator.drop(n).next)
@@ -64,7 +66,7 @@ abstract class RedBlackTest extends Properties("RedBlack") {
 trait RedBlackInvariants {
   self: RedBlackTest =>
   
-  import collection.immutable.RedBlack._
+  import RedBlack._
     
   def rootIsBlack[A](t: Tree[String, A]) = t.isBlack
   
@@ -110,7 +112,7 @@ trait RedBlackInvariants {
 }
 
 object TestInsert extends RedBlackTest with RedBlackInvariants {
-  import collection.immutable.RedBlack._
+  import RedBlack._
   
   override type ModifyParm = Int
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, tree.iterator.size + 1)
@@ -130,7 +132,7 @@ object TestInsert extends RedBlackTest with RedBlackInvariants {
 }
 
 object TestModify extends RedBlackTest {
-  import collection.immutable.RedBlack._
+  import RedBlack._
   
   def newValue = 1
   override def minimumSize = 1
@@ -148,7 +150,7 @@ object TestModify extends RedBlackTest {
 }
 
 object TestDelete extends RedBlackTest with RedBlackInvariants  {
-  import collection.immutable.RedBlack._
+  import RedBlack._
 
   override def minimumSize = 1
   override type ModifyParm = Int
@@ -165,7 +167,7 @@ object TestDelete extends RedBlackTest with RedBlackInvariants  {
 }
 
 object TestRange extends RedBlackTest with RedBlackInvariants  {
-  import collection.immutable.RedBlack._
+  import RedBlack._
   
   override type ModifyParm = (Option[Int], Option[Int])
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = for {
@@ -198,6 +200,7 @@ object TestRange extends RedBlackTest with RedBlackInvariants  {
       .toList)
     filteredTree == newTree.iterator.map(_._1).toList
   }
+}
 }
 
 object Test extends Properties("RedBlack") {

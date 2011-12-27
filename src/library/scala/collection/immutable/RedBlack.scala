@@ -15,7 +15,8 @@ package immutable
  *
  *  @since 2.3
  */
-object RedBlack extends Serializable {
+private[immutable]
+object RedBlack {
 
   private def blacken[A, B](t: Tree[A, B]): Tree[A, B] = t match {
     case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
@@ -302,8 +303,6 @@ object RedBlack extends Serializable {
   }
 
   private[this] class TreeIterator[A, B](tree: NonEmpty[A, B]) extends Iterator[(A, B)] {
-    import collection.mutable.Stack
-
     override def hasNext: Boolean = !next.isEmpty
 
     override def next: (A, B) = next match {
@@ -326,7 +325,7 @@ object RedBlack extends Serializable {
       }
     }
 
-    private[this] val path: Stack[NonEmpty[A, B]] = Stack.empty[NonEmpty[A, B]]
+    private[this] val path = mutable.ArrayStack.empty[NonEmpty[A, B]]
     addLeftMostBranchToPath(tree)
     private[this] var next: Tree[A, B] = path.pop()
   }
