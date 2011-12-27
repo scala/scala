@@ -106,6 +106,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        *   refinement, where the refinement defines a parameter based on a
        *   type variable. */
       case ad@ApplyDynamic(qual0, params) =>
+        if (settings.logReflectiveCalls.value)
+          unit.echo(ad.pos, "method invocation uses reflection")
+      
         val typedPos = typedWithPos(ad.pos) _
 
         assert(ad.symbol.isPublic)
@@ -502,7 +505,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
            *   expected to be an AnyRef. */
           val t: Tree = ad.symbol.tpe match {
             case MethodType(mparams, resType) =>
-              assert(params.length == mparams.length)
+              assert(params.length == mparams.length, mparams)
+              
               typedPos {
                 val sym = currentOwner.newValue(ad.pos, mkTerm("qual")) setInfo qual0.tpe
                 qual = safeREF(sym)
