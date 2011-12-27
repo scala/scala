@@ -46,22 +46,23 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@SerialVersionUID(-234066569443569402L)
-class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
-                (implicit val ordering: Ordering[A])
+@SerialVersionUID(-5685982407650748405L)
+class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
   import RedBlack._
 
   override def stringPrefix = "TreeSet"
 
-  override def head = t.smallest.key
-  override def headOption = if (t.isEmpty) None else Some(head)
-  override def last = t.greatest.key
-  override def lastOption = if (t.isEmpty) None else Some(last)
+  override def size = tree.count
 
-  override def tail = new TreeSet(size - 1, tree.delete(firstKey))
-  override def init = new TreeSet(size - 1, tree.delete(lastKey))
+  override def head = tree.smallest.key
+  override def headOption = if (tree.isEmpty) None else Some(head)
+  override def last = tree.greatest.key
+  override def lastOption = if (tree.isEmpty) None else Some(last)
+
+  override def tail = new TreeSet(tree.delete(firstKey))
+  override def init = new TreeSet(tree.delete(lastKey))
 
   override def drop(n: Int) = {
     if (n <= 0) this
@@ -101,11 +102,9 @@ class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
 
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
-  def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
+  def this()(implicit ordering: Ordering[A]) = this(RedBlack.Empty.empty)(ordering)
 
-  protected val tree: RedBlack.Tree[A, Unit] = if (size == 0) Empty.empty else t
-
-  private def newSet(s: Int, t: RedBlack.Tree[A, Unit]) = new TreeSet[A](s, t)
+  private def newSet(t: RedBlack.Tree[A, Unit]) = new TreeSet[A](t)
 
   /** A factory to create empty sets of the same type of keys.
    */
@@ -116,10 +115,7 @@ class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
    *  @param elem    a new element to add.
    *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
-  def + (elem: A): TreeSet[A] = {
-    val newsize = if (tree.lookup(elem).isEmpty) size + 1 else size
-    newSet(newsize, tree.update(elem, ()))
-  }
+  def + (elem: A): TreeSet[A] = newSet(tree.update(elem, ()))
 
   /** A new `TreeSet` with the entry added is returned,
    *  assuming that elem is <em>not</em> in the TreeSet.
@@ -129,7 +125,7 @@ class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
    */
   def insert(elem: A): TreeSet[A] = {
     assert(tree.lookup(elem).isEmpty)
-    newSet(size + 1, tree.update(elem, ()))
+    newSet(tree.update(elem, ()))
   }
 
   /** Creates a new `TreeSet` with the entry removed.
@@ -139,7 +135,7 @@ class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
    */
   def - (elem:A): TreeSet[A] =
     if (tree.lookup(elem).isEmpty) this
-    else newSet(size - 1, tree delete elem)
+    else newSet(tree delete elem)
 
   /** Checks if this set contains element `elem`.
    *
@@ -161,7 +157,7 @@ class TreeSet[A](override val size: Int, t: RedBlack.Tree[A, Unit])
 
   override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = {
     val tree = this.tree.range(from, until)
-    newSet(tree.count, tree)
+    newSet(tree)
   }
   override def firstKey = tree.first
   override def lastKey = tree.last

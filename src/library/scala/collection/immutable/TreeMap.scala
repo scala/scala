@@ -23,7 +23,6 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
   def empty[A, B](implicit ord: Ordering[A]) = new TreeMap[A, B]()(ord)
   /** $sortedMapCanBuildFromInfo */
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), TreeMap[A, B]] = new SortedMapCanBuildFrom[A, B]
-  private def make[A, B](s: Int, t: RedBlack.Tree[A, B])(implicit ord: Ordering[A]) = new TreeMap[A, B](s, t)(ord)
 }
 
 /** This class implements immutable maps using a tree.
@@ -46,7 +45,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class TreeMap[A, +B](override val size: Int, t: RedBlack.Tree[A, B])(implicit val ordering: Ordering[A])
+class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: Ordering[A])
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
@@ -59,32 +58,32 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack.Tree[A, B])(implicit va
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
 
-  def this()(implicit ordering: Ordering[A]) = this(0, null)(ordering)
+  override def size = tree.count
 
-  protected val tree: RedBlack.Tree[A, B] = if (size == 0) Empty.empty else t
+  def this()(implicit ordering: Ordering[A]) = this(RedBlack.Empty.empty)(ordering)
 
   override def rangeImpl(from : Option[A], until : Option[A]): TreeMap[A,B] = {
     val ntree = tree.range(from,until)
-    new TreeMap[A,B](ntree.count, ntree)
+    new TreeMap[A,B](ntree)
   }
 
-  override def firstKey = t.first
-  override def lastKey = t.last
+  override def firstKey = tree.first
+  override def lastKey = tree.last
   override def compare(k0: A, k1: A): Int = ordering.compare(k0, k1)
 
   override def head = {
-    val smallest = t.smallest
+    val smallest = tree.smallest
     (smallest.key, smallest.value)
   }
-  override def headOption = if (t.isEmpty) None else Some(head)
+  override def headOption = if (tree.isEmpty) None else Some(head)
   override def last = {
-    val greatest = t.greatest
+    val greatest = tree.greatest
     (greatest.key, greatest.value)
   }
-  override def lastOption = if (t.isEmpty) None else Some(last)
+  override def lastOption = if (tree.isEmpty) None else Some(last)
 
-  override def tail = new TreeMap(size - 1, tree.delete(firstKey))
-  override def init = new TreeMap(size - 1, tree.delete(lastKey))
+  override def tail = new TreeMap(tree.delete(firstKey))
+  override def init = new TreeMap(tree.delete(lastKey))
 
   override def drop(n: Int) = {
     if (n <= 0) this
@@ -135,10 +134,7 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack.Tree[A, B])(implicit va
    *  @param value   the value to be associated with `key`
    *  @return        a new $coll with the updated binding
    */
-  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
-    val newsize = if (tree.lookup(key).isEmpty) size + 1 else size
-    TreeMap.make(newsize, tree.update(key, value))
-  }
+  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = new TreeMap(tree.update(key, value))
 
   /** Add a key/value pair to this map.
    *  @tparam   B1   type of the value of the new binding, a supertype of `B`
@@ -180,13 +176,12 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack.Tree[A, B])(implicit va
    */
   def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     assert(tree.lookup(key).isEmpty)
-    TreeMap.make(size + 1, tree.update(key, value))
+    new TreeMap(tree.update(key, value))
   }
 
   def - (key:A): TreeMap[A, B] =
     if (tree.lookup(key).isEmpty) this
-    else if (size == 1) empty
-    else TreeMap.make(size - 1, tree.delete(key))
+    else new TreeMap(tree.delete(key))
 
   /** Check if this map maps `key` to a value and return the
    *  value if it exists.
