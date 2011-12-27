@@ -386,6 +386,30 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val NoneModule: Symbol  = getModule("scala.None")
     lazy val SomeModule: Symbol  = getModule("scala.Some")
 
+    /** Note: don't use this manifest/type function for anything important,
+     *  as it is incomplete.  Would love to have things like existential types
+     *  working, but very unfortunately the manifests just stuff the relevant
+     *  information into the toString method.
+     */
+    def manifestToType(m: OptManifest[_]): Type = m match {
+      case x: AnyValManifest[_] =>
+        getClassIfDefined("scala." + x).tpe
+      case m: ClassManifest[_] =>
+        val name = m.erasure.getName
+        if (name endsWith nme.MODULE_SUFFIX_STRING)
+          getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING).tpe
+        else {
+          val sym  = getClassIfDefined(name)
+          val args = m.typeArguments
+
+          if (sym eq NoSymbol) NoType
+          else if (args.isEmpty) sym.tpe
+          else appliedType(sym.typeConstructor, args map manifestToType)
+        }
+      case _ =>
+        NoType
+    }
+
     // The given symbol represents either String.+ or StringAdd.+
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
     def isArrowAssoc(sym: Symbol) = ArrowAssocClass.tpe.decls.toList contains sym

@@ -5487,6 +5487,10 @@ A type's typeSymbol should never be inspected directly.
     case _ =>
       t
   }
+  def elimRefinement(t: Type) = t match {
+    case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
+    case _                                             => t
+  }
 
   /** A collector that tests for existential types appearing at given variance in a type */
   class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) {

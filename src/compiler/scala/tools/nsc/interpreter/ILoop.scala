@@ -51,7 +51,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     intp.reporter.printMessage(msg)
 
   def isAsync = !settings.Yreplsync.value
-  lazy val power = Power(this)
+  lazy val power = new Power(intp, new StdReplVals(this))
 
   // TODO
   // object opt extends AestheticSettings
@@ -253,6 +253,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   /** Power user commands */
   lazy val powerCommands: List[LoopCommand] = List(
     nullary("dump", "displays a view of the interpreter's internal state", dumpCommand),
+    nullary("vals", "gives information about the power mode repl vals", valsCommand),
     cmd("phase", "<phase>", "set the implicit phase for power commands", phaseCommand),
     cmd("wrap", "<method>", "name of method to wrap around each repl line", wrapCommand) withLongHelp ("""
       |:wrap
@@ -283,6 +284,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     history.asStrings takeRight 30 foreach echo
     in.redrawLine()
   }
+  private def valsCommand(): Result = power.valsDescription
 
   private val typeTransforms = List(
     "scala.collection.immutable." -> "immutable.",
