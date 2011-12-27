@@ -262,8 +262,9 @@ object RedBlack {
     def last  = if (right eq Empty.Instance) key else right.last
     val count = 1 + left.count + right.count
     protected[immutable] def nth(n: Int) = {
-      if (n < left.count) left.nth(n)
-      else if (n > left.count) right.nth(n - left.count - 1)
+      val count = left.count
+      if (n < count) left.nth(n)
+      else if (n > count) right.nth(n - count - 1)
       else this
     }
   }
