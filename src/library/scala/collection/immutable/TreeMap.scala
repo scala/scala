@@ -201,9 +201,9 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
    */
   def iterator: Iterator[(A, B)] = tree.iterator
 
-  override def toStream: Stream[(A, B)] = tree.toStream
+  override def toStream: Stream[(A, B)] = tree.iterator.toStream
 
-  override def foreach[U](f : ((A,B)) =>  U) = tree foreach { case (x, y) => f(x, y) }
+  override def foreach[U](f : ((A,B)) =>  U) = tree foreach f
 }
 
 

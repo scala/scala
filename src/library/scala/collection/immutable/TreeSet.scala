@@ -149,11 +149,11 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
    *
    *  @return the new iterator
    */
-  def iterator: Iterator[A] = tree.iterator map (_._1)
+  def iterator: Iterator[A] = tree.keyIterator
 
-  override def toStream: Stream[A] = tree.toStream map (_._1)
+  override def toStream: Stream[A] = tree.keyIterator.toStream
 
-  override def foreach[U](f: A =>  U) = tree foreach { (x, y) => f(x) }
+  override def foreach[U](f: A =>  U) = tree foreachKey f
 
   override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = {
     val tree = this.tree.range(from, until)

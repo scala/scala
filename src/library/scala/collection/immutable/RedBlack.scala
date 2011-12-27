@@ -32,9 +32,10 @@ object RedBlack {
     def update[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(k, v))
     def delete(k: A)(implicit ordering: Ordering[A]): Tree[A, B] = blacken(del(k))
     def range(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(rng(from, until))
-    def foreach[U](f: (A, B) =>  U)
-    def toStream: Stream[(A,B)]
+    def foreach[U](f: ((A, B)) =>  U)
+    def foreachKey[U](f: A =>  U)
     def iterator: Iterator[(A, B)]
+    def keyIterator: Iterator[A]
     def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1]
     def del(k: A)(implicit ordering: Ordering[A]): Tree[A, B]
     def smallest: NonEmpty[A, B]
@@ -150,14 +151,19 @@ object RedBlack {
     def smallest: NonEmpty[A, B] = if (left  eq Empty.Instance) this else left.smallest
     def greatest: NonEmpty[A, B] = if (right eq Empty.Instance) this else right.greatest
 
-    def toStream: Stream[(A,B)] = iterator.toStream
-
     def iterator: Iterator[(A, B)] = new TreeIterator(this)
+    def keyIterator: Iterator[A] = new TreeKeyIterator(this)
 
-    def foreach[U](f: (A, B) => U) {
-      left foreach f
-      f(key, value)
-      right foreach f
+    override def foreach[U](f: ((A, B)) => U) {
+      if (left ne Empty.Instance) left foreach f
+      f((key, value))
+      if (right ne Empty.Instance) right foreach f
+    }
+
+    override def foreachKey[U](f: A => U) {
+      if (left ne Empty.Instance) left foreachKey f
+      f(key)
+      if (right ne Empty.Instance) right foreachKey f
     }
 
     override def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = {
@@ -275,9 +281,10 @@ object RedBlack {
     def smallest: NonEmpty[A, Nothing] = throw new NoSuchElementException("empty map")
     def greatest: NonEmpty[A, Nothing] = throw new NoSuchElementException("empty map")
     def iterator: Iterator[(A, Nothing)] = Iterator.empty
-    def toStream: Stream[(A,Nothing)] = Stream.empty
+    def keyIterator: Iterator[A] = Iterator.empty
 
-    def foreach[U](f: (A, Nothing) => U) {}
+    override def foreach[U](f: ((A, Nothing)) => U) {}
+    override def foreachKey[U](f: A => U) {}
 
     def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]) = this
     def first = throw new NoSuchElementException("empty map")
@@ -303,16 +310,15 @@ object RedBlack {
   }
 
   private[this] class TreeIterator[A, B](tree: NonEmpty[A, B]) extends Iterator[(A, B)] {
-    override def hasNext: Boolean = !next.isEmpty
+    override def hasNext: Boolean = next ne Empty.Instance
 
     override def next: (A, B) = next match {
       case Empty.Instance =>
         throw new NoSuchElementException("next on empty iterator")
       case tree: NonEmpty[A, B] =>
-        val result = (tree.key, tree.value)
         addLeftMostBranchToPath(tree.right)
         next = if (path.isEmpty) Empty.empty else path.pop()
-        result
+        (tree.key, tree.value)
     }
 
     @annotation.tailrec
@@ -328,5 +334,32 @@ object RedBlack {
     private[this] val path = mutable.ArrayStack.empty[NonEmpty[A, B]]
     addLeftMostBranchToPath(tree)
     private[this] var next: Tree[A, B] = path.pop()
+  }
+
+  private[this] class TreeKeyIterator[A](tree: NonEmpty[A, _]) extends Iterator[A] {
+    override def hasNext: Boolean = next ne Empty.Instance
+
+    override def next: A = next match {
+      case Empty.Instance =>
+        throw new NoSuchElementException("next on empty iterator")
+      case tree: NonEmpty[A, _] =>
+        addLeftMostBranchToPath(tree.right)
+        next = if (path.isEmpty) Empty.empty else path.pop()
+        tree.key
+    }
+
+    @annotation.tailrec
+    private[this] def addLeftMostBranchToPath(tree: Tree[A, _]) {
+      tree match {
+        case Empty.Instance =>
+        case tree: NonEmpty[A, _] =>
+          path.push(tree)
+          addLeftMostBranchToPath(tree.left)
+      }
+    }
+
+    private[this] val path = mutable.ArrayStack.empty[NonEmpty[A, _]]
+    addLeftMostBranchToPath(tree)
+    private[this] var next: Tree[A, _] = path.pop()
   }
 }
