@@ -52,10 +52,12 @@ object RedBlack {
     def value: B
     def left: Tree[A, B]
     def right: Tree[A, B]
-    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[A, B] =
-      if (ordering.lt(k, key)) left.lookup(k)
-      else if (ordering.lt(key, k)) right.lookup(k)
+    def lookup(k: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
+      val cmp = ordering.compare(k, key)
+      if (cmp < 0) left.lookup(k)
+      else if (cmp > 0) right.lookup(k)
       else this
+    }
     private[this] def balanceLeft[B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1])/*: NonEmpty[A, B1]*/ = l match {
       case RedTree(y, yv, RedTree(x, xv, a, b), c) =>
         RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
@@ -73,8 +75,9 @@ object RedBlack {
         mkTree(isBlack, x, xv, a, r)
     }
     def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = {
-      if (ordering.lt(k, key)) balanceLeft(isBlack, key, value, left.upd(k, v), right)
-      else if (ordering.lt(key, k)) balanceRight(isBlack, key, value, left, right.upd(k, v))
+      val cmp = ordering.compare(k, key)
+      if (cmp < 0) balanceLeft(isBlack, key, value, left.upd(k, v), right)
+      else if (cmp > 0) balanceRight(isBlack, key, value, left, right.upd(k, v))
       else mkTree(isBlack, k, v, left, right)
     }
     // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
@@ -140,12 +143,11 @@ object RedBlack {
         case (a, RedTree(x, xv, b, c)) => RedTree(x, xv, append(a, b), c)
         case (RedTree(x, xv, a, b), c) => RedTree(x, xv, a, append(b, c))
       }
-      // RedBlack is neither A : Ordering[A], nor A <% Ordered[A]
-      k match {
-        case _ if ordering.lt(k, key) => delLeft
-        case _ if ordering.lt(key, k) => delRight
-        case _ => append(left, right)
-      }
+
+      val cmp = ordering.compare(k, key)
+      if (cmp < 0) delLeft
+      else if (cmp > 0) delRight
+      else append(left, right)
     }
 
     def smallest: NonEmpty[A, B] = if (left  eq Empty.Instance) this else left.smallest
@@ -169,8 +171,7 @@ object RedBlack {
     override def rng(from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = {
       if (from == None && until == None) return this
       if (from != None && ordering.lt(key, from.get)) return right.rng(from, until);
-      if (until != None && (ordering.lt(until.get,key) || !ordering.lt(key,until.get)))
-        return left.rng(from, until);
+      if (until != None && ordering.lteq(until.get, key)) return left.rng(from, until);
       val newLeft = left.rng(from, None)
       val newRight = right.rng(None, until)
       if ((newLeft eq left) && (newRight eq right)) this
