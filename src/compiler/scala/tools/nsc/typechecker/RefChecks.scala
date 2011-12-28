@@ -1092,7 +1092,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
 
         // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
-        if (nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
+        if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           if (actual isSubClass receiver) ()
           else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object
