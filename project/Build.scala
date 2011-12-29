@@ -11,6 +11,9 @@ object ScalaBuild extends Build with Layers {
     "Unlocks the locker layer of the compiler so that it will be recompiled on changed source files.")
   lazy val lockFile: SettingKey[File] = SettingKey("lock-file", 
     "Location of the lock file compiling this project.")
+  // New tasks/settings specific to the scala build.
+  lazy val lock: TaskKey[Unit] = TaskKey("lock", "Locks this project so it won't be recompiled.")
+  lazy val unlock: TaskKey[Unit] = TaskKey("unlock", "Unlocks this project so it will be recompiled.")
   lazy val makeDist: TaskKey[File] = TaskKey("make-dist", 
     "Creates a mini-distribution (scala home directory) for this build in a zip file.")
   lazy val makeExplodedDist: TaskKey[File] = TaskKey("make-exploded-dist", 
@@ -164,7 +167,9 @@ object ScalaBuild extends Build with Layers {
                              // Most libs in the compiler use this order to build.
                              compileOrder in Compile := CompileOrder.JavaThenScala,
                              lockFile <<= target(_ / "compile.lock"),
-                             skip in Compile <<= lockFile.map(_  exists)
+                             skip in Compile <<= lockFile.map(_  exists),
+                             lock <<= lockFile map { f => IO.touch(f) },
+                             unlock <<= lockFile map IO.delete
                             )
 
   // --------------------------------------------------------------
