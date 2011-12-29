@@ -2993,6 +2993,9 @@ A type's typeSymbol should never be inspected directly.
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself, and repeated parent classes are merged.
+   *
+   *  !!! Repeated parent classes are not merged - is this a bug in the
+   *  comment or in the code?
    */
   def intersectionType(tps: List[Type], owner: Symbol): Type = tps match {
     case List(tp) =>
@@ -5749,9 +5752,16 @@ A type's typeSymbol should never be inspected directly.
       val lubType =
         if (phase.erasedTypes || depth == 0) lubBase
         else {
-          val lubRefined = refinedType(lubParents, lubOwner)
+          val lubRefined  = refinedType(lubParents, lubOwner)
           val lubThisType = lubRefined.typeSymbol.thisType
-          val narrowts = ts map (_.narrow)
+          val narrowts    = ts map (_.narrow)
+          def excludeFromLub(sym: Symbol) = (
+               sym.isClass
+            || sym.isConstructor
+            || !sym.isPublic
+            || isGetClass(sym)
+            || narrowts.exists(t => !refines(t, sym))
+          )
           def lubsym(proto: Symbol): Symbol = {
             val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
@@ -5780,16 +5790,15 @@ A type's typeSymbol should never be inspected directly.
               // efficiency.
               alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
           }
-          for (sym <- lubBase.nonPrivateMembers) {
-            // add a refinement symbol for all non-class members of lubBase
-            // which are refined by every type in ts.
-            if (!sym.isClass && !sym.isConstructor && !isGetClass(sym) && (narrowts forall (t => refines(t, sym))))
-              try {
-                val lsym = lubsym(sym)
-                if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lubsym(sym))
-              } catch {
-                case ex: NoCommonType =>
-              }
+          // add a refinement symbol for all non-class members of lubBase
+          // which are refined by every type in ts.
+          for (sym <- lubBase.nonPrivateMembers ; if !excludeFromLub(sym)) {
+            try {
+              val lsym = lubsym(sym)
+              if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lsym)
+            } catch {
+              case ex: NoCommonType =>
+            }
           }
           if (lubRefined.decls.isEmpty) lubBase
           else if (!verifyLubs) lubRefined
