@@ -92,6 +92,10 @@ trait Types extends api.Types { self: SymbolTable =>
 
   protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
+  /** Empty immutable maps to avoid allocations. */
+  private val emptySymMap   = immutable.Map[Symbol, Symbol]()
+  private val emptySymCount = immutable.Map[Symbol, Int]()
+
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
@@ -484,7 +488,6 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Expands type aliases. */
     def dealias = this
 
-
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
      *  The empty scope for all other types.
@@ -507,47 +510,54 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false).alternatives
+    def members: List[Symbol] = membersBasedOnFlags(0, 0)
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: List[Symbol] =
-      findMember(nme.ANYNAME, PRIVATE | BridgeFlags, 0, false).alternatives
+    def nonPrivateMembers: List[Symbol] = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
 
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
      */
-    def nonPrivateMembersAdmitting(admit: Long): List[Symbol] =
-      findMember(nme.ANYNAME, (PRIVATE | BridgeFlags) & ~admit, 0, false).alternatives
+    def nonPrivateMembersAdmitting(admit: Long): List[Symbol] = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BridgeFlags, IMPLICIT, false).alternatives
+    def implicitMembers: List[Symbol] = membersBasedOnFlags(BridgeFlags, IMPLICIT)
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
-    def deferredMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BridgeFlags, DEFERRED, false).alternatives
+    def deferredMembers: List[Symbol] = membersBasedOnFlags(BridgeFlags, DEFERRED)
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, BridgeFlags, 0, false)
+    def member(name: Name): Symbol =
+      memberBasedOnName(name, BridgeFlags)
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Bridges are excluded from the result
      */
     def nonPrivateMember(name: Name): Symbol =
-      findMember(name, PRIVATE | BridgeFlags, 0, false)
+      memberBasedOnName(name, BridgeAndPrivateFlags)
 
-    /** The non-private member with given name, admitting members with given flags `admit`
-     *  an OverloadedSymbol if several exist, NoSymbol if none exist
+    /** The non-private member with given name, admitting members with given flags `admit`.
+     *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE
+     *  flag are usually excluded from findMember results, but supplying any of those flags
+     *  to this method disables that exclusion.
+     *
+     *  An OverloadedSymbol if several exist, NoSymbol if none exists.
      */
     def nonPrivateMemberAdmitting(name: Name, admit: Long): Symbol =
-      findMember(name, (PRIVATE | BridgeFlags) & ~admit, 0, false)
+      memberBasedOnName(name, BridgeAndPrivateFlags & ~admit)
 
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonLocalMember(name: Name): Symbol =
-      findMember(name, LOCAL | BridgeFlags, 0, false)
+      memberBasedOnName(name, BridgeFlags | LOCAL)
+      
+    def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): List[Symbol] =
+      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
+
+    def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
+      findMember(name, excludedFlags, 0, false)
 
     /** The least type instance of given class which is a supertype
      *  of this type.  Example:
@@ -3047,71 +3057,23 @@ A type's typeSymbol should never be inspected directly.
    *
    *  tpe1 where { tparams }
    *
-   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`. Extrapolating means
-   *  that type variables in `tparams` occurring in covariant positions are replaced by upper bounds,
-   *  (minus any SingletonClass markers),
-   *  type variables in `tparams` occurring in contravariant positions are replaced by upper bounds,
-   *  provided the resulting type is legal wrt to stability, and does not contain any
-   *  type variable in `tparams`.
-   *  The abstraction drops all type parameters that are not directly or indirectly
-   *  referenced by type `tpe1`.
-   *  If there are no remaining type parameters, simply returns result type `tpe`.
+   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`.
+   *  Extrapolating means that type variables in `tparams` occurring
+   *  in covariant positions are replaced by upper bounds, (minus any
+   *  SingletonClass markers), type variables in `tparams` occurring in
+   *  contravariant positions are replaced by upper bounds, provided the
+   *  resulting type is legal wrt to stability, and does not contain any type
+   *  variable in `tparams`.
+   *
+   *  The abstraction drops all type parameters that are not directly or
+   *  indirectly referenced by type `tpe1`. If there are no remaining type
+   *  parameters, simply returns result type `tpe`.
    */
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type =
     if (tparams.isEmpty) tpe0
     else {
-      var occurCount = emptySymCount ++ (tparams map (_ -> 0))
-      val tpe = deAlias(tpe0)
-      def countOccs(tp: Type) =
-        for (t <- tp) {
-          t match {
-            case TypeRef(_, sym, _) =>
-              occurCount get sym match {
-                case Some(count) => occurCount += (sym -> (count + 1))
-                case none =>
-              }
-            case _ =>
-          }
-        }
-      countOccs(tpe)
-      for (tparam <- tparams) countOccs(tparam.info)
-
-      val extrapolate = new TypeMap {
-        variance = 1
-        def apply(tp: Type): Type = {
-          val tp1 = mapOver(tp)
-          tp1 match {
-            case TypeRef(pre, sym, args) if (variance != 0) && (occurCount isDefinedAt sym) =>
-              val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
-              //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
-              if (!repl.typeSymbol.isBottomClass && occurCount(sym) == 1 && !(tparams exists (repl.contains)))
-                repl
-              else tp1
-            case _ =>
-              tp1
-          }
-        }
-        override def mapOver(tp: Type): Type = tp match {
-          case SingleType(pre, sym) =>
-            if (sym.isPackageClass) tp // short path
-            else {
-              val pre1 = this(pre)
-              if ((pre1 eq pre) || !pre1.isStable) tp
-              else singleType(pre1, sym)
-            }
-          case _ => super.mapOver(tp)
-        }
-
-        // Do not discard the types of existential ident's. The
-        // symbol of the Ident itself cannot be listed in the
-        // existential's parameters, so the resulting existential
-        // type would be ill-formed.
-        override def mapOver(tree: Tree) = tree match {
-          case Ident(_) if tree.tpe.isStable => tree
-          case _                             => super.mapOver(tree)
-        }
-      }
-      val tpe1 = extrapolate(tpe)
+      val tpe      = deAlias(tpe0)
+      val tpe1     = new ExistentialExtrapolation(tparams) extrapolate tpe
       var tparams0 = tparams
       var tparams1 = tparams0 filter tpe1.contains
 
@@ -3332,16 +3294,82 @@ A type's typeSymbol should never be inspected directly.
     def keepAnnotation(annot: AnnotationInfo) = annot matches TypeConstraintClass
   }
 
+  trait VariantTypeMap extends TypeMap {
+    private[this] var _variance = 1
+
+    override def variance = _variance
+    def variance_=(x: Int) = _variance = x
+    
+    override protected def noChangeToSymbols(origSyms: List[Symbol]) = {
+      origSyms forall { sym =>
+        val v = variance
+        if (sym.isAliasType) variance = 0
+        val result = this(sym.info)
+        variance = v
+        result eq sym.info
+      }
+    }
+
+    override protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      map2Conserve(args, tparams) { (arg, tparam) =>
+        val v = variance
+        if (tparam.isContravariant) variance = -variance
+        else if (!tparam.isCovariant) variance = 0
+        val arg1 = this(arg)
+        variance = v
+        arg1
+      }
+
+    /** Map this function over given type */
+    override def mapOver(tp: Type): Type = tp match {
+      case MethodType(params, result) =>
+        variance = -variance
+        val params1 = mapOver(params)
+        variance = -variance
+        val result1 = this(result)
+        if ((params1 eq params) && (result1 eq result)) tp
+        else copyMethodType(tp, params1, result1.substSym(params, params1))
+      case PolyType(tparams, result) =>
+        variance = -variance
+        val tparams1 = mapOver(tparams)
+        variance = -variance
+        var result1 = this(result)
+        if ((tparams1 eq tparams) && (result1 eq result)) tp
+        else PolyType(tparams1, result1.substSym(tparams, tparams1))
+      case TypeBounds(lo, hi) =>
+        variance = -variance
+        val lo1 = this(lo)
+        variance = -variance
+        val hi1 = this(hi)
+        if ((lo1 eq lo) && (hi1 eq hi)) tp
+        else TypeBounds(lo1, hi1)
+      case TypeRef(pre, sym, args) =>
+        val pre1 = this(pre)
+        val args1 =
+          if (args.isEmpty)
+            args
+          else if (variance == 0) // fast & safe path: don't need to look at typeparams
+            args mapConserve this
+          else {
+            val tparams = sym.typeParams
+            if (tparams.isEmpty) args
+            else mapOverArgs(args, tparams)
+          }
+        if ((pre1 eq pre) && (args1 eq args)) tp
+        else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1)
+      case _ =>
+        super.mapOver(tp)
+    }
+  }
+
   /** A prototype for mapping a function over all possible types
    */
-  abstract class TypeMap extends Function1[Type, Type] {
+  abstract class TypeMap extends (Type => Type) {
     def apply(tp: Type): Type
 
-    /** The variance relative to start. If you want variances to be significant, set
-     *    variance = 1
-     *  at the top of the typemap.
+    /** Mix in VariantTypeMap if you want variances to be significant.
      */
-    var variance = 0
+    def variance = 0
 
     // #3731: return sym1 for which holds: pre bound sym.name to sym and
     // pre1 now binds sym.name to sym1, conceptually exactly the same
@@ -3371,17 +3399,7 @@ A type's typeSymbol should never be inspected directly.
     def mapOver(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        //val args1 = args mapConserve this(_)
-        val args1 =
-          if (args.isEmpty)
-            args
-          else if (variance == 0) // fast & safe path: don't need to look at typeparams
-            args mapConserve this
-          else {
-            val tparams = sym.typeParams
-            if (tparams.isEmpty) args
-            else mapOverArgs(args, tparams)
-          }
+        val args1 = args mapConserve this
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1)
       case ThisType(_) => tp
@@ -3393,16 +3411,12 @@ A type's typeSymbol should never be inspected directly.
           else singleType(pre1, sym)
         }
       case MethodType(params, result) =>
-        variance = -variance
         val params1 = mapOver(params)
-        variance = -variance
         val result1 = this(result)
         if ((params1 eq params) && (result1 eq result)) tp
         else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
-        variance = -variance
         val tparams1 = mapOver(tparams)
-        variance = -variance
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
@@ -3417,9 +3431,7 @@ A type's typeSymbol should never be inspected directly.
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
         else SuperType(thistp1, supertp1)
       case TypeBounds(lo, hi) =>
-        variance = -variance
         val lo1 = this(lo)
-        variance = -variance
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
@@ -3475,15 +3487,14 @@ A type's typeSymbol should never be inspected directly.
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    protected final def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams) { (arg, tparam) =>
-        val v = variance
-        if (tparam.isContravariant) variance = -variance
-        else if (!tparam.isCovariant) variance = 0
-        val arg1 = this(arg)
-        variance = v
-        arg1
-      }
+    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      args mapConserve this
+    
+    /** Called by mapOver to determine whether the original symbols can
+     *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
+     */
+    protected def noChangeToSymbols(origSyms: List[Symbol]) =
+      origSyms forall (sym => sym.info eq this(sym.info))
 
     /** Map this function over given scope */
     def mapOver(scope: Scope): Scope = {
@@ -3492,20 +3503,13 @@ A type's typeSymbol should never be inspected directly.
       if (elems1 eq elems) scope
       else new Scope(elems1)
     }
-
+    
     /** Map this function over given list of symbols */
     def mapOver(origSyms: List[Symbol]): List[Symbol] = {
-      val change = origSyms exists { sym =>
-        val v = variance
-        if (sym.isAliasType) variance = 0
-        val result = this(sym.info)
-        variance = v
-        result ne sym.info
-      }
-      // map is not the identity --> do cloning properly
-      if (change) cloneSymbolsAndModify(origSyms, TypeMap.this)
       // fast path in case nothing changes due to map
-      else origSyms
+      if (noChangeToSymbols(origSyms)) origSyms
+      // map is not the identity --> do cloning properly
+      else cloneSymbolsAndModify(origSyms, TypeMap.this)
     }
 
     def mapOver(annot: AnnotationInfo): AnnotationInfo = {
@@ -3572,8 +3576,20 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  private val emptySymMap   = immutable.Map[Symbol, Symbol]()
-  private val emptySymCount = immutable.Map[Symbol, Int]()
+  /** A collector that tests for existential types appearing at given variance in a type
+   *  @PP: Commenting out due to not being used anywhere.
+   */
+  // class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) with VariantTypeMap {
+  //   variance = v
+  // 
+  //   def traverse(tp: Type) = tp match {
+  //     case ExistentialType(_, _) if (variance == v) => result = true
+  //     case _ => mapOver(tp)
+  //   }
+  // }
+  // 
+  // val containsCovariantExistentialCollector = new ContainsVariantExistentialCollector(1)
+  // val containsContravariantExistentialCollector = new ContainsVariantExistentialCollector(-1)
 
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
     val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
@@ -3625,6 +3641,62 @@ A type's typeSymbol should never be inspected directly.
         mapOver(tp)
     }
   }
+  
+  /** Used by existentialAbstraction.
+   */
+  class ExistentialExtrapolation(tparams: List[Symbol]) extends VariantTypeMap {
+    private val occurCount = mutable.HashMap[Symbol, Int]()
+    private def countOccs(tp: Type) = {
+      tp foreach {
+        case TypeRef(_, sym, _) =>
+          if (tparams contains sym)
+            occurCount(sym) += 1
+        case _ => ()
+      }
+    }
+    def extrapolate(tpe: Type): Type = {
+      tparams foreach (t => occurCount(t) = 0)
+      countOccs(tpe)
+      for (tparam <- tparams)
+        countOccs(tparam.info)
+      
+      apply(tpe)
+    }
+    
+    def apply(tp: Type): Type = {
+      val tp1 = mapOver(tp)
+      if (variance == 0) tp1
+      else tp1 match {
+        case TypeRef(pre, sym, args) if tparams contains sym =>
+          val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
+          //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
+          if (!repl.typeSymbol.isBottomClass && occurCount(sym) == 1 && !(tparams exists (repl.contains)))
+            repl
+          else tp1
+        case _ =>
+          tp1
+      }
+    }
+    override def mapOver(tp: Type): Type = tp match {
+      case SingleType(pre, sym) =>
+        if (sym.isPackageClass) tp // short path
+        else {
+          val pre1 = this(pre)
+          if ((pre1 eq pre) || !pre1.isStable) tp
+          else singleType(pre1, sym)
+        }
+      case _ => super.mapOver(tp)
+    }
+
+    // Do not discard the types of existential ident's. The
+    // symbol of the Ident itself cannot be listed in the
+    // existential's parameters, so the resulting existential
+    // type would be ill-formed.
+    override def mapOver(tree: Tree) = tree match {
+      case Ident(_) if tree.tpe.isStable => tree
+      case _                             => super.mapOver(tree)
+    }
+  }
 
   def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
 
@@ -3632,6 +3704,7 @@ A type's typeSymbol should never be inspected directly.
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
     var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
+    var capturedPre = emptySymMap
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
@@ -3661,8 +3734,6 @@ A type's typeSymbol should never be inspected directly.
 
       annotationArgRewriter.transform(tree)
     }
-
-    var capturedPre = emptySymMap
 
     def stabilize(pre: Type, clazz: Symbol): Type =
       capturedPre.getOrElse(clazz, {
@@ -5496,21 +5567,6 @@ A type's typeSymbol should never be inspected directly.
     case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
     case _                                             => t
   }
-
-  /** A collector that tests for existential types appearing at given variance in a type */
-  class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) {
-    def traverse(tp: Type) = tp match {
-      case ExistentialType(_, _) if (variance == v) => result = true
-      case _ => mapOver(tp)
-    }
-    def init() = {
-      variance = 1
-      this
-    }
-  }
-
-  val containsCovariantExistentialCollector = new ContainsVariantExistentialCollector(1)
-  val containsContravariantExistentialCollector = new ContainsVariantExistentialCollector(-1)
 
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */

@@ -226,6 +226,7 @@ class Flags extends ModifierFlags {
 
   /** The two bridge flags */
   final val BridgeFlags = BRIDGE | VBRIDGE
+  final val BridgeAndPrivateFlags = BridgeFlags | PRIVATE
 
   /** When a symbol for a field is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
