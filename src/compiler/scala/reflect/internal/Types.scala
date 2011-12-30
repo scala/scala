@@ -1900,7 +1900,7 @@ A type's typeSymbol should never be inspected directly.
     // note: does not go through typeRef. There's no need to because
     // neither `pre` nor `sym` changes.  And there's a performance
     // advantage to call TypeRef directly.
-    override def typeConstructor = TypeRef(pre, sym, Nil)
+    override def typeConstructor = if (args.isEmpty) this else TypeRef(pre, sym, Nil)
 
     // A reference (in a Scala program) to a type that has type
     // parameters, but where the reference does not include type
