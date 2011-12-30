@@ -1,0 +1,4178 @@
+>>> Range.inclusive <<<
+
+start   end     step    length/first/last
+-----------------------------------------
+0       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       0       -1      1/0/0
+0       0       1       1/0/0
+0       0       -2      1/0/0
+0       0       2       1/0/0
+0       0       -3      1/0/0
+0       0       3       1/0/0
+0       0       17      1/0/0
+0       0       127     1/0/0
+0       0       MIN+1   1/0/0
+0       0       MAX     1/0/0
+0       0       MIN     1/0/0
+0       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       -1      -1      2/0/-1
+0       -1      1       0
+0       -1      -2      1/0/0
+0       -1      2       0
+0       -1      -3      1/0/0
+0       -1      3       0
+0       -1      17      0
+0       -1      127     0
+0       -1      MIN+1   1/0/0
+0       -1      MAX     0
+0       -1      MIN     1/0/0
+0       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       1       -1      0
+0       1       1       2/0/1
+0       1       -2      0
+0       1       2       1/0/0
+0       1       -3      0
+0       1       3       1/0/0
+0       1       17      1/0/0
+0       1       127     1/0/0
+0       1       MIN+1   0
+0       1       MAX     1/0/0
+0       1       MIN     0
+0       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       3       -1      0
+0       3       1       4/0/3
+0       3       -2      0
+0       3       2       2/0/2
+0       3       -3      0
+0       3       3       2/0/3
+0       3       17      1/0/0
+0       3       127     1/0/0
+0       3       MIN+1   0
+0       3       MAX     1/0/0
+0       3       MIN     0
+0       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 0 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN+1   1       0
+0       MIN+1   -2      1073741824/0/MIN+2
+0       MIN+1   2       0
+0       MIN+1   -3      715827883/0/MIN+2
+0       MIN+1   3       0
+0       MIN+1   17      0
+0       MIN+1   127     0
+0       MIN+1   MIN+1   2/0/MIN+1
+0       MIN+1   MAX     0
+0       MIN+1   MIN     1/0/0
+0       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MAX     -1      0
+0       MAX     1       ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     -2      0
+0       MAX     2       1073741824/0/MAX-1
+0       MAX     -3      0
+0       MAX     3       715827883/0/MAX-1
+0       MAX     17      126322568/0/MAX-8
+0       MAX     127     16909321/0/MAX-7
+0       MAX     MIN+1   0
+0       MAX     MAX     2/0/MAX
+0       MAX     MIN     0
+0       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN     -1      ---
+    java.lang.IllegalArgumentException: 0 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN     1       0
+0       MIN     -2      1073741825/0/MIN
+0       MIN     2       0
+0       MIN     -3      715827883/0/MIN+2
+0       MIN     3       0
+0       MIN     17      0
+0       MIN     127     0
+0       MIN     MIN+1   2/0/MIN+1
+0       MIN     MAX     0
+0       MIN     MIN     2/0/MIN
+
+start   end     step    length/first/last
+-----------------------------------------
+-1      0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      0       -1      0
+-1      0       1       2/-1/0
+-1      0       -2      0
+-1      0       2       1/-1/-1
+-1      0       -3      0
+-1      0       3       1/-1/-1
+-1      0       17      1/-1/-1
+-1      0       127     1/-1/-1
+-1      0       MIN+1   0
+-1      0       MAX     1/-1/-1
+-1      0       MIN     0
+-1      -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      -1      -1      1/-1/-1
+-1      -1      1       1/-1/-1
+-1      -1      -2      1/-1/-1
+-1      -1      2       1/-1/-1
+-1      -1      -3      1/-1/-1
+-1      -1      3       1/-1/-1
+-1      -1      17      1/-1/-1
+-1      -1      127     1/-1/-1
+-1      -1      MIN+1   1/-1/-1
+-1      -1      MAX     1/-1/-1
+-1      -1      MIN     1/-1/-1
+-1      1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      1       -1      0
+-1      1       1       3/-1/1
+-1      1       -2      0
+-1      1       2       2/-1/1
+-1      1       -3      0
+-1      1       3       1/-1/-1
+-1      1       17      1/-1/-1
+-1      1       127     1/-1/-1
+-1      1       MIN+1   0
+-1      1       MAX     1/-1/-1
+-1      1       MIN     0
+-1      3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      3       -1      0
+-1      3       1       5/-1/3
+-1      3       -2      0
+-1      3       2       3/-1/3
+-1      3       -3      0
+-1      3       3       2/-1/2
+-1      3       17      1/-1/-1
+-1      3       127     1/-1/-1
+-1      3       MIN+1   0
+-1      3       MAX     1/-1/-1
+-1      3       MIN     0
+-1      MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN+1   -1      MAX/-1/MIN+1
+-1      MIN+1   1       0
+-1      MIN+1   -2      1073741824/-1/MIN+1
+-1      MIN+1   2       0
+-1      MIN+1   -3      715827883/-1/MIN+1
+-1      MIN+1   3       0
+-1      MIN+1   17      0
+-1      MIN+1   127     0
+-1      MIN+1   MIN+1   1/-1/-1
+-1      MIN+1   MAX     0
+-1      MIN+1   MIN     1/-1/-1
+-1      MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MAX     -1      0
+-1      MAX     1       ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -2      0
+-1      MAX     2       1073741825/-1/MAX
+-1      MAX     -3      0
+-1      MAX     3       715827883/-1/MAX-2
+-1      MAX     17      126322568/-1/MAX-9
+-1      MAX     127     16909321/-1/MAX-8
+-1      MAX     MIN+1   0
+-1      MAX     MAX     2/-1/MAX-1
+-1      MAX     MIN     0
+-1      MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN     -1      ---
+    java.lang.IllegalArgumentException: -1 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+-1      MIN     1       0
+-1      MIN     -2      1073741824/-1/MIN+1
+-1      MIN     2       0
+-1      MIN     -3      715827883/-1/MIN+1
+-1      MIN     3       0
+-1      MIN     17      0
+-1      MIN     127     0
+-1      MIN     MIN+1   2/-1/MIN
+-1      MIN     MAX     0
+-1      MIN     MIN     1/-1/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+1       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       0       -1      2/1/0
+1       0       1       0
+1       0       -2      1/1/1
+1       0       2       0
+1       0       -3      1/1/1
+1       0       3       0
+1       0       17      0
+1       0       127     0
+1       0       MIN+1   1/1/1
+1       0       MAX     0
+1       0       MIN     1/1/1
+1       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       -1      -1      3/1/-1
+1       -1      1       0
+1       -1      -2      2/1/-1
+1       -1      2       0
+1       -1      -3      1/1/1
+1       -1      3       0
+1       -1      17      0
+1       -1      127     0
+1       -1      MIN+1   1/1/1
+1       -1      MAX     0
+1       -1      MIN     1/1/1
+1       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       1       -1      1/1/1
+1       1       1       1/1/1
+1       1       -2      1/1/1
+1       1       2       1/1/1
+1       1       -3      1/1/1
+1       1       3       1/1/1
+1       1       17      1/1/1
+1       1       127     1/1/1
+1       1       MIN+1   1/1/1
+1       1       MAX     1/1/1
+1       1       MIN     1/1/1
+1       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       3       -1      0
+1       3       1       3/1/3
+1       3       -2      0
+1       3       2       2/1/3
+1       3       -3      0
+1       3       3       1/1/1
+1       3       17      1/1/1
+1       3       127     1/1/1
+1       3       MIN+1   0
+1       3       MAX     1/1/1
+1       3       MIN     0
+1       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 1 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN+1   1       0
+1       MIN+1   -2      1073741825/1/MIN+1
+1       MIN+1   2       0
+1       MIN+1   -3      715827883/1/MIN+3
+1       MIN+1   3       0
+1       MIN+1   17      0
+1       MIN+1   127     0
+1       MIN+1   MIN+1   2/1/MIN+2
+1       MIN+1   MAX     0
+1       MIN+1   MIN     2/1/MIN+1
+1       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MAX     -1      0
+1       MAX     1       MAX/1/MAX
+1       MAX     -2      0
+1       MAX     2       1073741824/1/MAX
+1       MAX     -3      0
+1       MAX     3       715827883/1/MAX
+1       MAX     17      126322568/1/MAX-7
+1       MAX     127     16909321/1/MAX-6
+1       MAX     MIN+1   0
+1       MAX     MAX     1/1/1
+1       MAX     MIN     0
+1       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN     -1      ---
+    java.lang.IllegalArgumentException: 1 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN     1       0
+1       MIN     -2      1073741825/1/MIN+1
+1       MIN     2       0
+1       MIN     -3      715827884/1/MIN
+1       MIN     3       0
+1       MIN     17      0
+1       MIN     127     0
+1       MIN     MIN+1   2/1/MIN+2
+1       MIN     MAX     0
+1       MIN     MIN     2/1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+3       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       0       -1      4/3/0
+3       0       1       0
+3       0       -2      2/3/1
+3       0       2       0
+3       0       -3      2/3/0
+3       0       3       0
+3       0       17      0
+3       0       127     0
+3       0       MIN+1   1/3/3
+3       0       MAX     0
+3       0       MIN     1/3/3
+3       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       -1      -1      5/3/-1
+3       -1      1       0
+3       -1      -2      3/3/-1
+3       -1      2       0
+3       -1      -3      2/3/0
+3       -1      3       0
+3       -1      17      0
+3       -1      127     0
+3       -1      MIN+1   1/3/3
+3       -1      MAX     0
+3       -1      MIN     1/3/3
+3       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       1       -1      3/3/1
+3       1       1       0
+3       1       -2      2/3/1
+3       1       2       0
+3       1       -3      1/3/3
+3       1       3       0
+3       1       17      0
+3       1       127     0
+3       1       MIN+1   1/3/3
+3       1       MAX     0
+3       1       MIN     1/3/3
+3       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       3       -1      1/3/3
+3       3       1       1/3/3
+3       3       -2      1/3/3
+3       3       2       1/3/3
+3       3       -3      1/3/3
+3       3       3       1/3/3
+3       3       17      1/3/3
+3       3       127     1/3/3
+3       3       MIN+1   1/3/3
+3       3       MAX     1/3/3
+3       3       MIN     1/3/3
+3       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 3 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN+1   1       0
+3       MIN+1   -2      1073741826/3/MIN+1
+3       MIN+1   2       0
+3       MIN+1   -3      715827884/3/MIN+2
+3       MIN+1   3       0
+3       MIN+1   17      0
+3       MIN+1   127     0
+3       MIN+1   MIN+1   2/3/MIN+4
+3       MIN+1   MAX     0
+3       MIN+1   MIN     2/3/MIN+3
+3       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MAX     -1      0
+3       MAX     1       MAX-2/3/MAX
+3       MAX     -2      0
+3       MAX     2       1073741823/3/MAX
+3       MAX     -3      0
+3       MAX     3       715827882/3/MAX-1
+3       MAX     17      126322568/3/MAX-5
+3       MAX     127     16909321/3/MAX-4
+3       MAX     MIN+1   0
+3       MAX     MAX     1/3/3
+3       MAX     MIN     0
+3       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN     -1      ---
+    java.lang.IllegalArgumentException: 3 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN     1       0
+3       MIN     -2      1073741826/3/MIN+1
+3       MIN     2       0
+3       MIN     -3      715827884/3/MIN+2
+3       MIN     3       0
+3       MIN     17      0
+3       MIN     127     0
+3       MIN     MIN+1   2/3/MIN+4
+3       MIN     MAX     0
+3       MIN     MIN     2/3/MIN+3
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN+1   0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   0       -1      0
+MIN+1   0       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       -2      0
+MIN+1   0       2       1073741824/MIN+1/-1
+MIN+1   0       -3      0
+MIN+1   0       3       715827883/MIN+1/-1
+MIN+1   0       17      126322568/MIN+1/-8
+MIN+1   0       127     16909321/MIN+1/-7
+MIN+1   0       MIN+1   0
+MIN+1   0       MAX     2/MIN+1/0
+MIN+1   0       MIN     0
+MIN+1   -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   -1      -1      0
+MIN+1   -1      1       MAX/MIN+1/-1
+MIN+1   -1      -2      0
+MIN+1   -1      2       1073741824/MIN+1/-1
+MIN+1   -1      -3      0
+MIN+1   -1      3       715827883/MIN+1/-1
+MIN+1   -1      17      126322568/MIN+1/-8
+MIN+1   -1      127     16909321/MIN+1/-7
+MIN+1   -1      MIN+1   0
+MIN+1   -1      MAX     1/MIN+1/MIN+1
+MIN+1   -1      MIN     0
+MIN+1   1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   1       -1      0
+MIN+1   1       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -2      0
+MIN+1   1       2       1073741825/MIN+1/1
+MIN+1   1       -3      0
+MIN+1   1       3       715827883/MIN+1/-1
+MIN+1   1       17      126322568/MIN+1/-8
+MIN+1   1       127     16909321/MIN+1/-7
+MIN+1   1       MIN+1   0
+MIN+1   1       MAX     2/MIN+1/0
+MIN+1   1       MIN     0
+MIN+1   3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   3       -1      0
+MIN+1   3       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -2      0
+MIN+1   3       2       1073741826/MIN+1/3
+MIN+1   3       -3      0
+MIN+1   3       3       715827884/MIN+1/2
+MIN+1   3       17      126322568/MIN+1/-8
+MIN+1   3       127     16909321/MIN+1/-7
+MIN+1   3       MIN+1   0
+MIN+1   3       MAX     2/MIN+1/0
+MIN+1   3       MIN     0
+MIN+1   MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN+1   -1      1/MIN+1/MIN+1
+MIN+1   MIN+1   1       1/MIN+1/MIN+1
+MIN+1   MIN+1   -2      1/MIN+1/MIN+1
+MIN+1   MIN+1   2       1/MIN+1/MIN+1
+MIN+1   MIN+1   -3      1/MIN+1/MIN+1
+MIN+1   MIN+1   3       1/MIN+1/MIN+1
+MIN+1   MIN+1   17      1/MIN+1/MIN+1
+MIN+1   MIN+1   127     1/MIN+1/MIN+1
+MIN+1   MIN+1   MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN+1   MAX     1/MIN+1/MIN+1
+MIN+1   MIN+1   MIN     1/MIN+1/MIN+1
+MIN+1   MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MAX     -1      0
+MIN+1   MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -2      0
+MIN+1   MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 2: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -3      0
+MIN+1   MAX     3       1431655765/MIN+1/MAX-2
+MIN+1   MAX     17      252645135/MIN+1/MAX-16
+MIN+1   MAX     127     33818641/MIN+1/MAX-14
+MIN+1   MAX     MIN+1   0
+MIN+1   MAX     MAX     3/MIN+1/MAX
+MIN+1   MAX     MIN     0
+MIN+1   MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN     -1      2/MIN+1/MIN
+MIN+1   MIN     1       0
+MIN+1   MIN     -2      1/MIN+1/MIN+1
+MIN+1   MIN     2       0
+MIN+1   MIN     -3      1/MIN+1/MIN+1
+MIN+1   MIN     3       0
+MIN+1   MIN     17      0
+MIN+1   MIN     127     0
+MIN+1   MIN     MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN     MAX     0
+MIN+1   MIN     MIN     1/MIN+1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+MAX     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     0       -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to 0 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     0       1       0
+MAX     0       -2      1073741824/MAX/1
+MAX     0       2       0
+MAX     0       -3      715827883/MAX/1
+MAX     0       3       0
+MAX     0       17      0
+MAX     0       127     0
+MAX     0       MIN+1   2/MAX/0
+MAX     0       MAX     0
+MAX     0       MIN     1/MAX/MAX
+MAX     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     -1      -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to -1 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     -1      1       0
+MAX     -1      -2      1073741825/MAX/-1
+MAX     -1      2       0
+MAX     -1      -3      715827883/MAX/1
+MAX     -1      3       0
+MAX     -1      17      0
+MAX     -1      127     0
+MAX     -1      MIN+1   2/MAX/0
+MAX     -1      MAX     0
+MAX     -1      MIN     2/MAX/-1
+MAX     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     1       -1      MAX/MAX/1
+MAX     1       1       0
+MAX     1       -2      1073741824/MAX/1
+MAX     1       2       0
+MAX     1       -3      715827883/MAX/1
+MAX     1       3       0
+MAX     1       17      0
+MAX     1       127     0
+MAX     1       MIN+1   1/MAX/MAX
+MAX     1       MAX     0
+MAX     1       MIN     1/MAX/MAX
+MAX     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     3       -1      MAX-2/MAX/3
+MAX     3       1       0
+MAX     3       -2      1073741823/MAX/3
+MAX     3       2       0
+MAX     3       -3      715827882/MAX/4
+MAX     3       3       0
+MAX     3       17      0
+MAX     3       127     0
+MAX     3       MIN+1   1/MAX/MAX
+MAX     3       MAX     0
+MAX     3       MIN     1/MAX/MAX
+MAX     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN+1   1       0
+MAX     MIN+1   -2      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483647 by -2: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN+1   2       0
+MAX     MIN+1   -3      1431655765/MAX/MIN+3
+MAX     MIN+1   3       0
+MAX     MIN+1   17      0
+MAX     MIN+1   127     0
+MAX     MIN+1   MIN+1   3/MAX/MIN+1
+MAX     MIN+1   MAX     0
+MAX     MIN+1   MIN     2/MAX/-1
+MAX     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MAX     -1      1/MAX/MAX
+MAX     MAX     1       1/MAX/MAX
+MAX     MAX     -2      1/MAX/MAX
+MAX     MAX     2       1/MAX/MAX
+MAX     MAX     -3      1/MAX/MAX
+MAX     MAX     3       1/MAX/MAX
+MAX     MAX     17      1/MAX/MAX
+MAX     MAX     127     1/MAX/MAX
+MAX     MAX     MIN+1   1/MAX/MAX
+MAX     MAX     MAX     1/MAX/MAX
+MAX     MAX     MIN     1/MAX/MAX
+MAX     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN     -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     1       0
+MAX     MIN     -2      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483648 by -2: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     2       0
+MAX     MIN     -3      1431655766/MAX/MIN
+MAX     MIN     3       0
+MAX     MIN     17      0
+MAX     MIN     127     0
+MAX     MIN     MIN+1   3/MAX/MIN+1
+MAX     MIN     MAX     0
+MAX     MIN     MIN     2/MAX/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     0       -1      0
+MIN     0       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -2      0
+MIN     0       2       1073741825/MIN/0
+MIN     0       -3      0
+MIN     0       3       715827883/MIN/-2
+MIN     0       17      126322568/MIN/-9
+MIN     0       127     16909321/MIN/-8
+MIN     0       MIN+1   0
+MIN     0       MAX     2/MIN/-1
+MIN     0       MIN     0
+MIN     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     -1      -1      0
+MIN     -1      1       ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      -2      0
+MIN     -1      2       1073741824/MIN/-2
+MIN     -1      -3      0
+MIN     -1      3       715827883/MIN/-2
+MIN     -1      17      126322568/MIN/-9
+MIN     -1      127     16909321/MIN/-8
+MIN     -1      MIN+1   0
+MIN     -1      MAX     2/MIN/-1
+MIN     -1      MIN     0
+MIN     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     1       -1      0
+MIN     1       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -2      0
+MIN     1       2       1073741825/MIN/0
+MIN     1       -3      0
+MIN     1       3       715827884/MIN/1
+MIN     1       17      126322568/MIN/-9
+MIN     1       127     16909321/MIN/-8
+MIN     1       MIN+1   0
+MIN     1       MAX     2/MIN/-1
+MIN     1       MIN     0
+MIN     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     3       -1      0
+MIN     3       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -2      0
+MIN     3       2       1073741826/MIN/2
+MIN     3       -3      0
+MIN     3       3       715827884/MIN/1
+MIN     3       17      126322568/MIN/-9
+MIN     3       127     16909321/MIN/-8
+MIN     3       MIN+1   0
+MIN     3       MAX     2/MIN/-1
+MIN     3       MIN     0
+MIN     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN+1   -1      0
+MIN     MIN+1   1       2/MIN/MIN+1
+MIN     MIN+1   -2      0
+MIN     MIN+1   2       1/MIN/MIN
+MIN     MIN+1   -3      0
+MIN     MIN+1   3       1/MIN/MIN
+MIN     MIN+1   17      1/MIN/MIN
+MIN     MIN+1   127     1/MIN/MIN
+MIN     MIN+1   MIN+1   0
+MIN     MIN+1   MAX     1/MIN/MIN
+MIN     MIN+1   MIN     0
+MIN     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MAX     -1      0
+MIN     MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -2      0
+MIN     MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 2: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -3      0
+MIN     MAX     3       1431655766/MIN/MAX
+MIN     MAX     17      252645136/MIN/MAX
+MIN     MAX     127     33818641/MIN/MAX-15
+MIN     MAX     MIN+1   0
+MIN     MAX     MAX     3/MIN/MAX-1
+MIN     MAX     MIN     0
+MIN     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN     -1      1/MIN/MIN
+MIN     MIN     1       1/MIN/MIN
+MIN     MIN     -2      1/MIN/MIN
+MIN     MIN     2       1/MIN/MIN
+MIN     MIN     -3      1/MIN/MIN
+MIN     MIN     3       1/MIN/MIN
+MIN     MIN     17      1/MIN/MIN
+MIN     MIN     127     1/MIN/MIN
+MIN     MIN     MIN+1   1/MIN/MIN
+MIN     MIN     MAX     1/MIN/MIN
+MIN     MIN     MIN     1/MIN/MIN
+
+>>> Range.apply <<<
+
+start   end     step    length/first/last
+-----------------------------------------
+0       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       0       -1      0
+0       0       1       0
+0       0       -2      0
+0       0       2       0
+0       0       -3      0
+0       0       3       0
+0       0       17      0
+0       0       127     0
+0       0       MIN+1   0
+0       0       MAX     0
+0       0       MIN     0
+0       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       -1      -1      1/0/0
+0       -1      1       0
+0       -1      -2      1/0/0
+0       -1      2       0
+0       -1      -3      1/0/0
+0       -1      3       0
+0       -1      17      0
+0       -1      127     0
+0       -1      MIN+1   1/0/0
+0       -1      MAX     0
+0       -1      MIN     1/0/0
+0       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       1       -1      0
+0       1       1       1/0/0
+0       1       -2      0
+0       1       2       1/0/0
+0       1       -3      0
+0       1       3       1/0/0
+0       1       17      1/0/0
+0       1       127     1/0/0
+0       1       MIN+1   0
+0       1       MAX     1/0/0
+0       1       MIN     0
+0       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       3       -1      0
+0       3       1       3/0/2
+0       3       -2      0
+0       3       2       2/0/2
+0       3       -3      0
+0       3       3       1/0/0
+0       3       17      1/0/0
+0       3       127     1/0/0
+0       3       MIN+1   0
+0       3       MAX     1/0/0
+0       3       MIN     0
+0       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN+1   -1      MAX/0/MIN+2
+0       MIN+1   1       0
+0       MIN+1   -2      1073741824/0/MIN+2
+0       MIN+1   2       0
+0       MIN+1   -3      715827883/0/MIN+2
+0       MIN+1   3       0
+0       MIN+1   17      0
+0       MIN+1   127     0
+0       MIN+1   MIN+1   1/0/0
+0       MIN+1   MAX     0
+0       MIN+1   MIN     1/0/0
+0       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MAX     -1      0
+0       MAX     1       MAX/0/MAX-1
+0       MAX     -2      0
+0       MAX     2       1073741824/0/MAX-1
+0       MAX     -3      0
+0       MAX     3       715827883/0/MAX-1
+0       MAX     17      126322568/0/MAX-8
+0       MAX     127     16909321/0/MAX-7
+0       MAX     MIN+1   0
+0       MAX     MAX     1/0/0
+0       MAX     MIN     0
+0       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN     -1      ---
+    java.lang.IllegalArgumentException: 0 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN     1       0
+0       MIN     -2      1073741824/0/MIN+2
+0       MIN     2       0
+0       MIN     -3      715827883/0/MIN+2
+0       MIN     3       0
+0       MIN     17      0
+0       MIN     127     0
+0       MIN     MIN+1   2/0/MIN+1
+0       MIN     MAX     0
+0       MIN     MIN     1/0/0
+
+start   end     step    length/first/last
+-----------------------------------------
+-1      0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      0       -1      0
+-1      0       1       1/-1/-1
+-1      0       -2      0
+-1      0       2       1/-1/-1
+-1      0       -3      0
+-1      0       3       1/-1/-1
+-1      0       17      1/-1/-1
+-1      0       127     1/-1/-1
+-1      0       MIN+1   0
+-1      0       MAX     1/-1/-1
+-1      0       MIN     0
+-1      -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      -1      -1      0
+-1      -1      1       0
+-1      -1      -2      0
+-1      -1      2       0
+-1      -1      -3      0
+-1      -1      3       0
+-1      -1      17      0
+-1      -1      127     0
+-1      -1      MIN+1   0
+-1      -1      MAX     0
+-1      -1      MIN     0
+-1      1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      1       -1      0
+-1      1       1       2/-1/0
+-1      1       -2      0
+-1      1       2       1/-1/-1
+-1      1       -3      0
+-1      1       3       1/-1/-1
+-1      1       17      1/-1/-1
+-1      1       127     1/-1/-1
+-1      1       MIN+1   0
+-1      1       MAX     1/-1/-1
+-1      1       MIN     0
+-1      3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      3       -1      0
+-1      3       1       4/-1/2
+-1      3       -2      0
+-1      3       2       2/-1/1
+-1      3       -3      0
+-1      3       3       2/-1/2
+-1      3       17      1/-1/-1
+-1      3       127     1/-1/-1
+-1      3       MIN+1   0
+-1      3       MAX     1/-1/-1
+-1      3       MIN     0
+-1      MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN+1   -1      MAX-1/-1/MIN+2
+-1      MIN+1   1       0
+-1      MIN+1   -2      1073741823/-1/MIN+3
+-1      MIN+1   2       0
+-1      MIN+1   -3      715827882/-1/MIN+4
+-1      MIN+1   3       0
+-1      MIN+1   17      0
+-1      MIN+1   127     0
+-1      MIN+1   MIN+1   1/-1/-1
+-1      MIN+1   MAX     0
+-1      MIN+1   MIN     1/-1/-1
+-1      MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MAX     -1      0
+-1      MAX     1       ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -2      0
+-1      MAX     2       1073741824/-1/MAX-2
+-1      MAX     -3      0
+-1      MAX     3       715827883/-1/MAX-2
+-1      MAX     17      126322568/-1/MAX-9
+-1      MAX     127     16909321/-1/MAX-8
+-1      MAX     MIN+1   0
+-1      MAX     MAX     2/-1/MAX-1
+-1      MAX     MIN     0
+-1      MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN     -1      MAX/-1/MIN+1
+-1      MIN     1       0
+-1      MIN     -2      1073741824/-1/MIN+1
+-1      MIN     2       0
+-1      MIN     -3      715827883/-1/MIN+1
+-1      MIN     3       0
+-1      MIN     17      0
+-1      MIN     127     0
+-1      MIN     MIN+1   1/-1/-1
+-1      MIN     MAX     0
+-1      MIN     MIN     1/-1/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+1       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       0       -1      1/1/1
+1       0       1       0
+1       0       -2      1/1/1
+1       0       2       0
+1       0       -3      1/1/1
+1       0       3       0
+1       0       17      0
+1       0       127     0
+1       0       MIN+1   1/1/1
+1       0       MAX     0
+1       0       MIN     1/1/1
+1       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       -1      -1      2/1/0
+1       -1      1       0
+1       -1      -2      1/1/1
+1       -1      2       0
+1       -1      -3      1/1/1
+1       -1      3       0
+1       -1      17      0
+1       -1      127     0
+1       -1      MIN+1   1/1/1
+1       -1      MAX     0
+1       -1      MIN     1/1/1
+1       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       1       -1      0
+1       1       1       0
+1       1       -2      0
+1       1       2       0
+1       1       -3      0
+1       1       3       0
+1       1       17      0
+1       1       127     0
+1       1       MIN+1   0
+1       1       MAX     0
+1       1       MIN     0
+1       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       3       -1      0
+1       3       1       2/1/2
+1       3       -2      0
+1       3       2       1/1/1
+1       3       -3      0
+1       3       3       1/1/1
+1       3       17      1/1/1
+1       3       127     1/1/1
+1       3       MIN+1   0
+1       3       MAX     1/1/1
+1       3       MIN     0
+1       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 1 until -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN+1   1       0
+1       MIN+1   -2      1073741824/1/MIN+3
+1       MIN+1   2       0
+1       MIN+1   -3      715827883/1/MIN+3
+1       MIN+1   3       0
+1       MIN+1   17      0
+1       MIN+1   127     0
+1       MIN+1   MIN+1   2/1/MIN+2
+1       MIN+1   MAX     0
+1       MIN+1   MIN     1/1/1
+1       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MAX     -1      0
+1       MAX     1       MAX-1/1/MAX-1
+1       MAX     -2      0
+1       MAX     2       1073741823/1/MAX-2
+1       MAX     -3      0
+1       MAX     3       715827882/1/MAX-3
+1       MAX     17      126322568/1/MAX-7
+1       MAX     127     16909321/1/MAX-6
+1       MAX     MIN+1   0
+1       MAX     MAX     1/1/1
+1       MAX     MIN     0
+1       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN     -1      ---
+    java.lang.IllegalArgumentException: 1 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN     1       0
+1       MIN     -2      1073741825/1/MIN+1
+1       MIN     2       0
+1       MIN     -3      715827883/1/MIN+3
+1       MIN     3       0
+1       MIN     17      0
+1       MIN     127     0
+1       MIN     MIN+1   2/1/MIN+2
+1       MIN     MAX     0
+1       MIN     MIN     2/1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+3       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       0       -1      3/3/1
+3       0       1       0
+3       0       -2      2/3/1
+3       0       2       0
+3       0       -3      1/3/3
+3       0       3       0
+3       0       17      0
+3       0       127     0
+3       0       MIN+1   1/3/3
+3       0       MAX     0
+3       0       MIN     1/3/3
+3       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       -1      -1      4/3/0
+3       -1      1       0
+3       -1      -2      2/3/1
+3       -1      2       0
+3       -1      -3      2/3/0
+3       -1      3       0
+3       -1      17      0
+3       -1      127     0
+3       -1      MIN+1   1/3/3
+3       -1      MAX     0
+3       -1      MIN     1/3/3
+3       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       1       -1      2/3/2
+3       1       1       0
+3       1       -2      1/3/3
+3       1       2       0
+3       1       -3      1/3/3
+3       1       3       0
+3       1       17      0
+3       1       127     0
+3       1       MIN+1   1/3/3
+3       1       MAX     0
+3       1       MIN     1/3/3
+3       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       3       -1      0
+3       3       1       0
+3       3       -2      0
+3       3       2       0
+3       3       -3      0
+3       3       3       0
+3       3       17      0
+3       3       127     0
+3       3       MIN+1   0
+3       3       MAX     0
+3       3       MIN     0
+3       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 3 until -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN+1   1       0
+3       MIN+1   -2      1073741825/3/MIN+3
+3       MIN+1   2       0
+3       MIN+1   -3      715827884/3/MIN+2
+3       MIN+1   3       0
+3       MIN+1   17      0
+3       MIN+1   127     0
+3       MIN+1   MIN+1   2/3/MIN+4
+3       MIN+1   MAX     0
+3       MIN+1   MIN     2/3/MIN+3
+3       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MAX     -1      0
+3       MAX     1       MAX-3/3/MAX-1
+3       MAX     -2      0
+3       MAX     2       1073741822/3/MAX-2
+3       MAX     -3      0
+3       MAX     3       715827882/3/MAX-1
+3       MAX     17      126322568/3/MAX-5
+3       MAX     127     16909321/3/MAX-4
+3       MAX     MIN+1   0
+3       MAX     MAX     1/3/3
+3       MAX     MIN     0
+3       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN     -1      ---
+    java.lang.IllegalArgumentException: 3 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN     1       0
+3       MIN     -2      1073741826/3/MIN+1
+3       MIN     2       0
+3       MIN     -3      715827884/3/MIN+2
+3       MIN     3       0
+3       MIN     17      0
+3       MIN     127     0
+3       MIN     MIN+1   2/3/MIN+4
+3       MIN     MAX     0
+3       MIN     MIN     2/3/MIN+3
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN+1   0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   0       -1      0
+MIN+1   0       1       MAX/MIN+1/-1
+MIN+1   0       -2      0
+MIN+1   0       2       1073741824/MIN+1/-1
+MIN+1   0       -3      0
+MIN+1   0       3       715827883/MIN+1/-1
+MIN+1   0       17      126322568/MIN+1/-8
+MIN+1   0       127     16909321/MIN+1/-7
+MIN+1   0       MIN+1   0
+MIN+1   0       MAX     1/MIN+1/MIN+1
+MIN+1   0       MIN     0
+MIN+1   -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   -1      -1      0
+MIN+1   -1      1       MAX-1/MIN+1/-2
+MIN+1   -1      -2      0
+MIN+1   -1      2       1073741823/MIN+1/-3
+MIN+1   -1      -3      0
+MIN+1   -1      3       715827882/MIN+1/-4
+MIN+1   -1      17      126322568/MIN+1/-8
+MIN+1   -1      127     16909321/MIN+1/-7
+MIN+1   -1      MIN+1   0
+MIN+1   -1      MAX     1/MIN+1/MIN+1
+MIN+1   -1      MIN     0
+MIN+1   1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   1       -1      0
+MIN+1   1       1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -2      0
+MIN+1   1       2       1073741824/MIN+1/-1
+MIN+1   1       -3      0
+MIN+1   1       3       715827883/MIN+1/-1
+MIN+1   1       17      126322568/MIN+1/-8
+MIN+1   1       127     16909321/MIN+1/-7
+MIN+1   1       MIN+1   0
+MIN+1   1       MAX     2/MIN+1/0
+MIN+1   1       MIN     0
+MIN+1   3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   3       -1      0
+MIN+1   3       1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -2      0
+MIN+1   3       2       1073741825/MIN+1/1
+MIN+1   3       -3      0
+MIN+1   3       3       715827884/MIN+1/2
+MIN+1   3       17      126322568/MIN+1/-8
+MIN+1   3       127     16909321/MIN+1/-7
+MIN+1   3       MIN+1   0
+MIN+1   3       MAX     2/MIN+1/0
+MIN+1   3       MIN     0
+MIN+1   MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN+1   -1      0
+MIN+1   MIN+1   1       0
+MIN+1   MIN+1   -2      0
+MIN+1   MIN+1   2       0
+MIN+1   MIN+1   -3      0
+MIN+1   MIN+1   3       0
+MIN+1   MIN+1   17      0
+MIN+1   MIN+1   127     0
+MIN+1   MIN+1   MIN+1   0
+MIN+1   MIN+1   MAX     0
+MIN+1   MIN+1   MIN     0
+MIN+1   MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MAX     -1      0
+MIN+1   MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -2      0
+MIN+1   MAX     2       MAX/MIN+1/MAX-2
+MIN+1   MAX     -3      0
+MIN+1   MAX     3       1431655765/MIN+1/MAX-2
+MIN+1   MAX     17      252645135/MIN+1/MAX-16
+MIN+1   MAX     127     33818641/MIN+1/MAX-14
+MIN+1   MAX     MIN+1   0
+MIN+1   MAX     MAX     2/MIN+1/0
+MIN+1   MAX     MIN     0
+MIN+1   MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN     -1      1/MIN+1/MIN+1
+MIN+1   MIN     1       0
+MIN+1   MIN     -2      1/MIN+1/MIN+1
+MIN+1   MIN     2       0
+MIN+1   MIN     -3      1/MIN+1/MIN+1
+MIN+1   MIN     3       0
+MIN+1   MIN     17      0
+MIN+1   MIN     127     0
+MIN+1   MIN     MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN     MAX     0
+MIN+1   MIN     MIN     1/MIN+1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+MAX     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     0       -1      MAX/MAX/1
+MAX     0       1       0
+MAX     0       -2      1073741824/MAX/1
+MAX     0       2       0
+MAX     0       -3      715827883/MAX/1
+MAX     0       3       0
+MAX     0       17      0
+MAX     0       127     0
+MAX     0       MIN+1   1/MAX/MAX
+MAX     0       MAX     0
+MAX     0       MIN     1/MAX/MAX
+MAX     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     -1      -1      ---
+    java.lang.IllegalArgumentException: 2147483647 until -1 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     -1      1       0
+MAX     -1      -2      1073741824/MAX/1
+MAX     -1      2       0
+MAX     -1      -3      715827883/MAX/1
+MAX     -1      3       0
+MAX     -1      17      0
+MAX     -1      127     0
+MAX     -1      MIN+1   2/MAX/0
+MAX     -1      MAX     0
+MAX     -1      MIN     1/MAX/MAX
+MAX     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     1       -1      MAX-1/MAX/2
+MAX     1       1       0
+MAX     1       -2      1073741823/MAX/3
+MAX     1       2       0
+MAX     1       -3      715827882/MAX/4
+MAX     1       3       0
+MAX     1       17      0
+MAX     1       127     0
+MAX     1       MIN+1   1/MAX/MAX
+MAX     1       MAX     0
+MAX     1       MIN     1/MAX/MAX
+MAX     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     3       -1      MAX-3/MAX/4
+MAX     3       1       0
+MAX     3       -2      1073741822/MAX/5
+MAX     3       2       0
+MAX     3       -3      715827882/MAX/4
+MAX     3       3       0
+MAX     3       17      0
+MAX     3       127     0
+MAX     3       MIN+1   1/MAX/MAX
+MAX     3       MAX     0
+MAX     3       MIN     1/MAX/MAX
+MAX     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 2147483647 until -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN+1   1       0
+MAX     MIN+1   -2      MAX/MAX/MIN+3
+MAX     MIN+1   2       0
+MAX     MIN+1   -3      1431655765/MAX/MIN+3
+MAX     MIN+1   3       0
+MAX     MIN+1   17      0
+MAX     MIN+1   127     0
+MAX     MIN+1   MIN+1   2/MAX/0
+MAX     MIN+1   MAX     0
+MAX     MIN+1   MIN     2/MAX/-1
+MAX     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MAX     -1      0
+MAX     MAX     1       0
+MAX     MAX     -2      0
+MAX     MAX     2       0
+MAX     MAX     -3      0
+MAX     MAX     3       0
+MAX     MAX     17      0
+MAX     MAX     127     0
+MAX     MAX     MIN+1   0
+MAX     MAX     MAX     0
+MAX     MAX     MIN     0
+MAX     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN     -1      ---
+    java.lang.IllegalArgumentException: 2147483647 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     1       0
+MAX     MIN     -2      ---
+    java.lang.IllegalArgumentException: 2147483647 until -2147483648 by -2: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     2       0
+MAX     MIN     -3      1431655765/MAX/MIN+3
+MAX     MIN     3       0
+MAX     MIN     17      0
+MAX     MIN     127     0
+MAX     MIN     MIN+1   3/MAX/MIN+1
+MAX     MIN     MAX     0
+MAX     MIN     MIN     2/MAX/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     0       -1      0
+MIN     0       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -2      0
+MIN     0       2       1073741824/MIN/-2
+MIN     0       -3      0
+MIN     0       3       715827883/MIN/-2
+MIN     0       17      126322568/MIN/-9
+MIN     0       127     16909321/MIN/-8
+MIN     0       MIN+1   0
+MIN     0       MAX     2/MIN/-1
+MIN     0       MIN     0
+MIN     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     -1      -1      0
+MIN     -1      1       MAX/MIN/-2
+MIN     -1      -2      0
+MIN     -1      2       1073741824/MIN/-2
+MIN     -1      -3      0
+MIN     -1      3       715827883/MIN/-2
+MIN     -1      17      126322568/MIN/-9
+MIN     -1      127     16909321/MIN/-8
+MIN     -1      MIN+1   0
+MIN     -1      MAX     1/MIN/MIN
+MIN     -1      MIN     0
+MIN     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     1       -1      0
+MIN     1       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -2      0
+MIN     1       2       1073741825/MIN/0
+MIN     1       -3      0
+MIN     1       3       715827883/MIN/-2
+MIN     1       17      126322568/MIN/-9
+MIN     1       127     16909321/MIN/-8
+MIN     1       MIN+1   0
+MIN     1       MAX     2/MIN/-1
+MIN     1       MIN     0
+MIN     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     3       -1      0
+MIN     3       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -2      0
+MIN     3       2       1073741826/MIN/2
+MIN     3       -3      0
+MIN     3       3       715827884/MIN/1
+MIN     3       17      126322568/MIN/-9
+MIN     3       127     16909321/MIN/-8
+MIN     3       MIN+1   0
+MIN     3       MAX     2/MIN/-1
+MIN     3       MIN     0
+MIN     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN+1   -1      0
+MIN     MIN+1   1       1/MIN/MIN
+MIN     MIN+1   -2      0
+MIN     MIN+1   2       1/MIN/MIN
+MIN     MIN+1   -3      0
+MIN     MIN+1   3       1/MIN/MIN
+MIN     MIN+1   17      1/MIN/MIN
+MIN     MIN+1   127     1/MIN/MIN
+MIN     MIN+1   MIN+1   0
+MIN     MIN+1   MAX     1/MIN/MIN
+MIN     MIN+1   MIN     0
+MIN     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MAX     -1      0
+MIN     MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -2      0
+MIN     MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 2: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -3      0
+MIN     MAX     3       1431655765/MIN/MAX-3
+MIN     MAX     17      252645135/MIN/MAX-17
+MIN     MAX     127     33818641/MIN/MAX-15
+MIN     MAX     MIN+1   0
+MIN     MAX     MAX     3/MIN/MAX-1
+MIN     MAX     MIN     0
+MIN     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN     -1      0
+MIN     MIN     1       0
+MIN     MIN     -2      0
+MIN     MIN     2       0
+MIN     MIN     -3      0
+MIN     MIN     3       0
+MIN     MIN     17      0
+MIN     MIN     127     0
+MIN     MIN     MIN+1   0
+MIN     MIN     MAX     0
+MIN     MIN     MIN     0
+
+>>> start to end <<<
+
+start   end     step    length/first/last
+-----------------------------------------
+0       0       0       1/0/0
+0       0       -1      1/0/0
+0       0       1       1/0/0
+0       0       -2      1/0/0
+0       0       2       1/0/0
+0       0       -3      1/0/0
+0       0       3       1/0/0
+0       0       17      1/0/0
+0       0       127     1/0/0
+0       0       MIN+1   1/0/0
+0       0       MAX     1/0/0
+0       0       MIN     1/0/0
+0       -1      0       0
+0       -1      -1      0
+0       -1      1       0
+0       -1      -2      0
+0       -1      2       0
+0       -1      -3      0
+0       -1      3       0
+0       -1      17      0
+0       -1      127     0
+0       -1      MIN+1   0
+0       -1      MAX     0
+0       -1      MIN     0
+0       1       0       2/0/1
+0       1       -1      2/0/1
+0       1       1       2/0/1
+0       1       -2      2/0/1
+0       1       2       2/0/1
+0       1       -3      2/0/1
+0       1       3       2/0/1
+0       1       17      2/0/1
+0       1       127     2/0/1
+0       1       MIN+1   2/0/1
+0       1       MAX     2/0/1
+0       1       MIN     2/0/1
+0       3       0       4/0/3
+0       3       -1      4/0/3
+0       3       1       4/0/3
+0       3       -2      4/0/3
+0       3       2       4/0/3
+0       3       -3      4/0/3
+0       3       3       4/0/3
+0       3       17      4/0/3
+0       3       127     4/0/3
+0       3       MIN+1   4/0/3
+0       3       MAX     4/0/3
+0       3       MIN     4/0/3
+0       MIN+1   0       0
+0       MIN+1   -1      0
+0       MIN+1   1       0
+0       MIN+1   -2      0
+0       MIN+1   2       0
+0       MIN+1   -3      0
+0       MIN+1   3       0
+0       MIN+1   17      0
+0       MIN+1   127     0
+0       MIN+1   MIN+1   0
+0       MIN+1   MAX     0
+0       MIN+1   MIN     0
+0       MAX     0       ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     -1      ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     1       ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     -2      ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     2       ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     -3      ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     3       ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     17      ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     127     ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     MAX     ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     MIN     ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN     0       0
+0       MIN     -1      0
+0       MIN     1       0
+0       MIN     -2      0
+0       MIN     2       0
+0       MIN     -3      0
+0       MIN     3       0
+0       MIN     17      0
+0       MIN     127     0
+0       MIN     MIN+1   0
+0       MIN     MAX     0
+0       MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+-1      0       0       2/-1/0
+-1      0       -1      2/-1/0
+-1      0       1       2/-1/0
+-1      0       -2      2/-1/0
+-1      0       2       2/-1/0
+-1      0       -3      2/-1/0
+-1      0       3       2/-1/0
+-1      0       17      2/-1/0
+-1      0       127     2/-1/0
+-1      0       MIN+1   2/-1/0
+-1      0       MAX     2/-1/0
+-1      0       MIN     2/-1/0
+-1      -1      0       1/-1/-1
+-1      -1      -1      1/-1/-1
+-1      -1      1       1/-1/-1
+-1      -1      -2      1/-1/-1
+-1      -1      2       1/-1/-1
+-1      -1      -3      1/-1/-1
+-1      -1      3       1/-1/-1
+-1      -1      17      1/-1/-1
+-1      -1      127     1/-1/-1
+-1      -1      MIN+1   1/-1/-1
+-1      -1      MAX     1/-1/-1
+-1      -1      MIN     1/-1/-1
+-1      1       0       3/-1/1
+-1      1       -1      3/-1/1
+-1      1       1       3/-1/1
+-1      1       -2      3/-1/1
+-1      1       2       3/-1/1
+-1      1       -3      3/-1/1
+-1      1       3       3/-1/1
+-1      1       17      3/-1/1
+-1      1       127     3/-1/1
+-1      1       MIN+1   3/-1/1
+-1      1       MAX     3/-1/1
+-1      1       MIN     3/-1/1
+-1      3       0       5/-1/3
+-1      3       -1      5/-1/3
+-1      3       1       5/-1/3
+-1      3       -2      5/-1/3
+-1      3       2       5/-1/3
+-1      3       -3      5/-1/3
+-1      3       3       5/-1/3
+-1      3       17      5/-1/3
+-1      3       127     5/-1/3
+-1      3       MIN+1   5/-1/3
+-1      3       MAX     5/-1/3
+-1      3       MIN     5/-1/3
+-1      MIN+1   0       0
+-1      MIN+1   -1      0
+-1      MIN+1   1       0
+-1      MIN+1   -2      0
+-1      MIN+1   2       0
+-1      MIN+1   -3      0
+-1      MIN+1   3       0
+-1      MIN+1   17      0
+-1      MIN+1   127     0
+-1      MIN+1   MIN+1   0
+-1      MIN+1   MAX     0
+-1      MIN+1   MIN     0
+-1      MAX     0       ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -1      ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     1       ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -2      ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     2       ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -3      ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     3       ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     17      ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     127     ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     MAX     ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     MIN     ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MIN     0       0
+-1      MIN     -1      0
+-1      MIN     1       0
+-1      MIN     -2      0
+-1      MIN     2       0
+-1      MIN     -3      0
+-1      MIN     3       0
+-1      MIN     17      0
+-1      MIN     127     0
+-1      MIN     MIN+1   0
+-1      MIN     MAX     0
+-1      MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+1       0       0       0
+1       0       -1      0
+1       0       1       0
+1       0       -2      0
+1       0       2       0
+1       0       -3      0
+1       0       3       0
+1       0       17      0
+1       0       127     0
+1       0       MIN+1   0
+1       0       MAX     0
+1       0       MIN     0
+1       -1      0       0
+1       -1      -1      0
+1       -1      1       0
+1       -1      -2      0
+1       -1      2       0
+1       -1      -3      0
+1       -1      3       0
+1       -1      17      0
+1       -1      127     0
+1       -1      MIN+1   0
+1       -1      MAX     0
+1       -1      MIN     0
+1       1       0       1/1/1
+1       1       -1      1/1/1
+1       1       1       1/1/1
+1       1       -2      1/1/1
+1       1       2       1/1/1
+1       1       -3      1/1/1
+1       1       3       1/1/1
+1       1       17      1/1/1
+1       1       127     1/1/1
+1       1       MIN+1   1/1/1
+1       1       MAX     1/1/1
+1       1       MIN     1/1/1
+1       3       0       3/1/3
+1       3       -1      3/1/3
+1       3       1       3/1/3
+1       3       -2      3/1/3
+1       3       2       3/1/3
+1       3       -3      3/1/3
+1       3       3       3/1/3
+1       3       17      3/1/3
+1       3       127     3/1/3
+1       3       MIN+1   3/1/3
+1       3       MAX     3/1/3
+1       3       MIN     3/1/3
+1       MIN+1   0       0
+1       MIN+1   -1      0
+1       MIN+1   1       0
+1       MIN+1   -2      0
+1       MIN+1   2       0
+1       MIN+1   -3      0
+1       MIN+1   3       0
+1       MIN+1   17      0
+1       MIN+1   127     0
+1       MIN+1   MIN+1   0
+1       MIN+1   MAX     0
+1       MIN+1   MIN     0
+1       MAX     0       MAX/1/MAX
+1       MAX     -1      MAX/1/MAX
+1       MAX     1       MAX/1/MAX
+1       MAX     -2      MAX/1/MAX
+1       MAX     2       MAX/1/MAX
+1       MAX     -3      MAX/1/MAX
+1       MAX     3       MAX/1/MAX
+1       MAX     17      MAX/1/MAX
+1       MAX     127     MAX/1/MAX
+1       MAX     MIN+1   MAX/1/MAX
+1       MAX     MAX     MAX/1/MAX
+1       MAX     MIN     MAX/1/MAX
+1       MIN     0       0
+1       MIN     -1      0
+1       MIN     1       0
+1       MIN     -2      0
+1       MIN     2       0
+1       MIN     -3      0
+1       MIN     3       0
+1       MIN     17      0
+1       MIN     127     0
+1       MIN     MIN+1   0
+1       MIN     MAX     0
+1       MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+3       0       0       0
+3       0       -1      0
+3       0       1       0
+3       0       -2      0
+3       0       2       0
+3       0       -3      0
+3       0       3       0
+3       0       17      0
+3       0       127     0
+3       0       MIN+1   0
+3       0       MAX     0
+3       0       MIN     0
+3       -1      0       0
+3       -1      -1      0
+3       -1      1       0
+3       -1      -2      0
+3       -1      2       0
+3       -1      -3      0
+3       -1      3       0
+3       -1      17      0
+3       -1      127     0
+3       -1      MIN+1   0
+3       -1      MAX     0
+3       -1      MIN     0
+3       1       0       0
+3       1       -1      0
+3       1       1       0
+3       1       -2      0
+3       1       2       0
+3       1       -3      0
+3       1       3       0
+3       1       17      0
+3       1       127     0
+3       1       MIN+1   0
+3       1       MAX     0
+3       1       MIN     0
+3       3       0       1/3/3
+3       3       -1      1/3/3
+3       3       1       1/3/3
+3       3       -2      1/3/3
+3       3       2       1/3/3
+3       3       -3      1/3/3
+3       3       3       1/3/3
+3       3       17      1/3/3
+3       3       127     1/3/3
+3       3       MIN+1   1/3/3
+3       3       MAX     1/3/3
+3       3       MIN     1/3/3
+3       MIN+1   0       0
+3       MIN+1   -1      0
+3       MIN+1   1       0
+3       MIN+1   -2      0
+3       MIN+1   2       0
+3       MIN+1   -3      0
+3       MIN+1   3       0
+3       MIN+1   17      0
+3       MIN+1   127     0
+3       MIN+1   MIN+1   0
+3       MIN+1   MAX     0
+3       MIN+1   MIN     0
+3       MAX     0       MAX-2/3/MAX
+3       MAX     -1      MAX-2/3/MAX
+3       MAX     1       MAX-2/3/MAX
+3       MAX     -2      MAX-2/3/MAX
+3       MAX     2       MAX-2/3/MAX
+3       MAX     -3      MAX-2/3/MAX
+3       MAX     3       MAX-2/3/MAX
+3       MAX     17      MAX-2/3/MAX
+3       MAX     127     MAX-2/3/MAX
+3       MAX     MIN+1   MAX-2/3/MAX
+3       MAX     MAX     MAX-2/3/MAX
+3       MAX     MIN     MAX-2/3/MAX
+3       MIN     0       0
+3       MIN     -1      0
+3       MIN     1       0
+3       MIN     -2      0
+3       MIN     2       0
+3       MIN     -3      0
+3       MIN     3       0
+3       MIN     17      0
+3       MIN     127     0
+3       MIN     MIN+1   0
+3       MIN     MAX     0
+3       MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN+1   0       0       ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       -1      ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       -2      ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       2       ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       -3      ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       3       ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       17      ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       127     ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   -1      0       MAX/MIN+1/-1
+MIN+1   -1      -1      MAX/MIN+1/-1
+MIN+1   -1      1       MAX/MIN+1/-1
+MIN+1   -1      -2      MAX/MIN+1/-1
+MIN+1   -1      2       MAX/MIN+1/-1
+MIN+1   -1      -3      MAX/MIN+1/-1
+MIN+1   -1      3       MAX/MIN+1/-1
+MIN+1   -1      17      MAX/MIN+1/-1
+MIN+1   -1      127     MAX/MIN+1/-1
+MIN+1   -1      MIN+1   MAX/MIN+1/-1
+MIN+1   -1      MAX     MAX/MIN+1/-1
+MIN+1   -1      MIN     MAX/MIN+1/-1
+MIN+1   1       0       ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -1      ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -2      ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       2       ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -3      ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       3       ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       17      ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       127     ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       0       ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -1      ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -2      ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       2       ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -3      ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       3       ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       17      ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       127     ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MIN+1   0       1/MIN+1/MIN+1
+MIN+1   MIN+1   -1      1/MIN+1/MIN+1
+MIN+1   MIN+1   1       1/MIN+1/MIN+1
+MIN+1   MIN+1   -2      1/MIN+1/MIN+1
+MIN+1   MIN+1   2       1/MIN+1/MIN+1
+MIN+1   MIN+1   -3      1/MIN+1/MIN+1
+MIN+1   MIN+1   3       1/MIN+1/MIN+1
+MIN+1   MIN+1   17      1/MIN+1/MIN+1
+MIN+1   MIN+1   127     1/MIN+1/MIN+1
+MIN+1   MIN+1   MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN+1   MAX     1/MIN+1/MIN+1
+MIN+1   MIN+1   MIN     1/MIN+1/MIN+1
+MIN+1   MAX     0       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -1      ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -2      ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -3      ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     3       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     17      ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     127     ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MIN     0       0
+MIN+1   MIN     -1      0
+MIN+1   MIN     1       0
+MIN+1   MIN     -2      0
+MIN+1   MIN     2       0
+MIN+1   MIN     -3      0
+MIN+1   MIN     3       0
+MIN+1   MIN     17      0
+MIN+1   MIN     127     0
+MIN+1   MIN     MIN+1   0
+MIN+1   MIN     MAX     0
+MIN+1   MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+MAX     0       0       0
+MAX     0       -1      0
+MAX     0       1       0
+MAX     0       -2      0
+MAX     0       2       0
+MAX     0       -3      0
+MAX     0       3       0
+MAX     0       17      0
+MAX     0       127     0
+MAX     0       MIN+1   0
+MAX     0       MAX     0
+MAX     0       MIN     0
+MAX     -1      0       0
+MAX     -1      -1      0
+MAX     -1      1       0
+MAX     -1      -2      0
+MAX     -1      2       0
+MAX     -1      -3      0
+MAX     -1      3       0
+MAX     -1      17      0
+MAX     -1      127     0
+MAX     -1      MIN+1   0
+MAX     -1      MAX     0
+MAX     -1      MIN     0
+MAX     1       0       0
+MAX     1       -1      0
+MAX     1       1       0
+MAX     1       -2      0
+MAX     1       2       0
+MAX     1       -3      0
+MAX     1       3       0
+MAX     1       17      0
+MAX     1       127     0
+MAX     1       MIN+1   0
+MAX     1       MAX     0
+MAX     1       MIN     0
+MAX     3       0       0
+MAX     3       -1      0
+MAX     3       1       0
+MAX     3       -2      0
+MAX     3       2       0
+MAX     3       -3      0
+MAX     3       3       0
+MAX     3       17      0
+MAX     3       127     0
+MAX     3       MIN+1   0
+MAX     3       MAX     0
+MAX     3       MIN     0
+MAX     MIN+1   0       0
+MAX     MIN+1   -1      0
+MAX     MIN+1   1       0
+MAX     MIN+1   -2      0
+MAX     MIN+1   2       0
+MAX     MIN+1   -3      0
+MAX     MIN+1   3       0
+MAX     MIN+1   17      0
+MAX     MIN+1   127     0
+MAX     MIN+1   MIN+1   0
+MAX     MIN+1   MAX     0
+MAX     MIN+1   MIN     0
+MAX     MAX     0       1/MAX/MAX
+MAX     MAX     -1      1/MAX/MAX
+MAX     MAX     1       1/MAX/MAX
+MAX     MAX     -2      1/MAX/MAX
+MAX     MAX     2       1/MAX/MAX
+MAX     MAX     -3      1/MAX/MAX
+MAX     MAX     3       1/MAX/MAX
+MAX     MAX     17      1/MAX/MAX
+MAX     MAX     127     1/MAX/MAX
+MAX     MAX     MIN+1   1/MAX/MAX
+MAX     MAX     MAX     1/MAX/MAX
+MAX     MAX     MIN     1/MAX/MAX
+MAX     MIN     0       0
+MAX     MIN     -1      0
+MAX     MIN     1       0
+MAX     MIN     -2      0
+MAX     MIN     2       0
+MAX     MIN     -3      0
+MAX     MIN     3       0
+MAX     MIN     17      0
+MAX     MIN     127     0
+MAX     MIN     MIN+1   0
+MAX     MIN     MAX     0
+MAX     MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN     0       0       ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -1      ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -2      ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       2       ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -3      ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       3       ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       17      ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       127     ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      0       ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      -1      ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      1       ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      -2      ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      2       ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      -3      ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      3       ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      17      ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      127     ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       0       ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -1      ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -2      ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       2       ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -3      ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       3       ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       17      ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       127     ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       0       ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -1      ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -2      ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       2       ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -3      ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       3       ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       17      ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       127     ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MIN+1   0       2/MIN/MIN+1
+MIN     MIN+1   -1      2/MIN/MIN+1
+MIN     MIN+1   1       2/MIN/MIN+1
+MIN     MIN+1   -2      2/MIN/MIN+1
+MIN     MIN+1   2       2/MIN/MIN+1
+MIN     MIN+1   -3      2/MIN/MIN+1
+MIN     MIN+1   3       2/MIN/MIN+1
+MIN     MIN+1   17      2/MIN/MIN+1
+MIN     MIN+1   127     2/MIN/MIN+1
+MIN     MIN+1   MIN+1   2/MIN/MIN+1
+MIN     MIN+1   MAX     2/MIN/MIN+1
+MIN     MIN+1   MIN     2/MIN/MIN+1
+MIN     MAX     0       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -1      ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -2      ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -3      ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     3       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     17      ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     127     ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MIN     0       1/MIN/MIN
+MIN     MIN     -1      1/MIN/MIN
+MIN     MIN     1       1/MIN/MIN
+MIN     MIN     -2      1/MIN/MIN
+MIN     MIN     2       1/MIN/MIN
+MIN     MIN     -3      1/MIN/MIN
+MIN     MIN     3       1/MIN/MIN
+MIN     MIN     17      1/MIN/MIN
+MIN     MIN     127     1/MIN/MIN
+MIN     MIN     MIN+1   1/MIN/MIN
+MIN     MIN     MAX     1/MIN/MIN
+MIN     MIN     MIN     1/MIN/MIN
+
+>>> start to end by step <<<
+
+start   end     step    length/first/last
+-----------------------------------------
+0       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       0       -1      1/0/0
+0       0       1       1/0/0
+0       0       -2      1/0/0
+0       0       2       1/0/0
+0       0       -3      1/0/0
+0       0       3       1/0/0
+0       0       17      1/0/0
+0       0       127     1/0/0
+0       0       MIN+1   1/0/0
+0       0       MAX     1/0/0
+0       0       MIN     1/0/0
+0       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       -1      -1      2/0/-1
+0       -1      1       0
+0       -1      -2      1/0/0
+0       -1      2       0
+0       -1      -3      1/0/0
+0       -1      3       0
+0       -1      17      0
+0       -1      127     0
+0       -1      MIN+1   1/0/0
+0       -1      MAX     0
+0       -1      MIN     1/0/0
+0       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       1       -1      0
+0       1       1       2/0/1
+0       1       -2      0
+0       1       2       1/0/0
+0       1       -3      0
+0       1       3       1/0/0
+0       1       17      1/0/0
+0       1       127     1/0/0
+0       1       MIN+1   0
+0       1       MAX     1/0/0
+0       1       MIN     0
+0       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       3       -1      0
+0       3       1       4/0/3
+0       3       -2      0
+0       3       2       2/0/2
+0       3       -3      0
+0       3       3       2/0/3
+0       3       17      1/0/0
+0       3       127     1/0/0
+0       3       MIN+1   0
+0       3       MAX     1/0/0
+0       3       MIN     0
+0       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 0 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN+1   1       0
+0       MIN+1   -2      1073741824/0/MIN+2
+0       MIN+1   2       0
+0       MIN+1   -3      715827883/0/MIN+2
+0       MIN+1   3       0
+0       MIN+1   17      0
+0       MIN+1   127     0
+0       MIN+1   MIN+1   2/0/MIN+1
+0       MIN+1   MAX     0
+0       MIN+1   MIN     1/0/0
+0       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MAX     -1      0
+0       MAX     1       ---
+    java.lang.IllegalArgumentException: 0 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+0       MAX     -2      0
+0       MAX     2       1073741824/0/MAX-1
+0       MAX     -3      0
+0       MAX     3       715827883/0/MAX-1
+0       MAX     17      126322568/0/MAX-8
+0       MAX     127     16909321/0/MAX-7
+0       MAX     MIN+1   0
+0       MAX     MAX     2/0/MAX
+0       MAX     MIN     0
+0       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN     -1      ---
+    java.lang.IllegalArgumentException: 0 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN     1       0
+0       MIN     -2      1073741825/0/MIN
+0       MIN     2       0
+0       MIN     -3      715827883/0/MIN+2
+0       MIN     3       0
+0       MIN     17      0
+0       MIN     127     0
+0       MIN     MIN+1   2/0/MIN+1
+0       MIN     MAX     0
+0       MIN     MIN     2/0/MIN
+
+start   end     step    length/first/last
+-----------------------------------------
+-1      0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      0       -1      0
+-1      0       1       2/-1/0
+-1      0       -2      0
+-1      0       2       1/-1/-1
+-1      0       -3      0
+-1      0       3       1/-1/-1
+-1      0       17      1/-1/-1
+-1      0       127     1/-1/-1
+-1      0       MIN+1   0
+-1      0       MAX     1/-1/-1
+-1      0       MIN     0
+-1      -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      -1      -1      1/-1/-1
+-1      -1      1       1/-1/-1
+-1      -1      -2      1/-1/-1
+-1      -1      2       1/-1/-1
+-1      -1      -3      1/-1/-1
+-1      -1      3       1/-1/-1
+-1      -1      17      1/-1/-1
+-1      -1      127     1/-1/-1
+-1      -1      MIN+1   1/-1/-1
+-1      -1      MAX     1/-1/-1
+-1      -1      MIN     1/-1/-1
+-1      1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      1       -1      0
+-1      1       1       3/-1/1
+-1      1       -2      0
+-1      1       2       2/-1/1
+-1      1       -3      0
+-1      1       3       1/-1/-1
+-1      1       17      1/-1/-1
+-1      1       127     1/-1/-1
+-1      1       MIN+1   0
+-1      1       MAX     1/-1/-1
+-1      1       MIN     0
+-1      3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      3       -1      0
+-1      3       1       5/-1/3
+-1      3       -2      0
+-1      3       2       3/-1/3
+-1      3       -3      0
+-1      3       3       2/-1/2
+-1      3       17      1/-1/-1
+-1      3       127     1/-1/-1
+-1      3       MIN+1   0
+-1      3       MAX     1/-1/-1
+-1      3       MIN     0
+-1      MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN+1   -1      MAX/-1/MIN+1
+-1      MIN+1   1       0
+-1      MIN+1   -2      1073741824/-1/MIN+1
+-1      MIN+1   2       0
+-1      MIN+1   -3      715827883/-1/MIN+1
+-1      MIN+1   3       0
+-1      MIN+1   17      0
+-1      MIN+1   127     0
+-1      MIN+1   MIN+1   1/-1/-1
+-1      MIN+1   MAX     0
+-1      MIN+1   MIN     1/-1/-1
+-1      MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MAX     -1      0
+-1      MAX     1       ---
+    java.lang.IllegalArgumentException: -1 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -2      0
+-1      MAX     2       1073741825/-1/MAX
+-1      MAX     -3      0
+-1      MAX     3       715827883/-1/MAX-2
+-1      MAX     17      126322568/-1/MAX-9
+-1      MAX     127     16909321/-1/MAX-8
+-1      MAX     MIN+1   0
+-1      MAX     MAX     2/-1/MAX-1
+-1      MAX     MIN     0
+-1      MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN     -1      ---
+    java.lang.IllegalArgumentException: -1 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+-1      MIN     1       0
+-1      MIN     -2      1073741824/-1/MIN+1
+-1      MIN     2       0
+-1      MIN     -3      715827883/-1/MIN+1
+-1      MIN     3       0
+-1      MIN     17      0
+-1      MIN     127     0
+-1      MIN     MIN+1   2/-1/MIN
+-1      MIN     MAX     0
+-1      MIN     MIN     1/-1/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+1       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       0       -1      2/1/0
+1       0       1       0
+1       0       -2      1/1/1
+1       0       2       0
+1       0       -3      1/1/1
+1       0       3       0
+1       0       17      0
+1       0       127     0
+1       0       MIN+1   1/1/1
+1       0       MAX     0
+1       0       MIN     1/1/1
+1       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       -1      -1      3/1/-1
+1       -1      1       0
+1       -1      -2      2/1/-1
+1       -1      2       0
+1       -1      -3      1/1/1
+1       -1      3       0
+1       -1      17      0
+1       -1      127     0
+1       -1      MIN+1   1/1/1
+1       -1      MAX     0
+1       -1      MIN     1/1/1
+1       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       1       -1      1/1/1
+1       1       1       1/1/1
+1       1       -2      1/1/1
+1       1       2       1/1/1
+1       1       -3      1/1/1
+1       1       3       1/1/1
+1       1       17      1/1/1
+1       1       127     1/1/1
+1       1       MIN+1   1/1/1
+1       1       MAX     1/1/1
+1       1       MIN     1/1/1
+1       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       3       -1      0
+1       3       1       3/1/3
+1       3       -2      0
+1       3       2       2/1/3
+1       3       -3      0
+1       3       3       1/1/1
+1       3       17      1/1/1
+1       3       127     1/1/1
+1       3       MIN+1   0
+1       3       MAX     1/1/1
+1       3       MIN     0
+1       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 1 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN+1   1       0
+1       MIN+1   -2      1073741825/1/MIN+1
+1       MIN+1   2       0
+1       MIN+1   -3      715827883/1/MIN+3
+1       MIN+1   3       0
+1       MIN+1   17      0
+1       MIN+1   127     0
+1       MIN+1   MIN+1   2/1/MIN+2
+1       MIN+1   MAX     0
+1       MIN+1   MIN     2/1/MIN+1
+1       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MAX     -1      0
+1       MAX     1       MAX/1/MAX
+1       MAX     -2      0
+1       MAX     2       1073741824/1/MAX
+1       MAX     -3      0
+1       MAX     3       715827883/1/MAX
+1       MAX     17      126322568/1/MAX-7
+1       MAX     127     16909321/1/MAX-6
+1       MAX     MIN+1   0
+1       MAX     MAX     1/1/1
+1       MAX     MIN     0
+1       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN     -1      ---
+    java.lang.IllegalArgumentException: 1 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN     1       0
+1       MIN     -2      1073741825/1/MIN+1
+1       MIN     2       0
+1       MIN     -3      715827884/1/MIN
+1       MIN     3       0
+1       MIN     17      0
+1       MIN     127     0
+1       MIN     MIN+1   2/1/MIN+2
+1       MIN     MAX     0
+1       MIN     MIN     2/1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+3       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       0       -1      4/3/0
+3       0       1       0
+3       0       -2      2/3/1
+3       0       2       0
+3       0       -3      2/3/0
+3       0       3       0
+3       0       17      0
+3       0       127     0
+3       0       MIN+1   1/3/3
+3       0       MAX     0
+3       0       MIN     1/3/3
+3       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       -1      -1      5/3/-1
+3       -1      1       0
+3       -1      -2      3/3/-1
+3       -1      2       0
+3       -1      -3      2/3/0
+3       -1      3       0
+3       -1      17      0
+3       -1      127     0
+3       -1      MIN+1   1/3/3
+3       -1      MAX     0
+3       -1      MIN     1/3/3
+3       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       1       -1      3/3/1
+3       1       1       0
+3       1       -2      2/3/1
+3       1       2       0
+3       1       -3      1/3/3
+3       1       3       0
+3       1       17      0
+3       1       127     0
+3       1       MIN+1   1/3/3
+3       1       MAX     0
+3       1       MIN     1/3/3
+3       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       3       -1      1/3/3
+3       3       1       1/3/3
+3       3       -2      1/3/3
+3       3       2       1/3/3
+3       3       -3      1/3/3
+3       3       3       1/3/3
+3       3       17      1/3/3
+3       3       127     1/3/3
+3       3       MIN+1   1/3/3
+3       3       MAX     1/3/3
+3       3       MIN     1/3/3
+3       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 3 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN+1   1       0
+3       MIN+1   -2      1073741826/3/MIN+1
+3       MIN+1   2       0
+3       MIN+1   -3      715827884/3/MIN+2
+3       MIN+1   3       0
+3       MIN+1   17      0
+3       MIN+1   127     0
+3       MIN+1   MIN+1   2/3/MIN+4
+3       MIN+1   MAX     0
+3       MIN+1   MIN     2/3/MIN+3
+3       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MAX     -1      0
+3       MAX     1       MAX-2/3/MAX
+3       MAX     -2      0
+3       MAX     2       1073741823/3/MAX
+3       MAX     -3      0
+3       MAX     3       715827882/3/MAX-1
+3       MAX     17      126322568/3/MAX-5
+3       MAX     127     16909321/3/MAX-4
+3       MAX     MIN+1   0
+3       MAX     MAX     1/3/3
+3       MAX     MIN     0
+3       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN     -1      ---
+    java.lang.IllegalArgumentException: 3 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN     1       0
+3       MIN     -2      1073741826/3/MIN+1
+3       MIN     2       0
+3       MIN     -3      715827884/3/MIN+2
+3       MIN     3       0
+3       MIN     17      0
+3       MIN     127     0
+3       MIN     MIN+1   2/3/MIN+4
+3       MIN     MAX     0
+3       MIN     MIN     2/3/MIN+3
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN+1   0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   0       -1      0
+MIN+1   0       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   0       -2      0
+MIN+1   0       2       1073741824/MIN+1/-1
+MIN+1   0       -3      0
+MIN+1   0       3       715827883/MIN+1/-1
+MIN+1   0       17      126322568/MIN+1/-8
+MIN+1   0       127     16909321/MIN+1/-7
+MIN+1   0       MIN+1   0
+MIN+1   0       MAX     2/MIN+1/0
+MIN+1   0       MIN     0
+MIN+1   -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   -1      -1      0
+MIN+1   -1      1       MAX/MIN+1/-1
+MIN+1   -1      -2      0
+MIN+1   -1      2       1073741824/MIN+1/-1
+MIN+1   -1      -3      0
+MIN+1   -1      3       715827883/MIN+1/-1
+MIN+1   -1      17      126322568/MIN+1/-8
+MIN+1   -1      127     16909321/MIN+1/-7
+MIN+1   -1      MIN+1   0
+MIN+1   -1      MAX     1/MIN+1/MIN+1
+MIN+1   -1      MIN     0
+MIN+1   1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   1       -1      0
+MIN+1   1       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -2      0
+MIN+1   1       2       1073741825/MIN+1/1
+MIN+1   1       -3      0
+MIN+1   1       3       715827883/MIN+1/-1
+MIN+1   1       17      126322568/MIN+1/-8
+MIN+1   1       127     16909321/MIN+1/-7
+MIN+1   1       MIN+1   0
+MIN+1   1       MAX     2/MIN+1/0
+MIN+1   1       MIN     0
+MIN+1   3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   3       -1      0
+MIN+1   3       1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -2      0
+MIN+1   3       2       1073741826/MIN+1/3
+MIN+1   3       -3      0
+MIN+1   3       3       715827884/MIN+1/2
+MIN+1   3       17      126322568/MIN+1/-8
+MIN+1   3       127     16909321/MIN+1/-7
+MIN+1   3       MIN+1   0
+MIN+1   3       MAX     2/MIN+1/0
+MIN+1   3       MIN     0
+MIN+1   MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN+1   -1      1/MIN+1/MIN+1
+MIN+1   MIN+1   1       1/MIN+1/MIN+1
+MIN+1   MIN+1   -2      1/MIN+1/MIN+1
+MIN+1   MIN+1   2       1/MIN+1/MIN+1
+MIN+1   MIN+1   -3      1/MIN+1/MIN+1
+MIN+1   MIN+1   3       1/MIN+1/MIN+1
+MIN+1   MIN+1   17      1/MIN+1/MIN+1
+MIN+1   MIN+1   127     1/MIN+1/MIN+1
+MIN+1   MIN+1   MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN+1   MAX     1/MIN+1/MIN+1
+MIN+1   MIN+1   MIN     1/MIN+1/MIN+1
+MIN+1   MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MAX     -1      0
+MIN+1   MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -2      0
+MIN+1   MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483647 to 2147483647 by 2: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -3      0
+MIN+1   MAX     3       1431655765/MIN+1/MAX-2
+MIN+1   MAX     17      252645135/MIN+1/MAX-16
+MIN+1   MAX     127     33818641/MIN+1/MAX-14
+MIN+1   MAX     MIN+1   0
+MIN+1   MAX     MAX     3/MIN+1/MAX
+MIN+1   MAX     MIN     0
+MIN+1   MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN     -1      2/MIN+1/MIN
+MIN+1   MIN     1       0
+MIN+1   MIN     -2      1/MIN+1/MIN+1
+MIN+1   MIN     2       0
+MIN+1   MIN     -3      1/MIN+1/MIN+1
+MIN+1   MIN     3       0
+MIN+1   MIN     17      0
+MIN+1   MIN     127     0
+MIN+1   MIN     MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN     MAX     0
+MIN+1   MIN     MIN     1/MIN+1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+MAX     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     0       -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to 0 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     0       1       0
+MAX     0       -2      1073741824/MAX/1
+MAX     0       2       0
+MAX     0       -3      715827883/MAX/1
+MAX     0       3       0
+MAX     0       17      0
+MAX     0       127     0
+MAX     0       MIN+1   2/MAX/0
+MAX     0       MAX     0
+MAX     0       MIN     1/MAX/MAX
+MAX     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     -1      -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to -1 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     -1      1       0
+MAX     -1      -2      1073741825/MAX/-1
+MAX     -1      2       0
+MAX     -1      -3      715827883/MAX/1
+MAX     -1      3       0
+MAX     -1      17      0
+MAX     -1      127     0
+MAX     -1      MIN+1   2/MAX/0
+MAX     -1      MAX     0
+MAX     -1      MIN     2/MAX/-1
+MAX     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     1       -1      MAX/MAX/1
+MAX     1       1       0
+MAX     1       -2      1073741824/MAX/1
+MAX     1       2       0
+MAX     1       -3      715827883/MAX/1
+MAX     1       3       0
+MAX     1       17      0
+MAX     1       127     0
+MAX     1       MIN+1   1/MAX/MAX
+MAX     1       MAX     0
+MAX     1       MIN     1/MAX/MAX
+MAX     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     3       -1      MAX-2/MAX/3
+MAX     3       1       0
+MAX     3       -2      1073741823/MAX/3
+MAX     3       2       0
+MAX     3       -3      715827882/MAX/4
+MAX     3       3       0
+MAX     3       17      0
+MAX     3       127     0
+MAX     3       MIN+1   1/MAX/MAX
+MAX     3       MAX     0
+MAX     3       MIN     1/MAX/MAX
+MAX     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN+1   1       0
+MAX     MIN+1   -2      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483647 by -2: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN+1   2       0
+MAX     MIN+1   -3      1431655765/MAX/MIN+3
+MAX     MIN+1   3       0
+MAX     MIN+1   17      0
+MAX     MIN+1   127     0
+MAX     MIN+1   MIN+1   3/MAX/MIN+1
+MAX     MIN+1   MAX     0
+MAX     MIN+1   MIN     2/MAX/-1
+MAX     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MAX     -1      1/MAX/MAX
+MAX     MAX     1       1/MAX/MAX
+MAX     MAX     -2      1/MAX/MAX
+MAX     MAX     2       1/MAX/MAX
+MAX     MAX     -3      1/MAX/MAX
+MAX     MAX     3       1/MAX/MAX
+MAX     MAX     17      1/MAX/MAX
+MAX     MAX     127     1/MAX/MAX
+MAX     MAX     MIN+1   1/MAX/MAX
+MAX     MAX     MAX     1/MAX/MAX
+MAX     MAX     MIN     1/MAX/MAX
+MAX     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN     -1      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     1       0
+MAX     MIN     -2      ---
+    java.lang.IllegalArgumentException: 2147483647 to -2147483648 by -2: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     2       0
+MAX     MIN     -3      1431655766/MAX/MIN
+MAX     MIN     3       0
+MAX     MIN     17      0
+MAX     MIN     127     0
+MAX     MIN     MIN+1   3/MAX/MIN+1
+MAX     MIN     MAX     0
+MAX     MIN     MIN     2/MAX/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     0       -1      0
+MIN     0       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -2      0
+MIN     0       2       1073741825/MIN/0
+MIN     0       -3      0
+MIN     0       3       715827883/MIN/-2
+MIN     0       17      126322568/MIN/-9
+MIN     0       127     16909321/MIN/-8
+MIN     0       MIN+1   0
+MIN     0       MAX     2/MIN/-1
+MIN     0       MIN     0
+MIN     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     -1      -1      0
+MIN     -1      1       ---
+    java.lang.IllegalArgumentException: -2147483648 to -1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      -2      0
+MIN     -1      2       1073741824/MIN/-2
+MIN     -1      -3      0
+MIN     -1      3       715827883/MIN/-2
+MIN     -1      17      126322568/MIN/-9
+MIN     -1      127     16909321/MIN/-8
+MIN     -1      MIN+1   0
+MIN     -1      MAX     2/MIN/-1
+MIN     -1      MIN     0
+MIN     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     1       -1      0
+MIN     1       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -2      0
+MIN     1       2       1073741825/MIN/0
+MIN     1       -3      0
+MIN     1       3       715827884/MIN/1
+MIN     1       17      126322568/MIN/-9
+MIN     1       127     16909321/MIN/-8
+MIN     1       MIN+1   0
+MIN     1       MAX     2/MIN/-1
+MIN     1       MIN     0
+MIN     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     3       -1      0
+MIN     3       1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -2      0
+MIN     3       2       1073741826/MIN/2
+MIN     3       -3      0
+MIN     3       3       715827884/MIN/1
+MIN     3       17      126322568/MIN/-9
+MIN     3       127     16909321/MIN/-8
+MIN     3       MIN+1   0
+MIN     3       MAX     2/MIN/-1
+MIN     3       MIN     0
+MIN     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN+1   -1      0
+MIN     MIN+1   1       2/MIN/MIN+1
+MIN     MIN+1   -2      0
+MIN     MIN+1   2       1/MIN/MIN
+MIN     MIN+1   -3      0
+MIN     MIN+1   3       1/MIN/MIN
+MIN     MIN+1   17      1/MIN/MIN
+MIN     MIN+1   127     1/MIN/MIN
+MIN     MIN+1   MIN+1   0
+MIN     MIN+1   MAX     1/MIN/MIN
+MIN     MIN+1   MIN     0
+MIN     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MAX     -1      0
+MIN     MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -2      0
+MIN     MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483648 to 2147483647 by 2: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -3      0
+MIN     MAX     3       1431655766/MIN/MAX
+MIN     MAX     17      252645136/MIN/MAX
+MIN     MAX     127     33818641/MIN/MAX-15
+MIN     MAX     MIN+1   0
+MIN     MAX     MAX     3/MIN/MAX-1
+MIN     MAX     MIN     0
+MIN     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN     -1      1/MIN/MIN
+MIN     MIN     1       1/MIN/MIN
+MIN     MIN     -2      1/MIN/MIN
+MIN     MIN     2       1/MIN/MIN
+MIN     MIN     -3      1/MIN/MIN
+MIN     MIN     3       1/MIN/MIN
+MIN     MIN     17      1/MIN/MIN
+MIN     MIN     127     1/MIN/MIN
+MIN     MIN     MIN+1   1/MIN/MIN
+MIN     MIN     MAX     1/MIN/MIN
+MIN     MIN     MIN     1/MIN/MIN
+
+>>> start until end <<<
+
+start   end     step    length/first/last
+-----------------------------------------
+0       0       0       0
+0       0       -1      0
+0       0       1       0
+0       0       -2      0
+0       0       2       0
+0       0       -3      0
+0       0       3       0
+0       0       17      0
+0       0       127     0
+0       0       MIN+1   0
+0       0       MAX     0
+0       0       MIN     0
+0       -1      0       0
+0       -1      -1      0
+0       -1      1       0
+0       -1      -2      0
+0       -1      2       0
+0       -1      -3      0
+0       -1      3       0
+0       -1      17      0
+0       -1      127     0
+0       -1      MIN+1   0
+0       -1      MAX     0
+0       -1      MIN     0
+0       1       0       1/0/0
+0       1       -1      1/0/0
+0       1       1       1/0/0
+0       1       -2      1/0/0
+0       1       2       1/0/0
+0       1       -3      1/0/0
+0       1       3       1/0/0
+0       1       17      1/0/0
+0       1       127     1/0/0
+0       1       MIN+1   1/0/0
+0       1       MAX     1/0/0
+0       1       MIN     1/0/0
+0       3       0       3/0/2
+0       3       -1      3/0/2
+0       3       1       3/0/2
+0       3       -2      3/0/2
+0       3       2       3/0/2
+0       3       -3      3/0/2
+0       3       3       3/0/2
+0       3       17      3/0/2
+0       3       127     3/0/2
+0       3       MIN+1   3/0/2
+0       3       MAX     3/0/2
+0       3       MIN     3/0/2
+0       MIN+1   0       0
+0       MIN+1   -1      0
+0       MIN+1   1       0
+0       MIN+1   -2      0
+0       MIN+1   2       0
+0       MIN+1   -3      0
+0       MIN+1   3       0
+0       MIN+1   17      0
+0       MIN+1   127     0
+0       MIN+1   MIN+1   0
+0       MIN+1   MAX     0
+0       MIN+1   MIN     0
+0       MAX     0       MAX/0/MAX-1
+0       MAX     -1      MAX/0/MAX-1
+0       MAX     1       MAX/0/MAX-1
+0       MAX     -2      MAX/0/MAX-1
+0       MAX     2       MAX/0/MAX-1
+0       MAX     -3      MAX/0/MAX-1
+0       MAX     3       MAX/0/MAX-1
+0       MAX     17      MAX/0/MAX-1
+0       MAX     127     MAX/0/MAX-1
+0       MAX     MIN+1   MAX/0/MAX-1
+0       MAX     MAX     MAX/0/MAX-1
+0       MAX     MIN     MAX/0/MAX-1
+0       MIN     0       0
+0       MIN     -1      0
+0       MIN     1       0
+0       MIN     -2      0
+0       MIN     2       0
+0       MIN     -3      0
+0       MIN     3       0
+0       MIN     17      0
+0       MIN     127     0
+0       MIN     MIN+1   0
+0       MIN     MAX     0
+0       MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+-1      0       0       1/-1/-1
+-1      0       -1      1/-1/-1
+-1      0       1       1/-1/-1
+-1      0       -2      1/-1/-1
+-1      0       2       1/-1/-1
+-1      0       -3      1/-1/-1
+-1      0       3       1/-1/-1
+-1      0       17      1/-1/-1
+-1      0       127     1/-1/-1
+-1      0       MIN+1   1/-1/-1
+-1      0       MAX     1/-1/-1
+-1      0       MIN     1/-1/-1
+-1      -1      0       0
+-1      -1      -1      0
+-1      -1      1       0
+-1      -1      -2      0
+-1      -1      2       0
+-1      -1      -3      0
+-1      -1      3       0
+-1      -1      17      0
+-1      -1      127     0
+-1      -1      MIN+1   0
+-1      -1      MAX     0
+-1      -1      MIN     0
+-1      1       0       2/-1/0
+-1      1       -1      2/-1/0
+-1      1       1       2/-1/0
+-1      1       -2      2/-1/0
+-1      1       2       2/-1/0
+-1      1       -3      2/-1/0
+-1      1       3       2/-1/0
+-1      1       17      2/-1/0
+-1      1       127     2/-1/0
+-1      1       MIN+1   2/-1/0
+-1      1       MAX     2/-1/0
+-1      1       MIN     2/-1/0
+-1      3       0       4/-1/2
+-1      3       -1      4/-1/2
+-1      3       1       4/-1/2
+-1      3       -2      4/-1/2
+-1      3       2       4/-1/2
+-1      3       -3      4/-1/2
+-1      3       3       4/-1/2
+-1      3       17      4/-1/2
+-1      3       127     4/-1/2
+-1      3       MIN+1   4/-1/2
+-1      3       MAX     4/-1/2
+-1      3       MIN     4/-1/2
+-1      MIN+1   0       0
+-1      MIN+1   -1      0
+-1      MIN+1   1       0
+-1      MIN+1   -2      0
+-1      MIN+1   2       0
+-1      MIN+1   -3      0
+-1      MIN+1   3       0
+-1      MIN+1   17      0
+-1      MIN+1   127     0
+-1      MIN+1   MIN+1   0
+-1      MIN+1   MAX     0
+-1      MIN+1   MIN     0
+-1      MAX     0       ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -1      ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     1       ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -2      ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     2       ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -3      ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     3       ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     17      ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     127     ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     MAX     ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     MIN     ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MIN     0       0
+-1      MIN     -1      0
+-1      MIN     1       0
+-1      MIN     -2      0
+-1      MIN     2       0
+-1      MIN     -3      0
+-1      MIN     3       0
+-1      MIN     17      0
+-1      MIN     127     0
+-1      MIN     MIN+1   0
+-1      MIN     MAX     0
+-1      MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+1       0       0       0
+1       0       -1      0
+1       0       1       0
+1       0       -2      0
+1       0       2       0
+1       0       -3      0
+1       0       3       0
+1       0       17      0
+1       0       127     0
+1       0       MIN+1   0
+1       0       MAX     0
+1       0       MIN     0
+1       -1      0       0
+1       -1      -1      0
+1       -1      1       0
+1       -1      -2      0
+1       -1      2       0
+1       -1      -3      0
+1       -1      3       0
+1       -1      17      0
+1       -1      127     0
+1       -1      MIN+1   0
+1       -1      MAX     0
+1       -1      MIN     0
+1       1       0       0
+1       1       -1      0
+1       1       1       0
+1       1       -2      0
+1       1       2       0
+1       1       -3      0
+1       1       3       0
+1       1       17      0
+1       1       127     0
+1       1       MIN+1   0
+1       1       MAX     0
+1       1       MIN     0
+1       3       0       2/1/2
+1       3       -1      2/1/2
+1       3       1       2/1/2
+1       3       -2      2/1/2
+1       3       2       2/1/2
+1       3       -3      2/1/2
+1       3       3       2/1/2
+1       3       17      2/1/2
+1       3       127     2/1/2
+1       3       MIN+1   2/1/2
+1       3       MAX     2/1/2
+1       3       MIN     2/1/2
+1       MIN+1   0       0
+1       MIN+1   -1      0
+1       MIN+1   1       0
+1       MIN+1   -2      0
+1       MIN+1   2       0
+1       MIN+1   -3      0
+1       MIN+1   3       0
+1       MIN+1   17      0
+1       MIN+1   127     0
+1       MIN+1   MIN+1   0
+1       MIN+1   MAX     0
+1       MIN+1   MIN     0
+1       MAX     0       MAX-1/1/MAX-1
+1       MAX     -1      MAX-1/1/MAX-1
+1       MAX     1       MAX-1/1/MAX-1
+1       MAX     -2      MAX-1/1/MAX-1
+1       MAX     2       MAX-1/1/MAX-1
+1       MAX     -3      MAX-1/1/MAX-1
+1       MAX     3       MAX-1/1/MAX-1
+1       MAX     17      MAX-1/1/MAX-1
+1       MAX     127     MAX-1/1/MAX-1
+1       MAX     MIN+1   MAX-1/1/MAX-1
+1       MAX     MAX     MAX-1/1/MAX-1
+1       MAX     MIN     MAX-1/1/MAX-1
+1       MIN     0       0
+1       MIN     -1      0
+1       MIN     1       0
+1       MIN     -2      0
+1       MIN     2       0
+1       MIN     -3      0
+1       MIN     3       0
+1       MIN     17      0
+1       MIN     127     0
+1       MIN     MIN+1   0
+1       MIN     MAX     0
+1       MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+3       0       0       0
+3       0       -1      0
+3       0       1       0
+3       0       -2      0
+3       0       2       0
+3       0       -3      0
+3       0       3       0
+3       0       17      0
+3       0       127     0
+3       0       MIN+1   0
+3       0       MAX     0
+3       0       MIN     0
+3       -1      0       0
+3       -1      -1      0
+3       -1      1       0
+3       -1      -2      0
+3       -1      2       0
+3       -1      -3      0
+3       -1      3       0
+3       -1      17      0
+3       -1      127     0
+3       -1      MIN+1   0
+3       -1      MAX     0
+3       -1      MIN     0
+3       1       0       0
+3       1       -1      0
+3       1       1       0
+3       1       -2      0
+3       1       2       0
+3       1       -3      0
+3       1       3       0
+3       1       17      0
+3       1       127     0
+3       1       MIN+1   0
+3       1       MAX     0
+3       1       MIN     0
+3       3       0       0
+3       3       -1      0
+3       3       1       0
+3       3       -2      0
+3       3       2       0
+3       3       -3      0
+3       3       3       0
+3       3       17      0
+3       3       127     0
+3       3       MIN+1   0
+3       3       MAX     0
+3       3       MIN     0
+3       MIN+1   0       0
+3       MIN+1   -1      0
+3       MIN+1   1       0
+3       MIN+1   -2      0
+3       MIN+1   2       0
+3       MIN+1   -3      0
+3       MIN+1   3       0
+3       MIN+1   17      0
+3       MIN+1   127     0
+3       MIN+1   MIN+1   0
+3       MIN+1   MAX     0
+3       MIN+1   MIN     0
+3       MAX     0       MAX-3/3/MAX-1
+3       MAX     -1      MAX-3/3/MAX-1
+3       MAX     1       MAX-3/3/MAX-1
+3       MAX     -2      MAX-3/3/MAX-1
+3       MAX     2       MAX-3/3/MAX-1
+3       MAX     -3      MAX-3/3/MAX-1
+3       MAX     3       MAX-3/3/MAX-1
+3       MAX     17      MAX-3/3/MAX-1
+3       MAX     127     MAX-3/3/MAX-1
+3       MAX     MIN+1   MAX-3/3/MAX-1
+3       MAX     MAX     MAX-3/3/MAX-1
+3       MAX     MIN     MAX-3/3/MAX-1
+3       MIN     0       0
+3       MIN     -1      0
+3       MIN     1       0
+3       MIN     -2      0
+3       MIN     2       0
+3       MIN     -3      0
+3       MIN     3       0
+3       MIN     17      0
+3       MIN     127     0
+3       MIN     MIN+1   0
+3       MIN     MAX     0
+3       MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN+1   0       0       MAX/MIN+1/-1
+MIN+1   0       -1      MAX/MIN+1/-1
+MIN+1   0       1       MAX/MIN+1/-1
+MIN+1   0       -2      MAX/MIN+1/-1
+MIN+1   0       2       MAX/MIN+1/-1
+MIN+1   0       -3      MAX/MIN+1/-1
+MIN+1   0       3       MAX/MIN+1/-1
+MIN+1   0       17      MAX/MIN+1/-1
+MIN+1   0       127     MAX/MIN+1/-1
+MIN+1   0       MIN+1   MAX/MIN+1/-1
+MIN+1   0       MAX     MAX/MIN+1/-1
+MIN+1   0       MIN     MAX/MIN+1/-1
+MIN+1   -1      0       MAX-1/MIN+1/-2
+MIN+1   -1      -1      MAX-1/MIN+1/-2
+MIN+1   -1      1       MAX-1/MIN+1/-2
+MIN+1   -1      -2      MAX-1/MIN+1/-2
+MIN+1   -1      2       MAX-1/MIN+1/-2
+MIN+1   -1      -3      MAX-1/MIN+1/-2
+MIN+1   -1      3       MAX-1/MIN+1/-2
+MIN+1   -1      17      MAX-1/MIN+1/-2
+MIN+1   -1      127     MAX-1/MIN+1/-2
+MIN+1   -1      MIN+1   MAX-1/MIN+1/-2
+MIN+1   -1      MAX     MAX-1/MIN+1/-2
+MIN+1   -1      MIN     MAX-1/MIN+1/-2
+MIN+1   1       0       ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -1      ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -2      ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       2       ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -3      ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       3       ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       17      ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       127     ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       0       ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -1      ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -2      ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       2       ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -3      ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       3       ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       17      ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       127     ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MIN+1   0       0
+MIN+1   MIN+1   -1      0
+MIN+1   MIN+1   1       0
+MIN+1   MIN+1   -2      0
+MIN+1   MIN+1   2       0
+MIN+1   MIN+1   -3      0
+MIN+1   MIN+1   3       0
+MIN+1   MIN+1   17      0
+MIN+1   MIN+1   127     0
+MIN+1   MIN+1   MIN+1   0
+MIN+1   MIN+1   MAX     0
+MIN+1   MIN+1   MIN     0
+MIN+1   MAX     0       ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -1      ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -2      ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -3      ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     3       ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     17      ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     127     ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     MAX     ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     MIN     ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MIN     0       0
+MIN+1   MIN     -1      0
+MIN+1   MIN     1       0
+MIN+1   MIN     -2      0
+MIN+1   MIN     2       0
+MIN+1   MIN     -3      0
+MIN+1   MIN     3       0
+MIN+1   MIN     17      0
+MIN+1   MIN     127     0
+MIN+1   MIN     MIN+1   0
+MIN+1   MIN     MAX     0
+MIN+1   MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+MAX     0       0       0
+MAX     0       -1      0
+MAX     0       1       0
+MAX     0       -2      0
+MAX     0       2       0
+MAX     0       -3      0
+MAX     0       3       0
+MAX     0       17      0
+MAX     0       127     0
+MAX     0       MIN+1   0
+MAX     0       MAX     0
+MAX     0       MIN     0
+MAX     -1      0       0
+MAX     -1      -1      0
+MAX     -1      1       0
+MAX     -1      -2      0
+MAX     -1      2       0
+MAX     -1      -3      0
+MAX     -1      3       0
+MAX     -1      17      0
+MAX     -1      127     0
+MAX     -1      MIN+1   0
+MAX     -1      MAX     0
+MAX     -1      MIN     0
+MAX     1       0       0
+MAX     1       -1      0
+MAX     1       1       0
+MAX     1       -2      0
+MAX     1       2       0
+MAX     1       -3      0
+MAX     1       3       0
+MAX     1       17      0
+MAX     1       127     0
+MAX     1       MIN+1   0
+MAX     1       MAX     0
+MAX     1       MIN     0
+MAX     3       0       0
+MAX     3       -1      0
+MAX     3       1       0
+MAX     3       -2      0
+MAX     3       2       0
+MAX     3       -3      0
+MAX     3       3       0
+MAX     3       17      0
+MAX     3       127     0
+MAX     3       MIN+1   0
+MAX     3       MAX     0
+MAX     3       MIN     0
+MAX     MIN+1   0       0
+MAX     MIN+1   -1      0
+MAX     MIN+1   1       0
+MAX     MIN+1   -2      0
+MAX     MIN+1   2       0
+MAX     MIN+1   -3      0
+MAX     MIN+1   3       0
+MAX     MIN+1   17      0
+MAX     MIN+1   127     0
+MAX     MIN+1   MIN+1   0
+MAX     MIN+1   MAX     0
+MAX     MIN+1   MIN     0
+MAX     MAX     0       0
+MAX     MAX     -1      0
+MAX     MAX     1       0
+MAX     MAX     -2      0
+MAX     MAX     2       0
+MAX     MAX     -3      0
+MAX     MAX     3       0
+MAX     MAX     17      0
+MAX     MAX     127     0
+MAX     MAX     MIN+1   0
+MAX     MAX     MAX     0
+MAX     MAX     MIN     0
+MAX     MIN     0       0
+MAX     MIN     -1      0
+MAX     MIN     1       0
+MAX     MIN     -2      0
+MAX     MIN     2       0
+MAX     MIN     -3      0
+MAX     MIN     3       0
+MAX     MIN     17      0
+MAX     MIN     127     0
+MAX     MIN     MIN+1   0
+MAX     MIN     MAX     0
+MAX     MIN     MIN     0
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN     0       0       ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -1      ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -2      ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       2       ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -3      ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       3       ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       17      ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       127     ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     -1      0       MAX/MIN/-2
+MIN     -1      -1      MAX/MIN/-2
+MIN     -1      1       MAX/MIN/-2
+MIN     -1      -2      MAX/MIN/-2
+MIN     -1      2       MAX/MIN/-2
+MIN     -1      -3      MAX/MIN/-2
+MIN     -1      3       MAX/MIN/-2
+MIN     -1      17      MAX/MIN/-2
+MIN     -1      127     MAX/MIN/-2
+MIN     -1      MIN+1   MAX/MIN/-2
+MIN     -1      MAX     MAX/MIN/-2
+MIN     -1      MIN     MAX/MIN/-2
+MIN     1       0       ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -1      ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -2      ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       2       ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -3      ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       3       ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       17      ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       127     ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       0       ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -1      ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -2      ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       2       ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -3      ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       3       ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       17      ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       127     ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MIN+1   0       1/MIN/MIN
+MIN     MIN+1   -1      1/MIN/MIN
+MIN     MIN+1   1       1/MIN/MIN
+MIN     MIN+1   -2      1/MIN/MIN
+MIN     MIN+1   2       1/MIN/MIN
+MIN     MIN+1   -3      1/MIN/MIN
+MIN     MIN+1   3       1/MIN/MIN
+MIN     MIN+1   17      1/MIN/MIN
+MIN     MIN+1   127     1/MIN/MIN
+MIN     MIN+1   MIN+1   1/MIN/MIN
+MIN     MIN+1   MAX     1/MIN/MIN
+MIN     MIN+1   MIN     1/MIN/MIN
+MIN     MAX     0       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -1      ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -2      ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -3      ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     3       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     17      ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     127     ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     MIN+1   ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     MAX     ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     MIN     ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MIN     0       0
+MIN     MIN     -1      0
+MIN     MIN     1       0
+MIN     MIN     -2      0
+MIN     MIN     2       0
+MIN     MIN     -3      0
+MIN     MIN     3       0
+MIN     MIN     17      0
+MIN     MIN     127     0
+MIN     MIN     MIN+1   0
+MIN     MIN     MAX     0
+MIN     MIN     MIN     0
+
+>>> start until end by step <<<
+
+start   end     step    length/first/last
+-----------------------------------------
+0       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       0       -1      0
+0       0       1       0
+0       0       -2      0
+0       0       2       0
+0       0       -3      0
+0       0       3       0
+0       0       17      0
+0       0       127     0
+0       0       MIN+1   0
+0       0       MAX     0
+0       0       MIN     0
+0       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       -1      -1      1/0/0
+0       -1      1       0
+0       -1      -2      1/0/0
+0       -1      2       0
+0       -1      -3      1/0/0
+0       -1      3       0
+0       -1      17      0
+0       -1      127     0
+0       -1      MIN+1   1/0/0
+0       -1      MAX     0
+0       -1      MIN     1/0/0
+0       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       1       -1      0
+0       1       1       1/0/0
+0       1       -2      0
+0       1       2       1/0/0
+0       1       -3      0
+0       1       3       1/0/0
+0       1       17      1/0/0
+0       1       127     1/0/0
+0       1       MIN+1   0
+0       1       MAX     1/0/0
+0       1       MIN     0
+0       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       3       -1      0
+0       3       1       3/0/2
+0       3       -2      0
+0       3       2       2/0/2
+0       3       -3      0
+0       3       3       1/0/0
+0       3       17      1/0/0
+0       3       127     1/0/0
+0       3       MIN+1   0
+0       3       MAX     1/0/0
+0       3       MIN     0
+0       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN+1   -1      MAX/0/MIN+2
+0       MIN+1   1       0
+0       MIN+1   -2      1073741824/0/MIN+2
+0       MIN+1   2       0
+0       MIN+1   -3      715827883/0/MIN+2
+0       MIN+1   3       0
+0       MIN+1   17      0
+0       MIN+1   127     0
+0       MIN+1   MIN+1   1/0/0
+0       MIN+1   MAX     0
+0       MIN+1   MIN     1/0/0
+0       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MAX     -1      0
+0       MAX     1       MAX/0/MAX-1
+0       MAX     -2      0
+0       MAX     2       1073741824/0/MAX-1
+0       MAX     -3      0
+0       MAX     3       715827883/0/MAX-1
+0       MAX     17      126322568/0/MAX-8
+0       MAX     127     16909321/0/MAX-7
+0       MAX     MIN+1   0
+0       MAX     MAX     1/0/0
+0       MAX     MIN     0
+0       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+0       MIN     -1      ---
+    java.lang.IllegalArgumentException: 0 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+0       MIN     1       0
+0       MIN     -2      1073741824/0/MIN+2
+0       MIN     2       0
+0       MIN     -3      715827883/0/MIN+2
+0       MIN     3       0
+0       MIN     17      0
+0       MIN     127     0
+0       MIN     MIN+1   2/0/MIN+1
+0       MIN     MAX     0
+0       MIN     MIN     1/0/0
+
+start   end     step    length/first/last
+-----------------------------------------
+-1      0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      0       -1      0
+-1      0       1       1/-1/-1
+-1      0       -2      0
+-1      0       2       1/-1/-1
+-1      0       -3      0
+-1      0       3       1/-1/-1
+-1      0       17      1/-1/-1
+-1      0       127     1/-1/-1
+-1      0       MIN+1   0
+-1      0       MAX     1/-1/-1
+-1      0       MIN     0
+-1      -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      -1      -1      0
+-1      -1      1       0
+-1      -1      -2      0
+-1      -1      2       0
+-1      -1      -3      0
+-1      -1      3       0
+-1      -1      17      0
+-1      -1      127     0
+-1      -1      MIN+1   0
+-1      -1      MAX     0
+-1      -1      MIN     0
+-1      1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      1       -1      0
+-1      1       1       2/-1/0
+-1      1       -2      0
+-1      1       2       1/-1/-1
+-1      1       -3      0
+-1      1       3       1/-1/-1
+-1      1       17      1/-1/-1
+-1      1       127     1/-1/-1
+-1      1       MIN+1   0
+-1      1       MAX     1/-1/-1
+-1      1       MIN     0
+-1      3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      3       -1      0
+-1      3       1       4/-1/2
+-1      3       -2      0
+-1      3       2       2/-1/1
+-1      3       -3      0
+-1      3       3       2/-1/2
+-1      3       17      1/-1/-1
+-1      3       127     1/-1/-1
+-1      3       MIN+1   0
+-1      3       MAX     1/-1/-1
+-1      3       MIN     0
+-1      MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN+1   -1      MAX-1/-1/MIN+2
+-1      MIN+1   1       0
+-1      MIN+1   -2      1073741823/-1/MIN+3
+-1      MIN+1   2       0
+-1      MIN+1   -3      715827882/-1/MIN+4
+-1      MIN+1   3       0
+-1      MIN+1   17      0
+-1      MIN+1   127     0
+-1      MIN+1   MIN+1   1/-1/-1
+-1      MIN+1   MAX     0
+-1      MIN+1   MIN     1/-1/-1
+-1      MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MAX     -1      0
+-1      MAX     1       ---
+    java.lang.IllegalArgumentException: -1 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+-1      MAX     -2      0
+-1      MAX     2       1073741824/-1/MAX-2
+-1      MAX     -3      0
+-1      MAX     3       715827883/-1/MAX-2
+-1      MAX     17      126322568/-1/MAX-9
+-1      MAX     127     16909321/-1/MAX-8
+-1      MAX     MIN+1   0
+-1      MAX     MAX     2/-1/MAX-1
+-1      MAX     MIN     0
+-1      MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+-1      MIN     -1      MAX/-1/MIN+1
+-1      MIN     1       0
+-1      MIN     -2      1073741824/-1/MIN+1
+-1      MIN     2       0
+-1      MIN     -3      715827883/-1/MIN+1
+-1      MIN     3       0
+-1      MIN     17      0
+-1      MIN     127     0
+-1      MIN     MIN+1   1/-1/-1
+-1      MIN     MAX     0
+-1      MIN     MIN     1/-1/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+1       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       0       -1      1/1/1
+1       0       1       0
+1       0       -2      1/1/1
+1       0       2       0
+1       0       -3      1/1/1
+1       0       3       0
+1       0       17      0
+1       0       127     0
+1       0       MIN+1   1/1/1
+1       0       MAX     0
+1       0       MIN     1/1/1
+1       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       -1      -1      2/1/0
+1       -1      1       0
+1       -1      -2      1/1/1
+1       -1      2       0
+1       -1      -3      1/1/1
+1       -1      3       0
+1       -1      17      0
+1       -1      127     0
+1       -1      MIN+1   1/1/1
+1       -1      MAX     0
+1       -1      MIN     1/1/1
+1       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       1       -1      0
+1       1       1       0
+1       1       -2      0
+1       1       2       0
+1       1       -3      0
+1       1       3       0
+1       1       17      0
+1       1       127     0
+1       1       MIN+1   0
+1       1       MAX     0
+1       1       MIN     0
+1       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       3       -1      0
+1       3       1       2/1/2
+1       3       -2      0
+1       3       2       1/1/1
+1       3       -3      0
+1       3       3       1/1/1
+1       3       17      1/1/1
+1       3       127     1/1/1
+1       3       MIN+1   0
+1       3       MAX     1/1/1
+1       3       MIN     0
+1       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 1 until -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN+1   1       0
+1       MIN+1   -2      1073741824/1/MIN+3
+1       MIN+1   2       0
+1       MIN+1   -3      715827883/1/MIN+3
+1       MIN+1   3       0
+1       MIN+1   17      0
+1       MIN+1   127     0
+1       MIN+1   MIN+1   2/1/MIN+2
+1       MIN+1   MAX     0
+1       MIN+1   MIN     1/1/1
+1       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MAX     -1      0
+1       MAX     1       MAX-1/1/MAX-1
+1       MAX     -2      0
+1       MAX     2       1073741823/1/MAX-2
+1       MAX     -3      0
+1       MAX     3       715827882/1/MAX-3
+1       MAX     17      126322568/1/MAX-7
+1       MAX     127     16909321/1/MAX-6
+1       MAX     MIN+1   0
+1       MAX     MAX     1/1/1
+1       MAX     MIN     0
+1       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+1       MIN     -1      ---
+    java.lang.IllegalArgumentException: 1 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+1       MIN     1       0
+1       MIN     -2      1073741825/1/MIN+1
+1       MIN     2       0
+1       MIN     -3      715827883/1/MIN+3
+1       MIN     3       0
+1       MIN     17      0
+1       MIN     127     0
+1       MIN     MIN+1   2/1/MIN+2
+1       MIN     MAX     0
+1       MIN     MIN     2/1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+3       0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       0       -1      3/3/1
+3       0       1       0
+3       0       -2      2/3/1
+3       0       2       0
+3       0       -3      1/3/3
+3       0       3       0
+3       0       17      0
+3       0       127     0
+3       0       MIN+1   1/3/3
+3       0       MAX     0
+3       0       MIN     1/3/3
+3       -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       -1      -1      4/3/0
+3       -1      1       0
+3       -1      -2      2/3/1
+3       -1      2       0
+3       -1      -3      2/3/0
+3       -1      3       0
+3       -1      17      0
+3       -1      127     0
+3       -1      MIN+1   1/3/3
+3       -1      MAX     0
+3       -1      MIN     1/3/3
+3       1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       1       -1      2/3/2
+3       1       1       0
+3       1       -2      1/3/3
+3       1       2       0
+3       1       -3      1/3/3
+3       1       3       0
+3       1       17      0
+3       1       127     0
+3       1       MIN+1   1/3/3
+3       1       MAX     0
+3       1       MIN     1/3/3
+3       3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       3       -1      0
+3       3       1       0
+3       3       -2      0
+3       3       2       0
+3       3       -3      0
+3       3       3       0
+3       3       17      0
+3       3       127     0
+3       3       MIN+1   0
+3       3       MAX     0
+3       3       MIN     0
+3       MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 3 until -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN+1   1       0
+3       MIN+1   -2      1073741825/3/MIN+3
+3       MIN+1   2       0
+3       MIN+1   -3      715827884/3/MIN+2
+3       MIN+1   3       0
+3       MIN+1   17      0
+3       MIN+1   127     0
+3       MIN+1   MIN+1   2/3/MIN+4
+3       MIN+1   MAX     0
+3       MIN+1   MIN     2/3/MIN+3
+3       MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MAX     -1      0
+3       MAX     1       MAX-3/3/MAX-1
+3       MAX     -2      0
+3       MAX     2       1073741822/3/MAX-2
+3       MAX     -3      0
+3       MAX     3       715827882/3/MAX-1
+3       MAX     17      126322568/3/MAX-5
+3       MAX     127     16909321/3/MAX-4
+3       MAX     MIN+1   0
+3       MAX     MAX     1/3/3
+3       MAX     MIN     0
+3       MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+3       MIN     -1      ---
+    java.lang.IllegalArgumentException: 3 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+3       MIN     1       0
+3       MIN     -2      1073741826/3/MIN+1
+3       MIN     2       0
+3       MIN     -3      715827884/3/MIN+2
+3       MIN     3       0
+3       MIN     17      0
+3       MIN     127     0
+3       MIN     MIN+1   2/3/MIN+4
+3       MIN     MAX     0
+3       MIN     MIN     2/3/MIN+3
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN+1   0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   0       -1      0
+MIN+1   0       1       MAX/MIN+1/-1
+MIN+1   0       -2      0
+MIN+1   0       2       1073741824/MIN+1/-1
+MIN+1   0       -3      0
+MIN+1   0       3       715827883/MIN+1/-1
+MIN+1   0       17      126322568/MIN+1/-8
+MIN+1   0       127     16909321/MIN+1/-7
+MIN+1   0       MIN+1   0
+MIN+1   0       MAX     1/MIN+1/MIN+1
+MIN+1   0       MIN     0
+MIN+1   -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   -1      -1      0
+MIN+1   -1      1       MAX-1/MIN+1/-2
+MIN+1   -1      -2      0
+MIN+1   -1      2       1073741823/MIN+1/-3
+MIN+1   -1      -3      0
+MIN+1   -1      3       715827882/MIN+1/-4
+MIN+1   -1      17      126322568/MIN+1/-8
+MIN+1   -1      127     16909321/MIN+1/-7
+MIN+1   -1      MIN+1   0
+MIN+1   -1      MAX     1/MIN+1/MIN+1
+MIN+1   -1      MIN     0
+MIN+1   1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   1       -1      0
+MIN+1   1       1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   1       -2      0
+MIN+1   1       2       1073741824/MIN+1/-1
+MIN+1   1       -3      0
+MIN+1   1       3       715827883/MIN+1/-1
+MIN+1   1       17      126322568/MIN+1/-8
+MIN+1   1       127     16909321/MIN+1/-7
+MIN+1   1       MIN+1   0
+MIN+1   1       MAX     2/MIN+1/0
+MIN+1   1       MIN     0
+MIN+1   3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   3       -1      0
+MIN+1   3       1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   3       -2      0
+MIN+1   3       2       1073741825/MIN+1/1
+MIN+1   3       -3      0
+MIN+1   3       3       715827884/MIN+1/2
+MIN+1   3       17      126322568/MIN+1/-8
+MIN+1   3       127     16909321/MIN+1/-7
+MIN+1   3       MIN+1   0
+MIN+1   3       MAX     2/MIN+1/0
+MIN+1   3       MIN     0
+MIN+1   MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN+1   -1      0
+MIN+1   MIN+1   1       0
+MIN+1   MIN+1   -2      0
+MIN+1   MIN+1   2       0
+MIN+1   MIN+1   -3      0
+MIN+1   MIN+1   3       0
+MIN+1   MIN+1   17      0
+MIN+1   MIN+1   127     0
+MIN+1   MIN+1   MIN+1   0
+MIN+1   MIN+1   MAX     0
+MIN+1   MIN+1   MIN     0
+MIN+1   MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MAX     -1      0
+MIN+1   MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483647 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN+1   MAX     -2      0
+MIN+1   MAX     2       MAX/MIN+1/MAX-2
+MIN+1   MAX     -3      0
+MIN+1   MAX     3       1431655765/MIN+1/MAX-2
+MIN+1   MAX     17      252645135/MIN+1/MAX-16
+MIN+1   MAX     127     33818641/MIN+1/MAX-14
+MIN+1   MAX     MIN+1   0
+MIN+1   MAX     MAX     2/MIN+1/0
+MIN+1   MAX     MIN     0
+MIN+1   MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN+1   MIN     -1      1/MIN+1/MIN+1
+MIN+1   MIN     1       0
+MIN+1   MIN     -2      1/MIN+1/MIN+1
+MIN+1   MIN     2       0
+MIN+1   MIN     -3      1/MIN+1/MIN+1
+MIN+1   MIN     3       0
+MIN+1   MIN     17      0
+MIN+1   MIN     127     0
+MIN+1   MIN     MIN+1   1/MIN+1/MIN+1
+MIN+1   MIN     MAX     0
+MIN+1   MIN     MIN     1/MIN+1/MIN+1
+
+start   end     step    length/first/last
+-----------------------------------------
+MAX     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     0       -1      MAX/MAX/1
+MAX     0       1       0
+MAX     0       -2      1073741824/MAX/1
+MAX     0       2       0
+MAX     0       -3      715827883/MAX/1
+MAX     0       3       0
+MAX     0       17      0
+MAX     0       127     0
+MAX     0       MIN+1   1/MAX/MAX
+MAX     0       MAX     0
+MAX     0       MIN     1/MAX/MAX
+MAX     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     -1      -1      ---
+    java.lang.IllegalArgumentException: 2147483647 until -1 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     -1      1       0
+MAX     -1      -2      1073741824/MAX/1
+MAX     -1      2       0
+MAX     -1      -3      715827883/MAX/1
+MAX     -1      3       0
+MAX     -1      17      0
+MAX     -1      127     0
+MAX     -1      MIN+1   2/MAX/0
+MAX     -1      MAX     0
+MAX     -1      MIN     1/MAX/MAX
+MAX     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     1       -1      MAX-1/MAX/2
+MAX     1       1       0
+MAX     1       -2      1073741823/MAX/3
+MAX     1       2       0
+MAX     1       -3      715827882/MAX/4
+MAX     1       3       0
+MAX     1       17      0
+MAX     1       127     0
+MAX     1       MIN+1   1/MAX/MAX
+MAX     1       MAX     0
+MAX     1       MIN     1/MAX/MAX
+MAX     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     3       -1      MAX-3/MAX/4
+MAX     3       1       0
+MAX     3       -2      1073741822/MAX/5
+MAX     3       2       0
+MAX     3       -3      715827882/MAX/4
+MAX     3       3       0
+MAX     3       17      0
+MAX     3       127     0
+MAX     3       MIN+1   1/MAX/MAX
+MAX     3       MAX     0
+MAX     3       MIN     1/MAX/MAX
+MAX     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN+1   -1      ---
+    java.lang.IllegalArgumentException: 2147483647 until -2147483647 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN+1   1       0
+MAX     MIN+1   -2      MAX/MAX/MIN+3
+MAX     MIN+1   2       0
+MAX     MIN+1   -3      1431655765/MAX/MIN+3
+MAX     MIN+1   3       0
+MAX     MIN+1   17      0
+MAX     MIN+1   127     0
+MAX     MIN+1   MIN+1   2/MAX/0
+MAX     MIN+1   MAX     0
+MAX     MIN+1   MIN     2/MAX/-1
+MAX     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MAX     -1      0
+MAX     MAX     1       0
+MAX     MAX     -2      0
+MAX     MAX     2       0
+MAX     MAX     -3      0
+MAX     MAX     3       0
+MAX     MAX     17      0
+MAX     MAX     127     0
+MAX     MAX     MIN+1   0
+MAX     MAX     MAX     0
+MAX     MAX     MIN     0
+MAX     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MAX     MIN     -1      ---
+    java.lang.IllegalArgumentException: 2147483647 until -2147483648 by -1: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     1       0
+MAX     MIN     -2      ---
+    java.lang.IllegalArgumentException: 2147483647 until -2147483648 by -2: seqs cannot contain more than Int.MaxValue elements.
+MAX     MIN     2       0
+MAX     MIN     -3      1431655765/MAX/MIN+3
+MAX     MIN     3       0
+MAX     MIN     17      0
+MAX     MIN     127     0
+MAX     MIN     MIN+1   3/MAX/MIN+1
+MAX     MIN     MAX     0
+MAX     MIN     MIN     2/MAX/-1
+
+start   end     step    length/first/last
+-----------------------------------------
+MIN     0       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     0       -1      0
+MIN     0       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 0 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     0       -2      0
+MIN     0       2       1073741824/MIN/-2
+MIN     0       -3      0
+MIN     0       3       715827883/MIN/-2
+MIN     0       17      126322568/MIN/-9
+MIN     0       127     16909321/MIN/-8
+MIN     0       MIN+1   0
+MIN     0       MAX     2/MIN/-1
+MIN     0       MIN     0
+MIN     -1      0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     -1      -1      0
+MIN     -1      1       MAX/MIN/-2
+MIN     -1      -2      0
+MIN     -1      2       1073741824/MIN/-2
+MIN     -1      -3      0
+MIN     -1      3       715827883/MIN/-2
+MIN     -1      17      126322568/MIN/-9
+MIN     -1      127     16909321/MIN/-8
+MIN     -1      MIN+1   0
+MIN     -1      MAX     1/MIN/MIN
+MIN     -1      MIN     0
+MIN     1       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     1       -1      0
+MIN     1       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 1 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     1       -2      0
+MIN     1       2       1073741825/MIN/0
+MIN     1       -3      0
+MIN     1       3       715827883/MIN/-2
+MIN     1       17      126322568/MIN/-9
+MIN     1       127     16909321/MIN/-8
+MIN     1       MIN+1   0
+MIN     1       MAX     2/MIN/-1
+MIN     1       MIN     0
+MIN     3       0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     3       -1      0
+MIN     3       1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 3 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     3       -2      0
+MIN     3       2       1073741826/MIN/2
+MIN     3       -3      0
+MIN     3       3       715827884/MIN/1
+MIN     3       17      126322568/MIN/-9
+MIN     3       127     16909321/MIN/-8
+MIN     3       MIN+1   0
+MIN     3       MAX     2/MIN/-1
+MIN     3       MIN     0
+MIN     MIN+1   0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN+1   -1      0
+MIN     MIN+1   1       1/MIN/MIN
+MIN     MIN+1   -2      0
+MIN     MIN+1   2       1/MIN/MIN
+MIN     MIN+1   -3      0
+MIN     MIN+1   3       1/MIN/MIN
+MIN     MIN+1   17      1/MIN/MIN
+MIN     MIN+1   127     1/MIN/MIN
+MIN     MIN+1   MIN+1   0
+MIN     MIN+1   MAX     1/MIN/MIN
+MIN     MIN+1   MIN     0
+MIN     MAX     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MAX     -1      0
+MIN     MAX     1       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 1: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -2      0
+MIN     MAX     2       ---
+    java.lang.IllegalArgumentException: -2147483648 until 2147483647 by 2: seqs cannot contain more than Int.MaxValue elements.
+MIN     MAX     -3      0
+MIN     MAX     3       1431655765/MIN/MAX-3
+MIN     MAX     17      252645135/MIN/MAX-17
+MIN     MAX     127     33818641/MIN/MAX-15
+MIN     MAX     MIN+1   0
+MIN     MAX     MAX     3/MIN/MAX-1
+MIN     MAX     MIN     0
+MIN     MIN     0       ---
+    java.lang.IllegalArgumentException: step cannot be 0.
+MIN     MIN     -1      0
+MIN     MIN     1       0
+MIN     MIN     -2      0
+MIN     MIN     2       0
+MIN     MIN     -3      0
+MIN     MIN     3       0
+MIN     MIN     17      0
+MIN     MIN     127     0
+MIN     MIN     MIN+1   0
+MIN     MIN     MAX     0
+MIN     MIN     MIN     0
+
