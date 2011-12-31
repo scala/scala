@@ -93,7 +93,7 @@ trait Names extends api.Names {
 
   /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
   def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
-    val chars = Codec fromUTF8 bs.slice(offset, offset + len)
+    val chars = Codec.fromUTF8(bs, offset, len)
     newTermName(chars, 0, chars.length)
   }
 

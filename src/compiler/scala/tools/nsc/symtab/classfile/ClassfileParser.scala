@@ -365,6 +365,13 @@ abstract class ClassfileParser {
         case arr: Type     => Constant(arr)
       }
     }
+    
+    private def getSubArray(bytes: Array[Byte]): Array[Byte] = {
+      val decodedLength = ByteCodecs.decode(bytes)
+      val arr           = new Array[Byte](decodedLength)
+      System.arraycopy(bytes, 0, arr, 0, decodedLength)
+      arr
+    }
 
     def getBytes(index: Int): Array[Byte] = {
       if (index <= 0 || len <= index) errorBadIndex(index)
@@ -372,11 +379,10 @@ abstract class ClassfileParser {
       if (value eq null) {
         val start = starts(index)
         if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
-        val len = in.getChar(start + 1)
+        val len   = in.getChar(start + 1)
         val bytes = new Array[Byte](len)
-        Array.copy(in.buf, start + 3, bytes, 0, len)
-        val decodedLength = ByteCodecs.decode(bytes)
-        value = bytes.take(decodedLength)
+        System.arraycopy(in.buf, start + 3, bytes, 0, len)
+        value = getSubArray(bytes)
         values(index) = value
       }
       value
@@ -394,9 +400,7 @@ abstract class ClassfileParser {
           val len = in.getChar(start + 1)
           bytesBuffer ++= in.buf.view(start + 3, start + 3 + len)
         }
-        val bytes = bytesBuffer.toArray
-        val decodedLength = ByteCodecs.decode(bytes)
-        value = bytes.take(decodedLength)
+        value = getSubArray(bytesBuffer.toArray)
         values(indices.head) = value
       }
       value
@@ -968,7 +972,7 @@ abstract class ClassfileParser {
       Some(ScalaSigBytes(pool getBytes in.nextChar))
     }
 
-    def parseScalaLongSigBytes: Option[ScalaSigBytes] = try {
+    def parseScalaLongSigBytes: Option[ScalaSigBytes] = {
       val tag = in.nextByte.toChar
       assert(tag == ARRAY_TAG)
       val stringCount = in.nextChar
@@ -979,11 +983,6 @@ abstract class ClassfileParser {
           in.nextChar.toInt
         }
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
-    }
-    catch {
-      case e: Throwable =>
-        e.printStackTrace
-        throw e
     }
 
     /** Parse and return a single annotation.  If it is malformed,
