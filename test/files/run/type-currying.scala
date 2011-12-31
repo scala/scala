@@ -43,3 +43,16 @@ object Test {
     assert(n0 == n1)
   }
 }
+
+class A {
+  object Foo {
+    def apply[T] = Bar
+  }
+  object Bar {
+    def apply() = Foo
+  }
+
+  def f() = Foo
+  def g = f()[Int]()[String]()
+  def h = Foo[Foo.type]()[Foo.type]()
+}

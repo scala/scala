@@ -1533,12 +1533,12 @@ self =>
         case LBRACKET =>
           val t1 = stripParens(t)
           t1 match {
-            case Ident(_) | Select(_, _) =>
-              var tapp: Tree = t1
+            case Ident(_) | Select(_, _) | Apply(_, _) =>
+              var app: Tree = t1
               while (in.token == LBRACKET)
-                tapp = atPos(tapp.pos.startOrPoint, in.offset)(TypeApply(tapp, exprTypeArgs()))
+                app = atPos(app.pos.startOrPoint, in.offset)(TypeApply(app, exprTypeArgs()))
 
-              simpleExprRest(tapp, true)
+              simpleExprRest(app, true)
             case _ =>
               t1
           }
