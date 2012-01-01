@@ -4284,10 +4284,14 @@ A type's typeSymbol should never be inspected directly.
         definitions.RootPackage
       } else if (sym.isModuleClass) {
         val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)
-        val result = sourceModule1.moduleClass
-        val msg = "sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
-        assert(result != NoSymbol, msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
-        result
+        var result = sourceModule1.moduleClass
+        if (result == NoSymbol) result = sourceModule1.initialize.moduleClass
+        if (result != NoSymbol) result
+        else {
+          val msg = "Cannot adapt module class; sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
+          debuglog(msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
+          sym
+        }
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
