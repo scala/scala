@@ -37,7 +37,7 @@ object REPL {
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
     if (command.settings.version.value)
-      reporter.info(null, versionMsg, true)
+      reporter.echo(versionMsg)
     else {
       try {
         object compiler extends Global(command.settings, reporter) {
@@ -48,7 +48,7 @@ object REPL {
           return
         }
         if (command.shouldStopWithInfo) {
-          reporter.info(null, command.getInfoMessage(compiler), true)
+          reporter.echo(command.getInfoMessage(compiler))
         } else {
           run(compiler)
         }

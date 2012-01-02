@@ -24,8 +24,8 @@ abstract class Driver {
 
   protected def doCompile(compiler: Global) {
     if (command.files.isEmpty) {
-      reporter.info(null, command.usageMsg, true)
-      reporter.info(null, compiler.pluginOptionsHelp, true)
+      reporter.echo(command.usageMsg)
+      reporter.echo(compiler.pluginOptionsHelp)
     } else {
       val run = new compiler.Run()
       run compile command.files
@@ -40,14 +40,14 @@ abstract class Driver {
     settings = command.settings
 
     if (settings.version.value) {
-      reporter.info(null, versionMsg, true)
+      reporter.echo(versionMsg)
     } else if (processSettingsHook()) {
       val compiler = newCompiler()
       try {
         if (reporter.hasErrors)
           reporter.flush()
         else if (command.shouldStopWithInfo)
-          reporter.info(null, command.getInfoMessage(compiler), true)
+          reporter.echo(command.getInfoMessage(compiler))
         else
           doCompile(compiler)
       } catch {

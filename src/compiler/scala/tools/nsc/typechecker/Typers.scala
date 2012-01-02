@@ -969,7 +969,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                     return typed(Select(tree, meth), mode, pt)
                   }
                   if (coercion != EmptyTree) {
-                    debuglog("inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe)
+                    def msg = "inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe
+                    if (settings.logImplicitConv.value)
+                      unit.echo(tree.pos, msg)
+
+                    debuglog(msg)
                     return newTyper(context.makeImplicit(context.reportAmbiguousErrors)).typed(
                       new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
                   }
@@ -1056,7 +1060,13 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
         inferView(qual, qual.tpe, searchTemplate, true) match {
           case EmptyTree  => qual
-          case coercion   => typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
+          case coercion   => 
+            if (settings.logImplicitConv.value)
+              unit.echo(qual.pos,
+                "applied implicit conversion from %s to %s = %s".format(
+                  qual.tpe, searchTemplate, coercion.symbol.defString))
+            
+            typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
         }
       }
       else qual

@@ -159,7 +159,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   // nearly every trait really must go.  For now using globalError.
   def error(msg: String)       = globalError(msg)
   def globalError(msg: String) = reporter.error(NoPosition, msg)
-  def inform(msg: String)      = reporter.info(NoPosition, msg, true)
+  def inform(msg: String)      = reporter.echo(msg)
   def warning(msg: String)     =
     if (opt.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
