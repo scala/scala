@@ -8,7 +8,7 @@ Properties of a Red & Black Tree:
 
 A node is either red or black.
 The root is black. (This rule is used in some definitions and not others. Since the
-root can always be changed from red to black but not necessarily vice-versa this 
+root can always be changed from red to black but not necessarily vice-versa this
 rule has little effect on analysis.)
 All leaves are black.
 Both children of every red node are black.
@@ -21,17 +21,17 @@ abstract class RedBlackTest extends Properties("RedBlack") {
   def maximumSize = 5
 
   import RedBlack._
-  
-  def nodeAt[A](tree: Tree[String, A], n: Int): Option[(String, A)] = if (n < tree.iterator.size && n >= 0)
-    Some(tree.iterator.drop(n).next)
+
+  def nodeAt[A](tree: Tree[String, A], n: Int): Option[(String, A)] = if (n < iterator(tree).size && n >= 0)
+    Some(iterator(tree).drop(n).next)
   else
     None
-    
-  def treeContains[A](tree: Tree[String, A], key: String) = tree.iterator.map(_._1) contains key
-  
-  def mkTree(level: Int, parentIsBlack: Boolean = false, label: String = ""): Gen[Tree[String, Int]] = 
+
+  def treeContains[A](tree: Tree[String, A], key: String) = iterator(tree).map(_._1) contains key
+
+  def mkTree(level: Int, parentIsBlack: Boolean = false, label: String = ""): Gen[Tree[String, Int]] =
     if (level == 0) {
-      value(Empty.empty)
+      value(null)
     } else {
       for {
         oddOrEven <- choose(0, 2)
@@ -41,7 +41,7 @@ abstract class RedBlackTest extends Properties("RedBlack") {
         left <- mkTree(nextLevel, !isRed, label + "L")
         right <- mkTree(nextLevel, !isRed, label + "R")
       } yield {
-        if (isRed) 
+        if (isRed)
           RedTree(label + "N", 0, left, right)
         else
           BlackTree(label + "N", 0, left, right)
@@ -52,11 +52,11 @@ abstract class RedBlackTest extends Properties("RedBlack") {
     depth <- choose(minimumSize, maximumSize + 1)
     tree <- mkTree(depth)
   } yield tree
-  
+
   type ModifyParm
   def genParm(tree: Tree[String, Int]): Gen[ModifyParm]
   def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int]
-  
+
   def genInput: Gen[(Tree[String, Int], ModifyParm, Tree[String, Int])] = for {
     tree <- genTree
     parm <- genParm(tree)
@@ -65,41 +65,41 @@ abstract class RedBlackTest extends Properties("RedBlack") {
 
 trait RedBlackInvariants {
   self: RedBlackTest =>
-  
+
   import RedBlack._
-    
-  def rootIsBlack[A](t: Tree[String, A]) = t.isBlack
-  
+
+  def rootIsBlack[A](t: Tree[String, A]) = isBlack(t)
+
   def areAllLeavesBlack[A](t: Tree[String, A]): Boolean = t match {
-    case Empty.Instance => t.isBlack
-    case ne: NonEmpty[_, _] => List(ne.left, ne.right) forall areAllLeavesBlack
+    case null => isBlack(t)
+    case ne => List(ne.left, ne.right) forall areAllLeavesBlack
   }
-  
+
   def areRedNodeChildrenBlack[A](t: Tree[String, A]): Boolean = t match {
-    case RedTree(_, _, left, right) => List(left, right) forall (t => t.isBlack && areRedNodeChildrenBlack(t)) 
+    case RedTree(_, _, left, right) => List(left, right) forall (t => isBlack(t) && areRedNodeChildrenBlack(t))
     case BlackTree(_, _, left, right) => List(left, right) forall areRedNodeChildrenBlack
-    case Empty.Instance => true
+    case null => true
   }
-  
+
   def blackNodesToLeaves[A](t: Tree[String, A]): List[Int] = t match {
-    case Empty.Instance => List(1)
+    case null => List(1)
     case BlackTree(_, _, left, right) => List(left, right) flatMap blackNodesToLeaves map (_ + 1)
     case RedTree(_, _, left, right) => List(left, right) flatMap blackNodesToLeaves
   }
-  
+
   def areBlackNodesToLeavesEqual[A](t: Tree[String, A]): Boolean = t match {
-    case Empty.Instance => true
-    case ne: NonEmpty[_, _] => 
+    case null => true
+    case ne =>
       (
-        blackNodesToLeaves(ne).distinct.size == 1 
-        && areBlackNodesToLeavesEqual(ne.left) 
+        blackNodesToLeaves(ne).distinct.size == 1
+        && areBlackNodesToLeavesEqual(ne.left)
         && areBlackNodesToLeavesEqual(ne.right)
       )
   }
-  
-  def orderIsPreserved[A](t: Tree[String, A]): Boolean = 
-    t.iterator zip t.iterator.drop(1) forall { case (x, y) => x._1 < y._1 }
-    
+
+  def orderIsPreserved[A](t: Tree[String, A]): Boolean =
+    iterator(t) zip iterator(t).drop(1) forall { case (x, y) => x._1 < y._1 }
+
   def setup(invariant: Tree[String, Int] => Boolean) = forAll(genInput) { case (tree, parm, newTree) =>
     invariant(newTree)
   }
@@ -113,10 +113,10 @@ trait RedBlackInvariants {
 
 object TestInsert extends RedBlackTest with RedBlackInvariants {
   import RedBlack._
-  
+
   override type ModifyParm = Int
-  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, tree.iterator.size + 1)
-  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = tree update (generateKey(tree, parm), 0)
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size + 1)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = update(tree, generateKey(tree, parm), 0)
 
   def generateKey(tree: Tree[String, Int], parm: ModifyParm): String = nodeAt(tree, parm) match {
     case Some((key, _)) => key.init.mkString + "MN"
@@ -133,18 +133,18 @@ object TestInsert extends RedBlackTest with RedBlackInvariants {
 
 object TestModify extends RedBlackTest {
   import RedBlack._
-  
+
   def newValue = 1
   override def minimumSize = 1
   override type ModifyParm = Int
-  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, tree.iterator.size)
-  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = nodeAt(tree, parm) map { 
-    case (key, _) => tree update (key, newValue)
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = nodeAt(tree, parm) map {
+    case (key, _) => update(tree, key, newValue)
   } getOrElse tree
 
   property("update modifies values") = forAll(genInput) { case (tree, parm, newTree) =>
     nodeAt(tree,parm) forall { case (key, _) =>
-      newTree.iterator contains (key, newValue)
+      iterator(newTree) contains (key, newValue)
     }
   }
 }
@@ -154,11 +154,11 @@ object TestDelete extends RedBlackTest with RedBlackInvariants  {
 
   override def minimumSize = 1
   override type ModifyParm = Int
-  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, tree.iterator.size)
-  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = nodeAt(tree, parm) map { 
-    case (key, _) => tree delete key
+  override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size)
+  override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = nodeAt(tree, parm) map {
+    case (key, _) => delete(tree, key)
   } getOrElse tree
-  
+
   property("delete removes elements") = forAll(genInput) { case (tree, parm, newTree) =>
     nodeAt(tree, parm) forall { case (key, _) =>
       !treeContains(newTree, key)
@@ -168,37 +168,37 @@ object TestDelete extends RedBlackTest with RedBlackInvariants  {
 
 object TestRange extends RedBlackTest with RedBlackInvariants  {
   import RedBlack._
-  
+
   override type ModifyParm = (Option[Int], Option[Int])
   override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = for {
-    from <- choose(0, tree.iterator.size)
-    to <- choose(0, tree.iterator.size) suchThat (from <=)
+    from <- choose(0, iterator(tree).size)
+    to <- choose(0, iterator(tree).size) suchThat (from <=)
     optionalFrom <- oneOf(Some(from), None, Some(from)) // Double Some(n) to get around a bug
     optionalTo <- oneOf(Some(to), None, Some(to)) // Double Some(n) to get around a bug
   } yield (optionalFrom, optionalTo)
-  
+
   override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = {
     val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
     val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-    tree range (from, to)
+    range(tree, from, to)
   }
-  
+
   property("range boundaries respected") = forAll(genInput) { case (tree, parm, newTree) =>
     val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
     val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-    ("lower boundary" |: (from forall ( key => newTree.iterator.map(_._1) forall (key <=)))) &&
-    ("upper boundary" |: (to forall ( key => newTree.iterator.map(_._1) forall (key >))))
+    ("lower boundary" |: (from forall ( key => iterator(newTree).map(_._1) forall (key <=)))) &&
+    ("upper boundary" |: (to forall ( key => iterator(newTree).map(_._1) forall (key >))))
   }
-  
+
   property("range returns all elements") = forAll(genInput) { case (tree, parm, newTree) =>
     val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
     val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-    val filteredTree = (tree.iterator
-      .map(_._1) 
+    val filteredTree = (iterator(tree)
+      .map(_._1)
       .filter(key => from forall (key >=))
       .filter(key => to forall (key <))
       .toList)
-    filteredTree == newTree.iterator.map(_._1).toList
+    filteredTree == iterator(newTree).map(_._1).toList
   }
 }
 }

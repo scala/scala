@@ -51,39 +51,39 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
      with MapLike[A, B, TreeMap[A, B]]
      with Serializable {
 
-  import RedBlack._
+  import immutable.{RedBlack => RB}
 
   def isSmaller(x: A, y: A) = ordering.lt(x, y)
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
 
-  override def size = tree.count
+  override def size = RB.count(tree)
 
-  def this()(implicit ordering: Ordering[A]) = this(RedBlack.Empty.empty)(ordering)
+  def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
   override def rangeImpl(from : Option[A], until : Option[A]): TreeMap[A,B] = {
-    val ntree = tree.range(from,until)
+    val ntree = RB.range(tree, from,until)
     new TreeMap[A,B](ntree)
   }
 
-  override def firstKey = tree.first
-  override def lastKey = tree.last
+  override def firstKey = RB.smallest(tree).key
+  override def lastKey = RB.greatest(tree).key
   override def compare(k0: A, k1: A): Int = ordering.compare(k0, k1)
 
   override def head = {
-    val smallest = tree.smallest
+    val smallest = RB.smallest(tree)
     (smallest.key, smallest.value)
   }
-  override def headOption = if (tree.isEmpty) None else Some(head)
+  override def headOption = if (RB.isEmpty(tree)) None else Some(head)
   override def last = {
-    val greatest = tree.greatest
+    val greatest = RB.greatest(tree)
     (greatest.key, greatest.value)
   }
-  override def lastOption = if (tree.isEmpty) None else Some(last)
+  override def lastOption = if (RB.isEmpty(tree)) None else Some(last)
 
-  override def tail = new TreeMap(tree.delete(firstKey))
-  override def init = new TreeMap(tree.delete(lastKey))
+  override def tail = new TreeMap(RB.delete(tree, firstKey))
+  override def init = new TreeMap(RB.delete(tree, lastKey))
 
   override def drop(n: Int) = {
     if (n <= 0) this
@@ -134,7 +134,7 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
    *  @param value   the value to be associated with `key`
    *  @return        a new $coll with the updated binding
    */
-  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = new TreeMap(tree.update(key, value))
+  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = new TreeMap(RB.update(tree, key, value))
 
   /** Add a key/value pair to this map.
    *  @tparam   B1   type of the value of the new binding, a supertype of `B`
@@ -175,13 +175,13 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
    *  @return       a new $coll with the inserted binding, if it wasn't present in the map
    */
   def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
-    assert(tree.lookup(key).isEmpty)
-    new TreeMap(tree.update(key, value))
+    assert(!RB.contains(tree, key))
+    new TreeMap(RB.update(tree, key, value))
   }
 
   def - (key:A): TreeMap[A, B] =
-    if (tree.lookup(key).isEmpty) this
-    else new TreeMap(tree.delete(key))
+    if (!RB.contains(tree, key)) this
+    else new TreeMap(RB.delete(tree, key))
 
   /** Check if this map maps `key` to a value and return the
    *  value if it exists.
@@ -189,21 +189,19 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
    *  @param  key     the key of the mapping of interest
    *  @return         the value of the mapping, if it exists
    */
-  override def get(key: A): Option[B] = lookup(tree, key) match {
-    case n: NonEmpty[_, _] => Some(n.value)
-    case _ => None
-  }
+  override def get(key: A): Option[B] = RB.get(tree, key)
 
   /** Creates a new iterator over all elements contained in this
    *  object.
    *
    *  @return the new iterator
    */
-  def iterator: Iterator[(A, B)] = tree.iterator
+  def iterator: Iterator[(A, B)] = RB.iterator(tree)
 
-  override def toStream: Stream[(A, B)] = tree.iterator.toStream
+  override def contains(key: A): Boolean = RB.contains(tree, key)
+  override def isDefinedAt(key: A): Boolean = RB.contains(tree, key)
 
-  override def foreach[U](f : ((A,B)) =>  U) = tree foreach f
+  override def foreach[U](f : ((A,B)) =>  U) = RB.foreach(tree, f)
 }
 
 

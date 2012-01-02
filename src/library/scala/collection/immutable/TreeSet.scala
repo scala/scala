@@ -50,19 +50,19 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
 class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
-  import RedBlack._
+  import immutable.{RedBlack => RB}
 
   override def stringPrefix = "TreeSet"
 
-  override def size = tree.count
+  override def size = RB.count(tree)
 
-  override def head = tree.smallest.key
-  override def headOption = if (tree.isEmpty) None else Some(head)
-  override def last = tree.greatest.key
-  override def lastOption = if (tree.isEmpty) None else Some(last)
+  override def head = RB.smallest(tree).key
+  override def headOption = if (RB.isEmpty(tree)) None else Some(head)
+  override def last = RB.greatest(tree).key
+  override def lastOption = if (RB.isEmpty(tree)) None else Some(last)
 
-  override def tail = new TreeSet(tree.delete(firstKey))
-  override def init = new TreeSet(tree.delete(lastKey))
+  override def tail = new TreeSet(RB.delete(tree, firstKey))
+  override def init = new TreeSet(RB.delete(tree, lastKey))
 
   override def drop(n: Int) = {
     if (n <= 0) this
@@ -102,7 +102,7 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
 
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
-  def this()(implicit ordering: Ordering[A]) = this(RedBlack.Empty.empty)(ordering)
+  def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
   private def newSet(t: RedBlack.Tree[A, Unit]) = new TreeSet[A](t)
 
@@ -115,7 +115,7 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
    *  @param elem    a new element to add.
    *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
-  def + (elem: A): TreeSet[A] = newSet(tree.update(elem, ()))
+  def + (elem: A): TreeSet[A] = newSet(RB.update(tree, elem, ()))
 
   /** A new `TreeSet` with the entry added is returned,
    *  assuming that elem is <em>not</em> in the TreeSet.
@@ -124,8 +124,8 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
    *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
   def insert(elem: A): TreeSet[A] = {
-    assert(tree.lookup(elem).isEmpty)
-    newSet(tree.update(elem, ()))
+    assert(!RB.contains(tree, elem))
+    newSet(RB.update(tree, elem, ()))
   }
 
   /** Creates a new `TreeSet` with the entry removed.
@@ -134,31 +134,29 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
    *  @return        a new $coll containing all the elements of this $coll except `elem`.
    */
   def - (elem:A): TreeSet[A] =
-    if (tree.lookup(elem).isEmpty) this
-    else newSet(tree delete elem)
+    if (!RB.contains(tree, elem)) this
+    else newSet(RB.delete(tree, elem))
 
   /** Checks if this set contains element `elem`.
    *
    *  @param  elem    the element to check for membership.
    *  @return true, iff `elem` is contained in this set.
    */
-  def contains(elem: A): Boolean = !lookup(tree, elem).isEmpty
+  def contains(elem: A): Boolean = RB.contains(tree, elem)
 
   /** Creates a new iterator over all elements contained in this
    *  object.
    *
    *  @return the new iterator
    */
-  def iterator: Iterator[A] = tree.keyIterator
+  def iterator: Iterator[A] = RB.keyIterator(tree)
 
-  override def toStream: Stream[A] = tree.keyIterator.toStream
-
-  override def foreach[U](f: A =>  U) = tree foreachKey f
+  override def foreach[U](f: A =>  U) = RB.foreachKey(tree, f)
 
   override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = {
-    val tree = this.tree.range(from, until)
-    newSet(tree)
+    val ntree = RB.range(tree, from, until)
+    newSet(ntree)
   }
-  override def firstKey = tree.first
-  override def lastKey = tree.last
+  override def firstKey = head
+  override def lastKey = last
 }
