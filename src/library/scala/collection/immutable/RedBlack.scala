@@ -224,23 +224,28 @@ object RedBlack {
                     right: Tree[A, B],
                     leftZipper: List[NonEmpty[A, B]],
                     rightZipper: List[NonEmpty[A, B]],
-                    smallerDepth: Int): (List[NonEmpty[A, B]], Boolean, Boolean, Int) = (left, right) match {
-        case (l @ BlackTree(_, _, _, _), r @ BlackTree(_, _, _, _)) =>
+                    smallerDepth: Int): (List[NonEmpty[A, B]], Boolean, Boolean, Int) = {
+        lazy val l = left.asInstanceOf[NonEmpty[A, B]]
+        lazy val r = right.asInstanceOf[NonEmpty[A, B]]
+        if (isBlackTree(left) && isBlackTree(right)) {
           unzipBoth(l.right, r.left, l :: leftZipper, r :: rightZipper, smallerDepth + 1)
-        case (l @ RedTree(_, _, _, _), r @ RedTree(_, _, _, _)) =>
+        } else if (isRedTree(left) && isRedTree(right)) {
           unzipBoth(l.right, r.left, l :: leftZipper, r :: rightZipper, smallerDepth)
-        case (_, r @ RedTree(_, _, _, _)) =>
+        } else if (isRedTree(right)) {
           unzipBoth(left, r.left, leftZipper, r :: rightZipper, smallerDepth)
-        case (l @ RedTree(_, _, _, _), _) =>
+        } else if (isRedTree(left)) {
           unzipBoth(l.right, right, l :: leftZipper, rightZipper, smallerDepth)
-        case (Empty.Instance, Empty.Instance) =>
+        } else if ((left eq Empty.Instance) && (right eq Empty.Instance)) {
           (Nil, true, false, smallerDepth)
-        case (Empty.Instance, r @ BlackTree(_, _, _, _)) =>
+        } else if ((left eq Empty.Instance) && isBlackTree(right)) {
           val leftMost = true
           (unzip(r :: rightZipper, leftMost), false, leftMost, smallerDepth)
-        case (l @ BlackTree(_, _, _, _), Empty.Instance) =>
+        } else if (isBlackTree(left) && (right eq Empty.Instance)) {
           val leftMost = false
           (unzip(l :: leftZipper, leftMost), false, leftMost, smallerDepth)
+        } else {
+          sys.error("unmatched trees in unzip: " + left + ", " + right)
+        }
       }
       unzipBoth(left, right, Nil, Nil, 0)
     }
@@ -248,7 +253,7 @@ object RedBlack {
     private[this] def rebalance(newLeft: Tree[A, B], newRight: Tree[A, B]) = {
       // This is like drop(n-1), but only counting black nodes
       def  findDepth(zipper: List[NonEmpty[A, B]], depth: Int): List[NonEmpty[A, B]] = zipper match {
-        case BlackTree(_, _, _, _) :: tail =>
+        case head :: tail if isBlackTree(head) =>
           if (depth == 1) zipper else findDepth(tail, depth - 1)
         case _ :: tail => findDepth(tail, depth)
         case Nil => sys.error("Defect: unexpected empty zipper while computing range")
