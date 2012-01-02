@@ -443,15 +443,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isStringAddition(sym: Symbol) = sym == String_+ || sym == StringAdd_+
     def isArrowAssoc(sym: Symbol) = ArrowAssocClass.tpe.decls.toList contains sym
 
-    // The given symbol is a method with the right signature to be a runnable java program.
-    def isJavaMainMethod(sym: Symbol) = sym.tpe match {
-      case MethodType(param :: Nil, restpe) if restpe.typeSymbol == UnitClass =>
-        param.tpe match {
-          case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol == StringClass
-          case _                                  => false
-        }
-      case _ => false
-    }
+    // The given symbol is a method with the right name and signature to be a runnable java program.
+    def isJavaMainMethod(sym: Symbol) = (sym.name == nme.main) && (sym.info match {
+      case MethodType(p :: Nil, restpe) => isArrayOfSymbol(p.tpe, StringClass) && restpe.typeSymbol == UnitClass
+      case _                            => false
+    })
     // The given class has a main method.
     def hasJavaMainMethod(sym: Symbol): Boolean =
       (sym.tpe member nme.main).alternatives exists isJavaMainMethod
@@ -594,6 +590,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def arrayType(arg: Type)     = appliedType(ArrayClass.typeConstructor, List(arg))
     def byNameType(arg: Type)    = appliedType(ByNameParamClass.typeConstructor, List(arg))
     def iteratorOfType(tp: Type) = appliedType(IteratorClass.typeConstructor, List(tp))
+
+    lazy val StringArray   = arrayType(StringClass.tpe)
+    lazy val ObjectArray   = arrayType(ObjectClass.tpe)
 
     def ClassType(arg: Type) =
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
