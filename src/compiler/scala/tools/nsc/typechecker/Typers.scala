@@ -4271,6 +4271,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           else
             typedIdent(name)
 
+        case ReferenceToBoxed(idt @ Ident(_)) =>
+          val id1 = typed1(idt, mode, pt) match { case id: Ident => id }
+          treeCopy.ReferenceToBoxed(tree, id1) setType AnyRefClass.tpe         
+
         case Literal(value) =>
           tree setType (
             if (value.tag == UnitTag) UnitClass.tpe
