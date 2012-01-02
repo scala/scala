@@ -18,14 +18,24 @@ package immutable
 private[immutable]
 object RedBlack {
 
-  private def blacken[A, B](t: Tree[A, B]): Tree[A, B] = t match {
-    case RedTree(k, v, l, r) => BlackTree(k, v, l, r)
-    case t => t
-  }
+  private def blacken[A, B](t: Tree[A, B]): Tree[A, B] = t.black
+
   private def mkTree[A, B](isBlack: Boolean, k: A, v: B, l: Tree[A, B], r: Tree[A, B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
+  def isRed[A, B](tree: Tree[A, B]) = !tree.isBlack
 
+  @annotation.tailrec
+  def lookup[A, B](tree: Tree[A, B], x: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree eq Empty.Instance) tree else {
+      val cmp = ordering.compare(x, tree.key)
+      if (cmp < 0) lookup(tree.left, x)
+      else if (cmp > 0) lookup(tree.right, x)
+      else tree
+  }
   sealed abstract class Tree[A, +B] extends Serializable {
+    def key: A
+    def value: B
+    def left: Tree[A, B]
+    def right: Tree[A, B]
     def isEmpty: Boolean
     def isBlack: Boolean
     def lookup(x: A)(implicit ordering: Ordering[A]): Tree[A, B]
@@ -45,33 +55,31 @@ object RedBlack {
     def last : A
     def count : Int
     protected[immutable] def nth(n: Int): NonEmpty[A, B]
+    def black: Tree[A, B] = this
+    def red: Tree[A, B]
   }
-  sealed abstract class NonEmpty[A, +B] extends Tree[A, B] with Serializable {
+  sealed abstract class NonEmpty[A, +B](final val key: A, final val value: B, final val left: Tree[A, B], final val right: Tree[A, B]) extends Tree[A, B] with Serializable {
     def isEmpty = false
-    def key: A
-    def value: B
-    def left: Tree[A, B]
-    def right: Tree[A, B]
     def lookup(k: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
       val cmp = ordering.compare(k, key)
       if (cmp < 0) left.lookup(k)
       else if (cmp > 0) right.lookup(k)
       else this
     }
-    private[this] def balanceLeft[B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1])/*: NonEmpty[A, B1]*/ = l match {
-      case RedTree(y, yv, RedTree(x, xv, a, b), c) =>
-        RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
-      case RedTree(x, xv, a, RedTree(y, yv, b, c)) =>
-        RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
-      case _ =>
+    private[this] def balanceLeft[B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1])/*: NonEmpty[A, B1]*/ = {
+      if (isRed(l) && isRed(l.left))
+        RedTree(l.key, l.value, BlackTree(l.left.key, l.left.value, l.left.left, l.left.right), BlackTree(z, zv, l.right, d))
+      else if (isRed(l) && isRed(l.right))
+        RedTree(l.right.key, l.right.value, BlackTree(l.key, l.value, l.left, l.right.left), BlackTree(z, zv, l.right.right, d))
+      else
         mkTree(isBlack, z, zv, l, d)
     }
-    private[this] def balanceRight[B1 >: B](isBlack: Boolean, x: A, xv: B, a: Tree[A, B1], r: Tree[A, B1])/*: NonEmpty[A, B1]*/ = r match {
-      case RedTree(z, zv, RedTree(y, yv, b, c), d) =>
-        RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
-      case RedTree(y, yv, b, RedTree(z, zv, c, d)) =>
-        RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
-      case _ =>
+    private[this] def balanceRight[B1 >: B](isBlack: Boolean, x: A, xv: B, a: Tree[A, B1], r: Tree[A, B1])/*: NonEmpty[A, B1]*/ = {
+      if (isRed(r) && isRed(r.left))
+        RedTree(r.left.key, r.left.value, BlackTree(x, xv, a, r.left.left), BlackTree(r.key, r.value, r.left.right, r.right))
+      else if (isRed(r) && isRed(r.right))
+        RedTree(r.key, r.value, BlackTree(x, xv, a, r.left), BlackTree(r.right.key, r.right.value, r.right.left, r.right.right))
+      else
         mkTree(isBlack, x, xv, a, r)
     }
     def upd[B1 >: B](k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = {
@@ -272,9 +280,13 @@ object RedBlack {
   object Empty {
     def empty[A]: Tree[A, Nothing] = Instance.asInstanceOf[Tree[A, Nothing]]
 
-    val Instance: Tree[_ >: Nothing, Nothing] = Empty[Nothing]()
+    final val Instance: Tree[_ >: Nothing, Nothing] = Empty[Nothing]()
   }
   final case class Empty[A] private () extends Tree[A, Nothing] {
+    def key = throw new NoSuchElementException("empty map")
+    def value = throw new NoSuchElementException("empty map")
+    def left = this
+    def right = this
     def isEmpty = true
     def isBlack = true
     def lookup(k: A)(implicit ordering: Ordering[A]): Tree[A, Nothing] = this
@@ -293,22 +305,34 @@ object RedBlack {
     def last = throw new NoSuchElementException("empty map")
     def count = 0
     protected[immutable] def nth(n: Int) = throw new NoSuchElementException("empty map")
+    override def red = sys.error("cannot make leaf red")
 
     override def toString() = "Empty"
 
     private def readResolve() = Empty.empty
   }
-  final case class RedTree[A, +B](override val key: A,
-                         override val value: B,
-                         override val left: Tree[A, B],
-                         override val right: Tree[A, B]) extends NonEmpty[A, B] {
+  final class RedTree[A, +B](key: A,
+                         value: B,
+                         left: Tree[A, B],
+                         right: Tree[A, B]) extends NonEmpty[A, B](key, value, left, right) {
     def isBlack = false
+    override def black = BlackTree(key, value, left, right)
+    override def red = this
   }
-  final case class BlackTree[A, +B](override val key: A,
-                           override val value: B,
-                           override val left: Tree[A, B],
-                           override val right: Tree[A, B]) extends NonEmpty[A, B] {
+  object RedTree {
+    def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
+    def unapply[A, B](t: RedTree[A, B]) = Some((t.key, t.value, t.left, t.right))
+  }
+  final class BlackTree[A, +B](key: A,
+                           value: B,
+                           left: Tree[A, B],
+                           right: Tree[A, B]) extends NonEmpty[A, B](key, value, left, right) {
     def isBlack = true
+    override def red = RedTree(key, value, left, right)
+  }
+  object BlackTree {
+    def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
+    def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
   private[this] class TreeIterator[A, B](tree: NonEmpty[A, B]) extends Iterator[(A, B)] {

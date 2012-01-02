@@ -142,7 +142,7 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
    *  @param  elem    the element to check for membership.
    *  @return true, iff `elem` is contained in this set.
    */
-  def contains(elem: A): Boolean = !tree.lookup(elem).isEmpty
+  def contains(elem: A): Boolean = !lookup(tree, elem).isEmpty
 
   /** Creates a new iterator over all elements contained in this
    *  object.

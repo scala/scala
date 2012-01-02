@@ -189,7 +189,7 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
    *  @param  key     the key of the mapping of interest
    *  @return         the value of the mapping, if it exists
    */
-  override def get(key: A): Option[B] = tree.lookup(key) match {
+  override def get(key: A): Option[B] = lookup(tree, key) match {
     case n: NonEmpty[_, _] => Some(n.value)
     case _ => None
   }
