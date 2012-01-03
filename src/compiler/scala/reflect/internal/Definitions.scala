@@ -101,9 +101,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val FloatClass   = valueCache(tpnme.Float)
     lazy val DoubleClass  = valueCache(tpnme.Double)
     lazy val BooleanClass = valueCache(tpnme.Boolean)
-      def Boolean_and = getMember(BooleanClass, nme.ZAND)
-      def Boolean_or  = getMember(BooleanClass, nme.ZOR)
-      def Boolean_not = getMember(BooleanClass, nme.UNARY_!)
+      lazy val Boolean_and = getMember(BooleanClass, nme.ZAND)
+      lazy val Boolean_or  = getMember(BooleanClass, nme.ZOR)
+      lazy val Boolean_not = getMember(BooleanClass, nme.UNARY_!)
 
     def ScalaValueClassesNoUnit = ScalaValueClasses filterNot (_ eq UnitClass)
     def ScalaValueClasses: List[Symbol] = List(
@@ -343,12 +343,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // arrays and their members
     lazy val ArrayModule  = getModule("scala.Array")
-      def ArrayModule_overloadedApply = getMember(ArrayModule, nme.apply)
+      lazy val ArrayModule_overloadedApply = getMember(ArrayModule, nme.apply)
     lazy val ArrayClass   = getClass("scala.Array")
-      def Array_apply      = getMember(ArrayClass, nme.apply)
-      def Array_update     = getMember(ArrayClass, nme.update)
-      def Array_length     = getMember(ArrayClass, nme.length)
-      lazy val Array_clone = getMember(ArrayClass, nme.clone_)
+      lazy val Array_apply  = getMember(ArrayClass, nme.apply)
+      lazy val Array_update = getMember(ArrayClass, nme.update)
+      lazy val Array_length = getMember(ArrayClass, nme.length)
+      lazy val Array_clone  = getMember(ArrayClass, nme.clone_)
 
     // reflection / structural types
     lazy val SoftReferenceClass     = getClass("java.lang.ref.SoftReference")
@@ -376,7 +376,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val NoManifest            = getModule("scala.reflect.NoManifest")
     lazy val CodeClass             = getClass(sn.Code)
     lazy val CodeModule            = getModule(sn.Code)
-      def Code_lift = getMember(CodeModule, nme.lift_)
+      lazy val Code_lift = getMember(CodeModule, nme.lift_)
 
     lazy val ScalaSignatureAnnotation = getClass("scala.reflect.ScalaSignature")
     lazy val ScalaLongSignatureAnnotation = getClass("scala.reflect.ScalaLongSignature")

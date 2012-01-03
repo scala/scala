@@ -537,6 +537,16 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
+      
+    /** All members with the given flags, excluding bridges.
+     */
+    def membersWithFlags(requiredFlags: Long): List[Symbol] =
+      membersBasedOnFlags(BridgeFlags, requiredFlags)
+
+    /** All non-private members with the given flags, excluding bridges.
+     */
+    def nonPrivateMembersWithFlags(requiredFlags: Long): List[Symbol] =
+      membersBasedOnFlags(BridgeAndPrivateFlags, requiredFlags)
 
     /** The non-private member with given name, admitting members with given flags `admit`.
      *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE
@@ -552,7 +562,10 @@ trait Types extends api.Types { self: SymbolTable =>
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonLocalMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeFlags | LOCAL)
-      
+    
+    /** Members excluding and requiring the given flags.
+     *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
+     */
     def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): List[Symbol] =
       findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
 
@@ -1017,7 +1030,6 @@ trait Types extends api.Types { self: SymbolTable =>
         baseClasses.head.newOverloaded(this, members.toList)
       }
     }
-
     /** The existential skolems and existentially quantified variables which are free in this type */
     def existentialSkolems: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
