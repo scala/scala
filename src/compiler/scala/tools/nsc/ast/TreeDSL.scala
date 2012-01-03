@@ -202,7 +202,7 @@ trait TreeDSL {
     class DefSymStart(val sym: Symbol) extends SymVODDStart with DefCreator {
       def symType  = sym.tpe.finalResultType
       def tparams  = sym.typeParams map TypeDef
-      def vparamss = sym.paramss map (xs => xs map ValDef)
+      def vparamss = mapParamss(sym)(ValDef)
     }
     class ValSymStart(val sym: Symbol) extends SymVODDStart with ValCreator {
       def symType = sym.tpe

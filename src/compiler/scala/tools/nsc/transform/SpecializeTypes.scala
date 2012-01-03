@@ -572,8 +572,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
         // they are never needed.
-        sym.info.paramss.flatten foreach (_.resetFlag(DEFAULTPARAM))
-
+        mapParamss(sym)(_ resetFlag DEFAULTPARAM)
         decls1.enter(subst(fullEnv)(sym))
       }
 
@@ -1235,7 +1234,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             debuglog("!!! adding body of a defdef %s, symbol %s: %s".format(tree, tree.symbol, rhs))
             body(tree.symbol) = rhs
             //          body(tree.symbol) = tree // whole method
-            parameters(tree.symbol) = vparamss map (_ map (_.symbol))
+            parameters(tree.symbol) = mmap(vparamss)(_.symbol)
             concreteSpecMethods -= tree.symbol
           } // no need to descend further down inside method bodies
 
@@ -1609,7 +1608,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (m.isClassConstructor) {
             val origParamss = parameters(info(m).target)
             val vparams = (
-              for ((tp, sym) <- m.info.paramTypes zip origParamss(0)) yield (
+              map2(m.info.paramTypes, origParamss(0))((tp, sym) =>
                 m.newValue(sym.pos, specializedName(sym, typeEnv(cls)))
                   .setInfo(tp)
                   .setFlag(sym.flags)
@@ -1625,7 +1624,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
 
             // ctor
-            mbrs += atPos(m.pos)(DefDef(m, Modifiers(m.flags), List(vparams) map (_ map ValDef), EmptyTree))
+            mbrs += atPos(m.pos)(DefDef(m, Modifiers(m.flags), mmap(List(vparams))(ValDef), EmptyTree))
           } else {
             mbrs += atPos(m.pos)(DefDef(m, { paramss => EmptyTree }))
           }
@@ -1671,7 +1670,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   private def forwardCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
-    val argss = paramss map (_ map (x => Ident(x.symbol)))
+    val argss = mmap(paramss)(x => Ident(x.symbol))
     atPos(pos) { (receiver /: argss) (Apply) }
   }
 
@@ -1708,11 +1707,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       && clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol
     )
 
-    val argss = paramss map (_ map (x =>
+    val argss = mmap(paramss)(x =>
       if (initializesSpecializedField(x.symbol))
         gen.mkAsInstanceOf(Literal(Constant(null)), x.symbol.tpe)
       else
-        Ident(x.symbol))
+        Ident(x.symbol)
     )
     atPos(pos) { (receiver /: argss) (Apply) }
   }

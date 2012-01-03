@@ -112,7 +112,7 @@ trait Unapplies extends ast.TreeDSL
 
   private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
     val DefDef(_, _, _, vparamss, _, _) = treeInfo firstConstructor cdef.impl.body
-    vparamss map (_ map copyUntyped[ValDef])
+    mmap(vparamss)(copyUntyped[ValDef])
   }
 
   /** The return value of an unapply method of a case class C[Ts]
@@ -165,7 +165,7 @@ trait Unapplies extends ast.TreeDSL
     val cparamss  = constrParamss(cdef)
     atPos(cdef.pos.focus)(
       DefDef(caseMods, nme.apply, tparams, cparamss, classType(cdef, tparams),
-        New(classType(cdef, tparams), cparamss map (_ map gen.paramToArg)))
+        New(classType(cdef, tparams), mmap(cparamss)(gen.paramToArg)))
     )
   }
 
@@ -201,12 +201,12 @@ trait Unapplies extends ast.TreeDSL
       def paramWithDefault(vd: ValDef) =
         treeCopy.ValDef(vd, vd.mods | DEFAULTPARAM, vd.name, atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt), toIdent(vd))
 
-      val paramss   = cparamss map (_ map paramWithDefault)
+      val paramss   = mmap(cparamss)(paramWithDefault)
       val classTpe  = classType(cdef, tparams)
 
       Some(atPos(cdef.pos.focus)(
         DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, paramss, classTpe,
-          New(classTpe, paramss map (_ map toIdent)))
+          New(classTpe, mmap(paramss)(toIdent)))
       ))
     }
   }

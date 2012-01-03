@@ -193,7 +193,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     DefDef(sym, Modifiers(sym.flags), vparamss, rhs)
 
   def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef =
-    DefDef(sym, mods, sym.paramss map (_.map(ValDef)), rhs)
+    DefDef(sym, mods, mapParamss(sym)(ValDef), rhs)
 
   def DefDef(sym: Symbol, rhs: Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)

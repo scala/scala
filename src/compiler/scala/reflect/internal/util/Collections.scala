@@ -21,6 +21,23 @@ trait Collections {
     else !xs2.isEmpty && !xs3.isEmpty && f(xs1.head, xs2.head, xs3.head) && corresponds3(xs1.tail, xs2.tail, xs3.tail)(f)
   )
 
+  /** All these mm methods are "deep map" style methods for
+   *  mapping etc. on a list of lists.
+   */
+  final def mexists[A](xss: List[List[A]])(p: A => Boolean) =
+    xss exists (_ exists p)
+  final def mmap[A, B](xss: List[List[A]])(f: A => B) =
+    xss map (_ map f)
+  final def mforeach[A](xss: List[List[A]])(f: A => Unit) =
+    xss foreach (_ foreach f)
+  final def mfind[A](xss: List[List[A]])(p: A => Boolean): Option[A] = {
+    for (xs <- xss; x <- xs)
+      if (p(x)) return Some(x)
+    None
+  }
+  final def mfilter[A](xss: List[List[A]])(p: A => Boolean) =
+    for (xs <- xss; x <- xs; if p(x)) yield x
+
   final def map2[A, B, C](xs1: List[A], xs2: List[B])(f: (A, B) => C): List[C] = {
     val lb = new ListBuffer[C]
     var ys1 = xs1
@@ -136,3 +153,6 @@ trait Collections {
     true
   }
 }
+
+object Collections extends Collections { }
+
