@@ -106,7 +106,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		processType(in, t) match
 		{
 			case s: SimpleType => s
-			case x => warning("Not a simple type:\n\tType: " + t + " (class " + t.getClass + ")\n\tTransformed: " + x.getClass); Constants.emptyType
+			case x => warning("Not a simple type:\n\tType: " + t + " (" + t.getClass + ")\n\tTransformed: " + x.getClass); Constants.emptyType
 		}
 	private def types(in: Symbol, t: List[Type]): Array[xsbti.api.Type] = t.toArray[Type].map(processType(in, _))
 	private def projectionType(in: Symbol, pre: Type, sym: Symbol) =
