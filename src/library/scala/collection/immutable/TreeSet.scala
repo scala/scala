@@ -149,7 +149,7 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
    *
    *  @return the new iterator
    */
-  def iterator: Iterator[A] = RB.keyIterator(tree)
+  def iterator: Iterator[A] = RB.keysIterator(tree)
 
   override def foreach[U](f: A =>  U) = RB.foreachKey(tree, f)
 

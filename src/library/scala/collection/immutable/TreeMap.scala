@@ -196,7 +196,10 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
    *
    *  @return the new iterator
    */
-  def iterator: Iterator[(A, B)] = RB.iterator(tree)
+  override def iterator: Iterator[(A, B)] = RB.iterator(tree)
+
+  override def keysIterator: Iterator[A] = RB.keysIterator(tree)
+  override def valuesIterator: Iterator[B] = RB.valuesIterator(tree)
 
   override def contains(key: A): Boolean = RB.contains(tree, key)
   override def isDefinedAt(key: A): Boolean = RB.contains(tree, key)

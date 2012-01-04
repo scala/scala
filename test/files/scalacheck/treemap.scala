@@ -22,6 +22,22 @@ object Test extends Properties("TreeMap") {
     consistent
   }
 
+  property("worst-case tree height is iterable") = forAll(choose(0, 10), arbitrary[Boolean]) { (n: Int, even: Boolean) =>
+    /*
+     * According to "Ralf Hinze. Constructing red-black trees" [http://www.cs.ox.ac.uk/ralf.hinze/publications/#P5]
+     * you can construct a skinny tree of height 2n by inserting the elements [1 .. 2^(n+1) - 2] and a tree of height
+     * 2n+1 by inserting the elements [1 .. 3 * 2^n - 2], both in reverse order.
+     *
+     * Since we allocate a fixed size buffer in the iterator (based on the tree size) we need to ensure
+     * it is big enough for these worst-case trees.
+     */
+    val highest = if (even) (1 << (n+1)) - 2 else 3*(1 << n) - 2
+    val values = (1 to highest).reverse
+    val subject = TreeMap(values zip values: _*)
+    val it = subject.iterator
+    try { while (it.hasNext) it.next; true } catch { case _ => false }
+  }
+
   property("sorted") = forAll { (subject: TreeMap[Int, String]) => (subject.size >= 3) ==> {
     subject.zip(subject.tail).forall { case (x, y) => x._1 < y._1 }
   }}

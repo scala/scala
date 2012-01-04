@@ -11,6 +11,7 @@
 package scala.collection
 package immutable
 
+import annotation.tailrec
 import annotation.meta.getter
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
@@ -37,7 +38,7 @@ object RedBlack {
     case tree => Some(tree.value)
   }
 
-  @annotation.tailrec
+  @tailrec
   def lookup[A, B](tree: Tree[A, B], x: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree eq null) null else {
     val cmp = ordering.compare(x, tree.key)
     if (cmp < 0) lookup(tree.left, x)
@@ -64,18 +65,19 @@ object RedBlack {
   }
 
   def foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit = if (tree ne null) {
-    foreach(tree.left, f)
+    if (tree.left ne null) foreach(tree.left, f)
     f((tree.key, tree.value))
-    foreach(tree.right, f)
+    if (tree.right ne null) foreach(tree.right, f)
   }
   def foreachKey[A, U](tree: Tree[A, _], f: A => U): Unit = if (tree ne null) {
-    foreachKey(tree.left, f)
+    if (tree.left ne null) foreachKey(tree.left, f)
     f(tree.key)
-    foreachKey(tree.right, f)
+    if (tree.right ne null) foreachKey(tree.right, f)
   }
 
-  def iterator[A, B](tree: Tree[A, B]): Iterator[(A, B)] = if (tree eq null) Iterator.empty else new TreeIterator(tree)
-  def keyIterator[A, _](tree: Tree[A, _]): Iterator[A] = if (tree eq null) Iterator.empty else new TreeKeyIterator(tree)
+  def iterator[A, B](tree: Tree[A, B]): Iterator[(A, B)] = new EntriesIterator(tree)
+  def keysIterator[A, _](tree: Tree[A, _]): Iterator[A] = new KeysIterator(tree)
+  def valuesIterator[_, B](tree: Tree[_, B]): Iterator[B] = new ValuesIterator(tree)
 
   private[this] def balanceLeft[A, B, B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1]): Tree[A, B1] = {
     if (isRedTree(l) && isRedTree(l.left))
@@ -283,7 +285,7 @@ object RedBlack {
     @(inline @getter) final val left: Tree[A, B],
     @(inline @getter) final val right: Tree[A, B])
   extends Serializable {
-    @(inline @getter) final val count: Int = 1 + RedBlack.count(left) + RedBlack.count(right)
+    final val count: Int = 1 + RedBlack.count(left) + RedBlack.count(right)
     def isBlack: Boolean
     def nth(n: Int): Tree[A, B] = {
       val count = RedBlack.count(left)
@@ -322,53 +324,75 @@ object RedBlack {
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
-  private[this] class TreeIterator[A, B](tree: Tree[A, B]) extends Iterator[(A, B)] {
+  private[this] abstract class TreeIterator[A, B, R](tree: Tree[A, B]) extends Iterator[R] {
+    protected[this] def nextResult(tree: Tree[A, B]): R
+
     override def hasNext: Boolean = next ne null
 
-    override def next: (A, B) = next match {
+    override def next: R = next match {
       case null =>
         throw new NoSuchElementException("next on empty iterator")
       case tree =>
-        addLeftMostBranchToPath(tree.right)
-        next = if (path.isEmpty) null else path.pop()
-        (tree.key, tree.value)
+        next = findNext(tree.right)
+        nextResult(tree)
     }
 
-    @annotation.tailrec
-    private[this] def addLeftMostBranchToPath(tree: Tree[A, B]) {
-      if (tree ne null) {
-        path.push(tree)
-        addLeftMostBranchToPath(tree.left)
+    @tailrec
+    private[this] def findNext(tree: Tree[A, B]): Tree[A, B] = {
+      if (tree eq null) popPath()
+      else if (tree.left eq null) tree
+      else {
+        pushPath(tree)
+        findNext(tree.left)
       }
     }
 
-    private[this] val path = mutable.ArrayStack.empty[Tree[A, B]]
-    addLeftMostBranchToPath(tree)
-    private[this] var next: Tree[A, B] = path.pop()
+    private[this] def pushPath(tree: Tree[A, B]) {
+      try {
+        path(index) = tree
+        index += 1
+      } catch {
+        case _: ArrayIndexOutOfBoundsException =>
+          // Either the tree became unbalanced or we calculated the maximum height incorrectly.
+          // To avoid crashing the iterator we expand the path array. Obviously this should never
+          // happen...
+          //
+          // An exception handler is used instead of an if-condition to optimize the normal path.
+          assert(index >= path.length)
+          path :+= null
+          pushPath(tree)
+      }
+    }
+    private[this] def popPath(): Tree[A, B] = if (index == 0) null else {
+      index -= 1
+      path(index)
+    }
+
+    private[this] var path = if (tree eq null) null else {
+      /*
+       * According to "Ralf Hinze. Constructing red-black trees" [http://www.cs.ox.ac.uk/ralf.hinze/publications/#P5]
+       * the maximum height of a red-black tree is 2*log_2(n + 2) - 2.
+       *
+       * According to {@see Integer#numberOfLeadingZeros} ceil(log_2(n)) = (32 - Integer.numberOfLeadingZeros(n - 1))
+       *
+       * We also don't store the deepest nodes in the path so the maximum path length is further reduced by one.
+       */
+      val maximumHeight = 2 * (32 - Integer.numberOfLeadingZeros(tree.count + 2 - 1)) - 2 - 1
+      new Array[Tree[A, B]](maximumHeight)
+    }
+    private[this] var index = 0
+    private[this] var next: Tree[A, B] = findNext(tree)
   }
 
-  private[this] class TreeKeyIterator[A](tree: Tree[A, _]) extends Iterator[A] {
-    override def hasNext: Boolean = next ne null
+  private[this] class EntriesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, (A, B)](tree) {
+    override def nextResult(tree: Tree[A, B]) = (tree.key, tree.value)
+  }
 
-    override def next: A = next match {
-      case null =>
-        throw new NoSuchElementException("next on empty iterator")
-      case tree =>
-        addLeftMostBranchToPath(tree.right)
-        next = if (path.isEmpty) null else path.pop()
-        tree.key
-    }
+  private[this] class KeysIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, A](tree) {
+    override def nextResult(tree: Tree[A, B]) = tree.key
+  }
 
-    @annotation.tailrec
-    private[this] def addLeftMostBranchToPath(tree: Tree[A, _]) {
-      if (tree ne null) {
-        path.push(tree)
-        addLeftMostBranchToPath(tree.left)
-      }
-    }
-
-    private[this] val path = mutable.ArrayStack.empty[Tree[A, _]]
-    addLeftMostBranchToPath(tree)
-    private[this] var next: Tree[A, _] = path.pop()
+  private[this] class ValuesIterator[A, B](tree: Tree[A, B]) extends TreeIterator[A, B, B](tree) {
+    override def nextResult(tree: Tree[A, B]) = tree.value
   }
 }
