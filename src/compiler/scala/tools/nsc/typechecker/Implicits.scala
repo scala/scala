@@ -816,7 +816,14 @@ trait Implicits {
               val newPending = undoLog undo {
                 is filterNot (alt => alt == i || {
                   try improves(i, alt)
-                  catch { case e: CyclicReference => true }
+                  catch { 
+                    case e: CyclicReference => 
+                      if (printInfers) {
+                        println(i+" discarded because cyclic reference occurred")
+                        e.printStackTrace()
+                      }
+                      true 
+                  }
                 })
               }
               rankImplicits(newPending, i :: acc)

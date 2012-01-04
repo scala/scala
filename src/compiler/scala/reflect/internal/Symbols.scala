@@ -1244,12 +1244,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def isNestedIn(that: Symbol): Boolean =
       owner == that || owner != NoSymbol && (owner isNestedIn that)
-
-    /** Is this class symbol a subclass of that symbol? */
-    final def isNonBottomSubClass(that: Symbol): Boolean = (
-      (this eq that) || this.isError || that.isError ||
-      info.baseTypeIndex(that) >= 0
-    )
+      
+    /** Is this class symbol a subclass of that symbol,
+     *  and is this class symbol also different from Null or Nothing? */
+    def isNonBottomSubClass(that: Symbol): Boolean = false
 
     /** Overridden in NullClass and NothingClass for custom behavior.
      */
@@ -2225,6 +2223,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       tyconCache = null
       super.info_=(tp)
     }
+
+    final override def isNonBottomSubClass(that: Symbol): Boolean = (
+      (this eq that) || this.isError || that.isError ||
+      info.baseTypeIndex(that) >= 0
+    )
 
     override def reset(completer: Type) {
       super.reset(completer)
