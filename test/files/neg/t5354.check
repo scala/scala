@@ -1,0 +1,7 @@
+t5354.scala:9: error: ambiguous implicit values:
+ both method x123 in package foo of type => foo.Bippy
+ and method z of type => foo.Bippy
+ match expected type foo.Bippy
+      implicitly[Bippy]
+                ^
+one error found
