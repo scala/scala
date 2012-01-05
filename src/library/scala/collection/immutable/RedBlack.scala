@@ -79,6 +79,14 @@ object RedBlack {
   def keysIterator[A, _](tree: Tree[A, _]): Iterator[A] = new KeysIterator(tree)
   def valuesIterator[_, B](tree: Tree[_, B]): Iterator[B] = new ValuesIterator(tree)
 
+  @tailrec
+  def nth[A, B](tree: Tree[A, B], n: Int): Tree[A, B] = {
+    val count = RedBlack.count(tree.left)
+    if (n < count) nth(tree.left, n)
+    else if (n > count) nth(tree.right, n - count - 1)
+    else tree
+  }
+
   private[this] def balanceLeft[A, B, B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1]): Tree[A, B1] = {
     if (isRedTree(l) && isRedTree(l.left))
       RedTree(l.key, l.value, BlackTree(l.left.key, l.left.value, l.left.left, l.left.right), BlackTree(z, zv, l.right, d))
@@ -287,16 +295,9 @@ object RedBlack {
   extends Serializable {
     final val count: Int = 1 + RedBlack.count(left) + RedBlack.count(right)
     def isBlack: Boolean
-    def nth(n: Int): Tree[A, B] = {
-      val count = RedBlack.count(left)
-      if (n < count) left.nth(n)
-      else if (n > count) right.nth(n - count - 1)
-      else this
-    }
     def black: Tree[A, B]
     def red: Tree[A, B]
   }
-
   final class RedTree[A, +B](key: A,
                              value: B,
                              left: Tree[A, B],
@@ -305,10 +306,6 @@ object RedBlack {
     override def black = BlackTree(key, value, left, right)
     override def red = this
     override def toString = "RedTree(" + key + ", " + value + ", " + left + ", " + right + ")"
-  }
-  object RedTree {
-    def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
-    def unapply[A, B](t: RedTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
   final class BlackTree[A, +B](key: A,
                                value: B,
@@ -319,8 +316,13 @@ object RedBlack {
     override def red = RedTree(key, value, left, right)
     override def toString = "BlackTree(" + key + ", " + value + ", " + left + ", " + right + ")"
   }
+
+  object RedTree {
+    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
+    def unapply[A, B](t: RedTree[A, B]) = Some((t.key, t.value, t.left, t.right))
+  }
   object BlackTree {
-    def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
+    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 

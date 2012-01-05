@@ -67,20 +67,20 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
   override def drop(n: Int) = {
     if (n <= 0) this
     else if (n >= size) empty
-    else from(tree.nth(n).key)
+    else from(RB.nth(tree, n).key)
   }
 
   override def take(n: Int) = {
     if (n <= 0) empty
     else if (n >= size) this
-    else until(tree.nth(n).key)
+    else until(RB.nth(tree, n).key)
   }
 
   override def slice(from: Int, until: Int) = {
     if (until <= from) empty
     else if (from <= 0) take(until)
     else if (until >= size) drop(from)
-    else range(tree.nth(from).key, tree.nth(until).key)
+    else range(RB.nth(tree, from).key, RB.nth(tree, until).key)
   }
 
   override def dropRight(n: Int) = take(size - n)
