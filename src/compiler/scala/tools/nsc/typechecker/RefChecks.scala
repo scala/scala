@@ -1347,7 +1347,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       }
 
       // types of the value parameters
-      member.paramss.flatten foreach (p => checkAccessibilityOfType(p.tpe))
+      mapParamss(member)(p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
       member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
