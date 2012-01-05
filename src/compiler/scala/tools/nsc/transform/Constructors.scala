@@ -254,26 +254,18 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       for ((accSym, accBody) <- outerAccessors)
         if (mustbeKept(accSym)) accessTraverser.traverse(accBody)
 
-      // Conflicting symbol list from parents: see bug #1960.
-      // It would be better to mangle the constructor parameter name since
-      // it can only be used internally, but I think we need more robust name
-      // mangling before we introduce more of it.
-      val parentSymbols = Map((for {
-        p <- impl.parents
-        if p.symbol.isTrait
-        sym <- p.symbol.info.nonPrivateMembers
-        if sym.isGetter && !sym.isOuterField
-      } yield sym.name -> p): _*)
-
       // Initialize all parameters fields that must be kept.
-      val paramInits =
-        for (acc <- paramAccessors if mustbeKept(acc)) yield {
-          if (parentSymbols contains acc.name)
-            unit.error(acc.pos, "parameter '%s' requires field but conflicts with %s in '%s'".format(
-              acc.name, acc.name, parentSymbols(acc.name)))
+      val paramInits = paramAccessors filter mustbeKept map { acc =>
+        // Check for conflicting symbol amongst parents: see bug #1960.
+        // It would be better to mangle the constructor parameter name since
+        // it can only be used internally, but I think we need more robust name
+        // mangling before we introduce more of it.
+        val conflict = clazz.info.nonPrivateMember(acc.name) filter (s => s.isGetter && !s.isOuterField && s.enclClass.isTrait)
+        if (conflict ne NoSymbol)
+          unit.error(acc.pos, "parameter '%s' requires field but conflicts with %s".format(acc.name, conflict.fullLocationString))
 
-          copyParam(acc, parameter(acc))
-        }
+        copyParam(acc, parameter(acc))
+      }
 
       /** Return a single list of statements, merging the generic class constructor with the
        *  specialized stats. The original statements are retyped in the current class, and
