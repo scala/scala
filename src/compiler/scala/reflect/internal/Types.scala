@@ -499,6 +499,9 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
     def decl(name: Name): Symbol = findDecl(name, 0)
+    
+    /** A list of all non-private members defined or declared in this type. */
+    def nonPrivateDecls: List[Symbol] = decls filter (x => !x.isPrivate) toList
 
     /** The non-private defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
