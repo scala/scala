@@ -275,7 +275,17 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         /* ### HANDLING METHODS NORMALLY COMPILED TO OPERATORS ### */
 
         val testForNumber: Tree => Tree = {
-          qual1 => (qual1 IS_OBJ BoxedNumberClass.tpe) OR (qual1 IS_OBJ BoxedCharacterClass.tpe)
+          // Can't shortcut on BoxedNumber because BoxesRunTime
+          // is unforgiving of other Numbers showing up.
+          qual1 => (
+               (qual1 IS_OBJ BoxedIntClass.tpe)
+            OR (qual1 IS_OBJ BoxedLongClass.tpe)
+            OR (qual1 IS_OBJ BoxedDoubleClass.tpe)
+            OR (qual1 IS_OBJ BoxedFloatClass.tpe)
+            OR (qual1 IS_OBJ BoxedByteClass.tpe)
+            OR (qual1 IS_OBJ BoxedShortClass.tpe)
+            OR (qual1 IS_OBJ BoxedCharacterClass.tpe)
+          )
         }
         val testForBoolean: Tree => Tree = {
           qual1 => (qual1 IS_OBJ BoxedBooleanClass.tpe)
