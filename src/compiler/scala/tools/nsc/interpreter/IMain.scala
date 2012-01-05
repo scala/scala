@@ -188,13 +188,19 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   import global._
   import definitions.{
     ScalaPackage, JavaLangPackage, PredefModule, RootClass,
-    getClassIfDefined, getModuleIfDefined
+    getClassIfDefined, getModuleIfDefined, getRequiredModule, getRequiredClass
   }
 
   private implicit def privateTreeOps(t: Tree): List[Tree] = {
     (new Traversable[Tree] {
       def foreach[U](f: Tree => U): Unit = t foreach { x => f(x) ; () }
     }).toList
+  }
+  
+  implicit def installReplTypeOps(tp: Type): ReplTypeOps = new ReplTypeOps(tp)
+  class ReplTypeOps(tp: Type) {
+    def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
+    def andAlso(fn: Type => Type): Type = if (tp eq NoType) tp else fn(tp)
   }
 
   // TODO: If we try to make naming a lazy val, we run into big time
@@ -204,12 +210,13 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val global: imain.global.type = imain.global
   } with Naming {
     // make sure we don't overwrite their unwisely named res3 etc.
-    override def freshUserVarName(): String = {
-      val name = super.freshUserVarName()
-      if (definedNameMap contains name) freshUserVarName()
+    def freshUserTermName(): TermName = {
+      val name = newTermName(freshUserVarName())
+      if (definedNameMap contains name) freshUserTermName()
       else name
     }
-    def isInternalVarName(name: Name): Boolean = isInternalVarName("" + name)
+    def isUserTermName(name: Name) = isUserVarName("" + name)
+    def isInternalTermName(name: Name) = isInternalVarName("" + name)
   }
   import naming._
 
@@ -359,7 +366,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   private def mostRecentlyHandledTree: Option[Tree] = {
     prevRequests.reverse foreach { req =>
       req.handlers.reverse foreach {
-        case x: MemberDefHandler if x.definesValue && !isInternalVarName(x.name) => return Some(x.member)
+        case x: MemberDefHandler if x.definesValue && !isInternalTermName(x.name) => return Some(x.member)
         case _ => ()
       }
     }
@@ -501,7 +508,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     trees.last match {
       case _:Assign                        => // we don't want to include assignments
       case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
-        val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
+        val varName  = if (synthetic) freshInternalVarName() else ("" + freshUserTermName())
         val rewrittenLine = (
           // In theory this would come out the same without the 1-specific test, but
           // it's a cushion against any more sneaky parse-tree position vs. code mismatches:
@@ -643,7 +650,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def directBind(name: String, boundType: String, value: Any): IR.Result = {
     val result = bind(name, boundType, value)
     if (result == IR.Success)
-      directlyBoundNames += name
+      directlyBoundNames += newTermName(name)
     result
   }
   def directBind(p: NamedParam): IR.Result                       = directBind(p.name, p.tpe, p.value)
@@ -651,7 +658,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def rebind(p: NamedParam): IR.Result = {
     val name     = p.name
-    val oldType  = typeOfTerm(name) getOrElse { return IR.Error }
+    val oldType  = typeOfTerm(name) orElse { return IR.Error }
     val newType  = p.tpe
     val tempName = freshInternalVarName()
 
@@ -666,7 +673,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def quietBind(p: NamedParam): IR.Result                  = beQuietDuring(bind(p))
   def bind(p: NamedParam): IR.Result                       = bind(p.name, p.tpe, p.value)
   def bind[T: Manifest](name: String, value: T): IR.Result = bind((name, value))
-  def bindValue(x: Any): IR.Result                         = bindValue(freshUserVarName(), x)
+  def bindValue(x: Any): IR.Result                         = bindValue("" + freshUserTermName(), x)
   def bindValue(name: String, x: Any): IR.Result           = bind(name, TypeStrings.fromValue(x), x)
 
   /** Reset this interpreter, forgetting all user-specified requests. */
@@ -789,7 +796,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = definitions.getModule(readPath)   // the outermost wrapper
+      val readRoot  = getRequiredModule(readPath)   // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot) { (sym, name) =>
         if (name == "") sym else
         lineAfterTyper(sym.info member newTermName(name))
@@ -1039,16 +1046,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def requestHistoryForName(name: Name): List[Request] =
     prevRequests.toList.reverse filter (_.definedNames contains name)
 
-  def safeClass(name: String): Option[Symbol] = {
-    try Some(definitions.getClass(newTypeName(name)))
-    catch { case _: MissingRequirementError => None }
-  }
-
-  def safeModule(name: String): Option[Symbol] = {
-    try Some(definitions.getModule(newTermName(name)))
-    catch { case _: MissingRequirementError => None }
-  }
-
   def definitionForName(name: Name): Option[MemberHandler] =
     requestForName(name) flatMap { req =>
       req.handlers find (_.definedNames contains name)
@@ -1060,34 +1057,32 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def classOfTerm(id: String): Option[JClass] =
     valueOfTerm(id) map (_.getClass)
 
-  def typeOfTerm(id: String): Option[Type] = newTermName(id) match {
-    case nme.ROOTPKG  => Some(definitions.RootClass.tpe)
-    case name         => requestForName(name) flatMap (_.compilerTypeOf get name)
+  def typeOfTerm(id: String): Type = newTermName(id) match {
+    case nme.ROOTPKG  => definitions.RootClass.tpe
+    case name         => requestForName(name) flatMap (_.compilerTypeOf get name) getOrElse NoType
   }
 
   def symbolOfTerm(id: String): Symbol =
     requestForIdent(id) flatMap (_.definedSymbols get newTermName(id)) getOrElse NoSymbol
 
   def runtimeClassAndTypeOfTerm(id: String): Option[(JClass, Type)] = {
-    for {
-      clazz <- classOfTerm(id)
-      tpe <- runtimeTypeOfTerm(id)
-      nonAnon <- clazz.supers find (!_.isScalaAnonymous)
-    } yield {
-      (nonAnon, tpe)
+    classOfTerm(id) flatMap { clazz =>
+      clazz.supers find (!_.isScalaAnonymous) map { nonAnon =>
+        (nonAnon, runtimeTypeOfTerm(id))
+      }
     }
   }
 
-  def runtimeTypeOfTerm(id: String): Option[Type] = {
-    for {
-      tpe <- typeOfTerm(id)
-      clazz <- classOfTerm(id)
-      staticSym = tpe.typeSymbol
-      runtimeSym <- safeClass(clazz.getName)
-      if runtimeSym != staticSym
-      if runtimeSym isSubClass staticSym
+  def runtimeTypeOfTerm(id: String): Type = {
+    typeOfTerm(id) andAlso { tpe =>
+      val clazz      = classOfTerm(id) getOrElse { return NoType }
+      val staticSym  = tpe.typeSymbol
+      val runtimeSym = getClassIfDefined(clazz.getName)
+      
+      if ((runtimeSym != NoSymbol) && (runtimeSym != staticSym) && (runtimeSym isSubClass staticSym))
+        runtimeSym.info
+      else NoType
     }
-    yield runtimeSym.info
   }
 
   object replTokens extends {
@@ -1099,16 +1094,16 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   } with ExprTyper { }
 
   def parse(line: String): Option[List[Tree]] = exprTyper.parse(line)
-  def typeOfExpression(expr: String, silent: Boolean = true): Option[Type] = {
+  def typeOfExpression(expr: String, silent: Boolean = true): Type =
     exprTyper.typeOfExpression(expr, silent)
-  }
+
   def prettyPrint(code: String) =
     replTokens.prettyPrint(exprTyper tokens code)
 
   protected def onlyTerms(xs: List[Name]) = xs collect { case x: TermName => x }
   protected def onlyTypes(xs: List[Name]) = xs collect { case x: TypeName => x }
 
-  def definedTerms   = onlyTerms(allDefinedNames) filterNot isInternalVarName
+  def definedTerms   = onlyTerms(allDefinedNames) filterNot isInternalTermName
   def definedTypes   = onlyTypes(allDefinedNames)
   def definedSymbols = prevRequests.toSet flatMap ((x: Request) => x.definedSymbols.values)
 

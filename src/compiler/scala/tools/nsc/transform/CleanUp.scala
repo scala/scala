@@ -274,69 +274,25 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         /* ### HANDLING METHODS NORMALLY COMPILED TO OPERATORS ### */
 
-        val testForNumber: Tree => Tree = {
-          // Can't shortcut on BoxedNumber because BoxesRunTime
-          // is unforgiving of other Numbers showing up.
-          qual1 => (
-               (qual1 IS_OBJ BoxedIntClass.tpe)
-            OR (qual1 IS_OBJ BoxedLongClass.tpe)
-            OR (qual1 IS_OBJ BoxedDoubleClass.tpe)
-            OR (qual1 IS_OBJ BoxedFloatClass.tpe)
-            OR (qual1 IS_OBJ BoxedByteClass.tpe)
-            OR (qual1 IS_OBJ BoxedShortClass.tpe)
-            OR (qual1 IS_OBJ BoxedCharacterClass.tpe)
-          )
-        }
-        val testForBoolean: Tree => Tree = {
-          qual1 => (qual1 IS_OBJ BoxedBooleanClass.tpe)
-        }
-        val testForNumberOrBoolean: Tree => Tree = {
-          qual1 => testForNumber(qual1) OR testForBoolean(qual1)
-        }
-
-        def postfixTest(name: Name): Option[(String, Tree => Tree)] = {
-          var runtimeTest: Tree => Tree = testForNumber
-          val newName = name match {
-            case nme.UNARY_!  => runtimeTest = testForBoolean ; "takeNot"
-            case nme.UNARY_+  => "positive"
-            case nme.UNARY_-  => "negate"
-            case nme.UNARY_~  => "complement"
-            case nme.toByte   => "toByte"
-            case nme.toShort  => "toShort"
-            case nme.toChar   => "toCharacter"
-            case nme.toInt    => "toInteger"
-            case nme.toLong   => "toLong"
-            case nme.toFloat  => "toFloat"
-            case nme.toDouble => "toDouble"
-            case _            => return None
-          }
-          Some((newName, runtimeTest))
-        }
-        def infixTest(name: Name): Option[(String, Tree => Tree)] = {
-          val (newName, runtimeTest) = name match {
-            case nme.OR   => ("takeOr", testForNumberOrBoolean)
-            case nme.XOR  => ("takeXor", testForNumberOrBoolean)
-            case nme.AND  => ("takeAnd", testForNumberOrBoolean)
-            case nme.EQ   => ("testEqual", testForNumberOrBoolean)
-            case nme.NE   => ("testNotEqual", testForNumberOrBoolean)
-            case nme.ADD  => ("add", testForNumber)
-            case nme.SUB  => ("subtract", testForNumber)
-            case nme.MUL  => ("multiply", testForNumber)
-            case nme.DIV  => ("divide", testForNumber)
-            case nme.MOD  => ("takeModulo", testForNumber)
-            case nme.LSL  => ("shiftSignedLeft", testForNumber)
-            case nme.LSR  => ("shiftLogicalRight", testForNumber)
-            case nme.ASR  => ("shiftSignedRight", testForNumber)
-            case nme.LT   => ("testLessThan", testForNumber)
-            case nme.LE   => ("testLessOrEqualThan", testForNumber)
-            case nme.GE   => ("testGreaterOrEqualThan", testForNumber)
-            case nme.GT   => ("testGreaterThan", testForNumber)
-            case nme.ZOR  => ("takeConditionalOr", testForBoolean)
-            case nme.ZAND => ("takeConditionalAnd", testForBoolean)
-            case _        => return None
-          }
-          Some((newName, runtimeTest))
-        }
+        // Can't shortcut on BoxedNumber because BoxesRunTime
+        // is unforgiving of other Numbers showing up.
+        def testForNumber(qual1: Tree): Tree = (
+             (qual1 IS_OBJ BoxedIntClass.tpe)
+          OR (qual1 IS_OBJ BoxedLongClass.tpe)
+          OR (qual1 IS_OBJ BoxedDoubleClass.tpe)
+          OR (qual1 IS_OBJ BoxedFloatClass.tpe)
+          OR (qual1 IS_OBJ BoxedByteClass.tpe)
+          OR (qual1 IS_OBJ BoxedShortClass.tpe)
+          OR (qual1 IS_OBJ BoxedCharacterClass.tpe)
+        )
+        def testForBoolean(qual1: Tree): Tree = (
+          (qual1 IS_OBJ BoxedBooleanClass.tpe)
+        )
+        def testForName(name: Name): Tree => Tree = (
+          if (nme.CommonOpNames(name)) t => testForNumber(t) OR testForBoolean(t)
+          else if (nme.BooleanOpNames(name)) testForBoolean
+          else testForNumber
+        )
 
         /** The Tree => Tree function in the return is necessary to prevent the original qual
          *  from being duplicated in the resulting code.  It may be a side-effecting expression,
@@ -345,12 +301,13 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
          *  (If the compiler can verify qual is safe to inline, it will not create the block.)
          */
         def getPrimitiveReplacementForStructuralCall(name: Name): Option[(Symbol, Tree => Tree)] = {
-          val opt = (
-            if (params.isEmpty) postfixTest(name)
-            else if (params.tail.isEmpty) infixTest(name)
-            else None
+          val methodName = (
+            if (params.isEmpty) nme.primitivePostfixMethodName(name)
+            else if (params.tail.isEmpty) nme.primitiveInfixMethodName(name)
+            else nme.NO_NAME
           )
-          opt map { case (name, fn) => (getMember(BoxesRunTimeClass, name), fn) }
+          if (methodName == nme.NO_NAME) None
+          else Some((getMember(BoxesRunTimeClass, methodName), testForName(name)))
         }
 
         /* ### BOXING PARAMS & UNBOXING RESULTS ### */

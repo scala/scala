@@ -26,9 +26,6 @@ abstract class ICodeReader extends ClassfileParser {
   var instanceCode: IClass = null          // the ICode class for the current symbol
   var staticCode:   IClass = null          // the ICode class static members
   var method: IMethod = NoIMethod          // the current IMethod
-
-  val nothingName = newTermName(SCALA_NOTHING)
-  val nullName    = newTermName(SCALA_NULL)
   var isScalaModule = false
 
   /** Read back bytecode for the given class symbol. It returns
@@ -182,9 +179,9 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def classNameToSymbol(name: Name) = {
-    val sym = if (name == nothingName)
+    val sym = if (name == fulltpnme.RuntimeNothing)
       definitions.NothingClass
-    else if (name == nullName)
+    else if (name == fulltpnme.RuntimeNull)
       definitions.NullClass
     else if (nme.isImplClassName(name)) {
       val iface = definitions.getClass(nme.interfaceName(name))
@@ -194,7 +191,7 @@ abstract class ICodeReader extends ClassfileParser {
     }
     else if (nme.isModuleName(name)) {
       val strippedName = nme.stripModuleSuffix(name)
-      val sym = forceMangledName(strippedName.decode, true)
+      val sym = forceMangledName(newTermName(strippedName.decode), true)
 
       if (sym == NoSymbol) definitions.getModule(strippedName)
       else sym
@@ -991,7 +988,7 @@ abstract class ICodeReader extends ClassfileParser {
     /** Return a fresh Local variable for the given index.
      */
     private def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
-      val sym = method.symbol.newVariable(NoPosition, "loc" + idx).setInfo(kind.toType);
+      val sym = method.symbol.newVariable(NoPosition, newTermName("loc" + idx)).setInfo(kind.toType);
       val l = new Local(sym, kind, isArg)
       method.addLocal(l)
       l
@@ -1008,7 +1005,7 @@ abstract class ICodeReader extends ClassfileParser {
 
     /** add a method param with the given index. */
     def enterParam(idx: Int, kind: TypeKind) = {
-      val sym = method.symbol.newVariable(NoPosition, "par" + idx).setInfo(kind.toType)
+      val sym = method.symbol.newVariable(NoPosition, newTermName("par" + idx)).setInfo(kind.toType)
       val l = new Local(sym, kind, true)
       assert(!locals.isDefinedAt(idx))
       locals += (idx -> List((l, kind)))

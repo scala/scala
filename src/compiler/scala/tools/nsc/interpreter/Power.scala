@@ -353,7 +353,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
   def source(code: String)     = new BatchSourceFile("<console>", code)
   def unit(code: String)       = new CompilationUnit(source(code))
   def trees(code: String)      = parse(code) getOrElse Nil
-  def typeOf(id: String): Type = intp.typeOfExpression(id) getOrElse NoType
+  def typeOf(id: String)       = intp.typeOfExpression(id)
 
   override def toString = """
     |** Power mode status **

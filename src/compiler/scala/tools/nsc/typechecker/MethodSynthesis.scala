@@ -248,7 +248,7 @@ trait MethodSynthesis {
     }
 
     sealed abstract class BeanAccessor(bean: String) extends DerivedFromValDef {
-      def name       = bean + tree.name.toString.capitalize
+      val name       = newTermName(bean + tree.name.toString.capitalize)
       def flagsMask  = BeanPropertyFlags
       def flagsExtra = 0
       override def derivedSym = enclClass.info decl name

@@ -36,6 +36,9 @@ trait Patterns extends ast.TreeDSL {
   //   case _              => NoSymbol
   // }
 
+  private lazy val dummyMethod =
+    new TermSymbol(NoSymbol, NoPosition, newTermName("matching$dummy"))
+
   // Fresh patterns
   def emptyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)
   def emptyTrees(i: Int): List[Tree] = List.fill(i)(EmptyTree)
@@ -191,9 +194,9 @@ trait Patterns extends ast.TreeDSL {
     // As yet I can't testify this is doing any good relative to using
     // tpt.tpe, but it doesn't seem to hurt either.
     private lazy val packedType = global.typer.computeType(tpt, tpt.tpe)
-    private lazy val consRef    = typeRef(NoPrefix, ConsClass, List(packedType))
-    private lazy val listRef    = typeRef(NoPrefix, ListClass, List(packedType))
-    private lazy val seqRef     = typeRef(NoPrefix, SeqClass, List(packedType))
+    private lazy val consRef    = appliedType(ConsClass.typeConstructor, List(packedType))
+    private lazy val listRef    = appliedType(ListClass.typeConstructor, List(packedType))
+    private lazy val seqRef     = appliedType(SeqClass.typeConstructor, List(packedType))
 
     private def thisSeqRef = {
       val tc = (tree.tpe baseType SeqClass).typeConstructor
@@ -205,7 +208,6 @@ trait Patterns extends ast.TreeDSL {
     private def listFolder(hd: Tree, tl: Tree): Tree = unbind(hd) match {
       case t @ Star(_) => moveBindings(hd, WILD(t.tpe))
       case _           =>
-        val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
         val consType    = MethodType(dummyMethod newSyntheticValueParams List(packedType, listRef), consRef)
 
         Apply(TypeTree(consType), List(hd, tl)) setType consRef

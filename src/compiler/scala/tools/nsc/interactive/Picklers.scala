@@ -101,7 +101,7 @@ trait Picklers { self: Global =>
           if (sym1.isOverloaded) {
             val index = sym1.alternatives.indexOf(sym)
             assert(index >= 0, sym1+" not found in alternatives "+sym1.alternatives)
-            buf += index.toString
+            buf += newTermName(index.toString)
           }
         }
       }

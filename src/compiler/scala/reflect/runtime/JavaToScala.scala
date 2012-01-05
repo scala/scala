@@ -272,7 +272,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   private def approximateMatch(sym: Symbol, jstr: String): Boolean =
     (sym.name.toString == jstr) ||
-      sym.isPrivate && nme.expandedName(sym.name, sym.owner).toString == jstr
+      sym.isPrivate && nme.expandedName(sym.name.toTermName, sym.owner).toString == jstr
 
   /**
    * Find declarations or definition in class `clazz` that maps to a Java
@@ -353,32 +353,28 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *          not available, wrapped from the Java reflection info.
    */
   def classToScala(jclazz: jClass[_]): Symbol = classCache.toScala(jclazz) {
-    if (jclazz.isMemberClass && !nme.isImplClassName(jclazz.getName)) {
-      val sym = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
+    val jname = javaTypeName(jclazz)
+    def lookup = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
+    
+    if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
+      val sym = lookup
       assert(sym.isType, sym+"/"+jclazz+"/"+sOwner(jclazz)+"/"+jclazz.getSimpleName)
       sym.asInstanceOf[ClassSymbol]
-    } else if (jclazz.isLocalClass || invalidClassName(jclazz.getName)) {
+    }
+    else if (jclazz.isLocalClass || invalidClassName(jname)) {
       // local classes and implementation classes not preserved by unpickling - treat as Java
       jclassAsScala(jclazz)
-    } else if (jclazz.isArray) {
+    }
+    else if (jclazz.isArray) {
       ArrayClass
-    } else jclazz match {
-      case java.lang.Void.TYPE      => UnitClass
-      case java.lang.Byte.TYPE      => ByteClass
-      case java.lang.Character.TYPE => CharClass
-      case java.lang.Short.TYPE     => ShortClass
-      case java.lang.Integer.TYPE   => IntClass
-      case java.lang.Long.TYPE      => LongClass
-      case java.lang.Float.TYPE     => FloatClass
-      case java.lang.Double.TYPE    => DoubleClass
-      case java.lang.Boolean.TYPE   => BooleanClass
-      case _ =>
-        // jclazz is top-level - get signature
-        sOwner(jclazz).info decl newTypeName(jclazz.getSimpleName)
-//        val (clazz, module) = createClassModule(
-//          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
-//        classCache enter (jclazz, clazz)
-//        clazz
+    }
+    else javaTypeToValueClass(jclazz) orElse {
+      // jclazz is top-level - get signature
+      lookup
+      //        val (clazz, module) = createClassModule(
+      //          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
+      //        classCache enter (jclazz, clazz)
+      //        clazz
     }
   }
 

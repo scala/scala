@@ -33,7 +33,7 @@ trait ToolBoxes extends { self: Universe =>
 
       private def nextWrapperModuleName() = {
         wrapCount += 1
-        "__wrapper$" + wrapCount
+        newTermName("__wrapper$" + wrapCount)
       }
 
       private def moduleFileName(className: String) = className + "$"
@@ -57,8 +57,8 @@ trait ToolBoxes extends { self: Universe =>
         val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
-        val meth = obj.moduleClass.newMethod(NoPosition, wrapperMethodName)
-        def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name) setInfo fv.tpe
+        val meth = obj.moduleClass.newMethod(NoPosition, newTermName(wrapperMethodName))
+        def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name.toTermName) setInfo fv.tpe
         meth setInfo MethodType(fvs map makeParam, expr.tpe)
         minfo.decls enter meth
         trace("wrapping ")(defOwner(expr) -> meth)

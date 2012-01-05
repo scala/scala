@@ -357,7 +357,7 @@ abstract class UnCurry extends InfoTransform
             case Apply(Apply(TypeApply(Select(tgt, nme.runOrElse), targs), args_scrut), args_pm) if opt.virtPatmat =>
               object noOne extends Transformer {
                 override val treeCopy = newStrictTreeCopier // must duplicate everything
-                val one = tgt.tpe member "one".toTermName
+                val one = tgt.tpe member newTermName("one")
                 override def transform(tree: Tree): Tree = tree match {
                   case Apply(fun, List(a)) if fun.symbol == one =>
                     // blow one's argument away since all we want to know is whether the match succeeds or not
@@ -367,7 +367,7 @@ abstract class UnCurry extends InfoTransform
                     super.transform(tree)
                 }
               }
-              substTree(Apply(Apply(TypeApply(Select(tgt.duplicate, tgt.tpe.member("isSuccess".toTermName)), targs map (_.duplicate)), args_scrut map (_.duplicate)), args_pm map (noOne.transform)))
+              substTree(Apply(Apply(TypeApply(Select(tgt.duplicate, tgt.tpe.member(newTermName("isSuccess"))), targs map (_.duplicate)), args_scrut map (_.duplicate)), args_pm map (noOne.transform)))
             // for the optimized version of virtpatmat
             case Block((zero: ValDef) :: (x: ValDef) :: (matchRes: ValDef) :: (keepGoing: ValDef) :: stats, _) if opt.virtPatmat =>
               dupVirtMatch(zero, x, matchRes, keepGoing, stats)
@@ -452,7 +452,7 @@ abstract class UnCurry extends InfoTransform
         atPhase(phase.next) {
           if (isJava && isPrimitiveArray(suffix.tpe) && isArrayOfSymbol(fun.tpe.params.last.tpe, ObjectClass)) {
             suffix = localTyper.typedPos(pos) {
-              gen.mkRuntimeCall("toObjectArray", List(suffix))
+              gen.mkRuntimeCall(nme.toObjectArray, List(suffix))
             }
           }
         }

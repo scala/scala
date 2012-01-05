@@ -110,7 +110,15 @@ object Codec extends LowPriorityCodecImplicits {
 
   @migration("This method was previously misnamed `fromUTF8`. Converts from character sequence to Array[Byte].", "2.9.0")
   def toUTF8(cs: CharSequence): Array[Byte] = {
-    val cbuffer = java.nio.CharBuffer wrap cs
+    val cbuffer = java.nio.CharBuffer.wrap(cs, 0, cs.length)
+    val bbuffer = UTF8.charSet encode cbuffer
+    val bytes = new Array[Byte](bbuffer.remaining())
+    bbuffer get bytes
+
+    bytes
+  }
+  def toUTF8(chars: Array[Char], offset: Int, len: Int): Array[Byte] = {
+    val cbuffer = java.nio.CharBuffer.wrap(chars, offset, len)
     val bbuffer = UTF8.charSet encode cbuffer
     val bytes = new Array[Byte](bbuffer.remaining())
     bbuffer get bytes

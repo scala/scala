@@ -20,8 +20,8 @@ trait Importers { self: SymbolTable =>
     def importSymbol(sym: from.Symbol): Symbol = {
       def doImport(sym: from.Symbol): Symbol = {
         val myowner = importSymbol(sym.owner)
-        val mypos = importPosition(sym.pos)
-        val myname = importName(sym.name)
+        val mypos   = importPosition(sym.pos)
+        val myname  = importName(sym.name).toTermName
         def linkReferenced(mysym: TermSymbol, x: from.TermSymbol, op: from.Symbol => Symbol): Symbol = {
           symMap(x) = mysym
           mysym.referenced = op(x.referenced)
@@ -33,7 +33,7 @@ trait Importers { self: SymbolTable =>
           case x: from.ModuleSymbol =>
             linkReferenced(new ModuleSymbol(myowner, mypos, myname), x, doImport)
           case x: from.FreeVar =>
-            new FreeVar(importName(x.name), importType(x.tpe), x.value)
+            new FreeVar(importName(x.name).toTermName, importType(x.tpe), x.value)
           case x: from.TermSymbol =>
             linkReferenced(new TermSymbol(myowner, mypos, myname), x, importSymbol)
           case x: from.TypeSkolem =>

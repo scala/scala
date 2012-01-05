@@ -3,13 +3,11 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.{ mutable, immutable, generic }
-import util.{ Position, NoPosition }
+import scala.collection.{ mutable, immutable }
 
 /**
  * Exception handlers are pieces of code that `handle` exceptions on
@@ -21,10 +19,10 @@ import util.{ Position, NoPosition }
 trait ExceptionHandlers {
   self: ICodes =>
 
-  import global.{ definitions, Symbol, NoSymbol }
+  import global._
   import definitions.{ ThrowableClass }
 
-  class ExceptionHandler(val method: IMethod, val label: String, val cls: Symbol, val pos: Position) {
+  class ExceptionHandler(val method: IMethod, val label: TermName, val cls: Symbol, val pos: Position) {
     def loadExceptionClass = if (cls == NoSymbol) ThrowableClass else cls
     private var _startBlock: BasicBlock = _;
     var finalizer: Finalizer = _;
@@ -69,12 +67,12 @@ trait ExceptionHandlers {
     def dup: ExceptionHandler = new ExceptionHandler(this)
   }
 
-  class Finalizer(method: IMethod, label: String, pos: Position) extends ExceptionHandler(method, label, NoSymbol, pos) {
+  class Finalizer(method: IMethod, label: TermName, pos: Position) extends ExceptionHandler(method, label, NoSymbol, pos) {
     override def toString() = "finalizer_" + label
     override def dup: Finalizer = new Finalizer(method, label, pos)
   }
 
-  object NoFinalizer extends Finalizer(null, "<no finalizer>", NoPosition) {
+  object NoFinalizer extends Finalizer(null, newTermNameCached("<no finalizer>"), NoPosition) {
     override def startBlock: BasicBlock             = sys.error("NoFinalizer cannot have a start block.");
     override def setStartBlock(b: BasicBlock): Unit = sys.error("NoFinalizer cannot have a start block.");
     override def dup = this

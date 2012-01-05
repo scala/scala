@@ -21,6 +21,8 @@ trait Unapplies extends ast.TreeDSL
   import CODE.{ CASE => _, _ }
   import treeInfo.{ isRepeatedParamType, isByNameParamType }
 
+  private val unapplyParamName = newTermName("x$0")
+  
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
     assert(ufn.isMethod)
@@ -173,14 +175,13 @@ trait Unapplies extends ast.TreeDSL
    */
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams   = cdef.tparams map copyUntypedInvariant
-    val paramName = newTermName("x$0")
     val method    = constrParamss(cdef) match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
     }
-    val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), paramName, classType(cdef, tparams), EmptyTree))
+    val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
     val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
-    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(paramName))
+    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(unapplyParamName))
 
     atPos(cdef.pos.focus)(
       DefDef(caseMods, method, tparams, List(cparams), TypeTree(), body)

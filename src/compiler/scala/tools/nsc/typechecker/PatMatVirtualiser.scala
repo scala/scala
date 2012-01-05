@@ -46,8 +46,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   import global._
   import definitions._
 
-  private lazy val matchingStrategyTycon = definitions.getClass("scala.MatchingStrategy").typeConstructor
-
   class MatchTranslator(typer: Typer) extends MatchCodeGen {
     def typed(tree: Tree, mode: Int, pt: Type): Tree = typer.typed(tree, mode, pt) // for MatchCodeGen -- imports don't provide implementations for abstract members
 
@@ -55,7 +53,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     import typeDebug.{ ptTree, ptBlock, ptLine }
 
     def solveContextBound(contextBoundTp: Type): (Tree, Type) = {
-      val solSym      = NoSymbol.newTypeParameter(NoPosition, "SolveImplicit$".toTypeName)
+      val solSym      = NoSymbol.newTypeParameter(NoPosition, newTypeName("SolveImplicit$"))
       val param       = solSym.setInfo(contextBoundTp.typeSymbol.typeParams(0).info.cloneInfo(solSym)) // TypeBounds(NothingClass.typeConstructor, baseTp)
       val pt          = appliedType(contextBoundTp, List(param.tpeHK))
       val savedUndets = context.undetparams
@@ -67,7 +65,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       (result.tree, result.subst.to(result.subst.from indexOf param))
     }
 
-    lazy val (matchingStrategy, matchingMonadType) = solveContextBound(matchingStrategyTycon)
+    lazy val (matchingStrategy, matchingMonadType) = solveContextBound(MatchingStrategyClass.typeConstructor)
 
     /** Implement a pattern match by turning its cases (including the implicit failure case)
       * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
@@ -1482,19 +1480,18 @@ defined class Foo */
     }
 
     object vpmName {
-      val one       = "one".toTermName
-      val drop      = "drop".toTermName
-      val flatMap   = "flatMap".toTermName
-      val get       = "get".toTermName
-      val guard     = "guard".toTermName
-      val isEmpty   = "isEmpty".toTermName
-      val orElse    = "orElse".toTermName
-      val outer     = "<outer>".toTermName
-      val runOrElse = "runOrElse".toTermName
-      val zero      = "zero".toTermName
+      val one       = newTermName("one")
+      val drop      = newTermName("drop")
+      val flatMap   = newTermName("flatMap")
+      val get       = newTermName("get")
+      val guard     = newTermName("guard")
+      val isEmpty   = newTermName("isEmpty")
+      val orElse    = newTermName("orElse")
+      val outer     = newTermName("<outer>")
+      val runOrElse = newTermName("runOrElse")
+      val zero      = newTermName("zero")
 
-      def counted(str: String, i: Int) = (str+i).toTermName
-      def tupleIndex(i: Int) = ("_"+i).toTermName
+      def counted(str: String, i: Int) = newTermName(str+i)
     }
 
 
@@ -1503,7 +1500,7 @@ defined class Foo */
     trait CommonCodeGen extends AbsCodeGen { self: CommonCodeGen with MatchingStrategyGen with MonadInstGen =>
       def fun(arg: Symbol, body: Tree): Tree           = Function(List(ValDef(arg)), body)
       def genTypeApply(tfun: Tree, args: Type*): Tree  = if(args contains NoType) tfun else TypeApply(tfun, args.toList map TypeTree)
-      def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT vpmName.tupleIndex(i)) // make tree that accesses the i'th component of the tuple referenced by binder
+      def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
       def index(tgt: Tree)(i: Int): Tree               = tgt APPLY (LIT(i))
       def drop(tgt: Tree)(n: Int): Tree                = (tgt DOT vpmName.drop) (LIT(n))
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya

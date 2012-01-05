@@ -169,7 +169,6 @@ trait Members {
     var exh: List[ExceptionHandler] = Nil
     var sourceFile: SourceFile = NoSourceFile
     var returnType: TypeKind = _
-
     var recursive: Boolean = false
 
     /** local variables and method parameters */

@@ -3205,7 +3205,7 @@ A type's typeSymbol should never be inspected directly.
         val isType = pnames.head.isTypeName
         val newParams = for (name <- pnames) yield
           if (isType) owner.newTypeParameter(NoPosition, name.toTypeName)
-          else owner.newValueParameter(NoPosition, name)
+          else owner.newValueParameter(NoPosition, name.toTermName)
         paramStack = newParams :: paramStack
         try {
           (newParams, ptypes).zipped foreach ((p, t) => p setInfo this(t))

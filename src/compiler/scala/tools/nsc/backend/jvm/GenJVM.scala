@@ -183,10 +183,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
-    val BeanInfoAttr     = definitions.getClass("scala.beans.BeanInfo")
-    val BeanInfoSkipAttr = definitions.getClass("scala.beans.BeanInfoSkip")
-    val BeanDisplayNameAttr = definitions.getClass("scala.beans.BeanDisplayName")
-    val BeanDescriptionAttr = definitions.getClass("scala.beans.BeanDescription")
+    val BeanInfoAttr        = definitions.getRequiredClass("scala.beans.BeanInfo")
+    val BeanInfoSkipAttr    = definitions.getRequiredClass("scala.beans.BeanInfoSkip")
+    val BeanDisplayNameAttr = definitions.getRequiredClass("scala.beans.BeanDisplayName")
+    val BeanDescriptionAttr = definitions.getRequiredClass("scala.beans.BeanDescription")
     
     final val ExcludedForwarderFlags = {
       import Flags._
@@ -296,7 +296,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
      */
     def scalaSignatureAddingMarker(jclass: JClass, sym: Symbol): Option[AnnotationInfo] =
       currentRun.symData get sym match {
-        case Some(pickle) if !nme.isModuleName(jclass.getName()) =>
+        case Some(pickle) if !nme.isModuleName(newTermName(jclass.getName)) =>
           val scalaAttr =
             fjbgContext.JOtherAttribute(jclass, jclass, tpnme.ScalaSignatureATTR.toString,
                                         versionPickle.bytes, versionPickle.writeIndex)
@@ -759,7 +759,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           null
         else {
           val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(outerName)
+          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
           else outerName
         }
       }

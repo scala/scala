@@ -58,11 +58,11 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
 
   private object xmltypes extends XMLTypeNames {
     type NameType = TypeName
-    implicit def createNameType(name: String): TypeName = newTypeName(name)
+    implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
   }
   private object xmlterms extends XMLTermNames {
     type NameType = TermName
-    implicit def createNameType(name: String): TermName = newTermName(name)
+    implicit def createNameType(name: String): TermName = newTermNameCached(name)
   }
 
   import xmltypes.{_Comment, _Elem, _EntityRef, _Group, _MetaData, _NamespaceBinding, _NodeBuffer,

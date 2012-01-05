@@ -85,9 +85,9 @@ abstract class Inliners extends SubComponent {
 
     /* fresh name counter */
     val fresh = perRunCaches.newMap[String, Int]() withDefaultValue 0
-    def freshName(s: String) = {
+    def freshName(s: String): TermName = {
       fresh(s) += 1
-      s + fresh(s)
+      newTermName(s + fresh(s))
     }
 
     private def hasInline(sym: Symbol)    = sym hasAnnotation ScalaInlineClass

@@ -866,7 +866,7 @@ abstract class Erasure extends AddInterfaces
                   unboundedGenericArrayLevel(arg.tpe) > 0) =>
           val level = unboundedGenericArrayLevel(arg.tpe)
           def isArrayTest(arg: Tree) =
-            gen.mkRuntimeCall("isArray", List(arg, Literal(Constant(level))))
+            gen.mkRuntimeCall(nme.isArray, List(arg, Literal(Constant(level))))
 
           global.typer.typedPos(tree.pos) {
             if (level == 1) isArrayTest(qual)
@@ -891,7 +891,16 @@ abstract class Erasure extends AddInterfaces
           if (unboundedGenericArrayLevel(qual.tpe.widen) == 1)
             // convert calls to apply/update/length on generic arrays to
             // calls of ScalaRunTime.array_xxx method calls
-            global.typer.typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
+            global.typer.typedPos(tree.pos)({
+              val arrayMethodName = name match {
+                case nme.apply  => nme.array_apply
+                case nme.length => nme.array_length
+                case nme.update => nme.array_update
+                case nme.clone_ => nme.array_clone
+                case _          => unit.error(tree.pos, "Unexpected array member, no translation exists.") ; nme.NO_NAME
+              }
+              gen.mkRuntimeCall(arrayMethodName, qual :: args)
+            })
           else
             // store exact array erasure in map to be retrieved later when we might
             // need to do the cast in adaptMember

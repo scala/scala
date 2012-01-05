@@ -165,9 +165,6 @@ abstract class LiftCode extends Transform with TypingTransformers {
    */
   class Reifier() {
 
-    final val mirrorFullName = "scala.reflect.mirror"
-    final val mirrorShortName = "$mr"
-    final val mirrorPrefix = mirrorShortName + "."
     final val scalaPrefix = "scala."
     final val localPrefix = "$local"
     final val memoizerName = "$memo"
@@ -217,16 +214,20 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
     // helper methods
 
-    private def localName(sym: Symbol) = localPrefix + symIndex(sym)
+    private def localName(sym: Symbol): TermName =
+      newTermName(localPrefix + symIndex(sym))
 
     private def call(fname: String, args: Tree*): Tree =
       Apply(termPath(fname), args.toList)
 
     private def mirrorSelect(name: String): Tree =
-      termPath(mirrorPrefix + name)
+      termPath(nme.MIRROR_PREFIX + name)
+
+    private def mirrorCall(name: TermName, args: Tree*): Tree =
+      call("" + (nme.MIRROR_PREFIX append name), args: _*)
 
     private def mirrorCall(name: String, args: Tree*): Tree =
-      call(mirrorPrefix + name, args: _*)
+      call(nme.MIRROR_PREFIX + name, args: _*)
 
     private def mirrorFactoryCall(value: Product, args: Tree*): Tree =
       mirrorCall(value.productPrefix, args: _*)
@@ -322,15 +323,15 @@ abstract class LiftCode extends Transform with TypingTransformers {
      * Generate code to add type and annotation info to a reified symbol
      */
     private def fillInSymbol(sym: Symbol): Tree = {
-      val rset = Apply(Select(reifySymRef(sym), "setTypeSig"), List(reifyType(sym.info)))
+      val rset = Apply(Select(reifySymRef(sym), nme.setTypeSig), List(reifyType(sym.info)))
       if (sym.annotations.isEmpty) rset
-      else Apply(Select(rset, "setAnnotations"), List(reify(sym.annotations)))
+      else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
     }
 
     /** Reify a scope */
     private def reifyScope(scope: Scope): Tree = {
       scope foreach registerReifiableSymbol
-      mirrorCall("newScopeWith", scope.toList map reifySymRef: _*)
+      mirrorCall(nme.newScopeWith, scope.toList map reifySymRef: _*)
     }
 
     /** Reify a list of symbols that need to be created */
@@ -348,14 +349,14 @@ abstract class LiftCode extends Transform with TypingTransformers {
       val tpe = tpe0.normalize
       val tsym = tpe.typeSymbol
       if (tsym.isClass && tpe == tsym.typeConstructor && tsym.isStatic)
-        Select(reifySymRef(tpe.typeSymbol), "asTypeConstructor")
+        Select(reifySymRef(tpe.typeSymbol), nme.asTypeConstructor)
       else tpe match {
         case t @ NoType =>
           reifyMirrorObject(t)
         case t @ NoPrefix =>
           reifyMirrorObject(t)
         case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
-          mirrorCall("thisModuleType", reify(clazz.fullName))
+          mirrorCall(nme.thisModuleType, reify(clazz.fullName))
         case t @ RefinedType(parents, decls) =>
           registerReifiableSymbol(tpe.typeSymbol)
           mirrorFactoryCall(t, reify(parents), reify(decls), reify(t.typeSymbol))
@@ -387,13 +388,13 @@ abstract class LiftCode extends Transform with TypingTransformers {
       case tt: TypeTree if (tt.tpe != null) =>
         if (!(boundSyms exists (tt.tpe contains _))) mirrorCall("TypeTree", reifyType(tt.tpe))
         else if (tt.original != null) reify(tt.original)
-        else mirrorCall("TypeTree")
+        else mirrorCall(nme.TypeTree)
       case ta @ TypeApply(hk, ts) =>
         val thereAreOnlyTTs = ts collect { case t if !t.isInstanceOf[TypeTree] => t } isEmpty;
         val ttsAreNotEssential = ts collect { case tt: TypeTree => tt } find { tt => tt.original != null } isEmpty;
         if (thereAreOnlyTTs && ttsAreNotEssential) reifyTree(hk) else reifyProduct(ta)
       case global.emptyValDef =>
-        mirrorSelect("emptyValDef")
+        mirrorSelect(nme.emptyValDef)
       case _ =>
         if (tree.isDef)
           boundSyms += tree.symbol
@@ -403,8 +404,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
           if (tree.isDef || tree.isInstanceOf[Function])
             registerReifiableSymbol(tree.symbol)
           if (tree.hasSymbol)
-            rtree = Apply(Select(rtree, "setSymbol"), List(reifySymRef(tree.symbol)))
-          Apply(Select(rtree, "setType"), List(reifyType(tree.tpe)))
+            rtree = Apply(Select(rtree, nme.setSymbol), List(reifySymRef(tree.symbol)))
+          Apply(Select(rtree, nme.setType), List(reifyType(tree.tpe)))
 */
     }
 
@@ -413,7 +414,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
      *  to a global value, or else a mirror Literal.
      */
     private def reifyFree(tree: Tree): Tree =
-      mirrorCall("Ident", reifySymRef(tree.symbol))
+      mirrorCall(nme.Ident, reifySymRef(tree.symbol))
 
     // todo: consider whether we should also reify positions
     private def reifyPosition(pos: Position): Tree =
@@ -443,7 +444,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
       case sym: Symbol  => reifySymRef(sym)
       case tpe: Type    => reifyType(tpe)
       case xs: List[_]  => reifyList(xs)
-      case xs: Array[_] => scalaFactoryCall("Array", xs map reify: _*)
+      case xs: Array[_] => scalaFactoryCall(nme.Array, xs map reify: _*)
       case scope: Scope => reifyScope(scope)
       case x: Name      => reifyName(x)
       case x: Position  => reifyPosition(x)
@@ -475,7 +476,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
     private def typePath(fullname: String): Tree = path(fullname, newTypeName)
 
     private def mirrorAlias =
-      ValDef(NoMods, mirrorShortName, TypeTree(), termPath(mirrorFullName))
+      ValDef(NoMods, nme.MIRROR_SHORT, TypeTree(), termPath(fullnme.MirrorPackage))
 
     /**
      * Generate code that generates a symbol table of all symbols registered in `reifiableSyms`

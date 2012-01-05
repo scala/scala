@@ -53,6 +53,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   def isAsync = !settings.Yreplsync.value
   lazy val power = new Power(intp, new StdReplVals(this))
+  lazy val NoType = intp.global.NoType
 
   // TODO
   // object opt extends AestheticSettings
@@ -436,9 +437,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   // Still todo: modules.
   private def typeCommand(line: String): Result = {
     if (line.trim == "") ":type <expression>"
-    else intp.typeOfExpression(line, false) match {
-      case Some(tp) => intp.afterTyper(tp.toString)
-      case _        => "" // the error message was already printed
+    else {
+      val tp = intp.typeOfExpression(line, false)
+      if (tp == NoType) "" // the error message was already printed
+      else intp.afterTyper(tp.toString)
     }
   }
   private def warningsCommand(): Result = {
@@ -485,13 +487,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         }
       case wrapper :: Nil =>
         intp.typeOfExpression(wrapper) match {
-          case Some(PolyType(List(targ), MethodType(List(arg), restpe))) =>
+          case PolyType(List(targ), MethodType(List(arg), restpe)) =>
             intp setExecutionWrapper intp.pathToTerm(wrapper)
             "Set wrapper to '" + wrapper + "'"
-          case Some(x) =>
-            failMsg + "\nFound: " + x
-          case _ =>
-            failMsg + "\nFound: <unknown>"
+          case tp =>
+            failMsg + (
+              if (tp == g.NoType) "\nFound: <unknown>"
+              else "\nFound: <unknown>"
+            )
         }
       case _ => failMsg
     }

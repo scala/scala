@@ -440,18 +440,18 @@ abstract class ClassfileParser {
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
     def loadClassSymbol(name: Name) = {
-      val s = name.toString
-      val file = global.classPath findSourceFile s getOrElse {
-        MissingRequirementError.notFound("class " + s)
+      val file = global.classPath findSourceFile ("" +name) getOrElse {
+        MissingRequirementError.notFound("class " + name)
       }
-      val completer = new global.loaders.ClassfileLoader(file)
+      val completer     = new global.loaders.ClassfileLoader(file)
       var owner: Symbol = definitions.RootClass
-      var sym: Symbol = NoSymbol
-      var ss: String = null
-      var start = 0
-      var end = s indexOf '.'
+      var sym: Symbol   = NoSymbol
+      var ss: Name      = null
+      var start         = 0
+      var end           = name indexOf '.'
+
       while (end > 0) {
-        ss = s.substring(start, end)
+        ss = name.subName(start, end)
         sym = owner.info.decls lookup ss
         if (sym == NoSymbol) {
           sym = owner.newPackage(NoPosition, ss) setInfo completer
@@ -460,17 +460,16 @@ abstract class ClassfileParser {
         }
         owner = sym.moduleClass
         start = end + 1
-        end = s.indexOf('.', start)
+        end = name.indexOf('.', start)
       }
-      ss = s substring start
-      sym = owner.info.decls lookup ss
-      if (sym == NoSymbol) {
-        sym = owner.newClass(NoPosition, newTypeName(ss)) setInfo completer
-        owner.info.decls enter sym
-        if (settings.debug.value && settings.verbose.value)
+      ss = name.subName(0, start)
+      owner.info.decls lookup ss orElse {
+        sym = owner.newClass(NoPosition, ss.toTypeName) setInfo completer
+        if (opt.verboseDebug)
           println("loaded "+sym+" from file "+file)
+
+        owner.info.decls enter sym
       }
-      sym
     }
 
     def lookupClass(name: Name) = try {

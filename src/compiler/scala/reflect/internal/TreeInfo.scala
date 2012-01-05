@@ -192,7 +192,7 @@ abstract class TreeInfo {
   def isVariableOrGetter(tree: Tree) = {
     def sym       = tree.symbol
     def isVar     = sym.isVariable
-    def isGetter  = mayBeVarGetter(sym) && sym.owner.info.member(nme.getterToSetter(sym.name)) != NoSymbol
+    def isGetter  = mayBeVarGetter(sym) && sym.owner.info.member(nme.getterToSetter(sym.name.toTermName)) != NoSymbol
 
     tree match {
       case Ident(_)         => isVar

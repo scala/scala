@@ -77,10 +77,13 @@ trait AnyValManifest[T] extends Manifest[T] with Equals {
  */
 object Manifest {
   private def ObjectClass = classOf[java.lang.Object]
+  
+  def valueManifests: List[AnyValManifest[_ <: scala.AnyVal]] =
+    List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)
 
   val Byte: AnyValManifest[Byte] = new AnyValManifest[scala.Byte] {
     def erasure = java.lang.Byte.TYPE
-    override def toString = "Byte"
+    final override val toString = "Byte"
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
     override def newWrappedArray(len: Int): WrappedArray[Byte] = new WrappedArray.ofByte(new Array[Byte](len))
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
@@ -89,7 +92,7 @@ object Manifest {
 
   val Short: AnyValManifest[Short] = new AnyValManifest[scala.Short] {
     def erasure = java.lang.Short.TYPE
-    override def toString = "Short"
+    final override val toString = "Short"
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
     override def newWrappedArray(len: Int): WrappedArray[Short] = new WrappedArray.ofShort(new Array[Short](len))
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
@@ -98,7 +101,7 @@ object Manifest {
 
   val Char: AnyValManifest[Char] = new AnyValManifest[scala.Char] {
     def erasure = java.lang.Character.TYPE
-    override def toString = "Char"
+    final override val toString = "Char"
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
     override def newWrappedArray(len: Int): WrappedArray[Char] = new WrappedArray.ofChar(new Array[Char](len))
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
@@ -107,7 +110,7 @@ object Manifest {
 
   val Int: AnyValManifest[Int] = new AnyValManifest[scala.Int] {
     def erasure = java.lang.Integer.TYPE
-    override def toString = "Int"
+    final override val toString = "Int"
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): WrappedArray[Int] = new WrappedArray.ofInt(new Array[Int](len))
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
@@ -116,7 +119,7 @@ object Manifest {
 
   val Long: AnyValManifest[Long] = new AnyValManifest[scala.Long] {
     def erasure = java.lang.Long.TYPE
-    override def toString = "Long"
+    final override val toString = "Long"
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
     override def newWrappedArray(len: Int): WrappedArray[Long] = new WrappedArray.ofLong(new Array[Long](len))
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
@@ -125,7 +128,7 @@ object Manifest {
 
   val Float: AnyValManifest[Float] = new AnyValManifest[scala.Float] {
     def erasure = java.lang.Float.TYPE
-    override def toString = "Float"
+    final override val toString = "Float"
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
     override def newWrappedArray(len: Int): WrappedArray[Float] = new WrappedArray.ofFloat(new Array[Float](len))
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
@@ -134,7 +137,7 @@ object Manifest {
 
   val Double: AnyValManifest[Double] = new AnyValManifest[scala.Double] {
     def erasure = java.lang.Double.TYPE
-    override def toString = "Double"
+    final override val toString = "Double"
     override def newArray(len: Int): Array[Double] = new Array[Double](len)
     override def newWrappedArray(len: Int): WrappedArray[Double] = new WrappedArray.ofDouble(new Array[Double](len))
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
@@ -143,7 +146,7 @@ object Manifest {
 
   val Boolean: AnyValManifest[Boolean] = new AnyValManifest[scala.Boolean] {
     def erasure = java.lang.Boolean.TYPE
-    override def toString = "Boolean"
+    final override val toString = "Boolean"
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
     override def newWrappedArray(len: Int): WrappedArray[Boolean] = new WrappedArray.ofBoolean(new Array[Boolean](len))
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
@@ -152,7 +155,7 @@ object Manifest {
 
   val Unit: AnyValManifest[Unit] = new AnyValManifest[scala.Unit] {
     def erasure = java.lang.Void.TYPE
-    override def toString = "Unit"
+    final override val toString = "Unit"
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
     override def newWrappedArray(len: Int): WrappedArray[Unit] = new WrappedArray.ofUnit(new Array[Unit](len))
     override def newArrayBuilder(): ArrayBuilder[Unit] = new ArrayBuilder.ofUnit()
@@ -160,7 +163,7 @@ object Manifest {
   }
 
   val Any: Manifest[Any] = new ClassTypeManifest[scala.Any](None, ObjectClass, Nil) {
-    override def toString = "Any"
+    final override val toString = "Any"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def hashCode = System.identityHashCode(this)
@@ -168,7 +171,7 @@ object Manifest {
   }
 
   val Object: Manifest[Object] = new ClassTypeManifest[java.lang.Object](None, ObjectClass, Nil) {
-    override def toString = "Object"
+    final override val toString = "Object"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def hashCode = System.identityHashCode(this)
@@ -176,7 +179,7 @@ object Manifest {
   }
 
   val AnyVal: Manifest[AnyVal] = new ClassTypeManifest[scala.AnyVal](None, ObjectClass, Nil) {
-    override def toString = "AnyVal"
+    final override val toString = "AnyVal"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def hashCode = System.identityHashCode(this)
@@ -184,7 +187,7 @@ object Manifest {
   }
 
   val Null: Manifest[Null] = new ClassTypeManifest[scala.Null](None, ObjectClass, Nil) {
-    override def toString = "Null"
+    final override val toString = "Null"
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
@@ -193,7 +196,7 @@ object Manifest {
   }
 
   val Nothing: Manifest[Nothing] = new ClassTypeManifest[scala.Nothing](None, ObjectClass, Nil) {
-    override def toString = "Nothing"
+    final override val toString = "Nothing"
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def hashCode = System.identityHashCode(this)
