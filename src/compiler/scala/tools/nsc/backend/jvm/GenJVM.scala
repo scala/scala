@@ -187,6 +187,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val BeanInfoSkipAttr = definitions.getClass("scala.beans.BeanInfoSkip")
     val BeanDisplayNameAttr = definitions.getClass("scala.beans.BeanDisplayName")
     val BeanDescriptionAttr = definitions.getClass("scala.beans.BeanDescription")
+    
+    final val ExcludedForwarderFlags = {
+      import Flags._
+      ( CASE | SPECIALIZED | LIFTED | PROTECTED | STATIC | BridgeAndPrivateFlags )
+    }
 
     // Additional interface parents based on annotations and other cues
     def newParentForAttr(attr: Symbol): Option[Type] = attr match {
@@ -1044,32 +1049,20 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       val className    = jclass.getName
       val linkedClass  = moduleClass.companionClass
       val linkedModule = linkedClass.companionSymbol
+      lazy val conflictingNames: Set[Name] = {
+        linkedClass.info.members collect { case sym if sym.name.isTermName => sym.name } toSet
+      }
+      debuglog("Potentially conflicting names for forwarders: " + conflictingNames)
 
-      /** There was a bit of a gordian logic knot here regarding forwarders.
-       *  All we really have to do is exclude certain categories of symbols and
-       *  then all matching names.
-       */
-      def memberNames(sym: Symbol) = sym.info.members map (_.name.toString) toSet
-      lazy val membersInCommon     =
-        memberNames(linkedModule) intersect memberNames(linkedClass)
-
-      /** Should method `m` get a forwarder in the mirror class? */
-      def shouldForward(m: Symbol): Boolean = (
-        m.owner != ObjectClass
-        && m.isMethod
-        && m.isPublic
-        && !m.hasFlag(Flags.CASE | Flags.DEFERRED | Flags.SPECIALIZED | Flags.LIFTED)
-        && !m.isConstructor
-        && !m.isStaticMember
-        && !membersInCommon(m.name.toString)
-      )
-
-      for (m <- moduleClass.info.nonPrivateMembers) {
-        if (shouldForward(m)) {
+      for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
+        if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
+          debuglog("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
+        else if (conflictingNames(m.name))
+          log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
+        else {
           log("Adding static forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
           addForwarder(jclass, moduleClass, m)
         }
-        else debuglog("No forwarder for '%s' from %s to '%s'".format(m, className, moduleClass))
       }
     }
 
