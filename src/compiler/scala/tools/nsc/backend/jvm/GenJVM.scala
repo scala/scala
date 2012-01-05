@@ -1253,7 +1253,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
                 jcode.emitINVOKEINTERFACE("java.dyn.Dynamic", jname, jtype)
 
               case Dynamic =>
-                if (needsInterfaceCall(method.owner))
+                if (needsInterfaceCall(method.owner) && (method.owner ne ObjectClass))
                   jcode.emitINVOKEINTERFACE(owner, jname, jtype)
                 else
                   jcode.emitINVOKEVIRTUAL(dynamicOwner, jname, jtype)
