@@ -409,7 +409,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
-    final def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
+    final def isHigherOrderTypeParameter = (this ne NoSymbol) && owner.isTypeParameterOrSkolem
     final def isTypeSkolem            = isSkolem && hasFlag(PARAM)
     // a type symbol bound by an existential type, for instance the T in
     // List[T] forSome { type T }

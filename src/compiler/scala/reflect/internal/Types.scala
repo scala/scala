@@ -2451,9 +2451,29 @@ A type's typeSymbol should never be inspected directly.
 */
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
     def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
-    // TODO why not initialise TypeConstraint with bounds of tparam?
-    // @PP: I tried that, didn't work out so well for me.
-    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams)
+    // See pos/tcpoly_infer_implicit_tuple_wrapper for the test which
+    // fails if I initialize the type constraint with the type parameter
+    // bounds. It seems that in that instance it interferes with the
+    // inference.  Thus, the isHigherOrderTypeParameter condition.
+    def apply(tparam: Symbol) = {
+      val constr = (
+        if (tparam.isAbstractType && tparam.typeParams.nonEmpty) {
+          // Force the info of a higher-order tparam's parameters.
+          // Otherwise things don't end well.  See SI-5359.
+          val info = tparam.info
+          if (info.bounds exists (t => t.typeSymbol.isHigherOrderTypeParameter)) {
+            log("TVar(" + tparam + ") receives empty constraint due to higher order type parameter in bounds " + info.bounds)
+            new TypeConstraint
+          }
+          else {
+            log("TVar(" + tparam + ") constraint initialized with bounds " + info.bounds)
+            new TypeConstraint(info.bounds)
+          }
+        }
+        else new TypeConstraint
+      )
+      new TypeVar(tparam.tpeHK, constr, Nil, tparam.typeParams)
+    }
     def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) =
       new TypeVar(origin, constr, args, params)
   }
@@ -2495,10 +2515,9 @@ A type's typeSymbol should never be inspected directly.
     override val typeArgs: List[Type],
     override val params: List[Symbol]
   ) extends Type {
-    private val numArgs = typeArgs.length
     // params are needed to keep track of variance (see mapOverArgs in SubstMap)
-    assert(typeArgs.isEmpty || sameLength(typeArgs, params))
-    // var tid = { tidCount += 1; tidCount } //DEBUG
+    assert(typeArgs.isEmpty || sameLength(typeArgs, params),
+      "%s / params=%s / args=%s".format(origin, params, typeArgs))
 
     /** The constraint associated with the variable */
     var constr = constr0
@@ -2740,11 +2759,12 @@ A type's typeSymbol should never be inspected directly.
     override def isVolatile = origin.isVolatile
 
     private def levelString = if (settings.explaintypes.value) level else ""
-    override def safeToString = constr.inst match {
-      case null   => "<null " + origin + ">"
-      case NoType => "?" + levelString + origin + typeArgsString(this)
-      case x      => "" + x
-    }
+    override def safeToString = (
+      if (constr eq null) "TVar<%s,constr=null>".format(origin)
+      else if (constr.inst eq null) "TVar<%s,constr.inst=null>".format(origin)
+      else if (constr.inst eq NoType) "?" + levelString + origin + typeArgsString(this)
+      else "" + constr.inst
+    )
     override def kind = "TypeVar"
 
     def cloneInternal = {
@@ -3248,6 +3268,7 @@ A type's typeSymbol should never be inspected directly.
    */
   class TypeConstraint(lo0: List[Type], hi0: List[Type], numlo0: Type, numhi0: Type, avoidWidening0: Boolean = false) {
     def this(lo0: List[Type], hi0: List[Type]) = this(lo0, hi0, NoType, NoType)
+    def this(bounds: TypeBounds) = this(List(bounds.lo), List(bounds.hi))
     def this() = this(List(), List())
 
     private var lobounds = lo0
@@ -4159,7 +4180,7 @@ A type's typeSymbol should never be inspected directly.
       case WildcardType =>
         TypeVar(tp, new TypeConstraint)
       case BoundedWildcardType(bounds) =>
-        TypeVar(tp, new TypeConstraint(List(bounds.lo), List(bounds.hi)))
+        TypeVar(tp, new TypeConstraint(bounds))
       case _ =>
         mapOver(tp)
     }
