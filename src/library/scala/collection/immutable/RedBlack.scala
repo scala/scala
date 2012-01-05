@@ -16,6 +16,11 @@ import annotation.meta.getter
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
  *
+ *  Implementation note: since efficiency is important for data structures this implementation
+ *  uses <code>null</code> to represent empty trees. This also means pattern matching cannot
+ *  easily be used. The API represented by the RedBlack object tries to hide these optimizations
+ *  behind a reasonably clean API.
+ *
  *  @since 2.3
  */
 private[immutable]
@@ -103,7 +108,7 @@ object RedBlack {
     else
       mkTree(isBlack, x, xv, a, r)
   }
-  private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree == null) {
+  private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree eq null) {
     RedTree(k, v, null, null)
   } else {
     val cmp = ordering.compare(k, tree.key)
@@ -114,7 +119,7 @@ object RedBlack {
 
     // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
     // http://www.cse.unsw.edu.au/~dons/data/RedBlackTree.html
-  private[this] def del[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree == null) null else {
+  private[this] def del[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = if (tree eq null) null else {
     def balance(x: A, xv: B, tl: Tree[A, B], tr: Tree[A, B]) = if (isRedTree(tl)) {
       if (isRedTree(tr)) {
         RedTree(x, xv, tl.black, tr.black)
@@ -287,6 +292,15 @@ object RedBlack {
     }
   }
 
+  /*
+   * Forcing direct fields access using the @inline annotation helps speed up
+   * various operations (especially smallest/greatest and update/delete).
+   *
+   * Unfortunately the direct field access is not guaranteed to work (but
+   * works on the current implementation of the Scala compiler).
+   *
+   * An alternative is to implement the these classes using plain old Java code...
+   */
   sealed abstract class Tree[A, +B](
     @(inline @getter) final val key: A,
     @(inline @getter) final val value: B,
@@ -355,11 +369,14 @@ object RedBlack {
         index += 1
       } catch {
         case _: ArrayIndexOutOfBoundsException =>
-          // Either the tree became unbalanced or we calculated the maximum height incorrectly.
-          // To avoid crashing the iterator we expand the path array. Obviously this should never
-          // happen...
-          //
-          // An exception handler is used instead of an if-condition to optimize the normal path.
+          /*
+           * Either the tree became unbalanced or we calculated the maximum height incorrectly.
+           * To avoid crashing the iterator we expand the path array. Obviously this should never
+           * happen...
+           *
+           * An exception handler is used instead of an if-condition to optimize the normal path.
+           * This makes a large difference in iteration speed!
+           */
           assert(index >= path.length)
           path :+= null
           pushPath(tree)
