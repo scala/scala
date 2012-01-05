@@ -1901,7 +1901,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (sym.isInterface) ACC_INTERFACE else 0,
       if (finalFlag) ACC_FINAL else 0,
       if (sym.isStaticMember) ACC_STATIC else 0,
-      if (sym.isBridge || sym.hasFlag(Flags.MIXEDIN) && sym.isMethod) ACC_BRIDGE else 0,
+      if (sym.isBridge) ACC_BRIDGE else 0,
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0
     )
