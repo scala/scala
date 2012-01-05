@@ -271,10 +271,14 @@ abstract class UnCurry extends InfoTransform
         def missingCaseCall(scrutinee: Tree): Tree = Apply(Select(This(anonClass), nme.missingCase), List(scrutinee))
 
         def applyMethodDef() = {
-          val body =
+          val body = localTyper.typedPos(fun.pos) {
             if (isPartial) gen.mkUncheckedMatch(gen.withDefaultCase(fun.body, missingCaseCall))
             else fun.body
-          DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
+          }
+          // Have to repack the type to avoid mismatches when existentials
+          // appear in the result - see SI-4869.
+          val applyResultType = localTyper.packedType(body, applyMethod)
+          DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(applyResultType), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {
           val isDefinedAtName = {
