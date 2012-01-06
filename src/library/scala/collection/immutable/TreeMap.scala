@@ -45,7 +45,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: Ordering[A])
+class TreeMap[A, +B] private (tree: RedBlack.Node[A, B])(implicit val ordering: Ordering[A])
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]

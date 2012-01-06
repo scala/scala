@@ -47,7 +47,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(-5685982407650748405L)
-class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: Ordering[A])
+class TreeSet[A] private (tree: RedBlack.Node[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
   import immutable.{RedBlack => RB}
@@ -105,7 +105,7 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  private def newSet(t: RedBlack.Tree[A, Unit]) = new TreeSet[A](t)
+  private def newSet(t: RedBlack.Node[A, Unit]) = new TreeSet[A](t)
 
   /** A factory to create empty sets of the same type of keys.
    */
