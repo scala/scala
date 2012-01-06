@@ -924,9 +924,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
 
         def validateVarianceArgs(tps: List[Type], variance: Int, tparams: List[Symbol]) {
-          (tps zip tparams) foreach {
-            case (tp, tparam) => validateVariance(tp, variance * tparam.variance)
-          }
+          foreach2(tps, tparams)((tp, tparam) => validateVariance(tp, variance * tparam.variance))
         }
 
         validateVariance(base.info, CoVariance)
