@@ -83,7 +83,7 @@ names-defaults-neg.scala:76: error: no type parameters for method test4: (x: T[T
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[Int]
- required: ?T[?T[List[?T[X forSome { type X }]]]]
+ required: ?T
 Error occurred in an application involving default arguments.
   test4()
   ^

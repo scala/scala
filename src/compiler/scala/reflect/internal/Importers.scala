@@ -167,7 +167,7 @@ trait Importers { self: SymbolTable =>
       case from.AntiPolyType(pre, targs) =>
         AntiPolyType(importType(pre), targs map importType)
       case x: from.TypeVar =>
-        new TypeVar(importType(x.origin), importTypeConstraint(x.constr0), x.typeArgs map importType, x.params map importSymbol)
+        TypeVar(importType(x.origin), importTypeConstraint(x.constr0), x.typeArgs map importType, x.params map importSymbol)
       case from.NotNullType(tpe) =>
         NotNullType(importType(tpe))
       case from.AnnotatedType(annots, tpe, selfsym) =>

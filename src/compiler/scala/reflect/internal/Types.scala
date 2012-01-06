@@ -87,6 +87,7 @@ trait Types extends api.Types { self: SymbolTable =>
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
 
   private final val printLubs = sys.props contains "scalac.debug.lub"
+  private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
 
@@ -2431,51 +2432,56 @@ A type's typeSymbol should never be inspected directly.
   // but pattern-matching returned the original constr0 (a bug)
   // now, pattern-matching returns the most recent constr
   object TypeVar {
-    // encapsulate suspension so we can automatically link the suspension of cloned
-    // typevars to their original if this turns out to be necessary
-/*
-    def Suspension = new Suspension
-    class Suspension {
-      private val suspended = mutable.HashSet[TypeVar]()
-      def suspend(tv: TypeVar): Unit = {
-        tv.suspended = true
-        suspended += tv
-      }
-      def resumeAll(): Unit = {
-        for (tv <- suspended) {
-          tv.suspended = false
+    @inline final def trace[T](action: String, msg: => String)(value: T): T = {
+      if (traceTypeVars) {
+        val s = msg match {
+          case ""   => ""
+          case str  => "( " + str + " )"
         }
-        suspended.clear()
+        Console.err.println("[%10s] %-25s%s".format(action, value, s))
       }
+      value
     }
-*/
-    def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
-    def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
-    // See pos/tcpoly_infer_implicit_tuple_wrapper for the test which
-    // fails if I initialize the type constraint with the type parameter
-    // bounds. It seems that in that instance it interferes with the
-    // inference.  Thus, the isHigherOrderTypeParameter condition.
-    def apply(tparam: Symbol) = {
-      val constr = (
-        if (tparam.isAbstractType && tparam.typeParams.nonEmpty) {
-          // Force the info of a higher-order tparam's parameters.
-          // Otherwise things don't end well.  See SI-5359.
-          val info = tparam.info
-          if (info.bounds exists (t => t.typeSymbol.isHigherOrderTypeParameter)) {
-            log("TVar(" + tparam + ") receives empty constraint due to higher order type parameter in bounds " + info.bounds)
-            new TypeConstraint
-          }
-          else {
-            log("TVar(" + tparam + ") constraint initialized with bounds " + info.bounds)
-            new TypeConstraint(info.bounds)
-          }
-        }
+
+    /** Create a new TypeConstraint based on the given symbol.
+     */
+    private def deriveConstraint(tparam: Symbol): TypeConstraint = {
+      // Force the info of a higher-order tparam's parameters.
+      // Otherwise things don't end well.  See SI-5359.  However
+      // we can't force all info, so we have to discriminate
+      // carefully.
+      val isHigher  = tparam.isAbstractType && tparam.typeParams.nonEmpty
+      // See pos/tcpoly_infer_implicit_tuple_wrapper for the test which
+      // fails if I initialize the type constraint with the type parameter
+      // bounds. It seems that in that instance it interferes with the
+      // inference.  Thus, the isHigherOrderTypeParameter condition.
+      val isExclude = isHigher && tparam.info.bounds.exists(_.typeSymbol.isHigherOrderTypeParameter)
+
+      def message = "" + tparam.name + " in " + tparam.owner + (
+        if (isExclude) ", empty due to higher order type parameter in bounds"
+        else ""
+      )
+      /*TypeVar.trace[TypeConstraint]("constr", message)*/(
+        if (isHigher && !isExclude) new TypeConstraint(tparam.info.bounds)
         else new TypeConstraint
       )
-      new TypeVar(tparam.tpeHK, constr, Nil, tparam.typeParams)
     }
-    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) =
-      new TypeVar(origin, constr, args, params)
+    def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
+    def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
+    def apply(tparam: Symbol): TypeVar                       = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams)
+
+    /** This is the only place TypeVars should be instantiated.
+     */
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]): TypeVar = {
+      val tv = (
+        if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr)
+        else if (args.size == params.size)    new AppliedTypeVar(origin, constr, params zip args)
+        else if (args.isEmpty)                new HKTypeVar(origin, constr, params)
+        else throw new TypeError("Invalid TypeVar construction: " + ((origin, constr, args, params)))
+      )
+      
+      trace("create", "In " + tv.originLocation)(tv)
+    }
   }
 
   // TODO: I don't really know why this happens -- maybe because
@@ -2502,22 +2508,53 @@ A type's typeSymbol should never be inspected directly.
       tp.typeSymbol
   )
 
+  /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
+   */
+  class HKTypeVar(
+    _origin: Type,
+    _constr: TypeConstraint,
+    override val params: List[Symbol]
+  ) extends TypeVar(_origin, _constr) {
+
+    require(params.nonEmpty, this)
+    override def isHigherKinded          = true
+    override protected def typeVarString = params.map(_.name).mkString("[", ", ", "]=>" + originName)
+  }
+  
+  /** Precondition: zipped params/args nonEmpty.  (Size equivalence enforced structurally.)
+   */
+  class AppliedTypeVar(
+    _origin: Type,
+    _constr: TypeConstraint,
+    zippedArgs: List[(Symbol, Type)]
+  ) extends TypeVar(_origin, _constr) {
+    
+    require(zippedArgs.nonEmpty, this)
+
+    override def params: List[Symbol] = zippedArgs map (_._1)
+    override def typeArgs: List[Type] = zippedArgs map (_._2)
+    
+    override protected def typeVarString = (
+      zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
+    )
+  }
+  
   /** A class representing a type variable: not used after phase `typer`.
    *
    *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
    *  A TypeVar with nonEmpty typeArgs can only be instantiated by a higher-kinded
    *  type that can be applied to those args.  A TypeVar is much like a TypeRef,
    *  except it has special logic for equality and subtyping.
+   *
+   *  Precondition for this class, enforced structurally: args.isEmpty && params.isEmpty.
    */
   class TypeVar(
     val origin: Type,
-    val constr0: TypeConstraint,
-    override val typeArgs: List[Type],
-    override val params: List[Symbol]
+    val constr0: TypeConstraint
   ) extends Type {
-    // params are needed to keep track of variance (see mapOverArgs in SubstMap)
-    assert(typeArgs.isEmpty || sameLength(typeArgs, params),
-      "%s / params=%s / args=%s".format(origin, params, typeArgs))
+    override def params: List[Symbol] = Nil
+    override def typeArgs: List[Type] = Nil
+    override def isHigherKinded = false
 
     /** The constraint associated with the variable */
     var constr = constr0
@@ -2525,7 +2562,38 @@ A type's typeSymbol should never be inspected directly.
 
     /** The variable's skolemization level */
     val level = skolemizationLevel
-
+    
+    /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
+     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
+     *
+     *  `constr` for `?CC` only tracks type constructors anyway,
+     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
+     *  `?CC's` hibounds contains List and Iterable.
+     */
+    def applyArgs(newArgs: List[Type]): TypeVar = (
+      if (newArgs.isEmpty && typeArgs.isEmpty)
+        this
+      else if (newArgs.size == params.size) {
+        val tv = TypeVar(origin, constr, newArgs, params)
+        TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
+      }
+      else
+        throw new TypeError("Invalid type application in TypeVar: " + params + ", " + newArgs)
+    )
+    // newArgs.length may differ from args.length (could've been empty before)
+    //
+    // !!! @PP - I need an example of this, since this exception never triggers
+    // even though I am requiring the size match.
+    //
+    // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
+    // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
+    // TypeVars get applied to different arguments over time (in asSeenFrom)
+     // -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
+    // thus: make new TypeVar's for every application of a TV to args,
+    // inference may generate several TypeVar's for a single type parameter that must be inferred,
+    // only one of them is in the set of tvars that need to be solved, but
+    // they share the same TypeConstraint instance
+    
     // When comparing to types containing skolems, remember the highest level
     // of skolemization. If that highest level is higher than our initial
     // skolemizationLevel, we can't re-use those skolems as the solution of this
@@ -2536,26 +2604,6 @@ A type's typeSymbol should never be inspected directly.
     private var encounteredHigherLevel = false
     private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
 
-    /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
-     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
-     *
-     *  `constr` for `?CC` only tracks type constructors anyway,
-     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
-     *  `?CC's` hibounds contains List and Iterable.
-     */
-    def applyArgs(newArgs: List[Type]): TypeVar =
-      if (newArgs.isEmpty) this // SubstMap relies on this (though this check is redundant when called from appliedType...)
-      else TypeVar(origin, constr, newArgs, params) // @M TODO: interaction with undoLog??
-      // newArgs.length may differ from args.length (could've been empty before)
-      // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
-      // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
-      // TypeVars get applied to different arguments over time (in asSeenFrom)
-       // -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
-      // thus: make new TypeVar's for every application of a TV to args,
-      // inference may generate several TypeVar's for a single type parameter that must be inferred,
-      // only one of them is in the set of tvars that need to be solved, but
-      // they share the same TypeConstraint instance
-
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
     // (undoLog is used to reset constraints to avoid piling up unrelated ones)
@@ -2564,7 +2612,8 @@ A type's typeSymbol should never be inspected directly.
       undoLog record this
       // if we were compared against later typeskolems, repack the existential,
       // because skolems are only compatible if they were created at the same level
-      constr.inst = if (shouldRepackType) repackExistential(tp) else tp
+      val res = if (shouldRepackType) repackExistential(tp) else tp
+      constr.inst = TypeVar.trace("setInst", "In " + originLocation + ", " + originName + "=" + res)(res)
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
@@ -2641,11 +2690,10 @@ A type's typeSymbol should never be inspected directly.
        *  type parameter we're trying to infer (the result will be sanity-checked later).
        */
       def unifyFull(tpe: Type) = {
-        // Since the alias/widen variations are often no-ops, this
-        // keenly collects them in a Set to avoid redundant tests.
+        // The alias/widen variations are often no-ops.
         val tpes = (
-          if (isLowerBound) Set(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias)
-          else Set(tpe)
+          if (isLowerBound) List(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias).distinct
+          else List(tpe)
         )
         tpes exists { tp =>
           val lhs = if (isLowerBound) tp.typeArgs else typeArgs
@@ -2745,33 +2793,54 @@ A type's typeSymbol should never be inspected directly.
       || !containsSkolemAboveLevel(tp)  // side-effects tracking boolean
       || enableTypeVarExperimentals     // -Xexperimental: always say we're relatable, track consequences
     )
-    override val isHigherKinded = typeArgs.isEmpty && params.nonEmpty
 
-    override def normalize: Type =
+    override def normalize: Type = (
       if (constr.instValid) constr.inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
       else if (isHigherKinded) typeFun(params, applyArgs(params map (_.typeConstructor)))
       else super.normalize
-
+    )
     override def typeSymbol = origin.typeSymbol
     override def isStable = origin.isStable
     override def isVolatile = origin.isVolatile
 
+    private def tparamsOfSym(sym: Symbol) = sym.info match {
+      case PolyType(tparams, _) if tparams.nonEmpty =>
+        tparams map (_.defString) mkString("[", ",", "]")
+      case _ => ""
+    }
+    def originName = {
+      val name = origin.typeSymbolDirect.decodedName
+      if (name startsWith "_$") origin.typeSymbol.decodedName else name
+    }
+    def originLocation = {
+      val sym   = origin.typeSymbolDirect
+      val owner = sym.owner
+      val clazz = owner.enclClass
+      val ownsString = (
+        if (owner.isMethod) "#" + owner.name + tparamsOfSym(owner)
+        else if (owner.isAbstractType) "#" + owner.defString
+        else ""
+      )
+      clazz.decodedName + tparamsOfSym(clazz) + ownsString
+    }
     private def levelString = if (settings.explaintypes.value) level else ""
+    protected def typeVarString = originName
     override def safeToString = (
-      if (constr eq null) "TVar<%s,constr=null>".format(origin)
-      else if (constr.inst eq null) "TVar<%s,constr.inst=null>".format(origin)
-      else if (constr.inst eq NoType) "?" + levelString + origin + typeArgsString(this)
-      else "" + constr.inst
+      if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
+      else if (constr.inst ne NoType) "" + constr.inst
+      else "?" + levelString + originName
     )
     override def kind = "TypeVar"
 
     def cloneInternal = {
       // cloning a suspended type variable when it's suspended will cause the clone
       // to never be resumed with the current implementation
-      assert(!suspended)
-      TypeVar(origin, constr cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+      assert(!suspended, this)
+      TypeVar.trace("clone", originLocation)(
+        TypeVar(origin, constr cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+      )
     }
   }
 
@@ -3326,10 +3395,18 @@ A type's typeSymbol should never be inspected directly.
       tc
     }
 
-    override def toString =
-      (loBounds map (_.safeToString)).mkString("[ _>:(", ",", ") ") +
-      (hiBounds map (_.safeToString)).mkString("| _<:(", ",", ") ] _= ") +
-      inst.safeToString
+    override def toString = {
+      val boundsStr = (
+        if (loBounds.isEmpty && hiBounds.isEmpty) "[]"
+        else {
+          val lostr = if (loBounds.isEmpty) "" else loBounds map (_.safeToString) mkString("_>:(", ", ", ")")
+          val histr = if (hiBounds.isEmpty) "" else hiBounds map (_.safeToString) mkString("_<:(", ", ", ")")
+          List(lostr, histr) filterNot (_ == "") mkString ("[", " | ", "]")
+        }
+      )
+      if (inst eq NoType) boundsStr
+      else boundsStr + " _= " + inst.safeToString
+    }
   }
 
   trait AnnotationFilter extends TypeMap {
