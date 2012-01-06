@@ -887,8 +887,9 @@ abstract class Erasure extends AddInterfaces
                                       fun.symbol != Object_isInstanceOf) =>
           // leave all other type tests/type casts, remove all other type applications
           preErase(fun)
-        case Apply(fn @ Select(qual, name), args) if (fn.symbol.owner == ArrayClass) =>
-          if (unboundedGenericArrayLevel(qual.tpe.widen) == 1)
+        case Apply(fn @ Select(qual, name), args) if fn.symbol.owner == ArrayClass =>
+          // Have to also catch calls to abstract types which are bounded by Array.
+          if (unboundedGenericArrayLevel(qual.tpe.widen) == 1 || qual.tpe.typeSymbol.isAbstractType) {
             // convert calls to apply/update/length on generic arrays to
             // calls of ScalaRunTime.array_xxx method calls
             global.typer.typedPos(tree.pos)({
@@ -901,14 +902,15 @@ abstract class Erasure extends AddInterfaces
               }
               gen.mkRuntimeCall(arrayMethodName, qual :: args)
             })
-          else
+          }
+          else {
             // store exact array erasure in map to be retrieved later when we might
             // need to do the cast in adaptMember
             treeCopy.Apply(
               tree,
               SelectFromArray(qual, name, erasure(tree.symbol, qual.tpe)).copyAttrs(fn),
               args)
-
+          }
         case Apply(fn @ Select(qual, _), Nil) if interceptedMethods(fn.symbol) =>
           if (fn.symbol == Any_## || fn.symbol == Object_##) {
             // This is unattractive, but without it we crash here on ().## because after
