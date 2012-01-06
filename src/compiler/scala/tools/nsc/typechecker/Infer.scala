@@ -1447,8 +1447,17 @@ trait Infer {
     /** A traverser to collect type parameters referred to in a type
      */
     object freeTypeParamsOfTerms extends SymCollector {
-      protected def includeCondition(sym: Symbol): Boolean =
-        sym.isAbstractType && sym.owner.isTerm
+      // An inferred type which corresponds to an unknown type
+      // constructor creates a file/declaration order-dependent crasher
+      // situation, the behavior of which depends on the state at the
+      // time the typevar is created. Until we can deal with these
+      // properly, we can avoid it by ignoring type parameters which
+      // have type constructors amongst their bounds. See SI-4070.
+      protected def includeCondition(sym: Symbol) = (
+           sym.isAbstractType
+        && sym.owner.isTerm
+        && !sym.info.bounds.exists(_.typeParams.nonEmpty)
+      )
     }
 
     /** A traverser to collect type parameters referred to in a type
