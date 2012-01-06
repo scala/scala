@@ -53,6 +53,7 @@ class TreeMap[A, +B] private (tree: RedBlack.Tree[A, B])(implicit val ordering: 
 
   import immutable.{RedBlack => RB}
 
+  @deprecated("use `ordering.lt` instead", "2.10")
   def isSmaller(x: A, y: A) = ordering.lt(x, y)
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =

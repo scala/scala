@@ -100,6 +100,7 @@ class TreeSet[A] private (tree: RedBlack.Tree[A, Unit])(implicit val ordering: O
     (take(n), drop(n))
   }
 
+  @deprecated("use `ordering.lt` instead", "2.10")
   def isSmaller(x: A, y: A) = compare(x,y) < 0
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
