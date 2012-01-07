@@ -12,6 +12,7 @@ package scala.collection
 package immutable
 
 import generic._
+import immutable.{RedBlackTree => RB}
 import mutable.Builder
 import annotation.bridge
 
@@ -45,13 +46,11 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-class TreeMap[A, +B] private (tree: RedBlack.Node[A, B])(implicit val ordering: Ordering[A])
+class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Ordering[A])
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
      with Serializable {
-
-  import immutable.{RedBlack => RB}
 
   @deprecated("use `ordering.lt` instead", "2.10")
   def isSmaller(x: A, y: A) = ordering.lt(x, y)
