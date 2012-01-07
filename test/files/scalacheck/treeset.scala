@@ -92,19 +92,19 @@ object Test extends Properties("TreeSet") {
     prefix == subject.take(n) && suffix == subject.drop(n)
   }
 
-  property("takeWhile") = forAll { (subject: TreeMap[Int, String]) =>
-    val result = subject.takeWhile(_._1 < 0)
-    result.forall(_._1 < 0) && result == subject.take(result.size)
+  property("takeWhile") = forAll { (subject: TreeSet[Int]) =>
+    val result = subject.takeWhile(_ < 0)
+    result.forall(_ < 0) && result == subject.take(result.size)
   }
 
-  property("dropWhile") = forAll { (subject: TreeMap[Int, String]) =>
-    val result = subject.dropWhile(_._1 < 0)
-    result.forall(_._1 >= 0) && result == subject.takeRight(result.size)
+  property("dropWhile") = forAll { (subject: TreeSet[Int]) =>
+    val result = subject.dropWhile(_ < 0)
+    result.forall(_ >= 0) && result == subject.takeRight(result.size)
   }
 
-  property("span identity") = forAll { (subject: TreeMap[Int, String]) =>
-    val (prefix, suffix) = subject.span(_._1 < 0)
-    prefix.forall(_._1 < 0) && suffix.forall(_._1 >= 0) && subject == prefix ++ suffix
+  property("span identity") = forAll { (subject: TreeSet[Int]) =>
+    val (prefix, suffix) = subject.span(_ < 0)
+    prefix.forall(_ < 0) && suffix.forall(_ >= 0) && subject == prefix ++ suffix
   }
 
   property("remove single") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
