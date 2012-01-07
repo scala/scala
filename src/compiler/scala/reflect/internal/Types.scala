@@ -90,6 +90,10 @@ trait Types extends api.Types { self: SymbolTable =>
   private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
+  /** In case anyone wants to turn off type parameter bounds being used
+   *  to seed type constraints.
+   */
+  private final val propagateParameterBoundsToTypeVars = !(sys.props contains "scalac.debug.no-prop-constraints")
 
   protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
@@ -1314,6 +1318,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
+    def isEmptyBounds = (lo.typeSymbolDirect eq NothingClass) && (hi.typeSymbolDirect eq AnyClass)
     // override def isNullable: Boolean = NullClass.tpe <:< lo;
     override def safeToString = ">: " + lo + " <: " + hi
     override def kind = "TypeBoundsType"
@@ -2446,25 +2451,23 @@ A type's typeSymbol should never be inspected directly.
     /** Create a new TypeConstraint based on the given symbol.
      */
     private def deriveConstraint(tparam: Symbol): TypeConstraint = {
-      // Force the info of a higher-order tparam's parameters.
-      // Otherwise things don't end well.  See SI-5359.  However
-      // we can't force all info, so we have to discriminate
-      // carefully.
-      val isHigher  = tparam.isAbstractType && tparam.typeParams.nonEmpty
-      // See pos/tcpoly_infer_implicit_tuple_wrapper for the test which
-      // fails if I initialize the type constraint with the type parameter
-      // bounds. It seems that in that instance it interferes with the
-      // inference.  Thus, the isHigherOrderTypeParameter condition.
-      val isExclude = isHigher && tparam.info.bounds.exists(_.typeSymbol.isHigherOrderTypeParameter)
+      /** Must force the type parameter's info at this point
+       *  or things don't end well for higher-order type params.
+       *  See SI-5359.
+       */
+      val bounds  = tparam.info.bounds
+      /** We can seed the type constraint with the type parameter
+       *  bounds as long as the types are concrete.  This should lower
+       *  the complexity of the search even if it doesn't improve
+       *  any results.
+       */
+      if (propagateParameterBoundsToTypeVars) {
+        val exclude = bounds.isEmptyBounds || bounds.exists(_.typeSymbolDirect.isNonClassType)
 
-      def message = "" + tparam.name + " in " + tparam.owner + (
-        if (isExclude) ", empty due to higher order type parameter in bounds"
-        else ""
-      )
-      /*TypeVar.trace[TypeConstraint]("constr", message)*/(
-        if (isHigher && !isExclude) new TypeConstraint(tparam.info.bounds)
-        else new TypeConstraint
-      )
+        if (exclude) new TypeConstraint
+        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
+      }
+      else new TypeConstraint
     }
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
     def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
@@ -3342,8 +3345,12 @@ A type's typeSymbol should never be inspected directly.
     def this(bounds: TypeBounds) = this(List(bounds.lo), List(bounds.hi))
     def this() = this(List(), List())
 
-    private var lobounds = lo0
-    private var hibounds = hi0
+    /** Guard these lists against AnyClass and NothingClass appearing,
+     *  else loBounds.isEmpty will have different results for an empty
+     *  constraint and one with Nothing as a lower bound.
+     */
+    private var lobounds = lo0 filterNot (_.typeSymbolDirect eq NothingClass)
+    private var hibounds = hi0 filterNot (_.typeSymbolDirect eq AnyClass)
     private var numlo = numlo0
     private var numhi = numhi0
     private var avoidWidening = avoidWidening0
@@ -3359,7 +3366,8 @@ A type's typeSymbol should never be inspected directly.
         else if (!isNumericSubType(tp, numlo))
           numlo = numericLoBound
       }
-      else lobounds ::= tp
+      else if (tp.typeSymbolDirect ne NothingClass)
+        lobounds ::= tp
     }
 
     def checkWidening(tp: Type) {
@@ -3378,7 +3386,8 @@ A type's typeSymbol should never be inspected directly.
         else if (!isNumericSubType(numhi, tp))
           numhi = numericHiBound
       }
-      else hibounds ::= tp
+      else if (tp.typeSymbolDirect ne AnyClass)
+        hibounds ::= tp
     }
 
     def isWithinBounds(tp: Type): Boolean =
