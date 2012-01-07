@@ -3266,6 +3266,20 @@ trait Types extends api.Types { self: SymbolTable =>
         mapOver(tp)
     }
   }
+  
+  /** Type with all top-level occurrences of abstract types replaced by their bounds */
+  def abstractTypesToBounds(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
+    case TypeRef(_, sym, _) if sym.isAbstractType =>
+      abstractTypesToBounds(tp.bounds.hi)
+    case TypeRef(_, sym, _) if sym.isAliasType =>
+      abstractTypesToBounds(tp.normalize)
+    case rtp @ RefinedType(parents, decls) =>
+      copyRefinedType(rtp, parents mapConserve abstractTypesToBounds, decls)
+    case AnnotatedType(_, underlying, _) =>
+      abstractTypesToBounds(underlying)
+    case _ =>
+      tp
+  }
 
   // Set to true for A* => Seq[A]
   //   (And it will only rewrite A* in method result types.)

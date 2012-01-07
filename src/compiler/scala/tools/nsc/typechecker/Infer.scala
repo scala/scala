@@ -1116,19 +1116,7 @@ trait Infer {
         }
     }
 
-    /** Type with all top-level occurrences of abstract types replaced by their bounds */
-    def widen(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
-      case TypeRef(_, sym, _) if sym.isAbstractType =>
-        widen(tp.bounds.hi)
-      case TypeRef(_, sym, _) if sym.isAliasType =>
-        widen(tp.normalize)
-      case rtp @ RefinedType(parents, decls) =>
-        copyRefinedType(rtp, parents mapConserve widen, decls)
-      case AnnotatedType(_, underlying, _) =>
-        widen(underlying)
-      case _ =>
-        tp
-    }
+    def widen(tp: Type): Type = abstractTypesToBounds(tp)
 
     /** Substitute free type variables <code>undetparams</code> of type constructor
      *  <code>tree</code> in pattern, given prototype <code>pt</code>.
