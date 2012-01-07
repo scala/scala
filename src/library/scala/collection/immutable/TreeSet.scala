@@ -94,10 +94,7 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
   }
   override def dropWhile(p: A => Boolean) = drop(countWhile(p))
   override def takeWhile(p: A => Boolean) = take(countWhile(p))
-  override def span(p: A => Boolean) = {
-    val n = countWhile(p)
-    (take(n), drop(n))
-  }
+  override def span(p: A => Boolean) = splitAt(countWhile(p))
 
   @deprecated("use `ordering.lt` instead", "2.10")
   def isSmaller(x: A, y: A) = compare(x,y) < 0

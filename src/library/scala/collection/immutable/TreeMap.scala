@@ -116,10 +116,7 @@ class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Orderi
   }
   override def dropWhile(p: ((A, B)) => Boolean) = drop(countWhile(p))
   override def takeWhile(p: ((A, B)) => Boolean) = take(countWhile(p))
-  override def span(p: ((A, B)) => Boolean) = {
-    val n = countWhile(p)
-    (take(n), drop(n))
-  }
+  override def span(p: ((A, B)) => Boolean) = splitAt(countWhile(p))
 
   /** A factory to create empty maps of the same type of keys.
    */
