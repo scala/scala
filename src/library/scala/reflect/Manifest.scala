@@ -44,7 +44,7 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
   override def arrayManifest: Manifest[Array[T]] =
-    Manifest.classType[Array[T]](arrayClass[T](erasure))
+    Manifest.classType[Array[T]](arrayClass[T](erasure), this)
 
   override def canEqual(that: Any): Boolean = that match {
     case _: Manifest[_]   => true
