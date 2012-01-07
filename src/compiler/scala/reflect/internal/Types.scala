@@ -2812,18 +2812,20 @@ A type's typeSymbol should never be inspected directly.
     }
     def originName = {
       val name = origin.typeSymbolDirect.decodedName
-      if (name startsWith "_$") origin.typeSymbol.decodedName else name
+      if (name contains "_$") origin.typeSymbolDirect.decodedName else name
     }
     def originLocation = {
-      val sym   = origin.typeSymbolDirect
-      val owner = sym.owner
-      val clazz = owner.enclClass
-      val ownsString = (
-        if (owner.isMethod) "#" + owner.name + tparamsOfSym(owner)
-        else if (owner.isAbstractType) "#" + owner.defString
-        else ""
-      )
-      clazz.decodedName + tparamsOfSym(clazz) + ownsString
+      val sym  = origin.typeSymbolDirect
+      val encl = sym.owner.logicallyEnclosingMember
+      
+      // This should display somewhere between one and three
+      // things which enclose the origin: at most, a class, a
+      // a method, and a term.  At least, a class.
+      List(
+        Some(encl.enclClass),
+        if (encl.isMethod) Some(encl) else None,
+        if (sym.owner.isTerm && (sym.owner != encl)) Some(sym.owner) else None
+      ).flatten map (s => s.decodedName + tparamsOfSym(s)) mkString "#"
     }
     private def levelString = if (settings.explaintypes.value) level else ""
     protected def typeVarString = originName
