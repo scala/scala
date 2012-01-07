@@ -110,10 +110,7 @@ trait Kinds {
   ): List[(Type, Symbol, KindErrors)] = {
 
     // instantiate type params that come from outside the abstract type we're currently checking
-    def transform(tp: Type, clazz: Symbol): Type =
-      tp.asSeenFrom(pre, clazz)
-    def transformedBounds(p: Symbol, o: Symbol) =
-      transform(p.info.instantiateTypeParams(tparams, targs).bounds, o)
+    def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz)
 
     // check that the type parameters hkargs to a higher-kinded type conform to the
     // expected params hkparams
@@ -131,6 +128,7 @@ trait Kinds {
       // @M sometimes hkargs != arg.typeParams, the symbol and the type may
       // have very different type parameters
       val hkparams = param.typeParams
+      
       def kindCheck(cond: Boolean, f: KindErrors => KindErrors) {
         if (!cond)
           kindErrors = f(kindErrors)
@@ -160,8 +158,8 @@ trait Kinds {
           // conceptually the same. Could also replace the types by
           // polytypes, but can't just strip the symbols, as ordering
           // is lost then.
-          val declaredBounds     = transformedBounds(hkparam, paramowner)
-          val declaredBoundsInst = bindHKParams(declaredBounds)
+          val declaredBounds     = transform(hkparam.info.instantiateTypeParams(tparams, targs).bounds, paramowner)
+          val declaredBoundsInst = transform(bindHKParams(declaredBounds), owner)
           val argumentBounds     = transform(hkarg.info.bounds, owner)
 
           kindCheck(declaredBoundsInst <:< argumentBounds, _ strictnessError (hkarg -> hkparam))
