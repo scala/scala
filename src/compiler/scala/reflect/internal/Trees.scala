@@ -248,10 +248,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   /** Block factory that flattens directly nested blocks.
    */
-  def Block(stats: Tree*): Block = stats match {
-    case Seq(b @ Block(_, _)) => b
-    case Seq(stat) => Block(stats.toList, Literal(Constant(())))
-    case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
+  def Block(stats: Tree*): Block = {
+    if (stats.isEmpty) Block(Nil, Literal(Constant(())))
+    else stats match {
+      case Seq(b @ Block(_, _)) => b
+      case Seq(stat) => Block(stats.toList, Literal(Constant(())))
+      case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
+    }
   }
 
   // --- specific traversers and transformers

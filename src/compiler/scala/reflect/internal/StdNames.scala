@@ -578,6 +578,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val testLessOrEqualThan: NameType    = "testLessOrEqualThan"
     val testLessThan: NameType           = "testLessThan"
     val testNotEqual: NameType           = "testNotEqual"
+    
+    val isBoxedNumberOrBoolean: NameType = "isBoxedNumberOrBoolean"
+    val isBoxedNumber: NameType = "isBoxedNumber"
 
     def toUnaryName(name: TermName): TermName = name match {
       case raw.MINUS => UNARY_-
@@ -627,6 +630,21 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case `toDouble` => toDouble
       case _          => NO_NAME
     }
+    
+    val reflPolyCacheName: NameType   = "reflPoly$Cache"
+    val reflClassCacheName: NameType  = "reflClass$Cache"
+    val reflParamsCacheName: NameType = "reflParams$Cache"
+    val reflMethodCacheName: NameType = "reflMethod$Cache"
+    val reflMethodName: NameType      = "reflMethod$Method"
+
+    private val reflectionCacheNames = Set[NameType](
+      reflPolyCacheName,
+      reflClassCacheName,
+      reflParamsCacheName,
+      reflMethodCacheName,
+      reflMethodName
+    )
+    def isReflectionCacheName(name: Name) = reflectionCacheNames exists (name startsWith _)
     
     @switch def productAccessorName(j: Int): TermName = j match {
       case 1  => nme._1

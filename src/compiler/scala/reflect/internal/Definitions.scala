@@ -267,10 +267,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
 
-    lazy val ConsoleModule: Symbol = getRequiredModule("scala.Console")
+    lazy val ConsoleModule: Symbol      = getRequiredModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getRequiredModule("scala.runtime.ScalaRunTime")
-    lazy val SymbolModule: Symbol = getRequiredModule("scala.Symbol")
-    lazy val Symbol_apply = getMember(SymbolModule, nme.apply)
+    lazy val SymbolModule: Symbol       = getRequiredModule("scala.Symbol")
+    lazy val Symbol_apply               = SymbolModule.info decl nme.apply
+
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq)
       def arrayApplyMethod = getMember(ScalaRunTimeModule, nme.array_apply)
       def arrayUpdateMethod = getMember(ScalaRunTimeModule, nme.array_update)
