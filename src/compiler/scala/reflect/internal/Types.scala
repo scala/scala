@@ -93,7 +93,7 @@ trait Types extends api.Types { self: SymbolTable =>
   /** In case anyone wants to turn off type parameter bounds being used
    *  to seed type constraints.
    */
-  private final val propagateParameterBoundsToTypeVars = !(sys.props contains "scalac.debug.no-prop-constraints")
+  private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
 
   protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
