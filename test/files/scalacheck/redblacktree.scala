@@ -29,6 +29,8 @@ package scala.collection.immutable.redblacktree {
 
     def treeContains[A](tree: Tree[String, A], key: String) = iterator(tree).map(_._1) contains key
 
+    def height(tree: Tree[_, _]): Int = if (tree eq null) 0 else (1 + math.max(height(tree.left), height(tree.right)))
+
     def mkTree(level: Int, parentIsBlack: Boolean = false, label: String = ""): Gen[Tree[String, Int]] =
       if (level == 0) {
         value(null)
@@ -100,6 +102,8 @@ package scala.collection.immutable.redblacktree {
     def orderIsPreserved[A](t: Tree[String, A]): Boolean =
       iterator(t) zip iterator(t).drop(1) forall { case (x, y) => x._1 < y._1 }
 
+    def heightIsBounded(t: Tree[_, _]): Boolean = height(t) <= (2 * (32 - Integer.numberOfLeadingZeros(count(t) + 2)) - 2)
+
     def setup(invariant: Tree[String, Int] => Boolean) = forAll(genInput) { case (tree, parm, newTree) =>
       invariant(newTree)
     }
@@ -109,6 +113,7 @@ package scala.collection.immutable.redblacktree {
     property("children of red nodes are black") = setup(areRedNodeChildrenBlack)
     property("black nodes are balanced") = setup(areBlackNodesToLeavesEqual)
     property("ordering of keys is preserved") = setup(orderIsPreserved)
+    property("height is bounded") = setup(heightIsBounded)
   }
 
   object TestInsert extends RedBlackTreeTest with RedBlackTreeInvariants {
