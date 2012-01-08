@@ -439,9 +439,10 @@ abstract class ClassfileParser {
 
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
-    def loadClassSymbol(name: Name) = {
+    def loadClassSymbol(name: Name): Symbol = {
       val file = global.classPath findSourceFile ("" +name) getOrElse {
-        MissingRequirementError.notFound("class " + name)
+        warning("Class " + name + " not found - continuing with a stub.")
+        return NoSymbol.newClass(name.toTypeName)
       }
       val completer     = new global.loaders.ClassfileLoader(file)
       var owner: Symbol = definitions.RootClass
