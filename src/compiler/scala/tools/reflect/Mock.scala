@@ -25,7 +25,8 @@ trait Mock extends (Invoked => AnyRef) {
 
   def newInvocationHandler() = new InvocationHandler {
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]) =
-      mock(Invoked(proxy, method, args))
+      try   { mock(Invoked(proxy, method, args)) }
+      catch { case _: NoClassDefFoundError => sys.exit(1) }
   }
 }
 

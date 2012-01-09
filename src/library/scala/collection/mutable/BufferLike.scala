@@ -152,7 +152,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   def prepend(elems: A*) { prependAll(elems) }
 
   /** Prepends the elements contained in a traversable object to this buffer.
-   *  @param elems  the collection containing the elements to prepend.
+   *  @param xs  the collection containing the elements to prepend.
    */
   def prependAll(xs: TraversableOnce[A]) { xs ++=: this }
 
@@ -220,10 +220,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param xs     the traversable object.
    *  @return       a new collection consisting of all the elements of this collection and `xs`.
    */
-  @migration(2, 8,
-    "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
-    "Use ++= instead if you intend to add by side effect to an existing collection.\n"
-  )
+  @migration("`++` creates a new buffer. Use `++=` to add an element from this buffer and return that buffer itself.", "2.8.0")
   def ++(xs: GenTraversableOnce[A]): This = clone() ++= xs.seq
 
   @bridge
@@ -234,10 +231,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elem  the element to remove.
    *  @return      a new collection consisting of all the elements of this collection except `elem`.
    */
-  @migration(2, 8,
-    "As of 2.8, - always creates a new collection, even on Buffers.\n"+
-    "Use -= instead if you intend to remove by side effect from an existing collection.\n"
-  )
+  @migration("`-` creates a new buffer. Use `-=` to remove an element from this buffer and return that buffer itself.", "2.8.0")
   override def -(elem: A): This = clone() -= elem
 
   /** Creates a new collection with all the elements of this collection except the two
@@ -249,10 +243,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @return      a new collection consisting of all the elements of this collection except
    *               `elem1`, `elem2` and those in `elems`.
    */
-  @migration(2, 8,
-    "As of 2.8, - always creates a new collection, even on Buffers.\n"+
-    "Use -= instead if you intend to remove by side effect from an existing collection.\n"
-  )
+  @migration("`-` creates a new buffer. Use `-=` to remove an element from this buffer and return that buffer itself.", "2.8.0")
   override def -(elem1: A, elem2: A, elems: A*): This = clone() -= elem1 -= elem2 --= elems
 
   /** Creates a new collection with all the elements of this collection except those
@@ -262,10 +253,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @return         a new collection with all the elements of this collection except
    *                  those in `xs`
    */
-  @migration(2, 8,
-    "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
-    "Use --= instead if you intend to remove by side effect from an existing collection.\n"
-  )
+  @migration("`--` creates a new buffer. Use `--=` to remove an element from this buffer and return that buffer itself.", "2.8.0")
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
 
   @bridge def --(xs: TraversableOnce[A]): This = --(xs: GenTraversableOnce[A])

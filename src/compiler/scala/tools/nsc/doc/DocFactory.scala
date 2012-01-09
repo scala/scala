@@ -96,7 +96,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
   val documentError: PartialFunction[Throwable, Unit] = {
     case NoCompilerRunException =>
-      reporter.info(NoPosition, "No documentation generated with unsucessful compiler run", false)
+      reporter.info(null, "No documentation generated with unsucessful compiler run", false)
     case _: ClassNotFoundException =>
       ()
   }

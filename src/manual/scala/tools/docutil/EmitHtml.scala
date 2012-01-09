@@ -201,164 +201,26 @@ object EmitHtml {
     out println "</body>"
     out println "</html>"
   }
-/* */
-/*
- private def group(ns: Iterable[NodeSeq]): NodeSeq = {
-    val zs = new NodeBuffer
-    for (z <- ns) { zs &+ z }
-    zs
+
+  def main(args: Array[String]) = args match{
+    case Array(classname)           => emitHtml(classname)
+    case Array(classname, file, _*) => emitHtml(classname, new java.io.FileOutputStream(file))
+    case _                          => sys.exit(1)
   }
 
-  def emitSection(section: Section, depth: int): NodeSeq = {
-    def emitText(text: AbstractText): NodeSeq = text match {
-      case seq:SeqText =>
-        group(seq.components.toList.map(item => emitText(item)))
-
-      case Text(text) =>
-        scala.xml.Text(escape(text))
-
-      case MDash =>
-        scala.xml.Text("&#8212;")
-
-      case NDash =>
-        scala.xml.Text("&#8211;")
-
-      case Bold(text) =>
-        <b>{emitText(text)}</b>
-
-      case Italic(text) =>
-        <i>{emitText(text)}</i>
-
-      case Emph(text) =>
-        <em>{emitText(text)}</em>
-
-      case Mono(text) =>
-        <code>{emitText(text)}</code>
-
-      case Quote(text) =>
-        emitText("\"" & text & "\"")
-
-      case DefinitionList(definitions @ _*) =>
-        <ins><dl>
-          {definitions.toList.map(d =>
-            <dt>{emitText(d.term)}</dt>
-            <dd>{emitText(d.description)}</dd>
-          )}
-        </dl></ins>
-
-      case Link(label, url) =>
-        <a href={url}>{emitText(label)}</a>
-
-      case _ =>
-        error("unknown text node " + text)
-    }
-
-    def emitParagraph(para: Paragraph): NodeSeq = para match {
-      case TextParagraph(text) =>
-        <p>{emitText(text)}</p>
-
-      case BlockQuote(text) =>
-        <blockquote>{emitText(text)}</blockquote>
-
-      case CodeSample(text) =>
-        <blockquote><pre>{escape(text)}</pre></blockquote>
-
-      case lst:BulletList =>
-        <ul>
-          {lst.items.toList.map(item => <li>{emitText(item)}</li>)}
-        </ul>
-
-      case lst:NumberedList =>
-        <ol>
-          {lst.items.toList.map(item => <li>{emitText(item)}</li>)}
-        </ol>
-
-      case TitledPara(title, text) =>
-        <p><strong>{escape(title)}</strong></p>
-        {emitText(text)}
-
-      case EmbeddedSection(sect) =>
-        {emitSection(sect, depth + 1)}
-
-      case _ =>
-        error("unknown paragraph node " + para)
-    }
-
-    val name = section.title.replaceAll("\\p{Space}", "_").toLowerCase()
-    <h3 id={name}>{section.title}</h3>.concat(
-    group(section.paragraphs.toList.map(p => emitParagraph(p))))
-  }
-
-  private def emit3columns(col1: String, col2: String, col3: String): NodeSeq =
-    <div style="float:left;">{col1}</div>
-    <div style="float:right;">{col3}</div>
-    <div style="text-align:center;">{col2}</div>
-    <div style="clear:both;"></div>
-
-  private def emitHeader(col1: String, col2: String, col3: String): NodeSeq =
-    <div style="margin: 0 0 2em 0;">
-      {emit3columns(col1, col2, col3)}
-    </div>
-
-  private def emitFooter(col1: String, col2: String, col3: String): NodeSeq = {
-    scala.xml.Comment("footer")
-    <div style="margin: 2em 0 0 0;">
-      {emit3columns(col1, col2, col3)}
-    </div>
-  }
-
-  def emitDocument(document: Document, addDocType: Boolean) = {
-      val name = document.title + "(" + document.category.id + ")"
-      val doc =
-        <html xml:lang="en">
-        <head>
-          <title>{document.title}</title>
-          <meta http-equiv="Content-Language" content="en"/>
-          <meta http-equiv="Content-Type" content={"text/html; charset=" + document.encoding}/>
-          <meta name="Author" content={document.author}/>
-          <style type="text/css">
-          {"  blockquote, pre { margin:1em 4em 1em 4em; }\n" +
-           "  p { margin:1em 2em 1em 2em; text-align:justify; }\n"}
-          </style>
-        </head>
-        <body>
-          {emitHeader(name, "" + document.category, name)}
-          {document.sections.map(s => emitSection(s, 2))}
-          {emitFooter("version " + document.version, document.date, name)}
-        </body>
-      </html>
-    out.println(doc)
-/*
-    val w = new java.io.StringWriter
-    val id = scala.xml.dtd.PublicID("PUBLIC", null)
-    val dtd = null //scala.xml.dtd.DEFAULT(true, "")
-    val doctype = scala.xml.dtd.DocType("html", id, null) //List(dtd))
-    XML.write(w, doc, document.encoding, true/ *xmlDecl* /, doctype)
-    out.println(w.toString())
-*/
-  }
-*/
-  def main(args: Array[String]) {
-    if (args.length < 1) {
-      System.err println "usage: EmitHtml <classname>"
-      sys.exit(1)
-    }
+  def emitHtml(classname: String, outStream: java.io.OutputStream = out.out) {
+    if(outStream != out.out) out setOut outStream
     try {
       val cl = this.getClass.getClassLoader()
-      val clasz = cl loadClass args(0)
+      val clasz = cl loadClass classname
       val meth = clasz getDeclaredMethod "manpage"
       val doc = meth.invoke(null).asInstanceOf[Document]
       emitDocument(doc)
     } catch {
       case ex: Exception =>
         ex.printStackTrace()
-        System.err println "Error in EmitHtml"
+        System.err println "Error in EmitManPage"
         sys.exit(1)
     }
-  }
-
-  def emitHtml(classname: String, outStream: java.io.OutputStream) {
-    out setOut outStream
-    main(Array(classname))
   }
 }

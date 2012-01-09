@@ -192,21 +192,21 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
 //          val expr2 = if (catches.nonEmpty) {
             val pos = catches.head.pos
-            val argSym = currentOwner.newValueParameter(pos, "$ex").setInfo(ThrowableClass.tpe)
+            val argSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
             val rhs = Match(Ident(argSym), catches1)
             val fun = Function(List(ValDef(argSym)), rhs)
-            val funSym = currentOwner.newValueParameter(pos, "$catches").setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
+            val funSym = currentOwner.newValueParameter(pos, cpsNames.catches).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
             val funDef = localTyper.typed(atPos(pos) { ValDef(funSym, fun) })
-            val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr1, expr1.tpe.member("flatMapCatch")), List(Ident(funSym))) })
+            val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym))) })
 
             argSym.owner = fun.symbol
             val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
             chown.traverse(rhs)
 
-            val exSym = currentOwner.newValueParameter(pos, "$ex").setInfo(ThrowableClass.tpe)
+            val exSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
             val catch2 = { localTyper.typedCases(tree, List(
               CaseDef(Bind(exSym, Typed(Ident("_"), TypeTree(ThrowableClass.tpe))),
-                Apply(Select(Ident(funSym), "isDefinedAt"), List(Ident(exSym))),
+                Apply(Select(Ident(funSym), nme.isDefinedAt), List(Ident(exSym))),
                 Apply(Ident(funSym), List(Ident(exSym))))
             ), ThrowableClass.tpe, targettp) }
 
@@ -317,11 +317,11 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 log("fun.tpe:"+fun.tpe)
                 log("return type of fun:"+body1.tpe)
 
-                var methodName = "map"
+                var methodName = nme.map
 
                 if (body1.tpe != null) {
                   if (body1.tpe.typeSymbol == Context)
-                    methodName = "flatMap"
+                    methodName = nme.flatMap
                 }
                 else
                   unit.error(rhs.pos, "cannot compute type for CPS-transformed function result")
@@ -347,14 +347,14 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   //   val <lhs> = ctx.getTrivialValue; ...    <--- TODO: try/catch ??? don't bother for the moment...
                   // else
                   //   ctx.flatMap { <lhs> => ... }
-                  val ctxSym = currentOwner.newValue(vd.symbol.name + "$shift").setInfo(rhs1.tpe)
+                  val ctxSym = currentOwner.newValue(vd.symbol.name append cpsNames.shiftSuffix).setInfo(rhs1.tpe)
                   val ctxDef = localTyper.typed(ValDef(ctxSym, rhs1))
                   def ctxRef = localTyper.typed(Ident(ctxSym))
                   val argSym = currentOwner.newValue(vd.symbol.name).setInfo(tpe)
-                  val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member("getTrivialValue"))))
+                  val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member(cpsNames.getTrivialValue))))
                   val switchExpr = localTyper.typed(atPos(vd.symbol.pos) {
                     val body2 = mkBlock(bodyStms, bodyExpr).duplicate // dup before typing!
-                    If(Select(ctxRef, ctxSym.tpe.member("isTrivial")),
+                    If(Select(ctxRef, ctxSym.tpe.member(cpsNames.isTrivial)),
                       applyTrivial(argSym, mkBlock(argDef::bodyStms, bodyExpr)),
                       applyCombinatorFun(ctxRef, body2))
                   })

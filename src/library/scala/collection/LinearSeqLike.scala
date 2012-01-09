@@ -13,6 +13,7 @@ import generic._
 import mutable.ListBuffer
 import immutable.List
 import scala.util.control.Breaks._
+import annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`.
  *
@@ -68,5 +69,10 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
       these = newBuilder.result
       xs
     }
+  }
+
+  @tailrec override final def corresponds[B](that: GenSeq[B])(p: (A,B) => Boolean): Boolean = {
+    if (this.isEmpty) that.isEmpty
+    else that.nonEmpty && p(head, that.head) && (tail corresponds that.tail)(p)
   }
 }

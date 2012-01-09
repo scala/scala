@@ -160,12 +160,12 @@ trait Trees extends api.Trees { self: SymbolTable =>
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     atPos(sym.pos) {
-      ModuleDef(Modifiers(sym.flags), sym.name, impl) setSymbol sym
+      ModuleDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
     }
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
     atPos(sym.pos) {
-      ValDef(Modifiers(sym.flags), sym.name,
+      ValDef(Modifiers(sym.flags), sym.name.toTermName,
              TypeTree(sym.tpe) setPos focusPos(sym.pos),
              rhs) setSymbol sym
     }
@@ -182,7 +182,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     atPos(sym.pos) {
       assert(sym != NoSymbol)
       DefDef(Modifiers(sym.flags),
-             sym.name,
+             sym.name.toTermName,
              sym.typeParams map TypeDef,
              vparamss,
              TypeTree(sym.tpe.finalResultType) setPos focusPos(sym.pos),
@@ -193,7 +193,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     DefDef(sym, Modifiers(sym.flags), vparamss, rhs)
 
   def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef =
-    DefDef(sym, mods, sym.paramss map (_.map(ValDef)), rhs)
+    DefDef(sym, mods, mapParamss(sym)(ValDef), rhs)
 
   def DefDef(sym: Symbol, rhs: Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)
@@ -214,7 +214,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     atPos(sym.pos) {
-      LabelDef(sym.name, params map Ident, rhs) setSymbol sym
+      LabelDef(sym.name.toTermName, params map Ident, rhs) setSymbol sym
     }
 
 
@@ -248,10 +248,13 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   /** Block factory that flattens directly nested blocks.
    */
-  def Block(stats: Tree*): Block = stats match {
-    case Seq(b @ Block(_, _)) => b
-    case Seq(stat) => Block(stats.toList, Literal(Constant(())))
-    case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
+  def Block(stats: Tree*): Block = {
+    if (stats.isEmpty) Block(Nil, Literal(Constant(())))
+    else stats match {
+      case Seq(b @ Block(_, _)) => b
+      case Seq(stat) => Block(stats.toList, Literal(Constant(())))
+      case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
+    }
   }
 
   // --- specific traversers and transformers

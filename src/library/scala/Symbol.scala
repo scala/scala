@@ -31,8 +31,8 @@ final class Symbol private (val name: String) extends Serializable {
   override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
 }
 
-object Symbol extends UniquenessCache[String, Symbol]
-{
+object Symbol extends UniquenessCache[String, Symbol] {
+  override def apply(name: String): Symbol = super.apply(name)
   protected def valueFromKey(name: String): Symbol = new Symbol(name)
   protected def keyFromValue(sym: Symbol): Option[String] = Some(sym.name)
 }

@@ -23,15 +23,10 @@ trait GenAndroid {
    *  `Parcelable` interface must also have a static field called `CREATOR`,
    *  which is an object implementing the `Parcelable.Creator` interface.
    */
-  private val fieldName = "CREATOR"
+  private val fieldName = newTermName("CREATOR")
 
-  private lazy val AndroidParcelableInterface =
-    try definitions.getClass("android.os.Parcelable")
-    catch { case _: FatalError => NoSymbol }
-
-  private lazy val AndroidCreatorClass =
-    if (AndroidParcelableInterface == NoSymbol) NoSymbol
-    else definitions.getClass("android.os.Parcelable$Creator")
+  private lazy val AndroidParcelableInterface = definitions.getClassIfDefined("android.os.Parcelable")
+  private lazy val AndroidCreatorClass        = definitions.getClassIfDefined("android.os.Parcelable$Creator")
 
   def isAndroidParcelableClass(sym: Symbol) =
     (AndroidParcelableInterface != NoSymbol) &&

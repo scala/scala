@@ -403,7 +403,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *
    *  @return   the reversed StringBuilder
    */
-  @migration(2, 8, "Since 2.8 reverse returns a new instance.  Use 'reverseContents' to update in place.")
+  @migration("`reverse` returns a new instance.  Use `reverseContents` to update in place and return that StringBuilder itself.", "2.8.0")
   override def reverse: StringBuilder = new StringBuilder(new JavaStringBuilder(underlying) reverse)
 
   override def clone(): StringBuilder = new StringBuilder(new JavaStringBuilder(underlying))

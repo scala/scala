@@ -49,7 +49,7 @@ abstract class MetaParser{
     val sym = locals.lookup(newTypeName(str))
     if (sym != NoSymbol) sym.tpe
     else {
-      val tp = definitions.getClass(str).tpe;
+      val tp = definitions.getRequiredClass(str).tpe;
       if (token != "[") tp
       else {
         val args = new ListBuffer[Type];

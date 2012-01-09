@@ -29,17 +29,7 @@ trait ScalaToJava extends ConversionUtil { self: SymbolTable =>
     def noClass = throw new ClassNotFoundException("no Java class corresponding to "+clazz+" found")
     //println("classToJava "+clazz+" "+clazz.owner+" "+clazz.owner.isPackageClass)//debug
     if (clazz.isValueClass)
-      clazz match {
-        case UnitClass => java.lang.Void.TYPE
-        case ByteClass => java.lang.Byte.TYPE
-        case CharClass => java.lang.Character.TYPE
-        case ShortClass => java.lang.Short.TYPE
-        case IntClass => java.lang.Integer.TYPE
-        case LongClass => java.lang.Long.TYPE
-        case FloatClass => java.lang.Float.TYPE
-        case DoubleClass => java.lang.Double.TYPE
-        case BooleanClass => java.lang.Boolean.TYPE
-      }
+      valueClassToJavaType(clazz)
     else if (clazz == ArrayClass)
       noClass
     else if (clazz.owner.isPackageClass)
@@ -54,7 +44,7 @@ trait ScalaToJava extends ConversionUtil { self: SymbolTable =>
   }
 
   private def expandedName(sym: Symbol): String =
-    if (sym.isPrivate) nme.expandedName(sym.name, sym.owner).toString
+    if (sym.isPrivate) nme.expandedName(sym.name.toTermName, sym.owner).toString
     else sym.name.toString
 
   def fieldToJava(fld: Symbol): jField = fieldCache.toJava(fld) {

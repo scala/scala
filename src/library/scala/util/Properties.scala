@@ -142,6 +142,11 @@ private[scala] trait PropertiesTrait {
    */
   def isWin                 = osName startsWith "Windows"
   def isMac                 = javaVendor startsWith "Apple"
+  
+  // This is looking for javac, tools.jar, etc.
+  // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,
+  // and finally the system property based javaHome.
+  def jdkHome              = envOrElse("JDK_HOME", envOrElse("JAVA_HOME", javaHome))
 
   def versionMsg            = "Scala %s %s -- %s".format(propCategory, versionString, copyrightString)
   def scalaCmd              = if (isWin) "scala.bat" else "scala"

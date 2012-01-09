@@ -194,9 +194,9 @@ abstract class CopyPropagation {
       this.method = m
 
       init {
-        worklist += m.code.startBlock
+        worklist += m.startBlock
         worklist ++= (m.exh map (_.startBlock))
-        m.code.blocks.foreach { b =>
+        m foreachBlock { b =>
           in(b)  = lattice.bottom
           out(b) = lattice.bottom
           assert(out.contains(b))
@@ -207,21 +207,21 @@ abstract class CopyPropagation {
         }
 
         // first block is special: it's not bottom, but a precisely defined state with no bindings
-        in(m.code.startBlock) = new lattice.State(lattice.emptyBinding, Nil);
+        in(m.startBlock) = new lattice.State(lattice.emptyBinding, Nil);
       }
     }
 
     override def run() {
       forwardAnalysis(blockTransfer)
       if (settings.debug.value) {
-        linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
+        linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(in(b) != lattice.bottom,
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited?"));
       }
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem =
-      b.foldLeft(in)(interpret)
+      b.iterator.foldLeft(in)(interpret)
 
     import opcodes._
 
@@ -520,8 +520,8 @@ abstract class CopyPropagation {
      */
     private def getBindingsForPrimaryCtor(in: copyLattice.State, ctor: Symbol): mutable.Map[Symbol, Value] = {
       val paramAccessors = ctor.owner.constrParamAccessors;
-      var values = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
-      val bindings = mutable.HashMap[Symbol, Value]()
+      var values         = in.stack.take(1 + ctor.info.paramTypes.length).reverse.drop(1);
+      val bindings       = mutable.HashMap[Symbol, Value]()
 
       debuglog("getBindings for: " + ctor + " acc: " + paramAccessors)
 
@@ -562,13 +562,12 @@ abstract class CopyPropagation {
     final def isPureMethod(m: Symbol): Boolean =
       m.isGetter // abstract getters are still pure, as we 'know'
 
-    final override def toString(): String = {
-      var res = ""
-      for (b <- this.method.code.blocks.toList)
-        res = (res + "\nIN(" + b.label + "):\t Bindings: " + in(b).bindings +
-               "\nIN(" + b.label +"):\t Stack: " + in(b).stack) + "\n";
-      res
-    }
+    final override def toString() = (
+      method.blocks map { b =>
+        "\nIN(%s):\t Bindings: %s".format(b.label, in(b).bindings) +
+        "\nIN(%s):\t Stack: %s".format(b.label, in(b).stack)
+      } mkString
+    )
 
   } /* class CopyAnalysis */
 }

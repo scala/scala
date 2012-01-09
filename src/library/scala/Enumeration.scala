@@ -48,19 +48,20 @@ import java.util.regex.Pattern
  *
  *  @param initial The initial value from which to count the integers that
  *                 identifies values at run-time.
- *  @param names   The sequence of names to give to this enumeration's values.
- *
  *  @author  Matthias Zenger
  */
 @SerialVersionUID(8476000850333817230L)
-abstract class Enumeration(initial: Int,
-    @deprecated("Names should be specified individually or discovered via reflection", "2.10")
-    names: String*) extends Serializable {
+abstract class Enumeration (initial: Int) extends Serializable {
   thisenum =>
 
   def this() = this(0)
-
-  @deprecated("Names should be specified individually or discovered via reflection", "2.10")
+    
+  @deprecated("Names should be specified individually or discovered via reflection", "2.10.0")
+  def this(initial: Int, names: String*) = {
+    this(initial)
+    this.nextName = names.iterator
+  }
+  @deprecated("Names should be specified individually or discovered via reflection", "2.10.0")
   def this(names: String*) = this(0, names: _*)
 
   /* Note that `readResolve` cannot be private, since otherwise
@@ -97,12 +98,13 @@ abstract class Enumeration(initial: Int,
   }
 
   /** The integer to use to identify the next created value. */
-  protected var nextId = initial
+  protected var nextId: Int = initial
 
   /** The string to use to name the next created value. */
-  protected var nextName = names.iterator
+  protected var nextName: Iterator[String] = _
+
   private def nextNameOrNull =
-    if (nextName.hasNext) nextName.next else null
+    if (nextName != null && nextName.hasNext) nextName.next else null
 
   /** The highest integer amongst those used to identify values in this
     * enumeration. */
@@ -120,17 +122,8 @@ abstract class Enumeration(initial: Int,
    */
   final def apply(x: Int): Value = vmap(x)
 
-  /**
-   * Return a `Value` from this `Enumeration` whose name matches
-   * the argument `s`.
-   *
-   * You can pass a String* set of names to the constructor, or initialize
-   * each `Enumeration` with `Value(String)`. Otherwise, the names are
-   * determined automatically through reflection.
-   *
-   * Note the change here wrt 2.7 is intentional. You should know whether
-   * a name is in an `Enumeration` beforehand. If not, just use find on
-   * values.
+  /** Return a `Value` from this `Enumeration` whose name matches
+   *  the argument `s`.  The names are determined automatically via reflection.
    *
    * @param  s an `Enumeration` name
    * @return   the `Value` of this `Enumeration` if its name matches `s`

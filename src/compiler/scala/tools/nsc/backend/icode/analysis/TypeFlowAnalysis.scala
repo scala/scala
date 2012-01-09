@@ -110,16 +110,16 @@ abstract class TypeFlowAnalysis {
       this.method = m
       //typeFlowLattice.lubs = 0
       init {
-        worklist += m.code.startBlock
+        worklist += m.startBlock
         worklist ++= (m.exh map (_.startBlock))
-        m.code.blocks.foreach { b =>
+        m foreachBlock { b =>
           in(b)  = typeFlowLattice.bottom
           out(b) = typeFlowLattice.bottom
         }
 
         // start block has var bindings for each of its parameters
         val entryBindings     = new VarBinding ++= (m.params map (p => ((p, p.kind))))
-        in(m.code.startBlock) = lattice.IState(entryBindings, typeStackLattice.bottom)
+        in(m.startBlock) = lattice.IState(entryBindings, typeStackLattice.bottom)
 
         m.exh foreach { e =>
           in(e.startBlock) = lattice.IState(in(e.startBlock).vars, typeStackLattice.exceptionHandlerStack)
@@ -132,16 +132,18 @@ abstract class TypeFlowAnalysis {
       if (this.method == null || this.method.symbol != m.symbol)
         init(m)
       else reinit {
-        for (b <- m.code.blocks; if !in.isDefinedAt(b)) {
-          for (p <- b.predecessors) {
-            if (out.isDefinedAt(p)) {
-              in(b) = out(p)
-              worklist += p
-            }
-/*            else
-              in(b)  = typeFlowLattice.bottom
-*/        }
-          out(b) = typeFlowLattice.bottom
+        m foreachBlock { b =>
+          if (!in.contains(b)) {
+            for (p <- b.predecessors) {
+              if (out.isDefinedAt(p)) {
+                in(b) = out(p)
+                worklist += p
+              }
+  /*            else
+                in(b)  = typeFlowLattice.bottom
+  */        }
+            out(b) = typeFlowLattice.bottom
+          }
         }
         for (handler <- m.exh) {
           val start = handler.startBlock
@@ -164,7 +166,7 @@ abstract class TypeFlowAnalysis {
       forwardAnalysis(blockTransfer)
       val t = timer.stop
       if (settings.debug.value) {
-        linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
+        linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
@@ -174,7 +176,7 @@ abstract class TypeFlowAnalysis {
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
-      b.foldLeft(in)(interpret)
+      b.iterator.foldLeft(in)(interpret)
     }
     /** The flow function of a given basic block. */
     /* var flowFun: immutable.Map[BasicBlock, TransferFunction] = new immutable.HashMap */

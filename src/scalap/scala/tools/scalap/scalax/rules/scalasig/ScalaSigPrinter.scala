@@ -13,9 +13,8 @@ package scalasig
 
 import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
-
 import scala.tools.scalap.scalax.util.StringUtil
-import reflect.NameTransformer
+import scala.reflect.NameTransformer
 import java.lang.String
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {

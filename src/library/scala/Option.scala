@@ -192,6 +192,13 @@ sealed abstract class Option[+A] extends Product with Serializable {
   @inline final def exists(p: A => Boolean): Boolean =
     !isEmpty && p(this.get)
 
+  /** Returns true if this option is empty '''or''' the predicate
+   * $p returns true when applied to this $option's value.
+   *
+   *  @param  p   the predicate to test
+   */
+  @inline final def forall(p: A => Boolean): Boolean = isEmpty || p(this.get)
+
   /** Apply the given procedure $f to the option's value,
    *  if it is nonempty. Otherwise, do nothing.
    *

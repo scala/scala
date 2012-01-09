@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# publishes nightly build if $publish_to is set in environment.
+# alternate maven settings.xml file given in $maven_settings.
+#
+
+[[ $# -eq 1 ]] || {
+  cat <<EOM
+Usage: $0 <scala version>
+
+Environment variables:
+  publish_to   rsync destination
+EOM
+  exit 0
+}
+version="$1"
+
+[[ -d dists/archives ]] || {
+  echo "Can't find build, has it completed? No directory at dists/archives"
+  exit 1
+}
+
+# should not be hardcoded
+# adds -Dsettings.file= if fixed path is present 
+mavenSettingsOption () {
+  hardcoded_path="/home/linuxsoft/apps/hudson-maven-settings/settings.xml"
+  
+  # environment variable
+  if [[ -n $maven_settings ]]; then
+    echo -Dsettings.file="$maven_settings"
+  elif [[ -f $hardcoded_path ]]; then
+    echo -Dsettings.file="$hardcoded_path"
+  fi
+}
+
+mavenSettings=${maven_settings:-findMavenSettings}
+
+if [[ -z $publish_to ]]; then
+  echo "Nothing to publish."
+else
+  echo "Publishing nightly build to $publish_to"
+  # Archive Scala nightly distribution
+  rsync -az dists/archives/ "$publish_to/distributions"
+  # don't publish docs in 2.8.x
+  [[ $version == "2.8.x" ]] || rsync -az build/scaladoc/ "$publish_to/docs"
+  # sbaz
+  [[ -d dists/sbaz ]] && rsync -az dists/sbaz/ "$publish_to/sbaz"
+  # Deploy the maven artifacts on scala-tools.org
+  ( cd dists/maven/latest && ant deploy.snapshot $(mavenSettingsOption) )
+fi

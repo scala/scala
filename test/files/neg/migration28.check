@@ -1,6 +1,5 @@
-migration28.scala:4: error: method scanRight in trait TraversableLike has changed semantics:
-This scanRight definition has changed in 2.9.
-The previous behavior can be reproduced with scanRight.reverse.
+migration28.scala:4: error: method scanRight in trait TraversableLike has changed semantics in version 2.9.0:
+The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.
   List(1,2,3,4,5).scanRight(0)(_+_)
                   ^
 one error found

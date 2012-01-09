@@ -12,22 +12,37 @@ trait CPSUtils {
   var cpsEnabled = true
   val verbose: Boolean = System.getProperty("cpsVerbose", "false") == "true"
   def vprintln(x: =>Any): Unit = if (verbose) println(x)
+  
+  object cpsNames {
+    val catches         = newTermName("$catches")
+    val ex              = newTermName("$ex")
+    val flatMapCatch    = newTermName("flatMapCatch")
+    val getTrivialValue = newTermName("getTrivialValue")
+    val isTrivial       = newTermName("isTrivial")
+    val reify           = newTermName("reify")
+    val reifyR          = newTermName("reifyR")
+    val shift           = newTermName("shift")
+    val shiftR          = newTermName("shiftR")
+    val shiftSuffix     = newTermName("$shift")
+    val shiftUnit       = newTermName("shiftUnit")
+    val shiftUnitR      = newTermName("shiftUnitR")
+  }
 
-  lazy val MarkerCPSSym        = definitions.getClass("scala.util.continuations.cpsSym")
-  lazy val MarkerCPSTypes      = definitions.getClass("scala.util.continuations.cpsParam")
-  lazy val MarkerCPSSynth      = definitions.getClass("scala.util.continuations.cpsSynth")
-  lazy val MarkerCPSAdaptPlus  = definitions.getClass("scala.util.continuations.cpsPlus")
-  lazy val MarkerCPSAdaptMinus = definitions.getClass("scala.util.continuations.cpsMinus")
+  lazy val MarkerCPSSym        = definitions.getRequiredClass("scala.util.continuations.cpsSym")
+  lazy val MarkerCPSTypes      = definitions.getRequiredClass("scala.util.continuations.cpsParam")
+  lazy val MarkerCPSSynth      = definitions.getRequiredClass("scala.util.continuations.cpsSynth")
+  lazy val MarkerCPSAdaptPlus  = definitions.getRequiredClass("scala.util.continuations.cpsPlus")
+  lazy val MarkerCPSAdaptMinus = definitions.getRequiredClass("scala.util.continuations.cpsMinus")
 
-  lazy val Context = definitions.getClass("scala.util.continuations.ControlContext")
-  lazy val ModCPS = definitions.getModule("scala.util.continuations")
+  lazy val Context = definitions.getRequiredClass("scala.util.continuations.ControlContext")
+  lazy val ModCPS = definitions.getRequiredModule("scala.util.continuations")
 
-  lazy val MethShiftUnit  = definitions.getMember(ModCPS, "shiftUnit")
-  lazy val MethShiftUnitR = definitions.getMember(ModCPS, "shiftUnitR")
-  lazy val MethShift      = definitions.getMember(ModCPS, "shift")
-  lazy val MethShiftR     = definitions.getMember(ModCPS, "shiftR")
-  lazy val MethReify      = definitions.getMember(ModCPS, "reify")
-  lazy val MethReifyR     = definitions.getMember(ModCPS, "reifyR")
+  lazy val MethShiftUnit  = definitions.getMember(ModCPS, cpsNames.shiftUnit)
+  lazy val MethShiftUnitR = definitions.getMember(ModCPS, cpsNames.shiftUnitR)
+  lazy val MethShift      = definitions.getMember(ModCPS, cpsNames.shift)
+  lazy val MethShiftR     = definitions.getMember(ModCPS, cpsNames.shiftR)
+  lazy val MethReify      = definitions.getMember(ModCPS, cpsNames.reify)
+  lazy val MethReifyR     = definitions.getMember(ModCPS, cpsNames.reifyR)
 
   lazy val allCPSAnnotations = List(MarkerCPSSym, MarkerCPSTypes, MarkerCPSSynth,
     MarkerCPSAdaptPlus, MarkerCPSAdaptMinus)

@@ -91,7 +91,7 @@ trait DoubleLinkedListLike[A, This <: Seq[A] with DoubleLinkedListLike[A, This]]
    *  current node, i.e. `this` node itself will still point "into" the list it
    *  was in.
    */
-  @migration(2, 9, "Double linked list now removes the current node from the list.")
+  @migration("Double linked list now removes the current node from the list.", "2.9.0")
   def remove(): Unit = if (nonEmpty) {
     next.prev = prev
     if (prev ne null) prev.next = next // because this could be the first node

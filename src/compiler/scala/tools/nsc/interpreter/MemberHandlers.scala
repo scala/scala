@@ -169,7 +169,7 @@ trait MemberHandlers {
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
     val Import(expr, selectors) = imp
-    def targetType = intp.typeOfExpression("" + expr)
+    def targetType: Type = intp.typeOfExpression("" + expr)
     override def isLegalTopLevel = true
 
     def createImportForName(name: Name): String = {
@@ -199,10 +199,10 @@ trait MemberHandlers {
     def importedSymbols = individualSymbols ++ wildcardSymbols
 
     lazy val individualSymbols: List[Symbol] =
-      atPickler(targetType.toList flatMap (tp => individualNames map (tp nonPrivateMember _)))
+      atPickler(individualNames map (targetType nonPrivateMember _))
 
     lazy val wildcardSymbols: List[Symbol] =
-      if (importsWildcard) atPickler(targetType.toList flatMap (_.nonPrivateMembers))
+      if (importsWildcard) atPickler(targetType.nonPrivateMembers)
       else Nil
 
     /** Complete list of names imported by a wildcard */

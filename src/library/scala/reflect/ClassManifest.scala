@@ -127,7 +127,7 @@ trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
     java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[jClass[Array[T]]]
 
   def arrayManifest: ClassManifest[Array[T]] =
-    ClassManifest.classType[Array[T]](arrayClass[T](erasure))
+    ClassManifest.classType[Array[T]](arrayClass[T](erasure), this)
 
   def newArray(len: Int): Array[T] =
     java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[T]]
@@ -220,7 +220,7 @@ object ClassManifest {
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
   def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
-    case NoManifest => Object.asInstanceOf[ClassManifest[Array[T]]]
+    case NoManifest          => Object.asInstanceOf[ClassManifest[Array[T]]]
     case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
   }
 

@@ -1,4 +1,4 @@
-import scala.tools.nsc.util.Origins
+import scala.reflect.internal.util.Origins
 
 package goxbox {
   object Socks {
