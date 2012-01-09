@@ -61,7 +61,7 @@ object Utility extends AnyRef with parsing.TokenTests {
     val key = md.key
     val smaller = sort(md.filter { m => m.key < key })
     val greater = sort(md.filter { m => m.key > key })
-    smaller.append( Null ).append(md.copy ( greater ))
+    smaller.copy(md.copy ( greater ))
   }
 
   /** Return the node with its attribute list sorted alphabetically
