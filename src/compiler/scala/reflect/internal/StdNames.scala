@@ -13,12 +13,10 @@ import annotation.switch
 trait StdNames extends NameManglers { self: SymbolTable =>
 
   def encode(str: String): TermName = newTermNameCached(NameTransformer.encode(str))
-
-  // I would like to eventually lose these, or at least create
-  // some barriers to relying upon them.  Maybe I need an annotation
-  // like @deprecated, but that doesn't @deprecated.  @chastise.
+  
   implicit def lowerTermNames(n: TermName): String = "" + n
-  implicit def stringToTermName(s: String): TermName = newTermName(s)
+
+  // implicit def stringToTermName(s: String): TermName = newTermName(s)
 
   /** This should be the first trait in the linearization. */
   trait Keywords {
