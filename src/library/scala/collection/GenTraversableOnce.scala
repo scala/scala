@@ -471,7 +471,7 @@ trait GenTraversableOnce[+A] {
    *  $willNotTerminateInf
    *  @return an indexed sequence containing all elements of this $coll.
    */
-  def toIndexedSeq[A1 >: A]: immutable.IndexedSeq[A1]
+  def toIndexedSeq: immutable.IndexedSeq[A]
 
   /** Converts this $coll to a stream.
    *  $willNotTerminateInf
