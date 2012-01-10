@@ -48,7 +48,8 @@ package scala.collection
  *  @author Martin Odersky
  *  @since  2.8.1
  */
-object JavaConverters {
+
+trait JavaConverters {
   import java.{ lang => jl, util => ju }
   import java.util.{ concurrent => juc }
   import JavaConversions._
@@ -536,3 +537,5 @@ object JavaConverters {
     propertiesAsScalaMapConverter(p)
 
 }
+
+object JavaConverters extends JavaConverters
