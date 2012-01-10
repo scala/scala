@@ -53,12 +53,12 @@ trait ToolBoxes extends { self: Universe =>
       }
     
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
-        val obj = EmptyPackageClass.newModule(NoPosition, nextWrapperModuleName())
+        val obj = EmptyPackageClass.newModule(nextWrapperModuleName())
         val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
-        val meth = obj.moduleClass.newMethod(NoPosition, newTermName(wrapperMethodName))
-        def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name.toTermName) setInfo fv.tpe
+        val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
+        def makeParam(fv: Symbol) = meth.newValueParameter(fv.name.toTermName) setInfo fv.tpe
         meth setInfo MethodType(fvs map makeParam, expr.tpe)
         minfo.decls enter meth
         trace("wrapping ")(defOwner(expr) -> meth)

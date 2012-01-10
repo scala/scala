@@ -96,17 +96,17 @@ abstract class TreeGen extends reflect.internal.TreeGen {
   }
 
   def mkModuleVarDef(accessor: Symbol) = {
+    val inClass    = accessor.owner.isClass
+    val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
+    
     val mval = (
-      accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
-      setInfo accessor.tpe.finalResultType
-      setFlag (MODULEVAR)
+      accessor.owner.newVariable(nme.moduleVarName(accessor.name), accessor.pos.focus, MODULEVAR | extraFlags)
+        setInfo accessor.tpe.finalResultType
+        addAnnotation VolatileAttr
     )
+    if (inClass)
+      mval.owner.info.decls enter mval
 
-    mval addAnnotation VolatileAttr
-    if (mval.owner.isClass) {
-      mval setFlag (PrivateLocal | SYNTHETIC)
-      mval.owner.info.decls.enter(mval)
-    }
     ValDef(mval)
   }
 

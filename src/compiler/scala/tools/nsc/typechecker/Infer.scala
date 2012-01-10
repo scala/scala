@@ -363,10 +363,7 @@ trait Infer {
     def makeFullyDefined(tp: Type): Type = {
       val tparams = new ListBuffer[Symbol]
       def addTypeParam(bounds: TypeBounds): Type = {
-        val tparam =
-          context.owner.newAbstractType(context.tree.pos.focus, newTypeName("_"+tparams.size))
-            .setFlag(EXISTENTIAL)
-            .setInfo(bounds)
+        val tparam = context.owner.newExistential(newTypeName("_"+tparams.size), context.tree.pos.focus) setInfo bounds
         tparams += tparam
         tparam.tpe
       }

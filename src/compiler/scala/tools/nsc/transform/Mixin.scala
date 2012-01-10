@@ -396,9 +396,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           if (sourceModule != NoSymbol) {
             sourceModule setPos sym.pos
             sourceModule.flags = MODULE | FINAL
-          } else {
-            sourceModule = clazz.owner.newModule(
-              sym.pos, sym.name.toTermName, sym.asInstanceOf[ClassSymbol])
+          }
+          else {
+            sourceModule = (
+              clazz.owner.newModuleSymbol(sym.name.toTermName, sym.pos, MODULE | FINAL)
+                setModuleClass sym.asInstanceOf[ClassSymbol]
+            )
             clazz.owner.info.decls enter sourceModule
           }
           sourceModule setInfo sym.tpe
@@ -742,7 +745,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         assert(!sym.isOverloaded, sym)
 
         def createBitmap: Symbol = {
-          val sym = clazz0.newVariable(clazz0.pos, bitmapName) setInfo IntClass.tpe
+          val sym = clazz0.newVariable(bitmapName, clazz0.pos) setInfo IntClass.tpe
           atPhase(currentRun.typerPhase)(sym addAnnotation VolatileAttr)
 
           category match {

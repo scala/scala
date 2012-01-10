@@ -198,9 +198,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def DefDef(sym: Symbol, rhs: Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)
 
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = {
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
     DefDef(sym, rhs(sym.info.paramss))
-  }
 
   /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =

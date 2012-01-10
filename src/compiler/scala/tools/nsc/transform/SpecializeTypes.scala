@@ -407,7 +407,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def typeParamSubAnyRef(sym: Symbol, cls: Symbol) = (
     anyrefSpecCache.getOrElseUpdate(sym,
-      cls.newTypeParameter(sym.pos, sym.name append nme.SPECIALIZED_SUFFIX_NAME toTypeName)
+      cls.newTypeParameter(sym.name append nme.SPECIALIZED_SUFFIX_NAME toTypeName, sym.pos)
         setInfo TypeBounds(sym.info.bounds.lo, AnyRefClass.tpe)
     ).tpe
   )

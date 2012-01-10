@@ -53,7 +53,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     import typeDebug.{ ptTree, ptBlock, ptLine }
 
     def solveContextBound(contextBoundTp: Type): (Tree, Type) = {
-      val solSym      = NoSymbol.newTypeParameter(NoPosition, newTypeName("SolveImplicit$"))
+      val solSym      = NoSymbol.newTypeParameter(newTypeName("SolveImplicit$"))
       val param       = solSym.setInfo(contextBoundTp.typeSymbol.typeParams(0).info.cloneInfo(solSym)) // TypeBounds(NothingClass.typeConstructor, baseTp)
       val pt          = appliedType(contextBoundTp, List(param.tpeHK))
       val savedUndets = context.undetparams
@@ -1245,7 +1245,7 @@ defined class Foo */
         }
         t match {
           case Function(_, _) if t.symbol == NoSymbol =>
-            t.symbol = currentOwner.newValue(t.pos, nme.ANON_FUN_NAME).setFlag(SYNTHETIC).setInfo(NoType)
+            t.symbol = currentOwner.newAnonymousFunctionValue(t.pos)
             // println("new symbol for "+ (t, t.symbol.ownerChain))
           case Function(_, _) if (t.symbol.owner == NoSymbol) || (t.symbol.owner == origOwner) =>
             // println("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))

@@ -126,11 +126,15 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         if (treeInfo.firstConstructor(stats) == EmptyTree) makeConstructor(List()) :: stats
         else stats)
 
-    def makeParam(name: String, tpt: Tree) =
-      ValDef(Modifiers(Flags.JAVA | Flags.PARAM), newTermName(name), tpt, EmptyTree)
+    def makeSyntheticParam(count: Int, tpt: Tree): ValDef =
+      makeParam(nme.syntheticParamName(count), tpt)
+    def makeParam(name: String, tpt: Tree): ValDef =
+      makeParam(newTypeName(name), tpt)
+    def makeParam(name: TermName, tpt: Tree): ValDef =
+      ValDef(Modifiers(Flags.JAVA | Flags.PARAM), name, tpt, EmptyTree)
 
     def makeConstructor(formals: List[Tree]) = {
-      val vparams = formals.zipWithIndex map { case (p, i) => makeParam("x$" + (i + 1), p) }
+      val vparams = mapWithIndex(formals)((p, i) => makeSyntheticParam(i + 1, p))
       DefDef(Modifiers(Flags.JAVA), nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
     }
 

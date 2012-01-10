@@ -293,23 +293,22 @@ trait Namers extends MethodSynthesis {
     private def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
-      val sym         = tree match {
-        case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(pos, name.toTypeName)
-        case TypeDef(_, _, _, _)                    => owner.newAliasType(pos, name.toTypeName)
-        case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => owner.newConstructor(pos)
-        case DefDef(_, _, _, _, _, _)               => owner.newMethod(pos, name.toTermName)
-        case ClassDef(_, _, _, _)                   => owner.newClass(pos, name.toTypeName)
-        case ModuleDef(_, _, _)                     => owner.newModule(pos, name)
-        case ValDef(_, _, _, _) if isParameter      => owner.newValueParameter(pos, name)
+      val flags       = tree.mods.flags & mask
+      
+      tree match {
+        case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(name.toTypeName, pos, flags)
+        case TypeDef(_, _, _, _)                    => owner.newTypeSymbol(name.toTypeName, pos, flags)
+        case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => owner.newConstructor(pos, flags)
+        case DefDef(_, _, _, _, _, _)               => owner.newMethod(name.toTermName, pos, flags)
+        case ClassDef(_, _, _, _)                   => owner.newClassSymbol(name.toTypeName, pos, flags)
+        case ModuleDef(_, _, _)                     => owner.newModule(name, pos, flags)
+        case ValDef(_, _, _, _) if isParameter      => owner.newValueParameter(name, pos, flags)
         case PackageDef(pid, _)                     => createPackageSymbol(pos, pid)
-        case ValDef(_, _, _, _)                     => owner.newValue(pos, name)
+        case ValDef(_, _, _, _)                     => owner.newValue(name, pos, flags)
       }
-      sym setFlag (tree.mods.flags & mask)
     }
-    private def createFieldSymbol(tree: ValDef): TermSymbol = (
-      owner.newValue(tree.pos, nme.getterToLocal(tree.name))
-        setFlag tree.mods.flags & FieldFlags | PrivateLocal
-    )
+    private def createFieldSymbol(tree: ValDef): TermSymbol =
+      owner.newValue(nme.getterToLocal(tree.name), tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
 
     private def createImportSymbol(tree: Tree) =
       NoSymbol.newImport(tree.pos) setInfo completerOf(tree)
@@ -325,7 +324,7 @@ trait Namers extends MethodSynthesis {
       if (existing.isPackage && pkgOwner == existing.owner)
         existing
       else {
-        val pkg          = pkgOwner.newPackage(pos, pid.name.toTermName)
+        val pkg          = pkgOwner.newPackage(pid.name.toTermName, pos)
         val pkgClass     = pkg.moduleClass
         val pkgClassInfo = new PackageClassInfoType(newPackageScope(pkgClass), pkgClass)
 
@@ -579,7 +578,7 @@ trait Namers extends MethodSynthesis {
       // via "x$lzy" as can be seen in test #3927.
       val sym = (
         if (owner.isClass) createFieldSymbol(tree)
-        else owner.newValue(tree.pos, tree.name append nme.LAZY_LOCAL) setFlag tree.mods.flags resetFlag IMPLICIT
+        else owner.newValue(tree.name append nme.LAZY_LOCAL, tree.pos, tree.mods.flags & ~IMPLICIT)
       )
       enterValSymbol(tree, sym setFlag MUTABLE setLazyAccessor lazyAccessor)
     }

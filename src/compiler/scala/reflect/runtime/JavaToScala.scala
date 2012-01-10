@@ -115,7 +115,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  @param   jtvar   The Java type variable
    */
   private def createTypeParameter(jtvar: jTypeVariable[_ <: GenericDeclaration]): Symbol = {
-    val tparam = sOwner(jtvar).newTypeParameter(NoPosition, newTypeName(jtvar.getName))
+    val tparam = sOwner(jtvar).newTypeParameter(newTypeName(jtvar.getName))
       .setInfo(new TypeParamCompleter(jtvar))
     tparamCache enter (jtvar, tparam)
     tparam
@@ -335,7 +335,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val name = newTermName(fullname drop (split + 1))
     var pkg = owner.info decl name
     if (pkg == NoSymbol) {
-      pkg = owner.newPackage(NoPosition, name)
+      pkg = owner.newPackage(name)
       pkg.moduleClass setInfo new LazyPackageType
       pkg setInfo pkg.moduleClass.tpe
       owner.info.decls enter pkg

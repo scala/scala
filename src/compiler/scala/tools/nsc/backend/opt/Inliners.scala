@@ -348,7 +348,7 @@ abstract class Inliners extends SubComponent {
 
         def blockEmit(i: Instruction) = block.emit(i, targetPos)
         def newLocal(baseName: String, kind: TypeKind) =
-          new Local(caller.sym.newVariable(targetPos, freshName(baseName)), kind, false)
+          new Local(caller.sym.newVariable(freshName(baseName), targetPos), kind, false)
 
         val a = new analysis.MethodTFA(inc.m)
 
@@ -400,7 +400,7 @@ abstract class Inliners extends SubComponent {
 
         /** alfa-rename `l` in caller's context. */
         def dupLocal(l: Local): Local = {
-          val sym = caller.sym.newVariable(l.sym.pos, freshName(l.sym.name.toString))
+          val sym = caller.sym.newVariable(freshName(l.sym.name.toString), l.sym.pos)
           // sym.setInfo(l.sym.tpe)
           val dupped = new Local(sym, l.kind, false)
           inlinedLocals(l) = dupped

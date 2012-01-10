@@ -230,6 +230,31 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val _20 : NameType = "_20"
     val _21 : NameType = "_21"
     val _22 : NameType = "_22"
+
+    val x_0 : NameType  = "x$0"
+    val x_1 : NameType  = "x$1"
+    val x_2 : NameType  = "x$2"
+    val x_3 : NameType  = "x$3"
+    val x_4 : NameType  = "x$4"
+    val x_5 : NameType  = "x$5"
+    val x_6 : NameType  = "x$6"
+    val x_7 : NameType  = "x$7"
+    val x_8 : NameType  = "x$8"
+    val x_9 : NameType  = "x$9"
+    
+    @switch def syntheticParamName(i: Int): TermName = i match {
+      case 0  => nme.x_0
+      case 1  => nme.x_1
+      case 2  => nme.x_2
+      case 3  => nme.x_3
+      case 4  => nme.x_4
+      case 5  => nme.x_5
+      case 6  => nme.x_6
+      case 7  => nme.x_7
+      case 8  => nme.x_8
+      case 9  => nme.x_9
+      case _  => newTermName("x$" + i)
+    }
     
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"

@@ -455,7 +455,7 @@ abstract class ClassfileParser {
         ss = name.subName(start, end)
         sym = owner.info.decls lookup ss
         if (sym == NoSymbol) {
-          sym = owner.newPackage(NoPosition, ss) setInfo completer
+          sym = owner.newPackage(ss) setInfo completer
           sym.moduleClass setInfo completer
           owner.info.decls enter sym
         }
@@ -813,7 +813,7 @@ abstract class ClassfileParser {
       val start = index
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
-        val s = sym.newTypeParameter(NoPosition, tpname)
+        val s = sym.newTypeParameter(tpname)
         tparams = tparams + (tpname -> s)
         sig2typeBounds(tparams, true)
         newTParams += s
@@ -1076,8 +1076,8 @@ abstract class ClassfileParser {
       val name = entry.originalName
       var sflags = toScalaFlags(jflags, isClass = true)
 
-      val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
-      val innerModule = getOwner(jflags).newModule(NoPosition, name.toTermName).setInfo(completer).setFlag(sflags)
+      val innerClass = getOwner(jflags).newClass(name.toTypeName).setInfo(completer).setFlag(sflags)
+      val innerModule = getOwner(jflags).newModule(name.toTermName).setInfo(completer).setFlag(sflags)
       innerModule.moduleClass setInfo global.loaders.moduleClassLoader
 
       getScope(jflags) enter innerClass

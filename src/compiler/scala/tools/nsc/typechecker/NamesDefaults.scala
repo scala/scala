@@ -269,7 +269,7 @@ trait NamesDefaults { self: Analyzer =>
             case _ =>
               (seqType(arg.tpe), true)
           } else (arg.tpe, false)
-        val s = context.owner.newValue(arg.pos, unit.freshTermName("x$"))
+        val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos)
         val valType = if (byName) functionType(List(), argTpe)
                       else if (repeated) argTpe
                       else argTpe

@@ -988,7 +988,7 @@ abstract class ICodeReader extends ClassfileParser {
     /** Return a fresh Local variable for the given index.
      */
     private def freshLocal(idx: Int, kind: TypeKind, isArg: Boolean) = {
-      val sym = method.symbol.newVariable(NoPosition, newTermName("loc" + idx)).setInfo(kind.toType);
+      val sym = method.symbol.newVariable(newTermName("loc" + idx)).setInfo(kind.toType);
       val l = new Local(sym, kind, isArg)
       method.addLocal(l)
       l
@@ -1005,7 +1005,7 @@ abstract class ICodeReader extends ClassfileParser {
 
     /** add a method param with the given index. */
     def enterParam(idx: Int, kind: TypeKind) = {
-      val sym = method.symbol.newVariable(NoPosition, newTermName("par" + idx)).setInfo(kind.toType)
+      val sym = method.symbol.newVariable(newTermName("par" + idx)).setInfo(kind.toType)
       val l = new Local(sym, kind, true)
       assert(!locals.isDefinedAt(idx))
       locals += (idx -> List((l, kind)))

@@ -14,6 +14,18 @@ import PartialFunction._
 trait Definitions extends reflect.api.StandardDefinitions {
   self: SymbolTable =>
 
+  private def newClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): Symbol = {
+    val clazz = owner.newClassSymbol(name, NoPosition, flags)
+    clazz setInfo ClassInfoType(parents, new Scope, clazz)
+    owner.info.decls enter clazz
+  }
+  private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): Symbol = {
+    val msym   = owner.newMethod(name.encode, NoPosition, flags)
+    val params = msym.newSyntheticValueParams(formals)
+    msym setInfo MethodType(params, restpe)
+    owner.info.decls enter msym
+  }
+
   // the scala value classes
   trait ValueClassDefinitions {
     self: definitions.type =>
@@ -66,13 +78,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val boxMethod        = classesMap(x => valueModuleMethod(x, nme.box))
     lazy val unboxMethod      = classesMap(x => valueModuleMethod(x, nme.unbox))
 
-    private def newClass(owner: Symbol, name: TypeName, parents: List[Type]): Symbol = {
-      val clazz = owner.newClass(NoPosition, name)
-      clazz.setInfo(ClassInfoType(parents, new Scope, clazz))
-      owner.info.decls.enter(clazz)
-      clazz
-    }
-
     def isNumericSubClass(sub: Symbol, sup: Symbol) = (
          (numericWeight contains sub)
       && (numericWeight contains sup)
@@ -124,21 +129,21 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // This is the package _root_.  The actual root cannot be referenced at
     // the source level, but _root_ is essentially a function () => <root>.
     lazy val RootPackage: Symbol = {
-      val rp = NoSymbol.newValue(NoPosition, nme.ROOTPKG)
-        .setFlag(FINAL | MODULE | PACKAGE | JAVA)
-        .setInfo(NullaryMethodType(RootClass.tpe))
+      val rp = (
+        NoSymbol.newValue(nme.ROOTPKG, flags = FINAL | MODULE | PACKAGE | JAVA)
+          setInfo NullaryMethodType(RootClass.tpe)
+      )
       RootClass.sourceModule = rp
       rp
     }
 
     // This is the actual root of everything, including the package _root_.
     lazy val RootClass: ModuleClassSymbol = (
-      NoSymbol.newModuleClass(NoPosition, tpnme.ROOT)
-        setFlag (FINAL | MODULE | PACKAGE | JAVA)
+      NoSymbol.newModuleClassSymbol(tpnme.ROOT, flags = FINAL | MODULE | PACKAGE | JAVA)
         setInfo rootLoader
     )
     // The empty package, which holds all top level types without given packages.
-    lazy val EmptyPackage       = RootClass.newPackage(NoPosition, nme.EMPTY_PACKAGE_NAME).setFlag(FINAL)
+    lazy val EmptyPackage       = RootClass.newPackage(nme.EMPTY_PACKAGE_NAME, flags = FINAL)
     lazy val EmptyPackageClass  = EmptyPackage.moduleClass
 
     lazy val JavaLangPackage      = getModule(sn.JavaLang)
@@ -190,11 +195,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
 
     // top types
-    lazy val AnyClass             = newClass(ScalaPackageClass, tpnme.Any, Nil) setFlag (ABSTRACT)
+    lazy val AnyClass             = newClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
     lazy val AnyRefClass          = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.typeConstructor)
     lazy val ObjectClass          = getClass(sn.Object)
-    lazy val AnyCompanionClass    = getRequiredClass("scala.AnyCompanion") setFlag (SEALED | ABSTRACT | TRAIT)
-    lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") setFlag (SEALED | ABSTRACT | TRAIT)
+    lazy val AnyCompanionClass    = getRequiredClass("scala.AnyCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
+    lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
 
     // bottom types
     lazy val RuntimeNothingClass  = getClass(fulltpnme.RuntimeNothing)
@@ -202,7 +207,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
       locally {
-        this setFlag ABSTRACT | TRAIT | FINAL
+        this initFlags ABSTRACT | TRAIT | FINAL
         this setInfo ClassInfoType(List(parent.tpe), new Scope, this)
         owner.info.decls enter this
       }
@@ -296,7 +301,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       //   .setInfo(UnitClass.tpe)
 
     lazy val TypeConstraintClass   = getRequiredClass("scala.annotation.TypeConstraint")
-    lazy val SingletonClass        = newClass(ScalaPackageClass, tpnme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
+    lazy val SingletonClass        = newClass(ScalaPackageClass, tpnme.Singleton, anyparam, ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getRequiredClass("scala.Serializable")
     lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
     lazy val ComparableClass       = getRequiredClass("java.lang.Comparable")
@@ -808,13 +813,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
      */
     private def getModuleOrClass(path: Name): Symbol = getModuleOrClass(path, path.length)
 
-    private def newClass(owner: Symbol, name: TypeName, parents: List[Type]): Symbol = {
-      val clazz = owner.newClass(NoPosition, name)
-      clazz.setInfo(ClassInfoType(parents, new Scope, clazz))
-      owner.info.decls.enter(clazz)
-      clazz
-    }
-
     private def newCovariantPolyClass(owner: Symbol, name: TypeName, parent: Symbol => Type): Symbol = {
       val clazz  = newClass(owner, name, List())
       val tparam = newTypeParam(clazz, 0) setFlag COVARIANT
@@ -832,22 +830,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
 
     private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol = {
-      val tpsym = owner.newAliasType(NoPosition, name)
+      val tpsym = owner.newAliasType(name)
       tpsym.setInfo(alias)
       owner.info.decls.enter(tpsym)
       tpsym
-    }
-
-    private def newMethod(owner: Symbol, name: TermName): Symbol = {
-      val msym = owner.newMethod(NoPosition, name.encode)
-      owner.info.decls.enter(msym)
-      msym
-    }
-
-    private[Definitions] def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type): Symbol = {
-      val msym = newMethod(owner, name)
-      val params = msym.newSyntheticValueParams(formals)
-      msym.setInfo(MethodType(params, restpe))
     }
 
     /** tcon receives the type parameter symbol as argument */
@@ -856,16 +842,14 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     /** tcon receives the type parameter symbol and the method symbol as arguments */
     private def newPolyMethodCon(owner: Symbol, name: TermName, tcon: Symbol => Symbol => Type): Symbol = {
-      val msym = newMethod(owner, name)
+      val msym   = owner.info.decls enter owner.newMethod(name.encode)
       val tparam = newTypeParam(msym, 0)
-      msym.setInfo(polyType(List(tparam), tcon(tparam)(msym)))
+
+      msym setInfo polyType(List(tparam), tcon(tparam)(msym))
     }
 
-    private def newParameterlessMethod(owner: Symbol, name: TermName, restpe: Type) =
-      newMethod(owner, name).setInfo(NullaryMethodType(restpe))
-
     private def newTypeParam(owner: Symbol, index: Int): Symbol =
-      owner.newTypeParameter(NoPosition, newTypeName("T" + index)) setInfo TypeBounds.empty
+      owner.newTypeParameter(newTypeName("T" + index)) setInfo TypeBounds.empty
 
     lazy val boxedClassValues = boxedClass.values.toSet
     lazy val isUnbox = unboxMethod.values.toSet
@@ -965,12 +949,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
       RootClass.info.decls enter RootPackage
 
       // members of class scala.Any
-      Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL
-      Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype) setFlag FINAL
+      Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
+      Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
       Any_equals   = newMethod(AnyClass, nme.equals_, anyparam, booltype)
       Any_hashCode = newMethod(AnyClass, nme.hashCode_, Nil, inttype)
       Any_toString = newMethod(AnyClass, nme.toString_, Nil, stringtype)
-      Any_##       = newMethod(AnyClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
+      Any_##       = newMethod(AnyClass, nme.HASHHASH, Nil, inttype, FINAL)
 
       // Any_getClass requires special handling.  The return type is determined on
       // a per-call-site basis as if the function being called were actually:
@@ -981,26 +965,24 @@ trait Definitions extends reflect.api.StandardDefinitions {
       // Since getClass is not actually a polymorphic method, this requires compiler
       // participation.  At the "Any" level, the return type is Class[_] as it is in
       // java.lang.Object.  Java also special cases the return type.
-      Any_getClass = (
-        newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType)
-          setFlag DEFERRED
-      )
+      Any_getClass =
+        newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
       Any_isInstanceOf = newPolyMethod(
         AnyClass, nme.isInstanceOf_, tparam => NullaryMethodType(booltype)) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(
         AnyClass, nme.asInstanceOf_, tparam => NullaryMethodType(tparam.typeConstructor)) setFlag FINAL
 
       // members of class java.lang.{ Object, String }
-      Object_## = newMethod(ObjectClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
-      Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL
-      Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL
-      Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL
-      Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype) setFlag FINAL
+      Object_## = newMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
+      Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype, FINAL)
+      Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype, FINAL)
+      Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype, FINAL)
+      Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
       Object_synchronized = newPolyMethodCon(
         ObjectClass, nme.synchronized_,
         tparam => msym => MethodType(msym.newSyntheticValueParams(List(tparam.typeConstructor)), tparam.typeConstructor)) setFlag FINAL
 
-      String_+ = newMethod(StringClass, nme.raw.PLUS, anyparam, stringtype) setFlag FINAL
+      String_+ = newMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
 
       val forced = List( // force initialization of every symbol that is entered as a side effect
         AnnotationDefaultAttr, // #2264
@@ -1037,7 +1019,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       // tparam => resultType, which is the resultType of PolyType, i.e. the result type after applying the
       // type parameter =-> a MethodType in this case
       // TODO: set type bounds manually (-> MulticastDelegate), see newTypeParam
-      val newCaller = newMethod(DelegateClass, name, paramTypes, delegateType) setFlag (FINAL | STATIC)
+      val newCaller = newMethod(DelegateClass, name, paramTypes, delegateType, FINAL | STATIC)
       // val newCaller = newPolyMethod(DelegateClass, name,
       // tparam => MethodType(paramTypes, tparam.typeConstructor)) setFlag (FINAL | STATIC)
       Delegate_scalaCallers = Delegate_scalaCallers ::: List(newCaller)

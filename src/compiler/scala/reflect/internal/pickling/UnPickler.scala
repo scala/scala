@@ -282,7 +282,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
       finishSym(tag match {
         case TYPEsym  => owner.newAbstractType(name.toTypeName)
-        case ALIASsym => owner.newAliasType(name.toTypeName)
+        case ALIASsym => owner.newTypeSymbol(name.toTypeName)
         case CLASSsym =>
           val sym = (isClassRoot, isModuleFlag) match {
             case (true, true)   => moduleRoot.moduleClass
@@ -297,11 +297,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case MODULEsym =>
           val clazz = at(inforef, () => readType()).typeSymbol // after the NMT_TRANSITION period, we can leave off the () => ... ()
           if (isModuleRoot) moduleRoot
-          else {
-            val m = owner.newModule(name.toTermName, clazz)
-            clazz.sourceModule = m
-            m
-          }
+          else owner.newLinkedModule(clazz)
         case VALsym =>
           if (isModuleRoot) { assert(false); NoSymbol }
           else if (isMethodFlag) owner.newMethod(name.toTermName)

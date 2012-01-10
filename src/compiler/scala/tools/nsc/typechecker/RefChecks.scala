@@ -444,6 +444,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             // check a type alias's RHS corresponds to its declaration
             // this overlaps somewhat with validateVariance
             if(member.isAliasType) {
+              // println("checkKindBounds" + ((List(member), List(memberTp.normalize), self, member.owner)))
               val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize), self, member.owner)
 
               if(!kindErrors.isEmpty)

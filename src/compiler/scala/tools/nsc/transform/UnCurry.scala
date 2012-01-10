@@ -133,11 +133,9 @@ abstract class UnCurry extends InfoTransform
 
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
-      nonLocalReturnKeys.getOrElseUpdate(meth, {
-        meth.newValue(meth.pos, unit.freshTermName("nonLocalReturnKey"))
-          .setFlag (SYNTHETIC)
-          .setInfo (ObjectClass.tpe)
-      })
+      nonLocalReturnKeys.getOrElseUpdate(meth,
+        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectClass.tpe
+      )
 
     /** Generate a non-local return throw with given return expression from given method.
      *  I.e. for the method's non-local return key, generate:
@@ -255,7 +253,7 @@ abstract class UnCurry extends InfoTransform
       if (fun1 ne fun) fun1
       else {
         val (formals, restpe) = (targs.init, targs.last)
-        val anonClass = owner newAnonymousFunctionClass fun.pos setFlag (FINAL | SYNTHETIC | inConstructorFlag)
+        val anonClass = owner.newAnonymousFunctionClass(fun.pos, inConstructorFlag)
         def parents =
           if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe), SerializableClass.tpe)
           else if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
@@ -772,7 +770,7 @@ abstract class UnCurry extends InfoTransform
       }
       val forwresult = dd.symbol.tpe.finalResultType
       val forwformsyms = map2(forwformals, flatparams)((tp, oldparam) =>
-        currentClass.newValueParameter(oldparam.symbol.pos, oldparam.name).setInfo(tp)
+        currentClass.newValueParameter(oldparam.name, oldparam.symbol.pos).setInfo(tp)
       )
       def mono = MethodType(forwformsyms, forwresult)
       val forwtype = dd.symbol.tpe match {

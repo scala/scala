@@ -1755,7 +1755,7 @@ abstract class GenICode extends SubComponent  {
         val sym = t.symbol
         def getLabel(pos: Position, name: Name) =
           labels.getOrElseUpdate(sym,
-            method.newLabel(sym.pos, unit.freshTermName(name.toString)) setInfo sym.tpe
+            method.newLabel(unit.freshTermName(name.toString), sym.pos) setInfo sym.tpe
           )
 
         t match {
@@ -2005,9 +2005,7 @@ abstract class GenICode extends SubComponent  {
 
       /** Make a fresh local variable. It ensures the 'name' is unique. */
       def makeLocal(pos: Position, tpe: Type, name: String): Local = {
-        val sym = method.symbol.newVariable(pos, unit.freshTermName(name))
-          .setInfo(tpe)
-          .setFlag(Flags.SYNTHETIC)
+        val sym = method.symbol.newVariable(unit.freshTermName(name), pos, Flags.SYNTHETIC) setInfo tpe
         this.method.addLocal(new Local(sym, toTypeKind(tpe), false))
       }
 

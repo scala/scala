@@ -192,10 +192,10 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
 //          val expr2 = if (catches.nonEmpty) {
             val pos = catches.head.pos
-            val argSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
+            val argSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
             val rhs = Match(Ident(argSym), catches1)
             val fun = Function(List(ValDef(argSym)), rhs)
-            val funSym = currentOwner.newValueParameter(pos, cpsNames.catches).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
+            val funSym = currentOwner.newValueParameter(cpsNames.catches, pos).setInfo(appliedType(PartialFunctionClass.tpe, List(ThrowableClass.tpe, targettp)))
             val funDef = localTyper.typed(atPos(pos) { ValDef(funSym, fun) })
             val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr1, expr1.tpe.member(cpsNames.flatMapCatch)), List(Ident(funSym))) })
 
@@ -203,7 +203,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
             chown.traverse(rhs)
 
-            val exSym = currentOwner.newValueParameter(pos, cpsNames.ex).setInfo(ThrowableClass.tpe)
+            val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
             val catch2 = { localTyper.typedCases(tree, List(
               CaseDef(Bind(exSym, Typed(Ident("_"), TypeTree(ThrowableClass.tpe))),
                 Apply(Select(Ident(funSym), nme.isDefinedAt), List(Ident(exSym))),
@@ -302,7 +302,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
               }
 
               def applyCombinatorFun(ctxR: Tree, body: Tree) = {
-                val arg = currentOwner.newValueParameter(ctxR.pos, name).setInfo(tpe)
+                val arg = currentOwner.newValueParameter(name, ctxR.pos).setInfo(tpe)
                 val body1 = (new TreeSymSubstituter(List(vd.symbol), List(arg)))(body)
                 val fun = localTyper.typed(atPos(vd.symbol.pos) { Function(List(ValDef(arg)), body1) }) // types body as well
                 arg.owner = fun.symbol
