@@ -30,6 +30,25 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else
       tree
   }
+  
+  /** Builds a fully attributed wildcard import node.
+   */
+  def mkWildcardImport(pkg: Symbol): Import = {
+    assert(pkg ne null, this)
+    val qual = gen.mkAttributedStableRef(pkg)
+    val importSym = (
+      NoSymbol
+        newImport NoPosition
+          setFlag SYNTHETIC
+          setInfo analyzer.ImportType(qual)
+    )
+    val importTree = (
+      Import(qual, List(ImportSelector(nme.WILDCARD, -1, null, -1)))
+        setSymbol importSym
+          setType NoType
+    )
+    importTree
+  }
 
   // wrap the given expression in a SoftReference so it can be gc-ed
   def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
