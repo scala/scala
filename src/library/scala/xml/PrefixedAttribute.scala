@@ -13,25 +13,22 @@ package scala.xml
  *
  *  @param pre   ...
  *  @param key   ...
- *  @param value the attribute value
+ *  @param value the attribute value, which may not be null
  *  @param next  ...
  */
 class PrefixedAttribute(
   val pre: String,
   val key: String,
   val value: Seq[Node],
-  val next1: MetaData)
+  val next: MetaData)
 extends Attribute
 {
-  val next = if (value ne null) next1 else next1.remove(key)
+  if (value eq null)
+    throw new UnsupportedOperationException("value is null")
 
-  /** same as this(pre, key, Text(value), next), or no attribute if value is null */
+  /** same as this(key, Utility.parseAttributeValue(value), next) */
   def this(pre: String, key: String, value: String, next: MetaData) =
-    this(pre, key, if (value ne null) Text(value) else null: NodeSeq, next)
-
-  /** same as this(pre, key, value.get, next), or no attribute if value is None */
-  def this(pre: String, key: String, value: Option[Seq[Node]], next: MetaData) =
-    this(pre, key, value.orNull, next)
+    this(pre, key, Text(value), next)
 
   /** Returns a copy of this unprefixed attribute with the given
    *  next field.
