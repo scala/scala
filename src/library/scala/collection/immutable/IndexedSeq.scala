@@ -22,7 +22,7 @@ trait IndexedSeq[+A] extends Seq[A]
                     with GenericTraversableTemplate[A, IndexedSeq]
                     with IndexedSeqLike[A, IndexedSeq[A]] {
   override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
-  override def toIndexedSeq[B >: A]: IndexedSeq[B] = this
+  override def toIndexedSeq: IndexedSeq[A] = this
   override def seq: IndexedSeq[A] = this
 }
 
