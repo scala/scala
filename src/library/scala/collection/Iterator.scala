@@ -9,7 +9,7 @@
 package scala.collection
 
 import mutable.ArrayBuffer
-import annotation.{ tailrec, migration }
+import annotation.migration
 import immutable.Stream
 
 /** The `Iterator` object provides various functions for
@@ -49,9 +49,9 @@ object Iterator {
    */
   def apply[A](elems: A*): Iterator[A] = elems.iterator
 
-  /** Creates iterator that produces the results of some element computation
-   *  a number of times.
-   *  @param   n  the number of elements returned by the iterator.
+  /** Creates iterator that produces the results of some element computation a number of times.
+   *
+   *  @param   len  the number of elements returned by the iterator.
    *  @param   elem the element computation
    *  @return  An iterator that produces the results of `n` evaluations of `elem`.
    */
@@ -64,7 +64,8 @@ object Iterator {
   }
 
   /** Creates an iterator producing the values of a given function over a range of integer values starting from 0.
-   *  @param  n   The number of elements returned by the iterator
+   *
+   *  @param  end The number of elements returned by the iterator
    *  @param  f   The function computing element values
    *  @return An iterator that produces the values `f(0), ..., f(n -1)`.
    */
@@ -422,10 +423,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   *  @return a new iterator which yields each value `x` produced by this iterator for
   *          which `pf` is defined the image `pf(x)`.
   */
-  @migration(2, 8,
-    "This collect implementation bears no relationship to the one before 2.8.\n"+
-    "The previous behavior can be reproduced with toSeq."
-  )
+  @migration("`collect` has changed. The previous behavior can be reproduced with `toSeq`.", "2.8.0")
   def collect[B](pf: PartialFunction[A, B]): Iterator[B] = {
     val self = buffered
     new Iterator[B] {
@@ -961,9 +959,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
   }
 
   /** Returns this iterator with patched values.
-   *  @param from     The start index from which to patch
-   *  @param ps       The iterator of patch values
-   *  @param replaced The number of values in the original iterator that are replaced by the patch.
+   *
+   *  @param from       The start index from which to patch
+   *  @param patchElems The iterator of patch values
+   *  @param replaced   The number of values in the original iterator that are replaced by the patch.
+   *  @note           Reuse: $consumesTwoAndProducesOneIterator
    */
   def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int) = new Iterator[B] {
     private var origElems = self
