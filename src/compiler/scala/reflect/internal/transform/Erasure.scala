@@ -59,7 +59,7 @@ trait Erasure {
   // included (use pre.baseType(cls.owner)).
   //
   // This requires that cls.isClass.
-  @inline protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
+  protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
   }
 
