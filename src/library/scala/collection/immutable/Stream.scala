@@ -774,7 +774,7 @@ self =>
    * `p`.
    *
    * @example {{{
-   + naturalsFrom(0) takeWhile { _ < 5 } mkString ", "
+   * naturalsFrom(0) takeWhile { _ < 5 } mkString ", "
    * produces: "0, 1, 2, 3, 4"
    * }}}
    */
