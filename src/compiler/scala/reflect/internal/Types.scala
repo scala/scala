@@ -943,30 +943,12 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      var suspension: mutable.HashSet[TypeVar] = null
       // if this type contains type variables, put them to sleep for a while -- don't just wipe them out by
       // replacing them by the corresponding type parameter, as that messes up (e.g.) type variables in type refinements
       // without this, the matchesType call would lead to type variables on both sides
       // of a subtyping/equality judgement, which can lead to recursive types being constructed.
       // See (t0851) for a situation where this happens.
-      if (!this.isGround) {
-        // PP: The foreach below was formerly expressed as:
-        //   for(tv @ TypeVar(_, _) <- this) { suspension suspend tv }
-        //
-        // The tree checker failed this saying a TypeVar is required, but a (Type @unchecked) was found.
-        // This is a consequence of using a pattern match and variable binding + ticket #1503, which
-        // was addressed by weakening the type of bindings in pattern matches if they occur on the right.
-        // So I'm not quite sure why this works at all, as the checker is right that it is mistyped.
-        // For now I modified it as below, which achieves the same without error.
-        //
-        // make each type var in this type use its original type for comparisons instead of collecting constraints
-        val susp = new mutable.HashSet[TypeVar] // use a local val so it remains unboxed
-        this foreach {
-          case tv: TypeVar  => tv.suspended = true; susp += tv
-          case _            =>
-        }
-        suspension = susp
-      }
+      val suspension: List[TypeVar] = if (this.isGround) null else suspendTypeVarsInType(this)
 
       incCounter(findMemberCount)
       val start = startTimer(findMemberNanos)
@@ -6100,6 +6082,26 @@ trait Types extends api.Types { self: SymbolTable =>
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
 
     if (ts exists (_.isNotNull)) res.notNull else res
+  }
+  
+  /** A list of the typevars in a type. */
+  def typeVarsInType(tp: Type): List[TypeVar] = {
+    var tvs: List[TypeVar] = Nil
+    tp foreach {
+      case t: TypeVar => tvs ::= t
+      case _          => 
+    }
+    tvs.reverse
+  }
+  /** Make each type var in this type use its original type for comparisons instead
+   * of collecting constraints.
+   */
+  def suspendTypeVarsInType(tp: Type): List[TypeVar] = {
+    val tvs = typeVarsInType(tp)
+    // !!! Is it somehow guaranteed that this will not break under nesting?
+    // In general one has to save and restore the contents of the field...
+    tvs foreach (_.suspended = true)
+    tvs 
   }
 
   /** Compute lub (if `variance == 1`) or glb (if `variance == -1`) of given list

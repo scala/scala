@@ -138,6 +138,9 @@ trait Infer {
   def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
                   variances: List[Int], upper: Boolean, depth: Int): List[Type] = {
 
+    if (tvars.nonEmpty)
+      printInference("[solve types] solving for " + tparams.map(_.name).mkString(", ") + " in " + tvars.mkString(", "))
+
     if (!solve(tvars, tparams, variances, upper, depth)) {
       // no panic, it's good enough to just guess a solution, we'll find out
       // later whether it works.  *ZAP* @M danger, Will Robinson! this means
@@ -550,18 +553,6 @@ trait Infer {
         throw new NoInstance("parameter lists differ in length")
 
       val restpeInst = restpe.instantiateTypeParams(tparams, tvars)
-      printInference(
-        ptBlock("methTypeArgs",
-          "tparams"     -> tparams,
-          "formals"     -> formals,
-          "restpe"      -> restpe,
-          "restpeInst"  -> restpeInst,
-          "argtpes"     -> argtpes,
-          "pt"          -> pt,
-          "tvars"       -> tvars,
-          "constraints" -> tvars.map(_.constr)
-        )
-      )
 
       // first check if typevars can be fully defined from the expected type.
       // The return value isn't used so I'm making it obvious that this side
@@ -599,17 +590,7 @@ trait Infer {
         tvars, tparams, tparams map varianceInTypes(formals),
         false, lubDepth(formals) max lubDepth(argtpes)
       )
-      val result = adjustTypeArgs(tparams, tvars, targs, restpe)
-
-      printInference(
-        ptBlock("methTypeArgs result",
-          "tvars"              -> tvars,
-          "constraints"        -> tvars.map(_.constr),
-          "targs"              -> targs,
-          "adjusted type args" -> result
-        )
-      )
-      result
+      adjustTypeArgs(tparams, tvars, targs, restpe)
     }
 
     private[typechecker] def followApply(tp: Type): Type = tp match {
@@ -1094,15 +1075,6 @@ trait Infer {
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
       case MethodType(params0, _) =>
-        printInference(
-          ptBlock("inferMethodInstance",
-            "fn"          -> fn,
-            "undetparams" -> undetparams,
-            "args"        -> args,
-            "pt0"         -> pt0
-          )
-        )
-
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(params0 map (_.tpe), args.length)
@@ -1112,11 +1084,19 @@ trait Infer {
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
             methTypeArgs(undetparams, formals, restpe, argtpes, pt)
 
+          printInference("[infer method] solving for %s in %s based on (%s)%s (%s)".format(
+            undetparams.map(_.name).mkString(", "),
+            fn.tpe,
+            argtpes.mkString(", "),
+            restpe,
+            (okparams map (_.name), okargs).zipped.map(_ + "=" + _).mkString("solved: ", ", ", "")
+          ))
+
           checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")
           val treeSubst = new TreeTypeSubstituter(okparams, okargs)
           treeSubst traverseTrees fn :: args
 
-          val result = leftUndet match {
+          leftUndet match {
             case Nil  => Nil
             case xs   =>
               // #3890
@@ -1126,10 +1106,6 @@ trait Infer {
 
               xs1
           }
-          if (result.nonEmpty)
-            printInference("inferMethodInstance, still undetermined: " + result)
-
-          result
         }
         catch ifNoInstance { msg =>
           errorTree(fn, "no type parameters for " +
