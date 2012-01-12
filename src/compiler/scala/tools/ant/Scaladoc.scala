@@ -19,45 +19,38 @@ import scala.tools.nsc.Global
 import scala.tools.nsc.doc.Settings
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
-/** <p>
- *    An Ant task to document Scala code.
- *  </p>
- *  <p>
- *    This task can take the following parameters as attributes:
- *  </p>
- *  <ul>
- *    <li>srcdir (mandatory),</li>
- *    <li>srcref,</li>
- *    <li>destdir,</li>
- *    <li>classpath,</li>
- *    <li>classpathref,</li>
- *    <li>sourcepath,</li>
- *    <li>sourcepathref,</li>
- *    <li>bootclasspath,</li>
- *    <li>bootclasspathref,</li>
- *    <li>extdirs,</li>
- *    <li>extdirsref,</li>
- *    <li>encoding,</li>
- *    <li>doctitle,</li>
- *    <li>header,</li>
- *    <li>footer,</li>
- *    <li>top,</li>
- *    <li>bottom,</li>
- *    <li>addparams,</li>
- *    <li>deprecation,</li>
- *    <li>docgenerator,</li>
- *    <li>unchecked.</li>
- *  </ul>
- *  <p>
- *    It also takes the following parameters as nested elements:
- *  </p>
- *  <ul>
- *    <li>src (for srcdir),</li>
- *    <li>classpath,</li>
- *    <li>sourcepath,</li>
- *    <li>bootclasspath,</li>
- *    <li>extdirs.</li>
- *  </ul>
+/** An Ant task to document Scala code.
+ *
+ *  This task can take the following parameters as attributes:
+ *  - `srcdir` (mandatory),
+ *  - `srcref`,
+ *  - `destdir`,
+ *  - `classpath`,
+ *  - `classpathref`,
+ *  - `sourcepath`,
+ *  - `sourcepathref`,
+ *  - `bootclasspath`,
+ *  - `bootclasspathref`,
+ *  - `extdirs`,
+ *  - `extdirsref`,
+ *  - `encoding`,
+ *  - `doctitle`,
+ *  - `header`,
+ *  - `footer`,
+ *  - `top`,
+ *  - `bottom`,
+ *  - `addparams`,
+ *  - `deprecation`,
+ *  - `docgenerator`,
+ *  - `docrootcontent`,
+ *  - `unchecked`.
+ *
+ *  It also takes the following parameters as nested elements:
+ *  - `src` (for srcdir),
+ *  - `classpath`,
+ *  - `sourcepath`,
+ *  - `bootclasspath`,
+ *  - `extdirs`.
  *
  *  @author Gilles Dubochet, Stephane Micheloud
  */
@@ -103,8 +96,14 @@ class Scaladoc extends ScalaMatchingTask {
   /** The fully qualified name of a doclet class, which will be used to generate the documentation. */
   private var docgenerator: Option[String] = None
 
+  /** The file from which the documentation content of the root package will be taken */
+  private var docrootcontent: Option[File] = None
+
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
+
+  /** The document footer of the generated HTML documentation. */
+  private var docfooter: Option[String] = None
 
   /** The document version, to be added to the title. */
   private var docversion: Option[String] = None
@@ -280,7 +279,17 @@ class Scaladoc extends ScalaMatchingTask {
     docgenerator = Some(input)
   }
 
-  /** Sets the <code>docversion</code> attribute.
+  /**
+   * Sets the `docrootcontent` attribute.
+   *
+   * @param input The file from which the documentation content of the root
+   * package will be taken.
+   */
+  def setDocrootcontent(input : File) {
+    docrootcontent = Some(input)
+  }
+
+  /** Sets the `docversion` attribute.
    *
    *  @param input The value of <code>docversion</code>.
    */
@@ -302,6 +311,14 @@ class Scaladoc extends ScalaMatchingTask {
    */
   def setDoctitle(input: String) {
     doctitle = Some(input)
+  }
+
+  /** Sets the <code>docfooter</code> attribute.
+   *
+   *  @param input The value of <code>docfooter</code>.
+   */
+  def setDocfooter(input: String) {
+    docfooter = Some(input)
   }
 
   /** Set the <code>addparams</code> info attribute.
@@ -523,6 +540,7 @@ class Scaladoc extends ScalaMatchingTask {
     if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
     if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
+    if (!docfooter.isEmpty) docSettings.docfooter.value = decodeEscapes(docfooter.get)
     if (!docversion.isEmpty) docSettings.docversion.value = decodeEscapes(docversion.get)
     if (!docsourceurl.isEmpty) docSettings.docsourceurl.value =decodeEscapes(docsourceurl.get)
     if (!docUncompilable.isEmpty) docSettings.docUncompilable.value = decodeEscapes(docUncompilable.get)
@@ -530,6 +548,7 @@ class Scaladoc extends ScalaMatchingTask {
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     if (!docgenerator.isEmpty) docSettings.docgenerator.value = docgenerator.get
+    if (!docrootcontent.isEmpty) docSettings.docRootContent.value = docrootcontent.get.getAbsolutePath()
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
 
     docSettings processArgumentString addParams

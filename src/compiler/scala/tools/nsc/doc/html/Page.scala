@@ -1,4 +1,10 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2011 LAMP/EPFL
+ * @author  David Bernard, Manohar Jonnalagedda
+ */
+
 package scala.tools.nsc.doc.html
+
 import scala.tools.nsc.doc.model._
 import java.io.{FileOutputStream, File}
 import scala.reflect.NameTransformer
@@ -6,9 +12,10 @@ import scala.reflect.NameTransformer
 abstract class Page {
   thisPage =>
 
-  /** The path of this page, relative to the API site. `path.tail` is a list of folder names leading to this page (from
-    * closest package to one-above-root package), `path.head` is the file name of this page. Note that `path` has a
-    * length of at least one. */
+  /** The path of this page, relative to the API site. `path.tail` is a list
+    * of folder names leading to this page (from closest package to
+    * one-above-root package), `path.head` is the file name of this page.
+    * Note that `path` has a length of at least one. */
   def path: List[String]
 
   def absoluteLinkTo(path: List[String]) = path.reverse.mkString("/")
@@ -22,8 +29,8 @@ abstract class Page {
     new FileOutputStream(file.getPath)
   }
 
-  /** Writes this page as a file. The file's location is relative to the generator's site root, and the encoding is
-    * also defined by the generator.
+  /** Writes this page as a file. The file's location is relative to the
+    * generator's site root, and the encoding is also defined by the generator.
     * @param generator The generator that is writing this page. */
   def writeFor(site: HtmlFactory): Unit
 

@@ -1,4 +1,10 @@
+/* NSC -- new Scala compiler
+ * Copyright 2007-2011 LAMP/EPFL
+ * @author  David Bernard, Manohar Jonnalagedda
+ */
+
 package scala.tools.nsc.doc.html.page
+
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.model.{Package, DocTemplateEntity}
 import scala.tools.nsc.doc.html.{Page, HtmlFactory}
@@ -8,7 +14,7 @@ import scala.util.parsing.json.{JSONObject, JSONArray}
 class IndexScript(universe: doc.Universe, index: doc.Index) extends Page {
   def path = List("index.js")
 
-  override def writeFor(site: HtmlFactory): Unit = {
+  override def writeFor(site: HtmlFactory) {
     val stream = createFileOutputStream(site)
     val writer = Channels.newWriter(stream.getChannel, site.encoding)
     try {

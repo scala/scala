@@ -1,0 +1,27 @@
+This is the documentation for the Scala standard library.
+
+== Package structure ==
+
+The [[scala]] package contains core types.
+
+scala.[[scala.collection]] and its subpackages contain a collections framework with higher-order functions for manipulation. Both [[scala.collection.immutable]] and [[scala.collection.mutable]] data structures are available, with immutable as the default. The [[scala.collection.parallel]] collections provide automatic parallel operation.
+
+Other important packages include:
+
+  - scala.[[scala.actors]] - Concurrency framework inspired by Erlang.
+  - scala.[[scala.io]] - Input and output.
+  - scala.[[scala.math]] - Basic math functions and additional numeric types.
+  - scala.[[scala.sys]] - Interaction with other processes and the operating system.
+  - scala.util.[[scala.util.matching]] - Pattern matching in text using regular expressions.
+  - scala.util.parsing.[[scala.util.parsing.combinator]] - Composable combinators for parsing.
+  - scala.[[scala.xml]] - XML parsing, manipulation, and serialization.
+
+Many other packages exist.  See the complete list on the left.
+
+== Automatic imports ==
+
+Identifiers in the scala package and the [[scala.Predef]] object are always in scope by default.
+
+Some of these identifiers are type aliases provided as shortcuts to commonly used classes.  For example, List is an alias for scala.collection.immutable.[[scala.collection.immutable.List]].
+
+Other aliases refer to classes providing by the underlying platform.  For example, on the JVM, String is an alias for java.lang.String.

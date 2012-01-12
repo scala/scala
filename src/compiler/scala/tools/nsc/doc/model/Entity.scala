@@ -127,6 +127,9 @@ trait MemberEntity extends Entity {
   /** Some deprecation message if this member is deprecated, or none otherwise. */
   def deprecation: Option[Body]
 
+  /** Some migration warning if this member has a migration annotation, or none otherwise. */
+  def migration: Option[Body]
+
   @deprecated("Use `inDefinitionTemplates` instead", "2.9.0")
   def inheritedFrom: List[TemplateEntity]
 
@@ -297,6 +300,10 @@ trait NonTemplateMemberEntity extends MemberEntity {
   /** Whether this member is a use case. A use case is a member which does not exist in the documented code.
     * It corresponds to a real member, and provides a simplified, yet compatible signature for that member. */
   def isUseCase: Boolean
+
+  /** Whether this member is a bridge member. A bridge member does only exist for binary compatibility reasons
+    * and should not appear in ScalaDoc. */
+  def isBridge: Boolean
 
 }
 

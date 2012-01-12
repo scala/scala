@@ -381,6 +381,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isPredefModule      = this == PredefModule
     final def isScalaPackage      = (this == ScalaPackage) || (isPackageObject && owner == ScalaPackageClass)
     final def isScalaPackageClass = skipPackageObject == ScalaPackageClass
+    def inDefaultNamespace        = owner.isPredefModule || owner.isScalaPackageClass
 
     /** If this is a package object or package object class, its owner: otherwise this.
      */
@@ -424,7 +425,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     // prevents someone from writing a @migration annotation with a calculated
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
+    def hasMigrationAnnotation = hasAnnotation(MigrationAnnotationClass)
     def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(2) }
+    def migrationVersion    = getAnnotation(MigrationAnnotationClass) map { version => version.intArg(0).get + "." + version.intArg(1).get }
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 

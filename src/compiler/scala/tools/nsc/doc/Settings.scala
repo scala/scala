@@ -41,12 +41,20 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     ""
   )
 
+  val docfooter = StringSetting (
+    "-doc-footer",
+    "footer",
+    "A footer on every ScalaDoc page, by default the EPFL/Typesafe copyright notice. Can be overridden with a custom footer.",
+    ""
+  )
+
   val docUncompilable = StringSetting (
     "-doc-no-compile",
     "path",
     "A directory containing sources which should be parsed, no more (e.g. AnyRef.scala)",
     ""
   )
+
   lazy val uncompilableFiles = docUncompilable.value match {
     case ""     => Nil
     case path   => io.Directory(path).deepFiles filter (_ hasExtension "scala") toList
@@ -57,7 +65,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
   val docsourceurl = StringSetting (
     "-doc-source-url",
     "url",
-    "A URL pattern used to build links to template sources; use variables, for example: €{TPL_NAME} ('Seq'), €{TPL_OWNER} ('scala.collection'), €{FILE_PATH} ('scala/collection/Seq')",
+    "A URL pattern used to build links to template sources; use variables, for example: ?{TPL_NAME} ('Seq'), ?{TPL_OWNER} ('scala.collection'), ?{FILE_PATH} ('scala/collection/Seq')",
     ""
   )
 
@@ -73,6 +81,12 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     "scala.tools.nsc.doc.html.Doclet"
   )
 
+  val docRootContent = PathSetting (
+    "-doc-root-content",
+    "The file from which the root package documentation should be imported.",
+    ""
+  )
+
   // Somewhere slightly before r18708 scaladoc stopped building unless the
   // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
   // suppress-vt-warnings option and renamed it for this purpose.
@@ -80,7 +94,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
-    docformat, doctitle, docversion, docUncompilable, docsourceurl, docgenerator
+    docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator
   )
   val isScaladocSpecific: String => Boolean = scaladocSpecific map (_.name)
 }

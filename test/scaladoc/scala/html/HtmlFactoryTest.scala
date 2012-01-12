@@ -141,8 +141,8 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4372.scala") match {
       case node: scala.xml.Node => {
         val html = node.toString
-        html.contains("<span class=\"name\">+:</span>\n") &&
-          html.contains("<span class=\"name\">-:</span>\n") &&
+        html.contains("<span class=\"name\" title=\"gt4s: $plus$colon\">+:</span>") &&
+          html.contains("<span class=\"name\" title=\"gt4s: $minus$colon\">-:</span>") &&
             html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
       }
       case _ => false
@@ -247,11 +247,11 @@ object Test extends Properties("HtmlFactory") {
     val lines = """
         |type Bar = AnyRef { type Dingus <: T forSome { type T <: String } }
         |type Foo = AnyRef { ... /* 3 definitions in type refinement */ }
-        |def g (x: T forSome { type T <: String }): String 
-        |def h (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
-        |def hh (x: Float): AnyRef { def quux(x: Int,y: Int): Int }
-        |def j (x: Int): Bar
-        |def k (): AnyRef { type Dingus <: T forSome { type T <: String } }
+        |def g(x: T forSome { type T <: String }): String
+        |def h(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+        |def hh(x: Float): AnyRef { def quux(x: Int,y: Int): Int }
+        |def j(x: Int): Bar
+        |def k(): AnyRef { type Dingus <: T forSome { type T <: String } }
       """.stripMargin.trim.lines map (_.trim)
 
     files("RefinementAndExistentials.html") match {
@@ -303,6 +303,72 @@ object Test extends Properties("HtmlFactory") {
           case Some(node) => node.toString.contains(">bar</strike>")
           case _ => false
         })
+      case _ => false
+    }
+  }
+
+  property("SI-4641") = {
+    createReferenceIndex("SI_4641.scala") match {
+      case Some(pages) => pages.contains("index/index-_.html")
+      case _ => false
+    }
+  }
+
+  property("SI-4421") = {
+    createTemplate("SI_4421.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains(">Example:") && html.contains(">Note<")
+      }
+      case _ => false
+    }
+  }
+
+  property("SI-4589") = {
+    createTemplate("SI_4589.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains(">x0123456789: <") &&
+          html.contains(">x012345678901234567890123456789: <")
+      }
+      case _ => false
+    }
+  }
+
+  property("Should decode symbolic type alias name.") = {
+    createTemplate("SI_4715.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains(">: :+:[<")
+      }
+      case _ => false
+    }
+  }
+
+  property("Shouldn't drop type arguments to aliased tuple.") = {
+    createTemplate("SI_4676.scala") match {
+      case node: scala.xml.Node => {
+        node.toString.contains(">ss: (String, String)<")
+      }
+      case _ => false
+    }
+  }
+
+  property("Default arguments of synthesized constructor") = {
+    val files = createTemplates("SI_4287.scala")
+
+    files("ClassWithSugar.html") match {
+      case node: scala.xml.Node => {
+        node.toString.contains(">123<")
+      }
+      case _ => false
+    }
+  }
+
+  property("Default arguments of synthesized constructor") = {
+    createTemplate("SI_4507.scala") match {
+      case node: scala.xml.Node =>
+        ! node.toString.contains("<li>returns silently when evaluating true and true</li>")
       case _ => false
     }
   }
