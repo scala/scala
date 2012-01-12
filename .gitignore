@@ -1,1 +1,5 @@
 *.jar
+build
+*.*~
+*~
+.gitignore

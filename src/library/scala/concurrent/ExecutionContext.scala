@@ -28,6 +28,6 @@ trait ExecutionContext {
 }
 
 
-sealed trait CanBlock
+sealed trait CanAwait
 
 

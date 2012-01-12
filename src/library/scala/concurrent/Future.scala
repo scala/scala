@@ -161,7 +161,7 @@ self =>
       }
       this
     }
-    def await(timeout: Timeout)(implicit canblock: CanBlock): Throwable = {
+    def await(timeout: Timeout)(implicit canawait: CanAwait): Throwable = {
       var t: Throwable = null
       try {
         val res = self.await(timeout)

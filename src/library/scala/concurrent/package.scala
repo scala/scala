@@ -68,7 +68,7 @@ package object concurrent {
    *  - TimeoutException - in the case that the blockable object timed out
    */
   def await[T](timeout: Timeout)(body: =>T): T = await(timeout, new Awaitable[T] {
-    def await(timeout: Timeout)(implicit cb: CanBlock) = body
+    def await(timeout: Timeout)(implicit cb: CanAwait) = body
   })
   
   /** Blocks on a blockable object.
@@ -104,3 +104,5 @@ package concurrent {
   }
   
 }
+
+
