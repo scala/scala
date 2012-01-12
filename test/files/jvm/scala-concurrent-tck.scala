@@ -184,6 +184,17 @@ trait FutureCombinators extends TestBase {
     done()
   }
 
+  // collect: stub
+  def testCollectSuccess(): Unit = once {
+    done =>
+    done()
+  }
+
+  def testCollectFailure(): Unit = once {
+    done =>
+    done()
+  }
+
   // foreach: stub
   def testForeachSuccess(): Unit = once {
     done =>
@@ -229,13 +240,15 @@ trait FutureCombinators extends TestBase {
       assert(any == cause)
     }
   }
-
+  
   testMapSuccess()
   testMapFailure()
   testFlatMapSuccess()
   testFlatMapFailure()
   testFilterSuccess()
   testFilterFailure()
+  testCollectSuccess()
+  testCollectFailure()
   testForeachSuccess()
   testForeachFailure()
   testRecoverSuccess()

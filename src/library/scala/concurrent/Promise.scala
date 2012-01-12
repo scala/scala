@@ -25,6 +25,9 @@ import scala.util.Timeout
  *  If the throwable used to fail this promise is an error, a control exception
  *  or an interrupted exception, it will be wrapped as a cause within an
  *  `ExecutionException` which will fail the promise.
+ *  
+ *  @define nonDeterministic
+ *  Note: Using this method may result in non-deterministic concurrent programs.
  */
 trait Promise[T] {
   
@@ -38,7 +41,15 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def success(value: T): Unit
+  def success(v: T): this.type = if (trySuccess(v)) this else throw new IllegalStateException("Promise already completed.")
+  
+  /** Tries to complete the promise with a value.
+   *  
+   *  $nonDeterministic
+   *  
+   *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
+   */
+  def trySuccess(value: T): Boolean
   
   /** Completes the promise with an exception.
    *  
@@ -48,8 +59,16 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def failure(t: Throwable): Unit
-
+  def failure(t: Throwable): this.type = if (tryFailure(t)) this else throw new IllegalStateException("Promise already completed.")
+  
+  /** Tries to complete the promise with an exception.
+   *  
+   *  $nonDeterministic
+   *  
+   *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
+   */
+  def tryFailure(t: Throwable): Boolean
+  
   /** Wraps a `Throwable` in an `ExecutionException` if necessary.
    *
    *  $allowedThrowables
@@ -58,7 +77,7 @@ trait Promise[T] {
     case t: Throwable if isFutureThrowable(t) => t
     case _ => new ExecutionException(t)
   }
-
+  
 }
 
 

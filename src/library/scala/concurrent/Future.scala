@@ -61,6 +61,9 @@ import scala.collection.generic.CanBuildFrom
  *  {{{
  *  f flatMap { (x: Int) => g map { (y: Int) => x + y } }
  *  }}}
+ *  
+ *  @define nonDeterministic
+ *  Note: using this method yields nondeterministic dataflow programs.
  */
 trait Future[+T] extends Awaitable[T] {
 self =>
@@ -113,11 +116,11 @@ self =>
   
   /** The execution context of the future.
    */
-  def executionContext: ExecutionContext
+  def executor: ExecutionContext
   
   /** Creates a new promise.
    */
-  def newPromise[S]: Promise[S] = executionContext promise
+  def newPromise[S]: Promise[S] = executor promise
   
   
   /* Projections */
@@ -135,7 +138,7 @@ self =>
    *  and throws a corresponding exception if the original future fails.
    */
   def failed: Future[Throwable] = new Future[Throwable] {
-    def executionContext = self.executionContext
+    def executor = self.executor
     def onComplete[U](func: Either[Throwable, Throwable] => U) = {
       self.onComplete {
         case Left(t) => func(Right(t))
@@ -242,8 +245,8 @@ self =>
    *  val f = future { 5 }
    *  val g = f filter { _ % 2 == 1 }
    *  val h = f filter { _ % 2 == 0 }
-   *  block on g // evaluates to 5
-   *  block on h // throw a NoSuchElementException
+   *  await(0) g // evaluates to 5
+   *  await(0) h // throw a NoSuchElementException
    *  }}}
    */
   def filter(pred: T => Boolean): Future[T] = {
@@ -259,7 +262,6 @@ self =>
   
   /** Creates a new future by mapping the value of the current future if the given partial function is defined at that value.
    *  
-   *  
    *  If the current future contains a value for which the partial function is defined, the new future will also hold that value.
    *  Otherwise, the resulting future will fail with a `NoSuchElementException`.
    *
@@ -274,8 +276,8 @@ self =>
    *  val h = f collect {
    *    case x if x > 0 => x * 2
    *  }
-   *  block on g // evaluates to 5
-   *  block on h // throw a NoSuchElementException
+   *  await(0) g // evaluates to 5
+   *  await(0) h // throw a NoSuchElementException
    *  }}}
    */
   def collect[S](pf: PartialFunction[T, S]): Future[S] = {
@@ -289,14 +291,68 @@ self =>
     p.future
   }
   
+  /** Creates a new future which holds the result of this future if it was completed successfully, or, if not,
+   *  the result of the `that` future if `that` is completed successfully.
+   *  If both futures are failed, the resulting future holds the throwable object of the first future.
+   *  
+   *  Example:
+   *  {{{
+   *  val f = future { sys.error("failed") }
+   *  val g = future { 5 }
+   *  val h = f orElse g
+   *  await(0) h // evaluates to 5
+   *  }}}
+   */
+  def orElse[U >: T](that: Future[U]): Future[U] = {
+    val p = newPromise[U]
+    
+    onComplete {
+      case Left(t) => that onComplete {
+        case Left(_) => p failure t
+        case Right(v) => p success v
+      }
+      case Right(v) => p success v
+    }
+    
+    p.future
+  }
+  
+  /** Creates a new future which holds the result of either this future or `that` future, depending on
+   *  which future was completed first.
+   *  
+   *  $nonDeterministic
+   *  
+   *  Example:
+   *  {{{
+   *  val f = future { sys.error("failed") }
+   *  val g = future { 5 }
+   *  val h = f orElse g
+   *  await(0) h // evaluates to either 5 or throws a runtime exception
+   *  }}}
+   */
+  def or[U >: T](that: Future[U]): Future[U] = {
+    val p = newPromise[U]
+    
+    val completePromise: PartialFunction[Either[Throwable, T], _] = {
+      case Left(t) => p tryFailure t
+      case Right(v) => p trySuccess v
+    }
+    this onComplete completePromise
+    this onComplete completePromise
+    
+    p.future
+  }
+  
 }
 
 
 object Future {
   
+  /*
+  // TODO make more modular by encoding this within the execution context
   def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
     val builder = cbf(futures)
-    val p: Promise[Coll[T]] = executionContext.promise[Coll[T]]
+    val p: Promise[Coll[T]] = executor.promise[Coll[T]]
     
     if (futures.size == 1) futures.head onComplete {
       case Left(t) => p failure t
@@ -317,6 +373,7 @@ object Future {
     
     p.future
   }
+  */
   
   @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
   

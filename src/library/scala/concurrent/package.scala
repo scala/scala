@@ -50,6 +50,12 @@ package object concurrent {
     case _ => true
   }
   
+  private[concurrent] def resolveThrowable[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
+    case Left(t: scala.runtime.NonLocalReturnControl[_]) => Right(t.value.asInstanceOf[T])
+    case Left(t: InterruptedException) => Left(new ExecutionException("Boxed InterruptedException", t))
+    case _ => source
+  }
+  
   /* concurrency constructs */
   
   def future[T](body: =>T)(implicit execCtx: ExecutionContext = executionContext): Future[T] =
