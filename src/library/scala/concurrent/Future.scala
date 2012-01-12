@@ -344,5 +344,7 @@ object Future {
     
     p.future
   }
-
+  
+  @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
+  
 }

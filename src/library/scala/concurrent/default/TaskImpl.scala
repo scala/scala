@@ -122,7 +122,7 @@ private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
     }
   }
   
-  def await(timeout: Timeout)(implicit canblock: scala.concurrent.CanBlock): T = getState match {
+  def await(timeout: Timeout)(implicit canawait: scala.concurrent.CanAwait): T = getState match {
     case Success(res) => res
     case Failure(t)   => throw t
     case _ =>
@@ -196,7 +196,7 @@ private[concurrent] class TaskImpl[T](context: ExecutionContextImpl, body: => T)
   def tryCancel(): Unit =
     tryUnfork()
   
-  def await(timeout: Timeout)(implicit canblock: CanBlock): T = {
+  def await(timeout: Timeout)(implicit canawait: CanAwait): T = {
     join() // TODO handle timeout also
     (updater.get(this): @unchecked) match {
       case Success(r) => r
@@ -272,7 +272,7 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
       // TODO add exception handling here!
       val mb = new ForkJoinPool.ManagedBlocker {
         def block() = {
-          res = b.await(timeout)(CanBlockEvidence)
+          res = b.await(timeout)(CanAwaitEvidence)
           blockingDone = true
           true
         }

@@ -17,7 +17,7 @@ import scala.util.Timeout
 
 trait Awaitable[+T] {
   @implicitNotFound(msg = "Waiting must be done by calling `await(timeout) b`, where `b` is the `Awaitable` object.")
-  def await(timeout: Timeout)(implicit canblock: CanBlock): T
+  def await(timeout: Timeout)(implicit canawait: CanAwait): T
 }
 
 

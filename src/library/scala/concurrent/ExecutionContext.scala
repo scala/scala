@@ -10,7 +10,7 @@ import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, Recurs
 
 trait ExecutionContext {
   
-  protected implicit object CanBlockEvidence extends CanBlock
+  protected implicit object CanAwaitEvidence extends CanAwait
   
   def execute(runnable: Runnable): Unit
   
