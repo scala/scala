@@ -185,18 +185,18 @@ object Test extends Properties("HtmlFactory") {
   property("Trac #4180") = {
     createTemplate("Trac4180.scala") != None
   }
-  // 
-  // property("Trac #4372") = {
-  //   createTemplate("Trac4372.scala") match {
-  //     case node: scala.xml.Node => {
-  //       val html = node.toString
-  //       html.contains("<span class=\"name\" title=\"gt4s: $plus$colon\">+:</span>") &&
-  //         html.contains("<span class=\"name\" title=\"gt4s: $minus$colon\">-:</span>") &&
-  //           html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
-  //     }
-  //     case _ => false
-  //   }
-  // }
+
+  property("Trac #4372") = {
+    createTemplate("Trac4372.scala") match {
+      case node: scala.xml.Node => {
+        val html = node.toString
+        html.contains("<span title=\"gt4s: $plus$colon\" class=\"name\">+:</span>") &&
+          html.contains("<span title=\"gt4s: $minus$colon\" class=\"name\">-:</span>") &&
+            html.contains("""<span class="params">(<span name="n">n: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>""")
+      }
+      case _ => false
+    }
+  }
 
   property("Trac #4374 - public") = {
     val files = createTemplates("Trac4374.scala")
@@ -426,11 +426,11 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("SI_4898.scala")
     true
   }
-  // 
-  // property("Use cases should override their original members") =
-  //    checkText1("SI_5054_q1.scala", """def test(): Int""") &&
-  //    !checkText1("SI_5054_q1.scala", """def test(implicit lost: Int): Int""")
-  // 
+  
+  property("Use cases should override their original members") =
+     checkText1("SI_5054_q1.scala", """def test(): Int""") &&
+     !checkText1("SI_5054_q1.scala", """def test(implicit lost: Int): Int""")
+  
 
   property("Use cases should keep their flags - final should not be lost") = 
     checkText1("SI_5054_q2.scala", """final def test(): Int""")
