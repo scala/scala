@@ -1,28 +1,31 @@
-
-/**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
- */
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
 
 package scala.concurrent
 
-//import akka.AkkaException (replaced with Exception)
-//import akka.event.Logging.Error (removed all logging)
+
+
 import scala.util.{ Timeout, Duration }
 import scala.Option
-//import akka.japi.{ Procedure, Function ⇒ JFunc, Option ⇒ JOption } (commented methods)
 
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
-import java.util.concurrent.TimeUnit.{ NANOSECONDS ⇒ NANOS, MILLISECONDS ⇒ MILLIS }
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.{ LinkedList ⇒ JLinkedList }
+import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
+import java.lang.{ Iterable => JIterable }
+import java.util.{ LinkedList => JLinkedList }
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
-//import akka.util.Switch (commented method)
-import java.{ lang ⇒ jl }
+import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
+
+
 
 /** The trait that represents futures.
  *  
@@ -95,20 +98,6 @@ self =>
     case Right(v) => // do nothing
   }
   
-  /* To be removed
-  /** When this future times out, apply the provided function.
-   *  
-   *  If the future has already timed out,
-   *  this will either be applied immediately or be scheduled asynchronously.
-   *  
-   *  $multipleCallbacks
-   */
-  def onTimeout[U](callback: FutureTimeoutException => U): this.type = onComplete {
-    case Left(te: FutureTimeoutException) => callback(te)
-    case Right(v) => // do nothing
-  }
-  */
-  
   /** When this future is completed, either through an exception, a timeout, or a value,
    *  apply the provided function.
    *  
@@ -129,14 +118,6 @@ self =>
   /** Creates a new promise.
    */
   def newPromise[S]: Promise[S] = executionContext promise
-  
-  /*
-  /** Tests whether this `Future`'s timeout has expired.
-   *
-   *  $futureTimeout
-   */
-  def isTimedout: Boolean
-  */
   
   
   /* Projections */
@@ -176,46 +157,6 @@ self =>
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
   }
   
-  /*
-  /** A timed out projection of this future.
-   *  
-   *  The timed out projection is a future holding a value of type `FutureTimeoutException`.
-   *  
-   *  It is completed with a value which is a `FutureTimeoutException` of the original future
-   *  in case the original future is timed out.
-   *  
-   *  It is failed with a `NoSuchElementException` if the original future is completed successfully.
-   *  It is failed with the original exception otherwise.
-   *  
-   *  Blocking on this future returns a value only if the original future timed out, and a
-   *  corresponding exception otherwise.
-   */
-  def timedout: Future[FutureTimeoutException] = new Future[FutureTimeoutException] {
-    def executionContext = self.executionContext
-    def onComplete[U](func: Either[Throwable, FutureTimeoutException] => U) = {
-      self.onComplete {
-        case Left(te: FutureTimeoutException) => func(Right(te))
-        case Left(t) => func(Left(noSuchElemThrowable(t)))
-        case Right(v) => func(Left(noSuchElemValue(v)))
-      }
-      this
-    }
-    def isTimedout = self.isTimedout
-    def block()(implicit canblock: CanBlock) = try {
-      val res = self.block()
-      throw noSuchElemValue(res)
-    } catch {
-      case ft: FutureTimeoutException =>
-        ft
-      case t: Throwable =>
-        throw noSuchElemThrowable(t)
-    }
-    private def noSuchElemValue(v: T) =
-      new NoSuchElementException("Future.timedout didn't time out. Instead completed with: " + v)
-    private def noSuchElemThrowable(v: Throwable) =
-      new NoSuchElementException("Future.timedout didn't time out. Instead failed with: " + v)
-  }
-  */
   
   /* Monadic operations */
   
@@ -299,7 +240,7 @@ self =>
    *  Example:
    *  {{{
    *  val f = future { 5 }
-   *  val g = g filter { _ % 2 == 1 }
+   *  val g = f filter { _ % 2 == 1 }
    *  val h = f filter { _ % 2 == 0 }
    *  block on g // evaluates to 5
    *  block on h // throw a NoSuchElementException
@@ -311,6 +252,38 @@ self =>
     onComplete {
       case Left(t) => p failure t
       case Right(v) => if (pred(v)) p success v else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
+    }
+    
+    p.future
+  }
+  
+  /** Creates a new future by mapping the value of the current future if the given partial function is defined at that value.
+   *  
+   *  
+   *  If the current future contains a value for which the partial function is defined, the new future will also hold that value.
+   *  Otherwise, the resulting future will fail with a `NoSuchElementException`.
+   *
+   *  If the current future fails or times out, the resulting future also fails or times out, respectively.
+   *
+   *  Example:
+   *  {{{
+   *  val f = future { -5 }
+   *  val g = f collect {
+   *    case x if x < 0 => -x
+   *  }
+   *  val h = f collect {
+   *    case x if x > 0 => x * 2
+   *  }
+   *  block on g // evaluates to 5
+   *  block on h // throw a NoSuchElementException
+   *  }}}
+   */
+  def collect[S](pf: PartialFunction[T, S]): Future[S] = {
+    val p = newPromise[S]
+    
+    onComplete {
+      case Left(t) => p failure t
+      case Right(v) => if (pf.isDefinedAt(v)) p success pf(v) else p failure new NoSuchElementException("Future.collect partial function is not defined at: " + v)
     }
     
     p.future

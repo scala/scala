@@ -11,6 +11,8 @@ import scala.concurrent.{
 import scala.concurrent.future
 import scala.concurrent.promise
 import scala.concurrent.await
+import scala.concurrent.result
+import scala.concurrent.ready
 
 import scala.util.Duration
 
@@ -42,9 +44,10 @@ trait FutureCallbacks extends TestBase {
     val f = future {
       x = 1
     }
-    f onSuccess { _ =>
-      done()
-      assert(x == 1)
+    f onSuccess {
+      case _ =>
+        done()
+        assert(x == 1)
     }
   }
   
@@ -54,12 +57,14 @@ trait FutureCallbacks extends TestBase {
     val f = future {
       x = 1
     }
-    f onSuccess { _ =>
+    f onSuccess { 
+      case _ =>
       assert(x == 1)
       x = 2
-      f onSuccess { _ =>
-        assert(x == 2)
-        done()
+      f onSuccess { 
+        case _ =>
+          assert(x == 2)
+          done()
       }
     }
   }
@@ -70,8 +75,8 @@ trait FutureCallbacks extends TestBase {
       done()
       throw new Exception
     }
-    f onSuccess { _ =>
-      assert(false)
+    f onSuccess { 
+      case _ => assert(false)
     }
   }
   
@@ -82,9 +87,10 @@ trait FutureCallbacks extends TestBase {
       x = 1
       throw new Exception
     }
-    f onSuccess { _ =>
-      done()
-      assert(false)
+    f onSuccess {
+      case _ =>
+        done()
+        assert(false)
     }
     f onFailure {
       case _ =>
@@ -98,9 +104,10 @@ trait FutureCallbacks extends TestBase {
     val f = future[Unit] {
       throw cause
     }
-    f onSuccess { _ =>
-      done()
-      assert(false)
+    f onSuccess {
+      case _ =>
+        done()
+        assert(false)
     }
     f onFailure {
       case e: ExecutionException if (e.getCause == cause) =>
@@ -116,9 +123,10 @@ trait FutureCallbacks extends TestBase {
     val f = future[Unit] {
       throw new TimeoutException()
     }
-    f onSuccess { _ =>
-      done()
-      assert(false)
+    f onSuccess {
+      case _ =>
+        done()
+        assert(false)
     }
     f onFailure {
       case e: TimeoutException =>
@@ -195,9 +203,10 @@ trait FutureCombinators extends TestBase {
     } recover {
       case re: RuntimeException =>
         "recovered"
-    } onSuccess { x =>
-      done()
-      assert(x == "recovered")
+    } onSuccess {
+      case x =>
+        done()
+        assert(x == "recovered")
     } onFailure { case any =>
       done()
       assert(false)
@@ -211,9 +220,10 @@ trait FutureCombinators extends TestBase {
       throw cause
     } recover {
       case te: TimeoutException => "timeout"
-    } onSuccess { x =>
-      done()
-      assert(false)
+    } onSuccess {
+      case x =>
+        done()
+        assert(false)
     } onFailure { case any =>
       done()
       assert(any == cause)
@@ -258,9 +268,9 @@ trait FutureProjections extends TestBase {
       throw cause
     }
     f.failed onSuccess {
-      t =>
-      assert(t == cause)
-      done()
+      case t =>
+        assert(t == cause)
+        done()
     }
   }
   
@@ -291,7 +301,7 @@ trait FutureProjections extends TestBase {
     val f = future {
       throw cause
     }
-    assert(await(0, f.failed) == cause)
+    assert(result(f.failed, Duration(500, "ms")) == cause)
     done()
   }
   
@@ -299,7 +309,7 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     try {
-      await(0, f.failed)
+      ready(f.failed, Duration(0, "ms"))
       assert(false)
     } catch {
       case nsee: NoSuchElementException => done()
@@ -321,7 +331,7 @@ trait Blocking extends TestBase {
   def testAwaitSuccess(): Unit = once {
     done =>
     val f = future { 0 }
-    await(Duration(500, "ms"), f)
+    ready(f, Duration(500, "ms"))
     done()
   }
   
@@ -332,7 +342,7 @@ trait Blocking extends TestBase {
       throw cause
     }
     try {
-      await(Duration(500, "ms"), f)
+      ready(f, Duration(500, "ms"))
       assert(false)
     } catch {
       case t =>
@@ -354,12 +364,14 @@ trait Promises extends TestBase {
     val p = promise[Int]()
     val f = p.future
     
-    f.onSuccess { x =>
-      done()
-      assert(x == 5)
-    } onFailure { case any =>
-      done()
-      assert(false)
+    f.onSuccess {
+      case x =>
+        done()
+        assert(x == 5)
+    } onFailure {
+      case any =>
+        done()
+        assert(false)
     }
     
     p.success(5)

@@ -67,9 +67,9 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def await[T](timeout: Timeout)(body: =>T): T = await(timeout, new Awaitable[T] {
+  def await[T](atMost: Duration)(body: =>T): T = result(new Awaitable[T] {
     def await(timeout: Timeout)(implicit cb: CanAwait) = body
-  })
+  }, atMost)
   
   /** Blocks on a blockable object.
    *  
@@ -80,11 +80,16 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def await[T](timeout: Timeout, awaitable: Awaitable[T]): T = {
+  def result[T](awaitable: Awaitable[T], atMost: Duration): T = {
     currentExecutionContext.get match {
-      case null => awaitable.await(timeout)(null) // outside - TODO - fix timeout case
-      case x => x.blockingCall(timeout, awaitable) // inside an execution context thread
+      case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
+      case x => x.blockingCall(atMost, awaitable) // inside an execution context thread
     }
+  }
+  
+  def ready[T](awaitable: Awaitable[T], atMost: Duration): Awaitable[T] = {
+    result(awaitable, atMost)
+    awaitable
   }
   
 }
