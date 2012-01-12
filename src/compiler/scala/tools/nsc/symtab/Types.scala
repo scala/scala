@@ -1966,8 +1966,11 @@ A type's typeSymbol should never be inspected directly.
               // ...but only if it's not a tuple, so ((T1, T2)) => R is distinguishable
               // from (T1, T2) => R.
               return (targs match {
-                case in :: out :: Nil if !isTupleTypeOrSubtype(in)  =>
-                  "" + in + " => " + out
+                case in :: out :: Nil if !isTupleTypeOrSubtype(in) =>
+                  // A => B => C should be (A => B) => C or A => (B => C)
+                  val in_s  = if (isFunctionType(in)) "(" + in + ")" else "" + in
+                  val out_s = if (isFunctionType(out)) "(" + out + ")" else "" + out
+                  in_s + " => " + out_s
                 case xs =>
                   xs.init.mkString("(", ", ", ")") + " => " + xs.last
               })
