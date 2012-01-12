@@ -1,0 +1,20 @@
+nested-fn-print.scala:4: error: only classes can have declared but undefined members
+(Note that variables need to be initialized to be defined)
+  var x3: Int => Double
+      ^
+nested-fn-print.scala:7: error: type mismatch;
+ found   : String("a")
+ required: Int => (Float => Double)
+    x1 = "a"
+         ^
+nested-fn-print.scala:8: error: type mismatch;
+ found   : String("b")
+ required: (Int => Float) => Double
+    x2 = "b"
+         ^
+nested-fn-print.scala:9: error: type mismatch;
+ found   : String("c")
+ required: Int => Double
+    x3 = "c"
+         ^
+four errors found
