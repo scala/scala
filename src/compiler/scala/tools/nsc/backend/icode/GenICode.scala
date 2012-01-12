@@ -102,7 +102,7 @@ abstract class GenICode extends SubComponent  {
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         debuglog("Entering method " + name)
         val m = new IMethod(tree.symbol)
-        m.sourceFile = unit.source.toString()
+        m.sourceFile = unit.source
         m.returnType = if (tree.symbol.isConstructor) UNIT
                        else toTypeKind(tree.symbol.info.resultType)
         ctx.clazz.addMethod(m)
@@ -1078,6 +1078,7 @@ abstract class GenICode extends SubComponent  {
             }
 
             caseCtx = genLoad(body, tmpCtx, generatedType)
+            // close the block unless it's already been closed by the body, which closes the block if it ends in a jump (which is emitted to have alternatives share their body)
             caseCtx.bb.closeWith(JUMP(afterCtx.bb) setPos caze.pos)
           }
           ctx1.bb.emitOnly(
@@ -1292,7 +1293,7 @@ abstract class GenICode extends SubComponent  {
 
     /** The Object => String overload.
      */
-    private lazy val String_valueOf: Symbol = getMember(StringModule, "valueOf") filter (sym =>
+    private lazy val String_valueOf: Symbol = getMember(StringModule, nme.valueOf) filter (sym =>
       sym.info.paramTypes match {
         case List(pt) => pt.typeSymbol == ObjectClass
         case _        => false
@@ -1304,7 +1305,7 @@ abstract class GenICode extends SubComponent  {
     // case we want to get more precise.
     //
     // private def valueOfForType(tp: Type): Symbol = {
-    //   val xs = getMember(StringModule, "valueOf") filter (sym =>
+    //   val xs = getMember(StringModule, nme.valueOf) filter (sym =>
     //     // We always exclude the Array[Char] overload because java throws an NPE if
     //     // you pass it a null.  It will instead find the Object one, which doesn't.
     //     sym.info.paramTypes match {
@@ -1351,7 +1352,7 @@ abstract class GenICode extends SubComponent  {
     def genScalaHash(tree: Tree, ctx: Context): Context = {
       val hashMethod = {
         ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
-        getMember(ScalaRunTimeModule, "hash")
+        getMember(ScalaRunTimeModule, nme.hash_)
       }
 
       val ctx1 = genLoad(tree, ctx, ObjectReference)
@@ -1715,7 +1716,7 @@ abstract class GenICode extends SubComponent  {
       do {
         changed = false
         n += 1
-        method.code.blocks foreach prune0
+        method.blocks foreach prune0
       } while (changed)
 
       debuglog("Prune fixpoint reached in " + n + " iterations.");
@@ -1754,7 +1755,7 @@ abstract class GenICode extends SubComponent  {
         val sym = t.symbol
         def getLabel(pos: Position, name: Name) =
           labels.getOrElseUpdate(sym,
-            method.newLabel(sym.pos, unit.freshTermName(name.toString)) setInfo sym.tpe
+            method.newLabel(unit.freshTermName(name.toString), sym.pos) setInfo sym.tpe
           )
 
         t match {
@@ -1923,7 +1924,7 @@ abstract class GenICode extends SubComponent  {
         val ctx1 = new Context(this) setMethod(m)
         ctx1.labels = mutable.HashMap()
         ctx1.method.code = new Code(m)
-        ctx1.bb = ctx1.method.code.startBlock
+        ctx1.bb = ctx1.method.startBlock
         ctx1.defdef = d
         ctx1.scope = EmptyScope
         ctx1.enterScope
@@ -1931,11 +1932,12 @@ abstract class GenICode extends SubComponent  {
       }
 
       /** Return a new context for a new basic block. */
-      def newBlock: Context = {
+      def newBlock(): Context = {
         val block = method.code.newBlock
         handlers foreach (_ addCoveredBlock block)
         currentExceptionHandlers foreach (_ addBlock block)
-        block.varsInScope = mutable.HashSet() ++= scope.varsInScope
+        block.varsInScope.clear()
+        block.varsInScope ++= scope.varsInScope
         new Context(this) setBasicBlock block
       }
 
@@ -1957,7 +1959,7 @@ abstract class GenICode extends SubComponent  {
        */
       private def newExceptionHandler(cls: Symbol, resultKind: TypeKind, pos: Position): ExceptionHandler = {
         handlerCount += 1
-        val exh = new ExceptionHandler(method, "" + handlerCount, cls, pos)
+        val exh = new ExceptionHandler(method, newTermNameCached("" + handlerCount), cls, pos)
         exh.resultKind = resultKind
         method.addHandler(exh)
         handlers = exh :: handlers
@@ -2003,9 +2005,7 @@ abstract class GenICode extends SubComponent  {
 
       /** Make a fresh local variable. It ensures the 'name' is unique. */
       def makeLocal(pos: Position, tpe: Type, name: String): Local = {
-        val sym = method.symbol.newVariable(pos, unit.freshTermName(name))
-          .setInfo(tpe)
-          .setFlag(Flags.SYNTHETIC)
+        val sym = method.symbol.newVariable(unit.freshTermName(name), pos, Flags.SYNTHETIC) setInfo tpe
         this.method.addLocal(new Local(sym, toTypeKind(tpe), false))
       }
 

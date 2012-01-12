@@ -181,10 +181,7 @@ trait TypeDiagnostics {
       val getter = if (member.isSetter) member.getter(member.owner) else member
       val flags  = if (getter.setter(member.owner) != NoSymbol) DEFERRED | MUTABLE else DEFERRED
 
-      ( getter.owner.newValue(getter.pos, getter.name.toTermName)
-          setInfo getter.tpe.resultType
-          setFlag flags
-      )
+      getter.owner.newValue(getter.name.toTermName, getter.pos, flags) setInfo getter.tpe.resultType
     }
 
   def treeSymTypeMsg(tree: Tree): String = {

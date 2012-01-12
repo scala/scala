@@ -365,6 +365,13 @@ abstract class ClassfileParser {
         case arr: Type     => Constant(arr)
       }
     }
+    
+    private def getSubArray(bytes: Array[Byte]): Array[Byte] = {
+      val decodedLength = ByteCodecs.decode(bytes)
+      val arr           = new Array[Byte](decodedLength)
+      System.arraycopy(bytes, 0, arr, 0, decodedLength)
+      arr
+    }
 
     def getBytes(index: Int): Array[Byte] = {
       if (index <= 0 || len <= index) errorBadIndex(index)
@@ -372,11 +379,10 @@ abstract class ClassfileParser {
       if (value eq null) {
         val start = starts(index)
         if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
-        val len = in.getChar(start + 1)
+        val len   = in.getChar(start + 1)
         val bytes = new Array[Byte](len)
-        Array.copy(in.buf, start + 3, bytes, 0, len)
-        val decodedLength = ByteCodecs.decode(bytes)
-        value = bytes.take(decodedLength)
+        System.arraycopy(in.buf, start + 3, bytes, 0, len)
+        value = getSubArray(bytes)
         values(index) = value
       }
       value
@@ -394,9 +400,7 @@ abstract class ClassfileParser {
           val len = in.getChar(start + 1)
           bytesBuffer ++= in.buf.view(start + 3, start + 3 + len)
         }
-        val bytes = bytesBuffer.toArray
-        val decodedLength = ByteCodecs.decode(bytes)
-        value = bytes.take(decodedLength)
+        value = getSubArray(bytesBuffer.toArray)
         values(indices.head) = value
       }
       value
@@ -435,38 +439,38 @@ abstract class ClassfileParser {
 
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
-    def loadClassSymbol(name: Name) = {
-      val s = name.toString
-      val file = global.classPath findSourceFile s getOrElse {
-        MissingRequirementError.notFound("class " + s)
+    def loadClassSymbol(name: Name): Symbol = {
+      val file = global.classPath findSourceFile ("" +name) getOrElse {
+        warning("Class " + name + " not found - continuing with a stub.")
+        return NoSymbol.newClass(name.toTypeName)
       }
-      val completer = new global.loaders.ClassfileLoader(file)
+      val completer     = new global.loaders.ClassfileLoader(file)
       var owner: Symbol = definitions.RootClass
-      var sym: Symbol = NoSymbol
-      var ss: String = null
-      var start = 0
-      var end = s indexOf '.'
+      var sym: Symbol   = NoSymbol
+      var ss: Name      = null
+      var start         = 0
+      var end           = name indexOf '.'
+
       while (end > 0) {
-        ss = s.substring(start, end)
+        ss = name.subName(start, end)
         sym = owner.info.decls lookup ss
         if (sym == NoSymbol) {
-          sym = owner.newPackage(NoPosition, ss) setInfo completer
+          sym = owner.newPackage(ss) setInfo completer
           sym.moduleClass setInfo completer
           owner.info.decls enter sym
         }
         owner = sym.moduleClass
         start = end + 1
-        end = s.indexOf('.', start)
+        end = name.indexOf('.', start)
       }
-      ss = s substring start
-      sym = owner.info.decls lookup ss
-      if (sym == NoSymbol) {
-        sym = owner.newClass(NoPosition, newTypeName(ss)) setInfo completer
-        owner.info.decls enter sym
-        if (settings.debug.value && settings.verbose.value)
+      ss = name.subName(0, start)
+      owner.info.decls lookup ss orElse {
+        sym = owner.newClass(NoPosition, ss.toTypeName) setInfo completer
+        if (opt.verboseDebug)
           println("loaded "+sym+" from file "+file)
+
+        owner.info.decls enter sym
       }
-      sym
     }
 
     def lookupClass(name: Name) = try {
@@ -682,8 +686,6 @@ abstract class ClassfileParser {
       while (!isDelimiter(sig(index))) { index += 1 }
       sig.subName(start, index)
     }
-    def existentialType(tparams: List[Symbol], tp: Type): Type =
-      if (tparams.isEmpty) tp else ExistentialType(tparams, tp)
     def sig2type(tparams: immutable.Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig(index); index += 1
       tag match {
@@ -716,7 +718,12 @@ abstract class ClassfileParser {
                       index += 1
                       val bounds = variance match {
                         case '+' => TypeBounds.upper(objToAny(sig2type(tparams, skiptvs)))
-                        case '-' => TypeBounds.lower(sig2type(tparams, skiptvs))
+                        case '-' => 
+                          val tp = sig2type(tparams, skiptvs)
+                          // sig2type seems to return AnyClass regardless of the situation:
+                          // we don't want Any as a LOWER bound.
+                          if (tp.typeSymbol == definitions.AnyClass) TypeBounds.empty
+                          else TypeBounds.lower(tp)
                         case '*' => TypeBounds.empty
                       }
                       val newtparam = sym.newExistential(sym.pos, newTypeName("?"+i)) setInfo bounds
@@ -729,14 +736,14 @@ abstract class ClassfileParser {
                 }
                 accept('>')
                 assert(xs.length > 0)
-                existentialType(existentials.toList, typeRef(pre, classSym, xs.toList))
+                newExistentialType(existentials.toList, typeRef(pre, classSym, xs.toList))
               } else if (classSym.isMonomorphicType) {
                 tp
               } else {
                 // raw type - existentially quantify all type parameters
                 val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
                 val t = typeRef(pre, classSym, eparams.map(_.tpe))
-                val res = existentialType(eparams, t)
+                val res = newExistentialType(eparams, t)
                 if (settings.debug.value && settings.verbose.value)
                   println("raw type " + classSym + " -> " + res)
                 res
@@ -806,7 +813,7 @@ abstract class ClassfileParser {
       val start = index
       while (sig(index) != '>') {
         val tpname = subName(':'.==).toTypeName
-        val s = sym.newTypeParameter(NoPosition, tpname)
+        val s = sym.newTypeParameter(tpname)
         tparams = tparams + (tpname -> s)
         sig2typeBounds(tparams, true)
         newTParams += s
@@ -970,7 +977,7 @@ abstract class ClassfileParser {
       Some(ScalaSigBytes(pool getBytes in.nextChar))
     }
 
-    def parseScalaLongSigBytes: Option[ScalaSigBytes] = try {
+    def parseScalaLongSigBytes: Option[ScalaSigBytes] = {
       val tag = in.nextByte.toChar
       assert(tag == ARRAY_TAG)
       val stringCount = in.nextChar
@@ -981,11 +988,6 @@ abstract class ClassfileParser {
           in.nextChar.toInt
         }
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
-    }
-    catch {
-      case e: Throwable =>
-        e.printStackTrace
-        throw e
     }
 
     /** Parse and return a single annotation.  If it is malformed,
@@ -1074,8 +1076,8 @@ abstract class ClassfileParser {
       val name = entry.originalName
       var sflags = toScalaFlags(jflags, isClass = true)
 
-      val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
-      val innerModule = getOwner(jflags).newModule(NoPosition, name.toTermName).setInfo(completer).setFlag(sflags)
+      val innerClass = getOwner(jflags).newClass(name.toTypeName).setInfo(completer).setFlag(sflags)
+      val innerModule = getOwner(jflags).newModule(name.toTermName).setInfo(completer).setFlag(sflags)
       innerModule.moduleClass setInfo global.loaders.moduleClassLoader
 
       getScope(jflags) enter innerClass

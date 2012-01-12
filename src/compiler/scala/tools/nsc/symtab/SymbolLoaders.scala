@@ -49,7 +49,7 @@ abstract class SymbolLoaders {
    */
   def enterModule(root: Symbol, name: String, completer: SymbolLoader): Symbol = {
     val owner = realOwner(root)
-    val module = owner.newModule(NoPosition, newTermName(name))
+    val module = owner.newModule(newTermName(name))
     module setInfo completer
     module.moduleClass setInfo moduleClassLoader
     enterIfNew(owner, module, completer)
@@ -199,7 +199,7 @@ abstract class SymbolLoaders {
           return
         }
       }
-      val pkg = root.newPackage(NoPosition, newTermName(name))
+      val pkg = root.newPackage(newTermName(name))
       pkg.moduleClass.setInfo(completer)
       pkg.setInfo(pkg.moduleClass.tpe)
       root.info.decls.enter(pkg)

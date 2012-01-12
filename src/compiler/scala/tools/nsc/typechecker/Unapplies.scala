@@ -21,6 +21,8 @@ trait Unapplies extends ast.TreeDSL
   import CODE.{ CASE => _, _ }
   import treeInfo.{ isRepeatedParamType, isByNameParamType }
 
+  private val unapplyParamName = nme.x_0
+  
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
     assert(ufn.isMethod)
@@ -112,7 +114,7 @@ trait Unapplies extends ast.TreeDSL
 
   private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
     val DefDef(_, _, _, vparamss, _, _) = treeInfo firstConstructor cdef.impl.body
-    vparamss map (_ map copyUntyped[ValDef])
+    mmap(vparamss)(copyUntyped[ValDef])
   }
 
   /** The return value of an unapply method of a case class C[Ts]
@@ -165,7 +167,7 @@ trait Unapplies extends ast.TreeDSL
     val cparamss  = constrParamss(cdef)
     atPos(cdef.pos.focus)(
       DefDef(caseMods, nme.apply, tparams, cparamss, classType(cdef, tparams),
-        New(classType(cdef, tparams), cparamss map (_ map gen.paramToArg)))
+        New(classType(cdef, tparams), mmap(cparamss)(gen.paramToArg)))
     )
   }
 
@@ -173,14 +175,13 @@ trait Unapplies extends ast.TreeDSL
    */
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
     val tparams   = cdef.tparams map copyUntypedInvariant
-    val paramName = newTermName("x$0")
     val method    = constrParamss(cdef) match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
     }
-    val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), paramName, classType(cdef, tparams), EmptyTree))
+    val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
     val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
-    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(paramName))
+    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(unapplyParamName))
 
     atPos(cdef.pos.focus)(
       DefDef(caseMods, method, tparams, List(cparams), TypeTree(), body)
@@ -201,12 +202,12 @@ trait Unapplies extends ast.TreeDSL
       def paramWithDefault(vd: ValDef) =
         treeCopy.ValDef(vd, vd.mods | DEFAULTPARAM, vd.name, atPos(vd.pos.focus)(TypeTree() setOriginal vd.tpt), toIdent(vd))
 
-      val paramss   = cparamss map (_ map paramWithDefault)
+      val paramss   = mmap(cparamss)(paramWithDefault)
       val classTpe  = classType(cdef, tparams)
 
       Some(atPos(cdef.pos.focus)(
         DefDef(Modifiers(SYNTHETIC), nme.copy, tparams, paramss, classTpe,
-          New(classTpe, paramss map (_ map toIdent)))
+          New(classTpe, mmap(paramss)(toIdent)))
       ))
     }
   }

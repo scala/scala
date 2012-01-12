@@ -123,6 +123,18 @@ END-USER TARGETS
     <antcall target="palo.done"/>
   </target>
 
+  <target name="fastlocker"
+    description="Buildlocker without extra fuss">
+    <antcall target="locker.unlock"/>
+    <antcall target="locker.done"/>
+  </target>
+
+  <target name="buildlocker"
+    description="Does the same for locker as build does for quick">
+    <antcall target="locker.unlock"/>
+    <antcall target="palo.bin"/>
+  </target>
+
   <target name="newlibs"
     description="Requires libraries (MSIL, FJBG) to be rebuilt. Add this target before any other if class file format is incompatible.">
     <property name="libs.outdated" value="yes"/>
@@ -220,7 +232,7 @@ INITIALISATION
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
     <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
-      <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
     <!-- Find out whether we are running on Windows -->
@@ -411,10 +423,32 @@ LOCAL REFERENCE BUILD (LOCKER)
     <delete dir="${build-locker.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
   
-  <target name="locker.unlock">
-    <delete file="${build-locker.dir}/all.complete"/>
+  <target name="locker.unlock.pre-lib">
+    <uptodate property="locker.lib.available" targetfile="${build-locker.dir}/library.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="library/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="locker.unlock.lib" depends="locker.unlock.pre-lib" unless="locker.lib.available">
     <delete file="${build-locker.dir}/library.complete"/>
+  </target>
+
+  <target name="locker.unlock.pre-comp" depends="locker.unlock.lib">
+    <uptodate property="locker.comp.available" targetfile="${build-locker.dir}/compiler.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="compiler/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="locker.unlock.comp" depends="locker.unlock.pre-comp" unless="locker.comp.available">
     <delete file="${build-locker.dir}/compiler.complete"/>
+  </target>
+
+  <target name="locker.unlock" depends="locker.unlock.comp">
+    <delete file="${build-locker.dir}/all.complete" />
   </target>
 
 <!-- ===========================================================================
@@ -449,7 +483,10 @@ PACKED LOCKER BUILD (PALO)
     <jar destfile="${build-palo.dir}/lib/scala-compiler.jar" manifest="${basedir}/META-INF/MANIFEST.MF">
       <fileset dir="${build-locker.dir}/classes/compiler"/>
       <!-- filemode / dirmode: see trac ticket #1294 -->
+      <zipfileset dirmode="755" filemode="644" src="${lib.dir}/fjbg.jar"/>
+      <zipfileset dirmode="755" filemode="644" src="${lib.dir}/msil.jar"/>
     </jar>
+    <copy file="${jline.jar}" toDir="${build-palo.dir}/lib"/>
   </target>
 
   <target name="palo.done" depends="palo.comp">
@@ -457,6 +494,51 @@ PACKED LOCKER BUILD (PALO)
 
   <target name="palo.clean" depends="quick.clean">
     <delete dir="${build-palo.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+  <target name="palo.pre-bin" depends="palo.comp">
+    <uptodate property="palo.bin.available" targetfile="${build-locker.dir}/bin.complete">
+      <srcfiles dir="${src.dir}">
+        <include name="compiler/scala/tools/ant/templates/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="palo.bin" depends="palo.pre-bin" unless="palo.bin.available">
+    <taskdef name="palo-bin" classname="scala.tools.ant.ScalaTool">
+      <classpath>
+        <pathelement location="${build-palo.dir}/lib/scala-library.jar"/>
+        <pathelement location="${build-palo.dir}/lib/scala-compiler.jar"/>
+        <pathelement location="${build-palo.dir}/lib/jline.jar"/>
+      </classpath>
+    </taskdef>
+    <mkdir dir="${build-palo.dir}/bin"/>
+    <palo-bin
+      file="${build-palo.dir}/bin/scala"
+      class="scala.tools.nsc.MainGenericRunner"
+      javaFlags="${java.flags}"/>
+    <palo-bin
+      file="${build-palo.dir}/bin/scalac"
+      class="scala.tools.nsc.Main"
+      javaFlags="${java.flags}"/>
+    <palo-bin
+      file="${build-palo.dir}/bin/scaladoc"
+      class="scala.tools.nsc.ScalaDoc"
+      javaFlags="${java.flags}"/>
+    <palo-bin
+      file="${build-palo.dir}/bin/fsc"
+      class="scala.tools.nsc.CompileClient"
+      javaFlags="${java.flags}"/>
+    <palo-bin
+      file="${build-palo.dir}/bin/scalap"
+      class="scala.tools.scalap.Main"
+      javaFlags="${java.flags}"/>
+    <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scala"/>
+    <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scalac"/>
+    <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scaladoc"/>
+    <chmod perm="ugo+rx" file="${build-palo.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${build-palo.dir}/bin/scalap"/>
+    <touch file="${build-locker.dir}/bin.complete" verbose="no"/>
   </target>
 
 <!-- ===========================================================================
@@ -661,7 +743,14 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.plugins.timer" action="total"/>
   </target>
   
-  <target name="quick.scalacheck" depends="quick.plugins">
+  <target name="quick.pre-scalacheck" depends="quick.plugins">
+    <uptodate property="quick.scalacheck.available" targetfile="${build-quick.dir}/scalacheck.complete">
+      <srcfiles dir="${src.dir}/scalacheck"/>
+    </uptodate>
+  </target>
+
+  <target name="quick.scalacheck" depends="quick.pre-scalacheck" unless="quick.scalacheck.available">
+    <stopwatch name="quick.scalacheck.timer"/>
     <mkdir dir="${build-quick.dir}/classes/scalacheck"/>
     <scalacfork
       destdir="${build-quick.dir}/classes/scalacheck"
@@ -675,6 +764,8 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/scalacheck"/>
       </compilationpath>
     </scalacfork>
+    <touch file="${build-quick.dir}/scalacheck.complete" verbose="no"/>
+    <stopwatch name="quick.scalacheck.timer" action="total"/>
   </target>
   
   <target name="quick.pre-scalap" depends="quick.scalacheck">

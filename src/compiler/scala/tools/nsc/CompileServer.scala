@@ -136,9 +136,9 @@ class StandardCompileServer extends SocketServer {
     }
 
     if (command.shouldStopWithInfo)
-      reporter.info(null, command.getInfoMessage(newGlobal(newSettings, reporter)), true)
+      reporter.echo(command.getInfoMessage(newGlobal(newSettings, reporter)))
     else if (command.files.isEmpty)
-      reporter.info(null, command.usageMsg, true)
+      reporter.echo(command.usageMsg)
     else {
       if (isCompilerReusable) {
         info("[Reusing existing Global instance.]")

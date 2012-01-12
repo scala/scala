@@ -82,7 +82,7 @@ trait Printers { self: ICodes =>
       if (!m.isAbstractMethod) {
         println(" {")
         println("locals: " + m.locals.mkString("", ", ", ""))
-        println("startBlock: " + m.code.startBlock)
+        println("startBlock: " + m.startBlock)
         println("blocks: " + m.code.blocks.mkString("[", ",", "]"))
         println
         lin.linearize(m) foreach printBlock

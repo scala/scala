@@ -355,7 +355,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           val valueTpe = removeAllCPSAnnotations(expr.tpe)
 
-          val sym = currentOwner.newValue(tree.pos, unit.fresh.newName("tmp"))
+          val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName("tmp")))
                       .setInfo(valueTpe)
                       .setFlag(Flags.SYNTHETIC)
                       .setAnnotations(List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil)))

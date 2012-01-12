@@ -3,10 +3,12 @@
  * @author Paul Phillips
  */
 
-package scala.tools.nsc
-package util
+package scala.reflect
+package internal.util
 
-import scala.reflect.NameTransformer._
+import NameTransformer._
+import scala.collection.{ mutable, immutable }
+import Origins._
 
 /** A debugging class for logging from whence a method is being called.
  *  Say you wanted to discover who was calling phase_= in SymbolTable.
@@ -33,10 +35,6 @@ import scala.reflect.NameTransformer._
  }}}
  *
  */
-
-import scala.collection.{ mutable, immutable }
-import Origins._
-
 abstract class Origins {
   type Rep
   def newRep(xs: StackSlice): Rep
@@ -94,7 +92,9 @@ object Origins {
   def apply(tag: String, clazz: Class[_]): Origins = apply(tag, new OneLine(clazz))
   def apply(tag: String, orElse: => Origins): Origins = {
     counters find (_.tag == tag) getOrElse {
-      returning(orElse setTag tag)(counters += _)
+      val res = orElse setTag tag
+      counters += res
+      res
     }
   }
 

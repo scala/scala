@@ -54,7 +54,7 @@ trait ParallelMatching extends ast.TreeDSL
     }
     def createLabelDef(namePrefix: String, body: Tree, params: List[Symbol] = Nil, restpe: Type = matchResultType) = {
       val labelName = cunit.freshTermName(namePrefix)
-      val labelSym  = owner.newLabel(owner.pos, labelName)
+      val labelSym  = owner.newLabel(labelName, owner.pos)
       val labelInfo = MethodType(params, restpe)
 
       LabelDef(labelSym setInfo labelInfo, params, body setType restpe)

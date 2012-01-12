@@ -220,8 +220,8 @@ trait DocComments { self: Global =>
         else site.info.baseClasses
 
       searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
-        case Some(str) if str startsWith '$'  => lookupVariable(str.tail, site)
-        case res                              => res orElse lookupVariable(vble, site.owner)
+        case Some(str) if str startsWith "$" => lookupVariable(str.tail, site)
+        case res                             => res orElse lookupVariable(vble, site.owner)
       }
   }
 
@@ -397,7 +397,7 @@ trait DocComments { self: Global =>
               if (tpe != NoType) tpe
               else {
                 val alias1 = alias.cloneSymbol(definitions.RootClass)
-                alias1.name = repl.toTypeName
+                alias1.name = newTypeName(repl)
                 typeRef(NoPrefix, alias1, Nil)
               }
             case None =>

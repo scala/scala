@@ -185,7 +185,7 @@ trait PhaseAssembly {
      *  dependency on something that is dropped.
      */
     def removeDanglingNodes() {
-      for (node <- nodes.valuesIterator filter (_.phaseobj.isEmpty)) {
+      for (node <- nodes.values filter (_.phaseobj.isEmpty)) {
         val msg = "dropping dependency on node with no phase object: "+node.phasename
         informProgress(msg)
         nodes -= node.phasename

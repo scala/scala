@@ -214,10 +214,10 @@ trait Implicits {
   /** An extractor for types of the form ? { name: (? >: argtpe <: Any*)restp }
    */
   object HasMethodMatching {
+    val dummyMethod = new TermSymbol(NoSymbol, NoPosition, newTermName("typer$dummy"))
+    def templateArgType(argtpe: Type) = new BoundedWildcardType(TypeBounds.lower(argtpe))
+    
     def apply(name: Name, argtpes: List[Type], restpe: Type): Type = {
-      def templateArgType(argtpe: Type) =
-        new BoundedWildcardType(TypeBounds(argtpe, AnyClass.tpe))
-      val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "typer$dummy")
       val mtpe = MethodType(dummyMethod.newSyntheticValueParams(argtpes map templateArgType), restpe)
       memberWildcardType(name, mtpe)
     }
@@ -816,7 +816,14 @@ trait Implicits {
               val newPending = undoLog undo {
                 is filterNot (alt => alt == i || {
                   try improves(i, alt)
-                  catch { case e: CyclicReference => true }
+                  catch { 
+                    case e: CyclicReference => 
+                      if (printInfers) {
+                        println(i+" discarded because cyclic reference occurred")
+                        e.printStackTrace()
+                      }
+                      true 
+                  }
                 })
               }
               rankImplicits(newPending, i :: acc)

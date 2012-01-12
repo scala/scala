@@ -184,6 +184,8 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case _ => errorBadSignature("bad name tag: " + tag)
       }
     }
+    protected def readTermName(): TermName = readName().toTermName
+    protected def readTypeName(): TypeName = readName().toTypeName
 
     /** Read a symbol */
     protected def readSymbol(): Symbol = {
@@ -211,7 +213,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             return NoSymbol
 
           if (tag == EXTMODCLASSref) {
-            val moduleVar = owner.info.decl(nme.moduleVarName(name))
+            val moduleVar = owner.info.decl(nme.moduleVarName(name.toTermName))
             if (moduleVar.isLazyAccessor)
               return moduleVar.lazyAccessor.lazyAccessor
           }
@@ -223,7 +225,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           // (2) Try with expanded name.  Can happen if references to private
           // symbols are read from outside: for instance when checking the children
           // of a class.  See #1722.
-          fromName(nme.expandedName(name, owner)) orElse {
+          fromName(nme.expandedName(name.toTermName, owner)) orElse {
             // (3) Try as a nested object symbol.
             nestedObjectSymbol orElse {
               // (4) Otherwise, fail.
@@ -280,7 +282,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
       finishSym(tag match {
         case TYPEsym  => owner.newAbstractType(name.toTypeName)
-        case ALIASsym => owner.newAliasType(name.toTypeName)
+        case ALIASsym => owner.newTypeSymbol(name.toTypeName)
         case CLASSsym =>
           val sym = (isClassRoot, isModuleFlag) match {
             case (true, true)   => moduleRoot.moduleClass
@@ -295,15 +297,11 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
         case MODULEsym =>
           val clazz = at(inforef, () => readType()).typeSymbol // after the NMT_TRANSITION period, we can leave off the () => ... ()
           if (isModuleRoot) moduleRoot
-          else {
-            val m = owner.newModule(name, clazz)
-            clazz.sourceModule = m
-            m
-          }
+          else owner.newLinkedModule(clazz)
         case VALsym =>
           if (isModuleRoot) { assert(false); NoSymbol }
-          else if (isMethodFlag) owner.newMethod(name)
-          else owner.newValue(name)
+          else if (isMethodFlag) owner.newMethod(name.toTermName)
+          else owner.newValue(name.toTermName)
 
         case _ =>
           errorBadSignature("bad symbol tag: " + tag)
@@ -378,7 +376,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           // that it isn't right here. See #4757 for the immediate
           // motivation to fix it.
           val tparams = until(end, readSymbolRef) map (_ setFlag EXISTENTIAL)
-          ExistentialType(tparams, restpe)
+          newExistentialType(tparams, restpe)
 
         case ANNOTATEDtpe =>
           var typeRef = readNat()
@@ -549,13 +547,13 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
         case MODULEtree =>
           setSymModsName()
-          ModuleDef(mods, name, readTemplateRef())
+          ModuleDef(mods, name.toTermName, readTemplateRef())
 
         case VALDEFtree =>
           setSymModsName()
           val tpt = readTreeRef()
           val rhs = readTreeRef()
-          ValDef(mods, name, tpt, rhs)
+          ValDef(mods, name.toTermName, tpt, rhs)
 
         case DEFDEFtree =>
           setSymModsName()
@@ -563,7 +561,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           val vparamss = times(readNat(), () => times(readNat(), readValDefRef))
           val tpt = readTreeRef()
           val rhs = readTreeRef()
-          DefDef(mods, name, tparams, vparamss, tpt, rhs)
+          DefDef(mods, name.toTermName, tparams, vparamss, tpt, rhs)
 
         case TYPEDEFtree =>
           setSymModsName()
@@ -575,7 +573,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
           setSymName()
           val rhs = readTreeRef()
           val params = until(end, readIdentRef)
-          LabelDef(name, params, rhs)
+          LabelDef(name.toTermName, params, rhs)
 
         case IMPORTtree =>
           setSym()

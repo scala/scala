@@ -101,7 +101,7 @@ retrieved 123 members
 `method takeWhile(p: B => Boolean)Iterator[B]`
 `method toArray[B >: B](implicit evidence$1: ClassManifest[B])Array[B]`
 `method toBuffer[B >: B]=> scala.collection.mutable.Buffer[B]`
-`method toIndexedSeq[B >: B]=> scala.collection.immutable.IndexedSeq[B]`
+`method toIndexedSeq=> scala.collection.immutable.IndexedSeq[B]`
 `method toIterable=> Iterable[B]`
 `method toIterator=> Iterator[B]`
 `method toList=> List[B]`

@@ -9,7 +9,7 @@
 package scala.tools.scalap
 
 import java.io._
-
+import scala.reflect.NameTransformer
 
 class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer) {
 
@@ -32,22 +32,22 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
   }
 
   def nameToClass(str: String): String = {
-    val res = Names.decode(str.replace('/', '.'))
+    val res = NameTransformer.decode(str.replace('/', '.'))
     if (res == "java.lang.Object") "scala.Any" else res
   }
 
   def nameToClass0(str: String) = {
-    val res = Names.decode(str.replace('/', '.'))
+    val res = NameTransformer.decode(str.replace('/', '.'))
     if (res == "java.lang.Object") "scala.AnyRef" else res
   }
 
   def nameToSimpleClass(str: String) =
-    Names.decode(str.substring(str.lastIndexOf('/') + 1))
+    NameTransformer.decode(str.substring(str.lastIndexOf('/') + 1))
 
   def nameToPackage(str: String) = {
     val inx = str.lastIndexOf('/')
     val name = if (inx == -1) str else str.substring(0, inx).replace('/', '.')
-    Names.decode(name)
+    NameTransformer.decode(name)
   }
 
   def sigToType(str: String): String =
@@ -119,9 +119,9 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
   def printField(flags: Int, name: Int, tpe: Int, attribs: List[cf.Attribute]) {
     print(flagsToStr(false, flags))
     if ((flags & 0x0010) != 0)
-      print("val " + Names.decode(getName(name)))
+      print("val " + NameTransformer.decode(getName(name)))
     else
-      print("final var " + Names.decode(getName(name)))
+      print("final var " + NameTransformer.decode(getName(name)))
     print(": " + getType(tpe) + ";").newline
   }
 
@@ -139,20 +139,20 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
             if (getName(name) == "<init>") {
               print("def this" + getType(tpe) + ";").newline
             } else {
-              print("def " + Names.decode(getName(name)))
+              print("def " + NameTransformer.decode(getName(name)))
               print(getType(tpe) + ";").newline
             }
           case Some(str) =>
             if (getName(name) == "<init>")
               print("def this" + str + ";").newline
             else
-              print("def " + Names.decode(getName(name)) + str + ";").newline
+              print("def " + NameTransformer.decode(getName(name)) + str + ";").newline
         }
       case None =>
         if (getName(name) == "<init>") {
           print("def this" + getType(tpe) + ";").newline
         } else {
-          print("def " + Names.decode(getName(name)))
+          print("def " + NameTransformer.decode(getName(name)))
           print(getType(tpe) + ";").newline
       }
     }

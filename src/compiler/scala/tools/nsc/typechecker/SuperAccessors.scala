@@ -43,7 +43,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 
     private def transformArgs(params: List[Symbol], args: List[Tree]) = {
-      treeInfo.zipMethodParamsAndArgs(params, args) map { case (param, arg) =>
+      treeInfo.mapMethodParamsAndArgs(params, args) { (param, arg) =>
         if (isByNameParamType(param.tpe))
           withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
         else transform(arg)
@@ -321,12 +321,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val code = DefDef(protAcc, {
           val (receiver :: _) :: tail = protAcc.paramss
           val base: Tree              = Select(Ident(receiver), sym)
-          val allParamTypes           = sym.tpe.paramss map (xs => xs map (_.tpe))
-
-          (tail zip allParamTypes).foldLeft(base) {
-            case (fn, (params, tpes)) =>
-              Apply(fn, params zip tpes map { case (p, tp) => makeArg(p, receiver, tp) })
-          }
+          val allParamTypes           = mapParamss(sym)(_.tpe)
+          val args = map2(tail, allParamTypes)((params, tpes) => map2(params, tpes)(makeArg(_, receiver, _)))
+          args.foldLeft(base)(Apply(_, _))
         })
 
         debuglog("" + code)

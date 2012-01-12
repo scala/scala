@@ -13,7 +13,7 @@ import scala.collection.{ mutable, immutable, generic }
 trait ProxyReport {
   val global: Global
   import global._
-  import definitions.{ getClass => gc, _ }
+  import definitions._
 
   private object classes {
     def isIgnorable(sym: Symbol) = sym :: sym.allOverriddenSymbols exists { s =>
@@ -26,13 +26,13 @@ trait ProxyReport {
       methods foreach (m => m.initialize.info.paramss.flatten foreach (_.initialize))
       methods
     }
-    lazy val GlobalClass     = gc(classOf[Global].getName)
-    lazy val GenericClass    = getModule("scala.collection.generic").moduleClass
-    lazy val CollectionClass = getModule("scala.collection").moduleClass
+    lazy val GlobalClass     = getRequiredClass(classOf[Global].getName)
+    lazy val GenericClass    = getRequiredModule("scala.collection.generic").moduleClass
+    lazy val CollectionClass = getRequiredModule("scala.collection").moduleClass
 
-    def getType(name: String)    = getMember(GlobalClass, name.toTypeName)
-    def getColl(name: String)    = getMember(CollectionClass, name.toTypeName)
-    def getGeneric(name: String) = getMember(GenericClass, name.toTypeName)
+    def getType(name: String)    = getMember(GlobalClass, newTypeName(name))
+    def getColl(name: String)    = getMember(CollectionClass, newTypeName(name))
+    def getGeneric(name: String) = getMember(GenericClass, newTypeName(name))
 
     // the following operations + those in RewrappingTypeProxy are all operations
     // in class Type that are overridden in some subclass

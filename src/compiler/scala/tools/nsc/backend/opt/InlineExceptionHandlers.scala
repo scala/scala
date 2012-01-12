@@ -79,7 +79,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
     /* Type Flow Analysis */
     private val tfa: analysis.MethodTFA = new analysis.MethodTFA()
     private var tfaCache: Map[Int, tfa.lattice.Elem] = Map.empty
-    private var analyzedMethod: IMethod = null
+    private var analyzedMethod: IMethod = NoIMethod
 
     /* Blocks that need to be analyzed */
     private var todoBlocks: List[BasicBlock] = Nil
@@ -110,7 +110,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
       * inlined blocks, so worst case scenario we double the size of the code
       */
     private def applyMethod(method: IMethod): Unit = {
-      if (method.code ne null) {
+      if (method.hasCode) {
         // create the list of starting blocks
         todoBlocks = global.icodes.linearizer.linearize(method)
 
@@ -127,7 +127,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
       todoBlocks = Nil
 
       // Type flow analysis cleanup
-      analyzedMethod = null
+      analyzedMethod = NoIMethod
       tfaCache = Map.empty
       //TODO: Need a way to clear tfa structures
     }
@@ -151,7 +151,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
        *  - we change the THROW exception to the new Clear stack + JUMP code
        */
       for {
-        (instr @ THROW(clazz), index) <- bblock.zipWithIndex
+        (instr @ THROW(clazz), index) <- bblock.iterator.zipWithIndex
         // Decide if any handler fits this exception
         // If not, then nothing to do, we cannot determine statically which handler will catch the exception
         (handler, caughtException)    <- findExceptionHandler(toTypeKind(clazz.tpe), bblock.exceptionSuccessors)
@@ -181,7 +181,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
 
             if (!canReplaceHandler) {
               currentClass.cunit.warning(NoPosition, "Unable to inline the exception handler inside incorrect" +
-                " block:\n" + bblock.mkString("\n") + "\nwith stack: " + typeInfo + " just " +
+                " block:\n" + bblock.iterator.mkString("\n") + "\nwith stack: " + typeInfo + " just " +
                 "before instruction index " + index)
             }
             else {
@@ -261,13 +261,13 @@ abstract class InlineExceptionHandlers extends SubComponent {
     private def getTypesAtBlockEntry(bblock: BasicBlock): tfa.lattice.Elem = {
       // lazily perform tfa, because it's expensive
       // cache results by block label, as rewriting the code messes up the block's hashCode
-      if (analyzedMethod eq null) {
+      if (analyzedMethod eq NoIMethod) {
         analyzedMethod = bblock.method
         tfa.init(bblock.method)
         tfa.run
         log("      performed tfa on method: " + bblock.method)
 
-        for (block <- bblock.method.code.blocks.sortBy(_.label))
+        for (block <- bblock.method.blocks.sortBy(_.label))
           tfaCache += block.label -> tfa.in(block)
       }
 
@@ -360,7 +360,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
           val caughtException = toTypeKind(caughtClass.tpe)
           // copy the exception handler code once again, dropping the LOAD_EXCEPTION
           val copy = handler.code.newBlock
-          copy.emitOnly(handler drop dropCount: _*)
+          copy.emitOnly(handler.iterator drop dropCount toSeq: _*)
 
           // extend the handlers of the handler to the copy
           for (parentHandler <- handler.method.exh ; if parentHandler covers handler) {
@@ -382,7 +382,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
 
         case _ =>
           currentClass.cunit.warning(NoPosition, "Unable to inline the exception handler due to incorrect format:\n" +
-            handler.mkString("\n"))
+            handler.iterator.mkString("\n"))
           None
       }
     }

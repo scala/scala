@@ -13,8 +13,6 @@ import scala.tools.util.AbstractTimer
  * timings.
  */
 class ReporterTimer(reporter: Reporter) extends AbstractTimer {
-
   def issue(msg: String, duration: Long) =
     reporter.info(null, "[" + msg + " in " + duration + "ms]", false)
-
 }

@@ -26,7 +26,7 @@ abstract class AbstractPartialFunction[-T1, +R]
   private var fallBackField: PartialFunction[T1 @uncheckedVariance, R @uncheckedVariance] = _
 
   def fallBack: PartialFunction[T1, R] = synchronized {
-    if (fallBackField == null) fallBackField = PartialFunction.empty
+    if (fallBackField eq null) fallBackField = PartialFunction.empty
     fallBackField
   }
 
@@ -38,7 +38,7 @@ abstract class AbstractPartialFunction[-T1, +R]
   override def orElse[A1 <: T1, B1 >: R](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] = {
     val result = this.clone.asInstanceOf[AbstractPartialFunction[A1, B1]]
     result.synchronized {
-      result.fallBackField = this.fallBackField orElse that
+      result.fallBackField = if (this.fallBackField eq null) that else this.fallBackField orElse that
       result
     }
   }

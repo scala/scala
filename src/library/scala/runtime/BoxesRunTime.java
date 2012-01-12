@@ -769,6 +769,24 @@ public final class BoxesRunTime
         }
         throw new NoSuchMethodException();
     }
+    
+    public static boolean isBoxedNumberOrBoolean(Object arg) {
+      if (arg instanceof java.lang.Boolean)
+        return true;
+      else
+        return isBoxedNumber(arg);
+    }
+    public static boolean isBoxedNumber(Object arg) {
+      return  (
+           (arg instanceof java.lang.Integer)
+        || (arg instanceof java.lang.Long)
+        || (arg instanceof java.lang.Double)
+        || (arg instanceof java.lang.Float)
+        || (arg instanceof java.lang.Short)
+        || (arg instanceof java.lang.Character)
+        || (arg instanceof java.lang.Byte)
+      );
+    }
 
     /** arg.toChar */
     public static java.lang.Character toCharacter(Object arg) throws NoSuchMethodException {

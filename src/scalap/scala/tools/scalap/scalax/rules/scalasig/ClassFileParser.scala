@@ -65,8 +65,11 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
    * stores and array of bytes for the decompiler
    */
   def fromUTF8StringAndBytes = {
-    val chunk: Array[Byte] = bytes drop pos take length
-    StringBytesPair(io.Codec.fromUTF8(chunk).mkString, chunk)
+    val chunk: Array[Byte] = new Array[Byte](length)
+    System.arraycopy(bytes, pos, chunk, 0, length)
+    val str = new String(io.Codec.fromUTF8(bytes, pos, length))
+    
+    StringBytesPair(str, chunk)
   }
 
   def byte(i : Int) = bytes(pos) & 0xFF

@@ -77,7 +77,7 @@ trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversabl
   override def toList: List[A] = self.toList
   override def toIterable: Iterable[A] = self.toIterable
   override def toSeq: Seq[A] = self.toSeq
-  override def toIndexedSeq[B >: A] = self.toIndexedSeq
+  override def toIndexedSeq: immutable.IndexedSeq[A] = self.toIndexedSeq
   override def toBuffer[B >: A] = self.toBuffer
   override def toStream: Stream[A] = self.toStream
   override def toSet[B >: A]: immutable.Set[B] = self.toSet

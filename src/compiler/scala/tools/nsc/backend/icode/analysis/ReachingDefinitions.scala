@@ -78,7 +78,10 @@ abstract class ReachingDefinitions {
       drops.clear()
       outStack.clear()
 
-      for (b <- m.code.blocks.toList; (g, k) = genAndKill(b); (d, st) = dropsAndGen(b)) {
+      m foreachBlock { b =>
+        val (g, k) = genAndKill(b)
+        val (d, st) = dropsAndGen(b)
+
         gen  += (b -> g)
         kill += (b -> k)
         drops += (b -> d)
@@ -86,8 +89,8 @@ abstract class ReachingDefinitions {
       }
 
       init {
-        worklist ++= m.code.blocks.toList
-        m.code.blocks.foreach { b =>
+        m foreachBlock { b =>
+          worklist += b
           in(b)  = lattice.bottom
           out(b) = lattice.bottom
         }
@@ -141,7 +144,7 @@ abstract class ReachingDefinitions {
     override def run() {
       forwardAnalysis(blockTransfer)
       if (settings.debug.value) {
-        linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
+        linearizer.linearize(method).foreach(b => if (b != method.startBlock)
           assert(lattice.bottom != in(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? " + in(b)
                  + ": bot: " + lattice.bottom

@@ -17,6 +17,19 @@ abstract class LambdaLift extends InfoTransform {
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "lambdalift"
+    
+  /** Converts types of captured variables to *Ref types.
+   */
+  def boxIfCaptured(sym: Symbol, tpe: Type, erasedTypes: Boolean) =
+    if (sym.isCapturedVariable) {
+      val symClass = tpe.typeSymbol
+      def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
+        if (isValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
+        else if (erasedTypes) objectRefClass.tpe
+        else appliedType(objectRefClass.typeConstructor, List(tpe))
+      if (sym.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)
+      else refType(refClass, ObjectRefClass)
+    } else tpe
 
   private val lifted = new TypeMap {
     def apply(tp: Type): Type = tp match {
@@ -31,7 +44,8 @@ abstract class LambdaLift extends InfoTransform {
     }
   }
 
-  def transformInfo(sym: Symbol, tp: Type): Type = lifted(tp)
+  def transformInfo(sym: Symbol, tp: Type): Type =
+    boxIfCaptured(sym, lifted(tp), erasedTypes = true)
 
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new LambdaLifter(unit)
@@ -55,7 +69,10 @@ abstract class LambdaLift extends InfoTransform {
 
     /** Buffers for lifted out classes and methods */
     private val liftedDefs = new LinkedHashMap[Symbol, List[Tree]]
-
+    
+    /** True if we are transforming under a ReferenceToBoxed node */
+    private var isBoxedRef = false
+    
     private type SymSet = TreeSet[Symbol]
 
     private def newSymSet = new TreeSet[Symbol](_ isLess _)
@@ -116,22 +133,7 @@ abstract class LambdaLift extends InfoTransform {
           }
           changedFreeVars = true
           debuglog("" + sym + " is free in " + enclosure);
-          if (sym.isVariable && !sym.hasFlag(CAPTURED)) {
-            // todo: We should merge this with the lifting done in liftCode.
-            // We do have to lift twice: in liftCode, because Code[T] needs to see the lifted version
-            // and here again because lazy bitmaps are introduced later and get lifted here.
-            // But we should factor out the code and run it twice.
-            sym setFlag CAPTURED
-            val symClass = sym.tpe.typeSymbol
-            atPhase(phase.next) {
-              sym updateInfo (
-                if (sym.hasAnnotation(VolatileAttr))
-                  if (isValueClass(symClass)) volatileRefClass(symClass).tpe else VolatileObjectRefClass.tpe
-                else
-                  if (isValueClass(symClass)) refClass(symClass).tpe else ObjectRefClass.tpe
-              )
-            }
-          }
+          if (sym.isVariable) sym setFlag CAPTURED
         }
         !enclosure.isClass
       }
@@ -228,6 +230,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxy(sym: Symbol) = {
       def searchIn(enclosure: Symbol): Symbol = {
+        if (enclosure eq NoSymbol) throw new IllegalArgumentException("Could not find proxy for "+ sym.defString +" in "+ sym.ownerChain +" (currentOwner= "+ currentOwner +" )")
         debuglog("searching for " + sym + "(" + sym.owner + ") in " + enclosure + " " + enclosure.logicallyEnclosingMember)
 
         val ps = (proxies get enclosure.logicallyEnclosingMember).toList.flatten filter (_.name == sym.name)
@@ -339,7 +342,7 @@ abstract class LambdaLift extends InfoTransform {
       EmptyTree
     }
 
-    private def postTransform(tree: Tree): Tree = {
+    private def postTransform(tree: Tree, isBoxedRef: Boolean = false): Tree = {
       val sym = tree.symbol
       tree match {
         case ClassDef(_, _, _, _) =>
@@ -362,8 +365,19 @@ abstract class LambdaLift extends InfoTransform {
                 }
               case arg => arg
             }
+            /** Wrap expr argument in new *Ref(..) constructor, but make
+             *  sure that Try expressions stay at toplevel.
+             */
+            def refConstr(expr: Tree): Tree = expr match {
+              case Try(block, catches, finalizer) =>
+                Try(refConstr(block), catches map refConstrCase, finalizer)
+              case _ => 
+                Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(expr))
+            }
+            def refConstrCase(cdef: CaseDef): CaseDef = 
+              CaseDef(cdef.pat, cdef.guard, refConstr(cdef.body))
             treeCopy.ValDef(tree, mods, name, tpt1, typer.typedPos(rhs.pos) {
-              Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(constructorArg))
+              refConstr(constructorArg)
             })
           } else tree
         case Return(Block(stats, value)) =>
@@ -387,7 +401,7 @@ abstract class LambdaLift extends InfoTransform {
                 atPos(tree.pos)(proxyRef(sym))
               else tree
             else tree
-          if (sym.isCapturedVariable)
+          if (sym.isCapturedVariable && !isBoxedRef)
             atPos(tree.pos) {
               val tp = tree.tpe
               val elemTree = typer typed Select(tree1 setType sym.tpe, nme.elem)
@@ -405,10 +419,16 @@ abstract class LambdaLift extends InfoTransform {
           tree
       }
     }
+    
+    private def preTransform(tree: Tree) = super.transform(tree) setType lifted(tree.tpe)
 
-    override def transform(tree: Tree): Tree =
-      postTransform(super.transform(tree) setType lifted(tree.tpe))
-
+    override def transform(tree: Tree): Tree = tree match {
+      case ReferenceToBoxed(idt) =>
+        postTransform(preTransform(idt), isBoxedRef = true)
+      case _ =>
+        postTransform(preTransform(tree))
+    }
+      
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {

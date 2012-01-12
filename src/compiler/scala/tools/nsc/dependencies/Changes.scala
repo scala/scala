@@ -18,8 +18,8 @@ abstract class Changes {
 
   abstract class Change
 
-  private lazy val annotationsChecked =
-      List(definitions.getClass("scala.specialized")) // Any others that should be checked?
+  private lazy val annotationsChecked = 
+    List(definitions.SpecializedClass) // Any others that should be checked?
 
   private val flagsToCheck = IMPLICIT | FINAL | PRIVATE | PROTECTED | SEALED |
                              OVERRIDE | CASE | ABSTRACT | DEFERRED | METHOD |

@@ -47,14 +47,23 @@ abstract class Reporter {
     finally incompleteHandler = saved
   }
 
-  var cancelled         = false
-  def hasErrors         = ERROR.count > 0 || cancelled
-  def hasWarnings       = WARNING.count > 0
+  var cancelled   = false
+  def hasErrors   = ERROR.count > 0 || cancelled
+  def hasWarnings = WARNING.count > 0
 
-  def    info(pos: Position, msg: String, force: Boolean) { info0(pos, msg,    INFO, force) }
-  def warning(pos: Position, msg: String                ) { withoutTruncating(info0(pos, msg, WARNING, false)) }
-  def   error(pos: Position, msg: String                ) { withoutTruncating(info0(pos, msg,   ERROR, false)) }
-  def incompleteInputError(pos: Position, msg: String   ) {
+  /** For sending a message which should not be labeled as a warning/error,
+   *  but also shouldn't require -verbose to be visible.
+   */
+  def echo(msg: String): Unit                                = info(NoPosition, msg, true)
+  def echo(pos: Position, msg: String): Unit                 = info(pos, msg, true)
+  
+  /** Informational messages, suppressed unless -verbose or force=true. */
+  def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force)
+  
+  /** Warnings and errors. */
+  def warning(pos: Position, msg: String): Unit              = withoutTruncating(info0(pos, msg, WARNING, false))
+  def error(pos: Position, msg: String): Unit                = withoutTruncating(info0(pos, msg, ERROR, false))
+  def incompleteInputError(pos: Position, msg: String): Unit = {
     if (incompleteHandled) incompleteHandler(pos, msg)
     else error(pos, msg)
   }

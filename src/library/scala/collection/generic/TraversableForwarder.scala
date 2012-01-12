@@ -61,7 +61,7 @@ trait TraversableForwarder[+A] extends Traversable[A] {
   override def toList: List[A] = underlying.toList
   override def toIterable: Iterable[A] = underlying.toIterable
   override def toSeq: Seq[A] = underlying.toSeq
-  override def toIndexedSeq[B >: A] = underlying.toIndexedSeq
+  override def toIndexedSeq = underlying.toIndexedSeq
   override def toBuffer[B >: A] = underlying.toBuffer
   override def toStream: Stream[A] = underlying.toStream
   override def toSet[B >: A]: immutable.Set[B] = underlying.toSet

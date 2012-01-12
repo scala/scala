@@ -8,6 +8,7 @@
 package scala.tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
+import scala.reflect.NameTransformer
 import scalax.rules.scalasig._
 import tools.nsc.util.{ ClassPath, JavaClassPath }
 import tools.util.PathResolver
@@ -96,7 +97,7 @@ class Main {
    */
   def process(args: Arguments, path: ClassPath[AbstractFile])(classname: String): Unit = {
     // find the classfile
-    val encName = Names.encode(
+    val encName = NameTransformer.encode(
       if (classname == "scala.AnyRef") "java.lang.Object"
       else classname)
     val cls = path.findClass(encName)
