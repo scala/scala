@@ -88,7 +88,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     val entries = mutable.HashMap[String, Entry]()
 
     override def isDirectory = true
-    override def iterator = entries.valuesIterator
+    override def iterator: Iterator[Entry] = entries.valuesIterator
     override def lookupName(name: String, directory: Boolean): Entry = {
       if (directory) entries(name + "/")
       else entries(name)
@@ -110,7 +110,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
 }
 
 final class FileZipArchive(file: JFile) extends ZipArchive(file) {
-  def iterator = {
+  def iterator: Iterator[Entry] = {
     val zipFile = new ZipFile(file)
     val root    = new DirEntry("/")
     val dirs    = mutable.HashMap[String, DirEntry]("/" -> root)
@@ -151,13 +151,17 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
 }
 
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
-  def iterator = {
+  def iterator: Iterator[Entry] = {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
 
     @tailrec def loop() {
       val zipEntry = in.getNextEntry()
+      class EmptyFileEntry() extends Entry(zipEntry.getName) {
+        override def toByteArray: Array[Byte] = null
+        override def sizeOption = Some(0)
+      }
       class FileEntry() extends Entry(zipEntry.getName) {
         override val toByteArray: Array[Byte] = {
           val len    = zipEntry.getSize().toInt
@@ -186,7 +190,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
         if (zipEntry.isDirectory)
           dir
         else {
-          val f = new FileEntry()
+          val f = if (zipEntry.getSize() == 0) new EmptyFileEntry() else new FileEntry()
           dir.entries(f.name) = f
         }
         in.closeEntry()

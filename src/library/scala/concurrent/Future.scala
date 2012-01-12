@@ -65,16 +65,17 @@ self =>
   /* Callbacks */
   
   /** When this future is completed successfully (i.e. with a value),
-   *  apply the provided function to the value.
+   *  apply the provided partial function to the value if the partial function
+   *  is defined at that value.
    *  
    *  If the future has already been completed with a value,
    *  this will either be applied immediately or be scheduled asynchronously.
    *  
    *  $multipleCallbacks
    */
-  def onSuccess[U](func: T => U): this.type = onComplete {
+  def onSuccess[U](pf: PartialFunction[T, U]): this.type = onComplete {
     case Left(t) => // do nothing
-    case Right(v) => func(v)
+    case Right(v) if pf isDefinedAt v => pf(v)
   }
   
   /** When this future is completed with a failure (i.e. with a throwable),
@@ -243,11 +244,12 @@ self =>
   
   /** Asynchronously processes the value in the future once the value becomes available.
    *  
-   *  Will not be called if the future times out or fails.
-   *  
-   *  This method typically registers an `onSuccess` callback.
+   *  Will not be called if the future fails.
    */
-  def foreach[U](f: T => U): Unit = onSuccess(f)
+  def foreach[U](f: T => U): Unit = onComplete {
+    case Right(r) => f(r)
+    case Left(_)  => // do nothing
+  }
   
   /** Creates a new future by applying a function to the successful result of
    *  this future. If this future is completed with an exception then the new

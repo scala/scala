@@ -41,13 +41,15 @@ object Elem {
 class Elem(
   override val prefix: String,
   val label: String,
-  override val attributes: MetaData,
+  attributes1: MetaData,
   override val scope: NamespaceBinding,
   val child: Node*)
 extends Node with Serializable
 {
   final override def doCollectNamespaces = true
   final override def doTransform         = true
+
+  override val attributes = MetaData.normalize(attributes1, scope)
 
   if (prefix == "")
     throw new IllegalArgumentException("prefix of zero length, use null instead")

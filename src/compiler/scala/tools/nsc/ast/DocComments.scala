@@ -99,9 +99,9 @@ trait DocComments { self: Global =>
    */
   def useCases(sym: Symbol, site: Symbol): List[(Symbol, String, Position)] = {
     def getUseCases(dc: DocComment) = {
-      for (uc <- dc.useCases; defn <- uc.expandedDefs(site)) yield
+      for (uc <- dc.useCases; defn <- uc.expandedDefs(sym, site)) yield
         (defn,
-         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn, copyFirstPara = true), sym, site),
+         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn), sym, site),
          uc.pos)
     }
     getDocComment(sym) map getUseCases getOrElse List()
@@ -220,8 +220,8 @@ trait DocComments { self: Global =>
         else site.info.baseClasses
 
       searchList collectFirst { case x if defs(x) contains vble => defs(x)(vble) } match {
-        case Some(str) if str startsWith '$'  => lookupVariable(str.tail, site)
-        case res                              => res orElse lookupVariable(vble, site.owner)
+        case Some(str) if str startsWith "$" => lookupVariable(str.tail, site)
+        case res                             => res orElse lookupVariable(vble, site.owner)
       }
   }
 
@@ -346,7 +346,7 @@ trait DocComments { self: Global =>
     var defined: List[Symbol] = List() // initialized by Typer
     var aliases: List[Symbol] = List() // initialized by Typer
 
-    def expandedDefs(site: Symbol): List[Symbol] = {
+    def expandedDefs(sym: Symbol, site: Symbol): List[Symbol] = {
 
       def select(site: Type, name: Name, orElse: => Type): Type = {
         val member = site.nonPrivateMember(name)
@@ -397,7 +397,7 @@ trait DocComments { self: Global =>
               if (tpe != NoType) tpe
               else {
                 val alias1 = alias.cloneSymbol(definitions.RootClass)
-                alias1.name = repl.toTypeName
+                alias1.name = newTypeName(repl)
                 typeRef(NoPrefix, alias1, Nil)
               }
             case None =>
@@ -424,8 +424,10 @@ trait DocComments { self: Global =>
       }
 
       for (defn <- defined) yield {
-        defn.cloneSymbol.setFlag(Flags.SYNTHETIC).setInfo(
-          substAliases(defn.info).asSeenFrom(site.thisType, defn.owner))
+        val useCase = defn.cloneSymbol
+        useCase.owner = sym.owner
+        useCase.flags = sym.flags
+        useCase.setFlag(Flags.SYNTHETIC).setInfo(substAliases(defn.info).asSeenFrom(site.thisType, sym.owner))
       }
     }
   }

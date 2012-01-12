@@ -150,49 +150,64 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
     }
 
 // Override checking ------------------------------------------------------------
+    
+    def isJavaVarargsAncestor(clazz: Symbol) = (
+         clazz.isClass
+      && clazz.isJavaDefined
+      && (clazz.info.nonPrivateDecls exists isJavaVarArgsMethod)
+    )
 
     /** Add bridges for vararg methods that extend Java vararg methods
      */
     def addVarargBridges(clazz: Symbol): List[Tree] = {
-      val self = clazz.thisType
-      val bridges = new ListBuffer[Tree]
+      // This is quite expensive, so attempt to skip it completely.
+      // Insist there at least be a java-defined ancestor which
+      // defines a varargs method. TODO: Find a cheaper way to exclude.
+      if (clazz.thisType.baseClasses exists isJavaVarargsAncestor) {
+        log("Found java varargs ancestor in " + clazz.fullLocationString + ".")
+        val self = clazz.thisType
+        val bridges = new ListBuffer[Tree]
+    
+        def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
+          log("Generating varargs bridge for " + member.fullLocationString + " of type " + bridgetpe)
+          
+          val bridge = member.cloneSymbolImpl(clazz)
+            .setPos(clazz.pos).setFlag(member.flags | VBRIDGE)
+          bridge.setInfo(bridgetpe.cloneInfo(bridge))
+          clazz.info.decls enter bridge
+         
+          val params  = bridge.paramss.head
+          val elemtp  = params.last.tpe.typeArgs.head
+          val idents  = params map Ident
+          val lastarg = gen.wildcardStar(gen.mkWrapArray(idents.last, elemtp))
+          val body    = Apply(Select(This(clazz), member), idents.init :+ lastarg)
 
-      def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
-        val bridge = member.cloneSymbolImpl(clazz)
-          .setPos(clazz.pos).setFlag(member.flags | VBRIDGE)
-        bridge.setInfo(bridgetpe.cloneInfo(bridge))
-        clazz.info.decls enter bridge
-        val List(params) = bridge.paramss
-        val TypeRef(_, JavaRepeatedParamClass, List(elemtp)) = params.last.tpe
-        val (initargs, List(lastarg0)) = (params map Ident) splitAt (params.length - 1)
-        val lastarg = gen.wildcardStar(gen.mkWrapArray(lastarg0, elemtp))
-        val body = Apply(Select(This(clazz), member), initargs ::: List(lastarg))
-        localTyper.typed {
-          /*util.trace("generating varargs bridge")*/(DefDef(bridge, body))
+          localTyper typed DefDef(bridge, body)
         }
-      }
-
-      // For all concrete non-private members that have a (Scala) repeated parameter:
-      //   compute the corresponding method type `jtpe` with a Java repeated parameter
-      //   if a method with type `jtpe` exists and that method is not a varargs bridge
-      //   then create a varargs bridge of type `jtpe` that forwards to the
-      //   member method with the Scala vararg type.
-      for (member <- clazz.info.nonPrivateMembers) {
-        if (!(member hasFlag DEFERRED) && hasRepeatedParam(member.info)) {
-          val jtpe = toJavaRepeatedParam(self.memberType(member))
-          val inherited = clazz.info.nonPrivateMemberAdmitting(member.name, VBRIDGE) filter (
-            sym => (self.memberType(sym) matches jtpe) && !(sym hasFlag VBRIDGE)
-            // this is a bit tortuous: we look for non-private members or bridges
-            // if we find a bridge everything is OK. If we find another member,
-            // we need to create a bridge
-          )
-          if (inherited.exists) {
-            bridges += varargBridge(member, jtpe)
+    
+        // For all concrete non-private members that have a (Scala) repeated parameter:
+        //   compute the corresponding method type `jtpe` with a Java repeated parameter
+        //   if a method with type `jtpe` exists and that method is not a varargs bridge
+        //   then create a varargs bridge of type `jtpe` that forwards to the
+        //   member method with the Scala vararg type.
+        for (member <- clazz.info.nonPrivateMembers) {
+          if (!member.isDeferred && member.isMethod && hasRepeatedParam(member.info)) {
+            val inherited = clazz.info.nonPrivateMemberAdmitting(member.name, VBRIDGE)
+            // Delaying calling memberType as long as possible
+            if (inherited ne NoSymbol) {
+              val jtpe = toJavaRepeatedParam(self.memberType(member))
+              // this is a bit tortuous: we look for non-private members or bridges
+              // if we find a bridge everything is OK. If we find another member,
+              // we need to create a bridge
+              if (inherited filter (sym => (self.memberType(sym) matches jtpe) && !(sym hasFlag VBRIDGE)) exists)
+                bridges += varargBridge(member, jtpe)
+            }
           }
         }
+    
+        bridges.toList
       }
-
-      bridges.toList
+      else Nil
     }
 
     /** 1. Check all members of class `clazz` for overriding conditions.
@@ -395,8 +410,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           }
         }
 
-
-
         def checkOverrideTypes() {
           if (other.isAliasType) {
             //if (!member.typeParams.isEmpty) (1.5)  @MAT
@@ -405,14 +418,14 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             //  overrideError("may not override parameterized type");
             // @M: substSym
 
-            if( !(sameLength(member.typeParams, other.typeParams) && (self.memberType(member).substSym(member.typeParams, other.typeParams) =:= self.memberType(other))) ) // (1.6)
+            if( !(sameLength(member.typeParams, other.typeParams) && (memberTp.substSym(member.typeParams, other.typeParams) =:= otherTp)) ) // (1.6)
               overrideTypeError();
-          } else if (other.isAbstractType) {
+          } 
+          else if (other.isAbstractType) {
             //if (!member.typeParams.isEmpty) // (1.7)  @MAT
             //  overrideError("may not be parameterized");
-
-            val memberTp = self.memberType(member)
             val otherTp = self.memberInfo(other)
+            
             if (!(otherTp.bounds containsType memberTp)) { // (1.7.1)
               overrideTypeError(); // todo: do an explaintypes with bounds here
               explainTypes(_.bounds containsType _, otherTp, memberTp)
@@ -1092,7 +1105,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         }
 
         // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
-        if (nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
+        if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
           if (actual isSubClass receiver) ()
           else if (receiver isSubClass actual) ()
           // warn only if they have no common supertype below Object
@@ -1273,8 +1286,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
      *  indicating it has changed semantics between versions.
      */
     private def checkMigration(sym: Symbol, pos: Position) = {
-      for (msg <- sym.migrationMessage)
-        unit.warning(pos, sym.fullLocationString + " has changed semantics:\n" + msg)
+      if (sym.hasMigrationAnnotation)
+        unit.warning(pos, "%s has changed semantics in version %s:\n%s".format(
+          sym.fullLocationString, sym.migrationVersion.get, sym.migrationMessage.get)
+        )
     }
 
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
@@ -1332,7 +1347,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       }
 
       // types of the value parameters
-      member.paramss.flatten foreach (p => checkAccessibilityOfType(p.tpe))
+      mapParamss(member)(p => checkAccessibilityOfType(p.tpe))
       // upper bounds of type parameters
       member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
@@ -1547,7 +1562,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             checkOverloadedRestrictions(currentOwner)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
-
             if (bridges.nonEmpty) treeCopy.Template(tree, parents, self, body ::: bridges)
             else tree
 

@@ -1,0 +1,4 @@
+t5357.scala:5: error: Pattern variables must start with a lower-case letter. (SLS 8.1.1.)
+    case A: N => 1
+          ^
+one error found

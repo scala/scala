@@ -33,11 +33,11 @@ trait GenJVMUtil {
   )
 
   // Don't put this in per run caches.
-  private val javaNameCache = new mutable.WeakHashMap[Symbol, String]() ++= List(
-    NothingClass        -> RuntimeNothingClass.fullName('/'),
-    RuntimeNothingClass -> RuntimeNothingClass.fullName('/'),
-    NullClass           -> RuntimeNullClass.fullName('/'),
-    RuntimeNullClass    -> RuntimeNullClass.fullName('/')
+  private val javaNameCache = new mutable.WeakHashMap[Symbol, Name]() ++= List(
+    NothingClass        -> binarynme.RuntimeNothing,
+    RuntimeNothingClass -> binarynme.RuntimeNothing,
+    NullClass           -> binarynme.RuntimeNull,
+    RuntimeNullClass    -> binarynme.RuntimeNull
   )
 
   /** This trait may be used by tools who need access to
@@ -70,7 +70,6 @@ trait GenJVMUtil {
     def mkArray(xs: Traversable[JType]): Array[JType] = { val a = new Array[JType](xs.size); xs.copyToArray(a); a }
     def mkArray(xs: Traversable[String]): Array[String] = { val a = new Array[String](xs.size); xs.copyToArray(a); a }
 
-
     /** Return the a name of this symbol that can be used on the Java
      *  platform.  It removes spaces from names.
      *
@@ -86,11 +85,13 @@ trait GenJVMUtil {
      */
     def javaName(sym: Symbol): String =
       javaNameCache.getOrElseUpdate(sym, {
-        if (sym.isClass || (sym.isModule && !sym.isMethod))
-          sym.javaBinaryName
-        else
-          sym.javaSimpleName
-      })
+        sym.name.newName(
+          if (sym.isClass || (sym.isModule && !sym.isMethod))
+            sym.javaBinaryName
+          else
+            sym.javaSimpleName
+        )
+      }).toString
 
     def javaType(t: TypeKind): JType = (t: @unchecked) match {
       case UNIT            => JType.VOID

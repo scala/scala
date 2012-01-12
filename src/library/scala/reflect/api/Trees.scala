@@ -542,11 +542,17 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
   case class Select(qualifier: Tree, name: Name)
        extends RefTree
 
+  def Select(qualifier: Tree, name: String): Select =
+    Select(qualifier, newTermName(name))
+
   def Select(qualifier: Tree, sym: Symbol): Select =
     Select(qualifier, sym.name) setSymbol sym
 
   /** Identifier <name> */
   case class Ident(name: Name) extends RefTree { }
+
+  def Ident(name: String): Ident =
+    Ident(newTermName(name))
 
   def Ident(sym: Symbol): Ident =
     Ident(sym.name) setSymbol sym
@@ -625,6 +631,11 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   
+  /** An empty deferred value definition corresponding to:
+   *    val _: _
+   *  This is used as a placeholder in the `self` parameter Template if there is 
+   *  no definition of a self value of self type.
+   */
   def emptyValDef: ValDef
 
   // ------ traversers, copiers, and transformers ---------------------------------------------

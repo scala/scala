@@ -46,12 +46,12 @@ extends AbstractMap[A, B]
 
   override def keysIterator: Iterator[A] = imap.keysIterator
 
-  @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
+  @migration("`keys` returns Iterable[A] rather than Iterator[A].", "2.8.0")
   override def keys: collection.Iterable[A] = imap.keys
 
   override def valuesIterator: Iterator[B] = imap.valuesIterator
 
-  @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
+  @migration("`values` returns Iterable[B] rather than Iterator[B].", "2.8.0")
   override def values: collection.Iterable[B] = imap.values
 
   def iterator: Iterator[(A, B)] = imap.iterator

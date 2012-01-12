@@ -547,7 +547,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               if (parentToken == AT && in.token == DEFAULT) {
                 val annot =
                   atPos(pos) {
-                    New(Select(scalaDot(newTermName("runtime")), tpnme.AnnotationDefaultATTR), List(List()))
+                    New(Select(scalaDot(nme.runtime), tpnme.AnnotationDefaultATTR), List(List()))
                   }
                 mods1 = mods1 withAnnotations List(annot)
                 skipTo(SEMI)
@@ -794,9 +794,9 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(INTERFACE)
       val pos = in.currentPos
       val name = identForType()
-      val parents = List(scalaDot(newTypeName("Annotation")),
-                         Select(javaLangDot(newTermName("annotation")), newTypeName("Annotation")),
-                         scalaDot(newTypeName("ClassfileAnnotation")))
+      val parents = List(scalaDot(tpnme.Annotation),
+                         Select(javaLangDot(nme.annotation), tpnme.Annotation),
+                         scalaDot(tpnme.ClassfileAnnotation))
       val (statics, body) = typeBody(AT, name)
       def getValueMethodType(tree: Tree) = tree match {
         case DefDef(_, nme.value, _, _, tpt, _) => Some(tpt.duplicate)
@@ -838,18 +838,18 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         }
       val predefs = List(
         DefDef(
-          Modifiers(Flags.JAVA | Flags.STATIC), newTermName("values"), List(),
+          Modifiers(Flags.JAVA | Flags.STATIC), nme.values, List(),
           List(List()),
           arrayOf(enumType),
           blankExpr),
         DefDef(
-          Modifiers(Flags.JAVA | Flags.STATIC), newTermName("valueOf"), List(),
+          Modifiers(Flags.JAVA | Flags.STATIC), nme.valueOf, List(),
           List(List(makeParam("x", TypeTree(StringClass.tpe)))),
           enumType,
           blankExpr))
       accept(RBRACE)
       val superclazz =
-        AppliedTypeTree(javaLangDot(newTypeName("Enum")), List(enumType))
+        AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
         ClassDef(mods, name, List(),
                  makeTemplate(superclazz :: interfaces, body))

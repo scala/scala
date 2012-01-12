@@ -28,12 +28,6 @@ checksensible.scala:27: error: comparing values of types Int and Unit using `=='
 checksensible.scala:29: error: comparing values of types Int and String using `==' will always yield false
   1 == "abc"
     ^
-checksensible.scala:32: error: String and Int are unrelated: they will most likely never compare equal
-  "abc" == 1        // warns because the lub of String and Int is Any
-        ^
-checksensible.scala:33: error: Some[Int] and Int are unrelated: they will most likely never compare equal
-  Some(1) == 1      // as above
-          ^
 checksensible.scala:38: error: comparing a fresh object using `==' will always yield false
   new AnyRef == 1
              ^
@@ -100,4 +94,4 @@ checksensible.scala:84: error: comparing values of types EqEqRefTest.this.C3 and
 checksensible.scala:95: error: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-34 errors found
+32 errors found

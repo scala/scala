@@ -264,7 +264,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Create a new getter for current symbol (which must be a field)
      */
     final def newGetter: Symbol = (
-      owner.newMethod(focusPos(pos), nme.getterName(name))
+      owner.newMethod(focusPos(pos), nme.getterName(name.toTermName))
         setFlag getterFlags(flags)
         setPrivateWithin privateWithin
         setInfo MethodType(Nil, tpe)
@@ -409,7 +409,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     final def isTypeParameterOrSkolem = isType && hasFlag(PARAM)
-    final def isHigherOrderTypeParameter = owner.isTypeParameterOrSkolem
+    final def isHigherOrderTypeParameter = (this ne NoSymbol) && owner.isTypeParameterOrSkolem
     final def isTypeSkolem            = isSkolem && hasFlag(PARAM)
     // a type symbol bound by an existential type, for instance the T in
     // List[T] forSome { type T }
@@ -430,7 +430,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def isJavaInterface = isJavaDefined && isTrait
-    final def needsFlatClasses: Boolean = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
+    final def needsFlatClasses = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
 
     // In java.lang, Predef, or scala package/package object
     def isInDefaultNamespace = UnqualifiedOwners(effectiveOwner)
@@ -494,8 +494,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
     def hasMigrationAnnotation = hasAnnotation(MigrationAnnotationClass)
-    def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(2) }
-    def migrationVersion    = getAnnotation(MigrationAnnotationClass) map { version => version.intArg(0).get + "." + version.intArg(1).get }
+    def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(0) }
+    def migrationVersion    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(1) }
     def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
     def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
@@ -699,16 +699,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
       rawowner = owner
     }
-    private[Symbols] def flattenName(): Name = {
-      // This assertion caused me no end of trouble in the interpeter in situations
-      // where everything proceeds smoothly if there's no assert.  I don't think calling "name"
-      // on a symbol is the right place to throw fatal exceptions if things don't look right.
-      // It really hampers exploration.  Finally I gave up and disabled it, and tickets like
-      // SI-4874 instantly start working.
-      // assert(rawowner.isClass, "fatal: %s has non-class owner %s after flatten.".format(rawname + idString, rawowner))
-
-      nme.flattenedName(rawowner.name, rawname)
-    }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
     def originalOwnerChain: List[Symbol] = this :: originalOwner.getOrElse(this, rawowner).originalOwnerChain
@@ -756,7 +746,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this symbol has an expanded name, its original name, otherwise its name itself.
      *  @see expandName
      */
-    def originalName = nme.originalName(name)
+    def originalName: Name = nme.originalName(name)
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
@@ -764,20 +754,28 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */
-    def decodedName: String = stripNameString(NameTransformer.decode(encodedName))
+    def decodedName: String = nme.dropLocalSuffix(name).decode
 
-    /** Either "$" or "" depending on whether this is a module class.
-     */
+    private def addModuleSuffix(n: Name): Name =
+      if (needsModuleSuffix) n append nme.MODULE_SUFFIX_STRING else n
+    
     def moduleSuffix: String = (
-      if (hasModuleFlag && !isMethod && !isImplClass && !isJavaDefined) nme.MODULE_SUFFIX_STRING
+      if (needsModuleSuffix) nme.MODULE_SUFFIX_STRING
       else ""
     )
-
+    /** Whether this symbol needs nme.MODULE_SUFFIX_STRING (aka $) appended on the java platform.
+     */
+    def needsModuleSuffix = (
+         hasModuleFlag 
+      && !isMethod
+      && !isImplClass
+      && !isJavaDefined
+    )
     /** These should be moved somewhere like JavaPlatform.
      */
-    def javaSimpleName = ("" + simpleName).trim + moduleSuffix
-    def javaBinaryName = fullNameInternal('/') + moduleSuffix
-    def javaClassName  = fullNameInternal('.') + moduleSuffix
+    def javaSimpleName: String = addModuleSuffix(nme.dropLocalSuffix(simpleName)).toString
+    def javaBinaryName: String = addModuleSuffix(fullNameInternal('/')).toString
+    def javaClassName: String  = addModuleSuffix(fullNameInternal('.')).toString
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by `separator` characters.
@@ -785,22 +783,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  Never adds id.
      *  Drops package objects.
      */
-    final def fullName(separator: Char): String = stripNameString(fullNameInternal(separator))
+    final def fullName(separator: Char): String = fullNameAsName(separator).toString
 
     /** Doesn't drop package objects, for those situations (e.g. classloading)
      *  where the true path is needed.
      */
-    private def fullNameInternal(separator: Char): String = (
-      if (isRoot || isRootPackage || this == NoSymbol) this.toString
-      else if (owner.isEffectiveRoot) encodedName
-      else effectiveOwner.enclClass.fullName(separator) + separator + encodedName
+    private def fullNameInternal(separator: Char): Name = (
+      if (isRoot || isRootPackage || this == NoSymbol) name
+      else if (owner.isEffectiveRoot) name
+      else effectiveOwner.enclClass.fullNameAsName(separator) append separator append name
     )
-
-    /** Strip package objects and any local suffix.
-     */
-    private def stripNameString(s: String) =
-      if (settings.debug.value) s
-      else s stripSuffix nme.LOCAL_SUFFIX_STRING
+    
+    def fullNameAsName(separator: Char): Name = nme.dropLocalSuffix(fullNameInternal(separator))
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
@@ -1097,6 +1091,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def typeParams: List[Symbol] =
       if (isMonomorphicType) Nil
       else {
+        // analogously to the "info" getter, here we allow for two completions:
+        //   one: sourceCompleter to LazyType, two: LazyType to completed type
+        if (validTo == NoPeriod)
+          atPhase(phaseOf(infos.validFrom))(rawInfo load this)
         if (validTo == NoPeriod)
           atPhase(phaseOf(infos.validFrom))(rawInfo load this)
 
@@ -1238,12 +1236,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def isNestedIn(that: Symbol): Boolean =
       owner == that || owner != NoSymbol && (owner isNestedIn that)
-
-    /** Is this class symbol a subclass of that symbol? */
-    final def isNonBottomSubClass(that: Symbol): Boolean = (
-      (this eq that) || this.isError || that.isError ||
-      info.baseTypeIndex(that) >= 0
-    )
+      
+    /** Is this class symbol a subclass of that symbol,
+     *  and is this class symbol also different from Null or Nothing? */
+    def isNonBottomSubClass(that: Symbol): Boolean = false
 
     /** Overridden in NullClass and NothingClass for custom behavior.
      */
@@ -1365,7 +1361,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The symbol accessed by this accessor function, but with given owner type. */
     final def accessed(ownerTp: Type): Symbol = {
       assert(hasAccessorFlag, this)
-      ownerTp decl nme.getterToLocal(getterName)
+      ownerTp decl nme.getterToLocal(getterName.toTermName)
     }
 
     /** The module corresponding to this module class (note that this
@@ -1698,17 +1694,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     final def getter(base: Symbol): Symbol = base.info.decl(getterName) filter (_.hasAccessorFlag)
 
-    def getterName = (
-      if (isSetter) nme.setterToGetter(name)
-      else if (nme.isLocalName(name)) nme.localToGetter(name)
-      else name
+    def getterName: TermName = (
+      if (isSetter) nme.setterToGetter(name.toTermName)
+      else if (nme.isLocalName(name)) nme.localToGetter(name.toTermName)
+      else name.toTermName
     )
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
     final def setter(base: Symbol): Symbol = setter(base, false)
 
     final def setter(base: Symbol, hasExpandedName: Boolean): Symbol = {
-      var sname = nme.getterToSetter(nme.getterName(name))
+      var sname = nme.getterToSetter(nme.getterName(name.toTermName))
       if (hasExpandedName) sname = nme.expandedSetterName(sname, base)
       base.info.decl(sname) filter (_.hasAccessorFlag)
     }
@@ -1763,7 +1759,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           getter(owner).expandName(base)
           setter(owner).expandName(base)
         }
-        name = nme.expandedName(name, base)
+        name = nme.expandedName(name.toTermName, base)
         if (isType) name = name
       }
     }
@@ -1796,7 +1792,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ------ toString -------------------------------------------------------------------
 
     /** A tag which (in the ideal case) uniquely identifies class symbols */
-    final def tag = fullName.##
+    final def tag: Int = fullName.##
 
     /** The simple name of this Symbol */
     final def simpleName: Name = name
@@ -1806,7 +1802,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (the initial Name) before falling back on id, which varies depending
      *  on exactly when a symbol is loaded.
      */
-    final def sealedSortName = initName + "#" + id
+    final def sealedSortName: String = initName + "#" + id
 
     /** String representation of symbol's definition key word */
     final def keyString: String =
@@ -1874,7 +1870,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  E.g. $eq => =.
      *  If settings.uniqid, adds id.
      */
-    def nameString = decodedName + idString
+    def nameString: String = (
+      if (settings.uniqid.value) decodedName + "#" + id
+      else "" + decodedName
+    )
 
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString = if (settings.uniqid.value) "#"+id else ""
@@ -1882,14 +1881,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation, including symbol's kind e.g., "class Foo", "method Bar".
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
-    override def toString = compose(
+    override def toString: String = compose(
       kindString,
       if (hasMeaninglessName) owner.decodedName + idString else nameString
     )
 
     /** String representation of location.
      */
-    def ownsString = {
+    def ownsString: String = {
       val owns = effectiveOwner
       if (owns.isClass && !owns.isEmptyPrefix) "" + owns else ""
     }
@@ -1897,12 +1896,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation of location, plus a preposition.  Doesn't do much,
      *  for backward compatibility reasons.
      */
-    def locationString = ownsString match {
+    def locationString: String = ownsString match {
       case ""   => ""
       case s    => " in " + s
     }
-    def fullLocationString = toString + locationString
-    def signatureString = if (hasRawInfo) infoString(rawInfo) else "<_>"
+    def fullLocationString: String = toString + locationString
+    def signatureString: String = if (hasRawInfo) infoString(rawInfo) else "<_>"
 
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
@@ -1994,7 +1993,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   extends Symbol(initOwner, initPos, initName) {
     final override def isTerm = true
 
-    override def name: TermName = super.name
+    override def name: TermName = rawname.toTermName
     privateWithin = NoSymbol
 
     var referenced: Symbol = NoSymbol
@@ -2081,20 +2080,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class ModuleSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) {
     private var flatname: TermName = null
-    // This method could use a better name from someone clearer on what the condition expresses.
-    private def isFlatAdjusted = !isMethod && needsFlatClasses
 
-    override def owner: Symbol =
-      if (isFlatAdjusted) rawowner.owner
+    override def owner = (
+      if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
-
-    override def name: TermName =
-      if (isFlatAdjusted) {
-        if (flatname == null)
-          flatname = flattenName().toTermName
-
+    )
+    override def name: TermName = (
+      if (!isMethod && needsFlatClasses) {
+        if (flatname eq null)
+          flatname = nme.flattenedName(rawowner.name, rawname)
+        
         flatname
-      } else rawname
+      }
+      else rawname.toTermName
+    )
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =
       new ModuleSymbol(owner, pos, name).copyAttrsFrom(this)
@@ -2217,6 +2216,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       super.info_=(tp)
     }
 
+    final override def isNonBottomSubClass(that: Symbol): Boolean = (
+      (this eq that) || this.isError || that.isError ||
+      info.baseTypeIndex(that) >= 0
+    )
+
     override def reset(completer: Type) {
       super.reset(completer)
       tpePeriod = NoPeriod
@@ -2288,7 +2292,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
-
+    private var flatname: TypeName = null
     private var source: AbstractFileType = null
     private var thissym: Symbol = this
 
@@ -2307,20 +2311,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       thissym = this
     }
 
-    private var flatname: TypeName = null
-
-    override def owner: Symbol =
-      if (needsFlatClasses) rawowner.owner
-      else rawowner
-
-    override def name: TypeName =
-      if (needsFlatClasses) {
-        if (flatname == null)
-          flatname = flattenName().toTypeName
-        flatname
-      }
-      else rawname.asInstanceOf[TypeName]
-
     private var thisTypeCache: Type = _
     private var thisTypePeriod = NoPeriod
 
@@ -2336,7 +2326,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
       thisTypeCache
     }
-
+    
+    override def owner: Symbol =
+      if (needsFlatClasses) rawowner.owner else rawowner
+    override def name: TypeName = (
+      if (needsFlatClasses) {
+        if (flatname eq null)
+          flatname = nme.flattenedName(rawowner.name, rawname).toTypeName
+          
+        flatname
+      }
+      else rawname.toTypeName
+    )
+    
     /** A symbol carrying the self type of the class as its type */
     override def thisSym: Symbol = thissym
 
@@ -2407,7 +2409,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def sourceModule_=(module: Symbol) { this.module = module }
   }
 
-  class FreeVar(name: TermName, tpe: Type, val value: Any) extends TermSymbol(definitions.RootClass, NoPosition, name) {
+  class FreeVar(name0: TermName, tpe: Type, val value: Any) extends TermSymbol(definitions.RootClass, NoPosition, name0) {
     setInfo(tpe)
 
     override def hashCode = value.hashCode
@@ -2511,6 +2513,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     val syms1 = cloneSymbolsAtOwner(syms, owner)
     creator(syms1, tpe.substSym(syms, syms1))
   }
+  
+  /** A deep map on a symbol's paramss.
+   */
+  def mapParamss[T](sym: Symbol)(f: Symbol => T): List[List[T]] = mmap(sym.info.paramss)(f)
 
   /** Create a new existential type skolem with the given owner and origin.
    */

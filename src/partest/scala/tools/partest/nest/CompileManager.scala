@@ -75,7 +75,8 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     val logWriter = new FileWriter(log)
 
     // check whether there is a ".flags" file
-    val flagsFileName = "%s.flags" format (basename(log.getName) dropRight 4) // 4 is "-run" or similar
+    val logFile = basename(log.getName)
+    val flagsFileName = "%s.flags" format (logFile.substring(0, logFile.lastIndexOf("-")))
     val argString = (io.File(log).parent / flagsFileName) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
     val allOpts = fileManager.SCALAC_OPTS.toList ::: argString.split(' ').toList.filter(_.length > 0)
     val args = allOpts.toList

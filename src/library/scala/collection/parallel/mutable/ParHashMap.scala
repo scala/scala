@@ -190,7 +190,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
   } else {
     // construct a normal table and fill it sequentially
     // TODO parallelize by keeping separate sizemaps and merging them
-    val table = new HashTable[K, DefaultEntry[K, V]] {
+    object table extends HashTable[K, DefaultEntry[K, V]] {
       def insertEntry(e: DefaultEntry[K, V]) = if (super.findEntry(e.key) eq null) super.addEntry(e)
       sizeMapInit(table.length)
     }
@@ -201,8 +201,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
       }
       i += 1
     }
-    val c = table.hashTableContents
-    new ParHashMap(c)
+    new ParHashMap(table.hashTableContents)
   }
 
   /* classes */

@@ -141,10 +141,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @param elem  the element to add.
    *  @return      a new set consisting of elements of this set and `elem`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To add an element as a\n"+
-    "side effect to an existing set and return that set itself, use +=."
-  )
+  @migration("`+` creates a new set. Use `+=` to add an element to this set and return that set itself.", "2.8.0")
   override def + (elem: A): This = clone() += elem
 
   /** Creates a new set consisting of all the elements of this set and two or more
@@ -158,10 +155,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @return      a new set consisting of all the elements of this set, `elem1`,
    *               `elem2` and those in `elems`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To add the elements as a\n"+
-    "side effect to an existing set and return that set itself, use +=."
-  )
+  @migration("`+` creates a new set. Use `+=` to add an element to this set and return that set itself.", "2.8.0")
   override def + (elem1: A, elem2: A, elems: A*): This =
     clone() += elem1 += elem2 ++= elems
 
@@ -173,10 +167,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @param xs        the traversable object.
    *  @return          a new set consisting of elements of this set and those in `xs`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To add the elements as a\n"+
-    "side effect to an existing set and return that set itself, use ++=."
-  )
+  @migration("`++` creates a new set. Use `++=` to add elements to this set and return that set itself.", "2.8.0")
   override def ++(xs: GenTraversableOnce[A]): This = clone() ++= xs.seq
 
   @bridge def ++(xs: TraversableOnce[A]): This = ++(xs: GenTraversableOnce[A])
@@ -186,10 +177,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @param elem  the element to remove.
    *  @return      a new set consisting of all the elements of this set except `elem`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To remove the element as a\n"+
-    "side effect to an existing set and return that set itself, use -=."
-  )
+  @migration("`-` creates a new set. Use `-=` to remove an element from this set and return that set itself.", "2.8.0")
   override def -(elem: A): This = clone() -= elem
 
   /** Creates a new set consisting of all the elements of this set except the two
@@ -201,10 +189,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @return      a new set consisting of all the elements of this set except
    *               `elem1`, `elem2` and `elems`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To remove the elements as a\n"+
-    "side effect to an existing set and return that set itself, use -=."
-  )
+  @migration("`-` creates a new set. Use `-=` to remove an element from this set and return that set itself.", "2.8.0")
   override def -(elem1: A, elem2: A, elems: A*): This =
     clone() -= elem1 -= elem2 --= elems
 
@@ -215,10 +200,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  @return         a new set consisting of all the elements of this set except
    *                  elements from `xs`.
    */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To remove the elements as a\n"+
-    "side effect to an existing set and return that set itself, use --=."
-  )
+  @migration("`--` creates a new set. Use `--=` to remove elements from this set and return that set itself.", "2.8.0")
   override def --(xs: GenTraversableOnce[A]): This = clone() --= xs.seq
 
   @bridge def --(xs: TraversableOnce[A]): This = --(xs: GenTraversableOnce[A])

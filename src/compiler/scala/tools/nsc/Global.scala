@@ -39,6 +39,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
                                                                       with Trees
                                                                       with TreePrinters
                                                                       with DocComments
+                                                                      with MacroContext
                                                                       with symtab.Positions {
 
   override def settings = currentSettings
@@ -151,17 +152,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** Register top level class (called on entering the class)
    */
   def registerTopLevelSym(sym: Symbol) {}
-
+  
 // ------------------ Reporting -------------------------------------
 
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
   def error(msg: String)       = globalError(msg)
   def globalError(msg: String) = reporter.error(NoPosition, msg)
-  def inform(msg: String)      = reporter.info(NoPosition, msg, true)
+  def inform(msg: String)      = reporter.echo(msg)
   def warning(msg: String)     =
     if (opt.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
+
+  // Needs to call error to make sure the compile fails.
+  override def abort(msg: String): Nothing = {
+    error(msg)
+    super.abort(msg)
+  }
 
   @inline final def ifDebug(body: => Unit) {
     if (settings.debug.value)
@@ -343,7 +350,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     def run() {
       echoPhaseSummary(this)
-      currentRun.units foreach applyPhase
+      currentRun.units foreach { unit =>
+        if (opt.timings) {
+          val start = System.nanoTime
+          try applyPhase(unit)
+          finally unitTimings(unit) += (System.nanoTime - start)
+        }
+        else applyPhase(unit)
+      }
     }
 
     def apply(unit: CompilationUnit): Unit
@@ -669,6 +683,21 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
   protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
   private lazy val phaseTimings = new Phases.TimingModel   // tracking phase stats
+  private lazy val unitTimings = mutable.HashMap[CompilationUnit, Long]() withDefaultValue 0L // tracking time spent per unit
+  private def unitTimingsFormatted(): String = {
+    def toMillis(nanos: Long) = "%.3f" format nanos / 1000000d
+    
+    val formatter = new util.TableDef[(String, String)] {
+      >> ("ms"   -> (_._1)) >+ "  "
+      << ("path" -> (_._2))
+    }
+    "" + (
+      new formatter.Table(unitTimings.toList sortBy (-_._2) map { 
+        case (unit, nanos) => (toMillis(nanos), unit.source.path)
+      })
+    )
+  }
+  
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
     phasesDescMap(sub) = descr
@@ -1149,8 +1178,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       if (opt.profileAll)
         profiler.stopProfiling()
 
-      if (opt.timings)
+      if (opt.timings) {
         inform(phaseTimings.formatted)
+        inform(unitTimingsFormatted)
+      }
 
       // In case no phase was specified for -Xshow-class/object, show it now for sure.
       if (opt.noShow)
@@ -1177,8 +1208,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       perRunCaches.clearAll()
 
       // Reset project
-      atPhase(namerPhase) {
-        resetProjectClasses(definitions.RootClass)
+      if (!stopPhase("namer")) {
+        atPhase(namerPhase) {
+          resetProjectClasses(definitions.RootClass)
+        }
       }
     }
 

@@ -38,8 +38,8 @@ object MetaData {
     def iterate(md: MetaData, normalized_attribs: MetaData, set: Set[String]): MetaData = {
       lazy val key = getUniversalKey(md, scope)
       if (md eq Null) normalized_attribs
-      else if (set(key)) iterate(md.next, normalized_attribs, set)
-      else iterate(md.next, md copy normalized_attribs, set + key)
+      else if ((md.value eq null) || set(key)) iterate(md.next, normalized_attribs, set)
+      else md copy iterate(md.next, normalized_attribs, set + key)
     }
     iterate(attribs, Null, Set())
   }

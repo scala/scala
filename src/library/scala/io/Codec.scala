@@ -97,19 +97,28 @@ object Codec extends LowPriorityCodecImplicits {
     new Codec(decoder.charset()) { override def decoder = _decoder }
   }
 
-  @migration(2, 9, "This method was previously misnamed `toUTF8`. Converts from Array[Byte] to Array[Char].")
-  def fromUTF8(bytes: Array[Byte]): Array[Char] = {
-    val bbuffer = java.nio.ByteBuffer wrap bytes
+  @migration("This method was previously misnamed `toUTF8`. Converts from Array[Byte] to Array[Char].", "2.9.0")
+  def fromUTF8(bytes: Array[Byte]): Array[Char] = fromUTF8(bytes, 0, bytes.length)
+  def fromUTF8(bytes: Array[Byte], offset: Int, len: Int): Array[Char] = {
+    val bbuffer = java.nio.ByteBuffer.wrap(bytes, offset, len)
     val cbuffer = UTF8.charSet decode bbuffer
-    val chars = new Array[Char](cbuffer.remaining())
+    val chars   = new Array[Char](cbuffer.remaining())
     cbuffer get chars
 
     chars
   }
 
-  @migration(2, 9, "This method was previously misnamed `fromUTF8`. Converts from character sequence to Array[Byte].")
+  @migration("This method was previously misnamed `fromUTF8`. Converts from character sequence to Array[Byte].", "2.9.0")
   def toUTF8(cs: CharSequence): Array[Byte] = {
-    val cbuffer = java.nio.CharBuffer wrap cs
+    val cbuffer = java.nio.CharBuffer.wrap(cs, 0, cs.length)
+    val bbuffer = UTF8.charSet encode cbuffer
+    val bytes = new Array[Byte](bbuffer.remaining())
+    bbuffer get bytes
+
+    bytes
+  }
+  def toUTF8(chars: Array[Char], offset: Int, len: Int): Array[Byte] = {
+    val cbuffer = java.nio.CharBuffer.wrap(chars, offset, len)
     val bbuffer = UTF8.charSet encode cbuffer
     val bytes = new Array[Byte](bbuffer.remaining())
     bbuffer get bytes

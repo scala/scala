@@ -87,10 +87,19 @@ trait Types extends api.Types { self: SymbolTable =>
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
 
   private final val printLubs = sys.props contains "scalac.debug.lub"
+  private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   /** In case anyone wants to turn off lub verification without reverting anything. */
   private final val verifyLubs = true
+  /** In case anyone wants to turn off type parameter bounds being used
+   *  to seed type constraints.
+   */
+  private final val propagateParameterBoundsToTypeVars = sys.props contains "scalac.debug.prop-constraints"
 
   protected val enableTypeVarExperimentals = settings.Xexperimental.value
+
+  /** Empty immutable maps to avoid allocations. */
+  private val emptySymMap   = immutable.Map[Symbol, Symbol]()
+  private val emptySymCount = immutable.Map[Symbol, Int]()
 
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
@@ -484,7 +493,6 @@ trait Types extends api.Types { self: SymbolTable =>
     /** Expands type aliases. */
     def dealias = this
 
-
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
      *  The empty scope for all other types.
@@ -496,6 +504,9 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
     def decl(name: Name): Symbol = findDecl(name, 0)
+    
+    /** A list of all non-private members defined or declared in this type. */
+    def nonPrivateDecls: List[Symbol] = decls filter (x => !x.isPrivate) toList
 
     /** The non-private defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -507,47 +518,67 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false).alternatives
+    def members: List[Symbol] = membersBasedOnFlags(0, 0)
 
     /** A list of all non-private members of this type (defined or inherited) */
-    def nonPrivateMembers: List[Symbol] =
-      findMember(nme.ANYNAME, PRIVATE | BridgeFlags, 0, false).alternatives
+    def nonPrivateMembers: List[Symbol] = membersBasedOnFlags(BridgeAndPrivateFlags, 0)
 
     /** A list of all non-private members of this type  (defined or inherited),
      *  admitting members with given flags `admit`
      */
-    def nonPrivateMembersAdmitting(admit: Long): List[Symbol] =
-      findMember(nme.ANYNAME, (PRIVATE | BridgeFlags) & ~admit, 0, false).alternatives
+    def nonPrivateMembersAdmitting(admit: Long): List[Symbol] = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BridgeFlags, IMPLICIT, false).alternatives
+    def implicitMembers: List[Symbol] = membersBasedOnFlags(BridgeFlags, IMPLICIT)
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
-    def deferredMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BridgeFlags, DEFERRED, false).alternatives
+    def deferredMembers: List[Symbol] = membersBasedOnFlags(BridgeFlags, DEFERRED)
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, BridgeFlags, 0, false)
+    def member(name: Name): Symbol =
+      memberBasedOnName(name, BridgeFlags)
 
     /** The non-private member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Bridges are excluded from the result
      */
     def nonPrivateMember(name: Name): Symbol =
-      findMember(name, PRIVATE | BridgeFlags, 0, false)
+      memberBasedOnName(name, BridgeAndPrivateFlags)
+      
+    /** All members with the given flags, excluding bridges.
+     */
+    def membersWithFlags(requiredFlags: Long): List[Symbol] =
+      membersBasedOnFlags(BridgeFlags, requiredFlags)
 
-    /** The non-private member with given name, admitting members with given flags `admit`
-     *  an OverloadedSymbol if several exist, NoSymbol if none exist
+    /** All non-private members with the given flags, excluding bridges.
+     */
+    def nonPrivateMembersWithFlags(requiredFlags: Long): List[Symbol] =
+      membersBasedOnFlags(BridgeAndPrivateFlags, requiredFlags)
+
+    /** The non-private member with given name, admitting members with given flags `admit`.
+     *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE
+     *  flag are usually excluded from findMember results, but supplying any of those flags
+     *  to this method disables that exclusion.
+     *
+     *  An OverloadedSymbol if several exist, NoSymbol if none exists.
      */
     def nonPrivateMemberAdmitting(name: Name, admit: Long): Symbol =
-      findMember(name, (PRIVATE | BridgeFlags) & ~admit, 0, false)
+      memberBasedOnName(name, BridgeAndPrivateFlags & ~admit)
 
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonLocalMember(name: Name): Symbol =
-      findMember(name, LOCAL | BridgeFlags, 0, false)
+      memberBasedOnName(name, BridgeFlags | LOCAL)
+    
+    /** Members excluding and requiring the given flags.
+     *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
+     */
+    def membersBasedOnFlags(excludedFlags: Long, requiredFlags: Long): List[Symbol] =
+      findMember(nme.ANYNAME, excludedFlags, requiredFlags, false).alternatives
+
+    def memberBasedOnName(name: Name, excludedFlags: Long): Symbol =
+      findMember(name, excludedFlags, 0, false)
 
     /** The least type instance of given class which is a supertype
      *  of this type.  Example:
@@ -568,7 +599,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *    T.asSeenFrom(ThisType(C), D)  (where D is owner of m)
      *      = Int
      */
-    def asSeenFrom(pre: Type, clazz: Symbol): Type =
+    def asSeenFrom(pre: Type, clazz: Symbol): Type = {
       if (isTrivial || phase.erasedTypes && pre.typeSymbol != ArrayClass) this
       else {
 //        scala.tools.nsc.util.trace.when(pre.isInstanceOf[ExistentialType])("X "+this+".asSeenfrom("+pre+","+clazz+" = ") {
@@ -584,6 +615,7 @@ trait Types extends api.Types { self: SymbolTable =>
         stopTimer(asSeenFromNanos, start)
         result
       }
+    }
 
     /** The info of `sym`, seen as a member of this type.
      *
@@ -649,7 +681,11 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     /** Returns all parts of this type which satisfy predicate `p` */
-    def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p).collect(this).toList
+    def filter(p: Type => Boolean): List[Type] = new FilterTypeCollector(p) collect this
+    def withFilter(p: Type => Boolean) = new FilterTypeCollector(p) {
+      def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
+      def map[T](f: Type => T): List[T]  = collect(Type.this) map f
+    }
 
     /** Returns optionally first type (in a preorder traversal) which satisfies predicate `p`,
      *  or None if none exists.
@@ -1002,7 +1038,6 @@ trait Types extends api.Types { self: SymbolTable =>
         baseClasses.head.newOverloaded(this, members.toList)
       }
     }
-
     /** The existential skolems and existentially quantified variables which are free in this type */
     def existentialSkolems: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
@@ -1283,6 +1318,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case TypeBounds(_, _) => that <:< this
       case _                => lo <:< that && that <:< hi
     }
+    def isEmptyBounds = (lo.typeSymbolDirect eq NothingClass) && (hi.typeSymbolDirect eq AnyClass)
     // override def isNullable: Boolean = NullClass.tpe <:< lo;
     override def safeToString = ">: " + lo + " <: " + hi
     override def kind = "TypeBoundsType"
@@ -1609,29 +1645,40 @@ trait Types extends api.Types { self: SymbolTable =>
                                          // (this can happen only for erroneous programs).
       }
 
+    private object enterRefs extends TypeMap {
+      private var tparam: Symbol = _
+
+      def apply(tp: Type): Type = {
+        tp match {
+          case TypeRef(_, sym, args) if args.nonEmpty =>
+            if (settings.debug.value && !sameLength(sym.info.typeParams, args))
+              debugwarn("Mismatched zip in computeRefs(): " + sym.info.typeParams + ", " + args)
+
+            foreach2(sym.info.typeParams, args) { (tparam1, arg) =>
+              if (arg contains tparam) {
+                addRef(NonExpansive, tparam, tparam1)
+                if (arg.typeSymbol != tparam)
+                  addRef(Expansive, tparam, tparam1)
+              }
+            }
+          case _ =>
+        }
+        mapOver(tp)
+      }
+      def enter(tparam0: Symbol, parent: Type) {
+        this.tparam = tparam0
+        this(parent)
+      }
+    }
+
     /** Compute initial (one-step) references and set state to `Initializing`.
      */
     private def computeRefs() {
       refs = Array(Map(), Map())
-      for (tparam <- typeSymbol.typeParams) {
-        val enterRefs = new TypeMap {
-          def apply(tp: Type): Type = {
-            tp match {
-              case TypeRef(_, sym, args) if args.nonEmpty =>
-                if (settings.debug.value && !sameLength(sym.info.typeParams, args))
-                  debugwarn("Mismatched zip in computeRefs(): " + sym.info.typeParams + ", " + args)
-
-                for ((tparam1, arg) <- sym.info.typeParams zip args; if arg contains tparam) {
-                  addRef(NonExpansive, tparam, tparam1)
-                  if (arg.typeSymbol != tparam)
-                    addRef(Expansive, tparam, tparam1)
-                }
-              case _ =>
-            }
-            mapOver(tp)
-          }
+      typeSymbol.typeParams foreach { tparam =>
+        parents foreach { p =>
+          enterRefs.enter(tparam, p)
         }
-        for (p <- parents) enterRefs(p)
       }
       state = Initializing
     }
@@ -1896,7 +1943,7 @@ A type's typeSymbol should never be inspected directly.
     // note: does not go through typeRef. There's no need to because
     // neither `pre` nor `sym` changes.  And there's a performance
     // advantage to call TypeRef directly.
-    override def typeConstructor = TypeRef(pre, sym, Nil)
+    override def typeConstructor = if (args.isEmpty) this else TypeRef(pre, sym, Nil)
 
     // A reference (in a Scala program) to a type that has type
     // parameters, but where the reference does not include type
@@ -2149,15 +2196,23 @@ A type's typeSymbol should never be inspected directly.
     override def isJava = true
   }
 
-  case class NullaryMethodType(override val resultType: Type) extends SimpleTypeProxy {
-    override def underlying        = resultType
-    override def isTrivial         = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
-    override def paramSectionCount = 0
-    override def paramss           = Nil
-    override def params            = Nil
-    override def paramTypes        = Nil
-    override def safeToString      = "=> " + resultType
-    override def kind              = "NullaryMethodType"
+  case class NullaryMethodType(override val resultType: Type) extends Type {
+    override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
+    override def prefix: Type = resultType.prefix
+    override def narrow: Type = resultType.narrow
+    override def finalResultType: Type = resultType.finalResultType
+    override def termSymbol: Symbol = resultType.termSymbol
+    override def typeSymbol: Symbol = resultType.typeSymbol
+    override def parents: List[Type] = resultType.parents
+    override def decls: Scope = resultType.decls
+    override def baseTypeSeq: BaseTypeSeq = resultType.baseTypeSeq
+    override def baseTypeSeqDepth: Int = resultType.baseTypeSeqDepth
+    override def baseClasses: List[Symbol] = resultType.baseClasses
+    override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
+    override def boundSyms = resultType.boundSyms
+    override def isVolatile = resultType.isVolatile
+    override def safeToString: String = "=> "+ resultType
+    override def kind = "NullaryMethodType"
   }
 
   object NullaryMethodType extends NullaryMethodTypeExtractor
@@ -2224,6 +2279,15 @@ A type's typeSymbol should never be inspected directly.
   }
 
   object PolyType extends PolyTypeExtractor
+  
+  /** A creator for existential types which flattens nested existentials.
+   */
+  def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
+    if (quantified.isEmpty) underlying
+    else underlying match {
+      case ExistentialType(qs, restpe) => newExistentialType(quantified ::: qs, restpe)
+      case _                           => ExistentialType(quantified, underlying)
+    }
 
   case class ExistentialType(quantified: List[Symbol],
                              override val underlying: Type) extends RewrappingTypeProxy
@@ -2288,7 +2352,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     override def cloneInfo(owner: Symbol) =
-      createFromClonedSymbolsAtOwner(quantified, owner, underlying)(ExistentialType(_, _))
+      createFromClonedSymbolsAtOwner(quantified, owner, underlying)(newExistentialType)
 
     override def atOwner(owner: Symbol) =
       if (quantified exists (_.owner != owner)) cloneInfo(owner) else this
@@ -2373,31 +2437,54 @@ A type's typeSymbol should never be inspected directly.
   // but pattern-matching returned the original constr0 (a bug)
   // now, pattern-matching returns the most recent constr
   object TypeVar {
-    // encapsulate suspension so we can automatically link the suspension of cloned
-    // typevars to their original if this turns out to be necessary
-/*
-    def Suspension = new Suspension
-    class Suspension {
-      private val suspended = mutable.HashSet[TypeVar]()
-      def suspend(tv: TypeVar): Unit = {
-        tv.suspended = true
-        suspended += tv
-      }
-      def resumeAll(): Unit = {
-        for (tv <- suspended) {
-          tv.suspended = false
+    @inline final def trace[T](action: String, msg: => String)(value: T): T = {
+      if (traceTypeVars) {
+        val s = msg match {
+          case ""   => ""
+          case str  => "( " + str + " )"
         }
-        suspended.clear()
+        Console.err.println("[%10s] %-25s%s".format(action, value, s))
       }
+      value
     }
-*/
-    def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
-    def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
-    // TODO why not initialise TypeConstraint with bounds of tparam?
-    // @PP: I tried that, didn't work out so well for me.
-    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams)
-    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) =
-      new TypeVar(origin, constr, args, params)
+
+    /** Create a new TypeConstraint based on the given symbol.
+     */
+    private def deriveConstraint(tparam: Symbol): TypeConstraint = {
+      /** Must force the type parameter's info at this point
+       *  or things don't end well for higher-order type params.
+       *  See SI-5359.
+       */
+      val bounds  = tparam.info.bounds
+      /** We can seed the type constraint with the type parameter
+       *  bounds as long as the types are concrete.  This should lower
+       *  the complexity of the search even if it doesn't improve
+       *  any results.
+       */
+      if (propagateParameterBoundsToTypeVars) {
+        val exclude = bounds.isEmptyBounds || bounds.exists(_.typeSymbolDirect.isNonClassType)
+
+        if (exclude) new TypeConstraint
+        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
+      }
+      else new TypeConstraint
+    }
+    def unapply(tv: TypeVar): Some[(Type, TypeConstraint)]   = Some((tv.origin, tv.constr))
+    def apply(origin: Type, constr: TypeConstraint): TypeVar = apply(origin, constr, Nil, Nil)
+    def apply(tparam: Symbol): TypeVar                       = apply(tparam.tpeHK, deriveConstraint(tparam), Nil, tparam.typeParams)
+
+    /** This is the only place TypeVars should be instantiated.
+     */
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]): TypeVar = {
+      val tv = (
+        if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr)
+        else if (args.size == params.size)    new AppliedTypeVar(origin, constr, params zip args)
+        else if (args.isEmpty)                new HKTypeVar(origin, constr, params)
+        else throw new TypeError("Invalid TypeVar construction: " + ((origin, constr, args, params)))
+      )
+      
+      trace("create", "In " + tv.originLocation)(tv)
+    }
   }
 
   // TODO: I don't really know why this happens -- maybe because
@@ -2424,23 +2511,53 @@ A type's typeSymbol should never be inspected directly.
       tp.typeSymbol
   )
 
+  /** Precondition: params.nonEmpty.  (args.nonEmpty enforced structurally.)
+   */
+  class HKTypeVar(
+    _origin: Type,
+    _constr: TypeConstraint,
+    override val params: List[Symbol]
+  ) extends TypeVar(_origin, _constr) {
+
+    require(params.nonEmpty, this)
+    override def isHigherKinded          = true
+    override protected def typeVarString = params.map(_.name).mkString("[", ", ", "]=>" + originName)
+  }
+  
+  /** Precondition: zipped params/args nonEmpty.  (Size equivalence enforced structurally.)
+   */
+  class AppliedTypeVar(
+    _origin: Type,
+    _constr: TypeConstraint,
+    zippedArgs: List[(Symbol, Type)]
+  ) extends TypeVar(_origin, _constr) {
+    
+    require(zippedArgs.nonEmpty, this)
+
+    override def params: List[Symbol] = zippedArgs map (_._1)
+    override def typeArgs: List[Type] = zippedArgs map (_._2)
+    
+    override protected def typeVarString = (
+      zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
+    )
+  }
+  
   /** A class representing a type variable: not used after phase `typer`.
    *
    *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
    *  A TypeVar with nonEmpty typeArgs can only be instantiated by a higher-kinded
    *  type that can be applied to those args.  A TypeVar is much like a TypeRef,
    *  except it has special logic for equality and subtyping.
+   *
+   *  Precondition for this class, enforced structurally: args.isEmpty && params.isEmpty.
    */
   class TypeVar(
     val origin: Type,
-    val constr0: TypeConstraint,
-    override val typeArgs: List[Type],
-    override val params: List[Symbol]
+    val constr0: TypeConstraint
   ) extends Type {
-    private val numArgs = typeArgs.length
-    // params are needed to keep track of variance (see mapOverArgs in SubstMap)
-    assert(typeArgs.isEmpty || sameLength(typeArgs, params))
-    // var tid = { tidCount += 1; tidCount } //DEBUG
+    override def params: List[Symbol] = Nil
+    override def typeArgs: List[Type] = Nil
+    override def isHigherKinded = false
 
     /** The constraint associated with the variable */
     var constr = constr0
@@ -2448,7 +2565,38 @@ A type's typeSymbol should never be inspected directly.
 
     /** The variable's skolemization level */
     val level = skolemizationLevel
-
+    
+    /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
+     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
+     *
+     *  `constr` for `?CC` only tracks type constructors anyway,
+     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
+     *  `?CC's` hibounds contains List and Iterable.
+     */
+    def applyArgs(newArgs: List[Type]): TypeVar = (
+      if (newArgs.isEmpty && typeArgs.isEmpty)
+        this
+      else if (newArgs.size == params.size) {
+        val tv = TypeVar(origin, constr, newArgs, params)
+        TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
+      }
+      else
+        throw new TypeError("Invalid type application in TypeVar: " + params + ", " + newArgs)
+    )
+    // newArgs.length may differ from args.length (could've been empty before)
+    //
+    // !!! @PP - I need an example of this, since this exception never triggers
+    // even though I am requiring the size match.
+    //
+    // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
+    // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
+    // TypeVars get applied to different arguments over time (in asSeenFrom)
+     // -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
+    // thus: make new TypeVar's for every application of a TV to args,
+    // inference may generate several TypeVar's for a single type parameter that must be inferred,
+    // only one of them is in the set of tvars that need to be solved, but
+    // they share the same TypeConstraint instance
+    
     // When comparing to types containing skolems, remember the highest level
     // of skolemization. If that highest level is higher than our initial
     // skolemizationLevel, we can't re-use those skolems as the solution of this
@@ -2459,26 +2607,6 @@ A type's typeSymbol should never be inspected directly.
     private var encounteredHigherLevel = false
     private def shouldRepackType = enableTypeVarExperimentals && encounteredHigherLevel
 
-    /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
-     *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
-     *
-     *  `constr` for `?CC` only tracks type constructors anyway,
-     *   so when `?CC[Int] <:< List[Int]` and `?CC[String] <:< Iterable[String]`
-     *  `?CC's` hibounds contains List and Iterable.
-     */
-    def applyArgs(newArgs: List[Type]): TypeVar =
-      if (newArgs.isEmpty) this // SubstMap relies on this (though this check is redundant when called from appliedType...)
-      else TypeVar(origin, constr, newArgs, params) // @M TODO: interaction with undoLog??
-      // newArgs.length may differ from args.length (could've been empty before)
-      // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
-      // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
-      // TypeVars get applied to different arguments over time (in asSeenFrom)
-       // -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
-      // thus: make new TypeVar's for every application of a TV to args,
-      // inference may generate several TypeVar's for a single type parameter that must be inferred,
-      // only one of them is in the set of tvars that need to be solved, but
-      // they share the same TypeConstraint instance
-
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
     // (undoLog is used to reset constraints to avoid piling up unrelated ones)
@@ -2487,7 +2615,8 @@ A type's typeSymbol should never be inspected directly.
       undoLog record this
       // if we were compared against later typeskolems, repack the existential,
       // because skolems are only compatible if they were created at the same level
-      constr.inst = if (shouldRepackType) repackExistential(tp) else tp
+      val res = if (shouldRepackType) repackExistential(tp) else tp
+      constr.inst = TypeVar.trace("setInst", "In " + originLocation + ", " + originName + "=" + res)(res)
     }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
@@ -2564,11 +2693,10 @@ A type's typeSymbol should never be inspected directly.
        *  type parameter we're trying to infer (the result will be sanity-checked later).
        */
       def unifyFull(tpe: Type) = {
-        // Since the alias/widen variations are often no-ops, this
-        // keenly collects them in a Set to avoid redundant tests.
+        // The alias/widen variations are often no-ops.
         val tpes = (
-          if (isLowerBound) Set(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias)
-          else Set(tpe)
+          if (isLowerBound) List(tpe, tpe.widen, tpe.dealias, tpe.widen.dealias).distinct
+          else List(tpe)
         )
         tpes exists { tp =>
           val lhs = if (isLowerBound) tp.typeArgs else typeArgs
@@ -2668,32 +2796,56 @@ A type's typeSymbol should never be inspected directly.
       || !containsSkolemAboveLevel(tp)  // side-effects tracking boolean
       || enableTypeVarExperimentals     // -Xexperimental: always say we're relatable, track consequences
     )
-    override val isHigherKinded = typeArgs.isEmpty && params.nonEmpty
 
-    override def normalize: Type =
+    override def normalize: Type = (
       if (constr.instValid) constr.inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
       else if (isHigherKinded) typeFun(params, applyArgs(params map (_.typeConstructor)))
       else super.normalize
-
+    )
     override def typeSymbol = origin.typeSymbol
     override def isStable = origin.isStable
     override def isVolatile = origin.isVolatile
 
-    private def levelString = if (settings.explaintypes.value) level else ""
-    override def safeToString = constr.inst match {
-      case null   => "<null " + origin + ">"
-      case NoType => "?" + levelString + origin + typeArgsString(this)
-      case x      => "" + x
+    private def tparamsOfSym(sym: Symbol) = sym.info match {
+      case PolyType(tparams, _) if tparams.nonEmpty =>
+        tparams map (_.defString) mkString("[", ",", "]")
+      case _ => ""
     }
+    def originName = {
+      val name = origin.typeSymbolDirect.decodedName
+      if (name contains "_$") origin.typeSymbolDirect.decodedName else name
+    }
+    def originLocation = {
+      val sym  = origin.typeSymbolDirect
+      val encl = sym.owner.logicallyEnclosingMember
+      
+      // This should display somewhere between one and three
+      // things which enclose the origin: at most, a class, a
+      // a method, and a term.  At least, a class.
+      List(
+        Some(encl.enclClass),
+        if (encl.isMethod) Some(encl) else None,
+        if (sym.owner.isTerm && (sym.owner != encl)) Some(sym.owner) else None
+      ).flatten map (s => s.decodedName + tparamsOfSym(s)) mkString "#"
+    }
+    private def levelString = if (settings.explaintypes.value) level else ""
+    protected def typeVarString = originName
+    override def safeToString = (
+      if ((constr eq null) || (constr.inst eq null)) "TVar<" + originName + "=null>"
+      else if (constr.inst ne NoType) "" + constr.inst
+      else "?" + levelString + originName
+    )
     override def kind = "TypeVar"
 
     def cloneInternal = {
       // cloning a suspended type variable when it's suspended will cause the clone
       // to never be resumed with the current implementation
-      assert(!suspended)
-      TypeVar(origin, constr cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+      assert(!suspended, this)
+      TypeVar.trace("clone", originLocation)(
+        TypeVar(origin, constr cloneInternal, typeArgs, params) // @M TODO: clone args/params?
+      )
     }
   }
 
@@ -2950,6 +3102,9 @@ A type's typeSymbol should never be inspected directly.
 
   /** A creator for intersection type where intersections of a single type are
    *  replaced by the type itself, and repeated parent classes are merged.
+   *
+   *  !!! Repeated parent classes are not merged - is this a bug in the
+   *  comment or in the code?
    */
   def intersectionType(tps: List[Type], owner: Symbol): Type = tps match {
     case List(tp) =>
@@ -2987,7 +3142,7 @@ A type's typeSymbol should never be inspected directly.
       case TypeRef(pre, sym @ (NothingClass|AnyClass), _) => copyTypeRef(tycon, pre, sym, Nil)   //@M drop type args to Any/Nothing
       case TypeRef(pre, sym, _)                           => copyTypeRef(tycon, pre, sym, args)
       case PolyType(tparams, restpe)                      => restpe.instantiateTypeParams(tparams, args)
-      case ExistentialType(tparams, restpe)               => ExistentialType(tparams, appliedType(restpe, args))
+      case ExistentialType(tparams, restpe)               => newExistentialType(tparams, appliedType(restpe, args))
       case st: SingletonType                              => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case RefinedType(parents, decls)                    => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
       case TypeBounds(lo, hi)                             => TypeBounds(appliedType(lo, args), appliedType(hi, args))
@@ -3026,71 +3181,23 @@ A type's typeSymbol should never be inspected directly.
    *
    *  tpe1 where { tparams }
    *
-   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`. Extrapolating means
-   *  that type variables in `tparams` occurring in covariant positions are replaced by upper bounds,
-   *  (minus any SingletonClass markers),
-   *  type variables in `tparams` occurring in contravariant positions are replaced by upper bounds,
-   *  provided the resulting type is legal wrt to stability, and does not contain any
-   *  type variable in `tparams`.
-   *  The abstraction drops all type parameters that are not directly or indirectly
-   *  referenced by type `tpe1`.
-   *  If there are no remaining type parameters, simply returns result type `tpe`.
+   *  where `tpe1` is the result of extrapolating `tpe` wrt to `tparams`.
+   *  Extrapolating means that type variables in `tparams` occurring
+   *  in covariant positions are replaced by upper bounds, (minus any
+   *  SingletonClass markers), type variables in `tparams` occurring in
+   *  contravariant positions are replaced by upper bounds, provided the
+   *  resulting type is legal wrt to stability, and does not contain any type
+   *  variable in `tparams`.
+   *
+   *  The abstraction drops all type parameters that are not directly or
+   *  indirectly referenced by type `tpe1`. If there are no remaining type
+   *  parameters, simply returns result type `tpe`.
    */
   def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type =
     if (tparams.isEmpty) tpe0
     else {
-      var occurCount = emptySymCount ++ (tparams map (_ -> 0))
-      val tpe = deAlias(tpe0)
-      def countOccs(tp: Type) =
-        for (t <- tp) {
-          t match {
-            case TypeRef(_, sym, _) =>
-              occurCount get sym match {
-                case Some(count) => occurCount += (sym -> (count + 1))
-                case none =>
-              }
-            case _ =>
-          }
-        }
-      countOccs(tpe)
-      for (tparam <- tparams) countOccs(tparam.info)
-
-      val extrapolate = new TypeMap {
-        variance = 1
-        def apply(tp: Type): Type = {
-          val tp1 = mapOver(tp)
-          tp1 match {
-            case TypeRef(pre, sym, args) if (variance != 0) && (occurCount isDefinedAt sym) =>
-              val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
-              //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
-              if (!repl.typeSymbol.isBottomClass && occurCount(sym) == 1 && !(tparams exists (repl.contains)))
-                repl
-              else tp1
-            case _ =>
-              tp1
-          }
-        }
-        override def mapOver(tp: Type): Type = tp match {
-          case SingleType(pre, sym) =>
-            if (sym.isPackageClass) tp // short path
-            else {
-              val pre1 = this(pre)
-              if ((pre1 eq pre) || !pre1.isStable) tp
-              else singleType(pre1, sym)
-            }
-          case _ => super.mapOver(tp)
-        }
-
-        // Do not discard the types of existential ident's. The
-        // symbol of the Ident itself cannot be listed in the
-        // existential's parameters, so the resulting existential
-        // type would be ill-formed.
-        override def mapOver(tree: Tree) = tree match {
-          case Ident(_) if tree.tpe.isStable => tree
-          case _                             => super.mapOver(tree)
-        }
-      }
-      val tpe1 = extrapolate(tpe)
+      val tpe      = deAlias(tpe0)
+      val tpe1     = new ExistentialExtrapolation(tparams) extrapolate tpe
       var tparams0 = tparams
       var tparams1 = tparams0 filter tpe1.contains
 
@@ -3100,11 +3207,7 @@ A type's typeSymbol should never be inspected directly.
           tparams1 exists { p1 => p1 == p || (p1.info contains p) }
         }
       }
-      if (tparams1.isEmpty) tpe1
-      else tpe1 match {
-        case ExistentialType(tparams2, tpe2) => ExistentialType(tparams1 ::: tparams2, tpe2)
-        case _ => ExistentialType(tparams1, tpe1)
-      }
+      newExistentialType(tparams1, tpe1)
     }
 
   /** Remove any occurrences of type aliases from this type */
@@ -3196,7 +3299,7 @@ A type's typeSymbol should never be inspected directly.
         val isType = pnames.head.isTypeName
         val newParams = for (name <- pnames) yield
           if (isType) owner.newTypeParameter(NoPosition, name.toTypeName)
-          else owner.newValueParameter(NoPosition, name)
+          else owner.newValueParameter(NoPosition, name.toTermName)
         paramStack = newParams :: paramStack
         try {
           (newParams, ptypes).zipped foreach ((p, t) => p setInfo this(t))
@@ -3239,10 +3342,15 @@ A type's typeSymbol should never be inspected directly.
    */
   class TypeConstraint(lo0: List[Type], hi0: List[Type], numlo0: Type, numhi0: Type, avoidWidening0: Boolean = false) {
     def this(lo0: List[Type], hi0: List[Type]) = this(lo0, hi0, NoType, NoType)
+    def this(bounds: TypeBounds) = this(List(bounds.lo), List(bounds.hi))
     def this() = this(List(), List())
 
-    private var lobounds = lo0
-    private var hibounds = hi0
+    /** Guard these lists against AnyClass and NothingClass appearing,
+     *  else loBounds.isEmpty will have different results for an empty
+     *  constraint and one with Nothing as a lower bound.
+     */
+    private var lobounds = lo0 filterNot (_.typeSymbolDirect eq NothingClass)
+    private var hibounds = hi0 filterNot (_.typeSymbolDirect eq AnyClass)
     private var numlo = numlo0
     private var numhi = numhi0
     private var avoidWidening = avoidWidening0
@@ -3258,7 +3366,8 @@ A type's typeSymbol should never be inspected directly.
         else if (!isNumericSubType(tp, numlo))
           numlo = numericLoBound
       }
-      else lobounds ::= tp
+      else if (tp.typeSymbolDirect ne NothingClass)
+        lobounds ::= tp
     }
 
     def checkWidening(tp: Type) {
@@ -3277,7 +3386,8 @@ A type's typeSymbol should never be inspected directly.
         else if (!isNumericSubType(numhi, tp))
           numhi = numericHiBound
       }
-      else hibounds ::= tp
+      else if (tp.typeSymbolDirect ne AnyClass)
+        hibounds ::= tp
     }
 
     def isWithinBounds(tp: Type): Boolean =
@@ -3296,10 +3406,18 @@ A type's typeSymbol should never be inspected directly.
       tc
     }
 
-    override def toString =
-      (loBounds map (_.safeToString)).mkString("[ _>:(", ",", ") ") +
-      (hiBounds map (_.safeToString)).mkString("| _<:(", ",", ") ] _= ") +
-      inst.safeToString
+    override def toString = {
+      val boundsStr = (
+        if (loBounds.isEmpty && hiBounds.isEmpty) "[]"
+        else {
+          val lostr = if (loBounds.isEmpty) "" else loBounds map (_.safeToString) mkString("_>:(", ", ", ")")
+          val histr = if (hiBounds.isEmpty) "" else hiBounds map (_.safeToString) mkString("_<:(", ", ", ")")
+          List(lostr, histr) filterNot (_ == "") mkString ("[", " | ", "]")
+        }
+      )
+      if (inst eq NoType) boundsStr
+      else boundsStr + " _= " + inst.safeToString
+    }
   }
 
   trait AnnotationFilter extends TypeMap {
@@ -3315,16 +3433,82 @@ A type's typeSymbol should never be inspected directly.
     def keepAnnotation(annot: AnnotationInfo) = annot matches TypeConstraintClass
   }
 
+  trait VariantTypeMap extends TypeMap {
+    private[this] var _variance = 1
+
+    override def variance = _variance
+    def variance_=(x: Int) = _variance = x
+    
+    override protected def noChangeToSymbols(origSyms: List[Symbol]) = {
+      origSyms forall { sym =>
+        val v = variance
+        if (sym.isAliasType) variance = 0
+        val result = this(sym.info)
+        variance = v
+        result eq sym.info
+      }
+    }
+
+    override protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      map2Conserve(args, tparams) { (arg, tparam) =>
+        val v = variance
+        if (tparam.isContravariant) variance = -variance
+        else if (!tparam.isCovariant) variance = 0
+        val arg1 = this(arg)
+        variance = v
+        arg1
+      }
+
+    /** Map this function over given type */
+    override def mapOver(tp: Type): Type = tp match {
+      case MethodType(params, result) =>
+        variance = -variance
+        val params1 = mapOver(params)
+        variance = -variance
+        val result1 = this(result)
+        if ((params1 eq params) && (result1 eq result)) tp
+        else copyMethodType(tp, params1, result1.substSym(params, params1))
+      case PolyType(tparams, result) =>
+        variance = -variance
+        val tparams1 = mapOver(tparams)
+        variance = -variance
+        var result1 = this(result)
+        if ((tparams1 eq tparams) && (result1 eq result)) tp
+        else PolyType(tparams1, result1.substSym(tparams, tparams1))
+      case TypeBounds(lo, hi) =>
+        variance = -variance
+        val lo1 = this(lo)
+        variance = -variance
+        val hi1 = this(hi)
+        if ((lo1 eq lo) && (hi1 eq hi)) tp
+        else TypeBounds(lo1, hi1)
+      case TypeRef(pre, sym, args) =>
+        val pre1 = this(pre)
+        val args1 =
+          if (args.isEmpty)
+            args
+          else if (variance == 0) // fast & safe path: don't need to look at typeparams
+            args mapConserve this
+          else {
+            val tparams = sym.typeParams
+            if (tparams.isEmpty) args
+            else mapOverArgs(args, tparams)
+          }
+        if ((pre1 eq pre) && (args1 eq args)) tp
+        else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1)
+      case _ =>
+        super.mapOver(tp)
+    }
+  }
+
   /** A prototype for mapping a function over all possible types
    */
-  abstract class TypeMap extends Function1[Type, Type] {
+  abstract class TypeMap extends (Type => Type) {
     def apply(tp: Type): Type
 
-    /** The variance relative to start. If you want variances to be significant, set
-     *    variance = 1
-     *  at the top of the typemap.
+    /** Mix in VariantTypeMap if you want variances to be significant.
      */
-    var variance = 0
+    def variance = 0
 
     // #3731: return sym1 for which holds: pre bound sym.name to sym and
     // pre1 now binds sym.name to sym1, conceptually exactly the same
@@ -3354,17 +3538,7 @@ A type's typeSymbol should never be inspected directly.
     def mapOver(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) =>
         val pre1 = this(pre)
-        //val args1 = args mapConserve this(_)
-        val args1 =
-          if (args.isEmpty)
-            args
-          else if (variance == 0) // fast & safe path: don't need to look at typeparams
-            args mapConserve this
-          else {
-            val tparams = sym.typeParams
-            if (tparams.isEmpty) args
-            else mapOverArgs(args, tparams)
-          }
+        val args1 = args mapConserve this
         if ((pre1 eq pre) && (args1 eq args)) tp
         else copyTypeRef(tp, pre1, coevolveSym(pre, pre1, sym), args1)
       case ThisType(_) => tp
@@ -3376,16 +3550,12 @@ A type's typeSymbol should never be inspected directly.
           else singleType(pre1, sym)
         }
       case MethodType(params, result) =>
-        variance = -variance
         val params1 = mapOver(params)
-        variance = -variance
         val result1 = this(result)
         if ((params1 eq params) && (result1 eq result)) tp
         else copyMethodType(tp, params1, result1.substSym(params, params1))
       case PolyType(tparams, result) =>
-        variance = -variance
         val tparams1 = mapOver(tparams)
-        variance = -variance
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
@@ -3400,9 +3570,7 @@ A type's typeSymbol should never be inspected directly.
         if ((thistp1 eq thistp) && (supertp1 eq supertp)) tp
         else SuperType(thistp1, supertp1)
       case TypeBounds(lo, hi) =>
-        variance = -variance
         val lo1 = this(lo)
-        variance = -variance
         val hi1 = this(hi)
         if ((lo1 eq lo) && (hi1 eq hi)) tp
         else TypeBounds(lo1, hi1)
@@ -3420,7 +3588,7 @@ A type's typeSymbol should never be inspected directly.
         val tparams1 = mapOver(tparams)
         var result1 = this(result)
         if ((tparams1 eq tparams) && (result1 eq result)) tp
-        else ExistentialType(tparams1, result1.substSym(tparams, tparams1))
+        else newExistentialType(tparams1, result1.substSym(tparams, tparams1))
       case OverloadedType(pre, alts) =>
         val pre1 = if (pre.isInstanceOf[ClassInfoType]) pre else this(pre)
         if (pre1 eq pre) tp
@@ -3458,15 +3626,14 @@ A type's typeSymbol should never be inspected directly.
         // throw new Error("mapOver inapplicable for " + tp);
     }
 
-    protected final def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
-      map2Conserve(args, tparams) { (arg, tparam) =>
-        val v = variance
-        if (tparam.isContravariant) variance = -variance
-        else if (!tparam.isCovariant) variance = 0
-        val arg1 = this(arg)
-        variance = v
-        arg1
-      }
+    protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      args mapConserve this
+    
+    /** Called by mapOver to determine whether the original symbols can
+     *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
+     */
+    protected def noChangeToSymbols(origSyms: List[Symbol]) =
+      origSyms forall (sym => sym.info eq this(sym.info))
 
     /** Map this function over given scope */
     def mapOver(scope: Scope): Scope = {
@@ -3475,20 +3642,13 @@ A type's typeSymbol should never be inspected directly.
       if (elems1 eq elems) scope
       else new Scope(elems1)
     }
-
+    
     /** Map this function over given list of symbols */
     def mapOver(origSyms: List[Symbol]): List[Symbol] = {
-      val change = origSyms exists { sym =>
-        val v = variance
-        if (sym.isAliasType) variance = 0
-        val result = this(sym.info)
-        variance = v
-        result ne sym.info
-      }
-      // map is not the identity --> do cloning properly
-      if (change) cloneSymbolsAndModify(origSyms, TypeMap.this)
       // fast path in case nothing changes due to map
-      else origSyms
+      if (noChangeToSymbols(origSyms)) origSyms
+      // map is not the identity --> do cloning properly
+      else cloneSymbolsAndModify(origSyms, TypeMap.this)
     }
 
     def mapOver(annot: AnnotationInfo): AnnotationInfo = {
@@ -3555,13 +3715,25 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  private val emptySymMap   = immutable.Map[Symbol, Symbol]()
-  private val emptySymCount = immutable.Map[Symbol, Int]()
+  /** A collector that tests for existential types appearing at given variance in a type
+   *  @PP: Commenting out due to not being used anywhere.
+   */
+  // class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) with VariantTypeMap {
+  //   variance = v
+  // 
+  //   def traverse(tp: Type) = tp match {
+  //     case ExistentialType(_, _) if (variance == v) => result = true
+  //     case _ => mapOver(tp)
+  //   }
+  // }
+  // 
+  // val containsCovariantExistentialCollector = new ContainsVariantExistentialCollector(1)
+  // val containsContravariantExistentialCollector = new ContainsVariantExistentialCollector(-1)
 
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
-    val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
-      clazz.newExistential(clazz.pos, newTypeName("?"+i)).setInfo(tparam.info.bounds)
-    }
+    val eparams = mapWithIndex(tparams)((tparam, i) =>
+      clazz.newExistential(clazz.pos, newTypeName("?"+i)) setInfo tparam.info.bounds)
+
     eparams map (_ substInfo (tparams, eparams))
   }
 
@@ -3608,6 +3780,62 @@ A type's typeSymbol should never be inspected directly.
         mapOver(tp)
     }
   }
+  
+  /** Used by existentialAbstraction.
+   */
+  class ExistentialExtrapolation(tparams: List[Symbol]) extends VariantTypeMap {
+    private val occurCount = mutable.HashMap[Symbol, Int]()
+    private def countOccs(tp: Type) = {
+      tp foreach {
+        case TypeRef(_, sym, _) =>
+          if (tparams contains sym)
+            occurCount(sym) += 1
+        case _ => ()
+      }
+    }
+    def extrapolate(tpe: Type): Type = {
+      tparams foreach (t => occurCount(t) = 0)
+      countOccs(tpe)
+      for (tparam <- tparams)
+        countOccs(tparam.info)
+      
+      apply(tpe)
+    }
+    
+    def apply(tp: Type): Type = {
+      val tp1 = mapOver(tp)
+      if (variance == 0) tp1
+      else tp1 match {
+        case TypeRef(pre, sym, args) if tparams contains sym =>
+          val repl = if (variance == 1) dropSingletonType(tp1.bounds.hi) else tp1.bounds.lo
+          //println("eliminate "+sym+"/"+repl+"/"+occurCount(sym)+"/"+(tparams exists (repl.contains)))//DEBUG
+          if (!repl.typeSymbol.isBottomClass && occurCount(sym) == 1 && !(tparams exists (repl.contains)))
+            repl
+          else tp1
+        case _ =>
+          tp1
+      }
+    }
+    override def mapOver(tp: Type): Type = tp match {
+      case SingleType(pre, sym) =>
+        if (sym.isPackageClass) tp // short path
+        else {
+          val pre1 = this(pre)
+          if ((pre1 eq pre) || !pre1.isStable) tp
+          else singleType(pre1, sym)
+        }
+      case _ => super.mapOver(tp)
+    }
+
+    // Do not discard the types of existential ident's. The
+    // symbol of the Ident itself cannot be listed in the
+    // existential's parameters, so the resulting existential
+    // type would be ill-formed.
+    override def mapOver(tree: Tree) = tree match {
+      case Ident(_) if tree.tpe.isStable => tree
+      case _                             => super.mapOver(tree)
+    }
+  }
 
   def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(List(hi, SingletonClass.tpe)))
 
@@ -3615,6 +3843,7 @@ A type's typeSymbol should never be inspected directly.
   class AsSeenFromMap(pre: Type, clazz: Symbol) extends TypeMap with KeepOnlyTypeConstraints {
     var capturedSkolems: List[Symbol] = List()
     var capturedParams: List[Symbol] = List()
+    var capturedPre = emptySymMap
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object annotationArgRewriter extends TypeMapTransformer {
@@ -3644,8 +3873,6 @@ A type's typeSymbol should never be inspected directly.
 
       annotationArgRewriter.transform(tree)
     }
-
-    var capturedPre = emptySymMap
 
     def stabilize(pre: Type, clazz: Symbol): Type =
       capturedPre.getOrElse(clazz, {
@@ -3789,7 +4016,7 @@ A type's typeSymbol should never be inspected directly.
       case PolyType(bs, restp) =>
         createFromClonedSymbols(bs, restp)((ps1, tp1) => PolyType(ps1, renameBoundSyms(tp1)))
       case ExistentialType(bs, restp) =>
-        createFromClonedSymbols(bs, restp)(ExistentialType(_, _))
+        createFromClonedSymbols(bs, restp)(newExistentialType)
       case _ =>
         tp
     }
@@ -4041,7 +4268,7 @@ A type's typeSymbol should never be inspected directly.
       case WildcardType =>
         TypeVar(tp, new TypeConstraint)
       case BoundedWildcardType(bounds) =>
-        TypeVar(tp, new TypeConstraint(List(bounds.lo), List(bounds.hi)))
+        TypeVar(tp, new TypeConstraint(bounds))
       case _ =>
         mapOver(tp)
     }
@@ -4094,9 +4321,13 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A map to implement the `filter` method. */
-  class FilterTypeCollector(p: Type => Boolean) extends TypeCollector(new ListBuffer[Type]) {
+  class FilterTypeCollector(p: Type => Boolean) extends TypeCollector[List[Type]](Nil) {
+    def withFilter(q: Type => Boolean) = new FilterTypeCollector(tp => p(tp) && q(tp))
+
+    override def collect(tp: Type) = super.collect(tp).reverse
+
     def traverse(tp: Type) {
-      if (p(tp)) result += tp
+      if (p(tp)) result ::= tp
       mapOver(tp)
     }
   }
@@ -4180,10 +4411,14 @@ A type's typeSymbol should never be inspected directly.
         definitions.RootPackage
       } else if (sym.isModuleClass) {
         val sourceModule1 = adaptToNewRun(pre, sym.sourceModule)
-        val result = sourceModule1.moduleClass
-        val msg = "sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
-        assert(result != NoSymbol, msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
-        result
+        var result = sourceModule1.moduleClass
+        if (result == NoSymbol) result = sourceModule1.initialize.moduleClass
+        if (result != NoSymbol) result
+        else {
+          val msg = "Cannot adapt module class; sym = %s, sourceModule = %s, sourceModule.moduleClass = %s => sourceModule1 = %s, sourceModule1.moduleClass = %s"
+          debuglog(msg.format(sym, sym.sourceModule, sym.sourceModule.moduleClass, sourceModule1, sourceModule1.moduleClass))
+          sym
+        }
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
@@ -4333,8 +4568,7 @@ A type's typeSymbol should never be inspected directly.
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2)
         pre1 =:= pre2 &&
-        ((args1, args2, sym1.typeParams).zipped forall {
-          (arg1, arg2, tparam) =>
+        forall3(args1, args2, sym1.typeParams) { (arg1, arg2, tparam) => 
             //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
           if (tparam.variance == 0) arg1 =:= arg2
           else if (arg1.isInstanceOf[TypeVar])
@@ -4344,7 +4578,7 @@ A type's typeSymbol should never be inspected directly.
             // also: think what happens if there are embedded typevars?
             if (tparam.variance < 0) arg1 <:< arg2 else arg2 <:< arg1
           else true
-        })
+        }
       case (et: ExistentialType, _) =>
         et.withTypeVars(isConsistent(_, tp2))
       case (_, et: ExistentialType) =>
@@ -4867,19 +5101,11 @@ A type's typeSymbol should never be inspected directly.
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
     }))
 
-  /** True if all three arguments have the same number of elements and
-   *  the function is true for all the triples.
-   */
-  @tailrec final def corresponds3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C], f: (A, B, C) => Boolean): Boolean = {
-    if (xs1.isEmpty) xs2.isEmpty && xs3.isEmpty
-    else !xs2.isEmpty && !xs3.isEmpty && f(xs1.head, xs2.head, xs3.head) && corresponds3(xs1.tail, xs2.tail, xs3.tail, f)
-  }
-
   def isSubArg(t1: Type, t2: Type, variance: Int) =
     (variance > 0 || t2 <:< t1) && (variance < 0 || t1 <:< t2)
 
   def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean =
-    corresponds3(tps1, tps2, tparams map (_.variance), isSubArg)
+    corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
 
   def differentOrNone(tp1: Type, tp2: Type) = if (tp1 eq tp2) NoType else tp1
 
@@ -5251,7 +5477,6 @@ A type's typeSymbol should never be inspected directly.
 
   def solve(tvars: List[TypeVar], tparams: List[Symbol],
             variances: List[Int], upper: Boolean, depth: Int): Boolean = {
-    val config = tvars zip (tparams zip variances)
 
     def solveOne(tvar: TypeVar, tparam: Symbol, variance: Int) {
       if (tvar.constr.inst == NoType) {
@@ -5260,15 +5485,17 @@ A type's typeSymbol should never be inspected directly.
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
         //Console.println("solveOne0(tv, tp, v, b)="+(tvar, tparam, variance, bound))
         var cyclic = bound contains tparam
-        for ((tvar2, (tparam2, variance2)) <- config) {
-          if (tparam2 != tparam &&
-              ((bound contains tparam2) ||
-               up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
-               !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {
+        foreach3(tvars, tparams, variances)((tvar2, tparam2, variance2) => {
+          val ok = (tparam2 != tparam) && (
+               (bound contains tparam2)
+            ||  up && (tparam2.info.bounds.lo =:= tparam.tpe)
+            || !up && (tparam2.info.bounds.hi =:= tparam.tpe)
+          )
+          if (ok) {
             if (tvar2.constr.inst eq null) cyclic = true
             solveOne(tvar2, tparam2, variance2)
           }
-        }
+        })
         if (!cyclic) {
           if (up) {
             if (bound.typeSymbol != AnyClass)
@@ -5307,9 +5534,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     // println("solving "+tvars+"/"+tparams+"/"+(tparams map (_.info)))
-    for ((tvar, (tparam, variance)) <- config)
-      solveOne(tvar, tparam, variance)
-
+    foreach3(tvars, tparams, variances)(solveOne)
     tvars forall (tvar => tvar.constr.isWithinBounds(tvar.constr.inst))
   }
 
@@ -5357,6 +5582,23 @@ A type's typeSymbol should never be inspected directly.
     val formatted = tableDef.table(transposed)
     println("** Depth is " + depth + "\n" + formatted)
   }
+  
+  /** From a list of types, find any which take type parameters 
+   *  where the type parameter bounds contain references to other
+   *  any types in the list (including itself.)
+   *
+   *  @return List of symbol pairs holding the recursive type
+   *    parameter and the parameter which references it.
+   */
+  def findRecursiveBounds(ts: List[Type]): List[(Symbol, Symbol)] = {
+    if (ts.isEmpty) Nil
+    else {
+      val sym = ts.head.typeSymbol
+      require(ts.tail forall (_.typeSymbol == sym), ts)
+      for (p <- sym.typeParams ; in <- sym.typeParams ; if in.info.bounds contains p) yield
+        p -> in
+    }
+  }
 
   /** Given a matrix `tsBts` whose columns are basetype sequences (and the symbols `tsParams` that should be interpreted as type parameters in this matrix),
    * compute its least sorted upwards closed upper bound relative to the following ordering <= between lists of types:
@@ -5403,6 +5645,19 @@ A type's typeSymbol should never be inspected directly.
         // merging, strip targs that refer to bound tparams (when we're computing the lub of type
         // constructors.) Also filter out all types that are a subtype of some other type.
         if (isUniformFrontier) {
+          if (settings.debug.value || printLubs) {
+            val fbounds = findRecursiveBounds(ts0)
+            if (fbounds.nonEmpty) {
+              println("Encountered " + fbounds.size + " recursive bounds while lubbing " + ts0.size + " types.")
+              for ((p0, p1) <- fbounds) {
+                val desc = if (p0 == p1) "its own bounds" else "the bounds of " + p1
+
+                println("  " + p0.fullLocationString + " appears in " + desc)
+                println("    " + p1 + " " + p1.info.bounds)
+              }
+              println("")
+            }
+          }
           val tails = tsBts map (_.tail)
           mergePrefixAndArgs(elimSub(ts0 map elimHigherOrderTypeParam, depth), 1, depth) match {
             case Some(tp) => tp :: loop(tails)
@@ -5428,7 +5683,7 @@ A type's typeSymbol should never be inspected directly.
       }
     }
 
-    val initialBTSes = ts map (_.baseTypeSeq.toList)
+    val initialBTSes = ts map (_.baseTypeSeq.toList filter (_.typeSymbol.isPublic))
     if (printLubs)
       printLubMatrix(ts zip initialBTSes toMap, depth)
 
@@ -5471,21 +5726,10 @@ A type's typeSymbol should never be inspected directly.
     case _ =>
       t
   }
-
-  /** A collector that tests for existential types appearing at given variance in a type */
-  class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) {
-    def traverse(tp: Type) = tp match {
-      case ExistentialType(_, _) if (variance == v) => result = true
-      case _ => mapOver(tp)
-    }
-    def init() = {
-      variance = 1
-      this
-    }
+  def elimRefinement(t: Type) = t match {
+    case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
+    case _                                             => t
   }
-
-  val containsCovariantExistentialCollector = new ContainsVariantExistentialCollector(1)
-  val containsContravariantExistentialCollector = new ContainsVariantExistentialCollector(-1)
 
   /** Eliminate from list of types all elements which are a subtype
    *  of some other element of the list. */
@@ -5603,8 +5847,8 @@ A type's typeSymbol should never be inspected directly.
       case List() => NothingClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
-        val tparams1 = (tparams, matchingBounds(ts, tparams).transpose).zipped map
-          ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth)))
+        val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
+          tparam.cloneSymbol.setInfo(glb(bounds, depth)))
         PolyType(tparams1, lub0(matchingInstTypes(ts, tparams1)))
       case ts @ MethodType(params, _) :: rest =>
         MethodType(params, lub0(matchingRestypes(ts, params map (_.tpe))))
@@ -5632,9 +5876,16 @@ A type's typeSymbol should never be inspected directly.
       val lubType =
         if (phase.erasedTypes || depth == 0) lubBase
         else {
-          val lubRefined = refinedType(lubParents, lubOwner)
+          val lubRefined  = refinedType(lubParents, lubOwner)
           val lubThisType = lubRefined.typeSymbol.thisType
-          val narrowts = ts map (_.narrow)
+          val narrowts    = ts map (_.narrow)
+          def excludeFromLub(sym: Symbol) = (
+               sym.isClass
+            || sym.isConstructor
+            || !sym.isPublic
+            || isGetClass(sym)
+            || narrowts.exists(t => !refines(t, sym))
+          )
           def lubsym(proto: Symbol): Symbol = {
             val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
@@ -5643,7 +5894,7 @@ A type's typeSymbol should never be inspected directly.
             if (syms contains NoSymbol) NoSymbol
             else {
               val symtypes =
-                (narrowts, syms).zipped map ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
+                map2(narrowts, syms)((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
               if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
                 proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, decr(depth)))
               else if (symtypes.tail forall (symtypes.head =:=))
@@ -5663,16 +5914,15 @@ A type's typeSymbol should never be inspected directly.
               // efficiency.
               alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
           }
-          for (sym <- lubBase.nonPrivateMembers) {
-            // add a refinement symbol for all non-class members of lubBase
-            // which are refined by every type in ts.
-            if (!sym.isClass && !sym.isConstructor && !isGetClass(sym) && (narrowts forall (t => refines(t, sym))))
-              try {
-                val lsym = lubsym(sym)
-                if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lubsym(sym))
-              } catch {
-                case ex: NoCommonType =>
-              }
+          // add a refinement symbol for all non-class members of lubBase
+          // which are refined by every type in ts.
+          for (sym <- lubBase.nonPrivateMembers ; if !excludeFromLub(sym)) {
+            try {
+              val lsym = lubsym(sym)
+              if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lsym)
+            } catch {
+              case ex: NoCommonType =>
+            }
           }
           if (lubRefined.decls.isEmpty) lubBase
           else if (!verifyLubs) lubRefined
@@ -5705,7 +5955,7 @@ A type's typeSymbol should never be inspected directly.
     }
     val res = lub0(ts)
     if (printLubs) {
-      indent = indent dropRight 2
+      indent = indent stripSuffix "  "
       println(indent + "lub of " + ts + " is " + res)//debug
     }
     if (ts forall (_.isNotNull)) res.notNull else res
@@ -5748,8 +5998,8 @@ A type's typeSymbol should never be inspected directly.
       case List() => AnyClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
-        val tparams1 = (tparams, matchingBounds(ts, tparams).transpose).zipped map
-          ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth)))
+        val tparams1 = map2(tparams, matchingBounds(ts, tparams).transpose)((tparam, bounds) =>
+          tparam.cloneSymbol.setInfo(lub(bounds, depth)))
         PolyType(tparams1, glbNorm(matchingInstTypes(ts, tparams1), depth))
       case ts @ MethodType(params, _) :: rest =>
         MethodType(params, glbNorm(matchingRestypes(ts, params map (_.tpe)), depth))
@@ -5880,38 +6130,39 @@ A type's typeSymbol should never be inspected directly.
             else if (args exists (arg => isValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
             else Some(typeRef(pre, sym, List(lub(args))))
           }
-        } else {
-          val args = (sym.typeParams, argss.transpose).zipped map { (tparam, as) =>
-              if (depth == 0) {
-                if (tparam.variance == variance) {
-                  // Take the intersection of the upper bounds of the type parameters
-                  // rather than falling all the way back to "Any", otherwise we end up not
-                  // conforming to bounds.
-                  val bounds0 = sym.typeParams map (_.info.bounds.hi) filterNot (_.typeSymbol == AnyClass)
-                  if (bounds0.isEmpty) AnyClass.tpe
-                  else intersectionType(bounds0)
-                }
-                else if (tparam.variance == -variance) NothingClass.tpe
-                else NoType
+        }
+        else {
+          val args = map2(sym.typeParams, argss.transpose) { (tparam, as) =>
+            if (depth == 0) {
+              if (tparam.variance == variance) {
+                // Take the intersection of the upper bounds of the type parameters
+                // rather than falling all the way back to "Any", otherwise we end up not
+                // conforming to bounds.
+                val bounds0 = sym.typeParams map (_.info.bounds.hi) filterNot (_.typeSymbol == AnyClass)
+                if (bounds0.isEmpty) AnyClass.tpe
+                else intersectionType(bounds0 map (b => b.asSeenFrom(tps.head, sym)))
               }
+              else if (tparam.variance == -variance) NothingClass.tpe
+              else NoType
+            }
+            else {
+              if (tparam.variance == variance) lub(as, decr(depth))
+              else if (tparam.variance == -variance) glb(as, decr(depth))
               else {
-                if (tparam.variance == variance) lub(as, decr(depth))
-                else if (tparam.variance == -variance) glb(as, decr(depth))
-                else {
-                  val l = lub(as, decr(depth))
-                  val g = glb(as, decr(depth))
-                  if (l <:< g) l
-                  else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
-                         // just err on the conservative side, i.e. with a bound that is too high.
-                         // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
+                val l = lub(as, decr(depth))
+                val g = glb(as, decr(depth))
+                if (l <:< g) l
+                else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                       // just err on the conservative side, i.e. with a bound that is too high.
+                       // if(!(tparam.info.bounds contains tparam))   //@M can't deal with f-bounds, see #2251
 
-                    val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
-                    capturedParams += qvar
-                    qvar.tpe
-                  }
+                  val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                  capturedParams += qvar
+                  qvar.tpe
                 }
               }
             }
+          }
           if (args contains NoType) None
           else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
         }
@@ -5996,148 +6247,6 @@ A type's typeSymbol should never be inspected directly.
         throw new NoCommonType(tps)
     }
 
-
-  // TODO: this desperately needs to be cleaned up
-  // plan: split into kind inference and subkinding
-  // every Type has a (cached) Kind
-  def kindsConform(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): Boolean =
-    checkKindBounds0(tparams, targs, pre, owner, false).isEmpty
-
-  /** Check well-kindedness of type application (assumes arities are already checked) -- @M
-   *
-   * This check is also performed when abstract type members become concrete (aka a "type alias") -- then tparams.length==1
-   * (checked one type member at a time -- in that case, prefix is the name of the type alias)
-   *
-   * Type application is just like value application: it's "contravariant" in the sense that
-   * the type parameters of the supplied type arguments must conform to the type parameters of
-   * the required type parameters:
-   *   - their bounds must be less strict
-   *   - variances must match (here, variances are absolute, the variance of a type parameter does not influence the variance of its higher-order parameters)
-   *   - @M TODO: are these conditions correct,sufficient&necessary?
-   *
-   *  e.g. class Iterable[t, m[+x <: t]] --> the application Iterable[Int, List] is okay, since
-   *       List's type parameter is also covariant and its bounds are weaker than <: Int
-   */
-  def checkKindBounds0(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol, explainErrors: Boolean): List[(Type, Symbol, List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)])] = {
-    var error = false
-
-    def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz) // instantiate type params that come from outside the abstract type we're currently checking
-    def transformedBounds(p: Symbol, o: Symbol) = transform(p.info.instantiateTypeParams(tparams, targs).bounds, o)
-
-    /** Check whether `sym1`'s variance conforms to `sym2`'s variance.
-     *
-     *  If `sym2` is invariant, `sym1`'s variance is irrelevant. Otherwise they must be equal.
-     */
-    def variancesMatch(sym1: Symbol, sym2: Symbol): Boolean = (sym2.variance==0 || sym1.variance==sym2.variance)
-
-    // check that the type parameters <arg>hkargs</arg> to a higher-kinded type conform to the expected params <arg>hkparams</arg>
-    def checkKindBoundsHK(
-      hkargs:        List[Symbol],
-      arg:           Symbol,
-      param:         Symbol,
-      paramowner:    Symbol,
-      underHKParams: List[Symbol],
-      withHKArgs:    List[Symbol]
-    ): (List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
-
-      def bindHKParams(tp: Type) = tp.substSym(underHKParams, withHKArgs)
-      // @M sometimes hkargs != arg.typeParams, the symbol and the type may have very different type parameters
-      val hkparams = param.typeParams
-
-      if (settings.debug.value) {
-        log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
-        log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
-        log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
-      }
-
-      if (!sameLength(hkargs, hkparams)) {
-        if (arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
-        else {error = true; (List((arg, param)), Nil, Nil) } // shortcut: always set error, whether explainTypesOrNot
-      }
-      else {
-        val _arityMismatches    = if (explainErrors) new ListBuffer[(Symbol, Symbol)] else null
-        val _varianceMismatches = if (explainErrors) new ListBuffer[(Symbol, Symbol)] else null
-        val _stricterBounds     = if (explainErrors) new ListBuffer[(Symbol, Symbol)] else null
-
-        def varianceMismatch(a: Symbol, p: Symbol) { if(explainErrors) _varianceMismatches += ((a, p)) else error = true}
-        def stricterBound(a: Symbol, p: Symbol) { if(explainErrors) _stricterBounds += ((a, p)) else error = true }
-        def arityMismatches(as: Iterable[(Symbol, Symbol)]) { if(explainErrors) _arityMismatches ++= as }
-        def varianceMismatches(as: Iterable[(Symbol, Symbol)]) { if(explainErrors) _varianceMismatches ++= as }
-        def stricterBounds(as: Iterable[(Symbol, Symbol)]) { if(explainErrors) _stricterBounds ++= as }
-
-        for ((hkarg, hkparam) <- hkargs zip hkparams) {
-          if (hkparam.typeParams.isEmpty && hkarg.typeParams.isEmpty) { // base-case: kind *
-            if (!variancesMatch(hkarg, hkparam))
-              varianceMismatch(hkarg, hkparam)
-
-            // instantiateTypeParams(tparams, targs) --> higher-order bounds may contain references to type arguments
-            // substSym(hkparams, hkargs) --> these types are going to be compared as types of kind *
-            //    --> their arguments use different symbols, but are conceptually the same
-            //        (could also replace the types by polytypes, but can't just strip the symbols, as ordering is lost then)
-            val declaredBounds     = transformedBounds(hkparam, paramowner)
-            val declaredBoundsInst = bindHKParams(declaredBounds)
-            val argumentBounds     = transform(hkarg.info.bounds, owner)
-            if (!(declaredBoundsInst <:< argumentBounds))
-              stricterBound(hkarg, hkparam)
-
-            debuglog(
-              "checkKindBoundsHK base case: " + hkparam +
-              " declared bounds: " + declaredBounds +
-              " after instantiating earlier hkparams: " + declaredBoundsInst + "\n" +
-              "checkKindBoundsHK base case: "+ hkarg +
-              " has bounds: " + argumentBounds
-            )
-          }
-          else {
-            debuglog("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
-            val (am, vm, sb) = checkKindBoundsHK(
-              hkarg.typeParams,
-              hkarg,
-              hkparam,
-              paramowner,
-              underHKParams ++ hkparam.typeParams,
-              withHKArgs ++ hkarg.typeParams
-            )
-            arityMismatches(am)
-            varianceMismatches(vm)
-            stricterBounds(sb)
-          }
-          if (!explainErrors && error) return (Nil, Nil, Nil) // stop as soon as we encountered an error
-        }
-        if (!explainErrors) (Nil, Nil, Nil)
-        else (_arityMismatches.toList, _varianceMismatches.toList, _stricterBounds.toList)
-      }
-    }
-
-    val errors = new ListBuffer[(Type, Symbol, List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)])]
-    if (settings.debug.value &&(tparams.nonEmpty || targs.nonEmpty))
-      log("checkKindBounds0(" + tparams + ", " + targs + ", " + pre + ", " + owner + ", " + explainErrors + ")")
-
-    for {
-      (tparam, targ) <- tparams zip targs
-      // Prevent WildcardType from causing kind errors, as typevars may be higher-order
-      if (targ != WildcardType) && (targ.isHigherKinded || tparam.typeParams.nonEmpty)
-    } {
-      // @M must use the typeParams of the *type* targ, not of the *symbol* of targ!!
-      targ.typeSymbolDirect.info // force symbol load for #4205
-      val tparamsHO = targ.typeParams
-
-      val (arityMismatches, varianceMismatches, stricterBounds) = (
-        // NOTE: *not* targ.typeSymbol, which normalizes
-        checkKindBoundsHK(tparamsHO, targ.typeSymbolDirect, tparam, tparam.owner, tparam.typeParams, tparamsHO)
-      )
-      if (explainErrors) {
-        if (arityMismatches.nonEmpty || varianceMismatches.nonEmpty || stricterBounds.nonEmpty) {
-          errors += ((targ, tparam, arityMismatches, varianceMismatches, stricterBounds))
-        }
-      }
-      else if (error)
-        return List((NoType, NoSymbol, Nil, Nil, Nil))
-    }
-
-    errors.toList
-  }
-
 // Errors and Diagnostics -----------------------------------------------------
 
   /** A throwable signalling a type error */
@@ -6164,7 +6273,7 @@ A type's typeSymbol should never be inspected directly.
     Console.println(indent + tp1 + " " + op + " " + arg2 + "?" /* + "("+tp1.getClass+","+arg2.getClass+")"*/)
     indent = indent + "  "
     val result = p(tp1, arg2)
-    indent = indent dropRight 2
+    indent = indent stripSuffix "  "
     Console.println(indent + result)
     result
   }

@@ -72,7 +72,7 @@ abstract class DeadCodeElimination extends SubComponent {
     val dropOf: mutable.Map[(BasicBlock, Int), List[(BasicBlock, Int)]] = perRunCaches.newMap()
 
     def dieCodeDie(m: IMethod) {
-      if (m.code ne null) {
+      if (m.hasCode) {
         log("dead code elimination on " + m);
         dropOf.clear()
         m.code.blocks.clear()
@@ -90,12 +90,12 @@ abstract class DeadCodeElimination extends SubComponent {
     }
 
     /** collect reaching definitions and initial useful instructions for this method. */
-    def collectRDef(m: IMethod): Unit = if (m.code ne null) {
+    def collectRDef(m: IMethod): Unit = if (m.hasCode) {
       defs = immutable.HashMap.empty; worklist.clear(); useful.clear();
       rdef.init(m);
       rdef.run;
 
-      for (bb <- m.code.blocks.toList) {
+      m foreachBlock { bb =>
         useful(bb) = new mutable.BitSet(bb.size)
         var rd = rdef.in(bb);
         for (Pair(i, idx) <- bb.toList.zipWithIndex) {
@@ -184,7 +184,7 @@ abstract class DeadCodeElimination extends SubComponent {
     def sweep(m: IMethod) {
       val compensations = computeCompensations(m)
 
-      for (bb <- m.code.blocks.toList) {
+      m foreachBlock { bb =>
 //        Console.println("** Sweeping block " + bb + " **")
         val oldInstr = bb.toList
         bb.open
@@ -223,7 +223,7 @@ abstract class DeadCodeElimination extends SubComponent {
     private def computeCompensations(m: IMethod): mutable.Map[(BasicBlock, Int), List[Instruction]] = {
       val compensations: mutable.Map[(BasicBlock, Int), List[Instruction]] = new mutable.HashMap
 
-      for (bb <- m.code.blocks) {
+      m foreachBlock { bb =>
         assert(bb.closed, "Open block in computeCompensations")
         for ((i, idx) <- bb.toList.zipWithIndex) {
           if (!useful(bb)(idx)) {

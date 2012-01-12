@@ -10,9 +10,11 @@ import scala.collection.{ mutable, immutable }
 import util._
 
 abstract class SymbolTable extends api.Universe
+                              with Collections
                               with Names
                               with Symbols
                               with Types
+                              with Kinds
                               with Scopes
                               with Definitions
                               with Constants
@@ -31,8 +33,8 @@ abstract class SymbolTable extends api.Universe
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
-  def abort(msg: String): Nothing = throw new Error(msg)
-  def abort(): Nothing = throw new Error()
+  def abort(msg: String): Nothing = throw new FatalError(msg)
+  def abort(): Nothing = abort("unknown error")
 
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)

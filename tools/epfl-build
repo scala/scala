@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#
+# builds nightlies
+
+[[ $# -gt 0 ]] || {
+  cat <<EOM
+Usage: $0 <version> [opt opt ...]
+
+  Everything after the version is supplied to scalac and partest.
+  Example:   $0 -Xcheckinit -Ycheck:all
+
+Environment variables:
+  extra_ant_targets   Additional ant targets to run after nightly
+
+EOM
+  exit 0
+}
+
+# version isn't actually used at present.
+scalaVersion="$1" && shift
+scalaArgs="-Dscalac.args=\"$@\" -Dpartest.scalac_opts=\"$@\""
+
+ant all.clean && ./pull-binary-libs.sh
+
+ant $scalaArgs build-opt &&
+ant $scalaArgs nightly &&
+for target in $extra_ant_targets; do ant $target ; done
+# [[ -n "$BUILD_DOCSCOMP" ]] && ant docscomp

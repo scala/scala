@@ -21,6 +21,9 @@ object XMLUtil {
 }
 
 object Test extends Properties("HtmlFactory") {
+	
+	final val RESOURCES = "test/scaladoc/resources/"
+	
   import scala.tools.nsc.doc.{DocFactory, Settings}
   import scala.tools.nsc.doc.model.IndexModelFactory
   import scala.tools.nsc.doc.html.HtmlFactory
@@ -47,7 +50,7 @@ object Test extends Properties("HtmlFactory") {
   def createTemplates(basename: String) = {
     val result = scala.collection.mutable.Map[String, scala.xml.NodeSeq]()
 
-    createFactory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
+    createFactory.makeUniverse(List(RESOURCES+basename)) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         (new HtmlFactory(universe, index)).writeTemplates((page) => {
@@ -61,7 +64,7 @@ object Test extends Properties("HtmlFactory") {
   }
 
   def createReferenceIndex(basename: String) = {
-    createFactory.makeUniverse(List("test/scaladoc/resources/"+basename)) match {
+    createFactory.makeUniverse(List(RESOURCES+basename)) match {
       case Some(universe) => {
         val index = IndexModelFactory.makeIndex(universe)
         val pages = index.firstLetterIndex.map({
@@ -81,6 +84,52 @@ object Test extends Properties("HtmlFactory") {
     val html = scala.stripSuffix(".scala") + ".html"
     createTemplates(scala)(html)
   }
+  
+  /**
+   * See checkTextOnly(scalaFile: String, checks: List[String])
+   */
+  def checkText1(scalaFile: String, check: String, debug: Boolean = true): Boolean = checkText(scalaFile, List(check), debug)
+  
+  /**
+   * This tests the text without the markup - ex:
+   * 
+   * <h4 class="signature">
+   *  <span class="modifier_kind">
+   *    <span class="modifier">implicit</span>
+   *    <span class="kind">def</span>
+   *  </span>
+   *  <span class="symbol">
+   *    <span class="name">test</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+   *  </span>
+   *  </h4>
+   * 
+   * becomes:
+   * 
+   *  implicit def test(): Int
+   *  
+   * and is required to contain the text in the given checks
+   * 
+   * NOTE: Comparison is done ignoring all whitespace
+   */
+  def checkText(scalaFile: String, checks: List[String], debug: Boolean = true): Boolean = {
+    val htmlFile = scalaFile.stripSuffix(".scala") + ".html"    
+    val htmlText = createTemplates(scalaFile)(htmlFile).text.replace('→',' ').replaceAll("\\s+","")
+    var result = true
+    
+    for (check <- checks) {
+    	val checkText = check.replace('→',' ').replaceAll("\\s+","")
+    	val checkValue = htmlText.contains(checkText)
+    	if (debug && (!checkValue)) {
+    		Console.err.println("Check failed: ")
+    		Console.err.println("HTML: " + htmlText)
+    		Console.err.println("Check: " + checkText)
+    	}
+  		result &&= checkValue 
+    }
+    
+    result
+  }
+  
 
   def shortComments(root: scala.xml.Node) =
     XMLUtil.stripGroup(root).descendant.flatMap {
@@ -377,20 +426,43 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("SI_4898.scala")
     true
   }
+  
+  property("Use cases should override their original members") =
+     checkText1("SI_5054_q1.scala", """def test(): Int""") &&
+     !checkText1("SI_5054_q1.scala", """def test(implicit lost: Int): Int""")
+  
 
-  property("Use cases should override their original members - valid until signature is added to html") = {
-    createTemplate("SI_5054.scala") match {
-      case node: scala.xml.Node =>
-        node.toString.contains("A simple comment") &&
-        ! node.toString.contains("a lost parameter")
-      case _ => false
-    }
-  }
+  property("Use cases should keep their flags - final should not be lost") = 
+    checkText1("SI_5054_q2.scala", """final def test(): Int""")
+  
+  property("Use cases should keep their flags - implicit should not be lost") = 
+    checkText1("SI_5054_q3.scala", """implicit def test(): Int""")
 
+  property("Use cases should keep their flags - real abstract should not be lost") = 
+    checkText1("SI_5054_q4.scala", """abstract def test(): Int""")
+
+  property("Use cases should keep their flags - traits should not be affected") = 
+    checkText1("SI_5054_q5.scala", """def test(): Int""")
+
+  property("Use cases should keep their flags - traits should not be affected") = 
+    checkText1("SI_5054_q6.scala", """abstract def test(): Int""")
+   
+  property("Use case individual signature test") = 
+    checkText("SI_5054_q7.scala", List( 
+        """abstract def test2(explicit: Int): Int [use case] This takes the explicit value passed.""",
+        """abstract def test1(): Int [use case] This takes the implicit value in scope."""))
+
+  property("Display correct \"Definition classes\"") = 
+    checkText1("SI_5287.scala", 
+        """def method(): Int
+           [use case] The usecase explanation
+           [use case] The usecase explanation
+           Definition Classes SI_5287 SI_5287_B SI_5287_A""", debug=true) 
+           // explanation appears twice, as small comment and full comment
   
   {
     val files = createTemplates("basic.scala")
-    println(files)
+    //println(files)
 
     property("class") = files.get("com/example/p1/Clazz.html") match {
       case Some(node: scala.xml.Node) => {

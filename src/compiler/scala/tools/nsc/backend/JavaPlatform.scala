@@ -39,9 +39,9 @@ trait JavaPlatform extends Platform {
   ) ++ depAnalysisPhase
 
   lazy val externalEquals          = getMember(BoxesRunTimeClass, nme.equals_)
-  lazy val externalEqualsNumNum    = getMember(BoxesRunTimeClass, "equalsNumNum")
-  lazy val externalEqualsNumChar   = getMember(BoxesRunTimeClass, "equalsNumChar")
-  lazy val externalEqualsNumObject = getMember(BoxesRunTimeClass, "equalsNumObject")
+  lazy val externalEqualsNumNum    = getMember(BoxesRunTimeClass, nme.equalsNumNum)
+  lazy val externalEqualsNumChar   = getMember(BoxesRunTimeClass, nme.equalsNumChar)
+  lazy val externalEqualsNumObject = getMember(BoxesRunTimeClass, nme.equalsNumObject)
 
   /** We could get away with excluding BoxedBooleanClass for the
    *  purpose of equality testing since it need not compare equal

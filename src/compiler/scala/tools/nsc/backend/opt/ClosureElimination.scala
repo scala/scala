@@ -94,12 +94,12 @@ abstract class ClosureElimination extends SubComponent {
     import copyPropagation._
 
     /* Some embryonic copy propagation. */
-    def analyzeMethod(m: IMethod): Unit = try {if (m.code ne null) {
+    def analyzeMethod(m: IMethod): Unit = try {if (m.hasCode) {
       log("Analyzing " + m)
       cpp.init(m)
       cpp.run
 
-      for (bb <- linearizer.linearize(m)) {
+      m.linearizedBlocks() foreach { bb =>
         var info = cpp.in(bb)
         debuglog("Cpp info at entry to block " + bb + ": " + info)
 
@@ -201,28 +201,25 @@ abstract class ClosureElimination extends SubComponent {
   /** Peephole optimization. */
   abstract class PeepholeOpt {
 
-    private var method: IMethod = null
+    private var method: IMethod = NoIMethod
 
     /** Concrete implementations will perform their optimizations here */
     def peep(bb: BasicBlock, i1: Instruction, i2: Instruction): Option[List[Instruction]]
 
     var liveness: global.icodes.liveness.LivenessAnalysis = null
 
-    def apply(m: IMethod): Unit = if (m.code ne null) {
+    def apply(m: IMethod): Unit = if (m.hasCode) {
       method = m
       liveness = new global.icodes.liveness.LivenessAnalysis
       liveness.init(m)
       liveness.run
-      for (b <- m.code.blocks)
-        transformBlock(b)
+      m foreachBlock transformBlock
     }
 
     def transformBlock(b: BasicBlock): Unit = if (b.size >= 2) {
-      var newInstructions: List[Instruction] = Nil
-
-      newInstructions = b.toList
-
+      var newInstructions: List[Instruction] = b.toList
       var redo = false
+
       do {
         var h = newInstructions.head
         var t = newInstructions.tail

@@ -12,6 +12,7 @@ trait Dossiers {
 
   import intp._
   import intp.global._
+  import definitions._
 
   trait Dossier {
     def symbol: Symbol
@@ -34,7 +35,7 @@ trait Dossiers {
 
   class TermDossier(val symbol: TermSymbol, val staticType: Type, val value: AnyRef) extends Dossier {
     def runtimeClass: JClass = value.getClass
-    def runtimeSymbol: Symbol  = safeClass(runtimeClass.getName) getOrElse NoSymbol
+    def runtimeSymbol: Symbol  = getClassIfDefined(runtimeClass.getName)
     def runtimeType: Type      = runtimeSymbol.tpe
     def runtimeTypeString      = TypeStrings.fromClazz(runtimeClass)
 

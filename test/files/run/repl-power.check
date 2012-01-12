@@ -2,15 +2,31 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> :power
-** Power User mode enabled - BEEP BOOP SPIZ **
+** Power User mode enabled - BEEP WHIR GYVE **
 ** :phase has been set to 'typer'.          **
 ** scala.tools.nsc._ has been imported      **
-** global._ and definitions._ also imported **
-** Try  :help,  vals.<tab>,  power.<tab>    **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
 
 scala> // guarding against "error: reference to global is ambiguous"
 
 scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
 res0: $r.global.emptyValDef.type = private val _ = _
+
+scala> val tp = ArrayClass[scala.util.Random]    // magic with manifests
+tp: $r.global.Type = Array[scala.util.Random]
+
+scala> tp.memberType(Array_apply)                // evidence
+res1: $r.global.Type = (i: Int)scala.util.Random
+
+scala> val m = LIT(10) MATCH (CASE(LIT(5)) ==> FALSE, DEFAULT ==> TRUE) // treedsl
+m: $r.treedsl.global.Match = 
+10 match {
+  case 5 => false
+  case _ => true
+}
+
+scala> typed(m).tpe                              // typed is in scope
+res2: $r.treedsl.global.Type = Boolean
 
 scala> 

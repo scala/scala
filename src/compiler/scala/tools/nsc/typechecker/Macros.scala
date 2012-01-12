@@ -7,13 +7,10 @@ trait Macros { self: Analyzer =>
   import global._
   import definitions._
 
-  def macroMethName(name: Name) =
-    newTermName((if (name.isTypeName) "type" else "def") + "macro$" + name)
-
   def macroMeth(mac: Symbol): Symbol = {
     var owner = mac.owner
     if (!owner.isModuleClass) owner = owner.companionModule.moduleClass
-    owner.info.decl(macroMethName(mac.name))
+    owner.info.decl(nme.macroMethodName(mac.name))
   }
 
   /**
@@ -37,21 +34,21 @@ trait Macros { self: Analyzer =>
   def macroMethDef(mdef: DefDef): Tree = {
     def paramDef(name: Name, tpt: Tree) = ValDef(Modifiers(PARAM), name, tpt, EmptyTree)
     val universeType = TypeTree(ReflectApiUniverse.tpe)
-    val globParamSec = List(paramDef("glob", universeType))
-    def globSelect(name: Name) = Select(Ident("glob"), name)
+    val globParamSec = List(paramDef(nme.glob, universeType))
+    def globSelect(name: Name) = Select(Ident(nme.glob), name)
     def globTree = globSelect(newTypeName("Tree"))
     def globType = globSelect(newTypeName("Type"))
-    val thisParamSec = if (mdef.symbol.owner.isModuleClass) List() else List(paramDef("_this", globTree))
+    val thisParamSec = if (mdef.symbol.owner.isModuleClass) List() else List(paramDef(newTermName("_this"), globTree))
     def tparamInMacro(tdef: TypeDef) = paramDef(tdef.name.toTermName, globType)
     def vparamInMacro(vdef: ValDef): ValDef = paramDef(vdef.name, globTree)
     def wrapImplicit(tree: Tree) = atPos(tree.pos) {
-      Block(List(ValDef(Modifiers(IMPLICIT), "$glob", universeType, Ident("glob"))), tree)
+      Block(List(ValDef(Modifiers(IMPLICIT), newTermName("$" + nme.glob), universeType, Ident(nme.glob))), tree)
     }
 
     atPos(mdef.pos) {
       new DefDef( // can't call DefDef here; need to find out why
         mods = mdef.mods &~ MACRO,
-        name = macroMethName(mdef.name),
+        name = nme.macroMethodName(mdef.name),
         tparams = List(),
         vparamss = globParamSec :: thisParamSec :: (mdef.tparams map tparamInMacro) ::
           (mdef.vparamss map (_ map vparamInMacro)),

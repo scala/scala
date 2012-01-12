@@ -24,7 +24,6 @@ build script or user-created if needed.  This is not a complete listing. ::
    |   +--scala-library.jar     The stable reference ('starr') library jar
    |   +--scala-library-src.jar A snapshot of the source used to build starr.
    |   ---ant/                  Support libraries for ant.
-   +--project/                  The (already legacy) 0.7 sbt build.
    +--pull-binary-libs.sh       Pulls binary artifacts from remote repository.
    +--push-binary-libs.sh       Pushes new binary artifacts and creates sha.
    +--README.rst                The file you are currently reading.

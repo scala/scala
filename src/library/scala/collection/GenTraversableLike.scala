@@ -123,10 +123,7 @@ trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Paralleli
    *  @param bf      $bfinfo
    *  @return        collection with intermediate results
    */
-  @migration(2, 9,
-    "This scanRight definition has changed in 2.9.\n" +
-    "The previous behavior can be reproduced with scanRight.reverse."
-  )
+  @migration("The behavior of `scanRight` has changed. The previous behavior can be reproduced with scanRight.reverse.", "2.9.0")
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** Applies a function `f` to all elements of this $coll.

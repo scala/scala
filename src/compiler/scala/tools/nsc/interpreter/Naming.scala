@@ -84,7 +84,7 @@ trait Naming {
     var x = 0
     () => { x += 1 ; x }
   }
-  def freshUserVarName()     = userVar()
+  def freshUserVarName() = userVar()
   def freshInternalVarName() = internalVar()
 
   def resetAllCreators() {
