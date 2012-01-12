@@ -286,7 +286,7 @@ object Test3_mutable {
   import scala.collection.mutable.{
     ArrayBuffer, ArrayBuilder, ArraySeq, ArrayStack, BitSet, DoubleLinkedList,
     HashMap, HashSet, History, LinkedList, ListBuffer, Publisher, Queue,
-    Stack, StringBuilder, WrappedArray}
+    Stack, StringBuilder, WrappedArray, TreeSet}
 
   // in alphabetic order
   try {
@@ -380,6 +380,11 @@ object Test3_mutable {
     val wa1 = WrappedArray.make(Array(1, 2, 3))
     val _wa1: WrappedArray[Int] = read(write(wa1))
     check(wa1, _wa1)
+    
+    // TreeSet
+    val ts1 = TreeSet[Int]() ++= Array(1, 2, 3)
+    val _ts1: TreeSet[Int] = read(write(ts1))
+    check(ts1, _ts1)
   }
   catch {
     case e: Exception =>
