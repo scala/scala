@@ -1,5 +1,4 @@
-package scala.swing
-package test
+package examples.swing
 
 import scala.swing.Swing._
 import scala.swing.{MainFrame, Panel}
