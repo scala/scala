@@ -177,7 +177,28 @@ trait GenTraversableLike[+A, +Repr] extends GenTraversableOnce[A] with Paralleli
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That
 
   /** Builds a new collection by applying a function to all elements of this $coll
-   *  and concatenating the results.
+   *  and using the elements of the resulting collections. For example:
+   *
+   *  {{{
+   *  def getWords(lines: Seq[String]): Seq[String] = lines flatMap (line => line split "\\W+")
+   *  }}}
+   *
+   *  The type of the resulting collection is guided by the static type of $coll. This might
+   *  cause unexpected results sometimes. For example:
+   *
+   *  {{{
+   *  // lettersOf will return a Seq[Char] of likely repeated letters, instead of a Set
+   *  def lettersOf(words: Seq[String]) = words flatMap (word => word.toSet)
+   *
+   *  // lettersOf will return a Set[Char], not a Seq
+   *  def lettersOf(words: Seq[String]) = words.toSet flatMap (word => word.toSeq)
+   *
+   *  // xs will be a an Iterable[Int]
+   *  val xs = Map("a" -> List(11,111), "b" -> List(22,222)).flatMap(_._2)
+   *
+   *  // ys will be a Map[Int, Int]
+   *  val ys = Map("a" -> List(1 -> 11,1 -> 111), "b" -> List(2 -> 22,2 -> 222)).flatMap(_._2)
+   *  }}}
    *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.

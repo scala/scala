@@ -709,6 +709,9 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
      *  outer $coll containing this `WithFilter` instance that satisfy
      *  predicate `p` and concatenating the results.
      *
+     *  The type of the resulting collection will be guided by the static type
+     *  of the outer $coll.
+     *
      *  @param f      the function to apply to each element.
      *  @tparam B     the element type of the returned collection.
      *  @tparam That  $thatinfo
