@@ -3804,7 +3804,24 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
-              defSym = defEntry.sym
+              // Right here is where SI-1987, overloading in package objects, can be
+              // seen to go wrong. There is an overloaded symbol, but when referring
+              // to the unqualified identifier from elsewhere in the package, only
+              // the last definition is visible. So overloading mis-resolves and is
+              // definition-order dependent, bad things. See run/t1987.scala.
+              //
+              // I assume the actual problem involves how/where these symbols are entered
+              // into the scope. But since I didn't figure out how to fix it that way, I
+              // catch it here by looking up package-object-defined symbols in the prefix.
+              if (isInPackageObject(defEntry.sym, pre.typeSymbol)) {
+                defSym = pre.member(defEntry.sym.name)
+                if (defSym ne defEntry.sym) {
+                  log("!!! Overloaded package object member resolved incorrectly.\n  Discarded: " +
+                    defEntry.sym.defString + "\n  Using: " + defSym.defString)
+                }
+              }
+              else
+                defSym = defEntry.sym
             }
             else {
               cx = cx.enclClass
