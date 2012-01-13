@@ -454,9 +454,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isAnonOrRefinementClass      = isAnonymousClass || isRefinementClass
 
     // A package object or its module class
-    final def isPackageObjectOrClass = name == nme.PACKAGE || name == tpnme.PACKAGE
-    final def isPackageObject        = name == nme.PACKAGE && owner.isPackageClass
-    final def isPackageObjectClass   = name == tpnme.PACKAGE && owner.isPackageClass
+    final def isPackageObjectOrClass = (this ne NoSymbol) && owner.isPackageClass && (name == nme.PACKAGE || name == tpnme.PACKAGE)
+    final def isPackageObject        = (this ne NoSymbol) && owner.isPackageClass && name == nme.PACKAGE
+    final def isPackageObjectClass   = (this ne NoSymbol) && owner.isPackageClass && name == tpnme.PACKAGE
 
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def isJavaInterface = isJavaDefined && isTrait
@@ -467,7 +467,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The owner, skipping package objects.
      */
-    def effectiveOwner = owner.skipPackageObject
+    def effectiveOwner = if (owner.isPackageObjectClass) owner.skipPackageObject else owner
 
     /** If this is a package object or its implementing class, its owner: otherwise this.
      */
@@ -2432,7 +2432,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
         implicitMembersCacheKey1 = tp
         implicitMembersCacheKey2 = tp.decls.elems
-        implicitMembersCacheValue = tp.implicitMembers
+        // When a package object which defines an implicit, it may turn up here in two
+        // forms which are not recognized as the same implicit definition, creating a
+        // spurious ambiguity (see pos/t3999). Since I haven't figured out package objects
+        // well enough to fix this at the root, I am filtering here by applying the
+        // property that a member's owner must be unique.
+        if (isPackageClass)
+          implicitMembersCacheValue = tp.implicitMembers filter (_.owner eq this)
+        else
+          implicitMembersCacheValue = tp.implicitMembers
       }
       implicitMembersCacheValue
     }
