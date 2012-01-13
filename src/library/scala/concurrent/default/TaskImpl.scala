@@ -11,9 +11,9 @@ import scala.annotation.tailrec
 
 
 private[concurrent] trait Completable[T] {
-  self: Future[T] =>
+self: Future[T] =>
   
-  val executionContext: ExecutionContextImpl
+  val executor: ExecutionContextImpl
 
   type Callback = Either[Throwable, T] => Any
 
@@ -62,9 +62,9 @@ private[concurrent] trait Completable[T] {
 }
 
 private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
-  extends Promise[T] with Future[T] with Completable[T] {
+extends Promise[T] with Future[T] with Completable[T] {
  
-  val executionContext: scala.concurrent.default.ExecutionContextImpl = context
+  val executor: scala.concurrent.default.ExecutionContextImpl = context
 
   @volatile private var state: State[T] = _
 
@@ -85,40 +85,35 @@ private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
     case _ => null
   }
   
-  /** Completes the promise with a value.
-   *  
-   *  @param value    The value to complete the promise with.
-   *  
-   *  $promiseCompletion
-   */
-  def success(value: T): Unit = {
+  def tryComplete(r: Either[Throwable, T]) = r match {
+    case Left(t) => tryFailure(t)
+    case Right(v) => trySuccess(v)
+  }
+  
+  def trySuccess(value: T): Boolean = {
     val cbs = tryCompleteState(Success(value))
     if (cbs == null)
-      throw new IllegalStateException
+      false
     else {
       processCallbacks(cbs, Right(value))
       this.synchronized {
         this.notifyAll()
       }
+      true
     }
   }
 
-  /** Completes the promise with an exception.
-   *  
-   *  @param t        The throwable to complete the promise with.
-   *  
-   *  $promiseCompletion
-   */
-  def failure(t: Throwable): Unit = {
+  def tryFailure(t: Throwable): Boolean = {
     val wrapped = wrap(t)
     val cbs = tryCompleteState(Failure(wrapped))
     if (cbs == null)
-      throw new IllegalStateException
+      false
     else {
       processCallbacks(cbs, Left(wrapped))
       this.synchronized {
         this.notifyAll()
       }
+      true
     }
   }
   
@@ -140,9 +135,9 @@ private[concurrent] class PromiseImpl[T](context: ExecutionContextImpl)
 }
 
 private[concurrent] class TaskImpl[T](context: ExecutionContextImpl, body: => T)
-  extends RecursiveAction with Task[T] with Future[T] with Completable[T] {
+extends RecursiveAction with Task[T] with Future[T] with Completable[T] {
 
-  val executionContext: ExecutionContextImpl = context
+  val executor: ExecutionContextImpl = context
 
   @volatile private var state: State[T] = _
 
@@ -179,8 +174,8 @@ private[concurrent] class TaskImpl[T](context: ExecutionContextImpl, body: => T)
   
   def start(): Unit = {
     Thread.currentThread match {
-      case fj: ForkJoinWorkerThread if fj.getPool eq executionContext.pool => fork()
-      case _ => executionContext.pool.execute(this)
+      case fj: ForkJoinWorkerThread if fj.getPool eq executor.pool => fork()
+      case _ => executor.pool.execute(this)
     }
   }
   
@@ -264,7 +259,7 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   
   // TODO fix the timeout
   def blockingCall[T](timeout: Timeout, b: Awaitable[T]): T = b match {
-    case fj: TaskImpl[_] if fj.executionContext.pool eq pool =>
+    case fj: TaskImpl[_] if fj.executor.pool eq pool =>
       fj.await(timeout)
     case _ =>
       var res: T = null.asInstanceOf[T]

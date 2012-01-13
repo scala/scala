@@ -35,13 +35,42 @@ trait Promise[T] {
    */
   def future: Future[T]
   
+  private def throwCompleted = throw new IllegalStateException("Promise already completed.")
+  
+  /** Completes the promise with either an exception or a value.
+   *  
+   *  @param result     Either the value or the exception to complete the promise with.
+   *  
+   *  $promiseCompletion
+   */
+  def complete(result: Either[Throwable, T]): this.type = if (tryComplete(result)) this else throwCompleted
+  
+  /** Tries to complete the promise with either a value or the exception.
+   *  
+   *  $nonDeterministic
+   *  
+   *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
+   */
+  def tryComplete(result: Either[Throwable, T]): Boolean
+  
+  /** Completes this promise with the specified future, once that future is completed.
+   *  
+   *  @return   This promise
+   */
+  final def completeWith(other: Future[T]): this.type = {
+    other onComplete {
+      this complete _
+    }
+    this
+  }
+  
   /** Completes the promise with a value.
    *  
    *  @param value    The value to complete the promise with.
    *  
    *  $promiseCompletion
    */
-  def success(v: T): this.type = if (trySuccess(v)) this else throw new IllegalStateException("Promise already completed.")
+  def success(v: T): this.type = if (trySuccess(v)) this else throwCompleted
   
   /** Tries to complete the promise with a value.
    *  
@@ -59,7 +88,7 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def failure(t: Throwable): this.type = if (tryFailure(t)) this else throw new IllegalStateException("Promise already completed.")
+  def failure(t: Throwable): this.type = if (tryFailure(t)) this else throwCompleted
   
   /** Tries to complete the promise with an exception.
    *  

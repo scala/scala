@@ -179,8 +179,10 @@ self =>
     val p = newPromise[U]
     
     onComplete {
-      case Left(t) => if (pf isDefinedAt t) p success pf(t) else p failure t
-      case Right(v) => p success v
+      case Left(t) if pf isDefinedAt t =>
+        try { p success pf(t) }
+        catch { case t: Throwable => p complete resolver(t) }
+      case otherwise => p complete otherwise
     }
     
     p.future
@@ -206,7 +208,11 @@ self =>
     
     onComplete {
       case Left(t) => p failure t
-      case Right(v) => p success f(v)
+      case Right(v) =>
+        try p success f(v)
+        catch {
+          case t => p complete resolver(t)
+        }
     }
     
     p.future
@@ -224,10 +230,15 @@ self =>
     
     onComplete {
       case Left(t) => p failure t
-      case Right(v) => f(v) onComplete {
-        case Left(t) => p failure t
-        case Right(v) => p success v
-      }
+      case Right(v) => 
+        try {
+          f(v) onComplete {
+            case Left(t) => p failure t
+            case Right(v) => p success v
+          }
+        } catch {
+          case t: Throwable => p complete resolver(t)
+        }
     }
     
     p.future
@@ -254,7 +265,13 @@ self =>
     
     onComplete {
       case Left(t) => p failure t
-      case Right(v) => if (pred(v)) p success v else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
+      case Right(v) =>
+        try {
+          if (pred(v)) p success v
+          else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
+        } catch {
+          case t: Throwable => p complete resolver(t)
+        }
     }
     
     p.future
@@ -285,7 +302,13 @@ self =>
     
     onComplete {
       case Left(t) => p failure t
-      case Right(v) => if (pf.isDefinedAt(v)) p success pf(v) else p failure new NoSuchElementException("Future.collect partial function is not defined at: " + v)
+      case Right(v) =>
+        try {
+          if (pf.isDefinedAt(v)) p success pf(v)
+          else p failure new NoSuchElementException("Future.collect partial function is not defined at: " + v)
+        } catch {
+          case t: Throwable => p complete resolver(t)
+        }
     }
     
     p.future
@@ -294,6 +317,8 @@ self =>
   /** Creates a new future which holds the result of this future if it was completed successfully, or, if not,
    *  the result of the `that` future if `that` is completed successfully.
    *  If both futures are failed, the resulting future holds the throwable object of the first future.
+   *  
+   *  Using this method will not cause concurrent programs to become nondeterministic.
    *  
    *  Example:
    *  {{{
@@ -326,7 +351,7 @@ self =>
    *  {{{
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
-   *  val h = f orElse g
+   *  val h = f or g
    *  await(0) h // evaluates to either 5 or throws a runtime exception
    *  }}}
    */

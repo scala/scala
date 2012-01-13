@@ -50,11 +50,21 @@ package object concurrent {
     case _ => true
   }
   
-  private[concurrent] def resolveThrowable[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
+  private[concurrent] def resolve[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
     case Left(t: scala.runtime.NonLocalReturnControl[_]) => Right(t.value.asInstanceOf[T])
     case Left(t: InterruptedException) => Left(new ExecutionException("Boxed InterruptedException", t))
+    case Left(e: Error) => throw e
     case _ => source
   }
+  
+  private val resolverFunction: PartialFunction[Throwable, Either[Throwable, _]] = {
+    case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value)
+    case t: InterruptedException => Left(new ExecutionException("Boxed InterruptedException", t))
+    case e: Error => throw e
+    case t => Left(t)
+  }
+  
+  private[concurrent] def resolver[T] = resolverFunction.asInstanceOf[PartialFunction[Throwable, Either[Throwable, T]]]
   
   /* concurrency constructs */
   
