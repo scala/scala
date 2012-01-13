@@ -116,7 +116,19 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
   }
 
   /** Converts this $coll of traversable collections into
-   *  a $coll in which all element collections are concatenated.
+   *  a $coll formed by the elements of these traversable
+   *  collections.
+   *
+   *  The resulting collection's type will be guided by the
+   *  static type of $coll. For example:
+   *
+   *  {{{
+   *  val xs = List(Set(1, 2, 3), Set(1, 2, 3))
+   *  // xs == List(1, 2, 3, 1, 2, 3)
+   *
+   *  val ys = Set(List(1, 2, 3), List(3, 2, 1))
+   *  // ys == Set(1, 2, 3)
+   *  }}}
    *
    *  @tparam B the type of the elements of each traversable collection.
    *  @param asTraversable an implicit conversion which asserts that the element
