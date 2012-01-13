@@ -23,7 +23,7 @@ trait ExecutionContext {
   def future[T](body: => T): Future[T]
   
   /** Only callable from the tasks running on the same execution context. */
-  def blockingCall[T](timeout: Timeout, body: Awaitable[T]): T
+  def blockingCall[T](body: Awaitable[T]): T
   
 }
 

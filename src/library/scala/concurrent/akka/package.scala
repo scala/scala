@@ -11,6 +11,7 @@ package scala.concurrent
 
 
 import java.{lang => jl}
+import scala.util.Duration
 
 
 
@@ -30,6 +31,8 @@ package object akka {
   def boxedType(c: Class[_]): Class[_] = {
     if (c.isPrimitive) toBoxed(c) else c
   }  
+  
+  def dur2long(dur: Duration): Long = if (dur.isFinite) dur.toNanos else Long.MaxValue
   
 }
 

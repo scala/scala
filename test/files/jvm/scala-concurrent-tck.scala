@@ -10,9 +10,7 @@ import scala.concurrent.{
 }
 import scala.concurrent.future
 import scala.concurrent.promise
-import scala.concurrent.await
-import scala.concurrent.result
-import scala.concurrent.ready
+import scala.concurrent.blocking
 
 import scala.util.Duration
 
@@ -314,7 +312,7 @@ trait FutureProjections extends TestBase {
     val f = future {
       throw cause
     }
-    assert(result(f.failed, Duration(500, "ms")) == cause)
+    assert(blocking(f.failed, Duration(500, "ms")) == cause)
     done()
   }
   
@@ -322,7 +320,7 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     try {
-      ready(f.failed, Duration(0, "ms"))
+      blocking(f.failed, Duration(0, "ms"))
       assert(false)
     } catch {
       case nsee: NoSuchElementException => done()
@@ -344,7 +342,7 @@ trait Blocking extends TestBase {
   def testAwaitSuccess(): Unit = once {
     done =>
     val f = future { 0 }
-    ready(f, Duration(500, "ms"))
+    blocking(f, Duration(500, "ms"))
     done()
   }
   
@@ -355,7 +353,7 @@ trait Blocking extends TestBase {
       throw cause
     }
     try {
-      ready(f, Duration(500, "ms"))
+      blocking(f, Duration(500, "ms"))
       assert(false)
     } catch {
       case t =>

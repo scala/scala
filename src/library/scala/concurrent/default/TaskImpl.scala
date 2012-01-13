@@ -5,7 +5,7 @@ package default
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveAction, ForkJoinWorkerThread }
-import scala.util.{ Timeout, Duration }
+import scala.util.Duration
 import scala.annotation.tailrec
 
 
@@ -90,7 +90,7 @@ extends Promise[T] with Future[T] with Completable[T] {
     case Right(v) => trySuccess(v)
   }
   
-  def trySuccess(value: T): Boolean = {
+  override def trySuccess(value: T): Boolean = {
     val cbs = tryCompleteState(Success(value))
     if (cbs == null)
       false
@@ -103,7 +103,7 @@ extends Promise[T] with Future[T] with Completable[T] {
     }
   }
 
-  def tryFailure(t: Throwable): Boolean = {
+  override def tryFailure(t: Throwable): Boolean = {
     val wrapped = wrap(t)
     val cbs = tryCompleteState(Failure(wrapped))
     if (cbs == null)
@@ -117,7 +117,7 @@ extends Promise[T] with Future[T] with Completable[T] {
     }
   }
   
-  def await(timeout: Timeout)(implicit canawait: scala.concurrent.CanAwait): T = getState match {
+  def await(atMost: Duration)(implicit canawait: scala.concurrent.CanAwait): T = getState match {
     case Success(res) => res
     case Failure(t)   => throw t
     case _ =>
@@ -191,7 +191,7 @@ extends RecursiveAction with Task[T] with Future[T] with Completable[T] {
   def tryCancel(): Unit =
     tryUnfork()
   
-  def await(timeout: Timeout)(implicit canawait: CanAwait): T = {
+  def await(atMost: Duration)(implicit canawait: CanAwait): T = {
     join() // TODO handle timeout also
     (updater.get(this): @unchecked) match {
       case Success(r) => r
@@ -257,17 +257,16 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   def promise[T]: Promise[T] =
     new PromiseImpl[T](this)
   
-  // TODO fix the timeout
-  def blockingCall[T](timeout: Timeout, b: Awaitable[T]): T = b match {
+  def blockingCall[T](b: Awaitable[T]): T = b match {
     case fj: TaskImpl[_] if fj.executor.pool eq pool =>
-      fj.await(timeout)
+      fj.await(Duration.fromNanos(0))
     case _ =>
       var res: T = null.asInstanceOf[T]
       @volatile var blockingDone = false
       // TODO add exception handling here!
       val mb = new ForkJoinPool.ManagedBlocker {
         def block() = {
-          res = b.await(timeout)(CanAwaitEvidence)
+          res = b.await(Duration.fromNanos(0))(CanAwaitEvidence)
           blockingDone = true
           true
         }

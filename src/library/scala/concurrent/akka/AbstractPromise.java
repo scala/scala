@@ -6,19 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent
+package scala.concurrent.akka;
 
 
 
-import scala.annotation.implicitNotFound
-import scala.util.Duration
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 
 
-trait Awaitable[+T] {
-  @implicitNotFound(msg = "Waiting must be done by calling `blocking(timeout) b`, where `b` is the `Awaitable` object or a potentially blocking piece of code.")
-  def await(atMost: Duration)(implicit canawait: CanAwait): T
+abstract class AbstractPromise {
+    private volatile Object _ref = null;
+    protected final static AtomicReferenceFieldUpdater<AbstractPromise, Object> updater =
+	AtomicReferenceFieldUpdater.newUpdater(AbstractPromise.class, Object.class, "_ref");
 }
-
-
-

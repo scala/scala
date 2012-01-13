@@ -29,6 +29,18 @@ import scala.collection.generic.CanBuildFrom
 
 /** The trait that represents futures.
  *  
+ *  Asynchronous computations that yield futures are created with the `future` call:
+ *  
+ *  {{{
+ *  val s = "Hello"
+ *  val f: Future[String] = future {
+ *    s + " future!"
+ *  }
+ *  f onSuccess {
+ *    case msg => println(msg)
+ *  }
+ *  }}}
+ *  
  *  @define multipleCallbacks
  *  Multiple callbacks may be registered; there is no guarantee that they will be
  *  executed in a particular order.
@@ -37,12 +49,14 @@ import scala.collection.generic.CanBuildFrom
  *  The future may contain a throwable object and this means that the future failed.
  *  Futures obtained through combinators have the same exception as the future they were obtained from.
  *  The following throwable objects are not contained in the future:
- *  - Error - errors are not contained within futures
- *  - scala.util.control.ControlThrowable - not contained within futures
- *  - InterruptedException - not contained within futures
+ *  - `Error` - errors are not contained within futures
+ *  - `InterruptedException` - not contained within futures
+ *  - all `scala.util.control.ControlThrowable` except `NonLocalReturnControl` - not contained within futures
  *  
  *  Instead, the future is completed with a ExecutionException with one of the exceptions above
  *  as the cause.
+ *  If a future is failed with a `scala.runtime.NonLocalReturnControl`,
+ *  it is completed with a value instead from that throwable instead instead.
  *
  *  @define forComprehensionExamples
  *  Example:
@@ -146,10 +160,10 @@ self =>
       }
       this
     }
-    def await(timeout: Timeout)(implicit canawait: CanAwait): Throwable = {
+    def await(atMost: Duration)(implicit canawait: CanAwait): Throwable = {
       var t: Throwable = null
       try {
-        val res = self.await(timeout)
+        val res = self.await(atMost)
         t = noSuchElem(res)
       } catch {
         case t: Throwable => return t

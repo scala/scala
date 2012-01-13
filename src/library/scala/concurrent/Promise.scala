@@ -78,7 +78,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def trySuccess(value: T): Boolean
+  def trySuccess(value: T): Boolean = tryComplete(Right(value))
   
   /** Completes the promise with an exception.
    *  
@@ -96,7 +96,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryFailure(t: Throwable): Boolean
+  def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
   
   /** Wraps a `Throwable` in an `ExecutionException` if necessary.
    *
@@ -112,15 +112,7 @@ trait Promise[T] {
 
 
 object Promise {
-  /*
-  /**
-   * Creates a non-completed, new, Promise with the supplied timeout in milliseconds
-   */
-  def apply[A](timeout: Timeout)(implicit dispatcher: MessageDispatcher): Promise[A] = DefaultPromise[A](timeout)
-
-  /**
-   * Creates a non-completed, new, Promise with the default timeout (akka.actor.timeout in conf)
-   */
-  def apply[A]()(implicit dispatcher: MessageDispatcher, timeout: Timeout): Promise[A] = apply(timeout)
-  */
+  
+  
+  
 }

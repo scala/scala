@@ -52,15 +52,17 @@ package object concurrent {
   
   private[concurrent] def resolve[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
     case Left(t: scala.runtime.NonLocalReturnControl[_]) => Right(t.value.asInstanceOf[T])
+    case Left(t: scala.util.control.ControlThrowable) => Left(new ExecutionException("Boxed ControlThrowable", t))
     case Left(t: InterruptedException) => Left(new ExecutionException("Boxed InterruptedException", t))
-    case Left(e: Error) => throw e
+    case Left(e: Error) => Left(new ExecutionException("Boxed Error", e))
     case _ => source
   }
   
   private val resolverFunction: PartialFunction[Throwable, Either[Throwable, _]] = {
     case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value)
+    case t: scala.util.control.ControlThrowable => Left(new ExecutionException("Boxed ControlThrowable", t))
     case t: InterruptedException => Left(new ExecutionException("Boxed InterruptedException", t))
-    case e: Error => throw e
+    case e: Error => Left(new ExecutionException("Boxed Error", e))
     case t => Left(t)
   }
   
@@ -83,9 +85,12 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def await[T](atMost: Duration)(body: =>T): T = result(new Awaitable[T] {
-    def await(timeout: Timeout)(implicit cb: CanAwait) = body
-  }, atMost)
+  def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
+  
+  /** Wraps a block of code into an awaitable object. */
+  def body2awaitable[T](body: =>T) = new Awaitable[T] {
+    def await(atMost: Duration)(implicit cb: CanAwait) = body
+  }
   
   /** Blocks on a blockable object.
    *  
@@ -96,18 +101,23 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def result[T](awaitable: Awaitable[T], atMost: Duration): T = {
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
     currentExecutionContext.get match {
       case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
-      case x => x.blockingCall(atMost, awaitable) // inside an execution context thread
+      case x => x.blockingCall(awaitable) // inside an execution context thread
     }
   }
   
-  def ready[T](awaitable: Awaitable[T], atMost: Duration): Awaitable[T] = {
-    result(awaitable, atMost)
-    awaitable
+  object await {
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): Awaitable[T] = {
+      try blocking(awaitable, atMost)
+      catch { case _ => }
+      awaitable
+    }
+    
+    def result[T](awaitable: Awaitable[T], atMost: Duration): T = blocking(awaitable, atMost)
   }
-  
+
 }
 
 
