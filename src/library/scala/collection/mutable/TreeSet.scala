@@ -9,11 +9,7 @@
 package scala.collection
 package mutable
 
-
-
 import generic._
-
-
 
 /** 
  * @define Coll mutable.TreeSet
@@ -87,7 +83,6 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
       resolve.cardinality = resolve.cardinality - 1
     } catch {
       case e: NoSuchElementException => ()
-      case a: Any => a.printStackTrace
     }
     this
   }
@@ -98,7 +93,6 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
       resolve.cardinality = resolve.cardinality + 1
     } catch {
       case e: IllegalArgumentException => ()
-      case a: Any => a.printStackTrace
     }
     this
   }
@@ -126,5 +120,4 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
     AVLTree.iterator(resolve.avl,
 		     isLeftAcceptable(from, ordering),
 		     isRightAcceptable(until, ordering))
-
 }
