@@ -6,6 +6,8 @@
 package scala.reflect
 package internal
 
+import annotation.switch
+
 object ClassfileConstants {
 
   final val JAVA_MAGIC = 0xCAFEBABE
@@ -326,28 +328,62 @@ object ClassfileConstants {
   final val impdep1       = 0xfe
   final val impdep2       = 0xff
 
-  def toScalaFlags(flags: Int, isClass: Boolean = false, isField: Boolean = false): Long = {
+  abstract class FlagTranslation {
     import Flags._
-    var res = 0l
-    if ((flags & JAVA_ACC_PRIVATE) != 0)
-      res = res | PRIVATE
-    else if ((flags & JAVA_ACC_PROTECTED) != 0)
-      res = res | PROTECTED
-    if ((flags & JAVA_ACC_ABSTRACT) != 0 && (flags & JAVA_ACC_ANNOTATION) == 0)
-      res = res | DEFERRED
-    if ((flags & JAVA_ACC_FINAL) != 0)
-      res = res | FINAL
-    if (((flags & JAVA_ACC_INTERFACE) != 0) &&
-        ((flags & JAVA_ACC_ANNOTATION) == 0))
-      res = res | TRAIT | INTERFACE | ABSTRACT
-    if ((flags & JAVA_ACC_SYNTHETIC) != 0)
-      res = res | SYNTHETIC
-    if ((flags & JAVA_ACC_STATIC) != 0)
-      res = res | STATIC
-    if (isClass && ((res & DEFERRED) != 0L))
-      res = res & ~DEFERRED | ABSTRACT
-    if (isField && (res & FINAL) == 0L)
-      res = res | MUTABLE
-    res | JAVA
+
+    private var isAnnotation = false
+    private var isClass      = false
+    private def initFields(flags: Int) = {
+      isAnnotation = (flags & JAVA_ACC_ANNOTATION) != 0
+      isClass      = false
+    }
+    private def translateFlag(jflag: Int): Long = (jflag: @switch) match {
+      case JAVA_ACC_PRIVATE    => PRIVATE
+      case JAVA_ACC_PROTECTED  => PROTECTED
+      case JAVA_ACC_FINAL      => FINAL
+      case JAVA_ACC_SYNTHETIC  => SYNTHETIC
+      case JAVA_ACC_STATIC     => STATIC
+      case JAVA_ACC_ABSTRACT   => if (isAnnotation) 0L else if (isClass) ABSTRACT else DEFERRED
+      case JAVA_ACC_INTERFACE  => if (isAnnotation) 0L else TRAIT | INTERFACE | ABSTRACT
+      case _                   => 0L
+    }
+    private def translateFlags(jflags: Int, baseFlags: Long): Long = {
+      var res: Long = JAVA | baseFlags
+      /** fast, elegant, maintainable, pick any two... */
+      res |= translateFlag(jflags & JAVA_ACC_PRIVATE)
+      res |= translateFlag(jflags & JAVA_ACC_PROTECTED)
+      res |= translateFlag(jflags & JAVA_ACC_FINAL)
+      res |= translateFlag(jflags & JAVA_ACC_SYNTHETIC)
+      res |= translateFlag(jflags & JAVA_ACC_STATIC)
+      res |= translateFlag(jflags & JAVA_ACC_ABSTRACT)
+      res |= translateFlag(jflags & JAVA_ACC_INTERFACE)
+      res
+    }
+      
+    def classFlags(jflags: Int): Long = {
+      initFields(jflags)
+      isClass = true
+      translateFlags(jflags, 0)
+    }
+    def fieldFlags(jflags: Int): Long = {
+      initFields(jflags)
+      translateFlags(jflags, if ((jflags & JAVA_ACC_FINAL) == 0) MUTABLE else 0)
+    }
+    def methodFlags(jflags: Int): Long = {
+      initFields(jflags)
+      translateFlags(jflags, 0)
+    }
   }
+  object FlagTranslation extends FlagTranslation { }
+  
+  def toScalaMethodFlags(flags: Int): Long = FlagTranslation methodFlags flags
+  def toScalaClassFlags(flags: Int): Long  = FlagTranslation classFlags flags
+  def toScalaFieldFlags(flags: Int): Long  = FlagTranslation fieldFlags flags
+  
+  @deprecated("Use another method in this object", "2.10.0")
+  def toScalaFlags(flags: Int, isClass: Boolean = false, isField: Boolean = false): Long = (
+    if (isClass) toScalaClassFlags(flags)
+    else if (isField) toScalaFieldFlags(flags)
+    else toScalaMethodFlags(flags)
+  )
 }
