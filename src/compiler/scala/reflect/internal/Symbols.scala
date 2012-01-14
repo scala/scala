@@ -49,9 +49,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   val originalOwner = perRunCaches.newMap[Symbol, Symbol]()
 
   abstract class AbsSymbolImpl extends AbsSymbol { this: Symbol =>
-    def newNestedSymbol(pos: Position, name: Name) = name match {
-      case n: TermName => newTermSymbol(n, pos)
-      case n: TypeName => newTypeSymbol(n, pos)
+    def newNestedSymbol(name: Name, pos: Position, flags: Long) = name match {
+      case n: TermName => newTermSymbol(n, pos, flags)
+      case n: TypeName => newTypeSymbol(n, pos, flags)
     }
     def typeSig: Type = info
     def typeSigIn(site: Type): Type = site.memberInfo(this)
