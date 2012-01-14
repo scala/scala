@@ -60,8 +60,7 @@ abstract class ICodeReader extends ClassfileParser {
     this.staticCode   = new IClass(staticModule)
     val jflags = in.nextChar
     val isAttribute = (jflags & JAVA_ACC_ANNOTATION) != 0
-    var sflags = toScalaFlags(jflags, true)
-    if ((sflags & DEFERRED) != 0L) sflags = sflags & ~DEFERRED | ABSTRACT
+    val sflags = toScalaClassFlags(jflags)  // what, this is never used??
     val c = pool getClassSymbol in.nextChar
 
     parseInnerClasses()
@@ -86,28 +85,24 @@ abstract class ICodeReader extends ClassfileParser {
     val jflags   = in.nextChar
     val name     = pool getName in.nextChar
     val owner    = getOwner(jflags)
-    val dummySym = owner.newMethod(owner.pos, name) setFlag javaToScalaFlags(jflags)
+    val dummySym = owner.newMethod(name, owner.pos, toScalaMethodFlags(jflags))
 
     try {
-      val ch = in.nextChar
-      var tpe  = pool.getType(dummySym, ch)
+      val ch  = in.nextChar
+      val tpe = pool.getType(dummySym, ch)
 
       if ("<clinit>" == name.toString)
         (jflags, NoSymbol)
       else {
         val owner = getOwner(jflags)
-        var sym = owner.info.findMember(name, 0, 0, false).suchThat(old => sameType(old.tpe, tpe));
+        var sym = owner.info.findMember(name, 0, 0, false).suchThat(old => sameType(old.tpe, tpe))
         if (sym == NoSymbol)
-          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(old => old.tpe =:= tpe);
+          sym = owner.info.findMember(newTermName(name + nme.LOCAL_SUFFIX_STRING), 0, 0, false).suchThat(_.tpe =:= tpe)
         if (sym == NoSymbol) {
           log("Could not find symbol for " + name + ": " + tpe)
           log(owner.info.member(name).tpe + " : " + tpe)
-          if (name.toString == "toMap")
-            tpe = pool.getType(dummySym, ch)
-          if (field)
-            sym = owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE | javaToScalaFlags(jflags))
-          else
-            sym = dummySym.setInfo(tpe)
+          sym = if (field) owner.newValue(name, owner.pos, toScalaFieldFlags(jflags)) else dummySym
+          sym setInfo tpe
           owner.info.decls.enter(sym)
           log("added " + sym + ": " + sym.tpe)
         }
@@ -117,19 +112,6 @@ abstract class ICodeReader extends ClassfileParser {
       case e: MissingRequirementError =>
         (jflags, NoSymbol)
     }
-  }
-
-  private def javaToScalaFlags(flags: Int): Long = {
-    import ch.epfl.lamp.fjbg.JAccessFlags._
-
-    var res = 0L
-    if ((flags & ACC_PRIVATE) != 0) res |= Flags.PRIVATE
-    if ((flags & ACC_PROTECTED) != 0) res |= Flags.PROTECTED
-    if ((flags & ACC_FINAL) != 0) res |= Flags.FINAL
-    if ((flags & ACC_ABSTRACT) != 0) res |= Flags.DEFERRED
-    if ((flags & ACC_SYNTHETIC) != 0) res |= Flags.SYNTHETIC
-
-    res
   }
 
   /** Checks if `tp1` is the same type as `tp2`, modulo implicit methods.
