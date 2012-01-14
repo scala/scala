@@ -20,21 +20,25 @@ package scala
  *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
  *  }}}
  *
- *  The main distinction between `PartialFunction` and [[scala.Function1]] is that
- *  an alternative behavior can be applied to those elements that are declared
- *  to be outside its domain. For example:
+ *  The main distinction between `PartialFunction` and [[scala.Function1]] is
+ *  that the user of a `PartialFunction` may choose to do something different
+ *  with input that is declared to be outside its domain. For example:
  *
  *  {{{
  *  val sample = 1 to 10
- *  val isEven: PartialFunction[Int, String] = { case x if x % 2 == 0 => x+" is even" }
+ *  val isEven: PartialFunction[Int, String] = { 
+ *    case x if x % 2 == 0 => x+" is even" 
+ *  }
  *
  *  // the method collect can use isDefinedAt to select which members to collect
  *  val evenNumbers = sample collect isEven
  *
- *  val isOdd: PartialFunction[Int, String] = { case x if x % 2 == 1 => x+" is odd" }
+ *  val isOdd: PartialFunction[Int, String] = { 
+ *    case x if x % 2 == 1 => x+" is odd" 
+ *  }
  *
- *  // the method orElse allows chaining another partial function to handle input
- *  // outside the declared domain
+ *  // the method orElse allows chaining another partial function to handle 
+ *  // input outside the declared domain
  *  val numbers = sample map (isEven orElse isOdd)
  *  }}}
  *
