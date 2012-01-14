@@ -282,7 +282,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
 
       finishSym(tag match {
         case TYPEsym  => owner.newAbstractType(name.toTypeName)
-        case ALIASsym => owner.newTypeSymbol(name.toTypeName)
+        case ALIASsym => owner.newAliasType(name.toTypeName)
         case CLASSsym =>
           val sym = (isClassRoot, isModuleFlag) match {
             case (true, true)   => moduleRoot.moduleClass

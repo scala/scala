@@ -1390,10 +1390,9 @@ trait Namers extends MethodSynthesis {
         )
         if (sym hasAnnotation NativeAttr)
           sym resetFlag DEFERRED
-        else if (!symbolAllowsDeferred && ownerRequiresConcrete) {
+        else if (!symbolAllowsDeferred && ownerRequiresConcrete)
           fail("only classes can have declared but undefined members" + abstractVarMessage(sym))
-          sym resetFlag DEFERRED
-        }
+
         checkWithDeferred(PRIVATE)
         checkWithDeferred(FINAL)
       }

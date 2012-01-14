@@ -2542,7 +2542,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             val pattp  = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
 
             // turn any unresolved type variables in freevars into existential skolems
-            val skolems = freeVars map (fv => newExistentialSkolem(fv, unapplyContext.owner, fv))
+            val skolems = freeVars map (fv => unapplyContext.owner.newExistentialSkolem(fv, fv))
             arg.tpe = pattp.substSym(freeVars, skolems)
             argDummy setInfo arg.tpe
           }

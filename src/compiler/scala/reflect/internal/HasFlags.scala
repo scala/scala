@@ -136,6 +136,9 @@ trait HasFlags {
   /** Whether this entity has NONE of the flags in the given mask.
    */
   def hasNoFlags(mask: Long): Boolean = !hasFlag(mask)
+  
+  protected def isSetting(f: Long, mask: Long)  = !hasFlag(f) && ((mask & f) != 0L)
+  protected def isClearing(f: Long, mask: Long) =  hasFlag(f) && ((mask & f) != 0L)
 
   // Tests which come through cleanly: both Symbol and Modifiers use these
   // identically, testing for a single flag.

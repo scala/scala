@@ -499,7 +499,7 @@ abstract class ClassfileParser {
   def parseClass() {
     val jflags = in.nextChar
     val isAnnotation = hasAnnotation(jflags)
-    var sflags = toScalaFlags(jflags, isClass = true)
+    var sflags = toScalaClassFlags(jflags)
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = if (externalName.toString.indexOf('$') < 0) pool.getClassSymbol(nameIdx) else clazz
@@ -604,7 +604,7 @@ abstract class ClassfileParser {
 
   def parseField() {
     val jflags = in.nextChar
-    var sflags = toScalaFlags(jflags, isField = true)
+    var sflags = toScalaFieldFlags(jflags)
     if ((sflags & PRIVATE) != 0L && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
     } else {
@@ -635,7 +635,7 @@ abstract class ClassfileParser {
 
   def parseMethod() {
     val jflags = in.nextChar.toInt
-    var sflags = toScalaFlags(jflags)
+    var sflags = toScalaMethodFlags(jflags)
     if (isPrivate(jflags) && !global.settings.XO.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
@@ -1074,7 +1074,7 @@ abstract class ClassfileParser {
 
     def enterClassAndModule(entry: InnerClassEntry, completer: global.loaders.SymbolLoader, jflags: Int) {
       val name = entry.originalName
-      var sflags = toScalaFlags(jflags, isClass = true)
+      var sflags = toScalaClassFlags(jflags)
 
       val innerClass = getOwner(jflags).newClass(name.toTypeName).setInfo(completer).setFlag(sflags)
       val innerModule = getOwner(jflags).newModule(name.toTermName).setInfo(completer).setFlag(sflags)

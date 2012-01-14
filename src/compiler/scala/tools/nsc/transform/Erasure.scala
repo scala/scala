@@ -768,10 +768,8 @@ abstract class Erasure extends AddInterfaces
             }
           );
           if (bridgeNeeded) {
-            val bridge = other.cloneSymbolImpl(owner)
-              .setPos(owner.pos)
-              .setFlag(member.flags | BRIDGE)
-              .resetFlag(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+            val newFlags = (member.flags | BRIDGE) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+            val bridge   = other.cloneSymbolImpl(owner, newFlags) setPos owner.pos
             // the parameter symbols need to have the new owner
             bridge.setInfo(otpe.cloneInfo(bridge))
             bridgeTarget(bridge) = member
