@@ -337,8 +337,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     if (pkg == NoSymbol) {
       pkg = owner.newPackage(name)
       pkg.moduleClass setInfo new LazyPackageType
-      pkg setInfo pkg.moduleClass.tpe
-      owner.info.decls enter pkg
+      pkg setInfoAndEnter pkg.moduleClass.tpe
       info("made Scala "+pkg)
     } else if (!pkg.isPackage)
       throw new ReflectError(pkg+" is not a package")

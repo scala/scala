@@ -105,8 +105,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Move tree into constructor, take care of changing owner from `oldowner` to constructor symbol
       def intoConstructor(oldowner: Symbol, tree: Tree) =
-        intoConstructorTransformer.transform(
-          new ChangeOwnerTraverser(oldowner, constr.symbol)(tree))
+        intoConstructorTransformer transform tree.changeOwner(oldowner -> constr.symbol)
 
       // Should tree be moved in front of super constructor call?
       def canBeMoved(tree: Tree) = tree match {
@@ -454,28 +453,24 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       def delayedInitClosure(stats: List[Tree]) =
         localTyper.typed {
           atPos(impl.pos) {
-            val closureClass = clazz.newClass(impl.pos, nme.delayedInitArg.toTypeName)
-              .setFlag(SYNTHETIC | FINAL)
+            val closureClass   = clazz.newClass(nme.delayedInitArg.toTypeName, impl.pos, SYNTHETIC | FINAL)
             val closureParents = List(AbstractFunctionClass(0).tpe, ScalaObjectClass.tpe)
-            closureClass.setInfo(new ClassInfoType(closureParents, new Scope, closureClass))
 
-            val outerField = closureClass.newValue(impl.pos, nme.OUTER)
-              .setFlag(PrivateLocal | PARAMACCESSOR)
-              .setInfo(clazz.tpe)
+            closureClass setInfoAndEnter new ClassInfoType(closureParents, new Scope, closureClass)
 
-            val applyMethod = closureClass.newMethod(impl.pos, nme.apply)
-              .setFlag(FINAL)
-              .setInfo(MethodType(List(), ObjectClass.tpe))
-
-            closureClass.info.decls enter outerField
-            closureClass.info.decls enter applyMethod
-
-            val outerFieldDef = ValDef(outerField)
-
-            val changeOwner = new ChangeOwnerTraverser(impl.symbol, applyMethod)
-
+            val outerField = (
+              closureClass
+                newValue(nme.OUTER, impl.pos, PrivateLocal | PARAMACCESSOR)
+                setInfoAndEnter clazz.tpe
+            )
+            val applyMethod = (
+              closureClass
+                newMethod(nme.apply, impl.pos, FINAL)
+                setInfoAndEnter MethodType(Nil, ObjectClass.tpe)
+            )
+            val outerFieldDef     = ValDef(outerField)
             val closureClassTyper = localTyper.atOwner(closureClass)
-            val applyMethodTyper = closureClassTyper.atOwner(applyMethod)
+            val applyMethodTyper  = closureClassTyper.atOwner(applyMethod)
 
             val constrStatTransformer = new Transformer {
               override def transform(tree: Tree): Tree = tree match {
@@ -507,8 +502,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                           }
                         else tree
                       case _ =>
-                        changeOwner.changeOwner(tree)
-                        tree
+                        tree.changeOwner(impl.symbol -> applyMethod)
                     }
                   }
               }

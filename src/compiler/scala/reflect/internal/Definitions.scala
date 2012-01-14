@@ -16,14 +16,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
   private def newClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): Symbol = {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
-    clazz setInfo ClassInfoType(parents, new Scope, clazz)
-    owner.info.decls enter clazz
+    clazz setInfoAndEnter ClassInfoType(parents, new Scope, clazz)
   }
   private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): Symbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
     val params = msym.newSyntheticValueParams(formals)
-    msym setInfo MethodType(params, restpe)
-    owner.info.decls enter msym
+    msym setInfoAndEnter MethodType(params, restpe)
   }
 
   // the scala value classes
@@ -130,7 +128,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // the source level, but _root_ is essentially a function () => <root>.
     lazy val RootPackage: Symbol = {
       val rp = (
-        NoSymbol.newValue(nme.ROOTPKG, flags = FINAL | MODULE | PACKAGE | JAVA)
+        NoSymbol.newValue(nme.ROOTPKG, NoPosition, FINAL | MODULE | PACKAGE | JAVA)
           setInfo NullaryMethodType(RootClass.tpe)
       )
       RootClass.sourceModule = rp
@@ -139,11 +137,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // This is the actual root of everything, including the package _root_.
     lazy val RootClass: ModuleClassSymbol = (
-      NoSymbol.newModuleClassSymbol(tpnme.ROOT, flags = FINAL | MODULE | PACKAGE | JAVA)
+      NoSymbol.newModuleClassSymbol(tpnme.ROOT, NoPosition, FINAL | MODULE | PACKAGE | JAVA)
         setInfo rootLoader
     )
     // The empty package, which holds all top level types without given packages.
-    lazy val EmptyPackage       = RootClass.newPackage(nme.EMPTY_PACKAGE_NAME, flags = FINAL)
+    lazy val EmptyPackage       = RootClass.newPackage(nme.EMPTY_PACKAGE_NAME, NoPosition, FINAL)
     lazy val EmptyPackageClass  = EmptyPackage.moduleClass
 
     lazy val JavaLangPackage      = getModule(sn.JavaLang)
@@ -208,8 +206,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
       locally {
         this initFlags ABSTRACT | TRAIT | FINAL
-        this setInfo ClassInfoType(List(parent.tpe), new Scope, this)
-        owner.info.decls enter this
+        this setInfoAndEnter ClassInfoType(List(parent.tpe), new Scope, this)
       }
       final override def isBottomClass = true
     }
@@ -829,12 +826,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
           ClassInfoType(List(AnyRefClass.tpe, p), new Scope, clazz)))
     }
 
-    private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol = {
-      val tpsym = owner.newAliasType(name)
-      tpsym.setInfo(alias)
-      owner.info.decls.enter(tpsym)
-      tpsym
-    }
+    private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol =
+      owner.newAliasType(name) setInfoAndEnter alias
 
     /** tcon receives the type parameter symbol as argument */
     private def newPolyMethod(owner: Symbol, name: TermName, tcon: Symbol => Type): Symbol =

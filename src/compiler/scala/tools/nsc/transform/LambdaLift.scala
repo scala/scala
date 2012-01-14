@@ -213,17 +213,14 @@ abstract class LambdaLift extends InfoTransform {
 
       atPhase(phase.next) {
         for ((owner, freeValues) <- free.toList) {
+          val newFlags = SYNTHETIC | ( if (owner.isClass) PARAMACCESSOR | PrivateLocal else PARAM )
           debuglog("free var proxy: %s, %s".format(owner.fullLocationString, freeValues.toList.mkString(", ")))
-
-            proxies(owner) =
-              for (fv <- freeValues.toList) yield {
-                val proxy = owner.newValue(owner.pos, fv.name)
-                  .setFlag(if (owner.isClass) PARAMACCESSOR | PrivateLocal else PARAM)
-                  .setFlag(SYNTHETIC)
-                  .setInfo(fv.info);
-                if (owner.isClass) owner.info.decls enter proxy;
-                proxy
-              }
+          proxies(owner) =
+            for (fv <- freeValues.toList) yield {
+              val proxy = owner.newValue(fv.name, owner.pos, newFlags) setInfo fv.info
+              if (owner.isClass) owner.info.decls enter proxy
+              proxy
+            }
         }
       }
     }
@@ -409,12 +406,12 @@ abstract class LambdaLift extends InfoTransform {
             }
           else tree1
         case Block(stats, expr0) =>
-          val (lzyVals, rest) = stats.partition {
-                      case stat@ValDef(_, _, _, _) if stat.symbol.isLazy => true
-                      case stat@ValDef(_, _, _, _) if stat.symbol.hasFlag(MODULEVAR) => true
-                      case _                                             => false
-                  }
-          treeCopy.Block(tree, lzyVals:::rest, expr0)
+          val (lzyVals, rest) = stats partition {
+            case stat: ValDef => stat.symbol.isLazy || stat.symbol.isModuleVar
+            case _            => false
+          }
+          if (lzyVals.isEmpty) tree
+          else treeCopy.Block(tree, lzyVals ::: rest, expr0)
         case _ =>
           tree
       }

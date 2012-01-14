@@ -1814,13 +1814,18 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def typeConstructor = this
     // eta-expand, subtyping relies on eta-expansion of higher-kinded types
-    // override protected def normalizeImpl: Type = 
-    //   if (isHigherKinded) etaExpand else super.normalizeImpl
+
+    override protected def normalizeImpl: Type = 
+      if (isHigherKinded) etaExpand else super.normalizeImpl
   }
   
   trait ClassTypeRef extends TypeRef {
     // !!! There are scaladoc-created symbols arriving which violate this require.
     // require(sym.isClass, sym)
+    
+    override protected def normalizeImpl: Type =
+      if (sym.isRefinementClass) sym.info.normalize // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
+      else super.normalizeImpl
 
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this
@@ -1873,8 +1878,20 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeSymbol = if (this ne normalize) normalize.typeSymbol else sym
 
     // beta-reduce, but don't do partial application -- cycles have been checked in typeRef
-    // override protected zzImpl = 
-    //   if (typeParamsMatchArgs) betaReduce.normalize else ErrorType
+    override protected def normalizeImpl =
+      if (typeParamsMatchArgs) betaReduce.normalize
+      else if (isHigherKinded) super.normalizeImpl
+      else ErrorType
+    
+    // isHKSubType0 introduces synthetic type params so that
+    // betaReduce can first apply sym.info to typeArgs before calling
+    // asSeenFrom.  asSeenFrom then skips synthetic type params, which
+    // are used to reduce HO subtyping to first-order subtyping, but
+    // which can't be instantiated from the given prefix and class.
+    //
+    // this crashes pos/depmet_implicit_tpbetareduce.scala
+    // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
+    def betaReduce = transform(sym.info.resultType)
     
     // #3731: return sym1 for which holds: pre bound sym.name to sym and
     // pre1 now binds sym.name to sym1, conceptually exactly the same
@@ -1961,33 +1978,20 @@ trait Types extends api.Types { self: SymbolTable =>
     // corresponding type parameters (unbound type variables)
     def transform(tp: Type): Type
 
-    private def normalize0: Type = (
-      if (pre eq WildcardType) WildcardType // arises when argument-dependent types are approximated (see def depoly in implicits)
-      else if (isHigherKinded) etaExpand   // eta-expand, subtyping relies on eta-expansion of higher-kinded types
-      else if (sym.isAliasType && typeParamsMatchArgs) betaReduce.normalize // beta-reduce, but don't do partial application -- cycles have been checked in typeRef
-      else if (sym.isRefinementClass) sym.info.normalize // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
-      else if (sym.isAliasType) ErrorType //println("!!error: "+(pre, sym, sym.info, sym.info.typeParams, args))
-      else super.normalize
-    )
+    // eta-expand, subtyping relies on eta-expansion of higher-kinded types
+    protected def normalizeImpl: Type = if (isHigherKinded) etaExpand else super.normalize
 
-    // TODO: test case that is compiled  in a specific order and in different runs
-    override def normalize: Type = {
-      if (phase.erasedTypes) normalize0
+    // TODO: test case that is compiled in a specific order and in different runs
+    final override def normalize: Type = {
+      // arises when argument-dependent types are approximated (see def depoly in implicits)
+      if (pre eq WildcardType) WildcardType
+      else if (phase.erasedTypes) normalizeImpl
       else {
         if (normalized eq null)
-          normalized = normalize0
+          normalized = normalizeImpl
         normalized
       }
     }
-    // isHKSubType0 introduces synthetic type params so that
-    // betaReduce can first apply sym.info to typeArgs before calling
-    // asSeenFrom.  asSeenFrom then skips synthetic type params, which
-    // are used to reduce HO subtyping to first-order subtyping, but
-    // which can't be instantiated from the given prefix and class.
-    //
-    // this crashes pos/depmet_implicit_tpbetareduce.scala
-    // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
-    def betaReduce = transform(sym.info.resultType)
     
     def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala

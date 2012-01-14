@@ -465,11 +465,9 @@ abstract class ClassfileParser {
       }
       ss = name.subName(0, start)
       owner.info.decls lookup ss orElse {
-        sym = owner.newClass(NoPosition, ss.toTypeName) setInfo completer
-        if (opt.verboseDebug)
-          println("loaded "+sym+" from file "+file)
-
-        owner.info.decls enter sym
+        sym = owner.newClass(NoPosition, ss.toTypeName) setInfoAndEnter completer
+        debuglog("loaded "+sym+" from file "+file)
+        sym
       }
     }
 
