@@ -98,7 +98,7 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
   }
 
   /**
-   * Thanks to the nature immutable of the
+   * Thanks to the immutable nature of the
    * underlying AVL Tree, we can share it with
    * the clone. So clone complexity in time is O(1).
    * 
