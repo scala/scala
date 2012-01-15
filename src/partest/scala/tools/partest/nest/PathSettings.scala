@@ -16,6 +16,9 @@ object PathSettings {
 
   private def cwd = Directory.Current getOrElse sys.error("user.dir property not set")
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
+  private def findJar(d: Directory, name: String): Option[File] = findJar(d.files, name)
+  private def findJar(files: Iterator[File], name: String): Option[File] =
+    files filter (_ hasExtension "jar") find { _.name startsWith name }
 
   // Directory <root>/test
   lazy val testRoot: Directory = testRootDir getOrElse {
@@ -33,7 +36,7 @@ object PathSettings {
   // Directory <root>/test/files/speclib
   lazy val srcSpecLibDir = Directory(srcDir / "speclib")
 
-  lazy val srcSpecLib: File = srcSpecLibDir.files find (_.name startsWith "instrumented") getOrElse {
+  lazy val srcSpecLib: File = findJar(srcSpecLibDir, "instrumented") getOrElse {
     sys.error("No instrumented.jar found in %s".format(srcSpecLibDir))
   }
 
@@ -51,7 +54,7 @@ object PathSettings {
   lazy val buildPackLibDir = Directory(buildDir / "pack" / "lib")
 
   lazy val scalaCheck: File =
-    buildPackLibDir.files ++ srcLibDir.files find (_.name startsWith "scalacheck") getOrElse {
+    findJar(buildPackLibDir.files ++ srcLibDir.files, "scalacheck") getOrElse {
       sys.error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
     }
 }
