@@ -1,0 +1,12 @@
+P_2.scala:14: error: reference to x is ambiguous;
+it is both defined in object C and imported subsequently by 
+import Q.X._
+          println("L14: "+x)   // reference to 'x' is ambiguous here
+                          ^
+P_2.scala:19: error: reference to y is ambiguous;
+it is imported twice in the same scope by
+import P.X._
+and import X.y
+            println("L19: "+y) // reference to 'y' is ambiguous here
+                            ^
+two errors found
