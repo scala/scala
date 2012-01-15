@@ -3365,7 +3365,9 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** Guard these lists against AnyClass and NothingClass appearing,
      *  else loBounds.isEmpty will have different results for an empty
-     *  constraint and one with Nothing as a lower bound.
+     *  constraint and one with Nothing as a lower bound.  [Actually
+     *  guarding addLoBound/addHiBound somehow broke raw types so it
+     *  only guards against being created with them.]
      */
     private var lobounds = lo0 filterNot (_.typeSymbolDirect eq NothingClass)
     private var hibounds = hi0 filterNot (_.typeSymbolDirect eq AnyClass)
@@ -3384,8 +3386,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else if (!isNumericSubType(tp, numlo))
           numlo = numericLoBound
       }
-      else if (tp.typeSymbolDirect ne NothingClass)
-        lobounds ::= tp
+      else lobounds ::= tp
     }
 
     def checkWidening(tp: Type) {
@@ -3404,8 +3405,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else if (!isNumericSubType(numhi, tp))
           numhi = numericHiBound
       }
-      else if (tp.typeSymbolDirect ne AnyClass)
-        hibounds ::= tp
+      else hibounds ::= tp
     }
 
     def isWithinBounds(tp: Type): Boolean =
