@@ -24,10 +24,18 @@ package scala
  *    assert(succ(0) == anonfun1(0))
  *  }
  *  }}}
+ *
+ *  Note that `Function1` does not define a total function, as might
+ *  be suggested by the existence of [[scala.PartialFunction]]. The only
+ *  distinction between `Function1` and `PartialFunction` is that the
+ *  latter can specify inputs which it will not handle.
+ *
  */
 @annotation.implicitNotFound(msg = "No implicit view available from ${T1} => ${R}.")
 trait Function1[@specialized(scala.Int, scala.Long, scala.Float, scala.Double) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) +R] extends AnyRef { self =>
-  /** Apply the body of this function to the argument.
+  /** Apply the body of this function to the argument. It may throw an
+   *  exception.
+   *
    *  @return   the result of function application.
    */
   def apply(v1: T1): R
