@@ -107,6 +107,24 @@ object Test extends Properties("TreeSet") {
     prefix.forall(_ < 0) && suffix.forall(_ >= 0) && subject == prefix ++ suffix
   }
 
+  property("from is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
+    val n = choose(0, subject.size - 1).sample.get
+    val from = subject.drop(n).firstKey
+    subject.from(from).firstKey == from && subject.from(from).forall(_ >= from)
+  }}
+
+  property("to is inclusive") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
+    val n = choose(0, subject.size - 1).sample.get
+    val to = subject.drop(n).firstKey
+    subject.to(to).lastKey == to && subject.to(to).forall(_ <= to)
+  }}
+
+  property("until is exclusive") = forAll { (subject: TreeSet[Int]) => subject.size > 1 ==> {
+    val n = choose(1, subject.size - 1).sample.get
+    val until = subject.drop(n).firstKey
+    subject.until(until).lastKey == subject.take(n).lastKey && subject.until(until).forall(_ <= until)
+  }}
+
   property("remove single") = forAll { (subject: TreeSet[Int]) => subject.nonEmpty ==> {
     val element = oneOf(subject.toSeq).sample.get
     val removed = subject - element

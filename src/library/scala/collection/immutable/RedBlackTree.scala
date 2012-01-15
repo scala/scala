@@ -45,7 +45,11 @@ object RedBlackTree {
   def count(tree: Tree[_, _]) = if (tree eq null) 0 else tree.count
   def update[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(tree, k, v))
   def delete[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = blacken(del(tree, k))
-  def range[A, B](tree: Tree[A, B], from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(rng(tree, from, until))
+  def range[A, B](tree: Tree[A, B], low: Option[A], lowInclusive: Boolean, high: Option[A], highInclusive: Boolean)(implicit ordering: Ordering[A]): Tree[A, B] = {
+    val after: Option[A => Boolean] = low.map(key => if (lowInclusive) ordering.lt(_, key) else ordering.lteq(_, key))
+    val before: Option[A => Boolean] = high.map(key => if (highInclusive) ordering.lt(key, _) else ordering.lteq(key, _))
+    blacken(rng(tree, after, before))
+  }
 
   def smallest[A, B](tree: Tree[A, B]): Tree[A, B] = {
     if (tree eq null) throw new NoSuchElementException("empty map")
@@ -198,13 +202,13 @@ object RedBlackTree {
     else append(tree.left, tree.right)
   }
 
-  private[this] def rng[A, B](tree: Tree[A, B], from: Option[A], until: Option[A])(implicit ordering: Ordering[A]): Tree[A, B] = {
+  private[this] def rng[A, B](tree: Tree[A, B], after: Option[A => Boolean], before: Option[A => Boolean])(implicit ordering: Ordering[A]): Tree[A, B] = {
     if (tree eq null) return null
-    if (from == None && until == None) return tree
-    if (from != None && ordering.lt(tree.key, from.get)) return rng(tree.right, from, until);
-    if (until != None && ordering.lteq(until.get, tree.key)) return rng(tree.left, from, until);
-    val newLeft = rng(tree.left, from, None)
-    val newRight = rng(tree.right, None, until)
+    if (after == None && before == None) return tree
+    if (after != None && after.get(tree.key)) return rng(tree.right, after, before);
+    if (before != None && before.get(tree.key)) return rng(tree.left, after, before);
+    val newLeft = rng(tree.left, after, None)
+    val newRight = rng(tree.right, None, before)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
     else if (newLeft eq null) upd(newRight, tree.key, tree.value);
     else if (newRight eq null) upd(newLeft, tree.key, tree.value);

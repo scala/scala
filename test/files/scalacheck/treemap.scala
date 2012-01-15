@@ -111,6 +111,24 @@ object Test extends Properties("TreeMap") {
     prefix.forall(_._1 < 0) && suffix.forall(_._1 >= 0) && subject == prefix ++ suffix
   }
 
+  property("from is inclusive") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
+    val n = choose(0, subject.size - 1).sample.get
+    val from = subject.drop(n).firstKey
+    subject.from(from).firstKey == from && subject.from(from).forall(_._1 >= from)
+  }}
+
+  property("to is inclusive") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
+    val n = choose(0, subject.size - 1).sample.get
+    val to = subject.drop(n).firstKey
+    subject.to(to).lastKey == to && subject.to(to).forall(_._1 <= to)
+  }}
+
+  property("until is exclusive") = forAll { (subject: TreeMap[Int, String]) => subject.size > 1 ==> {
+    val n = choose(1, subject.size - 1).sample.get
+    val until = subject.drop(n).firstKey
+    subject.until(until).lastKey == subject.take(n).lastKey && subject.until(until).forall(_._1 <= until)
+  }}
+
   property("remove single") = forAll { (subject: TreeMap[Int, String]) => subject.nonEmpty ==> {
     val key = oneOf(subject.keys.toSeq).sample.get
     val removed = subject - key

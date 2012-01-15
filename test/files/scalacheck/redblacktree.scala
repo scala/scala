@@ -174,36 +174,41 @@ package scala.collection.immutable.redblacktree {
   object TestRange extends RedBlackTreeTest with RedBlackTreeInvariants  {
     import RB._
 
-    override type ModifyParm = (Option[Int], Option[Int])
+    override type ModifyParm = (Option[Int], Boolean, Option[Int], Boolean)
     override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = for {
       from <- choose(0, iterator(tree).size)
+      fromInclusive <- oneOf(false, true)
       to <- choose(0, iterator(tree).size) suchThat (from <=)
+      toInclusive <- oneOf(false, true)
       optionalFrom <- oneOf(Some(from), None, Some(from)) // Double Some(n) to get around a bug
       optionalTo <- oneOf(Some(to), None, Some(to)) // Double Some(n) to get around a bug
-    } yield (optionalFrom, optionalTo)
+    } yield (optionalFrom, fromInclusive, optionalTo, toInclusive)
 
     override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = {
       val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
-      val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-      range(tree, from, to)
+      val to = parm._3 flatMap (nodeAt(tree, _) map (_._1))
+      range(tree, from, parm._2, to, parm._4)
     }
 
     property("range boundaries respected") = forAll(genInput) { case (tree, parm, newTree) =>
       val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
-      val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-      ("lower boundary" |: (from forall ( key => iterator(newTree).map(_._1) forall (key <=)))) &&
-      ("upper boundary" |: (to forall ( key => iterator(newTree).map(_._1) forall (key >))))
+      val fromPredicate: String => String => Boolean = if (parm._2) (_ <=) else (_ <)
+      val to = parm._3 flatMap (nodeAt(tree, _) map (_._1))
+      val toPredicate: String => String => Boolean = if (parm._4) (_ >=) else (_ >)
+      ("lower boundary" |: (from forall ( key => keysIterator(newTree) forall fromPredicate(key)))) &&
+      ("upper boundary" |: (to forall ( key => keysIterator(newTree) forall toPredicate(key))))
     }
 
     property("range returns all elements") = forAll(genInput) { case (tree, parm, newTree) =>
       val from = parm._1 flatMap (nodeAt(tree, _) map (_._1))
-      val to = parm._2 flatMap (nodeAt(tree, _) map (_._1))
-      val filteredTree = (iterator(tree)
-        .map(_._1)
-        .filter(key => from forall (key >=))
-        .filter(key => to forall (key <))
+      val fromPredicate: String => String => Boolean = if (parm._2) (_ >=) else (_ >)
+      val to = parm._3 flatMap (nodeAt(tree, _) map (_._1))
+      val toPredicate: String => String => Boolean = if (parm._4) (_ <=) else (_ <)
+      val filteredTree = (keysIterator(tree)
+        .filter(key => from forall fromPredicate(key))
+        .filter(key => to forall toPredicate(key))
         .toList)
-      filteredTree == iterator(newTree).map(_._1).toList
+      filteredTree == keysIterator(newTree).toList
     }
   }
 }
