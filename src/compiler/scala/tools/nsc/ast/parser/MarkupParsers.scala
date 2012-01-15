@@ -117,7 +117,7 @@ trait MarkupParsers {
      *                      | `{` scalablock `}`
      */
     def xAttributes = {
-      val aMap = mutable.HashMap[String, Tree]()
+      val aMap = mutable.LinkedHashMap[String, Tree]()
 
       while (isNameStart(ch)) {
         val start = curOffset
