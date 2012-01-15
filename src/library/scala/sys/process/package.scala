@@ -11,6 +11,59 @@
 // for process debugging output.
 //
 package scala.sys {
+  /**
+    * This package is used to create process pipelines, similar to Unix command pipelines.
+    *
+    * The key concept is that one builds a [[scala.sys.process.Process]] that will run and return an exit
+    * value.  This `Process` is usually composed of one or more [[scala.sys.process.ProcessBuilder]], fed by a
+    * [[scala.sys.process.ProcessBuilder.Source]] and feeding a [[scala.sys.process.ProcessBuilder.Sink]]. A
+    * `ProcessBuilder` itself is both a `Source` and a `Sink`.
+    *
+    * As `ProcessBuilder`, `Sink` and `Source` are abstract, one usually creates them with `apply` methods on
+    * the companion object of [[scala.sys.process.Process]], or through implicit conversions available in this
+    * package object from `String` and other types. The pipe is composed through unix-like pipeline and I/O
+    * redirection operators available on [[scala.sys.process.ProcessBuilder]].
+    *
+    * The example below shows how to build and combine such commands. It searches for `null` uses in the `src`
+    * directory, printing a message indicating whether they were found or not. The first command pipes its
+    * output to the second command, whose exit value is then used to choose between the third or fourth
+    * commands. This same example is explained in greater detail on [[scala.sys.process.ProcessBuilder]].
+    *
+    * {{{
+    * import scala.sys.process._
+    * (
+    *     "find src -name *.scala -exec grep null {} ;"
+    *     #|  "xargs test -z"
+    *     #&&  "echo null-free"  #||  "echo null detected"
+    * ) !
+    * }}}
+    *
+    * Other implicits available here are for [[scala.sys.process.ProcessBuilder.FileBuilder]], which extends
+    * both `Sink` and `Source`, and for [[scala.sys.process.ProcessBuilder.URLBuilder]], which extends
+    * `Source` alone.
+    *
+    * One can even create a `Process` solely out of these, without running any command. For example, this will
+    * download from a URL to a file:
+    *
+    * {{{
+    * import java.io.File
+    * import java.net.URL
+    * import scala.sys.process._
+    * new URL("http://www.scala-lang.org/") #> new File("scala-lang.html") !
+    * }}}
+    *
+    * One may use a `Process` directly through `ProcessBuilder`'s `run` method, which starts the process in
+    * the background, and returns a `Process`. If background execution is not desired, one can get a
+    * `ProcessBuilder` to execute through a method such as `!`, `lines`, `run` or variations thereof. That
+    * will create the `Process` to execute the commands, and return either the exit value or the output, maybe
+    * throwing an exception.
+    *
+    * Finally, when executing a `ProcessBuilder`, one may pass a [[scala.sys.process.ProcessLogger]] to
+    * capture stdout and stderr of the executing processes. A `ProcessLogger` may be created through its
+    * companion object from functions of type `(String) => Unit`, or one might redirect it to a file, using
+    * [[scala.sys.process.FileProcessLogger]], which can also be created through `ProcessLogger`'s object
+    * companion.
+    */
   package object process extends ProcessImplicits {
     def javaVmArguments: List[String] = {
       import collection.JavaConversions._

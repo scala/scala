@@ -23,6 +23,8 @@ import immutable.{List, Nil}
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#mutable_lists "Scala's Collection Library overview"]]
+ *  section on `Mutable Lists` for more information.
  */
 @SerialVersionUID(5938451523372603072L)
 class MutableList[A]
@@ -73,12 +75,12 @@ extends LinearSeq[A]
   override def length: Int = len
 
   /** Returns the <code>n</code>th element of this list.
-   *  @throws IndexOutofBoundsException if index does not exist.
+   *  @throws IndexOutOfBoundsException if index does not exist.
    */
   override def apply(n: Int): A = first0.apply(n)
 
   /** Updates the <code>n</code>th element of this list to a new value.
-   *  @throws IndexOutofBoundsException if index does not exist.
+   *  @throws IndexOutOfBoundsException if index does not exist.
    */
   def update(n: Int, x: A): Unit = first0.update(n, x)
 

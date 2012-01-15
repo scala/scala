@@ -31,6 +31,9 @@ import annotation.bridge
  *  @author Paul Phillips
  *  @version 2.8
  *  @since   2.5
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#ranges "Scala's Collection Library overview"]]
+ *  section on `Ranges` for more information.
+ *
  *  @define Coll Range
  *  @define coll range
  *  @define mayNotTerminateInf

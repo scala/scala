@@ -90,7 +90,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param n      the index where new elements are inserted.
    *  @param elems  the traversable collection containing the elements to insert.
-   *  @throws   IndexOutofBoundsException if the index `n` is not in the valid range
+   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
    *            `0 <= n <= length`.
    */
   def insertAll(n: Int, elems: collection.Traversable[A])
@@ -99,7 +99,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     *
     *  @param n  the index which refers to the element to delete.
     *  @return   the previous element at index `n`
-    *   @throws   IndexOutofBoundsException if the if the index `n` is not in the valid range
+    *   @throws   IndexOutOfBoundsException if the if the index `n` is not in the valid range
     *            `0 <= n < length`.
     */
   def remove(n: Int): A
@@ -108,7 +108,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param n  the index which refers to the first element to remove.
    *  @param count  the number of elements to remove.
-   *  @throws   IndexOutofBoundsException if the index `n` is not in the valid range
+   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
    *            `0 <= n <= length - count`.
    *  @throws   IllegalArgumentException if `count < 0`.
    */
@@ -160,7 +160,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param n      the index where new elements are inserted.
    *  @param elems  the traversable collection containing the elements to insert.
-   *  @throws   IndexOutofBoundsException if the index `n` is not in the valid range
+   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
    *            `0 <= n <= length`.
    */
   def insert(n: Int, elems: A*) { insertAll(n, elems) }

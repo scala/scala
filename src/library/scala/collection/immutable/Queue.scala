@@ -18,14 +18,26 @@ import annotation.tailrec
 /** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
+ *  `Queue` is implemented as a pair of `List`s, one containing the ''in'' elements and the other the ''out'' elements.
+ *  Elements are added to the ''in'' list and removed from the ''out'' list. When the ''out'' list runs dry, the
+ *  queue is pivoted by replacing the ''out'' list by ''in.reverse'', and ''in'' by ''Nil''.
+ *
+ *  Adding items to the queue always has cost `O(1)`. Removing items has cost `O(1)`, except in the case
+ *  where a pivot is required, in which case, a cost of `O(n)` is incurred, where `n` is the number of elements in the queue. When this happens,
+ *  `n` remove operations with `O(1)` cost are guaranteed. Removing an item is on average `O(1)`.
+ *
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
  *  @since   1
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#immutable_queues "Scala's Collection Library overview"]]
+ *  section on `Immutable Queues` for more information.
+ *
  *  @define Coll immutable.Queue
  *  @define coll immutable queue
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+
 @SerialVersionUID(-7622936493364270175L)
 class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
             extends LinearSeq[A]

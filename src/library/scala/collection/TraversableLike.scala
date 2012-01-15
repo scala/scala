@@ -39,8 +39,7 @@ import parallel.ParIterable
  *  a non-strict collection class may defer computation of some of their
  *  elements until after the instance is available as a value.
  *  A typical example of a non-strict collection class is a
- *  <a href="../immutable/Stream.html" target="ContentFrame">
- *  `scala.collection.immutable.Stream`</a>.
+ *  [[scala.collection.immutable/Stream]].
  *  A more general class of examples are `TraversableViews`.
  *
  *  If a collection is an instance of an ordered collection class, traversing
@@ -160,6 +159,17 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  It differs from ++ in that the right operand determines the type of the
    *  resulting collection rather than the left one.
    *
+   *  Example:
+   *  {{{
+   *     scala> val x = List(1)
+   *     x: List[Int] = List(1)
+   *
+   *     scala> val y = LinkedList(2)
+   *     y: scala.collection.mutable.LinkedList[Int] = LinkedList(2)
+   *
+   *     scala> val z = x ++: y
+   *     z: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *  }}}
    *  @param that   the traversable to append.
    *  @tparam B     the element type of the returned collection.
    *  @tparam That  $thatinfo
@@ -180,10 +190,39 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b.result
   }
 
-  /** This overload exists because: for the implementation of ++: we should reuse
-   *  that of ++ because many collections override it with more efficient versions.
-   *  Since TraversableOnce has no '++' method, we have to implement that directly,
-   *  but Traversable and down can use the overload.
+  /** As with `++`, returns a new collection containing the elements from the left operand followed by the
+   *  elements from the right operand.
+   *  It differs from `++` in that the right operand determines the type of
+   *  the resulting collection rather than the left one.
+   *
+   *  Example:
+   *  {{{
+   *     scala> val x = List(1)
+   *     x: List[Int] = List(1)
+   *
+   *     scala> val y = LinkedList(2)
+   *     y: scala.collection.mutable.LinkedList[Int] = LinkedList(2)
+   *
+   *     scala> val z = x ++: y
+   *     z: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *  }}}
+   *
+   * This overload exists because: for the implementation of `++:` we should
+   *  reuse that of `++` because many collections override it with more
+   *  efficient versions.
+   *
+   *  Since `TraversableOnce` has no `++` method, we have to implement that
+   *  directly, but `Traversable` and down can use the overload.
+   *
+   *  @param that   the traversable to append.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` which contains all elements
+   *                of this $coll followed by all elements of `that`.
+   *
+   *  @return       a new $coll which contains all elements of this $coll
+   *                followed by all elements of `that`.
    */
   def ++:[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
     (that ++ seq)(breakOut)
@@ -665,6 +704,9 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     /** Builds a new collection by applying a function to all elements of the
      *  outer $coll containing this `WithFilter` instance that satisfy
      *  predicate `p` and concatenating the results.
+     *
+     *  The type of the resulting collection will be guided by the static type
+     *  of the outer $coll.
      *
      *  @param f      the function to apply to each element.
      *  @tparam B     the element type of the returned collection.

@@ -11,25 +11,29 @@
 package scala.util.control
 
 /** A class that can be instantiated for the break control abstraction.
- *  Example usage:<pre>
- *
+ *  Example usage:
+ *  {{{
  *  val mybreaks = new Breaks
- *  import</b> mybreaks.{break, breakable}
+ *  import mybreaks.{break, breakable}
  *
  *  breakable {
- *    <b>for</b> (...) {
- *      <b>if</b> (...) break
+ *    for (...) {
+ *      if (...) break()
  *    }
- *  }</pre>
- *
- *  Calls to break from one instantiation of Breaks will never
- *  target breakable objects of some other instantion.
+ *  }
+ *  }}}
+ *  Calls to break from one instantiation of `Breaks` will never
+ *  target breakable objects of some other instantiation.
  */
 class Breaks {
 
   private val breakException = new BreakControl
 
-  /** A block from which one can exit with a `break''. */
+  /**
+   * A block from which one can exit with a `break`. The `break` may be
+   * executed further down in the call stack provided that it is called on the
+   * exact same instance of `Breaks`.
+   */
   def breakable(op: => Unit) {
     try {
       op
@@ -43,6 +47,18 @@ class Breaks {
     def catchBreak(onBreak: => Unit): Unit
   }
 
+  /**
+   * This variant enables the execution of a code block in case of a `break()`:
+   * {{{
+   * tryBreakable {
+   *   for (...) {
+   *     if (...) break()
+   *   }
+   * } catchBreak {
+   *   doCleanup()
+   * }
+   * }}}
+   */
   def tryBreakable(op: => Unit) = new TryBlock {
     def catchBreak(onBreak: => Unit) = try {
       op
@@ -53,24 +69,26 @@ class Breaks {
     }
   }
 
-  /* Break from dynamically closest enclosing breakable block
-   * @note this might be different than the statically closest enclosing
-   * block!
+  /**
+   * Break from dynamically closest enclosing breakable block using this exact
+   * `Breaks` instance.
+   *
+   * @note This might be different than the statically closest enclosing block!
    */
   def break() { throw breakException }
 }
 
 /** An object that can be used for the break control abstraction.
- *  Example usage:<pre>
- *
- *  <b>import</b> Breaks.{break, breakable}
+ *  Example usage:
+ *  {{{
+ *  import Breaks.{break, breakable}
  *
  *  breakable {
- *    <b>for</b> (...) {
- *      <b>if</b> (...) break
+ *    for (...) {
+ *      if (...) break
  *    }
- *  }</pre>
- *
+ *  }
+ *  }}}
  */
 object Breaks extends Breaks
 
