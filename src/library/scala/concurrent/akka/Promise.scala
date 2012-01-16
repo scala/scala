@@ -12,7 +12,7 @@ package scala.concurrent.akka
 
 import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
-import scala.concurrent.{Awaitable, ExecutionContext, resolver, blocking, CanAwait, TimeoutException}
+import scala.concurrent.{Awaitable, ExecutionContext, resolve, resolver, blocking, CanAwait, TimeoutException}
 import scala.util.continuations._
 import scala.util.Duration
 import scala.annotation.tailrec
@@ -20,6 +20,8 @@ import scala.annotation.tailrec
 
 
 trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
+  
+  def future = this
   
   // TODO refine answer and return types here from Any to type parameters
   // then move this up in the hierarchy
@@ -75,7 +77,7 @@ object Promise {
    */
   sealed trait FState[+T] { def value: Option[Either[Throwable, T]] }
   
-  case class Pending[T](listeners: List[Either[Throwable, T] ⇒ Unit] = Nil) extends FState[T] {
+  case class Pending[T](listeners: List[Either[Throwable, T] => Any] = Nil) extends FState[T] {
     def value: Option[Either[Throwable, T]] = None
   }
   
@@ -89,8 +91,9 @@ object Promise {
   
   private val emptyPendingValue = Pending[Nothing](Nil)
   
-  /* default promise implementation */
-  abstract class DefaultPromise[T](implicit val executor: ExecutionContext) extends AbstractPromise with Promise[T] {
+  /** Default promise implementation.
+   */
+  class DefaultPromise[T](implicit val executor: ExecutionContextImpl) extends AbstractPromise with Promise[T] {
   self =>
     
     updater.set(this, Promise.EmptyPending())
@@ -102,7 +105,13 @@ object Promise {
           val ms = NANOSECONDS.toMillis(waitTimeNanos)
           val ns = (waitTimeNanos % 1000000l).toInt // as per object.wait spec
           val start = System.nanoTime()
-          try { synchronized { if (value.isEmpty) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
+          try {
+            synchronized {
+              while (value.isEmpty) wait(ms, ns)
+            }
+          } catch {
+            case e: InterruptedException =>
+          }
           
           awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
         } else
@@ -133,80 +142,92 @@ object Promise {
     @inline
     protected final def getState: FState[T] = updater.get(this)
     
-    /*
     def tryComplete(value: Either[Throwable, T]): Boolean = {
-      val callbacks: List[Either[Throwable, T] => Unit] = {
+      val callbacks: List[Either[Throwable, T] => Any] = {
         try {
           @tailrec
-          def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Unit] = {
+          def tryComplete(v: Either[Throwable, T]): List[Either[Throwable, T] => Any] = {
             getState match {
               case cur @ Pending(listeners) =>
-              if (updateState(cur, if (v.isLeft) Failure(Some(v)) else Success(Some(v)))) listeners
-                                   else tryComplete(v)
+                if (updateState(cur, if (v.isLeft) Failure(Some(v)) else Success(Some(v)))) listeners
+                else tryComplete(v)
               case _ => null
             }
           }
           tryComplete(resolve(value))
         } finally {
-          synchronized { notifyAll() } //Notify any evil blockers
+          synchronized { notifyAll() } // notify any blockers from `tryAwait`
         }
       }
       
       callbacks match {
         case null             => false
         case cs if cs.isEmpty => true
-        case cs               => Future.dispatchTask(() => cs.foreach(f => notifyCompleted(f, value))); true
+        case cs               =>
+          executor dispatchFuture {
+            () => cs.foreach(f => notifyCompleted(f, value))
+          }
+          true
       }
     }
     
-    def onComplete(func: Either[Throwable, T] => Unit): this.type = {
-      @tailrec //Returns whether the future has already been completed or not
+    def onComplete[U](func: Either[Throwable, T] => U): this.type = {
+      @tailrec // Returns whether the future has already been completed or not
       def tryAddCallback(): Boolean = {
         val cur = getState
         cur match {
           case _: Success[_] | _: Failure[_] => true
           case p: Pending[_] =>
-          val pt = p.asInstanceOf[Pending[T]]
-          if (updateState(pt, pt.copy(listeners = func :: pt.listeners))) false else tryAddCallback()
+            val pt = p.asInstanceOf[Pending[T]]
+            if (updateState(pt, pt.copy(listeners = func :: pt.listeners))) false else tryAddCallback()
         }
       }
       
       if (tryAddCallback()) {
         val result = value.get
-        Future.dispatchTask(() => notifyCompleted(func, result))
+        executor dispatchFuture {
+          () => notifyCompleted(func, result)
+        }
       }
       
       this
     }
     
-    private final def notifyCompleted(func: Either[Throwable, T] => Unit, result: Either[Throwable, T]) {
-      try { func(result) } catch { case e => logError("Future onComplete-callback raised an exception", e) }
+    private final def notifyCompleted(func: Either[Throwable, T] => Any, result: Either[Throwable, T]) {
+      // TODO see what to do about logging
+      //try {
+      func(result)
+      //} catch {
+      //  case e => logError("Future onComplete-callback raised an exception", e)
+      //}
     }
-    */
   }
   
-  /*
-  /**
-   * An already completed Future is seeded with it's result at creation, is useful for when you are participating in
-   * a Future-composition but you already have a value to contribute.
+  /** An already completed Future is given its result at creation.
+   *  
+   *  Useful in Future-composition when a value to contribute is already available.
    */
-  final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContext) extends Promise[T] {
+  final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContextImpl) extends Promise[T] {
     val value = Some(resolve(suppliedValue))
-
+    
     def tryComplete(value: Either[Throwable, T]): Boolean = false
-    def onComplete(func: Either[Throwable, T] => Unit): this.type = {
+    
+    def onComplete[U](func: Either[Throwable, T] => U): this.type = {
       val completedAs = value.get
-      Future dispatchTask (() => func(completedAs))
+      executor dispatchFuture {
+        () => func(completedAs)
+      }
       this
     }
-
-    def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this
-    def result(atMost: Duration)(implicit permit: CanAwait): T = value.get match {
+    
+    private def ready(atMost: Duration)(implicit permit: CanAwait): this.type = this
+    
+    def await(atMost: Duration)(implicit permit: CanAwait): T = value.get match {
       case Left(e)  => throw e
       case Right(r) => r
     }
   }
-  */
+  
 }
 
 

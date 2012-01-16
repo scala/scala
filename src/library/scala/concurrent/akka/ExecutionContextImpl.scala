@@ -1,0 +1,102 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2011, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala.concurrent.akka
+
+
+
+import java.util.concurrent.{Callable, ExecutorService}
+import scala.concurrent.{ExecutionContext, resolver, Awaitable}
+import scala.util.Duration
+import scala.collection.mutable.Stack
+
+
+
+class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionContext {
+  
+  def execute(runnable: Runnable): Unit = executorService execute runnable
+  
+  def execute[U](body: () => U): Unit = execute(new Runnable {
+    def run() = body()
+  })
+  
+  def promise[T]: Promise[T] = new Promise.DefaultPromise[T]()(this)
+  
+  def future[T](body: =>T): Future[T] = {
+    val p = promise[T]
+    
+    dispatchFuture {
+      () =>
+      p complete {
+        try {
+          Right(body)
+        } catch {
+          case e => resolver(e)
+        }
+      }
+    }
+    
+    p.future
+  }
+  
+  /** Only callable from the tasks running on the same execution context. */
+  def blockingCall[T](body: Awaitable[T]): T = {
+    releaseStack()
+    
+    // TODO see what to do with timeout
+    body.await(Duration.fromNanos(0))(CanAwaitEvidence)
+  }
+  
+  // an optimization for batching futures
+  // TODO we should replace this with a public queue,
+  // so that it can be stolen from
+  // OR: a push to the local task queue should be so cheap that this is
+  // not even needed, but stealing is still possible
+  private val _taskStack = new ThreadLocal[Stack[() => Unit]]()
+  
+  private def releaseStack(): Unit =
+    _taskStack.get match {
+      case stack if (stack ne null) && stack.nonEmpty =>
+        val tasks = stack.elems
+        stack.clear()
+        _taskStack.remove()
+        dispatchFuture(() => _taskStack.get.elems = tasks, true)
+      case null =>
+        // do nothing - there is no local batching stack anymore
+      case _ =>
+        _taskStack.remove()
+    }
+  
+  private[akka] def dispatchFuture(task: () => Unit, force: Boolean = false): Unit =
+    _taskStack.get match {
+      case stack if (stack ne null) && !force => stack push task
+      case _ => this.execute(
+        new Runnable {
+          def run() {
+            try {
+              val taskStack = Stack[() => Unit](task)
+              _taskStack set taskStack
+              while (taskStack.nonEmpty) {
+                val next = taskStack.pop()
+                try {
+                  next.apply()
+                } catch {
+                  case e =>
+                    // TODO catching all and continue isn't good for OOME
+                    e.printStackTrace()
+                }
+              }
+            } finally {
+              _taskStack.remove()
+            }
+          }
+        }
+      )
+    }
+  
+}
