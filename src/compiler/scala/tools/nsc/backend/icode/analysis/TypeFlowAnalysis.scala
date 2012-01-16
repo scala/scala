@@ -619,6 +619,50 @@ abstract class TypeFlowAnalysis {
 	}
   }
 
+  class MTFAGrowable extends MethodTFA {
+
+    import icodes._
+
+    /** discards what must be discarded, blanks what needs to be blanked out, and keeps the rest. */
+    def reinit(m: icodes.IMethod, staleOut: List[BasicBlock], inlined: collection.Set[BasicBlock], staleIn: collection.Set[BasicBlock]) {
+      if (this.method == null || this.method.symbol != m.symbol) {
+        init(m)
+        return
+      } else if(staleOut.isEmpty && inlined.isEmpty && staleIn.isEmpty) {
+        // this promotes invoking reinit if in doubt, no performance degradation will ensue!
+        return;
+      }
+
+      reinit {
+        // asserts conveying an idea what CFG shapes arrive here.
+        // staleIn foreach (p => assert( !in.isDefinedAt(p), p))
+        // staleIn foreach (p => assert(!out.isDefinedAt(p), p))
+        // inlined foreach (p => assert( !in.isDefinedAt(p), p))
+        // inlined foreach (p => assert(!out.isDefinedAt(p), p))
+        // inlined foreach (p => assert(!p.successors.isEmpty || p.lastInstruction.isInstanceOf[icodes.opcodes.THROW], p))
+        // staleOut foreach (p => assert(  in.isDefinedAt(p), p))
+
+        // never rewrite in(m.startBlock)
+        staleOut foreach { b =>
+          if(!inlined.contains(b)) { worklist += b }
+          out(b)    = typeFlowLattice.bottom
+        }
+        // nothing else is added to the worklist, bb's reachable via succs will be tfa'ed
+        blankOut(inlined)
+        blankOut(staleIn)
+        // no need to add startBlocks from m.exh
+      }
+    }
+
+    private def blankOut(blocks: collection.Set[BasicBlock]) {
+      blocks foreach { b =>
+        in(b)     = typeFlowLattice.bottom
+        out(b)    = typeFlowLattice.bottom
+      }
+    }
+
+  }
+
   class Timer {
     var millis = 0L
 
