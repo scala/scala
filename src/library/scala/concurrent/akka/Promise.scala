@@ -13,7 +13,7 @@ package scala.concurrent.akka
 import java.util.concurrent.TimeUnit.{ NANOSECONDS, MILLISECONDS }
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.{Awaitable, ExecutionContext, resolve, resolver, blocking, CanAwait, TimeoutException}
-import scala.util.continuations._
+//import scala.util.continuations._
 import scala.util.Duration
 import scala.annotation.tailrec
 
@@ -25,7 +25,7 @@ trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
   
   // TODO refine answer and return types here from Any to type parameters
   // then move this up in the hierarchy
-  
+  /*
   final def <<(value: T): Future[T] @cps[Future[Any]] = shift {
     cont: (Future[T] => Future[Any]) =>
     cont(complete(Right(value)))
@@ -47,7 +47,7 @@ trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
     
     p.future
   }
-  
+  */
   // TODO finish this once we introduce something like dataflow streams
   
   /*

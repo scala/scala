@@ -11,7 +11,7 @@ package scala.concurrent.akka
 
 
 import scala.concurrent.{Awaitable, ExecutionContext}
-import scala.util.continuations._
+//import scala.util.continuations._
 
 
 
@@ -24,7 +24,7 @@ trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
    *  Returns the result of this Future without blocking, by suspending execution and storing it as a
    *  continuation until the result is available.
    */
-  def apply(): T @cps[Future[Any]] = shift(this flatMap (_: T => Future[Any]))
+  //def apply(): T @cps[Future[Any]] = shift(this flatMap (_: T => Future[Any]))
   
   /** Tests whether this Future has been completed.
    */

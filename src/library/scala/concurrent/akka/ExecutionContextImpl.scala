@@ -44,8 +44,17 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
     p.future
   }
   
+  def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
+  
+  def blocking[T](atMost: Duration)(awaitable: Awaitable[T]): T = {
+    currentExecutionContext.get match {
+      case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
+      case x => x.blockingCall(awaitable) // inside an execution context thread
+    }
+  }
+  
   /** Only callable from the tasks running on the same execution context. */
-  def blockingCall[T](body: Awaitable[T]): T = {
+  private def blockingCall[T](body: Awaitable[T]): T = {
     releaseStack()
     
     // TODO see what to do with timeout

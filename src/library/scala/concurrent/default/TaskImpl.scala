@@ -257,7 +257,16 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   def promise[T]: Promise[T] =
     new PromiseImpl[T](this)
   
-  def blockingCall[T](b: Awaitable[T]): T = b match {
+  def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
+  
+  def blocking[T](atMost: Duration)(awaitable: Awaitable[T]): T = {
+    currentExecutionContext.get match {
+      case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
+      case x => x.blockingCall(awaitable) // inside an execution context thread
+    }
+  }
+  
+  private def blockingCall[T](b: Awaitable[T]): T = b match {
     case fj: TaskImpl[_] if fj.executor.pool eq pool =>
       fj.await(Duration.fromNanos(0))
     case _ =>

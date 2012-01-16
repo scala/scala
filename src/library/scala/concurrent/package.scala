@@ -76,6 +76,11 @@ package object concurrent {
   def promise[T]()(implicit execCtx: ExecutionContext = executionContext): Promise[T] =
     execCtx promise
   
+  /** Wraps a block of code into an awaitable object. */
+  def body2awaitable[T](body: =>T) = new Awaitable[T] {
+    def await(atMost: Duration)(implicit cb: CanAwait) = body
+  }
+  
   /** Used to block on a piece of code which potentially blocks.
    *  
    *  @param body         A piece of code which contains potentially blocking or long running calls.
@@ -85,14 +90,10 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
+  def blocking[T](atMost: Duration)(body: =>T)(implicit execCtx: ExecutionContext = executionContext): T =
+    executionContext.blocking(atMost)(body)
   
-  /** Wraps a block of code into an awaitable object. */
-  def body2awaitable[T](body: =>T) = new Awaitable[T] {
-    def await(atMost: Duration)(implicit cb: CanAwait) = body
-  }
-  
-  /** Blocks on a blockable object.
+  /** Blocks on an awaitable object.
    *  
    *  @param awaitable    An object with a `block` method which runs potentially blocking or long running calls.
    *  
@@ -101,23 +102,32 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
+  def blocking[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): T =
+    executionContext.blocking(atMost)(awaitable)
+  
+  /*
+  def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
+  
   def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
     currentExecutionContext.get match {
       case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
       case x => x.blockingCall(awaitable) // inside an execution context thread
     }
   }
+  */
   
   object await {
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): Awaitable[T] = {
+    def ready[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): Awaitable[T] = {
       try blocking(awaitable, atMost)
       catch { case _ => }
       awaitable
     }
     
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T = blocking(awaitable, atMost)
+    def result[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): T = {
+      blocking(awaitable, atMost)
+    }
   }
-
+  
 }
 
 
