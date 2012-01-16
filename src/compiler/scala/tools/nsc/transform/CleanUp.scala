@@ -147,11 +147,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             if (isFinal) FINAL else 0
           )
           
-          val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags) setInfo forType
+          val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags) setInfoAndEnter forType
           if (!isFinal)
             varSym.addAnnotation(VolatileAttr)
 
-          currentClass.info.decls enter varSym
           val varDef = typedPos( VAL(varSym) === forInit )
           newStaticMembers append transform(varDef)
 
@@ -163,13 +162,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         def addStaticMethodToClass(forName: String, forArgsTypes: List[Type], forResultType: Type)
                                   (forBody: Pair[Symbol, List[Symbol]] => Tree): Symbol = {
-          val methSym = currentClass.newMethod(ad.pos, mkTerm(forName))
-            .setFlag(STATIC | SYNTHETIC)
 
-          methSym.setInfo(MethodType(methSym.newSyntheticValueParams(forArgsTypes), forResultType))
-          currentClass.info.decls enter methSym
+          val methSym = currentClass.newMethod(mkTerm(forName), ad.pos, STATIC | SYNTHETIC)
+          val params  = methSym.newSyntheticValueParams(forArgsTypes)
+          methSym setInfoAndEnter MethodType(params, forResultType)
 
-          val methDef = typedPos( DefDef(methSym, { forBody(Pair(methSym, methSym.paramss(0))) }) )
+          val methDef = typedPos( DefDef(methSym, forBody(methSym -> params)) )
           newStaticMembers append transform(methDef)
 
           methSym
@@ -404,7 +402,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
               // exception catching machinery
-              val invokeExc   = currentOwner.newValue(ad.pos, mkTerm("")) setInfo InvocationTargetExceptionClass.tpe
+              val invokeExc   = currentOwner.newValue(mkTerm(""), ad.pos) setInfo InvocationTargetExceptionClass.tpe
               def catchVar    = Bind(invokeExc, Typed(Ident(nme.WILDCARD), TypeTree(InvocationTargetExceptionClass.tpe)))
               def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
 
@@ -492,7 +490,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               assert(params.length == mparams.length, mparams)
               
               typedPos {
-                val sym = currentOwner.newValue(ad.pos, mkTerm("qual")) setInfo qual0.tpe
+                val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
                 qual = safeREF(sym)
 
                 BLOCK(

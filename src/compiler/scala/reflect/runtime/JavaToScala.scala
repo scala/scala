@@ -406,7 +406,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     val tparams = new ListBuffer[Symbol]
     def targToScala(arg: jType): Type = arg match {
       case jwild: WildcardType =>
-        val tparam = owner.newExistential(NoPosition, newTypeName("T$" + tparams.length))
+        val tparam = owner.newExistential(newTypeName("T$" + tparams.length))
           .setInfo(TypeBounds(
             lub(jwild.getLowerBounds.toList map typeToScala),
             glb(jwild.getUpperBounds.toList map typeToScala map objToAny)))
@@ -467,9 +467,11 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  @return A Scala value symbol that wraps all reflection info of `jfield`
    */
   private def jfieldAsScala(jfield: jField): Symbol = fieldCache.toScala(jfield) {
-    val field = sOwner(jfield).newValue(NoPosition, newTermName(jfield.getName))
-      .setFlag(toScalaFieldFlags(jfield.getModifiers) | JAVA)
-      .setInfo(typeToScala(jfield.getGenericType))
+    val field = (
+      sOwner(jfield)
+        newValue(newTermName(jfield.getName), NoPosition, toScalaFieldFlags(jfield.getModifiers))
+        setInfo typeToScala(jfield.getGenericType)
+    )
     fieldCache enter (jfield, field)
     copyAnnotations(field, jfield)
     field
@@ -487,8 +489,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   private def jmethodAsScala(jmeth: jMethod): Symbol = methodCache.toScala(jmeth) {
     val clazz = sOwner(jmeth)
-    val meth = clazz.newMethod(NoPosition, newTermName(jmeth.getName))
-      .setFlag(toScalaMethodFlags(jmeth.getModifiers) | JAVA)
+    val meth = clazz.newMethod(newTermName(jmeth.getName), NoPosition, toScalaMethodFlags(jmeth.getModifiers))
     methodCache enter (jmeth, meth)
     val tparams = jmeth.getTypeParameters.toList map createTypeParameter
     val paramtpes = jmeth.getGenericParameterTypes.toList map typeToScala
@@ -510,8 +511,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private def jconstrAsScala(jconstr: jConstructor[_]): Symbol = {
     // [Martin] Note: I know there's a lot of duplication wrt jmethodAsScala, but don't think it's worth it to factor this out.
     val clazz = sOwner(jconstr)
-    val constr = clazz.newMethod(NoPosition, nme.CONSTRUCTOR)
-      .setFlag(toScalaMethodFlags(jconstr.getModifiers) | JAVA)
+    val constr = clazz.newConstructor(NoPosition, toScalaMethodFlags(jconstr.getModifiers))
     constructorCache enter (jconstr, constr)
     val tparams = jconstr.getTypeParameters.toList map createTypeParameter
     val paramtpes = jconstr.getGenericParameterTypes.toList map typeToScala

@@ -110,12 +110,12 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
-      val m = clazz.newMethod(clazz.pos.focus, name.toTermName)
+      val m = clazz.newMethod(name.toTermName, clazz.pos.focus)
       m setInfo info
       finishMethod(m, f)
     }
     private def createInternal(name: Name, f: Symbol => Tree, infoFn: Symbol => Type): Tree = {
-      val m = clazz.newMethod(clazz.pos.focus, name.toTermName)
+      val m = clazz.newMethod(name.toTermName, clazz.pos.focus)
       m setInfo infoFn(m)
       finishMethod(m, f)
     }

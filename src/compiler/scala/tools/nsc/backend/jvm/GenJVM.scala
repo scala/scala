@@ -966,9 +966,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           serialVUID foreach { value =>
             import Flags._, definitions._
             val fieldName = "serialVersionUID"
-            val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
-                                .setFlag(STATIC | FINAL)
-                                .setInfo(longType)
+            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, STATIC | FINAL) setInfo longType
             clasz addField new IField(fieldSymbol)
             lastBlock emit CONSTANT(Constant(value))
             lastBlock emit STORE_FIELD(fieldSymbol, true)

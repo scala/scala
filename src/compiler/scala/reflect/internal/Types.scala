@@ -3726,7 +3726,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
     val eparams = mapWithIndex(tparams)((tparam, i) =>
-      clazz.newExistential(clazz.pos, newTypeName("?"+i)) setInfo tparam.info.bounds)
+      clazz.newExistential(newTypeName("?"+i), clazz.pos) setInfo tparam.info.bounds)
 
     eparams map (_ substInfo (tparams, eparams))
   }
@@ -3848,10 +3848,10 @@ trait Types extends api.Types { self: SymbolTable =>
             if (tree.symbol isNonBottomSubClass clazz) &&
                (pre.widen.typeSymbol isNonBottomSubClass tree.symbol) =>
               if (pre.isStable) { // XXX why is this in this method? pull it out and guard the call `annotationArgRewriter.transform(tree)`?
-                val termSym =
-                  pre.typeSymbol.owner.newValue(
-                    pre.typeSymbol.pos,
-                    pre.typeSymbol.name.toTermName).setInfo(pre)  // what symbol should really be used?
+                val termSym = (
+                  pre.typeSymbol.owner.newValue(pre.typeSymbol.name.toTermName, pre.typeSymbol.pos) // what symbol should really be used?
+                    setInfo pre
+                )
                 gen.mkAttributedQualifier(pre, termSym)
               } else
                 giveup()
@@ -4205,7 +4205,7 @@ trait Types extends api.Types { self: SymbolTable =>
         val symowner = oldSym.owner
         val bound = singletonBounds(actualsIndexed(actualIdx))
 
-        val sym = symowner.newExistential(oldSym.pos, newTypeName(oldSym.name + ".type"))
+        val sym = symowner.newExistential(newTypeName(oldSym.name + ".type"), oldSym.pos)
         sym.setInfo(bound)
         sym.setFlag(oldSym.flags)
 
@@ -5892,7 +5892,7 @@ trait Types extends api.Types { self: SymbolTable =>
               else {
                 def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                   TypeBounds(glb(bnds map (_.lo), decr(depth)), lub(bnds map (_.hi), decr(depth)))
-                lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name.toTypeName)
+                lubRefined.typeSymbol.newAbstractType(proto.name.toTypeName, proto.pos)
                   .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
               }
             }

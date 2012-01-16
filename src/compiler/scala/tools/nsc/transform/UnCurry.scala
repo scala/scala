@@ -168,7 +168,7 @@ abstract class UnCurry extends InfoTransform
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
       localTyper.typed {
         val extpe = nonLocalReturnExceptionType(meth.tpe.finalResultType)
-        val ex = meth.newValue(body.pos, nme.ex) setInfo extpe
+        val ex = meth.newValue(nme.ex, body.pos) setInfo extpe
         val pat = Bind(ex,
                        Typed(Ident(nme.WILDCARD),
                              AppliedTypeTree(Ident(NonLocalReturnControlClass),
@@ -260,13 +260,12 @@ abstract class UnCurry extends InfoTransform
           else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
         anonClass setInfo ClassInfoType(parents, new Scope, anonClass)
-        val applyMethod = anonClass.newMethod(fun.pos, nme.apply) setFlag FINAL
-        applyMethod setInfo MethodType(applyMethod newSyntheticValueParams formals, restpe)
-        anonClass.info.decls enter applyMethod
-        anonClass.addAnnotation(serialVersionUIDAnnotation)
+        val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL) 
+        applyMethod setInfoAndEnter MethodType(applyMethod newSyntheticValueParams formals, restpe)
+        anonClass addAnnotation serialVersionUIDAnnotation
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
-        new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
+        fun.body.changeOwner(fun.symbol -> applyMethod)
 
         def missingCaseCall(scrutinee: Tree): Tree = Apply(Select(This(anonClass), nme.missingCase), List(scrutinee))
 
@@ -285,12 +284,11 @@ abstract class UnCurry extends InfoTransform
             if (anonClass.info.member(nme._isDefinedAt) != NoSymbol) nme._isDefinedAt
             else nme.isDefinedAt
           }
-          val m = anonClass.newMethod(fun.pos, isDefinedAtName) setFlag FINAL
-          m setInfo MethodType(m newSyntheticValueParams formals, BooleanClass.tpe)
-          anonClass.info.decls enter m
-          val vparam = fun.vparams.head.symbol
-          val idparam = m.paramss.head.head
-          val substParam = new TreeSymSubstituter(List(vparam), List(idparam))
+          val m      = anonClass.newMethod(isDefinedAtName, fun.pos, FINAL)
+          val params = m newSyntheticValueParams formals
+          m setInfoAndEnter MethodType(params, BooleanClass.tpe)
+
+          val substParam = new TreeSymSubstituter(fun.vparams map (_.symbol), params)
           def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
 
           // waiting here until we can mix case classes and extractors reliably (i.e., when virtpatmat becomes the default)
@@ -518,9 +516,9 @@ abstract class UnCurry extends InfoTransform
        */
       def liftTree(tree: Tree) = {
         debuglog("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(tree.pos, unit.freshTermName("liftedTree"))
+        val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
         sym.setInfo(MethodType(List(), tree.tpe))
-        new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
+        tree.changeOwner(currentOwner -> sym)
         localTyper.typedPos(tree.pos)(Block(
           List(DefDef(sym, List(Nil), tree)),
           Apply(Ident(sym), Nil)
@@ -783,11 +781,7 @@ abstract class UnCurry extends InfoTransform
       }
 
       // create the symbol
-      val forwsym = (
-        currentClass.newMethod(dd.pos, dd.name)
-        . setFlag (VARARGS | SYNTHETIC | flatdd.symbol.flags)
-        . setInfo (forwtype)
-      )
+      val forwsym = currentClass.newMethod(dd.name, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {

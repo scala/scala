@@ -154,10 +154,9 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(qual.pos, unit.freshTermName("qual$"))
-                            .setInfo(qual.tpe)
-        blockTyper.context.scope.enter(sym)
-        val vd = atPos(sym.pos)(ValDef(sym, qual).setType(NoType))
+        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos) setInfo qual.tpe
+        blockTyper.context.scope enter sym
+        val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
 
         var baseFunTransformed = atPos(baseFun.pos.makeTransparent) {
           // don't use treeCopy: it would assign opaque position.

@@ -218,11 +218,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
    */
   private def mkPackedValDef(expr: Tree, owner: Symbol, name: Name): (ValDef, () => Ident) = {
     val packedType = typer.packedType(expr, owner)
-    val sym = (
-      owner.newValue(expr.pos.makeTransparent, name)
-      setFlag SYNTHETIC
-      setInfo packedType
-    )
+    val sym = owner.newValue(name, expr.pos.makeTransparent, SYNTHETIC) setInfo packedType
 
     (ValDef(sym, expr), () => Ident(sym) setPos sym.pos.focus setType expr.tpe)
   }

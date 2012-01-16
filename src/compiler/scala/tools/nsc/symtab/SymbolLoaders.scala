@@ -39,7 +39,7 @@ abstract class SymbolLoaders {
    */
   def enterClass(root: Symbol, name: String, completer: SymbolLoader): Symbol = {
     val owner = realOwner(root)
-    val clazz = owner.newClass(NoPosition, newTypeName(name))
+    val clazz = owner.newClass(newTypeName(name))
     clazz setInfo completer
     enterIfNew(owner, clazz, completer)
   }

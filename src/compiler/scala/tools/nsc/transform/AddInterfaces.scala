@@ -121,8 +121,11 @@ abstract class AddInterfaces extends InfoTransform {
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
       val decls = new Scope
       if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
-        decls enter (implClass.newMethod(implClass.pos, nme.MIXIN_CONSTRUCTOR)
-                     setInfo MethodType(List(), UnitClass.tpe))
+        decls enter (
+          implClass.newMethod(nme.MIXIN_CONSTRUCTOR, implClass.pos)
+            setInfo MethodType(Nil, UnitClass.tpe)
+        )
+
       for (sym <- ifaceDecls.iterator) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {

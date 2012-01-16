@@ -255,8 +255,11 @@ abstract class ClassfileParser {
               f = ownerTpe.findMember(origName, 0, 0, false).suchThat(_.tpe =:= tpe)
             } else {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
-              f = if (tpe.isInstanceOf[MethodType]) owner.newMethod(owner.pos, name).setInfo(tpe)
-                  else owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE)
+              f = tpe match {
+                case MethodType(_, _) => owner.newMethod(name, owner.pos)
+                case _                => owner.newVariable(name, owner.pos)
+              }
+              f setInfo tpe
               log("created fake member " + f.fullName)
             }
 //            println("\townerTpe.decls: " + ownerTpe.decls)
@@ -283,7 +286,7 @@ abstract class ClassfileParser {
         if (in.buf(start).toInt != CONSTANT_NAMEANDTYPE) errorBadTag(start)
         val name = getName(in.getChar(start + 1).toInt)
         // create a dummy symbol for method types
-        val dummySym = ownerTpe.typeSymbol.newMethod(ownerTpe.typeSymbol.pos, name)
+        val dummySym = ownerTpe.typeSymbol.newMethod(name, ownerTpe.typeSymbol.pos)
         var tpe  = getType(dummySym, in.getChar(start + 3).toInt)
 
         // fix the return type, which is blindly set to the class currently parsed
@@ -465,7 +468,7 @@ abstract class ClassfileParser {
       }
       ss = name.subName(0, start)
       owner.info.decls lookup ss orElse {
-        sym = owner.newClass(NoPosition, ss.toTypeName) setInfoAndEnter completer
+        sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
         debuglog("loaded "+sym+" from file "+file)
         sym
       }
@@ -608,7 +611,7 @@ abstract class ClassfileParser {
     } else {
       val name    = pool.getName(in.nextChar)
       val info    = pool.getType(in.nextChar)
-      val sym     = getOwner(jflags).newValue(NoPosition, name).setFlag(sflags)
+      val sym     = getOwner(jflags).newValue(name, NoPosition, sflags)
       val isEnum  = (jflags & JAVA_ACC_ENUM) != 0
 
       sym setInfo {
@@ -646,7 +649,7 @@ abstract class ClassfileParser {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)
-        val sym = getOwner(jflags).newMethod(NoPosition, name).setFlag(sflags)
+        val sym = getOwner(jflags).newMethod(name, NoPosition, sflags)
         var info = pool.getType(sym, (in.nextChar))
         if (name == nme.CONSTRUCTOR)
           info match {
@@ -724,7 +727,7 @@ abstract class ClassfileParser {
                           else TypeBounds.lower(tp)
                         case '*' => TypeBounds.empty
                       }
-                      val newtparam = sym.newExistential(sym.pos, newTypeName("?"+i)) setInfo bounds
+                      val newtparam = sym.newExistential(newTypeName("?"+i), sym.pos) setInfo bounds
                       existentials += newtparam
                       xs += newtparam.tpe //@M should probably be .tpeHK
                       i += 1

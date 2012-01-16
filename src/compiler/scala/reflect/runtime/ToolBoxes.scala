@@ -41,9 +41,12 @@ trait ToolBoxes extends { self: Universe =>
       private def isFree(t: Tree) = t.isInstanceOf[Ident] && t.symbol.isInstanceOf[FreeVar]
 
       def typedTopLevelExpr(tree: Tree, pt: Type): Tree = {
-        val ownerClass = EmptyPackageClass.newClass(newTypeName("<expression-owner>"))
-        ownerClass.setInfo(new ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
-        val owner = ownerClass.newLocalDummy(tree.pos)
+        // !!! Why is this is in the empty package? If it's only to make
+        // it inaccessible then please put it somewhere designed for that
+        // rather than polluting the empty package with synthetics.
+        val ownerClass = EmptyPackageClass.newClassWithInfo(newTypeName("<expression-owner>"), List(ObjectClass.tpe), newScope)
+        val owner      = ownerClass.newLocalDummy(tree.pos)
+
         typer.atOwner(tree, owner).typed(tree, analyzer.EXPRmode, pt)
       }
       

@@ -212,17 +212,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         setInfo OverloadedType(pre, alternatives)
     )
 
-    /** for explicit outer phase */
-    final def newOuterAccessor(pos: Position) = {
-      val accFlags = METHOD | STABLE | SYNTHETIC | (
-        if (isTrait) DEFERRED else 0
-      )
-      val sym = newMethodSymbol(nme.OUTER, pos, accFlags)
-      sym.expandName(this)
-      sym.referenced = this
-      sym
-    }
-
     final def newErrorValue(name: TermName) =
       newTermSymbol(name, pos, SYNTHETIC | IS_ERROR) setInfo ErrorType
 
@@ -285,6 +274,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def newClass(name: TypeName, pos: Position = NoPosition, newFlags: Long = 0L) =
       newClassSymbol(name, pos, newFlags)
+    
+    /** A new class with its info set to a ClassInfoType with given scope and parents. */
+    def newClassWithInfo(name: TypeName, parents: List[Type], scope: Scope, pos: Position = NoPosition, newFlags: Long = 0L) = {
+      val clazz = newClass(name, pos, newFlags)
+      clazz setInfo ClassInfoType(parents, scope, clazz)
+    }
+    final def newErrorClass(name: TypeName) =
+      newClassWithInfo(name, Nil, new ErrorScope(this), pos, SYNTHETIC | IS_ERROR)
 
     final def newModuleClass(name: TypeName, pos: Position = NoPosition) =
       newModuleClassSymbol(name, pos)
@@ -311,11 +308,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         setPrivateWithin privateWithin
         setInfo MethodType(Nil, tpe)
     )
-
-    final def newErrorClass(name: TypeName) = {
-      val clazz = newClassSymbol(name, pos, SYNTHETIC | IS_ERROR)
-      clazz setInfo ClassInfoType(Nil, new ErrorScope(this), clazz)
-    }
 
     final def newErrorSymbol(name: Name): Symbol = name match {
       case x: TypeName  => newErrorClass(x)
@@ -1196,7 +1188,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           oldsymbuf += sym
           newsymbuf += (
             if (sym.isClass)
-              tp.typeSymbol.newAbstractType(sym.pos, sym.name.toTypeName).setInfo(sym.existentialBound)
+              tp.typeSymbol.newAbstractType(sym.name.toTypeName, sym.pos).setInfo(sym.existentialBound)
             else
               sym.cloneSymbol(tp.typeSymbol))
         }
@@ -1346,15 +1338,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       cloneSymbol(owner)
 
     /** A clone of this symbol, but with given owner. */
-    final def cloneSymbol(owner: Symbol): Symbol = {
-      val newSym = cloneSymbolImpl(owner, this.rawflags)
+    final def cloneSymbol(owner: Symbol): Symbol = cloneSymbol(owner, this.rawflags)
+    final def cloneSymbol(owner: Symbol, newFlags: Long): Symbol = {
+      val newSym = cloneSymbolImpl(owner, newFlags)
       ( newSym
           setPrivateWithin privateWithin
           setInfo (info cloneInfo newSym)
           setAnnotations this.annotations
       )
     }
-    
     /** Internal method to clone a symbol's implementation with the given flags and no info. */
     def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol
     def cloneSymbolImpl(owner: Symbol): Symbol = cloneSymbolImpl(owner, 0L)

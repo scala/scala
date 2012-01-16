@@ -144,7 +144,7 @@ abstract class TailCalls extends Transform {
       def isTransformed    = isEligible && accessed
       def tailrecFailure() = unit.error(failPos, "could not optimize @tailrec annotated " + method + ": " + failReason)
 
-      def newThis(pos: Position) = method.newValue(pos, nme.THIS) setInfo currentClass.typeOfThis setFlag SYNTHETIC
+      def newThis(pos: Position) = method.newValue(nme.THIS, pos, SYNTHETIC) setInfo currentClass.typeOfThis
 
       override def toString(): String = (
         "" + method.name + " tparams: " + tparams + " tailPos: " + tailPos +

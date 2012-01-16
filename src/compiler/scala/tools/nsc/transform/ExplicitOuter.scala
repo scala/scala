@@ -91,6 +91,21 @@ abstract class ExplicitOuter extends InfoTransform
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
     else clazz.info.decls find (_.outerSource == clazz) getOrElse NoSymbol
    }
+  def newOuterAccessor(clazz: Symbol) = {
+    val accFlags = SYNTHETIC | METHOD | STABLE | ( if (clazz.isTrait) DEFERRED else 0 )
+    val sym      = clazz.newMethodSymbol(nme.OUTER, clazz.pos, accFlags)
+    val restpe   = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
+    
+    sym expandName clazz
+    sym.referenced = clazz
+    sym setInfo MethodType(Nil, restpe)
+  }
+  def newOuterField(clazz: Symbol) = {
+    val accFlags = SYNTHETIC | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
+    val sym      = clazz.newValue(nme.OUTER_LOCAL, clazz.pos, accFlags)
+
+    sym setInfo clazz.outerClass.thisType
+  }
 
   /** <p>
    *    The type transformation method:
@@ -146,27 +161,20 @@ abstract class ExplicitOuter extends InfoTransform
       var decls1 = decls
       if (isInner(clazz) && !clazz.isInterface) {
         decls1 = decls.cloneScope
-        val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
+        val outerAcc = clazz.newMethod(nme.OUTER, clazz.pos) // 3
         outerAcc expandName clazz
-
-        val restpe = if (clazz.isTrait) clazz.outerClass.tpe else clazz.outerClass.thisType
-        decls1 enter (clazz.newOuterAccessor(clazz.pos) setInfo MethodType(Nil, restpe))
-        if (hasOuterField(clazz)) { //2
-          val access = if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED
-          decls1 enter (
-            clazz.newValue(clazz.pos, nme.OUTER_LOCAL)
-            setFlag (SYNTHETIC | PARAMACCESSOR | access)
-            setInfo clazz.outerClass.thisType
-          )
-        }
+        
+        decls1 enter newOuterAccessor(clazz)
+        if (hasOuterField(clazz)) //2
+          decls1 enter newOuterField(clazz)
       }
       if (!clazz.isTrait && !parents.isEmpty) {
         for (mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = decls.cloneScope
-            val newAcc = mixinOuterAcc.cloneSymbol(clazz)
-            newAcc resetFlag DEFERRED setInfo (clazz.thisType memberType mixinOuterAcc)
+            val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
+            newAcc setInfo (clazz.thisType memberType mixinOuterAcc)
             decls1 enter newAcc
           }
         }
@@ -372,15 +380,13 @@ abstract class ExplicitOuter extends InfoTransform
 
       def makeGuardDef(vs: List[Symbol], guard: Tree) = {
         val gdname = unit.freshTermName("gd")
-        val method = currentOwner.newMethod(tree.pos, gdname) setFlag SYNTHETIC
-        val fmls   = vs map (_.tpe)
-        val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)
-        method setInfo tpe
+        val method = currentOwner.newMethod(gdname, tree.pos, SYNTHETIC)
+        val params = method newSyntheticValueParams vs.map(_.tpe)
+        method setInfo new MethodType(params, BooleanClass.tpe)
 
-        localTyper typed (DEF(method) === {
-          new ChangeOwnerTraverser(currentOwner, method) traverse guard
-          new TreeSymSubstituter(vs, method.paramss.head) transform (guard)
-        })
+        localTyper typed {
+          DEF(method) === guard.changeOwner(currentOwner -> method).substTreeSyms(vs zip params: _*)
+        }
       }
 
       val nguard = new ListBuffer[Tree]

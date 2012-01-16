@@ -71,11 +71,10 @@ object SBTRunner extends DirectRunner {
 
   def main(args: Array[String]): Unit = {
     import collection.JavaConverters._
-    val failures = for {
-      (path, result) <- mainReflect(args).asScala
-     if result == 1 || result == 2
-     val resultName = (if(result == 1) " [FAILED]" else " [TIMEOUT]")
-    } yield path + resultName
+    val failures = (
+      for ((path, result) <- mainReflect(args).asScala ; if result == 1 || result == 2) yield
+        path + ( if (result == 1) " [FAILED]" else " [TIMEOUT]" )
+    )
     // Re-list all failures so we can go figure out what went wrong.
     failures foreach System.err.println
     if(!failures.isEmpty) sys.exit(1)

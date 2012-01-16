@@ -192,12 +192,10 @@ trait Implicits {
    */
   def memberWildcardType(name: Name, tp: Type) = {
     val result = refinedType(List(WildcardType), NoSymbol)
-    var psym = name match {
-      case x: TypeName  => result.typeSymbol.newAbstractType(NoPosition, x)
-      case x: TermName  => result.typeSymbol.newValue(NoPosition, x)
+    name match {
+      case x: TermName => result.typeSymbol.newValue(x) setInfoAndEnter tp
+      case x: TypeName => result.typeSymbol.newAbstractType(x) setInfoAndEnter tp
     }
-    psym setInfo tp
-    result.decls enter psym
     result
   }
 

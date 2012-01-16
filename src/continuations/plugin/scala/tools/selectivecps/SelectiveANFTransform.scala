@@ -215,13 +215,9 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         case ldef @ LabelDef(name, params, rhs) =>
           if (hasAnswerTypeAnn(tree.tpe)) {
-            val sym = currentOwner.newMethod(tree.pos, name)
-                        .setInfo(ldef.symbol.info)
-                        .setFlag(Flags.SYNTHETIC)
-
-            val rhs1 = new TreeSymSubstituter(List(ldef.symbol), List(sym)).transform(rhs)
-            val rhsVal = transExpr(rhs1, None, getAnswerTypeAnn(tree.tpe))
-            new ChangeOwnerTraverser(currentOwner, sym) traverse rhsVal
+            val sym    = currentOwner.newMethod(name, tree.pos, Flags.SYNTHETIC) setInfo ldef.symbol.info
+            val rhs1   = new TreeSymSubstituter(List(ldef.symbol), List(sym)).transform(rhs)
+            val rhsVal = transExpr(rhs1, None, getAnswerTypeAnn(tree.tpe)) changeOwner (currentOwner -> sym)
 
             val stm1 = localTyper.typed(DefDef(sym, rhsVal))
             val expr = localTyper.typed(Apply(Ident(sym), List()))
@@ -355,12 +351,12 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           val valueTpe = removeAllCPSAnnotations(expr.tpe)
 
-          val sym = currentOwner.newValue(tree.pos, newTermName(unit.fresh.newName("tmp")))
-                      .setInfo(valueTpe)
-                      .setFlag(Flags.SYNTHETIC)
-                      .setAnnotations(List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil)))
-
-          new ChangeOwnerTraverser(currentOwner, sym) traverse expr
+          val sym: Symbol = (
+            currentOwner.newValue(newTermName(unit.fresh.newName("tmp")), tree.pos, Flags.SYNTHETIC)
+              setInfo valueTpe
+              setAnnotations List(AnnotationInfo(MarkerCPSSym.tpe, Nil, Nil))
+          )
+          expr.changeOwner(currentOwner -> sym)
 
           (stms ::: List(ValDef(sym, expr) setType(NoType)),
              Ident(sym) setType(valueTpe) setPos(tree.pos), linearize(spc, spcVal)(unit, tree.pos))

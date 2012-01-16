@@ -37,8 +37,8 @@ abstract class SampleTransform extends Transform {
                 Select(                         // The `Select` factory method is defined in class `Trees`
                   sup,
                   currentOwner.newValue(        // creates a new term symbol owned by `currentowner`
-                    tree1.pos,
-                    newTermName("sample"))))))  // The standard term name creator
+                    newTermName("sample"),      // The standard term name creator
+                    tree1.pos)))))
         case _ =>
           tree1
       }

@@ -2817,7 +2817,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
         val bound      = sym.existentialBound
         val sowner     = if (isRawParameter(sym)) context.owner else sym.owner
-        val quantified = sowner.newExistential(sym.pos, name)
+        val quantified = sowner.newExistential(name, sym.pos)
 
         quantified setInfo bound.cloneInfo(quantified)
       }
@@ -3079,7 +3079,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                    * */
                   ( context.owner
                       newLocalDummy (ann.pos)
-                      newValue (ann.pos, nme.self)
+                      newValue (nme.self, ann.pos)
                       setInfo (arg1.tpe.withoutAnnotations)
                   )
                 }
@@ -3120,9 +3120,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (vble == NoSymbol)
             vble =
               if (isFullyDefined(pt))
-                context.owner.newAliasType(tree.pos, name) setInfo pt
+                context.owner.newAliasType(name, tree.pos) setInfo pt
               else
-                context.owner.newAbstractType(tree.pos, name) setInfo TypeBounds.empty
+                context.owner.newAbstractType(name, tree.pos) setInfo TypeBounds.empty
           val rawInfo = vble.rawInfo
           vble = if (vble.name == tpnme.WILDCARD) context.scope.enter(vble)
                  else namer.enterInScope(vble)
@@ -3130,7 +3130,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
         def typedBindTerm(name: TermName) = {
           if (vble == NoSymbol)
-            vble = context.owner.newValue(tree.pos, name)
+            vble = context.owner.newValue(name, tree.pos)
           if (vble.name.toTermName != nme.WILDCARD) {
             if ((mode & ALTmode) != 0)
               error(tree.pos, "illegal variable in pattern alternative")

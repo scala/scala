@@ -203,7 +203,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
                   // Here we could create a single local for all exceptions of a certain type. TODO: try that.
                   val localName   = currentClass.cunit.freshTermName("exception$")
                   val localType   = exceptionType
-                  val localSymbol = bblock.method.symbol.newValue(NoPosition, localName).setInfo(localType.toType)
+                  val localSymbol = bblock.method.symbol.newValue(localName).setInfo(localType.toType)
                   val local       = new Local(localSymbol, localType, false)
 
                   bblock.method.addLocal(local)
