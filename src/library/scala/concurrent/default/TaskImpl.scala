@@ -215,6 +215,8 @@ case class Failure[T](throwable: Throwable) extends State[T]
 
 
 private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
+  import ExecutionContextImpl._
+  
   val pool = {
     val p = new ForkJoinPool
     p.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler {
@@ -259,10 +261,11 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   
   def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
   
-  def blocking[T](atMost: Duration)(awaitable: Awaitable[T]): T = {
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
     currentExecutionContext.get match {
       case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
-      case x => x.blockingCall(awaitable) // inside an execution context thread
+      case x if x eq this => this.blockingCall(awaitable) // inside an execution context thread on this executor
+      case x => x.blocking(awaitable, atMost)
     }
   }
   
@@ -286,3 +289,19 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
   }
 
 }
+
+
+object ExecutionContextImpl {
+  
+  private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
+    override protected def initialValue = null
+  }
+  
+}
+
+
+
+
+
+
+

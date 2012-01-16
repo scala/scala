@@ -13,6 +13,7 @@ package scala.concurrent
 import java.util.concurrent.{ Executors, Future => JFuture, Callable }
 import scala.util.{ Duration, Timeout }
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
+import scala.collection.generic.CanBuildFrom
 
 
 
@@ -32,11 +33,45 @@ trait ExecutionContext {
   
   def blocking[T](atMost: Duration)(body: =>T): T
   
-  def blocking[T](atMost: Duration)(awaitable: Awaitable[T]): T
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T
+  
+  def futureUtilities: FutureUtilities = FutureUtilitiesImpl
   
 }
 
 
 sealed trait CanAwait
 
+
+trait FutureUtilities {
+  
+  def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
+    val builder = cbf(futures)
+    val p: Promise[Coll[T]] = promise[Coll[T]]
+    
+    if (futures.size == 1) futures.head onComplete {
+      case Left(t) => p failure t
+      case Right(v) => builder += v
+        p success builder.result
+    } else {
+      val restFutures = all(futures.tail)
+      futures.head onComplete {
+        case Left(t) => p failure t
+        case Right(v) => builder += v
+          restFutures onComplete {
+            case Left(t) => p failure t
+            case Right(vs) => for (v <- vs) builder += v
+              p success builder.result
+          }
+      }
+    }
+    
+    p.future
+  }
+  
+}
+
+
+object FutureUtilitiesImpl extends FutureUtilities {
+}
 

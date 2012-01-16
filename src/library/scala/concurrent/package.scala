@@ -27,16 +27,12 @@ package object concurrent {
   /** A global execution environment for executing lightweight tasks.
    */
   lazy val executionContext =
-    new default.ExecutionContextImpl
+    new akka.ExecutionContextImpl(java.util.concurrent.Executors.newCachedThreadPool())
   
   /** A global service for scheduling tasks for execution.
    */
   lazy val scheduler =
     new default.SchedulerImpl
-  
-  private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContext] = new ThreadLocal[ExecutionContext] {
-    override protected def initialValue = null
-  }
   
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
     case t: Throwable if isFutureThrowable(t) => t
@@ -90,7 +86,7 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](atMost: Duration)(body: =>T)(implicit execCtx: ExecutionContext = executionContext): T =
+  def blocking[T](atMost: Duration)(body: =>T)(implicit execCtx: ExecutionContext): T =
     executionContext.blocking(atMost)(body)
   
   /** Blocks on an awaitable object.
@@ -102,19 +98,8 @@ package object concurrent {
    *  - InterruptedException - in the case that a wait within the blockable object was interrupted
    *  - TimeoutException - in the case that the blockable object timed out
    */
-  def blocking[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): T =
-    executionContext.blocking(atMost)(awaitable)
-  
-  /*
-  def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
-  
-  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
-    currentExecutionContext.get match {
-      case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
-      case x => x.blockingCall(awaitable) // inside an execution context thread
-    }
-  }
-  */
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration)(implicit execCtx: ExecutionContext = executionContext): T =
+    executionContext.blocking(awaitable, atMost)
   
   object await {
     def ready[T](atMost: Duration)(awaitable: Awaitable[T])(implicit execCtx: ExecutionContext = executionContext): Awaitable[T] = {

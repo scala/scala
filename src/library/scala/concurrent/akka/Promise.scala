@@ -118,7 +118,7 @@ object Promise {
           value.isDefined
       }
       
-      executor.blockingCall(concurrent.body2awaitable(awaitUnsafe(dur2long(atMost))))
+      executor.blocking(concurrent.body2awaitable(awaitUnsafe(dur2long(atMost))), Duration.fromNanos(0))
     }
     
     private def ready(atMost: Duration)(implicit permit: CanAwait): this.type =

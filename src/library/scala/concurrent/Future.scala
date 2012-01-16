@@ -365,11 +365,11 @@ self =>
    *  {{{
    *  val f = future { sys.error("failed") }
    *  val g = future { 5 }
-   *  val h = f or g
+   *  val h = f any g
    *  await(0) h // evaluates to either 5 or throws a runtime exception
    *  }}}
    */
-  def or[U >: T](that: Future[U]): Future[U] = {
+  def any[U >: T](that: Future[U]): Future[U] = {
     val p = newPromise[U]
     
     val completePromise: PartialFunction[Either[Throwable, T], _] = {
@@ -385,35 +385,24 @@ self =>
 }
 
 
+/** TODO some docs
+ *  
+ *  @define nonDeterministic
+ *  Note: using this method yields nondeterministic dataflow programs.
+ */
 object Future {
   
-  /*
-  // TODO make more modular by encoding this within the execution context
-  def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
-    val builder = cbf(futures)
-    val p: Promise[Coll[T]] = executor.promise[Coll[T]]
-    
-    if (futures.size == 1) futures.head onComplete {
-      case Left(t) => p failure t
-      case Right(v) => builder += v
-        p success builder.result
-    } else {
-      val restFutures = all(futures.tail)
-      futures.head onComplete {
-        case Left(t) => p failure t
-        case Right(v) => builder += v
-          restFutures onComplete {
-            case Left(t) => p failure t
-            case Right(vs) => for (v <- vs) builder += v
-              p success builder.result
-          }
-      }
-    }
-    
-    p.future
-  }
-  */
+  // TODO make more modular by encoding all other helper methods within the execution context
+  /**
+   */
+  def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]], ec: ExecutionContext): Future[Coll[T]] =
+    ec.futureUtilities.all[T, Coll](futures)
   
+  // move this to future companion object
   @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
   
 }
+
+
+
+

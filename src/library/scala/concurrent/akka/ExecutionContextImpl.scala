@@ -11,15 +11,22 @@ package scala.concurrent.akka
 
 
 import java.util.concurrent.{Callable, ExecutorService}
-import scala.concurrent.{ExecutionContext, resolver, Awaitable}
+import scala.concurrent.{ExecutionContext, resolver, Awaitable, body2awaitable}
 import scala.util.Duration
 import scala.collection.mutable.Stack
 
 
 
 class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionContext {
+  import ExecutionContextImpl._
   
-  def execute(runnable: Runnable): Unit = executorService execute runnable
+  def execute(runnable: Runnable): Unit = executorService match {
+    // case fj: ForkJoinPool =>
+    //   // TODO fork if more applicable
+    //   executorService execute runnable
+    case _ =>
+      executorService execute runnable
+  }
   
   def execute[U](body: () => U): Unit = execute(new Runnable {
     def run() = body()
@@ -46,7 +53,7 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
   
   def blocking[T](atMost: Duration)(body: =>T): T = blocking(body2awaitable(body), atMost)
   
-  def blocking[T](atMost: Duration)(awaitable: Awaitable[T]): T = {
+  def blocking[T](awaitable: Awaitable[T], atMost: Duration): T = {
     currentExecutionContext.get match {
       case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
       case x => x.blockingCall(awaitable) // inside an execution context thread
@@ -109,3 +116,14 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
     }
   
 }
+
+
+object ExecutionContextImpl {
+  
+  private[concurrent] def currentExecutionContext: ThreadLocal[ExecutionContextImpl] = new ThreadLocal[ExecutionContextImpl] {
+    override protected def initialValue = null
+  }
+  
+}
+
+

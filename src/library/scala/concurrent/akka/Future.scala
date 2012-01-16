@@ -17,7 +17,7 @@ import scala.concurrent.{Awaitable, ExecutionContext}
 
 trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
   
-  implicit def executor: ExecutionContext
+  implicit def executor: ExecutionContextImpl
   
   /** For use only within a Future.flow block or another compatible Delimited Continuations reset block.
    *  
