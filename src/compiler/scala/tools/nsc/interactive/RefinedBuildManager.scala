@@ -166,10 +166,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
                 changesOf(oldSym) = (changes ++ changesErasure).distinct
               case _ =>
                 // a new top level definition
-                changesOf(sym) =
-                    sym.info.parents.filter(_.typeSymbol.isSealed).map(
-                      p => changeChangeSet(p.typeSymbol,
-                                           sym+" extends a sealed "+p.typeSymbol))
+                changesOf(sym) = sym.parentSymbols filter (_.isSealed) map (p =>
+                    changeChangeSet(p, sym+" extends a sealed "+p))
             }
           }
           // Create a change for the top level classes that were removed
@@ -242,7 +240,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
     for ((oldSym, changes) <- changesOf; change <- changes) {
       def checkParents(cls: Symbol, file: AbstractFile) {
-        val parentChange = cls.info.parents.exists(_.typeSymbol.fullName == oldSym.fullName)
+        val parentChange = cls.parentSymbols exists (_.fullName == oldSym.fullName)
           // if (settings.buildmanagerdebug.value)
           //   compiler.inform("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
         change match {

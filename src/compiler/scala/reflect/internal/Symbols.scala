@@ -1458,6 +1458,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** The superclass of this class. */
     def superClass: Symbol = if (info.parents.isEmpty) NoSymbol else info.parents.head.typeSymbol
+    def parentSymbols: List[Symbol] = info.parents map (_.typeSymbol)
 
     /** The directly or indirectly inherited mixins of this class
      *  except for mixin classes inherited by the superclass. Mixin classes appear

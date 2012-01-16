@@ -331,21 +331,22 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
         // return if we already checked this combination elsewhere
         if (member.owner != clazz) {
-          if ((member.owner isSubClass other.owner) && (member.isDeferred || !other.isDeferred)) {
+          def deferredCheck        = member.isDeferred || !other.isDeferred
+          def subOther(s: Symbol)  = s isSubClass other.owner
+          def subMember(s: Symbol) = s isSubClass member.owner
+          
+          if (subOther(member.owner) && deferredCheck) {
             //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
-            return;
+            return
           }
-          if (clazz.info.parents exists (parent =>
-            (parent.typeSymbol isSubClass other.owner) && (parent.typeSymbol isSubClass member.owner) &&
-            (member.isDeferred || !other.isDeferred))) {
-              //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
-                return;
-            }
-          if (clazz.info.parents forall (parent =>
-            (parent.typeSymbol isSubClass other.owner) == (parent.typeSymbol isSubClass member.owner))) {
-              //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
-              return;
-            }
+          if (clazz.parentSymbols exists (p => subOther(p) && subMember(p) && deferredCheck)) {
+            //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
+            return
+          }
+          if (clazz.parentSymbols forall (p => subOther(p) == subMember(p))) {
+            //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
+            return
+          }
         }
 
         /** Is the intersection between given two lists of overridden symbols empty?
@@ -672,9 +673,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               }
             }
           }
-          val parents = bc.info.parents
-          if (!parents.isEmpty && parents.head.typeSymbol.hasFlag(ABSTRACT))
-            checkNoAbstractDecls(parents.head.typeSymbol)
+          if (bc.superClass hasFlag ABSTRACT)
+            checkNoAbstractDecls(bc.superClass)
         }
 
         checkNoAbstractMembers()

@@ -158,7 +158,7 @@ abstract class SymbolTable extends api.Universe
       }
     }
     // enter decls of parent classes
-    for (pt <- container.info.parents; p = pt.typeSymbol) {
+    for (p <- container.parentSymbols) {
       if (p != definitions.ObjectClass && p != definitions.ScalaObjectClass) {
         openPackageModule(p, dest)
       }

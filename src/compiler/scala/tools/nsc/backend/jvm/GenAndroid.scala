@@ -30,7 +30,7 @@ trait GenAndroid {
 
   def isAndroidParcelableClass(sym: Symbol) =
     (AndroidParcelableInterface != NoSymbol) &&
-    (sym.info.parents contains AndroidParcelableInterface.tpe)
+    (sym.parentSymbols contains AndroidParcelableInterface)
 
   def addCreatorCode(codegen: BytecodeGenerator, block: BasicBlock) {
     import codegen._
