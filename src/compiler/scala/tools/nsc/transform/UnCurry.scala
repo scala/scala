@@ -210,6 +210,7 @@ abstract class UnCurry extends InfoTransform
      *    body = expr match { case P_i if G_i => E_i }_i=1..n
      *  to:
      *
+     //TODO: correct code template below
      *    class $anon() extends AbstractPartialFunction[T, R] with Serializable {
      *      def apply(x: T): R = (expr: @unchecked) match {
      *        case P_1 if G_1 => E_1

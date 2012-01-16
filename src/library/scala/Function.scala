@@ -29,6 +29,7 @@ object Function {
 
   /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.
    *
+   *  TODO: check if the paragraph below is still correct
    *  '''Important note''': this transformation implies the original function
    *  will be called 2 or more times on each logical invocation, because the
    *  only way to supply an implementation of `isDefinedAt` is to call the
@@ -39,11 +40,7 @@ object Function {
    *                f returns `Some(_)` and undefined where `f` returns `None`.
    *  @see [[scala.PartialFunction#lift]]
    */
-  def unlift[T, R](f: T => Option[R]): PartialFunction[T, R] = new runtime.AbstractPartialFunction[T, R] {
-    def apply(x: T): R = f(x).get
-    def _isDefinedAt(x: T): Boolean = f(x).isDefined
-    override def lift: T => Option[R] = f
-  }
+  def unlift[T, R](f: T => Option[R]): PartialFunction[T, R] = PartialFunction.unlifted(f)
 
   /** Uncurrying for functions of arity 2. This transforms a unary function
    *  returning another unary function into a function of arity 2.
