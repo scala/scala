@@ -1258,7 +1258,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
           val specCandidates = qual.tpe.member(specializedName(symbol, env))
-          val specMember = specCandidates suchThat (s => doesConform(symbol, tree.tpe, s.tpe, env))
+          val specMember = specCandidates suchThat { s =>
+            doesConform(symbol, tree.tpe, qual.tpe.memberType(s), env)
+          }
+          
           log("[specSym] found: " + specCandidates.tpe + ", instantiated as: " + tree.tpe)
           log("[specSym] found specMember: " + specMember)
           if (specMember ne NoSymbol)
