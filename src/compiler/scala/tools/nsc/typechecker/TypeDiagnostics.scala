@@ -494,6 +494,11 @@ trait TypeDiagnostics {
     def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
       case ValDef(_, _, tpt, _) if tpt.tpe == null        => "recursive "+sym+" needs type"
       case DefDef(_, _, _, _, tpt, _) if tpt.tpe == null  => List(cyclicAdjective(sym), sym, "needs result type") mkString " "
+      case Import(expr, selectors)                        =>
+        ( "encountered unrecoverable cycle resolving import." +
+          "\nNote: this is often due in part to a class depending on a definition nested within its companion." +
+          "\nIf applicable, you may wish to try moving some members into another object."
+        )
     }
 
     /** Report a type error.
@@ -508,7 +513,11 @@ trait TypeDiagnostics {
 
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
-          contextError(ex.pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
+          val pos = info.tree match {
+            case Import(expr, _)  => expr.pos
+            case _                => ex.pos
+          }
+          contextError(pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
 
           if (sym == ObjectClass)
             throw new FatalError("cannot redefine root "+sym)
