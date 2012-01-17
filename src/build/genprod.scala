@@ -174,7 +174,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
  *  shorthand for the anonymous class definition %s:
  *
  *  {{{
- *  object Main extends Application { %s }
+ *  object Main extends App { %s }
  *  }}}"""
 
   def toStr() = "\"" + ("<function%d>" format i) + "\""

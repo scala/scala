@@ -19,6 +19,20 @@ import annotation.tailrec
  *  list, type variable `This` is used to model self types of
  *  linked lists.
  *
+ *  $singleLinkedListExample
+ *
+ *  @author  Matthias Zenger
+ *  @author  Martin Odersky
+ *  @version 1.0, 08/07/2003
+ *  @since   2.8
+ *
+ *  @tparam A    type of the elements contained in the linked list
+ *  @tparam This the type of the actual linked list holding the elements
+ *
+ *  @define Coll LinkedList
+ *  @define coll linked list
+ *
+ *  @define singleLinkedListExample
  *  If the list is empty `next` must be set to `this`. The last node in every
  *  mutable linked list is empty.
  *
@@ -42,17 +56,6 @@ import annotation.tailrec
  *                                   [   ] <-`
  *
  *  }}}
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 1.0, 08/07/2003
- *  @since   2.8
- *
- *  @tparam A    type of the elements contained in the linked list
- *  @tparam This the type of the actual linked list holding the elements
- *
- *  @define Coll LinkedList
- *  @define coll linked list
  */
 trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends SeqLike[A, This] { self =>
 
@@ -60,6 +63,10 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
   var next: This = _
 
   override def isEmpty = next eq this
+
+  /** Determines the length of this $coll by traversing and counting every
+    * node.
+    */
   override def length: Int = length0(repr, 0)
 
   @tailrec private def length0(elem: This, acc: Int): Int =
@@ -74,7 +81,39 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
     next
   }
 
-  /** Append linked list `that` at current position of this linked list
+  /** If `this` is empty then it does nothing and returns `that`. Otherwise, appends `that` to `this`. The append
+   * requires a full traversal of `this`.
+   *
+   * Examples:
+   *
+   * {{{
+   *      scala> val a = LinkedList(1, 2)
+   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *      scala> val b = LinkedList(1, 2)
+   *      b: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *      scala> a.append(b)
+   *      res0: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 1, 2)
+   *
+   *      scala> println(a)
+   *      LinkedList(1, 2, 1, 2)
+   * }}}
+   *
+   * {{{
+   *    scala> val a = new LinkedList[Int]()
+   *    a: scala.collection.mutable.LinkedList[Int] = LinkedList()
+   *
+   *    scala> val b = LinkedList(1, 2)
+   *    b: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *    scala> val c = a.append(b)
+   *    c: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
+   *
+   *    scala> println(a)
+   *    LinkedList()
+   * }}}
+   *
    *  @return the list after append (this is the list itself if nonempty,
    *  or list `that` if list this is empty. )
    */

@@ -476,11 +476,48 @@ object Array extends FallbackArrayBuilding {
     fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
 }
 
-/** Represents polymorphic arrays. `Array[T]` is Scala's representation
+/** Arrays are mutable, indexed collections of values. `Array[T]` is Scala's representation
  *  for Java's `T[]`.
+ *
+ *  {{{
+ *  val numbers = Array(1, 2, 3, 4)
+ *  val first = numbers(0) // read the first element
+ *  numbers(3) = 100 // replace the 4th array element with 100
+ *  val biggerNumbers = numbers.map(_ * 2) // multiply all numbers by two
+ *  }}}
+ *
+ *  Arrays make use of two common pieces of Scala syntactic sugar, shown on lines 2 and 3 of the above
+ *  example code.
+ *  Line 2 is translated into a call to `apply(Int)`, while line 3 is translated into a call to
+ *  `update(Int, T)`. For more information on these transformations, see the
+ *  [[http://www.scala-lang.org/docu/files/ScalaReference.pdf Scala Language Specification v2.8]], Sections
+ *  6.6 and 6.15 respectively.
+ *
+ *  Two implicit conversions exist in [[scala.Predef]] that are frequently applied to arrays: a conversion
+ *  to [[scala.collection.mutable.ArrayOps]] (shown on line 4 of the example above) and a conversion
+ *  to [[scala.collection.mutable.WrappedArray]] (a subtype of [[scala.collections.Seq]]).
+ *  Both types make available many of the standard operations found in the Scala collections API.
+ *  The conversion to `ArrayOps` is temporary, as all operations defined on `ArrayOps` return an `Array`,
+ *  while the conversion to `WrappedArray` is permanent as all operations return a `WrappedArray`.
+ *
+ *  The conversion to `ArrayOps` takes priority over the conversion to `WrappedArray`. For instance,
+ *  consider the following code:
+ *
+ *  {{{
+ *  val arr = Array(1, 2, 3)
+ *  val arrReversed = arr.reverse
+ *  val seqReversed : Seq[Int] = arr.reverse
+ *  }}}
+ *
+ *  Value `arrReversed` will be of type `Array[Int]`, with an implicit conversion to `ArrayOps` occurring
+ *  to perform the `reverse` operation. The value of `seqReversed`, on the other hand, will be computed
+ *  by converting to `WrappedArray` first and invoking the variant of `reverse` that returns another
+ *  `WrappedArray`.
  *
  *  @author Martin Odersky
  *  @version 1.0
+ *  @see [[http://www.scala-lang.org/docu/files/collections-api/collections_38.html#anchor "The Scala 2.8 Collections' API"]]
+ *  section on `Array` by Martin Odersky for more information.
  */
 final class Array[T](_length: Int) extends java.io.Serializable with java.lang.Cloneable {
 
@@ -556,8 +593,8 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
 
   /** Update the element at given index.
    *
-   *  Indices start at `0`; `xs.apply(0)` is the first element of array `xs`.
-   *  Note the indexing syntax `xs(i)` is a shorthand for `xs.apply(i)`.
+   *  Indices start at `0`; `xs.update(i, x)` replaces the i^th^ element in the array.
+   *  Note the syntax `xs(i) = x` is a shorthand for `xs.update(i, x)`.
    *
    *  @param    i   the index
    *  @param    x   the value to be written at index `i`

@@ -15,14 +15,14 @@ import java.util.Comparator
  *  equivalence and a representation of equivalence on some type. This
  *  trait is for representing the latter.
  *
- *  An <a href="http://en.wikipedia.org/wiki/Equivalence_relation">equivalence
- *  relation</a> is a binary relation on a type. This relation is exposed as
+ *  An [[http://en.wikipedia.org/wiki/Equivalence_relation equivalence relation]]
+ *  is a binary relation on a type. This relation is exposed as
  *  the `equiv` method of the `Equiv` trait.  The relation must be:
  *
- *  1. reflexive: equiv(x, x) == true for any x of type T.
- *  2. symmetric: equiv(x, y) == equiv(y, x) for any x and y of type T.
- *  3. transitive: if equiv(x, y) == true and equiv(y, z) == true, then
- *  equiv(x, z) == true for any x, y, and z of type T.
+ *    1. reflexive: `equiv(x, x) == true` for any x of type `T`.
+ *    1. symmetric: `equiv(x, y) == equiv(y, x)` for any `x` and `y` of type `T`.
+ *    1. transitive: if `equiv(x, y) == true` and `equiv(y, z) == true`, then
+ *       `equiv(x, z) == true` for any `x`, `y`, and `z` of type `T`.
  *
  *  @author  Geoffrey Washburn, Paul Phillips
  *  @version 1.0, 2008-04-03
@@ -30,7 +30,7 @@ import java.util.Comparator
  */
 
 trait Equiv[T] {
-  /** Returns true iff x is equivalent to y.
+  /** Returns `true` iff `x` is equivalent to `y`.
    */
   def equiv(x: T, y: T): Boolean
 }

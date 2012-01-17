@@ -15,6 +15,36 @@ package scala
  *  `A`. The function `isDefinedAt` allows to
  *  test dynamically if a value is in the domain of the function.
  *
+ *  Even if `isDefinedAt` returns true for an `a: A`, calling `apply(a)` may
+ *  still throw an exception, so the following code is legal:
+ *
+ *  {{{
+ *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
+ *  }}}
+ *
+ *  The main distinction between `PartialFunction` and [[scala.Function1]] is
+ *  that the user of a `PartialFunction` may choose to do something different
+ *  with input that is declared to be outside its domain. For example:
+ *
+ *  {{{
+ *  val sample = 1 to 10
+ *  val isEven: PartialFunction[Int, String] = { 
+ *    case x if x % 2 == 0 => x+" is even" 
+ *  }
+ *
+ *  // the method collect can use isDefinedAt to select which members to collect
+ *  val evenNumbers = sample collect isEven
+ *
+ *  val isOdd: PartialFunction[Int, String] = { 
+ *    case x if x % 2 == 1 => x+" is odd" 
+ *  }
+ *
+ *  // the method orElse allows chaining another partial function to handle 
+ *  // input outside the declared domain
+ *  val numbers = sample map (isEven orElse isOdd)
+ *  }}}
+ *
+ *
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
@@ -97,10 +127,10 @@ object PartialFunction
   def cond[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
     (pf isDefinedAt x) && pf(x)
 
-  /** Transforms a PartialFunction[T, U] `pf' into Function1[T, Option[U]] `f'
+  /** Transforms a PartialFunction[T, U] `pf` into Function1[T, Option[U]] `f`
    *  whose result is Some(x) if the argument is in pf's domain and None otherwise,
-   *  and applies it to the value `x'.  In effect, it is a 'match' statement
-   *  which wraps all case results in Some(_) and adds 'case _ => None' to the end.
+   *  and applies it to the value `x`.  In effect, it is a `match` statement
+   *  which wraps all case results in Some(_) and adds `case _ => None` to the end.
    *
    *  @param  x     the value to test
    *  @param  pf    the PartialFunction[T, U]

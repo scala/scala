@@ -26,7 +26,7 @@ import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
  *    selected on the stable identifier path of the enumeration instance).
  *
  * @example {{{
- *  object Main extends Application {
+ *  object Main extends App {
  *
  *    object WeekDay extends Enumeration {
  *      type WeekDay = Value

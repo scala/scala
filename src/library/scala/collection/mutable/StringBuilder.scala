@@ -21,6 +21,8 @@ import immutable.StringLike
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.7
+ *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html# "Scala's Collection Library overview"]]
+ *  section on `StringBuilders` for more information.
  */
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(private val underlying: JavaStringBuilder)
