@@ -160,33 +160,26 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   override def classNameToSymbol(name: Name) = {
-    val sym = if (name == fulltpnme.RuntimeNothing)
-      definitions.NothingClass
-    else if (name == fulltpnme.RuntimeNull)
-      definitions.NullClass
-    else if (nme.isImplClassName(name)) {
-      val iface = definitions.getClass(nme.interfaceName(name))
-      log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
-      iface.owner.info // force the mixin type-transformer
-      definitions.getClass(name)
-    }
-    else if (nme.isModuleName(name)) {
-      val strippedName = nme.stripModuleSuffix(name)
-      val sym = forceMangledName(newTermName(strippedName.decode), true)
-
-      if (sym == NoSymbol) definitions.getModule(strippedName)
-      else sym
-    }
-    else {
-      forceMangledName(name, false)
-      atPhase(currentRun.flattenPhase.next)(definitions.getClass(name))
-    }
-    if (sym.isModule)
-      sym.moduleClass
-    else
-      sym
+    val sym = (
+      if (nme.isImplClassName(name)) {
+        val iface = lookupClass(nme.interfaceName(name))
+        log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
+        iface.owner.info // force the mixin type-transformer
+        lookupClass(name.toTypeName)
+      }
+      else if (nme.isModuleName(name)) {
+        val strippedName = nme.stripModuleSuffix(name).toTermName
+        val sym          = forceMangledName(strippedName.decodedName, true)
+        sym orElse definitions.getModule(strippedName)
+      }
+      else {
+        forceMangledName(name, false)
+        atPhase(currentRun.flattenPhase.next)(lookupClass(name))
+      }
+    )
+    if (sym.isModule) sym.moduleClass
+    else sym
   }
-
 
   var maxStack: Int = _
   var maxLocals: Int = _

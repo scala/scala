@@ -439,61 +439,57 @@ abstract class ClassfileParser {
 //    println("found: " + sym)
     sym
   }
-
-  /** Return the class symbol of the given name. */
-  def classNameToSymbol(name: Name): Symbol = {
-    def loadClassSymbol(name: Name): Symbol = {
-      val file = global.classPath findSourceFile ("" +name) getOrElse {
-        warning("Class " + name + " not found - continuing with a stub.")
-        return NoSymbol.newClass(name.toTypeName)
-      }
-      val completer     = new global.loaders.ClassfileLoader(file)
-      var owner: Symbol = definitions.RootClass
-      var sym: Symbol   = NoSymbol
-      var ss: Name      = null
-      var start         = 0
-      var end           = name indexOf '.'
-
-      while (end > 0) {
-        ss = name.subName(start, end)
-        sym = owner.info.decls lookup ss
-        if (sym == NoSymbol) {
-          sym = owner.newPackage(ss) setInfo completer
-          sym.moduleClass setInfo completer
-          owner.info.decls enter sym
-        }
-        owner = sym.moduleClass
-        start = end + 1
-        end = name.indexOf('.', start)
-      }
-      ss = name.subName(0, start)
-      owner.info.decls lookup ss orElse {
-        sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
-        debuglog("loaded "+sym+" from file "+file)
-        sym
-      }
+  
+  protected def lookupClass(name: Name) = {
+    val sym = name match {
+      case fulltpnme.RuntimeNothing => definitions.NothingClass
+      case fulltpnme.RuntimeNull    => definitions.NullClass
+      case _ =>
+        if (innerClasses contains name)   // check inner classes
+          innerClasses.classSymbol(innerClasses(name).externalName)
+        else if (name containsChar '.')   // qualified name
+          definitions.getClassIfDefined(name)
+        else                              // might be in the empty package
+          definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
     }
 
-    def lookupClass(name: Name) = try {
-      if (name.pos('.') == name.length)
-        definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
-      else
-        definitions.getClass(name) // see tickets #2464, #3756
-    } catch {
-      case _: FatalError => loadClassSymbol(name)
-    }
+    sym orElse loadClassSymbol(name)
+  }
 
-    innerClasses.get(name) match {
-      case Some(entry) =>
-        //println("found inner class " + name)
-        val res = innerClasses.classSymbol(entry.externalName)
-        //println("\trouted to: " + res)
-        res
-      case None =>
-        //if (name.toString.contains("$")) println("No inner class: " + name + innerClasses + " while parsing " + in.file.name)
-        lookupClass(name)
+  protected def loadClassSymbol(name: Name): Symbol = {
+    val file = global.classPath findSourceFile ("" +name) getOrElse {
+      warning("Class " + name + " not found - continuing with a stub.")
+      return NoSymbol.newClass(name.toTypeName)
+    }
+    val completer     = new global.loaders.ClassfileLoader(file)
+    var owner: Symbol = definitions.RootClass
+    var sym: Symbol   = NoSymbol
+    var ss: Name      = null
+    var start         = 0
+    var end           = name indexOf '.'
+
+    while (end > 0) {
+      ss = name.subName(start, end)
+      sym = owner.info.decls lookup ss
+      if (sym == NoSymbol) {
+        sym = owner.newPackage(ss) setInfo completer
+        sym.moduleClass setInfo completer
+        owner.info.decls enter sym
+      }
+      owner = sym.moduleClass
+      start = end + 1
+      end = name.indexOf('.', start)
+    }
+    ss = name.subName(0, start)
+    owner.info.decls lookup ss orElse {
+      sym = owner.newClass(ss.toTypeName) setInfoAndEnter completer
+      debuglog("loaded "+sym+" from file "+file)
+      sym
     }
   }
+
+  /** Return the class symbol of the given name. */
+  def classNameToSymbol(name: Name): Symbol = lookupClass(name)
 
   var sawPrivateConstructor = false
 
