@@ -43,7 +43,7 @@ case class StringContext(parts: String*) {
    *          that does not start a valid escape sequence.
    */
   def s(args: Any*) = {
-    checkLengths(args)
+    checkLengths(args: _*)
     val pi = parts.iterator
     val ai = args.iterator
     val bldr = new java.lang.StringBuilder(treatEscapes(pi.next))
@@ -83,7 +83,7 @@ case class StringContext(parts: String*) {
    *      format specifier `%s` and adding a corresponding argument string `"%"`.
    */
   def f(args: Any*) = {
-    checkLengths(args)
+    checkLengths(args: _*)
     val pi = parts.iterator
     val ai = args.iterator
     val bldr = new java.lang.StringBuilder
