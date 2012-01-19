@@ -10,7 +10,6 @@ package scala.concurrent
 
 
 
-import scala.util.Timeout
 
 
 

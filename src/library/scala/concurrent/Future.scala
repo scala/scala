@@ -355,8 +355,7 @@ self =>
     
     p.future
   }
-
-/*  
+  
   /** Creates a new future which holds the result of either this future or `that` future, depending on
    *  which future was completed first.
    *  
@@ -370,20 +369,20 @@ self =>
    *  await(0) h // evaluates to either 5 or throws a runtime exception
    *  }}}
    */
-  def any[U >: T](that: Future[U]): Future[U] = {
+  def either[U >: T](that: Future[U]): Future[U] = {
     val p = newPromise[U]
     
-    val completePromise: PartialFunction[Either[Throwable, T], _] = {
+    val completePromise: PartialFunction[Either[Throwable, U], _] = {
       case Left(t) => p tryFailure t
       case Right(v) => p trySuccess v
     }
+    
     this onComplete completePromise
     that onComplete completePromise
     
     p.future
   }
-
-*/
+  
 }
 
 
@@ -399,14 +398,14 @@ object Future {
   /** TODO some docs
    */
   def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]], ec: ExecutionContext): Future[Coll[T]] =
-    ec.futureUtilities.all[T, Coll](futures)
+    ec.all[T, Coll](futures)
   
   // move this to future companion object
   @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
 
-  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.futureUtilities.any(futures)
+  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.any(futures)
 
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.futureUtilities.find(futures)(predicate)
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.find(futures)(predicate)
   
 }
 

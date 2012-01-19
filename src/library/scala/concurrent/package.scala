@@ -6,13 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
 
 
+import java.util.concurrent.atomic.{ AtomicInteger }
 import scala.util.{ Timeout, Duration }
+import collection._
+import scala.collection.generic.CanBuildFrom
 
 
 
@@ -127,6 +128,81 @@ package concurrent {
    */
   class FutureTimeoutException(origin: Future[_], message: String) extends TimeoutException(message) {
     def this(origin: Future[_]) = this(origin, "Future timed out.")
+  }
+  
+  trait ExecutionContextBase {
+  self: ExecutionContext =>
+    
+    private implicit val executionContext = self
+    
+    /** TODO some docs
+     *  
+     */
+    def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
+      val buffer = new mutable.ArrayBuffer[T]
+      val counter = new AtomicInteger(1) // how else could we do this?
+      val p: Promise[Coll[T]] = promise[Coll[T]] // we need an implicit execctx in the signature
+      var idx = 0
+      
+      def tryFinish() = if (counter.decrementAndGet() == 0) {
+        val builder = cbf(futures)
+        builder ++= buffer
+        p success builder.result
+      }
+      
+      for (f <- futures) {
+        val currentIndex = idx
+        buffer += null.asInstanceOf[T]
+        counter.incrementAndGet()
+        f onComplete {
+          case Left(t) =>
+            p tryFailure t
+          case Right(v) =>
+            buffer(currentIndex) = v
+            tryFinish()
+        }
+        idx += 1
+      }
+      
+      tryFinish()
+      
+      p.future
+    }
+    
+    /** TODO some docs
+     *  
+     */
+    def any[T](futures: Traversable[Future[T]]): Future[T] = {
+      val p = promise[T]
+      val completeFirst: Either[Throwable, T] => Unit = elem => p tryComplete elem
+      
+      futures foreach (_ onComplete completeFirst)
+      
+      p.future
+    }
+    
+    /** TODO some docs
+     *  
+     */
+    def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean): Future[Option[T]] = {
+      if (futures.isEmpty) Promise.successful[Option[T]](None).future
+      else {
+        val result = promise[Option[T]]
+        val count = new AtomicInteger(futures.size)
+        val search: Either[Throwable, T] => Unit = { 
+          v => v match {
+            case Right(r) => if (predicate(r)) result trySuccess Some(r)
+            case _        =>
+          }
+          if (count.decrementAndGet() == 0) result trySuccess None
+        }
+        
+        futures.foreach(_ onComplete search)
+
+        result.future
+      }
+    }
+
   }
   
 }
