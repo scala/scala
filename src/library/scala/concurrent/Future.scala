@@ -355,7 +355,8 @@ self =>
     
     p.future
   }
-  
+
+/*  
   /** Creates a new future which holds the result of either this future or `that` future, depending on
    *  which future was completed first.
    *  
@@ -377,12 +378,14 @@ self =>
       case Right(v) => p trySuccess v
     }
     this onComplete completePromise
-    this onComplete completePromise
+    that onComplete completePromise
     
     p.future
   }
-  
+
+*/
 }
+
 
 
 /** TODO some docs
@@ -393,13 +396,17 @@ self =>
 object Future {
   
   // TODO make more modular by encoding all other helper methods within the execution context
-  /**
+  /** TODO some docs
    */
   def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]], ec: ExecutionContext): Future[Coll[T]] =
     ec.futureUtilities.all[T, Coll](futures)
   
   // move this to future companion object
   @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
+
+  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.futureUtilities.any(futures)
+
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.futureUtilities.find(futures)(predicate)
   
 }
 

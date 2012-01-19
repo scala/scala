@@ -113,6 +113,9 @@ trait Promise[T] {
 
 object Promise {
   
-  
+  def successful[T](result: T): Promise[T] = {
+    val p = promise[T]()
+    p.success(result)
+  }
   
 }
