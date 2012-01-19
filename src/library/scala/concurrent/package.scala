@@ -10,10 +10,7 @@ package scala
 
 
 
-import java.util.concurrent.atomic.{ AtomicInteger }
-import scala.util.{ Timeout, Duration }
-import collection._
-import scala.collection.generic.CanBuildFrom
+import scala.util.Duration
 
 
 
@@ -114,6 +111,19 @@ package object concurrent {
     }
   }
   
+  /** Importing this object allows using some concurrency primitives
+   *  on futures and promises that can yield nondeterministic programs.
+   *  
+   *  While program determinism is broken when using these primitives,
+   *  some programs cannot be written without them (e.g. multiple client threads
+   *  cannot send requests to a server thread through regular promises and futures).
+   */
+  object nondeterministic {
+    
+    implicit def future2nondeterministic[T](f: Future[T]) = new NondeterministicFuture[T](f)
+    
+  }
+  
 }
 
 
@@ -130,79 +140,35 @@ package concurrent {
     def this(origin: Future[_]) = this(origin, "Future timed out.")
   }
   
-  trait ExecutionContextBase {
-  self: ExecutionContext =>
+  private[concurrent] class NondeterministicFuture[+T](self: Future[T]) {
     
-    private implicit val executionContext = self
-    
-    /** TODO some docs
+    /** Creates a new future which holds the result of either this future or `that` future, depending on
+     *  which future was completed first.
      *  
+     *  $nonDeterministic
+     *  
+     *  Example:
+     *  {{{
+     *  val f = future { sys.error("failed") }
+     *  val g = future { 5 }
+     *  val h = f either g
+     *  await(0) h // evaluates to either 5 or throws a runtime exception
+     *  }}}
      */
-    def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
-      val buffer = new mutable.ArrayBuffer[T]
-      val counter = new AtomicInteger(1) // how else could we do this?
-      val p: Promise[Coll[T]] = promise[Coll[T]] // we need an implicit execctx in the signature
-      var idx = 0
+    def either[U >: T](that: Future[U]): Future[U] = {
+      val p = self.newPromise[U]
       
-      def tryFinish() = if (counter.decrementAndGet() == 0) {
-        val builder = cbf(futures)
-        builder ++= buffer
-        p success builder.result
+      val completePromise: PartialFunction[Either[Throwable, U], _] = {
+        case Left(t) => p tryFailure t
+        case Right(v) => p trySuccess v
       }
       
-      for (f <- futures) {
-        val currentIndex = idx
-        buffer += null.asInstanceOf[T]
-        counter.incrementAndGet()
-        f onComplete {
-          case Left(t) =>
-            p tryFailure t
-          case Right(v) =>
-            buffer(currentIndex) = v
-            tryFinish()
-        }
-        idx += 1
-      }
-      
-      tryFinish()
+      self onComplete completePromise
+      that onComplete completePromise
       
       p.future
     }
     
-    /** TODO some docs
-     *  
-     */
-    def any[T](futures: Traversable[Future[T]]): Future[T] = {
-      val p = promise[T]
-      val completeFirst: Either[Throwable, T] => Unit = elem => p tryComplete elem
-      
-      futures foreach (_ onComplete completeFirst)
-      
-      p.future
-    }
-    
-    /** TODO some docs
-     *  
-     */
-    def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean): Future[Option[T]] = {
-      if (futures.isEmpty) Promise.successful[Option[T]](None).future
-      else {
-        val result = promise[Option[T]]
-        val count = new AtomicInteger(futures.size)
-        val search: Either[Throwable, T] => Unit = { 
-          v => v match {
-            case Right(r) => if (predicate(r)) result trySuccess Some(r)
-            case _        =>
-          }
-          if (count.decrementAndGet() == 0) result trySuccess None
-        }
-        
-        futures.foreach(_ onComplete search)
-
-        result.future
-      }
-    }
-
   }
   
 }

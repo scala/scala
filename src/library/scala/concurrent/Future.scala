@@ -77,9 +77,6 @@ import scala.collection.generic.CanBuildFrom
  *  {{{
  *  f flatMap { (x: Int) => g map { (y: Int) => x + y } }
  *  }}}
- *  
- *  @define nonDeterministic
- *  Note: using this method yields nondeterministic dataflow programs.
  */
 trait Future[+T] extends Awaitable[T] {
 self =>
@@ -336,6 +333,8 @@ self =>
    *  
    *  Using this method will not cause concurrent programs to become nondeterministic.
    *  
+   *  
+   *  
    *  Example:
    *  {{{
    *  val f = future { sys.error("failed") }
@@ -354,33 +353,6 @@ self =>
       }
       case Right(v) => p success v
     }
-    
-    p.future
-  }
-  
-  /** Creates a new future which holds the result of either this future or `that` future, depending on
-   *  which future was completed first.
-   *  
-   *  $nonDeterministic
-   *  
-   *  Example:
-   *  {{{
-   *  val f = future { sys.error("failed") }
-   *  val g = future { 5 }
-   *  val h = f any g
-   *  await(0) h // evaluates to either 5 or throws a runtime exception
-   *  }}}
-   */
-  def either[U >: T](that: Future[U]): Future[U] = {
-    val p = newPromise[U]
-    
-    val completePromise: PartialFunction[Either[Throwable, U], _] = {
-      case Left(t) => p tryFailure t
-      case Right(v) => p trySuccess v
-    }
-    
-    this onComplete completePromise
-    that onComplete completePromise
     
     p.future
   }

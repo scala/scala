@@ -34,8 +34,6 @@ trait Promise[T] {
    */
   def future: Future[T]
   
-  private def throwCompleted = throw new IllegalStateException("Promise already completed.")
-  
   /** Completes the promise with either an exception or a value.
    *  
    *  @param result     Either the value or the exception to complete the promise with.
@@ -105,6 +103,8 @@ trait Promise[T] {
     case t: Throwable if isFutureThrowable(t) => t
     case _ => new ExecutionException(t)
   }
+  
+  private def throwCompleted = throw new IllegalStateException("Promise already completed.")
   
 }
 
