@@ -122,6 +122,10 @@ trait Contexts { self: Analyzer =>
     var typingIndentLevel: Int = 0
     def typingIndent = "  " * typingIndentLevel
 
+    def enclClassOrMethod: Context =
+      if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
+      else outer.enclClassOrMethod
+
     def undetparamsString =
       if (undetparams.isEmpty) ""
       else undetparams.mkString("undetparams=", ", ", "")

@@ -3800,6 +3800,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
           var cx = startingIdentContext
           while (defSym == NoSymbol && cx != NoContext) {
+            // !!! Shouldn't the argument to compileSourceFor be cx, not context?
+            // I can't tell because those methods do nothing in the standard compiler,
+            // presumably they are overridden in the IDE.
             currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name)
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
@@ -3914,9 +3917,18 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 // Avoiding some spurious error messages: see SI-2388.
                 if (reporter.hasErrors && (name startsWith tpnme.ANON_CLASS_NAME)) ()
                 else {
-                  val similar = (
-                    // name length check to limit unhelpful suggestions for e.g. "x" and "b1"
-                    if (name.length > 2) {
+                  // This laborious determination arrived at to keep the tests working.
+                  val calcSimilar = (
+                    name.length > 2 && (
+                         startingIdentContext.reportGeneralErrors
+                      || startingIdentContext.enclClassOrMethod.reportGeneralErrors
+                    )
+                  )
+                  // avoid calculating if we're in "silent" mode.
+                  // name length check to limit unhelpful suggestions for e.g. "x" and "b1"
+                  val similar = {
+                    if (!calcSimilar) ""
+                    else {
                       val allowed = (
                         startingIdentContext.enclosingContextChain
                             flatMap (ctx => ctx.scope.toList ++ ctx.imports.flatMap(_.allImportedSymbols))
@@ -3929,8 +3941,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                       )
                       similarString("" + name, allowedStrings)
                     }
-                    else ""
-                  )
+                  }
                   error(tree.pos, "not found: "+decodeWithKind(name, context.owner) + similar)
                 }
               }
