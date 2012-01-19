@@ -41,6 +41,8 @@ import scala.collection.generic.CanBuildFrom
  *  }
  *  }}}
  *  
+ *  @author  Philipp Haller, Heather Miller, Aleksandar Prokopec, Viktor Klang
+ *  
  *  @define multipleCallbacks
  *  Multiple callbacks may be registered; there is no guarantee that they will be
  *  executed in a particular order.

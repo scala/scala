@@ -23,7 +23,7 @@ class Channel[A] {
   private var written = new LinkedList[A] // FIFO buffer, realized through
   private var lastWritten = written       // aliasing of a linked list
   private var nreaders = 0
-
+  
   /**
    *  @param x ...
    */
@@ -33,7 +33,7 @@ class Channel[A] {
     lastWritten = lastWritten.next
     if (nreaders > 0) notify()
   }
-
+  
   def read: A = synchronized {
     while (written.next == null) {
       try {
@@ -46,4 +46,5 @@ class Channel[A] {
     written = written.next
     x
   }
+  
 }

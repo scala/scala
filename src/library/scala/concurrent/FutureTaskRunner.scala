@@ -13,6 +13,7 @@ package scala.concurrent
  *
  *  @author Philipp Haller
  */
+@deprecated("Use `ExecutionContext`s instead.", "2.10.0")
 trait FutureTaskRunner extends TaskRunner {
 
   /** The type of the futures that the underlying task runner supports.

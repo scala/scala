@@ -12,6 +12,7 @@ package scala.concurrent
  *
  *  @author Philipp Haller
  */
+@deprecated("Use `ExecutionContext`s instead.", "2.10.0")
 trait TaskRunner {
 
   type Task[T]
