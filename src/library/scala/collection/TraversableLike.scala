@@ -535,7 +535,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     val b = newBuilder
     var go = false
     for (x <- this) {
-      if (!p(x)) go = true
+      if (!go && !p(x)) go = true
       if (go) b += x
     }
     b.result
