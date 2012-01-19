@@ -10,6 +10,7 @@ package scala.concurrent
 
 
 
+import scala.annotation.implicitNotFound
 
 
 
@@ -30,6 +31,8 @@ package scala.concurrent
  */
 trait Promise[T] {
   
+  import nondeterministic._
+  
   /** Future containing the value of this promise.
    */
   def future: Future[T]
@@ -48,7 +51,8 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryComplete(result: Either[Throwable, T]): Boolean
+  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
+  def tryComplete(result: Either[Throwable, T])(implicit nondet: NonDeterministic): Boolean
   
   /** Completes this promise with the specified future, once that future is completed.
    *  
@@ -75,7 +79,8 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def trySuccess(value: T): Boolean = tryComplete(Right(value))
+  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
+  def trySuccess(value: T)(implicit nondet: NonDeterministic): Boolean = tryComplete(Right(value))(nonDeterministicEvidence)
   
   /** Completes the promise with an exception.
    *  
@@ -93,7 +98,8 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
+  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
+  def tryFailure(t: Throwable)(implicit nondet: NonDeterministic): Boolean = tryComplete(Left(t))(nonDeterministicEvidence)
   
   /** Wraps a `Throwable` in an `ExecutionException` if necessary.
    *
@@ -112,9 +118,19 @@ trait Promise[T] {
 
 object Promise {
   
-  def successful[T](result: T): Promise[T] = {
-    val p = promise[T]()
-    p.success(result)
-  }
+  def kept[T](result: T)(implicit execctx: ExecutionContext): Promise[T] =
+    execctx keptPromise result
+  
+  def broken[T](t: Throwable)(implicit execctx: ExecutionContext): Promise[T] = 
+    execctx brokenPromise t
   
 }
+
+
+
+
+
+
+
+
+

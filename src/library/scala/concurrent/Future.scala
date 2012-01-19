@@ -10,20 +10,21 @@ package scala.concurrent
 
 
 
-import scala.util.{ Timeout, Duration }
-import scala.Option
-
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
 import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
 import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
+import java.{ lang => jl }
+import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
+
+import scala.util.{ Timeout, Duration }
+import scala.Option
 
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
-import java.{ lang => jl }
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
+import scala.annotation.implicitNotFound
 
 
 
@@ -357,6 +358,34 @@ self =>
     p.future
   }
   
+  /** Creates a new future which holds the result of either this future or `that` future, depending on
+   *  which future was completed first.
+   *  
+   *  $nonDeterministic
+   *  
+   *  Example:
+   *  {{{
+   *  val f = future { sys.error("failed") }
+   *  val g = future { 5 }
+   *  val h = f either g
+   *  await(0) h // evaluates to either 5 or throws a runtime exception
+   *  }}}
+   */
+  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
+  def either[U >: T](that: Future[U])(implicit nondet: NonDeterministic): Future[U] = {
+    val p = self.newPromise[U]
+    
+    val completePromise: PartialFunction[Either[Throwable, U], _] = {
+      case Left(t) => p tryFailure t
+      case Right(v) => p trySuccess v
+    }
+    
+    self onComplete completePromise
+    that onComplete completePromise
+    
+    p.future
+  }
+  
 }
 
 
@@ -377,9 +406,9 @@ object Future {
   // move this to future companion object
   @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
 
-  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.any(futures)
+  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext, nondet: NonDeterministic): Future[T] = ec.any(futures)
 
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.find(futures)(predicate)
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext, nondet: NonDeterministic): Future[Option[T]] = ec.find(futures)(predicate)
   
 }
 

@@ -120,7 +120,7 @@ package object concurrent {
    */
   object nondeterministic {
     
-    implicit def future2nondeterministic[T](f: Future[T]) = new NondeterministicFuture[T](f)
+    implicit val nonDeterministicEvidence = new NonDeterministic {}
     
   }
   
@@ -140,36 +140,13 @@ package concurrent {
     def this(origin: Future[_]) = this(origin, "Future timed out.")
   }
   
-  private[concurrent] class NondeterministicFuture[+T](self: Future[T]) {
-    
-    /** Creates a new future which holds the result of either this future or `that` future, depending on
-     *  which future was completed first.
-     *  
-     *  $nonDeterministic
-     *  
-     *  Example:
-     *  {{{
-     *  val f = future { sys.error("failed") }
-     *  val g = future { 5 }
-     *  val h = f either g
-     *  await(0) h // evaluates to either 5 or throws a runtime exception
-     *  }}}
-     */
-    def either[U >: T](that: Future[U]): Future[U] = {
-      val p = self.newPromise[U]
-      
-      val completePromise: PartialFunction[Either[Throwable, U], _] = {
-        case Left(t) => p tryFailure t
-        case Right(v) => p trySuccess v
-      }
-      
-      self onComplete completePromise
-      that onComplete completePromise
-      
-      p.future
-    }
-    
-  }
+  /** Evidence that the program can be nondeterministic.
+   *  
+   *  Programs in which such an evidence is available in scope
+   *  can contain calls to methods which yield nondeterministic
+   *  programs.
+   */
+  sealed trait NonDeterministic
   
 }
 

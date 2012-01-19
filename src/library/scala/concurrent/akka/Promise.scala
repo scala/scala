@@ -16,7 +16,7 @@ import scala.concurrent.{Awaitable, ExecutionContext, resolve, resolver, blockin
 //import scala.util.continuations._
 import scala.util.Duration
 import scala.annotation.tailrec
-
+import scala.concurrent.NonDeterministic
 
 
 trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
@@ -142,7 +142,7 @@ object Promise {
     @inline
     protected final def getState: FState[T] = updater.get(this)
     
-    def tryComplete(value: Either[Throwable, T]): Boolean = {
+    def tryComplete(value: Either[Throwable, T])(implicit nd: NonDeterministic): Boolean = {
       val callbacks: List[Either[Throwable, T] => Any] = {
         try {
           @tailrec
@@ -210,7 +210,7 @@ object Promise {
   final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContextImpl) extends Promise[T] {
     val value = Some(resolve(suppliedValue))
     
-    def tryComplete(value: Either[Throwable, T]): Boolean = false
+    def tryComplete(value: Either[Throwable, T])(implicit nondet: NonDeterministic): Boolean = false
     
     def onComplete[U](func: Either[Throwable, T] => U): this.type = {
       val completedAs = value.get

@@ -16,6 +16,7 @@ import scala.util.Duration
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
 import scala.collection.generic.CanBuildFrom
 import collection._
+import annotation.implicitNotFound
 
 
 
@@ -41,10 +42,21 @@ trait ExecutionContext {
   
   private implicit val executionContext = this
   
+  def keptPromise[T](result: T): Promise[T] = {
+    val p = promise[T]
+    p success result
+  }
+  
+  def brokenPromise[T](t: Throwable): Promise[T] = {
+    val p = promise[T]
+    p failure t
+  }
+  
   /** TODO some docs
    *  
    */
   def all[T, Coll[X] <: Traversable[X]](futures: Coll[Future[T]])(implicit cbf: CanBuildFrom[Coll[_], T, Coll[T]]): Future[Coll[T]] = {
+    import nondeterministic._
     val buffer = new mutable.ArrayBuffer[T]
     val counter = new AtomicInteger(1) // how else could we do this?
     val p: Promise[Coll[T]] = promise[Coll[T]] // we need an implicit execctx in the signature
@@ -78,7 +90,8 @@ trait ExecutionContext {
   /** TODO some docs
    *  
    */
-  def any[T](futures: Traversable[Future[T]]): Future[T] = {
+  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
+  def any[T](futures: Traversable[Future[T]])(implicit nondet: NonDeterministic): Future[T] = {
     val p = promise[T]
     val completeFirst: Either[Throwable, T] => Unit = elem => p tryComplete elem
     
@@ -90,8 +103,9 @@ trait ExecutionContext {
   /** TODO some docs
    *  
    */
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean): Future[Option[T]] = {
-    if (futures.isEmpty) Promise.successful[Option[T]](None).future
+  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit nondet: NonDeterministic): Future[Option[T]] = {
+    if (futures.isEmpty) Promise.kept[Option[T]](None).future
     else {
       val result = promise[Option[T]]
       val count = new AtomicInteger(futures.size)
