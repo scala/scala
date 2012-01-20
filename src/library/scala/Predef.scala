@@ -269,7 +269,7 @@ object Predef extends LowPriorityImplicits {
   def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
 
   def readLine(): String = Console.readLine()
-  def readLine(text: String, args: Any*) = Console.readLine(text, args)
+  def readLine(text: String, args: Any*) = Console.readLine(text, args: _*)
   def readBoolean() = Console.readBoolean()
   def readByte() = Console.readByte()
   def readShort() = Console.readShort()
