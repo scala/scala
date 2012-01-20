@@ -393,6 +393,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // scala.reflect
     lazy val ReflectApiUniverse = getRequiredClass("scala.reflect.api.Universe")
+    lazy val ReflectMacroContext = getRequiredClass("scala.reflect.macro.Context")
     lazy val ReflectRuntimeMirror = getRequiredModule("scala.reflect.runtime.Mirror")
       def freeValueMethod = getMember(ReflectRuntimeMirror, nme.freeValue)
     lazy val ReflectPackage = getPackageObject("scala.reflect")

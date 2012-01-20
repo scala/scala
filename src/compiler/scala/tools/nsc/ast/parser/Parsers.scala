@@ -2449,7 +2449,7 @@ self =>
       else {
         val nameOffset = in.offset
         val name = ident()
-        if (name == nme.macro_ && isIdent && settings.Xexperimental.value)
+        if (name == nme.macro_ && isIdent && settings.Xmacros.value)
           funDefRest(start, in.offset, mods | Flags.MACRO, ident())
         else
           funDefRest(start, nameOffset, mods, name)
@@ -2480,6 +2480,9 @@ self =>
             restype = scalaUnitConstr
             blockExpr()
           } else {
+            if (name == nme.macro_ && isIdent && in.token != EQUALS) {
+              warning("this syntactically invalid code resembles a macro definition. have you forgotten to enable -Xmacros?")
+            }
             equalsExpr()
           }
         DefDef(newmods, name, tparams, vparamss, restype, rhs)
@@ -2539,7 +2542,7 @@ self =>
       newLinesOpt()
       atPos(start, in.offset) {
         val name = identForType()
-        if (name == nme.macro_.toTypeName && isIdent && settings.Xexperimental.value) {
+        if (name == nme.macro_.toTypeName && isIdent && settings.Xmacros.value) {
           funDefRest(start, in.offset, mods | Flags.MACRO, identForType())
         } else {
           // @M! a type alias as well as an abstract type may declare type parameters

@@ -1,7 +1,7 @@
 package scala.reflect
-package api
+package macro
 
-trait MacroContext extends Universe {
+trait Context extends api.Universe {
   
   /** Mark a variable as captured; i.e. force boxing in a *Ref type.
    */

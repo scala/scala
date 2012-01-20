@@ -27,11 +27,15 @@ object ReflectionUtils {
     case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
   }
 
-  // Retrieves the MODULE$ field for the given class name.
-  def singletonInstance(className: String, cl: ClassLoader = getClass.getClassLoader): Option[AnyRef] = {
+  def singletonInstance(className: String, cl: ClassLoader = getClass.getClassLoader): AnyRef = {
     val name = if (className endsWith "$") className else className + "$"
-
-    try Some(java.lang.Class.forName(name, true, cl) getField "MODULE$" get null)
-    catch { case _: ClassNotFoundException  => None }
+    val clazz = java.lang.Class.forName(name, true, cl) 
+    val singleton = clazz getField "MODULE$" get null
+    singleton
   }
+
+  // Retrieves the MODULE$ field for the given class name.
+  def singletonInstanceOpt(className: String, cl: ClassLoader = getClass.getClassLoader): Option[AnyRef] = 
+    try Some(singletonInstance(className, cl))
+    catch { case _: ClassNotFoundException  => None }
 }

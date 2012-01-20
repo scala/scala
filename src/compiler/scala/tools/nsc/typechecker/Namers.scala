@@ -842,10 +842,10 @@ trait Namers extends MethodSynthesis {
         Namers.this.classOfModuleClass get clazz foreach { cdefRef =>
           val cdef = cdefRef()
           if (cdef.mods.isCase) addApplyUnapply(cdef, templateNamer)
-          addMacroMethods(cdef.impl, templateNamer)
+          if (settings.Xmacros.value) addMacroMethods(cdef.impl, templateNamer)
           classOfModuleClass -= clazz
         }
-        addMacroMethods(templ, templateNamer)
+        if (settings.Xmacros.value) addMacroMethods(templ, templateNamer)
       }
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
