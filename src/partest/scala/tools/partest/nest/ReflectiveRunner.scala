@@ -58,10 +58,17 @@ class ReflectiveRunner {
     if (isPartestDebug)
       println("Loading classes from:\n" + sepUrls.mkString("\n"))
 
-    val paths = classPath match {
-      case Some(cp) => Nil
-      case _        => files.toList map (_.path)
-    }
+    // @partest maintainer: it seems to me that commented lines are incorrect
+    // if classPath is not empty, then it has been provided by the --classpath option
+    // which points to the root of Scala home (see ConsoleFileManager's testClasses and the true flag in the ctor for more information)
+    // this doesn't mean that we had custom Java classpath set, so we don't have to override latestXXXFiles from the file manager
+    //
+    //val paths = classPath match {
+    //  case Some(cp) => Nil
+    //  case _        => files.toList map (_.path)
+    //}
+    val paths = files.toList map (_.path)
+
     val newClasspath = ClassPath.join(paths: _*)
 
     setProp("java.class.path", newClasspath)
