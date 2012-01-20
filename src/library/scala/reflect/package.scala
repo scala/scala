@@ -8,7 +8,7 @@ package object reflect {
   // initialization, but in response to a doomed attempt to utilize it.
   lazy val mirror: api.Mirror = {
     // we use (Java) reflection here so that we can keep reflect.runtime and reflect.internals in a seperate jar
-    ReflectionUtils.singletonInstance("scala.reflect.runtime.Mirror") collect { case x: api.Mirror => x } getOrElse {
+    ReflectionUtils.singletonInstanceOpt("scala.reflect.runtime.Mirror") collect { case x: api.Mirror => x } getOrElse {
       throw new UnsupportedOperationException("Scala reflection not available on this platform")
     }
   }

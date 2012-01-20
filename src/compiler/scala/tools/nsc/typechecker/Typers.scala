@@ -911,7 +911,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
           if (tree.isType)
             adaptType()
-          else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
+          else if (inExprModeButNot(mode, FUNmode) && tree.symbol != null && tree.symbol.isMacro && !tree.isDef) {
+            val tree1 = expandMacro(tree)
+            if (tree1.isErroneous) tree1 else typed(tree1, mode, pt) 
+          } else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (inAllModes(mode, EXPRmode | FUNmode) &&
             !tree.tpe.isInstanceOf[MethodType] &&
@@ -3471,9 +3474,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 // (calling typed1 more than once for the same tree)
                 if (checked ne res) typed { atPos(tree.pos)(checked) }
                 else res
-              } else if ((mode & FUNmode) == 0 && fun2.hasSymbol && fun2.symbol.isMacro)
-                typed1(macroExpand(res), mode, pt)
-              else
+              } else
                 res
             case ex: TypeError =>
               fun match {
@@ -3483,7 +3484,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     stopTimer(failedOpEqNanos, opeqStart)
                     convertToAssignment(fun, qual1, name, args, ex)
-                  } 
+                  }
                   else {
                     stopTimer(failedApplyNanos, appStart)
                     reportTypeError(fun.pos, ex)
@@ -4439,6 +4440,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           pendingTreeTypes = pendingTreeTypes.tail
         }
       }
+    }
+
+    def expandMacro(tree: Tree): Tree = try {
+      macroExpand(tree) match {
+        case t: Tree => t
+        case t => errorTree(tree, "macros must return a compiler-specific tree; returned class is: " + t.getClass)
+      }
+    } catch {
+      case ex: MacroExpandError => errorTree(tree, ex.msg)
     }
 
     def atOwner(owner: Symbol): Typer =

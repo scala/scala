@@ -45,7 +45,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   def javaClass(path: String): jClass[_] =
     javaClass(path, defaultReflectiveClassLoader())
   def javaClass(path: String, classLoader: JClassLoader): jClass[_] =
-    classLoader.loadClass(path)
+    Class.forName(path, true, classLoader)
 
   /** Does `path` correspond to a Java class with that fully qualified name? */
   def isJavaClass(path: String): Boolean =
