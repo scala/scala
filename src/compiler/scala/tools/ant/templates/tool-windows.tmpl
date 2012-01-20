@@ -86,4 +86,6 @@ goto :eof
 
 :end
 @@endlocal
-exit /b %errorlevel%
+
+REM exit code fix, see http://stackoverflow.com/questions/4632891/exiting-batch-with-exit-b-x-where-x-1-acts-as-if-command-completed-successfu
+@@%COMSPEC% /C exit %errorlevel% >nul
