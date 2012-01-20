@@ -96,6 +96,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions.") .
                           withPostSetHook(set => List(YmethodInfer, overrideObjects) foreach (_.value = set.value))
                                                    // YdepMethTpes, YvirtClasses,
+  val Xmacros       = BooleanSetting    ("-Xmacros", "Enable macros.")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.

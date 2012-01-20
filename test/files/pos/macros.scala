@@ -1,10 +1,8 @@
 object Test {
 
-  class C { 
+  class C {
     def macro foo[T](xs: List[T]): T = (T, xs) match {
-      case (t1: glob.Type, t2: glob.Tree) => t2
+      case (t1: Type, t2: Tree) => t2
     }
   }
 }
-
-
