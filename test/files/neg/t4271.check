@@ -1,0 +1,10 @@
+t4271.scala:9: error: value to is not a member of Int
+  3 to 5
+    ^
+t4271.scala:10: error: value ensuring is not a member of Int
+  5 ensuring true
+    ^
+t4271.scala:11: error: value -> is not a member of Int
+  3 -> 5
+    ^
+three errors found
