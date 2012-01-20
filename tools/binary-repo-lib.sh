@@ -77,7 +77,7 @@ pushJarFile() {
   local remote_uri=${version}${jar#$basedir}
   echo "  Pushing to ${remote_urlbase}/${remote_uri} ..."
   echo "	$curl"
-  local curl=$(curlUpload $remote_uri $jar_name $user $pw)
+  curlUpload $remote_uri $jar_name $user $pw
   echo "  Making new sha1 file ...."
   echo "$jar_sha1" > "${jar_name}${desired_ext}"
   popd >/dev/null
@@ -112,14 +112,20 @@ pushJarFiles() {
   local password=$3
   # TODO - ignore target/ and build/
   local jarFiles="$(find ${basedir}/lib -name "*.jar") $(find ${basedir}/test/files -name "*.jar")"
+  local changed="no"
   for jar in $jarFiles; do
     local valid=$(isJarFileValid $jar)
     if [[ "$valid" != "OK" ]]; then
       echo "$jar has changed, pushing changes...."
+      changed="yes"
       pushJarFile $jar $basedir $user $password
     fi
   done
-  echo "Binary changes have been pushed.  You may now submit the new *${desired_ext} files to git."
+  if test "$changed" == "no"; then
+    echo "No jars have been changed."
+  else
+    echo "Binary changes have been pushed.  You may now submit the new *${desired_ext} files to git."
+  fi
 }
 
 # Pulls a single binary artifact from a remote repository.
@@ -141,7 +147,7 @@ pullJarFile() {
 # Argument 1 - The directory to search for *.desired.sha1 files that need to be retrieved.
 pullJarFiles() {
   local basedir=$1
-  local desiredFiles="$(find ${basedir}/lib -name *${desired_ext}) $(find ${basedir}/test/files -name *${desired_ext})"
+  local desiredFiles="$(find ${basedir}/lib -name *${desired_ext}) $(find ${basedir}/test/files -name *${desired_ext}) $(find ${basedir}/tools -name *${desired_ext})"
   for sha in $desiredFiles; do
     jar=${sha%$desired_ext}
     local valid=$(isJarFileValid $jar)
