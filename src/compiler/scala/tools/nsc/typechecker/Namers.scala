@@ -828,8 +828,14 @@ trait Namers extends MethodSynthesis {
         if (inheritsSelf || tp.isError) AnyRefClass.tpe
         else tp
       }
-
-      val parents = typer.parentTypes(templ) map checkParent
+      
+      var parents = typer.parentTypes(templ) map checkParent
+      if (clazz.hasAnnotation(ScalaInlineClass)) {
+        if (!(parents exists (_.typeSymbol == NotNullClass)))
+          parents = parents :+ NotNullClass.tpe
+        clazz setFlag FINAL
+      }
+          
       enterSelf(templ.self)
 
       val decls = new Scope
