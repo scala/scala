@@ -2835,9 +2835,22 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def packSymbols(hidden: List[Symbol], tp: Type): Type =
       if (hidden.isEmpty) tp
       else existentialTransform(hidden, tp)(existentialAbstraction)
+      
+    def isReferencedFrom(ctx: Context, sym: Symbol): Boolean =
+      ctx.owner.isTerm && 
+      (ctx.scope.exists { dcl => dcl.isInitialized && (dcl.info contains sym) }) || 
+      {
+        var ctx1 = ctx.outer
+        while ((ctx1 != NoContext) && (ctx1.scope eq ctx.scope)) ctx1 = ctx1.outer
+        (ctx1 != NoContext) && isReferencedFrom(ctx1, sym)
+      }
 
     def isCapturedExistential(sym: Symbol) =
-      sym hasAllFlags (EXISTENTIAL | CAPTURED)  // todo refine this
+      (sym hasAllFlags (EXISTENTIAL | CAPTURED)) && {
+      val start = startTimer(isReferencedNanos)
+      try !isReferencedFrom(context, sym)
+      finally stopTimer(isReferencedNanos, start)
+    }
 
     def packCaptured(tpe: Type): Type = {
       val captured = mutable.Set[Symbol]()
