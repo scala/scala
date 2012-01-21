@@ -153,13 +153,19 @@ trait Parsers {
     val successful = true
   }
 
-  var lastNoSuccess: NoSuccess = null
+  private lazy val lastNoSuccessTL = new ThreadLocal[NoSuccess]
+
+  private def setLastNoSuccess(noSuccess: Option[NoSuccess]) {
+    lastNoSuccessTL.set(noSuccess.getOrElse(null))
+  }
+
+  private def lastNoSuccess = Option(lastNoSuccessTL.get)
 
   /** A common super-class for unsuccessful parse results. */
   sealed abstract class NoSuccess(val msg: String, override val next: Input) extends ParseResult[Nothing] { // when we don't care about the difference between Failure and Error
     val successful = false
-    if (!(lastNoSuccess != null && next.pos < lastNoSuccess.next.pos))
-      lastNoSuccess = this
+    if (lastNoSuccess.map(next.pos < _.next.pos).getOrElse(false))
+      setLastNoSuccess(Some(this))
 
     def map[U](f: Nothing => U) = this
     def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
@@ -877,16 +883,18 @@ trait Parsers {
    *           if `p` consumed all the input.
    */
   def phrase[T](p: Parser[T]) = new Parser[T] {
-    lastNoSuccess = null
-    def apply(in: Input) = p(in) match {
-      case s @ Success(out, in1) =>
-        if (in1.atEnd)
-          s
-        else if (lastNoSuccess == null || lastNoSuccess.next.pos < in1.pos)
-          Failure("end of input expected", in1)
-        else
-          lastNoSuccess
-      case _ => lastNoSuccess
+    def apply(in: Input) = try {
+      setLastNoSuccess(None)
+      p(in) match {
+        case s @ Success(out, in1) =>
+          if (in1.atEnd)
+            s
+          else
+            lastNoSuccess filterNot { _.next.pos < in1.pos } getOrElse Failure("end of input expected", in1)
+        case n: NoSuccess => lastNoSuccess getOrElse n
+      }
+    } finally {
+      setLastNoSuccess(None)
     }
   }
 
