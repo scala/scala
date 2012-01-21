@@ -150,14 +150,12 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
 
   override def foreach[U](f: A =>  U) = RB.foreachKey(tree, f)
 
-  override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = {
-    val ntree = RB.range(tree, from, true, until, false)
-    newSet(ntree)
-  }
-  override def to(to: A): TreeSet[A] = {
-    val ntree = RB.range(tree, None, true, Some(to), true)
-    newSet(ntree)
-  }
+  override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
+  override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
+  override def from(from: A): TreeSet[A] = newSet(RB.from(tree, from))
+  override def to(to: A): TreeSet[A] = newSet(RB.to(tree, to))
+  override def until(until: A): TreeSet[A] = newSet(RB.until(tree, until))
+
   override def firstKey = head
   override def lastKey = last
 }

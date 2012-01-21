@@ -45,11 +45,16 @@ object RedBlackTree {
   def count(tree: Tree[_, _]) = if (tree eq null) 0 else tree.count
   def update[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1)(implicit ordering: Ordering[A]): Tree[A, B1] = blacken(upd(tree, k, v))
   def delete[A, B](tree: Tree[A, B], k: A)(implicit ordering: Ordering[A]): Tree[A, B] = blacken(del(tree, k))
-  def range[A, B](tree: Tree[A, B], low: Option[A], lowInclusive: Boolean, high: Option[A], highInclusive: Boolean)(implicit ordering: Ordering[A]): Tree[A, B] = {
-    val after: Option[A => Boolean] = low.map(key => if (lowInclusive) ordering.lt(_, key) else ordering.lteq(_, key))
-    val before: Option[A => Boolean] = high.map(key => if (highInclusive) ordering.lt(key, _) else ordering.lteq(key, _))
-    blacken(rng(tree, after, before))
+  def rangeImpl[A: Ordering, B](tree: Tree[A, B], from: Option[A], until: Option[A]): Tree[A, B] = (from, until) match {
+    case (Some(from), Some(until)) => this.range(tree, from, until)
+    case (Some(from), None)        => this.from(tree, from)
+    case (None,       Some(until)) => this.until(tree, until)
+    case (None,       None)        => tree
   }
+  def range[A: Ordering, B](tree: Tree[A, B], from: A, until: A): Tree[A, B] = blacken(doRange(tree, from, until))
+  def from[A: Ordering, B](tree: Tree[A, B], from: A): Tree[A, B] = blacken(doFrom(tree, from))
+  def to[A: Ordering, B](tree: Tree[A, B], to: A): Tree[A, B] = blacken(doTo(tree, to))
+  def until[A: Ordering, B](tree: Tree[A, B], key: A): Tree[A, B] = blacken(doUntil(tree, key))
 
   def smallest[A, B](tree: Tree[A, B]): Tree[A, B] = {
     if (tree eq null) throw new NoSuchElementException("empty map")
@@ -202,13 +207,36 @@ object RedBlackTree {
     else append(tree.left, tree.right)
   }
 
-  private[this] def rng[A, B](tree: Tree[A, B], after: Option[A => Boolean], before: Option[A => Boolean])(implicit ordering: Ordering[A]): Tree[A, B] = {
+  private[this] def doFrom[A, B](tree: Tree[A, B], from: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
     if (tree eq null) return null
-    if (after == None && before == None) return tree
-    if (after != None && after.get(tree.key)) return rng(tree.right, after, before);
-    if (before != None && before.get(tree.key)) return rng(tree.left, after, before);
-    val newLeft = rng(tree.left, after, None)
-    val newRight = rng(tree.right, None, before)
+    if (ordering.lt(tree.key, from)) return doFrom(tree.right, from)
+    val newLeft = doFrom(tree.left, from)
+    if (newLeft eq tree.left) tree
+    else if (newLeft eq null) upd(tree.right, tree.key, tree.value)
+    else rebalance(tree, newLeft, tree.right)
+  }
+  private[this] def doTo[A, B](tree: Tree[A, B], to: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
+    if (tree eq null) return null
+    if (ordering.lt(to, tree.key)) return doTo(tree.left, to)
+    val newRight = doTo(tree.right, to)
+    if (newRight eq tree.right) tree
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value)
+    else rebalance(tree, tree.left, newRight)
+  }
+  private[this] def doUntil[A, B](tree: Tree[A, B], until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
+    if (tree eq null) return null
+    if (ordering.lteq(until, tree.key)) return doUntil(tree.left, until)
+    val newRight = doUntil(tree.right, until)
+    if (newRight eq tree.right) tree
+    else if (newRight eq null) upd(tree.left, tree.key, tree.value)
+    else rebalance(tree, tree.left, newRight)
+  }
+  private[this] def doRange[A, B](tree: Tree[A, B], from: A, until: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
+    if (tree eq null) return null
+    if (ordering.lt(tree.key, from)) return doRange(tree.right, from, until);
+    if (ordering.lteq(until, tree.key)) return doRange(tree.left, from, until);
+    val newLeft = doFrom(tree.left, from)
+    val newRight = doUntil(tree.right, until)
     if ((newLeft eq tree.left) && (newRight eq tree.right)) tree
     else if (newLeft eq null) upd(newRight, tree.key, tree.value);
     else if (newRight eq null) upd(newLeft, tree.key, tree.value);

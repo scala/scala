@@ -62,14 +62,11 @@ class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Orderi
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  override def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = {
-    val ntree = RB.range(tree, from, true, until, false)
-    new TreeMap[A, B](ntree)
-  }
-  override def to(to: A): TreeMap[A, B] = {
-    val ntree = RB.range(tree, None, true, Some(to), true)
-    new TreeMap[A, B](ntree)
-  }
+  override def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = new TreeMap[A, B](RB.rangeImpl(tree, from, until))
+  override def range(from: A, until: A): TreeMap[A, B] = new TreeMap[A, B](RB.range(tree, from, until))
+  override def from(from: A): TreeMap[A, B] = new TreeMap[A, B](RB.from(tree, from))
+  override def to(to: A): TreeMap[A, B] = new TreeMap[A, B](RB.to(tree, to))
+  override def until(until: A): TreeMap[A, B] = new TreeMap[A, B](RB.until(tree, until))
 
   override def firstKey = RB.smallest(tree).key
   override def lastKey = RB.greatest(tree).key
