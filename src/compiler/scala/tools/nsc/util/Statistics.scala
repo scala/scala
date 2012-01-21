@@ -20,7 +20,7 @@ class Statistics extends scala.reflect.internal.util.Statistics {
   val typedSelectCount = new Counter
   val typerNanos = new Timer
   val classReadNanos = new Timer
-
+  
   val failedApplyNanos = new Timer
   val failedOpEqNanos = new Timer
   val failedSilentNanos = new Timer
@@ -48,6 +48,7 @@ class Statistics extends scala.reflect.internal.util.Statistics {
   val subtypeImprovCount = new SubCounter(subtypeCount)
   val subtypeETNanos = new Timer
   val matchesPtNanos = new Timer
+  val isReferencedNanos = new Timer
   val ctr1 = new Counter
   val ctr2 = new Counter
   val ctr3 = new Counter
@@ -137,6 +138,7 @@ abstract class StatisticsInfo {
         inform("time spent in failed     : "+showRelTyper(failedSilentNanos))
         inform("       failed apply      : "+showRelTyper(failedApplyNanos))
         inform("       failed op=        : "+showRelTyper(failedOpEqNanos))
+        inform("time spent ref scanning  : "+showRelTyper(isReferencedNanos))
         inform("micros by tree node      : "+showCounts(microsByType))
         inform("#visits by tree node     : "+showCounts(visitsByType))
         val average = new ClassCounts
