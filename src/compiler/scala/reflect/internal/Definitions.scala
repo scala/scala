@@ -29,8 +29,13 @@ trait Definitions extends reflect.api.StandardDefinitions {
     self: definitions.type =>
 
     private[Definitions] def valueCache(name: Name) = {
-      if (name.isTypeName) ScalaPackageClass.info member name
-      else ScalaPackageClass.info member name suchThat (_ hasFlag MODULE)
+      val res = (
+        if (name.isTypeName) ScalaPackageClass.info member name
+        else ScalaPackageClass.info member name suchThat (_ hasFlag MODULE)
+      )
+      if (res eq NoSymbol)
+        abort("Could not find value classes! This is a catastrophic failure.  scala " + scala.util.Properties.versionString)
+      else res
     }
     private[Definitions] def valueModuleMethod(className: Name, methodName: Name): Symbol = {
       valueCache(className.toTermName).moduleClass.tpe member methodName
