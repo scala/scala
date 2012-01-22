@@ -64,9 +64,12 @@ abstract class Inliners extends SubComponent {
     }
 
     override def run() {
-      super.run()
-      inliner.NonPublicRefs.usesNonPublics.clear()
-      inliner.recentTFAs.clear
+      try {
+        super.run()
+      } finally {
+        inliner.NonPublicRefs.usesNonPublics.clear()
+        inliner.recentTFAs.clear
+      }
     }
   }
 
