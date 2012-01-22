@@ -6,8 +6,11 @@ import Arbitrary._
 import util._
 
 object Test extends Properties("TreeSet") {
-  implicit def arbTreeSet[A : Arbitrary : Ordering]: Arbitrary[TreeSet[A]] =
-    Arbitrary(listOf(arbitrary[A]) map (elements => TreeSet(elements: _*)))
+  def genTreeSet[A: Arbitrary: Ordering]: Gen[TreeSet[A]] =
+    for {
+      elements <- listOf(arbitrary[A])
+    } yield TreeSet(elements: _*)
+  implicit def arbTreeSet[A : Arbitrary : Ordering]: Arbitrary[TreeSet[A]] = Arbitrary(genTreeSet)
 
   property("foreach/iterator consistency") = forAll { (subject: TreeSet[Int]) =>
     val it = subject.iterator
@@ -90,6 +93,17 @@ object Test extends Properties("TreeSet") {
     val n = choose(-1, subject.size + 1).sample.get
     val (prefix, suffix) = subject.splitAt(n)
     prefix == subject.take(n) && suffix == subject.drop(n)
+  }
+
+  def genSliceParms = for {
+    tree <- genTreeSet[Int]
+    from <- choose(0, tree.size)
+    until <- choose(from, tree.size)
+  } yield (tree, from, until)
+
+  property("slice") = forAll(genSliceParms) { case (subject, from, until) =>
+    val slice = subject.slice(from, until)
+    slice.size == until - from && subject.toSeq == subject.take(from).toSeq ++ slice ++ subject.drop(until)
   }
 
   property("takeWhile") = forAll { (subject: TreeSet[Int]) =>
