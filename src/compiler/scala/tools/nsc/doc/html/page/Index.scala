@@ -24,7 +24,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
     ( if (!s.docversion.isDefault) (" " + s.docversion.value) else "" )
   }
 
-  val headers =
+  def headers =
     <xml:group>
       <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
@@ -34,7 +34,7 @@ class Index(universe: doc.Universe, index: doc.Index) extends HtmlPage {
       <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
 
-  val body =
+  def body =
     <body>
       <div id="library">
         <img class='class icon' src={ relativeLinkTo{List("class.png", "lib")} }/>
