@@ -14,15 +14,17 @@ package scala.annotation
  * reason or another retain the same name and type signature,
  * but some aspect of their behavior is different.  An illustrative
  * examples is Stack.iterator, which reversed from LIFO to FIFO
- * order between scala 2.7 and 2.8.
+ * order between Scala 2.7 and 2.8.
  *
- * The version numbers are to mark the scala major/minor release
- * version where the change took place.
+ * @param message A message describing the change, which is emitted
+ * by the compiler if the flag `-Xmigration` is set.
+ *
+ * @param changedIn The version, in which the behaviour change was
+ * introduced.
  *
  * @since 2.8
  */
-private[scala] final class migration(
-  majorVersion: Int,
-  minorVersion: Int,
-  message: String)
-extends annotation.StaticAnnotation {}
+ private[scala] final class migration(message: String, changedIn: String) extends annotation.StaticAnnotation {
+   @deprecated("Use the constructor taking two Strings instead.", "2.10")
+   def this(majorVersion: Int, minorVersion: Int, message: String) = this(message, majorVersion + "." + minorVersion)
+ }
