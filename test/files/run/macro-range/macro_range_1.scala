@@ -29,12 +29,13 @@ abstract class Utils {
     }
   }
   def makeApply(fn: Tree, args: List[Tree]): Tree = fn match {
-    case Function(vparams, body) => 
+    case Function(vparams, body) =>
       new TreeSubstituter(vparams map (_.symbol), args) transform body
     case Block(stats, expr) =>
       Block(stats, makeApply(expr, args))
-    case _ => 
-      println("no beta on "+fn+" "+fn.getClass)
+    case _ =>
+      // todo. read the compiler config and print if -Ydebug is set
+      //println("no beta on "+fn+" "+fn.getClass)
       Apply(fn, args)
   }
   def makeWhile(lname: TermName, cond: Tree, body: Tree): Tree = {
@@ -48,7 +49,8 @@ abstract class Utils {
 
 class Range(val from: Int, val to: Int) extends RangeDefault {
   override def macro foreach(f: Int => Unit): Unit = {
-    println("macro-expand, _this = "+ _this) 
+    // todo. read the compiler config and print if -Ydebug is set
+    //println("macro-expand, _this = "+ _this)
     import _context._
     object utils extends Utils {
       val context: _context.type = _context
@@ -71,12 +73,15 @@ class Range(val from: Int, val to: Int) extends RangeDefault {
         val body = Block(
             List(makeApply(f, List(iref))),
             Assign(iref, makeBinop(iref, "$plus", Literal(Constant(1)))))
-        tools.nsc.util.trace("generated: ")(
+        val generated =
         Block(
           List(
             ValDef(Modifiers(Set(Modifier.mutable)), iname, TypeTree(), lo),
             ValDef(Modifiers(), hname, TypeTree(), hi)),
-          makeWhile(labelname, cond, body)))
+          makeWhile(labelname, cond, body))
+        // todo. read the compiler config and print if -Ydebug is set
+        //tools.nsc.util.trace("generated: ")(generated)
+        generated
       case _ =>
         Apply(
           Select(
