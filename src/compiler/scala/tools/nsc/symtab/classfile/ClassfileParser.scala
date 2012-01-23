@@ -606,7 +606,7 @@ abstract class ClassfileParser {
   def parseField() {
     val jflags = in.nextChar
     var sflags = toScalaFieldFlags(jflags)
-    if ((sflags & PRIVATE) != 0L && !global.settings.XO.value) {
+    if ((sflags & PRIVATE) != 0L && !global.settings.optimise.value) {
       in.skip(4); skipAttributes()
     } else {
       val name    = pool.getName(in.nextChar)
@@ -637,7 +637,7 @@ abstract class ClassfileParser {
   def parseMethod() {
     val jflags = in.nextChar.toInt
     var sflags = toScalaMethodFlags(jflags)
-    if (isPrivate(jflags) && !global.settings.XO.value) {
+    if (isPrivate(jflags) && !global.settings.optimise.value) {
       val name = pool.getName(in.nextChar)
       if (name == nme.CONSTRUCTOR)
         sawPrivateConstructor = true
@@ -645,7 +645,7 @@ abstract class ClassfileParser {
     } else {
       if ((jflags & JAVA_ACC_BRIDGE) != 0)
         sflags |= BRIDGE
-      if ((sflags & PRIVATE) != 0L && global.settings.XO.value) {
+      if ((sflags & PRIVATE) != 0L && global.settings.optimise.value) {
         in.skip(4); skipAttributes()
       } else {
         val name = pool.getName(in.nextChar)

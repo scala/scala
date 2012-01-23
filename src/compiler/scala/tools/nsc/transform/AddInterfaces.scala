@@ -81,10 +81,17 @@ abstract class AddInterfaces extends InfoTransform {
     atPhase(implClassPhase) {
       val implName = nme.implClassName(iface.name)
       var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
-      if (impl != NoSymbol && settings.XO.value) {
-        log("unlinking impl class " + impl)
-        iface.owner.info.decls.unlink(impl)
-        impl = NoSymbol
+      if (impl != NoSymbol) {
+        // Unlink a pre-existing symbol only if the implementation class is
+        // visible on the compilation classpath.  In general this is true under
+        // -optimise and not otherwise, but the classpath can use arbitrary
+        // logic so the classpath must be queried.
+        if (classPath.context.isValidName(implName + ".class")) {
+          log("unlinking impl class " + impl)
+          iface.owner.info.decls.unlink(impl)
+          impl = NoSymbol
+        }
+        else log("not unlinking existing " + impl + " as the impl class is not visible on the classpath.")
       }
       if (impl == NoSymbol) {
         impl = iface.cloneSymbolImpl(iface.owner)
