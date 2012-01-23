@@ -929,13 +929,19 @@ self =>
 /** A specialized, extra-lazy implementation of a stream iterator, so it can
  *  iterate as lazily as it traverses the tail.
  */
-final class StreamIterator[+A](self: Stream[A]) extends AbstractIterator[A] with Iterator[A] {
+final class StreamIterator[+A] private() extends AbstractIterator[A] with Iterator[A] {
+  def this(self: Stream[A]) {
+    this()
+    these = new LazyCell(self)
+  }
+
   // A call-by-need cell.
   class LazyCell(st: => Stream[A]) {
     lazy val v = st
   }
 
-  private var these = new LazyCell(self)
+  private var these: LazyCell = _
+
   def hasNext: Boolean = these.v.nonEmpty
   def next(): A =
     if (isEmpty) Iterator.empty.next
