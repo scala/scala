@@ -13,13 +13,13 @@ import scala.xml.{ NodeSeq, Text, XML, UnprefixedAttribute }
 
 class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
-  val path =
+  def path =
     templateToPath(tpl)
 
-  val title =
+  def title =
     tpl.qualifiedName
 
-  val headers =
+  def headers =
     <xml:group>
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
@@ -48,7 +48,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   /* for body, there is a special case for AnyRef, otherwise AnyRef appears
    * like a package/object this problem should be fixed, this implementation
    * is just a patch. */
-  val body = {
+  def body = {
     val templateName = if (tpl.isRootPackage) "root package" else tpl.name
     val displayName = tpl.companion match {
       case Some(companion) if (companion.visibility.isPublic && companion.inSource != None) =>
@@ -225,9 +225,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     mbr match {
       case dte: DocTemplateEntity if isSelf =>
         // comment of class itself
-        <xml:group>
-          <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
-        </xml:group>
+        memberToFullCommentHtml(mbr, isSelf = true)
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
         // comment of inner, documented class (only short comment, full comment is on the class' own page)
         memberToInlineCommentHtml(mbr, isSelf)
@@ -264,6 +262,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     else
       <p class="shortcomment cmt">{ memberToUseCaseCommentHtml(mbr, isSelf) }{ inlineToHtml(mbr.comment.get.short) }</p>
   }
+
+  def memberToFullCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
+    <xml:group>
+      <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
+    </xml:group>
 
   def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
