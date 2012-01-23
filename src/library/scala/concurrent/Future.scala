@@ -128,13 +128,9 @@ self =>
   
   /* Miscellaneous */
   
-  /** The execution context of the future.
-   */
-  def executor: ExecutionContext
-  
   /** Creates a new promise.
    */
-  def newPromise[S]: Promise[S] = executor promise
+  def newPromise[S]: Promise[S]
   
   
   /* Projections */
@@ -152,7 +148,7 @@ self =>
    *  and throws a corresponding exception if the original future fails.
    */
   def failed: Future[Throwable] = new Future[Throwable] {
-    def executor = self.executor
+    def newPromise[S]: Promise[S] = self.newPromise
     def onComplete[U](func: Either[Throwable, Throwable] => U) = {
       self.onComplete {
         case Left(t) => func(Right(t))

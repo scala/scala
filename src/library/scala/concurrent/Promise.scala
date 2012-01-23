@@ -101,8 +101,8 @@ trait Promise[T] {
   @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
   def tryFailure(t: Throwable)(implicit nondet: NonDeterministic): Boolean = tryComplete(Left(t))(nonDeterministicEvidence)
   
-  /** Wraps a `Throwable` in an `ExecutionException` if necessary.
-   *
+  /** Wraps a `Throwable` in an `ExecutionException` if necessary. TODO replace with `resolver` from scala.concurrent
+   *  
    *  $allowedThrowables
    */
   protected def wrap(t: Throwable): Throwable = t match {

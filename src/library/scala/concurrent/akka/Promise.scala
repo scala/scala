@@ -23,6 +23,8 @@ trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
   
   def future = this
   
+  def newPromise[S]: Promise[S] = executor promise
+  
   // TODO refine answer and return types here from Any to type parameters
   // then move this up in the hierarchy
   /*
@@ -194,12 +196,11 @@ object Promise {
     }
     
     private final def notifyCompleted(func: Either[Throwable, T] => Any, result: Either[Throwable, T]) {
-      // TODO see what to do about logging
-      //try {
-      func(result)
-      //} catch {
-      //  case e => logError("Future onComplete-callback raised an exception", e)
-      //}
+      try {
+        func(result)
+      } catch {
+        case e => e.printStackTrace()
+      }
     }
   }
   

@@ -16,6 +16,8 @@ self: Future[T] =>
   
   val executor: ExecutionContextImpl
 
+  def newPromise[S]: Promise[S] = executor promise
+  
   type Callback = Either[Throwable, T] => Any
 
   def getState: State[T]
