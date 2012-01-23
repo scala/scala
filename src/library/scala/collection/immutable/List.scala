@@ -316,28 +316,7 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
 
-  import java.io._
 
-  private def writeObject(out: ObjectOutputStream) {
-    var xs: List[B] = this
-    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
-    out.writeObject(ListSerializeEnd)
-  }
-
-  private def readObject(in: ObjectInputStream) {
-    hd = in.readObject.asInstanceOf[B]
-    assert(hd != ListSerializeEnd)
-    var current: ::[B] = this
-    while (true) in.readObject match {
-      case ListSerializeEnd =>
-        current.tl = Nil
-        return
-      case a : Any =>
-        val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
-        current.tl = list
-        current = list
-    }
-  }
 }
 
 /** $factoryInfo
