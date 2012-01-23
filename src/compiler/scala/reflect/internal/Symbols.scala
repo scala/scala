@@ -1425,7 +1425,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def sourceModule: Symbol = NoSymbol
 
-    /** The implementation class of a trait. */
+    /** The implementation class of a trait.  If available it will be the
+     *  symbol with the same owner, and the name of this symbol with $class
+     *  appended to it.
+     */
     final def implClass: Symbol = owner.info.decl(nme.implClassName(name))
 
     /** The class that is logically an outer class of given `clazz`.
