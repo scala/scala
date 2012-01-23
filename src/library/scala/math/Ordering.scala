@@ -10,7 +10,7 @@ package scala.math
 
 import java.util.Comparator
 
-/** Ordering is trait whose instances each represent a strategy for sorting
+/** Ordering is a trait whose instances each represent a strategy for sorting
   * instances of a type.
   *
   * Ordering's companion object defines many implicit objects to deal with
