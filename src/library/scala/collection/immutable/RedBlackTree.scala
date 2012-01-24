@@ -166,7 +166,7 @@ object RedBlackTree {
     } else if (isRedTree(tr) && isBlackTree(tr.left)) {
       RedTree(tr.left.key, tr.left.value, BlackTree(x, xv, tl, tr.left.left), balance(tr.key, tr.value, tr.left.right, subl(tr.right)))
     } else {
-      sys.error("Defect: invariance violation at ") // TODO
+      sys.error("Defect: invariance violation")
     }
     def balRight(x: A, xv: B, tl: Tree[A, B], tr: Tree[A, B]) = if (isRedTree(tr)) {
       RedTree(x, xv, tl, tr.black)
@@ -175,7 +175,7 @@ object RedBlackTree {
     } else if (isRedTree(tl) && isBlackTree(tl.right)) {
       RedTree(tl.right.key, tl.right.value, balance(tl.key, tl.value, subl(tl.left), tl.right.left), BlackTree(x, xv, tl.right.right, tr))
     } else {
-      sys.error("Defect: invariance violation at ") // TODO
+      sys.error("Defect: invariance violation")
     }
     def delLeft = if (isBlackTree(tree.left)) balLeft(tree.key, tree.value, del(tree.left, k), tree.right) else RedTree(tree.key, tree.value, del(tree.left, k), tree.right)
     def delRight = if (isBlackTree(tree.right)) balRight(tree.key, tree.value, tree.left, del(tree.right, k)) else RedTree(tree.key, tree.value, tree.left, del(tree.right, k))
