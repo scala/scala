@@ -111,6 +111,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 
     try {
       NestUI.verbose("compiling "+toCompile)
+      NestUI.verbose("with classpath: "+global.classPath.toString)
       try new global.Run compile toCompile
       catch {
         case FatalError(msg) =>
