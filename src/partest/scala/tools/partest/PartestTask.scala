@@ -281,6 +281,26 @@ class PartestTask extends Task with CompilationPathProperty {
       }
     } getOrElse sys.error("Provided classpath does not contain a Scala library.")
 
+    val scalaCompiler = {
+      (classpath.list map { fs => new File(fs) }) find { f =>
+        f.getName match {
+          case "scala-compiler.jar" => true
+          case "compiler" if (f.getParentFile.getName == "classes") => true
+          case _ => false
+        }
+      }
+    } getOrElse sys.error("Provided classpath does not contain a Scala compiler.")
+
+    val scalaPartest = {
+      (classpath.list map { fs => new File(fs) }) find { f =>
+        f.getName match {
+          case "scala-partest.jar" => true
+          case "partest" if (f.getParentFile.getName == "classes") => true
+          case _ => false
+        }
+      }
+    } getOrElse sys.error("Provided classpath does not contain a Scala partest.")
+
     def scalacArgsFlat: Option[Seq[String]] = scalacArgs map (_ flatMap { a =>
       val parts = a.getParts
       if(parts eq null) Seq[String]() else parts.toSeq
@@ -294,6 +314,8 @@ class PartestTask extends Task with CompilationPathProperty {
     antFileManager.failed = runFailed
     antFileManager.CLASSPATH = ClassPath.join(classpath.list: _*)
     antFileManager.LATEST_LIB = scalaLibrary.getAbsolutePath
+    antFileManager.LATEST_COMP = scalaCompiler.getAbsolutePath
+    antFileManager.LATEST_PARTEST = scalaPartest.getAbsolutePath
 
     javacmd foreach (x => antFileManager.JAVACMD = x.getAbsolutePath)
     javaccmd foreach (x => antFileManager.JAVAC_CMD = x.getAbsolutePath)
@@ -361,18 +383,18 @@ class PartestTask extends Task with CompilationPathProperty {
 
   private def oneResult(res: (String, Int)) =
     <testcase name={res._1}>{
-  	  res._2 match {
-  	    case 0 => scala.xml.NodeSeq.Empty
+      res._2 match {
+        case 0 => scala.xml.NodeSeq.Empty
         case 1 => <failure message="Test failed"/>
         case 2 => <failure message="Test timed out"/>
-  	  }
-  	}</testcase>
+      }
+    }</testcase>
 
   private def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) =
     <testsuite name={kind} tests={(succs + fails).toString} failures={fails.toString}>
-  	  <properties/>
-  	  {
-  	    results.map(oneResult(_))
-  	  }
+      <properties/>
+      {
+        results.map(oneResult(_))
+      }
     </testsuite>
 }
