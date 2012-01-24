@@ -24,7 +24,6 @@ import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
-import scala.annotation.implicitNotFound
 
 
 
@@ -60,7 +59,10 @@ import scala.annotation.implicitNotFound
  *  as the cause.
  *  If a future is failed with a `scala.runtime.NonLocalReturnControl`,
  *  it is completed with a value instead from that throwable instead instead.
- *
+ *  
+ *  @define nonDeterministic
+ *  Note: using this method yields nondeterministic dataflow programs.
+ *  
  *  @define forComprehensionExamples
  *  Example:
  *  
@@ -172,31 +174,6 @@ self =>
   
   
   /* Monadic operations */
-  
-  /** Creates a new future that will handle any matching throwable that this
-   *  future might contain. If there is no match, or if this future contains
-   *  a valid result then the new future will contain the same.
-   *  
-   *  Example:
-   *  
-   *  {{{
-   *  future (6 / 0) recover { case e: ArithmeticException ⇒ 0 } // result: 0
-   *  future (6 / 0) recover { case e: NotFoundException   ⇒ 0 } // result: exception
-   *  future (6 / 2) recover { case e: ArithmeticException ⇒ 0 } // result: 3
-   *  }}}
-   */
-  def recover[U >: T](pf: PartialFunction[Throwable, U]): Future[U] = {
-    val p = newPromise[U]
-    
-    onComplete {
-      case Left(t) if pf isDefinedAt t =>
-        try { p success pf(t) }
-        catch { case t: Throwable => p complete resolver(t) }
-      case otherwise => p complete otherwise
-    }
-    
-    p.future
-  }
   
   /** Asynchronously processes the value in the future once the value becomes available.
    *  
@@ -324,13 +301,68 @@ self =>
     p.future
   }
   
+  /** Creates a new future that will handle any matching throwable that this
+   *  future might contain. If there is no match, or if this future contains
+   *  a valid result then the new future will contain the same.
+   *  
+   *  Example:
+   *  
+   *  {{{
+   *  future (6 / 0) recover { case e: ArithmeticException ⇒ 0 } // result: 0
+   *  future (6 / 0) recover { case e: NotFoundException   ⇒ 0 } // result: exception
+   *  future (6 / 2) recover { case e: ArithmeticException ⇒ 0 } // result: 3
+   *  }}}
+   */
+  def recover[U >: T](pf: PartialFunction[Throwable, U]): Future[U] = {
+    val p = newPromise[U]
+    
+    onComplete {
+      case Left(t) if pf isDefinedAt t =>
+        try { p success pf(t) }
+        catch { case t: Throwable => p complete resolver(t) }
+      case otherwise => p complete otherwise
+    }
+    
+    p.future
+  }
+  
+  /** Creates a new future that will handle any matching throwable that this
+   *  future might contain by assigning it a value of another future.
+   *  
+   *  If there is no match, or if this future contains
+   *  a valid result then the new future will contain the same result.
+   *  
+   *  Example:
+   *  
+   *  {{{
+   *  val f = future { Int.MaxValue }
+   *  future (6 / 0) rescue { case e: ArithmeticException => f } // result: Int.MaxValue
+   *  }}}
+   */
+  def rescue[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
+    val p = newPromise[U]
+    
+    onComplete {
+      case Left(t) if pf isDefinedAt t =>
+        try {
+          pf(t) onComplete {
+            case Left(t) => p failure t
+            case Right(v) => p success v
+          }
+        } catch {
+          case t: Throwable => p complete resolver(t)
+        }
+      case otherwise => p complete otherwise
+    }
+    
+    p.future
+  }
+  
   /** Creates a new future which holds the result of this future if it was completed successfully, or, if not,
    *  the result of the `that` future if `that` is completed successfully.
    *  If both futures are failed, the resulting future holds the throwable object of the first future.
    *  
    *  Using this method will not cause concurrent programs to become nondeterministic.
-   *  
-   *  
    *  
    *  Example:
    *  {{{
@@ -367,8 +399,7 @@ self =>
    *  await(0) h // evaluates to either 5 or throws a runtime exception
    *  }}}
    */
-  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
-  def either[U >: T](that: Future[U])(implicit nondet: NonDeterministic): Future[U] = {
+  def either[U >: T](that: Future[U]): Future[U] = {
     val p = self.newPromise[U]
     
     val completePromise: PartialFunction[Either[Throwable, U], _] = {
@@ -402,9 +433,9 @@ object Future {
   // move this to future companion object
   @inline def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] = executor.future(body)
 
-  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext, nondet: NonDeterministic): Future[T] = ec.any(futures)
+  def any[T](futures: Traversable[Future[T]])(implicit ec: ExecutionContext): Future[T] = ec.any(futures)
 
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext, nondet: NonDeterministic): Future[Option[T]] = ec.find(futures)(predicate)
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit ec: ExecutionContext): Future[Option[T]] = ec.find(futures)(predicate)
   
 }
 

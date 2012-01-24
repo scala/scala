@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveAction, ForkJoinWorkerThread }
 import scala.util.Duration
 import scala.annotation.tailrec
-import scala.concurrent.NonDeterministic
 
 
 
@@ -88,12 +87,12 @@ extends Promise[T] with Future[T] with Completable[T] {
     case _ => null
   }
   
-  def tryComplete(r: Either[Throwable, T])(implicit nd: NonDeterministic) = r match {
+  def tryComplete(r: Either[Throwable, T]) = r match {
     case Left(t) => tryFailure(t)
     case Right(v) => trySuccess(v)
   }
   
-  override def trySuccess(value: T)(implicit nd: NonDeterministic): Boolean = {
+  override def trySuccess(value: T): Boolean = {
     val cbs = tryCompleteState(Success(value))
     if (cbs == null)
       false
@@ -106,7 +105,7 @@ extends Promise[T] with Future[T] with Completable[T] {
     }
   }
 
-  override def tryFailure(t: Throwable)(implicit nd: NonDeterministic): Boolean = {
+  override def tryFailure(t: Throwable): Boolean = {
     val wrapped = wrap(t)
     val cbs = tryCompleteState(Failure(wrapped))
     if (cbs == null)

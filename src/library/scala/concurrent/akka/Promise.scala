@@ -144,7 +144,7 @@ object Promise {
     @inline
     protected final def getState: FState[T] = updater.get(this)
     
-    def tryComplete(value: Either[Throwable, T])(implicit nd: NonDeterministic): Boolean = {
+    def tryComplete(value: Either[Throwable, T]): Boolean = {
       val callbacks: List[Either[Throwable, T] => Any] = {
         try {
           @tailrec
@@ -211,7 +211,7 @@ object Promise {
   final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val executor: ExecutionContextImpl) extends Promise[T] {
     val value = Some(resolve(suppliedValue))
     
-    def tryComplete(value: Either[Throwable, T])(implicit nondet: NonDeterministic): Boolean = false
+    def tryComplete(value: Either[Throwable, T]): Boolean = false
     
     def onComplete[U](func: Either[Throwable, T] => U): this.type = {
       val completedAs = value.get

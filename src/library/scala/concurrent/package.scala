@@ -119,9 +119,6 @@ package object concurrent {
    *  cannot send requests to a server thread through regular promises and futures).
    */
   object nondeterministic {
-    
-    implicit val nonDeterministicEvidence = new NonDeterministic {}
-    
   }
   
   final class DurationOps private[concurrent] (x: Int) {

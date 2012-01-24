@@ -10,7 +10,6 @@ package scala.concurrent
 
 
 
-import scala.annotation.implicitNotFound
 
 
 
@@ -51,8 +50,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
-  def tryComplete(result: Either[Throwable, T])(implicit nondet: NonDeterministic): Boolean
+  def tryComplete(result: Either[Throwable, T]): Boolean
   
   /** Completes this promise with the specified future, once that future is completed.
    *  
@@ -79,8 +77,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
-  def trySuccess(value: T)(implicit nondet: NonDeterministic): Boolean = tryComplete(Right(value))(nonDeterministicEvidence)
+  def trySuccess(value: T): Boolean = tryComplete(Right(value))
   
   /** Completes the promise with an exception.
    *  
@@ -98,8 +95,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
-  def tryFailure(t: Throwable)(implicit nondet: NonDeterministic): Boolean = tryComplete(Left(t))(nonDeterministicEvidence)
+  def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
   
   /** Wraps a `Throwable` in an `ExecutionException` if necessary. TODO replace with `resolver` from scala.concurrent
    *  

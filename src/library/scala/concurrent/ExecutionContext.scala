@@ -16,7 +16,6 @@ import scala.util.Duration
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
 import scala.collection.generic.CanBuildFrom
 import collection._
-import annotation.implicitNotFound
 
 
 
@@ -90,8 +89,7 @@ trait ExecutionContext {
   /** TODO some docs
    *  
    */
-  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
-  def any[T](futures: Traversable[Future[T]])(implicit nondet: NonDeterministic): Future[T] = {
+  def any[T](futures: Traversable[Future[T]]): Future[T] = {
     val p = promise[T]
     val completeFirst: Either[Throwable, T] => Unit = elem => p tryComplete elem
     
@@ -103,8 +101,7 @@ trait ExecutionContext {
   /** TODO some docs
    *  
    */
-  @implicitNotFound(msg = "Calling this method yields non-deterministic programs.")
-  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean)(implicit nondet: NonDeterministic): Future[Option[T]] = {
+  def find[T](futures: Traversable[Future[T]])(predicate: T => Boolean): Future[Option[T]] = {
     if (futures.isEmpty) Promise.kept[Option[T]](None).future
     else {
       val result = promise[Option[T]]
