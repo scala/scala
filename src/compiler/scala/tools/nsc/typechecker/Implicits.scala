@@ -94,21 +94,13 @@ trait Implicits {
 
   private val ManifestSymbols = Set(PartialManifestClass, FullManifestClass, OptManifestClass)
 
-  /** Map all type params in given list to WildcardType
-   *  @param   tparams  The list of type parameters to map
-   *  @param   tp  The type in which to do the mapping
-   */
-  private def tparamsToWildcards(tparams: List[Symbol], tp: Type) =
-    if (tparams.isEmpty) tp
-    else tp.instantiateTypeParams(tparams, tparams map (_ => WildcardType))
-
   /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
    * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate DebruijnIndex types
    * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
    * so we have to approximate (otherwise it is excluded a priori).
    */
   private def depoly(tp: Type): Type = tp match {
-    case PolyType(tparams, restpe) => tparamsToWildcards(tparams, ApproximateDependentMap(restpe))
+    case PolyType(tparams, restpe) => deriveTypeWithWildcards(tparams)(ApproximateDependentMap(restpe))
     case _                         => ApproximateDependentMap(tp)
   }
 
