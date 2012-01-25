@@ -13,6 +13,7 @@ import java.io.{ File, FileWriter }
 import org.apache.tools.ant.Project
 import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }
+import org.apache.tools.ant.BuildException
 import scala.tools.nsc.io
 import scala.tools.nsc.util.ScalaClassLoader
 
@@ -150,7 +151,7 @@ class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
     val res = execWithArgFiles(java, paths)
 
     if (failOnError && res != 0)
-      sys.error("Compilation failed because of an internal compiler error;"+
+      throw new BuildException("Compilation failed because of an internal compiler error;"+
             " see the error output for details.")
   }
 }
