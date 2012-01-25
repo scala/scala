@@ -41,7 +41,7 @@ import java.io._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@SerialVersionUID(3419063961353022661L)
+@SerialVersionUID(3419063961353022662L)
 final class ListBuffer[A]
       extends AbstractBuffer[A]
          with Buffer[A]
@@ -399,7 +399,7 @@ final class ListBuffer[A]
   private def copy() {
     var cursor = start
     val limit = last0.tail
-    clear
+    clear()
     while (cursor ne limit) {
       this += cursor.head
       cursor = cursor.tail
