@@ -72,7 +72,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** The class for all symbols */
-  abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name)
+  abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
           extends AbsSymbolImpl
              with HasFlags
              with Annotatable[Symbol] {
@@ -2064,7 +2064,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** A class for term symbols */
-  class TermSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
+  class TermSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends Symbol(initOwner, initPos, initName) {
     final override def isTerm = true
 
@@ -2157,7 +2157,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** A class for module symbols */
-  class ModuleSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
+  class ModuleSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) {
     private var flatname: TermName = null
 
@@ -2180,7 +2180,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** A class for method symbols */
-  class MethodSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
+  class MethodSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) {
     private var mtpePeriod = NoPeriod
     private var mtpePre: Type = _
@@ -2206,7 +2206,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
   }
   
-  class AliasTypeSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
+  class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     // Temporary programmatic help tracking down who might do such a thing
     override def setFlag(mask: Long): this.type = {
@@ -2247,7 +2247,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
-  abstract class TypeSymbol(initOwner: Symbol, initPos: Position, initName: TypeName) extends Symbol(initOwner, initPos, initName) {
+  abstract class TypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName) extends Symbol(initOwner, initPos, initName) {
     privateWithin = NoSymbol
     private var tyconCache: Type = null
     private var tyconRunId = NoRunId
@@ -2385,7 +2385,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *
    *     origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
    */
-  class TypeSkolem(initOwner: Symbol, initPos: Position, initName: TypeName, origin: AnyRef)
+  class TypeSkolem protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The skolemization level in place when the skolem was constructed */
@@ -2414,7 +2414,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** A class for class symbols */
-  class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
+  class ClassSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     private[this] var flatname: TypeName = null
     private[this] var source: AbstractFileType = null
@@ -2511,7 +2511,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  Note: Not all module classes are of this type; when unpickled, we get
    *  plain class symbols!
    */
-  class ModuleClassSymbol(owner: Symbol, pos: Position, name: TypeName)
+  class ModuleClassSymbol protected[Symbols] (owner: Symbol, pos: Position, name: TypeName)
   extends ClassSymbol(owner, pos, name) {
     private var module: Symbol = null
     private var implicitMembersCacheValue: List[Symbol] = List()
@@ -2544,7 +2544,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** An object representing a missing symbol */
-  class NoSymbol extends Symbol(null, NoPosition, nme.NO_NAME) {
+  class NoSymbol protected[Symbols]() extends Symbol(null, NoPosition, nme.NO_NAME) {
     synchronized {
       setInfo(NoType)
       privateWithin = this
