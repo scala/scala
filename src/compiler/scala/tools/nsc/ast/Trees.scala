@@ -17,7 +17,6 @@ import scala.reflect.internal.Flags.TRAIT
 trait Trees extends reflect.internal.Trees { self: Global =>
 
   // --- additional cases --------------------------------------------------------
-
   /** Only used during parsing */
   case class Parens(args: List[Tree]) extends Tree
 
@@ -31,7 +30,6 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     override def isType = definition.isType
   }
 
-
   /** Either an assignment or a named argument. Only appears in argument lists,
    *  eliminated by typecheck (doTypedApply)
    */
@@ -40,7 +38,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
 
  /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends TermTree with RefTree { }
+       extends TermTree with RefTree
 
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
@@ -163,7 +161,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       traverser.traverse(qualifier)
     case ReferenceToBoxed(idt) =>
       traverser.traverse(idt)
-    case TypeTreeWithDeferredRefCheck() => // TODO: should we traverse the wrapped tree?
+    case TypeTreeWithDeferredRefCheck() =>
       // (and rewrap the result? how to update the deferred check? would need to store wrapped tree instead of returning it from check)
     case _ => super.xtraverse(traverser, tree)
   }

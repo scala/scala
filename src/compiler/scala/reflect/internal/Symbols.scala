@@ -345,22 +345,26 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
-    def lock(handler: => Unit) = {
+    def lock(handler: => Unit): Boolean = {
       if ((rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
           recursionTable get this match {
             case Some(n) =>
               if (n > settings.Yrecursion.value) {
                 handler
+                false
               } else {
                 recursionTable += (this -> (n + 1))
+                true
               }
             case None =>
               recursionTable += (this -> 1)
+              true
           }
-        } else { handler }
+        } else { handler; false }
       } else {
         rawflags |= LOCKED
+        true
 //        activeLocks += 1
 //        lockedSyms += this
       }
@@ -963,7 +967,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           phase = phaseOf(infos.validFrom)
           tp.complete(this)
         } finally {
-          // if (id == 431) println("completer ran "+tp.getClass+" for "+fullName)
           unlock()
           phase = current
         }

@@ -1388,7 +1388,7 @@ trait Types extends api.Types { self: SymbolTable =>
         //Console.println("baseTypeSeq(" + typeSymbol + ") = " + baseTypeSeqCache.toList);//DEBUG
       }
       if (baseTypeSeqCache eq undetBaseTypeSeq)
-        throw new TypeError("illegal cyclic inheritance involving " + typeSymbol)
+        throw new RecoverableCyclicReference(typeSymbol)
       baseTypeSeqCache
     }
 
@@ -1430,7 +1430,7 @@ trait Types extends api.Types { self: SymbolTable =>
         }
       }
       if (baseClassesCache eq null)
-        throw new TypeError("illegal cyclic reference involving " + typeSymbol)
+        throw new RecoverableCyclicReference(typeSymbol)
       baseClassesCache
     }
 
@@ -1946,7 +1946,7 @@ trait Types extends api.Types { self: SymbolTable =>
           // If a subtyping cycle is not detected here, we'll likely enter an infinite
           // loop before a sensible error can be issued.  SI-5093 is one example.
           case x: SubType if x.supertype eq this =>
-            throw new TypeError("illegal cyclic reference involving " + sym)
+            throw new RecoverableCyclicReference(sym)
           case tp => tp
         }
       }
@@ -2064,7 +2064,7 @@ trait Types extends api.Types { self: SymbolTable =>
         }
       }
       if (baseTypeSeqCache == undetBaseTypeSeq)
-        throw new TypeError("illegal cyclic inheritance involving " + sym)
+        throw new RecoverableCyclicReference(sym)
       baseTypeSeqCache
     }
 
@@ -2074,11 +2074,11 @@ trait Types extends api.Types { self: SymbolTable =>
       else pre.prefixString
     )
     private def argsString = if (args.isEmpty) "" else args.mkString("[", ",", "]")
-    private def refinementString = (
+    def refinementString = (
       if (sym.isStructuralRefinement) (
         decls filter (sym => sym.isPossibleInRefinement && sym.isPublic)
           map (_.defString)
-          mkString(" {", "; ", "}")
+          mkString("{", "; ", "}")
       )
       else ""
     )
@@ -2498,7 +2498,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if (args.isEmpty && params.isEmpty)   new TypeVar(origin, constr)
         else if (args.size == params.size)    new AppliedTypeVar(origin, constr, params zip args)
         else if (args.isEmpty)                new HKTypeVar(origin, constr, params)
-        else throw new TypeError("Invalid TypeVar construction: " + ((origin, constr, args, params)))
+        else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
       
       trace("create", "In " + tv.originLocation)(tv)
@@ -2599,7 +2599,7 @@ trait Types extends api.Types { self: SymbolTable =>
         TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
       }
       else
-        throw new TypeError("Invalid type application in TypeVar: " + params + ", " + newArgs)
+        throw new Error("Invalid type application in TypeVar: " + params + ", " + newArgs)
     )
     // newArgs.length may differ from args.length (could've been empty before)
     //
@@ -3079,7 +3079,7 @@ trait Types extends api.Types { self: SymbolTable =>
     // don't expand cyclical type alias
     // we require that object is initialized, thus info.typeParams instead of typeParams.
     if (sym1.isAliasType && sameLength(sym1.info.typeParams, args) && !sym1.lockOK)
-      throw new TypeError("illegal cyclic reference involving " + sym1)
+      throw new RecoverableCyclicReference(sym1)
 
     val pre1 = pre match {
       case x: SuperType if sym1.isEffectivelyFinal || sym1.isDeferred =>
@@ -3101,7 +3101,7 @@ trait Types extends api.Types { self: SymbolTable =>
   def copyTypeRef(tp: Type, pre: Type, sym: Symbol, args: List[Type]): Type = tp match {
     case TypeRef(pre0, sym0, _) if pre == pre0 && sym0.name == sym.name =>
       if (sym.isAliasType && sameLength(sym.info.typeParams, args) && !sym.lockOK)
-        throw new TypeError("illegal cyclic reference involving " + sym)
+        throw new RecoverableCyclicReference(sym)
 
       TypeRef(pre, sym, args)
     case _ =>
@@ -3985,15 +3985,17 @@ trait Types extends api.Types { self: SymbolTable =>
                       else instParamRelaxed(ps.tail, as.tail)
 
                     //Console.println("instantiating " + sym + " from " + basesym + " with " + basesym.typeParams + " and " + baseargs+", pre = "+pre+", symclazz = "+symclazz);//DEBUG
-                    if (sameLength(basesym.typeParams, baseargs)) {
+                    if (sameLength(basesym.typeParams, baseargs))
                       instParam(basesym.typeParams, baseargs)
-                    } else {
-                      throw new TypeError(
-                        "something is wrong (wrong class file?): "+basesym+
-                        " with type parameters "+
-                        basesym.typeParams.map(_.name).mkString("[",",","]")+
-                        " gets applied to arguments "+baseargs.mkString("[",",","]")+", phase = "+phase)
-                    }
+                    else
+                      if (symclazz.tpe.parents.exists(_.isErroneous))
+                        ErrorType // don't be to overzealous with throwing exceptions, see #2641
+                      else
+                        throw new Error(
+                          "something is wrong (wrong class file?): "+basesym+
+                          " with type parameters "+
+                          basesym.typeParams.map(_.name).mkString("[",",","]")+
+                          " gets applied to arguments "+baseargs.mkString("[",",","]")+", phase = "+phase)
                   case ExistentialType(tparams, qtpe) =>
                     capturedSkolems = capturedSkolems union tparams
                     toInstance(qtpe, clazz)
@@ -6278,6 +6280,12 @@ trait Types extends api.Types { self: SymbolTable =>
     def this(msg: String) = this(NoPosition, msg)
   }
 
+  // TODO: RecoverableCyclicReference should be separated from TypeError,
+  // but that would be a big change. Left for further refactoring.
+  /** An exception for cyclic references from which we can recover */
+  case class RecoverableCyclicReference(sym: Symbol)
+    extends TypeError("illegal cyclic reference involving " + sym)
+
   class NoCommonType(tps: List[Type]) extends Throwable(
     "lub/glb of incompatible types: " + tps.mkString("", " and ", "")) with ControlThrowable
 
@@ -6285,9 +6293,6 @@ trait Types extends api.Types { self: SymbolTable =>
   class MalformedType(msg: String) extends TypeError(msg) {
     def this(pre: Type, tp: String) = this("malformed type: " + pre + "#" + tp)
   }
-
-  /** An exception signalling a variance annotation/usage conflict */
-  class VarianceError(msg: String) extends TypeError(msg)
 
   /** The current indentation string for traces */
   private var indent: String = ""

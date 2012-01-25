@@ -129,6 +129,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
     def shortClass: String = tree.getClass.getName split "[.$]" last
+
+    def isErrorTyped = (tree.tpe ne null) && tree.tpe.isError
+
     /** When you want to know a little more than the class, but a lot
      *  less than the whole tree.
      */

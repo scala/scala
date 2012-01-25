@@ -422,7 +422,7 @@ abstract class UnCurry extends InfoTransform
             if (tp.typeSymbol.isBottomClass) getManifest(AnyClass.tpe)
             else if (!manifestOpt.tree.isEmpty) manifestOpt.tree
             else if (tp.bounds.hi ne tp) getManifest(tp.bounds.hi)
-            else localTyper.getManifestTree(tree.pos, tp, false)
+            else localTyper.getManifestTree(tree, tp, false)
           }
           atPhase(phase.next) {
             localTyper.typedPos(pos) {

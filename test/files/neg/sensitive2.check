@@ -1,0 +1,10 @@
+sensitive2.scala:6: error: type mismatch;
+ found   : String("abc")
+ required: Test.Foo[_]
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method foo1 in object Test of type [A](a: A)Test.Foo[A]
+ and method foo2 in object Test of type (a: Any)Test.Foo[String]
+ are possible conversion functions from String("abc") to Test.Foo[_]
+  val a: Foo[_] = "abc"
+                  ^
+one error found
