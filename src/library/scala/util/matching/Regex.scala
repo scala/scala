@@ -377,6 +377,46 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
   override def toString = regex
 }
 
+/** This trait turns off the implicit anchoring semantics of Regex
+ *  in match/case.
+ *
+ *  The canonical way of adding in this trait is by using the method `qr`, provided
+ *  on [[java.lang.String]] through an implicit conversion into
+ *  [[scala.collection.immutable.WrappedString]]. Using triple quotes to write these
+ *  strings avoids having to quote the backslash character (`\`).
+ *
+ *  This changes the basic behavior so the following work
+ *
+ *  {{{
+ *  val dateP1 = """(\d\d\d\d)-(\d\d)-(\d\d)""".qr
+ *
+ *  val dateP1(year, month, day) = "Date 2011-07-15"
+ *
+ *  val copyright: String = "Date of this document: 2011-07-15" match {
+ *    case dateP1(year, month, day) => "Copyright "+year
+ *    case _                        => "No copyright"
+ *  }
+ *  }}}
+ *
+ */
+trait NoImplicitAnchors {
+
+  self: scala.util.matching.Regex =>
+
+  import Regex.Match
+
+  override def unapplySeq(target: Any): Option[List[String]] = target match {
+    case s: java.lang.CharSequence =>
+      val m = pattern.matcher(s)
+      if (m.find(0)) Some((1 to m.groupCount).toList map m.group)
+      else None
+    case Match(s) =>
+      unapplySeq(s)
+    case _ =>
+      None
+  }
+}
+
 /** This object defines inner classes that describe
  *  regex matches and helper objects. The class hierarchy
  *  is as follows:
