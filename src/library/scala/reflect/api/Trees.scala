@@ -8,7 +8,8 @@ package api
 
 import scala.collection.mutable.ListBuffer
 
-trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
+// Syncnote: Trees are currently not thread-safe.
+trait Trees { self: Universe =>
 
   private[scala] var nodeCount = 0
 

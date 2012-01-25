@@ -259,7 +259,7 @@ abstract class UnCurry extends InfoTransform
           else if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
           else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
-        anonClass setInfo ClassInfoType(parents, new Scope, anonClass)
+        anonClass setInfo ClassInfoType(parents, newScope, anonClass)
         val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL) 
         applyMethod setInfoAndEnter MethodType(applyMethod newSyntheticValueParams formals, restpe)
         anonClass addAnnotation serialVersionUIDAnnotation

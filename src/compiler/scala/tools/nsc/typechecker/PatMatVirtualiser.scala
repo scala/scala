@@ -1457,7 +1457,7 @@ defined class Foo */
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") = {ctr += 1;
       // assert(owner ne null)
       // assert(owner ne NoSymbol)
-      new TermSymbol(NoSymbol, pos, vpmName.counted(prefix, ctr)) setInfo repackExistential(tp)
+      NoSymbol.newTermSymbol(vpmName.counted(prefix, ctr), pos) setInfo repackExistential(tp)
     }
 
     def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {

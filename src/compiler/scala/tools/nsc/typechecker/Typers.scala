@@ -1404,7 +1404,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       assert(clazz != NoSymbol)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, new Scope)){
+      val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
         _.typedTemplate(cdef.impl, parentTypes(cdef.impl))
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
@@ -1439,7 +1439,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val clazz     = mdef.symbol.moduleClass
       val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol, mdef)
-      val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, new Scope)){
+      val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
         _.typedTemplate(mdef.impl, {
           parentTypes(mdef.impl) ++ (
             if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) Nil
@@ -1448,7 +1448,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               List(TypeTree(SerializableClass.tpe) setPos clazz.pos.focus)
             }
           )
-        })}
+        })
+      }
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
@@ -4043,7 +4044,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         val parents1 = templ.parents mapConserve (typedType(_, mode))
         if (parents1 exists (_.isErrorTyped)) tree setType ErrorType
         else {
-          val decls = new Scope
+          val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
           val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)

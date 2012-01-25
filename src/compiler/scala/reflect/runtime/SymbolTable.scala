@@ -6,7 +6,7 @@ package runtime
  *  It can be used either from the reflexive mirror itself (class Universe), or else from
  *  a runtime compiler that uses reflection to get a class information (class scala.tools.nsc.ReflectGlobal)
  */
-trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava with Loaders {
+trait SymbolTable extends internal.SymbolTable with JavaToScala with ScalaToJava with Loaders with SynchronizedOps {
 
   /** If `owner` is a package class (but not the empty package) and `name` is a term name, make a new package
    *  <owner>.<name>, otherwise return NoSymbol.

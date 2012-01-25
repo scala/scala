@@ -253,7 +253,7 @@ trait Contexts { self: Analyzer =>
       make(unit, tree, owner, scope, imports)
 
     def makeNewScope(tree: Tree, owner: Symbol): Context =
-      make(tree, owner, new Scope(scope))
+      make(tree, owner, newNestedScope(scope))
     // IDE stuff: distinguish between scopes created for typing and scopes created for naming.
 
     def make(tree: Tree, owner: Symbol): Context =

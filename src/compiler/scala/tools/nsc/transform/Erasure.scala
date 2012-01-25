@@ -742,7 +742,7 @@ abstract class Erasure extends AddInterfaces
       //println("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase)
       val site = owner.thisType
-      val bridgesScope = new Scope
+      val bridgesScope = newScope
       val bridgeTarget = new mutable.HashMap[Symbol, Symbol]
       var bridges: List[Tree] = List()
       val opc = atPhase(currentRun.explicitouterPhase) {
