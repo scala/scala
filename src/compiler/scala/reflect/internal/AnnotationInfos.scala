@@ -178,7 +178,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
     private var rawpos: Position = NoPosition
     def pos = rawpos
-    def setPos(pos: Position): this.type = {
+    def setPos(pos: Position): this.type = { // Syncnote: Setpos inaccessible to reflection, so no sync in rawpos necessary.
       rawpos = pos
       this
     }

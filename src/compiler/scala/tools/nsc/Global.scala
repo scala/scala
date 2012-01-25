@@ -615,7 +615,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   object icodeChecker extends icodeCheckers.ICodeChecker()
 
   object typer extends analyzer.Typer(
-    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, new Scope)
+    analyzer.NoContext.make(EmptyTree, Global.this.definitions.RootClass, newScope)
   )
 
   /** Add the internal compiler phases to the phases set.

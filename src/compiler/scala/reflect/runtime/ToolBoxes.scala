@@ -57,7 +57,7 @@ trait ToolBoxes extends { self: Universe =>
     
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
         val obj = EmptyPackageClass.newModule(nextWrapperModuleName())
-        val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
+        val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), newScope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
         val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))

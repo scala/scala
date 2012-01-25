@@ -1363,7 +1363,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       assert(clazz != NoSymbol)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
-      val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope))
+      val impl1 = newTyper(context.make(cdef.impl, clazz, newScope))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if ((clazz != ClassfileAnnotationClass) &&
@@ -1398,7 +1398,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol, mdef)
 
-      val typer0 = newTyper(context.make(mdef.impl, clazz, new Scope))
+      val typer0 = newTyper(context.make(mdef.impl, clazz, newScope))
       val impl1  = typer0.typedTemplate(mdef.impl, {
         parentTypes(mdef.impl) ++ (
           if (linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) Nil
@@ -3997,7 +3997,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         val parents1 = templ.parents mapConserve (typedType(_, mode))
         if (parents1 exists (_.tpe.isError)) tree setType ErrorType
         else {
-          val decls = new Scope
+          val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
           val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ.body)

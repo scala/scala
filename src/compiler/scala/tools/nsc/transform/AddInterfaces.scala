@@ -139,7 +139,7 @@ abstract class AddInterfaces extends InfoTransform {
      *  given the decls ifaceDecls of its interface.
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
-      val decls = new Scope
+      val decls = newScope
       if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
         decls enter (
           implClass.newMethod(nme.MIXIN_CONSTRUCTOR, implClass.pos)

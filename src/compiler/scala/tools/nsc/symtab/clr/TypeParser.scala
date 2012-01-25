@@ -165,7 +165,7 @@ abstract class TypeParser {
       clrTypes.sym2type(typMgdPtr) = clazzMgdPtr
       /* clazzMgdPtr but not clazzBoxed is mapped by clrTypes.types into an msil.Type instance,
          because there's no metadata-level representation for a "boxed valuetype" */
-      val instanceDefsMgdPtr = new Scope
+      val instanceDefsMgdPtr = newScope
       val classInfoMgdPtr = ClassInfoType(definitions.anyvalparam, instanceDefsMgdPtr, clazzMgdPtr)
       clazzMgdPtr.setFlag(flags)
       clazzMgdPtr.setInfo(classInfoMgdPtr)
@@ -196,8 +196,8 @@ abstract class TypeParser {
       }
     }
 /* END CLR generics (snippet 2) */
-    instanceDefs = new Scope
-    staticDefs = new Scope
+    instanceDefs = newScope
+    staticDefs = newScope
 
     val classInfoAsInMetadata = {
         val ifaces: Array[MSILType] = typ.getInterfaces()
@@ -212,7 +212,7 @@ abstract class TypeParser {
         }
         // methods, properties, events, fields are entered in a moment
         if (canBeTakenAddressOf) {
-          val instanceDefsBoxed = new Scope
+          val instanceDefsBoxed = newScope
           ClassInfoType(parents.toList, instanceDefsBoxed, clazzBoxed)
         } else
           ClassInfoType(parents.toList, instanceDefs, clazz)
