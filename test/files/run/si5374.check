@@ -1,3 +1,6 @@
 ListBuffer(1, 2, 3, 1)
 ListBuffer(1, 2, 3, 1)
 ListBuffer()
+List(1, 2, 3, 4, 5)
+List(1, 2, 3)
+ok
