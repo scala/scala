@@ -180,7 +180,7 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
       None
   }
 
-  /** Return all matches of this regexp in given character sequence as a [[scala.util.mathcing.Regex.MatchIterator]],
+  /** Return all matches of this regexp in given character sequence as a [[scala.util.matching.Regex.MatchIterator]],
    *  which is a special [[scala.collection.Iterator]] that returns the
    *  matched strings, but can also be converted into a normal iterator
    *  that returns objects of type [[scala.util.matching.Regex.Match]]
@@ -192,6 +192,25 @@ class Regex(regex: String, groupNames: String*) extends Serializable {
    *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
   def findAllIn(source: java.lang.CharSequence) = new Regex.MatchIterator(source, this, groupNames)
+
+
+  /** Return all matches of this regexp in given character sequence as a
+   *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match].
+   *
+   *  @param source The text to match against.
+   *  @return       A [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]] for all matches.
+   *  @example      {{{for (words <- """\w+""".r findAllMatchIn "A simple example.") yield words.start}}}
+   */
+  def findAllMatchIn(source: java.lang.CharSequence): Iterator[Match] = {
+    val matchIterator = findAllIn(source)
+    new Iterator[Match] {
+      def hasNext = matchIterator.hasNext
+      def next: Match = {
+        matchIterator.next;
+        new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
+      }
+    }
+  }
 
   /** Return optionally first matching string of this regexp in given character sequence,
    *  or None if it does not exist.
@@ -505,7 +524,7 @@ object Regex {
   class MatchIterator(val source: java.lang.CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
 
-    protected val matcher = regex.pattern.matcher(source)
+    protected[Regex] val matcher = regex.pattern.matcher(source)
     private var nextSeen = false
 
     /** Is there another match? */
