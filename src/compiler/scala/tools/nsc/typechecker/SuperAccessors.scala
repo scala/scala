@@ -97,18 +97,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           var superAcc = clazz.info.decl(supername).suchThat(_.alias == sym)
           if (superAcc == NoSymbol) {
             debuglog("add super acc " + sym + sym.locationString + " to `" + clazz);//debug
-            superAcc =
-              clazz.newMethod(tree.pos, supername)
-                .setFlag(SUPERACCESSOR | PRIVATE)
-                .setAlias(sym)
+            superAcc = clazz.newMethod(supername, tree.pos, SUPERACCESSOR | PRIVATE) setAlias sym
             var superAccTpe = clazz.thisType.memberType(sym)
             if (sym.isModule && !sym.isMethod) {
               // the super accessor always needs to be a method. See #231
               superAccTpe = NullaryMethodType(superAccTpe)
             }
-            superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
-            //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
-            clazz.info.decls enter superAcc
+            superAcc setInfoAndEnter (superAccTpe cloneInfo superAcc)
             storeAccessorDefinition(clazz, DefDef(superAcc, EmptyTree))
           }
           atPos(sup.pos) {
@@ -312,14 +307,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                      memberType.cloneInfo(protAcc).asSeenFrom(qual.tpe, sym.owner))
       }
 
-      var protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s))
-      if (protAcc == NoSymbol) {
-        protAcc = clazz.newMethod(tree.pos, nme.protName(sym.originalName))
-        protAcc.setInfo(accType(protAcc))
-        clazz.info.decls.enter(protAcc);
+      val protAcc = clazz.info.decl(accName).suchThat(s => s == NoSymbol || s.tpe =:= accType(s)) orElse {
+        val newAcc = clazz.newMethod(nme.protName(sym.originalName), tree.pos)
+        newAcc setInfoAndEnter accType(newAcc)
 
-        val code = DefDef(protAcc, {
-          val (receiver :: _) :: tail = protAcc.paramss
+        val code = DefDef(newAcc, {
+          val (receiver :: _) :: tail = newAcc.paramss
           val base: Tree              = Select(Ident(receiver), sym)
           val allParamTypes           = mapParamss(sym)(_.tpe)
           val args = map2(tail, allParamTypes)((params, tpes) => map2(params, tpes)(makeArg(_, receiver, _)))
@@ -328,12 +321,15 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         debuglog("" + code)
         storeAccessorDefinition(clazz, code)
+        newAcc
       }
-      var res: Tree = atPos(tree.pos) {
-        if (targs.head == EmptyTree)
-          Apply(Select(This(clazz), protAcc), List(qual))
-        else
-          Apply(TypeApply(Select(This(clazz), protAcc), targs), List(qual))
+      val selection = Select(This(clazz), protAcc)
+      def mkApply(fn: Tree) = Apply(fn, qual :: Nil)
+      val res = atPos(tree.pos) { 
+        targs.head match {
+          case EmptyTree  => mkApply(selection)
+          case _          => mkApply(TypeApply(selection, targs))
+        }
       }
       debuglog("Replaced " + tree + " with " + res)
       if (hasArgs) localTyper.typedOperator(res) else localTyper.typed(res)
@@ -371,25 +367,21 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val clazz = hostForAccessorOf(field, currentOwner.enclClass)
       assert(clazz != NoSymbol, field)
       debuglog("Decided for host class: " + clazz)
+      
       val accName = nme.protSetterName(field.originalName)
-      var protAcc = clazz.info.decl(accName)
-      if (protAcc == NoSymbol) {
-        protAcc = clazz.newMethod(field.pos, nme.protSetterName(field.originalName))
-        protAcc.setInfo(MethodType(protAcc.newSyntheticValueParams(List(clazz.typeOfThis, field.tpe)),
-                                   UnitClass.tpe))
-        clazz.info.decls.enter(protAcc)
-        val code = DefDef(protAcc, {
-          val obj :: value :: Nil = protAcc.paramss.head
-          atPos(tree.pos) {
-            Assign(
-              Select(Ident(obj), field.name),
-              Ident(value))
-          }
-        })
-        debuglog("" + code)
-        storeAccessorDefinition(clazz, code)
+      val protectedAccessor = clazz.info decl accName orElse {
+        val protAcc      = clazz.newMethod(accName, field.pos)
+        val paramTypes   = List(clazz.typeOfThis, field.tpe)
+        val params       = protAcc newSyntheticValueParams paramTypes
+        val accessorType = MethodType(params, UnitClass.tpe)
+        
+        protAcc setInfoAndEnter accessorType
+        val obj :: value :: Nil = params
+        storeAccessorDefinition(clazz, DefDef(protAcc, Assign(Select(Ident(obj), field.name), Ident(value))))
+      
+        protAcc
       }
-      atPos(tree.pos)(Select(This(clazz), protAcc))
+      atPos(tree.pos)(Select(This(clazz), protectedAccessor))
     }
 
     /** Does `sym` need an accessor when accessed from `currentOwner`?

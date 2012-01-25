@@ -53,7 +53,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     import typeDebug.{ ptTree, ptBlock, ptLine }
 
     def solveContextBound(contextBoundTp: Type): (Tree, Type) = {
-      val solSym      = NoSymbol.newTypeParameter(NoPosition, newTypeName("SolveImplicit$"))
+      val solSym      = NoSymbol.newTypeParameter(newTypeName("SolveImplicit$"))
       val param       = solSym.setInfo(contextBoundTp.typeSymbol.typeParams(0).info.cloneInfo(solSym)) // TypeBounds(NothingClass.typeConstructor, baseTp)
       val pt          = appliedType(contextBoundTp, List(param.tpeHK))
       val savedUndets = context.undetparams
@@ -1128,62 +1128,48 @@ defined class Foo */
     //   }
     // }
 
-    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = if (optimizingCodeGen) {
-      def unfold(tms: List[TreeMaker], currLabel: Option[Symbol] = None, nextLabel: Option[Symbol] = None): List[CaseDef] = tms match {
-        // constant
-        case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil => import CODE._
-          @inline
-          def substedBody  = btm.substitution(body)
-          val labelledBody = currLabel match {
-            case None          => substedBody // currLabel.isEmpty implies nextLabel.isEmpty
-            case Some(myLabel) =>
-              LabelDef(myLabel, Nil,
-                nextLabel match {
-                  case None       => substedBody
-                  case Some(next) => ID(next) APPLY ()
-                }
-              )
-          }
-          List(CaseDef(const, EmptyTree, labelledBody))
-
-        // alternatives
-        case AlternativesTreeMaker(_, altss, _) :: bodyTm :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
-          val labels  = altss map { alts =>
-            Some(freshSym(NoPosition, MethodType(Nil, pt), "$alt$") setFlag (METHOD | LABEL))
-          }
-
-          val caseDefs = (altss, labels, labels.tail :+ None).zipped.map { case (alts, currLabel, nextLabel) =>
-            unfold(alts :+ bodyTm, currLabel, nextLabel)
-          }
-
-          if (caseDefs exists (_.isEmpty)) Nil
-          else caseDefs.flatten
-
-        case _ => Nil // failure
-      }
+    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = if (!optimizingCodeGen) None else {
+      def sequence[T](xs: List[Option[T]]): Option[List[T]] =
+        if (xs exists (_.isEmpty)) None else Some(xs.flatten)
 
       val caseDefs = cases map { makers =>
         removeSubstOnly(makers) match {
           // default case (don't move this to unfold, as it may only occur on the top level, not as an alternative -- well, except in degenerate matches)
           case (btm@BodyTreeMaker(body, _)) :: Nil =>
-            List(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
-          case nonTrivialMakers =>
-            unfold(nonTrivialMakers)
+            Some(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
+          // constant
+          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil => import CODE._
+            Some(CaseDef(const, EmptyTree, btm.substitution(body)))
+          // alternatives
+          case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
+            val caseConstants = altss map {
+              case EqualityTestTreeMaker(_, const@SwitchablePattern(), _) :: Nil =>
+                Some(const)
+              case _ =>
+                None
+            }
+
+            sequence(caseConstants) map { contants =>
+              val substedBody  = btm.substitution(body)
+              CaseDef(Alternative(contants), EmptyTree, substedBody)
+            }
+          case _ =>
+            None //failure (can't translate pattern to a switch)
         }
       }
 
-      if (caseDefs exists (_.isEmpty)) None
-      else { import CODE._
+      sequence(caseDefs) map { caseDefs =>
+        import CODE._
         val matcher = BLOCK(
           VAL(scrutSym) === scrut, // TODO: type test for switchable type if patterns allow switch but the scrutinee doesn't
-          Match(REF(scrutSym), caseDefs.flatten) // match on scrutSym, not scrut to avoid duplicating scrut
+          Match(REF(scrutSym), caseDefs) // match on scrutSym, not scrut to avoid duplicating scrut
         )
 
         // matcher filter (tree => tree.tpe == null) foreach println
         // treeBrowser browse matcher
-        Some(matcher) // set type to avoid recursion in typedMatch
+        matcher // set type to avoid recursion in typedMatch
       }
-    } else None
+    }
 
     def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] =
       doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
@@ -1245,7 +1231,7 @@ defined class Foo */
         }
         t match {
           case Function(_, _) if t.symbol == NoSymbol =>
-            t.symbol = currentOwner.newValue(t.pos, nme.ANON_FUN_NAME).setFlag(SYNTHETIC).setInfo(NoType)
+            t.symbol = currentOwner.newAnonymousFunctionValue(t.pos)
             // println("new symbol for "+ (t, t.symbol.ownerChain))
           case Function(_, _) if (t.symbol.owner == NoSymbol) || (t.symbol.owner == origOwner) =>
             // println("fundef: "+ (t, t.symbol.ownerChain, currentOwner.ownerChain))
@@ -1377,19 +1363,19 @@ defined class Foo */
       @inline private def dontStore(tp: Type) = (tp.typeSymbol eq UnitClass) || (tp.typeSymbol eq NothingClass)
       lazy val keepGoing = freshSym(NoPosition, BooleanClass.tpe, "keepGoing") setFlag MUTABLE
       lazy val matchRes  = freshSym(NoPosition, AnyClass.tpe, "matchRes") setFlag MUTABLE
-      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean) = matcher match {
-        case Function(List(x: ValDef), body) =>
-          matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
-          if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
-          BLOCK(
-            VAL(zeroSym)   === REF(NoneModule), // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
-            VAL(x.symbol)  === scrut, // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for x.symbol in body -- the owner structure is repaired by fixerUpper
-            VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
-            VAL(keepGoing) === TRUE,
-            body,
-            if(hasDefault) REF(matchRes)
-            else (IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes))
-          )
+      override def runOrElse(scrut: Tree, matcher: Tree, scrutTp: Type, resTp: Type, hasDefault: Boolean) = {
+        val Function(List(x: ValDef), body) = matcher
+        matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
+        if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
+        BLOCK(
+          VAL(zeroSym)   === REF(NoneModule), // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
+          VAL(x.symbol)  === scrut, // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for x.symbol in body -- the owner structure is repaired by fixerUpper
+          VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
+          VAL(keepGoing) === TRUE,
+          body,
+          if(hasDefault) REF(matchRes)
+          else (IF (REF(keepGoing)) THEN MATCHERROR(REF(x.symbol)) ELSE REF(matchRes))
+        )
       }
 
       // only used to wrap the RHS of a body

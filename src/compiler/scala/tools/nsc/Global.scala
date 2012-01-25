@@ -193,10 +193,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def inform[T](msg: String, value: T): T  = returning(value)(x => inform(msg + x))
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
-  def logResult[T](msg: String)(result: T): T = {
-    log(msg + ": " + result)
-    result
-  }
   def logError(msg: String, t: Throwable): Unit = ()
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef): Unit =
@@ -905,6 +901,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Counts for certain classes of warnings during this run. */
     var deprecationWarnings: List[(Position, String)] = Nil
     var uncheckedWarnings: List[(Position, String)] = Nil
+    
+    /** A flag whether macro expansions failed */
+    var macroExpansionFailed = false
 
     /** Progress tracking.  Measured in "progress units" which are 1 per
      *  compilation unit per phase completed.
@@ -1087,6 +1086,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         )
         warn(deprecationWarnings.size, "deprecation", settings.deprecation)
         warn(uncheckedWarnings.size, "unchecked", settings.unchecked)
+        if (macroExpansionFailed)
+          warning("some macros could not be expanded and code fell back to overridden methods;"+
+                  "\nrecompiling with generated classfiles on the classpath might help.")
         // todo: migrationWarnings
       }
     }

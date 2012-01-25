@@ -22,6 +22,7 @@ trait Importers { self: SymbolTable =>
         val myowner = importSymbol(sym.owner)
         val mypos   = importPosition(sym.pos)
         val myname  = importName(sym.name).toTermName
+        val myflags = sym.flags
         def linkReferenced(mysym: TermSymbol, x: from.TermSymbol, op: from.Symbol => Symbol): Symbol = {
           symMap(x) = mysym
           mysym.referenced = op(x.referenced)
@@ -29,19 +30,20 @@ trait Importers { self: SymbolTable =>
         }
         val mysym = sym match {
           case x: from.MethodSymbol =>
-            linkReferenced(new MethodSymbol(myowner, mypos, myname), x, importSymbol)
+            linkReferenced(myowner.newMethod(myname, mypos, myflags), x, importSymbol)
           case x: from.ModuleSymbol =>
-            linkReferenced(new ModuleSymbol(myowner, mypos, myname), x, doImport)
+            linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, doImport)
           case x: from.FreeVar =>
-            new FreeVar(importName(x.name).toTermName, importType(x.tpe), x.value)
+            newFreeVar(importName(x.name).toTermName, importType(x.tpe), x.value, myflags)
           case x: from.TermSymbol =>
-            linkReferenced(new TermSymbol(myowner, mypos, myname), x, importSymbol)
+            linkReferenced(myowner.newValue(myname, mypos, myflags), x, importSymbol)
           case x: from.TypeSkolem =>
-            new TypeSkolem(myowner, mypos, myname.toTypeName, x.unpackLocation match {
-              case null => null
-              case y: from.Tree => importTree(y)
+            val origin = x.unpackLocation match {
+              case null           => null
+              case y: from.Tree   => importTree(y)
               case y: from.Symbol => importSymbol(y)
-            })
+            }
+            myowner.newTypeSkolemSymbol(myname.toTypeName, origin, mypos, myflags)
           /*
               case x: from.ModuleClassSymbol =>
                 val mysym = new ModuleClassSymbol(myowner, mypos, myname.toTypeName)
@@ -49,17 +51,17 @@ trait Importers { self: SymbolTable =>
                 mysym
 */
           case x: from.ClassSymbol =>
-            val mysym = new ClassSymbol(myowner, mypos, myname.toTypeName)
+            val mysym = myowner.newClassSymbol(myname.toTypeName, mypos, myflags)
             if (sym.thisSym != sym) {
               mysym.typeOfThis = importType(sym.typeOfThis)
               mysym.thisSym.name = importName(sym.thisSym.name)
             }
             mysym
           case x: from.TypeSymbol =>
-            new TypeSymbol(myowner, mypos, myname.toTypeName)
+            myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
         }
         symMap(sym) = mysym
-        mysym setFlag sym.flags | Flags.LOCKED
+        mysym setFlag Flags.LOCKED
         mysym setInfo {
           val mytypeParams = sym.typeParams map doImport
           new LazyPolyType(mytypeParams) {

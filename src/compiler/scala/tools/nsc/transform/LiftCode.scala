@@ -71,6 +71,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
         case mod => mod.toString
       }
 
+      // I fervently hope this is a test case or something, not anything being
+      // depended upon.  Of more fragile code I cannot conceive.
       for (line <- (tree.toString.split(Properties.lineSeparator) drop 2 dropRight 1)) {
         var s = line.trim
         s = s.replace("$mr.", "")
@@ -81,24 +83,23 @@ abstract class LiftCode extends Transform with TypingTransformers {
         s = s.replace("immutable.this.Nil", "List()")
         s = s.replace("modifiersFromInternalFlags", "Modifiers")
         s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
-        s = """Modifiers\((\d+)L, newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
-          val buf = new StringBuffer()
+        s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
+          val buf = new StringBuilder
 
           val flags = m.group(1).toLong
-          var s_flags = Flags.modifiersOfFlags(flags) map copypasteModifier
-          buf.append("Set(" + s_flags.mkString(", ") + ")")
+          val s_flags = Flags.modifiersOfFlags(flags) map copypasteModifier mkString ", "
+          if (s_flags != "")
+            buf.append("Set(" + s_flags + ")")
 
-          var privateWithin = m.group(2)
-          buf.append(", " + "newTypeName(\"" + privateWithin + "\")")
+          val privateWithin = "" + m.group(2)
+          if (privateWithin != "")
+            buf.append(", newTypeName(\"" + privateWithin + "\")")
 
-          var annotations = m.group(3)
-          buf.append(", " + "List(" + annotations + ")")
+          val annotations = m.group(3)
+          if (annotations.nonEmpty)
+            buf.append(", List(" + annotations + ")")
 
-          var s = buf.toString
-          if (s.endsWith(", List()")) s = s.substring(0, s.length - ", List()".length)
-          if (s.endsWith(", newTypeName(\"\")")) s = s.substring(0, s.length - ", newTypeName(\"\")".length)
-          if (s.endsWith("Set()")) s = s.substring(0, s.length - "Set()".length)
-          "Modifiers(" + s + ")"
+          "Modifiers(" + buf.toString  + ")"
         })
         s = """setInternalFlags\((\d+)L\)""".r.replaceAllIn(s, m => {
           val flags = m.group(1).toLong
@@ -310,13 +311,13 @@ abstract class LiftCode extends Transform with TypingTransformers {
      */
     private def reifySymbolDef(sym: Symbol): Tree = {
       if (reifyDebug) println("reify sym def " + sym)
-      var rsym: Tree =
+
+      ValDef(NoMods, localName(sym), TypeTree(),
         Apply(
           Select(reify(sym.owner), "newNestedSymbol"),
-          List(reify(sym.pos), reify(sym.name)))
-      if (sym.flags != 0L)
-        rsym = Apply(Select(rsym, "setInternalFlags"), List(Literal(Constant(sym.flags))))
-      ValDef(NoMods, localName(sym), TypeTree(), rsym)
+          List(reify(sym.name), reify(sym.pos), Literal(Constant(sym.flags)))
+        )
+      )
     }
 
     /**

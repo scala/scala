@@ -171,8 +171,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
           log("Generating varargs bridge for " + member.fullLocationString + " of type " + bridgetpe)
           
-          val bridge = member.cloneSymbolImpl(clazz)
-            .setPos(clazz.pos).setFlag(member.flags | VBRIDGE)
+          val bridge = member.cloneSymbolImpl(clazz, member.flags | VBRIDGE) setPos clazz.pos
           bridge.setInfo(bridgetpe.cloneInfo(bridge))
           clazz.info.decls enter bridge
          
@@ -332,21 +331,22 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
         // return if we already checked this combination elsewhere
         if (member.owner != clazz) {
-          if ((member.owner isSubClass other.owner) && (member.isDeferred || !other.isDeferred)) {
+          def deferredCheck        = member.isDeferred || !other.isDeferred
+          def subOther(s: Symbol)  = s isSubClass other.owner
+          def subMember(s: Symbol) = s isSubClass member.owner
+          
+          if (subOther(member.owner) && deferredCheck) {
             //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
-            return;
+            return
           }
-          if (clazz.info.parents exists (parent =>
-            (parent.typeSymbol isSubClass other.owner) && (parent.typeSymbol isSubClass member.owner) &&
-            (member.isDeferred || !other.isDeferred))) {
-              //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
-                return;
-            }
-          if (clazz.info.parents forall (parent =>
-            (parent.typeSymbol isSubClass other.owner) == (parent.typeSymbol isSubClass member.owner))) {
-              //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
-              return;
-            }
+          if (clazz.parentSymbols exists (p => subOther(p) && subMember(p) && deferredCheck)) {
+            //Console.println(infoString(member) + " shadows2 " + infoString(other) + " in " + clazz);//DEBUG
+            return
+          }
+          if (clazz.parentSymbols forall (p => subOther(p) == subMember(p))) {
+            //Console.println(infoString(member) + " shadows " + infoString(other) + " in " + clazz);//DEBUG
+            return
+          }
         }
 
         /** Is the intersection between given two lists of overridden symbols empty?
@@ -444,6 +444,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             // check a type alias's RHS corresponds to its declaration
             // this overlaps somewhat with validateVariance
             if(member.isAliasType) {
+              // println("checkKindBounds" + ((List(member), List(memberTp.normalize), self, member.owner)))
               val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize), self, member.owner)
 
               if(!kindErrors.isEmpty)
@@ -672,9 +673,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
               }
             }
           }
-          val parents = bc.info.parents
-          if (!parents.isEmpty && parents.head.typeSymbol.hasFlag(ABSTRACT))
-            checkNoAbstractDecls(parents.head.typeSymbol)
+          if (bc.superClass hasFlag ABSTRACT)
+            checkNoAbstractDecls(bc.superClass)
         }
 
         checkNoAbstractMembers()
@@ -1166,12 +1166,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       }
       def createStaticModuleAccessor() = atPhase(phase.next) {
         val method = (
-          sym.owner.newMethod(sym.pos, sym.name.toTermName)
-            setFlag (sym.flags | STABLE)
-            resetFlag MODULE
-            setInfo NullaryMethodType(sym.moduleClass.tpe)
+          sym.owner.newMethod(sym.name.toTermName, sym.pos, (sym.flags | STABLE) & ~MODULE)
+            setInfoAndEnter NullaryMethodType(sym.moduleClass.tpe)
         )
-        sym.owner.info.decls enter method
         localTyper.typedPos(tree.pos)(gen.mkModuleAccessDef(method, sym))
       }
       def createInnerModuleAccessor(vdef: Tree) = List(

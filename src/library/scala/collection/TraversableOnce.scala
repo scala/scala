@@ -245,7 +245,7 @@ trait TraversableOnce[+A] extends GenTraversableOnce[A] {
 
   def toSeq: Seq[A] = toStream
 
-  def toIndexedSeq[B >: A]: immutable.IndexedSeq[B] = immutable.IndexedSeq() ++ seq
+  def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq() ++ seq
 
   def toBuffer[B >: A]: mutable.Buffer[B] = new ArrayBuffer[B] ++= seq
 

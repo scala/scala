@@ -30,13 +30,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
   import global._
   import icodes._
   import icodes.opcodes._
-  import definitions.{
-    AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
-    SerializableClass, StringClass, ClassClass, FunctionClass,
-    DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
-    TransientAttr, CloneableAttr, RemoteAttr, JavaCloneableClass,
-    RemoteInterfaceClass, RemoteExceptionClass, hasJavaMainMethod
-  }
+  import definitions._
 
   val phaseName = "jvm"
 
@@ -68,10 +62,10 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
 
     def isJavaEntryPoint(clasz: IClass) = {
       val sym = clasz.symbol
-      def fail(msg: String) = {
+      def fail(msg: String, pos: Position = sym.pos) = {
         clasz.cunit.warning(sym.pos,
-          sym.name + " has a main method, but " + sym.fullName('.') + " will not be a runnable program.\n" +
-          "  " + msg + ", which means no static forwarder can be generated.\n"
+          sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
+          "  Reason: " + msg
           // TODO: make this next claim true, if possible
           //   by generating valid main methods as static in module classes
           //   not sure what the jvm allows here
@@ -79,19 +73,47 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
         )
         false
       }
-      sym.hasModuleFlag && hasJavaMainMethod(sym) && {
-        // At this point we've seen a module with a main method, so if this
-        // doesn't turn out to be a valid entry point, issue a warning.
-        val companion = sym.linkedClassOfClass
-        if (companion.isTrait)
-          fail("Its companion is a trait")
-        else if (hasJavaMainMethod(companion) && !(sym isSubClass companion))
-          fail("Its companion contains its own main method")
-        // this is only because forwarders aren't smart enough yet
-        else if (companion.tpe.member(nme.main) != NoSymbol)
-          fail("Its companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
-        else
-          true
+      def failNoForwarder(msg: String) = {
+        fail(msg + ", which means no static forwarder can be generated.\n")
+      }
+      val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
+      val hasApproximate = possibles exists { m =>
+        m.info match {
+          case MethodType(p :: Nil, _) => p.tpe.typeSymbol == ArrayClass
+          case _                       => false
+        }
+      }
+      // At this point it's a module with a main-looking method, so either
+      // succeed or warn that it isn't.
+      hasApproximate && {
+        // Before erasure so we can identify generic mains.
+        atPhase(currentRun.erasurePhase) {
+          val companion     = sym.linkedClassOfClass
+          val companionMain = companion.tpe.member(nme.main)
+
+          if (hasJavaMainMethod(companion))
+            failNoForwarder("companion contains its own main method")
+          else if (companion.tpe.member(nme.main) != NoSymbol)
+            // this is only because forwarders aren't smart enough yet
+            failNoForwarder("companion contains its own main method (implementation restriction: no main is allowed, regardless of signature)")
+          else if (companion.isTrait)
+            failNoForwarder("companion is a trait")
+          // Now either succeeed, or issue some additional warnings for things which look like
+          // attempts to be java main methods.
+          else possibles exists { m =>
+            m.info match {
+              case PolyType(_, _) =>
+                fail("main methods cannot be generic.")
+              case MethodType(params, res) =>
+                if (res.typeSymbol :: params exists (_.isAbstractType))
+                  fail("main methods cannot refer to type parameters or abstract types.", m.pos)
+                else
+                  isJavaMainMethod(m) || fail("main method must have exact signature (Array[String])Unit", m.pos)
+              case tp =>
+                fail("don't know what this is: " + tp, m.pos)
+            }
+          }
+        }
       }
     }
 
@@ -854,7 +876,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           if (outerField != NoSymbol) {
             log("Adding fake local to represent outer 'this' for closure " + clasz)
             val _this = new Local(
-              method.symbol.newVariable(NoPosition, nme.FAKE_LOCAL_THIS), toTypeKind(outerField.tpe), false)
+              method.symbol.newVariable(nme.FAKE_LOCAL_THIS), toTypeKind(outerField.tpe), false)
             m.locals = m.locals ::: List(_this)
             computeLocalVarsIndex(m) // since we added a new local, we need to recompute indexes
 
@@ -944,9 +966,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           serialVUID foreach { value =>
             import Flags._, definitions._
             val fieldName = "serialVersionUID"
-            val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
-                                .setFlag(STATIC | FINAL)
-                                .setInfo(longType)
+            val fieldSymbol = clasz.symbol.newValue(newTermName(fieldName), NoPosition, STATIC | FINAL) setInfo longType
             clasz addField new IField(fieldSymbol)
             lastBlock emit CONSTANT(Constant(value))
             lastBlock emit STORE_FIELD(fieldSymbol, true)

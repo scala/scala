@@ -10,11 +10,11 @@
 package scala.xml
 package include.sax
 
-import scala.xml.include._
 import scala.util.control.Exception.{ catching, ignoring }
 import org.xml.sax.XMLReader
 import org.xml.sax.helpers.XMLReaderFactory
 
+@deprecated("Code example will be moved to documentation.", "2.10.0")
 object Main {
   private val namespacePrefixes = "http://xml.org/sax/features/namespace-prefixes"
   private val lexicalHandler = "http://xml.org/sax/properties/lexical-handler"

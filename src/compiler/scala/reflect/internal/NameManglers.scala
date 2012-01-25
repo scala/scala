@@ -85,7 +85,7 @@ trait NameManglers {
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
-    def isImplClassName(name: Name)         = stripAnonNumberSuffix(name) endsWith IMPL_CLASS_SUFFIX
+    def isImplClassName(name: Name)         = name endsWith IMPL_CLASS_SUFFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
     def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
     def isLoopHeaderLabel(name: Name)       = (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)
@@ -176,25 +176,18 @@ trait NameManglers {
       else name.toTermName
     }
 
-    /** !!! I'm putting this logic in place because I can witness
-     *  trait impls get lifted and acquiring names like 'Foo$class$1'
-     *  while clearly still being what they were. It's only being used on
-     *  isImplClassName. However, it's anyone's guess how much more
-     *  widely this logic actually ought to be applied. Anything which
-     *  tests for how a name ends is a candidate for breaking down once
-     *  something is lifted from a method.
-     *
-     *  TODO: resolve this significant problem.
-     */
-    def stripAnonNumberSuffix(name: Name): Name = {
-      val str = "" + name
-      if (str == "" || !str.endChar.isDigit) name
-      else {
-        val idx = name.lastPos('$')
-        if (idx < 0 || str.substring(idx + 1).exists(c => !c.isDigit)) name
-        else name.subName(0, idx)
-      }
-    }
+    // This isn't needed at the moment since I fixed $class$1 but
+    // I expect it will be at some point.
+    //
+    // def anonNumberSuffix(name: Name): Name = {
+    //   ("" + name) lastIndexOf '$' match {
+    //     case -1   => nme.EMPTY
+    //     case idx  =>
+    //       val s = name drop idx
+    //       if (s.toString forall (_.isDigit)) s
+    //       else nme.EMPTY
+    //   }
+    // }
 
     def stripModuleSuffix(name: Name): Name = (
       if (isModuleName(name)) name dropRight MODULE_SUFFIX_STRING.length else name

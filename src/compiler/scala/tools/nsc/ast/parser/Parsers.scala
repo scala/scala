@@ -28,14 +28,17 @@ trait ParsersCommon extends ScannersCommon {
   val global : Global
   import global._
 
-  trait ParserCommon {
+  /** This is now an abstract class, only to work around the optimizer:
+   *  methods in traits are never inlined.
+   */
+  abstract class ParserCommon {
     val in: ScannerCommon
     def freshName(prefix: String): Name
     def freshTermName(prefix: String): TermName
     def freshTypeName(prefix: String): TypeName
     def deprecationWarning(off: Int, msg: String): Unit
     def accept(token: Int): Int
-
+  
     /** Methods inParensOrError and similar take a second argument which, should
      *  the next token not be the expected opener (e.g. LPAREN) will be returned
      *  instead of the contents of the groupers.  However in all cases accept(LPAREN)
@@ -122,8 +125,6 @@ trait Parsers extends Scanners with MarkupParsers with ParsersCommon {
 self =>
   val global: Global
   import global._
-
-  private val glob: global.type = global
 
   case class OpInfo(operand: Tree, operator: Name, offset: Offset)
 
@@ -616,7 +617,7 @@ self =>
 
     def isLiteralToken(token: Int) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-           STRINGLIT | STRINGPART | SYMBOLLIT | TRUE | FALSE | NULL => true
+           STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL => true
       case _                                                        => false
     }
     def isLiteral = isLiteralToken(in.token)
@@ -1102,7 +1103,7 @@ self =>
      *  }}}
      *  @note  The returned tree does not yet have a position
      */
-    def literal(isNegated: Boolean): Tree = {
+    def literal(isNegated: Boolean = false): Tree = {
       def finish(value: Any): Tree = {
         val t = Literal(Constant(value))
         in.nextToken()
@@ -1110,19 +1111,19 @@ self =>
       }
       if (in.token == SYMBOLLIT)
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
-      else if (in.token == STRINGPART)
+      else if (in.token == INTERPOLATIONID)
         interpolatedString()
       else finish(in.token match {
-        case CHARLIT               => in.charVal
-        case INTLIT                => in.intVal(isNegated).toInt
-        case LONGLIT               => in.intVal(isNegated)
-        case FLOATLIT              => in.floatVal(isNegated).toFloat
-        case DOUBLELIT             => in.floatVal(isNegated)
-        case STRINGLIT             => in.strVal.intern()
-        case TRUE                  => true
-        case FALSE                 => false
-        case NULL                  => null
-        case _                     =>
+        case CHARLIT   => in.charVal
+        case INTLIT    => in.intVal(isNegated).toInt
+        case LONGLIT   => in.intVal(isNegated)
+        case FLOATLIT  => in.floatVal(isNegated).toFloat
+        case DOUBLELIT => in.floatVal(isNegated)
+        case STRINGLIT | STRINGPART => in.strVal.intern()
+        case TRUE      => true
+        case FALSE     => false
+        case NULL      => null
+        case _         =>
           syntaxErrorOrIncomplete("illegal literal", true)
           null
       })
@@ -1137,16 +1138,27 @@ self =>
       }
     }
 
-    private def interpolatedString(): Tree = {
-      var t = atPos(o2p(in.offset))(New(TypeTree(definitions.StringBuilderClass.tpe), List(List())))
+    private def interpolatedString(): Tree = atPos(in.offset) {
+      val start = in.offset
+      val interpolator = in.name
+      
+      val partsBuf = new ListBuffer[Tree]
+      val exprBuf = new ListBuffer[Tree]
+      in.nextToken()
       while (in.token == STRINGPART) {
-        t = stringOp(t, nme.append)
-        var e = expr()
-        if (in.token == STRINGFMT) e = stringOp(e, nme.formatted)
-        t = atPos(t.pos.startOrPoint)(Apply(Select(t, nme.append), List(e)))
+        partsBuf += literal()
+        exprBuf += {
+          if (in.token == IDENTIFIER) atPos(in.offset)(Ident(ident()))
+          else expr()
+        }
       }
-      if (in.token == STRINGLIT) t = stringOp(t, nme.append)
-      atPos(t.pos)(Select(t, nme.toString_))
+      if (in.token == STRINGLIT) partsBuf += literal()
+      
+      val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
+      val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
+      t2 setPos t2.pos.makeTransparent
+      val t3 = Select(t2, interpolator) setPos t2.pos
+      atPos(start) { Apply(t3, exprBuf.toList) }
     }
 
 /* ------------- NEW LINES ------------------------------------------------- */
@@ -1468,7 +1480,7 @@ self =>
         atPos(in.offset) {
           val name = nme.toUnaryName(rawIdent())
           // val name = nme.toUnaryName(ident())  // val name: Name = "unary_" + ident()
-          if (name == nme.UNARY_- && isNumericLit) simpleExprRest(atPos(in.offset)(literal(true)), true)
+          if (name == nme.UNARY_- && isNumericLit) simpleExprRest(atPos(in.offset)(literal(isNegated = true)), true)
           else Select(stripParens(simpleExpr()), name)
         }
       }
@@ -1492,7 +1504,7 @@ self =>
     def simpleExpr(): Tree = {
       var canApply = true
       val t =
-        if (isLiteral) atPos(in.offset)(literal(false))
+        if (isLiteral) atPos(in.offset)(literal())
         else in.token match {
           case XMLSTART =>
             xmlLiteral()
@@ -1826,7 +1838,7 @@ self =>
               case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT =>
                 t match {
                   case Ident(nme.MINUS) =>
-                    return atPos(start) { literal(true) }
+                    return atPos(start) { literal(isNegated = true) }
                   case _ =>
                 }
               case _ =>
@@ -1843,8 +1855,8 @@ self =>
             in.nextToken()
             atPos(start, start) { Ident(nme.WILDCARD) }
           case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
-               STRINGLIT | STRINGPART | SYMBOLLIT | TRUE | FALSE | NULL =>
-            atPos(start) { literal(false) }
+               STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL =>
+            atPos(start) { literal() }
           case LPAREN =>
             atPos(start)(makeParens(noSeq.patterns()))
           case XMLSTART =>
@@ -2437,7 +2449,7 @@ self =>
       else {
         val nameOffset = in.offset
         val name = ident()
-        if (name == nme.macro_ && isIdent && settings.Xexperimental.value)
+        if (name == nme.macro_ && isIdent && settings.Xmacros.value)
           funDefRest(start, in.offset, mods | Flags.MACRO, ident())
         else
           funDefRest(start, nameOffset, mods, name)
@@ -2468,6 +2480,9 @@ self =>
             restype = scalaUnitConstr
             blockExpr()
           } else {
+            if (name == nme.macro_ && isIdent && in.token != EQUALS) {
+              warning("this syntactically invalid code resembles a macro definition. have you forgotten to enable -Xmacros?")
+            }
             equalsExpr()
           }
         DefDef(newmods, name, tparams, vparamss, restype, rhs)
@@ -2527,7 +2542,7 @@ self =>
       newLinesOpt()
       atPos(start, in.offset) {
         val name = identForType()
-        if (name == nme.macro_.toTypeName && isIdent && settings.Xexperimental.value) {
+        if (name == nme.macro_.toTypeName && isIdent && settings.Xmacros.value) {
           funDefRest(start, in.offset, mods | Flags.MACRO, identForType())
         } else {
           // @M! a type alias as well as an abstract type may declare type parameters

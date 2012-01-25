@@ -77,7 +77,11 @@ trait Names extends api.Names {
   def newTermName(cs: Array[Char]): TermName = newTermName(cs, 0, cs.length)
   def newTypeName(cs: Array[Char]): TypeName = newTypeName(cs, 0, cs.length)
 
-  /** Create a term name from the characters in cs[offset..offset+len-1]. */
+  /** Create a term name from the characters in cs[offset..offset+len-1].
+   *  TODO - have a mode where name validation is performed at creation time
+   *  (e.g. if a name has the string "$class" in it, then fail if that
+   *  string is not at the very end.)
+   */
   protected def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
     val h = hashValue(cs, offset, len) & HASH_MASK
     var n = termHashtable(h)

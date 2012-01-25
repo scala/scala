@@ -133,11 +133,9 @@ abstract class UnCurry extends InfoTransform
 
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
-      nonLocalReturnKeys.getOrElseUpdate(meth, {
-        meth.newValue(meth.pos, unit.freshTermName("nonLocalReturnKey"))
-          .setFlag (SYNTHETIC)
-          .setInfo (ObjectClass.tpe)
-      })
+      nonLocalReturnKeys.getOrElseUpdate(meth,
+        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectClass.tpe
+      )
 
     /** Generate a non-local return throw with given return expression from given method.
      *  I.e. for the method's non-local return key, generate:
@@ -170,7 +168,7 @@ abstract class UnCurry extends InfoTransform
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
       localTyper.typed {
         val extpe = nonLocalReturnExceptionType(meth.tpe.finalResultType)
-        val ex = meth.newValue(body.pos, nme.ex) setInfo extpe
+        val ex = meth.newValue(nme.ex, body.pos) setInfo extpe
         val pat = Bind(ex,
                        Typed(Ident(nme.WILDCARD),
                              AppliedTypeTree(Ident(NonLocalReturnControlClass),
@@ -255,40 +253,42 @@ abstract class UnCurry extends InfoTransform
       if (fun1 ne fun) fun1
       else {
         val (formals, restpe) = (targs.init, targs.last)
-        val anonClass = owner newAnonymousFunctionClass fun.pos setFlag (FINAL | SYNTHETIC | inConstructorFlag)
+        val anonClass = owner.newAnonymousFunctionClass(fun.pos, inConstructorFlag)
         def parents =
           if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe), SerializableClass.tpe)
           else if (isPartial) List(appliedType(AbstractPartialFunctionClass.typeConstructor, targs), SerializableClass.tpe)
           else List(ObjectClass.tpe, fun.tpe, SerializableClass.tpe)
 
         anonClass setInfo ClassInfoType(parents, new Scope, anonClass)
-        val applyMethod = anonClass.newMethod(fun.pos, nme.apply) setFlag FINAL
-        applyMethod setInfo MethodType(applyMethod newSyntheticValueParams formals, restpe)
-        anonClass.info.decls enter applyMethod
-        anonClass.addAnnotation(serialVersionUIDAnnotation)
+        val applyMethod = anonClass.newMethod(nme.apply, fun.pos, FINAL) 
+        applyMethod setInfoAndEnter MethodType(applyMethod newSyntheticValueParams formals, restpe)
+        anonClass addAnnotation serialVersionUIDAnnotation
 
         fun.vparams foreach (_.symbol.owner = applyMethod)
-        new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
+        fun.body.changeOwner(fun.symbol -> applyMethod)
 
         def missingCaseCall(scrutinee: Tree): Tree = Apply(Select(This(anonClass), nme.missingCase), List(scrutinee))
 
         def applyMethodDef() = {
-          val body =
+          val body = localTyper.typedPos(fun.pos) {
             if (isPartial) gen.mkUncheckedMatch(gen.withDefaultCase(fun.body, missingCaseCall))
             else fun.body
-          DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
+          }
+          // Have to repack the type to avoid mismatches when existentials
+          // appear in the result - see SI-4869.
+          val applyResultType = localTyper.packedType(body, applyMethod)
+          DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(applyResultType), body) setSymbol applyMethod
         }
         def isDefinedAtMethodDef() = {
           val isDefinedAtName = {
             if (anonClass.info.member(nme._isDefinedAt) != NoSymbol) nme._isDefinedAt
             else nme.isDefinedAt
           }
-          val m = anonClass.newMethod(fun.pos, isDefinedAtName) setFlag FINAL
-          m setInfo MethodType(m newSyntheticValueParams formals, BooleanClass.tpe)
-          anonClass.info.decls enter m
-          val vparam = fun.vparams.head.symbol
-          val idparam = m.paramss.head.head
-          val substParam = new TreeSymSubstituter(List(vparam), List(idparam))
+          val m      = anonClass.newMethod(isDefinedAtName, fun.pos, FINAL)
+          val params = m newSyntheticValueParams formals
+          m setInfoAndEnter MethodType(params, BooleanClass.tpe)
+
+          val substParam = new TreeSymSubstituter(fun.vparams map (_.symbol), params)
           def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
 
           // waiting here until we can mix case classes and extractors reliably (i.e., when virtpatmat becomes the default)
@@ -516,9 +516,9 @@ abstract class UnCurry extends InfoTransform
        */
       def liftTree(tree: Tree) = {
         debuglog("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(tree.pos, unit.freshTermName("liftedTree"))
+        val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
         sym.setInfo(MethodType(List(), tree.tpe))
-        new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
+        tree.changeOwner(currentOwner -> sym)
         localTyper.typedPos(tree.pos)(Block(
           List(DefDef(sym, List(Nil), tree)),
           Apply(Ident(sym), Nil)
@@ -772,7 +772,7 @@ abstract class UnCurry extends InfoTransform
       }
       val forwresult = dd.symbol.tpe.finalResultType
       val forwformsyms = map2(forwformals, flatparams)((tp, oldparam) =>
-        currentClass.newValueParameter(oldparam.symbol.pos, oldparam.name).setInfo(tp)
+        currentClass.newValueParameter(oldparam.name, oldparam.symbol.pos).setInfo(tp)
       )
       def mono = MethodType(forwformsyms, forwresult)
       val forwtype = dd.symbol.tpe match {
@@ -781,11 +781,7 @@ abstract class UnCurry extends InfoTransform
       }
 
       // create the symbol
-      val forwsym = (
-        currentClass.newMethod(dd.pos, dd.name)
-        . setFlag (VARARGS | SYNTHETIC | flatdd.symbol.flags)
-        . setInfo (forwtype)
-      )
+      val forwsym = currentClass.newMethod(dd.name, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {

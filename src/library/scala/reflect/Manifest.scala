@@ -60,7 +60,7 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
   override def hashCode = this.erasure.##
 }
 
-sealed abstract class AnyValManifest[T <: AnyVal](override val toString: String) extends Manifest[T] with Equals {
+abstract class AnyValManifest[T <: AnyVal](override val toString: String) extends Manifest[T] with Equals {
   override def <:<(that: ClassManifest[_]): Boolean =
     (that eq this) || (that eq Manifest.Any) || (that eq Manifest.AnyVal)
   override def canEqual(other: Any) = other match {

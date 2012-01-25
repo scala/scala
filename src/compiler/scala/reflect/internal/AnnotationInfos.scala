@@ -230,10 +230,8 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)
 
     /** Change all ident's with Symbol "from" to instead use symbol "to" */
-    def substIdentSyms(from: Symbol, to: Symbol) = {
-      val subs = new TreeSymSubstituter(List(from), List(to))
-      AnnotationInfo(atp, args.map(subs(_)), assocs).setPos(pos)
-    }
+    def substIdentSyms(from: Symbol, to: Symbol) =
+      AnnotationInfo(atp, args map (_ substTreeSyms (from -> to)), assocs) setPos pos
 
     def stringArg(index: Int) = constantAtIndex(index) map (_.stringValue)
     def intArg(index: Int)    = constantAtIndex(index) map (_.intValue)

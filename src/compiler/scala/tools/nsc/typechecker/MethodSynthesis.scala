@@ -125,11 +125,7 @@ trait MethodSynthesis {
       def keepClean  = false  // whether annotations whose definitions are not meta-annotated should be kept.
       def validate() { }
       def createAndEnterSymbol(): Symbol = {
-        val sym = (
-          owner.newMethod(tree.pos.focus, name)
-            setFlag tree.mods.flags & flagsMask
-            setFlag flagsExtra
-        )
+        val sym = owner.newMethod(name, tree.pos.focus, (tree.mods.flags & flagsMask) | flagsExtra)
         setPrivateWithin(tree, sym)
         enterInScope(sym)
         sym setInfo completer(sym)

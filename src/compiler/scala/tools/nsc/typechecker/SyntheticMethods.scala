@@ -110,12 +110,12 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
-      val m = clazz.newMethod(clazz.pos.focus, name.toTermName)
+      val m = clazz.newMethod(name.toTermName, clazz.pos.focus)
       m setInfo info
       finishMethod(m, f)
     }
     private def createInternal(name: Name, f: Symbol => Tree, infoFn: Symbol => Type): Tree = {
-      val m = clazz.newMethod(clazz.pos.focus, name.toTermName)
+      val m = clazz.newMethod(name.toTermName, clazz.pos.focus)
       m setInfo infoFn(m)
       finishMethod(m, f)
     }
@@ -282,7 +282,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
       def argsBody: Tree = {
         val otherName = context.unit.freshTermName(clazz.name + "$")
-        val otherSym  = m.newValue(m.pos, otherName) setInfo clazz.tpe setFlag SYNTHETIC
+        val otherSym  = m.newValue(otherName, m.pos, SYNTHETIC) setInfo clazz.tpe
         val pairwise  = accessors map (acc => fn(Select(This(clazz), acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
         val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(This(clazz)))
         def block     = Block(ValDef(otherSym, thatCast), AND(pairwise :+ canEq: _*))

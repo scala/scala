@@ -23,7 +23,7 @@ retrieved 64 members
 `method add(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value]`
 `method apply(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[callccInterpreter.Value]`
 `method asInstanceOf[T0]=> T0`
-`method callCC[A](h: A => callccInterpreter.M[A] => callccInterpreter.M[A])callccInterpreter.M[A]`
+`method callCC[A](h: (A => callccInterpreter.M[A]) => callccInterpreter.M[A])callccInterpreter.M[A]`
 `method clone()Object`
 `method ensuring(cond: Boolean)callccInterpreter.type`
 `method ensuring(cond: Boolean, msg: => Any)callccInterpreter.type`

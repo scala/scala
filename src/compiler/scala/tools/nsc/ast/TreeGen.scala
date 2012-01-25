@@ -30,6 +30,25 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else
       tree
   }
+  
+  /** Builds a fully attributed wildcard import node.
+   */
+  def mkWildcardImport(pkg: Symbol): Import = {
+    assert(pkg ne null, this)
+    val qual = gen.mkAttributedStableRef(pkg)
+    val importSym = (
+      NoSymbol
+        newImport NoPosition
+          setFlag SYNTHETIC
+          setInfo analyzer.ImportType(qual)
+    )
+    val importTree = (
+      Import(qual, List(ImportSelector(nme.WILDCARD, -1, null, -1)))
+        setSymbol importSym
+          setType NoType
+    )
+    importTree
+  }
 
   // wrap the given expression in a SoftReference so it can be gc-ed
   def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
@@ -77,17 +96,17 @@ abstract class TreeGen extends reflect.internal.TreeGen {
   }
 
   def mkModuleVarDef(accessor: Symbol) = {
+    val inClass    = accessor.owner.isClass
+    val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
+    
     val mval = (
-      accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
-      setInfo accessor.tpe.finalResultType
-      setFlag (MODULEVAR)
+      accessor.owner.newVariable(nme.moduleVarName(accessor.name), accessor.pos.focus, MODULEVAR | extraFlags)
+        setInfo accessor.tpe.finalResultType
+        addAnnotation VolatileAttr
     )
+    if (inClass)
+      mval.owner.info.decls enter mval
 
-    mval addAnnotation VolatileAttr
-    if (mval.owner.isClass) {
-      mval setFlag (PrivateLocal | SYNTHETIC)
-      mval.owner.info.decls.enter(mval)
-    }
     ValDef(mval)
   }
 
@@ -199,11 +218,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
    */
   private def mkPackedValDef(expr: Tree, owner: Symbol, name: Name): (ValDef, () => Ident) = {
     val packedType = typer.packedType(expr, owner)
-    val sym = (
-      owner.newValue(expr.pos.makeTransparent, name)
-      setFlag SYNTHETIC
-      setInfo packedType
-    )
+    val sym = owner.newValue(name, expr.pos.makeTransparent, SYNTHETIC) setInfo packedType
 
     (ValDef(sym, expr), () => Ident(sym) setPos sym.pos.focus setType expr.tpe)
   }

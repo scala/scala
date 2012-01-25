@@ -39,7 +39,7 @@ trait TreeBuildUtil extends Universe with api.TreeBuildUtil {
     selectIn(owner.info, idx)
   }
 
-  def freeVar(name: String, info: Type, value: Any) = new FreeVar(newTermName(name), info, value)
+  def freeVar(name: String, info: Type, value: Any) = newFreeVar(newTermName(name), info, value)
 
   def modifiersFromInternalFlags(flags: Long, privateWithin: Name, annotations: List[Tree]): Modifiers =
     Modifiers(flags, privateWithin, annotations)

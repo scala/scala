@@ -143,15 +143,14 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         /* ### CREATING THE METHOD CACHE ### */
 
         def addStaticVariableToClass(forName: TermName, forType: Type, forInit: Tree, isFinal: Boolean): Symbol = {
-          val varSym = (
-            currentClass.newVariable(ad.pos, mkTerm("" + forName))
-              setFlag PRIVATE | STATIC | SYNTHETIC
-              setInfo forType
+          val flags = PRIVATE | STATIC | SYNTHETIC | (
+            if (isFinal) FINAL else 0
           )
-          if (isFinal) varSym setFlag FINAL
-          else varSym.addAnnotation(VolatileAttr)
+          
+          val varSym = currentClass.newVariable(mkTerm("" + forName), ad.pos, flags) setInfoAndEnter forType
+          if (!isFinal)
+            varSym.addAnnotation(VolatileAttr)
 
-          currentClass.info.decls enter varSym
           val varDef = typedPos( VAL(varSym) === forInit )
           newStaticMembers append transform(varDef)
 
@@ -163,13 +162,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         def addStaticMethodToClass(forName: String, forArgsTypes: List[Type], forResultType: Type)
                                   (forBody: Pair[Symbol, List[Symbol]] => Tree): Symbol = {
-          val methSym = currentClass.newMethod(ad.pos, mkTerm(forName))
-            .setFlag(STATIC | SYNTHETIC)
 
-          methSym.setInfo(MethodType(methSym.newSyntheticValueParams(forArgsTypes), forResultType))
-          currentClass.info.decls enter methSym
+          val methSym = currentClass.newMethod(mkTerm(forName), ad.pos, STATIC | SYNTHETIC)
+          val params  = methSym.newSyntheticValueParams(forArgsTypes)
+          methSym setInfoAndEnter MethodType(params, forResultType)
 
-          val methDef = typedPos( DefDef(methSym, { forBody(Pair(methSym, methSym.paramss(0))) }) )
+          val methDef = typedPos( DefDef(methSym, forBody(methSym -> params)) )
           newStaticMembers append transform(methDef)
 
           methSym
@@ -280,7 +278,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
               addStaticMethodToClass(nme.reflMethodName, List(ClassClass.tpe), MethodClass.tpe)
                 { case Pair(reflMethodSym, List(forReceiverSym)) =>
-                  val methodSym = reflMethodSym.newVariable(ad.pos, mkTerm("method")) setInfo MethodClass.tpe
+                  val methodSym = reflMethodSym.newVariable(mkTerm("method"), ad.pos) setInfo MethodClass.tpe
 
                   BLOCK(
                     IF (getPolyCache OBJ_EQ NULL) THEN (safeREF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
@@ -404,7 +402,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               def invocation  = (lookup DOT invokeName)(qual1(), invokeArgs)                        // .invoke(qual1, ...)
 
               // exception catching machinery
-              val invokeExc   = currentOwner.newValue(ad.pos, mkTerm("")) setInfo InvocationTargetExceptionClass.tpe
+              val invokeExc   = currentOwner.newValue(mkTerm(""), ad.pos) setInfo InvocationTargetExceptionClass.tpe
               def catchVar    = Bind(invokeExc, Typed(Ident(nme.WILDCARD), TypeTree(InvocationTargetExceptionClass.tpe)))
               def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
 
@@ -492,7 +490,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               assert(params.length == mparams.length, mparams)
               
               typedPos {
-                val sym = currentOwner.newValue(ad.pos, mkTerm("qual")) setInfo qual0.tpe
+                val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
                 qual = safeREF(sym)
 
                 BLOCK(
@@ -565,7 +563,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case theTry @ Try(block, catches, finalizer)
         if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.NothingClass =>
         val tpe = theTry.tpe.widen
-        val tempVar = currentOwner.newVariable(theTry.pos, mkTerm(nme.EXCEPTION_RESULT_PREFIX)).setInfo(tpe)
+        val tempVar = currentOwner.newVariable(mkTerm(nme.EXCEPTION_RESULT_PREFIX), theTry.pos).setInfo(tpe)
         def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))
 
         val newBlock    = assignBlock(block)
@@ -637,8 +635,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         // create a symbol for the static field
         val stfieldSym = (
-          currentClass.newVariable(pos, mkTerm("symbol$"))
-            setFlag PRIVATE | STATIC | SYNTHETIC | FINAL
+          currentClass.newVariable(mkTerm("symbol$"), pos, PRIVATE | STATIC | SYNTHETIC | FINAL)
             setInfo SymbolClass.tpe
         )
         currentClass.info.decls enter stfieldSym

@@ -30,13 +30,14 @@ trait GenAndroid {
 
   def isAndroidParcelableClass(sym: Symbol) =
     (AndroidParcelableInterface != NoSymbol) &&
-    (sym.info.parents contains AndroidParcelableInterface.tpe)
+    (sym.parentSymbols contains AndroidParcelableInterface)
 
   def addCreatorCode(codegen: BytecodeGenerator, block: BasicBlock) {
     import codegen._
-    val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
-                        .setFlag(Flags.STATIC | Flags.FINAL)
-                        .setInfo(AndroidCreatorClass.tpe)
+    val fieldSymbol = (
+      clasz.symbol.newValue(newTermName(fieldName), NoPosition, Flags.STATIC | Flags.FINAL)
+        setInfo AndroidCreatorClass.tpe
+    )
     val methodSymbol = definitions.getMember(clasz.symbol.companionModule, fieldName)
     clasz addField new IField(fieldSymbol)
     block emit CALL_METHOD(methodSymbol, Static(false))

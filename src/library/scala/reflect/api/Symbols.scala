@@ -150,10 +150,10 @@ trait Symbols { self: Universe =>
      */
     def asTypeIn(site: Type): Type
 
-    /** A fresh symbol with given position `pos` and name `name` that has
+    /** A fresh symbol with given name `name`, position `pos` and flags `flags` that has
      *  the current symbol as its owner.
      */
-    def newNestedSymbol(pos: Position, name: Name): Symbol // needed by LiftCode
+    def newNestedSymbol(name: Name, pos: Position, flags: Long): Symbol // needed by LiftCode
 
     /** Low-level operation to set the symbol's flags
      *  @return the symbol itself

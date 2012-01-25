@@ -801,7 +801,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   override def toList: List[T] = seq.toList
 
-  override def toIndexedSeq[U >: T]: collection.immutable.IndexedSeq[U] = seq.toIndexedSeq[U]
+  override def toIndexedSeq: collection.immutable.IndexedSeq[T] = seq.toIndexedSeq
 
   override def toStream: Stream[T] = seq.toStream
 

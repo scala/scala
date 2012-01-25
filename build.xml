@@ -941,9 +941,6 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/library">
         <include name="scala/swing/**"/>
       </fileset>
-      <fileset dir="${src.dir}/swing">
-        <include name="scala/swing/test/images/**"/>
-      </fileset>
     </jar>
   </target>
   
@@ -1543,7 +1540,6 @@ DOCUMENTATION
       <exclude name="runtime/*$.scala"/>
       <exclude name="runtime/ScalaRunTime.scala"/>
       <exclude name="runtime/StringAdd.scala"/>
-      <exclude name="scala/swing/test/**"/>
     </scaladoc>
     <touch file="${build-docs.dir}/library.complete" verbose="no"/>
     <stopwatch name="docs.lib.timer" action="total"/>

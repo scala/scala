@@ -41,9 +41,12 @@ trait ToolBoxes extends { self: Universe =>
       private def isFree(t: Tree) = t.isInstanceOf[Ident] && t.symbol.isInstanceOf[FreeVar]
 
       def typedTopLevelExpr(tree: Tree, pt: Type): Tree = {
-        val ownerClass = EmptyPackageClass.newClass(newTypeName("<expression-owner>"))
-        ownerClass.setInfo(new ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
-        val owner = ownerClass.newLocalDummy(tree.pos)
+        // !!! Why is this is in the empty package? If it's only to make
+        // it inaccessible then please put it somewhere designed for that
+        // rather than polluting the empty package with synthetics.
+        val ownerClass = EmptyPackageClass.newClassWithInfo(newTypeName("<expression-owner>"), List(ObjectClass.tpe), newScope)
+        val owner      = ownerClass.newLocalDummy(tree.pos)
+
         typer.atOwner(tree, owner).typed(tree, analyzer.EXPRmode, pt)
       }
       
@@ -53,12 +56,12 @@ trait ToolBoxes extends { self: Universe =>
       }
     
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
-        val obj = EmptyPackageClass.newModule(NoPosition, nextWrapperModuleName())
+        val obj = EmptyPackageClass.newModule(nextWrapperModuleName())
         val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
-        val meth = obj.moduleClass.newMethod(NoPosition, newTermName(wrapperMethodName))
-        def makeParam(fv: Symbol) = meth.newValueParameter(NoPosition, fv.name.toTermName) setInfo fv.tpe
+        val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
+        def makeParam(fv: Symbol) = meth.newValueParameter(fv.name.toTermName) setInfo fv.tpe
         meth setInfo MethodType(fvs map makeParam, expr.tpe)
         minfo.decls enter meth
         trace("wrapping ")(defOwner(expr) -> meth)

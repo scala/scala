@@ -128,7 +128,7 @@ abstract class TailCalls extends Transform {
           * the label field.
           */
         this.label    = {
-          val label     = method.newLabel(method.pos, newTermName("_" + method.name))
+          val label     = method.newLabel(newTermName("_" + method.name), method.pos)
           val thisParam = method.newSyntheticValueParam(currentClass.typeOfThis)
           label setInfo MethodType(thisParam :: method.tpe.params, method.tpe.finalResultType)
         }
@@ -144,7 +144,7 @@ abstract class TailCalls extends Transform {
       def isTransformed    = isEligible && accessed
       def tailrecFailure() = unit.error(failPos, "could not optimize @tailrec annotated " + method + ": " + failReason)
 
-      def newThis(pos: Position) = method.newValue(pos, nme.THIS) setInfo currentClass.typeOfThis setFlag SYNTHETIC
+      def newThis(pos: Position) = method.newValue(nme.THIS, pos, SYNTHETIC) setInfo currentClass.typeOfThis
 
       override def toString(): String = (
         "" + method.name + " tparams: " + tparams + " tailPos: " + tailPos +

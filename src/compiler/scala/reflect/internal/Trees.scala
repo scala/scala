@@ -121,7 +121,12 @@ trait Trees extends api.Trees { self: SymbolTable =>
         new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
-
+    
+    def substTreeSyms(pairs: (Symbol, Symbol)*): Tree = {
+      val list  = pairs.toList
+      val subst = new TreeSymSubstituter(list map (_._1), list map (_._2))
+      subst(tree)
+    }
     def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
     def shortClass: String = tree.getClass.getName split "[.$]" last
     /** When you want to know a little more than the class, but a lot
@@ -198,9 +203,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def DefDef(sym: Symbol, rhs: Tree): DefDef =
     DefDef(sym, Modifiers(sym.flags), rhs)
 
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = {
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
     DefDef(sym, rhs(sym.info.paramss))
-  }
 
   /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =

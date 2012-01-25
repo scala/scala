@@ -188,6 +188,10 @@ x = WrappedArray(1, 2, 3)
 y = WrappedArray(1, 2, 3)
 x equals y: true, y equals x: true
 
+x = TreeSet(1, 2, 3)
+y = TreeSet(1, 2, 3)
+x equals y: true, y equals x: true
+
 x =  xml:src="hello"
 y =  xml:src="hello"
 x equals y: true, y equals x: true
@@ -202,7 +206,7 @@ x equals y: true, y equals x: true
 
 x = <html>
       <body>
-        <table cellspacing="0" cellpadding="2">
+        <table cellpadding="2" cellspacing="0">
         <tr>
           <th>Last Name</th>
           <th>First Name</th>
@@ -222,7 +226,7 @@ x = <html>
       </html>
 y = <html>
       <body>
-        <table cellspacing="0" cellpadding="2">
+        <table cellpadding="2" cellspacing="0">
         <tr>
           <th>Last Name</th>
           <th>First Name</th>

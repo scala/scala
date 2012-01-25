@@ -286,18 +286,36 @@ extends collection.AbstractSeq[Int]
 object Range {
   private[immutable] val MAX_PRINT = 512  // some arbitrary value
 
-  /** Counts in "Long arithmetic" so we can recognize overflow.
+  /** Counts the number of range elements.
+   *  @pre  step != 0
+   *  If the size of the range exceeds Int.MaxValue, the
+   *  result will be negative.
    */
+  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int = {
+    if (step == 0)
+      throw new IllegalArgumentException("step cannot be 0.")
+
+    val isEmpty = (
+      if (start == end) !isInclusive
+      else if (start < end) step < 0
+      else step > 0
+    )
+    if (isEmpty) 0
+    else {
+      // Counts with Longs so we can recognize too-large ranges.
+      val gap: Long    = end.toLong - start.toLong
+      val jumps: Long  = gap / step
+      // Whether the size of this range is one larger than the
+      // number of full-sized jumps.
+      val hasStub      = isInclusive || (gap % step != 0)
+      val result: Long = jumps + ( if (hasStub) 1 else 0 )
+    
+      if (result > scala.Int.MaxValue) -1
+      else result.toInt
+    }
+  }
   def count(start: Int, end: Int, step: Int): Int =
     count(start, end, step, false)
-
-  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int = {
-    // faster path for the common counting range
-    if (start >= 0 && end > start && end < scala.Int.MaxValue && step == 1)
-      (end - start) + ( if (isInclusive) 1 else 0 )
-    else
-      NumericRange.count[Long](start, end, step, isInclusive)
-  }
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)
