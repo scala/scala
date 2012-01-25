@@ -32,7 +32,11 @@ trait BaseTypeSeqs {
   protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) = 
     new BaseTypeSeq(parents, elems)
 
-  class BaseTypeSeq(private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
+  /** Note: constructor is protected to force everyone to use the factory method newBaseTypeSeq instead.
+   *  This is necessary because when run from reflection every base type sequence needs to have a 
+   *  SynchronizedBaseTypeSeq as mixin. 
+   */
+  class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
     incCounter(baseTypeSeqCount)
     incCounter(baseTypeSeqLenTotal, elems.length)

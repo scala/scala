@@ -37,9 +37,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def unapplySeq(decls: Scope): Some[Seq[Symbol]] = Some(decls.toList)
   }
 
-  class Scope(initElems: ScopeEntry = null) extends Iterable[Symbol] {
+  /** Note: constructor is protected to force everyone to use the factory methods newScope or newNestedScope instead.
+   *  This is necessary because when run from reflection every scope needs to have a 
+   *  SynchronizedScope as mixin. 
+   */
+  class Scope protected[Scopes] (initElems: ScopeEntry = null) extends Iterable[Symbol] {
     
-    def this(base: Scope) = {
+    protected[Scopes] def this(base: Scope) = {
       this(base.elems)
       nestinglevel = base.nestinglevel + 1
     }
