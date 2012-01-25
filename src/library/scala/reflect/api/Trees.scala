@@ -8,8 +8,6 @@ package api
 
 import scala.collection.mutable.ListBuffer
 
-//import scala.tools.nsc.util.{ FreshNameCreator, HashSet, SourceFile }
-
 trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
 
   private[scala] var nodeCount = 0
@@ -549,7 +547,7 @@ trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
     Select(qualifier, sym.name) setSymbol sym
 
   /** Identifier <name> */
-  case class Ident(name: Name) extends RefTree { }
+  case class Ident(name: Name) extends RefTree
 
   def Ident(name: String): Ident =
     Ident(newTermName(name))
