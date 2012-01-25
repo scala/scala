@@ -1160,9 +1160,20 @@ defined class Foo */
 
       sequence(caseDefs) map { caseDefs =>
         import CODE._
+        val caseDefsWithDefault = {
+          def isDefault(x: CaseDef): Boolean = x match { 
+            case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
+            case _ => false
+          }
+          val hasDefault = caseDefs exists isDefault
+          if (hasDefault) caseDefs else {
+            val default = atPos(scrut.pos) { DEFAULT ==> MATCHERROR(REF(scrutSym)) }
+            caseDefs :+ default
+          }
+        }
         val matcher = BLOCK(
           VAL(scrutSym) === scrut, // TODO: type test for switchable type if patterns allow switch but the scrutinee doesn't
-          Match(REF(scrutSym), caseDefs) // match on scrutSym, not scrut to avoid duplicating scrut
+          Match(REF(scrutSym), caseDefsWithDefault) // match on scrutSym, not scrut to avoid duplicating scrut
         )
 
         // matcher filter (tree => tree.tpe == null) foreach println
