@@ -1138,7 +1138,7 @@ defined class Foo */
           case (btm@BodyTreeMaker(body, _)) :: Nil =>
             Some(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
           // constant
-          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil => import CODE._
+          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil =>
             Some(CaseDef(const, EmptyTree, btm.substitution(body)))
           // alternatives
           case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
