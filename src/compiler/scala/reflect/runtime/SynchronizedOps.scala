@@ -35,7 +35,6 @@ trait SynchronizedOps extends internal.SymbolTable
   
   override def newScope = new Scope() with SynchronizedScope
   override def newNestedScope(outer: Scope): Scope = new Scope(outer) with SynchronizedScope
-//  override def newScopeWith(elems: ScopeEntry): Scope = new Scope(elems) with SynchronizedScope
 
   trait SynchronizedScope extends Scope {
     override def isEmpty: Boolean = synchronized { super.isEmpty }

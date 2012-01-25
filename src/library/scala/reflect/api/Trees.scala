@@ -8,9 +8,9 @@ package api
 
 import scala.collection.mutable.ListBuffer
 
-//import scala.tools.nsc.util.{ FreshNameCreator, HashSet, SourceFile }
+// Syncnote: Trees are currently not thread-safe.
 
-trait Trees /*extends reflect.generic.Trees*/ { self: Universe =>
+trait Trees { self: Universe =>
 
   private[scala] var nodeCount = 0
 

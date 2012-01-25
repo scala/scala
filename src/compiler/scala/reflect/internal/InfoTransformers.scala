@@ -9,6 +9,8 @@ package internal
 trait InfoTransformers {
   self: SymbolTable =>
 
+  /* Syncnote: This should not need to be protected, as reflection does not run in multiple phases.
+   */
   abstract class InfoTransformer {
     var prev: InfoTransformer = this
     var next: InfoTransformer = this
