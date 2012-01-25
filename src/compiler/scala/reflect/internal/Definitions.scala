@@ -16,7 +16,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
   private def newClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): Symbol = {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
-    clazz setInfoAndEnter ClassInfoType(parents, new Scope, clazz)
+    clazz setInfoAndEnter ClassInfoType(parents, newScope, clazz)
   }
   private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): Symbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
@@ -206,7 +206,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
       locally {
         this initFlags ABSTRACT | TRAIT | FINAL
-        this setInfoAndEnter ClassInfoType(List(parent.tpe), new Scope, this)
+        this setInfoAndEnter ClassInfoType(List(parent.tpe), newScope, this)
       }
       final override def isBottomClass = true
     }
@@ -352,7 +352,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     )
     lazy val EqualsPatternClass = {
       val clazz = newClass(ScalaPackageClass, tpnme.EQUALS_PATTERN_NAME, Nil)
-      clazz setInfo polyType(List(newTypeParam(clazz, 0)), ClassInfoType(anyparam, new Scope, clazz))
+      clazz setInfo polyType(List(newTypeParam(clazz, 0)), ClassInfoType(anyparam, newScope, clazz))
     }
     lazy val MatchingStrategyClass = getRequiredClass("scala.MatchingStrategy")
 
@@ -823,7 +823,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       clazz.setInfo(
         polyType(
           List(tparam),
-          ClassInfoType(List(AnyRefClass.tpe, p), new Scope, clazz)))
+          ClassInfoType(List(AnyRefClass.tpe, p), newScope, clazz)))
     }
 
     private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol =

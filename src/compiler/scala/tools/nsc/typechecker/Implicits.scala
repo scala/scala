@@ -213,7 +213,7 @@ trait Implicits {
   /** An extractor for types of the form ? { name: (? >: argtpe <: Any*)restp }
    */
   object HasMethodMatching {
-    val dummyMethod = new TermSymbol(NoSymbol, NoPosition, newTermName("typer$dummy"))
+    val dummyMethod = NoSymbol.newTermSymbol(newTermName("typer$dummy"))
     def templateArgType(argtpe: Type) = new BoundedWildcardType(TypeBounds.lower(argtpe))
     
     def apply(name: Name, argtpes: List[Type], restpe: Type): Type = {

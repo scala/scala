@@ -955,7 +955,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 // Forward reference checking ---------------------------------------------------
 
     class LevelInfo(val outer: LevelInfo) {
-      val scope: Scope = if (outer eq null) new Scope else new Scope(outer.scope)
+      val scope: Scope = if (outer eq null) newScope else newNestedScope(outer.scope)
       var maxindex: Int = Int.MinValue
       var refpos: Position = _
       var refsym: Symbol = _

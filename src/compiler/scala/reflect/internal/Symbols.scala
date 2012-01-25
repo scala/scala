@@ -16,10 +16,13 @@ import api.Modifier
 trait Symbols extends api.Symbols { self: SymbolTable =>
   import definitions._
 
-  private var ids = 0
+  protected var ids = 0
+  
+  val emptySymbolArray = new Array[Symbol](0)
+
   def symbolCount = ids // statistics
 
-  val emptySymbolArray = new Array[Symbol](0)
+  protected def nextId() = { ids += 1; ids }
 
   /** Used for deciding in the IDE whether we can interrupt the compiler */
   //protected var activeLocks = 0
@@ -31,7 +34,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   private var recursionTable = immutable.Map.empty[Symbol, Int]
 
   private var nextexid = 0
-  private def freshExistentialName(suffix: String) = {
+  protected def freshExistentialName(suffix: String) = {
     nextexid += 1
     newTypeName("_" + nextexid + suffix)
   }
@@ -42,6 +45,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     m setModuleClass moduleClass
     m
   }
+  
   /** Create a new free variable.  Its owner is NoSymbol.
    */
   def newFreeVar(name: TermName, tpe: Type, value: Any, newFlags: Long = 0L): FreeVar =
@@ -77,14 +81,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 
-    var rawowner = initOwner
-    var rawname  = initName
-    var rawflags = 0L
-
+    private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
+    private[this] var _rawname  = initName
+    private[this] var _rawflags = 0L
+    
+    def rawowner = _rawowner
+    def rawname = _rawname
+    def rawflags = _rawflags
+    
+    protected def rawflags_=(x: FlagsType) { _rawflags = x }
+    
     private var rawpos = initPos
-    val id = { ids += 1; ids } // identity displayed when -uniqid
+    
+    val id = nextId() // identity displayed when -uniqid
 
-    var validTo: Period = NoPeriod
+    private[this] var _validTo: Period = NoPeriod
+    
+    def validTo = _validTo
+    def validTo_=(x: Period) { _validTo = x}
 
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
@@ -336,7 +350,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // True if the symbol is unlocked.
     // True if the symbol is locked but still below the allowed recursion depth.
     // False otherwise
-    def lockOK: Boolean = {
+    private[scala] def lockOK: Boolean = {
       ((rawflags & LOCKED) == 0L) ||
       ((settings.Yrecursion.value != 0) &&
        (recursionTable get this match {
@@ -345,7 +359,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     // Lock a symbol, using the handler if the recursion depth becomes too great.
-    def lock(handler: => Unit) = {
+    private[scala] def lock(handler: => Unit) = {
       if ((rawflags & LOCKED) != 0L) {
         if (settings.Yrecursion.value != 0) {
           recursionTable get this match {
@@ -360,18 +374,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           }
         } else { handler }
       } else {
-        rawflags |= LOCKED
+        _rawflags |= LOCKED
 //        activeLocks += 1
 //        lockedSyms += this
       }
     }
 
     // Unlock a symbol
-    def unlock() = {
+    private[scala] def unlock() = {
       if ((rawflags & LOCKED) != 0L) {
 //        activeLocks -= 1
 //        lockedSyms -= this
-        rawflags = rawflags & ~LOCKED
+        _rawflags = rawflags & ~LOCKED
         if (settings.Yrecursion.value != 0)
           recursionTable -= this
       }
@@ -736,7 +750,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ------ owner attribute --------------------------------------------------------------
 
     def owner: Symbol = rawowner
-    final def owner_=(owner: Symbol) {
+    def owner_=(owner: Symbol) {
       // don't keep the original owner in presentation compiler runs
       // (the map will grow indefinitely, and the only use case is the
       // backend).
@@ -744,8 +758,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         if (originalOwner contains this) ()
         else originalOwner(this) = rawowner
       }
-
-      rawowner = owner
+      assert(!inReflexiveMirror, "owner_= is not thread-safe; cannot be run in reflexive code")
+      _rawowner = owner
     }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
@@ -778,7 +792,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def name: Name = rawname
 
-    final def name_=(name: Name) {
+    def name_=(name: Name) {
       if (name != rawname) {
         if (owner.isClass) {
           var ifs = owner.infos
@@ -787,7 +801,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
             ifs = ifs.prev
           }
         }
-        rawname = name
+        _rawname = name
       }
     }
 
@@ -855,20 +869,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val fs = rawflags & phase.flagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~(fs >>> AntiShift)
     }
-    final def flags_=(fs: Long) = rawflags = fs
+    def flags_=(fs: Long) = _rawflags = fs
 
     /** Set the symbol's flags to the given value, asserting
      *  that the previous value was 0.
      */
     def initFlags(mask: Long): this.type = {
       assert(rawflags == 0L, this)
-      rawflags = mask
+      _rawflags = mask
       this
     }
-    def setFlag(mask: Long): this.type = { rawflags = rawflags | mask ; this }
-    def resetFlag(mask: Long): this.type = { rawflags = rawflags & ~mask ; this }
+    def setFlag(mask: Long): this.type = { _rawflags = rawflags | mask ; this }
+    def resetFlag(mask: Long): this.type = { _rawflags = rawflags & ~mask ; this }
     final def getFlag(mask: Long): Long = flags & mask
-    final def resetFlags() { rawflags = rawflags & TopLevelCreationFlags }
+    final def resetFlags() { _rawflags = rawflags & TopLevelCreationFlags }
 
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = (flags & mask) != 0L
@@ -954,7 +968,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
             throw CyclicReference(this, tp)
           }
         } else {
-          rawflags |= LOCKED
+          _rawflags |= LOCKED
 //          activeLocks += 1
  //         lockedSyms += this
         }
@@ -984,7 +998,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(info ne null)
       infos = TypeHistory(currentPeriod, info, null)
       unlock()
-      validTo = if (info.isComplete) currentPeriod else NoPeriod
+      _validTo = if (info.isComplete) currentPeriod else NoPeriod
     }
 
     /** Set initial info. */
@@ -1003,11 +1017,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** Set new info valid from start of this phase. */
-    final def updateInfo(info: Type): Symbol = {
+    def updateInfo(info: Type): Symbol = {
       assert(phaseId(infos.validFrom) <= phase.id)
       if (phaseId(infos.validFrom) == phase.id) infos = infos.prev
       infos = TypeHistory(currentPeriod, info, infos)
-      validTo = if (info.isComplete) currentPeriod else NoPeriod
+      _validTo = if (info.isComplete) currentPeriod else NoPeriod
       this
     }
 
@@ -1045,11 +1059,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
                   infos = TypeHistory(currentPeriod + 1, info1, infos)
                   this.infos = infos
                 }
-                validTo = currentPeriod + 1 // to enable reads from same symbol during info-transform
+                _validTo = currentPeriod + 1 // to enable reads from same symbol during info-transform
                 itr = itr.next
               }
-              validTo = if (itr.pid == NoPhase.id) curPeriod
-                        else period(currentRunId, itr.pid)
+              _validTo = if (itr.pid == NoPhase.id) curPeriod
+                         else period(currentRunId, itr.pid)
             }
           } finally {
             phase = current
@@ -1060,7 +1074,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     // adapt to new run in fsc.
-    private def adaptInfos(infos: TypeHistory): TypeHistory =
+    private def adaptInfos(infos: TypeHistory): TypeHistory = {
+      assert(!inReflexiveMirror)
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
       } else {
@@ -1069,7 +1084,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else {
           val pid = phaseId(infos.validFrom)
 
-          validTo = period(currentRunId, pid)
+          _validTo = period(currentRunId, pid)
           phase   = phaseWithId(pid)
 
           val info1 = (
@@ -1085,6 +1100,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           }
         }
       }
+    }
 
     /** Initialize the symbol */
     final def initialize: this.type = {
@@ -1094,6 +1110,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Was symbol's type updated during given phase? */
     final def isUpdatedAt(pid: Phase#Id): Boolean = {
+      assert(!inReflexiveMirror)
       var infos = this.infos
       while ((infos ne null) && phaseId(infos.validFrom) != pid + 1) infos = infos.prev
       infos ne null
@@ -1101,6 +1118,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Was symbol's type updated during given phase? */
     final def hasTypeAt(pid: Phase#Id): Boolean = {
+      assert(!inReflexiveMirror)
       var infos = this.infos
       while ((infos ne null) && phaseId(infos.validFrom) > pid) infos = infos.prev
       infos ne null
@@ -1212,7 +1230,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def reset(completer: Type) {
       resetFlags()
       infos = null
-      validTo = NoPeriod
+      _validTo = NoPeriod
       //limit = NoPhase.id
       setInfo(completer)
     }
@@ -1239,7 +1257,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 // ----- annotations ------------------------------------------------------------
 
     // null is a marker that they still need to be obtained.
-    private var _annotations: List[AnnotationInfo] = Nil
+    private[this] var _annotations: List[AnnotationInfo] = Nil
 
     def annotationsString = if (annotations.isEmpty) "" else annotations.mkString("(", ", ", ")")
 
@@ -2053,8 +2071,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def name: TermName = rawname.toTermName
     privateWithin = NoSymbol
 
-    var referenced: Symbol = NoSymbol
-    
+    private[this] var _referenced: Symbol = NoSymbol
+
+    def referenced: Symbol = _referenced
+    def referenced_=(x: Symbol) { _referenced = x }
+        
     def existentialBound = singletonBounds(this.tpe)
 
     def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol =
@@ -2226,7 +2247,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
-  sealed abstract class TypeSymbol(initOwner: Symbol, initPos: Position, initName: TypeName) extends Symbol(initOwner, initPos, initName) {
+  abstract class TypeSymbol(initOwner: Symbol, initPos: Position, initName: TypeName) extends Symbol(initOwner, initPos, initName) {
     privateWithin = NoSymbol
     private var tyconCache: Type = null
     private var tyconRunId = NoRunId
@@ -2395,9 +2416,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** A class for class symbols */
   class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
-    private var flatname: TypeName = null
-    private var source: AbstractFileType = null
-    private var thissym: Symbol = this
+    private[this] var flatname: TypeName = null
+    private[this] var source: AbstractFileType = null
+    private[this] var thissym: Symbol = this
 
     final override def isClass = true
     final override def isNonClassType = false
@@ -2459,7 +2480,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
         typeOfThisCache
       }
-      else thissym.tpe
+      else thisSym.tpe
     }
 
     /** Sets the self type of the class */
@@ -2479,7 +2500,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def sourceModule =
       if (isModuleClass) companionModule else NoSymbol
 
-    private var childSet: Set[Symbol] = Set()
+    private[this] var childSet: Set[Symbol] = Set()
     override def children = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
@@ -2523,10 +2544,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** An object representing a missing symbol */
-  object NoSymbol extends Symbol(null, NoPosition, nme.NO_NAME) {
-    setInfo(NoType)
-    privateWithin = this
-    override def info_=(info: Type) {
+  class NoSymbol extends Symbol(null, NoPosition, nme.NO_NAME) {
+    synchronized {
+      setInfo(NoType)
+      privateWithin = this
+    }
+    override def info_=(info: Type) = {
       infos = TypeHistory(1, NoType, null)
       unlock()
       validTo = currentPeriod
@@ -2552,6 +2575,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol = abort()
     override def originalEnclosingMethod = this
   }
+
+  protected def makeNoSymbol = new NoSymbol
+
+  lazy val NoSymbol = makeNoSymbol
 
   /** Derives a new list of symbols from the given list by mapping the given
    *  list across the given function.  Then fixes the info of all the new symbols

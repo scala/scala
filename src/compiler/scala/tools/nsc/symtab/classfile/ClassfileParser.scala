@@ -536,8 +536,8 @@ abstract class ClassfileParser {
     addEnclosingTParams(clazz)
     parseInnerClasses() // also sets the isScala / isScalaRaw / hasMeta flags, see r15956
     // get the class file parser to reuse scopes.
-    instanceDefs = new Scope
-    staticDefs = new Scope
+    instanceDefs = newScope
+    staticDefs = newScope
 
     val classInfo = ClassInfoType(parseParents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
