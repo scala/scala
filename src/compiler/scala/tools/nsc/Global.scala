@@ -13,7 +13,7 @@ import scala.tools.util.{ Profiling, PathResolver }
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ NoPosition, Exceptional, ClassPath, SourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, ScalaClassLoader, returning }
+import util.{ NoPosition, Exceptional, ClassPath, SourceFile, NoSourceFile, Statistics, StatisticsInfo, BatchSourceFile, ScriptSourceFile, ShowPickled, ScalaClassLoader, returning }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import settings.{ AestheticSettings }
 
@@ -163,6 +163,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def warning(msg: String)     =
     if (opt.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
+
+  // Getting in front of Predef's asserts to supplement with more info.
+  // This has the happy side effect of masking the one argument forms
+  // of assert and require (but for now I've reproduced them here,
+  // because there are a million to fix.)
+  @inline final def assert(assertion: Boolean, message: => Any) {
+    Predef.assert(assertion, supplementErrorMessage("" + message))
+  }
+  @inline final def assert(assertion: Boolean) {
+    assert(assertion, "")
+  }
+  @inline final def require(requirement: Boolean, message: => Any) {
+    Predef.require(requirement, supplementErrorMessage("" + message))
+  }
+  @inline final def require(requirement: Boolean) {
+    require(requirement, "")
+  }
 
   // Needs to call error to make sure the compile fails.
   override def abort(msg: String): Nothing = {
@@ -375,10 +392,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     final def applyPhase(unit: CompilationUnit) {
+      if ((unit ne null) && unit.exists)
+        lastSeenSourceFile = unit.source
+
       if (opt.echoFilenames)
         inform("[running phase " + name + " on " + unit + "]")
 
-      val unit0 = currentRun.currentUnit
+      val unit0 = currentUnit
       try {
         currentRun.currentUnit = unit
         if (!cancelled(unit)) {
@@ -387,7 +407,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
         }
         currentRun.advanceUnit
       } finally {
-        //assert(currentRun.currentUnit == unit)
+        //assert(currentUnit == unit)
         currentRun.currentUnit = unit0
       }
     }
@@ -781,9 +801,40 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     curRun = null
   }
 
+  /** There are common error conditions where when the exception hits
+   *  here, currentRun.currentUnit is null.  This robs us of the knowledge
+   *  of what file was being compiled when it broke.  Since I really
+   *  really want to know, this hack.
+   */
+  private var lastSeenSourceFile: SourceFile = NoSourceFile
+
   /** The currently active run
    */
-  def currentRun: Run = curRun
+  def currentRun: Run              = curRun
+  def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
+  def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+
+  /** Don't want to introduce new errors trying to report errors,
+   *  so swallow exceptions.
+   */
+  override def supplementErrorMessage(errorMessage: String): String = try {
+    """|
+       |     while compiling:  %s
+       |       current phase:  %s
+       |     library version:  %s
+       |    compiler version:  %s
+       |  reconstructed args:  %s
+       |
+       |%s""".stripMargin.format(
+      currentSource.path,
+      phase,
+      scala.util.Properties.versionString,
+      Properties.versionString,
+      settings.recreateArgs.mkString(" "),
+      if (opt.debug) "Current unit body:\n" + currentUnit.body + "\n" + errorMessage else errorMessage
+    )
+  }
+  catch { case x: Exception => errorMessage }
 
   /** The id of the currently active run
    */
@@ -798,9 +849,39 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** A Run is a single execution of the compiler on a sets of units
    */
   class Run {
+    /** Have been running into too many init order issues with Run
+     *  during erroneous conditions.  Moved all these vals up to the
+     *  top of the file so at least they're not trivially null.
+     */
     var isDefined = false
+    /** The currently compiled unit; set from GlobalPhase */
+    var currentUnit: CompilationUnit = NoCompilationUnit
+
+    /** Counts for certain classes of warnings during this run. */
+    var deprecationWarnings: List[(Position, String)] = Nil
+    var uncheckedWarnings: List[(Position, String)] = Nil
+    
+    /** A flag whether macro expansions failed */
+    var macroExpansionFailed = false
+
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
+
+    private val unitbuf = new mutable.ListBuffer[CompilationUnit]
+    val compiledFiles   = new mutable.HashSet[String]
+
+    /** A map from compiled top-level symbols to their source files */
+    val symSource = new mutable.HashMap[Symbol, AbstractFile]
+
+    /** A map from compiled top-level symbols to their picklers */
+    val symData = new mutable.HashMap[Symbol, PickleBuffer]
+
+    private var phasec: Int       = 0   // phases completed
+    private var unitc: Int        = 0   // units completed this phase
+    private var _unitbufSize = 0
+
+    def size = _unitbufSize
+    override def toString = "scalac Run for:\n  " + compiledFiles.toList.sorted.mkString("\n  ")
 
     // Calculate where to stop based on settings -Ystop-before or -Ystop-after.
     // Slightly complicated logic due to wanting -Ystop-before:parser to fail rather
@@ -895,16 +976,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     // --------------- Miscellania -------------------------------
 
-    /** The currently compiled unit; set from GlobalPhase */
-    var currentUnit: CompilationUnit = _
-
-    /** Counts for certain classes of warnings during this run. */
-    var deprecationWarnings: List[(Position, String)] = Nil
-    var uncheckedWarnings: List[(Position, String)] = Nil
-    
-    /** A flag whether macro expansions failed */
-    var macroExpansionFailed = false
-
     /** Progress tracking.  Measured in "progress units" which are 1 per
      *  compilation unit per phase completed.
      *
@@ -936,9 +1007,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     def cancel() { reporter.cancelled = true }
-
-    private var phasec: Int       = 0   // phases completed
-    private var unitc: Int        = 0   // units completed this phase
+    
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
     private def refreshProgress() = if (size > 0) progress(currentProgress, totalProgress)
@@ -977,11 +1046,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     // ----------- Units and top-level classes and objects --------
 
-    private val unitbuf = new mutable.ListBuffer[CompilationUnit]
-    val compiledFiles   = new mutable.HashSet[String]
-
-    private var _unitbufSize = 0
-    def size = _unitbufSize
 
     /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
@@ -1004,12 +1068,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
        currently depending upon.)
      */
     def units: Iterator[CompilationUnit] = unitbuf.iterator
-
-    /** A map from compiled top-level symbols to their source files */
-    val symSource = new mutable.HashMap[Symbol, AbstractFile]
-
-    /** A map from compiled top-level symbols to their picklers */
-    val symData = new mutable.HashMap[Symbol, PickleBuffer]
 
     def registerPickle(sym: Symbol): Unit = {
       // Convert all names to the type name: objects don't store pickled data
@@ -1114,6 +1172,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Compile list of units, starting with phase `fromPhase`
      */
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
+      try compileUnitsInternal(units, fromPhase)
+      catch { case ex => 
+        globalError(supplementErrorMessage("uncaught exception during compilation: " + ex.getClass.getName))
+        throw ex
+      }
+    }
+    
+    private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
       if (opt.profileAll) {
         inform("starting CPU profiling on compilation run")

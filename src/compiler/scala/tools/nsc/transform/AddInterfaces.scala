@@ -185,7 +185,7 @@ abstract class AddInterfaces extends InfoTransform {
       )
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
-          assert(phase == implClassPhase)
+          assert(phase == implClassPhase, tp)
           ClassInfoType(
             ObjectClass.tpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass)) :+ iface.tpe,
             implDecls(sym, decls),

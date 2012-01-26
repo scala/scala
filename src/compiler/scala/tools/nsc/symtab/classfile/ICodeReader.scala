@@ -434,7 +434,7 @@ abstract class ICodeReader extends ClassfileParser {
           val padding = if ((pc + size) % 4 != 0) 4 - ((pc + size) % 4) else 0
           size += padding
           in.bp += padding
-          assert((pc + size % 4) != 0)
+          assert((pc + size % 4) != 0, pc)
 /*          var byte1 = in.nextByte; size += 1;
           while (byte1 == 0) { byte1 = in.nextByte; size += 1; }
           val default = byte1 << 24 | in.nextByte << 16 | in.nextByte << 8 | in.nextByte;
@@ -454,7 +454,7 @@ abstract class ICodeReader extends ClassfileParser {
           val padding = if ((pc + size) % 4 != 0) 4 - ((pc + size) % 4) else 0
           size += padding
           in.bp += padding
-          assert((pc + size % 4) != 0)
+          assert((pc + size % 4) != 0, pc)
           val default = pc + in.nextInt; size += 4
           val npairs = in.nextInt; size += 4
           var tags: List[List[Int]] = Nil
@@ -988,7 +988,7 @@ abstract class ICodeReader extends ClassfileParser {
     def enterParam(idx: Int, kind: TypeKind) = {
       val sym = method.symbol.newVariable(newTermName("par" + idx)).setInfo(kind.toType)
       val l = new Local(sym, kind, true)
-      assert(!locals.isDefinedAt(idx))
+      assert(!locals.isDefinedAt(idx), locals(idx))
       locals += (idx -> List((l, kind)))
       l
     }

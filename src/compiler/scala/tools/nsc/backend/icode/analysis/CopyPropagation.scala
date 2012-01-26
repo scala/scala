@@ -199,7 +199,7 @@ abstract class CopyPropagation {
         m foreachBlock { b =>
           in(b)  = lattice.bottom
           out(b) = lattice.bottom
-          assert(out.contains(b))
+          assert(out.contains(b), out)
           log("Added point: " + b)
         }
         m.exh foreach { e =>

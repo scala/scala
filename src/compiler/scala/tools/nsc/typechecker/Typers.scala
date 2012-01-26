@@ -455,14 +455,14 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     @inline
     final def constrTyperIf(inConstr: Boolean): Typer =
       if (inConstr) {
-        assert(context.undetparams.isEmpty)
+        assert(context.undetparams.isEmpty, context.undetparams)
         newTyper(context.makeConstructorContext)
       } else this
 
     @inline
     final def withCondConstrTyper[T](inConstr: Boolean)(f: Typer => T): T =
       if (inConstr) {
-        assert(context.undetparams.isEmpty)
+        assert(context.undetparams.isEmpty, context.undetparams)
         val c = context.makeConstructorContext
         typerWithLocalContext(c)(f)
       } else {
@@ -867,7 +867,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
 
       def insertApply(): Tree = {
-        assert(!inHKMode(mode)) //@M
+        assert(!inHKMode(mode), modeString(mode)) //@M
         val qual = adaptToName(tree, nme.apply) match {
           case id @ Ident(_) =>
             val pre = if (id.symbol.owner.isPackageClass) id.symbol.owner.thisType
@@ -948,7 +948,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             applyPossible)
             insertApply()
           else if (!context.undetparams.isEmpty && !inPolyMode(mode)) { // (9)
-            assert(!inHKMode(mode)) //@M
+            assert(!inHKMode(mode), modeString(mode)) //@M
             if (inExprModeButNot(mode, FUNmode) && pt.typeSymbol == UnitClass)
               instantiateExpectingUnit(tree, mode)
             else
@@ -1239,7 +1239,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             })
             val outercontext = context.outer
 
-            assert(clazz != NoSymbol)
+            assert(clazz != NoSymbol, templ)
             val cscope = outercontext.makeNewScope(constr, outercontext.owner)
             val cbody2 = newTyper(cscope) // called both during completion AND typing.
                 .typePrimaryConstrBody(clazz,
@@ -1401,7 +1401,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 //      attributes(cdef)
       val clazz = cdef.symbol
       val typedMods = removeAnnotations(cdef.mods)
-      assert(clazz != NoSymbol)
+      assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
       val impl1 = typerReportAnyContextErrors(context.make(cdef.impl, clazz, newScope)) {
@@ -1611,7 +1611,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           (call, List())
       }
       val (superConstr, superArgs) = decompose(rhs)
-      assert(superConstr.symbol ne null)//debug
+      assert(superConstr.symbol ne null, superConstr)//debug
 
       val pending = ListBuffer[AbsTypeError]()
       // an object cannot be allowed to pass a reference to itself to a superconstructor
@@ -2521,7 +2521,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               inferExprInstance(fun, tparams)
               doTypedApply(tree, fun, args, mode, pt)
             } else {
-              assert(!inPatternMode(mode)) // this case cannot arise for patterns
+              assert(!inPatternMode(mode), modeString(mode)) // this case cannot arise for patterns
               val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
               val strictTargs = map2(lenientTargs, tparams)((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
@@ -4414,7 +4414,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             // whatever type to tree; we just have to survive until a real error message is issued.
             tree setType AnyClass.tpe
         case Import(expr, selectors) =>
-          assert(forInteractive) // should not happen in normal circumstances.
+          assert(forInteractive, "!forInteractive") // should not happen in normal circumstances.
           tree setType tree.symbol.tpe
         case _ =>
           abort("unexpected tree: " + tree.getClass + "\n" + tree)//debug

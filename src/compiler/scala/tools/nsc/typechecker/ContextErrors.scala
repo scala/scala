@@ -142,7 +142,7 @@ trait ContextErrors {
           case _ =>
             found
         }
-        assert(!found.isErroneous && !req.isErroneous)
+        assert(!found.isErroneous && !req.isErroneous, (found, req))
         
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(found, req, infer.isPossiblyMissingArgs(found, req))) )
         if (settings.explaintypes.value)

@@ -179,7 +179,7 @@ abstract class GenICode extends SubComponent  {
     }
 
     private def genThrow(expr: Tree, ctx: Context): (Context, TypeKind) = {
-      require(expr.tpe <:< ThrowableClass.tpe)
+      require(expr.tpe <:< ThrowableClass.tpe, expr.tpe)
 
       val thrownKind = toTypeKind(expr.tpe)
       val ctx1       = genLoad(expr, ctx, thrownKind)
@@ -480,7 +480,7 @@ abstract class GenICode extends SubComponent  {
      */
     private def msil_genLoadZeroOfNonEnumValuetype(ctx: Context, kind: TypeKind, pos: Position, leaveAddressOnStackInstead: Boolean) {
       val REFERENCE(clssym) = kind
-      assert(loaders.clrTypes.isNonEnumValuetype(clssym))
+      assert(loaders.clrTypes.isNonEnumValuetype(clssym), clssym)
       val local = ctx.makeLocal(pos, clssym.tpe, "tmp")
       ctx.method.addLocal(local)
       ctx.bb.emit(CIL_LOAD_LOCAL_ADDRESS(local), pos)
@@ -1064,7 +1064,7 @@ abstract class GenICode extends SubComponent  {
           var default: BasicBlock = afterCtx.bb
 
           for (caze @ CaseDef(pat, guard, body) <- cases) {
-            assert(guard == EmptyTree)
+            assert(guard == EmptyTree, guard)
             val tmpCtx = ctx1.newBlock
             pat match {
               case Literal(value) =>

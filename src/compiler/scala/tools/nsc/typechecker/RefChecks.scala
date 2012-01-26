@@ -1491,7 +1491,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
-        assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY))
+        assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY), (qual.symbol, sym, mix))
 
       transformCaseApply(tree,
         qual match {
