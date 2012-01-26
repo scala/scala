@@ -29,7 +29,14 @@ trait BaseTypeSeqs {
   this: SymbolTable =>
   import definitions._
 
-  class BaseTypeSeq(parents: List[Type], elems: Array[Type]) {
+  protected def newBaseTypeSeq(parents: List[Type], elems: Array[Type]) = 
+    new BaseTypeSeq(parents, elems)
+
+  /** Note: constructor is protected to force everyone to use the factory method newBaseTypeSeq instead.
+   *  This is necessary because when run from reflection every base type sequence needs to have a 
+   *  SynchronizedBaseTypeSeq as mixin. 
+   */
+  class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
     incCounter(baseTypeSeqCount)
     incCounter(baseTypeSeqLenTotal, elems.length)
@@ -41,7 +48,7 @@ trait BaseTypeSeqs {
     // (while NoType is in there to indicate a cycle in this BTS, during the execution of
     //  the mergePrefixAndArgs below, the elems get copied without the pending map,
     //  so that NoType's are seen instead of the original type --> spurious compile error)
-    val pending = new mutable.BitSet(length)
+    private val pending = new mutable.BitSet(length)
 
     /** The type at i'th position in this sequence; lazy types are returned evaluated. */
     def apply(i: Int): Type =
@@ -89,11 +96,11 @@ trait BaseTypeSeqs {
     /** Return all evaluated types in this sequence as a list */
     def toList: List[Type] = elems.toList
 
-    protected def copy(head: Type, offset: Int): BaseTypeSeq = {
+    def copy(head: Type, offset: Int): BaseTypeSeq = {
       val arr = new Array[Type](elems.length + offset)
       compat.Platform.arraycopy(elems, 0, arr, offset, elems.length)
       arr(0) = head
-      new BaseTypeSeq(parents, arr)
+      newBaseTypeSeq(parents, arr)
     }
 
     /** Compute new base type sequence with `tp` prepended to this sequence */
@@ -113,21 +120,10 @@ trait BaseTypeSeqs {
         arr(i) = f(elems(i))
         i += 1
       }
-      new BaseTypeSeq(parents, arr)
+      newBaseTypeSeq(parents, arr)
     }
 
-    def lateMap(f: Type => Type): BaseTypeSeq = new BaseTypeSeq(parents map f, elems) {
-      override def apply(i: Int) = f(self.apply(i))
-      override def rawElem(i: Int) = f(self.rawElem(i))
-      override def typeSymbol(i: Int) = self.typeSymbol(i)
-      override def toList = self.toList map f
-      override protected def copy(head: Type, offset: Int) = (self map f).copy(head, offset)
-      override def map(g: Type => Type) = lateMap(g)
-      override def lateMap(g: Type => Type) = self.lateMap(x => g(f(x)))
-      override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
-      override protected def maxDepthOfElems: Int = elems map (x => maxDpth(f(x))) max
-      override def toString = elems.mkString("MBTS(", ",", ")")
-    }
+    def lateMap(f: Type => Type): BaseTypeSeq = new MappedBaseTypeSeq(this, f)
 
     def exists(p: Type => Boolean): Boolean = elems exists p
 
@@ -177,10 +173,10 @@ trait BaseTypeSeqs {
   /** A merker object for a base type sequence that's no yet computed.
    *  used to catch inheritance cycles
    */
-  val undetBaseTypeSeq: BaseTypeSeq = new BaseTypeSeq(List(), Array())
+  val undetBaseTypeSeq: BaseTypeSeq = newBaseTypeSeq(List(), Array())
 
   /** Create a base type sequence consisting of a single type */
-  def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = new BaseTypeSeq(List(), Array(tp))
+  def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = newBaseTypeSeq(List(), Array(tp))
 
   /** Create the base type sequence of a compound type wuth given tp.parents */
   def compoundBaseTypeSeq(tp: Type): BaseTypeSeq = {
@@ -244,8 +240,21 @@ trait BaseTypeSeqs {
     val elems = new Array[Type](btsSize)
     buf.copyToArray(elems, 0)
 //    Console.println("computed baseTypeSeq of " + tsym.tpe + " " + parents + ": "+elems.toString)//DEBUG
-    new BaseTypeSeq(parents, elems)
+    newBaseTypeSeq(parents, elems)
   }
-
+  
+  class MappedBaseTypeSeq(orig: BaseTypeSeq, f: Type => Type) extends BaseTypeSeq(orig.parents map f, orig.elems) {
+    override def apply(i: Int) = f(orig.apply(i))
+    override def rawElem(i: Int) = f(orig.rawElem(i))
+    override def typeSymbol(i: Int) = orig.typeSymbol(i)
+    override def toList = orig.toList map f
+    override def copy(head: Type, offset: Int) = (orig map f).copy(head, offset)
+    override def map(g: Type => Type) = lateMap(g)
+    override def lateMap(g: Type => Type) = orig.lateMap(x => g(f(x)))
+    override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
+    override protected def maxDepthOfElems: Int = elems map (x => maxDpth(f(x))) max
+    override def toString = elems.mkString("MBTS(", ",", ")")
+  } 
+  
   val CyclicInheritance = new Throwable
 }

@@ -13,7 +13,7 @@ import annotation.switch
 trait StdNames extends NameManglers { self: SymbolTable =>
 
   def encode(str: String): TermName = newTermNameCached(NameTransformer.encode(str))
-  
+
   implicit def lowerTermNames(n: TermName): String = "" + n
 
   // implicit def stringToTermName(s: String): TermName = newTermName(s)
@@ -182,7 +182,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
   trait TermNames extends Keywords with CommonNames {
     // Compiler internal names
     val EXPAND_SEPARATOR_STRING         = "$$"
-    
+
     val ANYNAME: NameType               = "<anyname>"
     val CONSTRUCTOR: NameType           = "<init>"
     val FAKE_LOCAL_THIS: NameType       = "this$"
@@ -207,7 +207,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     final val Predef: NameType          = "Predef"
     final val ScalaRunTime: NameType    = "ScalaRunTime"
     final val Some: NameType            = "Some"
-    
+
     val _1 : NameType  = "_1"
     val _2 : NameType  = "_2"
     val _3 : NameType  = "_3"
@@ -301,6 +301,8 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
     val conforms: NameType             = "conforms"
+    val context : NameType             = "_context"
+    val contextImplicit : NameType     = "$context"
     val copy: NameType                 = "copy"
     val delayedInit: NameType          = "delayedInit"
     val delayedInitArg: NameType       = "delayedInit$body"
@@ -324,7 +326,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val freeValue : NameType           = "freeValue"
     val genericArrayOps: NameType      = "genericArrayOps"
     val get: NameType                  = "get"
-    val glob : NameType                = "glob"
     val hasNext: NameType              = "hasNext"
     val hashCode_ : NameType           = if (forMSIL) "GetHashCode" else "hashCode"
     val hash_ : NameType               = "hash"
@@ -430,7 +431,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val REFINE_CLASS_NAME: NameType  = "<refinement>"
     val ANON_CLASS_NAME: NameType    = "$anon"
   }
-  
+
   /** For fully qualified type names.
    */
   object fulltpnme extends TypeNames {
@@ -450,11 +451,11 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val RuntimeNothing = toBinary(fulltpnme.RuntimeNothing).toTypeName
     val RuntimeNull    = toBinary(fulltpnme.RuntimeNull).toTypeName
   }
-  
+
   object fullnme extends TermNames {
     type NameType = TermName
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
-    
+
     val MirrorPackage: NameType = "scala.reflect.mirror"
   }
 
@@ -516,7 +517,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
 
     def moduleVarName(name: TermName): TermName =
       newTermNameCached("" + name + MODULE_VAR_SUFFIX)
-    
+
     val ROOTPKG: TermName       = "_root_"
 
     /** Base strings from which synthetic names are derived. */
@@ -531,7 +532,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val INTERPRETER_VAR_PREFIX     = "res"
     val INTERPRETER_WRAPPER_SUFFIX = "$object"
     val WHILE_PREFIX               = "while$"
-    
+
     val EQEQ_LOCAL_VAR: TermName = newTermName(EQEQ_LOCAL_VAR_STRING)
 
     def getCause   = sn.GetCause
@@ -568,18 +569,18 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val UNARY_+ = encode("unary_+")
     val UNARY_- = encode("unary_-")
     val UNARY_! = encode("unary_!")
-    
+
     // Grouped here so Cleanup knows what tests to perform.
     val CommonOpNames   = Set[Name](OR, XOR, AND, EQ, NE)
     val ConversionNames = Set[Name](toByte, toChar, toDouble, toFloat, toInt, toLong, toShort)
     val BooleanOpNames  = Set[Name](ZOR, ZAND, UNARY_!) ++ CommonOpNames
     val NumberOpNames   = (
-         Set[Name](ADD, SUB, MUL, DIV, MOD, LSL, LSR, ASR, LT, LE, GE, GT) 
-      ++ Set(UNARY_+, UNARY_-, UNARY_!) 
+         Set[Name](ADD, SUB, MUL, DIV, MOD, LSL, LSR, ASR, LT, LE, GE, GT)
+      ++ Set(UNARY_+, UNARY_-, UNARY_!)
       ++ ConversionNames
       ++ CommonOpNames
     )
-    
+
     val add: NameType                    = "add"
     val complement: NameType             = "complement"
     val divide: NameType                 = "divide"
@@ -670,7 +671,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       reflMethodName
     )
     def isReflectionCacheName(name: Name) = reflectionCacheNames exists (name startsWith _)
-    
+
     @switch def productAccessorName(j: Int): TermName = j match {
       case 1  => nme._1
       case 2  => nme._2

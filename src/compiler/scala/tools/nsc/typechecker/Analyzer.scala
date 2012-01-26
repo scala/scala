@@ -23,6 +23,7 @@ trait Analyzer extends AnyRef
             with Macros
             with NamesDefaults
             with TypeDiagnostics
+            with ContextErrors
 {
   val global : Global
   import global._

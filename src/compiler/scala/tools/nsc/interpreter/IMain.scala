@@ -269,7 +269,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   /** Create a line manager.  Overridable.  */
   protected def noLineManager = ReplPropsKludge.noThreadCreation(settings)
-  protected def createLineManager(): Line.Manager = new Line.Manager(_classLoader)
+  protected def createLineManager(classLoader: ClassLoader): Line.Manager = new Line.Manager(classLoader)
 
   /** Instantiate a compiler.  Overridable. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -304,7 +304,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   final def ensureClassLoader() {
     if (_classLoader == null) {
       _classLoader = makeClassLoader()
-      _lineManager = if (noLineManager) null else createLineManager()
+      _lineManager = if (noLineManager) null else createLineManager(_classLoader)
     }
   }
   def classLoader: AbstractFileClassLoader = {

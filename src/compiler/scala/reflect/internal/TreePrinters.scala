@@ -397,7 +397,6 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 //          case SelectFromArray(qualifier, name, _) =>
 //          print(qualifier); print(".<arr>"); print(symName(tree, name))
 
-
         case tree =>
           xprintTree(this, tree)
       }

@@ -14,6 +14,7 @@ package immutable
 import generic._
 import mutable.{Builder, ListBuffer}
 import annotation.tailrec
+import java.io._
 
 /** A class for immutable linked lists representing ordered collections
  *  of elements of type.
@@ -315,17 +316,27 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   override def head : B = hd
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
-
-  import java.io._
-
+  
   private def writeObject(out: ObjectOutputStream) {
-    var xs: List[B] = this
-    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
-    out.writeObject(ListSerializeEnd)
+    out.writeObject(ListSerializeStart) // needed to differentiate with the legacy `::` serialization
+    out.writeObject(this.hd)
+    out.writeObject(this.tl)
   }
-
+  
   private def readObject(in: ObjectInputStream) {
-    hd = in.readObject.asInstanceOf[B]
+    val obj = in.readObject()
+    if (obj == ListSerializeStart) {
+      this.hd = in.readObject().asInstanceOf[B]
+      this.tl = in.readObject().asInstanceOf[List[B]]
+    } else oldReadObject(in, obj)
+  }
+  
+  /* The oldReadObject method exists here for compatibility reasons.
+   * :: objects used to be serialized by serializing all the elements to
+   * the output stream directly, but this was broken (see SI-5374).
+   */
+  private def oldReadObject(in: ObjectInputStream, firstObject: AnyRef) {
+    hd = firstObject.asInstanceOf[B]
     assert(hd != ListSerializeEnd)
     var current: ::[B] = this
     while (true) in.readObject match {
@@ -338,6 +349,13 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
         current = list
     }
   }
+  
+  private def oldWriteObject(out: ObjectOutputStream) {
+    var xs: List[B] = this
+    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
+    out.writeObject(ListSerializeEnd)
+  }
+  
 }
 
 /** $factoryInfo
@@ -603,4 +621,9 @@ object List extends SeqFactory[List] {
 
 /** Only used for list serialization */
 @SerialVersionUID(0L - 8476791151975527571L)
+private[scala] case object ListSerializeStart
+
+/** Only used for list serialization */
+@SerialVersionUID(0L - 8476791151975527571L)
 private[scala] case object ListSerializeEnd
+

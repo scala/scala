@@ -3,9 +3,4 @@ t3015.scala:7: error: scrutinee is incompatible with pattern type;
  required: String
   val b(foo) = "foo" 
        ^
-t3015.scala:7: error: type mismatch;
- found   : String with _$1(in object Test) where type +_$1(in object Test)
- required: (some other)_$1(in object Test) where type +(some other)_$1(in object Test)
-  val b(foo) = "foo" 
-      ^
-two errors found
+one error found

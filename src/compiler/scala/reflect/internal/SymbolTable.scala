@@ -271,4 +271,9 @@ abstract class SymbolTable extends api.Universe
 
   /** The phase which has given index as identifier. */
   val phaseWithId: Array[Phase]
+  
+  /** Is this symbol table part of reflexive mirror? In this case
+   *  operations need to be made thread safe.
+   */
+  def inReflexiveMirror = false
 }

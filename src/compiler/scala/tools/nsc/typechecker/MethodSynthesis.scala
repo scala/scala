@@ -32,10 +32,12 @@ trait MethodSynthesis {
   trait MethodSynth {
     self: Namer =>
 
+    import NamerErrorGen._
+
     def enterGetterSetter(tree: ValDef) {
       val ValDef(mods, name, _, _) = tree
       if (nme.isSetterName(name))
-        context.error(tree.pos, "Names of vals or vars may not end in `_='")
+        ValOrValWithSetterSuffixError(tree)
 
       val getter = Getter(tree).createAndEnterSymbol()
 
@@ -43,7 +45,7 @@ trait MethodSynthesis {
         if (mods.isLazy) enterLazyVal(tree, getter)
         else {
           if (mods.isPrivateLocal)
-            context.error(tree.pos, "private[this] not allowed for case class parameters")
+            PrivateThisCaseClassParameterError(tree)
           // Create the setter if necessary.
           if (mods.isMutable)
             Setter(tree).createAndEnterSymbol()
@@ -187,7 +189,7 @@ trait MethodSynthesis {
       override def validate() {
         assert(derivedSym != NoSymbol, tree)
         if (derivedSym.isOverloaded)
-          context.error(derivedSym.pos, derivedSym+" is defined twice")
+          GetterDefinedTwiceError(derivedSym)
 
         super.validate()
       }
@@ -255,8 +257,7 @@ trait MethodSynthesis {
         if (derivedSym == NoSymbol) {
           // the namer decides whether to generate these symbols or not. at that point, we don't
           // have symbolic information yet, so we only look for annotations named "BeanProperty".
-          context.error(tree.pos,
-            "implementation limitation: the BeanProperty annotation cannot be used in a type alias or renamed import")
+          BeanPropertyAnnotationLimitationError(tree)
         }
         super.validate()
       }
@@ -304,9 +305,9 @@ trait MethodSynthesis {
       val beans = beanAccessorsFromNames(tree)
       if (beans.nonEmpty) {
         if (!name(0).isLetter)
-          context.error(tree.pos, "`BeanProperty' annotation can be applied only to fields that start with a letter")
+          BeanPropertyAnnotationFieldWithoutLetterError(tree)
         else if (mods.isPrivate)  // avoids name clashes with private fields in traits
-          context.error(tree.pos, "`BeanProperty' annotation can be applied only to non-private fields")
+          BeanPropertyAnnotationPrivateFieldError(tree)
 
         // Create and enter the symbols here, add the trees in finishGetterSetter.
         beans foreach (_.createAndEnterSymbol())

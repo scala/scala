@@ -15,7 +15,14 @@ trait Symbols { self: Universe =>
      */
     def hasModifier(mod: Modifier.Value): Boolean
 
-    /** The owner of this symbol.
+    /** The owner of this symbol. This is the symbol
+     *  that directly contains the current symbol's definition.
+     *  The `NoSymbol` symbol does not have an owner, and calling this method
+     *  on one causes an internal error.
+     *  The owner of the Scala root class [[scala.reflect.api.mirror.RootClass]]
+     *  and the Scala root object [[scala.reflect.api.mirror.RootPackage]] is `NoSymbol`.
+     *  Every other symbol has a chain of owners that ends in
+     *  [[scala.reflect.api.mirror.RootClass]].
      */
     def owner: Symbol
 
@@ -74,23 +81,6 @@ trait Symbols { self: Universe =>
      */
     def annotations: List[self.AnnotationInfo]
 
-    /** The type of the symbol
-     */
-    def tpe: Type
-
-    /** The info of the symbol. This is like tpe, except for class symbols where the `info`
-     *  describes the contents of the class whereas the `tpe` is a reference to the class.
-     */
-    def info: Type
-
-    /** If this symbol is a class or trait, its self type, otherwise the type of the symbol itself
-     */
-    def typeOfThis: Type
-
-    /** The type `C.this`, where `C` is the current class.
-     */
-    def thisType: Type
-
     /** For a class: the module or case class factory with the same name in the same package.
      *  For all others: NoSymbol
      */
@@ -114,20 +104,43 @@ trait Symbols { self: Universe =>
     /** The top-level class containing this symbol. */
     def toplevelClass: Symbol
 
-    /** The next enclosing class */
+    /** The next enclosing class, or `NoSymbol` if none exists */
     def enclClass      : Symbol
 
-    /** The next enclosing method */
+    /** The next enclosing method, or `NoSymbol` if none exists */
     def enclMethod     : Symbol
 
+    /** Does this symbol represent the definition of term?
+     *  Note that every symbol is either a term or a type.
+     *  So for every symbol `sym`, either `sym.isTerm` is true
+     *  or `sym.isType` is true.
+     */
     def isTerm         : Boolean
+
+    /** Does this symbol represent the definition of type?
+     *  Note that every symbol is either a term or a type.
+     *  So for every symbol `sym`, either `sym.isTerm` is true
+     *  or `sym.isType` is true.
+     */
     def isType         : Boolean
+
+    /** Does this symbol represent the definition of class?
+     *  If yes, `isType` is also guaranteed to be true.
+     */
     def isClass        : Boolean
+
+    /** Does this symbol represent the definition of a type alias?
+     *  If yes, `isType` is also guaranteed to be true.
+     */
     def isAliasType    : Boolean
+
+    /** Does this symbol represent the definition of an abstract type?
+     *  If yes, `isType` is also guaranteed to be true.
+     */
     def isAbstractType : Boolean
 
     /** The type signature of this symbol.
-     *  Note if symbol is a member of a class, one almost always is interested
+     *  Note if the symbol is a member of a class, one almost always is interested
      *  in `typeSigIn` with a site type instead.
      */
     def typeSig: Type
@@ -136,22 +149,44 @@ trait Symbols { self: Universe =>
      */
     def typeSigIn(site: Type): Type
 
-    /** The type constructor corresponding to this type symbol.
-     */
-    def asTypeConstructor: Type  // needed by LiftCode
-
-   /** A type reference that refers to this type symbol
+   /**  A type reference that refers to this type symbol
      *  Note if symbol is a member of a class, one almost always is interested
      *  in `asTypeIn` with a site type instead.
+     *
+     *  Example: Given a class declaration `class C[T] { ... } `, that generates a symbol
+     *  `C`. Then `C.asType` is the type `C[T]`.
+     *
+     *  By contrast, `C.typeSig` would be a type signature of form
+     *  `PolyType(ClassInfoType(...))` that describes type parameters, value
+     *  parameters, parent types, and members of `C`.
      */
     def asType: Type
 
-    /** A type reference that refers to this type symbol seen as a member of given type `site`.
+    /** A type reference that refers to this type symbol seen
+     *  as a member of given type `site`.
      */
     def asTypeIn(site: Type): Type
 
+    /** The type constructor corresponding to this type symbol.
+     *  This is different from `asType` in that type parameters
+     *  are part of results of `asType`, but not of `asTypeConstructor`.
+     *
+     *  Example: Given a class declaration `class C[T] { ... } `, that generates a symbol
+     *  `C`. Then `C.asType` is the type `C[T]`, but `C.asTypeCponstructor` is `C`.
+     */
+    def asTypeConstructor: Type  // needed by LiftCode
+
+    /** If this symbol is a class or trait, its self type, otherwise the type
+     *  of the symbol itself.
+     */
+    def typeOfThis: Type
+
+    /** If this symbol is a class, the type `C.this`, otherwise `NoPrefix`.
+     */
+    def thisType: Type
+
     /** A fresh symbol with given name `name`, position `pos` and flags `flags` that has
-     *  the current symbol as its owner.
+     *  the current symbol as its owner. 
      */
     def newNestedSymbol(name: Name, pos: Position, flags: Long): Symbol // needed by LiftCode
 

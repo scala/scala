@@ -37,7 +37,7 @@ trait Patterns extends ast.TreeDSL {
   // }
 
   private lazy val dummyMethod =
-    new TermSymbol(NoSymbol, NoPosition, newTermName("matching$dummy"))
+    NoSymbol.newTermSymbol(newTermName("matching$dummy"))
 
   // Fresh patterns
   def emptyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)

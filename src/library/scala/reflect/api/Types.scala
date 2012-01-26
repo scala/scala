@@ -20,7 +20,7 @@ trait Types { self: Universe =>
 
     /** The collection of declarations in this type
      */
-    def allDeclarations: Iterable[Symbol]
+    def declarations: Iterable[Symbol]
 
     /** The member with given name, either directly declared or inherited,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -36,7 +36,7 @@ trait Types { self: Universe =>
      *  Members appear in the linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def allMembers: Iterable[Symbol]
+    def members: Iterable[Symbol]
 
     /** An iterable containing all non-private members of this type (directly declared or inherited)
      *  Members appear in the linearization order of their owners.
@@ -125,37 +125,28 @@ trait Types { self: Universe =>
 
     /** Does this type contain a reference to given symbol? */
     def contains(sym: Symbol): Boolean
-  }
 
-  /** This class declares methods that are visible in a `SingleType`.
-   */
-  trait AbsSingletonType extends AbsType {
+    /** If this is a compound type, the list of its parent types;
+     *  otherwise the empty list
+     */
+    def parents: List[Type]
 
-    /** The type underlying a singleton type */
+    /** If this is a singleton type, returns the type underlying it;
+     *  otherwise returns this type itself.
+     */
     def underlying: Type
 
-    /** Widen from singleton type to its underlying non-singleton
-     *  base type by applying one or more `underlying` dereferences,
-     *  identity for all other types.
+    /** If this is a singleton type, widen it to its nearest underlying non-singleton
+     *  base type by applying one or more `underlying` dereferences.
+     *  If this is not a singlecon type, returns this type itself.
      *
+     *  Example:
+     * 
      *  class Outer { class C ; val x: C }
      *  val o: Outer
      *  <o.x.type>.widen = o.C
      */
     def widen: Type
-  }
-
-  /** This class declares methods that are visible in a `CompoundType` (i.e.
-   *  a class/trait/object template or refined type of the form
-   *  {{{
-   *     P_1 with ... with P_m { D_1; ...; D_n }
-   *  }}}
-   *  P_n
-   */
-  trait AbsCompoundType extends AbsType {
-
-    /** The list of parent types of this compound type */
-    def parents: List[Type]
   }
 
   /** The type of Scala types, and also Scala type signatures.
@@ -293,7 +284,7 @@ trait Types { self: Universe =>
 
   /** A subtype of Type representing refined types as well as `ClassInfo` signatures.
    */
-  type CompoundType <: /*AbsCompoundType with*/ Type
+  type CompoundType <: Type
 
   /** The `RefinedType` type defines types of any of the forms on the left,
    *  with their RefinedType representations to the right.
