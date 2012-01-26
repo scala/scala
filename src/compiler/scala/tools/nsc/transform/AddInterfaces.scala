@@ -84,8 +84,14 @@ abstract class AddInterfaces extends InfoTransform {
       atPhase(implClassPhase) {
         log("%s.implClass == %s".format(iface, iface.implClass))
         val implName = nme.implClassName(iface.name)
-        var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
-        impl.info
+        var impl     = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
+
+        // !!! Why does forcing the impl's info here lead to a crash?
+        // See test case pos/trait-force-info.scala for a minimization.
+        // It crashes like this:
+        //
+        // [log lazyvals] trait ContextTrees.implClass == class ContextTrees$class
+        // error: java.lang.AssertionError: assertion failed: (scala.tools.nsc.typechecker.Contexts$NoContext$,scala.tools.nsc.typechecker.Contexts,NoContext$,trait Contexts in package typechecker) /  while parsing (/scala/trunk/build/pack/lib/scala-compiler.jar(scala/tools/nsc/interactive/ContextTrees$class.class),Some(class ContextTrees$class))trait Contexts.NoContext$ linkedModule: <none>List()
 
         val originalImpl = impl
         val originalImplString = originalImpl.hasFlagsToString(-1L)
