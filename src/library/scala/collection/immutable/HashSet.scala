@@ -105,7 +105,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   // TODO: add HashSet2, HashSet3, ...
 
-  class HashSet1[A](private[HashSet] var key: A, private[HashSet] var hash: Int) extends HashSet[A] {
+  class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends HashSet[A] {
     override def size = 1
 
     override def get0(key: A, hash: Int, level: Int): Boolean =
@@ -131,7 +131,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def foreach[U](f: A => U): Unit = f(key)
   }
 
-  private[immutable] class HashSetCollision1[A](private[HashSet] var hash: Int, var ks: ListSet[A])
+  private[immutable] class HashSetCollision1[A](private[HashSet] val hash: Int, val ks: ListSet[A])
             extends HashSet[A] {
 
     override def size = ks.size
@@ -178,7 +178,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   }
 
-  class HashTrieSet[A](private var bitmap: Int, private[collection] var elems: Array[HashSet[A]], private var size0: Int)
+  class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], private val size0: Int)
         extends HashSet[A] {
 
     override def size = size0
