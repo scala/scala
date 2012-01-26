@@ -111,7 +111,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
   // TODO: add HashMap2, HashMap3, ...
 
-  class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[collection] var value: (B @uV), private[collection] var kv: (A,B @uV)) extends HashMap[A,B] {
+  class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[collection] var kv: (A,B @uV)) extends HashMap[A,B] {
     override def size = 1
 
     private[collection] def getKey = key
@@ -176,13 +176,14 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
+    // this method may be called multiple times in a multithreaded environment, but that's ok
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[B1]): HashMap[A, B1] = {
       that.updated0(key, hash, level, value, kv, merger)
     }
   }
 
-  private[collection] class HashMapCollision1[A, +B](private[HashMap] var hash: Int, var kvs: ListMap[A, B @uV])
+  private[collection] class HashMapCollision1[A, +B](private[collection] val hash: Int, val kvs: ListMap[A, B @uV])
           extends HashMap[A, B @uV] {
 
     override def size = kvs.size
@@ -227,9 +228,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   }
 
   class HashTrieMap[A, +B](
-    private[HashMap] var bitmap: Int,
-    private[collection] var elems: Array[HashMap[A, B @uV]],
-    private[HashMap] var size0: Int
+    private[collection] val bitmap: Int,
+    private[collection] val elems: Array[HashMap[A, B @uV]],
+    private[collection] val size0: Int
   ) extends HashMap[A, B @uV] {
 
 /*
