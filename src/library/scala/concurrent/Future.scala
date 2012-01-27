@@ -149,27 +149,18 @@ self =>
    *  Blocking on this future returns a value if the original future is completed with an exception
    *  and throws a corresponding exception if the original future fails.
    */
-  def failed: Future[Throwable] = new Future[Throwable] {
-    def newPromise[S]: Promise[S] = self.newPromise
-    def onComplete[U](func: Either[Throwable, Throwable] => U) = {
-      self.onComplete {
-        case Left(t) => func(Right(t))
-        case Right(v) => func(Left(noSuchElem(v))) // do nothing
-      }
-      this
-    }
-    def await(atMost: Duration)(implicit canawait: CanAwait): Throwable = {
-      var t: Throwable = null
-      try {
-        val res = self.await(atMost)
-        t = noSuchElem(res)
-      } catch {
-        case t: Throwable => return t
-      }
-      throw t
-    }
-    private def noSuchElem(v: T) = 
+  def failed: Future[Throwable] = {
+    def noSuchElem(v: T) = 
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
+    
+    val p = newPromise[Throwable]
+    
+    onComplete {
+      case Left(t) => p success t
+      case Right(v) => p failure noSuchElem(v)
+    }
+    
+    p.future
   }
   
   
@@ -384,6 +375,61 @@ self =>
     }
     
     p.future
+  }
+  
+  /** Applies the side-effecting function to the result of this future, and returns
+   *  a new future with the result of this future.
+   *  
+   *  This method allows one to enforce that the callbacks are executed in a
+   *  specified order.
+   *  
+   *  Note that if one of the chained `andThen` callbacks throws
+   *  an exception, that exception is not propagated to the subsequent `andThen`
+   *  callbacks. Instead, the subsequent `andThen` callbacks are given the original
+   *  value of this future.
+   *  
+   *  The following example prints out `5`:
+   *  
+   *  {{{
+   *  val f = future { 5 }
+   *  f andThen {
+   *    case r => sys.error("runtime exception")
+   *  } andThen {
+   *    case Left(t) => println(t)
+   *    case Right(v) => println(v)
+   *  }
+   *  }}}
+   */
+  def andThen[U](pf: PartialFunction[Either[Throwable, T], U]): Future[T] = {
+    val p = newPromise[T]
+    
+    onComplete {
+      case r =>
+        try if (pf isDefinedAt r) pf(r)
+        finally p complete r
+    }
+    
+    p.future
+  }
+  
+  /** Executes a piece of code once this future is completed, regardless of whether
+   *  or not the future fails or succeeds, and returns a new future with the result of this
+   *  future.
+   *
+   *  This method allows one to enforce ordering.
+   *  
+   *  The below example always executes the `println` calls in order:
+   *  {{{
+   *  val f = future { 5 }
+   *  f ensure {
+   *    println("The value is available.")
+   *  } ensure {
+   *    println("The application can now end.")
+   *  }
+   *  }}}
+   */
+  def ensure[U](body: =>U): Future[T] = andThen {
+    case _ => body
   }
   
   /** Creates a new future which holds the result of either this future or `that` future, depending on
