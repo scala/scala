@@ -149,27 +149,18 @@ self =>
    *  Blocking on this future returns a value if the original future is completed with an exception
    *  and throws a corresponding exception if the original future fails.
    */
-  def failed: Future[Throwable] = new Future[Throwable] {
-    def newPromise[S]: Promise[S] = self.newPromise
-    def onComplete[U](func: Either[Throwable, Throwable] => U) = {
-      self.onComplete {
-        case Left(t) => func(Right(t))
-        case Right(v) => func(Left(noSuchElem(v))) // do nothing
-      }
-      this
-    }
-    def await(atMost: Duration)(implicit canawait: CanAwait): Throwable = {
-      var t: Throwable = null
-      try {
-        val res = self.await(atMost)
-        t = noSuchElem(res)
-      } catch {
-        case t: Throwable => return t
-      }
-      throw t
-    }
-    private def noSuchElem(v: T) = 
+  def failed: Future[Throwable] = {
+    def noSuchElem(v: T) = 
       new NoSuchElementException("Future.failed not completed with a throwable. Instead completed with: " + v)
+    
+    val p = newPromise[Throwable]
+    
+    this onComplete {
+      case Left(t) => p success t
+      case Right(v) => p failure noSuchElem(v)
+    }
+    
+    p.future
   }
   
   
