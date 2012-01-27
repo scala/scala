@@ -414,21 +414,21 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       }).reduceLeft(_ && _)
   }
   
-  // property("groupBy must be equal") = forAll(collectionPairs) {
-  //   case (t, coll) =>
-  //     (for ((f, ind) <- groupByFunctions.zipWithIndex) yield {
-  //       val tgroup = t.groupBy(f)
-  //       val cgroup = coll.groupBy(f)
-  //       if (tgroup != cgroup || cgroup != tgroup) {
-  //         println("from: " + t)
-  //         println("and: " + coll)
-  //         println("groups are: ")
-  //         println(tgroup)
-  //         println(cgroup)
-  //       }
-  //       ("operator " + ind) |: tgroup == cgroup && cgroup == tgroup
-  //     }).reduceLeft(_ && _)
-  // }
+  property("groupBy must be equal") = forAll(collectionPairs) {
+    case (t, coll) =>
+      (for ((f, ind) <- groupByFunctions.zipWithIndex) yield {
+        val tgroup = t.groupBy(f)
+        val cgroup = coll.groupBy(f)
+        if (tgroup != cgroup || cgroup != tgroup) {
+          println("from: " + t)
+          println("and: " + coll)
+          println("groups are: ")
+          println(tgroup)
+          println(cgroup)
+        }
+        ("operator " + ind) |: tgroup == cgroup && cgroup == tgroup
+      }).reduceLeft(_ && _)
+  }
   
 }
 
