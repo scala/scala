@@ -468,7 +468,7 @@ trait Scanners extends ScannersCommon {
             nextChar()
             getOperatorRest()
           } else {
-            syntaxError("illegal character")
+            syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch: Int)) + "'")
             nextChar()
           }
       }
