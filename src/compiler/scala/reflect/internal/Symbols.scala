@@ -1898,36 +1898,43 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
 
+    private case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
+    private def symbolKind: SymbolKind = {
+      val kind =
+        if (isInstanceOf[FreeVar]) ("free variable", "free variable", "FV")
+        else if (isPackage) ("package", "package", "PK")
+        else if (isPackageClass) ("package class", "package", "PKC")
+        else if (isPackageObject) ("package object", "package", "PKO")
+        else if (isPackageObjectClass) ("package object class", "package", "PKOC")
+        else if (isAnonymousClass) ("anonymous class", "anonymous class", "AC")
+        else if (isRefinementClass) ("refinement class", "", "RC")
+        else if (isModule) ("module", "object", "MOD")
+        else if (isModuleClass) ("module class", "object", "MODC")
+        else if (isGetter) ("getter", if (isSourceMethod) "method" else "value", "GET")
+        else if (isSetter) ("setter", if (isSourceMethod) "method" else "value", "SET")
+        else if (isTerm && isLazy) ("lazy value", "lazy value", "LAZ")
+        else if (isVariable) ("field", "variable", "VAR")
+        else if (isTrait) ("trait", "trait", "TRT")
+        else if (isClass) ("class", "class", "CLS")
+        else if (isType) ("type", "type", "TPE")
+        else if (isClassConstructor) ("constructor", "constructor", "CTOR")
+        else if (isSourceMethod) ("method", "method", "METH")
+        else if (isTerm) ("value", "value", "VAL")
+        else ("", "", "???")
+      SymbolKind(kind._1, kind._2, kind._3)
+    }
+
     /** Accurate string representation of symbols' kind, suitable for developers. */
     final def accurateKindString: String =
-      if (isPackage) "package"
-      else if (isPackageClass) "package class"
-      else if (isPackageObject) "package object"
-      else if (isPackageObjectClass) "package object class"
-      else if (isRefinementClass) "refinement class"
-      else if (isModule) "module"
-      else if (isModuleClass) "module class"
-      else if (isGetter) "getter"
-      else if (isSetter) "setter"
-      else if (isVariable) "field"
-      else sanitizedKindString
+      symbolKind.accurate
 
     /** String representation of symbol's kind, suitable for the masses. */
     private def sanitizedKindString: String =
-      if (isPackage || isPackageClass) "package"
-      else if (isModule || isModuleClass) "object"
-      else if (isAnonymousClass) "anonymous class"
-      else if (isRefinementClass) ""
-      else if (isTrait) "trait"
-      else if (isClass) "class"
-      else if (isType) "type"
-      else if (isInstanceOf[FreeVar]) "free variable"
-      else if (isTerm && isLazy) "lazy value"
-      else if (isVariable) "variable"
-      else if (isClassConstructor) "constructor"
-      else if (isSourceMethod) "method"
-      else if (isTerm) "value"
-      else ""
+      symbolKind.sanitized
+
+    /** String representation of symbol's kind, suitable for the masses. */
+    protected[scala] def abbreviatedKindString: String =
+      symbolKind.abbreviation
 
     final def kindString: String =
       if (settings.debug.value) accurateKindString
@@ -1950,11 +1957,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If !settings.debug translates expansions of operators back to operator symbol.
      *  E.g. $eq => =.
      *  If settings.uniqid, adds id.
+     *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = (
-      if (settings.uniqid.value) decodedName + "#" + id
-      else "" + decodedName
+      if (!settings.uniqid.value && !settings.Yshowsymkinds.value) "" + decodedName
+      else if (settings.uniqid.value && !settings.Yshowsymkinds.value) decodedName + "#" + id
+      else if (!settings.uniqid.value && settings.Yshowsymkinds.value) decodedName + "#" + abbreviatedKindString
+      else decodedName + "#" + id + "#" + abbreviatedKindString
     )
+
+    def fullNameString: String = {
+      def recur(sym: Symbol): String = {
+        if (sym.isRoot || sym.isRootPackage || sym == NoSymbol) sym.nameString
+        else if (sym.owner.isEffectiveRoot) sym.nameString
+        else recur(sym.effectiveOwner.enclClass) + "." + sym.nameString
+      }
+
+      recur(this)
+    }
 
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString = if (settings.uniqid.value) "#"+id else ""
