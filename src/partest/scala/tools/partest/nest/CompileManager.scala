@@ -26,7 +26,7 @@ class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
 
   deprecation.value = true
   nowarnings.value  = false
-  encoding.value    = "ISO-8859-1"
+  encoding.value    = "UTF-8"
   classpath.value   = cp
 }
 
