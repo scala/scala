@@ -123,21 +123,15 @@ trait ToolBoxes extends { self: Universe =>
           applyMeth.invoke(result)
         }
       }
-
-      def showAttributed(tree: Tree, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String = {
-        val saved1 = settings.printtypes.value
-        val saved2 = settings.uniqid.value
-        val saved3 = settings.Yshowsymkinds.value
+      
+      def showAttributed(tree: Tree): String = {
+        val saved = settings.printtypes.value
         try {
-          settings.printtypes.value = printTypes
-          settings.uniqid.value = printIds
-          settings.uniqid.value = printKinds
+          settings.printtypes.value = true
+          //settings.uniqid.value = true
           tree.toString
-        } finally {
-          settings.printtypes.value = saved1
-          settings.uniqid.value = saved2
-          settings.Yshowsymkinds.value = saved3
-        }
+        } finally
+          compiler.settings.printtypes.value = saved
       }
     }
 
