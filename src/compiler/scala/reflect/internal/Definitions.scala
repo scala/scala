@@ -14,6 +14,14 @@ import PartialFunction._
 trait Definitions extends reflect.api.StandardDefinitions {
   self: SymbolTable =>
 
+  /** Since both the value parameter types and the result type may
+   *  require access to the type parameter symbols, we model polymorphic
+   *  creation as a function from those symbols to (formal types, result type).
+   *  The Option is to distinguish between nullary methods and empty-param-list
+   *  methods.
+   */
+  private type PolyMethodCreator = List[Symbol] => (Option[List[Type]], Type)
+  
   private def newClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): Symbol = {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
     clazz setInfoAndEnter ClassInfoType(parents, newScope, clazz)
@@ -311,17 +319,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val RemoteInterfaceClass  = getRequiredClass("java.rmi.Remote")
     lazy val RemoteExceptionClass  = getRequiredClass("java.rmi.RemoteException")
 
-    lazy val RepeatedParamClass = newCovariantPolyClass(
-      ScalaPackageClass,
-      tpnme.REPEATED_PARAM_CLASS_NAME,
-      tparam => seqType(tparam.typeConstructor)
-    )
-
-    lazy val JavaRepeatedParamClass = newCovariantPolyClass(
-      ScalaPackageClass,
-      tpnme.JAVA_REPEATED_PARAM_CLASS_NAME,
-      tparam => arrayType(tparam.typeConstructor)
-    )
+    lazy val ByNameParamClass       = specialPolyClass(tpnme.BYNAME_PARAM_CLASS_NAME, COVARIANT)(_ => AnyClass.typeConstructor)
+    lazy val EqualsPatternClass     = specialPolyClass(tpnme.EQUALS_PATTERN_NAME, 0L)(_ => AnyClass.typeConstructor)
+    lazy val JavaRepeatedParamClass = specialPolyClass(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => arrayType(tparam.typeConstructor))
+    lazy val RepeatedParamClass     = specialPolyClass(tpnme.REPEATED_PARAM_CLASS_NAME, COVARIANT)(tparam => seqType(tparam.typeConstructor))
 
     def isByNameParamType(tp: Type)        = tp.typeSymbol == ByNameParamClass
     def isScalaRepeatedParamType(tp: Type) = tp.typeSymbol == RepeatedParamClass
@@ -350,15 +351,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _                                  => false
     }
 
-    lazy val ByNameParamClass = newCovariantPolyClass(
-      ScalaPackageClass,
-      tpnme.BYNAME_PARAM_CLASS_NAME,
-      tparam => AnyClass.typeConstructor
-    )
-    lazy val EqualsPatternClass = {
-      val clazz = newClass(ScalaPackageClass, tpnme.EQUALS_PATTERN_NAME, Nil)
-      clazz setInfo polyType(List(newTypeParam(clazz, 0)), ClassInfoType(anyparam, newScope, clazz))
-    }
     lazy val MatchingStrategyClass = getRequiredClass("scala.MatchingStrategy")
 
     // collections classes
@@ -637,8 +629,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
     
     // members of class scala.Any
-    lazy val Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
-    lazy val Any_!= = newMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
+    lazy val Any_==       = newMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
+    lazy val Any_!=       = newMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
     lazy val Any_equals   = newMethod(AnyClass, nme.equals_, anyparam, booltype)
     lazy val Any_hashCode = newMethod(AnyClass, nme.hashCode_, Nil, inttype)
     lazy val Any_toString = newMethod(AnyClass, nme.toString_, Nil, stringtype)
@@ -653,12 +645,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // Since getClass is not actually a polymorphic method, this requires compiler
     // participation.  At the "Any" level, the return type is Class[_] as it is in
     // java.lang.Object.  Java also special cases the return type.
-    lazy val Any_getClass =
-      newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
-    lazy val Any_isInstanceOf = newPolyMethod(
-       AnyClass, nme.isInstanceOf_, tparam => NullaryMethodType(booltype)) setFlag FINAL
-    lazy val Any_asInstanceOf = newPolyMethod(
-      AnyClass, nme.asInstanceOf_, tparam => NullaryMethodType(tparam.typeConstructor)) setFlag FINAL
+    lazy val Any_getClass     = newMethod(AnyClass, nme.getClass_, Nil, getMember(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
+    lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => booltype)
+    lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
 
     // members of class java.lang.{ Object, String }
     lazy val Object_## = newMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
@@ -666,15 +655,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype, FINAL)
     lazy val Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype, FINAL)
     lazy val Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
-    lazy val Object_synchronized = newPolyMethodCon(
-      ObjectClass, nme.synchronized_,
-      tparam => msym => MethodType(msym.newSyntheticValueParams(List(tparam.typeConstructor)), tparam.typeConstructor)) setFlag FINAL
-    lazy val Object_isInstanceOf = newPolyMethod(
-      ObjectClass, newTermName("$isInstanceOf"),
-      tparam => MethodType(List(), booltype)) setFlag (FINAL | SYNTHETIC)
-    lazy val Object_asInstanceOf = newPolyMethod(
-      ObjectClass, newTermName("$asInstanceOf"),
-      tparam => MethodType(List(), tparam.typeConstructor)) setFlag (FINAL | SYNTHETIC)
+    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC)(_ => booltype)
+    lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC)(_.typeConstructor)
+    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps => 
+      (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
+    )
     lazy val String_+ = newMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
 
     def Object_getClass  = getMember(ObjectClass, nme.getClass_)
@@ -685,7 +670,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def Object_equals    = getMember(ObjectClass, nme.equals_)
     def Object_hashCode  = getMember(ObjectClass, nme.hashCode_)
     def Object_toString  = getMember(ObjectClass, nme.toString_)
-
 
     // boxed classes
     lazy val ObjectRefClass         = getRequiredClass("scala.runtime.ObjectRef")
@@ -831,39 +815,36 @@ trait Definitions extends reflect.api.StandardDefinitions {
      */
     private def getModuleOrClass(path: Name): Symbol = getModuleOrClass(path, path.length)
 
-    private def newCovariantPolyClass(owner: Symbol, name: TypeName, parent: Symbol => Type): Symbol = {
-      val clazz  = newClass(owner, name, List())
-      val tparam = newTypeParam(clazz, 0) setFlag COVARIANT
-      val p      = parent(tparam)
-/*      p.typeSymbol.initialize
-      println(p.typeSymbol + " flags: " + Flags.flagsToString(p.typeSymbol.flags))
-      val parents = /*if (p.typeSymbol.isTrait)
-        List(definitions.AnyRefClass.tpe, p)
-                    else*/ List(p)
-      println("creating " + name + " with parents " + parents) */
-      clazz.setInfo(
-        polyType(
-          List(tparam),
-          ClassInfoType(List(AnyRefClass.tpe, p), newScope, clazz)))
-    }
-
     private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol =
       owner.newAliasType(name) setInfoAndEnter alias
-
-    /** tcon receives the type parameter symbol as argument */
-    private def newPolyMethod(owner: Symbol, name: TermName, tcon: Symbol => Type): Symbol =
-      newPolyMethodCon(owner, name, tparam => msym => tcon(tparam))
-
-    /** tcon receives the type parameter symbol and the method symbol as arguments */
-    private def newPolyMethodCon(owner: Symbol, name: TermName, tcon: Symbol => Symbol => Type): Symbol = {
-      val msym   = owner.info.decls enter owner.newMethod(name.encode)
-      val tparam = newTypeParam(msym, 0)
-
-      msym setInfo polyType(List(tparam), tcon(tparam)(msym))
+    
+    private def specialPolyClass(name: TypeName, flags: Long)(parentFn: Symbol => Type): Symbol = {
+      val clazz   = newClass(ScalaPackageClass, name, Nil)
+      val tparam  = clazz.newSyntheticTypeParam("T0", flags)
+      val parents = List(AnyRefClass.tpe, parentFn(tparam))
+      
+      clazz setInfo polyType(List(tparam), ClassInfoType(parents, newScope, clazz))
     }
+    
+    def newPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): Symbol = {
+      val msym    = owner.newMethod(name.encode, NoPosition, flags)
+      val tparams = msym.newSyntheticTypeParams(typeParamCount)
+      val mtpe    = createFn(tparams) match {
+        case (Some(formals), restpe) => MethodType(msym.newSyntheticValueParams(formals), restpe)
+        case (_, restpe)             => NullaryMethodType(restpe)
+      }
 
-    private def newTypeParam(owner: Symbol, index: Int): Symbol =
-      owner.newTypeParameter(newTypeName("T" + index)) setInfo TypeBounds.empty
+      msym setInfoAndEnter polyType(tparams, mtpe)
+    }
+    
+    /** T1 means one type parameter.
+     */
+    def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): Symbol = {
+      newPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
+    }
+    def newT1NoParamsMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): Symbol = {
+      newPolyMethod(1, owner, name, flags)(tparams => (Some(Nil), createFn(tparams.head)))
+    }
 
     lazy val boxedClassValues = boxedClass.values.toSet
     lazy val isUnbox = unboxMethod.values.toSet
