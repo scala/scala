@@ -797,7 +797,7 @@ abstract class Erasure extends AddInterfaces
                              // && (bridge.paramss.nonEmpty && bridge.paramss.head.nonEmpty && bridge.paramss.head.tail.isEmpty) // does the first argument list has exactly one argument -- for user-defined unapplies we can't be sure
                              && !(atPhase(phase.next)(member.tpe <:< other.tpe))) { // no static guarantees (TODO: is the subtype test ever true?)
                             import CODE._
-                            val typeTest = gen.mkIsInstanceOf(REF(bridge.paramss.head.head), member.tpe.params.head.tpe, any = true, wrapInApply = true) // any = true since we're before erasure (?), wrapInapply is true since we're after uncurry
+                            val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe, any = true, wrapInApply = true) // any = true since we're before erasure (?), wrapInapply is true since we're after uncurry
                             // println("unapp type test: "+ typeTest)
                             IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
                           } else bridgingCall

@@ -1053,7 +1053,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                 else accessedRef match {
                   case Literal(_) => accessedRef
                   case _ =>
-                    val init   = Assign(accessedRef, Ident(sym.paramss.head.head))
+                    val init   = Assign(accessedRef, Ident(sym.firstParam))
                     val getter = sym.getter(clazz)
 
                     if (!needsInitFlag(getter)) init

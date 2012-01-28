@@ -17,6 +17,139 @@ trait MethodSynthesis {
 
   import global._
   import definitions._
+  import CODE._
+  
+  object synthesisUtil {
+    type M[T]  = Manifest[T]
+    type CM[T] = ClassManifest[T]
+
+    def ValOrDefDef(sym: Symbol, body: Tree) =
+      if (sym.isLazy) ValDef(sym, body)
+      else DefDef(sym, body)
+
+    def applyTypeInternal(manifests: List[M[_]]): Type = {
+      val symbols = manifests map manifestToSymbol
+      val container :: args = symbols
+      val tparams = container.typeConstructor.typeParams
+
+      // Conservative at present - if manifests were more usable this could do a lot more.
+      require(symbols forall (_ ne NoSymbol), "Must find all manifests: " + symbols)
+      require(container.owner.isPackageClass, "Container must be a top-level class in a package: " + container)
+      require(tparams.size == args.size, "Arguments must match type constructor arity: " + tparams + ", " + args)
+
+      typeRef(container.typeConstructor.prefix, container, args map (_.tpe))
+    }
+    
+    def companionType[T](implicit m: M[T]) =
+      getRequiredModule(m.erasure.getName).tpe
+
+    // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
+    def applyType[CC](implicit m1: M[CC]): Type =
+      applyTypeInternal(List(m1))
+
+    def applyType[CC[X1], X1](implicit m1: M[CC[_]], m2: M[X1]): Type =
+      applyTypeInternal(List(m1, m2))
+
+    def applyType[CC[X1, X2], X1, X2](implicit m1: M[CC[_,_]], m2: M[X1], m3: M[X2]): Type =
+      applyTypeInternal(List(m1, m2, m3))
+
+    def applyType[CC[X1, X2, X3], X1, X2, X3](implicit m1: M[CC[_,_,_]], m2: M[X1], m3: M[X2], m4: M[X3]): Type =
+      applyTypeInternal(List(m1, m2, m3, m4))
+
+    def newMethodType[F](owner: Symbol)(implicit m: Manifest[F]): Type = {
+      val fnSymbol = manifestToSymbol(m)
+      assert(fnSymbol isSubClass FunctionClass(m.typeArguments.size - 1), (owner, m))
+      val symbols = m.typeArguments map (m => manifestToSymbol(m))
+      val formals = symbols.init map (_.typeConstructor)
+      val params  = owner newSyntheticValueParams formals
+
+      MethodType(params, symbols.last.typeConstructor)
+    }
+  }
+  import synthesisUtil._
+
+  class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
+    private def isOverride(name: TermName) =
+      clazzMember(name).alternatives exists (sym => !sym.isDeferred && (sym.owner != clazz))
+    
+    def newMethodFlags(name: TermName) = {
+      val overrideFlag = if (isOverride(name)) OVERRIDE else 0L
+      overrideFlag | SYNTHETIC
+    }
+    def newMethodFlags(method: Symbol) = {
+      val overrideFlag = if (isOverride(method.name)) OVERRIDE else 0L
+      (method.flags | overrideFlag | SYNTHETIC) & ~DEFERRED
+    }
+
+    private def finishMethod(method: Symbol, f: Symbol => Tree): Tree =
+      logResult("finishMethod")(localTyper typed ValOrDefDef(method, f(method)))
+
+    private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
+      val m = clazz.newMethod(name.toTermName, clazz.pos.focus, newMethodFlags(name))
+      finishMethod(m setInfoAndEnter info, f)
+    }
+    private def createInternal(name: Name, f: Symbol => Tree, infoFn: Symbol => Type): Tree = {
+      val m = clazz.newMethod(name.toTermName, clazz.pos.focus, newMethodFlags(name))
+      finishMethod(m setInfoAndEnter infoFn(m), f)
+    }
+    private def cloneInternal(original: Symbol, f: Symbol => Tree, name: Name): Tree = {
+      val m = original.cloneSymbol(clazz, newMethodFlags(original)) setPos clazz.pos.focus
+      m.name = name
+      finishMethod(clazz.info.decls enter m, f)
+    }
+
+    private def cloneInternal(original: Symbol, f: Symbol => Tree): Tree =
+      cloneInternal(original, f, original.name)
+
+    def clazzMember(name: Name)  = clazz.info nonPrivateMember name
+    def typeInClazz(sym: Symbol) = clazz.thisType memberType sym
+
+    /** Function argument takes the newly created method symbol of
+     *  the same type as `name` in clazz, and returns the tree to be
+     *  added to the template.
+     */
+    def overrideMethod(name: Name)(f: Symbol => Tree): Tree =
+      overrideMethod(clazzMember(name))(f)
+
+    def overrideMethod(original: Symbol)(f: Symbol => Tree): Tree =
+      cloneInternal(original, sym => f(sym setFlag OVERRIDE))
+
+    def deriveMethod(original: Symbol, nameFn: Name => Name)(f: Symbol => Tree): Tree =
+      cloneInternal(original, f, nameFn(original.name))
+
+    def createMethod(name: Name, paramTypes: List[Type], returnType: Type)(f: Symbol => Tree): Tree =
+      createInternal(name, f, (m: Symbol) => MethodType(m newSyntheticValueParams paramTypes, returnType))
+
+    def createMethod(name: Name, returnType: Type)(f: Symbol => Tree): Tree =
+      createInternal(name, f, NullaryMethodType(returnType))
+
+    def createMethod(original: Symbol)(f: Symbol => Tree): Tree =
+      createInternal(original.name, f, original.info)
+
+    def forwardMethod(original: Symbol, newMethod: Symbol)(transformArgs: List[Tree] => List[Tree]): Tree =
+      createMethod(original)(m => gen.mkMethodCall(newMethod, transformArgs(m.paramss.head map Ident)))
+
+    def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree) = {
+      createMethod(name, List(IntClass.tpe), returnType) { m =>
+        val arg0    = Ident(m.firstParam)
+        val default = DEFAULT ==> THROW(IndexOutOfBoundsExceptionClass, arg0)
+        val cases   = range.map(num => CASE(LIT(num)) ==> f(num)).toList :+ default
+
+        Match(arg0, cases)
+      }
+    }
+
+    // def foo() = constant
+    def constantMethod(name: Name, value: Any): Tree = {
+      val constant = Constant(value)
+      createMethod(name, Nil, constant.tpe)(_ => Literal(constant))
+    }
+    // def foo = constant
+    def constantNullary(name: Name, value: Any): Tree = {
+      val constant = Constant(value)
+      createMethod(name, constant.tpe)(_ => Literal(constant))
+    }
+  }
 
   /** There are two key methods in here.
    *

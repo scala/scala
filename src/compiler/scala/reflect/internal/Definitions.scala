@@ -421,22 +421,25 @@ trait Definitions extends reflect.api.StandardDefinitions {
      *  information into the toString method.
      */
     def manifestToType(m: OptManifest[_]): Type = m match {
-      case x: AnyValManifest[_] =>
-        getClassIfDefined("scala." + x).tpe
       case m: ClassManifest[_] =>
-        val name = m.erasure.getName
-        if (name endsWith nme.MODULE_SUFFIX_STRING)
-          getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING).tpe
-        else {
-          val sym  = getClassIfDefined(name)
-          val args = m.typeArguments
-
-          if (sym eq NoSymbol) NoType
-          else if (args.isEmpty) sym.tpe
-          else appliedType(sym.typeConstructor, args map manifestToType)
-        }
+        val sym  = manifestToSymbol(m)
+        val args = m.typeArguments
+      
+        if ((sym eq NoSymbol) || args.isEmpty) sym.tpe
+        else appliedType(sym.typeConstructor, args map manifestToType)
       case _ =>
         NoType
+    }
+
+    def manifestToSymbol(m: ClassManifest[_]): Symbol = m match {
+      case x: scala.reflect.AnyValManifest[_] =>
+        getMember(ScalaPackageClass, newTypeName("" + x))
+      case _                                  => 
+        val name = m.erasure.getName
+        if (name endsWith nme.MODULE_SUFFIX_STRING)
+          getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING)
+        else
+          getClassIfDefined(name)
     }
 
     // The given symbol represents either String.+ or StringAdd.+
@@ -584,6 +587,14 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def elementType(container: Symbol, tp: Type): Type = tp match {
       case TypeRef(_, `container`, arg :: Nil)  => arg
       case _                                    => NoType
+    }
+
+    /** To avoid unchecked warnings on polymorphic classes, translate
+     *  a Foo[T] into a Foo[_] for use in the pattern matcher.
+     */
+    def typeCaseType(clazz: Symbol) = clazz.tpe.normalize match {
+      case TypeRef(_, sym, args) if args.nonEmpty => newExistentialType(sym.typeParams, clazz.tpe)
+      case tp                                     => tp
     }
 
     def seqType(arg: Type)       = appliedType(SeqClass.typeConstructor, List(arg))

@@ -1832,6 +1832,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       }
     }
 
+    /** Remove any access boundary and clear flags PROTECTED | PRIVATE.
+     */
+    def makePublic = this setPrivateWithin NoSymbol resetFlag AccessFlags
+    
+    /** The first parameter to the first argument list of this method,
+     *  or NoSymbol if inapplicable.
+     */
+    def firstParam = info.params match {
+      case p :: _ => p
+      case _      => NoSymbol
+    }
+
     /** change name by appending $$<fully-qualified-name-of-class `base`>
      *  Do the same for any accessed symbols or setters/getters
      */
