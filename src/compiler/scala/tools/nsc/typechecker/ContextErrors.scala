@@ -142,7 +142,7 @@ trait ContextErrors {
           case _ =>
             found
         }
-        assert(!found.isErroneous && !req.isErroneous)
+        assert(!found.isErroneous && !req.isErroneous, (found, req))
         
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(found, req, infer.isPossiblyMissingArgs(found, req))) )
         if (settings.explaintypes.value)
@@ -171,6 +171,8 @@ trait ContextErrors {
         NormalTypeError(tree, "reference to " + name + " is ambiguous;\n" + msg)
 
       def SymbolNotFoundError(tree: Tree, name: Name, owner: Symbol, startingIdentCx: Context) = {
+        /*** Disabled pending investigation of performance impact.
+
         // This laborious determination arrived at to keep the tests working.
         val calcSimilar = (
           name.length > 2 && (
@@ -196,6 +198,8 @@ trait ContextErrors {
             similarString("" + name, allowedStrings)
           }
         }
+        */
+        val similar = ""
         NormalTypeError(tree, "not found: "+decodeWithKind(name, owner) + similar)
       }
 

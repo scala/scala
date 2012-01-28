@@ -1,0 +1,5 @@
+t3854.scala:1: error: class Bar needs to be abstract, since method foo in trait Foo of type [G[_]](implicit n: N[G,F])X[F] is not defined
+(Note that N[G,F] does not match M[G])
+class Bar[F[_]] extends Foo[F] {
+      ^
+one error found

@@ -585,7 +585,7 @@ trait Contexts { self: Analyzer =>
             debuglog("collect local implicits " + scope.toList)//DEBUG
             collectImplicits(scope.toList, NoPrefix)
           } else if (imports != nextOuter.imports) {
-            assert(imports.tail == nextOuter.imports)
+            assert(imports.tail == nextOuter.imports, (imports, nextOuter.imports))
             collectImplicitImports(imports.head)
           } else if (owner.isPackageClass) {
             // the corresponding package object may contain implicit members.

@@ -39,8 +39,6 @@ trait TypeDiagnostics {
   import definitions._
   import global.typer.{ infer, context }
 
-  private def currentUnit = currentRun.currentUnit
-
   /** The common situation of making sure nothing is erroneous could be
    *  nicer if Symbols, Types, and Trees all implemented some common interface
    *  in which isErroneous and similar would be placed.

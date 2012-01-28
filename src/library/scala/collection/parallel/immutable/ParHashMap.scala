@@ -304,14 +304,21 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), Has
       evaluateCombiners(trie)
       trie.asInstanceOf[HashMap[K, Repr]]
     }
-    private def evaluateCombiners(trie: HashMap[K, Combiner[V, Repr]]): Unit = trie match {
+    private def evaluateCombiners(trie: HashMap[K, Combiner[V, Repr]]): HashMap[K, Repr] = trie match {
       case hm1: HashMap.HashMap1[_, _] =>
-        hm1.asInstanceOf[HashMap.HashMap1[K, Repr]].value = hm1.value.result
-        hm1.kv = null
+        val evaledvalue = hm1.value.result
+        new HashMap.HashMap1[K, Repr](hm1.key, hm1.hash, evaledvalue, null)
       case hmc: HashMap.HashMapCollision1[_, _] =>
-        hmc.asInstanceOf[HashMap.HashMapCollision1[K, Repr]].kvs = hmc.kvs map { p => (p._1, p._2.result) }
-      case htm: HashMap.HashTrieMap[_, _] =>
-        for (hm <- htm.elems) evaluateCombiners(hm)
+        val evaledkvs = hmc.kvs map { p => (p._1, p._2.result) }
+        new HashMap.HashMapCollision1[K, Repr](hmc.hash, evaledkvs)
+      case htm: HashMap.HashTrieMap[k, v] =>
+        var i = 0
+        while (i < htm.elems.length) {
+          htm.elems(i) = evaluateCombiners(htm.elems(i)).asInstanceOf[HashMap[k, v]]
+          i += 1
+        }
+        htm.asInstanceOf[HashMap[K, Repr]]
+      case empty => empty.asInstanceOf[HashMap[K, Repr]]
     }
     def split = {
       val fp = howmany / 2

@@ -223,7 +223,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       try unit.body = transform(unit.body)
       catch {
         case ex: Exception =>
-          println("unhandled exception while transforming "+unit)
+          println(supplementErrorMessage("unhandled exception while transforming "+unit))
           throw ex
       }
     }

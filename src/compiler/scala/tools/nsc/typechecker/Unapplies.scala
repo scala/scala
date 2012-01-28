@@ -25,7 +25,7 @@ trait Unapplies extends ast.TreeDSL
   
   /** returns type list for return type of the extraction */
   def unapplyTypeList(ufn: Symbol, ufntpe: Type) = {
-    assert(ufn.isMethod)
+    assert(ufn.isMethod, ufn)
     //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
     ufn.name match {
       case nme.unapply    => unapplyTypeListFromReturnType(ufntpe)

@@ -1,4 +1,4 @@
-t2870.scala:1: error: not found: type Jar (similar: Jars)
+t2870.scala:1: error: not found: type Jar
 class Jars(jar: Jar)
                 ^
 t2870.scala:4: error: encountered unrecoverable cycle resolving import.

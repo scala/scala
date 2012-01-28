@@ -290,11 +290,11 @@ self =>
       inScalaPackage = false
       currentPackage = ""
     }
-    private lazy val anyValNames: Set[Name] = tpnme.ScalaValueNames.toSet + tpnme.AnyVal
+    private lazy val primitiveNames: Set[Name] = tpnme.ScalaValueNames.toSet
 
-    private def inScalaRootPackage       = inScalaPackage && currentPackage == "scala"
-    private def isScalaArray(name: Name) = inScalaRootPackage && name == tpnme.Array
-    private def isAnyValType(name: Name) = inScalaRootPackage && anyValNames(name)
+    private def inScalaRootPackage          = inScalaPackage && currentPackage == "scala"
+    private def isScalaArray(name: Name)    = inScalaRootPackage && name == tpnme.Array
+    private def isPrimitiveType(name: Name) = inScalaRootPackage && primitiveNames(name)
 
     def parseStartRule: () => Tree
 
@@ -2753,9 +2753,15 @@ self =>
 
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
-        if (isAnyValType(name)) {
-          val parent = if (name == tpnme.AnyVal) tpnme.Any else tpnme.AnyVal
-          Template(List(scalaDot(parent)), self, body)
+        if (isPrimitiveType(name)) {
+          Template(List(scalaDot(tpnme.AnyVal)), self, body)
+        }
+        else if (parents0 exists isReferenceToAnyVal) {
+          // TODO - enforce @inline annotation, and no other parents
+          Template(parents0, self, body)
+        }
+        else if (name == tpnme.AnyVal) {
+          Template(List(scalaDot(tpnme.Any)), self, body)
         }
         else {
           val parents = (
