@@ -534,7 +534,7 @@ trait ContextErrors {
         NormalTypeError(parent, "illegal inheritance from final "+mixin)
 
       def ParentSealedInheritanceError(parent: Tree, psym: Symbol) =
-        NormalTypeError(parent, "illegal inheritance from sealed " + psym + ": " + context.unit.source.file.canonicalPath + " != " + psym.sourceFile.canonicalPath)
+        NormalTypeError(parent, "illegal inheritance from sealed " + psym)// + ": " + context.unit.source.file.canonicalPath + " != " + psym.sourceFile.canonicalPath)
 
       def ParentSelfTypeConformanceError(parent: Tree, selfType: Type) =
         NormalTypeError(parent,

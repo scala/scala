@@ -182,7 +182,7 @@ trait AnyValReps {
     def classLines: List[String]
     def objectLines: List[String]
     def commonClassLines = List(
-      "def getClass(): Class[@name@]"
+      "override def getClass(): Class[@name@]"
     )
 
     def lcname = name.toLowerCase
@@ -429,7 +429,7 @@ def &(x: Boolean): Boolean  = sys.error("stub")
   */
 def ^(x: Boolean): Boolean  = sys.error("stub")
 
-def getClass(): Class[Boolean] = sys.error("stub")
+override def getClass(): Class[Boolean] = sys.error("stub")
     """.trim.lines.toList
 
     def objectLines = interpolate(allCompanions).lines.toList
@@ -443,7 +443,7 @@ def getClass(): Class[Boolean] = sys.error("stub")
  */
 """
     def classLines  = List(
-      """def getClass(): Class[Unit] = sys.error("stub")"""
+      """override def getClass(): Class[Unit] = sys.error("stub")"""
     )
     def objectLines = interpolate(allCompanions).lines.toList
 

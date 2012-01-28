@@ -1336,13 +1336,9 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           if (psym.isFinal)
             pending += ParentFinalInheritanceError(parent, psym)
 
-          if (psym.isSealed && !phase.erasedTypes) {
-            // AnyVal is sealed, but we have to let the value classes through manually
-            if (context.unit.source.file == psym.sourceFile || isValueClass(context.owner))
-              psym addChild context.owner
-            else
-              pending += ParentSealedInheritanceError(parent, psym)
-          }
+          if (psym.isSealed && !phase.erasedTypes)
+            pending += ParentSealedInheritanceError(parent, psym)
+
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
               !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)

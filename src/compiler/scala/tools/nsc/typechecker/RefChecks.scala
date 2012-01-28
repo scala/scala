@@ -685,10 +685,12 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           unit.error(clazz.pos, abstractErrorMessage)
       } else if (clazz.isTrait) {
         // prevent abstract methods in interfaces that override final members in Object; see #4431
-        for (decl <- clazz.info.decls.iterator) {
-          val overridden = decl.overriddenSymbol(ObjectClass)
-          if (overridden.isFinal)
-            unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
+        if (!(clazz isSubClass AnyValClass)) {
+          for (decl <- clazz.info.decls.iterator) {
+            val overridden = decl.overriddenSymbol(ObjectClass)
+            if (overridden.isFinal)
+              unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
+          }
         }
       }
 
