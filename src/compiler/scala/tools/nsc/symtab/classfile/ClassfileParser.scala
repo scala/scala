@@ -392,7 +392,7 @@ abstract class ClassfileParser {
     }
 
     def getBytes(indices: List[Int]): Array[Byte] = {
-      assert(!indices.isEmpty)
+      assert(!indices.isEmpty, indices)
       var value = values(indices.head).asInstanceOf[Array[Byte]]
       if (value eq null) {
         val bytesBuffer = ArrayBuffer.empty[Byte]
@@ -679,7 +679,7 @@ abstract class ClassfileParser {
     var index = 0
     val end = sig.length
     def accept(ch: Char) {
-      assert(sig(index) == ch)
+      assert(sig(index) == ch, (sig(index), ch))
       index += 1
     }
     def subName(isDelimiter: Char => Boolean): Name = {
@@ -736,7 +736,7 @@ abstract class ClassfileParser {
                   }
                 }
                 accept('>')
-                assert(xs.length > 0)
+                assert(xs.length > 0, tp)
                 newExistentialType(existentials.toList, typeRef(pre, classSym, xs.toList))
               } else if (classSym.isMonomorphicType) {
                 tp
@@ -750,7 +750,7 @@ abstract class ClassfileParser {
                 res
               }
             case tp =>
-              assert(sig(index) != '<')
+              assert(sig(index) != '<', tp)
               tp
           }
 
@@ -776,7 +776,7 @@ abstract class ClassfileParser {
           appliedType(definitions.ArrayClass.tpe, List(elemtp))
         case '(' =>
           // we need a method symbol. given in line 486 by calling getType(methodSym, ..)
-          assert(sym ne null)
+          assert(sym ne null, sig)
           val paramtypes = new ListBuffer[Type]()
           while (sig(index) != ')') {
             paramtypes += objToAny(sig2type(tparams, skiptvs))
@@ -809,7 +809,7 @@ abstract class ClassfileParser {
     var tparams = classTParams
     val newTParams = new ListBuffer[Symbol]()
     if (sig(index) == '<') {
-      assert(sym != null)
+      assert(sym != null, sig)
       index += 1
       val start = index
       while (sig(index) != '>') {
@@ -974,18 +974,18 @@ abstract class ClassfileParser {
 
     def parseScalaSigBytes: Option[ScalaSigBytes] = {
       val tag = in.nextByte.toChar
-      assert(tag == STRING_TAG)
+      assert(tag == STRING_TAG, tag)
       Some(ScalaSigBytes(pool getBytes in.nextChar))
     }
 
     def parseScalaLongSigBytes: Option[ScalaSigBytes] = {
       val tag = in.nextByte.toChar
-      assert(tag == ARRAY_TAG)
+      assert(tag == ARRAY_TAG, tag)
       val stringCount = in.nextChar
       val entries =
         for (i <- 0 until stringCount) yield {
           val stag = in.nextByte.toChar
-          assert(stag == STRING_TAG)
+          assert(stag == STRING_TAG, stag)
           in.nextChar.toInt
         }
       Some(ScalaSigBytes(pool.getBytes(entries.toList)))
@@ -1208,7 +1208,12 @@ abstract class ClassfileParser {
                 atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
               else
                 getMember(sym, innerName.toTypeName)
-            assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members)
+
+            assert(s ne NoSymbol, 
+              "" + ((externalName, outerName, innerName, sym.fullLocationString)) + " / " +
+              " while parsing " + ((in.file, busy)) +
+              sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members
+            )
             s
 
           case None =>

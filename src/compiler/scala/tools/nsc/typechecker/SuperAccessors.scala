@@ -453,7 +453,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (referencingClass.isSubClass(sym.owner.enclClass)
           || referencingClass.thisSym.isSubClass(sym.owner.enclClass)
           || referencingClass.enclosingPackageClass == sym.owner.enclosingPackageClass) {
-        assert(referencingClass.isClass)
+        assert(referencingClass.isClass, referencingClass)
         referencingClass
       } else if(referencingClass.owner.enclClass != NoSymbol)
         hostForAccessorOf(sym, referencingClass.owner.enclClass)

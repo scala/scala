@@ -1406,11 +1406,10 @@ trait Namers extends MethodSynthesis {
         if (info0 ne info1) sym setInfo info1
       }
 
-      if (sym.isClass && sym.hasAnnotation(ScalaInlineClass)) {
+      if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
         ensureParent(NotNullClass)
         sym setFlag FINAL
       }
-
 
       if (sym.isDeferred) {
         // Is this symbol type always allowed the deferred flag?

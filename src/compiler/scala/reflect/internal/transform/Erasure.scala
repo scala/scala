@@ -101,7 +101,7 @@ trait Erasure {
           ClassInfoType(
             if (clazz == ObjectClass || isValueClass(clazz)) Nil
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
-            else removeDoubleObject(parents map this),
+            else removeLaterObjects(parents map this),
             decls, clazz)
         case _ =>
           mapOver(tp)
@@ -220,11 +220,9 @@ trait Erasure {
     typeRef(erasure(sym, sym.owner.tpe), sym, List())
 
   /** Remove duplicate references to class Object in a list of parent classes */
-  private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
-    case List() => List()
-    case tp :: tps1 =>
-      if (tp.typeSymbol == ObjectClass) tp :: tps1.filter(_.typeSymbol != ObjectClass)
-      else tp :: removeDoubleObject(tps1)
+  private def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
+    case tp :: rest => tp :: (rest filter (_.typeSymbol != ObjectClass))
+    case _ => tps
   }
 
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:

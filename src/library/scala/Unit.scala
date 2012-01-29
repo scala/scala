@@ -17,7 +17,7 @@ package scala
  *  method which is declared `void`.
  */
 final class Unit extends AnyVal {
-  def getClass(): Class[Unit] = sys.error("stub")
+  override def getClass(): Class[Unit] = sys.error("stub")
 }
 
 object Unit extends AnyValCompanion {
