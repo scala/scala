@@ -1,0 +1,6 @@
+t4515.scala:37: error: type mismatch;
+ found   : _0(in value $anonfun) where type _0(in value $anonfun)
+ required: (some other)_0(in value $anonfun) where type +(some other)_0(in value $anonfun)
+        handler.onEvent(target, ctx.getEvent, node, ctx)
+                                    ^
+one error found
