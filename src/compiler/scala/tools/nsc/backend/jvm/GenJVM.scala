@@ -859,6 +859,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
       if (method.native)
         flags |= ACC_NATIVE
 
+      if (m.symbol.isSynchronized)
+        flags |= ACC_SYNCHRONIZED
+
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,

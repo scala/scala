@@ -734,6 +734,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val ScalaStrictFPAttr          = getRequiredClass("scala.annotation.strictfp")
     lazy val SerializableAttr           = getRequiredClass("scala.annotation.serializable") // @serializable is deprecated
     lazy val SwitchClass                = getRequiredClass("scala.annotation.switch")
+    lazy val SynchronizedAttr           = getRequiredClass("scala.annotation.synchronized")
     lazy val TailrecClass               = getRequiredClass("scala.annotation.tailrec")
     lazy val VarargsClass               = getRequiredClass("scala.annotation.varargs")
     lazy val uncheckedStableClass       = getRequiredClass("scala.annotation.unchecked.uncheckedStable")

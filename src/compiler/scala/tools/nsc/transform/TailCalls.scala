@@ -173,6 +173,29 @@ abstract class TailCalls extends Transform {
       trees map (t => transform(t, nctx))
     }
 
+    /**
+     * Transforms methods with synchronized body into synchronized methods
+     */
+    private def transformSynchronizedMethods(tree: Tree): Tree = {
+      def isSelfSynchronized(body: Apply) = body.fun match {
+        case TypeApply(fun @ Select(This(_), _), List(TypeTree()))
+        if (fun.symbol == Object_synchronized &&
+          fun.qualifier.symbol == tree.symbol.enclClass &&
+          !tree.symbol.enclClass.isTrait) => true
+        case _ => false
+      }
+
+      tree match {
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs @ Apply(_, List(body)))
+        if (isSelfSynchronized(rhs)) =>
+          val res = treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, body)
+          res.symbol withAnnotation AnnotationInfo(SynchronizedAttr.tpe, Nil, Nil)
+          res
+        case _ =>
+          tree
+      }
+    }
+
     override def transform(tree: Tree): Tree = {
       /** A possibly polymorphic apply to be considered for tail call transformation.
        */
@@ -222,7 +245,7 @@ abstract class TailCalls extends Transform {
         else                            rewriteTailCall(receiver)
       }
 
-      tree match {
+      transformSynchronizedMethods(tree) match {
         case dd @ DefDef(mods, name, tparams, vparams, tpt, rhs) =>
           val newCtx = new Context(dd)
 

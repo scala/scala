@@ -558,7 +558,7 @@ abstract class Inliners extends SubComponent {
       }
 
       def isStampedForInlining(stack: TypeStack) =
-        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stack)
+        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stack) && !inc.m.symbol.isSynchronized
 
       def logFailure(stack: TypeStack) = log(
         """|inline failed for %s:
@@ -576,6 +576,7 @@ abstract class Inliners extends SubComponent {
       def failureReason(stack: TypeStack) =
         if (!inc.m.hasCode) "bytecode was unavailable"
         else if (!isSafeToInline(stack)) "it is unsafe (target may reference private fields)"
+        else if (inc.m.symbol.isSynchronized) "method is synchronized"
         else "of a bug (run with -Ylog:inline -Ydebug for more information)"
 
       def canAccess(level: NonPublicRefs.Value) = level match {
