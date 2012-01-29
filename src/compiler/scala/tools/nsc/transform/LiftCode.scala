@@ -1,6 +1,7 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2011 LAMP/EPFL
  * @author Gilles Dubochet
+ * @author Martin Odersky
  */
 
 package scala.tools.nsc

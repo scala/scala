@@ -113,7 +113,7 @@ trait Namers extends MethodSynthesis {
     private def contextFile = context.unit.source.file
     private def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
-        // H@ need to ensure that we handle only cyclic references 
+        // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
         alt
     }
@@ -296,7 +296,7 @@ trait Namers extends MethodSynthesis {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
-      
+
       tree match {
         case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(name.toTypeName, pos, flags)
         case TypeDef(_, _, _, _)                    => owner.newTypeSymbol(name.toTypeName, pos, flags)
@@ -834,14 +834,13 @@ trait Namers extends MethodSynthesis {
         if (inheritsSelf || tp.isError) AnyRefClass.tpe
         else tp
       }
-      
-      var parents = typer.parentTypes(templ) map checkParent
-      if (clazz.hasAnnotation(ScalaInlineClass)) {
-        if (!(parents exists (_.typeSymbol == NotNullClass)))
-          parents = parents :+ NotNullClass.tpe
-        clazz setFlag FINAL
-      }
-          
+
+      val parents = typer.parentTypes(templ) map checkParent
+
+// not yet:
+//      if (!treeInfo.isInterface(clazz, templ.body) && clazz != ArrayClass)
+//        ensureParent(ScalaObjectClass)
+
       enterSelf(templ.self)
 
       val decls = newScope
@@ -892,7 +891,7 @@ trait Namers extends MethodSynthesis {
       val tparams0   = typer.reenterTypeParams(tparams)
       val resultType = templateSig(impl)
 
-      polyType(tparams0, resultType)
+      GenPolyType(tparams0, resultType)
     }
 
     private def methodSig(ddef: DefDef, mods: Modifiers, tparams: List[TypeDef],
@@ -935,7 +934,7 @@ trait Namers extends MethodSynthesis {
         // DEPMETTODO: check not needed when they become on by default
         checkDependencies(restpe)
 
-        polyType(
+        GenPolyType(
           tparamSyms, // deSkolemized symbols  -- TODO: check that their infos don't refer to method args?
           if (vparamSymss.isEmpty) NullaryMethodType(restpe)
           // vparamss refer (if they do) to skolemized tparams
@@ -1189,7 +1188,7 @@ trait Namers extends MethodSynthesis {
       // However, separate compilation requires the symbol info to be
       // loaded to do this check, but loading the info will probably
       // lead to spurious cyclic errors.  So omit the check.
-      polyType(tparamSyms, tp)
+      GenPolyType(tparamSyms, tp)
     }
 
     /** Given a case class
@@ -1253,8 +1252,12 @@ trait Namers extends MethodSynthesis {
       if (sym.isModule) annotate(sym.moduleClass)
 
       def getSig = tree match {
-        case ClassDef(_, _, tparams, impl) =>
-          createNamer(tree).classSig(tparams, impl)
+        case cdef @ ClassDef(_, _, tparams, impl) =>
+          val clazz = tree.symbol
+          val result = createNamer(tree).classSig(tparams, impl)
+          clazz setInfo result
+          if (clazz.isInlineClass) ensureCompanionObject(cdef)
+          result
 
         case ModuleDef(_, _, impl) =>
           val clazz = sym.moduleClass
@@ -1386,6 +1389,28 @@ trait Namers extends MethodSynthesis {
         fail(LazyAndEarlyInit)
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)
         fail(ByNameParameter)
+
+      def includeParent(tpe: Type, parent: Symbol): Type = tpe match {
+        case PolyType(tparams, restpe) =>
+          PolyType(tparams, includeParent(restpe, parent))
+        case ClassInfoType(parents, decls, clazz) =>
+          if (parents exists (_.typeSymbol == parent)) tpe
+          else ClassInfoType(parents :+ parent.tpe, decls, clazz)
+        case _ =>
+          tpe
+      }
+
+      def ensureParent(parent: Symbol) = {
+        val info0 = sym.info
+        val info1 = includeParent(info0, parent)
+        if (info0 ne info1) sym setInfo info1
+      }
+
+      if (sym.isClass && sym.hasAnnotation(ScalaInlineClass)) {
+        ensureParent(NotNullClass)
+        sym setFlag FINAL
+      }
+
 
       if (sym.isDeferred) {
         // Is this symbol type always allowed the deferred flag?

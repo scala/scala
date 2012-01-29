@@ -931,6 +931,10 @@ abstract class Erasure extends AddInterfaces
             tree
 
         case Apply(fn, args) =>
+          def qualifier = fn match {
+            case Select(qual, _) => qual
+            case TypeApply(Select(qual, _), _) => qual
+          }
           if (fn.symbol == Any_asInstanceOf)
             (fn: @unchecked) match {
               case TypeApply(Select(qual, _), List(targ)) =>
@@ -980,19 +984,12 @@ abstract class Erasure extends AddInterfaces
                 }
               case _ => tree
             }
-          }
-          else {
-            def doDynamic(fn: Tree, qual: Tree): Tree = {
-              if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol)
-                ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
-              else tree
-            }
-            fn match {
-              case Select(qual, _) => doDynamic(fn, qual)
-              case TypeApply(fni@Select(qual, _), _) => doDynamic(fni, qual)// type parameters are irrelevant in case of dynamic call
-              case _ =>
-                tree
-            }
+          } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
+            ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
+          } else if (false && fn.symbol.owner.isInlineClass && !fn.symbol.isParamAccessor) {
+            Apply(gen.mkAttributedRef(classInlining.staticMethod(fn.symbol)), qualifier :: args)
+          } else {
+            tree
           }
 
         case Select(qual, name) =>

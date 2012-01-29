@@ -224,14 +224,14 @@ abstract class TypeParser {
 
     if (canBeTakenAddressOf) {
       clazzBoxed.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
-                          else polyType(ownTypeParams, classInfoAsInMetadata) )
+                          else GenPolyType(ownTypeParams, classInfoAsInMetadata) )
       clazzBoxed.setFlag(flags)
       val rawValueInfoType = ClassInfoType(definitions.anyvalparam, instanceDefs, clazz)
       clazz.setInfo( if (ownTypeParams.isEmpty) rawValueInfoType
-                     else polyType(ownTypeParams, rawValueInfoType) )
+                     else GenPolyType(ownTypeParams, rawValueInfoType) )
     } else {
       clazz.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
-                     else polyType(ownTypeParams, classInfoAsInMetadata) )
+                     else GenPolyType(ownTypeParams, classInfoAsInMetadata) )
     }
 
     // TODO I don't remember if statics.setInfo and staticModule.setInfo should also know about type params
@@ -480,7 +480,7 @@ abstract class TypeParser {
     val mtype = methodType(method, rettype);
     if (mtype == null) return;
 /* START CLR generics (snippet 4) */
-    val mInfo = if (method.IsGeneric) polyType(newMethodTParams, mtype(methodSym))
+    val mInfo = if (method.IsGeneric) GenPolyType(newMethodTParams, mtype(methodSym))
                 else mtype(methodSym)
 /* END CLR generics (snippet 4) */
 /* START CLR non-generics (snippet 4)
