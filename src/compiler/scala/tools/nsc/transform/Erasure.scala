@@ -602,7 +602,7 @@ abstract class Erasure extends AddInterfaces
           Console.println("exception when typing " + tree)
           Console.println(er.msg + " in file " + context.owner.sourceFile)
           er.printStackTrace
-          abort()
+          abort("unrecoverable error")
         case ex: Exception =>
           //if (settings.debug.value)
           try Console.println("exception when typing " + tree)
@@ -986,8 +986,8 @@ abstract class Erasure extends AddInterfaces
             }
           } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
             ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
-          } else if (false && fn.symbol.owner.isInlineClass && classInlining.hasUnboxedVersion(fn.symbol)) {
-            Apply(gen.mkAttributedRef(classInlining.staticMethod(fn.symbol)), qualifier :: args)
+          } else if (fn.symbol.owner.isInlineClass && classInlining.hasUnboxedVersion(fn.symbol)) {
+            Apply(gen.mkAttributedRef(classInlining.unboxedMethod(fn.symbol)), qualifier :: args)
           } else {
             tree
           }

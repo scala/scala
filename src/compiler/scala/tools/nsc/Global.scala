@@ -867,7 +867,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Counts for certain classes of warnings during this run. */
     var deprecationWarnings: List[(Position, String)] = Nil
     var uncheckedWarnings: List[(Position, String)] = Nil
-    
+
     /** A flag whether macro expansions failed */
     var macroExpansionFailed = false
 
@@ -1014,7 +1014,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     def cancel() { reporter.cancelled = true }
-    
+
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
     private def refreshProgress() = if (size > 0) progress(currentProgress, totalProgress)
@@ -1031,6 +1031,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val namerPhase         = phaseNamed("namer")
     // packageobjects
     val typerPhase         = phaseNamed("typer")
+    val inlineclassesPhase = phaseNamed("inlineclasses")
     // superaccessors
     val picklerPhase       = phaseNamed("pickler")
     val refchecksPhase     = phaseNamed("refchecks")
@@ -1180,12 +1181,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      */
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
-      catch { case ex => 
+      catch { case ex =>
         globalError(supplementErrorMessage("uncaught exception during compilation: " + ex.getClass.getName))
         throw ex
       }
     }
-    
+
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
       if (opt.profileAll) {
