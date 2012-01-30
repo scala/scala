@@ -3,9 +3,9 @@ object TreeSetIterator {
 
   def main(args: Array[String]): Unit = {
     val n = 500000
-    new JavaUtilTS(n).main(args)
-    new MutableTS(n).main(args)
-    new ImmutableTS(n).main(args)
+    JavaUtilTS.main(args)
+    MutableTS.main(args)
+    ImmutableTS.main(args)
   }
 }
 
@@ -16,7 +16,8 @@ class Dummy(val a: Int) extends math.Ordered[Dummy] {
   }
 
 
-class JavaUtilTS(val length: Int) extends testing.Benchmark {
+object JavaUtilTS extends testing.Benchmark {
+  val length = sys.props("length").toInt
   var data: Array[Dummy] = (0 until length) map { a => new Dummy(a) } toArray
   var t: java.util.TreeSet[Dummy] = null
 
@@ -33,7 +34,8 @@ class JavaUtilTS(val length: Int) extends testing.Benchmark {
   }
 }
 
-class MutableTS(val length: Int) extends testing.Benchmark {
+object MutableTS extends testing.Benchmark {
+  val length = sys.props("length").toInt
   var data: Array[Dummy] = (0 until length) map { a => new Dummy(a) } toArray
   var t: collection.mutable.TreeSet[Dummy] = null
 
@@ -49,7 +51,8 @@ class MutableTS(val length: Int) extends testing.Benchmark {
   }
 }
 
-class ImmutableTS(val length: Int) extends testing.Benchmark {
+object ImmutableTS extends testing.Benchmark {
+  val length = sys.props("length").toInt
   var data: Array[Dummy] = (0 until length) map { a => new Dummy(a) } toArray
   var t: collection.immutable.TreeSet[Dummy] = null
 
