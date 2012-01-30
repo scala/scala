@@ -1409,7 +1409,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
-
+    
     override def safeToString: String =
       parents.mkString(" with ") +
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
@@ -1750,6 +1750,19 @@ trait Types extends api.Types { self: SymbolTable =>
 
     // override def isNonNull: Boolean = symbol == NonNullClass || super.isNonNull;
     override def kind = "ClassInfoType"
+    
+    override def safeToString =
+      if (settings.debug.value || decls.size > 1)
+        formattedToString
+      else
+        super.safeToString
+
+    /** A nicely formatted string with newlines and such.
+     */
+    def formattedToString: String =
+      parents.mkString("\n        with ") +
+      (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
+        decls.mkString(" {\n  ", "\n  ", "\n}") else "")
   }
 
   object ClassInfoType extends ClassInfoTypeExtractor
@@ -2479,7 +2492,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
     override def safeToString =
-      pre.toString + targs.mkString("(with type arguments ", ",", ")");
+      pre.toString + targs.mkString("(with type arguments ", ", ", ")");
     override def memberType(sym: Symbol) = appliedType(pre.memberType(sym), targs)
 //     override def memberType(sym: Symbol) = pre.memberType(sym) match {
 //       case PolyType(tparams, restp) =>
@@ -3530,14 +3543,14 @@ trait Types extends api.Types { self: SymbolTable =>
     }
 
     override def toString = {
-      val boundsStr = (
-        if (loBounds.isEmpty && hiBounds.isEmpty) "[]"
-        else {
-          val lostr = if (loBounds.isEmpty) "" else loBounds map (_.safeToString) mkString("_>:(", ", ", ")")
-          val histr = if (hiBounds.isEmpty) "" else hiBounds map (_.safeToString) mkString("_<:(", ", ", ")")
-          List(lostr, histr) filterNot (_ == "") mkString ("[", " | ", "]")
-        }
-      )
+      val boundsStr = {
+        val lo    = loBounds filterNot (_.typeSymbolDirect eq NothingClass)
+        val hi    = hiBounds filterNot (_.typeSymbolDirect eq AnyClass)
+        val lostr = if (lo.isEmpty) Nil else List(lo.mkString(" >: (", ", ", ")"))
+        val histr = if (hi.isEmpty) Nil else List(hi.mkString(" <: (", ", ", ")"))
+      
+        lostr ++ histr mkString ("[", " | ", "]")
+      }
       if (inst eq NoType) boundsStr
       else boundsStr + " _= " + inst.safeToString
     }

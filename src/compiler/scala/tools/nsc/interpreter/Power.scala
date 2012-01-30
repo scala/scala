@@ -187,12 +187,12 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     def declsOverride = membersDeclared filter (_.isOverride)
     def declsOriginal = membersDeclared filterNot (_.isOverride)
 
-    def members             = membersUnabridged filterNot excludeMember
-    def membersUnabridged   = tpe.members
-    def membersDeclared     = members filterNot excludeMember
-    def membersInherited    = members filterNot (membersDeclared contains _)
-    def memberTypes         = members filter (_.name.isTypeName)
-    def memberMethods       = members filter (_.isMethod)
+    def members           = membersUnabridged filterNot excludeMember
+    def membersUnabridged = tpe.members
+    def membersDeclared   = members filterNot excludeMember
+    def membersInherited  = members filterNot (membersDeclared contains _)
+    def memberTypes       = members filter (_.name.isTypeName)
+    def memberMethods     = members filter (_.isMethod)
     
     def pkg             = symbol.enclosingPackage
     def pkgName         = pkg.fullName
@@ -204,10 +204,13 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     def fullManifest   = manifest[T]
     def erasure        = fullManifest.erasure
     def shortClass     = erasure.getName split "[$.]" last
-    def baseTypeSeq    = tpe.baseTypeSeq.toList
-    def baseTypeSeqMap = baseTypeSeq map (x => (x, x.decls.toList)) toMap
 
-    def baseTypeWhichDefines(name: String) = baseTypeSeq filter (_.decls exists (_.name.toString == name))
+    def baseClasses                    = tpe.baseClasses
+    def baseClassDecls                 = baseClasses map (x => (x, x.info.decls.toList.sortBy(_.name.toString))) toMap
+    def ancestors                      = baseClasses drop 1
+    def ancestorDeclares(name: String) = ancestors filter (_.info member newTermName(name) ne NoSymbol)
+    def baseTypes                      = tpe.baseTypeSeq.toList
+
     def <:<[U: Manifest](other: U) = tpe <:< newInfo(other).tpe
     def lub[U: Manifest](other: U) = intp.global.lub(List(tpe, newInfo(other).tpe))
     def glb[U: Manifest](other: U) = intp.global.glb(List(tpe, newInfo(other).tpe))
