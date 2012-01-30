@@ -9,7 +9,6 @@
 package scala.collection
 package mutable
 
-import annotation.tailrec
 
 /**
  * An immutable AVL Tree implementation used by mutable.TreeSet
@@ -22,6 +21,53 @@ private[mutable] sealed trait AVLTree[+A] extends Serializable {
 
   def depth: Int
 
+  def iterator[B >: A]: Iterator[B] = Iterator.empty
+
+  def contains[B >: A](value: B, ordering: Ordering[B]): Boolean = false
+
+  /**
+   * Returns a new tree containing the given element.
+   * Thows an IllegalArgumentException if element is already present.
+   * 
+   */
+  def insert[B >: A](value: B, ordering: Ordering[B]): AVLTree[B] = Node(value, Leaf, Leaf)
+
+  /**
+   * Return a new tree which not contains given element.
+   * 
+   */
+  def remove[B >: A](value: B, ordering: Ordering[B]): AVLTree[A] =
+    throw new NoSuchElementException(String.valueOf(value))
+  
+  /**
+   * Return a tuple containing the smallest element of the provided tree
+   * and a new tree from which this element has been extracted.
+   * 
+   */
+  def removeMin[B >: A]: (B, AVLTree[B]) = sys.error("Should not happen.")
+  
+  /**
+   * Return a tuple containing the biggest element of the provided tree
+   * and a new tree from which this element has been extracted.
+   * 
+   */
+  def removeMax[B >: A]: (B, AVLTree[B]) = sys.error("Should not happen.")
+
+  def rebalance[B >: A]: AVLTree[B] = this
+
+  def leftRotation[B >: A]: Node[B] = sys.error("Should not happen.")
+
+  def rightRotation[B >: A]: Node[B] = sys.error("Should not happen.")
+
+  def doubleLeftRotation[B >: A]: Node[B] = sys.error("Should not happen.")
+
+  def doubleRightRotation[B >: A]: Node[B] = sys.error("Should not happen.")
+}
+
+private case object Leaf extends AVLTree[Nothing] {
+  override val balance: Int = 0
+
+  override val depth: Int = -1
 }
 
 private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree[A]) extends AVLTree[A] {
@@ -29,80 +75,69 @@ private case class Node[A](val data: A, val left: AVLTree[A], val right: AVLTree
 
   override val depth: Int = math.max(left.depth, right.depth) + 1
 
-}
+  override def iterator[B >: A]: Iterator[B] = new AVLIterator(this)
 
-private case object Leaf extends AVLTree[Nothing] {
-  override val balance: Int = 0
-
-  override val depth: Int = -1
-
-}
-
-private[mutable] object AVLTree {
+  override def contains[B >: A](value: B, ordering: Ordering[B]) = {
+    val ord = ordering.compare(value, data)
+    if (0 == ord)
+      true
+    else if (ord < 0)
+      left.contains(value, ordering)
+    else
+      right.contains(value, ordering)
+  }
 
   /**
    * Returns a new tree containing the given element.
    * Thows an IllegalArgumentException if element is already present.
    * 
    */
-  def insert[A](value: A, tree: AVLTree[A], ordering: Ordering[A]): AVLTree[A] = {
-    @tailrec
-    def insertTC(value: A, tree: AVLTree[A], reassemble: AVLTree[A] => AVLTree[A]): AVLTree[A] = tree match {
-      case Leaf => reassemble(Node(value, Leaf, Leaf))
-
-      case Node(a, left, right) => if (0 == ordering.compare(value, a)) {
-        throw new IllegalArgumentException()
-      } else if (-1 == ordering.compare(value, a)) {
-        insertTC(value, left, x => reassemble(rebalance(Node(a, x, right))))
-      } else {
-        insertTC(value, right, x => reassemble(rebalance(Node(a, left, x))))
-      }
-    }
-
-    insertTC(value, tree, x => rebalance(x))
-  }
-
-  def contains[A](value: A, tree: AVLTree[A], ordering: Ordering[A]): Boolean = tree match {
-    case Leaf => false
-
-    case Node(a, left, right) => if (0 == ordering.compare(value, a)) {
-      true
-    } else if (-1 == ordering.compare(value, a)) {
-      contains(value, left, ordering)
-    } else {
-      contains(value, right, ordering)
-    }
+  override def insert[B >: A](value: B, ordering: Ordering[B]) = {
+    val ord = ordering.compare(value, data)
+    if (0 == ord)
+      throw new IllegalArgumentException()
+    else if (ord < 0)
+      Node(data, left.insert(value, ordering), right).rebalance
+    else
+      Node(data, left, right.insert(value, ordering)).rebalance
   }
 
   /**
    * Return a new tree which not contains given element.
    * 
    */
-  def remove[A](value: A, tree: AVLTree[A], ordering: Ordering[A]): AVLTree[A] = tree match {
-    case Leaf => throw new NoSuchElementException()
-
-    case Node(a, Leaf, Leaf) => if (0 == ordering.compare(value, a)) {
-      Leaf
+  override def remove[B >: A](value: B, ordering: Ordering[B]): AVLTree[A] = {
+    val ord = ordering.compare(value, data)
+    if(ord == 0) {
+      if (Leaf == left) {
+        if (Leaf == right) {
+          Leaf
+        } else {
+          val (min, newRight) = right.removeMin
+          Node(min, left, newRight).rebalance
+        }
+      } else {
+        val (max, newLeft) = left.removeMax
+        Node(max, newLeft, right).rebalance
+      }
+    } else if (ord < 0) {
+      Node(data, left.remove(value, ordering), right).rebalance
     } else {
-      throw new NoSuchElementException()
+      Node(data, left, right.remove(value, ordering)).rebalance
     }
+  }
 
-    case Node(a, left, right@Node(_, _, _)) => if (0 == ordering.compare(value, a)) {
-      val (min, newRight) = removeMin(right)
-      rebalance(Node(min, left, newRight))
-    } else if (-1 == ordering.compare(value, a)) {
-      rebalance(Node(a, remove(value, left, ordering), right))
-    } else {
-      rebalance(Node(a, left, remove(value, right, ordering)))
-    }
-
-    case Node(a, left@Node(_, _, _), right) => if (0 == ordering.compare(value, a)) {
-      val (max, newLeft) = removeMax(left)
-      rebalance(Node(max, newLeft, right))
-    } else if (-1 == ordering.compare(value, a)) {
-      rebalance(Node(a, remove(value, left, ordering), right))
-    } else {
-      rebalance(Node(a, left, remove(value, right, ordering)))
+  /**
+   * Return a tuple containing the smallest element of the provided tree
+   * and a new tree from which this element has been extracted.
+   * 
+   */
+  override def removeMin[B >: A]: (B, AVLTree[B]) = {
+    if (Leaf == left)
+      (data, right)
+    else {
+      val (min, newLeft) = left.removeMin
+      (min, Node(data, newLeft, right).rebalance)
     }
   }
 
@@ -111,96 +146,96 @@ private[mutable] object AVLTree {
    * and a new tree from which this element has been extracted.
    * 
    */
-  def removeMax[A](tree: Node[A]): (A, AVLTree[A]) = {
-    @tailrec
-    def removeMaxTC(tree: AVLTree[A], assemble: (A, AVLTree[A]) => (A, AVLTree[A])): (A, AVLTree[A]) = tree match {
-      case Node(a, Leaf, Leaf) => assemble(a, Leaf)
-      case Node(a, left, Leaf) => assemble(a, left)
-      case Node(a, left, right) => removeMaxTC(right,
-        (max: A, avl: AVLTree[A]) => assemble(max, rebalance(Node(a, left, avl))))
-      case Leaf => sys.error("Should not happen.")
+  override def removeMax[B >: A]: (B, AVLTree[B]) = {
+    if (Leaf == right)
+      (data, left)
+    else {
+      val (max, newRight) = right.removeMax
+      (max, Node(data, left, newRight).rebalance)
     }
-
-    removeMaxTC(tree, (a, b) => (a, b))
   }
-
-  /**
-   * Return a tuple containing the smallest element of the provided tree
-   * and a new tree from which this element has been extracted.
-   * 
-   */
-  def removeMin[A](tree: Node[A]): (A, AVLTree[A]) = {
-    @tailrec
-    def removeMinTC(tree: AVLTree[A], assemble: (A, AVLTree[A]) => (A, AVLTree[A])): (A, AVLTree[A]) = tree match {
-      case Node(a, Leaf, Leaf) => assemble(a, Leaf)
-      case Node(a, Leaf, right) => assemble(a, right)
-      case Node(a, left, right) => removeMinTC(left,
-        (min: A, avl: AVLTree[A]) => assemble(min, rebalance(Node(a, avl, right))))
-      case Leaf => sys.error("Should not happen.")
-    }
-
-    removeMinTC(tree, (a, b) => (a, b))
-  }
-
-  /**
-   * Returns a bounded stream of elements in the tree.
-   * 
-   */
-  def toStream[A](tree: AVLTree[A], isLeftAcceptable: A => Boolean, isRightAcceptable: A => Boolean): Stream[A] = tree match {
-    case Leaf => Stream.empty
-
-    case Node(a, left, right) => if (isLeftAcceptable(a)) {
-      if (isRightAcceptable(a)) {
-        toStream(left, isLeftAcceptable, isRightAcceptable) ++ Stream(a) ++ toStream(right, isLeftAcceptable, isRightAcceptable)
-      } else {
-        toStream(left, isLeftAcceptable, isRightAcceptable)
-      }
-    } else if (isRightAcceptable(a)) {
-      toStream(right, isLeftAcceptable, isRightAcceptable)
+  
+  override def rebalance[B >: A] = {
+    if (-2 == balance) {
+      if (1 == left.balance)
+        doubleRightRotation
+      else
+        rightRotation
+    } else if (2 == balance) {
+      if (-1 == right.balance)
+        doubleLeftRotation
+      else
+        leftRotation
     } else {
-      Stream.empty
+      this
     }
   }
 
-  /**
-   * Returns a bounded iterator of elements in the tree.
-   * 
-   */
-  def iterator[A](tree: AVLTree[A], isLeftAcceptable: A => Boolean, isRightAcceptable: A => Boolean): Iterator[A] =
-    toStream(tree, isLeftAcceptable, isRightAcceptable).iterator
+  override def leftRotation[B >: A] = {
+    if (Leaf != right) {
+      val r: Node[A] = right.asInstanceOf[Node[A]]
+      Node(r.data, Node(data, left, r.left), r.right)
+    } else sys.error("Should not happen.")
+  }
 
-  def rebalance[A](tree: AVLTree[A]): AVLTree[A] = (tree, tree.balance) match {
-    case (node@Node(_, left, _), -2) => left.balance match {
-      case 1 => doubleRightRotation(node)
-      case _ => rightRotation(node)
+  override def rightRotation[B >: A] = {
+    if (Leaf != left) {
+      val l: Node[A] = left.asInstanceOf[Node[A]]
+      Node(l.data, l.left, Node(data, l.right, right))
+    } else sys.error("Should not happen.")
+  }
+
+  override def doubleLeftRotation[B >: A] = {
+    if (Leaf != right) {
+      val r: Node[A] = right.asInstanceOf[Node[A]]
+      // Let's save an instanceOf by 'inlining' the left rotation
+      val rightRotated = r.rightRotation
+      Node(rightRotated.data, Node(data, left, rightRotated.left), rightRotated.right)
+    } else sys.error("Should not happen.")
+  }
+
+  override def doubleRightRotation[B >: A] = {
+    if (Leaf != left) {
+      val l: Node[A] = left.asInstanceOf[Node[A]]
+      // Let's save an instanceOf by 'inlining' the right rotation
+      val leftRotated = l.leftRotation
+      Node(leftRotated.data, leftRotated.left, Node(data, leftRotated.right, right))
+    } else sys.error("Should not happen.")
+  }
+}
+
+private class AVLIterator[A](root: Node[A]) extends Iterator[A] {
+  val stack = mutable.ArrayStack[Node[A]](root)
+  diveLeft()
+
+  private def diveLeft(): Unit = {
+    if (Leaf != stack.head.left) {
+      val left: Node[A] = stack.head.left.asInstanceOf[Node[A]]
+      stack.push(left)
+      diveLeft()
     }
+  }
 
-    case (node@Node(_, _, right), 2) => right.balance match {
-      case -1 => doubleLeftRotation(node)
-      case _ => leftRotation(node)
+  private def engageRight(): Unit = {
+    if (Leaf != stack.head.right) {
+      val right: Node[A] = stack.head.right.asInstanceOf[Node[A]]
+      stack.pop
+      stack.push(right)
+      diveLeft()
+    } else
+      stack.pop
+  }
+
+  override def hasNext: Boolean = !stack.isEmpty
+
+  override def next(): A = {
+    if (stack.isEmpty)
+      throw new NoSuchElementException()
+    else {
+      val result = stack.head.data
+      // Let's maintain stack for the next invocation
+      engageRight()
+      result
     }
-
-    case _ => tree
   }
-
-  def leftRotation[A](tree: Node[A]): AVLTree[A] = tree.right match {
-    case Node(b, left, right) => Node(b, Node(tree.data, tree.left, left), right)
-    case _ => sys.error("Should not happen.")
-  }
-
-  def rightRotation[A](tree: Node[A]): AVLTree[A] = tree.left match {
-    case Node(b, left, right) => Node(b, left, Node(tree.data, right, tree.right))
-    case _ => sys.error("Should not happen.")
-  }
-
-  def doubleLeftRotation[A](tree: Node[A]): AVLTree[A] = tree.right match {
-    case right@Node(b, l, r) => leftRotation(Node(tree.data, tree.left, rightRotation(right)))
-    case _ => sys.error("Should not happen.")
-  }
-
-  def doubleRightRotation[A](tree: Node[A]): AVLTree[A] = tree.left match {
-    case left@Node(b, l, r) => rightRotation(Node(tree.data, leftRotation(left), tree.right))
-    case _ => sys.error("Should not happen.")
-  }
-
 }
