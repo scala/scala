@@ -1407,7 +1407,9 @@ trait Namers extends MethodSynthesis {
       }
 
       if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
-        ensureParent(NotNullClass)
+        if (!sym.isSubClass(AnyValClass))
+          ensureParent(NotNullClass)
+
         sym setFlag FINAL
       }
 
@@ -1437,7 +1439,7 @@ trait Namers extends MethodSynthesis {
       checkNoConflict(PRIVATE, PROTECTED)
       // checkNoConflict(PRIVATE, OVERRIDE) // this one leads to bad error messages like #4174, so catch in refchecks
       // checkNoConflict(PRIVATE, FINAL)    // can't do this because FINAL also means compile-time constant
-      checkNoConflict(ABSTRACT, FINAL)
+      // checkNoConflict(ABSTRACT, FINAL)   // this one gives a bad error for non-@inline classes which extend AnyVal
       // @PP: I added this as a sanity check because these flags are supposed to be
       // converted to ABSOVERRIDE before arriving here.
       checkNoConflict(ABSTRACT, OVERRIDE)

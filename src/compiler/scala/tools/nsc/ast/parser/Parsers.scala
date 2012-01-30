@@ -2757,7 +2757,7 @@ self =>
           Template(List(scalaDot(tpnme.AnyVal)), self, body)
         }
         else if (parents0 exists isReferenceToAnyVal) {
-          // TODO - enforce @inline annotation, and no other parents
+          // @inline and other restrictions enforced in refchecks
           Template(parents0, self, body)
         }
         else if (name == tpnme.AnyVal) {

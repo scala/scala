@@ -683,15 +683,15 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
         if (abstractErrors.nonEmpty)
           unit.error(clazz.pos, abstractErrorMessage)
-      } else if (clazz.isTrait) {
-        // prevent abstract methods in interfaces that override final members in Object; see #4431
-        if (!(clazz isSubClass AnyValClass)) {
+      }
+      else if (clazz.isTrait && !(clazz isSubClass AnyValClass)) {
+        // For non-AnyVal classes, prevent abstract methods in interfaces that override
+        // final members in Object; see #4431
         for (decl <- clazz.info.decls.iterator) {
           val overridden = decl.overriddenSymbol(ObjectClass)
           if (overridden.isFinal)
             unit.error(decl.pos, "trait cannot redefine final method from class AnyRef")
         }
-      }
       }
 
       /** Returns whether there is a symbol declared in class `inclazz`
@@ -1527,6 +1527,19 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         )
         case _ => ()
     }
+    
+    // verify classes extending AnyVal meet the requirements
+    // (whatever those are to be, but at least: @inline annotation)
+    private def checkAnyValSubclass(clazz: Symbol) = {
+      if ((clazz isSubClass AnyValClass) && (clazz ne AnyValClass) && !isPrimitiveValueClass(clazz)) {
+        if (!clazz.hasAnnotation(ScalaInlineClass))
+          unit.error(clazz.pos, "Only @inline classes are allowed to extend AnyVal")
+        if (clazz.isTrait)
+          unit.error(clazz.pos, "Only @inline classes (not traits) are allowed to extend AnyVal")
+        if (clazz.tpe <:< AnyRefClass.tpe)
+          unit.error(clazz.pos, "Classes which extend AnyVal may not have an ancestor which inherits AnyRef")
+      }
+    }
 
     override def transform(tree: Tree): Tree = {
       val savedLocalTyper = localTyper
@@ -1562,6 +1575,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             checkOverloadedRestrictions(currentOwner)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
+            checkAnyValSubclass(currentOwner)
+
             if (bridges.nonEmpty) treeCopy.Template(tree, parents, self, body ::: bridges)
             else tree
 

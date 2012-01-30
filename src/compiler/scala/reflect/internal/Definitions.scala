@@ -910,6 +910,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     private lazy val scalaValueClassesSet = ScalaValueClasses.toSet
     private lazy val boxedValueClassesSet = boxedClass.values.toSet + BoxedUnitClass
 
+    /** Now that AnyVal is unsealing we need less ambiguous names
+     *  for when we need to distinguish the Nine Original AnyVals
+     *  from the heathen masses.
+     */
+    def isPrimitiveValueClass(sym: Symbol) = scalaValueClassesSet(sym)
+
     /** Is symbol a value class? */
     def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
     def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
@@ -1029,7 +1035,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
       /** Removing the anyref parent they acquire from having a source file.
        */
-      setParents(AnyValClass, anyparam)
+      setParents(AnyValClass, List(NotNullClass.tpe, AnyClass.tpe))
       ScalaValueClasses foreach { sym =>
         setParents(sym, anyvalparam)
       }
