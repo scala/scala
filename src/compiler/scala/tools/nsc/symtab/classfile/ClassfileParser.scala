@@ -368,7 +368,7 @@ abstract class ClassfileParser {
         case arr: Type     => Constant(arr)
       }
     }
-
+    
     private def getSubArray(bytes: Array[Byte]): Array[Byte] = {
       val decodedLength = ByteCodecs.decode(bytes)
       val arr           = new Array[Byte](decodedLength)
@@ -719,7 +719,7 @@ abstract class ClassfileParser {
                       index += 1
                       val bounds = variance match {
                         case '+' => TypeBounds.upper(objToAny(sig2type(tparams, skiptvs)))
-                        case '-' =>
+                        case '-' => 
                           val tp = sig2type(tparams, skiptvs)
                           // sig2type seems to return AnyClass regardless of the situation:
                           // we don't want Any as a LOWER bound.

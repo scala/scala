@@ -292,8 +292,8 @@ self =>
     }
     private lazy val primitiveNames: Set[Name] = tpnme.ScalaValueNames.toSet
 
-    private def inScalaRootPackage          = inScalaPackage && currentPackage == "scala"
-    private def isScalaArray(name: Name)    = inScalaRootPackage && name == tpnme.Array
+    private def inScalaRootPackage       = inScalaPackage && currentPackage == "scala"
+    private def isScalaArray(name: Name) = inScalaRootPackage && name == tpnme.Array
     private def isPrimitiveType(name: Name) = inScalaRootPackage && primitiveNames(name)
 
     def parseStartRule: () => Tree

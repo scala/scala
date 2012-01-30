@@ -154,7 +154,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       case ErrorType =>
         fun
     }
-
+    
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
       inferView(tree, from, to, reportAmbiguous, true)
 
@@ -274,7 +274,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
       tp match {
         case TypeRef(pre, sym, args) =>
-          checkNotLocked(sym) &&
+          checkNotLocked(sym) && 
           ((!sym.isNonClassType) || checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args), sym))
           // @M! info for a type ref to a type parameter now returns a polytype
           // @M was: checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym)
@@ -939,7 +939,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             adaptType()
           else if (inExprModeButNot(mode, FUNmode) && tree.symbol != null && tree.symbol.isMacro && !tree.isDef) {
             val tree1 = expandMacro(tree)
-            if (tree1.isErroneous) tree1 else typed(tree1, mode, pt)
+            if (tree1.isErroneous) tree1 else typed(tree1, mode, pt) 
           } else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (inAllModes(mode, EXPRmode | FUNmode) &&
@@ -1084,7 +1084,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         // Note: implicit arguments are still inferred (this kind of "chaining" is allowed)
       )
     }
-
+    
     def adaptToMember(qual: Tree, searchTemplate: Type): Tree =
       adaptToMember(qual, searchTemplate, true, true)
     def adaptToMember(qual: Tree, searchTemplate: Type, reportAmbiguous: Boolean): Tree =
@@ -1099,12 +1099,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
         inferView(qual, qual.tpe, searchTemplate, reportAmbiguous, saveErrors) match {
           case EmptyTree  => qual
-          case coercion   =>
+          case coercion   => 
             if (settings.logImplicitConv.value)
               unit.echo(qual.pos,
                 "applied implicit conversion from %s to %s = %s".format(
                   qual.tpe, searchTemplate, coercion.symbol.defString))
-
+            
             typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
         }
       }
@@ -2889,10 +2889,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def packSymbols(hidden: List[Symbol], tp: Type): Type =
       if (hidden.isEmpty) tp
       else existentialTransform(hidden, tp)(existentialAbstraction)
-
+      
     def isReferencedFrom(ctx: Context, sym: Symbol): Boolean =
-      ctx.owner.isTerm &&
-      (ctx.scope.exists { dcl => dcl.isInitialized && (dcl.info contains sym) }) ||
+      ctx.owner.isTerm && 
+      (ctx.scope.exists { dcl => dcl.isInitialized && (dcl.info contains sym) }) || 
       {
         var ctx1 = ctx.outer
         while ((ctx1 != NoContext) && (ctx1.scope eq ctx.scope)) ctx1 = ctx1.outer
@@ -3879,7 +3879,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           reallyExists(sym) &&
           ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod || sym.hasFlag(ACCESSOR))
         }
-
+        
         if (defSym == NoSymbol) {
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
 
@@ -4370,7 +4370,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
         case ReferenceToBoxed(idt @ Ident(_)) =>
           val id1 = typed1(idt, mode, pt) match { case id: Ident => id }
-          treeCopy.ReferenceToBoxed(tree, id1) setType AnyRefClass.tpe
+          treeCopy.ReferenceToBoxed(tree, id1) setType AnyRefClass.tpe         
 
         case Literal(value) =>
           tree setType (

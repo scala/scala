@@ -30,7 +30,7 @@ final class Short extends AnyVal {
  * @return the bitwise negation of this value
  * @example {{{
  * ~5 == -6
- * // in binary: ~00000101 == 
+ * // in binary: ~00000101 ==
  * //             11111010
  * }}}
  */
@@ -60,22 +60,22 @@ final class Short extends AnyVal {
   def <<(x: Long): Int = sys.error("stub")
   /**
   * @return this value bit-shifted right by the specified number of bits,
-  *         filling the new left bits with zeroes. 
+  *         filling the new left bits with zeroes.
   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
   * @example {{{
-  * -21 >>> 3 == 536870909 
-  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * -21 >>> 3 == 536870909
+  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
   * //            00011111 11111111 11111111 11111101
   * }}}
   */
   def >>>(x: Int): Int = sys.error("stub")
   /**
   * @return this value bit-shifted right by the specified number of bits,
-  *         filling the new left bits with zeroes. 
+  *         filling the new left bits with zeroes.
   * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}
   * @example {{{
-  * -21 >>> 3 == 536870909 
-  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == 
+  * -21 >>> 3 == 536870909
+  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==
   * //            00011111 11111111 11111111 11111101
   * }}}
   */
@@ -85,8 +85,8 @@ final class Short extends AnyVal {
   *         filling in the right bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
   * @example {{{
-  * -21 >> 3 == -3 
-  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == 
+  * -21 >> 3 == -3
+  * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
   * //            11111111 11111111 11111111 11111101
   * }}}
   */
@@ -96,8 +96,8 @@ final class Short extends AnyVal {
   *         filling in the right bits with the same value as the left-most bit of this.
   *         The effect of this is to retain the sign of the value.
   * @example {{{
-  * -21 >> 3 == -3 
-  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == 
+  * -21 >> 3 == -3
+  * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==
   * //            11111111 11111111 11111111 11111101
   * }}}
   */
@@ -281,9 +281,9 @@ final class Short extends AnyVal {
   * @return the bitwise OR of this value and x
   * @example {{{
   * (0xf0 | 0xaa) == 0xfa
-  * // in binary:   11110000 
-  * //            | 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            | 10101010
+  * //              --------
   * //              11111010
   * }}}
   */
@@ -292,9 +292,9 @@ final class Short extends AnyVal {
   * @return the bitwise OR of this value and x
   * @example {{{
   * (0xf0 | 0xaa) == 0xfa
-  * // in binary:   11110000 
-  * //            | 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            | 10101010
+  * //              --------
   * //              11111010
   * }}}
   */
@@ -303,9 +303,9 @@ final class Short extends AnyVal {
   * @return the bitwise OR of this value and x
   * @example {{{
   * (0xf0 | 0xaa) == 0xfa
-  * // in binary:   11110000 
-  * //            | 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            | 10101010
+  * //              --------
   * //              11111010
   * }}}
   */
@@ -314,9 +314,9 @@ final class Short extends AnyVal {
   * @return the bitwise OR of this value and x
   * @example {{{
   * (0xf0 | 0xaa) == 0xfa
-  * // in binary:   11110000 
-  * //            | 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            | 10101010
+  * //              --------
   * //              11111010
   * }}}
   */
@@ -325,9 +325,9 @@ final class Short extends AnyVal {
   * @return the bitwise OR of this value and x
   * @example {{{
   * (0xf0 | 0xaa) == 0xfa
-  * // in binary:   11110000 
-  * //            | 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            | 10101010
+  * //              --------
   * //              11111010
   * }}}
   */
@@ -337,9 +337,9 @@ final class Short extends AnyVal {
   * @return the bitwise AND of this value and x
   * @example {{{
   * (0xf0 & 0xaa) == 0xa0
-  * // in binary:   11110000 
-  * //            & 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            & 10101010
+  * //              --------
   * //              10100000
   * }}}
   */
@@ -348,9 +348,9 @@ final class Short extends AnyVal {
   * @return the bitwise AND of this value and x
   * @example {{{
   * (0xf0 & 0xaa) == 0xa0
-  * // in binary:   11110000 
-  * //            & 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            & 10101010
+  * //              --------
   * //              10100000
   * }}}
   */
@@ -359,9 +359,9 @@ final class Short extends AnyVal {
   * @return the bitwise AND of this value and x
   * @example {{{
   * (0xf0 & 0xaa) == 0xa0
-  * // in binary:   11110000 
-  * //            & 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            & 10101010
+  * //              --------
   * //              10100000
   * }}}
   */
@@ -370,9 +370,9 @@ final class Short extends AnyVal {
   * @return the bitwise AND of this value and x
   * @example {{{
   * (0xf0 & 0xaa) == 0xa0
-  * // in binary:   11110000 
-  * //            & 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            & 10101010
+  * //              --------
   * //              10100000
   * }}}
   */
@@ -381,9 +381,9 @@ final class Short extends AnyVal {
   * @return the bitwise AND of this value and x
   * @example {{{
   * (0xf0 & 0xaa) == 0xa0
-  * // in binary:   11110000 
-  * //            & 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            & 10101010
+  * //              --------
   * //              10100000
   * }}}
   */
@@ -393,9 +393,9 @@ final class Short extends AnyVal {
   * @return the bitwise XOR of this value and x
   * @example {{{
   * (0xf0 ^ 0xaa) == 0x5a
-  * // in binary:   11110000 
-  * //            ^ 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            ^ 10101010
+  * //              --------
   * //              01011010
   * }}}
   */
@@ -404,9 +404,9 @@ final class Short extends AnyVal {
   * @return the bitwise XOR of this value and x
   * @example {{{
   * (0xf0 ^ 0xaa) == 0x5a
-  * // in binary:   11110000 
-  * //            ^ 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            ^ 10101010
+  * //              --------
   * //              01011010
   * }}}
   */
@@ -415,9 +415,9 @@ final class Short extends AnyVal {
   * @return the bitwise XOR of this value and x
   * @example {{{
   * (0xf0 ^ 0xaa) == 0x5a
-  * // in binary:   11110000 
-  * //            ^ 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            ^ 10101010
+  * //              --------
   * //              01011010
   * }}}
   */
@@ -426,9 +426,9 @@ final class Short extends AnyVal {
   * @return the bitwise XOR of this value and x
   * @example {{{
   * (0xf0 ^ 0xaa) == 0x5a
-  * // in binary:   11110000 
-  * //            ^ 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            ^ 10101010
+  * //              --------
   * //              01011010
   * }}}
   */
@@ -437,9 +437,9 @@ final class Short extends AnyVal {
   * @return the bitwise XOR of this value and x
   * @example {{{
   * (0xf0 ^ 0xaa) == 0x5a
-  * // in binary:   11110000 
-  * //            ^ 10101010 
-  * //              -------- 
+  * // in binary:   11110000
+  * //            ^ 10101010
+  * //              --------
   * //              01011010
   * }}}
   */

@@ -166,7 +166,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val RuntimePackage       = getRequiredModule("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass
-
+    
     lazy val JavaLangEnumClass = getRequiredClass("java.lang.Enum")
 
     // convenient one-argument parameter lists
@@ -178,10 +178,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
     private def booltype    = BooleanClass.typeConstructor
     private def inttype     = IntClass.typeConstructor
     private def stringtype  = StringClass.typeConstructor
-
+    
     // Java types
     def javaTypeName(jclazz: Class[_]): TypeName = newTypeName(jclazz.getName)
-
+    
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
       case java.lang.Void.TYPE      => UnitClass
       case java.lang.Byte.TYPE      => ByteClass
@@ -274,7 +274,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
-
+      
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
      *  which does a member lookup (it can't be a lazy val because we might reload Predef
@@ -496,7 +496,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case DoubleClass  => nme.wrapDoubleArray
       case BooleanClass => nme.wrapBooleanArray
       case UnitClass    => nme.wrapUnitArray
-      case _        =>
+      case _        => 
         if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol)) nme.wrapRefArray
         else nme.genericWrapArray
     }
@@ -640,7 +640,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         case _ => false
       })
     }
-
+    
     // members of class scala.Any
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
     lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
@@ -816,10 +816,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
       while (result.isAliasType) result = result.info.typeSymbol
       result
     }
-
+    
     def getRequiredModule(fullname: String): Symbol =
       getModule(newTermNameCached(fullname))
-    def getRequiredClass(fullname: String): Symbol =
+    def getRequiredClass(fullname: String): Symbol = 
       getClass(newTypeNameCached(fullname))
 
     def getClassIfDefined(fullname: String): Symbol =
@@ -993,7 +993,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
       RootClass.info.decls enter EmptyPackage
       RootClass.info.decls enter RootPackage
-
+      
       val forced = List( // force initialization of every symbol that is entered as a side effect
         AnnotationDefaultAttr, // #2264
         RepeatedParamClass,
