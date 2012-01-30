@@ -3823,7 +3823,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             && qual.tpe.typeSymbol.isPublic
           )
           if (isRefinableGetClass)
-            selection setType MethodType(Nil, erasure.getClassReturnType(qual.tpe))
+            selection setType MethodType(Nil, getClassReturnType(qual.tpe))
           else
             selection
         }

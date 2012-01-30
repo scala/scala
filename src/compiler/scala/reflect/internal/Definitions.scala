@@ -663,7 +663,40 @@ trait Definitions extends reflect.api.StandardDefinitions {
     // AnyVal_getClass is defined here. Once we have a new strap, it could also be
     // defined directly in the AnyVal trait. Right now this does not work, because
     // strap complains about overriding a final getClass method in Any.
-    lazy val AnyVal_getClass = newMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe), DEFERRED)
+    lazy val AnyVal_getClass = newMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe))
+
+    // A type function from T => Class[U], used to determine the return
+    // type of getClass calls.  The returned type is:
+    //
+    //  1. If T is a value type, Class[T].
+    //  2. If T is a phantom type (Any or AnyVal), Class[_].
+    //  3. If T is a local class, Class[_ <: |T|].
+    //  4. Otherwise, Class[_ <: T].
+    //
+    // Note: AnyVal cannot be Class[_ <: AnyVal] because if the static type of the
+    // receiver is AnyVal, it implies the receiver is boxed, so the correct
+    // class object is that of java.lang.Integer, not Int.
+    //
+    // TODO: If T is final, return type could be Class[T].  Should it?
+    def getClassReturnType(tp: Type): Type = {
+      val sym     = tp.typeSymbol
+
+      if (phase.erasedTypes) ClassClass.tpe
+      else if (isValueClass(sym)) ClassType(tp.widen)
+      else {
+        val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
+        val upperBound = (
+          if (isPhantomClass(sym)) AnyClass.tpe
+          else if (sym.isLocalClass) erasure.intersectionDominator(tp.parents)
+          else tp.widen
+        )
+
+        existentialAbstraction(
+          eparams,
+          ClassType(eparams.head setInfo TypeBounds.upper(upperBound) tpe)
+        )
+      }
+    }
 
     // members of class java.lang.{ Object, String }
     lazy val Object_## = newMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
