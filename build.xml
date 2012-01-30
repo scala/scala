@@ -213,11 +213,22 @@ INITIALISATION
   <condition property="starr.absent">
     <not><available file="${lib.dir}/scala-library.jar"/></not>
   </condition>
+  
+  <!-- It's such a PITA to perform the amazing && in ant, forget it.
+       I'll just check the compiler jar. -->
+  <target name="init.starr.check">
+    <uptodate property="starr.compiler.uptodate"
+              srcfile="${lib.dir}/scala-compiler.jar.desired.sha1"
+              targetfile="${lib.dir}/scala-compiler.jar" />
+  </target>
 
-  <target name="init.starr" if="starr.absent">
-    <echo level="warn" message="Downloading bootstrap libs.  (To do this by hand, run ./pull-binary-libs.sh)"/>
+  <target name="init.starr" depends="init.starr.check" unless="starr.compiler.uptodate">
+    <echo level="warn" message="Updating bootstrap libs.  (To do this by hand, run ./pull-binary-libs.sh)"/>
     <exec osfamily="unix" vmlauncher="false" executable="./pull-binary-libs.sh" failifexecutionfails="true" />
     <exec osfamily="windows" vmlauncher="false" executable="pull-binary-libs.sh" failifexecutionfails="true" />
+    <!-- uptodate task needs to know these are what's in the sha. -->
+    <touch file="${lib.dir}/scala-library.jar" />
+    <touch file="${lib.dir}/scala-compiler.jar" />
   </target>
 
   <target name="init" depends="init.starr">
