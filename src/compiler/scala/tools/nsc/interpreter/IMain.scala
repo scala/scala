@@ -1125,6 +1125,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val termname = newTypeName(name)
     findName(termname) getOrElse getModuleIfDefined(termname)
   }
+  def types[T: ClassManifest] : Symbol = types(classManifest[T].erasure.getName)
+  def terms[T: ClassManifest] : Symbol = terms(classManifest[T].erasure.getName)
+  def apply[T: ClassManifest] : Symbol = apply(classManifest[T].erasure.getName)
 
   /** the previous requests this interpreter has processed */
   private lazy val prevRequests       = mutable.ListBuffer[Request]()
