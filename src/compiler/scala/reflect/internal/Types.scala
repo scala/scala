@@ -1205,7 +1205,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (settings.debug.value) sym.nameString + ".this."
       else if (sym.isAnonOrRefinementClass) "this."
       else if (sym.isOmittablePrefix) ""
-      else if (sym.isModuleClass) sym.fullName + "."
+      else if (sym.isModuleClass) sym.fullNameString + "."
       else sym.nameString + ".this."
     override def safeToString: String =
       if (sym.isRoot) "<root>"

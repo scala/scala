@@ -31,39 +31,6 @@ abstract class Erasure extends AddInterfaces
 
 // -------- erasure on types --------------------------------------------------------
 
-  // A type function from T => Class[U], used to determine the return
-  // type of getClass calls.  The returned type is:
-  //
-  //  1. If T is a value type, Class[T].
-  //  2. If T is a phantom type (Any or AnyVal), Class[_].
-  //  3. If T is a local class, Class[_ <: |T|].
-  //  4. Otherwise, Class[_ <: T].
-  //
-  // Note: AnyVal cannot be Class[_ <: AnyVal] because if the static type of the
-  // receiver is AnyVal, it implies the receiver is boxed, so the correct
-  // class object is that of java.lang.Integer, not Int.
-  //
-  // TODO: If T is final, return type could be Class[T].  Should it?
-  def getClassReturnType(tp: Type): Type = {
-    val sym     = tp.typeSymbol
-
-    if (phase.erasedTypes) ClassClass.tpe
-    else if (isValueClass(sym)) ClassType(tp.widen)
-    else {
-      val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
-      val upperBound = (
-        if (isPhantomClass(sym)) AnyClass.tpe
-        else if (sym.isLocalClass) intersectionDominator(tp.parents)
-        else tp.widen
-      )
-
-      existentialAbstraction(
-        eparams,
-        ClassType(eparams.head setInfo TypeBounds.upper(upperBound) tpe)
-      )
-    }
-  }
-
   // convert a numeric with a toXXX method
   def numericConversion(tree: Tree, numericSym: Symbol): Tree = {
     val mname      = newTermName("to" + numericSym.name)
@@ -797,7 +764,7 @@ abstract class Erasure extends AddInterfaces
                              // && (bridge.paramss.nonEmpty && bridge.paramss.head.nonEmpty && bridge.paramss.head.tail.isEmpty) // does the first argument list has exactly one argument -- for user-defined unapplies we can't be sure
                              && !(atPhase(phase.next)(member.tpe <:< other.tpe))) { // no static guarantees (TODO: is the subtype test ever true?)
                             import CODE._
-                            val typeTest = gen.mkIsInstanceOf(REF(bridge.paramss.head.head), member.tpe.params.head.tpe, any = true, wrapInApply = true) // any = true since we're before erasure (?), wrapInapply is true since we're after uncurry
+                            val typeTest = gen.mkIsInstanceOf(REF(bridge.firstParam), member.tpe.params.head.tpe, any = true, wrapInApply = true) // any = true since we're before erasure (?), wrapInapply is true since we're after uncurry
                             // println("unapp type test: "+ typeTest)
                             IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
                           } else bridgingCall
