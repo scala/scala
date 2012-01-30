@@ -659,6 +659,15 @@ trait Definitions extends reflect.api.StandardDefinitions {
        AnyClass, nme.isInstanceOf_, tparam => NullaryMethodType(booltype)) setFlag FINAL
     lazy val Any_asInstanceOf = newPolyMethod(
       AnyClass, nme.asInstanceOf_, tparam => NullaryMethodType(tparam.typeConstructor)) setFlag FINAL
+      
+    // AnyVal_getClass is defined here. Once we have a new strap, it could also be
+    // defined directly in the AnyVal trait. Right now this does not work, because
+    // strap complains about overriding a final getClass method in Any.
+    lazy val AnyVal_getClass = {
+      val m = AnyValClass.newMethod(nme.getClass_)
+      val tparam = m.newExistential(newTypeName("T")) setInfo TypeBounds(NothingClass.tpe, AnyValClass.tpe)
+      m setInfoAndEnter MethodType(List(), ExistentialType(List(tparam), appliedType(ClassClass.typeConstructor, List(tparam.tpe))))
+    }
 
     // members of class java.lang.{ Object, String }
     lazy val Object_## = newMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)
@@ -859,7 +868,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       val msym   = owner.info.decls enter owner.newMethod(name.encode)
       val tparam = newTypeParam(msym, 0)
 
-      msym setInfo GenPolyType(List(tparam), tcon(tparam)(msym))
+      msym setInfo PolyType(List(tparam), tcon(tparam)(msym))
     }
 
     private def newTypeParam(owner: Symbol, index: Int): Symbol =
@@ -991,7 +1000,8 @@ trait Definitions extends reflect.api.StandardDefinitions {
         Object_synchronized,
         Object_isInstanceOf,
         Object_asInstanceOf,
-        String_+
+        String_+,
+        AnyVal_getClass
       )
 
       /** Removing the anyref parent they acquire from having a source file.

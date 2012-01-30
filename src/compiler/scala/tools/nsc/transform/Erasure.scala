@@ -986,8 +986,8 @@ abstract class Erasure extends AddInterfaces
             }
           } else if (fn.symbol.owner.isRefinementClass && !fn.symbol.isOverridingSymbol) {
             ApplyDynamic(qualifier, args) setSymbol fn.symbol setPos tree.pos
-          } else if (fn.symbol.owner.isInlineClass && classInlining.hasUnboxedVersion(fn.symbol)) {
-            Apply(gen.mkAttributedRef(classInlining.unboxedMethod(fn.symbol)), qualifier :: args)
+          } else if (fn.symbol.owner.isInlineClass && extensionMethods.hasExtension(fn.symbol)) {
+            Apply(gen.mkAttributedRef(extensionMethods.extensionMethod(fn.symbol)), qualifier :: args)
           } else {
             tree
           }

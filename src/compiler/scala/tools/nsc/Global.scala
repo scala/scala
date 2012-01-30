@@ -436,11 +436,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   } with Analyzer
 
-  object classInlining extends {
+  object extensionMethods extends {
     val global: Global.this.type = Global.this
     val runsAfter = List("typer")
     val runsRightAfter = None
-  } with ClassInlining
+  } with ExtensionMethods
 
   // phaseName = "superaccessors"
   object superAccessors extends {
@@ -656,7 +656,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       analyzer.packageObjects -> "load package objects",
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
-      classInlining           -> "add static methods to inline classes",
+      extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
       liftcode                -> "reify trees",

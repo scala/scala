@@ -26,6 +26,7 @@ package scala
  *  The ''floating point types'' are [[scala.Float]] and [[scala.Double]].
  */
 trait AnyVal {
-//  disabled for now to make the standard build go through
+//  disabled for now to make the standard build go through. 
+//  Once we have a new strap we can uncomment this and delete the AnyVal_getClass entry in Definitions.
 //  def getClass(): Class[_ <: AnyVal] = ???   
 }
