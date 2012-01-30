@@ -620,7 +620,7 @@ object List extends SeqFactory[List] {
 }
 
 /** Only used for list serialization */
-@SerialVersionUID(0L - 8476791151975527571L)
+@SerialVersionUID(0L - 8287891243975527522L)
 private[scala] case object ListSerializeStart
 
 /** Only used for list serialization */
