@@ -33,12 +33,17 @@ abstract class SymbolTable extends api.Universe
 {
   def rootLoader: LazyType
   def log(msg: => AnyRef): Unit
-  def abort(msg: String): Nothing = throw new FatalError(msg)
+  def abort(msg: String): Nothing = throw new FatalError(supplementErrorMessage(msg))
+
+  @deprecated("2.10.0", "Give us a reason")
   def abort(): Nothing = abort("unknown error")
 
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
   def debugwarn(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
+  
+  /** Overridden when we know more about what was happening during a failure. */
+  def supplementErrorMessage(msg: String): String = msg
 
   private[scala] def printResult[T](msg: String)(result: T) = {
     Console.err.println(msg + ": " + result)
@@ -271,4 +276,9 @@ abstract class SymbolTable extends api.Universe
 
   /** The phase which has given index as identifier. */
   val phaseWithId: Array[Phase]
+  
+  /** Is this symbol table part of reflexive mirror? In this case
+   *  operations need to be made thread safe.
+   */
+  def inReflexiveMirror = false
 }

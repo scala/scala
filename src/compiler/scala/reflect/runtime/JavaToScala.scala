@@ -175,7 +175,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       load(sym)
       completeRest()
     }
-    def completeRest(): Unit = {
+    def completeRest(): Unit = self.synchronized {
       val tparams = clazz.rawInfo.typeParams
 
       val parents = try {

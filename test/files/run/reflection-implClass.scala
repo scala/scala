@@ -8,19 +8,19 @@
 object Test extends App with Outer {
   import scala.reflect.mirror
 
-  assert(mirror.classToSymbol(manifest[Foo].erasure).info.declaration(mirror.newTermName("bar")).info ==
-    mirror.classToSymbol(manifest[Bar].erasure).info.declaration(mirror.newTermName("foo")).info)
+  assert(mirror.classToSymbol(manifest[Foo].erasure).typeSig.declaration(mirror.newTermName("bar")).typeSig ==
+    mirror.classToSymbol(manifest[Bar].erasure).typeSig.declaration(mirror.newTermName("foo")).typeSig)
 
   val s1 = implClass(manifest[Foo].erasure)
   assert(s1 != mirror.NoSymbol)
-  assert(s1.info != mirror.NoType)
-  assert(s1.companionModule.info != mirror.NoType)
-  assert(s1.companionModule.info.declaration(mirror.newTermName("bar")) != mirror.NoSymbol)
+  assert(s1.typeSig != mirror.NoType)
+  assert(s1.companionModule.typeSig != mirror.NoType)
+  assert(s1.companionModule.typeSig.declaration(mirror.newTermName("bar")) != mirror.NoSymbol)
   val s2 = implClass(manifest[Bar].erasure)
   assert(s2 != mirror.NoSymbol)
-  assert(s2.info != mirror.NoType)
-  assert(s2.companionModule.info != mirror.NoType)
-  assert(s2.companionModule.info.declaration(mirror.newTermName("foo")) != mirror.NoSymbol)
+  assert(s2.typeSig != mirror.NoType)
+  assert(s2.companionModule.typeSig != mirror.NoType)
+  assert(s2.companionModule.typeSig.declaration(mirror.newTermName("foo")) != mirror.NoSymbol)
   def implClass(clazz: Class[_]) = {
     val implClass = Class.forName(clazz.getName + "$class")
     mirror.classToSymbol(implClass)

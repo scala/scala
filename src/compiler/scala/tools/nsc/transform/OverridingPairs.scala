@@ -74,7 +74,7 @@ abstract class OverridingPairs {
     }
 
     /** The symbols that can take part in an overriding pair */
-    private val decls = new Scope
+    private val decls = newScope
 
     // fill `decls` with overriding shadowing overridden */
     { def fillDecls(bcs: List[Symbol], deferredflag: Int) {

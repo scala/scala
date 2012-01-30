@@ -207,7 +207,7 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)
-      root.setInfo(new PackageClassInfoType(new Scope(), root))
+      root.setInfo(new PackageClassInfoType(newScope, root))
 
       val sourcepaths = classpath.sourcepaths
       for (classRep <- classpath.classes if platform.doLoad(classRep)) {

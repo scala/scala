@@ -502,7 +502,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       typeEnv(sClass) = env
       this.specializedClass((clazz, env0)) = sClass
 
-      val decls1                        = new Scope // declarations of the newly specialized class 'sClass'
+      val decls1                        = newScope  // declarations of the newly specialized class 'sClass'
       var oldClassTParams: List[Symbol] = Nil       // original unspecialized type parameters
       var newClassTParams: List[Symbol] = Nil       // unspecialized type parameters of 'specializedClass' (cloned)
 
@@ -1089,7 +1089,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (tparams.nonEmpty) " (poly)" else "",
           clazz, parents1, phase)
         )
-        val newScope = new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz))
+        val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
         // If tparams.isEmpty, this is just the ClassInfoType.
         polyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>

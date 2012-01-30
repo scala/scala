@@ -81,7 +81,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // we don't transform after typers
       // (that would require much more sophistication when generating trees,
       //  and the only place that emits Matches after typers is for exception handling anyway)
-      assert(phase.id <= currentRun.typerPhase.id)
+      assert(phase.id <= currentRun.typerPhase.id, phase)
 
       val scrutType = repeatedToSeq(elimAnonymousClass(scrut.tpe.widen))
 
@@ -315,7 +315,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
           val extractorCall = try {
             context.undetparams = Nil
             silent(_.typed(Apply(Select(orig, extractor), List(Ident(nme.SELECTOR_DUMMY) setType fun.tpe.finalResultType)), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
-              case extractorCall: Tree => extractorCall // if !extractorCall.containsError()
+              case SilentResultValue(extractorCall) => extractorCall // if !extractorCall.containsError()
               case _ =>
                 // this fails to resolve overloading properly...
                 // Apply(typedOperator(Select(orig, extractor)), List(Ident(nme.SELECTOR_DUMMY))) // no need to set the type of the dummy arg, it will be replaced anyway
@@ -876,7 +876,7 @@ defined class Foo */
       private val reusedBy = new collection.mutable.HashSet[Test]
       var reuses: Option[Test] = None
       def registerReuseBy(later: Test): Unit = {
-        assert(later.reuses.isEmpty)
+        assert(later.reuses.isEmpty, later.reuses)
         reusedBy += later
         later.reuses = Some(this)
       }
@@ -1128,62 +1128,48 @@ defined class Foo */
     //   }
     // }
 
-    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = if (optimizingCodeGen) {
-      def unfold(tms: List[TreeMaker], currLabel: Option[Symbol] = None, nextLabel: Option[Symbol] = None): List[CaseDef] = tms match {
-        // constant
-        case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil => import CODE._
-          @inline
-          def substedBody  = btm.substitution(body)
-          val labelledBody = currLabel match {
-            case None          => substedBody // currLabel.isEmpty implies nextLabel.isEmpty
-            case Some(myLabel) =>
-              LabelDef(myLabel, Nil,
-                nextLabel match {
-                  case None       => substedBody
-                  case Some(next) => ID(next) APPLY ()
-                }
-              )
-          }
-          List(CaseDef(const, EmptyTree, labelledBody))
-
-        // alternatives
-        case AlternativesTreeMaker(_, altss, _) :: bodyTm :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
-          val labels  = altss map { alts =>
-            Some(freshSym(NoPosition, MethodType(Nil, pt), "$alt$") setFlag (METHOD | LABEL))
-          }
-
-          val caseDefs = (altss, labels, labels.tail :+ None).zipped.map { case (alts, currLabel, nextLabel) =>
-            unfold(alts :+ bodyTm, currLabel, nextLabel)
-          }
-
-          if (caseDefs exists (_.isEmpty)) Nil
-          else caseDefs.flatten
-
-        case _ => Nil // failure
-      }
+    def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = if (!optimizingCodeGen) None else {
+      def sequence[T](xs: List[Option[T]]): Option[List[T]] =
+        if (xs exists (_.isEmpty)) None else Some(xs.flatten)
 
       val caseDefs = cases map { makers =>
         removeSubstOnly(makers) match {
           // default case (don't move this to unfold, as it may only occur on the top level, not as an alternative -- well, except in degenerate matches)
           case (btm@BodyTreeMaker(body, _)) :: Nil =>
-            List(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
-          case nonTrivialMakers =>
-            unfold(nonTrivialMakers)
+            Some(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
+          // constant
+          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil => import CODE._
+            Some(CaseDef(const, EmptyTree, btm.substitution(body)))
+          // alternatives
+          case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
+            val caseConstants = altss map {
+              case EqualityTestTreeMaker(_, const@SwitchablePattern(), _) :: Nil =>
+                Some(const)
+              case _ =>
+                None
+            }
+
+            sequence(caseConstants) map { contants =>
+              val substedBody  = btm.substitution(body)
+              CaseDef(Alternative(contants), EmptyTree, substedBody)
+            }
+          case _ =>
+            None //failure (can't translate pattern to a switch)
         }
       }
 
-      if (caseDefs exists (_.isEmpty)) None
-      else { import CODE._
+      sequence(caseDefs) map { caseDefs =>
+        import CODE._
         val matcher = BLOCK(
           VAL(scrutSym) === scrut, // TODO: type test for switchable type if patterns allow switch but the scrutinee doesn't
-          Match(REF(scrutSym), caseDefs.flatten) // match on scrutSym, not scrut to avoid duplicating scrut
+          Match(REF(scrutSym), caseDefs) // match on scrutSym, not scrut to avoid duplicating scrut
         )
 
         // matcher filter (tree => tree.tpe == null) foreach println
         // treeBrowser browse matcher
-        Some(matcher) // set type to avoid recursion in typedMatch
+        matcher // set type to avoid recursion in typedMatch
       }
-    } else None
+    }
 
     def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] =
       doCSE(prevBinder, doDCE(prevBinder, cases, pt), pt)
@@ -1253,7 +1239,7 @@ defined class Foo */
           case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
             // println("def: "+ (d, d.symbol.ownerChain, currentOwner.ownerChain))
             if(d.symbol.isLazy) { // for lazy val's accessor -- is there no tree??
-              assert(d.symbol.lazyAccessor != NoSymbol && d.symbol.lazyAccessor.owner == d.symbol.owner)
+              assert(d.symbol.lazyAccessor != NoSymbol && d.symbol.lazyAccessor.owner == d.symbol.owner, d.symbol.lazyAccessor)
               d.symbol.lazyAccessor.owner = currentOwner
             }
             if(d.symbol.moduleClass ne NoSymbol)
@@ -1471,7 +1457,7 @@ defined class Foo */
     def freshSym(pos: Position, tp: Type = NoType, prefix: String = "x") = {ctr += 1;
       // assert(owner ne null)
       // assert(owner ne NoSymbol)
-      new TermSymbol(NoSymbol, pos, vpmName.counted(prefix, ctr)) setInfo repackExistential(tp)
+      NoSymbol.newTermSymbol(vpmName.counted(prefix, ctr), pos) setInfo repackExistential(tp)
     }
 
     def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {

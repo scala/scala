@@ -26,7 +26,7 @@ class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
 
   deprecation.value = true
   nowarnings.value  = false
-  encoding.value    = "ISO-8859-1"
+  encoding.value    = "UTF-8"
   classpath.value   = cp
 }
 
@@ -111,6 +111,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 
     try {
       NestUI.verbose("compiling "+toCompile)
+      NestUI.verbose("with classpath: "+global.classPath.toString)
       try new global.Run compile toCompile
       catch {
         case FatalError(msg) =>

@@ -210,9 +210,9 @@ trait Importers { self: SymbolTable =>
       result
     }
 
-    // !!! todo: override to vcater for PackageScopes
+    // !!! todo: override to cater for PackageScopes
     def importScope(decls: from.Scope): Scope =
-      new Scope(decls.toList map importSymbol)
+      newScopeWith(decls.toList map importSymbol: _*)
 
     def importName(name: from.Name): Name =
       if (name.isTypeName) newTypeName(name.toString) else newTermName(name.toString)

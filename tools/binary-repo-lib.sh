@@ -7,6 +7,8 @@ remote_urlbase="http://typesafe.artifactoryonline.com/typesafe/scala-sha-bootstr
 libraryJar="$(pwd)/lib/scala-library.jar"
 desired_ext=".desired.sha1"
 push_jar="$(pwd)/tools/push.jar"
+# Cache dir has .sbt in it to line up with SBT build.
+cache_dir="${HOME}/.sbt/cache/scala"
 
 # Checks whether or not curl is installed and issues a warning on failure.
 checkCurl() {
@@ -126,6 +128,25 @@ pushJarFiles() {
   else
     echo "Binary changes have been pushed.  You may now submit the new *${desired_ext} files to git."
   fi
+} 
+
+# Pulls a single binary artifact from a remote repository.
+# Argument 1 - The uri to the file that should be downloaded.
+# Argument 2 - SHA of the file...
+# Returns: Cache location.
+pullJarFileToCache() {
+  local uri=$1
+  local sha=$2
+  local cache_loc=$cache_dir/$uri
+  local cdir=$(dirname $cache_loc)
+  if [[ ! -d $cdir ]]; then
+    mkdir -p $cdir
+  fi
+  # TODO - Check SHA of local cache is accurate.
+  if [[ ! -f $cache_loc ]]; then
+    curlDownload $cache_loc ${remote_urlbase}/${uri}
+  fi
+  echo "$cache_loc"
 }
 
 # Pulls a single binary artifact from a remote repository.
@@ -139,8 +160,9 @@ pullJarFile() {
   local jar_name=${jar#$jar_dir/}
   local version=${sha1% ?$jar_name}
   local remote_uri=${version}/${jar#$basedir/}
-  echo "Downloading from ${remote_urlbase}/${remote_uri}"
-  curlDownload $jar ${remote_urlbase}/${remote_uri}
+  echo "Resolving [${remote_uri}]"
+  local cached_file=$(pullJarFileToCache $remote_uri $version)
+  cp $cached_file $jar
 }
 
 # Pulls binary artifacts from the remote repository.
@@ -152,7 +174,6 @@ pullJarFiles() {
     jar=${sha%$desired_ext}
     local valid=$(isJarFileValid $jar)
     if [[ "$valid" != "OK" ]]; then
-      echo "Obtaining [$jar] from binary repository..."
       pullJarFile $jar $basedir
     fi
   done

@@ -47,20 +47,7 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
 
   /** Prints the message with the given position indication. */
   def printMessage(posIn: Position, msg: String) {
-    val pos = if (posIn eq null) NoPosition
-              else if (posIn.isDefined) posIn.inUltimateSource(posIn.source)
-              else posIn
-    pos match {
-      case FakePos(fmsg) =>
-        printMessage(fmsg+" "+msg)
-      case NoPosition =>
-        printMessage(msg)
-      case _ =>
-        val buf = new StringBuilder(msg)
-        val file = pos.source.file
-        printMessage((if (shortname) file.name else file.path)+":"+pos.line+": "+msg)
-        printSourceLine(pos)
-    }
+    printMessage(Position.formatMessage(posIn, msg, shortname))
   }
   def print(pos: Position, msg: String, severity: Severity) {
     printMessage(pos, clabel(severity) + msg)

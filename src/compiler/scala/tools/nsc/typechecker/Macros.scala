@@ -97,8 +97,6 @@ trait Macros { self: Analyzer =>
     override def defaultReflectiveClassLoader() = libraryClassLoader
   }
 
-  class MacroExpandError(val msg: String) extends Exception(msg)
-
   /** Return optionally address of companion object and implementation method symbol
    *  of given macro; or None if implementation classfile cannot be loaded or does 
    *  not contain the macro implementation.
@@ -127,7 +125,7 @@ trait Macros { self: Analyzer =>
    *  Or, if that fails, and the macro overrides a method return
    *  tree that calls this method instead of the macro.
    */
-  def macroExpand(tree: Tree): Any = {
+  def macroExpand(tree: Tree, context: Context): Option[Any] = {
     val macroDef = tree.symbol
     macroImpl(macroDef) match {
       case Some((receiver, rmeth)) =>
@@ -139,41 +137,55 @@ trait Macros { self: Analyzer =>
         }
         val rawArgs: Seq[Any] = rawArgss.flatten
         try {
-          mirror.invoke(receiver, rmeth, rawArgs: _*)
+          Some(mirror.invoke(receiver, rmeth, rawArgs: _*))
         } catch {
           case ex =>
             val realex = ReflectionUtils.unwrapThrowable(ex)
             val stacktrace = new java.io.StringWriter()
             realex.printStackTrace(new java.io.PrintWriter(stacktrace))
             val msg = System.getProperty("line.separator") + stacktrace
-            throw new MacroExpandError("exception during macro expansion: " + msg)
+            context.unit.error(tree.pos, "exception during macro expansion: " + msg)
+            None
         }
       case None =>
         val trace = scala.tools.nsc.util.trace when settings.debug.value
-        def notFound() = throw new MacroExpandError("macro implementation not found: " + macroDef.name)
-        def fallBackToOverridden(tree: Tree): Tree = {
+        def notFound() = {
+          context.unit.error(tree.pos, "macro implementation not found: " + macroDef.name)
+          None
+        }
+        def fallBackToOverridden(tree: Tree): Option[Tree] = {
           tree match {
             case Select(qual, name) if (macroDef.isMacro) =>
               macroDef.allOverriddenSymbols match {
-                case first :: others =>
-                  return Select(qual, name) setPos tree.pos setSymbol first
+                case first :: _ =>
+                  Some(Select(qual, name) setPos tree.pos setSymbol first)
                 case _ => 
                   trace("macro is not overridden: ")(tree)
                   notFound()
               }
             case Apply(fn, args) =>
-              Apply(fallBackToOverridden(fn), args) setPos tree.pos
+              fallBackToOverridden(fn) match {
+                case Some(fn1) => Some(Apply(fn1, args) setPos tree.pos)
+                case _         => None
+              }
             case TypeApply(fn, args) =>
-              TypeApply(fallBackToOverridden(fn), args) setPos tree.pos
+              fallBackToOverridden(fn) match {
+                case Some(fn1) => Some(TypeApply(fn1, args) setPos tree.pos)
+                case _         => None
+              }
             case _ =>
               trace("unexpected tree in fallback: ")(tree)
               notFound()
           }
         }
-        val tree1 = fallBackToOverridden(tree)
-        trace("falling back to ")(tree1)
-        currentRun.macroExpansionFailed = true
-        tree1
+        fallBackToOverridden(tree) match {
+          case Some(tree1) =>
+            trace("falling back to ")(tree1)
+            currentRun.macroExpansionFailed = true
+            Some(tree1)
+          case None =>
+            None
+        }
     }
   }
 }

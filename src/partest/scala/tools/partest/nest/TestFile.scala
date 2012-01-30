@@ -12,6 +12,7 @@ import java.io.{ File => JFile }
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io._
+import scala.util.Properties.{ propIsSet, propOrElse, setProp }
 
 trait TestFileCommon {
   def file: JFile
@@ -61,6 +62,10 @@ case class SpecializedTestFile(file: JFile, fileManager: FileManager) extends Te
     super.defineSettings(settings, setOutDir) && {
       // add the instrumented library version to classpath
       settings.classpath prepend PathSettings.srcSpecLib.toString
+      // @partest maintainer: if we use a custom Scala build (specified via --classpath)
+      // then the classes provided by it will come earlier than instrumented.jar in the resulting classpath
+      // this entire classpath business needs a thorough solution
+      if (propIsSet("java.class.path")) setProp("java.class.path", PathSettings.srcSpecLib.toString + ";" + propOrElse("java.class.path", ""))
       true
     }
   }

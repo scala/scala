@@ -309,7 +309,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   override def byteValue   = intValue.toByte
 
   /** Converts this BigInt to a <tt>short</tt>.
-   *  If the BigInt is too big to fit in a byte, only the low-order 16 bits are returned.
+   *  If the BigInt is too big to fit in a short, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value as well as return a result with the opposite sign.
    */
@@ -323,7 +323,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   def charValue   = intValue.toChar
 
   /** Converts this BigInt to an <tt>int</tt>.
-   *  If the BigInt is too big to fit in a char, only the low-order 32 bits
+   *  If the BigInt is too big to fit in a int, only the low-order 32 bits
    *  are returned. Note that this conversion can lose information about the
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.
@@ -331,7 +331,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   def intValue    = this.bigInteger.intValue
 
   /** Converts this BigInt to a <tt>long</tt>.
-   *  If the BigInt is too big to fit in a char, only the low-order 64 bits
+   *  If the BigInt is too big to fit in a long, only the low-order 64 bits
    *  are returned. Note that this conversion can lose information about the
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.

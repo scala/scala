@@ -57,7 +57,7 @@ trait ToolBoxes extends { self: Universe =>
     
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
         val obj = EmptyPackageClass.newModule(nextWrapperModuleName())
-        val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), new Scope, obj.moduleClass)
+        val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), newScope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
         val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
@@ -123,15 +123,21 @@ trait ToolBoxes extends { self: Universe =>
           applyMeth.invoke(result)
         }
       }
-      
-      def showAttributed(tree: Tree): String = {
-        val saved = settings.printtypes.value
+
+      def showAttributed(tree: Tree, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String = {
+        val saved1 = settings.printtypes.value
+        val saved2 = settings.uniqid.value
+        val saved3 = settings.Yshowsymkinds.value
         try {
-          settings.printtypes.value = true
-          //settings.uniqid.value = true
+          settings.printtypes.value = printTypes
+          settings.uniqid.value = printIds
+          settings.uniqid.value = printKinds
           tree.toString
-        } finally
-          compiler.settings.printtypes.value = saved
+        } finally {
+          settings.printtypes.value = saved1
+          settings.uniqid.value = saved2
+          settings.Yshowsymkinds.value = saved3
+        }
       }
     }
 

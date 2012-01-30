@@ -49,6 +49,7 @@ trait AnnotationCheckers {
     def adaptAnnotations(tree: Tree, mode: Int, pt: Type): Tree = tree
   }
 
+  // Syncnote: Annotation checkers inaccessible to reflection, so no sync in var necessary.
   /** The list of annotation checkers that have been registered */
   private var annotationCheckers: List[AnnotationChecker] = Nil
 

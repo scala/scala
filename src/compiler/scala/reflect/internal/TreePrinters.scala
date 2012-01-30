@@ -27,10 +27,20 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
   /** Turns a path into a String, introducing backquotes
    *  as necessary.
    */
-  def backquotedPath(t: Tree): String = t match {
-    case Select(qual, name) => "%s.%s".format(backquotedPath(qual), quotedName(name))
-    case Ident(name)        => quotedName(name)
-    case _                  => t.toString
+  def backquotedPath(t: Tree): String = {
+    def suffix(t: Tree) = {
+      var suffix = ""
+      if (t.hasSymbol && settings.uniqid.value) suffix += ("#" + t.symbol.id)
+      if (t.hasSymbol && settings.Yshowsymkinds.value) suffix += ("#" + t.symbol.abbreviatedKindString)
+      suffix
+    }
+
+    t match {
+      case Select(qual, name) if name.isTermName  => "%s.%s".format(backquotedPath(qual), quotedName(name)) + suffix(t)
+      case Select(qual, name) if name.isTypeName  => "%s#%s".format(backquotedPath(qual), quotedName(name)) + suffix(t)
+      case Ident(name)                            => quotedName(name) + suffix(t)
+      case _                                      => t.toString
+    }
   }
 
   class TreePrinter(out: PrintWriter) extends super.TreePrinter {
@@ -396,7 +406,6 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
 // SelectFromArray.
 //          case SelectFromArray(qualifier, name, _) =>
 //          print(qualifier); print(".<arr>"); print(symName(tree, name))
-
 
         case tree =>
           xprintTree(this, tree)
