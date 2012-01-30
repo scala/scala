@@ -79,7 +79,7 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
 
   override def -=(elem: A): this.type = {
     try {
-      resolve.avl = AVLTree.remove(elem, resolve.avl, ordering)
+      resolve.avl = resolve.avl.remove(elem, ordering)
       resolve.cardinality = resolve.cardinality - 1
     } catch {
       case e: NoSuchElementException => ()
@@ -89,7 +89,7 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
 
   override def +=(elem: A): this.type = {
     try {
-      resolve.avl = AVLTree.insert(elem, resolve.avl, ordering)
+      resolve.avl = resolve.avl.insert(elem, ordering)
       resolve.cardinality = resolve.cardinality + 1
     } catch {
       case e: IllegalArgumentException => ()
@@ -98,7 +98,7 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
   }
 
   /**
-   * Thanks to the nature immutable of the
+   * Thanks to the immutable nature of the
    * underlying AVL Tree, we can share it with
    * the clone. So clone complexity in time is O(1).
    * 
@@ -113,11 +113,11 @@ class TreeSet[A](implicit val ordering: Ordering[A]) extends SortedSet[A] with S
   override def contains(elem: A): Boolean = {
     isLeftAcceptable(from, ordering)(elem) &&
     isRightAcceptable(until, ordering)(elem) &&
-    AVLTree.contains(elem, resolve.avl, ordering)
+    resolve.avl.contains(elem, ordering)
   }
 
-  override def iterator: Iterator[A] =
-    AVLTree.iterator(resolve.avl,
-		     isLeftAcceptable(from, ordering),
-		     isRightAcceptable(until, ordering))
+  override def iterator: Iterator[A] = resolve.avl.iterator
+    .dropWhile(e => !isLeftAcceptable(from, ordering)(e))
+      .takeWhile(e => isRightAcceptable(until, ordering)(e))
+  
 }
