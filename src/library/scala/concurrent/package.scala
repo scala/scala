@@ -121,11 +121,6 @@ package object concurrent {
   object nondeterministic {
   }
   
-  final class DurationOps private[concurrent] (x: Int) {
-    // TODO ADD OTHERS
-    def ns = util.Duration.fromNanos(0)
-  }
-  
   @inline implicit final def int2durationops(x: Int) = new DurationOps(x)
   
 }
@@ -144,13 +139,10 @@ package concurrent {
     def this(origin: Future[_]) = this(origin, "Future timed out.")
   }
   
-  /** Evidence that the program can be nondeterministic.
-   *  
-   *  Programs in which such an evidence is available in scope
-   *  can contain calls to methods which yield nondeterministic
-   *  programs.
-   */
-  sealed trait NonDeterministic
+  final class DurationOps private[concurrent] (x: Int) {
+    // TODO ADD OTHERS
+    def ns = util.Duration.fromNanos(0)
+  }
   
 }
 

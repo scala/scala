@@ -37,6 +37,8 @@ trait ExecutionContext {
   
   def blocking[T](awaitable: Awaitable[T], atMost: Duration): T
   
+  def reportFailure(t: Throwable): Unit
+  
   /* implementations follow */
   
   private implicit val executionContext = this

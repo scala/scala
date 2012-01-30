@@ -199,7 +199,7 @@ object Promise {
       try {
         func(result)
       } catch {
-        case e => e.printStackTrace()
+        case e => executor.reportFailure(e)
       }
     }
   }

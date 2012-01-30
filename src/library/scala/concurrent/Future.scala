@@ -330,7 +330,7 @@ self =>
    *  future (6 / 0) rescue { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
    */
-  def rescue[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
+  def tryRecover[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
     val p = newPromise[U]
     
     onComplete {
@@ -344,6 +344,31 @@ self =>
           case t: Throwable => p complete resolver(t)
         }
       case otherwise => p complete otherwise
+    }
+    
+    p.future
+  }
+  
+  /** Zips the values of `this` and `that` future, and creates
+   *  a new future holding the tuple of their results.
+   *  
+   *  If `this` future fails, the resulting future is failed
+   *  with the throwable stored in `this`.
+   *  Otherwise, if `that` future fails, the resulting future is failed
+   *  with the throwable stored in `that`.
+   */
+  def zip[U](that: Future[U]): Future[(T, U)] = {
+    val p = newPromise[(T, U)]
+    
+    this onComplete {
+      case Left(t)  => p failure t
+      case Right(r) => that onSuccess {
+        case r2 => p success ((r, r2))
+      }
+    }
+    
+    that onFailure {
+      case f => p failure f
     }
     
     p.future
@@ -410,26 +435,6 @@ self =>
     }
     
     p.future
-  }
-  
-  /** Executes a piece of code once this future is completed, regardless of whether
-   *  or not the future fails or succeeds, and returns a new future with the result of this
-   *  future.
-   *
-   *  This method allows one to enforce ordering.
-   *  
-   *  The below example always executes the `println` calls in order:
-   *  {{{
-   *  val f = future { 5 }
-   *  f ensure {
-   *    println("The value is available.")
-   *  } ensure {
-   *    println("The application can now end.")
-   *  }
-   *  }}}
-   */
-  def ensure[U](body: =>U): Future[T] = andThen {
-    case _ => body
   }
   
   /** Creates a new future which holds the result of either this future or `that` future, depending on

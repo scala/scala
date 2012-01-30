@@ -290,6 +290,8 @@ private[concurrent] final class ExecutionContextImpl extends ExecutionContext {
       res
   }
 
+  def reportFailure(t: Throwable): Unit = {}
+  
 }
 
 

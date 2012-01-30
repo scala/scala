@@ -22,7 +22,7 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
   
   def execute(runnable: Runnable): Unit = executorService match {
     // case fj: ForkJoinPool =>
-    //   // TODO fork if more applicable
+    //   TODO fork if more applicable
     //   executorService execute runnable
     case _ =>
       executorService execute runnable
@@ -58,6 +58,10 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
       case null => awaitable.await(atMost)(null) // outside - TODO - fix timeout case
       case x => x.blockingCall(awaitable) // inside an execution context thread
     }
+  }
+  
+  def reportFailure(t: Throwable) {
+    t.printStackTrace()
   }
   
   /** Only callable from the tasks running on the same execution context. */
@@ -104,7 +108,7 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
                 } catch {
                   case e =>
                     // TODO catching all and continue isn't good for OOME
-                    e.printStackTrace()
+                    reportFailure(e)
                 }
               }
             } finally {
