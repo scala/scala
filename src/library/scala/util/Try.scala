@@ -10,6 +10,10 @@ package scala.util
 
 
 
+import collection.Seq
+
+
+
 /**
  * The `Try` type represents a computation that may either result in an exception, 
  * or return a success value. It's analagous to the `Either` type.
@@ -33,7 +37,7 @@ sealed abstract class Try[+T] {
   /**
    * Returns the value from this `Success` or throws the exception if this is a `Failure`.
    */
-  def get
+  def get: T
 
   /**
    * Applies the given function f if this is a Result.
@@ -50,10 +54,19 @@ sealed abstract class Try[+T] {
    */
   def map[U](f: T => U): Try[U]
 
+  def collect[U](pf: PartialFunction[T, U]): Try[U]
+  
+  def exists(p: T => Boolean): Boolean
+  
   /**
    * Converts this to a `Failure` if the predicate is not satisfied.
    */
   def filter(p: T => Boolean): Try[T]
+
+  /**
+   * Converts this to a `Failure` if the predicate is not satisfied.
+   */
+  def filterNote(p: T => Boolean): Try[T] = filter(x => !p(x))
 
   /**
    * Calls the exceptionHandler with the exception if this is a `Failure`. This is like `flatMap` for the exception.
@@ -63,57 +76,28 @@ sealed abstract class Try[+T] {
   /**
    * Calls the exceptionHandler with the exception if this is a `Failure`. This is like map for the exception.
    */
-  def handle[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U]
-
-  /**
-   * Invoked regardless of whether the computation completed
-   * successfully or unsuccessfully.  Implemented in terms of
-   * `respond` so that subclasses control evaluation order.  Returns a
-   * chained `this` as in `respond`.
-   */
-  def ensure[U](f: => U): Try[T] =
-    respond { _ => f }
-
+  def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U]
+  
   /**
    * Returns `None` if this is a `Failure` or a `Some` containing the value if this is a `Success`.
    */
   def toOption = if (isSuccess) Some(get) else None
 
+  def toSeq = if (isSuccess) Seq(get) else Seq()
+  
   /**
-   * Invokes the given closure when the value is available.  Returns
-   * another 'This[R]' that is guaranteed to be available only *after*
-   * 'k' has run.  This enables the enforcement of invocation ordering.
-   *
-   * This is overridden by subclasses.
-   */
-  def respond[U](k: Try[T] => U): Try[T] = { 
-    k(this)
-    this
-  }
-
-  /**
-   * Invokes the given transformation when the value is available,
-   * returning the transformed value. This method is like a combination
-   * of `flatMap` and `rescue`. This method is typically used for more
-   * imperative control-flow than flatMap/rescue which often exploits
-   * the Null Object Pattern.
-   *
-   * This is overridden by subclasses.
-   */
-  def transform[U](f: Try[T] => Try[U]): Try[U] =
-    f(this)
-
-  /**
-   * Returns the given function applied to the value from this Success or returns this if this is a `Failure.
+   * Returns the given function applied to the value from this Success or returns this if this is a `Failure`.
    * Alias for `flatMap`.
    */
-  def andThen[U](f: T => Try[U]) = flatMap(f)
+  def andThen[U](f: T => Try[U]): Try[U] = flatMap(f)
 
   /**
    * Transforms a nested `Try`, i.e., a `Try` of type `Try[Try[T]]`, 
-   * into an un-nested `Try`, i.e., a `Try` of type `Try[T]`
+   * into an un-nested `Try`, i.e., a `Try` of type `Try[T]`.
    */
   def flatten[U](implicit ev: T <:< Try[U]): Try[U]
+  
+  def failed: Try[Throwable]
 }
 
 
@@ -130,15 +114,18 @@ final case class Failure[+T](e: Throwable) extends Try[T] {
   def get: T = throw e
   def flatMap[U](f: T => Try[U]): Try[U] = Failure[U](e)
   def flatten[U](implicit ev: T <:< Try[U]): Try[U] = Failure[U](e)
-  def foreach[U](f: T => U) {}
+  def foreach[U](f: T => U): Unit = {}
   def map[U](f: T => U): Try[U] = Failure[U](e)
+  def collect[U](pf: PartialFunction[T, U]): Try[U] = Failure[U](e)
   def filter(p: T => Boolean): Try[T] = this
-  def handle[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] = 
+  def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] = 
     if (rescueException.isDefinedAt(e)) {
       Try(rescueException(e))
     } else {
       this
     }
+  def exists(p: T => Boolean): Boolean = false
+  def failed: Try[Throwable] = Success(e)
 }
 
 
@@ -153,12 +140,17 @@ final case class Success[+T](r: T) extends Try[T] {
       case e => Failure(e) 
     }
   def flatten[U](implicit ev: T <:< Try[U]): Try[U] = r
-  def foreach[U](f: T => U) = f(r)
+  def foreach[U](f: T => U): Unit = f(r)
   def map[U](f: T => U): Try[U] = Try[U](f(r))
+  def collect[U](pf: PartialFunction[T, U]): Try[U] =
+    if (pf isDefinedAt r) Success(pf(r))
+    else Failure[U](new NoSuchElementException("Partial function not defined at " + r))
   def filter(p: T => Boolean): Try[T] = 
-    if (p(apply())) this 
-    else Failure(new NoSuchElementException("Predicate does not hold"))
-  def handle[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] = this
+    if (p(r)) this
+    else Failure(new NoSuchElementException("Predicate does not hold for " + r))
+  def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] = this
+  def exists(p: T => Boolean): Boolean = p(r)
+  def failed: Try[Throwable] = Failure(new UnsupportedOperationException("Success.failed"))
 }
 
 
