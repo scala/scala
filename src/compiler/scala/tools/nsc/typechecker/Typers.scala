@@ -793,7 +793,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           val tree0 = etaExpand(context.unit, tree)
           // println("eta "+tree+" ---> "+tree0+":"+tree0.tpe+" undet: "+context.undetparams+ " mode: "+Integer.toHexString(mode))
 
-          if (meth.typeParams.nonEmpty) {
+          if (context.undetparams.nonEmpty) {
             // #2624: need to infer type arguments for eta expansion of a polymorphic method
             // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
             // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
