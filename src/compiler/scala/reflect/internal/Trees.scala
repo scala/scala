@@ -10,7 +10,7 @@ import Flags._
 import api.Modifier
 
 trait Trees extends api.Trees { self: SymbolTable =>
-  
+
   // Belongs in TreeInfo but then I can't reach it from TreePrinters.
   def isReferenceToScalaMember(t: Tree, Id: Name) = t match {
     case Ident(Id)                                          => true
@@ -133,7 +133,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         new ChangeOwnerTraverser(oldOwner, newOwner) apply t
       }
     }
-
+    
     def substTreeSyms(pairs: (Symbol, Symbol)*): Tree =
       substTreeSyms(pairs.map(_._1).toList, pairs.map(_._2).toList)
 

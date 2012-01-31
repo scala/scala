@@ -47,6 +47,17 @@ trait SyntheticMethods extends ast.TreeDSL {
       newTyper( if (reporter.hasErrors) context makeSilent false else context )
     )
     import synthesizer._
+    
+    if (clazz0 isSubClass AnyValClass) return {
+      if (clazz0.info member nme.getClass_ isDeferred) {
+        val getClassMethod = createMethod(nme.getClass_, getClassReturnType(clazz.tpe)) { sym =>
+          // XXX dummy implementation for now
+          NULL
+        }
+        treeCopy.Template(templ, templ.parents, templ.self, templ.body :+ getClassMethod)
+      }
+      else templ
+    }
 
     val originalAccessors = clazz.caseFieldAccessors
     // private ones will have been renamed -- make sure they are entered

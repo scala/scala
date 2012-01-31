@@ -113,7 +113,7 @@ trait Namers extends MethodSynthesis {
     private def contextFile = context.unit.source.file
     private def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
-        // H@ need to ensure that we handle only cyclic references
+        // H@ need to ensure that we handle only cyclic references 
         TypeSigError(tree, ex)
         alt
     }
@@ -296,7 +296,7 @@ trait Namers extends MethodSynthesis {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
-
+      
       tree match {
         case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(name.toTypeName, pos, flags)
         case TypeDef(_, _, _, _)                    => owner.newTypeSymbol(name.toTypeName, pos, flags)
@@ -1407,7 +1407,9 @@ trait Namers extends MethodSynthesis {
       }
 
       if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
-        ensureParent(NotNullClass)
+        if (!sym.isSubClass(AnyValClass))
+          ensureParent(NotNullClass)
+
         sym setFlag FINAL
       }
 
@@ -1437,7 +1439,7 @@ trait Namers extends MethodSynthesis {
       checkNoConflict(PRIVATE, PROTECTED)
       // checkNoConflict(PRIVATE, OVERRIDE) // this one leads to bad error messages like #4174, so catch in refchecks
       // checkNoConflict(PRIVATE, FINAL)    // can't do this because FINAL also means compile-time constant
-      checkNoConflict(ABSTRACT, FINAL)
+      // checkNoConflict(ABSTRACT, FINAL)   // this one gives a bad error for non-@inline classes which extend AnyVal
       // @PP: I added this as a sanity check because these flags are supposed to be
       // converted to ABSOVERRIDE before arriving here.
       checkNoConflict(ABSTRACT, OVERRIDE)

@@ -956,8 +956,8 @@ abstract class Erasure extends AddInterfaces
           } else if (fn.symbol.owner.isInlineClass && extensionMethods.hasExtension(fn.symbol)) {
             Apply(gen.mkAttributedRef(extensionMethods.extensionMethod(fn.symbol)), qualifier :: args)
           } else {
-            tree
-          }
+                tree
+            }
 
         case Select(qual, name) =>
           val owner = tree.symbol.owner

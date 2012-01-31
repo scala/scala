@@ -74,7 +74,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     AnyRefClass, ObjectClass, Predef_AnyRef,
     uncheckedVarianceClass
   }
-
+  
   /** TODO - this is a lot of maps.
    */
 
@@ -494,7 +494,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       def cloneInSpecializedClass(member: Symbol, flagFn: Long => Long) =
         member.cloneSymbol(sClass, flagFn(member.flags | SPECIALIZED))
-
+      
       sClass.sourceFile = clazz.sourceFile
       currentRun.symSource(sClass) = clazz.sourceFile // needed later on by mixin
 
@@ -1197,7 +1197,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     } else NoSymbol
 
   def illegalSpecializedInheritance(clazz: Symbol): Boolean = (
-       hasSpecializedFlag(clazz)
+       hasSpecializedFlag(clazz) 
     && originalClass(clazz).parentSymbols.exists(p => hasSpecializedParams(p) && !p.isTrait)
   )
 
@@ -1261,7 +1261,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specMember = specCandidates suchThat { s =>
             doesConform(symbol, tree.tpe, qual.tpe.memberType(s), env)
           }
-
+          
           log("[specSym] found: " + specCandidates.tpe + ", instantiated as: " + tree.tpe)
           log("[specSym] found specMember: " + specMember)
           if (specMember ne NoSymbol)
@@ -1378,7 +1378,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             (new CollectMethodBodies)(tree)
           val parents1 = map2(currentOwner.info.parents, parents)((tpe, parent) =>
             TypeTree(tpe) setPos parent.pos)
-
+          
           treeCopy.Template(tree,
             parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/ ,
             self,

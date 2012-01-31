@@ -354,7 +354,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   def classToScala(jclazz: jClass[_]): Symbol = classCache.toScala(jclazz) {
     val jname = javaTypeName(jclazz)
     def lookup = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
-
+    
     if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
       val sym = lookup
       assert(sym.isType, sym+"/"+jclazz+"/"+sOwner(jclazz)+"/"+jclazz.getSimpleName)

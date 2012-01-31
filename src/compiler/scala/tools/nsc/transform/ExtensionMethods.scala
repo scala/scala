@@ -84,10 +84,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     def extensionMethInfo(extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type = {
       var newTypeParams = cloneSymbolsAtOwner(clazz.typeParams, extensionMeth)
       val thisParamType = appliedType(clazz.typeConstructor, newTypeParams map (_.tpe))
-      val thisParam = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
+      val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       def transform(clonedType: Type): Type = clonedType match {
         case MethodType(params, restpe) =>
-          MethodType(List(thisParam), clonedType)
+          // I assume it was a bug that this was dropping params...
+          MethodType(thisParam :: params, clonedType)
         case NullaryMethodType(restpe) =>
           MethodType(List(thisParam), restpe)
       }
@@ -116,7 +117,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val extensionMeth = companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE | FINAL)
             .setAnnotations(origMeth.annotations)
           companion.info.decls.enter(extensionMeth)
-          extensionMeth.setInfo(extensionMethInfo(extensionMeth, origMeth.info, currentOwner))
+          val newInfo = extensionMethInfo(extensionMeth, origMeth.info, currentOwner)
+          extensionMeth setInfo newInfo
+          log("Inline class %s spawns extension method.\n  Old: %s\n  New: %s".format(
+            currentOwner,
+            origMeth.defString, 
+            extensionMeth.defString)) // extensionMeth.defStringSeenAs(origInfo
+
           def thisParamRef = gen.mkAttributedIdent(extensionMeth.info.params.head setPos extensionMeth.pos)
           val GenPolyType(extensionTpeParams, extensionMono) = extensionMeth.info
           val origTpeParams = origMeth.typeParams ::: currentOwner.typeParams

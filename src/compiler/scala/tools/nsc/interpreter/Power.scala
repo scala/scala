@@ -20,7 +20,7 @@ import io.{ Path }
 class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: ReplValsImpl) {
   import intp.{ beQuietDuring, typeOfExpression, interpret, parse }
   import intp.global._
-  import definitions.{ manifestToType, getClassIfDefined, getModuleIfDefined }
+  import definitions.{ manifestToType, manifestToSymbol, getClassIfDefined, getModuleIfDefined }
 
   abstract class SymSlurper {
     def isKeep(sym: Symbol): Boolean
@@ -65,10 +65,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     }
   }
 
-  class PackageSlurper(pkgName: String) extends SymSlurper {
-    val pkgSymbol = getModuleIfDefined(pkgName)
-    val modClass  = pkgSymbol.moduleClass
-
+  class PackageSlurper(packageClass: Symbol) extends SymSlurper {
     /** Looking for dwindling returns */
     def droppedEnough() = unseenHistory.size >= 4 && {
       unseenHistory takeRight 4 sliding 2 forall { it =>
@@ -79,9 +76,16 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
 
     def isRecur(sym: Symbol)  = true
     def isIgnore(sym: Symbol) = sym.isAnonOrRefinementClass || (sym.name.toString contains "$mc")
-    def isKeep(sym: Symbol)   = sym.hasTransOwner(modClass)
+    def isKeep(sym: Symbol)   = sym.hasTransOwner(packageClass)
     def isFinished()          = droppedEnough()
-    def slurp()               = apply(modClass)
+    def slurp()               = {
+      if (packageClass.isPackageClass)
+        apply(packageClass)
+      else {
+        repldbg("Not a package class! " + packageClass)
+        Set()
+      }
+    }
   }
 
   private def customBanner = replProps.powerBanner.option flatMap (f => io.File(f).safeSlurp())
@@ -124,7 +128,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     def to_str(m: Symbol) = "%12s %s".format(
       m.decodedName, "" + elimRefinement(m.accessedOrSelf.tpe) stripPrefix "scala.tools.nsc.")
 
-    ( rutil.info[ReplValsImpl].declares
+    ( rutil.info[ReplValsImpl].membersDeclared
         filter (m => m.isPublic && !m.hasModuleFlag && !m.isConstructor)
         sortBy (_.decodedName) 
            map to_str
@@ -136,59 +140,81 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     implicit def apply[T: Manifest] : InternalInfo[T] = new InternalInfo[T](None)
   }
   object InternalInfo extends LowPriorityInternalInfo { }
+  
+  /** Now dealing with the problem of acidentally calling a method on Type
+   *  when you're holding a Symbol and seeing the Symbol converted to the
+   *  type of Symbol rather than the type of the thing represented by the
+   *  symbol, by only implicitly installing one method, "?", and the rest
+   *  of the conveniences exist on that wrapper.
+   */
+  trait LowPriorityInternalInfoWrapper {
+    implicit def apply[T: Manifest] : InternalInfoWrapper[T] = new InternalInfoWrapper[T](None)
+  }
+  object InternalInfoWrapper extends LowPriorityInternalInfoWrapper {
+    
+  }
+  class InternalInfoWrapper[T: Manifest](value: Option[T] = None) {
+    def ? : InternalInfo[T] = new InternalInfo[T](value)
+  }
 
   /** Todos...
    *    translate manifest type arguments into applied types
    *    customizable symbol filter (had to hardcode no-spec to reduce noise)
    */
   class InternalInfo[T: Manifest](value: Option[T] = None) {
-    // Decided it was unwise to have implicit conversions via commonly
-    // used type/symbol methods, because it's too easy to e.g. call
-    // "x.tpe" where x is a Type, and rather than failing you get the
-    // Type representing Types#Type (or Manifest, or whatever.)
-    private def tpe    = tpe_
-    private def symbol = symbol_
-    private def name   = name_
+    private def newInfo[U: Manifest](value: U): InternalInfo[U] = new InternalInfo[U](Some(value))
+    private def isSpecialized(s: Symbol) = s.name.toString contains "$mc"
+    private def isImplClass(s: Symbol)   = s.name.toString endsWith "$class"
+    
+    /** Standard noise reduction filter. */
+    def excludeMember(s: Symbol) = (
+         isSpecialized(s)
+      || isImplClass(s)
+      || s.isAnonOrRefinementClass
+      || s.isAnonymousFunction
+    )
+    def symbol      = manifestToSymbol(fullManifest)
+    def tpe         = manifestToType(fullManifest)
+    def name        = symbol.name
+    def companion   = symbol.companionSymbol
+    def info        = symbol.info
+    def moduleClass = symbol.moduleClass
+    def owner       = symbol.owner
+    def owners      = symbol.ownerChain drop 1
+    def signature   = symbol.defString
 
-    def symbol_ : Symbol = getClassIfDefined(erasure.getName)
-    def tpe_ : Type      = manifestToType(man)
-    def name_ : Name     = symbol.name
-    def companion        = symbol.companionSymbol
-    def info             = symbol.info
-    def module           = symbol.moduleClass
-    def owner            = symbol.owner
-    def owners           = symbol.ownerChain drop 1
-    def defn             = symbol.defString
-    def decls            = symbol.info.decls
+    def decls         = info.decls
+    def declsOverride = membersDeclared filter (_.isOverride)
+    def declsOriginal = membersDeclared filterNot (_.isOverride)
 
-    def declares  = decls.toList
-    def inherits  = members filterNot (declares contains _)
-    def types     = members filter (_.name.isTypeName)
-    def methods   = members filter (_.isMethod)
-    def overrides = declares filter (_.isOverride)
-    def inPackage = owners find (x => x.isPackageClass || x.isPackage) getOrElse definitions.RootPackage
+    def members           = membersUnabridged filterNot excludeMember
+    def membersUnabridged = tpe.members
+    def membersDeclared   = members filterNot excludeMember
+    def membersInherited  = members filterNot (membersDeclared contains _)
+    def memberTypes       = members filter (_.name.isTypeName)
+    def memberMethods     = members filter (_.isMethod)
+    
+    def pkg             = symbol.enclosingPackage
+    def pkgName         = pkg.fullName
+    def pkgClass        = symbol.enclosingPackageClass
+    def pkgMembers      = pkg.info.members filterNot excludeMember
+    def pkgClasses      = pkgMembers filter (s => s.isClass && s.isDefinedInPackage)
+    def pkgSymbols      = new PackageSlurper(pkgClass).slurp() filterNot excludeMember
 
-    def man        = manifest[T]
-    def erasure    = man.erasure
-    def members    = tpe.members filterNot (_.name.toString contains "$mc")
-    def allMembers = tpe.members
-    def bts        = info.baseTypeSeq.toList
-    def btsmap     = bts map (x => (x, x.decls.toList)) toMap
-    def pkgName    = Option(erasure.getPackage) map (_.getName)
-    def pkg        = pkgName map getModuleIfDefined getOrElse NoSymbol
-    def pkgmates   = pkg.tpe.members
-    def pkgslurp   = pkgName match {
-      case Some(name) => new PackageSlurper(name) slurp()
-      case _          => Set()
-    }
-    def ?         = this
+    def fullManifest   = manifest[T]
+    def erasure        = fullManifest.erasure
+    def shortClass     = erasure.getName split "[$.]" last
 
-    def whoHas(name: String) = bts filter (_.decls exists (_.name.toString == name))
-    def <:<[U: Manifest](other: U) = tpe <:< InternalInfo[U].tpe
-    def lub[U: Manifest](other: U) = intp.global.lub(List(tpe, InternalInfo[U].tpe))
-    def glb[U: Manifest](other: U) = intp.global.glb(List(tpe, InternalInfo[U].tpe))
+    def baseClasses                    = tpe.baseClasses
+    def baseClassDecls                 = baseClasses map (x => (x, x.info.decls.toList.sortBy(_.name.toString))) toMap
+    def ancestors                      = baseClasses drop 1
+    def ancestorDeclares(name: String) = ancestors filter (_.info member newTermName(name) ne NoSymbol)
+    def baseTypes                      = tpe.baseTypeSeq.toList
 
-    def shortClass = erasure.getName split "[$.]" last
+    def <:<[U: Manifest](other: U) = tpe <:< newInfo(other).tpe
+    def lub[U: Manifest](other: U) = intp.global.lub(List(tpe, newInfo(other).tpe))
+    def glb[U: Manifest](other: U) = intp.global.glb(List(tpe, newInfo(other).tpe))
+
     override def toString = value match {
       case Some(x)  => "%s (%s)".format(x, shortClass)
       case _        => erasure.getName
@@ -288,11 +314,17 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     def slurp(): String = io.Streamable.slurp(url)
     def pp() { intp prettyPrint slurp() }
   }
-
+  class RichSymbolList(syms: List[Symbol]) {
+    def sigs  = syms map (_.defString)
+    def infos = syms map (_.info)
+  }
+  
   trait Implicits1 {
     // fallback
     implicit def replPrinting[T](x: T)(implicit pretty: Prettifier[T] = Prettifier.default[T]) =
       new SinglePrettifierClass[T](x)
+    
+    implicit def liftToTypeName(s: String): TypeName = newTypeName(s)
   }
   trait Implicits2 extends Implicits1 {
     class RichSymbol(sym: Symbol) {
@@ -309,7 +341,7 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
     implicit lazy val powerSymbolOrdering: Ordering[Symbol] = Ordering[Name] on (_.name)
     implicit lazy val powerTypeOrdering: Ordering[Type]     = Ordering[Symbol] on (_.typeSymbol)
 
-    implicit def replInternalInfo[T: Manifest](x: T): InternalInfo[T] = new InternalInfo[T](Some(x))
+    implicit def replInternalInfo[T: Manifest](x: T): InternalInfoWrapper[T] = new InternalInfoWrapper[T](Some(x))
     implicit def replEnhancedStrings(s: String): RichReplString = new RichReplString(s)
     implicit def replMultiPrinting[T: Prettifier](xs: TraversableOnce[T]): MultiPrettifierClass[T] =
       new MultiPrettifierClass[T](xs.toSeq)
@@ -318,6 +350,9 @@ class Power[ReplValsImpl <: ReplVals : Manifest](val intp: IMain, replVals: Repl
 
     implicit def replInputStream(in: InputStream)(implicit codec: Codec) = new RichInputStream(in)
     implicit def replEnhancedURLs(url: URL)(implicit codec: Codec): RichReplURL = new RichReplURL(url)(codec)
+    
+    implicit def liftToTermName(s: String): TermName = newTermName(s)
+    implicit def replListOfSymbols(xs: List[Symbol]) = new RichSymbolList(xs)
   }
 
   trait ReplUtilities {

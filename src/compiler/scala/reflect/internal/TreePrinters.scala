@@ -249,17 +249,17 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
             print("AnyVal")
           }
           else {
-            printRow(parents, " with ")
-            if (!body.isEmpty) {
-              if (self.name != nme.WILDCARD) {
-                print(" { ", self.name); printOpt(": ", self.tpt); print(" => ")
-              } else if (!self.tpt.isEmpty) {
-                print(" { _ : ", self.tpt, " => ")
-              } else {
-                print(" {")
-              }
-              printColumn(body, "", ";", "}")
+          printRow(parents, " with ")
+          if (!body.isEmpty) {
+            if (self.name != nme.WILDCARD) {
+              print(" { ", self.name); printOpt(": ", self.tpt); print(" => ")
+            } else if (!self.tpt.isEmpty) {
+              print(" { _ : ", self.tpt, " => ")
+            } else {
+              print(" {")
             }
+            printColumn(body, "", ";", "}")
+          }
           }
           currentOwner = currentOwner1
 
