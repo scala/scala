@@ -1272,6 +1272,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = _annotations
+
+    /** This getter is necessary for reflection, see https://issues.scala-lang.org/browse/SI-5423
+     *  We could auto-inject completion into `annotations' and `setAnnotations', but I'm not sure about that
+     *  @odersky writes: I fear we can't do the forcing for all compiler symbols as that could introduce cycles
+     */
+    def getAnnotations: List[AnnotationInfo] = {
+      initialize
+      _annotations
+    }
+
     def setAnnotations(annots: List[AnnotationInfo]): this.type = {
       _annotations = annots
       this
