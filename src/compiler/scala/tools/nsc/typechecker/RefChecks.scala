@@ -1034,10 +1034,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         /** Symbols which limit the warnings we can issue since they may be value types */
         val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
 
-        // Whether def equals(other: Any) is overridden
-        def isUsingDefaultEquals      = {
+        // Whether def equals(other: Any) is overridden or synthetic
+        def isUsingWarnableEquals = {
           val m = receiver.info.member(nme.equals_)
-          (m == Object_equals) || (m == Any_equals)
+          (m == Object_equals) || (m == Any_equals) || (m.isSynthetic && m.owner.isCase)
         }
         // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
         def isUsingDefaultScalaOp = {
@@ -1045,7 +1045,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
           (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=)
         }
         // Whether the operands+operator represent a warnable combo (assuming anyrefs)
-        def isWarnable           = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
+        // Looking for comparisons performed with ==/!= in combination with either an
+        // equals method inherited from Object or a case class synthetic equals (for
+        // which we know the logic.)
+        def isWarnable           = isReferenceOp || (isUsingDefaultScalaOp && isUsingWarnableEquals)
         def isEitherNullable     = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass

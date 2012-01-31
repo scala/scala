@@ -1,0 +1,13 @@
+t5426.scala:2: error: comparing values of types Some[Int] and Int using `==' will always yield false
+  def f1 = Some(5) == 5
+                   ^
+t5426.scala:3: error: comparing values of types Int and Some[Int] using `==' will always yield false
+  def f2 = 5 == Some(5)
+             ^
+t5426.scala:8: error: comparing values of types Int and Some[Int] using `==' will always yield false
+  (x1 == x2)
+      ^
+t5426.scala:9: error: comparing values of types Some[Int] and Int using `==' will always yield false
+  (x2 == x1)
+      ^
+four errors found
