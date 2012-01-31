@@ -11,6 +11,7 @@ package scala.concurrent.akka
 
 
 import scala.concurrent.{Awaitable, ExecutionContext}
+import scala.util.{ Try, Success, Failure }
 //import scala.util.continuations._
 
 
@@ -35,9 +36,9 @@ trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
    *  if it contains a valid result, or Some(Left(error)) if it contains
    *  an exception.
    */
-  def value: Option[Either[Throwable, T]]
+  def value: Option[Try[T]]
   
-  def onComplete[U](func: Either[Throwable, T] => U): this.type
+  def onComplete[U](func: Try[T] => U): this.type
   
   /** Creates a new Future[A] which is completed with this Future's result if
    *  that conforms to A's erased type or a ClassCastException otherwise.
@@ -46,12 +47,12 @@ trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
     val p = executor.promise[T]
     
     onComplete {
-      case l @ Left(t) => p complete l.asInstanceOf[Either[Throwable, T]]
-      case Right(v) =>
+      case f @ Failure(t) => p complete f.asInstanceOf[Try[T]]
+      case Success(v) =>
         p complete (try {
-          Right(boxedType(m.erasure).cast(v).asInstanceOf[T])
+          Success(boxedType(m.erasure).cast(v).asInstanceOf[T])
         } catch {
-          case e: ClassCastException ⇒ Left(e)
+          case e: ClassCastException ⇒ Failure(e)
         })
     }
     

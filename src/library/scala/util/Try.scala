@@ -66,7 +66,7 @@ sealed abstract class Try[+T] {
   /**
    * Converts this to a `Failure` if the predicate is not satisfied.
    */
-  def filterNote(p: T => Boolean): Try[T] = filter(x => !p(x))
+  def filterNot(p: T => Boolean): Try[T] = filter(x => !p(x))
 
   /**
    * Calls the exceptionHandler with the exception if this is a `Failure`. This is like `flatMap` for the exception.
@@ -101,31 +101,31 @@ sealed abstract class Try[+T] {
 }
 
 
-final case class Failure[+T](e: Throwable) extends Try[T] {
+final case class Failure[+T](val exception: Throwable) extends Try[T] {
   def isFailure = true
   def isSuccess = false
   def rescue[U >: T](rescueException: PartialFunction[Throwable, Try[U]]): Try[U] = {
     try {
-      if (rescueException.isDefinedAt(e)) rescueException(e) else this
+      if (rescueException.isDefinedAt(exception)) rescueException(exception) else this
     } catch {
       case e2 => Failure(e2)
     }   
   }
-  def get: T = throw e
-  def flatMap[U](f: T => Try[U]): Try[U] = Failure[U](e)
-  def flatten[U](implicit ev: T <:< Try[U]): Try[U] = Failure[U](e)
+  def get: T = throw exception
+  def flatMap[U](f: T => Try[U]): Try[U] = Failure[U](exception)
+  def flatten[U](implicit ev: T <:< Try[U]): Try[U] = Failure[U](exception)
   def foreach[U](f: T => U): Unit = {}
-  def map[U](f: T => U): Try[U] = Failure[U](e)
-  def collect[U](pf: PartialFunction[T, U]): Try[U] = Failure[U](e)
+  def map[U](f: T => U): Try[U] = Failure[U](exception)
+  def collect[U](pf: PartialFunction[T, U]): Try[U] = Failure[U](exception)
   def filter(p: T => Boolean): Try[T] = this
   def recover[U >: T](rescueException: PartialFunction[Throwable, U]): Try[U] = 
-    if (rescueException.isDefinedAt(e)) {
-      Try(rescueException(e))
+    if (rescueException.isDefinedAt(exception)) {
+      Try(rescueException(exception))
     } else {
       this
     }
   def exists(p: T => Boolean): Boolean = false
-  def failed: Try[Throwable] = Success(e)
+  def failed: Try[Throwable] = Success(exception)
 }
 
 

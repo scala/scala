@@ -13,6 +13,7 @@ package scala.concurrent
 import java.util.concurrent.atomic.{ AtomicInteger }
 import java.util.concurrent.{ Executors, Future => JFuture, Callable }
 import scala.util.Duration
+import scala.util.{ Try, Success, Failure }
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveTask => FJTask, RecursiveAction, ForkJoinWorkerThread }
 import scala.collection.generic.CanBuildFrom
 import collection._
@@ -74,9 +75,9 @@ trait ExecutionContext {
       buffer += null.asInstanceOf[T]
       counter.incrementAndGet()
       f onComplete {
-        case Left(t) =>
+        case Failure(t) =>
           p tryFailure t
-        case Right(v) =>
+        case Success(v) =>
           buffer(currentIndex) = v
         tryFinish()
       }
@@ -93,7 +94,7 @@ trait ExecutionContext {
    */
   def any[T](futures: Traversable[Future[T]]): Future[T] = {
     val p = promise[T]
-    val completeFirst: Either[Throwable, T] => Unit = elem => p tryComplete elem
+    val completeFirst: Try[T] => Unit = elem => p tryComplete elem
     
     futures foreach (_ onComplete completeFirst)
     
@@ -108,9 +109,9 @@ trait ExecutionContext {
     else {
       val result = promise[Option[T]]
       val count = new AtomicInteger(futures.size)
-      val search: Either[Throwable, T] => Unit = { 
+      val search: Try[T] => Unit = { 
         v => v match {
-          case Right(r) => if (predicate(r)) result trySuccess Some(r)
+          case Success(r) => if (predicate(r)) result trySuccess Some(r)
           case _        =>
         }
         if (count.decrementAndGet() == 0) result trySuccess None

@@ -8,7 +8,7 @@
 
 package scala.concurrent
 
-
+import scala.util.{ Try, Success, Failure }
 
 
 
@@ -42,7 +42,7 @@ trait Promise[T] {
    *  
    *  $promiseCompletion
    */
-  def complete(result: Either[Throwable, T]): this.type = if (tryComplete(result)) this else throwCompleted
+  def complete(result:Try[T]): this.type = if (tryComplete(result)) this else throwCompleted
   
   /** Tries to complete the promise with either a value or the exception.
    *  
@@ -50,7 +50,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryComplete(result: Either[Throwable, T]): Boolean
+  def tryComplete(result: Try[T]): Boolean
   
   /** Completes this promise with the specified future, once that future is completed.
    *  
@@ -77,7 +77,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def trySuccess(value: T): Boolean = tryComplete(Right(value))
+  def trySuccess(value: T): Boolean = tryComplete(Success(value))
   
   /** Completes the promise with an exception.
    *  
@@ -95,7 +95,7 @@ trait Promise[T] {
    *  
    *  @return    If the promise has already been completed returns `false`, or `true` otherwise.
    */
-  def tryFailure(t: Throwable): Boolean = tryComplete(Left(t))
+  def tryFailure(t: Throwable): Boolean = tryComplete(Failure(t))
   
   /** Wraps a `Throwable` in an `ExecutionException` if necessary. TODO replace with `resolver` from scala.concurrent
    *  

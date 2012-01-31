@@ -12,7 +12,7 @@ package scala.concurrent.akka
 
 import java.util.concurrent.{Callable, ExecutorService}
 import scala.concurrent.{ExecutionContext, resolver, Awaitable, body2awaitable}
-import scala.util.Duration
+import scala.util.{ Duration, Try, Success, Failure }
 import scala.collection.mutable.Stack
 
 
@@ -41,7 +41,7 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
       () =>
       p complete {
         try {
-          Right(body)
+          Success(body)
         } catch {
           case e => resolver(e)
         }

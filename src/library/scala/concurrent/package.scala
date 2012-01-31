@@ -10,7 +10,7 @@ package scala
 
 
 
-import scala.util.Duration
+import scala.util.{ Duration, Try, Success, Failure }
 
 
 
@@ -44,23 +44,24 @@ package object concurrent {
     case _ => true
   }
   
-  private[concurrent] def resolve[T](source: Either[Throwable, T]): Either[Throwable, T] = source match {
-    case Left(t: scala.runtime.NonLocalReturnControl[_]) => Right(t.value.asInstanceOf[T])
-    case Left(t: scala.util.control.ControlThrowable) => Left(new ExecutionException("Boxed ControlThrowable", t))
-    case Left(t: InterruptedException) => Left(new ExecutionException("Boxed InterruptedException", t))
-    case Left(e: Error) => Left(new ExecutionException("Boxed Error", e))
+  private[concurrent] def resolve[T](source: Try[T]): Try[T] = source match {
+    case Failure(t: scala.runtime.NonLocalReturnControl[_]) => Success(t.value.asInstanceOf[T])
+    case Failure(t: scala.util.control.ControlThrowable) => Failure(new ExecutionException("Boxed ControlThrowable", t))
+    case Failure(t: InterruptedException) => Failure(new ExecutionException("Boxed InterruptedException", t))
+    case Failure(e: Error) => Failure(new ExecutionException("Boxed Error", e))
     case _ => source
   }
   
-  private val resolverFunction: PartialFunction[Throwable, Either[Throwable, _]] = {
-    case t: scala.runtime.NonLocalReturnControl[_] => Right(t.value)
-    case t: scala.util.control.ControlThrowable => Left(new ExecutionException("Boxed ControlThrowable", t))
-    case t: InterruptedException => Left(new ExecutionException("Boxed InterruptedException", t))
-    case e: Error => Left(new ExecutionException("Boxed Error", e))
-    case t => Left(t)
+  // TODO, docs, return type
+  private val resolverFunction: PartialFunction[Throwable, Try[_]] = {
+    case t: scala.runtime.NonLocalReturnControl[_] => Success(t.value)
+    case t: scala.util.control.ControlThrowable => Failure(new ExecutionException("Boxed ControlThrowable", t))
+    case t: InterruptedException => Failure(new ExecutionException("Boxed InterruptedException", t))
+    case e: Error => Failure(new ExecutionException("Boxed Error", e))
+    case t => Failure(t)
   }
   
-  private[concurrent] def resolver[T] = resolverFunction.asInstanceOf[PartialFunction[Throwable, Either[Throwable, T]]]
+  private[concurrent] def resolver[T] = resolverFunction.asInstanceOf[PartialFunction[Throwable, Try[T]]]
   
   /* concurrency constructs */
   

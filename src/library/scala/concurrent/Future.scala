@@ -17,7 +17,7 @@ import java.util.{ LinkedList => JLinkedList }
 import java.{ lang => jl }
 import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicBoolean }
 
-import scala.util.{ Timeout, Duration }
+import scala.util.{ Timeout, Duration, Try, Success, Failure }
 import scala.Option
 
 import scala.annotation.tailrec
@@ -96,8 +96,8 @@ self =>
    *  $multipleCallbacks
    */
   def onSuccess[U](pf: PartialFunction[T, U]): this.type = onComplete {
-    case Left(t) => // do nothing
-    case Right(v) if pf isDefinedAt v => pf(v)
+    case Failure(t) => // do nothing
+    case Success(v) => if (pf isDefinedAt v) pf(v) else { /*do nothing*/ }
   }
   
   /** When this future is completed with a failure (i.e. with a throwable),
@@ -113,8 +113,8 @@ self =>
    *  $multipleCallbacks
    */
   def onFailure[U](callback: PartialFunction[Throwable, U]): this.type = onComplete {
-    case Left(t) if isFutureThrowable(t) => if (callback.isDefinedAt(t)) callback(t)
-    case Right(v) => // do nothing
+    case Failure(t) => if (isFutureThrowable(t) && callback.isDefinedAt(t)) callback(t) else { /*do nothing*/ }
+    case Success(v) => // do nothing
   }
   
   /** When this future is completed, either through an exception, a timeout, or a value,
@@ -125,7 +125,7 @@ self =>
    *  
    *  $multipleCallbacks
    */
-  def onComplete[U](func: Either[Throwable, T] => U): this.type
+  def onComplete[U](func: Try[T] => U): this.type
   
   
   /* Miscellaneous */
@@ -156,8 +156,8 @@ self =>
     val p = newPromise[Throwable]
     
     onComplete {
-      case Left(t) => p success t
-      case Right(v) => p failure noSuchElem(v)
+      case Failure(t) => p success t
+      case Success(v) => p failure noSuchElem(v)
     }
     
     p.future
@@ -171,8 +171,8 @@ self =>
    *  Will not be called if the future fails.
    */
   def foreach[U](f: T => U): Unit = onComplete {
-    case Right(r) => f(r)
-    case Left(_)  => // do nothing
+    case Success(r) => f(r)
+    case Failure(_)  => // do nothing
   }
   
   /** Creates a new future by applying a function to the successful result of
@@ -185,8 +185,8 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p failure t
-      case Right(v) =>
+      case Failure(t) => p failure t
+      case Success(v) =>
         try p success f(v)
         catch {
           case t => p complete resolver(t)
@@ -207,12 +207,12 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p failure t
-      case Right(v) => 
+      case Failure(t) => p failure t
+      case Success(v) => 
         try {
           f(v) onComplete {
-            case Left(t) => p failure t
-            case Right(v) => p success v
+            case Failure(t) => p failure t
+            case Success(v) => p success v
           }
         } catch {
           case t: Throwable => p complete resolver(t)
@@ -242,8 +242,8 @@ self =>
     val p = newPromise[T]
     
     onComplete {
-      case Left(t) => p failure t
-      case Right(v) =>
+      case Failure(t) => p failure t
+      case Success(v) =>
         try {
           if (pred(v)) p success v
           else p failure new NoSuchElementException("Future.filter predicate is not satisfied by: " + v)
@@ -279,8 +279,8 @@ self =>
     val p = newPromise[S]
     
     onComplete {
-      case Left(t) => p failure t
-      case Right(v) =>
+      case Failure(t) => p failure t
+      case Success(v) =>
         try {
           if (pf.isDefinedAt(v)) p success pf(v)
           else p failure new NoSuchElementException("Future.collect partial function is not defined at: " + v)
@@ -308,7 +308,7 @@ self =>
     val p = newPromise[U]
     
     onComplete {
-      case Left(t) if pf isDefinedAt t =>
+      case Failure(t) if pf isDefinedAt t =>
         try { p success pf(t) }
         catch { case t: Throwable => p complete resolver(t) }
       case otherwise => p complete otherwise
@@ -334,11 +334,11 @@ self =>
     val p = newPromise[U]
     
     onComplete {
-      case Left(t) if pf isDefinedAt t =>
+      case Failure(t) if pf isDefinedAt t =>
         try {
           pf(t) onComplete {
-            case Left(t) => p failure t
-            case Right(v) => p success v
+            case Failure(t) => p failure t
+            case Success(v) => p success v
           }
         } catch {
           case t: Throwable => p complete resolver(t)
@@ -361,8 +361,8 @@ self =>
     val p = newPromise[(T, U)]
     
     this onComplete {
-      case Left(t)  => p failure t
-      case Right(r) => that onSuccess {
+      case Failure(t)  => p failure t
+      case Success(r) => that onSuccess {
         case r2 => p success ((r, r2))
       }
     }
@@ -392,11 +392,11 @@ self =>
     val p = newPromise[U]
     
     onComplete {
-      case Left(t) => that onComplete {
-        case Left(_) => p failure t
-        case Right(v) => p success v
+      case Failure(t) => that onComplete {
+        case Failure(_) => p failure t
+        case Success(v) => p success v
       }
-      case Right(v) => p success v
+      case Success(v) => p success v
     }
     
     p.future
@@ -420,12 +420,12 @@ self =>
    *  f andThen {
    *    case r => sys.error("runtime exception")
    *  } andThen {
-   *    case Left(t) => println(t)
-   *    case Right(v) => println(v)
+   *    case Failure(t) => println(t)
+   *    case Success(v) => println(v)
    *  }
    *  }}}
    */
-  def andThen[U](pf: PartialFunction[Either[Throwable, T], U]): Future[T] = {
+  def andThen[U](pf: PartialFunction[Try[T], U]): Future[T] = {
     val p = newPromise[T]
     
     onComplete {
@@ -453,9 +453,9 @@ self =>
   def either[U >: T](that: Future[U]): Future[U] = {
     val p = self.newPromise[U]
     
-    val completePromise: PartialFunction[Either[Throwable, U], _] = {
-      case Left(t) => p tryFailure t
-      case Right(v) => p trySuccess v
+    val completePromise: PartialFunction[Try[U], _] = {
+      case Failure(t) => p tryFailure t
+      case Success(v) => p trySuccess v
     }
     
     self onComplete completePromise

@@ -5,6 +5,8 @@ package default
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.forkjoin.{ ForkJoinPool, RecursiveAction, ForkJoinWorkerThread }
+import scala.util.Try
+import scala.util
 import scala.util.Duration
 import scala.annotation.tailrec
 
@@ -17,7 +19,7 @@ self: Future[T] =>
 
   def newPromise[S]: Promise[S] = executor promise
   
-  type Callback = Either[Throwable, T] => Any
+  type Callback = Try[T] => Any
 
   def getState: State[T]
 
@@ -25,22 +27,22 @@ self: Future[T] =>
 
   protected def dispatch[U](r: Runnable) = executionContext execute r
   
-  protected def processCallbacks(cbs: List[Callback], r: Either[Throwable, T]) =
+  protected def processCallbacks(cbs: List[Callback], r: Try[T]) =
     for (cb <- cbs) dispatch(new Runnable {
       override def run() = cb(r)
     })
 
   def future: Future[T] = self
   
-  def onComplete[U](callback: Either[Throwable, T] => U): this.type = {
-    @tailrec def tryAddCallback(): Either[Throwable, T] = {
+  def onComplete[U](callback: Try[T] => U): this.type = {
+    @tailrec def tryAddCallback(): Try[T] = {
       getState match {
         case p @ Pending(lst) =>
           val pt = p.asInstanceOf[Pending[T]]
           if (casState(pt, Pending(callback :: pt.callbacks))) null
           else tryAddCallback()
-        case Success(res) => Right(res)
-        case Failure(t) => Left(t)
+        case Success(res) => util.Success(res)
+        case Failure(t) => util.Failure(t)
       }
     }
     
@@ -87,9 +89,9 @@ extends Promise[T] with Future[T] with Completable[T] {
     case _ => null
   }
   
-  def tryComplete(r: Either[Throwable, T]) = r match {
-    case Left(t) => tryFailure(t)
-    case Right(v) => trySuccess(v)
+  def tryComplete(r: Try[T]) = r match {
+    case util.Failure(t) => tryFailure(t)
+    case util.Success(v) => trySuccess(v)
   }
   
   override def trySuccess(value: T): Boolean = {
@@ -97,7 +99,7 @@ extends Promise[T] with Future[T] with Completable[T] {
     if (cbs == null)
       false
     else {
-      processCallbacks(cbs, Right(value))
+      processCallbacks(cbs, util.Success(value))
       this.synchronized {
         this.notifyAll()
       }
@@ -111,7 +113,7 @@ extends Promise[T] with Future[T] with Completable[T] {
     if (cbs == null)
       false
     else {
-      processCallbacks(cbs, Left(wrapped))
+      processCallbacks(cbs, util.Failure(wrapped))
       this.synchronized {
         this.notifyAll()
       }
@@ -163,13 +165,13 @@ extends RecursiveAction with Task[T] with Future[T] with Completable[T] {
     var cbs: List[Callback] = null
     try {
       val res = body
-      processCallbacks(tryCompleteState(Success(res)), Right(res))
+      processCallbacks(tryCompleteState(Success(res)), util.Success(res))
     } catch {
       case t if isFutureThrowable(t) =>
-        processCallbacks(tryCompleteState(Failure(t)), Left(t))
+        processCallbacks(tryCompleteState(Failure(t)), util.Failure(t))
       case t =>
         val ee = new ExecutionException(t)
-        processCallbacks(tryCompleteState(Failure(ee)), Left(ee))
+        processCallbacks(tryCompleteState(Failure(ee)), util.Failure(ee))
         throw t
     }
   }
@@ -207,7 +209,7 @@ extends RecursiveAction with Task[T] with Future[T] with Completable[T] {
 private[concurrent] sealed abstract class State[T]
 
 
-case class Pending[T](callbacks: List[Either[Throwable, T] => Any]) extends State[T]
+case class Pending[T](callbacks: List[Try[T] => Any]) extends State[T]
 
 
 case class Success[T](result: T) extends State[T]
