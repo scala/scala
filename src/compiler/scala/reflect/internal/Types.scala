@@ -65,6 +65,8 @@ import util.Statistics._
     // inst is the instantiation and constr is a list of bounds.
   case DeBruijnIndex(level, index)
     // for dependent method types: a type referring to a method parameter.
+  case ErasedInlineType(tp)
+    // only used during erasure of inline classes.
 */
 
 trait Types extends api.Types { self: SymbolTable =>
@@ -3067,6 +3069,15 @@ trait Types extends api.Types { self: SymbolTable =>
       "De Bruijn "+kind+"("+(pnames mkString ",")+";"+(ptypes mkString ",")+";"+restpe+")"
     }
   }
+  
+  abstract case class ErasedInlineType(sym: Symbol) extends Type 
+  
+  final class UniqueErasedInlineType(sym: Symbol) extends ErasedInlineType(sym) with UniqueType
+  
+  object ErasedInlineType {
+    def apply(sym: Symbol): Type = 
+      unique(new UniqueErasedInlineType(sym))
+  }
 
   /** A class representing an as-yet unevaluated type.
    */
@@ -3732,6 +3743,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case WildcardType => tp
       case NoType => tp
       case NoPrefix => tp
+      case ErasedSingleType(sym) => tp
 */
       case _ =>
         tp

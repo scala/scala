@@ -62,6 +62,13 @@ trait Erasure {
   protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
   }
+  
+  protected def unboxInlineType(clazz: Symbol): Type = 
+    clazz.primaryConstructor.info.params.head.tpe
+    
+  protected def eraseInlineClassRef(clazz: Symbol): Type = {
+    scalaErasure(unboxInlineType(clazz))
+  }
 
   abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
@@ -80,6 +87,7 @@ trait Erasure {
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
           else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
+          else if (sym.isInlineClass) eraseInlineClassRef(sym)
           else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
           else apply(sym.info) // alias type or abstract type
         case PolyType(tparams, restpe) =>
