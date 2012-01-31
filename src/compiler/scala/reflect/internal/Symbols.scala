@@ -1023,8 +1023,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Modifies this symbol's info in place. */
     def modifyInfo(f: Type => Type): this.type              = setInfo(f(info))
     /** Substitute second list of symbols for first in current info. */
-    def substInfo(syms0: List[Symbol], syms1: List[Symbol]) = modifyInfo(_.substSym(syms0, syms1))
-    def setInfoOwnerAdjusted(info: Type): this.type         = setInfo(info atOwner this)
+    def substInfo(syms0: List[Symbol], syms1: List[Symbol]): this.type =
+      if (syms0.isEmpty) this
+      else modifyInfo(_.substSym(syms0, syms1))
+
+    def setInfoOwnerAdjusted(info: Type): this.type = setInfo(info atOwner this)
     
     /** Set the info and enter this symbol into the owner's scope. */
     def setInfoAndEnter(info: Type): this.type = {

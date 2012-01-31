@@ -680,7 +680,7 @@ trait Types extends api.Types { self: SymbolTable =>
      * symbol.
      */
     def substSym(from: List[Symbol], to: List[Symbol]): Type =
-      if (from eq to) this
+      if ((from eq to) || from.isEmpty) this
       else new SubstSymMap(from, to) apply this
 
     /** Substitute all occurrences of `ThisType(from)` in this type by `to`.
@@ -5381,9 +5381,9 @@ trait Types extends api.Types { self: SymbolTable =>
             val params2 = mt2.params
             val res2 = mt2.resultType
             (sameLength(params1, params2) &&
+             mt1.isImplicit == mt2.isImplicit &&
              matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
-             (res1 <:< res2.substSym(params2, params1)) &&
-             mt1.isImplicit == mt2.isImplicit)
+             (res1 <:< res2.substSym(params2, params1)))
           // TODO: if mt1.params.isEmpty, consider NullaryMethodType?
           case _ =>
             false
@@ -5503,9 +5503,9 @@ trait Types extends api.Types { self: SymbolTable =>
         tp2 match {
           case mt2 @ MethodType(params2, res2) =>
             // sameLength(params1, params2) was used directly as pre-screening optimization (now done by matchesQuantified -- is that ok, performancewise?)
-            matchesQuantified(params1, params2, res1, res2) &&
+            mt1.isImplicit == mt2.isImplicit &&
             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
-            mt1.isImplicit == mt2.isImplicit
+            matchesQuantified(params1, params2, res1, res2)
           case NullaryMethodType(res2) =>
             if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
             else matchesType(tp1, res2, alwaysMatchSimple)
@@ -5532,7 +5532,10 @@ trait Types extends api.Types { self: SymbolTable =>
       case PolyType(tparams1, res1) =>
         tp2 match {
           case PolyType(tparams2, res2) =>
-            matchesQuantified(tparams1, tparams2, res1, res2)
+            if ((tparams1 corresponds tparams2)(_ eq _))
+              matchesType(res1, res2, alwaysMatchSimple)
+            else
+              matchesQuantified(tparams1, tparams2, res1, res2)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
           case _ =>
