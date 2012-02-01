@@ -330,7 +330,7 @@ self =>
    *  future (6 / 0) rescue { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
    */
-  def tryRecover[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
+  def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
     val p = newPromise[U]
     
     onComplete {
@@ -388,7 +388,7 @@ self =>
    *  await(0) h // evaluates to 5
    *  }}}
    */
-  def orElse[U >: T](that: Future[U]): Future[U] = {
+  def fallbackTo[U >: T](that: Future[U]): Future[U] = {
     val p = newPromise[U]
     
     onComplete {
