@@ -314,6 +314,26 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(virtualDirectory, parent) {
     private[IMain] var traceClassLoading = isReplTrace
     override protected def trace = super.trace || traceClassLoading
+    
+    private val packages = mutable.HashMap[String, Package]()
+    private def enclosingPackageNames(name: String): List[String] =
+      (name split '.').inits.toList drop 1 dropRight 1 map (_ mkString ".") reverse
+
+    // Here's what all those params to definePackage are after the package name:
+    //
+    // specTitle - The specification title
+    // specVersion - The specification version
+    // specVendor - The specification vendor
+    // implTitle - The implementation title
+    // implVersion - The implementation version
+    // implVendor - The implementation vendor
+    // sealBase - If not null, then this package is sealed with respect to the given code source URL object. Otherwise, the package is not sealed.
+    private def addPackageNames(name: String) {
+      enclosingPackageNames(name) filterNot (packages contains _) foreach { p =>
+        packages(p) = definePackage(p, "", "", "", "", "", "", null)
+        repltrace("Added " + packages(p) + " to repl classloader.")
+      }
+    }
 
     /** Overridden here to try translating a simple name to the generated
      *  class name if the original attempt fails.  This method is used by
@@ -327,6 +347,12 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         case file                         =>
           file
       }
+    }
+    override def findClass(name: String): JClass = {
+      val clazz = super.findClass(name)
+      if (clazz ne null)
+        addPackageNames(clazz.getName)
+      clazz
     }
   }
   private def makeClassLoader(): AbstractFileClassLoader =

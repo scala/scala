@@ -20,6 +20,10 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     with ScalaClassLoader
 {
   // private val defined = mutable.Map[String, Class[_]]()
+
+  // Widening to public
+  override def getPackage(name: String) = super.getPackage(name)
+
   override protected def trace =
     sys.props contains "scala.debug.classloader"
 
