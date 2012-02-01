@@ -48,22 +48,19 @@ extends ParSeq[T]
 
   def this() = this(Vector())
 
-  type SCPI = SignalContextPassingIterator[ParVectorIterator]
-
   def apply(idx: Int) = vector.apply(idx)
 
   def length = vector.length
 
   def splitter: SeqSplitter[T] = {
-    val pit = new ParVectorIterator(vector.startIndex, vector.endIndex) with SCPI
+    val pit = new ParVectorIterator(vector.startIndex, vector.endIndex)
     vector.initIterator(pit)
     pit
   }
 
   override def seq: Vector[T] = vector
 
-  class ParVectorIterator(_start: Int, _end: Int) extends VectorIterator[T](_start, _end) with ParIterator {
-  self: SCPI =>
+  class ParVectorIterator(_start: Int, _end: Int) extends VectorIterator[T](_start, _end) with SeqSplitter[T] {
     def remaining: Int = remainingElementCount
     def dup: SeqSplitter[T] = (new ParVector(remainingVector)).splitter
     def split: Seq[ParVectorIterator] = {

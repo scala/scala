@@ -140,8 +140,9 @@ package parallel {
    *  Automatically forwards the signal delegate when splitting.
    */
   private[parallel] class BufferSplitter[T]
-    (private val buffer: collection.mutable.ArrayBuffer[T], private var index: Int, private val until: Int, var signalDelegate: collection.generic.Signalling)
+  (private val buffer: collection.mutable.ArrayBuffer[T], private var index: Int, private val until: Int, _sigdel: collection.generic.Signalling)
   extends IterableSplitter[T] {
+    signalDelegate = _sigdel
     def hasNext = index < until
     def next = {
       val r = buffer(index)

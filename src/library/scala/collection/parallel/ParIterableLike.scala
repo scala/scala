@@ -171,42 +171,6 @@ self: ParIterableLike[T, Repr, Sequential] =>
   def seq: Sequential
 
   def repr: Repr = this.asInstanceOf[Repr]
-  
-  /** Parallel iterators are split iterators that have additional accessor and
-   *  transformer methods defined in terms of methods `next` and `hasNext`.
-   *  When creating a new parallel collection, one might want to override these
-   *  new methods to make them more efficient.
-   *
-   *  Parallel iterators are augmented with signalling capabilities. This means
-   *  that a signalling object can be assigned to them as needed.
-   *
-   *  The self-type ensures that signal context passing behaviour gets mixed in
-   *  a concrete object instance.
-   */
-  trait ParIterator extends IterableSplitter[T] {
-    me: SignalContextPassingIterator[ParIterator] =>
-    var signalDelegate: Signalling = IdleSignalling
-    def repr = self.repr
-    def split: Seq[IterableSplitter[T]]
-  }
-  
-  /** A stackable modification that ensures signal contexts get passed along the iterators.
-   *  A self-type requirement in `ParIterator` ensures that this trait gets mixed into
-   *  concrete iterators.
-   */
-  trait SignalContextPassingIterator[+IterRepr <: ParIterator] extends ParIterator {
-    // Note: This functionality must be factored out to this inner trait to avoid boilerplate.
-    // Also, one could omit the cast below. However, this leads to return type inconsistencies,
-    // due to inability to override the return type of _abstract overrides_.
-    // Be aware that this stackable modification has to be subclassed, so it shouldn't be rigid
-    // on the type of iterators it splits.
-    // The alternative is some boilerplate - better to tradeoff some type safety to avoid it here.
-    abstract override def split: Seq[IterRepr] = {
-      val pits = super.split
-      pits foreach { _.signalDelegate = signalDelegate }
-      pits.asInstanceOf[Seq[IterRepr]]
-    }
-  }
 
   def hasDefiniteSize = true
 
@@ -870,7 +834,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     protected[this] val pit: IterableSplitter[T]
     protected[this] def newSubtask(p: IterableSplitter[T]): Accessor[R, Tp]
     def shouldSplitFurther = pit.remaining > threshold(size, parallelismLevel)
-    def split = pit.split.map(newSubtask(_)) // default split procedure
+    def split = pit.splitWithSignalling.map(newSubtask(_)) // default split procedure
     private[parallel] override def signalAbort = pit.abort
     override def toString = this.getClass.getSimpleName + "(" + pit.toString + ")(" + result + ")(supername: " + super.toString + ")"
   }
@@ -1142,7 +1106,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     }
     protected[this] def newSubtask(p: IterableSplitter[T]) = throw new UnsupportedOperationException
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       val sizes = pits.scanLeft(0)(_ + _.remaining)
       for ((p, untilp) <- pits zip sizes; if untilp <= n) yield {
         if (untilp + p.remaining < n) new Take(p.remaining, cbf, p)
@@ -1160,7 +1124,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prev: Option[Combiner[U, This]]) = result = pit.drop2combiner(n, reuse(prev, cbf()))
     protected[this] def newSubtask(p: IterableSplitter[T]) = throw new UnsupportedOperationException
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       val sizes = pits.scanLeft(0)(_ + _.remaining)
       for ((p, withp) <- pits zip sizes.tail; if withp >= n) yield {
         if (withp - p.remaining > n) new Drop(0, cbf, p)
@@ -1178,7 +1142,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prev: Option[Combiner[U, This]]) = result = pit.slice2combiner(from, until, reuse(prev, cbf()))
     protected[this] def newSubtask(p: IterableSplitter[T]) = throw new UnsupportedOperationException
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       val sizes = pits.scanLeft(0)(_ + _.remaining)
       for ((p, untilp) <- pits zip sizes; if untilp + p.remaining >= from || untilp <= until) yield {
         val f = (from max untilp) - untilp
@@ -1197,7 +1161,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prev: Option[(Combiner[U, This], Combiner[U, This])]) = result = pit.splitAt2combiners(at, reuse(prev.map(_._1), cbfBefore()), reuse(prev.map(_._2), cbfAfter()))
     protected[this] def newSubtask(p: IterableSplitter[T]) = throw new UnsupportedOperationException
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       val sizes = pits.scanLeft(0)(_ + _.remaining)
       for ((p, untilp) <- pits zip sizes) yield new SplitAt((at max untilp min (untilp + p.remaining)) - untilp, cbfBefore, cbfAfter, p)
     }
@@ -1215,7 +1179,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     } else result = (reuse(prev.map(_._1), cbf()), false)
     protected[this] def newSubtask(p: IterableSplitter[T]) = throw new UnsupportedOperationException
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new TakeWhile(pos + untilp, pred, cbf, p)
     }
     override def merge(that: TakeWhile[U, This]) = if (result._2) {
@@ -1240,7 +1204,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     }
     protected[this] def newSubtask(p: IterableSplitter[T]) = throw new UnsupportedOperationException
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new Span(pos + untilp, pred, cbfBefore, cbfAfter, p)
     }
     override def merge(that: Span[U, This]) = result = if (result._2.size == 0) {
@@ -1257,9 +1221,9 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](othpit, pbf())
     protected[this] def newSubtask(p: IterableSplitter[T]) = unsupported
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       val sizes = pits.map(_.remaining)
-      val opits = othpit.psplit(sizes: _*)
+      val opits = othpit.psplitWithSignalling(sizes: _*)
       (pits zip opits) map { p => new Zip(pbf, p._1, p._2) }
     }
     override def merge(that: Zip[U, S, That]) = result = result combine that.result
@@ -1273,12 +1237,12 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prev: Option[Result]) = result = pit.zipAll2combiner[U, S, That](othpit, thiselem, thatelem, pbf())
     protected[this] def newSubtask(p: IterableSplitter[T]) = unsupported
     override def split = if (pit.remaining <= len) {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       val sizes = pits.map(_.remaining)
-      val opits = othpit.psplit(sizes: _*)
+      val opits = othpit.psplitWithSignalling(sizes: _*)
       ((pits zip opits) zip sizes) map { t => new ZipAll(t._2, thiselem, thatelem, pbf, t._1._1, t._1._2) }
     } else {
-      val opits = othpit.psplit(pit.remaining)
+      val opits = othpit.psplitWithSignalling(pit.remaining)
       val diff = len - pit.remaining
       Seq(
         new ZipAll(pit.remaining, thiselem, thatelem, pbf, pit, opits(0)), // nothing wrong will happen with the cast below - elem T is never accessed
@@ -1295,7 +1259,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     def leaf(prev: Option[Unit]) = pit.copyToArray(array, from, len)
     protected[this] def newSubtask(p: IterableSplitter[T]) = unsupported
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining); if untilp < len) yield {
         val plen = p.remaining min (len - untilp)
         new CopyToArray[U, This](from + untilp, plen, array, p)
@@ -1352,7 +1316,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
     } else trees(from)
     protected[this] def newSubtask(pit: IterableSplitter[T]) = unsupported
     override def split = {
-      val pits = pit.split
+      val pits = pit.splitWithSignalling
       for ((p, untilp) <- pits zip pits.scanLeft(from)(_ + _.remaining)) yield {
         new CreateScanTree(untilp, p.remaining, z, op, p)
       }

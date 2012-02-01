@@ -56,7 +56,7 @@ self =>
 
   override def seq = new collection.mutable.HashMap[K, V](hashTableContents)
 
-  def splitter = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
+  def splitter = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]])
 
   override def size = tableSize
 
@@ -93,14 +93,11 @@ self =>
 
   override def stringPrefix = "ParHashMap"
 
-  type SCPI = SignalContextPassingIterator[ParHashMapIterator]
-
   class ParHashMapIterator(start: Int, untilIdx: Int, totalSize: Int, e: DefaultEntry[K, V])
-  extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) with ParIterator {
-  me: SCPI =>
+  extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) {
     def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value);
     def newIterator(idxFrom: Int, idxUntil: Int, totalSz: Int, es: DefaultEntry[K, V]) =
-      new ParHashMapIterator(idxFrom, idxUntil, totalSz, es) with SCPI
+      new ParHashMapIterator(idxFrom, idxUntil, totalSz, es)
   }
 
   private def writeObject(out: java.io.ObjectOutputStream) {
