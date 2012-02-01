@@ -129,7 +129,13 @@ abstract class LiftCode extends Transform with TypingTransformers {
               if (reifyCopypaste) printCopypaste(result)
               result
             }
-          } finally printTypings = saved
+          } catch {
+            case ex: ReifierError =>
+              unit.error(ex.pos, ex.msg)
+              tree
+          } finally {
+            printTypings = saved
+          }
         case _ =>
           super.transform(tree)
       }
@@ -396,6 +402,10 @@ abstract class LiftCode extends Transform with TypingTransformers {
         if (thereAreOnlyTTs && ttsAreNotEssential) reifyTree(hk) else reifyProduct(ta)
       case global.emptyValDef =>
         mirrorSelect(nme.emptyValDef)
+      case Literal(constant @ Constant(tpe: Type)) if boundSyms exists (tpe contains _) =>
+        CannotReifyClassOfBoundType(tree, tpe)
+      case Literal(constant @ Constant(sym: Symbol)) if boundSyms contains sym =>
+        CannotReifyClassOfBoundEnum(tree, constant.tpe)
       case _ =>
         if (tree.isDef)
           boundSyms += tree.symbol
@@ -494,8 +504,20 @@ abstract class LiftCode extends Transform with TypingTransformers {
 
       symDefs.toList ++ fillIns.toList
     }
+  }
 
-    private def cannotReify(value: Any): Nothing =
-      abort("don't know how to reify " + value + " of " + value.getClass)
+  /** A throwable signalling a reification error */
+  class ReifierError(var pos: Position, val msg: String) extends Throwable(msg) {
+    def this(msg: String) = this(NoPosition, msg)
+  }
+
+  def CannotReifyClassOfBoundType(tree: Tree, tpe: Type) = {
+    val msg = "cannot reify classOf[%s] which refers to a type declared inside the block being reified".format(tpe)
+    throw new ReifierError(tree.pos, msg)
+  }
+
+  def CannotReifyClassOfBoundEnum(tree: Tree, tpe: Type) = {
+    val msg = "cannot reify classOf[%s] which refers to an enum declared inside the block being reified".format(tpe)
+    throw new ReifierError(tree.pos, msg)
   }
 }
