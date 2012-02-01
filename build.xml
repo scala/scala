@@ -251,17 +251,12 @@ INITIALISATION
       <os family="windows"/>
     </condition>
 
-    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="git.describe" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="git.describe" failifexecutionfails="false" />
+    <!-- Generating version string -->
+    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="version.number" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="version.number" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
-    <property name="git.describe" value="-unknown-"/>
+    <property name="version.number" value="-unknown-"/>
     <property name="init.avail" value="yes"/>
-
-    <!-- Generating version number -->
-    <property file="${basedir}/build.number"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${git.describe}"/>
 
     <!-- And print-out what we are building -->
     <echo message="       build time: ${time.human}" />
