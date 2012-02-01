@@ -79,7 +79,7 @@ trait Symbols { self: Universe =>
 
     /** A list of annotations attached to this Symbol.
      */
-    def annotations: List[self.AnnotationInfo]
+    def getAnnotations: List[self.AnnotationInfo]
 
     /** For a class: the module or case class factory with the same name in the same package.
      *  For all others: NoSymbol

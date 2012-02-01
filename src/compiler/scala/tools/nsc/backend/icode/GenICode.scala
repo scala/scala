@@ -1072,6 +1072,15 @@ abstract class GenICode extends SubComponent  {
                 targets = tmpCtx.bb :: targets
               case Ident(nme.WILDCARD) =>
                 default = tmpCtx.bb
+              case Alternative(alts) =>
+                alts foreach {
+                  case Literal(value) =>
+                    tags = value.intValue :: tags
+                    targets = tmpCtx.bb :: targets
+                  case _ =>
+                    abort("Invalid case in alternative in switch-like pattern match: " +
+                          tree + " at: " + tree.pos)
+                }
               case _ =>
                 abort("Invalid case statement in switch-like pattern match: " +
                       tree + " at: " + (tree.pos))

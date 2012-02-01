@@ -1128,9 +1128,21 @@ defined class Foo */
     //   }
     // }
 
+    private val switchableTpes = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
+
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = if (!optimizingCodeGen) None else {
       def sequence[T](xs: List[Option[T]]): Option[List[T]] =
         if (xs exists (_.isEmpty)) None else Some(xs.flatten)
+
+      def isSwitchableTpe(tpe: Type): Boolean =
+        switchableTpes contains tpe
+      def switchableConstToInt(x: Tree): Tree = {
+        val Literal(const) = x
+        const.tag match {
+          case IntTag => x
+          case ByteTag | ShortTag | CharTag => Literal(Constant(const.intValue))
+        }
+      }
 
       val caseDefs = cases map { makers =>
         removeSubstOnly(makers) match {
@@ -1138,13 +1150,13 @@ defined class Foo */
           case (btm@BodyTreeMaker(body, _)) :: Nil =>
             Some(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
           // constant
-          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil => import CODE._
-            Some(CaseDef(const, EmptyTree, btm.substitution(body)))
+          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil =>
+            Some(CaseDef(switchableConstToInt(const), EmptyTree, btm.substitution(body)))
           // alternatives
           case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
             val caseConstants = altss map {
               case EqualityTestTreeMaker(_, const@SwitchablePattern(), _) :: Nil =>
-                Some(const)
+                Some(switchableConstToInt(const))
               case _ =>
                 None
             }
@@ -1158,16 +1170,35 @@ defined class Foo */
         }
       }
 
-      sequence(caseDefs) map { caseDefs =>
-        import CODE._
-        val matcher = BLOCK(
-          VAL(scrutSym) === scrut, // TODO: type test for switchable type if patterns allow switch but the scrutinee doesn't
-          Match(REF(scrutSym), caseDefs) // match on scrutSym, not scrut to avoid duplicating scrut
-        )
-
-        // matcher filter (tree => tree.tpe == null) foreach println
-        // treeBrowser browse matcher
-        matcher // set type to avoid recursion in typedMatch
+      if (!isSwitchableTpe(scrut.tpe))
+        None
+      else {
+        sequence(caseDefs) map { caseDefs =>
+          import CODE._
+          val caseDefsWithDefault = {
+            def isDefault(x: CaseDef): Boolean = x match {
+              case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
+              case _ => false
+            }
+            val hasDefault = caseDefs exists isDefault
+            if (hasDefault) caseDefs else {
+              val default = atPos(scrut.pos) { DEFAULT ==> MATCHERROR(REF(scrutSym)) }
+              caseDefs :+ default
+            }
+          }
+          val matcher = BLOCK(
+            if (scrut.tpe != IntClass.tpe) {
+              scrutSym setInfo IntClass.tpe
+              VAL(scrutSym) === (scrut DOT nme.toInt)
+            } else {
+              VAL(scrutSym) === scrut
+            },
+            Match(REF(scrutSym), caseDefsWithDefault) // match on scrutSym, not scrut to avoid duplicating scrut
+          )
+          // matcher filter (tree => tree.tpe == null) foreach println
+          // treeBrowser browse matcher
+          matcher // set type to avoid recursion in typedMatch
+        }
       }
     }
 
