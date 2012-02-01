@@ -276,6 +276,8 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
        *  of class `clazz` are met.
        */
       def checkOverride(member: Symbol, other: Symbol) {
+        debuglog("Checking validity of %s overriding %s".format(member.fullLocationString, other.fullLocationString))
+        
         def memberTp = self.memberType(member)
         def otherTp  = self.memberType(other)
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType

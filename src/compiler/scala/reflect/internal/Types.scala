@@ -5477,6 +5477,8 @@ trait Types extends api.Types { self: SymbolTable =>
             else matchesType(tp1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
+          case TypeRef(_, sym, Nil) =>
+            params1.isEmpty && sym.isModuleClass && matchesType(res1, sym.tpe, alwaysMatchSimple)
           case _ =>
             false
         }
@@ -5488,6 +5490,8 @@ trait Types extends api.Types { self: SymbolTable =>
             matchesType(res1, res2, alwaysMatchSimple)
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
+          case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+            matchesType(res1, sym.tpe, alwaysMatchSimple)
           case _ =>
             matchesType(res1, tp2, alwaysMatchSimple)
         }
@@ -5507,6 +5511,12 @@ trait Types extends api.Types { self: SymbolTable =>
           case _ =>
             if (alwaysMatchSimple) matchesType(res1, tp2, true)
             else lastTry
+        }
+      case TypeRef(_, sym, Nil) if sym.isModuleClass =>
+        tp2 match {
+          case MethodType(Nil, res2)   => matchesType(sym.tpe, res2, alwaysMatchSimple)
+          case NullaryMethodType(res2) => matchesType(sym.tpe, res2, alwaysMatchSimple)
+          case _                       => lastTry
         }
       case _ =>
         lastTry
