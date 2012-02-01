@@ -21,9 +21,6 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
 {
   // private val defined = mutable.Map[String, Class[_]]()
 
-  // Widening to public
-  override def getPackage(name: String) = super.getPackage(name)
-
   override protected def trace =
     sys.props contains "scala.debug.classloader"
 
@@ -45,6 +42,22 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
       case null   => null
       case file   => file
     }
+  }
+
+  protected def dirNameToPath(name: String): String =
+    name.replace('.', '/')
+
+  protected def findAbstractDir(name: String): AbstractFile = {
+    var file: AbstractFile = root
+    val pathParts          = dirNameToPath(name) split '/'
+
+    for (dirPart <- pathParts) {
+      file = file.lookupName(dirPart, true)
+      if (file == null)
+        return null
+    }
+
+    return file
   }
 
   override def getResourceAsStream(name: String) = findAbstractFile(name) match {
@@ -78,4 +91,24 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
   //   case null   => super.getResource(name)
   //   case file   => new URL(...)
   // }
+
+  private val packages = mutable.Map[String, Package]()
+
+  override def definePackage(name: String, specTitle: String, specVersion: String, specVendor: String, implTitle: String, implVersion: String, implVendor: String, sealBase: URL): Package = {
+    throw new UnsupportedOperationException()
+  }
+
+  override def getPackage(name: String): Package = {
+    findAbstractDir(name) match {
+      case null => super.getPackage(name)
+      case file => packages.getOrElseUpdate(name, {
+        val ctor = classOf[Package].getDeclaredConstructor(classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[String], classOf[URL], classOf[ClassLoader])
+        ctor.setAccessible(true)
+        ctor.newInstance(name, null, null, null, null, null, null, null, this)
+      })
+    }
+  }
+
+  override def getPackages(): Array[Package] =
+    root.iterator.filter(_.isDirectory).map(dir => getPackage(dir.name)).toArray
 }
