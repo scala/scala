@@ -831,7 +831,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       case xs            => sys.error("Internal error: eval object " + evalClass + ", " + xs.mkString("\n", "\n", ""))
     }
     private def compileAndSaveRun(label: String, code: String) = {
-      showCodeIfDebugging(code)
+      showCodeIfDebugging(packaged(code))
       val (success, run) = compileSourcesKeepingRun(new BatchSourceFile(label, packaged(code)))
       lastRun = run
       success
