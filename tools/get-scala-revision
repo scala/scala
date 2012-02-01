@@ -2,23 +2,23 @@
 #
 # Usage: get-scala-revision [dir]
 # Figures out current scala revision of a git clone.
-#
 # If no dir is given, current working dir is used.
+#
+# Example build version string:
+#   v2.10.0-M1-0098-g6f1c486d0b-2012-02-01
+#
 
-# not like releases come out so often that we are duty-bound
-# to recalculate this every time.
-# git merge-base v2.8.2 v2.9.1 master
-devbase="df13e31bbb"
+[[ $# -eq 0 ]] || cd "$1"
 
-# reimplementing git describe hopefully in a way which works
-# without any particular tags, branches, or recent versions of git.
-# this is supposed to generate
-#     dev-NNNN-g<sha>
-# where NNNN is the number of commits since devbase, which
-# is the merge-base of the most recent release and master.
-# Presently hardcoded to reduce uncertainty, v2.8.2/v2.9.1/master.
-commits=$(git --no-pager log --pretty=oneline $devbase..HEAD | wc -l)
-sha=$(git rev-list -n 1 HEAD)
-datestr=$(date "+%Y-%m-%d")
+# the closest tag, obtained separately because we have to
+# reconstruct the string around the padded distance.
+tag=$(git describe --abbrev=0)
 
-printf "rdev-%s-%s-g%s\n" $commits $datestr ${sha:0:7}
+# the full string - padding correctness depends on abbrev=10.
+described=$(git describe --abbrev=10 --always --tags)
+
+# 016 is rocket-surgically-calibrated to pad the distance from the
+# tag to the current commit into a 4-digit number - since maven
+# will be treating this as a string, the ide depends on
+# 10 being greater than 9 (thus 0010 and 00009.)
+printf "%s-%016s-%s\n" "$tag" "${described##${tag}-}" $(date "+%Y-%m-%d")
