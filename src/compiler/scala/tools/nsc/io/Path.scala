@@ -48,7 +48,7 @@ object Path {
   implicit def jfile2path(jfile: JFile): Path = apply(jfile)
 
   // java 7 style, we don't use it yet
-  // object AccessMode extends Enumeration("AccessMode") {
+  // object AccessMode extends Enumeration {
   //   val EXECUTE, READ, WRITE = Value
   // }
   // def checkAccess(modes: AccessMode*): Boolean = {
