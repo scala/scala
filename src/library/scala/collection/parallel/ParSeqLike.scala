@@ -213,9 +213,9 @@ self =>
   } otherwise seq.sameElements(that)
 
   /** Tests whether this $coll ends with the given parallel sequence.
-   *
+   *  
    *  $abortsignalling
-   *
+   *  
    *  @tparam S       the type of the elements of `that` sequence
    *  @param that     the sequence to test
    *  @return         `true` if this $coll has `that` as a suffix, `false` otherwise
@@ -236,12 +236,13 @@ self =>
       val that = patch.asParSeq
       val pbf = bf.asParallel
       val pits = splitter.psplit(from, replaced, length - from - realreplaced)
-      val copystart = new Copy[U, That](() => pbf(repr), pits(0))
+      val cfactory = combinerFactory(() => pbf(repr))
+      val copystart = new Copy[U, That](cfactory, pits(0))
       val copymiddle = wrap {
-        val tsk = new that.Copy[U, That](() => pbf(repr), that.splitter)
+        val tsk = new that.Copy[U, That](cfactory, that.splitter)
         tasksupport.executeAndWaitResult(tsk)
       }
-      val copyend = new Copy[U, That](() => pbf(repr), pits(2))
+      val copyend = new Copy[U, That](cfactory, pits(2))
       executeAndWaitResult(((copystart parallel copymiddle) { _ combine _ } parallel copyend) { _ combine _ } mapResult {
         _.result
       })

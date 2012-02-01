@@ -83,6 +83,7 @@ package object parallel {
   }
 }
 
+
 package parallel {
   trait FactoryOps[From, Elem, To] {
     trait Otherwise[R] {
@@ -113,7 +114,19 @@ package parallel {
   }
 
   /* classes */
-
+  
+  trait CombinerFactory[U, Repr] {
+    /** Provides a combiner used to construct a collection. */
+    def apply(): Combiner[U, Repr]
+    /** The call to the `apply` method can create a new combiner each time.
+     *  If it does, this method returns `false`.
+     *  The same combiner factory may be used each time (typically, this is
+     *  the case for concurrent collections, which are thread safe).
+     *  If so, the method returns `true`.
+     */
+    def doesShareCombiners: Boolean
+  }
+  
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
   final case class CompositeThrowable(
     val throwables: Set[Throwable]
