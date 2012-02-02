@@ -844,7 +844,7 @@ object Ctrie extends MutableMapFactory[Ctrie] {
 }
 
 
-private[mutable] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
+private[collection] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
   var stack = new Array[Array[BasicNode]](7)
   var stackpos = new Array[Int](7)
   var depth = -1
@@ -910,10 +910,12 @@ private[mutable] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean = 
     }
   } else current = null
   
+  protected def newIterator(_ct: Ctrie[K, V], _mustInit: Boolean) = new CtrieIterator[K, V](_ct, _mustInit)
+  
   /** Returns a sequence of iterators over subsets of this iterator.
    *  It's used to ease the implementation of splitters for a parallel version of the Ctrie.
    */
-  protected def subdivide: Seq[Iterator[(K, V)]] = if (subiter ne null) {
+  protected def subdivide(): Seq[Iterator[(K, V)]] = if (subiter ne null) {
     // the case where an LNode is being iterated
     val it = subiter
     subiter = null
@@ -927,7 +929,7 @@ private[mutable] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean = 
         val (arr1, arr2) = stack(d).drop(stackpos(d) + 1).splitAt(rem / 2)
         stack(d) = arr1
         stackpos(d) = -1
-        val it = new CtrieIterator[K, V](ct, false)
+        val it = newIterator(ct, false)
         it.stack(0) = arr2
         it.stackpos(0) = -1
         it.depth = 0

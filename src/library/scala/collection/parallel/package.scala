@@ -196,22 +196,23 @@ package parallel {
    *  the receiver (which will be the return value).
    */
   private[parallel] abstract class BucketCombiner[-Elem, +To, Buck, +CombinerType <: BucketCombiner[Elem, To, Buck, CombinerType]]
-    (private val bucketnumber: Int)
+  (private val bucketnumber: Int)
   extends Combiner[Elem, To] {
   //self: EnvironmentPassingCombiner[Elem, To] =>
     protected var buckets: Array[UnrolledBuffer[Buck]] @uncheckedVariance = new Array[UnrolledBuffer[Buck]](bucketnumber)
     protected var sz: Int = 0
-
+    
     def size = sz
-
+    
     def clear() = {
       buckets = new Array[UnrolledBuffer[Buck]](bucketnumber)
       sz = 0
     }
-
+    
     def beforeCombine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]) {}
+    
     def afterCombine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]) {}
-
+    
     def combine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]): Combiner[N, NewTo] = {
       if (this eq other) this
       else other match {

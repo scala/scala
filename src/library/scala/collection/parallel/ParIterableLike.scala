@@ -451,7 +451,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
     reduce((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
   }
-
+  
   def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = if (bf(repr).isCombiner) {
     executeAndWaitResult(new Map[S, That](f, combinerFactory(() => bf(repr).asCombiner), splitter) mapResult { _.result })
   } else seq.map(f)(bf2seq(bf))
