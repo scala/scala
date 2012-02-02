@@ -625,7 +625,7 @@ trait Implicits {
             if (context.hasErrors)
               fail("typing TypeApply reported errors for the implicit tree")
             else {
-              val result = new SearchResult(checked, subst)
+              val result = new SearchResult(itree2, subst)
               incCounter(foundImplicits)
               printInference("[success] found %s for pt %s".format(result, ptInstantiated))
               result
