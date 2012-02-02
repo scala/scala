@@ -327,8 +327,19 @@ trait Importers { self: SymbolTable =>
           null
       }
       if (mytree != null) {
-        if (mytree hasSymbol) mytree.symbol = importSymbol(tree.symbol)
-        mytree.tpe = importType(tree.tpe)
+        val mysym = if (tree hasSymbol) importSymbol(tree.symbol) else NoSymbol
+        val mytpe = importType(tree.tpe)
+
+        mytree match {
+          case mytt: TypeTree =>
+            val tt = tree.asInstanceOf[from.TypeTree]
+            if (mytree hasSymbol) mytt.symbol = mysym
+            if (tt.wasEmpty) mytt.defineType(mytpe) else mytt.setType(mytpe)
+            if (tt.original != null) mytt.setOriginal(importTree(tt.original))
+          case _ =>
+            if (mytree hasSymbol) mytree.symbol = importSymbol(tree.symbol)
+            mytree.tpe = importType(tree.tpe)
+        }
       }
       mytree
     }

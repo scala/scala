@@ -2,6 +2,5 @@ q = 1
 y = 1
 first invocation = 15
 q = 2
-y = 1
+y = 2
 second invocation = 17
-q after second invocation = 2
