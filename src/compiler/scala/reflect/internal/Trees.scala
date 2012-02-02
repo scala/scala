@@ -251,8 +251,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   def Super(sym: Symbol, mix: TypeName): Tree = Super(This(sym), mix)
 
-  def This(sym: Symbol): Tree = This(sym.name.toTypeName) setSymbol sym
-
   /** Block factory that flattens directly nested blocks.
    */
   def Block(stats: Tree*): Block = {
