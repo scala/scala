@@ -460,8 +460,19 @@ abstract class LiftCode extends Transform with TypingTransformers {
      * Reify a free reference. The result will be either a mirror reference
      *  to a global value, or else a mirror Literal.
      */
-    private def reifyFree(tree: Tree): Tree =
-      mirrorCall(nme.Ident, reifySymRef(tree.symbol))
+    private def reifyFree(tree: Tree): Tree = tree match {
+      case This(_) if tree.symbol.isClass && !tree.symbol.isModuleClass =>
+        val sym = tree.symbol
+        if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
+        if (reifyDebug) println("Free: " + sym)
+        val freeVar = mirrorCall("freeVar", reify(sym.name.toString), reify(sym.tpe), This(sym))
+        mirrorCall(nme.Ident, freeVar)
+      case This(_) =>
+        if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))
+        mirrorCall(nme.This, reifySymRef(tree.symbol))
+      case _ =>
+        mirrorCall(nme.Ident, reifySymRef(tree.symbol))
+    }
 
     // todo: consider whether we should also reify positions
     private def reifyPosition(pos: Position): Tree =
