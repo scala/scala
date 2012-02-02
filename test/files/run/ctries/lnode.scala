@@ -25,7 +25,10 @@ object LNodeSpec extends Spec {
     "remove elements with the same hash codes" in {
       val ct = new Ctrie[DumbHash, Int]
       for (i <- 0 until initsz) ct.update(new DumbHash(i), i)
-      for (i <- 0 until initsz) assert(ct.remove(new DumbHash(i)) == Some(i))
+      for (i <- 0 until initsz) {
+        val remelem = ct.remove(new DumbHash(i))
+        assert(remelem == Some(i), "removing " + i + " yields " + remelem)
+      }
       for (i <- 0 until initsz) assert(ct.get(new DumbHash(i)) == None)
     }
     

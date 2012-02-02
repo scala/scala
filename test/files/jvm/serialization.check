@@ -192,6 +192,10 @@ x = TreeSet(1, 2, 3)
 y = TreeSet(1, 2, 3)
 x equals y: true, y equals x: true
 
+x = Ctrie(1 -> one, 2 -> two, 3 -> three)
+y = Ctrie(1 -> one, 2 -> two, 3 -> three)
+x equals y: true, y equals x: true
+
 x =  xml:src="hello"
 y =  xml:src="hello"
 x equals y: true, y equals x: true
