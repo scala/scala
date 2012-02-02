@@ -42,8 +42,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
 
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
-  
-  /** Marks underlying reference to id as boxed. 
+
+  /** Marks underlying reference to id as boxed.
    *  @pre: id must refer to a captured variable
    *  A reference such marked will refer to the boxed entity, no dereferencing
    *  with `.elem` is done on it.
@@ -208,7 +208,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       case _ => this.treeCopy.SelectFromArray(tree, qualifier, selector, erasure)
     }
     def ReferenceToBoxed(tree: Tree, idt: Ident) = tree match {
-      case t @ ReferenceToBoxed(idt0) 
+      case t @ ReferenceToBoxed(idt0)
       if (idt0 == idt) => t
       case _ => this.treeCopy.ReferenceToBoxed(tree, idt)
     }
@@ -251,62 +251,79 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     }
   }
 
-  /** resets symbol and tpe fields in a tree, @see ResetAttrsTraverse
+  /** resets symbol and tpe fields in a tree, @see ResetAttrs
    */
 //  def resetAllAttrs[A<:Tree](x:A): A = { new ResetAttrsTraverser().traverse(x); x }
 //  def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
-  
-  def resetAllAttrs[A<:Tree](x:A): A = new ResetAttrsTransformer(false).transformPoly(x)
-  def resetLocalAttrs[A<:Tree](x:A): A = new ResetAttrsTransformer(true).transformPoly(x)
+
+  def resetAllAttrs[A<:Tree](x:A): A = new ResetAttrs(false).transform(x)
+  def resetLocalAttrs[A<:Tree](x:A): A = new ResetAttrs(true).transform(x)
 
   /** A transformer which resets symbol and tpe fields of all nodes in a given tree,
    *  with special treatment of:
    *    TypeTree nodes: are replaced by their original if it exists, otherwise tpe field is reset
    *                    to empty if it started out empty or refers to local symbols (which are erased).
    *    TypeApply nodes: are deleted if type arguments end up reverted to empty
-   *    This(pkg) notes where pkg is a pckage: these are kept.
+   *    This(pkg) nodes where pkg is a package: these are kept.
    *
-   *  (bq:) This traverser has mutable state and should be discarded after use
+   *  (bq:) This transformer has mutable state and should be discarded after use
    */
-  private class ResetAttrsTransformer(localOnly: Boolean) extends Transformer {
-    private val erasedSyms = util.HashSet[Symbol](8)
-    private def resetDef(tree: Tree) {
-      if (tree.symbol != null && tree.symbol != NoSymbol)
-        erasedSyms addEntry tree.symbol
-      tree.symbol = NoSymbol
-    }
-    override def transform(tree: Tree): Tree = super.transform {
-      tree match {
-        case Template(_, _, body) =>
-          body foreach resetDef
-          resetDef(tree)
-          tree.tpe = null
-          tree
-        case _: DefTree | Function(_, _) | Template(_, _, _) =>
-          resetDef(tree)
-          tree.tpe = null
-          tree
-        case tpt: TypeTree =>
-          if (tpt.original != null)
-            tpt.original
-          else if (tpt.tpe != null && (tpt.wasEmpty || (tpt.tpe exists (tp => erasedSyms contains tp.typeSymbol))))
-            tpt.tpe = null
-          tree
-        case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
-          fn
-        case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
-          tree
-        case EmptyTree =>
-          tree
-        case _ =>
-          if (tree.hasSymbol && (!localOnly || (erasedSyms contains tree.symbol))) 
-            tree.symbol = NoSymbol
-          tree.tpe = null
-          tree
+  private class ResetAttrs(localOnly: Boolean) {
+    val locals = util.HashSet[Symbol](8)
+
+    class MarkLocals extends self.Traverser {
+      def markLocal(tree: Tree) =
+        if (tree.symbol != null && tree.symbol != NoSymbol)
+          locals addEntry tree.symbol
+
+      override def traverse(tree: Tree) = {
+        tree match {
+         case _: DefTree | Function(_, _) | Template(_, _, _) =>
+           markLocal(tree)
+         case _ if tree.symbol.isInstanceOf[FreeVar] =>
+           markLocal(tree)
+         case _ =>
+           ;
+        }
+
+        super.traverse(tree)
       }
     }
-    def transformPoly[T <: Tree](x: T): T = {
-      val x1 = transform(x)
+
+    class Transformer extends self.Transformer {
+      override def transform(tree: Tree): Tree = super.transform {
+        tree match {
+          case tpt: TypeTree =>
+            if (tpt.original != null) {
+              transform(tpt.original)
+            } else {
+              if (tpt.tpe != null && (tpt.wasEmpty || (tpt.tpe exists (tp => locals contains tp.typeSymbol))))
+                tpt.tpe = null
+              tree
+            }
+          case TypeApply(fn, args) if args map transform exists (_.isEmpty) =>
+            transform(fn)
+          case This(_) if tree.symbol != null && tree.symbol.isPackageClass =>
+            tree
+          case EmptyTree =>
+            tree
+          case _ =>
+            if (tree.hasSymbol && (!localOnly || (locals contains tree.symbol)))
+              tree.symbol = NoSymbol
+            tree.tpe = null
+            tree
+        }
+      }
+    }
+
+    def transform[T <: Tree](x: T): T = {
+      new MarkLocals().traverse(x)
+
+      val trace = scala.tools.nsc.util.trace when settings.debug.value
+      val eoln = System.getProperty("line.separator")
+      trace("locals (%d total): %n".format(locals.size))(locals.toList map {"  " + _} mkString eoln)
+
+      val x1 = new Transformer().transform(x)
       assert(x.getClass isInstance x1)
       x1.asInstanceOf[T]
     }

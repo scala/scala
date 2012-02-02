@@ -24,11 +24,17 @@ object CodeTest {
 
   def apply[T](code: Code[T], args: Array[String] = Array()) = {
     println("testing: "+code.tree)
+    println("type is: "+code.manifest.tpe)
+    val isNullary = code.manifest.tpe.typeSymbol == scala.reflect.mirror.definitions.FunctionClass(0)
     val reporter = new ConsoleReporter(new Settings)
     val toolbox = new ToolBox(reporter, args mkString " ")
     val ttree = toolbox.typeCheck(code.tree, code.manifest.tpe)
-    println("result = " + toolbox.showAttributed(ttree))
-    val evaluated = toolbox.runExpr(ttree)
+    println("result = " + toolbox.showAttributed(ttree, printTypes = true, printIds = false))
+    var evaluated = toolbox.runExpr(ttree)
+    if (evaluated != null && isNullary) {
+      val applyMeth = evaluated.getClass.getMethod("apply")
+      evaluated = applyMeth.invoke(evaluated)
+    }
     println("evaluated = "+evaluated)
     evaluated
   }

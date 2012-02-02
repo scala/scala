@@ -16,9 +16,12 @@ tag=$(git describe --abbrev=0)
 
 # the full string - padding correctness depends on abbrev=10.
 described=$(git describe --abbrev=10 --always --tags)
+suffix="${described##${tag}-}"
+counter=$(echo $suffix | cut -d - -f 1)
+hash=$(echo $suffix | cut -d - -f 2)
 
 # 016 is rocket-surgically-calibrated to pad the distance from the
 # tag to the current commit into a 4-digit number - since maven
 # will be treating this as a string, the ide depends on
 # 10 being greater than 9 (thus 0010 and 00009.)
-printf "%s-%016s-%s\n" "$tag" "${described##${tag}-}" $(date "+%Y-%m-%d")
+printf "%s-%04d-%10s-%s\n" "$tag" "$counter" "$hash" $(date "+%Y-%m-%d")

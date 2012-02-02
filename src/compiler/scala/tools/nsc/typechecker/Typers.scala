@@ -100,6 +100,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       case MethodType(params, _) =>
         val argResultsBuff = new ListBuffer[SearchResult]()
         val argBuff = new ListBuffer[Tree]()
+        var paramFailed = false
 
         def mkPositionalArg(argTree: Tree, paramName: Name) = argTree
         def mkNamedArg(argTree: Tree, paramName: Name) = atPos(argTree.pos)(new AssignOrNamedArg(Ident(paramName), (argTree)))
@@ -114,14 +115,14 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           for(ar <- argResultsBuff)
             paramTp = paramTp.subst(ar.subst.from, ar.subst.to)
 
-          val res = inferImplicit(fun, paramTp, true, false, context)
+          val res = if (paramFailed) SearchFailure else inferImplicit(fun, paramTp, context.reportErrors, false, context)
           argResultsBuff += res
 
           if (res != SearchFailure) {
             argBuff += mkArg(res.tree, param.name)
           } else {
             mkArg = mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
-            if (!param.hasDefault) {
+            if (!param.hasDefault && !paramFailed) {
               context.errBuffer.find(_.kind == ErrorKinds.Divergent) match {
                 case Some(divergentImplicit) =>
                   // DivergentImplicit error has higher priority than "no implicit found"
@@ -133,6 +134,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 case None =>
                   NoImplicitFoundError(fun, param)
               }
+              paramFailed = true
             }
             /* else {
              TODO: alternative (to expose implicit search failure more) -->
@@ -767,7 +769,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
         withCondConstrTyper(treeInfo.isSelfOrSuperConstrCall(tree)){ typer1 =>
           if (original != EmptyTree && pt != WildcardType)
-            typer1.silent(tpr => tpr.typed(tpr.applyImplicitArgs(tree), mode, pt)) match {
+            typer1.silent(tpr => {
+              val withImplicitArgs = tpr.applyImplicitArgs(tree)
+              if (tpr.context.hasErrors) tree // silent will wrap it in SilentTypeError anyway
+              else tpr.typed(withImplicitArgs, mode, pt)
+            }) match {
               case SilentResultValue(result) =>
                 result
               case _ =>
@@ -2915,7 +2921,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       existentialAbstraction(captured.toList, tpe)
     }
 
-    /** convert skolems to existentials */
+    /** convert local symbols and skolems to existentials */
     def packedType(tree: Tree, owner: Symbol): Type = {
       def defines(tree: Tree, sym: Symbol) =
         sym.isExistentialSkolem && sym.unpackLocation == tree ||

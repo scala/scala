@@ -55,10 +55,16 @@ abstract class LiftCode extends Transform with TypingTransformers {
   class Codifier(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     val reifyDebug = settings.Yreifydebug.value
+    val reifyTyperDebug = settings.Yreifytyperdebug.value
     val debugTrace = util.trace when reifyDebug
 
     val reifyCopypaste = settings.Yreifycopypaste.value
     def printCopypaste(tree: Tree) {
+      if (reifyDebug) println("=======================")
+      printCopypaste1(tree)
+      if (reifyDebug) println("=======================")
+    }
+    def printCopypaste1(tree: Tree) {
       import scala.reflect.api.Modifier
       import scala.reflect.api.Modifier._
 
@@ -123,11 +129,14 @@ abstract class LiftCode extends Transform with TypingTransformers {
         case Apply(_, List(tree)) if sym == Code_lift => // reify Code.lift[T](expr) instances
           val saved = printTypings
           try {
-            printTypings = reifyDebug
+            debugTrace("transforming = ")(if (settings.Xshowtrees.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
             debugTrace("transformed = ") {
-              val result = localTyper.typedPos(tree.pos)(codify(super.transform(tree)))
-              if (reifyCopypaste) printCopypaste(result)
-              result
+              val untyped = codify(super.transform(tree))
+              if (reifyCopypaste) printCopypaste(untyped)
+
+              printTypings = reifyTyperDebug
+              val typed = localTyper.typedPos(tree.pos)(untyped)
+              typed
             }
           } catch {
             case ex: ReifierError =>
@@ -145,7 +154,8 @@ abstract class LiftCode extends Transform with TypingTransformers {
       val targetType = definitions.CodeClass.primaryConstructor.info.paramTypes.head
       val reifier = new Reifier()
       val arg = gen.mkAsInstanceOf(reifier.reifyTopLevel(tree), targetType, wrapInApply = false)
-      val treetpe =
+      val treetpe = // this really should use packedType(tree.tpe, context.owner)
+                    // where packedType is defined in Typers. But we can do that only if liftCode is moved to Typers.
         if (tree.tpe.typeSymbol.isAnonymousClass) tree.tpe.typeSymbol.classBound
         else tree.tpe
       New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(treetpe.widen))),
@@ -274,6 +284,14 @@ abstract class LiftCode extends Transform with TypingTransformers {
         case None =>
           if (sym == NoSymbol)
             mirrorSelect("NoSymbol")
+          else if (sym == RootPackage)
+            mirrorSelect("definitions.RootPackage")
+          else if (sym == RootClass)
+            mirrorSelect("definitions.RootClass")
+          else if (sym == EmptyPackage)
+            mirrorSelect("definitions.EmptyPackage")
+          else if (sym == EmptyPackageClass)
+            mirrorSelect("definitions.EmptyPackageClass")
           else if (sym.isModuleClass)
             Select(reifySymRef(sym.sourceModule), "moduleClass")
           else if (sym.isStatic && sym.isClass)
@@ -300,7 +318,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
             if (sym.isTerm) {
               if (reifyDebug) println("Free: " + sym)
               val symtpe = lambdaLift.boxIfCaptured(sym, sym.tpe, erasedTypes = false)
-              def markIfCaptured(arg: Ident): Tree = 
+              def markIfCaptured(arg: Ident): Tree =
                 if (sym.isCapturedVariable) referenceCapturedVariable(arg) else arg
               mirrorCall("freeVar", reify(sym.name.toString), reify(symtpe), markIfCaptured(Ident(sym)))
             } else {
@@ -381,6 +399,14 @@ abstract class LiftCode extends Transform with TypingTransformers {
       }
     }
 
+    private def definedInLiftedCode(tpe: Type) =
+      tpe exists (tp => boundSyms contains tp.typeSymbol)
+
+    private def isErased(tree: Tree) = tree match {
+      case tt: TypeTree => definedInLiftedCode(tt.tpe) && tt.original == null
+      case _ => false
+    }
+
     /** Reify a tree */
     private def reifyTree(tree: Tree): Tree = tree match {
       case EmptyTree =>
@@ -393,13 +419,21 @@ abstract class LiftCode extends Transform with TypingTransformers {
           mirrorCall("Select", reifyFree(tree), reifyName(nme.elem))
         } else reifyFree(tree)
       case tt: TypeTree if (tt.tpe != null) =>
-        if (!(boundSyms exists (tt.tpe contains _))) mirrorCall("TypeTree", reifyType(tt.tpe))
-        else if (tt.original != null) reify(tt.original)
-        else mirrorCall(nme.TypeTree)
+        if (definedInLiftedCode(tt.tpe)) {
+          // erase non-essential (i.e. inferred) types
+          // reify symless counterparts of essential types
+          if (tt.original != null) reify(tt.original) else mirrorCall("TypeTree")
+        } else {
+          var rtt = mirrorCall(nme.TypeTree, reifyType(tt.tpe))
+          if (tt.original != null) {
+            val setOriginal = Select(rtt, newTermName("setOriginal"))
+            val reifiedOriginal = reify(tt.original)
+            rtt = Apply(setOriginal, List(reifiedOriginal))
+          }
+          rtt
+        }
       case ta @ TypeApply(hk, ts) =>
-        val thereAreOnlyTTs = ts collect { case t if !t.isInstanceOf[TypeTree] => t } isEmpty;
-        val ttsAreNotEssential = ts collect { case tt: TypeTree => tt } find { tt => tt.original != null } isEmpty;
-        if (thereAreOnlyTTs && ttsAreNotEssential) reifyTree(hk) else reifyProduct(ta)
+        if (ts exists isErased) reifyTree(hk) else reifyProduct(ta)
       case global.emptyValDef =>
         mirrorSelect(nme.emptyValDef)
       case Literal(constant @ Constant(tpe: Type)) if boundSyms exists (tpe contains _) =>
@@ -407,8 +441,10 @@ abstract class LiftCode extends Transform with TypingTransformers {
       case Literal(constant @ Constant(sym: Symbol)) if boundSyms contains sym =>
         CannotReifyClassOfBoundEnum(tree, constant.tpe)
       case _ =>
-        if (tree.isDef)
+        if (tree.isDef) {
+          if (reifyDebug) println("boundSym: " + tree.symbol)
           boundSyms += tree.symbol
+        }
 
         reifyProduct(tree)
       /*
@@ -424,8 +460,19 @@ abstract class LiftCode extends Transform with TypingTransformers {
      * Reify a free reference. The result will be either a mirror reference
      *  to a global value, or else a mirror Literal.
      */
-    private def reifyFree(tree: Tree): Tree =
-      mirrorCall(nme.Ident, reifySymRef(tree.symbol))
+    private def reifyFree(tree: Tree): Tree = tree match {
+      case This(_) if tree.symbol.isClass && !tree.symbol.isModuleClass =>
+        val sym = tree.symbol
+        if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
+        if (reifyDebug) println("Free: " + sym)
+        val freeVar = mirrorCall("freeVar", reify(sym.name.toString), reify(sym.tpe), This(sym))
+        mirrorCall(nme.Ident, freeVar)
+      case This(_) =>
+        if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))
+        mirrorCall(nme.This, reifySymRef(tree.symbol))
+      case _ =>
+        mirrorCall(nme.Ident, reifySymRef(tree.symbol))
+    }
 
     // todo: consider whether we should also reify positions
     private def reifyPosition(pos: Position): Tree =

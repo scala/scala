@@ -10,6 +10,8 @@ object Test extends App {
     val fun: reflect.Code[Int => Int] = x => {
       y += 1
       q += 1
+      println("q = " + q)
+      println("y = " + y)
       x + ys.length * z + q + y
     }
 
