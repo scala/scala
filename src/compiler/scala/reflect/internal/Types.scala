@@ -5459,8 +5459,8 @@ trait Types extends api.Types { self: SymbolTable =>
           matchesType(tp1, res2, true)
         case MethodType(_, _) =>
           false
-        case PolyType(tparams2, res2) =>
-          tparams2.isEmpty && matchesType(tp1, res2, alwaysMatchSimple)
+        case PolyType(_, _) =>
+          false
         case _ =>
           alwaysMatchSimple || tp1 =:= tp2
       }
@@ -5478,7 +5478,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
           case TypeRef(_, sym, Nil) =>
-            params1.isEmpty && sym.isModuleClass && matchesType(res1, sym.tpe, alwaysMatchSimple)
+            params1.isEmpty && sym.isModuleClass && matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             false
         }
@@ -5491,7 +5491,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case ExistentialType(_, res2) =>
             alwaysMatchSimple && matchesType(tp1, res2, true)
           case TypeRef(_, sym, Nil) if sym.isModuleClass =>
-            matchesType(res1, sym.tpe, alwaysMatchSimple)
+            matchesType(res1, tp2, alwaysMatchSimple)
           case _ =>
             matchesType(res1, tp2, alwaysMatchSimple)
         }
@@ -5514,8 +5514,8 @@ trait Types extends api.Types { self: SymbolTable =>
         }
       case TypeRef(_, sym, Nil) if sym.isModuleClass =>
         tp2 match {
-          case MethodType(Nil, res2)   => matchesType(sym.tpe, res2, alwaysMatchSimple)
-          case NullaryMethodType(res2) => matchesType(sym.tpe, res2, alwaysMatchSimple)
+          case MethodType(Nil, res2)   => matchesType(tp1, res2, alwaysMatchSimple)
+          case NullaryMethodType(res2) => matchesType(tp1, res2, alwaysMatchSimple)
           case _                       => lastTry
         }
       case _ =>
