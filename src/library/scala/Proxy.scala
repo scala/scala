@@ -22,7 +22,8 @@ package scala
  *  @author  Matthias Zenger
  *  @version 1.0, 26/04/2004
  */
-trait Proxy extends Any {
+// trait Proxy extends Any {
+trait Proxy {
   def self: Any
 
   override def hashCode: Int = self.hashCode

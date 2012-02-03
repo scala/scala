@@ -633,7 +633,7 @@ abstract class UnCurry extends InfoTransform
           tree1
       }
     } setType {
-      assert(tree.tpe != null, tree + " tpe is null")
+      assert(tree.tpe != null, "tpe is null at " + tree.pos + " for " + tree.summaryString + " / " + tree)
       uncurryTreeType(tree.tpe)
     }
 

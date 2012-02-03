@@ -1482,7 +1482,10 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
       if (settings.Xmigration28.value)
         checkMigration(sym, tree.pos)
 
-      if (currentClass != sym.owner && sym.hasLocalFlag) {
+      if (sym eq NoSymbol) {
+        unit.warning(tree.pos, "Select node has NoSymbol! " + tree + " / " + tree.tpe)
+      }
+      else if (currentClass != sym.owner && sym.hasLocalFlag) {
         var o = currentClass
         var hidden = false
         while (!hidden && o != sym.owner && o != sym.owner.moduleClass && !o.isPackage) {
