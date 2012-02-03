@@ -613,6 +613,11 @@ object Test9_parallel {
     val _mpm: mutable.ParHashMap[Int, Int] = read(write(mpm))
     check(mpm, _mpm)
     
+    // mutable.ParCtrie
+    val mpc = mutable.ParCtrie(1 -> 2, 2 -> 4)
+    val _mpc: mutable.ParCtrie[Int, Int] = read(write(mpc))
+    check(mpc, _mpc)
+    
     // mutable.ParHashSet
     val mps = mutable.ParHashSet(1, 2, 3)
     val _mps: mutable.ParHashSet[Int] = read(write(mps))

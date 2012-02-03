@@ -141,8 +141,8 @@ object IteratorSpec extends Spec {
     
     "be consistent when taken with concurrent modifications" in {
       val sz = 25000
-      val W = 25
-      val S = 10
+      val W = 15
+      val S = 5
       val checks = 5
       val ct = new Ctrie[Wrap, Int]
       for (i <- 0 until sz) ct.put(new Wrap(i), i)
@@ -182,8 +182,8 @@ object IteratorSpec extends Spec {
     
     "be consistent with a concurrent removal with a well defined order" in {
       val sz = 150000
-      val sgroupsize = 40
-      val sgroupnum = 20
+      val sgroupsize = 10
+      val sgroupnum = 5
       val removerslowdown = 50
       val ct = new Ctrie[Wrap, Int]
       for (i <- 0 until sz) ct.put(new Wrap(i), i)
@@ -201,7 +201,7 @@ object IteratorSpec extends Spec {
       def consistentIteration(it: Iterator[(Wrap, Int)]) = {
         class Iter extends Thread {
           override def run() {
-            val elems = it.toSeq
+            val elems = it.toBuffer
             if (elems.nonEmpty) {
               val minelem = elems.minBy((x: (Wrap, Int)) => x._1.i)._1.i
               assert(elems.forall(_._1.i >= minelem))
@@ -224,8 +224,8 @@ object IteratorSpec extends Spec {
     
     "be consistent with a concurrent insertion with a well defined order" in {
       val sz = 150000
-      val sgroupsize = 30
-      val sgroupnum = 30
+      val sgroupsize = 10
+      val sgroupnum = 10
       val inserterslowdown = 50
       val ct = new Ctrie[Wrap, Int]
       

@@ -287,6 +287,10 @@ x = ParHashMap(1 -> 2, 2 -> 4)
 y = ParHashMap(1 -> 2, 2 -> 4)
 x equals y: true, y equals x: true
 
+x = ParCtrie(1 -> 2, 2 -> 4)
+y = ParCtrie(1 -> 2, 2 -> 4)
+x equals y: true, y equals x: true
+
 x = ParHashSet(1, 2, 3)
 y = ParHashSet(1, 2, 3)
 x equals y: true, y equals x: true

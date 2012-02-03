@@ -34,7 +34,6 @@ import scala.collection.generic.Sizing
  */
 trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
 //self: EnvironmentPassingCombiner[Elem, To] =>
-  private[collection] final val tasksupport = getTaskSupport
 
   /** Combines the contents of the receiver builder and the `other` builder,
    *  producing a new builder containing both their elements.
