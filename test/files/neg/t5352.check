@@ -1,0 +1,13 @@
+t5352.scala:11: error: type mismatch;
+ found   : boop.Bar
+ required: boop.BarF
+    (which expands to)  AnyRef{def f(): Int}
+  x = xs.head
+         ^
+t5352.scala:14: error: method f in class Bar1 cannot be accessed in boop.Bar1
+ Access to protected method f not permitted because
+ enclosing object boop is not a subclass of 
+ class Bar1 in object boop where target is defined
+  (new Bar1).f
+             ^
+two errors found

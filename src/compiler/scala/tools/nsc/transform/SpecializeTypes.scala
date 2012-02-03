@@ -1711,8 +1711,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def makeArguments(fun: Symbol, vparams: List[Symbol]): List[Tree] = (
     //! TODO: make sure the param types are seen from the right prefix
-    for ((tp, arg) <- fun.info.paramTypes zip vparams) yield
-      gen.maybeMkAsInstanceOf(Ident(arg), tp, arg.tpe)
+    map2(fun.info.paramTypes, vparams)((tp, arg) => gen.maybeMkAsInstanceOf(Ident(arg), tp, arg.tpe))
   )
   private def findSpec(tp: Type): Type = tp match {
     case TypeRef(pre, sym, _ :: _) => specializedType(tp)

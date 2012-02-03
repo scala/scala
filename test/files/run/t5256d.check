@@ -1,0 +1,20 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> import scala.reflect.mirror._
+import scala.reflect.mirror._
+
+scala> class A
+defined class A
+
+scala> val c = classToType(classOf[A])
+c: reflect.mirror.Type = A
+
+scala> println(c.typeSymbol == classToSymbol(classOf[A]))
+true
+
+scala> 
+
+scala> 

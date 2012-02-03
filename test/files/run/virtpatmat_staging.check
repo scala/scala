@@ -1,0 +1,1 @@
+runOrElse(7, ?guard(false,?).flatMap(? =>one(foo)).orElse(one(bar)))

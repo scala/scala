@@ -271,6 +271,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     // Compiler utilized names
     // val productElementName: NameType = "productElementName"
     val Ident: NameType                = "Ident"
+    val This: NameType                 = "This"
     val StringContext: NameType        = "StringContext"
     val TYPE_ : NameType               = "TYPE"
     val TypeTree: NameType             = "TypeTree"

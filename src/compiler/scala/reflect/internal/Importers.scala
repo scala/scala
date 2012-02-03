@@ -145,8 +145,8 @@ trait Importers { self: SymbolTable =>
         PolyType(tparams map importSymbol, importType(restpe))
       case from.NullaryMethodType(restpe) =>
         NullaryMethodType(importType(restpe))
-      case from.ConstantType(from.Constant(value)) =>
-        ConstantType(Constant(value))
+      case from.ConstantType(constant @ from.Constant(_)) =>
+        ConstantType(importConstant(constant))
       case from.SuperType(thistpe, supertpe) =>
         SuperType(importType(thistpe), importType(supertpe))
       case from.TypeBounds(lo, hi) =>
@@ -194,8 +194,8 @@ trait Importers { self: SymbolTable =>
       })
 
     def importAnnotArg(arg: from.ClassfileAnnotArg): ClassfileAnnotArg = arg match {
-      case from.LiteralAnnotArg(from.Constant(value)) =>
-        LiteralAnnotArg(Constant(value))
+      case from.LiteralAnnotArg(constant @ from.Constant(_)) =>
+        LiteralAnnotArg(importConstant(constant))
       case from.ArrayAnnotArg(args) =>
         ArrayAnnotArg(args map importAnnotArg)
       case from.ScalaSigBytes(bytes) =>
@@ -303,8 +303,8 @@ trait Importers { self: SymbolTable =>
           case _ =>
             new Ident(importName(name))
         }
-        case from.Literal(from.Constant(value)) =>
-          new Literal(Constant(value))
+        case from.Literal(constant @ from.Constant(_)) =>
+          new Literal(importConstant(constant))
         case from.TypeTree() =>
           new TypeTree()
         case from.Annotated(annot, arg) =>
@@ -327,8 +327,19 @@ trait Importers { self: SymbolTable =>
           null
       }
       if (mytree != null) {
-        if (mytree hasSymbol) mytree.symbol = importSymbol(tree.symbol)
-        mytree.tpe = importType(tree.tpe)
+        val mysym = if (tree hasSymbol) importSymbol(tree.symbol) else NoSymbol
+        val mytpe = importType(tree.tpe)
+
+        mytree match {
+          case mytt: TypeTree =>
+            val tt = tree.asInstanceOf[from.TypeTree]
+            if (mytree hasSymbol) mytt.symbol = mysym
+            if (tt.wasEmpty) mytt.defineType(mytpe) else mytt.setType(mytpe)
+            if (tt.original != null) mytt.setOriginal(importTree(tt.original))
+          case _ =>
+            if (mytree hasSymbol) mytree.symbol = importSymbol(tree.symbol)
+            mytree.tpe = importType(tree.tpe)
+        }
       }
       mytree
     }
@@ -339,5 +350,10 @@ trait Importers { self: SymbolTable =>
     def importRefTree(tree: from.RefTree): RefTree = importTree(tree).asInstanceOf[RefTree]
     def importIdent(tree: from.Ident): Ident = importTree(tree).asInstanceOf[Ident]
     def importCaseDef(tree: from.CaseDef): CaseDef = importTree(tree).asInstanceOf[CaseDef]
+    def importConstant(constant: from.Constant): Constant = new Constant(constant.tag match {
+      case ClassTag => importType(constant.value.asInstanceOf[from.Type])
+      case EnumTag => importSymbol(constant.value.asInstanceOf[from.Symbol])
+      case _ => constant.value
+    })
   }
 }

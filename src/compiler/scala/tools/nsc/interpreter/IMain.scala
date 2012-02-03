@@ -196,7 +196,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       def foreach[U](f: Tree => U): Unit = t foreach { x => f(x) ; () }
     }).toList
   }
-  
+
   implicit def installReplTypeOps(tp: Type): ReplTypeOps = new ReplTypeOps(tp)
   class ReplTypeOps(tp: Type) {
     def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
@@ -831,7 +831,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       case xs            => sys.error("Internal error: eval object " + evalClass + ", " + xs.mkString("\n", "\n", ""))
     }
     private def compileAndSaveRun(label: String, code: String) = {
-      showCodeIfDebugging(code)
+      showCodeIfDebugging(packaged(code))
       val (success, run) = compileSourcesKeepingRun(new BatchSourceFile(label, packaged(code)))
       lastRun = run
       success
@@ -1078,7 +1078,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val clazz      = classOfTerm(id) getOrElse { return NoType }
       val staticSym  = tpe.typeSymbol
       val runtimeSym = getClassIfDefined(clazz.getName)
-      
+
       if ((runtimeSym != NoSymbol) && (runtimeSym != staticSym) && (runtimeSym isSubClass staticSym))
         runtimeSym.info
       else NoType

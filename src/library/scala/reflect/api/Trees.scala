@@ -537,6 +537,9 @@ trait Trees { self: Universe =>
     // The symbol of a This is the class to which the this refers.
     // For instance in C.this, it would be C.
 
+  def This(sym: Symbol): Tree =
+    This(sym.name.toTypeName) setSymbol sym
+
   /** Designator <qualifier> . <name> */
   case class Select(qualifier: Tree, name: Name)
        extends RefTree
