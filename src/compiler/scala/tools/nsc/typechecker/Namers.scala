@@ -113,7 +113,7 @@ trait Namers extends MethodSynthesis {
     private def contextFile = context.unit.source.file
     private def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
-        // H@ need to ensure that we handle only cyclic references 
+        // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
         alt
     }
@@ -296,7 +296,7 @@ trait Namers extends MethodSynthesis {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
-      
+
       tree match {
         case TypeDef(_, _, _, _) if isParameter     => owner.newTypeParameter(name.toTypeName, pos, flags)
         case TypeDef(_, _, _, _)                    => owner.newTypeSymbol(name.toTypeName, pos, flags)
@@ -705,6 +705,13 @@ trait Namers extends MethodSynthesis {
         if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
+      tree match {
+        case cdef: ClassDef =>
+          if (!treeInfo.isInterface(sym, cdef.impl.body) && sym != ArrayClass &&
+              (sym.info.parents forall (_.typeSymbol != AnyValClass)))
+          ensureParent(sym, ScalaObjectClass)
+        case _ =>
+      }
     }
 
     def moduleClassTypeCompleter(tree: Tree) = {
@@ -836,10 +843,6 @@ trait Namers extends MethodSynthesis {
       }
 
       val parents = typer.parentTypes(templ) map checkParent
-
-// not yet:
-//      if (!treeInfo.isInterface(clazz, templ.body) && clazz != ArrayClass)
-//        ensureParent(ScalaObjectClass)
 
       enterSelf(templ.self)
 
@@ -1313,6 +1316,22 @@ trait Namers extends MethodSynthesis {
       }
     }
 
+    def includeParent(tpe: Type, parent: Symbol): Type = tpe match {
+      case PolyType(tparams, restpe) =>
+        PolyType(tparams, includeParent(restpe, parent))
+      case ClassInfoType(parents, decls, clazz) =>
+        if (parents exists (_.typeSymbol == parent)) tpe
+        else ClassInfoType(parents :+ parent.tpe, decls, clazz)
+      case _ =>
+        tpe
+    }
+
+    def ensureParent(clazz: Symbol, parent: Symbol) = {
+      val info0 = clazz.info
+      val info1 = includeParent(info0, parent)
+      if (info0 ne info1) clazz setInfo info1
+    }
+
     class LogTransitions[S](onEnter: S => String, onExit: S => String) {
       val enabled = settings.debug.value
       @inline final def apply[T](entity: S)(body: => T): T = {
@@ -1390,25 +1409,9 @@ trait Namers extends MethodSynthesis {
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)
         fail(ByNameParameter)
 
-      def includeParent(tpe: Type, parent: Symbol): Type = tpe match {
-        case PolyType(tparams, restpe) =>
-          PolyType(tparams, includeParent(restpe, parent))
-        case ClassInfoType(parents, decls, clazz) =>
-          if (parents exists (_.typeSymbol == parent)) tpe
-          else ClassInfoType(parents :+ parent.tpe, decls, clazz)
-        case _ =>
-          tpe
-      }
-
-      def ensureParent(parent: Symbol) = {
-        val info0 = sym.info
-        val info1 = includeParent(info0, parent)
-        if (info0 ne info1) sym setInfo info1
-      }
-
-      if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
+     if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
         if (!sym.isSubClass(AnyValClass))
-          ensureParent(NotNullClass)
+          ensureParent(sym, NotNullClass)
 
         sym setFlag FINAL
       }

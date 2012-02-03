@@ -21,7 +21,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
    *  methods.
    */
   private type PolyMethodCreator = List[Symbol] => (Option[List[Type]], Type)
-  
+
   private def enterNewClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): Symbol = {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
     clazz setInfoAndEnter ClassInfoType(parents, newScope, clazz)
@@ -104,7 +104,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isGetClass(sym: Symbol) =
       (sym.name == nme.getClass_) && (sym.paramss.isEmpty || sym.paramss.head.isEmpty)
 
-    lazy val AnyValClass  = valueCache(tpnme.AnyVal)
     lazy val UnitClass    = valueCache(tpnme.Unit)
     lazy val ByteClass    = valueCache(tpnme.Byte)
     lazy val ShortClass   = valueCache(tpnme.Short)
@@ -166,7 +165,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val RuntimePackage       = getRequiredModule("scala.runtime")
     lazy val RuntimePackageClass  = RuntimePackage.moduleClass
-    
+
     lazy val JavaLangEnumClass = getRequiredClass("java.lang.Enum")
 
     // convenient one-argument parameter lists
@@ -178,10 +177,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
     private def booltype    = BooleanClass.typeConstructor
     private def inttype     = IntClass.typeConstructor
     private def stringtype  = StringClass.typeConstructor
-    
+
     // Java types
     def javaTypeName(jclazz: Class[_]): TypeName = newTypeName(jclazz.getName)
-    
+
     def javaTypeToValueClass(jtype: Class[_]): Symbol = jtype match {
       case java.lang.Void.TYPE      => UnitClass
       case java.lang.Byte.TYPE      => ByteClass
@@ -207,12 +206,41 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _            => null
     }
 
+    private def fixupAsAnyTrait(clazz: Symbol): Symbol = {
+      clazz setInfo fixupAsAnyTrait(clazz.info)
+      clazz
+    }
+
+    private def fixupAsAnyTrait(tpe: Type): Type = tpe match {
+      case ClassInfoType(parents, decls, clazz) =>
+        if (parents.head.typeSymbol == AnyClass) tpe
+        else {
+          assert(parents.head.typeSymbol == ObjectClass, parents)
+          ClassInfoType(AnyClass.tpe :: parents.tail, decls, clazz)
+        }
+      case PolyType(tparams, restpe) =>
+        PolyType(tparams, fixupAsAnyTrait(restpe))
+//      case _ => tpe
+    }
+
     // top types
     lazy val AnyClass             = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
     lazy val AnyRefClass          = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.typeConstructor)
     lazy val ObjectClass          = getClass(sn.Object)
     lazy val AnyCompanionClass    = getRequiredClass("scala.AnyCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
     lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
+
+    private var oldValueScheme = true
+
+    lazy val AnyValClass          = ScalaPackageClass.info member tpnme.AnyVal orElse {
+//      println("new anyval")
+      oldValueScheme = true
+      val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, 0L)
+      val av_constr = anyval.newClassConstructor(NoPosition)
+      anyval.info.decls enter av_constr
+      anyval
+    }
+      lazy val AnyVal_getClass = enterNewMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe))
 
     // bottom types
     lazy val RuntimeNothingClass  = getClass(fulltpnme.RuntimeNothing)
@@ -274,7 +302,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
-      
+
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
      *  which does a member lookup (it can't be a lazy val because we might reload Predef
@@ -316,7 +344,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, anyparam, ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getRequiredClass("scala.Serializable")
     lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
-    lazy val ComparableClass       = getRequiredClass("java.lang.Comparable")
+    lazy val ComparableClass       = fixupAsAnyTrait(getRequiredClass("java.lang.Comparable"))
     lazy val JavaCloneableClass    = getRequiredClass("java.lang.Cloneable")
     lazy val RemoteInterfaceClass  = getRequiredClass("java.rmi.Remote")
     lazy val RemoteExceptionClass  = getRequiredClass("java.rmi.RemoteException")
@@ -426,7 +454,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case m: ClassManifest[_] =>
         val sym  = manifestToSymbol(m)
         val args = m.typeArguments
-      
+
         if ((sym eq NoSymbol) || args.isEmpty) sym.tpe
         else appliedType(sym.typeConstructor, args map manifestToType)
       case _ =>
@@ -436,7 +464,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def manifestToSymbol(m: ClassManifest[_]): Symbol = m match {
       case x: scala.reflect.AnyValManifest[_] =>
         getMember(ScalaPackageClass, newTypeName("" + x))
-      case _                                  => 
+      case _                                  =>
         val name = m.erasure.getName
         if (name endsWith nme.MODULE_SUFFIX_STRING)
           getModuleIfDefined(name stripSuffix nme.MODULE_SUFFIX_STRING)
@@ -496,7 +524,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case DoubleClass  => nme.wrapDoubleArray
       case BooleanClass => nme.wrapBooleanArray
       case UnitClass    => nme.wrapUnitArray
-      case _        => 
+      case _        =>
         if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol)) nme.wrapRefArray
         else nme.genericWrapArray
     }
@@ -640,7 +668,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         case _ => false
       })
     }
-    
+
     // members of class scala.Any
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, anyparam, booltype, FINAL)
     lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, anyparam, booltype, FINAL)
@@ -662,12 +690,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => booltype)
     lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
 
-    // AnyVal_getClass is defined here. Once we have a new strap, it could also be
-    // defined directly in the AnyVal trait. Right now this does not work, because
-    // strap complains about overriding a final getClass method in Any.
-    lazy val AnyVal_getClass = newMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe))
-
-    // A type function from T => Class[U], used to determine the return
+  // A type function from T => Class[U], used to determine the return
     // type of getClass calls.  The returned type is:
     //
     //  1. If T is a value type, Class[T].
@@ -708,7 +731,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
     lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC)(_ => booltype)
     lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps => 
+    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
     lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
@@ -816,10 +839,10 @@ trait Definitions extends reflect.api.StandardDefinitions {
       while (result.isAliasType) result = result.info.typeSymbol
       result
     }
-    
+
     def getRequiredModule(fullname: String): Symbol =
       getModule(newTermNameCached(fullname))
-    def getRequiredClass(fullname: String): Symbol = 
+    def getRequiredClass(fullname: String): Symbol =
       getClass(newTypeNameCached(fullname))
 
     def getClassIfDefined(fullname: String): Symbol =
@@ -868,15 +891,15 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     private def newAlias(owner: Symbol, name: TypeName, alias: Type): Symbol =
       owner.newAliasType(name) setInfoAndEnter alias
-    
+
     private def specialPolyClass(name: TypeName, flags: Long)(parentFn: Symbol => Type): Symbol = {
       val clazz   = enterNewClass(ScalaPackageClass, name, Nil)
       val tparam  = clazz.newSyntheticTypeParam("T0", flags)
       val parents = List(AnyRefClass.tpe, parentFn(tparam))
-      
+
       clazz setInfo GenPolyType(List(tparam), ClassInfoType(parents, newScope, clazz))
     }
-    
+
     def newPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): Symbol = {
       val msym    = owner.newMethod(name.encode, NoPosition, flags)
       val tparams = msym.newSyntheticTypeParams(typeParamCount)
@@ -887,7 +910,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
       msym setInfoAndEnter polyType(tparams, mtpe)
     }
-    
+
     /** T1 means one type parameter.
      */
     def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): Symbol = {
@@ -999,7 +1022,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
       RootClass.info.decls enter EmptyPackage
       RootClass.info.decls enter RootPackage
-      
+
       val forced = List( // force initialization of every symbol that is entered as a side effect
         AnnotationDefaultAttr, // #2264
         RepeatedParamClass,
@@ -1029,13 +1052,18 @@ trait Definitions extends reflect.api.StandardDefinitions {
         Object_synchronized,
         Object_isInstanceOf,
         Object_asInstanceOf,
+        //AnyVal_getClass,
         String_+,
-        AnyVal_getClass
+        ComparableClass
       )
 
-      /** Removing the anyref parent they acquire from having a source file.
+      /* Removing the anyref parent they acquire from having a source file.
        */
-      setParents(AnyValClass, List(NotNullClass.tpe, AnyClass.tpe))
+      if (oldValueScheme) {
+        setParents(AnyValClass, List(NotNullClass.tpe, AnyClass.tpe))
+      } else {
+        AnyVal_getClass // force it!
+      }
       ScalaValueClasses foreach { sym =>
         setParents(sym, anyvalparam)
       }

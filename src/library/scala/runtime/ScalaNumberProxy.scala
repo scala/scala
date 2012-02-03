@@ -64,7 +64,7 @@ abstract class FractionalProxy[T : Fractional] extends ScalaNumberProxy[T] with 
   def to(end: T, step: T): NumericRange.Inclusive[T]    = NumericRange.inclusive(self, end, step)
 }
 
-trait OrderedProxy[T] extends Typed[T] with Ordered[T] {
+trait OrderedProxy[T] extends Ordered[T] with Typed[T] {
   protected def ord: Ordering[T]
 
   def compare(y: T) = ord.compare(self, y)

@@ -38,7 +38,7 @@ trait ParsersCommon extends ScannersCommon {
     def freshTypeName(prefix: String): TypeName
     def deprecationWarning(off: Int, msg: String): Unit
     def accept(token: Int): Int
-  
+
     /** Methods inParensOrError and similar take a second argument which, should
      *  the next token not be the expected opener (e.g. LPAREN) will be returned
      *  instead of the contents of the groupers.  However in all cases accept(LPAREN)
@@ -1141,7 +1141,7 @@ self =>
     private def interpolatedString(): Tree = atPos(in.offset) {
       val start = in.offset
       val interpolator = in.name
-      
+
       val partsBuf = new ListBuffer[Tree]
       val exprBuf = new ListBuffer[Tree]
       in.nextToken()
@@ -1153,7 +1153,7 @@ self =>
         }
       }
       if (in.token == STRINGLIT) partsBuf += literal()
-      
+
       val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
       val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
       t2 setPos t2.pos.makeTransparent
@@ -2765,8 +2765,10 @@ self =>
         }
         else {
           val parents = (
-            if (!isInterface(mods, body) && !isScalaArray(name)) parents0 :+ scalaScalaObjectConstr
-            else if (parents0.isEmpty) List(scalaAnyRefConstr)
+            if (parents0.isEmpty) List(scalaAnyRefConstr)
+            /*if (!isInterface(mods, body) && !isScalaArray(name))
+              parents0 /* :+ scalaScalaObjectConstr*/
+            else*/
             else parents0
           ) ++ caseParents()
           Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
