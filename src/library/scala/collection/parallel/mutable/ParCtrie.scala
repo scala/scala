@@ -27,7 +27,7 @@ import scala.collection.mutable.CtrieIterator
  *  @author Aleksandar Prokopec
  *  @since 2.10
  */
-final class ParCtrie[K, V] private[mutable] (private val ctrie: Ctrie[K, V])
+final class ParCtrie[K, V] private[collection] (private val ctrie: Ctrie[K, V])
 extends ParMap[K, V]
    with GenericParMapTemplate[K, V, ParCtrie]
    with ParMapLike[K, V, ParCtrie[K, V], Ctrie[K, V]]
@@ -45,7 +45,7 @@ extends ParMap[K, V]
   
   override def seq = ctrie
   
-  def splitter = new ParCtrieSplitter(ctrie.readOnlySnapshot().asInstanceOf[Ctrie[K, V]], true)
+  def splitter = new ParCtrieSplitter(0, ctrie.readOnlySnapshot().asInstanceOf[Ctrie[K, V]], true)
   
   override def size = ctrie.size
   
@@ -76,15 +76,21 @@ extends ParMap[K, V]
 }
 
 
-private[collection] class ParCtrieSplitter[K, V](ct: Ctrie[K, V], mustInit: Boolean)
-extends CtrieIterator[K, V](ct, mustInit)
+private[collection] class ParCtrieSplitter[K, V](lev: Int, ct: Ctrie[K, V], mustInit: Boolean)
+extends CtrieIterator[K, V](lev, ct, mustInit)
    with IterableSplitter[(K, V)]
 {
   // only evaluated if `remaining` is invoked (which is not used by most tasks)
-  lazy val totalsize = ct.iterator.size // TODO improve to lazily compute sizes
+  //lazy val totalsize = ct.iterator.size /* TODO improve to lazily compute sizes */
+  def totalsize: Int = throw new UnsupportedOperationException
   var iterated = 0
   
-  protected override def newIterator(_ct: Ctrie[K, V], _mustInit: Boolean) = new ParCtrieSplitter[K, V](_ct, _mustInit)
+  protected override def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new ParCtrieSplitter[K, V](_lev, _ct, _mustInit)
+  
+  override def shouldSplitFurther[S](coll: collection.parallel.ParIterable[S], parallelismLevel: Int) = {
+    val maxsplits = 3 + Integer.highestOneBit(parallelismLevel)
+    level < maxsplits
+  }
   
   def dup = null // TODO necessary for views
   
@@ -94,6 +100,8 @@ extends CtrieIterator[K, V](ct, mustInit)
   }
   
   def split: Seq[IterableSplitter[(K, V)]] = subdivide().asInstanceOf[Seq[IterableSplitter[(K, V)]]]
+  
+  override def isRemainingCheap = false
   
   def remaining: Int = totalsize - iterated
 }

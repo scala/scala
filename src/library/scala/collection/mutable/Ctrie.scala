@@ -13,6 +13,7 @@ package mutable
 
 import java.util.concurrent.atomic._
 import collection.immutable.{ ListMap => ImmutableListMap }
+import collection.parallel.mutable.ParCtrie
 import generic._
 import annotation.tailrec
 import annotation.switch
@@ -578,6 +579,8 @@ private[mutable] case class RDCSS_Descriptor[K, V](old: INode[K, V], expectedmai
  *  iterator and clear operations. The cost of evaluating the (lazy) snapshot is
  *  distributed across subsequent updates, thus making snapshot evaluation horizontally scalable.
  *  
+ *  For details, see: http://lampwww.epfl.ch/~prokopec/ctries-snapshot.pdf
+ *  
  *  @author Aleksandar Prokopec
  *  @since 2.10
  */
@@ -585,6 +588,7 @@ private[mutable] case class RDCSS_Descriptor[K, V](old: INode[K, V], expectedmai
 final class Ctrie[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[Ctrie[K, V], AnyRef])
 extends ConcurrentMap[K, V]
    with MapLike[K, V, Ctrie[K, V]]
+   with CustomParallelizable[(K, V), ParCtrie[K, V]]
    with Serializable
 {
   import Ctrie.computeHash
@@ -710,6 +714,10 @@ extends ConcurrentMap[K, V]
   
   /* public methods */
   
+  override def seq = this
+  
+  override def par = new ParCtrie(this)
+  
   override def empty: Ctrie[K, V] = new Ctrie[K, V]
   
   @inline final def isReadOnly = rootupdater eq null
@@ -820,7 +828,7 @@ extends ConcurrentMap[K, V]
   
   def iterator: Iterator[(K, V)] =
     if (nonReadOnly) readOnlySnapshot().iterator
-    else new CtrieIterator(this)
+    else new CtrieIterator(0, this)
   
   override def stringPrefix = "Ctrie"
   
@@ -844,7 +852,7 @@ object Ctrie extends MutableMapFactory[Ctrie] {
 }
 
 
-private[collection] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
+private[collection] class CtrieIterator[K, V](var level: Int, ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
   var stack = new Array[Array[BasicNode]](7)
   var stackpos = new Array[Int](7)
   var depth = -1
@@ -910,7 +918,7 @@ private[collection] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean
     }
   } else current = null
   
-  protected def newIterator(_ct: Ctrie[K, V], _mustInit: Boolean) = new CtrieIterator[K, V](_ct, _mustInit)
+  protected def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new CtrieIterator[K, V](_lev, _ct, _mustInit)
   
   /** Returns a sequence of iterators over subsets of this iterator.
    *  It's used to ease the implementation of splitters for a parallel version of the Ctrie.
@@ -920,8 +928,12 @@ private[collection] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean
     val it = subiter
     subiter = null
     advance()
+    this.level += 1
     Seq(it, this)
-  } else if (depth == -1) Seq(this) else {
+  } else if (depth == -1) {
+    this.level += 1
+    Seq(this)
+  } else {
     var d = 0
     while (d <= depth) {
       val rem = stack(d).length - 1 - stackpos(d)
@@ -929,15 +941,17 @@ private[collection] class CtrieIterator[K, V](ct: Ctrie[K, V], mustInit: Boolean
         val (arr1, arr2) = stack(d).drop(stackpos(d) + 1).splitAt(rem / 2)
         stack(d) = arr1
         stackpos(d) = -1
-        val it = newIterator(ct, false)
+        val it = newIterator(level + 1, ct, false)
         it.stack(0) = arr2
         it.stackpos(0) = -1
         it.depth = 0
         it.advance() // <-- fix it
+        this.level += 1
         return Seq(this, it)
       }
       d += 1
     }
+    this.level += 1
     Seq(this)
   }
   

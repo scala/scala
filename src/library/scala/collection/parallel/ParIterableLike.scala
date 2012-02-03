@@ -96,17 +96,6 @@ import annotation.unchecked.uncheckedVariance
  *  The combination of methods `toMap`, `toSeq` or `toSet` along with `par` and `seq` is a flexible
  *  way to change between different collection types.
  *
- *  The method:
- *
- *  {{{
- *     def threshold(sz: Int, p: Int): Int
- *  }}}
- *
- *  provides an estimate on the minimum number of elements the collection has before
- *  the splitting stops and depends on the number of elements in the collection. A rule of the
- *  thumb is the number of elements divided by 8 times the parallelism level. This method may
- *  be overridden in concrete implementations if necessary.
- *
  *  Since this trait extends the `Iterable` trait, methods like `size` must also
  *  be implemented in concrete collections, while `iterator` forwards to `splitter` by
  *  default.
@@ -205,18 +194,6 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  rather than later on and in unpredictable ways.
    */
   def isStrictSplitterCollection = true
-
-  /** Some minimal number of elements after which this collection should be handled
-   *  sequentially by different processors.
-   *
-   *  This method depends on the size of the collection and the parallelism level, which
-   *  are both specified as arguments.
-   *
-   *  @param sz   the size based on which to compute the threshold
-   *  @param p    the parallelism level based on which to compute the threshold
-   *  @return     the maximum number of elements for performing operations sequentially
-   */
-  def threshold(sz: Int, p: Int): Int = thresholdFromSize(sz, p)
 
   /** The `newBuilder` operation returns a parallel builder assigned to this collection's fork/join pool.
    *  This method forwards the call to `newCombiner`.
@@ -833,7 +810,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
   extends StrictSplitterCheckTask[R, Tp] {
     protected[this] val pit: IterableSplitter[T]
     protected[this] def newSubtask(p: IterableSplitter[T]): Accessor[R, Tp]
-    def shouldSplitFurther = pit.remaining > threshold(size, parallelismLevel)
+    def shouldSplitFurther = pit.shouldSplitFurther(self.repr, parallelismLevel)
     def split = pit.splitWithSignalling.map(newSubtask(_)) // default split procedure
     private[parallel] override def signalAbort = pit.abort
     override def toString = this.getClass.getSimpleName + "(" + pit.toString + ")(" + result + ")(supername: " + super.toString + ")"
@@ -1362,7 +1339,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   /* scan tree */
 
-  protected[this] def scanBlockSize = (threshold(size, parallelismLevel) / 2) max 1
+  protected[this] def scanBlockSize = (thresholdFromSize(size, parallelismLevel) / 2) max 1
 
   protected[this] trait ScanTree[U >: T] {
     def beginsAt: Int

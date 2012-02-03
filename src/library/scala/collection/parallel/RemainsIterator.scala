@@ -28,6 +28,11 @@ private[collection] trait RemainsIterator[+T] extends Iterator[T] {
    *  This method doesn't change the state of the iterator.
    */
   def remaining: Int
+  
+  /** For most collections, this is a cheap operation.
+   *  Exceptions can override this method.
+   */
+  def isRemainingCheap = true
 }
 
 
@@ -112,7 +117,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def map2combiner[S, That](f: T => S, cb: Combiner[S, That]): Combiner[S, That] = {
     //val cb = pbf(repr)
-    cb.sizeHint(remaining)
+    if (isRemainingCheap) cb.sizeHint(remaining)
     while (hasNext) cb += f(next)
     cb
   }
@@ -137,7 +142,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   }
 
   def copy2builder[U >: T, Coll, Bld <: Builder[U, Coll]](b: Bld): Bld = {
-    b.sizeHint(remaining)
+    if (isRemainingCheap) b.sizeHint(remaining)
     while (hasNext) b += next
     b
   }
@@ -179,7 +184,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def drop2combiner[U >: T, This](n: Int, cb: Combiner[U, This]): Combiner[U, This] = {
     drop(n)
-    cb.sizeHint(remaining)
+    if (isRemainingCheap) cb.sizeHint(remaining)
     while (hasNext) cb += next
     cb
   }
@@ -197,7 +202,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
 
   def splitAt2combiners[U >: T, This](at: Int, before: Combiner[U, This], after: Combiner[U, This]) = {
     before.sizeHint(at)
-    after.sizeHint(remaining - at)
+    if (isRemainingCheap) after.sizeHint(remaining - at)
     var left = at
     while (left > 0) {
       before += next
@@ -223,7 +228,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
       val curr = next
       if (p(curr)) before += curr
       else {
-        after.sizeHint(remaining + 1)
+        if (isRemainingCheap) after.sizeHint(remaining + 1)
         after += curr
         isBefore = false
       }
@@ -263,7 +268,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   }
 
   def zip2combiner[U >: T, S, That](otherpit: RemainsIterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
-    cb.sizeHint(remaining min otherpit.remaining)
+    if (isRemainingCheap && otherpit.isRemainingCheap) cb.sizeHint(remaining min otherpit.remaining)
     while (hasNext && otherpit.hasNext) {
       cb += ((next, otherpit.next))
     }
@@ -271,7 +276,7 @@ private[collection] trait AugmentedIterableIterator[+T] extends RemainsIterator[
   }
 
   def zipAll2combiner[U >: T, S, That](that: RemainsIterator[S], thiselem: U, thatelem: S, cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
-    cb.sizeHint(remaining max that.remaining)
+    if (isRemainingCheap && that.isRemainingCheap) cb.sizeHint(remaining max that.remaining)
     while (this.hasNext && that.hasNext) cb += ((this.next, that.next))
     while (this.hasNext) cb += ((this.next, thatelem))
     while (that.hasNext) cb += ((thiselem, that.next))
@@ -330,7 +335,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
   /* transformers */
 
   def reverse2combiner[U >: T, This](cb: Combiner[U, This]): Combiner[U, This] = {
-    cb.sizeHint(remaining)
+    if (isRemainingCheap) cb.sizeHint(remaining)
     var lst = List[T]()
     while (hasNext) lst ::= next
     while (lst != Nil) {
@@ -342,7 +347,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
 
   def reverseMap2combiner[S, That](f: T => S, cb: Combiner[S, That]): Combiner[S, That] = {
     //val cb = cbf(repr)
-    cb.sizeHint(remaining)
+    if (isRemainingCheap) cb.sizeHint(remaining)
     var lst = List[S]()
     while (hasNext) lst ::= f(next)
     while (lst != Nil) {
@@ -354,7 +359,7 @@ private[collection] trait AugmentedSeqIterator[+T] extends AugmentedIterableIter
 
   def updated2combiner[U >: T, That](index: Int, elem: U, cb: Combiner[U, That]): Combiner[U, That] = {
     //val cb = cbf(repr)
-    cb.sizeHint(remaining)
+    if (isRemainingCheap) cb.sizeHint(remaining)
     var j = 0
     while (hasNext) {
       if (j == index) {
@@ -394,6 +399,8 @@ self =>
     pits foreach { _.signalDelegate = signalDelegate }
     pits
   }
+  
+  def shouldSplitFurther[S](coll: ParIterable[S], parallelismLevel: Int) = remaining > thresholdFromSize(coll.size, parallelismLevel)
   
   /** The number of elements this iterator has yet to traverse. This method
    *  doesn't change the state of the iterator.
