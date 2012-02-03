@@ -327,7 +327,7 @@ self =>
    *  
    *  {{{
    *  val f = future { Int.MaxValue }
-   *  future (6 / 0) rescue { case e: ArithmeticException => f } // result: Int.MaxValue
+   *  future (6 / 0) recoverWith { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
    */
   def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
@@ -336,10 +336,7 @@ self =>
     onComplete {
       case Failure(t) if pf isDefinedAt t =>
         try {
-          pf(t) onComplete {
-            case Failure(t) => p failure t
-            case Success(v) => p success v
-          }
+          p completeWith pf(t)
         } catch {
           case t: Throwable => p complete resolver(t)
         }
