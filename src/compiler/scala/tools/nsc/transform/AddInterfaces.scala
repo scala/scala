@@ -298,7 +298,7 @@ abstract class AddInterfaces extends InfoTransform {
     }
     val mixinConstructorCalls: List[Tree] = {
       for (mc <- clazz.mixinClasses.reverse
-           if mc.hasFlag(lateINTERFACE) && mc != ScalaObjectClass)
+           if mc.hasFlag(lateINTERFACE))
       yield mixinConstructorCall(implClass(mc))
     }
     (tree: @unchecked) match {

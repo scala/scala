@@ -705,13 +705,6 @@ trait Namers extends MethodSynthesis {
         if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
-      tree match {
-        case cdef: ClassDef =>
-          if (!treeInfo.isInterface(sym, cdef.impl.body) && sym != ArrayClass &&
-              (sym.info.parents forall (_.typeSymbol != AnyValClass)))
-          ensureParent(sym, ScalaObjectClass)
-        case _ =>
-      }
     }
 
     def moduleClassTypeCompleter(tree: Tree) = {

@@ -43,8 +43,7 @@ trait Contexts { self: Analyzer =>
    *  - if option `-Yno-imports` is given, nothing is imported
    *  - if the unit is java defined, only `java.lang` is imported
    *  - if option `-Yno-predef` is given, if the unit body has an import of Predef
-   *    among its leading imports, or if the tree is [[scala.ScalaObject]]
-   *    or [[scala.Predef]], `Predef` is not imported.
+   *    among its leading imports, or if the tree is [[scala.Predef]], `Predef` is not imported.
    */
   protected def rootImports(unit: CompilationUnit): List[Symbol] = {
     import definitions._

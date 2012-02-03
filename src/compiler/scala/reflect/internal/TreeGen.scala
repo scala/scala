@@ -12,7 +12,6 @@ abstract class TreeGen {
   def scalaDot(name: Name)        = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
   def scalaAnyRefConstr           = scalaDot(tpnme.AnyRef)
   def scalaUnitConstr             = scalaDot(tpnme.Unit)
-  def scalaScalaObjectConstr      = scalaDot(tpnme.ScalaObject)
   def productConstr               = scalaDot(tpnme.Product)
   def serializableConstr          = scalaDot(tpnme.Serializable)
 

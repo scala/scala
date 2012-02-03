@@ -4614,6 +4614,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 	        // AnyRef, but the AnyRef type alias is entered after the scala package is
 	        // loaded and completed, so that ScalaObject is unpickled while AnyRef is not
 	        // yet defined )
+	        // !!! TODO - revisit now that ScalaObject is gone.
 	        result setType(restpe)
 	      } else { // must not normalize: type application must be (bounds-)checked (during RefChecks), see #2208
 	        // during uncurry (after refchecks), all types are normalized

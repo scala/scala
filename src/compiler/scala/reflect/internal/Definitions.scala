@@ -274,7 +274,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val UninitializedErrorClass        = getRequiredClass("scala.UninitializedFieldError")
 
     // fundamental reference classes
-    lazy val ScalaObjectClass           = getMember(ScalaPackageClass, tpnme.ScalaObject)
     lazy val PartialFunctionClass       = getRequiredClass("scala.PartialFunction")
     lazy val AbstractPartialFunctionClass = getRequiredClass("scala.runtime.AbstractPartialFunction")
     lazy val SymbolClass                = getRequiredClass("scala.Symbol")

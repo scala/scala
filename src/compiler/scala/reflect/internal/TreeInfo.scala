@@ -470,7 +470,6 @@ abstract class TreeInfo {
     }
 
     (  isUnitInScala(body, nme.Predef)
-    || isUnitInScala(body, tpnme.ScalaObject)
     || containsLeadingPredefImport(List(body)))
   }
 

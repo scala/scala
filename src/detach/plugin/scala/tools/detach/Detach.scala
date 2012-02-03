@@ -734,7 +734,7 @@ abstract class Detach extends PluginComponent
             proxyOwner.newClass(clazz.pos, encode(clazz.name.decode + PROXY_SUFFIX))
           iface.sourceFile = clazz.sourceFile
           iface setFlag (ABSTRACT | TRAIT | INTERFACE) // Java interface
-          val iparents = List(ObjectClass.tpe, RemoteClass.tpe, ScalaObjectClass.tpe)
+          val iparents = List(ObjectClass.tpe, RemoteClass.tpe)
           iface setInfo ClassInfoType(iparents, newScope, iface)
           // methods must throw RemoteException
           iface addAnnotation remoteAnnotationInfo
@@ -744,8 +744,7 @@ abstract class Detach extends PluginComponent
           iclaz.sourceFile = clazz.sourceFile
           iclaz setFlag (SYNTHETIC | FINAL)
           // Variant 1: rebind/unbind
-          val cparents = List(UnicastRemoteObjectClass.tpe, iface.tpe,
-                              UnreferencedClass.tpe, ScalaObjectClass.tpe)
+          val cparents = List(UnicastRemoteObjectClass.tpe, iface.tpe, UnreferencedClass.tpe)
           // Variant 2: un-/exportObject
           //val cparents = List(ObjectClass.tpe, iface.tpe,
           //                    UnreferencedClass.tpe, ScalaObjectClass.tpe)

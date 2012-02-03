@@ -1361,7 +1361,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
     /**
      * Re-orders the source files to
-     *  1. ScalaObject
+     *  1. This Space Intentionally Left Blank
      *  2. LowPriorityImplicits / EmbeddedControls (i.e. parents of Predef)
      *  3. the rest
      *
@@ -1389,7 +1389,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       def rank(f: SourceFile) = {
         if (f.file.container.name != "scala") goLast
         else f.file.name match {
-          case "ScalaObject.scala"            => 1
           case "LowPriorityImplicits.scala"   => 2
           case "StandardEmbeddings.scala"     => 2
           case "EmbeddedControls.scala"       => 2

@@ -392,7 +392,7 @@ self =>
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(List(scalaScalaObjectConstr), emptyValDef, List(emptyInit, mainDef))
+      def moduleBody  = Template(List(scalaAnyRefConstr), emptyValDef, List(emptyInit, mainDef))
       def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
       // package <empty> { ... }

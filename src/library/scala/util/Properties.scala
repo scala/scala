@@ -15,7 +15,7 @@ import java.util.jar.Attributes.{ Name => AttributeName }
 /** Loads `library.properties` from the jar. */
 object Properties extends PropertiesTrait {
   protected def propCategory    = "library"
-  protected def pickJarBasedOn  = classOf[ScalaObject]
+  protected def pickJarBasedOn  = classOf[Option[_]]
 
   /** Scala manifest attributes.
    */

@@ -20,7 +20,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   thisFactory: ModelFactory with CommentFactory with TreeFactory =>
 
   import global._
-  import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyValClass, AnyRefClass }
+  import definitions.{ ObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyValClass, AnyRefClass }
 
   private var droppedPackages = 0
   def templatesCount = templatesCache.size - droppedPackages
@@ -42,7 +42,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     memberSym.isOmittablePrefix || (closestPackage(memberSym) == closestPackage(templateSym))
   }
 
-  private lazy val noSubclassCache = Set(AnyClass, AnyRefClass, ObjectClass, ScalaObjectClass)
+  private lazy val noSubclassCache = Set(AnyClass, AnyRefClass, ObjectClass)
 
   /**  */
   def makeModel: Option[Universe] = {
@@ -217,13 +217,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     }
     def parentType = {
       if (sym.isPackage || sym == AnyClass) None else {
-        val tps =
-          (sym.tpe.parents filter (_ != ScalaObjectClass.tpe)) map { _.asSeenFrom(sym.thisType, sym) }
+        val tps = sym.tpe.parents map { _.asSeenFrom(sym.thisType, sym) }
         Some(makeType(RefinedType(tps, EmptyScope), inTpl))
       }
     }
     val linearization: List[(TemplateEntity, TypeEntity)] = {
-      sym.ancestors filter (_ != ScalaObjectClass) map { ancestor =>
+      sym.ancestors map { ancestor =>
         val typeEntity = makeType(sym.info.baseType(ancestor), this)
         val tmplEntity = makeTemplate(ancestor) match {
           case tmpl: DocTemplateImpl  => tmpl registerSubClass this ; tmpl
@@ -316,7 +315,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
     case null | EmptyPackage | NoSymbol =>
       normalizeTemplate(RootPackage)
-    case ScalaObjectClass | ObjectClass =>
+    case ObjectClass =>
       normalizeTemplate(AnyRefClass)
     case _ if aSym.isPackageObject =>
       aSym
