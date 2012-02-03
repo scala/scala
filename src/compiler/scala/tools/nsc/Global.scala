@@ -27,7 +27,8 @@ import typechecker._
 import transform._
 
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
-import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
+// import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
+import backend.{ ScalaPrimitives, Platform, JavaPlatform }
 import backend.jvm.GenJVM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
@@ -65,9 +66,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   type ThisPlatform = Platform { val global: Global.this.type }
 
-  lazy val platform: ThisPlatform =
-    if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
-    else new { val global: Global.this.type = Global.this } with JavaPlatform
+  lazy val platform: ThisPlatform = new { val global: Global.this.type = Global.this } with JavaPlatform
+    // if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
+    // else new { val global: Global.this.type = Global.this } with JavaPlatform
 
   def classPath: ClassPath[platform.BinaryRepr] = platform.classPath
   def rootLoader: LazyType = platform.rootLoader
