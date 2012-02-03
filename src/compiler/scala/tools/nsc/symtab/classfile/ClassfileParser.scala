@@ -238,9 +238,9 @@ abstract class ClassfileParser {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
           //assert(name.endsWith("$"), "Not a module class: " + name)
-          f = forceMangledName(name.subName(0, name.length - 1), true)
+          f = forceMangledName(name dropRight 1, true)
           if (f == NoSymbol)
-            f = definitions.getModule(name.subName(0, name.length - 1))
+            f = definitions.getModule(name dropRight 1)
         } else {
           val origName = nme.originalName(name)
           val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
@@ -1074,27 +1074,27 @@ abstract class ClassfileParser {
     }
 
     def enterClassAndModule(entry: InnerClassEntry, completer: global.loaders.SymbolLoader, jflags: Int) {
-      val name = entry.originalName
-      var sflags = toScalaClassFlags(jflags)
+      val name        = entry.originalName
+      var sflags      = toScalaClassFlags(jflags)
+      val owner       = getOwner(jflags)
+      val scope       = getScope(jflags)
+      val innerClass  = owner.newClass(name.toTypeName, NoPosition, sflags) setInfo completer
+      val innerModule = owner.newModule(name.toTermName, NoPosition, sflags) setInfo completer
 
-      val innerClass = getOwner(jflags).newClass(name.toTypeName).setInfo(completer).setFlag(sflags)
-      val innerModule = getOwner(jflags).newModule(name.toTermName).setInfo(completer).setFlag(sflags)
       innerModule.moduleClass setInfo global.loaders.moduleClassLoader
-
-      getScope(jflags) enter innerClass
-      getScope(jflags) enter innerModule
+      scope enter innerClass
+      scope enter innerModule
 
       val decls = innerClass.enclosingPackage.info.decls
-      val e = decls.lookupEntry(className(entry.externalName))
-      if (e ne null) {
-        //println("removing " + e)
-        decls.unlink(e)
+      def unlinkIfPresent(name: Name) = {
+        val e = decls lookupEntry name
+        if (e ne null)
+          decls unlink e
       }
-      val e1 = decls.lookupEntry(className(entry.externalName).toTypeName)
-      if (e1 ne null) {
-        //println("removing " + e1)
-        decls.unlink(e1)
-      }
+
+      val cName = className(entry.externalName)
+      unlinkIfPresent(cName.toTermName)
+      unlinkIfPresent(cName.toTypeName)
     }
 
     for (entry <- innerClasses.values) {
