@@ -234,7 +234,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val AnyValClass          = ScalaPackageClass.info member tpnme.AnyVal orElse {
 //      println("new anyval")
-      oldValueScheme = true
+      oldValueScheme = false
       val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, 0L)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
