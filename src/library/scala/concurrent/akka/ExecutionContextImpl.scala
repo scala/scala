@@ -60,8 +60,9 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
     }
   }
   
-  def reportFailure(t: Throwable) {
-    t.printStackTrace()
+  def reportFailure(t: Throwable) = t match {
+    case e: Error => throw e // rethrow serious errors
+    case t => t.printStackTrace()
   }
   
   /** Only callable from the tasks running on the same execution context. */
