@@ -230,17 +230,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyCompanionClass    = getRequiredClass("scala.AnyCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
     lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
 
-    private var oldValueScheme = true
-
-    lazy val AnyValClass = ScalaPackageClass.info member tpnme.AnyVal
-//     lazy val AnyValClass          = ScalaPackageClass.info member tpnme.AnyVal orElse {
-// //      println("new anyval")
-//       oldValueScheme = true
-//       val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, 0L)
-//       val av_constr = anyval.newClassConstructor(NoPosition)
-//       anyval.info.decls enter av_constr
-//       anyval
-//     }
+    lazy val AnyValClass = ScalaPackageClass.info member tpnme.AnyVal orElse {
+      val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), 0L)
+      val av_constr = anyval.newClassConstructor(NoPosition)
+      anyval.info.decls enter av_constr
+      anyval
+    }
       lazy val AnyVal_getClass = enterNewMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe))
 
     // bottom types
@@ -1077,21 +1072,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
         Object_synchronized,
         Object_isInstanceOf,
         Object_asInstanceOf,
-        //AnyVal_getClass,
         String_+,
         ComparableClass
       )
-
-      /* Removing the anyref parent they acquire from having a source file.
-       */
-      if (oldValueScheme) {
-        setParents(AnyValClass, List(NotNullClass.tpe, AnyClass.tpe))
-      } else {
-        AnyVal_getClass // force it!
-      }
-      ScalaValueClasses foreach { sym =>
-        setParents(sym, anyvalparam)
-      }
 
       isInitialized = true
     } //init

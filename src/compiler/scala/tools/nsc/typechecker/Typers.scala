@@ -1610,6 +1610,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  @param rhs      ...
      */
     def computeParamAliases(clazz: Symbol, vparamss: List[List[ValDef]], rhs: Tree) {
+      if (clazz eq AnyValClass)
+        return
       debuglog("computing param aliases for "+clazz+":"+clazz.primaryConstructor.tpe+":"+rhs)//debug
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
         case Apply(fn, args) =>

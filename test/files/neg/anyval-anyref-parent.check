@@ -1,0 +1,4 @@
+anyval-anyref-parent.scala:5: error: Any does not have a constructor
+class Bar1 extends Any      // fail
+           ^
+one error found

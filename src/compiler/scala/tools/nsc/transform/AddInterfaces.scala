@@ -301,12 +301,16 @@ abstract class AddInterfaces extends InfoTransform {
            if mc.hasFlag(lateINTERFACE))
       yield mixinConstructorCall(implClass(mc))
     }
-    (tree: @unchecked) match {
+    tree match {
       case Block(stats, expr) =>
         // needs `hasSymbol` check because `supercall` could be a block (named / default args)
-        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
-        // assert(supercall.symbol.isClassConstructor, supercall)
-        treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
+        stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER)) match {
+          case (presuper, supercall :: rest) =>
+            stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
+            treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
+          case (Nil, Nil) =>  // AnyVal constructor
+            Literal(Constant())
+        }
     }
   }
 

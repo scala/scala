@@ -2753,7 +2753,11 @@ self =>
 
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
-        if (isPrimitiveType(name))
+        if (inScalaPackage && name == tpnme.AnyVal) {
+          val constructor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
+          Template(parents0, self, constructor :: body)
+        }
+        else if (isPrimitiveType(name))
           Template(List(scalaAnyValConstr), self, body)
         else if (parents0 exists isReferenceToAnyVal) {
           // @inline and other restrictions enforced in refchecks
@@ -2761,10 +2765,7 @@ self =>
         }
         else {
           val parents = (
-            if (parents0.isEmpty) {
-              if (inScalaPackage && name == tpnme.AnyVal) List(scalaAnyConstr)
-              else List(scalaAnyRefConstr)
-            }
+            if (parents0.isEmpty) List(scalaAnyRefConstr)
             /*if (!isInterface(mods, body) && !isScalaArray(name))
               parents0 /* :+ scalaScalaObjectConstr*/
             else*/
