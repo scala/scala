@@ -20,7 +20,7 @@ retrieved 64 members
 `method ->[B](y: B)(callccInterpreter.type, B)`
 `method ==(x$1: Any)Boolean`
 `method ==(x$1: AnyRef)Boolean`
-`method add(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value]`
+`method add(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Serializable with Product with callccInterpreter.Value]`
 `method apply(a: callccInterpreter.Value, b: callccInterpreter.Value)callccInterpreter.M[callccInterpreter.Value]`
 `method asInstanceOf[T0]=> T0`
 `method callCC[A](h: (A => callccInterpreter.M[A]) => callccInterpreter.M[A])callccInterpreter.M[A]`
@@ -87,7 +87,7 @@ def showM(m: callccInterpreter.M[callccInterpreter.Value]): String = m.in.apply(
 askType at CallccInterpreter.scala(50,30)
 ================================================================================
 [response] askTypeAt at (50,30)
-def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value] = scala.this.Predef.Pair.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
+def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Serializable with Product with callccInterpreter.Value] = scala.this.Predef.Pair.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
   case scala.this.Predef.Pair.unapply[callccInterpreter.Value, callccInterpreter.Value](<unapply-selector>) <unapply> ((n: Int)callccInterpreter.Num((m @ _)), (n: Int)callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
   case _ => callccInterpreter.this.unitM[callccInterpreter.Wrong.type](callccInterpreter.this.Wrong)
 }

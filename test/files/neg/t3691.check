@@ -1,10 +1,10 @@
 t3691.scala:4: error: type mismatch;
- found   : Object with Test.A[String]
+ found   : Test.A[String]
  required: AnyRef{type A[x]}
  val b = (new A[String]{}): { type A[x] } // not ok
           ^
 t3691.scala:5: error: type mismatch;
- found   : Object with Test.A[String]
+ found   : Test.A[String]
  required: AnyRef{type A}
  val c = (new A[String]{}): { type A } // not ok
           ^
