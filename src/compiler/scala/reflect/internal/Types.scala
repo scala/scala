@@ -410,6 +410,11 @@ trait Types extends api.Types { self: SymbolTable =>
      *  inherited by typerefs, singleton types, and refinement types,
      *  The empty list for all other types */
     def parents: List[Type] = List()
+    
+    /** For a class with nonEmpty parents, the first parent.
+     *  Otherwise some specific fixed top type.
+     */
+    def firstParent = if (parents.nonEmpty) parents.head else ObjectClass.tpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -1412,10 +1417,10 @@ trait Types extends api.Types { self: SymbolTable =>
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
     
-    override def safeToString: String =
-      parents.mkString(" with ") +
+    override def safeToString: String = parentsString(parents) + (
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
+    )
   }
   
   protected def defineBaseTypeSeqOfCompoundType(tpe: CompoundType) = {
@@ -1477,7 +1482,7 @@ trait Types extends api.Types { self: SymbolTable =>
       else {
         //Console.println("computing base classes of " + typeSymbol + " at phase " + phase);//DEBUG
         // optimized, since this seems to be performance critical
-        val superclazz = tpe.parents.head
+        val superclazz = tpe.firstParent
         var mixins = tpe.parents.tail
         val sbcs = superclazz.baseClasses
         var bcs = sbcs
@@ -1524,7 +1529,7 @@ trait Types extends api.Types { self: SymbolTable =>
     )
 
     override def typeParams =
-      if (isHigherKinded) parents.head.typeParams
+      if (isHigherKinded) firstParent.typeParams
       else super.typeParams
 
     //@M may result in an invalid type (references to higher-order args become dangling )
@@ -2142,12 +2147,12 @@ trait Types extends api.Types { self: SymbolTable =>
       )
       else ""
     )
+      
     private def finishPrefix(rest: String) = (
       if (sym.isPackageClass) packagePrefix + rest
       else if (sym.isModuleClass) objectPrefix + rest
       else if (!sym.isInitialized) rest
-      else if (sym.isAnonymousClass && !phase.erasedTypes)
-        thisInfo.parents.mkString("", " with ", refinementString)
+      else if (sym.isAnonymousClass && !phase.erasedTypes) parentsString(thisInfo.parents) + refinementString
       else if (sym.isRefinementClass) "" + thisInfo
       else rest
     )
@@ -3225,11 +3230,21 @@ trait Types extends api.Types { self: SymbolTable =>
    *  comment or in the code?
    */
   def intersectionType(tps: List[Type], owner: Symbol): Type = tps match {
-    case List(tp) =>
-      tp
-    case _ =>
-       refinedType(tps, owner)
-/*
+    case tp :: Nil => tp
+    case _         => refinedType(tps, owner)
+  }
+  /** A creator for intersection type where intersections of a single type are
+   *  replaced by the type itself.
+   */
+  def intersectionType(tps: List[Type]): Type = tps match {
+    case tp :: Nil  => tp
+    case _          => refinedType(tps, commonOwner(tps))
+  }
+
+/**** This implementation to merge parents was checked in in commented-out
+      form and has languished unaltered for five years.  I think we should
+      use it or lose it.
+
       def merge(tps: List[Type]): List[Type] = tps match {
         case tp :: tps1 =>
           val tps1a = tps1 filter (_.typeSymbol.==(tp.typeSymbol))
@@ -3244,14 +3259,6 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       refinedType(merge(tps), owner)
 */
-  }
-
-  /** A creator for intersection type where intersections of a single type are
-   *  replaced by the type itself. */
-  def intersectionType(tps: List[Type]): Type = tps match {
-    case List(tp) => tp
-    case _ => refinedType(tps, commonOwner(tps))
-  }
 
   /** A creator for type applications */
   def appliedType(tycon: Type, args: List[Type]): Type =
@@ -4504,9 +4511,7 @@ trait Types extends api.Types { self: SymbolTable =>
     else {
       commonOwnerMap.clear()
       tps foreach (commonOwnerMap traverse _)
-      val result = if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
-      debuglog(tps.mkString("commonOwner(", ", ", ") == " + result))
-      result
+      if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
     }
   }
   

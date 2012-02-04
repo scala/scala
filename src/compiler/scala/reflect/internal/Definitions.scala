@@ -232,14 +232,15 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     private var oldValueScheme = true
 
-    lazy val AnyValClass          = ScalaPackageClass.info member tpnme.AnyVal orElse {
-//      println("new anyval")
-      oldValueScheme = true
-      val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, 0L)
-      val av_constr = anyval.newClassConstructor(NoPosition)
-      anyval.info.decls enter av_constr
-      anyval
-    }
+    lazy val AnyValClass = ScalaPackageClass.info member tpnme.AnyVal
+//     lazy val AnyValClass          = ScalaPackageClass.info member tpnme.AnyVal orElse {
+// //      println("new anyval")
+//       oldValueScheme = true
+//       val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, 0L)
+//       val av_constr = anyval.newClassConstructor(NoPosition)
+//       anyval.info.decls enter av_constr
+//       anyval
+//     }
       lazy val AnyVal_getClass = enterNewMethod(AnyValClass, nme.getClass_, Nil, getClassReturnType(AnyValClass.tpe))
 
     // bottom types
@@ -721,6 +722,31 @@ trait Definitions extends reflect.api.StandardDefinitions {
         )
       }
     }
+
+    /** Remove references to class Object (other than the head) in a list of parents */
+    def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
+      case Nil      => Nil
+      case x :: xs  => x :: xs.filter(_.typeSymbol != ObjectClass)
+    }
+    /** Order a list of types with non-trait classes before others. */
+    def classesFirst(tps: List[Type]): List[Type] = {
+      val (classes, others) = tps partition (t => t.typeSymbol.isClass && !t.typeSymbol.isTrait)
+      if (classes.isEmpty || others.isEmpty || (tps startsWith classes)) tps
+      else classes ::: others
+    }
+    /** The following transformations applied to a list of parents.
+     *  If any parent is a class/trait, all parents which are Object
+     *  or an alias of it are discarded. Otherwise, all Objects other
+     *  the head of the list are discarded.
+     */
+    def normalizedParents(parents: List[Type]): List[Type] = {
+      if (parents exists (t => (t.typeSymbol ne ObjectClass) && t.typeSymbol.isClass))
+        parents filterNot (_.typeSymbol eq ObjectClass)
+      else
+        removeLaterObjects(parents)
+    }
+    def parentsString(parents: List[Type]) =
+      normalizedParents(parents) mkString " with "
 
     // members of class java.lang.{ Object, String }
     lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, inttype, FINAL)

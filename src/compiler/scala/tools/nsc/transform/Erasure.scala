@@ -714,7 +714,7 @@ abstract class Erasure extends AddInterfaces
       var bridges: List[Tree] = List()
       val opc = atPhase(currentRun.explicitouterPhase) {
         new overridingPairs.Cursor(owner) {
-          override def parents: List[Type] = List(owner.info.parents.head)
+          override def parents: List[Type] = List(owner.info.firstParent)
           override def exclude(sym: Symbol): Boolean =
             !sym.isMethod || sym.isPrivate || super.exclude(sym)
         }

@@ -225,13 +225,7 @@ trait Erasure {
 
   /** Type reference after erasure */
   def erasedTypeRef(sym: Symbol): Type =
-    typeRef(erasure(sym, sym.owner.tpe), sym, List())
-
-  /** Remove duplicate references to class Object in a list of parent classes */
-  private def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
-    case tp :: rest => tp :: (rest filter (_.typeSymbol != ObjectClass))
-    case _ => tps
-  }
+    typeRef(erasure(sym, sym.owner.tpe), sym, Nil)
 
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *

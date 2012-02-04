@@ -25,8 +25,8 @@ package scala
  *  The ''integer types'' include the subrange types as well as [[scala.Int]] and [[scala.Long]].
  *  The ''floating point types'' are [[scala.Float]] and [[scala.Double]].
  */
-trait AnyVal extends NotNull {
-//  disabled for now to make the standard build go through. 
-//  Once we have a new strap we can uncomment this and delete the AnyVal_getClass entry in Definitions.
-//  def getClass(): Class[_ <: AnyVal] = ???   
+trait AnyVal extends Any with NotNull {
+  //  disabled for now to make the standard build go through. 
+  //  Once we have a new strap we can uncomment this and delete the AnyVal_getClass entry in Definitions.
+  def getClass(): Class[_ <: AnyVal] = ???   
 }

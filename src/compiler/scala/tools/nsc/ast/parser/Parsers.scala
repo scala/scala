@@ -2753,19 +2753,18 @@ self =>
 
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
-        if (isPrimitiveType(name)) {
-          Template(List(scalaDot(tpnme.AnyVal)), self, body)
-        }
+        if (isPrimitiveType(name))
+          Template(List(scalaAnyValConstr), self, body)
         else if (parents0 exists isReferenceToAnyVal) {
           // @inline and other restrictions enforced in refchecks
           Template(parents0, self, body)
         }
-        else if (name == tpnme.AnyVal) {
-          Template(List(scalaDot(tpnme.Any)), self, body)
-        }
         else {
           val parents = (
-            if (parents0.isEmpty) List(scalaAnyRefConstr)
+            if (parents0.isEmpty) {
+              if (inScalaPackage && name == tpnme.AnyVal) List(scalaAnyConstr)
+              else List(scalaAnyRefConstr)
+            }
             /*if (!isInterface(mods, body) && !isScalaArray(name))
               parents0 /* :+ scalaScalaObjectConstr*/
             else*/

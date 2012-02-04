@@ -1208,7 +1208,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           val supertpt1 = typedType(supertpt)
           if (!supertpt1.isErrorTyped) {
             mixins = supertpt1 :: mixins
-            supertpt = TypeTree(supertpt1.tpe.parents.head) setPos supertpt.pos.focus
+            supertpt = TypeTree(supertpt1.tpe.firstParent) setPos supertpt.pos.focus
           }
         }
         if (supertpt.tpe.typeSymbol == AnyClass && firstParent.isTrait && firstParent != AnyValClass)
@@ -1302,12 +1302,15 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               else xs
             )
         }
+        
         fixDuplicates(supertpt :: mixins) mapConserve (tpt => checkNoEscaping.privates(clazz, tpt))
       }
       catch {
         case ex: TypeError =>
           // fallback in case of cyclic errors
           // @H none of the tests enter here but I couldn't rule it out
+          log("Type error calculating parents in template " + templ)
+          log("Error: " + ex)
           ParentTypesError(templ, ex)
           List(TypeTree(AnyRefClass.tpe))
       }
@@ -1415,7 +1418,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         _.typedTemplate(cdef.impl, parentTypes(cdef.impl))
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
-      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.parents.head.typeSymbol == AnyClass)
+      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         for (stat <- impl2.body)
           if (!treeInfo.isAllowedInAnyTrait(stat))
             unit.error(stat.pos, "this statement is not allowed in trait extending from class Any: "+stat)
@@ -3670,16 +3673,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
         }
 
-        val owntype =
-          if (mix.isEmpty) {
-            if ((mode & SUPERCONSTRmode) != 0)
-              if (clazz.info.parents.isEmpty) AnyRefClass.tpe // can happen due to cyclic references ==> #1036
-              else clazz.info.parents.head
-            else intersectionType(clazz.info.parents)
-          } else {
-            findMixinSuper(clazz.tpe)
-          }
-
+        val owntype = (
+          if (!mix.isEmpty) findMixinSuper(clazz.tpe)
+          else if ((mode & SUPERCONSTRmode) != 0) clazz.info.firstParent
+          else intersectionType(clazz.info.parents)
+        )
         treeCopy.Super(tree, qual1, mix) setType SuperType(clazz.thisType, owntype)
       }
 
