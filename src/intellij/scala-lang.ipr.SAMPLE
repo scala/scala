@@ -32,7 +32,7 @@
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
   <component name="EntryPointsManager">
     <entry_points version="2.0" />
-  </component>
+  </component>  
   <component name="InspectionProjectProfileManager">
     <profiles>
       <profile version="1.0" is_locked="false">
@@ -201,6 +201,7 @@
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
       <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
       <module fileurl="file://$PROJECT_DIR$/partest.iml" filepath="$PROJECT_DIR$/partest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/scala.iml" filepath="$PROJECT_DIR$/scala.iml" />
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
       <module fileurl="file://$PROJECT_DIR$/swing.iml" filepath="$PROJECT_DIR$/swing.iml" />
     </modules>
