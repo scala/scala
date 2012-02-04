@@ -2525,8 +2525,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               /** This is translating uses of List() into Nil.  This is less
                *  than ideal from a consistency standpoint, but it shouldn't be
                *  altered without due caution.
+               *  ... this also causes bootstrapping cycles if List_apply is
+               *  forced during kind-arity checking, so it is guarded by additional
+               *  tests to ensure we're sufficiently far along.
                */
-              if (fun.symbol == List_apply && args.isEmpty && !forInteractive)
+              if (args.isEmpty && !forInteractive && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == List_apply))
                 atPos(tree.pos)(gen.mkNil setType restpe)
               else
                 constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
