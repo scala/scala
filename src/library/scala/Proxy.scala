@@ -22,8 +22,7 @@ package scala
  *  @author  Matthias Zenger
  *  @version 1.0, 26/04/2004
  */
-// trait Proxy extends Any {
-trait Proxy {
+trait Proxy extends Any {
   def self: Any
 
   override def hashCode: Int = self.hashCode
@@ -39,7 +38,7 @@ trait Proxy {
 object Proxy {
   /** A proxy which exposes the type it is proxying for via a type parameter.
    */
-  trait Typed[T] extends /*Any with */Proxy {
+  trait Typed[T] extends Any with Proxy {
     def self: T
   }
 }
