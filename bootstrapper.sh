@@ -17,18 +17,24 @@ EOM
 locker=build/locker/classes/library
 quick=build/quick/classes/library
 
-run pull-binary-libs.sh
-run rm -rf ./build
-run mkdir -p $locker
-for f in $troubleFiles; do
-  run ./tools/starr_scalac -d $locker $f
-done
+doLocker () {
+  run pull-binary-libs.sh  
+  [[ -d $locker ]] || run mkdir -p $locker
+  for f in $troubleFiles; do
+    run ./tools/starr_scalac -d $locker $f
+  done
+  run env ANT_OPTS="-Xmx2g -Xms2g" ant "$@" locker.done
+}
+doQuick () {
+  [[ -d $quick ]] || run mkdir -p $quick
+  for f in $troubleFiles; do
+    run ./tools/locker_scalac -d $quick $f
+  done
+  run env ANT_OPTS="-Xmx2g -Xms2g" ant "$@" build
+}
 
-run env ANT_OPTS="-Xmx2g -Xms2g" ant "$@" locker.done
-run mkdir -p $quick
-
-for f in $troubleFiles; do
-  run ./tools/locker_scalac -d $quick $f
-done
-
-run env ANT_OPTS="-Xmx2g -Xms2g" ant "$@" build
+case $1 in
+  all.clean) run ant all.clean && shift && doLocker "$@" && doQuick "$@" ;;
+  clean)     run ant clean && shift && doQuick "$@" ;;
+  *)         echo "Freshening only: to all.clean or clean before build, give all.clean or clean as first arg" && doQuick "$@" ;;
+esac
