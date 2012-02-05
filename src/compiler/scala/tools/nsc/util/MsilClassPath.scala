@@ -8,20 +8,20 @@
 package scala.tools.nsc
 package util
 
-// import java.io.File
-// import java.net.URL
-// import java.util.StringTokenizer
-// import scala.util.Sorting
-// import scala.collection.mutable
-// import scala.tools.nsc.io.{ AbstractFile, MsilFile }
-// import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
-// import ClassPath.{ ClassPathContext, isTraitImplementation }
+import java.io.File
+import java.net.URL
+import java.util.StringTokenizer
+import scala.util.Sorting
+import scala.collection.mutable
+import scala.tools.nsc.io.{ AbstractFile, MsilFile }
+import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
+import ClassPath.{ ClassPathContext, isTraitImplementation }
 
 /** Keeping the MSIL classpath code in its own file is important to make sure
  *  we don't accidentally introduce a dependency on msil.jar in the jvm.
  */
 
-object MsilClassPath /*{
+object MsilClassPath {
   def collectTypes(assemFile: AbstractFile) = {
     var res: Array[MSILType] = MSILType.EmptyTypes
     val assem = Assembly.LoadFrom(assemFile.path)
@@ -167,4 +167,3 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
  */
 class MsilClassPath(ext: String, user: String, source: String, context: MsilContext)
 extends MergedClassPath[MsilFile](MsilClassPath.assembleEntries(ext, user, source, context), context) { }
-*/

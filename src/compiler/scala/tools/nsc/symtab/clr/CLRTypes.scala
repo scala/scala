@@ -7,17 +7,17 @@ package scala.tools.nsc
 package symtab
 package clr
 
-// import java.io.File
-// import java.util.{Comparator, StringTokenizer}
-// import scala.util.Sorting
-// import ch.epfl.lamp.compiler.msil._
-// import scala.collection.{ mutable, immutable }
-// import scala.tools.nsc.util.{Position, NoPosition}
+import java.io.File
+import java.util.{Comparator, StringTokenizer}
+import scala.util.Sorting
+import ch.epfl.lamp.compiler.msil._
+import scala.collection.{ mutable, immutable }
+import scala.tools.nsc.util.{Position, NoPosition}
 
 /**
  * Collects all types from all reference assemblies.
  */
-abstract class CLRTypes /*{
+abstract class CLRTypes {
 
   val global: Global
   import global.Symbol
@@ -135,4 +135,3 @@ abstract class CLRTypes /*{
 
   def isDelegateType(t: Type): Boolean = { t.BaseType() == DELEGATE }
 }  // CLRTypes
-*/

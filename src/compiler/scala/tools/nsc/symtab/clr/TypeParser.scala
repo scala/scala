@@ -6,17 +6,17 @@ package scala.tools.nsc
 package symtab
 package clr
 
-// import java.io.IOException
-// import io.MsilFile
-// import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _}
-// import scala.collection.{ mutable, immutable }
-// import scala.reflect.internal.pickling.UnPickler
-// import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
+import java.io.IOException
+import io.MsilFile
+import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute, _}
+import scala.collection.{ mutable, immutable }
+import scala.reflect.internal.pickling.UnPickler
+import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
 
 /**
  *  @author Nikolay Mihaylov
  */
-abstract class TypeParser /*{
+abstract class TypeParser {
 
   val global: Global
 
@@ -224,14 +224,14 @@ abstract class TypeParser /*{
 
     if (canBeTakenAddressOf) {
       clazzBoxed.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
-                          else GenPolyType(ownTypeParams, classInfoAsInMetadata) )
+                          else polyType(ownTypeParams, classInfoAsInMetadata) )
       clazzBoxed.setFlag(flags)
       val rawValueInfoType = ClassInfoType(definitions.anyvalparam, instanceDefs, clazz)
       clazz.setInfo( if (ownTypeParams.isEmpty) rawValueInfoType
-                     else GenPolyType(ownTypeParams, rawValueInfoType) )
+                     else polyType(ownTypeParams, rawValueInfoType) )
     } else {
       clazz.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
-                     else GenPolyType(ownTypeParams, classInfoAsInMetadata) )
+                     else polyType(ownTypeParams, classInfoAsInMetadata) )
     }
 
     // TODO I don't remember if statics.setInfo and staticModule.setInfo should also know about type params
@@ -256,18 +256,18 @@ abstract class TypeParser /*{
 
     // import nested types
     for (ntype <- typ.getNestedTypes() if !(ntype.IsNestedPrivate || ntype.IsNestedAssembly || ntype.IsNestedFamANDAssem)
-                                        || ntype.IsInterface /* TODO why shouldn't nested ifaces be type-parsed too? */ )
+				                                 || ntype.IsInterface /* TODO why shouldn't nested ifaces be type-parsed too? */ )
       {
         val loader = new loaders.MsilFileLoader(new MsilFile(ntype))
- val nclazz = statics.newClass(ntype.Name.toTypeName)
- val nmodule = statics.newModule(ntype.Name)
- nclazz.setInfo(loader)
- nmodule.setInfo(loader)
- staticDefs.enter(nclazz)
- staticDefs.enter(nmodule)
+	val nclazz = statics.newClass(ntype.Name.toTypeName)
+	val nmodule = statics.newModule(ntype.Name)
+	nclazz.setInfo(loader)
+	nmodule.setInfo(loader)
+	staticDefs.enter(nclazz)
+	staticDefs.enter(nmodule)
 
- assert(nclazz.companionModule == nmodule, nmodule)
- assert(nmodule.companionClass == nclazz, nclazz)
+	assert(nclazz.companionModule == nmodule, nmodule)
+	assert(nmodule.companionClass == nclazz, nclazz)
       }
 
     val fields = typ.getFields()
@@ -280,9 +280,9 @@ abstract class TypeParser /*{
       val name = newTermName(field.Name);
       val fieldType =
         if (field.IsLiteral && !field.FieldType.IsEnum && isDefinedAtgetConstant(getCLRType(field.FieldType)))
-       ConstantType(getConstant(getCLRType(field.FieldType), field.getValue))
-     else
-       getCLRType(field.FieldType)
+	      ConstantType(getConstant(getCLRType(field.FieldType), field.getValue))
+	    else
+	      getCLRType(field.FieldType)
       val owner = if (field.IsStatic()) statics else clazz;
       val sym = owner.newValue(NoPosition, name).setFlag(flags).setInfo(fieldType);
         // TODO: set private within!!! -> look at typechecker/Namers.scala
@@ -301,49 +301,49 @@ abstract class TypeParser /*{
     for (prop <- typ.getProperties) {
       val propType: Type = getCLSType(prop.PropertyType);
       if (propType != null) {
- val getter: MethodInfo = prop.GetGetMethod(true);
- val setter: MethodInfo = prop.GetSetMethod(true);
- var gparamsLength: Int = -1;
- if (!(getter == null || getter.IsPrivate || getter.IsAssembly
+	val getter: MethodInfo = prop.GetGetMethod(true);
+	val setter: MethodInfo = prop.GetSetMethod(true);
+	var gparamsLength: Int = -1;
+	if (!(getter == null || getter.IsPrivate || getter.IsAssembly
               || getter.IsFamilyAndAssembly || getter.HasPtrParamOrRetType))
-   {
-     assert(prop.PropertyType == getter.ReturnType);
-     val gparams: Array[ParameterInfo] = getter.GetParameters();
-     gparamsLength = gparams.length;
-     val name: Name = if (gparamsLength == 0) prop.Name else nme.apply;
-     val flags = translateAttributes(getter);
-     val owner: Symbol = if (getter.IsStatic) statics else clazz;
-     val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
+	  {
+	    assert(prop.PropertyType == getter.ReturnType);
+	    val gparams: Array[ParameterInfo] = getter.GetParameters();
+	    gparamsLength = gparams.length;
+	    val name: Name = if (gparamsLength == 0) prop.Name else nme.apply;
+	    val flags = translateAttributes(getter);
+	    val owner: Symbol = if (getter.IsStatic) statics else clazz;
+	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
       val mtype: Type = if (gparamsLength == 0) NullaryMethodType(propType) // .NET properties can't be polymorphic
                         else methodType(getter, getter.ReturnType)(methodSym)
         methodSym.setInfo(mtype);
-     methodSym.setFlag(Flags.ACCESSOR);
-     (if (getter.IsStatic) staticDefs else instanceDefs).enter(methodSym)
-     clrTypes.methods(methodSym) = getter;
-     methodsSet -= getter;
-   }
- if (!(setter == null || setter.IsPrivate || setter.IsAssembly
+	    methodSym.setFlag(Flags.ACCESSOR);
+	    (if (getter.IsStatic) staticDefs else instanceDefs).enter(methodSym)
+	    clrTypes.methods(methodSym) = getter;
+	    methodsSet -= getter;
+	  }
+	if (!(setter == null || setter.IsPrivate || setter.IsAssembly
              || setter.IsFamilyAndAssembly || setter.HasPtrParamOrRetType))
-   {
-     val sparams: Array[ParameterInfo] = setter.GetParameters()
-     if(getter != null)
-       assert(getter.IsStatic == setter.IsStatic);
-     assert(setter.ReturnType == clrTypes.VOID);
-     if(getter != null)
-       assert(sparams.length == gparamsLength + 1, "" + getter + "; " + setter);
+	  {
+	    val sparams: Array[ParameterInfo] = setter.GetParameters()
+	    if(getter != null)
+	      assert(getter.IsStatic == setter.IsStatic);
+	    assert(setter.ReturnType == clrTypes.VOID);
+	    if(getter != null)
+	      assert(sparams.length == gparamsLength + 1, "" + getter + "; " + setter);
 
-     val name: Name = if (gparamsLength == 0) nme.getterToSetter(prop.Name)
-          else nme.update;
-     val flags = translateAttributes(setter);
-     val mtype = methodType(setter, definitions.UnitClass.tpe);
-     val owner: Symbol = if (setter.IsStatic) statics else clazz;
-     val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
+	    val name: Name = if (gparamsLength == 0) nme.getterToSetter(prop.Name)
+			     else nme.update;
+	    val flags = translateAttributes(setter);
+	    val mtype = methodType(setter, definitions.UnitClass.tpe);
+	    val owner: Symbol = if (setter.IsStatic) statics else clazz;
+	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
         methodSym.setInfo(mtype(methodSym))
-     methodSym.setFlag(Flags.ACCESSOR);
-     (if (setter.IsStatic) staticDefs else instanceDefs).enter(methodSym);
-     clrTypes.methods(methodSym) = setter;
-     methodsSet -= setter;
-   }
+	    methodSym.setFlag(Flags.ACCESSOR);
+	    (if (setter.IsStatic) staticDefs else instanceDefs).enter(methodSym);
+	    clrTypes.methods(methodSym) = setter;
+	    methodsSet -= setter;
+	  }
       }
     }
 
@@ -354,27 +354,27 @@ abstract class TypeParser /*{
       val adder: MethodInfo = event.GetAddMethod();
       val remover: MethodInfo = event.GetRemoveMethod();
       if (!(adder == null || adder.IsPrivate || adder.IsAssembly
-     || adder.IsFamilyAndAssembly))
- {
-   assert(adder.ReturnType == clrTypes.VOID);
-   assert(adder.GetParameters().map(_.ParameterType).toList == List(event.EventHandlerType));
-   val name = encode("+=");
-   val flags = translateAttributes(adder);
-   val mtype: Type = methodType(adder, adder.ReturnType);
-   createMethod(name, flags, mtype, adder, adder.IsStatic)
-   methodsSet -= adder;
- }
+	    || adder.IsFamilyAndAssembly))
+	{
+	  assert(adder.ReturnType == clrTypes.VOID);
+	  assert(adder.GetParameters().map(_.ParameterType).toList == List(event.EventHandlerType));
+	  val name = encode("+=");
+	  val flags = translateAttributes(adder);
+	  val mtype: Type = methodType(adder, adder.ReturnType);
+	  createMethod(name, flags, mtype, adder, adder.IsStatic)
+	  methodsSet -= adder;
+	}
       if (!(remover == null || remover.IsPrivate || remover.IsAssembly
-     || remover.IsFamilyAndAssembly))
- {
-   assert(remover.ReturnType == clrTypes.VOID);
-   assert(remover.GetParameters().map(_.ParameterType).toList == List(event.EventHandlerType));
-   val name = encode("-=");
-   val flags = translateAttributes(remover);
-   val mtype: Type = methodType(remover, remover.ReturnType);
-   createMethod(name, flags, mtype, remover, remover.IsStatic)
-   methodsSet -= remover;
- }
+	    || remover.IsFamilyAndAssembly))
+	{
+	  assert(remover.ReturnType == clrTypes.VOID);
+	  assert(remover.GetParameters().map(_.ParameterType).toList == List(event.EventHandlerType));
+	  val name = encode("-=");
+	  val flags = translateAttributes(remover);
+	  val mtype: Type = methodType(remover, remover.ReturnType);
+	  createMethod(name, flags, mtype, remover, remover.IsStatic)
+	  methodsSet -= remover;
+	}
     } */
 
 /* Adds view amounting to syntax sugar for a CLR implicit overload.
@@ -480,7 +480,7 @@ abstract class TypeParser /*{
     val mtype = methodType(method, rettype);
     if (mtype == null) return;
 /* START CLR generics (snippet 4) */
-    val mInfo = if (method.IsGeneric) GenPolyType(newMethodTParams, mtype(methodSym))
+    val mInfo = if (method.IsGeneric) polyType(newMethodTParams, mtype(methodSym))
                 else mtype(methodSym)
 /* END CLR generics (snippet 4) */
 /* START CLR non-generics (snippet 4)
@@ -805,7 +805,7 @@ abstract class TypeParser /*{
   private def translateAttributes(typ: MSILType): Long = {
     var flags: Long = Flags.JAVA;
     if (typ.IsNotPublic() || typ.IsNestedPrivate()
- || typ.IsNestedAssembly() || typ.IsNestedFamANDAssem())
+	|| typ.IsNestedAssembly() || typ.IsNestedFamANDAssem())
       flags = flags | Flags.PRIVATE;
     else if (typ.IsNestedFamily() || typ.IsNestedFamORAssem())
       flags = flags | Flags.PROTECTED;
@@ -849,4 +849,3 @@ abstract class TypeParser /*{
     flags
   }
 }
-*/

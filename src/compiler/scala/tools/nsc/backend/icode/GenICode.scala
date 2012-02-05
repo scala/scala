@@ -160,8 +160,8 @@ abstract class GenICode extends SubComponent  {
       case Assign(lhs @ Select(_, _), rhs) =>
         val isStatic = lhs.symbol.isStaticMember
         var ctx1 = if (isStatic) ctx
-                   // else if (forMSIL && msil_IsValuetypeInstField(lhs.symbol))
-                   //   msil_genLoadQualifierAddress(lhs, ctx)
+                   else if (forMSIL && msil_IsValuetypeInstField(lhs.symbol))
+                     msil_genLoadQualifierAddress(lhs, ctx)
                    else genLoadQualifier(lhs, ctx)
 
         ctx1 = genLoad(rhs, ctx1, toTypeKind(lhs.symbol.info))
@@ -460,132 +460,132 @@ abstract class GenICode extends SubComponent  {
         fun.symbol.simpleName + ") " + " at: " + (tree.pos)
       )
     }
-    // 
-    // /**
-    //  * forMSIL
-    //  */
-    // private def msil_IsValuetypeInstMethod(msym: Symbol) = (
-    //   loaders.clrTypes.methods get msym exists (mMSIL =>
-    //     mMSIL.IsInstance && mMSIL.DeclaringType.IsValueType
-    //   )
-    // )
-    // private def msil_IsValuetypeInstField(fsym: Symbol) = (
-    //   loaders.clrTypes.fields get fsym exists (fMSIL =>
-    //     !fMSIL.IsStatic && fMSIL.DeclaringType.IsValueType
-    //   )
-    // )
-    // 
-    // /**
-    //  * forMSIL: Adds a local var, the emitted code requires one more slot on the stack as on entry
-    //  */
-    // private def msil_genLoadZeroOfNonEnumValuetype(ctx: Context, kind: TypeKind, pos: Position, leaveAddressOnStackInstead: Boolean) {
-    //   val REFERENCE(clssym) = kind
-    //   assert(loaders.clrTypes.isNonEnumValuetype(clssym), clssym)
-    //   val local = ctx.makeLocal(pos, clssym.tpe, "tmp")
-    //   ctx.method.addLocal(local)
-    //   ctx.bb.emit(CIL_LOAD_LOCAL_ADDRESS(local), pos)
-    //   ctx.bb.emit(CIL_INITOBJ(kind), pos)
-    //   val instr = if (leaveAddressOnStackInstead)
-    //                 CIL_LOAD_LOCAL_ADDRESS(local)
-    //               else
-    //                 LOAD_LOCAL(local)
-    //   ctx.bb.emit(instr, pos)
-    // }
-    // 
-    // /**
-    //  * forMSIL
-    //  */
-    // private def msil_genLoadAddressOf(tree: Tree, ctx: Context, expectedType: TypeKind, butRawValueIsAlsoGoodEnough: Boolean): Context = {
-    //   var generatedType = expectedType
-    //   var addressTaken = false
-    //   debuglog("at line: " + (if (tree.pos.isDefined) tree.pos.line else tree.pos))
-    // 
-    //   var resCtx: Context = tree match {
-    // 
-    //     // emits CIL_LOAD_FIELD_ADDRESS
-    //     case Select(qualifier, selector) if (!tree.symbol.isModule) =>
-    //       addressTaken = true
-    //       val sym = tree.symbol
-    //       generatedType = toTypeKind(sym.info)
-    // 
-    //       if (sym.isStaticMember) {
-    //         ctx.bb.emit(CIL_LOAD_FIELD_ADDRESS(sym, true), tree.pos)
-    //         ctx
-    //       } else {
-    //         val ctx1 = genLoadQualifier(tree, ctx)
-    //         ctx1.bb.emit(CIL_LOAD_FIELD_ADDRESS(sym, false), tree.pos)
-    //         ctx1
-    //       }
-    // 
-    //     // emits CIL_LOAD_LOCAL_ADDRESS
-    //     case Ident(name) if (!tree.symbol.isPackage && !tree.symbol.isModule)=>
-    //       addressTaken = true
-    //       val sym = tree.symbol
-    //       try {
-    //         val Some(l) = ctx.method.lookupLocal(sym)
-    //         ctx.bb.emit(CIL_LOAD_LOCAL_ADDRESS(l), tree.pos)
-    //         generatedType = l.kind // actually, should be "V&" but the callsite is aware of this
-    //       } catch {
-    //         case ex: MatchError =>
-    //           abort("symbol " + sym + " does not exist in " + ctx.method)
-    //       }
-    //       ctx
-    // 
-    //     // emits CIL_LOAD_ARRAY_ITEM_ADDRESS
-    //     case Apply(fun, args) =>
-    //       if (isPrimitive(fun.symbol)) {
-    // 
-    //         val sym = tree.symbol
-    //         val Apply(fun @ Select(receiver, _), args) = tree
-    //         val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
-    // 
-    //         if (isArrayOp(code)) {
-    //           val arrayObj = receiver
-    //           val k = toTypeKind(arrayObj.tpe)
-    //           val ARRAY(elementType) = k
-    //           if (scalaPrimitives.isArrayGet(code)) {
-    //             var ctx1 = genLoad(arrayObj, ctx, k)
-    //             // load argument on stack
-    //             debugassert(args.length == 1, "Too many arguments for array get operation: " + tree)
-    //             ctx1 = genLoad(args.head, ctx1, INT)
-    //             generatedType = elementType // actually "managed pointer to element type" but the callsite is aware of this
-    //             ctx1.bb.emit(CIL_LOAD_ARRAY_ITEM_ADDRESS(elementType), tree.pos)
-    //             addressTaken = true
-    //             ctx1
-    //           } else null
-    //         } else null
-    //       } else null
-    // 
-    //     case This(qual) =>
-    //       /* TODO: this case handler is a placeholder for the time when Level 2 support for valuetypes is in place,
-    //          in particular when invoking other methods on this where this is a valuetype value (boxed or not).
-    //          As receiver, a managed pointer is expected, and a plain ldarg.0 achieves just that. */
-    //       addressTaken = true
-    //       genLoad(tree, ctx, expectedType)
-    // 
-    //     case _ =>
-    //       null /* A method returning ByRef won't pass peverify, so I guess this case handler is dead code.
-    //               Even if it's not, the code below to handler !addressTaken below. */
-    //   }
-    // 
-    //   if (!addressTaken) {
-    //     resCtx = genLoad(tree, ctx, expectedType)
-    //     if (!butRawValueIsAlsoGoodEnough) {
-    //       // raw value on stack (must be an intermediate result, e.g. returned by method call), take address
-    //       addressTaken = true
-    //       val boxType = expectedType // toTypeKind(expectedType /* TODO FIXME */)
-    //       resCtx.bb.emit(BOX(boxType), tree.pos)
-    //       resCtx.bb.emit(CIL_UNBOX(boxType), tree.pos)
-    //     }
-    //   }
-    // 
-    //   // emit conversion
-    //   if (generatedType != expectedType)
-    //     abort("Unexpected tree in msil_genLoadAddressOf: " + tree + " at: " + tree.pos)
-    // 
-    //   resCtx
-    // }
-    // 
+
+    /**
+     * forMSIL
+     */
+    private def msil_IsValuetypeInstMethod(msym: Symbol) = (
+      loaders.clrTypes.methods get msym exists (mMSIL =>
+        mMSIL.IsInstance && mMSIL.DeclaringType.IsValueType
+      )
+    )
+    private def msil_IsValuetypeInstField(fsym: Symbol) = (
+      loaders.clrTypes.fields get fsym exists (fMSIL =>
+        !fMSIL.IsStatic && fMSIL.DeclaringType.IsValueType
+      )
+    )
+
+    /**
+     * forMSIL: Adds a local var, the emitted code requires one more slot on the stack as on entry
+     */
+    private def msil_genLoadZeroOfNonEnumValuetype(ctx: Context, kind: TypeKind, pos: Position, leaveAddressOnStackInstead: Boolean) {
+      val REFERENCE(clssym) = kind
+      assert(loaders.clrTypes.isNonEnumValuetype(clssym), clssym)
+      val local = ctx.makeLocal(pos, clssym.tpe, "tmp")
+      ctx.method.addLocal(local)
+      ctx.bb.emit(CIL_LOAD_LOCAL_ADDRESS(local), pos)
+      ctx.bb.emit(CIL_INITOBJ(kind), pos)
+      val instr = if (leaveAddressOnStackInstead)
+                    CIL_LOAD_LOCAL_ADDRESS(local)
+                  else
+                    LOAD_LOCAL(local)
+      ctx.bb.emit(instr, pos)
+    }
+
+    /**
+     * forMSIL
+     */
+    private def msil_genLoadAddressOf(tree: Tree, ctx: Context, expectedType: TypeKind, butRawValueIsAlsoGoodEnough: Boolean): Context = {
+      var generatedType = expectedType
+      var addressTaken = false
+      debuglog("at line: " + (if (tree.pos.isDefined) tree.pos.line else tree.pos))
+
+      var resCtx: Context = tree match {
+
+        // emits CIL_LOAD_FIELD_ADDRESS
+        case Select(qualifier, selector) if (!tree.symbol.isModule) =>
+          addressTaken = true
+          val sym = tree.symbol
+          generatedType = toTypeKind(sym.info)
+
+          if (sym.isStaticMember) {
+            ctx.bb.emit(CIL_LOAD_FIELD_ADDRESS(sym, true), tree.pos)
+            ctx
+          } else {
+            val ctx1 = genLoadQualifier(tree, ctx)
+            ctx1.bb.emit(CIL_LOAD_FIELD_ADDRESS(sym, false), tree.pos)
+            ctx1
+          }
+
+        // emits CIL_LOAD_LOCAL_ADDRESS
+        case Ident(name) if (!tree.symbol.isPackage && !tree.symbol.isModule)=>
+          addressTaken = true
+          val sym = tree.symbol
+          try {
+            val Some(l) = ctx.method.lookupLocal(sym)
+            ctx.bb.emit(CIL_LOAD_LOCAL_ADDRESS(l), tree.pos)
+            generatedType = l.kind // actually, should be "V&" but the callsite is aware of this
+          } catch {
+            case ex: MatchError =>
+              abort("symbol " + sym + " does not exist in " + ctx.method)
+          }
+          ctx
+
+        // emits CIL_LOAD_ARRAY_ITEM_ADDRESS
+        case Apply(fun, args) =>
+          if (isPrimitive(fun.symbol)) {
+
+            val sym = tree.symbol
+            val Apply(fun @ Select(receiver, _), args) = tree
+            val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
+
+            if (isArrayOp(code)) {
+              val arrayObj = receiver
+              val k = toTypeKind(arrayObj.tpe)
+              val ARRAY(elementType) = k
+              if (scalaPrimitives.isArrayGet(code)) {
+                var ctx1 = genLoad(arrayObj, ctx, k)
+                // load argument on stack
+                debugassert(args.length == 1, "Too many arguments for array get operation: " + tree)
+                ctx1 = genLoad(args.head, ctx1, INT)
+                generatedType = elementType // actually "managed pointer to element type" but the callsite is aware of this
+                ctx1.bb.emit(CIL_LOAD_ARRAY_ITEM_ADDRESS(elementType), tree.pos)
+                addressTaken = true
+                ctx1
+              } else null
+            } else null
+          } else null
+
+        case This(qual) =>
+          /* TODO: this case handler is a placeholder for the time when Level 2 support for valuetypes is in place,
+             in particular when invoking other methods on this where this is a valuetype value (boxed or not).
+             As receiver, a managed pointer is expected, and a plain ldarg.0 achieves just that. */
+          addressTaken = true
+          genLoad(tree, ctx, expectedType)
+
+        case _ =>
+          null /* A method returning ByRef won't pass peverify, so I guess this case handler is dead code.
+                  Even if it's not, the code below to handler !addressTaken below. */
+      }
+
+      if (!addressTaken) {
+        resCtx = genLoad(tree, ctx, expectedType)
+        if (!butRawValueIsAlsoGoodEnough) {
+          // raw value on stack (must be an intermediate result, e.g. returned by method call), take address
+          addressTaken = true
+          val boxType = expectedType // toTypeKind(expectedType /* TODO FIXME */)
+          resCtx.bb.emit(BOX(boxType), tree.pos)
+          resCtx.bb.emit(CIL_UNBOX(boxType), tree.pos)
+        }
+      }
+
+      // emit conversion
+      if (generatedType != expectedType)
+        abort("Unexpected tree in msil_genLoadAddressOf: " + tree + " at: " + tree.pos)
+
+      resCtx
+    }
+
 
     /**
      * Generate code for trees that produce values on the stack
@@ -793,19 +793,19 @@ abstract class GenICode extends SubComponent  {
               debugassert(ctor.owner == cls,
                        "Symbol " + ctor.owner.fullName + " is different than " + tpt)
 
-              // val ctx2 = if (forMSIL && loaders.clrTypes.isNonEnumValuetype(cls)) {
-              //   /* parameterful constructors are the only possible custom constructors,
-              //      a default constructor can't be defined for valuetypes, CLR dixit */
-              //   val isDefaultConstructor = args.isEmpty
-              //   if (isDefaultConstructor) {
-              //     msil_genLoadZeroOfNonEnumValuetype(ctx, rt, tree.pos, leaveAddressOnStackInstead = false)
-              //     ctx
-              //   } else {
-              //     val ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
-              //     ctx1.bb.emit(CIL_NEWOBJ(ctor), tree.pos)
-              //     ctx1
-              //   }
-              // } else {
+              val ctx2 = if (forMSIL && loaders.clrTypes.isNonEnumValuetype(cls)) {
+                /* parameterful constructors are the only possible custom constructors,
+                   a default constructor can't be defined for valuetypes, CLR dixit */
+                val isDefaultConstructor = args.isEmpty
+                if (isDefaultConstructor) {
+                  msil_genLoadZeroOfNonEnumValuetype(ctx, rt, tree.pos, leaveAddressOnStackInstead = false)
+                  ctx
+                } else {
+                  val ctx1 = genLoadArguments(args, ctor.info.paramTypes, ctx)
+                  ctx1.bb.emit(CIL_NEWOBJ(ctor), tree.pos)
+                  ctx1
+                }
+              } else {
                 val nw = NEW(rt)
                 ctx.bb.emit(nw, tree.pos)
                 ctx.bb.emit(DUP(generatedType))
@@ -815,8 +815,8 @@ abstract class GenICode extends SubComponent  {
                 nw.init = init
                 ctx1.bb.emit(init, tree.pos)
                 ctx1
-              // }
-              // ctx2
+              }
+              ctx2
 
             case _ =>
               abort("Cannot instantiate " + tpt + "of kind: " + generatedType)
@@ -845,12 +845,12 @@ abstract class GenICode extends SubComponent  {
           generatedType = boxType
           ctx1.bb.emit(UNBOX(boxType), expr.pos)
           ctx1
-        // 
-        // case Apply(fun @ _, List(expr)) if (forMSIL && loaders.clrTypes.isAddressOf(fun.symbol)) =>
-        //   debuglog("ADDRESSOF : " + fun.symbol.fullName);
-        //   val ctx1 = msil_genLoadAddressOf(expr, ctx, toTypeKind(expr.tpe), butRawValueIsAlsoGoodEnough = false)
-        //   generatedType = toTypeKind(fun.symbol.tpe.resultType)
-        //   ctx1
+
+        case Apply(fun @ _, List(expr)) if (forMSIL && loaders.clrTypes.isAddressOf(fun.symbol)) =>
+          debuglog("ADDRESSOF : " + fun.symbol.fullName);
+          val ctx1 = msil_genLoadAddressOf(expr, ctx, toTypeKind(expr.tpe), butRawValueIsAlsoGoodEnough = false)
+          generatedType = toTypeKind(fun.symbol.tpe.resultType)
+          ctx1
 
         case app @ Apply(fun, args) =>
           val sym = fun.symbol
@@ -887,9 +887,9 @@ abstract class GenICode extends SubComponent  {
 
             var ctx1 =
               if (invokeStyle.hasInstance) {
-                // if (forMSIL && !(invokeStyle.isInstanceOf[SuperCall]) && msil_IsValuetypeInstMethod(sym))
-                //   msil_genLoadQualifierAddress(fun, ctx)
-                // else
+                if (forMSIL && !(invokeStyle.isInstanceOf[SuperCall]) && msil_IsValuetypeInstMethod(sym))
+                  msil_genLoadQualifierAddress(fun, ctx)
+                else
                   genLoadQualifier(fun, ctx)
               } else ctx
 
@@ -1150,15 +1150,15 @@ abstract class GenICode extends SubComponent  {
         case _ =>
           abort("Unknown qualifier " + tree)
       }
-    // 
-    // /** forMSIL */
-    // private def msil_genLoadQualifierAddress(tree: Tree, ctx: Context): Context =
-    //   tree match {
-    //     case Select(qualifier, _) =>
-    //       msil_genLoadAddressOf(qualifier, ctx, toTypeKind(qualifier.tpe), butRawValueIsAlsoGoodEnough = false)
-    //     case _ =>
-    //       abort("Unknown qualifier " + tree)
-    //   }
+
+    /** forMSIL */
+    private def msil_genLoadQualifierAddress(tree: Tree, ctx: Context): Context =
+      tree match {
+        case Select(qualifier, _) =>
+          msil_genLoadAddressOf(qualifier, ctx, toTypeKind(qualifier.tpe), butRawValueIsAlsoGoodEnough = false)
+        case _ =>
+          abort("Unknown qualifier " + tree)
+      }
 
     /**
      * Generate code that loads args into label parameters.

@@ -6,14 +6,13 @@
 package scala.tools.nsc
 package io
 
-// import ch.epfl.lamp.compiler.msil.{ Type => MsilType, _ }
+import ch.epfl.lamp.compiler.msil.{ Type => MsilType, _ }
 
 /** This class wraps an MsilType.  It exists only so
  *  ClassPath can treat all of JVM/MSIL/bin/src files
  *  uniformly, as AbstractFiles.
  */
-class MsilFile /* (val msilType: MsilType) extends VirtualFile(msilType.FullName, msilType.Namespace) {
+class MsilFile(val msilType: MsilType) extends VirtualFile(msilType.FullName, msilType.Namespace) {
 }
 
 object NoMsilFile extends MsilFile(null) { }
-*/

@@ -7,16 +7,16 @@
 package scala.tools.nsc
 package backend.msil
 
-// import java.io.{File, IOException}
-// import java.nio.{ByteBuffer, ByteOrder}
-// import scala.collection.{ mutable, immutable }
-// import scala.tools.nsc.symtab._
-// 
-// import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
-// import ch.epfl.lamp.compiler.msil.emit._
-// import ch.epfl.lamp.compiler.msil.util.PECustomMod
+import java.io.{File, IOException}
+import java.nio.{ByteBuffer, ByteOrder}
+import scala.collection.{ mutable, immutable }
+import scala.tools.nsc.symtab._
 
-abstract class GenMSIL /*extends SubComponent {
+import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
+import ch.epfl.lamp.compiler.msil.emit._
+import ch.epfl.lamp.compiler.msil.util.PECustomMod
+
+abstract class GenMSIL extends SubComponent {
   import global._
   import loaders.clrTypes
   import clrTypes.{types, constructors, methods, fields}
@@ -1815,7 +1815,7 @@ abstract class GenMSIL /*extends SubComponent {
         types.get(sym).getOrElse {
           classes.get(sym) match {
             case Some(iclass) =>
-               msilTypeBuilderFromSym(sym)
+	              msilTypeBuilderFromSym(sym)
             case None =>
               getType(sym)
           }
@@ -1844,7 +1844,7 @@ abstract class GenMSIL /*extends SubComponent {
       debuglog("super type: " + parents(0).typeSymbol + ", msil type: " + superType)
 
       val interfaces: Array[MsilType] =
- parents.tail.map(p => msilTypeFromSym(p.typeSymbol)).toArray
+	parents.tail.map(p => msilTypeFromSym(p.typeSymbol)).toArray
       if (parents.length > 1) {
         if (settings.debug.value) {
           log("interfaces:")
@@ -2355,4 +2355,3 @@ abstract class GenMSIL /*extends SubComponent {
   } // class BytecodeGenerator
 
 } // class GenMSIL
-*/

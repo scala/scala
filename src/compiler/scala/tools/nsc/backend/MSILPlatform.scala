@@ -6,12 +6,12 @@
 package scala.tools.nsc
 package backend
 
-// import ch.epfl.lamp.compiler.{ msil => msillib }
-// import util.{ ClassPath, MsilClassPath }
-// import msil.GenMSIL
-// import io.{ AbstractFile, MsilFile }
+import ch.epfl.lamp.compiler.{ msil => msillib }
+import util.{ ClassPath, MsilClassPath }
+import msil.GenMSIL
+import io.{ AbstractFile, MsilFile }
 
-trait MSILPlatform /*extends Platform {
+trait MSILPlatform extends Platform {
   import global._
   import definitions.{ ComparatorClass, BoxedNumberClass, getMember }
 
@@ -63,4 +63,3 @@ trait MSILPlatform /*extends Platform {
   def needCompile(bin: MsilFile, src: AbstractFile) =
     false // always use compiled file on .net
 }
-*/

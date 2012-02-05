@@ -281,7 +281,7 @@ INITIALISATION
     <path id="aux.libs">
       <fileset dir="${lib.dir}">
         <include name="fjbg.jar"/>
-        <!-- <include name="msil.jar"/> -->
+        <include name="msil.jar"/>
         <include name="forkjoin.jar"/>
       </fileset>
       <pathelement location="${ant.jar}"/>
@@ -490,7 +490,7 @@ PACKED LOCKER BUILD (PALO)
       <fileset dir="${build-locker.dir}/classes/compiler"/>
       <!-- filemode / dirmode: see trac ticket #1294 -->
       <zipfileset dirmode="755" filemode="644" src="${lib.dir}/fjbg.jar"/>
-      <!-- <zipfileset dirmode="755" filemode="644" src="${lib.dir}/msil.jar"/> -->
+      <zipfileset dirmode="755" filemode="644" src="${lib.dir}/msil.jar"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-palo.dir}/lib"/>
   </target>
@@ -640,12 +640,12 @@ QUICK BUILD (QUICK)
   <target name="quick.newlibs" depends="quick.lib" if="libs.outdated">
     <antcall target="libs.done" inheritRefs="true"/>
     <property name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
-    <!-- <property name="msil.jar" value="${build-libs.dir}/msil.jar"/> -->
+    <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
   </target>
   
   <target name="quick.libs" depends="quick.newlibs" unless="libs.outdated">
     <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
-    <!-- <property name="msil.jar" value="${lib.dir}/msil.jar"/> -->
+    <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   </target>
 
   <target name="quick.newforkjoin" depends="quick.libs" if="forkjoin.outdated">
@@ -968,7 +968,7 @@ PACKED QUICK BUILD (PACK)
       <fileset dir="${build-quick.dir}/classes/compiler"/>
       <!-- filemode / dirmode: see trac ticket #1294 -->
       <zipfileset dirmode="755" filemode="644" src="${fjbg.jar}"/>
-      <!-- <zipfileset dirmode="755" filemode="644" src="${msil.jar}"/> -->
+      <zipfileset dirmode="755" filemode="644" src="${msil.jar}"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
     <copy todir="${build-pack.dir}/lib">
@@ -1901,7 +1901,7 @@ STABLE REFERENCE (STARR)
     <copy toDir="${lib.dir}" overwrite="yes">
       <fileset dir="${build-libs.dir}">
         <include name="fjbg.jar"/>
-        <!-- <include name="msil.jar"/> -->
+        <include name="msil.jar"/>
         <include name="forkjoin.jar"/>
       </fileset>
     </copy>
