@@ -108,11 +108,14 @@ trait Macros { self: Analyzer =>
       else {
         val receiverClass: mirror.Symbol = mirror.classWithName(mmeth.owner.fullName)
         val receiverObj = receiverClass.companionModule
-        if (receiverObj == NoSymbol) None
+        if (receiverObj == mirror.NoSymbol) None
         else {
           val receiver = mirror.getCompanionObject(receiverClass)
           val rmeth = receiverObj.info.member(mirror.newTermName(mmeth.name.toString))
-          Some((receiver, rmeth))
+          if (rmeth == mirror.NoSymbol) None
+          else {
+            Some((receiver, rmeth))
+          }
         }
       }
     } catch {

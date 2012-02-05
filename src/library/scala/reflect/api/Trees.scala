@@ -476,6 +476,17 @@ trait Trees { self: Universe =>
    */
   case class New(tpt: Tree) extends TermTree
 
+  /** Factory method for object creation `new tpt(args_1)...(args_n)`
+   *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
+   */
+  def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
+    assert(!argss.isEmpty)
+    // todo. we need to expose names in scala.reflect.api
+//    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
+    val superRef: Tree = Select(New(tpt), "<init>")
+    (superRef /: argss) (Apply)
+  }
+
   /** Type annotation, eliminated by explicit outer */
   case class Typed(expr: Tree, tpt: Tree)
        extends TermTree
@@ -632,10 +643,10 @@ trait Trees { self: Universe =>
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
-  
+
   /** An empty deferred value definition corresponding to:
    *    val _: _
-   *  This is used as a placeholder in the `self` parameter Template if there is 
+   *  This is used as a placeholder in the `self` parameter Template if there is
    *  no definition of a self value of self type.
    */
   def emptyValDef: ValDef

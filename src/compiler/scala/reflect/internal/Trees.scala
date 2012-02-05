@@ -231,15 +231,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
 
-
-  /** Factory method for object creation `new tpt(args_1)...(args_n)`
-   *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
-   */
-  def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
-    assert(!argss.isEmpty)
-    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
-    (superRef /: argss) (Apply)
-  }
   /** 0-1 argument list new, based on a symbol.
    */
   def New(sym: Symbol, args: Tree*): Tree =

@@ -12,6 +12,7 @@ import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
 import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.{ ClassPath, FakePos }
+import scala.tools.nsc.Properties.{ setProp, propOrEmpty }
 import scala.tools.util.PathResolver
 import io.Path
 import java.io.{ File, BufferedReader, PrintWriter, FileReader, Writer, FileWriter, StringWriter }
@@ -112,6 +113,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     try {
       NestUI.verbose("compiling "+toCompile)
       NestUI.verbose("with classpath: "+global.classPath.toString)
+      NestUI.verbose("and java classpath: "+ propOrEmpty("java.class.path"))
       try new global.Run compile toCompile
       catch {
         case FatalError(msg) =>

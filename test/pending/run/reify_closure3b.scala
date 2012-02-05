@@ -7,9 +7,9 @@ object Test extends App {
     class Foo(y: Int) {
       def y1 = y
 
-      val fun: reflect.Code[Int => Int] = x => {
+      val fun = reflect.Code.lift{(x: Int) => {
         x + y1
-      }
+      }}
     }
 
     val reporter = new ConsoleReporter(new Settings)
