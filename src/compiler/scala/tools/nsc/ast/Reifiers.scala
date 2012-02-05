@@ -281,9 +281,9 @@ trait Reifiers { self: Global =>
     private def reifyTree(tree: Tree): Tree = tree match {
       case EmptyTree =>
         reifyMirrorObject(EmptyTree)
-      case This(_) if !(boundSyms contains tree.symbol) =>
+      case This(_) if tree.symbol != NoSymbol && !(boundSyms contains tree.symbol) =>
         reifyFree(tree)
-      case Ident(_) if !(boundSyms contains tree.symbol) =>
+      case Ident(_) if tree.symbol != NoSymbol && !(boundSyms contains tree.symbol) =>
         if (tree.symbol.isVariable && tree.symbol.owner.isTerm) {
           captureVariable(tree.symbol) // Note order dependency: captureVariable needs to come before reifyTree here.
           mirrorCall("Select", reifyFree(tree), reifyName(nme.elem))
