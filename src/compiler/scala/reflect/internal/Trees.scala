@@ -74,7 +74,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
     override def hasModifier(mod: Modifier) =
       hasFlag(flagOfModifier(mod))
-    override def allModifiers: Set[Modifier] =
+    override def modifiers: Set[Modifier] =
       Modifier.values filter hasModifier
     override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
       Modifiers(flags, privateWithin, f(annotations)) setPositions positions

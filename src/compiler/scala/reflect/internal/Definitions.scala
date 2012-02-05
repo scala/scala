@@ -605,6 +605,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def ClassType(arg: Type) =
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
       else appliedType(ClassClass.typeConstructor, List(arg))
+    
+    def vmClassType(arg: Type): Type = ClassType(arg)
+    def vmSignature(sym: Symbol, info: Type): String = signature(info)    // !!!
 
     //
     // .NET backend

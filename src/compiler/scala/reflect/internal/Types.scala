@@ -261,6 +261,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def declarations = decls
     def typeArguments = typeArgs
     def erasedType = transformedType(this)
+    def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
   }
 
   /** The base class for all types */

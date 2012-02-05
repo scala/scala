@@ -3714,7 +3714,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
         if (!reallyExists(sym)) {
-          if (context.owner.toplevelClass.isJavaDefined && name.isTypeName) {
+          if (context.owner.enclosingTopLevelClass.isJavaDefined && name.isTypeName) {
             val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
             if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
           }

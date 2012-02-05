@@ -16,8 +16,8 @@ trait Trees { self: Universe =>
   type Modifiers <: AbsModifiers
 
   abstract class AbsModifiers {
+    def modifiers: Set[Modifier]
     def hasModifier(mod: Modifier): Boolean
-    def allModifiers: Set[Modifier]
     def privateWithin: Name  // default: EmptyTypeName
     def annotations: List[Tree] // default: List()
     def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers
@@ -483,7 +483,7 @@ trait Trees { self: Universe =>
     assert(!argss.isEmpty)
     // todo. we need to expose names in scala.reflect.api
 //    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
-    val superRef: Tree = Select(New(tpt), "<init>")
+    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
     (superRef /: argss) (Apply)
   }
 
@@ -1140,9 +1140,9 @@ trait Trees { self: Universe =>
   abstract class Transformer {
     val treeCopy: TreeCopier = newLazyTreeCopier
     protected var currentOwner: Symbol = definitions.RootClass
-    protected def currentMethod = currentOwner.enclMethod
-    protected def currentClass = currentOwner.enclClass
-    protected def currentPackage = currentOwner.toplevelClass.owner
+    protected def currentMethod = currentOwner.enclosingMethod
+    protected def currentClass = currentOwner.enclosingClass
+    protected def currentPackage = currentOwner.enclosingTopLevelClass.owner
     def transform(tree: Tree): Tree = tree match {
       case EmptyTree =>
         tree

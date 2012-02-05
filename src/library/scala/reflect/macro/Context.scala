@@ -19,7 +19,7 @@ trait Context extends api.Universe {
    *
    *  The reifier transforms it to the following tree:
    *
-   *    $mr.Apply($mr.Select($mr.Ident($mr.freeVar("x", <Int>, x), "+"), List($mr.Literal($mr.Constant(1))))))
+   *    $mr.Apply($mr.Select($mr.Ident($mr.newFreeVar("x", <Int>, x), "+"), List($mr.Literal($mr.Constant(1))))))
    *
    *  The transformation looks mostly straightforward, but it has its tricky parts:
    *    * Reifier retains symbols and types defined outside the reified tree, however

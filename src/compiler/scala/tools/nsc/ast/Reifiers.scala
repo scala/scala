@@ -160,8 +160,6 @@ trait Reifiers { self: Global =>
             mirrorSelect("definitions.RootClass")
           else if (sym == EmptyPackage)
             mirrorSelect("definitions.EmptyPackage")
-          else if (sym == EmptyPackageClass)
-            mirrorSelect("definitions.EmptyPackageClass")
           else if (sym.isModuleClass)
             Select(reifySymRef(sym.sourceModule), "moduleClass")
           else if (sym.isStatic && sym.isClass)
@@ -190,7 +188,7 @@ trait Reifiers { self: Global =>
               val symtpe = lambdaLift.boxIfCaptured(sym, sym.tpe, erasedTypes = false)
               def markIfCaptured(arg: Ident): Tree =
                 if (sym.isCapturedVariable) referenceCapturedVariable(arg) else arg
-              mirrorCall("freeVar", reify(sym.name.toString), reify(symtpe), markIfCaptured(Ident(sym)))
+              mirrorCall("newFreeVar", reify(sym.name.toString), reify(symtpe), markIfCaptured(Ident(sym)))
             } else {
               if (reifyDebug) println("Late local: " + sym)
               registerReifiableSymbol(sym)
@@ -218,7 +216,7 @@ trait Reifiers { self: Global =>
      * Generate code to add type and annotation info to a reified symbol
      */
     private def fillInSymbol(sym: Symbol): Tree = {
-      val rset = Apply(Select(reifySymRef(sym), nme.setTypeSig), List(reifyType(sym.info)))
+      val rset = Apply(Select(reifySymRef(sym), nme.setTypeSignature), List(reifyType(sym.info)))
       if (sym.annotations.isEmpty) rset
       else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
     }
@@ -335,7 +333,7 @@ trait Reifiers { self: Global =>
         val sym = tree.symbol
         if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
         if (reifyDebug) println("Free: " + sym)
-        val freeVar = mirrorCall("freeVar", reify(sym.name.toString), reify(sym.tpe), This(sym))
+        val freeVar = mirrorCall("newFreeVar", reify(sym.name.toString), reify(sym.tpe), This(sym))
         mirrorCall(nme.Ident, freeVar)
       case This(_) =>
         if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))

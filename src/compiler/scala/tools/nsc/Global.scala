@@ -1076,7 +1076,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
-      else if (!sym.owner.isPackageClass) compiles(sym.toplevelClass)
+      else if (!sym.owner.isPackageClass) compiles(sym.enclosingTopLevelClass)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
