@@ -2764,13 +2764,11 @@ self =>
           Template(parents0, self, body)
         }
         else {
-          val parents = (
-            if (parents0.isEmpty) List(scalaAnyRefConstr)
-            /*if (!isInterface(mods, body) && !isScalaArray(name))
-              parents0 /* :+ scalaScalaObjectConstr*/
-            else*/
-            else parents0
-          ) ++ caseParents()
+          val casePs = caseParents()
+          val parents = parents0 match {
+            case Nil if casePs.isEmpty  => List(scalaAnyRefConstr)
+            case _                      => parents0 ++ casePs
+          }
           Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
         }
       }
