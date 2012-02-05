@@ -402,9 +402,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val FullManifestModule    = getRequiredModule("scala.reflect.Manifest")
     lazy val OptManifestClass      = getRequiredClass("scala.reflect.OptManifest")
     lazy val NoManifest            = getRequiredModule("scala.reflect.NoManifest")
-    lazy val CodeClass             = getClass(sn.Code)
-    lazy val CodeModule            = getModule(sn.Code)
-      lazy val Code_lift = getMember(CodeModule, nme.lift_)
 
     lazy val ScalaSignatureAnnotation = getRequiredClass("scala.reflect.ScalaSignature")
     lazy val ScalaLongSignatureAnnotation = getRequiredClass("scala.reflect.ScalaLongSignature")
