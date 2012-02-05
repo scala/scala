@@ -177,8 +177,7 @@ trait Members {
     /** method parameters */
     var params: List[Local] = Nil
 
-    // TODO - see how null is stil arriving here
-    def hasCode = (code ne NoCode) && (code ne null)
+    def hasCode = code ne NoCode
     def setCode(code: Code): IMethod = {
       this.code = code;
       this
