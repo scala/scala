@@ -206,11 +206,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _            => null
     }
 
-    private def fixupAsAnyTrait(clazz: Symbol): Symbol = {
-      clazz setInfo fixupAsAnyTrait(clazz.info)
-      clazz
-    }
-
     private def fixupAsAnyTrait(tpe: Type): Type = tpe match {
       case ClassInfoType(parents, decls, clazz) =>
         if (parents.head.typeSymbol == AnyClass) tpe
@@ -231,7 +226,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
 
     lazy val AnyValClass = ScalaPackageClass.info member tpnme.AnyVal orElse {
-      val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), 0L)
+      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), 0L)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
       anyval
@@ -339,7 +334,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, anyparam, ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getRequiredClass("scala.Serializable")
     lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
-    lazy val ComparableClass       = fixupAsAnyTrait(getRequiredClass("java.lang.Comparable"))
+    lazy val ComparableClass       = getRequiredClass("java.lang.Comparable") modifyInfo fixupAsAnyTrait
     lazy val JavaCloneableClass    = getRequiredClass("java.lang.Cloneable")
     lazy val RemoteInterfaceClass  = getRequiredClass("java.rmi.Remote")
     lazy val RemoteExceptionClass  = getRequiredClass("java.rmi.RemoteException")
