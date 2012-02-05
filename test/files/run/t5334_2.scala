@@ -4,12 +4,13 @@ import reflect.runtime.Mirror.ToolBox
 
 object Test extends App {
   val code = scala.reflect.Code.lift{
-    class C
+    class C { override def toString() = "C" }
     List((new C, new C))
   };
 
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
   val ttree = toolbox.typeCheck(code.tree)
-  toolbox.runExpr(ttree)
+  println(ttree.tpe)
+  println(toolbox.runExpr(ttree))
 }
