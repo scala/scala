@@ -2754,6 +2754,8 @@ self =>
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
         if (inScalaPackage && name == tpnme.AnyVal) {
+          // Not a well-formed constructor, has to be finished later - see note
+          // regarding AnyVal constructor in AddInterfaces.
           val constructor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
           Template(parents0, self, constructor :: body)
         }

@@ -309,6 +309,7 @@ abstract class AddInterfaces extends InfoTransform {
             stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
             treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
           case (Nil, Nil) =>
+            assert(clazz eq AnyValClass, clazz)
             // AnyVal constructor - have to provide a real body so the
             // jvm doesn't throw a VerifyError. But we can't add the
             // body until now, because the typer knows that Any has no
