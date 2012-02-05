@@ -7,6 +7,7 @@ remote_urlbase="http://typesafe.artifactoryonline.com/typesafe/scala-sha-bootstr
 libraryJar="$(pwd)/lib/scala-library.jar"
 desired_ext=".desired.sha1"
 push_jar="$(pwd)/tools/push.jar"
+if [[ "$OSTYPE" == *Cygwin* || "$OSTYPE" == *cygwin* ]]; then push_jar="$(cygpath -m "$push_jar")"; fi
 # Cache dir has .sbt in it to line up with SBT build.
 cache_dir="${HOME}/.sbt/cache/scala"
 
