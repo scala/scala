@@ -48,8 +48,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           case Some(ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, _))) =>
             ConstrInfo(ddef, vparams map (_.symbol), rhs)
           case x =>
-            // assert(false, "no constructor in template: impl = " + impl)
-            // AnyVal constructor
+            // AnyVal constructor is OK
+            assert(clazz eq AnyValClass, "no constructor in template: impl = " + impl)
             return impl
         }
       }
