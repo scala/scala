@@ -1,0 +1,6 @@
+The Scala compiler API. 
+
+The following resources are useful for Scala plugin/compiler development:
+  - [[http://www.scala-lang.org/node/215 Scala development tutorials]] on [[http://www.scala-lang.org www.scala-lang.org]] 
+  - [[https://wiki.scala-lang.org/display/SIW/ Scala Internals wiki]] 
+  - [[http://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/ Scala compiler corner]], maintained by Miguel 
