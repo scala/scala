@@ -716,7 +716,16 @@ trait Definitions extends reflect.api.StandardDefinitions {
     /** Remove references to class Object (other than the head) in a list of parents */
     def removeLaterObjects(tps: List[Type]): List[Type] = tps match {
       case Nil      => Nil
-      case x :: xs  => x :: xs.filter(_.typeSymbol != ObjectClass)
+      case x :: xs  => x :: xs.filterNot(_.typeSymbol == ObjectClass)
+    }
+    /** Remove all but one reference to class Object from a list of parents. */
+    def removeRedundantObjects(tps: List[Type]): List[Type] = tps match {
+      case Nil      => Nil
+      case x :: xs  => 
+        if (x.typeSymbol == ObjectClass)
+          x :: xs.filterNot(_.typeSymbol == ObjectClass)
+        else
+          x :: removeRedundantObjects(xs)
     }
     /** Order a list of types with non-trait classes before others. */
     def classesFirst(tps: List[Type]): List[Type] = {
@@ -725,15 +734,15 @@ trait Definitions extends reflect.api.StandardDefinitions {
       else classes ::: others
     }
     /** The following transformations applied to a list of parents.
-     *  If any parent is a class/trait, all parents which are Object
-     *  or an alias of it are discarded. Otherwise, all Objects other
-     *  the head of the list are discarded.
+     *  If any parent is a class/trait, all parents which normalize to
+     *  Object are discarded.  Otherwise, all parents which normalize
+     *  to Object except the first one found are discarded.
      */
     def normalizedParents(parents: List[Type]): List[Type] = {
       if (parents exists (t => (t.typeSymbol ne ObjectClass) && t.typeSymbol.isClass))
         parents filterNot (_.typeSymbol eq ObjectClass)
       else
-        removeLaterObjects(parents)
+        removeRedundantObjects(parents)
     }
     def parentsString(parents: List[Type]) =
       normalizedParents(parents) mkString " with "
