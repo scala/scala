@@ -701,7 +701,7 @@ abstract class UnCurry extends InfoTransform
               }
             debuglog("rewrote try: " + catches + " ==> " + catchall);
             val catches1 = localTyper.typedCases(
-              tree, List(catchall), ThrowableClass.tpe, WildcardType)
+              List(catchall), ThrowableClass.tpe, WildcardType)
             treeCopy.Try(tree, body, catches1, finalizer)
           }
         case Apply(Apply(fn, args), args1) =>
