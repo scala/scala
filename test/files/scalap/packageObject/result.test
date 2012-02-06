@@ -1,4 +1,4 @@
-package object PackageObject extends java.lang.Object with scala.ScalaObject {
+package object PackageObject extends java.lang.Object {
   def this() = { /* compiled code */ }
   type A = scala.Predef.String
   def foo(i : scala.Int) : scala.Int = { /* compiled code */ }

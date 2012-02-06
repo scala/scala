@@ -1,4 +1,4 @@
-trait AbstractMethod extends java.lang.Object with scala.ScalaObject {
+trait AbstractMethod extends java.lang.Object {
   def $init$() : scala.Unit = { /* compiled code */ }
   def arity : scala.Int
   def isCool : scala.Boolean = { /* compiled code */ }

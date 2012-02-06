@@ -1,4 +1,4 @@
-class ValAndVar extends java.lang.Object with scala.ScalaObject {
+class ValAndVar extends java.lang.Object {
   def this() = { /* compiled code */ }
   val foo : java.lang.String = { /* compiled code */ }
   var bar : scala.Int = { /* compiled code */ }

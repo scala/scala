@@ -1,4 +1,4 @@
-class ClassWithSelfAnnotation extends java.lang.Object with scala.ScalaObject {
+class ClassWithSelfAnnotation extends java.lang.Object {
  this : ClassWithSelfAnnotation with java.lang.CharSequence =>
   def this() = { /* compiled code */ }
   def foo : scala.Int = { /* compiled code */ }

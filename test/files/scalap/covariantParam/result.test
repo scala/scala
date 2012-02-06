@@ -1,4 +1,4 @@
-class CovariantParam[+A] extends java.lang.Object with scala.ScalaObject {
+class CovariantParam[+A] extends java.lang.Object {
   def this() = { /* compiled code */ }
   def foo[A](a : A) : scala.Int = { /* compiled code */ }
 }
