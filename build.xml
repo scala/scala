@@ -210,28 +210,33 @@ PROPERTIES
 INITIALISATION
 ============================================================================ -->
 
-  <condition property="starr.absent">
-    <not><available file="${lib.dir}/scala-library.jar"/></not>
-  </condition>
-  
-  <!-- It's such a PITA to perform the amazing && in ant, forget it.
-       I'll just check the compiler jar. -->
-  <target name="init.starr.check">
-    <uptodate property="starr.compiler.uptodate"
-              srcfile="${lib.dir}/scala-compiler.jar.desired.sha1"
-              targetfile="${lib.dir}/scala-compiler.jar" />
+  <target name="init.jars.check">
+    <uptodate property="lib.jars.uptodate">
+      <srcfiles dir="${basedir}">
+        <include name="lib/**/*.desired.sha1"/>
+        <include name="test/files/**/*.desired.sha1"/>
+        <include name="tools/**/*.desired.sha1"/>
+      </srcfiles>
+      <mapper type="glob" from="*.desired.sha1" to="*"/>
+    </uptodate>
   </target>
 
-  <target name="init.starr" depends="init.starr.check" unless="starr.compiler.uptodate">
+  <target name="init.jars" depends="init.jars.check" unless="lib.jars.uptodate">
     <echo level="warn" message="Updating bootstrap libs.  (To do this by hand, run ./pull-binary-libs.sh)"/>
     <exec osfamily="unix" vmlauncher="false" executable="./pull-binary-libs.sh" failifexecutionfails="true" />
     <exec osfamily="windows" vmlauncher="false" executable="pull-binary-libs.sh" failifexecutionfails="true" />
     <!-- uptodate task needs to know these are what's in the sha. -->
-    <touch file="${lib.dir}/scala-library.jar" />
-    <touch file="${lib.dir}/scala-compiler.jar" />
+    <touch>
+      <fileset dir="${basedir}">
+        <include name="lib/**/*.desired.sha1"/>
+        <include name="test/files/**/*.desired.sha1"/>
+        <include name="tools/**/*.desired.sha1"/>
+      </fileset>
+      <mapper type="glob" from="*.desired.sha1" to="*"/>
+    </touch>
   </target>
 
-  <target name="init" depends="init.starr">
+  <target name="init" depends="init.jars">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
