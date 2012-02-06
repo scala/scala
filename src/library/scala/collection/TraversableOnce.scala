@@ -56,7 +56,7 @@ import annotation.unchecked.{ uncheckedVariance => uV }
  *
  *    Note: will not terminate for infinite-sized collections.
  */
-trait TraversableOnce[+A] extends GenTraversableOnce[A] {
+trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   self =>
 
   /** Self-documenting abstract methods. */
@@ -360,6 +360,7 @@ trait TraversableOnce[+A] extends GenTraversableOnce[A] {
 object TraversableOnce {
   implicit def traversableOnceCanBuildFrom[T] = new OnceCanBuildFrom[T]
   implicit def wrapTraversableOnce[A](trav: TraversableOnce[A]) = new MonadOps(trav)
+  implicit def alternateImplicit[A](trav: TraversableOnce[A]) = new ForceImplicitAmbiguity
   implicit def flattenTraversableOnce[A, CC[_]](travs: TraversableOnce[CC[A]])(implicit ev: CC[A] => TraversableOnce[A]) =
     new FlattenOps[A](travs map ev)
 
@@ -390,6 +391,8 @@ object TraversableOnce {
       def next(): A = if (hasNext) it.next() else Iterator.empty.next()
     }
   }
+
+  class ForceImplicitAmbiguity
 
   class MonadOps[+A](trav: TraversableOnce[A]) {
     def map[B](f: A => B): TraversableOnce[B] = trav.toIterator map f

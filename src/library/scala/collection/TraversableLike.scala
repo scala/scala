@@ -64,7 +64,8 @@ import parallel.ParIterable
  *  @define Coll Traversable
  *  @define coll traversable collection
  */
-trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
+trait TraversableLike[+A, +Repr] extends Any
+                                    with HasNewBuilder[A, Repr]
                                     with FilterMonadic[A, Repr]
                                     with TraversableOnce[A]
                                     with GenTraversableLike[A, Repr]

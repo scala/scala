@@ -29,7 +29,7 @@ import java.util.Comparator
  *  @since 2.7
  */
 
-trait Equiv[T] {
+trait Equiv[T] extends Any {
   /** Returns `true` iff `x` is equivalent to `y`.
    */
   def equiv(x: T, y: T): Boolean
