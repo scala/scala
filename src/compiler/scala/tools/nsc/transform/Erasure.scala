@@ -334,6 +334,9 @@ abstract class Erasure extends AddInterfaces
   }
 
   class UnknownSig extends Exception
+    
+  override def eraseInlineClassRef(clazz: Symbol): Type = ErasedInlineType(clazz)
+    
 
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *
