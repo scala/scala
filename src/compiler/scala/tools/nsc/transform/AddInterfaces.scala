@@ -302,21 +302,19 @@ abstract class AddInterfaces extends InfoTransform {
       yield mixinConstructorCall(implClass(mc))
     }
     tree match {
+      case Block(Nil, expr) =>
+        // AnyVal constructor - have to provide a real body so the
+        // jvm doesn't throw a VerifyError. But we can't add the
+        // body until now, because the typer knows that Any has no
+        // constructor and won't accept a call to super.init.
+        assert((clazz isSubClass AnyValClass) || clazz.info.parents.isEmpty, clazz)
+        val superCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), Nil)
+        Block(List(superCall), expr)
+
       case Block(stats, expr) =>
         // needs `hasSymbol` check because `supercall` could be a block (named / default args)
-        stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER)) match {
-          case (presuper, supercall :: rest) =>
-            stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
-            treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
-          case (Nil, Nil) =>
-            assert(clazz eq AnyValClass, clazz)
-            // AnyVal constructor - have to provide a real body so the
-            // jvm doesn't throw a VerifyError. But we can't add the
-            // body until now, because the typer knows that Any has no
-            // constructor and won't accept a call to super.init.
-            val superCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), Nil)
-            Block(List(superCall), Literal(Constant()))
-        }
+        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
+        treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }
 

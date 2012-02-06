@@ -1787,11 +1787,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
 
-      if (meth.isPrimaryConstructor && meth.isClassConstructor && !isPastTyper && !reporter.hasErrors) {
+      if (meth.isPrimaryConstructor && meth.isClassConstructor && !isPastTyper && !reporter.hasErrors && !meth.owner.isSubClass(AnyValClass)) {
         // At this point in AnyVal there is no supercall, which will blow up
         // in computeParamAliases; there's nothing to be computed for Anyval anyway.
-        if (meth.owner ne AnyValClass)
-          computeParamAliases(meth.owner, vparamss1, rhs1)
+        computeParamAliases(meth.owner, vparamss1, rhs1)
       }
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
         rhs1 = checkDead(rhs1)

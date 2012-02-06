@@ -1,4 +1,14 @@
 anyval-anyref-parent.scala:5: error: Any does not have a constructor
 class Bar1 extends Any      // fail
            ^
-one error found
+anyval-anyref-parent.scala:9: error: illegal inheritance; superclass Any
+ is not a subclass of the superclass Object
+ of the mixin trait Immutable
+trait Foo4 extends Any with Immutable // fail
+                            ^
+anyval-anyref-parent.scala:10: error: illegal inheritance; superclass AnyVal
+ is not a subclass of the superclass Object
+ of the mixin trait Immutable
+trait Foo5 extends AnyVal with Immutable   // fail
+                               ^
+three errors found

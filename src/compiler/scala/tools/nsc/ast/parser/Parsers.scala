@@ -2722,23 +2722,6 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      /** Extra parents for case classes. */
-      def caseParents() = (
-        if (mods.isCase) {
-          val arity = if (vparamss.isEmpty || vparamss.head.isEmpty) 0 else vparamss.head.size
-          productConstr :: serializableConstr :: {
-            Nil
-            // if (arity == 0 || settings.YnoProductN.value) Nil
-            // else List(
-            //   AppliedTypeTree(
-            //     productConstrN(arity),
-            //     vparamss.head map (vd => vd.tpt.duplicate setPos vd.tpt.pos.focus)
-            //   )
-            // )
-          }
-        }
-        else Nil
-      )
       val (parents0, argss, self, body) = (
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.hasTraitFlag) {
           in.nextToken()
@@ -2750,29 +2733,25 @@ self =>
           (List(), List(List()), self, body)
         }
       )
-
+      def anyrefParents() = {
+        val caseParents = if (mods.isCase) List(productConstr, serializableConstr) else Nil
+        parents0 ::: caseParents match {
+          case Nil  => List(scalaAnyRefConstr)
+          case ps   => ps
+        }
+      }
+      def anyvalConstructor() = (
+        // Not a well-formed constructor, has to be finished later - see note
+        // regarding AnyVal constructor in AddInterfaces.
+        DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
+      )
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+
       atPos(tstart0) {
-        if (inScalaPackage && name == tpnme.AnyVal) {
-          // Not a well-formed constructor, has to be finished later - see note
-          // regarding AnyVal constructor in AddInterfaces.
-          val constructor = DefDef(NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(), Block(Nil, Literal(Constant())))
-          Template(parents0, self, constructor :: body)
-        }
-        else if (isPrimitiveType(name))
-          Template(List(scalaAnyValConstr), self, body)
-        else if (parents0 exists isReferenceToAnyVal) {
-          // @inline and other restrictions enforced in refchecks
-          Template(parents0, self, body)
-        }
-        else {
-          val casePs = caseParents()
-          val parents = parents0 match {
-            case Nil if casePs.isEmpty  => List(scalaAnyRefConstr)
-            case _                      => parents0 ++ casePs
-          }
-          Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))
-        }
+        if ((inScalaPackage && name == tpnme.AnyVal) || (parents0 exists isReferenceToAnyVal))
+          Template(parents0, self, anyvalConstructor :: body)
+        else
+          Template(anyrefParents, self, constrMods, vparamss, argss, body, o2p(tstart))
       }
     }
 
