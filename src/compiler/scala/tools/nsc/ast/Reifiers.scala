@@ -290,14 +290,20 @@ trait Reifiers { self: Global =>
         if (definedInLiftedCode(tt.tpe)) {
           // erase non-essential (i.e. inferred) types
           // reify symless counterparts of essential types
+          // @xeno.by: in general case reflective compiler lacks the context to typecheck the originals
+          // more info here: https://issues.scala-lang.org/browse/SI-5273?focusedCommentId=56057#comment-56057
+          // this is A BIG BAD TODO!
           if (tt.original != null) reify(tt.original) else mirrorCall("TypeTree")
         } else {
           var rtt = mirrorCall(nme.TypeTree, reifyType(tt.tpe))
-          if (tt.original != null) {
-            val setOriginal = Select(rtt, newTermName("setOriginal"))
-            val reifiedOriginal = reify(tt.original)
-            rtt = Apply(setOriginal, List(reifiedOriginal))
-          }
+          // @xeno.by: originals get typechecked during subsequent reflective compilation, which leads to subtle bugs
+          // https://issues.scala-lang.org/browse/SI-5273?focusedCommentId=56057#comment-56057
+          // until this is somehow sorted out, I disable reification of originals
+          // if (tt.original != null) {
+          //   val setOriginal = Select(rtt, newTermName("setOriginal"))
+          //   val reifiedOriginal = reify(tt.original)
+          //   rtt = Apply(setOriginal, List(reifiedOriginal))
+          // }
           rtt
         }
       case ta @ TypeApply(hk, ts) =>
