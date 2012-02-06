@@ -226,7 +226,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
 
     lazy val AnyValClass = ScalaPackageClass.info member tpnme.AnyVal orElse {
-      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), 0L)
+      val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, List(AnyClass.tpe, NotNullClass.tpe), ABSTRACT)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
       anyval

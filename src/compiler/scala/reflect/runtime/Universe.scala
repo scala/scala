@@ -37,6 +37,12 @@ class Universe extends SymbolTable {
   type Position = String // source file?
   val NoPosition = ""
 
+  definitions.AnyValClass // force it.
+
   // establish root association to avoid cyclic dependency errors later
   classToScala(classOf[java.lang.Object]).initialize
+
+//  println("initializing definitions")
+  definitions.init()
+
 }

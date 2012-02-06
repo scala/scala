@@ -229,6 +229,7 @@ abstract class UnPickler /*extends reflect.generic.UnPickler*/ {
             // (3) Try as a nested object symbol.
             nestedObjectSymbol orElse {
               // (4) Otherwise, fail.
+              //System.err.println("missing "+name+" in "+owner+"/"+owner.id+" "+owner.info.decls)
               adjust(errorMissingRequirement(name, owner))
             }
           }

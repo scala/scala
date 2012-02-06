@@ -5409,8 +5409,7 @@ trait Types extends api.Types { self: SymbolTable =>
           case NullClass =>
             tp2 match {
               case TypeRef(_, sym2, _) =>
-                sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) &&
-                !(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)
+                containsNull(sym2)
               case _ =>
                 isSingleType(tp2) && tp1 <:< tp2.widen
             }
@@ -5441,6 +5440,11 @@ trait Types extends api.Types { self: SymbolTable =>
     firstTry
   }
 
+  private def containsNull(sym: Symbol): Boolean =
+    sym.isClass && sym != NothingClass &&
+    !(sym isNonBottomSubClass AnyValClass) &&
+    !(sym isNonBottomSubClass NotNullClass)
+
   /** Are `tps1` and `tps2` lists of equal length such that all elements
    *  of `tps1` conform to corresponding elements of `tps2`?
    */
@@ -5452,7 +5456,7 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def specializesSym(tp: Type, sym: Symbol): Boolean =
     tp.typeSymbol == NothingClass ||
-    tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
+    tp.typeSymbol == NullClass && containsNull(sym.owner) ||
     (tp.nonPrivateMember(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 

@@ -705,17 +705,17 @@ trait Namers extends MethodSynthesis {
         if (needsCycleCheck && !typer.checkNonCyclic(tree.pos, tp))
           sym setInfo ErrorType
       }
-      tree match {
-        case ClassDef(_, _, _, impl) =>
-          val parentsOK = (
-               treeInfo.isInterface(sym, impl.body)
-            || (sym eq ArrayClass)
-            || (sym isSubClass AnyValClass)
-          )
-          if (!parentsOK)
-            ensureParent(sym, AnyRefClass)
-        case _ => ()
-      }
+      // tree match {
+      //   case ClassDef(_, _, _, impl) =>
+      //     val parentsOK = (
+      //          treeInfo.isInterface(sym, impl.body)
+      //       || (sym eq ArrayClass)
+      //       || (sym isSubClass AnyValClass)
+      //     )
+      //     if (!parentsOK)
+      //       ensureParent(sym, AnyRefClass)
+      //   case _ => ()
+      // }
     }
 
     def moduleClassTypeCompleter(tree: Tree) = {
