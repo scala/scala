@@ -1,8 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 #
 
-THISDIR=`dirname $0`
-CP=`$THISDIR/lockercp`
-CLASS="scala.tools.nsc.Main"
+CP=$($(dirname $BASH_SOURCE)/lockercp)
 
-java -classpath "$CP" $CLASS -usejavacp "$@"
+java $JAVA_OPTS -classpath "$CP" scala.tools.nsc.Main -usejavacp "$@"

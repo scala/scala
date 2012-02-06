@@ -261,6 +261,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def declarations = decls
     def typeArguments = typeArgs
     def erasedType = transformedType(this)
+    def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
   }
 
   /** The base class for all types */
@@ -5687,7 +5688,7 @@ trait Types extends api.Types { self: SymbolTable =>
     val padded       = sorted map (_._2.padTo(maxSeqLength, NoType))
     val transposed   = padded.transpose
 
-    val columns: List[Column[List[Type]]] = sorted.zipWithIndex map {
+    val columns: List[Column[List[Type]]] = mapWithIndex(sorted) {
       case ((k, v), idx) =>
         Column(str(k), (xs: List[Type]) => str(xs(idx)), true)
     }

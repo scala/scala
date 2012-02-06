@@ -1,0 +1,7 @@
+zero
+one
+many
+got a
+got b
+got some letter
+scala.MatchError: 5 (of class java.lang.Integer)

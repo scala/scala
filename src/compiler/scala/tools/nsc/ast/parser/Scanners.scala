@@ -84,6 +84,8 @@ trait Scanners extends ScannersCommon {
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
+    
+    def isAtEnd = charOffset >= buf.length
 
     def flush = { charOffset = offset; nextChar(); this }
 
@@ -449,7 +451,7 @@ trait Scanners extends ScannersCommon {
         case ']' =>
           nextChar(); token = RBRACKET
         case SU =>
-          if (charOffset >= buf.length) token = EOF
+          if (isAtEnd) token = EOF
           else {
             syntaxError("illegal character")
             nextChar()
@@ -771,10 +773,10 @@ trait Scanners extends ScannersCommon {
       putChar(ch)
     }
 
-    private def getLitChars(delimiter: Char) =
-      while (ch != delimiter && (ch != CR && ch != LF && ch != SU || isUnicodeEscape)) {
+    private def getLitChars(delimiter: Char) = {
+      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape))
         getLitChar()
-      }
+    }
 
     /** read fractional part and exponent of floating point number
      *  if one is present.

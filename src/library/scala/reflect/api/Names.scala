@@ -11,7 +11,6 @@ package api
  *  `name1 == name2` implies `name1 eq name2`.
  */
 trait Names {
-  
   /** The abstract type of names */
   type Name >: Null <: AbsName
 
@@ -37,12 +36,20 @@ trait Names {
     /** Replaces all occurrences of $op_names in this name by corresponding operator symbols.
      *  Example: `foo_+=` becomes `foo_$plus$eq`.
      */
-    def decode: String
+    def decoded: String
 
     /** Replaces all occurrences of operator symbols in this name by corresponding $op_names.
      *  Example: `foo_$plus$eq` becomes `foo_+=`
      */
-    def encode: Name
+    def encoded: String
+    
+    /** The decoded name, still represented as a name.
+     */
+    def decodedName: Name
+
+    /** The encoded name, still represented as a name.
+     */
+    def encodedName: Name
   }
 
   /** Create a new term name.

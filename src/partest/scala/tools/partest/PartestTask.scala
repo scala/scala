@@ -15,10 +15,8 @@ import scala.tools.nsc.io.{ Directory, Path => SPath }
 import nsc.util.ClassPath
 import util.PathResolver
 import scala.tools.ant.sabbus.CompilationPathProperty
-
 import java.io.File
 import java.lang.reflect.Method
-
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{Path, Reference, FileSet}
 import org.apache.tools.ant.types.Commandline.Argument
@@ -308,6 +306,16 @@ class PartestTask extends Task with CompilationPathProperty {
 
     val antRunner = new scala.tools.partest.nest.AntRunner
     val antFileManager = antRunner.fileManager
+
+    // this is a workaround for https://issues.scala-lang.org/browse/SI-5433
+    // when that bug is fixed, this paragraph of code can be safely removed
+    // we hack into the classloader that will become parent classloader for scalac
+    // this way we ensure that reflective macro lookup will pick correct Code.lift
+    val loader = getClass.getClassLoader.asInstanceOf[org.apache.tools.ant.AntClassLoader]
+    val path = new org.apache.tools.ant.types.Path(getProject())
+    val newClassPath = ClassPath.join(nest.PathSettings.srcCodeLib.toString, loader.getClasspath)
+    path.setPath(newClassPath)
+    loader.setClassPath(path)
 
     antFileManager.showDiff = showDiff
     antFileManager.showLog = showLog

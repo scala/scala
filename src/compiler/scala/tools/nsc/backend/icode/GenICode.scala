@@ -133,7 +133,7 @@ abstract class GenICode extends SubComponent  {
           if (!ctx1.bb.closed) ctx1.bb.close
           prune(ctx1.method)
         } else
-          ctx1.method.setCode(null)
+          ctx1.method.setCode(NoCode)
         ctx1
 
       case Template(_, _, body) =>
@@ -1072,6 +1072,15 @@ abstract class GenICode extends SubComponent  {
                 targets = tmpCtx.bb :: targets
               case Ident(nme.WILDCARD) =>
                 default = tmpCtx.bb
+              case Alternative(alts) =>
+                alts foreach {
+                  case Literal(value) =>
+                    tags = value.intValue :: tags
+                    targets = tmpCtx.bb :: targets
+                  case _ =>
+                    abort("Invalid case in alternative in switch-like pattern match: " +
+                          tree + " at: " + tree.pos)
+                }
               case _ =>
                 abort("Invalid case statement in switch-like pattern match: " +
                       tree + " at: " + (tree.pos))

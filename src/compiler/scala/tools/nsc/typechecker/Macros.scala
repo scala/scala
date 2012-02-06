@@ -106,13 +106,16 @@ trait Macros { self: Analyzer =>
       val mmeth = macroMeth(mac)
       if (mmeth == NoSymbol) None
       else {
-        val receiverClass: mirror.Symbol = mirror.classWithName(mmeth.owner.fullName)
+        val receiverClass: mirror.Symbol = mirror.symbolForName(mmeth.owner.fullName)
         val receiverObj = receiverClass.companionModule
-        if (receiverObj == NoSymbol) None
+        if (receiverObj == mirror.NoSymbol) None
         else {
-          val receiver = mirror.getCompanionObject(receiverClass)
+          val receiver = mirror.companionInstance(receiverClass)
           val rmeth = receiverObj.info.member(mirror.newTermName(mmeth.name.toString))
-          Some((receiver, rmeth))
+          if (rmeth == mirror.NoSymbol) None
+          else {
+            Some((receiver, rmeth))
+          }
         }
       }
     } catch {
@@ -137,7 +140,7 @@ trait Macros { self: Analyzer =>
         }
         val rawArgs: Seq[Any] = rawArgss.flatten
         try {
-          Some(mirror.invoke(receiver, rmeth, rawArgs: _*))
+          Some(mirror.invoke(receiver, rmeth)(rawArgs: _*))
         } catch {
           case ex =>
             val realex = ReflectionUtils.unwrapThrowable(ex)

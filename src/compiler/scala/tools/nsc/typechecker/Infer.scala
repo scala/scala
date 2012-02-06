@@ -228,9 +228,9 @@ trait Infer {
       if (sym.isError) {
         tree setSymbol sym setType ErrorType
       } else {
-        val topClass = context.owner.toplevelClass
+        val topClass = context.owner.enclosingTopLevelClass
         if (context.unit.exists)
-          context.unit.depends += sym.toplevelClass
+          context.unit.depends += sym.enclosingTopLevelClass
 
         var sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
         // Console.println("check acc " + (sym, sym1) + ":" + (sym.tpe, sym1.tpe) + " from " + pre);//DEBUG
@@ -640,13 +640,7 @@ trait Infer {
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
         case MethodType(params, _) =>
-          val formals0 = params map { param =>
-            param.tpe match {
-              case TypeRef(_, sym, List(tpe)) if sym isNonBottomSubClass CodeClass => tpe
-              case tpe => tpe
-            }
-          }
-          val formals = formalTypes(formals0, argtpes0.length)
+          val formals = formalTypes(params map { _.tpe }, argtpes0.length)
 
           def tryTupleApply: Boolean = {
             // if 1 formal, 1 argtpe (a tuple), otherwise unmodified argtpes0
