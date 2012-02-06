@@ -1269,13 +1269,13 @@ abstract class ClassfileParser {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
       // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
       // apparently occurs when processing v45.3 bytecode.
-      if (sym.toplevelClass != NoSymbol)
-        sym.privateWithin = sym.toplevelClass.owner
+      if (sym.enclosingTopLevelClass != NoSymbol)
+        sym.privateWithin = sym.enclosingTopLevelClass.owner
 
     // protected in java means package protected. #3946
     if ((jflags & JAVA_ACC_PROTECTED) != 0)
-      if (sym.toplevelClass != NoSymbol)
-        sym.privateWithin = sym.toplevelClass.owner
+      if (sym.enclosingTopLevelClass != NoSymbol)
+        sym.privateWithin = sym.enclosingTopLevelClass.owner
   }
 
   @inline private def isPrivate(flags: Int)     = (flags & JAVA_ACC_PRIVATE) != 0

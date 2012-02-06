@@ -40,6 +40,13 @@ object PathSettings {
     sys.error("No instrumented.jar found in %s".format(srcSpecLibDir))
   }
 
+  // Directory <root>/test/files/codelib
+  lazy val srcCodeLibDir = Directory(srcDir / "codelib")
+
+  lazy val srcCodeLib: File = findJar(srcCodeLibDir, "code") getOrElse {
+    sys.error("No code.jar found in %s".format(srcCodeLibDir))
+  }
+
   // Directory <root>/build
   lazy val buildDir: Directory = {
     val bases      = testRoot :: testRoot.parents

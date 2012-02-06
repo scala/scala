@@ -10,6 +10,7 @@ package scala.collection.parallel.immutable
 
 import scala.collection.immutable.Range
 import scala.collection.parallel.Combiner
+import scala.collection.parallel.SeqSplitter
 import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.IterableSplitter
 import scala.collection.Iterator
@@ -41,13 +42,10 @@ self =>
 
   @inline final def apply(idx: Int) = range.apply(idx);
 
-  def splitter = new ParRangeIterator with SCPI
-
-  type SCPI = SignalContextPassingIterator[ParRangeIterator]
+  def splitter = new ParRangeIterator
 
   class ParRangeIterator(range: Range = self.range)
-  extends ParIterator {
-  me: SignalContextPassingIterator[ParRangeIterator] =>
+  extends SeqSplitter[Int] {
     override def toString = "ParRangeIterator(over: " + range + ")"
     private var ind = 0
     private val len = range.length
@@ -64,15 +62,15 @@ self =>
 
     private def rangeleft = range.drop(ind)
 
-    def dup = new ParRangeIterator(rangeleft) with SCPI
+    def dup = new ParRangeIterator(rangeleft)
 
     def split = {
       val rleft = rangeleft
       val elemleft = rleft.length
-      if (elemleft < 2) Seq(new ParRangeIterator(rleft) with SCPI)
+      if (elemleft < 2) Seq(new ParRangeIterator(rleft))
       else Seq(
-        new ParRangeIterator(rleft.take(elemleft / 2)) with SCPI,
-        new ParRangeIterator(rleft.drop(elemleft / 2)) with SCPI
+        new ParRangeIterator(rleft.take(elemleft / 2)),
+        new ParRangeIterator(rleft.drop(elemleft / 2))
       )
     }
 
@@ -81,7 +79,7 @@ self =>
       for (sz <- sizes) yield {
         val fronttaken = rleft.take(sz)
         rleft = rleft.drop(sz)
-        new ParRangeIterator(fronttaken) with SCPI
+        new ParRangeIterator(fronttaken)
       }
     }
 

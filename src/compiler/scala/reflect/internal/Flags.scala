@@ -466,7 +466,7 @@ class Flags extends ModifierFlags {
   }
   protected final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 
-  def flagOfModifier(mod: Modifier.Value): Long = mod match {
+  def flagOfModifier(mod: Modifier): Long = mod match {
     case Modifier.`protected` => PROTECTED
     case Modifier.`private` => PRIVATE
     case Modifier.`override` => OVERRIDE
@@ -496,13 +496,13 @@ class Flags extends ModifierFlags {
     case Modifier.bynameParameter => BYNAMEPARAM
   }
 
-  def flagsOfModifiers(mods: List[Modifier.Value]): Long =
+  def flagsOfModifiers(mods: List[Modifier]): Long =
     (mods :\ 0L) { (mod, curr) => curr | flagOfModifier(mod) }
 
-  def modifierOfFlag(flag: Long): Option[Modifier.Value] =
+  def modifierOfFlag(flag: Long): Option[Modifier] =
     Modifier.values find { mod => flagOfModifier(mod) == flag }
 
-  def modifiersOfFlags(flags: Long): List[Modifier.Value] =
+  def modifiersOfFlags(flags: Long): List[Modifier] =
     pickledListOrder map (mask => modifierOfFlag(flags & mask)) flatMap { mod => mod }
 }
 

@@ -222,7 +222,7 @@ object Manifest {
       val clazz = classToSymbol(erasure)
       val pre = prefix match {
         case Some(pm) => pm.tpe
-        case None => clazz.owner.thisType
+        case None     => clazz.owner.thisPrefix
       }
       namedType(pre, clazz, typeArguments map (_.tpe))
     }

@@ -72,9 +72,9 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def withPosition(flag: Long, position: Position) =
       copy() setPositions positions + (flag -> position)
 
-    override def hasModifier(mod: Modifier.Value) =
+    override def hasModifier(mod: Modifier) =
       hasFlag(flagOfModifier(mod))
-    override def allModifiers: Set[Modifier.Value] =
+    override def modifiers: Set[Modifier] =
       Modifier.values filter hasModifier
     override def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers =
       Modifiers(flags, privateWithin, f(annotations)) setPositions positions
@@ -85,7 +85,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List())
   def Modifiers(flags: Long): Modifiers = Modifiers(flags, tpnme.EMPTY)
 
-  def Modifiers(mods: Set[Modifier.Value],
+  def Modifiers(mods: Set[Modifier],
                 privateWithin: Name,
                 annotations: List[Tree]): Modifiers = {
     val flagSet = mods map flagOfModifier
@@ -231,15 +231,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
 
-
-  /** Factory method for object creation `new tpt(args_1)...(args_n)`
-   *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
-   */
-  def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
-    assert(!argss.isEmpty)
-    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
-    (superRef /: argss) (Apply)
-  }
   /** 0-1 argument list new, based on a symbol.
    */
   def New(sym: Symbol, args: Tree*): Tree =

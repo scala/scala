@@ -61,13 +61,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case n: TermName => newTermSymbol(n, pos, newFlags)
       case n: TypeName => newTypeSymbol(n, pos, newFlags)
     }
-    def typeSig: Type = info
-    def typeSigIn(site: Type): Type = site.memberInfo(this)
+    def enclosingClass: Symbol            = enclClass
+    def enclosingMethod: Symbol           = enclMethod
+    def thisPrefix: Type                  = thisType
+    def selfType: Type                    = typeOfThis
+    def typeSignature: Type               = info
+    def typeSignatureIn(site: Type): Type = site memberInfo this
+    
     def asType: Type = tpe
     def asTypeIn(site: Type): Type = site.memberType(this)
     def asTypeConstructor: Type = typeConstructor
     def setInternalFlags(flag: Long): this.type = { setFlag(flag); this }
-    def setTypeSig(tpe: Type): this.type = { setInfo(tpe); this }
+    def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
   }
 
@@ -103,12 +108,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
 
-    override def hasModifier(mod: Modifier.Value) =
+    /** !!! The logic after "hasFlag" is far too opaque to be unexplained.
+     *  I'm guessing it's attempting to compensate for flag overloading,
+     *  and embedding such logic in an undocumented island like this is a
+     *  notarized guarantee of future breakage.
+     */
+    override def hasModifier(mod: Modifier) =
       hasFlag(flagOfModifier(mod)) &&
       (!(mod == Modifier.bynameParameter) || isTerm) &&
       (!(mod == Modifier.covariant) || isType)
 
-    override def allModifiers: Set[Modifier.Value] =
+    override def modifiers: Set[Modifier] =
       Modifier.values filter hasModifier
 
 // ------ creators -------------------------------------------------------------------
@@ -1271,14 +1281,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** After the typer phase (before, look at the definition's Modifiers), contains
      *  the annotations attached to member a definition (class, method, type, field).
      */
-    def annotations: List[AnnotationInfo] = _annotations
+    def annotations: List[AnnotationInfo] = {
+      // Necessary for reflection, see SI-5423
+      if (inReflexiveMirror)
+        initialize
 
-    /** This getter is necessary for reflection, see https://issues.scala-lang.org/browse/SI-5423
-     *  We could auto-inject completion into `annotations' and `setAnnotations', but I'm not sure about that
-     *  @odersky writes: I fear we can't do the forcing for all compiler symbols as that could introduce cycles
-     */
-    def getAnnotations: List[AnnotationInfo] = {
-      initialize
       _annotations
     }
 
@@ -1572,10 +1579,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else owner.logicallyEnclosingMember
 
     /** The top-level class containing this symbol. */
-    def toplevelClass: Symbol =
+    def enclosingTopLevelClass: Symbol =
       if (owner.isPackageClass) {
         if (isClass) this else moduleClass
-      } else owner.toplevelClass
+      } else owner.enclosingTopLevelClass
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = (
@@ -1879,7 +1886,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 */
     def sourceFile: AbstractFileType =
       if (isModule) moduleClass.sourceFile
-      else toplevelClass.sourceFile
+      else enclosingTopLevelClass.sourceFile
 
     def sourceFile_=(f: AbstractFileType) {
       abort("sourceFile_= inapplicable for " + this)
@@ -2588,7 +2595,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   class FreeVar(name0: TermName, val value: Any) extends TermSymbol(NoSymbol, NoPosition, name0) {
-    override def hashCode = value.hashCode
+    override def hashCode = if (value == null) 0 else value.hashCode
     override def equals(other: Any): Boolean = other match {
       case that: FreeVar => this.value.asInstanceOf[AnyRef] eq that.value.asInstanceOf[AnyRef]
       case _             => false
@@ -2611,7 +2618,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def defString: String = toString
     override def locationString: String = ""
     override def enclClass: Symbol = this
-    override def toplevelClass: Symbol = this
+    override def enclosingTopLevelClass: Symbol = this
     override def enclMethod: Symbol = this
     override def sourceFile: AbstractFileType = null
     override def ownerChain: List[Symbol] = List()

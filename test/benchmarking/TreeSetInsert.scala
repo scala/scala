@@ -33,6 +33,7 @@ object JavaUtilTS extends testing.Benchmark {
   }
 }
 
+
 object MutableTS extends testing.Benchmark {
   val length = sys.props("length").toInt
   var data: Array[Dummy] = (0 until length) map { a => new Dummy(a) } toArray
@@ -49,6 +50,7 @@ object MutableTS extends testing.Benchmark {
     }
   }
 }
+
 
 object ImmutableTS extends testing.Benchmark {
   val length = sys.props("length").toInt

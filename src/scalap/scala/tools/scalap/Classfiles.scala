@@ -41,31 +41,5 @@ object Classfiles {
     CONSTANT_INTFMETHODREF -> "InterfaceMethod",
     CONSTANT_NAMEANDTYPE -> "NameAndType"
   )
-
-  final val BAD_ATTR = 0x00000
-  final val SOURCEFILE_ATTR = 0x00001
-  final val SYNTHETIC_ATTR = 0x00002
-  final val DEPRECATED_ATTR = 0x00004
-  final val CODE_ATTR = 0x00008
-  final val EXCEPTIONS_ATTR = 0x00010
-  final val CONSTANT_VALUE_ATTR = 0x00020
-  final val LINE_NUM_TABLE_ATTR = 0x00040
-  final val LOCAL_VAR_TABLE_ATTR = 0x00080
-  final val INNERCLASSES_ATTR = 0x08000
-  final val META_ATTR = 0x10000
-  final val SCALA_ATTR = 0x20000
-
-  final val SOURCEFILE_N = "SourceFile"
-  final val SYNTHETIC_N = "Synthetic"
-  final val DEPRECATED_N = "Deprecated"
-  final val CODE_N = "Code"
-  final val EXCEPTIONS_N = "Exceptions"
-  final val CONSTANT_VALUE_N = "ConstantValue"
-  final val LINE_NUM_TABLE_N = "LineNumberTable"
-  final val LOCAL_VAR_TABLE_N = "LocalVariableTable"
-  final val INNERCLASSES_N = "InnerClasses"
-  final val META_N = "JacoMeta"
-  final val SCALA_N = "ScalaSignature"
-  final val CONSTR_N = "<init>"
 }
 

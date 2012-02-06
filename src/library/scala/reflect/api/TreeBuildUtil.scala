@@ -3,19 +3,19 @@ package scala.reflect.api
 trait TreeBuildUtil extends Universe {
 
   /** The symbol corresponding to the globally accessible class with the
-   *  given fully qualified name `fullname`.
+   *  given fully qualified name `fullName`.
    */
-  def staticClass(fullname: String): Symbol
+  def staticClass(fullName: String): Symbol
 
   /** The symbol corresponding to the globally accessible object with the
-   *  given fully qualified name `fullname`.
+   *  given fully qualified name `fullName`.
    */
-  def staticModule(fullname: String): Symbol
+  def staticModule(fullName: String): Symbol
 
   /** The this-ptype of the globally accessible object with the
-   *  given fully qualified name `fullname`.
+   *  given fully qualified name `fullName`.
    */
-  def thisModuleType(fullname: String): Type
+  def thisModuleType(fullName: String): Type
 
   /** Selects type symbol with given simple name `name` from the defined members of `owner`.
    */
@@ -38,7 +38,7 @@ trait TreeBuildUtil extends Universe {
    *  @param   tsig   the type signature of the free variable
    *  @param   value  the value of the free variable at runtime
    */
-  def freeVar(name: String, tsig: Type, value: Any): Symbol
+  def newFreeVar(name: String, info: Type, value: Any): Symbol
 
   /** Create a Modiiers structure given internal flags, qualifier, annotations */
   def modifiersFromInternalFlags(flags: Long, privateWithin: Name, annotations: List[Tree]): Modifiers

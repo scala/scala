@@ -4,7 +4,7 @@
  */
 
 package scala.tools.nsc
-package transform
+package ast
 
 import symtab._
 import Flags._
@@ -13,174 +13,44 @@ import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.FreshNameCreator
 import scala.runtime.ScalaRunTime.{ isAnyVal, isTuple }
 
-/**
- * Translate expressions of the form reflect.Code.lift(exp)
- *  to the reified "reflect trees" representation of exp.
- *  Also: mutable variables that are accessed from a local function are wrapped in refs.
+/** Given a tree or type, generate a tree that when executed at runtime produces the original tree or type.
+ *  See more info in the comments to `reify' in scala.reflect.macro.Context.
  *
  *  @author Martin Odersky
  *  @version 2.10
  */
-abstract class LiftCode extends Transform with TypingTransformers {
+trait Reifiers { self: Global =>
 
-  import global._ // the global environment
-  import definitions._ // standard classes and methods
-  import typer.{ typed, atOwner } // methods to type trees
+  def reify(tree: Tree): Tree = {
+    if (tree.tpe != null) {
+      val saved = printTypings
+      try {
+        val reifyDebug = settings.Yreifydebug.value
+        val debugTrace = util.trace when reifyDebug
+        debugTrace("transforming = ")(if (settings.Xshowtrees.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
+        debugTrace("transformed = ") {
+          val reifier = new Reifier()
+          val untyped = reifier.reifyTopLevel(tree)
 
-  val symbols: global.type = global
-
-  /** the following two members override abstract members in Transform */
-  val phaseName: String = "liftcode"
-
-  def newTransformer(unit: CompilationUnit): Transformer =
-    new Codifier(unit)
-
-  private lazy val MirrorMemberNames =
-    ReflectRuntimeMirror.info.nonPrivateMembers filter (_.isTerm) map (_.toString) toSet
-
-  // Would be nice if we could use something like this to check the names,
-  // but it seems that info is unavailable when I need it.
-  private def mirrorFactoryName(value: Any): Option[String] = value match {
-    // Modest (inadequate) sanity check that there's a member by this name.
-    case x: Product if MirrorMemberNames(x.productPrefix) =>
-      Some(x.productPrefix)
-    case _ =>
-      Some(value.getClass.getName split """[$.]""" last) filter MirrorMemberNames
-  }
-  private def isMirrorMemberObject(value: Product) = value match {
-    case NoType | NoPrefix | NoPosition | EmptyTree => true
-    case _                                          => false
-  }
-
-  class Codifier(unit: CompilationUnit) extends TypingTransformer(unit) {
-
-    val reifyDebug = settings.Yreifydebug.value
-    val reifyTyperDebug = settings.Yreifytyperdebug.value
-    val debugTrace = util.trace when reifyDebug
-
-    val reifyCopypaste = settings.Yreifycopypaste.value
-    def printCopypaste(tree: Tree) {
-      if (reifyDebug) println("=======================")
-      printCopypaste1(tree)
-      if (reifyDebug) println("=======================")
-    }
-    def printCopypaste1(tree: Tree) {
-      import scala.reflect.api.Modifier
-      import scala.reflect.api.Modifier._
-
-      def copypasteModifier(mod: Modifier.Value): String = mod match {
-        case mod @ (
-             `protected` | `private` | `override` |
-             `abstract` | `final` | `sealed` |
-             `implicit` | `lazy` | `macro` |
-             `case` | `trait`) => "`" + mod.toString + "`"
-        case mod => mod.toString
-      }
-
-      // I fervently hope this is a test case or something, not anything being
-      // depended upon.  Of more fragile code I cannot conceive.
-      for (line <- (tree.toString.split(Properties.lineSeparator) drop 2 dropRight 1)) {
-        var s = line.trim
-        s = s.replace("$mr.", "")
-        s = s.replace(".apply", "")
-        s = s.replace("scala.collection.immutable.", "")
-        s = "List\\[List\\[.*?\\].*?\\]".r.replaceAllIn(s, "List")
-        s = "List\\[.*?\\]".r.replaceAllIn(s, "List")
-        s = s.replace("immutable.this.Nil", "List()")
-        s = s.replace("modifiersFromInternalFlags", "Modifiers")
-        s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
-        s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
-          val buf = new StringBuilder
-
-          val flags = m.group(1).toLong
-          val s_flags = Flags.modifiersOfFlags(flags) map copypasteModifier mkString ", "
-          if (s_flags != "")
-            buf.append("Set(" + s_flags + ")")
-
-          val privateWithin = "" + m.group(2)
-          if (privateWithin != "")
-            buf.append(", newTypeName(\"" + privateWithin + "\")")
-
-          val annotations = m.group(3)
-          if (annotations.nonEmpty)
-            buf.append(", List(" + annotations + ")")
-
-          "Modifiers(" + buf.toString  + ")"
-        })
-        s = """setInternalFlags\((\d+)L\)""".r.replaceAllIn(s, m => {
-          val flags = m.group(1).toLong
-          val mods = Flags.modifiersOfFlags(flags) map copypasteModifier
-          "setInternalFlags(flagsOfModifiers(List(" + mods.mkString(", ") + ")))"
-        })
-
-        println(s)
-      }
-    }
-
-    override def transformUnit(unit: CompilationUnit) {
-      atPhase(phase.next) {
-        super.transformUnit(unit)
-      }
-    }
-
-    override def transform(tree: Tree): Tree = {
-      val sym = tree.symbol
-      tree match {
-        case Apply(_, List(tree)) if sym == Code_lift => // reify Code.lift[T](expr) instances
-          val saved = printTypings
-          try {
-            debugTrace("transforming = ")(if (settings.Xshowtrees.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
-            debugTrace("transformed = ") {
-              val untyped = codify(super.transform(tree))
-              if (reifyCopypaste) printCopypaste(untyped)
-
-              printTypings = reifyTyperDebug
-              val typed = localTyper.typedPos(tree.pos)(untyped)
-              typed
-            }
-          } catch {
-            case ex: ReifierError =>
-              unit.error(ex.pos, ex.msg)
-              tree
-          } finally {
-            printTypings = saved
+          val reifyCopypaste = settings.Yreifycopypaste.value
+          if (reifyCopypaste) {
+            if (reifyDebug) println("=======================")
+            println(reifiedNodeToString(untyped))
+            if (reifyDebug) println("=======================")
           }
-        case _ =>
-          super.transform(tree)
-      }
-    }
 
-    def codify(tree: Tree): Tree = debugTrace("codified " + tree + " -> ") {
-      val targetType = definitions.CodeClass.primaryConstructor.info.paramTypes.head
-      val reifier = new Reifier()
-      val arg = gen.mkAsInstanceOf(reifier.reifyTopLevel(tree), targetType, wrapInApply = false)
-      val treetpe = // this really should use packedType(tree.tpe, context.owner)
-                    // where packedType is defined in Typers. But we can do that only if liftCode is moved to Typers.
-        if (tree.tpe.typeSymbol.isAnonymousClass) tree.tpe.typeSymbol.classBound
-        else tree.tpe
-      New(TypeTree(appliedType(definitions.CodeClass.typeConstructor, List(treetpe.widen))),
-        List(List(arg)))
+          untyped
+        }
+      } finally {
+        printTypings = saved
+      }
+    } else {
+      CannotReifyPreTyperTrees(tree)
     }
   }
 
-  /**
-   *  Given a tree or type, generate a tree that when executed at runtime produces the original tree or type.
-   *  For instance: Given
-   *
-   *   var x = 1; Code(x + 1)
-   *
-   *  The `x + 1` expression is reified to
-   *
-   *  $mr.Apply($mr.Select($mr.Ident($mr.freeVar("x". <Int>, x), "+"), List($mr.Literal($mr.Constant(1))))))
-   *
-   *  Or, the term name 'abc' is reified to:
-   *
-   *  $mr.Apply($mr.Select($mr.Ident("newTermName")), List(Literal(Constant("abc")))))
-   *
-   * todo: Treat embedded Code blocks by merging them into containing block
-   *
-   */
   class Reifier() {
+    import definitions._
 
     final val scalaPrefix = "scala."
     final val localPrefix = "$local"
@@ -290,8 +160,6 @@ abstract class LiftCode extends Transform with TypingTransformers {
             mirrorSelect("definitions.RootClass")
           else if (sym == EmptyPackage)
             mirrorSelect("definitions.EmptyPackage")
-          else if (sym == EmptyPackageClass)
-            mirrorSelect("definitions.EmptyPackageClass")
           else if (sym.isModuleClass)
             Select(reifySymRef(sym.sourceModule), "moduleClass")
           else if (sym.isStatic && sym.isClass)
@@ -320,7 +188,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
               val symtpe = lambdaLift.boxIfCaptured(sym, sym.tpe, erasedTypes = false)
               def markIfCaptured(arg: Ident): Tree =
                 if (sym.isCapturedVariable) referenceCapturedVariable(arg) else arg
-              mirrorCall("freeVar", reify(sym.name.toString), reify(symtpe), markIfCaptured(Ident(sym)))
+              mirrorCall("newFreeVar", reify(sym.name.toString), reify(symtpe), markIfCaptured(Ident(sym)))
             } else {
               if (reifyDebug) println("Late local: " + sym)
               registerReifiableSymbol(sym)
@@ -348,7 +216,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
      * Generate code to add type and annotation info to a reified symbol
      */
     private def fillInSymbol(sym: Symbol): Tree = {
-      val rset = Apply(Select(reifySymRef(sym), nme.setTypeSig), List(reifyType(sym.info)))
+      val rset = Apply(Select(reifySymRef(sym), nme.setTypeSignature), List(reifyType(sym.info)))
       if (sym.annotations.isEmpty) rset
       else Apply(Select(rset, nme.setAnnotations), List(reify(sym.annotations)))
     }
@@ -411,9 +279,9 @@ abstract class LiftCode extends Transform with TypingTransformers {
     private def reifyTree(tree: Tree): Tree = tree match {
       case EmptyTree =>
         reifyMirrorObject(EmptyTree)
-      case This(_) if !(boundSyms contains tree.symbol) =>
+      case This(_) if tree.symbol != NoSymbol && !(boundSyms contains tree.symbol) =>
         reifyFree(tree)
-      case Ident(_) if !(boundSyms contains tree.symbol) =>
+      case Ident(_) if tree.symbol != NoSymbol && !(boundSyms contains tree.symbol) =>
         if (tree.symbol.isVariable && tree.symbol.owner.isTerm) {
           captureVariable(tree.symbol) // Note order dependency: captureVariable needs to come before reifyTree here.
           mirrorCall("Select", reifyFree(tree), reifyName(nme.elem))
@@ -422,19 +290,25 @@ abstract class LiftCode extends Transform with TypingTransformers {
         if (definedInLiftedCode(tt.tpe)) {
           // erase non-essential (i.e. inferred) types
           // reify symless counterparts of essential types
+          // @xeno.by: in general case reflective compiler lacks the context to typecheck the originals
+          // more info here: https://issues.scala-lang.org/browse/SI-5273?focusedCommentId=56057#comment-56057
+          // this is A BIG BAD TODO!
           if (tt.original != null) reify(tt.original) else mirrorCall("TypeTree")
         } else {
           var rtt = mirrorCall(nme.TypeTree, reifyType(tt.tpe))
-          if (tt.original != null) {
-            val setOriginal = Select(rtt, newTermName("setOriginal"))
-            val reifiedOriginal = reify(tt.original)
-            rtt = Apply(setOriginal, List(reifiedOriginal))
-          }
+          // @xeno.by: originals get typechecked during subsequent reflective compilation, which leads to subtle bugs
+          // https://issues.scala-lang.org/browse/SI-5273?focusedCommentId=56057#comment-56057
+          // until this is somehow sorted out, I disable reification of originals
+          // if (tt.original != null) {
+          //   val setOriginal = Select(rtt, newTermName("setOriginal"))
+          //   val reifiedOriginal = reify(tt.original)
+          //   rtt = Apply(setOriginal, List(reifiedOriginal))
+          // }
           rtt
         }
       case ta @ TypeApply(hk, ts) =>
         if (ts exists isErased) reifyTree(hk) else reifyProduct(ta)
-      case global.emptyValDef =>
+      case self.emptyValDef =>
         mirrorSelect(nme.emptyValDef)
       case Literal(constant @ Constant(tpe: Type)) if boundSyms exists (tpe contains _) =>
         CannotReifyClassOfBoundType(tree, tpe)
@@ -465,7 +339,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
         val sym = tree.symbol
         if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
         if (reifyDebug) println("Free: " + sym)
-        val freeVar = mirrorCall("freeVar", reify(sym.name.toString), reify(sym.tpe), This(sym))
+        val freeVar = mirrorCall("newFreeVar", reify(sym.name.toString), reify(sym.tpe), This(sym))
         mirrorCall(nme.Ident, freeVar)
       case This(_) =>
         if (reifyDebug) println("This for %s, reified as This".format(tree.symbol))
@@ -534,7 +408,7 @@ abstract class LiftCode extends Transform with TypingTransformers {
     private def typePath(fullname: String): Tree = path(fullname, newTypeName)
 
     private def mirrorAlias =
-      ValDef(NoMods, nme.MIRROR_SHORT, TypeTree(), termPath(fullnme.MirrorPackage))
+      ValDef(NoMods, nme.MIRROR_SHORT, SingletonTypeTree(termPath(fullnme.MirrorPackage)), termPath(fullnme.MirrorPackage))
 
     /**
      * Generate code that generates a symbol table of all symbols registered in `reifiableSyms`
@@ -556,6 +430,11 @@ abstract class LiftCode extends Transform with TypingTransformers {
   /** A throwable signalling a reification error */
   class ReifierError(var pos: Position, val msg: String) extends Throwable(msg) {
     def this(msg: String) = this(NoPosition, msg)
+  }
+
+  def CannotReifyPreTyperTrees(tree: Tree) = {
+    val msg = "pre-typer trees are not supported, consider typechecking the tree before passing it to the reifier"
+    throw new ReifierError(tree.pos, msg)
   }
 
   def CannotReifyClassOfBoundType(tree: Tree, tpe: Type) = {

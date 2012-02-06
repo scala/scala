@@ -43,7 +43,8 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *  - `deprecation`,
  *  - `docgenerator`,
  *  - `docrootcontent`,
- *  - `unchecked`.
+ *  - `unchecked`,
+ *  - `nofail`.
  *
  *  It also takes the following parameters as nested elements:
  *  - `src` (for srcdir),
@@ -122,7 +123,10 @@ class Scaladoc extends ScalaMatchingTask {
 
   /** Instruct the compiler to generate unchecked information. */
   private var unchecked: Boolean = false
-
+  
+  /** Instruct the ant task not to fail in the event of errors */
+  private var nofail: Boolean = false
+  
 /*============================================================================*\
 **                             Properties setters                             **
 \*============================================================================*/
@@ -352,6 +356,17 @@ class Scaladoc extends ScalaMatchingTask {
   def setDocUncompilable(input: String) {
     docUncompilable = Some(input)
   }
+  
+  /** Set the `nofail` info attribute.
+   *
+   *  @param input One of the flags `yes/no` or `on/off`. Default if no/off.
+   */
+  def setNoFail(input: String) {
+    if (Flag.isPermissible(input))
+      nofail = "yes".equals(input) || "on".equals(input)
+    else
+      buildError("Unknown nofail flag '" + input + "'")
+  }
 
 /*============================================================================*\
 **                             Properties getters                             **
@@ -553,6 +568,8 @@ class Scaladoc extends ScalaMatchingTask {
     Pair(docSettings, sourceFiles)
   }
 
+  def safeBuildError(message: String): Unit = if (nofail) log(message) else buildError(message)
+  
   /** Performs the compilation. */
   override def execute() = {
     val Pair(docSettings, sourceFiles) = initialize
@@ -561,7 +578,7 @@ class Scaladoc extends ScalaMatchingTask {
       val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
       docProcessor.document(sourceFiles.map (_.toString))
       if (reporter.ERROR.count > 0)
-        buildError(
+        safeBuildError(
           "Document failed with " +
           reporter.ERROR.count + " error" +
           (if (reporter.ERROR.count > 1) "s" else "") +
@@ -576,11 +593,11 @@ class Scaladoc extends ScalaMatchingTask {
     } catch {
       case exception: Throwable if exception.getMessage ne null =>
         exception.printStackTrace()
-        buildError("Document failed because of an internal documenter error (" +
+        safeBuildError("Document failed because of an internal documenter error (" +
           exception.getMessage + "); see the error output for details.")
       case exception =>
         exception.printStackTrace()
-        buildError("Document failed because of an internal documenter error " +
+        safeBuildError("Document failed because of an internal documenter error " +
           "(no error message provided); see the error output for details.")
     }
   }

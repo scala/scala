@@ -29,7 +29,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
   /** A parallel iterator returning all the entries.
    */
   abstract class EntryIterator[T, +IterRepr <: IterableSplitter[T]]
-    (private var idx: Int, private val until: Int, private val totalsize: Int, private var es: Entry)
+  (private var idx: Int, private val until: Int, private val totalsize: Int, private var es: Entry)
   extends IterableSplitter[T] with SizeMapUtils {
     private val itertable = table
     private var traversed = 0

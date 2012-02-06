@@ -1163,7 +1163,7 @@ trait Implicits {
 /*          !!! the following is almost right, but we have to splice nested manifest
  *          !!! types into this type. This requires a substantial extension of
  *          !!! reifiers.
-            val reifier = new liftcode.Reifier()
+            val reifier = new Reifier()
             val rtree = reifier.reifyTopLevel(tp1)
             manifestFactoryCall("apply", tp, rtree)
 */
