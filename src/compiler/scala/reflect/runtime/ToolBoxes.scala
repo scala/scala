@@ -164,7 +164,13 @@ trait ToolBoxes extends { self: Universe =>
       }
 
       command.settings.outputDirs setSingleOutput virtualDirectory
-      new ToolBoxGlobal(command.settings, reporter)
+      val instance = new ToolBoxGlobal(command.settings, reporter)
+
+      // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
+      // that states that the period must be different from NoPeriod
+      val run = new instance.Run
+      instance.phase = run.refchecksPhase
+      instance
     }
 
     lazy val importer = new compiler.Importer {
@@ -176,10 +182,6 @@ trait ToolBoxes extends { self: Universe =>
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, defaultReflectiveClassLoader)
 
     private def importAndTypeCheck(tree: rm.Tree, expectedType: rm.Type): compiler.Tree = {
-      // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
-      // that states that the period must be different from NoPeriod
-      val run = new compiler.Run
-      compiler.phase = run.refchecksPhase
       val ctree: compiler.Tree = importer.importTree(tree.asInstanceOf[Tree])
       val pt: compiler.Type = importer.importType(expectedType.asInstanceOf[Type])
 //      val typer = compiler.typer.atOwner(ctree, if (owner.isModule) cowner.moduleClass else cowner)

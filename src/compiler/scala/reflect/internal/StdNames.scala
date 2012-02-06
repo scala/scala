@@ -370,7 +370,10 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val self: NameType                 = "self"
     val setAccessible: NameType        = "setAccessible"
     val setAnnotations: NameType       = "setAnnotations"
+    val setSymbol: NameType            = "setSymbol"
+    val setType: NameType              = "setType"
     val setTypeSignature: NameType     = "setTypeSignature"
+
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val thisModuleType: NameType       = "thisModuleType"

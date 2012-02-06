@@ -24,21 +24,30 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
   }
   def quotedName(name: Name): String = quotedName(name, false)
 
+  private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
+    val sym = tree.symbol
+    if (sym != null && sym != NoSymbol) {
+      val prefix = if (sym.isMixinConstructor) "/*%s*/".format(quotedName(sym.owner.name, decoded)) else ""
+      var suffix = ""
+      if (settings.uniqid.value) suffix += ("#" + sym.id)
+      if (settings.Yshowsymkinds.value) suffix += ("#" + sym.abbreviatedKindString)
+      prefix + tree.symbol.decodedName + suffix
+    } else {
+      quotedName(name, decoded)
+    }
+  }
+
+  def decodedSymName(tree: Tree, name: Name) = symNameInternal(tree, name, true)
+  def symName(tree: Tree, name: Name) = symNameInternal(tree, name, false)
+
   /** Turns a path into a String, introducing backquotes
    *  as necessary.
    */
   def backquotedPath(t: Tree): String = {
-    def suffix(t: Tree) = {
-      var suffix = ""
-      if (t.hasSymbol && settings.uniqid.value) suffix += ("#" + t.symbol.id)
-      if (t.hasSymbol && settings.Yshowsymkinds.value) suffix += ("#" + t.symbol.abbreviatedKindString)
-      suffix
-    }
-
     t match {
-      case Select(qual, name) if name.isTermName  => "%s.%s".format(backquotedPath(qual), quotedName(name)) + suffix(t)
-      case Select(qual, name) if name.isTypeName  => "%s#%s".format(backquotedPath(qual), quotedName(name)) + suffix(t)
-      case Ident(name)                            => quotedName(name) + suffix(t)
+      case Select(qual, name) if name.isTermName  => "%s.%s".format(backquotedPath(qual), symName(t, name))
+      case Select(qual, name) if name.isTypeName  => "%s#%s".format(backquotedPath(qual), symName(t, name))
+      case Ident(name)                            => symName(t, name)
       case _                                      => t.toString
     }
   }
@@ -127,18 +136,6 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
       case sym              => f(sym)
     }
     private def ifSym(tree: Tree, p: Symbol => Boolean) = symFn(tree, p, false)
-
-    private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
-      def nameFn(sym: Symbol) = {
-        val prefix = if (sym.isMixinConstructor) "/*%s*/".format(quotedName(sym.owner.name, decoded)) else ""
-        val suffix = if (uniqueIds) "#"+sym.id else ""
-        prefix + tree.symbol.decodedName + suffix
-      }
-      symFn(tree, nameFn, quotedName(name, decoded))
-    }
-
-    def decodedSymName(tree: Tree, name: Name) = symNameInternal(tree, name, true)
-    def symName(tree: Tree, name: Name) = symNameInternal(tree, name, false)
 
     def printOpt(prefix: String, tree: Tree) {
       if (!tree.isEmpty) { print(prefix, tree) }
@@ -422,7 +419,7 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
       case name: Name =>
         print(quotedName(name))
       case arg =>
-        out.print(arg.toString)
+        out.print(if (arg == null) "null" else arg.toString)
     }
   }
 

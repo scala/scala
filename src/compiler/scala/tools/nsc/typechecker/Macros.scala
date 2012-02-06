@@ -98,7 +98,7 @@ trait Macros { self: Analyzer =>
   }
 
   /** Return optionally address of companion object and implementation method symbol
-   *  of given macro; or None if implementation classfile cannot be loaded or does 
+   *  of given macro; or None if implementation classfile cannot be loaded or does
    *  not contain the macro implementation.
    */
   def macroImpl(mac: Symbol): Option[(AnyRef, mirror.Symbol)] = {
@@ -139,7 +139,15 @@ trait Macros { self: Analyzer =>
           else as
         }
         val rawArgs: Seq[Any] = rawArgss.flatten
+        val savedInfolevel = nodePrinters.infolevel
         try {
+          // @xeno.by: InfoLevel.Verbose examines and prints out infos of symbols
+          // by the means of this'es these symbols can climb up the lexical scope
+          // when these symbols will be examined by a node printer
+          // they will enumerate and analyze their children (ask for infos and tpes)
+          // if one of those children involves macro expansion, things might get nasty
+          // that's why I'm temporarily turning this behavior off
+          nodePrinters.infolevel = nodePrinters.InfoLevel.Quiet
           Some(mirror.invoke(receiver, rmeth)(rawArgs: _*))
         } catch {
           case ex =>
@@ -149,6 +157,8 @@ trait Macros { self: Analyzer =>
             val msg = System.getProperty("line.separator") + stacktrace
             context.unit.error(tree.pos, "exception during macro expansion: " + msg)
             None
+        } finally {
+          nodePrinters.infolevel = savedInfolevel
         }
       case None =>
         val trace = scala.tools.nsc.util.trace when settings.debug.value
@@ -162,7 +172,7 @@ trait Macros { self: Analyzer =>
               macroDef.allOverriddenSymbols match {
                 case first :: _ =>
                   Some(Select(qual, name) setPos tree.pos setSymbol first)
-                case _ => 
+                case _ =>
                   trace("macro is not overridden: ")(tree)
                   notFound()
               }
