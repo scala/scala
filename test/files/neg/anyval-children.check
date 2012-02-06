@@ -1,6 +1,7 @@
-anyval-children.scala:7: error: illegal inheritance; superclass Bippy
- is not a subclass of the superclass Object
- of the mixin trait ScalaObject
+anyval-children.scala:3: error: class AnyVal needs to be a trait to be mixed in
+@inline class NotOkDingus2 extends Immutable with AnyVal // fail
+                                                  ^
+anyval-children.scala:7: error: Bippy does not have a constructor
 class NotOkBippy1 extends Bippy // fail
                   ^
 anyval-children.scala:9: error: illegal inheritance; superclass Bippy
@@ -8,9 +9,7 @@ anyval-children.scala:9: error: illegal inheritance; superclass Bippy
  of the mixin trait Immutable
 class NotOkBippy2 extends Bippy with Immutable //fail
                                      ^
-anyval-children.scala:9: error: illegal inheritance; superclass Bippy
- is not a subclass of the superclass Object
- of the mixin trait ScalaObject
+anyval-children.scala:9: error: Bippy does not have a constructor
 class NotOkBippy2 extends Bippy with Immutable //fail
                   ^
 anyval-children.scala:11: error: illegal inheritance; superclass Bippy
@@ -18,9 +17,7 @@ anyval-children.scala:11: error: illegal inheritance; superclass Bippy
  of the mixin trait Immutable
 @inline class NotOkBippy3 extends Bippy with Immutable //fail
                                              ^
-anyval-children.scala:11: error: illegal inheritance; superclass Bippy
- is not a subclass of the superclass Object
- of the mixin trait ScalaObject
+anyval-children.scala:11: error: Bippy does not have a constructor
 @inline class NotOkBippy3 extends Bippy with Immutable //fail
                           ^
-5 errors found
+6 errors found

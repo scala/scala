@@ -87,8 +87,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       val thisParam     = extensionMeth.newValueParameter(nme.SELF, extensionMeth.pos) setInfo thisParamType
       def transform(clonedType: Type): Type = clonedType match {
         case MethodType(params, restpe) =>
-          // I assume it was a bug that this was dropping params...
-          MethodType(thisParam :: params, clonedType)
+          // I assume it was a bug that this was dropping params... [Martin]: No, it wasn't; it's curried.
+          MethodType(List(thisParam), clonedType)
         case NullaryMethodType(restpe) =>
           MethodType(List(thisParam), restpe)
       }
@@ -121,12 +121,13 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           extensionMeth setInfo newInfo
           log("Inline class %s spawns extension method.\n  Old: %s\n  New: %s".format(
             currentOwner,
-            origMeth.defString, 
+            origMeth.defString,
             extensionMeth.defString)) // extensionMeth.defStringSeenAs(origInfo
 
           def thisParamRef = gen.mkAttributedIdent(extensionMeth.info.params.head setPos extensionMeth.pos)
           val GenPolyType(extensionTpeParams, extensionMono) = extensionMeth.info
           val origTpeParams = origMeth.typeParams ::: currentOwner.typeParams
+          println("expanding "+tree+"/"+allParams(extensionMono)+"/"+extensionMeth.info)
           val extensionBody = rhs
               .substTreeSyms(origTpeParams, extensionTpeParams)
               .substTreeSyms(vparamss.flatten map (_.symbol), allParams(extensionMono).tail)

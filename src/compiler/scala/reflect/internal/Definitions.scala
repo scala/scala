@@ -235,7 +235,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyValClass          = ScalaPackageClass.info member tpnme.AnyVal orElse {
 //      println("new anyval")
       oldValueScheme = false
-      val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, 0L)
+      val anyval = enterNewClass(ScalaPackageClass, tpnme.AnyVal, anyparam, ABSTRACT)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
       anyval
@@ -1063,9 +1063,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
         setParents(AnyValClass, List(NotNullClass.tpe, AnyClass.tpe))
       } else {
         AnyVal_getClass // force it!
-      }
-      ScalaValueClasses foreach { sym =>
-        setParents(sym, anyvalparam)
+        ScalaValueClasses foreach { sym =>
+          setParents(sym, anyvalparam)
+        }
       }
 
       isInitialized = true

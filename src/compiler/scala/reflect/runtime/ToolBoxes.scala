@@ -49,15 +49,15 @@ trait ToolBoxes extends { self: Universe =>
 
         typer.atOwner(tree, owner).typed(tree, analyzer.EXPRmode, pt)
       }
-      
+
       def defOwner(tree: Tree): Symbol = tree find (_.isDef) map (_.symbol) match {
         case Some(sym) if sym != null && sym != NoSymbol => sym.owner
         case _ => NoSymbol
       }
-    
+
       def wrapInObject(expr: Tree, fvs: List[Symbol]): ModuleDef = {
         val obj = EmptyPackageClass.newModule(nextWrapperModuleName())
-        val minfo = ClassInfoType(List(ObjectClass.tpe, ScalaObjectClass.tpe), newScope, obj.moduleClass)
+        val minfo = ClassInfoType(List(ObjectClass.tpe), newScope, obj.moduleClass)
         obj.moduleClass setInfo minfo
         obj setInfo obj.moduleClass.tpe
         val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
@@ -104,13 +104,13 @@ trait ToolBoxes extends { self: Universe =>
       def runExpr(expr: Tree): Any = {
         val etpe = expr.tpe
         val fvs = (expr filter isFree map (_.symbol)).distinct
-        
+
         reporter.reset()
         val className = compileExpr(expr, fvs)
         if (reporter.hasErrors) {
           throw new Error("reflective compilation has failed")
         }
-        
+
         if (settings.debug.value) println("generated: "+className)
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get
@@ -167,7 +167,7 @@ trait ToolBoxes extends { self: Universe =>
     lazy val exporter = importer.reverse
 
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, defaultReflectiveClassLoader)
-    
+
     private def importAndTypeCheck(tree: rm.Tree, expectedType: rm.Type): compiler.Tree = {
       // need to establish a run an phase because otherwise we run into an assertion in TypeHistory
       // that states that the period must be different from NoPeriod
@@ -189,7 +189,7 @@ trait ToolBoxes extends { self: Universe =>
     def typeCheck(tree: rm.Tree): rm.Tree =
       typeCheck(tree, WildcardType.asInstanceOf[rm.Type])
 
-    def showAttributed(tree: rm.Tree): String = 
+    def showAttributed(tree: rm.Tree): String =
       compiler.showAttributed(importer.importTree(tree.asInstanceOf[Tree]))
 
     def runExpr(tree: rm.Tree, expectedType: rm.Type): Any = {
