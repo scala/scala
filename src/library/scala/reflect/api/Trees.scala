@@ -16,14 +16,14 @@ trait Trees { self: Universe =>
   type Modifiers <: AbsModifiers
 
   abstract class AbsModifiers {
-    def hasModifier(mod: Modifier.Value): Boolean
-    def allModifiers: Set[Modifier.Value]
+    def hasModifier(mod: Modifier): Boolean
+    def allModifiers: Set[Modifier]
     def privateWithin: Name  // default: EmptyTypeName
     def annotations: List[Tree] // default: List()
     def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers
   }
 
-  def Modifiers(mods: Set[Modifier.Value] = Set(),
+  def Modifiers(mods: Set[Modifier] = Set(),
                 privateWithin: Name = EmptyTypeName,
                 annotations: List[Tree] = List()): Modifiers
 

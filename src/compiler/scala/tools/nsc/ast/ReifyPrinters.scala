@@ -18,16 +18,6 @@ trait ReifyPrinters { self: NodePrinters =>
   object reifiedNodeToString extends Function1[Tree, String] {
     def apply(tree: Tree): String = {
       import scala.reflect.api.Modifier
-      import scala.reflect.api.Modifier._
-
-      def copypasteModifier(mod: Modifier.Value): String = mod match {
-        case mod @ (
-             `protected` | `private` | `override` |
-             `abstract` | `final` | `sealed` |
-             `implicit` | `lazy` | `macro` |
-             `case` | `trait`) => "`" + mod.toString + "`"
-        case mod => mod.toString
-      }
 
       // @PP: I fervently hope this is a test case or something, not anything being
       // depended upon.  Of more fragile code I cannot conceive.
@@ -47,7 +37,7 @@ trait ReifyPrinters { self: NodePrinters =>
           val buf = new StringBuilder
 
           val flags = m.group(1).toLong
-          val s_flags = Flags.modifiersOfFlags(flags) map copypasteModifier mkString ", "
+          val s_flags = Flags.modifiersOfFlags(flags) map (_.sourceString) mkString ", "
           if (s_flags != "")
             buf.append("Set(" + s_flags + ")")
 
@@ -63,7 +53,7 @@ trait ReifyPrinters { self: NodePrinters =>
         })
         s = """setInternalFlags\((\d+)L\)""".r.replaceAllIn(s, m => {
           val flags = m.group(1).toLong
-          val mods = Flags.modifiersOfFlags(flags) map copypasteModifier
+          val mods = Flags.modifiersOfFlags(flags) map (_.sourceString)
           "setInternalFlags(flagsOfModifiers(List(" + mods.mkString(", ") + ")))"
         })
 

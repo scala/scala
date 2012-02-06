@@ -9,11 +9,11 @@ trait Symbols { self: Universe =>
 
     /** The modifiers of this symbol
      */
-    def allModifiers: Set[Modifier.Value]
+    def allModifiers: Set[Modifier]
 
     /** Does this symbol have given modifier?
      */
-    def hasModifier(mod: Modifier.Value): Boolean
+    def hasModifier(mod: Modifier): Boolean
 
     /** The owner of this symbol. This is the symbol
      *  that directly contains the current symbol's definition.

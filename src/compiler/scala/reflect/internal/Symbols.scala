@@ -103,12 +103,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
 
-    override def hasModifier(mod: Modifier.Value) =
+    override def hasModifier(mod: Modifier) =
       hasFlag(flagOfModifier(mod)) &&
       (!(mod == Modifier.bynameParameter) || isTerm) &&
       (!(mod == Modifier.covariant) || isType)
 
-    override def allModifiers: Set[Modifier.Value] =
+    override def allModifiers: Set[Modifier] =
       Modifier.values filter hasModifier
 
 // ------ creators -------------------------------------------------------------------
