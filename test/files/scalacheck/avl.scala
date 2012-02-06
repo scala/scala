@@ -47,21 +47,21 @@ package scala.collection.mutable {
       }
     }
 
-    def genInput: Gen[(Int, List[AVLTree[Int]])] = for {
-      size <- Gen.choose(20, 25)
-      elements <- Gen.listOfN(size, Gen.choose(0, 1000))
-      selected <- Gen.choose(0, 1000)
+    def genInput: org.scalacheck.Gen[(Int, List[AVLTree[Int]])] = for {
+      size <- org.scalacheck.Gen.choose(20, 25)
+      elements <- org.scalacheck.Gen.listOfN(size, org.scalacheck.Gen.choose(0, 1000))
+      selected <- org.scalacheck.Gen.choose(0, 1000)
     } yield {
       // selected mustn't be in elements already
       val list = makeAllBalancedTree(elements.sorted.distinct.map(_*2))
       (selected*2+1, list) 
     }
 
-    def genInputDelete: Gen[(Int, List[AVLTree[Int]])] = for {
-      size <- Gen.choose(20, 25)
-      elements <- Gen.listOfN(size, Gen.choose(0, 1000))
+    def genInputDelete: org.scalacheck.Gen[(Int, List[AVLTree[Int]])] = for {
+      size <- org.scalacheck.Gen.choose(20, 25)
+      elements <- org.scalacheck.Gen.listOfN(size, org.scalacheck.Gen.choose(0, 1000))
       e = elements.sorted.distinct
-      selected <- Gen.choose(0, e.size-1)
+      selected <- org.scalacheck.Gen.choose(0, e.size-1)
     } yield {
       // selected must be in elements already
       val list = makeAllBalancedTree(e)

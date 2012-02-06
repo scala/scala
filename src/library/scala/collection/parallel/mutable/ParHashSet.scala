@@ -66,14 +66,11 @@ extends ParSet[T]
 
   def contains(elem: T) = containsEntry(elem)
 
-  def splitter = new ParHashSetIterator(0, table.length, size) with SCPI
-
-  type SCPI = SignalContextPassingIterator[ParHashSetIterator]
+  def splitter = new ParHashSetIterator(0, table.length, size)
 
   class ParHashSetIterator(start: Int, iteratesUntil: Int, totalElements: Int)
-  extends ParFlatHashTableIterator(start, iteratesUntil, totalElements) with ParIterator {
-  me: SCPI =>
-    def newIterator(start: Int, until: Int, total: Int) = new ParHashSetIterator(start, until, total) with SCPI
+  extends ParFlatHashTableIterator(start, iteratesUntil, totalElements) {
+    def newIterator(start: Int, until: Int, total: Int) = new ParHashSetIterator(start, until, total)
   }
 
   private def writeObject(s: java.io.ObjectOutputStream) {

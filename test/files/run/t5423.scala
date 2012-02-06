@@ -6,7 +6,7 @@ import scala.reflect.Code
 final class table extends StaticAnnotation
 @table class A
 
-object Test extends App{
+object Test extends App {
   val s = classToSymbol(classOf[A])
-  println(s.getAnnotations)
+  println(s.annotations)
 }

@@ -192,6 +192,10 @@ x = TreeSet(1, 2, 3)
 y = TreeSet(1, 2, 3)
 x equals y: true, y equals x: true
 
+x = Ctrie(1 -> one, 2 -> two, 3 -> three)
+y = Ctrie(1 -> one, 2 -> two, 3 -> three)
+x equals y: true, y equals x: true
+
 x =  xml:src="hello"
 y =  xml:src="hello"
 x equals y: true, y equals x: true
@@ -281,6 +285,10 @@ x equals y: true, y equals x: true
 
 x = ParHashMap(1 -> 2, 2 -> 4)
 y = ParHashMap(1 -> 2, 2 -> 4)
+x equals y: true, y equals x: true
+
+x = ParCtrie(1 -> 2, 2 -> 4)
+y = ParCtrie(1 -> 2, 2 -> 4)
 x equals y: true, y equals x: true
 
 x = ParHashSet(1, 2, 3)

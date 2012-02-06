@@ -16,14 +16,14 @@ trait Trees { self: Universe =>
   type Modifiers <: AbsModifiers
 
   abstract class AbsModifiers {
-    def hasModifier(mod: Modifier.Value): Boolean
-    def allModifiers: Set[Modifier.Value]
+    def modifiers: Set[Modifier]
+    def hasModifier(mod: Modifier): Boolean
     def privateWithin: Name  // default: EmptyTypeName
     def annotations: List[Tree] // default: List()
     def mapAnnotations(f: List[Tree] => List[Tree]): Modifiers
   }
 
-  def Modifiers(mods: Set[Modifier.Value] = Set(),
+  def Modifiers(mods: Set[Modifier] = Set(),
                 privateWithin: Name = EmptyTypeName,
                 annotations: List[Tree] = List()): Modifiers
 
@@ -476,6 +476,17 @@ trait Trees { self: Universe =>
    */
   case class New(tpt: Tree) extends TermTree
 
+  /** Factory method for object creation `new tpt(args_1)...(args_n)`
+   *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
+   */
+  def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
+    assert(!argss.isEmpty)
+    // todo. we need to expose names in scala.reflect.api
+//    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
+    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
+    (superRef /: argss) (Apply)
+  }
+
   /** Type annotation, eliminated by explicit outer */
   case class Typed(expr: Tree, tpt: Tree)
        extends TermTree
@@ -632,10 +643,10 @@ trait Trees { self: Universe =>
   }
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
-  
+
   /** An empty deferred value definition corresponding to:
    *    val _: _
-   *  This is used as a placeholder in the `self` parameter Template if there is 
+   *  This is used as a placeholder in the `self` parameter Template if there is
    *  no definition of a self value of self type.
    */
   def emptyValDef: ValDef
@@ -1129,9 +1140,9 @@ trait Trees { self: Universe =>
   abstract class Transformer {
     val treeCopy: TreeCopier = newLazyTreeCopier
     protected var currentOwner: Symbol = definitions.RootClass
-    protected def currentMethod = currentOwner.enclMethod
-    protected def currentClass = currentOwner.enclClass
-    protected def currentPackage = currentOwner.toplevelClass.owner
+    protected def currentMethod = currentOwner.enclosingMethod
+    protected def currentClass = currentOwner.enclosingClass
+    protected def currentPackage = currentOwner.enclosingTopLevelClass.owner
     def transform(tree: Tree): Tree = tree match {
       case EmptyTree =>
         tree

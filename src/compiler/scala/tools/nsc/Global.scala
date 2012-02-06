@@ -37,6 +37,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
                                                                       with Plugins
                                                                       with PhaseAssembly
                                                                       with Trees
+                                                                      with Reifiers
                                                                       with TreePrinters
                                                                       with DocComments
                                                                       with MacroContext
@@ -124,7 +125,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** Print tree in detailed form */
   object nodePrinters extends {
     val global: Global.this.type = Global.this
-  } with NodePrinters {
+  } with NodePrinters with ReifyPrinters {
     infolevel = InfoLevel.Verbose
   }
 
@@ -134,6 +135,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   } with TreeBrowsers
 
   val nodeToString = nodePrinters.nodeToString
+  val reifiedNodeToString = nodePrinters.reifiedNodeToString
   val treeBrowser = treeBrowsers.create()
 
   // ------------ Hooks for interactive mode-------------------------
@@ -463,17 +465,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsRightAfter = None
   } with RefChecks
 
-  // phaseName = "liftcode"
-  object liftcode extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("refchecks")
-    val runsRightAfter = None
-  } with LiftCode
-
   // phaseName = "uncurry"
   override object uncurry extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("refchecks", "liftcode")
+    val runsAfter = List("refchecks")
     val runsRightAfter = None
   } with UnCurry
 
@@ -659,7 +654,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       extensionMethods        -> "add extension methods for inline classes",
       pickler                 -> "serialize symbol tables",
       refChecks               -> "reference/override checking, translate nested objects",
-      liftcode                -> "reify trees",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
@@ -1090,7 +1084,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
-      else if (!sym.owner.isPackageClass) compiles(sym.toplevelClass)
+      else if (!sym.owner.isPackageClass) compiles(sym.enclosingTopLevelClass)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 

@@ -19,6 +19,7 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.ParFactory
 import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
+import scala.collection.parallel.SeqSplitter
 import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
@@ -74,17 +75,13 @@ self =>
 
   override def seq = arrayseq
 
-  type SCPI = SignalContextPassingIterator[ParArrayIterator]
-
   protected[parallel] def splitter: ParArrayIterator = {
-    val pit = new ParArrayIterator with SCPI
+    val pit = new ParArrayIterator
     pit
   }
 
   class ParArrayIterator(var i: Int = 0, val until: Int = length, val arr: Array[Any] = array)
-  extends super.ParIterator {
-  me: SignalContextPassingIterator[ParArrayIterator] =>
-
+  extends SeqSplitter[T] {
     def hasNext = i < until
 
     def next = {
@@ -95,9 +92,9 @@ self =>
 
     def remaining = until - i
 
-    def dup = new ParArrayIterator(i, until, arr) with SCPI
+    def dup = new ParArrayIterator(i, until, arr)
 
-    def psplit(sizesIncomplete: Int*): Seq[ParIterator] = {
+    def psplit(sizesIncomplete: Int*): Seq[ParArrayIterator] = {
       var traversed = i
       val total = sizesIncomplete.reduceLeft(_ + _)
       val left = remaining
@@ -106,19 +103,19 @@ self =>
         val start = traversed
         val end = (traversed + sz) min until
         traversed = end
-        new ParArrayIterator(start, end, arr) with SCPI
+        new ParArrayIterator(start, end, arr)
       } else {
-        new ParArrayIterator(traversed, traversed, arr) with SCPI
+        new ParArrayIterator(traversed, traversed, arr)
       }
     }
 
-    override def split: Seq[ParIterator] = {
+    override def split: Seq[ParArrayIterator] = {
       val left = remaining
       if (left >= 2) {
         val splitpoint = left / 2
         val sq = Seq(
-          new ParArrayIterator(i, i + splitpoint, arr) with SCPI,
-          new ParArrayIterator(i + splitpoint, until, arr) with SCPI)
+          new ParArrayIterator(i, i + splitpoint, arr),
+          new ParArrayIterator(i + splitpoint, until, arr))
         i = until
         sq
       } else {

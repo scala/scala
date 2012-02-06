@@ -9,11 +9,20 @@ trait Symbols { self: Universe =>
 
     /** The modifiers of this symbol
      */
-    def allModifiers: Set[Modifier.Value]
+    def modifiers: Set[Modifier]
 
     /** Does this symbol have given modifier?
      */
-    def hasModifier(mod: Modifier.Value): Boolean
+    def hasModifier(mod: Modifier): Boolean
+
+    /** A list of annotations attached to this Symbol.
+     */
+    def annotations: List[self.AnnotationInfo]
+    
+    /** Whether this symbol carries an annotation for which the given
+     *  symbol is its typeSymbol.
+     */
+    def hasAnnotation(sym: Symbol): Boolean
 
     /** The owner of this symbol. This is the symbol
      *  that directly contains the current symbol's definition.
@@ -29,14 +38,6 @@ trait Symbols { self: Universe =>
     /** The name of the symbol as a member of the `Name` type.
      */
     def name: Name
-
-    /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
-     */
-    def encodedName: String
-
-    /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
-     */
-    def decodedName: String
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
@@ -66,49 +67,43 @@ trait Symbols { self: Universe =>
      *
      *  The java access levels translate as follows:
      *
-     *  java private:     hasFlag(PRIVATE)                && !hasAccessBoundary
-     *  java package:     !hasFlag(PRIVATE | PROTECTED)   && (privateWithin == enclosing package)
-     *  java protected:   hasFlag(PROTECTED)              && (privateWithin == enclosing package)
-     *  java public:      !hasFlag(PRIVATE | PROTECTED)   && !hasAccessBoundary
+     *  java private:     hasFlag(PRIVATE)                && (privateWithin == NoSymbol)
+     *  java package:     !hasFlag(PRIVATE | PROTECTED)   && (privateWithin == enclosingPackage)
+     *  java protected:   hasFlag(PROTECTED)              && (privateWithin == enclosingPackage)
+     *  java public:      !hasFlag(PRIVATE | PROTECTED)   && (privateWithin == NoSymbol)
      */
     def privateWithin: Symbol
 
-    /** Whether this symbol has a "privateWithin" visibility barrier attached.
-     */
-    def hasAccessBoundary: Boolean
-
-    /** A list of annotations attached to this Symbol.
-     */
-    def getAnnotations: List[self.AnnotationInfo]
-
     /** For a class: the module or case class factory with the same name in the same package.
+     *  For a module: the class with the same name in the same package.
      *  For all others: NoSymbol
      */
-    def companionModule: Symbol
-
-    /** For a module: the class with the same name in the same package.
-     *  For all others: NoSymbol
-     */
-    def companionClass: Symbol
-
-    /** The module corresponding to this module class (note that this
-     *  is not updated when a module is cloned), or NoSymbol if this is not a ModuleClass
-     */
-    def sourceModule: Symbol
+    def companionSymbol: Symbol
 
     /** If symbol is an object definition, its implied associated class,
      *  otherwise NoSymbol
      */
     def moduleClass: Symbol // needed for LiftCode
 
-    /** The top-level class containing this symbol. */
-    def toplevelClass: Symbol
+    /** If this symbol is a top-level class, this symbol; otherwise the next enclosing
+     *  top-level class, or `NoSymbol` if none exists.
+     */
+    def enclosingTopLevelClass: Symbol
 
-    /** The next enclosing class, or `NoSymbol` if none exists */
-    def enclClass      : Symbol
+    /** If this symbol is a class, this symbol; otherwise the next enclosing
+     *  class, or `NoSymbol` if none exists.
+     */
+    def enclosingClass: Symbol
 
-    /** The next enclosing method, or `NoSymbol` if none exists */
-    def enclMethod     : Symbol
+    /** If this symbol is a method, this symbol; otherwise the next enclosing
+     *  method, or `NoSymbol` if none exists.
+     */
+    def enclosingMethod: Symbol
+    
+    /** If this symbol is a package class, this symbol; otherwise the next enclosing
+     *  package class, or `NoSymbol` if none exists.
+     */
+    def enclosingPackageClass: Symbol
 
     /** Does this symbol represent the definition of term?
      *  Note that every symbol is either a term or a type.
@@ -141,13 +136,13 @@ trait Symbols { self: Universe =>
 
     /** The type signature of this symbol.
      *  Note if the symbol is a member of a class, one almost always is interested
-     *  in `typeSigIn` with a site type instead.
+     *  in `typeSignatureIn` with a site type instead.
      */
-    def typeSig: Type
+    def typeSignature: Type   // !!! Since one should almost never use this, let's give it a different name.
 
     /** The type signature of this symbol seen as a member of given type `site`.
      */
-    def typeSigIn(site: Type): Type
+    def typeSignatureIn(site: Type): Type
 
    /**  A type reference that refers to this type symbol
      *  Note if symbol is a member of a class, one almost always is interested
@@ -156,11 +151,11 @@ trait Symbols { self: Universe =>
      *  Example: Given a class declaration `class C[T] { ... } `, that generates a symbol
      *  `C`. Then `C.asType` is the type `C[T]`.
      *
-     *  By contrast, `C.typeSig` would be a type signature of form
+     *  By contrast, `C.typeSignature` would be a type signature of form
      *  `PolyType(ClassInfoType(...))` that describes type parameters, value
      *  parameters, parent types, and members of `C`.
      */
-    def asType: Type
+    def asType: Type  // !!! Same as typeSignature.
 
     /** A type reference that refers to this type symbol seen
      *  as a member of given type `site`.
@@ -172,37 +167,37 @@ trait Symbols { self: Universe =>
      *  are part of results of `asType`, but not of `asTypeConstructor`.
      *
      *  Example: Given a class declaration `class C[T] { ... } `, that generates a symbol
-     *  `C`. Then `C.asType` is the type `C[T]`, but `C.asTypeCponstructor` is `C`.
+     *  `C`. Then `C.asType` is the type `C[T]`, but `C.asTypeConstructor` is `C`.
      */
     def asTypeConstructor: Type  // needed by LiftCode
+    
+    /** If this symbol is a class, the type `C.this`, otherwise `NoPrefix`.
+     */
+    def thisPrefix: Type
 
     /** If this symbol is a class or trait, its self type, otherwise the type
      *  of the symbol itself.
      */
-    def typeOfThis: Type
-
-    /** If this symbol is a class, the type `C.this`, otherwise `NoPrefix`.
-     */
-    def thisType: Type
+    def selfType: Type
 
     /** A fresh symbol with given name `name`, position `pos` and flags `flags` that has
      *  the current symbol as its owner. 
      */
     def newNestedSymbol(name: Name, pos: Position, flags: Long): Symbol // needed by LiftCode
-
+    
     /** Low-level operation to set the symbol's flags
      *  @return the symbol itself
      */
-    def setInternalFlags(flags: Long): this.type // needed by LiftCode
+    def setInternalFlags(flags: Long): this.type // needed by LiftCode   !!! not enough reason to have in the api
 
     /** Set symbol's type signature to given type
      *  @return the symbol itself
      */
-    def setTypeSig(tpe: Type): this.type // needed by LiftCode
+    def setTypeSignature(tpe: Type): this.type // needed by LiftCode       !!! not enough reason to have in the api
 
     /** Set symbol's annotations to given annotations `annots`.
      */
-    def setAnnotations(annots: AnnotationInfo*): this.type // needed by LiftCode
+    def setAnnotations(annots: AnnotationInfo*): this.type // needed by LiftCode       !!! not enough reason to have in the api
   }
 
   val NoSymbol: Symbol
