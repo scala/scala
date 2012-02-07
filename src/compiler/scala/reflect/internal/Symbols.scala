@@ -499,7 +499,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
-    final def isInlineClass = isClass && hasAnnotation(ScalaInlineClass)
+    final def isInlineClass = 
+      isClass && info.parents.headOption.getOrElse(AnyClass.tpe).typeSymbol == AnyValClass &&
+      !isValueClass
 
     final def isAnonymousClass             = isClass && (name containsName tpnme.ANON_CLASS_NAME)
     final def isAnonymousFunction          = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)

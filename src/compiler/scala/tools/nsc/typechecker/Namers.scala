@@ -1263,7 +1263,10 @@ trait Namers extends MethodSynthesis {
           val clazz = tree.symbol
           val result = createNamer(tree).classSig(tparams, impl)
           clazz setInfo result
-          if (clazz.isInlineClass) ensureCompanionObject(cdef)
+          if (clazz.isInlineClass) {
+            clazz setFlag FINAL
+            ensureCompanionObject(cdef)
+          }
           result
 
         case ModuleDef(_, _, impl) =>
@@ -1412,13 +1415,6 @@ trait Namers extends MethodSynthesis {
         fail(LazyAndEarlyInit)
       if (sym.info.typeSymbol == FunctionClass(0) && sym.isValueParameter && sym.owner.isCaseClass)
         fail(ByNameParameter)
-
-     if (sym.isClass && sym.hasAnnotation(ScalaInlineClass) && !phase.erasedTypes) {
-        if (!sym.isSubClass(AnyValClass))
-          ensureParent(sym, NotNullClass)
-
-        sym setFlag FINAL
-      }
 
       if (sym.isDeferred) {
         // Is this symbol type always allowed the deferred flag?
