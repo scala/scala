@@ -1119,7 +1119,7 @@ trait Implicits {
           case ConstantType(value) =>
             manifestOfType(tp1.deconst, full)
           case TypeRef(pre, sym, args) =>
-            if (isValueClass(sym) || isPhantomClass(sym)) {
+            if (isPrimitiveValueClass(sym) || isPhantomClass(sym)) {
               findSingletonManifest(sym.name.toString)
             } else if (sym == ObjectClass || sym == AnyRefClass) {
               findSingletonManifest("Object")

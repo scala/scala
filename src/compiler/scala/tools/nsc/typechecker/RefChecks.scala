@@ -1053,7 +1053,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
         def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
         def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
-        def isSpecial(s: Symbol) = isValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
+        def isSpecial(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass) || isMaybeValue(s)
         def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
         val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
@@ -1074,7 +1074,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         if (nullCount == 2)
           nonSensible("", true)  // null == null
         else if (nullCount == 1) {
-          if (onSyms(_ exists isValueClass)) // null == 5
+          if (onSyms(_ exists isPrimitiveValueClass)) // null == 5
             nonSensible("", false)
           else if (onTrees( _ exists isNew)) // null == new AnyRef
             nonSensibleWarning("a fresh object", false)

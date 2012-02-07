@@ -4237,7 +4237,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         case Typed(expr0, tpt @ Ident(tpnme.WILDCARD_STAR))  =>
           val expr = typed(expr0, onlyStickyModes(mode), WildcardType)
           def subArrayType(pt: Type) =
-            if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
+            if (isPrimitiveValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
             else {
               val tparam = context.owner freshExistential "" setInfo TypeBounds.upper(pt)
               newExistentialType(List(tparam), arrayType(tparam.tpe))

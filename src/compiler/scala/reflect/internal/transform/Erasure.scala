@@ -107,7 +107,7 @@ trait Erasure {
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
           ClassInfoType(
-            if (clazz == ObjectClass || isValueClass(clazz)) Nil
+            if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
             else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
             else removeLaterObjects(parents map this),
             decls, clazz)

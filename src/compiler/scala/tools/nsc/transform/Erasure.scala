@@ -267,7 +267,7 @@ abstract class Erasure extends AddInterfaces
             jsig(RuntimeNothingClass.tpe)
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
-          else if (isValueClass(sym)) {
+          else if (isPrimitiveValueClass(sym)) {
             if (!primitiveOK) jsig(ObjectClass.tpe)
             else if (sym == UnitClass) jsig(BoxedUnitClass.tpe)
             else abbrvTag(sym).toString
@@ -464,7 +464,7 @@ abstract class Erasure extends AddInterfaces
     }
 
     private def isUnboxedValueMember(sym: Symbol) =
-      sym != NoSymbol && isValueClass(sym.owner)
+      sym != NoSymbol && isPrimitiveValueClass(sym.owner)
 
     /** Adapt `tree` to expected type `pt`.
      *
@@ -477,14 +477,14 @@ abstract class Erasure extends AddInterfaces
         log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree
-      else if (isValueClass(tree.tpe.typeSymbol) && !isValueClass(pt.typeSymbol))
+      else if (isPrimitiveValueClass(tree.tpe.typeSymbol) && !isPrimitiveValueClass(pt.typeSymbol))
         adaptToType(box(tree), pt)
       else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.params.isEmpty) {
         assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
       } else if (pt <:< tree.tpe)
         cast(tree, pt)
-      else if (isValueClass(pt.typeSymbol) && !isValueClass(tree.tpe.typeSymbol))
+      else if (isPrimitiveValueClass(pt.typeSymbol) && !isPrimitiveValueClass(tree.tpe.typeSymbol))
         adaptToType(unbox(tree, pt), pt)
       else
         cast(tree, pt)
@@ -519,7 +519,7 @@ abstract class Erasure extends AddInterfaces
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else
 */
-          if (isValueClass(targClass)) unbox(qual1, targ.tpe)
+          if (isPrimitiveValueClass(targClass)) unbox(qual1, targ.tpe)
           else tree
         case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
           if (tree.symbol == NoSymbol)
@@ -532,12 +532,12 @@ abstract class Erasure extends AddInterfaces
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual)
-            if ((isValueClass(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
+            if ((isPrimitiveValueClass(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
               qual1 = box(qual1)
-            else if (!isValueClass(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
+            else if (!isPrimitiveValueClass(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
 
-            if (isValueClass(tree.symbol.owner) && !isValueClass(qual1.tpe.typeSymbol))
+            if (isPrimitiveValueClass(tree.symbol.owner) && !isPrimitiveValueClass(qual1.tpe.typeSymbol))
               tree.symbol = NoSymbol
             else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.params.isEmpty) {
               assert(qual1.symbol.isStable, qual1.symbol);
@@ -895,7 +895,7 @@ abstract class Erasure extends AddInterfaces
             }
           }
           // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
-          else if (isValueClass(qual.tpe.typeSymbol))
+          else if (isPrimitiveValueClass(qual.tpe.typeSymbol))
             global.typer.typed(gen.mkRuntimeCall(nme.anyValClass, List(qual)))
           else
             tree
@@ -919,7 +919,7 @@ abstract class Erasure extends AddInterfaces
           else if (fn.symbol == Any_isInstanceOf) {
             fn match {
               case TypeApply(sel @ Select(qual, name), List(targ)) =>
-                if (qual.tpe != null && isValueClass(qual.tpe.typeSymbol) && targ.tpe != null && targ.tpe <:< AnyRefClass.tpe)
+                if (qual.tpe != null && isPrimitiveValueClass(qual.tpe.typeSymbol) && targ.tpe != null && targ.tpe <:< AnyRefClass.tpe)
                   unit.error(sel.pos, "isInstanceOf cannot test if value types are references.")
 
                 def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =

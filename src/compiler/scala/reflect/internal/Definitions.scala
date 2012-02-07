@@ -363,7 +363,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     }
 
     def isPrimitiveArray(tp: Type) = tp match {
-      case TypeRef(_, ArrayClass, arg :: Nil) => isValueClass(arg.typeSymbol)
+      case TypeRef(_, ArrayClass, arg :: Nil) => isPrimitiveValueClass(arg.typeSymbol)
       case _                                  => false
     }
     def isArrayOfSymbol(tp: Type, elem: Symbol) = tp match {
@@ -697,7 +697,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       val sym     = tp.typeSymbol
 
       if (phase.erasedTypes) ClassClass.tpe
-      else if (isValueClass(sym)) ClassType(tp.widen)
+      else if (isPrimitiveValueClass(sym)) ClassType(tp.widen)
       else {
         val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
         val upperBound = (
@@ -957,15 +957,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     private lazy val scalaValueClassesSet = ScalaValueClasses.toSet
     private lazy val boxedValueClassesSet = boxedClass.values.toSet + BoxedUnitClass
 
-    /** Now that AnyVal is unsealing we need less ambiguous names
-     *  for when we need to distinguish the Nine Original AnyVals
-     *  from the heathen masses.
-     */
-    def isPrimitiveValueClass(sym: Symbol) = scalaValueClassesSet(sym)
-
     /** Is symbol a value class? */
-    def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
-    def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
+    def isPrimitiveValueClass(sym: Symbol) = scalaValueClassesSet(sym)
+    def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isPrimitiveValueClass(sym)
     def isScalaValueType(tp: Type) = scalaValueClassesSet(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
@@ -975,7 +969,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
      *  value class.  Otherwise, NoSymbol.
      */
     def unboxedValueClass(sym: Symbol): Symbol =
-      if (isValueClass(sym)) sym
+      if (isPrimitiveValueClass(sym)) sym
       else if (sym == BoxedUnitClass) UnitClass
       else boxedClass.map(_.swap).getOrElse(sym, NoSymbol)
 
@@ -998,7 +992,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
         else flatNameString(sym.owner, separator) + nme.NAME_JOIN_STRING + sym.simpleName
       def signature1(etp: Type): String = {
         if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))
-        else if (isValueClass(etp.typeSymbol)) abbrvTag(etp.typeSymbol).toString()
+        else if (isPrimitiveValueClass(etp.typeSymbol)) abbrvTag(etp.typeSymbol).toString()
         else "L" + flatNameString(etp.typeSymbol, '/') + ";"
       }
       val etp = erasure(tp)

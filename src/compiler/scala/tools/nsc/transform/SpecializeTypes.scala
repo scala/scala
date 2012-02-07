@@ -69,7 +69,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   import definitions.{
     RootClass, BooleanClass, UnitClass, ArrayClass,
-    ScalaValueClasses, isValueClass, isScalaValueType,
+    ScalaValueClasses, isPrimitiveValueClass, isScalaValueType,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
     AnyRefClass, ObjectClass, Predef_AnyRef,
     uncheckedVarianceClass
@@ -115,12 +115,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   // for similar reasons? Does `sym.isAbstractType` make a difference?
   private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = (
        specializedOn(sym).exists(_.symbol == Predef_AnyRef)    // specialized on AnyRef
-    && !isValueClass(tp.typeSymbol)
+    && !isPrimitiveValueClass(tp.typeSymbol)
     && isBoundedGeneric(tp)
   )
   private def isBoundedGeneric(tp: Type) = tp match {
     case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
-    case TypeRef(_, sym, _)                       => !isValueClass(sym)
+    case TypeRef(_, sym, _)                       => !isPrimitiveValueClass(sym)
     case _                                        => false
   }
 
@@ -960,7 +960,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if isSpecialized(sym1) =>
       debuglog("Unify - basic case: " + tp1 + ", " + tp2)
-      if (isValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
+      if (isPrimitiveValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
         env + ((sym1, tp2))
       else
         if (strict) throw UnifyError else env
@@ -1305,7 +1305,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
               val env = typeEnv(specMember)
               val residualTargs = symbol.info.typeParams zip targs collect {
-                case (tvar, targ) if !env.contains(tvar) || !isValueClass(env(tvar).typeSymbol) => targ
+                case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
               }
 
               ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,

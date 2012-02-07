@@ -28,7 +28,7 @@ trait ScalaToJava extends ConversionUtil { self: SymbolTable =>
   def classToJava(clazz: Symbol): jClass[_] = classCache.toJava(clazz) {
     def noClass = throw new ClassNotFoundException("no Java class corresponding to "+clazz+" found")
     //println("classToJava "+clazz+" "+clazz.owner+" "+clazz.owner.isPackageClass)//debug
-    if (clazz.isValueClass)
+    if (clazz.isPrimitiveValueClass)
       valueClassToJavaType(clazz)
     else if (clazz == ArrayClass)
       noClass

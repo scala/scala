@@ -25,7 +25,7 @@ abstract class LambdaLift extends InfoTransform {
     if (sym.isCapturedVariable) {
       val symClass = tpe.typeSymbol
       def refType(valueRef: Map[Symbol, Symbol], objectRefClass: Symbol) =
-        if (isValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
+        if (isPrimitiveValueClass(symClass) && symClass != UnitClass) valueRef(symClass).tpe
         else if (erasedTypes) objectRefClass.tpe
         else appliedType(objectRefClass.typeConstructor, List(tpe))
       if (sym.hasAnnotation(VolatileAttr)) refType(volatileRefClass, VolatileObjectRefClass)

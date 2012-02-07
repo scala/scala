@@ -112,13 +112,13 @@ trait Types extends api.Types { self: SymbolTable =>
    *  to undo constraints in the case of isSubType/isSameType failure.
    */
   lazy val undoLog = newUndoLog
-  
+
   protected def newUndoLog = new UndoLog
-  
+
   class UndoLog {
     private type UndoPairs = List[(TypeVar, TypeConstraint)]
     private var log: UndoPairs = List()
-    
+
     // register with the auto-clearing cache manager
     perRunCaches.recordCache(this)
 
@@ -138,7 +138,7 @@ trait Types extends api.Types { self: SymbolTable =>
     private[reflect] def record(tv: TypeVar) = {
       log ::= ((tv, tv.constr.cloneInternal))
     }
-    
+
     private[scala] def clear() {
       if (settings.debug.value)
         self.log("Clearing " + log.size + " entries from the undoLog.")
@@ -411,7 +411,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  inherited by typerefs, singleton types, and refinement types,
      *  The empty list for all other types */
     def parents: List[Type] = List()
-    
+
     /** For a class with nonEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
@@ -435,7 +435,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** For a typeref, its arguments. The empty list for all other types */
     def typeArgs: List[Type] = List()
-    
+
     /** A list of placeholder types derived from the type parameters.
      *  Used by RefinedType and TypeRef.
      */
@@ -532,7 +532,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
     def decl(name: Name): Symbol = findDecl(name, 0)
-    
+
     /** A list of all non-private members defined or declared in this type. */
     def nonPrivateDecls: List[Symbol] = decls filter (x => !x.isPrivate) toList
 
@@ -573,7 +573,7 @@ trait Types extends api.Types { self: SymbolTable =>
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
-      
+
     /** All members with the given flags, excluding bridges.
      */
     def membersWithFlags(requiredFlags: Long): List[Symbol] =
@@ -598,7 +598,7 @@ trait Types extends api.Types { self: SymbolTable =>
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
     def nonLocalMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeFlags | LOCAL)
-    
+
     /** Members excluding and requiring the given flags.
      *  Note: unfortunately it doesn't work to exclude DEFERRED this way.
      */
@@ -1244,7 +1244,7 @@ trait Types extends api.Types { self: SymbolTable =>
     private[reflect] var underlyingPeriod = NoPeriod
     override def underlying: Type = {
       val cache = underlyingCache
-      if (underlyingPeriod == currentPeriod && cache != null) cache 
+      if (underlyingPeriod == currentPeriod && cache != null) cache
       else {
         defineUnderlyingOfSingleType(this)
         underlyingCache
@@ -1287,7 +1287,7 @@ trait Types extends api.Types { self: SymbolTable =>
       unique(new UniqueSingleType(pre, sym))
     }
   }
-  
+
   protected def defineUnderlyingOfSingleType(tpe: SingleType) = {
     val period = tpe.underlyingPeriod
     if (period != currentPeriod) {
@@ -1357,13 +1357,13 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def baseTypeSeq: BaseTypeSeq = {
       val cached = baseTypeSeqCache
-      if (baseTypeSeqPeriod == currentPeriod && cached != null && cached != undetBaseTypeSeq) 
+      if (baseTypeSeqPeriod == currentPeriod && cached != null && cached != undetBaseTypeSeq)
         cached
       else {
         defineBaseTypeSeqOfCompoundType(this)
         if (baseTypeSeqCache eq undetBaseTypeSeq)
           throw new RecoverableCyclicReference(typeSymbol)
-        
+
         baseTypeSeqCache
       }
     }
@@ -1377,7 +1377,7 @@ trait Types extends api.Types { self: SymbolTable =>
         defineBaseClassesOfCompoundType(this)
         if (baseClassesCache eq null)
           throw new RecoverableCyclicReference(typeSymbol)
-        
+
         baseClassesCache
       }
     }
@@ -1417,13 +1417,13 @@ trait Types extends api.Types { self: SymbolTable =>
 
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
-    
+
     override def safeToString: String = parentsString(parents) + (
       (if (settings.debug.value || parents.isEmpty || (decls.elems ne null))
         decls.mkString("{", "; ", "}") else "")
     )
   }
-  
+
   protected def defineBaseTypeSeqOfCompoundType(tpe: CompoundType) = {
     val period = tpe.baseTypeSeqPeriod
     if (period != currentPeriod) {
@@ -1476,7 +1476,7 @@ trait Types extends api.Types { self: SymbolTable =>
     if (tpe.baseTypeSeqCache eq undetBaseTypeSeq)
       throw new TypeError("illegal cyclic inheritance involving " + tpe.typeSymbol)
   }
-  
+
   protected def defineBaseClassesOfCompoundType(tpe: CompoundType) = {
     def computeBaseClasses: List[Symbol] =
       if (tpe.parents.isEmpty) List(tpe.typeSymbol)
@@ -1758,7 +1758,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     // override def isNonNull: Boolean = symbol == NonNullClass || super.isNonNull;
     override def kind = "ClassInfoType"
-    
+
     override def safeToString =
       if (settings.debug.value || decls.size > 1)
         formattedToString
@@ -1808,13 +1808,13 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected 
+  /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected
    * with synchronized, because they are accessed only from isVolatile, which is called only from
    * Typer.
    */
   private var volatileRecursions: Int = 0
   private val pendingVolatiles = new mutable.HashSet[Symbol]
-  
+
   class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) with UniqueType {
     require(args0.nonEmpty, this)
 
@@ -1832,7 +1832,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
       asSeenFromOwner(tp).instantiateTypeParams(sym.typeParams, args)
     }
-    
+
     // note: does not go through typeRef. There's no need to because
     // neither `pre` nor `sym` changes.  And there's a performance
     // advantage to call TypeRef directly.
@@ -1847,7 +1847,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def isHigherKinded = typeParams.nonEmpty
     override def typeParams     = if (isDefinitionsInitialized) sym.typeParams else sym.unsafeTypeParams
     private def isRaw           = !phase.erasedTypes && isRawIfWithoutArgs(sym)
-    
+
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
         if (sameLength(formals intersect typeParams, typeParams))
@@ -1867,9 +1867,9 @@ trait Types extends api.Types { self: SymbolTable =>
         res
     }
 
-    override def transformInfo(tp: Type): Type = 
+    override def transformInfo(tp: Type): Type =
       appliedType(asSeenFromOwner(tp), dummyArgs)
-      
+
     override def narrow =
       if (sym.isModuleClass) singleType(pre, sym.sourceModule)
       else super.narrow
@@ -1877,14 +1877,14 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeConstructor = this
     // eta-expand, subtyping relies on eta-expansion of higher-kinded types
 
-    override protected def normalizeImpl: Type = 
+    override protected def normalizeImpl: Type =
       if (isHigherKinded) etaExpand else super.normalizeImpl
   }
-  
+
   trait ClassTypeRef extends TypeRef {
     // !!! There are scaladoc-created symbols arriving which violate this require.
     // require(sym.isClass, sym)
-    
+
     override protected def normalizeImpl: Type =
       if (sym.isRefinementClass) sym.info.normalize // I think this is okay, but see #1241 (r12414), #2208, and typedTypeConstructor in Typers
       else super.normalizeImpl
@@ -1893,7 +1893,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (sym == clazz) this
       else transform(sym.info.baseType(clazz))
   }
-  
+
   trait NonClassTypeRef extends TypeRef {
     require(sym.isNonClassType, sym)
 
@@ -1912,11 +1912,11 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       relativeInfoCache
     }
-    
+
     override def baseType(clazz: Symbol): Type =
       if (sym == clazz) this else baseTypeOfNonClassTypeRef(this, clazz)
   }
-  
+
   protected def baseTypeOfNonClassTypeRef(tpe: NonClassTypeRef, clazz: Symbol) = try {
     basetypeRecursions += 1
     if (basetypeRecursions < LogPendingBaseTypesThreshold)
@@ -1933,7 +1933,7 @@ trait Types extends api.Types { self: SymbolTable =>
   } finally {
     basetypeRecursions -= 1
   }
-  
+
   trait AliasTypeRef extends NonClassTypeRef {
     require(sym.isAliasType, sym)
 
@@ -1951,7 +1951,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (typeParamsMatchArgs) betaReduce.normalize
       else if (isHigherKinded) super.normalizeImpl
       else ErrorType
-    
+
     // isHKSubType0 introduces synthetic type params so that
     // betaReduce can first apply sym.info to typeArgs before calling
     // asSeenFrom.  asSeenFrom then skips synthetic type params, which
@@ -1961,7 +1961,7 @@ trait Types extends api.Types { self: SymbolTable =>
     // this crashes pos/depmet_implicit_tpbetareduce.scala
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     def betaReduce = transform(sym.info.resultType)
-    
+
     // #3731: return sym1 for which holds: pre bound sym.name to sym and
     // pre1 now binds sym.name to sym1, conceptually exactly the same
     // symbol as sym.  The selection of sym on pre must be updated to the
@@ -1975,12 +1975,12 @@ trait Types extends api.Types { self: SymbolTable =>
         // TODO: is there another way a typeref's symbol can refer to a symbol defined in its pre?
         case _                                           => sym
       }
-    
+
   }
 
   trait AbstractTypeRef extends NonClassTypeRef {
     require(sym.isAbstractType, sym)
-    
+
     /** Syncnote: Pure performance caches; no need to synchronize in multi-threaded environment
      */
     private var symInfoCache: Type = _
@@ -2009,7 +2009,7 @@ trait Types extends api.Types { self: SymbolTable =>
         volatileRecursions -= 1
       }
     }
-    
+
     override def thisInfo   = {
       val symInfo = sym.info
       if (thisInfoCache == null || (symInfo ne symInfoCache)) {
@@ -2042,7 +2042,7 @@ trait Types extends api.Types { self: SymbolTable =>
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod             = NoPeriod
-    private var normalized: Type                       = _ 
+    private var normalized: Type                       = _
 
     // @M: propagate actual type params (args) to `tp`, by replacing
     // formal type parameters with actual ones. If tp is higher kinded,
@@ -2064,7 +2064,7 @@ trait Types extends api.Types { self: SymbolTable =>
         normalized
       }
     }
-    
+
     def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
@@ -2099,7 +2099,7 @@ trait Types extends api.Types { self: SymbolTable =>
       !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)
 
     override def isNotNull =
-      sym.isModuleClass || sym == NothingClass || isValueClass(sym) || super.isNotNull
+      sym.isModuleClass || sym == NothingClass || (sym isNonBottomSubClass NotNullClass) || super.isNotNull
 
     override def parents: List[Type] = {
       val cache = parentsCache
@@ -2118,12 +2118,12 @@ trait Types extends api.Types { self: SymbolTable =>
       }
       thisInfo.decls
     }
-  
+
     protected[Types] def baseTypeSeqImpl: BaseTypeSeq = sym.info.baseTypeSeq map transform
 
     override def baseTypeSeq: BaseTypeSeq = {
       val cache = baseTypeSeqCache
-      if (baseTypeSeqPeriod == currentPeriod && cache != null && cache != undetBaseTypeSeq) 
+      if (baseTypeSeqPeriod == currentPeriod && cache != null && cache != undetBaseTypeSeq)
         cache
       else {
         defineBaseTypeSeqOfTypeRef(this)
@@ -2148,7 +2148,7 @@ trait Types extends api.Types { self: SymbolTable =>
       )
       else ""
     )
-      
+
     private def finishPrefix(rest: String) = (
       if (sym.isPackageClass) packagePrefix + rest
       else if (sym.isModuleClass) objectPrefix + rest
@@ -2217,7 +2217,7 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     })
   }
-  
+
   protected def defineParentsOfTypeRef(tpe: TypeRef) = {
     val period = tpe.parentsPeriod
     if (period != currentPeriod) {
@@ -2229,7 +2229,7 @@ trait Types extends api.Types { self: SymbolTable =>
       }
     }
   }
-  
+
   protected def defineBaseTypeSeqOfTypeRef(tpe: TypeRef) = {
     val period = tpe.baseTypeSeqPeriod
     if (period != currentPeriod) {
@@ -2389,7 +2389,7 @@ trait Types extends api.Types { self: SymbolTable =>
   }
 
   object PolyType extends PolyTypeExtractor
-  
+
   /** A creator for existential types which flattens nested existentials.
    */
   def newExistentialType(quantified: List[Symbol], underlying: Type): Type =
@@ -2592,7 +2592,7 @@ trait Types extends api.Types { self: SymbolTable =>
         else if (args.isEmpty)                new HKTypeVar(origin, constr, params)
         else throw new Error("Invalid TypeVar construction: " + ((origin, constr, args, params)))
       )
-      
+
       trace("create", "In " + tv.originLocation)(tv)
     }
   }
@@ -2633,7 +2633,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def isHigherKinded          = true
     override protected def typeVarString = params.map(_.name).mkString("[", ", ", "]=>" + originName)
   }
-  
+
   /** Precondition: zipped params/args nonEmpty.  (Size equivalence enforced structurally.)
    */
   class AppliedTypeVar(
@@ -2641,17 +2641,17 @@ trait Types extends api.Types { self: SymbolTable =>
     _constr: TypeConstraint,
     zippedArgs: List[(Symbol, Type)]
   ) extends TypeVar(_origin, _constr) {
-    
+
     require(zippedArgs.nonEmpty, this)
 
     override def params: List[Symbol] = zippedArgs map (_._1)
     override def typeArgs: List[Type] = zippedArgs map (_._2)
-    
+
     override protected def typeVarString = (
       zippedArgs map { case (p, a) => p.name + "=" + a } mkString (origin + "[", ", ", "]")
     )
   }
-  
+
   /** A class representing a type variable: not used after phase `typer`.
    *
    *  A higher-kinded TypeVar has params (Symbols) and typeArgs (Types).
@@ -2669,7 +2669,7 @@ trait Types extends api.Types { self: SymbolTable =>
     override def typeArgs: List[Type] = Nil
     override def isHigherKinded = false
 
-    /** The constraint associated with the variable 
+    /** The constraint associated with the variable
      *  Syncnote: Type variables are assumed to be used from only one
      *  thread. They are not exposed in api.Types and are used only locally
      *  in operations that are exposed from types. Hence, no syncing of `constr`
@@ -2680,7 +2680,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     /** The variable's skolemization level */
     val level = skolemizationLevel
-    
+
     /** Two occurrences of a higher-kinded typevar, e.g. `?CC[Int]` and `?CC[String]`, correspond to
      *  ''two instances'' of `TypeVar` that share the ''same'' `TypeConstraint`.
      *
@@ -2711,7 +2711,7 @@ trait Types extends api.Types { self: SymbolTable =>
     // inference may generate several TypeVar's for a single type parameter that must be inferred,
     // only one of them is in the set of tvars that need to be solved, but
     // they share the same TypeConstraint instance
-    
+
     // When comparing to types containing skolems, remember the highest level
     // of skolemization. If that highest level is higher than our initial
     // skolemizationLevel, we can't re-use those skolems as the solution of this
@@ -2935,7 +2935,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def originLocation = {
       val sym  = origin.typeSymbolDirect
       val encl = sym.owner.logicallyEnclosingMember
-      
+
       // This should display somewhere between one and three
       // things which enclose the origin: at most, a class, a
       // a method, and a term.  At least, a class.
@@ -3075,13 +3075,13 @@ trait Types extends api.Types { self: SymbolTable =>
       "De Bruijn "+kind+"("+(pnames mkString ",")+";"+(ptypes mkString ",")+";"+restpe+")"
     }
   }
-  
-  abstract case class ErasedInlineType(sym: Symbol) extends Type 
-  
+
+  abstract case class ErasedInlineType(sym: Symbol) extends Type
+
   final class UniqueErasedInlineType(sym: Symbol) extends ErasedInlineType(sym) with UniqueType
-  
+
   object ErasedInlineType {
-    def apply(sym: Symbol): Type = 
+    def apply(sym: Symbol): Type =
       unique(new UniqueErasedInlineType(sym))
   }
 
@@ -3383,7 +3383,7 @@ trait Types extends api.Types { self: SymbolTable =>
         mapOver(tp)
     }
   }
-  
+
   /** Type with all top-level occurrences of abstract types replaced by their bounds */
   def abstractTypesToBounds(tp: Type): Type = tp match { // @M don't normalize here (compiler loops on pos/bug1090.scala )
     case TypeRef(_, sym, _) if sym.isAbstractType =>
@@ -3493,7 +3493,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def this(lo0: List[Type], hi0: List[Type]) = this(lo0, hi0, NoType, NoType)
     def this(bounds: TypeBounds) = this(List(bounds.lo), List(bounds.hi))
     def this() = this(List(), List())
-    
+
     /*  Syncnote: Type constraints are assumed to be used from only one
      *  thread. They are not exposed in api.Types and are used only locally
      *  in operations that are exposed from types. Hence, no syncing of any
@@ -3567,7 +3567,7 @@ trait Types extends api.Types { self: SymbolTable =>
         val hi    = hiBounds filterNot (_.typeSymbolDirect eq AnyClass)
         val lostr = if (lo.isEmpty) Nil else List(lo.mkString(" >: (", ", ", ")"))
         val histr = if (hi.isEmpty) Nil else List(hi.mkString(" <: (", ", ", ")"))
-      
+
         lostr ++ histr mkString ("[", " | ", "]")
       }
       if (inst eq NoType) boundsStr
@@ -3593,7 +3593,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     override def variance = _variance
     def variance_=(x: Int) = _variance = x
-    
+
     override protected def noChangeToSymbols(origSyms: List[Symbol]) = {
       origSyms forall { sym =>
         val v = variance
@@ -3760,7 +3760,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     protected def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
       args mapConserve this
-    
+
     /** Called by mapOver to determine whether the original symbols can
      *  be returned, or whether they must be cloned.  Overridden in VariantTypeMap.
      */
@@ -3774,7 +3774,7 @@ trait Types extends api.Types { self: SymbolTable =>
       if (elems1 eq elems) scope
       else newScopeWith(elems1: _*)
     }
-    
+
     /** Map this function over given list of symbols */
     def mapOver(origSyms: List[Symbol]): List[Symbol] = {
       // fast path in case nothing changes due to map
@@ -3837,7 +3837,7 @@ trait Types extends api.Types { self: SymbolTable =>
     def traverse(tp: Type): Unit
     def apply(tp: Type): Type = { traverse(tp); tp }
   }
-  
+
   abstract class TypeTraverserWithResult[T] extends TypeTraverser {
     def result: T
     def clear(): Unit
@@ -3857,13 +3857,13 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   // class ContainsVariantExistentialCollector(v: Int) extends TypeCollector(false) with VariantTypeMap {
   //   variance = v
-  // 
+  //
   //   def traverse(tp: Type) = tp match {
   //     case ExistentialType(_, _) if (variance == v) => result = true
   //     case _ => mapOver(tp)
   //   }
   // }
-  // 
+  //
   // val containsCovariantExistentialCollector = new ContainsVariantExistentialCollector(1)
   // val containsContravariantExistentialCollector = new ContainsVariantExistentialCollector(-1)
 
@@ -3917,7 +3917,7 @@ trait Types extends api.Types { self: SymbolTable =>
         mapOver(tp)
     }
   }
-  
+
   /** Used by existentialAbstraction.
    */
   class ExistentialExtrapolation(tparams: List[Symbol]) extends VariantTypeMap {
@@ -3935,10 +3935,10 @@ trait Types extends api.Types { self: SymbolTable =>
       countOccs(tpe)
       for (tparam <- tparams)
         countOccs(tparam.info)
-      
+
       apply(tpe)
     }
-    
+
     def apply(tp: Type): Type = {
       val tp1 = mapOver(tp)
       if (variance == 0) tp1
@@ -4515,12 +4515,12 @@ trait Types extends api.Types { self: SymbolTable =>
       if (commonOwnerMap.result ne null) commonOwnerMap.result else NoSymbol
     }
   }
-  
+
   protected def commonOwnerMap: CommonOwnerMap = commonOwnerMapObj
-  
+
   protected class CommonOwnerMap extends TypeTraverserWithResult[Symbol] {
     var result: Symbol = _
-    
+
     def clear() { result = null }
 
     private def register(sym: Symbol) {
@@ -4538,7 +4538,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case _                            => mapOver(tp)
     }
   }
-  
+
   private lazy val commonOwnerMapObj = new CommonOwnerMap
 
   class MissingAliasControl extends ControlThrowable
@@ -4546,7 +4546,7 @@ trait Types extends api.Types { self: SymbolTable =>
   class MissingTypeControl extends ControlThrowable
 
   object adaptToNewRunMap extends TypeMap {
-        
+
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (phase.flatClasses) {
         sym
@@ -4713,7 +4713,7 @@ trait Types extends api.Types { self: SymbolTable =>
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2)
         pre1 =:= pre2 &&
-        forall3(args1, args2, sym1.typeParams) { (arg1, arg2, tparam) => 
+        forall3(args1, args2, sym1.typeParams) { (arg1, arg2, tparam) =>
             //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
           if (tparam.variance == 0) arg1 =:= arg2
           else if (arg1.isInstanceOf[TypeVar])
@@ -5727,8 +5727,8 @@ trait Types extends api.Types { self: SymbolTable =>
     val formatted = tableDef.table(transposed)
     println("** Depth is " + depth + "\n" + formatted)
   }
-  
-  /** From a list of types, find any which take type parameters 
+
+  /** From a list of types, find any which take type parameters
    *  where the type parameter bounds contain references to other
    *  any types in the list (including itself.)
    *
@@ -6247,13 +6247,13 @@ trait Types extends api.Types { self: SymbolTable =>
 
     if (ts exists (_.isNotNull)) res.notNull else res
   }
-  
+
   /** A list of the typevars in a type. */
   def typeVarsInType(tp: Type): List[TypeVar] = {
     var tvs: List[TypeVar] = Nil
     tp foreach {
       case t: TypeVar => tvs ::= t
-      case _          => 
+      case _          =>
     }
     tvs.reverse
   }
@@ -6265,7 +6265,7 @@ trait Types extends api.Types { self: SymbolTable =>
     // !!! Is it somehow guaranteed that this will not break under nesting?
     // In general one has to save and restore the contents of the field...
     tvs foreach (_.suspended = true)
-    tvs 
+    tvs
   }
 
   /** Compute lub (if `variance == 1`) or glb (if `variance == -1`) of given list
@@ -6292,7 +6292,7 @@ trait Types extends api.Types { self: SymbolTable =>
           } else {
             val args = argss map (_.head)
             if (args.tail forall (_ =:= args.head)) Some(typeRef(pre, sym, List(args.head)))
-            else if (args exists (arg => isValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
+            else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
             else Some(typeRef(pre, sym, List(lub(args))))
           }
         }
@@ -6495,5 +6495,5 @@ trait Types extends api.Types { self: SymbolTable =>
       } finally {
         tostringRecursions -= 1
       }
-   
+
 }
