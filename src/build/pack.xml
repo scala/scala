@@ -284,6 +284,9 @@ MAIN DISTRIBUTION SBAZ
           file="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar"/>
     <copy tofile="${dists.dir}/maven/${version.number}/build.xml"
           file="${src.dir}/build/maven/maven-deploy.xml"/>
+    <!-- read version number from build.number file; TODO: parse git.describe output from build.xml -->
+    <property file="${basedir}/build.number"/>
+
     <!-- export properties for use when deploying -->
     <property name="maven.snapshot.version.number"
               value="${version.major}.${version.minor}.${version.patch}-SNAPSHOT"/>
