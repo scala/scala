@@ -37,5 +37,8 @@ suffix="${described##${tag}-}"
 counter=$(echo $suffix | cut -d - -f 1)
 hash=$(echo $suffix | cut -d - -f 2)
 
-# v2.10.0-M1-0098-g6f1c486d0b-2012-02-01
+# remove any alphabetic characters before the version number
+tag=$(echo $tag | sed "s/\([a-z_A-Z]*\)\(.*\)/\2/")
+
+# 2.10.0-M1-0098-g6f1c486d0b-2012-02-01
 printf "%s-%04d-%s-%s\n" "$tag" "$counter" "$hash" $(date "+%Y-%m-%d")
