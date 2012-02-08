@@ -30,22 +30,26 @@ trait Macros { self: Analyzer =>
     mac.owner.isModuleClass
 
   /**
-   * The definition of the method implementing a macro. Example:
+   *  The definition of the method implementing a macro. Example:
    *  Say we have in a class C
    *
    *    def macro foo[T](xs: List[T]): T = expr
    *
    *  Then the following macro method is generated for `foo`:
    *
-   *    def defmacro$foo(glob: scala.reflect.api.Universe)
-   *           (_this: glob.Tree)
-   *           (T: glob.Type)
-   *           (xs: glob.Tree): glob.Tree = {
-   *      implicit val $glob = glob
+   *    def defmacro$foo
+   *           (_context: scala.reflect.macro.Context)
+   *           (_this: _context.Tree)
+   *           (T: _context.Type)
+   *           (xs: _context.Tree): _context.Tree = {
+   *      import _context._  // this means that all methods of Context can be used unqualified in macro's body
    *      expr
    *    }
    *
-   *    If `foo` is declared in an object, the second parameter list is () instead of (_this: glob.Tree).
+   *  If `foo` is declared in an object, the second parameter list is () instead of (_this: _context.Tree).
+   *  If macro has no type arguments, the third parameter list is omitted (it's not empty, but omitted altogether).
+   *
+   *  To find out the desugared representation of your particular macro, compile it with -Ydebug.
    */
   def macroMethDef(mdef: DefDef): Tree = {
     def paramDef(name: Name, tpt: Tree) = ValDef(Modifiers(PARAM), name, tpt, EmptyTree)
