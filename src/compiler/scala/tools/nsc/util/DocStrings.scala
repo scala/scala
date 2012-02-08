@@ -73,7 +73,7 @@ object DocStrings {
    *  characters which terminate the comment.
    *  
    *  Also take usecases into account - they need to expand until the next 
-   *  @usecase or the end of the string, as they might include other sections 
+   *  usecase or the end of the string, as they might include other sections 
    *  of their own 
    */
   def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
@@ -86,7 +86,7 @@ object DocStrings {
     }
   
   /**
-   * Merge sections following an @usecase into the usecase comment, so they 
+   * Merge sections following an usecase into the usecase comment, so they 
    * can override the parent symbol's sections 
    */
   def mergeUsecaseSections(str: String, idxs: List[Int]): List[Int] = {
