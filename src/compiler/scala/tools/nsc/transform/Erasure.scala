@@ -521,32 +521,37 @@ abstract class Erasure extends AddInterfaces
 */
           if (isPrimitiveValueClass(targClass)) unbox(qual1, targ.tpe)
           else tree
-        case Select(qual, name) if (name != nme.CONSTRUCTOR) =>
-          if (tree.symbol == NoSymbol)
+        case Select(qual, name) =>
+          if (name == nme.CONSTRUCTOR) {
+            if (tree.symbol.owner == AnyValClass) tree.symbol = ObjectClass.primaryConstructor
             tree
-          else if (tree.symbol == Any_asInstanceOf)
-            adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
-          else if (tree.symbol == Any_isInstanceOf)
-            adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
-          else if (tree.symbol.owner == AnyClass)
-            adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
-          else {
-            var qual1 = typedQualifier(qual)
-            if ((isPrimitiveValueClass(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
-              qual1 = box(qual1)
-            else if (!isPrimitiveValueClass(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
-              qual1 = unbox(qual1, tree.symbol.owner.tpe)
+          } else {
+            if (tree.symbol == NoSymbol)
+              tree
+            else if (tree.symbol == Any_asInstanceOf)
+              adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
+            else if (tree.symbol == Any_isInstanceOf)
+              adaptMember(atPos(tree.pos)(Select(qual, Object_isInstanceOf)))
+            else if (tree.symbol.owner == AnyClass)
+              adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
+            else {
+              var qual1 = typedQualifier(qual)
+              if ((isPrimitiveValueClass(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
+                qual1 = box(qual1)
+              else if (!isPrimitiveValueClass(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))
+                qual1 = unbox(qual1, tree.symbol.owner.tpe)
 
-            if (isPrimitiveValueClass(tree.symbol.owner) && !isPrimitiveValueClass(qual1.tpe.typeSymbol))
-              tree.symbol = NoSymbol
-            else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.params.isEmpty) {
-              assert(qual1.symbol.isStable, qual1.symbol);
-              qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
-            } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
-              assert(tree.symbol.owner != ArrayClass)
-              qual1 = cast(qual1, tree.symbol.owner.tpe)
+              if (isPrimitiveValueClass(tree.symbol.owner) && !isPrimitiveValueClass(qual1.tpe.typeSymbol))
+                tree.symbol = NoSymbol
+              else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.params.isEmpty) {
+                assert(qual1.symbol.isStable, qual1.symbol);
+                qual1 = Apply(qual1, List()) setPos qual1.pos setType qual1.tpe.resultType
+              } else if (!(qual1.isInstanceOf[Super] || (qual1.tpe.typeSymbol isSubClass tree.symbol.owner))) {
+                assert(tree.symbol.owner != ArrayClass)
+                qual1 = cast(qual1, tree.symbol.owner.tpe)
+              }
+              treeCopy.Select(tree, qual1, name)
             }
-            treeCopy.Select(tree, qual1, name)
           }
         case SelectFromArray(qual, name, erasure) =>
           var qual1 = typedQualifier(qual)
