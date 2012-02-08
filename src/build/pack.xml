@@ -11,6 +11,9 @@ PROPERTIES
 ============================================================================ -->
   
   <property name="sbaz.universe" value="http://www.scala-lang.org/downloads/packages"/>
+  <property file="${basedir}/build.number.maven"/>
+  <!-- the maven stuff requires version.major, version.minor and version.patch properties.
+       the "get-scala-revision" script only returns "version.number" -->
   
 <!-- ===========================================================================
 MAIN DISTRIBUTION PACKAGING
