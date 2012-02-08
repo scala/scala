@@ -12,25 +12,16 @@ private object DelegatingReporter
 		new DelegatingReporter(Command.getWarnFatal(settings), delegate)
 }
 
-private trait ReporterCompat27 {
-	// this method is not in 2.7.7, so we need to have a dummy interface or scalac complains nothing is overridden
-	def hasWarnings: Boolean
-}
 // The following code is based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
-private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter with ReporterCompat27
+private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter
 {
 	import scala.tools.nsc.util.{FakePos,NoPosition,Position}
 
 	def error(msg: String) { error(FakePos("scalac"), msg) }
 
 	def printSummary() = delegate.printSummary()
-
-		// this helps keep source compatibility with the changes in 2.8 : Position.{source,line,column} are no longer Option[X]s, just plain Xs
-		// so, we normalize to Option[X]
-	private def o[T](t: Option[T]): Option[T] = t
-	private def o[T](t: T): Option[T] = Some(t)
 
 	override def hasErrors = delegate.hasErrors
 	override def hasWarnings = delegate.hasWarnings
@@ -54,7 +45,7 @@ private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Repor
 				case null | NoPosition => NoPosition
 				case x: FakePos => x
 				case x =>
-					posIn.inUltimateSource(o(posIn.source).get)
+					posIn.inUltimateSource(posIn.source)
 			}
 		pos match
 		{
@@ -64,33 +55,22 @@ private final class DelegatingReporter(warnFatal: Boolean, delegate: xsbti.Repor
 	}
 	private[this] def makePosition(pos: Position): xsbti.Position =
 	{
-		val srcO = o(pos.source)
-		val opt(sourcePath, sourceFile) = for(src <- srcO) yield (src.file.path, src.file.file)
-		val line = o(pos.line)
-		if(!line.isEmpty)
-		{
-			val lineContent = pos.lineContent.stripLineEnd
-			val offsetO = o(pos.offset)
-			val opt(pointer, pointerSpace) =
-				for(offset <- offsetO; src <- srcO) yield
-				{
-					val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
-					val pointerSpace = ((lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }).mkString
-					(pointer, pointerSpace)
-				}
-			position(sourcePath, sourceFile, line, lineContent, offsetO, pointer, pointerSpace)
-		}
-		else
-			position(sourcePath, sourceFile, line, "", None, None, None)
+		val src = pos.source
+		val sourcePath = src.file.path
+		val sourceFile = src.file.file
+		val line = pos.line
+		val lineContent = pos.lineContent.stripLineEnd
+		val offset = getOffset(pos)
+		val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
+		val pointerSpace = ((lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }).mkString
+		position(Some(sourcePath), Some(sourceFile), Some(line), lineContent, Some(offset), Some(pointer), Some(pointerSpace))
 	}
-	private[this] object opt
+	private[this] def getOffset(pos: Position): Int =
 	{
-		def unapply[A,B](o: Option[(A,B)]): Some[(Option[A], Option[B])] =
-			Some(o match
-			{
-				case Some((a,b)) => (Some(a), Some(b))
-				case None => (None, None)
-			})
+		// for compatibility with 2.8
+		implicit def withPoint(p: Position): WithPoint = new WithPoint(pos)
+		final class WithPoint(val p: Position) { def point = p.offset.get }
+		pos.point
 	}
 	private[this] def position(sourcePath0: Option[String], sourceFile0: Option[File], line0: Option[Int], lineContent0: String, offset0: Option[Int], pointer0: Option[Int], pointerSpace0: Option[String]) =
 		new xsbti.Position
