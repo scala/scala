@@ -2,6 +2,8 @@ package scala.reflect
 package internal
 package transform
 
+import Flags.PARAMACCESSOR
+
 trait Erasure {
 
   val global: SymbolTable
@@ -63,15 +65,20 @@ trait Erasure {
     if (cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
   }
 
-  protected def unboxInlineType(clazz: Symbol): Type =
+  protected def valueClassErasure(clazz: Symbol): Type =
     clazz.primaryConstructor.info.params.head.tpe
-
-  protected def eraseInlineClassRef(clazz: Symbol): Type = {
-    scalaErasure(unboxInlineType(clazz))
-  }
-
+    
+  protected def eraseInlineClassRef(clazz: Symbol): Type =
+    scalaErasure(valueClassErasure(clazz))
+    
+  protected def underlyingParamAccessor(clazz: Symbol) = 
+    clazz.info.decls.find(_ hasFlag PARAMACCESSOR).get
+  
   abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
+
+    def eraseNormalClassRef(pre: Type, clazz: Symbol): Type = 
+      typeRef(apply(rebindInnerClass(pre, clazz)), clazz, List())  // #2585
 
     def apply(tp: Type): Type = {
       tp match {
@@ -87,8 +94,8 @@ trait Erasure {
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
           else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
-          //else if (sym.isInlineClass) eraseInlineClassRef(sym)
-          else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
+          else if (sym.isInlineClass) eraseInlineClassRef(sym)
+          else if (sym.isClass) eraseNormalClassRef(pre, sym) 
           else apply(sym.info) // alias type or abstract type
         case PolyType(tparams, restpe) =>
           apply(restpe)
@@ -155,8 +162,14 @@ trait Erasure {
           log("Identified divergence between java/scala erasure:\n  scala: " + old + "\n   java: " + res)
       }
       res
-    }
-    else scalaErasure(tp)
+    } else if (sym.isMethodWithExtension || sym.isConstructor && sym.owner.isInlineClass)
+      scalaErasureAvoiding(sym.owner, tp)
+    else if (sym.isValue && sym.owner.isMethodWithExtension)
+      scala.tools.nsc.util.trace("avoid unboxed: "+sym+"/"+sym.owner.owner+"/"+tp) {
+        scalaErasureAvoiding(sym.owner.owner, tp)
+      }
+    else 
+      scalaErasure(tp)
   }
 
   /** Scala's more precise erasure than java's is problematic as follows:
@@ -177,6 +190,24 @@ trait Erasure {
      */
     def mergeParents(parents: List[Type]): Type =
       intersectionDominator(parents)
+  }
+  
+  def scalaErasureAvoiding(clazz: Symbol, tpe: Type): Type = {
+    tpe match {
+      case PolyType(tparams, restpe) =>
+        scalaErasureAvoiding(clazz, restpe)
+      case ExistentialType(tparams, restpe) =>
+        scalaErasureAvoiding(clazz, restpe)
+      case mt @ MethodType(params, restpe) =>
+        MethodType(
+          cloneSymbolsAndModify(params, scalaErasureAvoiding(clazz, _)),
+          if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
+          else scalaErasureAvoiding(clazz, (mt.resultType(params map (_.tpe)))))
+      case TypeRef(pre, `clazz`, args) =>
+        scalaErasure.eraseNormalClassRef(pre, clazz)
+      case _ =>
+        scalaErasure(tpe)
+    }
   }
 
   /** The intersection dominator (SLS 3.7) of a list of types is computed as follows.

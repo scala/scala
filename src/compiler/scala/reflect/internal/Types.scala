@@ -3076,7 +3076,9 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  abstract case class ErasedInlineType(sym: Symbol) extends Type
+  abstract case class ErasedInlineType(sym: Symbol) extends Type {
+    override def safeToString = sym.name+"$unboxed"
+  }
 
   final class UniqueErasedInlineType(sym: Symbol) extends ErasedInlineType(sym) with UniqueType
 

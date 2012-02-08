@@ -33,9 +33,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   def newTransformer(unit: CompilationUnit): Transformer =
     new Extender(unit)
 
-  def hasExtension(sym: Symbol) =
-    !sym.isParamAccessor && !sym.isConstructor
-
   /** Generate stream of possible names for the extension version of given instance method `imeth`.
    *  If the method is not overloaded, this stream consists of just "extension$imeth".
    *  If the method is overloaded, the stream has as first element "extensionX$imeth", where X is the
@@ -109,8 +106,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             super.transform(tree)
           }
           else tree
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs)
-        if currentOwner.isInlineClass && hasExtension(tree.symbol) =>
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isMethodWithExtension =>
           val companion = currentOwner.companionModule
           val origMeth = tree.symbol
           val extensionName = extensionNames(origMeth).head

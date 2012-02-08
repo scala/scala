@@ -502,6 +502,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInlineClass = 
       isClass && info.parents.headOption.getOrElse(AnyClass.tpe).typeSymbol == AnyValClass &&
       !isPrimitiveValueClass
+      
+    final def isMethodWithExtension = 
+      isMethod && owner.isInlineClass && !isParamAccessor && !isConstructor
 
     final def isAnonymousClass             = isClass && (name containsName tpnme.ANON_CLASS_NAME)
     final def isAnonymousFunction          = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
