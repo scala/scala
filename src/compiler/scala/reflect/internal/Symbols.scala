@@ -1578,6 +1578,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isMethod || isClass) this
       else owner.logicallyEnclosingMember
 
+    /** Kept for source compatibility with 2.9. Scala IDE for Eclipse relies on this. */
+    @deprecated("Use enclosingTopLevelClass")
+    def toplevelClass: Symbol = enclosingTopLevelClass
+      
     /** The top-level class containing this symbol. */
     def enclosingTopLevelClass: Symbol =
       if (owner.isPackageClass) {
