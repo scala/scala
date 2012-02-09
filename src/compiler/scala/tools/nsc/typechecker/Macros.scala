@@ -20,14 +20,11 @@ trait Macros { self: Analyzer =>
       macroArgs(fn) :+ args
     case TypeApply(fn, args) =>
       macroArgs(fn) :+ args
-    case Select(qual, name) if !isStaticMacro(tree.symbol) =>
+    case Select(qual, name) =>
       List(List(qual))
     case _ =>
       List(List())
   }
-
-  private def isStaticMacro(mac: Symbol): Boolean =
-    mac.owner.isModuleClass
 
   /**
    *  The definition of the method implementing a macro. Example:
@@ -46,7 +43,6 @@ trait Macros { self: Analyzer =>
    *      expr
    *    }
    *
-   *  If `foo` is declared in an object, the second parameter list is () instead of (_this: _context.Tree).
    *  If macro has no type arguments, the third parameter list is omitted (it's not empty, but omitted altogether).
    *
    *  To find out the desugared representation of your particular macro, compile it with -Ymacro-debug.
@@ -58,7 +54,7 @@ trait Macros { self: Analyzer =>
     def globSelect(name: Name) = Select(Ident(nme.macroContext), name)
     def globTree = globSelect(tpnme.Tree)
     def globTypeTree = globSelect(tpnme.TypeTree)
-    val thisParamSec = if (isStaticMacro(mdef.symbol)) List() else List(paramDef(nme.macroThis, globTree))
+    val thisParamSec = List(paramDef(newTermName(nme.macroThis), globTree))
     def tparamInMacro(tdef: TypeDef) = paramDef(tdef.name.toTermName, globTypeTree)
     def vparamInMacro(vdef: ValDef): ValDef = paramDef(vdef.name, vdef.tpt match {
       case tpt @ AppliedTypeTree(hk, _) if treeInfo.isRepeatedParamType(tpt) => AppliedTypeTree(hk, List(globTree))
