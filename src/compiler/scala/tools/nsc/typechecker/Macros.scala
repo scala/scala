@@ -40,7 +40,7 @@ trait Macros { self: Analyzer =>
    *    def defmacro$foo
    *           (_context: scala.reflect.macro.Context)
    *           (_this: _context.Tree)
-   *           (T: _context.Type)
+   *           (T: _context.TypeTree)
    *           (xs: _context.Tree): _context.Tree = {
    *      import _context._  // this means that all methods of Context can be used unqualified in macro's body
    *      expr
@@ -54,20 +54,20 @@ trait Macros { self: Analyzer =>
   def macroMethDef(mdef: DefDef): Tree = {
     def paramDef(name: Name, tpt: Tree) = ValDef(Modifiers(PARAM), name, tpt, EmptyTree)
     val contextType = TypeTree(ReflectMacroContext.tpe)
-    val globParamSec = List(paramDef(nme.context, contextType))
-    def globSelect(name: Name) = Select(Ident(nme.context), name)
-    def globTree = globSelect(newTypeName("Tree"))
-    def globType = globSelect(newTypeName("Type"))
-    val thisParamSec = if (isStaticMacro(mdef.symbol)) List() else List(paramDef(newTermName("_this"), globTree))
-    def tparamInMacro(tdef: TypeDef) = paramDef(tdef.name.toTermName, globType)
+    val globParamSec = List(paramDef(nme.macroContext, contextType))
+    def globSelect(name: Name) = Select(Ident(nme.macroContext), name)
+    def globTree = globSelect(tpnme.Tree)
+    def globTypeTree = globSelect(tpnme.TypeTree)
+    val thisParamSec = if (isStaticMacro(mdef.symbol)) List() else List(paramDef(nme.macroThis, globTree))
+    def tparamInMacro(tdef: TypeDef) = paramDef(tdef.name.toTermName, globTypeTree)
     def vparamInMacro(vdef: ValDef): ValDef = paramDef(vdef.name, vdef.tpt match {
       case tpt @ AppliedTypeTree(hk, _) if treeInfo.isRepeatedParamType(tpt) => AppliedTypeTree(hk, List(globTree))
       case _ => globTree
     })
     def wrapImplicit(tree: Tree) = atPos(tree.pos) {
       // implicit hasn't proven useful so far, so I'm disabling it
-      //val implicitDecl = ValDef(Modifiers(IMPLICIT), nme.contextImplicit, SingletonTypeTree(Ident(nme.context)), Ident(nme.context))
-      val importGlob = Import(Ident(nme.context), List(ImportSelector(nme.WILDCARD, -1, null, -1)))
+      //val implicitDecl = ValDef(Modifiers(IMPLICIT), nme.macroContextImplicit, SingletonTypeTree(Ident(nme.macroContext)), Ident(nme.macroContext))
+      val importGlob = Import(Ident(nme.macroContext), List(ImportSelector(nme.WILDCARD, -1, null, -1)))
       Block(List(importGlob), tree)
     }
     var formals = (mdef.vparamss map (_ map vparamInMacro))
