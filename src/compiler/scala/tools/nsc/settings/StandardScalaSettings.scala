@@ -33,7 +33,7 @@ trait StandardScalaSettings {
   val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files.", Properties.sourceEncoding)
   val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail.")
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
-  val help =           BooleanSetting ("-help", "Print a synopsis of standard options")
+  val help =           BooleanSetting ("-help", "Print a synopsis of standard options") withAbbreviation "--help"
   val make =            ChoiceSetting ("-make", "policy", "Recompilation detection policy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all")
                         . withDeprecationMessage ("this option is unmaintained.  Use sbt or an IDE for selective recompilation.")
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.")
