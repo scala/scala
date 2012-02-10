@@ -1,0 +1,63 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> trait ToS { final override def toString = getClass.getName }
+defined trait ToS
+
+scala> 
+
+scala> // def f1 = { case class Bar() extends ToS; Bar }
+
+scala> def f2 = { case class Bar() extends ToS; Bar() }
+f2: Bar forSome { type Bar <: Object with ToS with ScalaObject with Product with Serializable{def copy(): Bar} }
+
+scala> def f3 = { class Bar() extends ToS; object Bar extends ToS; Bar }
+f3: Object with ToS with ScalaObject
+
+scala> def f4 = { class Bar() extends ToS; new Bar() }
+f4: Object with ToS with ScalaObject
+
+scala> def f5 = { object Bar extends ToS; Bar }
+f5: Object with ToS with ScalaObject
+
+scala> def f6 = { () => { object Bar extends ToS ; Bar } }
+f6: () => Object with ToS with ScalaObject
+
+scala> def f7 = { val f = { () => { object Bar extends ToS ; Bar } } ; f }
+f7: () => Object with ToS with ScalaObject
+
+scala> 
+
+scala> // def f8 = { trait A ; trait B extends A ; class C extends B with ToS; new C { } }
+
+scala> // def f9 = { trait A ; trait B ; class C extends B with A with ToS; new C { } }
+
+scala> 
+
+scala> def f10 = { class A { type T1 } ; List[A#T1]() }
+f10: List[Object with ScalaObject{type T1}#T1]
+
+scala> def f11 = { abstract class A extends Seq[Int] ; List[A]() }
+f11: List[Object with Seq[Int] with ScalaObject]
+
+scala> def f12 = { abstract class A extends Seq[U forSome { type U <: Int }] ; List[A]() }
+f12: List[Object with Seq[U forSome { type U <: Int }] with ScalaObject]
+
+scala> 
+
+scala> trait Bippy { def bippy = "I'm Bippy!" }
+defined trait Bippy
+
+scala> object o1 {
+  def f1 = { trait A extends Seq[U forSome { type U <: Bippy }] ; abstract class B extends A ; trait C extends B ; (null: C) }
+  def f2 = f1.head.bippy
+}
+defined module o1
+
+scala> o1.f1 _
+res0: () => C forSome { type C <: Object with A with ScalaObject; type A <: Object with Seq[U forSome { type U <: Bippy }] } = <function0>
+
+scala> o1.f2 _
+res1: () => String = <function0>
+
+scala> 

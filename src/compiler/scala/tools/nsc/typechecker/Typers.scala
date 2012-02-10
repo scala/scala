@@ -2844,7 +2844,34 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
       sym.isTypeParameter && sym.owner.isJavaDefined
+    
+    /** If we map a set of hidden symbols to their existential bounds, we
+     *  have a problem: the bounds may themselves contain references to the
+     *  hidden symbols.  So this recursively calls existentialBound until
+     *  the typeSymbol is not amongst the symbols being hidden.
+     */
+    def existentialBoundsExcludingHidden(hidden: List[Symbol]): Map[Symbol, Type] = {
+      def safeBound(t: Type): Type =
+        if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.bounds.hi) else t
 
+      def hiBound(s: Symbol): Type = safeBound(s.existentialBound.bounds.hi) match {
+        case tp @ RefinedType(parents, decls) =>
+          val parents1 = parents mapConserve safeBound
+          if (parents eq parents1) tp
+          else copyRefinedType(tp, parents1, decls)
+        case tp => tp
+      }
+
+      (hidden map { s =>
+        // Hanging onto lower bound in case anything interesting
+        // happens with it.
+        (s, s.existentialBound match {
+          case TypeBounds(lo, hi) => TypeBounds(lo, hiBound(s))
+          case _                  => hiBound(s)
+        })
+      }).toMap
+    }
+    
     /** Given a set `rawSyms` of term- and type-symbols, and a type
      *  `tp`, produce a set of fresh type parameters and a type so that
      *  it can be abstracted to an existential type. Every type symbol
@@ -2862,12 +2889,13 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
      *  only the type of the Ident is changed.
      */
     protected def existentialTransform[T](rawSyms: List[Symbol], tp: Type)(creator: (List[Symbol], Type) => T): T = {
+      val allBounds = existentialBoundsExcludingHidden(rawSyms)
       val typeParams: List[Symbol] = rawSyms map { sym =>
         val name = sym.name match {
           case x: TypeName  => x
-          case x            => newTypeName(x + ".type")
+          case x            => nme.singletonName(x)
         }
-        val bound      = sym.existentialBound
+        val bound      = allBounds(sym)
         val sowner     = if (isRawParameter(sym)) context.owner else sym.owner
         val quantified = sowner.newExistential(name, sym.pos)
 
