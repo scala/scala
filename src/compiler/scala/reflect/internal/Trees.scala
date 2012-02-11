@@ -189,7 +189,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     atPos(sym.pos) {
       assert(sym != NoSymbol)
-      DefDef(Modifiers(sym.flags),
+      DefDef(mods,
              sym.name.toTermName,
              sym.typeParams map TypeDef,
              vparamss,
