@@ -1,0 +1,18 @@
+{
+  @new ann(bar = "1", quux = Array("2", "3"), baz = new ann(bar = "4")) class C extends Object with ScalaObject {
+    def <init>() = {
+      super.<init>();
+      ()
+    }
+  };
+  ()
+}
+{
+  @ann(bar = "1", quux = ["2", "3"], baz = ann(bar = "4")) class C extends Object with ScalaObject {
+    def <init>(): C = {
+      C.super.<init>();
+      ()
+    }
+  };
+  ()
+}

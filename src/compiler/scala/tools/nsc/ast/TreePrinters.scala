@@ -51,9 +51,6 @@ trait TreePrinters extends reflect.internal.TreePrinters { this: Global =>
       treePrinter.println()
       treePrinter.print(definition)
 
-    case AssignOrNamedArg(lhs, rhs) =>
-      treePrinter.print(lhs, " = ", rhs)
-
     case TypeTreeWithDeferredRefCheck() =>
       treePrinter.print("<tree with deferred refcheck>")
 

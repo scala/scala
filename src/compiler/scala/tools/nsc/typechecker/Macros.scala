@@ -49,7 +49,7 @@ trait Macros { self: Analyzer =>
    *  If `foo` is declared in an object, the second parameter list is () instead of (_this: _context.Tree).
    *  If macro has no type arguments, the third parameter list is omitted (it's not empty, but omitted altogether).
    *
-   *  To find out the desugared representation of your particular macro, compile it with -Ydebug.
+   *  To find out the desugared representation of your particular macro, compile it with -Ymacro-debug.
    */
   def macroMethDef(mdef: DefDef): Tree = {
     def paramDef(name: Name, tpt: Tree) = ValDef(Modifiers(PARAM), name, tpt, EmptyTree)
@@ -86,7 +86,7 @@ trait Macros { self: Analyzer =>
 
   def addMacroMethods(templ: Template, namer: Namer): Unit = {
     for (ddef @ DefDef(mods, _, _, _, _, _) <- templ.body if mods hasFlag MACRO) {
-      val trace = scala.tools.nsc.util.trace when settings.debug.value
+      val trace = scala.tools.nsc.util.trace when settings.Ymacrodebug.value
       val sym = namer.enterSyntheticSym(trace("macro def: ")(macroMethDef(ddef)))
       trace("added to "+namer.context.owner.enclClass+": ")(sym)
     }
@@ -106,16 +106,43 @@ trait Macros { self: Analyzer =>
    *  not contain the macro implementation.
    */
   def macroImpl(mac: Symbol): Option[(AnyRef, mirror.Symbol)] = {
+    val debug = settings.Ymacrodebug.value
+    val trace = scala.tools.nsc.util.trace when debug
+    trace("looking for macro implementation: ")(mac.fullNameString)
+
     try {
       val mmeth = macroMeth(mac)
+      trace("found implementation at: ")(mmeth.fullNameString)
+
       if (mmeth == NoSymbol) None
       else {
         val receiverClass: mirror.Symbol = mirror.symbolForName(mmeth.owner.fullName)
+        if (debug) {
+          println("receiverClass is: " + receiverClass.fullNameString)
+
+          val jreceiverClass = mirror.classToJava(receiverClass)
+          val jreceiverSource = jreceiverClass.getProtectionDomain.getCodeSource
+          println("jreceiverClass is %s from %s".format(jreceiverClass, jreceiverSource))
+
+          val jreceiverClasspath = jreceiverClass.getClassLoader match {
+            case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+            case _ => "<unknown>"
+          }
+          println("jreceiverClassLoader is %s with classpath %s".format(jreceiverClass.getClassLoader, jreceiverClasspath))
+        }
+
         val receiverObj = receiverClass.companionModule
+        trace("receiverObj is: ")(receiverObj.fullNameString)
+
         if (receiverObj == mirror.NoSymbol) None
         else {
           val receiver = mirror.companionInstance(receiverClass)
           val rmeth = receiverObj.info.member(mirror.newTermName(mmeth.name.toString))
+          if (debug) {
+            println("rmeth is: " + rmeth.fullNameString)
+            println("jrmeth is: " + mirror.methodToJava(rmeth))
+          }
+
           if (rmeth == mirror.NoSymbol) None
           else {
             Some((receiver, rmeth))
@@ -133,16 +160,21 @@ trait Macros { self: Analyzer =>
    *  tree that calls this method instead of the macro.
    */
   def macroExpand(tree: Tree, context: Context): Option[Any] = {
+    val trace = scala.tools.nsc.util.trace when settings.Ymacrodebug.value
+    trace("macroExpand: ")(tree)
+
     val macroDef = tree.symbol
     macroImpl(macroDef) match {
       case Some((receiver, rmeth)) =>
         val argss = List(global) :: macroArgs(tree)
         val paramss = macroMeth(macroDef).paramss
+        trace("paramss: ")(paramss)
         val rawArgss = for ((as, ps) <- argss zip paramss) yield {
           if (isVarArgsList(ps)) as.take(ps.length - 1) :+ as.drop(ps.length - 1)
           else as
         }
         val rawArgs: Seq[Any] = rawArgss.flatten
+        trace("rawArgs: ")(rawArgs)
         val savedInfolevel = nodePrinters.infolevel
         try {
           // @xeno.by: InfoLevel.Verbose examines and prints out infos of symbols
@@ -156,16 +188,19 @@ trait Macros { self: Analyzer =>
         } catch {
           case ex =>
             val realex = ReflectionUtils.unwrapThrowable(ex)
-            val stacktrace = new java.io.StringWriter()
-            realex.printStackTrace(new java.io.PrintWriter(stacktrace))
-            val msg = System.getProperty("line.separator") + stacktrace
+            val msg = if (settings.Ymacrodebug.value) {
+              val stacktrace = new java.io.StringWriter()
+              realex.printStackTrace(new java.io.PrintWriter(stacktrace))
+              System.getProperty("line.separator") + stacktrace
+            } else {
+              realex.getMessage
+            }
             context.unit.error(tree.pos, "exception during macro expansion: " + msg)
             None
         } finally {
           nodePrinters.infolevel = savedInfolevel
         }
       case None =>
-        val trace = scala.tools.nsc.util.trace when settings.debug.value
         def notFound() = {
           context.unit.error(tree.pos, "macro implementation not found: " + macroDef.name)
           None

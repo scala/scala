@@ -299,6 +299,9 @@ trait TreePrinters extends api.TreePrinters { self: SymbolTable =>
         case Assign(lhs, rhs) =>
           print(lhs, " = ", rhs)
 
+        case AssignOrNamedArg(lhs, rhs) =>
+          print(lhs, " = ", rhs)
+
         case If(cond, thenp, elsep) =>
           print("if (", cond, ")"); indent; println()
           print(thenp); undent
