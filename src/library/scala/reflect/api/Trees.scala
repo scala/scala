@@ -439,6 +439,12 @@ trait Trees { self: Universe =>
   case class Assign(lhs: Tree, rhs: Tree)
        extends TermTree
 
+  /** Either an assignment or a named argument. Only appears in argument lists,
+   *  eliminated by typecheck (doTypedApply)
+   */
+  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
+       extends TermTree
+
   /** Conditional expression */
   case class If(cond: Tree, thenp: Tree, elsep: Tree)
        extends TermTree
@@ -716,6 +722,8 @@ trait Trees { self: Universe =>
         }
       case Assign(lhs, rhs) =>
         traverse(lhs); traverse(rhs)
+      case AssignOrNamedArg(lhs, rhs) =>
+        traverse(lhs); traverse(rhs)
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
       case Match(selector, cases) =>
@@ -814,6 +822,7 @@ trait Trees { self: Universe =>
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
     def Function(tree: Tree, vparams: List[ValDef], body: Tree): Function
     def Assign(tree: Tree, lhs: Tree, rhs: Tree): Assign
+    def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree): AssignOrNamedArg
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree): If
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]): Match
     def Return(tree: Tree, expr: Tree): Return
@@ -876,6 +885,8 @@ trait Trees { self: Universe =>
       new Function(vparams, body).copyAttrs(tree)
     def Assign(tree: Tree, lhs: Tree, rhs: Tree) =
       new Assign(lhs, rhs).copyAttrs(tree)
+    def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree) =
+      new AssignOrNamedArg(lhs, rhs).copyAttrs(tree)
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) =
       new If(cond, thenp, elsep).copyAttrs(tree)
     def Match(tree: Tree, selector: Tree, cases: List[CaseDef]) =
@@ -1020,6 +1031,11 @@ trait Trees { self: Universe =>
       case t @ Assign(lhs0, rhs0)
       if (lhs0 == lhs) && (rhs0 == rhs) => t
       case _ => treeCopy.Assign(tree, lhs, rhs)
+    }
+    def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree) = tree match {
+      case t @ AssignOrNamedArg(lhs0, rhs0)
+      if (lhs0 == lhs) && (rhs0 == rhs) => t
+      case _ => treeCopy.AssignOrNamedArg(tree, lhs, rhs)
     }
     def If(tree: Tree, cond: Tree, thenp: Tree, elsep: Tree) = tree match {
       case t @ If(cond0, thenp0, elsep0)
@@ -1205,6 +1221,8 @@ trait Trees { self: Universe =>
         }
       case Assign(lhs, rhs) =>
         treeCopy.Assign(tree, transform(lhs), transform(rhs))
+      case AssignOrNamedArg(lhs, rhs) =>
+        treeCopy.AssignOrNamedArg(tree, transform(lhs), transform(rhs))
       case If(cond, thenp, elsep) =>
         treeCopy.If(tree, transform(cond), transform(thenp), transform(elsep))
       case Match(selector, cases) =>
@@ -1372,6 +1390,8 @@ trait Trees { self: Universe =>
     // vparams => body  where vparams:List[ValDef]
   case Assign(lhs, rhs) =>
     // lhs = rhs
+  case AssignOrNamedArg(lhs, rhs) =>                              (eliminated by typer, resurrected by reifier)
+    // @annotation(lhs = rhs)
   case If(cond, thenp, elsep) =>
     // if (cond) thenp else elsep
   case Match(selector, cases) =>

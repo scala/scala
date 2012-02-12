@@ -34,22 +34,22 @@ trait ReifyPrinters { self: NodePrinters =>
         s = s.replace("modifiersFromInternalFlags", "Modifiers")
         s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
         s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
-          val buf = new StringBuilder
+          val buf = new collection.mutable.ListBuffer[String]
+
+          val annotations = m.group(3)
+          if (buf.nonEmpty || annotations.nonEmpty)
+            buf.append("List(" + annotations + ")")
+
+          val privateWithin = "" + m.group(2)
+          if (buf.nonEmpty || privateWithin != "")
+            buf.append("newTypeName(\"" + privateWithin + "\")")
 
           val flags = m.group(1).toLong
           val s_flags = Flags.modifiersOfFlags(flags) map (_.sourceString) mkString ", "
-          if (s_flags != "")
+          if (buf.nonEmpty || s_flags != "")
             buf.append("Set(" + s_flags + ")")
 
-          val privateWithin = "" + m.group(2)
-          if (privateWithin != "")
-            buf.append(", newTypeName(\"" + privateWithin + "\")")
-
-          val annotations = m.group(3)
-          if (annotations.nonEmpty)
-            buf.append(", List(" + annotations + ")")
-
-          "Modifiers(" + buf.toString  + ")"
+          "Modifiers(" + buf.reverse.mkString(", ")  + ")"
         })
         s = """setInternalFlags\((\d+)L\)""".r.replaceAllIn(s, m => {
           val flags = m.group(1).toLong

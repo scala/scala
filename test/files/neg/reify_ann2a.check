@@ -1,0 +1,4 @@
+reify_ann2a.scala:9: error: exception during macro expansion: implementation restriction: cannot reify annotation @ann(immutable.this.List.apply[String]("1a")) which involves a symbol declared inside the block being reified
+  val tree = scala.reflect.Code.lift{
+                                    ^
+one error found

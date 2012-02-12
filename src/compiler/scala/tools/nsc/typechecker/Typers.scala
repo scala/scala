@@ -1404,7 +1404,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
     def typedClassDef(cdef: ClassDef): Tree = {
 //      attributes(cdef)
       val clazz = cdef.symbol
-      val typedMods = removeAnnotations(cdef.mods)
+      val typedMods = typedModifiers(cdef.mods)
       assert(clazz != NoSymbol, cdef)
       reenterTypeParams(cdef.tparams)
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
@@ -1441,7 +1441,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         linkedClass.info.decl(nme.CONSTRUCTOR).alternatives foreach (_.initialize)
 
       val clazz     = mdef.symbol.moduleClass
-      val typedMods = removeAnnotations(mdef.mods)
+      val typedMods = typedModifiers(mdef.mods)
       assert(clazz != NoSymbol, mdef)
       val impl1 = typerReportAnyContextErrors(context.make(mdef.impl, clazz, newScope)) {
         _.typedTemplate(mdef.impl, {
@@ -1541,8 +1541,17 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
     /** Remove definition annotations from modifiers (they have been saved
      *  into the symbol's ``annotations'' in the type completer / namer)
+     *
+     *  However reification does need annotation definitions to proceed.
+     *  Unfortunately, AnnotationInfo doesn't provide enough info to reify it in general case.
+     *  The biggest problem is with the "atp: Type" field, which cannot be reified in some situations
+     *  that involve locally defined annotations. See more about that in Reifiers.scala.
+     *
+     *  That's why the original tree gets saved into ``original'' field of AnnotationInfo (happens elsewhere).
+     *  The field doesn't get pickled/unpickled and exists only during a single compilation run.
+     *  This simultaneously allows us to reify annotations and to preserve backward compatibility.
      */
-    def removeAnnotations(mods: Modifiers): Modifiers =
+    def typedModifiers(mods: Modifiers): Modifiers =
       mods.copy(annotations = Nil) setPositions mods.positions
 
     /**
@@ -1553,7 +1562,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 //      attributes(vdef)
       val sym = vdef.symbol.initialize
       val typer1 = constrTyperIf(sym.isParameter && sym.owner.isConstructor)
-      val typedMods = removeAnnotations(vdef.mods)
+      val typedMods = typedModifiers(vdef.mods)
 
       // complete lazy annotations
       val annots = sym.annotations
@@ -1764,7 +1773,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
       checkNonCyclic(ddef, tpt1)
       ddef.tpt.setType(tpt1.tpe)
-      val typedMods = removeAnnotations(ddef.mods)
+      val typedMods = typedModifiers(ddef.mods)
       var rhs1 =
         if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasStaticFlag) { // need this to make it possible to generate static ctors
           if (!meth.isPrimaryConstructor &&
@@ -1813,7 +1822,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       tdef.symbol.initialize
       reenterTypeParams(tdef.tparams)
       val tparams1 = tdef.tparams mapConserve typedTypeDef
-      val typedMods = removeAnnotations(tdef.mods)
+      val typedMods = typedModifiers(tdef.mods)
       // complete lazy annotations
       val annots = tdef.symbol.annotations
 
@@ -2770,7 +2779,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             }
 
             if (hasError) annotationError
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setPos(ann.pos)
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}).setOriginal(ann).setPos(ann.pos)
           }
         } else if (requireJava) {
           reportAnnotationError(NestedAnnotationError(ann, annType))
@@ -2810,7 +2819,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              AnnotationInfo(annType, args, List()).setPos(t.pos)
+              AnnotationInfo(annType, args, List()).setOriginal(ann).setPos(t.pos)
 
             case Block(stats, expr) =>
               context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+

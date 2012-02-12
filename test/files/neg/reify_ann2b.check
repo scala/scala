@@ -1,0 +1,7 @@
+reify_ann2b.scala:10: error: inner classes cannot be classfile annotations
+    class ann(bar: String) extends ClassfileAnnotation
+          ^
+reify_ann2b.scala:9: error: exception during macro expansion: implementation restriction: cannot reify annotation @ann(bar = "1a") which involves a symbol declared inside the block being reified
+  val tree = scala.reflect.Code.lift{
+                                    ^
+two errors found
