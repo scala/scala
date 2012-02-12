@@ -906,11 +906,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         if (!handlers.last.definesValue) ""
         else handlers.last.definesTerm match {
           case Some(vname) if typeOf contains vname =>
-            """
-            |lazy val %s = {
-            |  %s
-            |  %s
-            |}""".stripMargin.format(lineRep.resultName, lineRep.printName, fullPath(vname))
+            "lazy val %s = %s".format(lineRep.resultName, fullPath(vname))
           case _  => ""
         }
       // first line evaluates object to make sure constructor is run
@@ -956,7 +952,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         typesOfDefinedTerms
 
         // compile the result-extraction object
-        beSilentDuring {
+        beQuietDuring {
           savingSettings(_.nowarn.value = true) {
             lineRep compile ResultObjectSourceCode(handlers)
           }
