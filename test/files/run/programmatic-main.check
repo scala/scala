@@ -13,17 +13,18 @@
              specialize  11  @specialized-driven class and method specialization
           explicitouter  12  this refs to outer pointers, translate patterns
                 erasure  13  erase types, add interfaces for traits
-               lazyvals  14  allocate bitmaps, translate lazy vals into lazified defs
-             lambdalift  15  move nested functions to top level
-           constructors  16  move field definitions into constructors
-                flatten  17  eliminate inner classes
-                  mixin  18  mixin composition
-                cleanup  19  platform-specific cleanups, generate reflective calls
-                  icode  20  generate portable intermediate code
-                inliner  21  optimization: do inlining
-inlineExceptionHandlers  22  optimization: inline exception handlers
-               closelim  23  optimization: eliminate uncalled closures
-                    dce  24  optimization: eliminate dead code
-                    jvm  25  generate JVM bytecode
-               terminal  26  The last phase in the compiler chain
+            posterasure  14  clean up erased inline classes
+               lazyvals  15  allocate bitmaps, translate lazy vals into lazified defs
+             lambdalift  16  move nested functions to top level
+           constructors  17  move field definitions into constructors
+                flatten  18  eliminate inner classes
+                  mixin  19  mixin composition
+                cleanup  20  platform-specific cleanups, generate reflective calls
+                  icode  21  generate portable intermediate code
+                inliner  22  optimization: do inlining
+inlineExceptionHandlers  23  optimization: inline exception handlers
+               closelim  24  optimization: eliminate uncalled closures
+                    dce  25  optimization: eliminate dead code
+                    jvm  26  generate JVM bytecode
+               terminal  27  The last phase in the compiler chain
 

@@ -154,7 +154,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   /** Register top level class (called on entering the class)
    */
   def registerTopLevelSym(sym: Symbol) {}
-  
+
 // ------------------ Reporting -------------------------------------
 
   // not deprecated yet, but a method called "error" imported into
@@ -500,6 +500,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsRightAfter = Some("explicitouter")
   } with Erasure
 
+  // phaseName = "posterasure"
+  object postErasure extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("erasure")
+    val runsRightAfter = Some("erasure")
+  } with PostErasure
+
   // phaseName = "lazyvals"
   object lazyVals extends {
     final val FLAGS_PER_WORD = 32
@@ -659,6 +666,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       specializeTypes         -> "@specialized-driven class and method specialization",
       explicitOuter           -> "this refs to outer pointers, translate patterns",
       erasure                 -> "erase types, add interfaces for traits",
+      postErasure             -> "clean up erased inline classes",
       lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
       lambdaLift              -> "move nested functions to top level",
       constructors            -> "move field definitions into constructors",
@@ -703,18 +711,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   private lazy val unitTimings = mutable.HashMap[CompilationUnit, Long]() withDefaultValue 0L // tracking time spent per unit
   private def unitTimingsFormatted(): String = {
     def toMillis(nanos: Long) = "%.3f" format nanos / 1000000d
-    
+
     val formatter = new util.TableDef[(String, String)] {
       >> ("ms"   -> (_._1)) >+ "  "
       << ("path" -> (_._2))
     }
     "" + (
-      new formatter.Table(unitTimings.toList sortBy (-_._2) map { 
+      new formatter.Table(unitTimings.toList sortBy (-_._2) map {
         case (unit, nanos) => (toMillis(nanos), unit.source.path)
       })
     )
   }
-  
+
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
     phasesDescMap(sub) = descr
@@ -861,7 +869,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     /** Counts for certain classes of warnings during this run. */
     var deprecationWarnings: List[(Position, String)] = Nil
     var uncheckedWarnings: List[(Position, String)] = Nil
-    
+
     /** A flag whether macro expansions failed */
     var macroExpansionFailed = false
 
@@ -1008,7 +1016,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     }
 
     def cancel() { reporter.cancelled = true }
-    
+
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
     private def refreshProgress() = if (size > 0) progress(currentProgress, totalProgress)
@@ -1175,12 +1183,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
      */
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase) {
       try compileUnitsInternal(units, fromPhase)
-      catch { case ex => 
+      catch { case ex =>
         globalError(supplementErrorMessage("uncaught exception during compilation: " + ex.getClass.getName))
         throw ex
       }
     }
-    
+
     private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase) {
       units foreach addUnit
       if (opt.profileAll) {

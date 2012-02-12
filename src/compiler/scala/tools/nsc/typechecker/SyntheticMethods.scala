@@ -39,6 +39,7 @@ trait SyntheticMethods extends ast.TreeDSL {
   /** Add the synthetic methods to case classes.
    */
   def addSyntheticMethods(templ: Template, clazz0: Symbol, context: Context): Template = {
+
     if (phase.erasedTypes)
       return templ
 
@@ -47,8 +48,8 @@ trait SyntheticMethods extends ast.TreeDSL {
       newTyper( if (reporter.hasErrors) context makeSilent false else context )
     )
     import synthesizer._
-    
-    if (clazz0 isSubClass AnyValClass) return {
+
+    if (clazz0 == AnyValClass || isPrimitiveValueClass(clazz0)) return {
       if (clazz0.info member nme.getClass_ isDeferred) {
         val getClassMethod = createMethod(nme.getClass_, getClassReturnType(clazz.tpe)) { sym =>
           // XXX dummy implementation for now
@@ -96,8 +97,8 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def hasOverridingImplementation(meth: Symbol) = {
       val sym = clazz.info nonPrivateMember meth.name
-      sym.alternatives filterNot (_ eq meth) exists { m0 =>
-        !m0.isDeferred && !m0.isSynthetic && (typeInClazz(m0) matches typeInClazz(meth))
+      sym.alternatives exists { m0 =>
+        (m0 ne meth) && !m0.isDeferred && !m0.isSynthetic && (m0.owner != AnyValClass) && (typeInClazz(m0) matches typeInClazz(meth))
       }
     }
     def readConstantValue[T](name: String, default: T = null.asInstanceOf[T]): T = {
@@ -122,13 +123,49 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     // def productElementNameMethod = perElementMethod(nme.productElementName, StringClass.tpe)(x => LIT(x.name.toString))
 
+    var syntheticCanEqual = false
+
     /** The canEqual method for case classes.
      *    def canEqual(that: Any) = that.isInstanceOf[This]
      */
-    def canEqualMethod: Tree = (
-      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m => 
+    def canEqualMethod: Tree = {
+      syntheticCanEqual = true
+      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m =>
         Ident(m.firstParam) IS_OBJ typeCaseType(clazz))
-    )
+    }
+
+    /** (that.isInstanceOf[this.C])
+     *  where that is the given methods first parameter.
+     */
+    def thatTest(eqmeth: Symbol): Tree =
+      gen.mkIsInstanceOf(Ident(eqmeth.firstParam), typeCaseType(clazz), true, false)
+
+    /** (that.asInstanceOf[this.C])
+     *  where that is the given methods first parameter.
+     */
+    def thatCast(eqmeth: Symbol): Tree =
+      gen.mkCast(Ident(eqmeth.firstParam), clazz.tpe)
+
+    /** The equality method core for case classes and inline clases.
+     *  1+ args:
+     *    (that.isInstanceOf[this.C]) && {
+     *        val x$1 = that.asInstanceOf[this.C]
+     *        (this.arg_1 == x$1.arg_1) && (this.arg_2 == x$1.arg_2) && ... && (x$1 canEqual this)
+     *       }
+     *  Drop canBuildFrom part if class is final and canBuildFrom is synthesized
+     */
+    def equalsCore(eqmeth: Symbol, accessors: List[Symbol]) = {
+      val otherName = context.unit.freshTermName(clazz.name + "$")
+      val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
+      val pairwise  = accessors map (acc => fn(Select(This(clazz), acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
+      val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(This(clazz)))
+      val tests     = if (clazz.isInlineClass || clazz.isFinal && syntheticCanEqual) pairwise else pairwise :+ canEq
+
+      thatTest(eqmeth) AND Block(
+        ValDef(otherSym, thatCast(eqmeth)),
+        AND(tests: _*)
+      )
+    }
 
     /** The equality method for case classes.
      *  0 args:
@@ -141,34 +178,36 @@ trait SyntheticMethods extends ast.TreeDSL {
      *       }
      *    }
      */
-    def equalsClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
-      val arg0      = Ident(m.firstParam)
-      val thatTest  = gen.mkIsInstanceOf(arg0, typeCaseType(clazz), true, false)
-      val thatCast  = gen.mkCast(arg0, clazz.tpe)
-
-      def argsBody: Tree = {
-        val otherName = context.unit.freshTermName(clazz.name + "$")
-        val otherSym  = m.newValue(otherName, m.pos, SYNTHETIC) setInfo clazz.tpe
-        val pairwise  = accessors map (acc => fn(Select(This(clazz), acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
-        val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(This(clazz)))
-        def block     = Block(ValDef(otherSym, thatCast), AND(pairwise :+ canEq: _*))
-
-        (This(clazz) ANY_EQ arg0) OR {
-          thatTest AND Block(
-            ValDef(otherSym, thatCast),
-            AND(pairwise :+ canEq: _*)
-          )
-        }
-      }
+    def equalsCaseClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
       if (accessors.isEmpty)
-        thatTest AND ((thatCast DOT nme.canEqual_)(This(clazz)))
+        if (clazz.isFinal) thatTest(m)
+        else thatTest(m) AND ((thatCast(m) DOT nme.canEqual_)(This(clazz)))
       else
-        argsBody
+        (This(clazz) ANY_EQ Ident(m.firstParam)) OR equalsCore(m, accessors)
+    }
+
+    /** The equality method for value classes
+     *  def equals(that: Any) = (this.asInstanceOf[AnyRef]) eq that.asInstanceOf[AnyRef]) || {
+     *    (that.isInstanceOf[this.C]) && {
+     *     val x$1 = that.asInstanceOf[this.C]
+     *     (this.underlying == that.underlying
+     */
+    def equalsInlineClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
+      equalsCore(m, List(clazz.firstParamAccessor))
+    }
+
+    /** The hashcode method for value classes
+     * def hashCode(): Int = this.underlying.hashCode
+     */
+    def hashCodeInlineClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
+      Select(
+        Select(This(clazz), clazz.firstParamAccessor),
+        nme.hashCode_)
     }
 
     /** The _1, _2, etc. methods to implement ProductN.
      */
-    def productNMethods = {
+     def productNMethods = {
       val accs = accessors.toIndexedSeq
       1 to arity map (num => productProj(arity, num) -> (() => projectionMethod(accs(num - 1), num)))
     }
@@ -190,7 +229,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def caseClassMethods = productMethods ++ productNMethods ++ Seq(
       Object_hashCode -> (() => forwardToRuntime(Object_hashCode)),
       Object_toString -> (() => forwardToRuntime(Object_toString)),
-      Object_equals   -> (() => equalsClassMethod)
+      Object_equals   -> (() => equalsCaseClassMethod)
     )
 
     def caseObjectMethods = productMethods ++ Seq(
@@ -198,6 +237,11 @@ trait SyntheticMethods extends ast.TreeDSL {
       Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode))
       // Not needed, as reference equality is the default.
       // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ Ident(m.firstParam)))
+    )
+
+    def inlineClassMethods = List(
+      Any_hashCode -> (() => hashCodeInlineClassMethod),
+      Any_equals -> (() => equalsInlineClassMethod)
     )
 
     /** If you serialize a singleton and then deserialize it twice,
@@ -214,10 +258,12 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def synthesize(): List[Tree] = {
       val methods = (
-        if (!clazz.isCase) Nil
+        if (clazz.isInlineClass) inlineClassMethods
+        else if (!clazz.isCase) Nil
         else if (clazz.isModuleClass) caseObjectMethods
         else caseClassMethods
       )
+
       def impls = for ((m, impl) <- methods ; if !hasOverridingImplementation(m)) yield impl()
       def extras = (
         if (needsReadResolve) {

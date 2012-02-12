@@ -65,7 +65,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     matching.head
   }
 
-   private def normalize(stpe: Type, clazz: Symbol): Type = stpe match {
+  private def normalize(stpe: Type, clazz: Symbol): Type = stpe match {
     case PolyType(tparams, restpe) =>
       GenPolyType(tparams dropRight clazz.typeParams.length, normalize(restpe, clazz))
     case MethodType(tparams, restpe) =>
@@ -123,7 +123,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           def thisParamRef = gen.mkAttributedIdent(extensionMeth.info.params.head setPos extensionMeth.pos)
           val GenPolyType(extensionTpeParams, extensionMono) = extensionMeth.info
           val origTpeParams = origMeth.typeParams ::: currentOwner.typeParams
-          println("expanding "+tree+"/"+allParams(extensionMono)+"/"+extensionMeth.info)
           val extensionBody = rhs
               .substTreeSyms(origTpeParams, extensionTpeParams)
               .substTreeSyms(vparamss.flatten map (_.symbol), allParams(extensionMono).tail)

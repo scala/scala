@@ -1193,6 +1193,27 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
     }
 
+    private def validateInlineClass(clazz: Symbol, body: List[Tree]) = {
+      if (clazz.isTrait)
+        unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
+      if (!clazz.isStatic)
+        unit.error(clazz.pos, "Value class may not be a "+
+          (if (clazz.owner.isTerm) "local class" else "member of another class"))
+      clazz.info.decls.toList.filter(acc => acc.isMethod && (acc hasFlag PARAMACCESSOR)) match {
+        case List(acc) =>
+          def isUnderlyingAcc(sym: Symbol) =
+            sym == acc || acc.hasAccessorFlag && sym == acc.accessed
+          if (acc.accessBoundary(clazz) != RootClass)
+            unit.error(acc.pos, "Value class needs to have a publicly accessible val parameter")
+          else
+            for (stat <- body)
+              if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
+                unit.error(stat.pos, "This statement is not allowed in value class: "+stat)
+        case x =>
+          unit.error(clazz.pos, "Value class needs to have exactly one public val parameter")
+      }
+    }
+
     def parentTypes(templ: Template): List[Tree] =
       if (templ.parents.isEmpty) List(TypeTree(AnyRefClass.tpe))
       else try {
@@ -1209,7 +1230,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             supertpt = TypeTree(supertpt1.tpe.firstParent) setPos supertpt.pos.focus
           }
         }
-        if (supertpt.tpe.typeSymbol == AnyClass && firstParent.isTrait && firstParent != AnyValClass)
+        if (supertpt.tpe.typeSymbol == AnyClass && firstParent.isTrait)
           supertpt.tpe = AnyRefClass.tpe
 
         // Determine
@@ -1300,7 +1321,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
               else xs
             )
         }
-        
+
         fixDuplicates(supertpt :: mixins) mapConserve (tpt => checkNoEscaping.privates(clazz, tpt))
       }
       catch {
@@ -1418,7 +1439,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
       if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
         for (stat <- impl2.body)
-          if (!treeInfo.isAllowedInAnyTrait(stat))
+          if (!treeInfo.isAllowedInUniversalTrait(stat))
             unit.error(stat.pos, "this statement is not allowed in trait extending from class Any: "+stat)
       if ((clazz != ClassfileAnnotationClass) &&
           (clazz isNonBottomSubClass ClassfileAnnotationClass))
@@ -1536,6 +1557,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
         unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
 
@@ -1544,6 +1566,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         else templ.body flatMap rewrappingWrapperTrees(namer.finishGetterSetter(Typer.this, _))
 
       val body1 = typedStats(body, templ.symbol)
+
+      if (clazz.isInlineClass)
+        validateInlineClass(clazz, body1)
+
       treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe
     }
 

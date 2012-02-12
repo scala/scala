@@ -10,10 +10,29 @@ trait Printable extends Any { def print: Unit = Console.print(this) }
 
 object Test extends App {
 
+  {
+  val x: Meter = new Meter(1)
+  val a: Object = x.asInstanceOf[Object]
+  val y: Meter = a.asInstanceOf[Meter]
+
+  val u: Double = 1
+  val b: Object = u.asInstanceOf[Object]
+  val v: Double = b.asInstanceOf[Double]
+  }
+
   val x = new Meter(1)
+  val y = x
   println((x + x) / x)
   println((x + x) / 0.5)
   println((x < x).toString)
-  
 
+
+  println("x.hashCode: "+x.hashCode)
+  println("x == 1: "+(x == 1))
+  println("x == y: "+(x == y))
+  assert(x.hashCode == (1.0).hashCode)
+  
+  val a: Any = x
+  val b: Any = y
+  println("a == b: "+(a == b))
 }
