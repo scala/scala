@@ -205,18 +205,18 @@ object ClassManifest {
     *       pass varargs as arrays into this, we get an infinitely recursive call
     *       to boxArray. (Besides, having a separate case is more efficient)
     */
-  def classType[T <: AnyRef](clazz: jClass[_]): ClassManifest[T] =
+  def classType[T](clazz: jClass[_]): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, Nil)
 
   /** ClassManifest for the class type `clazz[args]`, where `clazz` is
     * a top-level or static class and `args` are its type arguments */
-  def classType[T <: AnyRef](clazz: jClass[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
+  def classType[T](clazz: jClass[_], arg1: OptManifest[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](None, clazz, arg1 :: args.toList)
 
   /** ClassManifest for the class type `clazz[args]`, where `clazz` is
     * a class with non-package prefix type `prefix` and type arguments `args`.
     */
-  def classType[T <: AnyRef](prefix: OptManifest[_], clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] =
+  def classType[T](prefix: OptManifest[_], clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
   def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
@@ -249,7 +249,7 @@ object ClassManifest {
 
 /** Manifest for the class type `clazz[args]`, where `clazz` is
   * a top-level or static class: todo: we should try to merge this with Manifest's class */
-private class ClassTypeManifest[T <: AnyRef](
+private class ClassTypeManifest[T](
   prefix: Option[OptManifest[_]],
   val erasure: jClass[_],
   override val typeArguments: List[OptManifest[_]]) extends ClassManifest[T]

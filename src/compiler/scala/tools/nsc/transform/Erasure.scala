@@ -583,7 +583,7 @@ abstract class Erasure extends AddInterfaces
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf || tree.symbol == Object_asInstanceOf =>
           targ.tpe match {
-            case ErasedInlineType(clazz) => targ.setType(scalaErasure(clazz.tpe))
+            case ErasedInlineType(clazz) => targ.setType(clazz.tpe)
             case _ =>
           }
           tree
@@ -1065,7 +1065,11 @@ abstract class Erasure extends AddInterfaces
 
         case Literal(ct) if ct.tag == ClassTag
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
-          treeCopy.Literal(tree, Constant(erasure(NoSymbol, ct.typeValue)))
+          val erased = ct.typeValue match {
+            case TypeRef(pre, clazz, args) if clazz.isInlineClass => typeRef(pre, clazz, List())
+            case tpe => erasure(NoSymbol, tpe)
+          }
+          treeCopy.Literal(tree, Constant(erased))
 
         case _ =>
           tree

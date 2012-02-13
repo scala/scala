@@ -25,6 +25,7 @@ object Test extends App {
   println((x + x) / x)
   println((x + x) / 0.5)
   println((x < x).toString)
+  println("x.isInstanceOf[Meter]: "+x.isInstanceOf[Meter])
 
 
   println("x.hashCode: "+x.hashCode)
