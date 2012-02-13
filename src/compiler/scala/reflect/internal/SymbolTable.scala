@@ -120,9 +120,11 @@ abstract class SymbolTable extends api.Universe
     try op
     finally phase = current
   }
-
-  @inline final def afterPhase[T](ph: Phase)(op: => T): T =
-    atPhase(ph.next)(op)
+  /** Since when it is to be "at" a phase is inherently ambiguous,
+   *  a couple unambiguously named methods.
+   */
+  @inline final def beforePhase[T](ph: Phase)(op: => T): T = atPhase(ph)(op)
+  @inline final def afterPhase[T](ph: Phase)(op: => T): T  = atPhase(ph.next)(op)
 
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (target != NoPhase && phase.id > target.id) atPhase(target)(op) else op

@@ -116,7 +116,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      */
     def canEqualMethod: Tree = (
       createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m => 
-        Ident(m.firstParam) IS_OBJ typeCaseType(clazz))
+        Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
     )
 
     /** The equality method for case classes.
@@ -132,7 +132,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      */
     def equalsClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
       val arg0      = Ident(m.firstParam)
-      val thatTest  = gen.mkIsInstanceOf(arg0, typeCaseType(clazz), true, false)
+      val thatTest  = gen.mkIsInstanceOf(arg0, classExistentialType(clazz), true, false)
       val thatCast  = gen.mkCast(arg0, clazz.tpe)
 
       def argsBody: Tree = {
