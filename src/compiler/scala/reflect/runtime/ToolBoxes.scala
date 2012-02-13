@@ -44,11 +44,11 @@ trait ToolBoxes extends { self: Universe =>
         // !!! Why is this is in the empty package? If it's only to make
         // it inaccessible then please put it somewhere designed for that
         // rather than polluting the empty package with synthetics.
-        trace("typing: ")(showAttributed(tree))
+        trace("typing: ")(showAttributed(tree, true, true, settings.Yshowsymkinds.value))
         val ownerClass = EmptyPackageClass.newClassWithInfo(newTypeName("<expression-owner>"), List(ObjectClass.tpe), newScope)
         val owner      = ownerClass.newLocalDummy(tree.pos)
         val ttree = typer.atOwner(tree, owner).typed(tree, analyzer.EXPRmode, pt)
-        trace("typed: ")(showAttributed(ttree))
+        trace("typed: ")(showAttributed(ttree, true, true, settings.Yshowsymkinds.value))
         ttree
       }
 
@@ -78,9 +78,9 @@ trait ToolBoxes extends { self: Universe =>
                 List(List()),
                 List(methdef),
                 NoPosition))
-        trace("wrapped: ")(showAttributed(moduledef))
+        trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymkinds.value))
         val cleanedUp = resetLocalAttrs(moduledef)
-        trace("cleaned up: ")(showAttributed(cleanedUp))
+        trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymkinds.value))
         cleanedUp
       }
 
@@ -192,7 +192,8 @@ trait ToolBoxes extends { self: Universe =>
     def typeCheck(tree: rm.Tree, expectedType: rm.Type): rm.Tree = {
       if (compiler.settings.verbose.value) println("typing "+tree+", pt = "+expectedType)
       val ttree = importAndTypeCheck(tree, expectedType)
-      exporter.importTree(ttree).asInstanceOf[rm.Tree]
+      val ettree = exporter.importTree(ttree).asInstanceOf[rm.Tree]
+      ettree
     }
 
     def typeCheck(tree: rm.Tree): rm.Tree =
