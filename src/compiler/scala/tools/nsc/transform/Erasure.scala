@@ -335,9 +335,6 @@ abstract class Erasure extends AddInterfaces
 
   class UnknownSig extends Exception
 
-  override def eraseInlineClassRef(clazz: Symbol): Type = ErasedInlineType(clazz)
-
-
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *
    *   - For $asInstanceOf      : [T]T
@@ -439,7 +436,7 @@ abstract class Erasure extends AddInterfaces
               case Unboxed(arg) if arg.tpe.typeSymbol == clazz =>
                 log("shortcircuiting unbox -> box "+arg); arg
               case _ =>
-                New(clazz, cast(tree, valueClassErasure(clazz)))
+                New(clazz, cast(tree, underlyingOfValueClass(clazz)))
             }
           case _ =>
             tree.tpe.typeSymbol match {
@@ -913,7 +910,7 @@ abstract class Erasure extends AddInterfaces
                 gen.mkMethodCall(
                   qual1(),
                   fun.symbol,
-                  List(erasure(fun.symbol, arg.tpe)),
+                  List(specialErasure(fun.symbol, arg.tpe)),
                   Nil
                 ),
                 isArrayTest(qual1())
@@ -1067,7 +1064,7 @@ abstract class Erasure extends AddInterfaces
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
           val erased = ct.typeValue match {
             case TypeRef(pre, clazz, args) if clazz.isInlineClass => typeRef(pre, clazz, List())
-            case tpe => erasure(NoSymbol, tpe)
+            case tpe => specialErasure(NoSymbol, tpe)
           }
           treeCopy.Literal(tree, Constant(erased))
 
@@ -1087,10 +1084,10 @@ abstract class Erasure extends AddInterfaces
           val tree1 = preErase(tree)
           tree1 match {
             case EmptyTree | TypeTree() =>
-              tree1 setType erasure(NoSymbol, tree1.tpe)
+              tree1 setType specialErasure(NoSymbol, tree1.tpe)
             case DefDef(_, _, _, _, tpt, _) =>
               val result = super.transform(tree1) setType null
-              tpt.tpe = erasure(tree1.symbol, tree1.symbol.tpe).resultType
+              tpt.tpe = specialErasure(tree1.symbol, tree1.symbol.tpe).resultType
               result
             case _ =>
               super.transform(tree1) setType null

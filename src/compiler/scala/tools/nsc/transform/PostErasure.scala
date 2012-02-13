@@ -14,7 +14,7 @@ trait PostErasure extends InfoTransform with TypingTransformers {
 
   object elimErasedInline extends TypeMap {
     def apply(tp: Type) = tp match {
-      case ErasedInlineType(clazz) => erasure.valueClassErasure(clazz)
+      case ErasedInlineType(clazz) => erasure.underlyingOfValueClass(clazz)
       case _ => mapOver(tp)
     }
   }
