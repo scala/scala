@@ -35,4 +35,6 @@ object Test extends App {
   val a: Any = x
   val b: Any = y
   println("a == b: "+(a == b))
+
+  val arr = Array(x, y + x)
 }

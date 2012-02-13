@@ -21,7 +21,7 @@ trait Contexts { self: Analyzer =>
     outer      = this
     enclClass  = this
     enclMethod = this
-    
+
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
@@ -177,7 +177,7 @@ trait Contexts { self: Analyzer =>
       buffer.clear()
       current
     }
-    
+
     def logError(err: AbsTypeError) = buffer += err
 
     def withImplicitsDisabled[T](op: => T): T = {
@@ -237,7 +237,7 @@ trait Contexts { self: Analyzer =>
       c.implicitsEnabled = true
       c
     }
-    
+
     def makeNewImport(sym: Symbol): Context =
       makeNewImport(gen.mkWildcardImport(sym))
 
@@ -308,6 +308,7 @@ trait Contexts { self: Analyzer =>
       unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     def issue(err: AbsTypeError) {
+      if (settings.debug.value) println("issuing error: "+err)
       if (reportErrors) unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { buffer += err }
       else throw new TypeError(err.errPos, err.errMsg)

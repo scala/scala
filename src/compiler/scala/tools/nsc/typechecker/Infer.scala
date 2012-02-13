@@ -196,6 +196,10 @@ trait Infer {
 
     /* -- Error Messages --------------------------------------------------- */
     def setError[T <: Tree](tree: T): T = {
+      if (settings.debug.value) { // DEBUG
+        println("set error: "+tree);
+        throw new Error()
+      }
       def name        = newTermName("<error: " + tree.symbol + ">")
       def errorClass  = if (context.reportErrors) context.owner.newErrorClass(name.toTypeName) else stdErrorClass
       def errorValue  = if (context.reportErrors) context.owner.newErrorValue(name) else stdErrorValue
@@ -210,9 +214,9 @@ trait Infer {
     def getContext = context
 
     def issue(err: AbsTypeError): Unit = context.issue(err)
-    
-    def isPossiblyMissingArgs(found: Type, req: Type) = (found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req) 
-    
+
+    def isPossiblyMissingArgs(found: Type, req: Type) = (found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req)
+
     def explainTypes(tp1: Type, tp2: Type) =
       withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))
 
@@ -465,7 +469,7 @@ trait Infer {
      */
     def adjustTypeArgs(tparams: List[Symbol], tvars: List[TypeVar], targs: List[Type], restpe: Type = WildcardType): AdjustedTypeArgs.Result  = {
       val buf = AdjustedTypeArgs.Result.newBuilder[Symbol, Option[Type]]
-      
+
       foreach3(tparams, tvars, targs) { (tparam, tvar, targ) =>
         val retract = (
               targ.typeSymbol == NothingClass                                         // only retract Nothings
