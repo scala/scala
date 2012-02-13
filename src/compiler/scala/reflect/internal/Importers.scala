@@ -32,8 +32,11 @@ trait Importers { self: SymbolTable =>
 
     def importPosition(pos: from.Position): Position = NoPosition
 
-    def importSymbol(sym: from.Symbol): Symbol = {
+    def importSymbol(sym0: from.Symbol): Symbol = {
       def doImport(sym: from.Symbol): Symbol = {
+        if (symMap.contains(sym))
+          return symMap(sym)
+
         val myowner = importSymbol(sym.owner)
         val mypos   = importPosition(sym.pos)
         val myname  = importName(sym.name).toTermName
@@ -47,7 +50,7 @@ trait Importers { self: SymbolTable =>
           case x: from.MethodSymbol =>
             linkReferenced(myowner.newMethod(myname, mypos, myflags), x, importSymbol)
           case x: from.ModuleSymbol =>
-            linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, doImport)
+            linkReferenced(myowner.newModuleSymbol(myname, mypos, myflags), x, importSymbol)
           case x: from.FreeVar =>
             newFreeVar(importName(x.name).toTermName, importType(x.tpe), x.value, myflags)
           case x: from.TermSymbol =>
@@ -59,14 +62,14 @@ trait Importers { self: SymbolTable =>
               case y: from.Symbol => importSymbol(y)
             }
             myowner.newTypeSkolemSymbol(myname.toTypeName, origin, mypos, myflags)
-          /*
-              case x: from.ModuleClassSymbol =>
-                val mysym = new ModuleClassSymbol(myowner, mypos, myname.toTypeName)
-                mysym.sourceModule = importSymbol(x.sourceModule)
-                mysym
-*/
+          case x: from.ModuleClassSymbol =>
+            val mysym = myowner.newModuleClassSymbol(myname.toTypeName, mypos, myflags)
+            symMap(x) = mysym
+            mysym.sourceModule = importSymbol(x.sourceModule)
+            mysym
           case x: from.ClassSymbol =>
             val mysym = myowner.newClassSymbol(myname.toTypeName, mypos, myflags)
+            symMap(x) = mysym
             if (sym.thisSym != sym) {
               mysym.typeOfThis = importType(sym.typeOfThis)
               mysym.thisSym.name = importName(sym.thisSym.name)
@@ -78,7 +81,7 @@ trait Importers { self: SymbolTable =>
         symMap(sym) = mysym
         mysym setFlag Flags.LOCKED
         mysym setInfo {
-          val mytypeParams = sym.typeParams map doImport
+          val mytypeParams = sym.typeParams map importSymbol
           new LazyPolyType(mytypeParams) {
             override def complete(s: Symbol) {
               val result = sym.info match {
@@ -94,6 +97,7 @@ trait Importers { self: SymbolTable =>
       } // end doImport
 
       def importOrRelink: Symbol = {
+        val sym = sym0 // makes sym visible in the debugger
         if (sym == null)
           null
         else if (sym == from.NoSymbol)
@@ -101,51 +105,61 @@ trait Importers { self: SymbolTable =>
         else if (sym.isRoot)
           definitions.RootClass
         else {
-          val myowner = importSymbol(sym.owner)
-          val myname = importName(sym.name)
-          if (sym.isModuleClass) {
-            assert(sym.sourceModule != NoSymbol, sym)
-            val mymodule = importSymbol(sym.sourceModule)
-            assert(mymodule != NoSymbol, sym)
-            assert(mymodule.moduleClass != NoSymbol, mymodule)
-            mymodule.moduleClass
-          } else if (myowner.isClass && !myowner.isRefinementClass && !(myowner hasFlag Flags.LOCKED) && sym.owner.info.decl(sym.name).exists) {
-            // symbol is in class scope, try to find equivalent one in local scope
-            if (sym.isOverloaded)
-              myowner.newOverloaded(myowner.thisType, sym.alternatives map importSymbol)
-            else {
-              var existing: Symbol = myowner.info.decl(myname)
-              if (existing.isOverloaded) {
-                existing =
-                  if (sym.isMethod) {
-                    val localCopy = doImport(sym)
-                    existing filter (_.tpe matches localCopy.tpe)
-                  } else {
-                    existing filter (!_.isMethod)
-                  }
-                assert(!existing.isOverloaded,
-                    "import failure: cannot determine unique overloaded method alternative from\n "+
-                    (existing.alternatives map (_.defString) mkString "\n")+"\n that matches "+sym+":"+sym.tpe)
+          val name = sym.name
+          val owner = sym.owner
+          var scope = if (owner.isClass && !owner.isRefinementClass) owner.info else from.NoType
+          var existing = scope.decl(name)
+          if (sym.isPackageClass || sym.isModuleClass) existing = existing.moduleClass
+          if (!existing.exists) scope = from.NoType
+
+          val myname = importName(name)
+          val myowner = importSymbol(owner)
+          val myscope = if (scope != from.NoType && !(myowner hasFlag Flags.LOCKED)) myowner.info else NoType
+          var myexisting = if (myscope != NoType) myowner.info.decl(myname) else NoSymbol // cannot load myexisting in general case, because it creates cycles for methods
+          if (sym.isPackageClass || sym.isModuleClass) myexisting = importSymbol(sym.sourceModule).moduleClass
+          if (!sym.isOverloaded && myexisting.isOverloaded) {
+            myexisting =
+              if (sym.isMethod) {
+                val localCopy = doImport(sym)
+                myexisting filter (_.tpe matches localCopy.tpe)
+              } else {
+                myexisting filter (!_.isMethod)
               }
-              if (existing != NoSymbol) existing
-              else {
+            assert(!myexisting.isOverloaded,
+                "import failure: cannot determine unique overloaded method alternative from\n "+
+                (myexisting.alternatives map (_.defString) mkString "\n")+"\n that matches "+sym+":"+sym.tpe)
+          }
+
+          val mysym = {
+            if (sym.isOverloaded) {
+              myowner.newOverloaded(myowner.thisType, sym.alternatives map importSymbol)
+            } else if (sym.isTypeParameter && sym.paramPos >= 0 && !(myowner hasFlag Flags.LOCKED)) {
+              assert(myowner.typeParams.length > sym.paramPos,
+                  "import failure: cannot determine parameter "+sym+" (#"+sym.paramPos+") in "+
+                  myowner+typeParamsString(myowner.rawInfo)+"\n original symbol was: "+
+                  sym.owner+from.typeParamsString(sym.owner.info))
+              myowner.typeParams(sym.paramPos)
+            } else {
+              if (myexisting != NoSymbol) {
+                myexisting
+              } else {
                 val mysym = doImport(sym)
-                assert(myowner.info.decls.lookup(myname) == NoSymbol, myname+" "+myowner.info.decl(myname)+" "+existing)
-                myowner.info.decls enter mysym
+
+                if (myscope != NoType) {
+                  assert(myowner.info.decls.lookup(myname) == NoSymbol, myname+" "+myowner.info.decl(myname)+" "+myexisting)
+                  myowner.info.decls enter mysym
+                }
+
                 mysym
               }
             }
-          } else if (sym.isTypeParameter && sym.paramPos >= 0 && !(myowner hasFlag Flags.LOCKED)) {
-            assert(myowner.typeParams.length > sym.paramPos,
-                "import failure: cannot determine parameter "+sym+" (#"+sym.paramPos+") in "+
-                myowner+typeParamsString(myowner.rawInfo)+"\n original symbol was: "+
-                sym.owner+from.typeParamsString(sym.owner.info))
-            myowner.typeParams(sym.paramPos)
-          } else
-            doImport(sym)
+          }
+
+          mysym
         }
       } // end importOrRelink
 
+      val sym = sym0
       if (symMap contains sym) {
         symMap(sym)
       } else {

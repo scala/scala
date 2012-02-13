@@ -16,7 +16,7 @@ class Universe extends SymbolTable {
 
   val gen = new TreeGen { val global: Universe.this.type = Universe.this }
 
-  def settings = new Settings
+  lazy val settings = new Settings
   def forInteractive = false
   def forScaladoc = false
 
