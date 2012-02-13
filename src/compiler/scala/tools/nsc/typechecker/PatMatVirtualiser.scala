@@ -43,7 +43,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     val outer     = newTermName("<outer>")
     val runOrElse = newTermName("runOrElse")
     val zero      = newTermName("zero")
-    val __match   = newTermName("__match")
+    val _match  = newTermName("__match") // don't call it __match, since that will trigger virtual pattern matching...
 
     def counted(str: String, i: Int) = newTermName(str+i)
   }
@@ -51,8 +51,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   object MatchTranslator {
     def apply(typer: Typer): MatchTranslation = {
       import typer._
-      // typing `__match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
-      newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName.__match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+      // typing `_match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
+      newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
           case SilentResultValue(ms) => new PureMatchTranslator(typer, ms)
           case _ => new OptimizingMatchTranslator(typer)
         }
@@ -1156,10 +1156,10 @@ class Foo(x: Other) { x._1 } // no error in this order
     protected def matchMonadSym      = oneSig.finalResultType.typeSymbol
 
     import CODE._
-    def __match(n: Name): SelectStart = matchStrategy DOT n
+    def _match(n: Name): SelectStart = matchStrategy DOT n
 
     private lazy val oneSig: Type =
-      typer.typed(__match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message    
+      typer.typed(_match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message    
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
@@ -1170,13 +1170,13 @@ class Foo(x: Other) { x._1 } // no error in this order
       // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
       // TODO: consider catchAll, or virtualized matching will break in exception handlers
       def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, catchAll: Option[Tree => Tree]): Tree
-        = __match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, matcher))
+        = _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, matcher))
       // __match.one(`res`)
-      def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = (__match(vpmName.one)) (res)
+      def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = (_match(vpmName.one)) (res)
       // __match.zero
-      def zero: Tree = __match(vpmName.zero)
+      def zero: Tree = _match(vpmName.zero)
       // __match.guard(`c`, `then`)
-      def guard(c: Tree, then: Tree, tp: Type): Tree = __match(vpmName.guard) APPLY (c, then)
+      def guard(c: Tree, then: Tree, tp: Type): Tree = _match(vpmName.guard) APPLY (c, then)
 
       //// methods in the monad instance -- used directly in translation
       // `prev`.flatMap(`b` => `next`)
