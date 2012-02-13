@@ -4,8 +4,8 @@ import reflect.runtime.Mirror.ToolBox
 
 object Test extends App {
   val code = scala.reflect.Code.lift{
-    lazy x = 2
-    println(x)
+    val foo :: bar :: _ = List(1, 2, 3)
+    println(foo * bar)
   };
 
   val reporter = new ConsoleReporter(new Settings)
