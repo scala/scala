@@ -679,7 +679,8 @@ abstract class UnCurry extends InfoTransform
           if (dd.symbol hasAnnotation VarargsClass) addJavaVarargsForwarders(dd, flatdd, tree)
           flatdd
         case Try(body, catches, finalizer) =>
-          if (catches forall treeInfo.isCatchCase) tree
+          if (opt.virtPatmat) { if(catches exists (cd => !treeInfo.isCatchCase(cd))) debugwarn("VPM BUG! illegal try/catch "+ catches); tree }
+          else if (catches forall treeInfo.isCatchCase) tree
           else {
             val exname = unit.freshTermName("ex$")
             val cases =

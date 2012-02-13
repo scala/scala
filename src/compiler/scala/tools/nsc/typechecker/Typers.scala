@@ -4250,6 +4250,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             block1 = adapt(block1, mode, owntype)
             catches1 = catches1 map (adaptCase(_, owntype))
           }
+
+          if(!isPastTyper && opt.virtPatmat) {
+            catches1 = (MatchTranslator(this)).translateTry(catches1, owntype, tree.pos)
+          }
+
           treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
 
         case Throw(expr) =>
