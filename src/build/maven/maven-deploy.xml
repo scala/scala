@@ -14,7 +14,7 @@
 
     <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
     <property name="local.release.repository" value="${user.home}/.m2/repository" />
-    <property name="repository.credentials.id" value="scala-tools.org" />
+    <property name="repository.credentials.id" value="sonatype-nexus" />
     <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
     <echo>Using server[${repository.credentials.id}] for maven repository credentials.
