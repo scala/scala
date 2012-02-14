@@ -13,6 +13,7 @@ import processInternal._
 import java.io.{ BufferedReader, InputStreamReader, FilterInputStream, FilterOutputStream }
 import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.immutable.Stream
+import scala.annotation.tailrec
 
 /**
   * This object contains factories for [[scala.sys.process.ProcessIO]],
@@ -74,6 +75,7 @@ object BasicIO {
   def processFully(processLine: String => Unit): InputStream => Unit = in => {
     val reader = new BufferedReader(new InputStreamReader(in))
     processLinesFully(processLine)(reader.readLine)
+    reader.close()
   }
 
   def processLinesFully(processLine: String => Unit)(readLine: () => String) {
@@ -86,8 +88,11 @@ object BasicIO {
     }
     readFully()
   }
-  def connectToIn(o: OutputStream): Unit = transferFully(stdin, o)
-  def input(connect: Boolean): OutputStream => Unit = if (connect) connectToIn else _ => ()
+  def connectToIn(o: OutputStream): Unit = transferFully(Uncloseable protect stdin, o)
+  def input(connect: Boolean): OutputStream => Unit = { outputToProcess =>
+    if (connect) connectToIn(outputToProcess)
+    outputToProcess.close()
+  }
   def standard(connectInput: Boolean): ProcessIO = standard(input(connectInput))
   def standard(in: OutputStream => Unit): ProcessIO = new ProcessIO(in, toStdOut, toStdErr)
 
@@ -105,13 +110,14 @@ object BasicIO {
 
   private[this] def transferFullyImpl(in: InputStream, out: OutputStream) {
     val buffer = new Array[Byte](BufferSize)
-    def loop() {
+    @tailrec def loop() {
       val byteCount = in.read(buffer)
       if (byteCount > 0) {
         out.write(buffer, 0, byteCount)
-        out.flush()
-        loop()
-      }
+        // flush() will throw an exception once the process has terminated
+        val available = try { out.flush(); true } catch { case _: IOException => false }
+        if (available) loop() else in.close()
+      } else in.close()
     }
     loop()
   }
