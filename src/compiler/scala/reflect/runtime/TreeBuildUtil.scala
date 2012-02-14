@@ -2,23 +2,12 @@ package scala.reflect
 package runtime
 
 trait TreeBuildUtil extends Universe with api.TreeBuildUtil {
-  def staticClass(fullname: String): Symbol = {
-    val sym = definitions.getRequiredClass(fullname)
-    sym.initialize
-    sym
-  }
-
-  def staticModule(fullname: String): Symbol = {
-    val sym = definitions.getRequiredModule(fullname)
-    sym.initialize
-    sym
-  }
-
-  def thisModuleType(fullname: String) = {
-    val sym = staticModule(fullname).moduleClass
-    sym.initialize
-    sym.thisType
-  }
+  /** A comment to the effect of why initialize was added to all these
+   *  would be appreciated.  (We may as well start somewhere.)
+   */
+  def staticClass(fullname: String)    = definitions.getRequiredClass(fullname).initialize
+  def staticModule(fullname: String)   = definitions.getRequiredModule(fullname).initialize
+  def thisModuleType(fullname: String) = staticModule(fullname).moduleClass.initialize.thisType
 
  /** Selects type symbol with given name from the defined members of prefix type
    */
