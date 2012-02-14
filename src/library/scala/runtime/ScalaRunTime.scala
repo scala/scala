@@ -36,7 +36,16 @@ object ScalaRunTime {
     case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
     case _                                                                                             => false
   }
-  private val tupleNames = 1 to 22 map ("scala.Tuple" + _) toSet
+  // Avoiding boxing which messes up the specialized tests.  Don't ask.
+  private val tupleNames = {
+    var i = 22
+    var names: List[String] = Nil
+    while (i >= 1) {
+      names ::= ("scala.Tuple" + String.valueOf(i))
+      i -= 1
+    }
+    names.toSet
+  }
 
   /** Return the class object representing an unboxed value type,
    *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
