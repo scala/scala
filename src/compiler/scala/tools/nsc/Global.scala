@@ -807,6 +807,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def currentRun: Run              = curRun
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+  
+  @inline final def afterTyper[T](op: => T): T = afterPhase(currentRun.typerPhase)(op)
+  @inline final def beforeErasure[T](op: => T): T = beforePhase(currentRun.erasurePhase)(op)
+  @inline final def afterErasure[T](op: => T): T = afterPhase(currentRun.erasurePhase)(op)
 
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
@@ -1114,7 +1118,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
       lazy val trackers = currentRun.units.toList map (x => SymbolTracker(x))
       def snapshot() = {
         inform("\n[[symbol layout at end of " + phase + "]]")
-        atPhase(phase.next) {
+        afterPhase(phase) {
           trackers foreach { t =>
             t.snapshot()
             inform(t.show("Heading from " + phase.prev.name + " to " + phase.name))
@@ -1389,7 +1393,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
 
   def printAllUnits() {
     print("[[syntax trees at end of " + phase + "]]")
-    atPhase(phase.next) { currentRun.units foreach (treePrinter.print(_)) }
+    afterPhase(phase) { currentRun.units foreach (treePrinter.print(_)) }
   }
 
   private def findMemberFromRoot(fullName: Name): Symbol = {

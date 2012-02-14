@@ -35,13 +35,37 @@ abstract class DirectTest extends App {
     s processArguments (allArgs, true)
     s
   }
-  // compile the code, optionally first adding to the settings
-  def compile(args: String*) = {
+  // new compiler
+  def newCompiler(args: String*): Global = {
     val settings = newSettings((CommandLineParser tokenize extraSettings) ++ args.toList)
-    val global   = new Global(settings)
-    new global.Run compileSources List(new BatchSourceFile("<partest>", code))
+    new Global(settings)
+  }
+  def newSources(sourceCodes: String*) = sourceCodes.toList.zipWithIndex map {
+    case (src, idx) => new BatchSourceFile("newSource" + (idx + 1), src)
+  }
+  def compileString(global: Global)(sourceCode: String): Boolean = {
+    withRun(global)(_ compileSources newSources(sourceCode))
     !global.reporter.hasErrors
   }
+  def compilationUnits(global: Global)(sourceCodes: String*): List[global.CompilationUnit] = {
+    val units = withRun(global) { run =>
+      run compileSources newSources(sourceCodes: _*)
+      run.units.toList
+    }
+    if (global.reporter.hasErrors) {
+      global.reporter.flush()
+      sys.error("Compilation failure.")
+    }
+    units
+  }
+
+  def withRun[T](global: Global)(f: global.Run => T): T = {
+    global.reporter.reset()
+    f(new global.Run)
+  }
+  
+  // compile the code, optionally first adding to the settings
+  def compile(args: String*) = compileString(newCompiler(args: _*))(code)
 
   /**  Constructor/main body  **/
   try show()

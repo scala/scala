@@ -2433,25 +2433,37 @@ trait Types extends api.Types { self: SymbolTable =>
       case _ =>
         List()
     }
-
+    /** An existential can only be printed with wildcards if:
+     *   - the underlying type is a typeref
+     *   - where there is a 1-to-1 correspondence between underlying's typeargs and quantified
+     *   - and none of the existential parameters is referenced from anywhere else in the type 
+     *   - and none of the existential parameters are singleton types
+     */
+    private def isRepresentableWithWildcards = !settings.debug.value && {
+      val qset = quantified.toSet
+      !qset.exists(_.isSingletonExistential) && (underlying match {
+        case TypeRef(_, sym, args) =>
+          sameLength(args, quantified) && {
+            args forall { arg =>
+              qset(arg.typeSymbol) && !qset.exists(arg.typeSymbol.info.bounds contains _)
+            }
+          }
+        case _ => false
+      })
+    }
     override def safeToString: String = {
-      if (!(quantified exists (_.isSingletonExistential)) && !settings.debug.value)
-        // try to represent with wildcards first
-        underlying match {
-          case TypeRef(pre, sym, args) if args.nonEmpty =>
-            val wargs = wildcardArgsString(quantified.toSet, args)
-            if (sameLength(wargs, args))
-              return TypeRef(pre, sym, List()) + wargs.mkString("[", ", ", "]")
-          case _ =>
-        }
-      var ustr = underlying.toString
-      underlying match {
-        case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) => ustr = "("+ustr+")"
-        case _ =>
+      def clauses = {
+        val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
+        if (settings.explaintypes.value) "(" + str + ")" else str
       }
-      val str =
-        ustr+(quantified map (_.existentialToString) mkString(" forSome { ", "; ", " }"))
-      if (settings.explaintypes.value) "("+str+")" else str
+      underlying match {
+        case TypeRef(pre, sym, args) if isRepresentableWithWildcards =>
+          "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
+        case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
+          "(" + underlying + ")" + clauses
+        case _ =>
+          "" + underlying + clauses
+      }
     }
 
     override def cloneInfo(owner: Symbol) =
@@ -3260,6 +3272,25 @@ trait Types extends api.Types { self: SymbolTable =>
       case WildcardType                                   => tycon // needed for neg/t0226
       case _                                              => abort(debugString(tycon))
     }
+  
+  /** A creator for existential types where the type arguments,
+   *  rather than being applied directly, are interpreted as the
+   *  upper bounds of unknown types.  For instance if the type argument
+   *  list given is List(AnyRefClass), the resulting type would be
+   *  e.g. Set[_ <: AnyRef] rather than Set[AnyRef] .
+   */
+  def appliedTypeAsUpperBounds(tycon: Type, args: List[Type]): Type = {
+    tycon match {
+      case TypeRef(pre, sym, _) if sameLength(sym.typeParams, args) =>
+        val eparams  = typeParamsToExistentials(sym)
+        val bounds   = args map (TypeBounds upper _) 
+        (eparams, bounds).zipped foreach (_ setInfo _)
+
+        newExistentialType(eparams, typeRef(pre, sym, eparams map (_.tpe)))
+      case _ =>
+        appliedType(tycon, args)
+    }
+  }
 
   /** A creator for type parameterizations that strips empty type parameter lists.
    *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
@@ -3845,6 +3876,8 @@ trait Types extends api.Types { self: SymbolTable =>
 
     eparams map (_ substInfo (tparams, eparams))
   }
+  def typeParamsToExistentials(clazz: Symbol): List[Symbol] =
+    typeParamsToExistentials(clazz, clazz.typeParams)
 
   //  note: it's important to write the two tests in this order,
   //  as only typeParams forces the classfile to be read. See #400
@@ -3876,7 +3909,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if (expanded contains sym) AnyRefClass.tpe
         else try {
           expanded += sym
-          val eparams = mapOver(typeParamsToExistentials(sym, sym.typeParams))
+          val eparams = mapOver(typeParamsToExistentials(sym))
           existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map (_.tpe)))
         } finally {
           expanded -= sym

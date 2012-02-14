@@ -586,14 +586,6 @@ trait Definitions extends reflect.api.StandardDefinitions {
       case _                                    => NoType
     }
 
-    /** To avoid unchecked warnings on polymorphic classes, translate
-     *  a Foo[T] into a Foo[_] for use in the pattern matcher.
-     */
-    def typeCaseType(clazz: Symbol) = clazz.tpe.normalize match {
-      case TypeRef(_, sym, args) if args.nonEmpty => newExistentialType(sym.typeParams, clazz.tpe)
-      case tp                                     => tp
-    }
-
     def seqType(arg: Type)       = appliedType(SeqClass.typeConstructor, List(arg))
     def arrayType(arg: Type)     = appliedType(ArrayClass.typeConstructor, List(arg))
     def byNameType(arg: Type)    = appliedType(ByNameParamClass.typeConstructor, List(arg))
@@ -608,6 +600,26 @@ trait Definitions extends reflect.api.StandardDefinitions {
     
     def vmClassType(arg: Type): Type = ClassType(arg)
     def vmSignature(sym: Symbol, info: Type): String = signature(info)    // !!!
+
+    /** Given a class symbol C with type parameters T1, T2, ... Tn
+     *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
+     *  returns an existential type of the form
+     *
+     *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
+     */
+    def classExistentialType(clazz: Symbol): Type =
+      newExistentialType(clazz.typeParams, clazz.tpe)
+
+    /** Given type U, creates a Type representing Class[_ <: U].
+     */
+    def boundedClassType(upperBound: Type) =
+      appliedTypeAsUpperBounds(ClassClass.typeConstructor, List(upperBound))
+
+    /** To avoid unchecked warnings on polymorphic classes, translate
+     *  a Foo[T] into a Foo[_] for use in the pattern matcher.
+     */
+    @deprecated("Use classExistentialType", "2.10.0")
+    def typeCaseType(clazz: Symbol): Type = classExistentialType(clazz)
 
     //
     // .NET backend

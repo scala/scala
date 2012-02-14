@@ -44,22 +44,16 @@ abstract class Erasure extends AddInterfaces
   // class object is that of java.lang.Integer, not Int.
   //
   // TODO: If T is final, return type could be Class[T].  Should it?
-  def getClassReturnType(tp: Type): Type = {
-    val sym     = tp.typeSymbol
+  def getClassReturnType(tpe: Type): Type = {
+    if (phase.erasedTypes) ClassClass.tpe else {
+      val tp  = tpe.widen.normalize
+      val sym = tp.typeSymbol
 
-    if (phase.erasedTypes) ClassClass.tpe
-    else if (isValueClass(sym)) ClassType(tp.widen)
-    else {
-      val eparams    = typeParamsToExistentials(ClassClass, ClassClass.typeParams)
-      val upperBound = (
-        if (isPhantomClass(sym)) AnyClass.tpe
+      if (isValueClass(sym)) ClassType(tp)
+      else boundedClassType(
+        if (isPhantomClass(sym)) ObjectClass.tpe
         else if (sym.isLocalClass) intersectionDominator(tp.parents)
-        else tp.widen
-      )
-
-      existentialAbstraction(
-        eparams,
-        ClassType(eparams.head setInfo TypeBounds.upper(upperBound) tpe)
+        else tp
       )
     }
   }
