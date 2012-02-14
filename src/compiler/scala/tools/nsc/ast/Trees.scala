@@ -251,12 +251,27 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    *  (bq:) This transformer has mutable state and should be discarded after use
    */
   private class ResetAttrs(localOnly: Boolean) {
+    val debug = settings.debug.value
+    val trace = scala.tools.nsc.util.trace when debug
+
     val locals = util.HashSet[Symbol](8)
+    val orderedLocals = collection.mutable.ListBuffer[Symbol]()
+    def registerLocal(sym: Symbol) {
+      if (sym != null && sym != NoSymbol) {
+        if (debug && !(locals contains sym)) orderedLocals append sym
+        locals addEntry sym
+      }
+    }
 
     class MarkLocals extends self.Traverser {
-      def markLocal(tree: Tree) =
-        if (tree.symbol != null && tree.symbol != NoSymbol)
-          locals addEntry tree.symbol
+      def markLocal(tree: Tree) {
+        if (tree.symbol != null && tree.symbol != NoSymbol) {
+          val sym = tree.symbol
+          registerLocal(sym)
+          registerLocal(sym.sourceModule)
+          registerLocal(sym.moduleClass)
+        }
+      }
 
       override def traverse(tree: Tree) = {
         tree match {
@@ -301,9 +316,12 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     def transform[T <: Tree](x: T): T = {
       new MarkLocals().traverse(x)
 
-      val trace = scala.tools.nsc.util.trace when settings.debug.value
-      val eoln = System.getProperty("line.separator")
-      trace("locals (%d total): %n".format(locals.size))(locals.toList map {"  " + _} mkString eoln)
+      if (debug) {
+        assert(locals.size == orderedLocals.size)
+        val eoln = System.getProperty("line.separator")
+        val msg = orderedLocals.toList filter {_ != NoSymbol} map {"  " + _} mkString eoln
+        trace("locals (%d total): %n".format(orderedLocals.size))(msg)
+      }
 
       val x1 = new Transformer().transform(x)
       assert(x.getClass isInstance x1)
