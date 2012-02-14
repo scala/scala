@@ -19,8 +19,7 @@ object Test extends App {
     if (clo == null) {
       val reporter = new ConsoleReporter(new Settings)
       val toolbox = new ToolBox(reporter)
-      val ttree = toolbox.typeCheck(fun.tree)
-      val dyn = toolbox.runExpr(ttree)
+      val dyn = toolbox.runExpr(fun.tree)
       clo = dyn.asInstanceOf[Int => Int]
     }
 

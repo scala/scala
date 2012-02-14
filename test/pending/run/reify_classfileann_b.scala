@@ -17,12 +17,8 @@ object Test extends App {
   }.tree
   println(tree.toString)
 
-  // test 2: import and typecheck
+  // test 2: import and compile
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
-  val ttree = toolbox.typeCheck(tree)
-  println(ttree.toString)
-
-  // test 3: import and compile
-  toolbox.runExpr(ttree)
+  toolbox.runExpr(tree)
 }

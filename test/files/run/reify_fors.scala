@@ -23,7 +23,7 @@ object Test extends App {
       /** Return an iterator over persons that are older than 20.
        */
       def olderThan20(xs: Seq[Person]): Iterator[String] =
-        olderThan20(xs.elements)
+        olderThan20(xs.iterator)
 
       /** Return an iterator over persons older than 20, given
        *  an iterator over persons.
@@ -102,6 +102,5 @@ object Test extends App {
 
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
-  val ttree = toolbox.typeCheck(code.tree)
-  toolbox.runExpr(ttree)
+  toolbox.runExpr(code.tree)
 }

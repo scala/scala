@@ -11,8 +11,7 @@ object Test extends App {
 
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
-  val ttree = toolbox.typeCheck(fun().tree)
-  val dyn = toolbox.runExpr(ttree)
+  val dyn = toolbox.runExpr(fun().tree)
   val foo = dyn.asInstanceOf[Int]
   println(foo)
 }

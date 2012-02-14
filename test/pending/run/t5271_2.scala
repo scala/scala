@@ -4,15 +4,12 @@ import reflect.runtime.Mirror.ToolBox
 
 object Test extends App {
   val code = scala.reflect.Code.lift{
-    object C {
-      val x = 2
-    }
-
-    println(C.x)
+    case class C(foo: Int, bar: Int)
+    val c = C(2, 2)
+    println(c.foo * c.bar)
   };
 
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter)
-  val evaluated = toolbox.runExpr(code.tree)
-  println("evaluated = " + evaluated)
+  toolbox.runExpr(code.tree)
 }
