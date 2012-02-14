@@ -120,7 +120,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *  @param sym ...
      */
     def enterUnique(sym: Symbol) {
-      assert(lookup(sym.name) == NoSymbol)
+      assert(lookup(sym.name) == NoSymbol, (sym.fullLocationString, lookup(sym.name).fullLocationString))
       enter(sym)
     }
 
