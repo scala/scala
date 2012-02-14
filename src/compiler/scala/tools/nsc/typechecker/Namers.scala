@@ -282,7 +282,7 @@ trait Namers extends MethodSynthesis {
     }
 
     private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
-      log("[+symbol] " + sym.hasFlagsToString(-1L) + " " + sym)
+      log("[+symbol] " + sym.debugLocationString)
       tree.symbol = sym
       sym
     }

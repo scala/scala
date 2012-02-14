@@ -94,7 +94,6 @@ abstract class AddInterfaces extends InfoTransform {
         // error: java.lang.AssertionError: assertion failed: (scala.tools.nsc.typechecker.Contexts$NoContext$,scala.tools.nsc.typechecker.Contexts,NoContext$,trait Contexts in package typechecker) /  while parsing (/scala/trunk/build/pack/lib/scala-compiler.jar(scala/tools/nsc/interactive/ContextTrees$class.class),Some(class ContextTrees$class))trait Contexts.NoContext$ linkedModule: <none>List()
 
         val originalImpl = impl
-        val originalImplString = originalImpl.hasFlagsToString(-1L)
         if (impl != NoSymbol) {
           // Unlink a pre-existing symbol only if the implementation class is
           // visible on the compilation classpath.  In general this is true under
@@ -120,8 +119,8 @@ abstract class AddInterfaces extends InfoTransform {
         impl setInfo new LazyImplClassType(iface)
         implClassMap(iface) = impl
         debuglog(
-          "generating impl class " + impl + " " + impl.hasFlagsToString(-1L) + " in " + iface.owner + (
-            if (originalImpl == NoSymbol) "" else " (cloned from " + originalImpl.fullLocationString + " " + originalImplString + ")"
+          "generating impl class " + impl.debugLocationString + " in " + iface.owner + (
+            if (originalImpl == NoSymbol) "" else " (cloned from " + originalImpl.debugLocationString + ")"
           )
         )
         impl
