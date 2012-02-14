@@ -325,6 +325,16 @@ trait Reifiers { self: Global =>
             // registerReifiableSymbol(tree.symbol)
             boundSyms += tree.symbol
 
+            if (tree.symbol.sourceModule != NoSymbol) {
+              if (reifyDebug) println("boundSym (sourceModule): " + tree.symbol.sourceModule)
+              boundSyms += tree.symbol.sourceModule
+            }
+
+            if (tree.symbol.moduleClass != NoSymbol) {
+              if (reifyDebug) println("boundSym (moduleClass): " + tree.symbol.moduleClass)
+              boundSyms += tree.symbol.moduleClass
+            }
+
             val prefix = tree.productPrefix
             val elements = (tree.productIterator map {
               // annotations exist in two flavors:

@@ -2,9 +2,23 @@ package scala.reflect
 package runtime
 
 trait TreeBuildUtil extends Universe with api.TreeBuildUtil {
-  def staticClass(fullname: String): Symbol = definitions.getRequiredClass(fullname)
-  def staticModule(fullname: String): Symbol = definitions.getRequiredModule(fullname)
-  def thisModuleType(fullname: String) = staticModule(fullname).moduleClass.thisType
+  def staticClass(fullname: String): Symbol = {
+    val sym = definitions.getRequiredClass(fullname)
+    sym.initialize
+    sym
+  }
+
+  def staticModule(fullname: String): Symbol = {
+    val sym = definitions.getRequiredModule(fullname)
+    sym.initialize
+    sym
+  }
+
+  def thisModuleType(fullname: String) = {
+    val sym = staticModule(fullname).moduleClass
+    sym.initialize
+    sym.thisType
+  }
 
  /** Selects type symbol with given name from the defined members of prefix type
    */
