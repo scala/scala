@@ -1063,7 +1063,7 @@ abstract class Erasure extends AddInterfaces
         case Literal(ct) if ct.tag == ClassTag
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
           val erased = ct.typeValue match {
-            case TypeRef(pre, clazz, args) if clazz.isInlineClass => typeRef(pre, clazz, List())
+            case TypeRef(pre, clazz, args) if clazz.isInlineClass => scalaErasure.eraseNormalClassRef(pre, clazz)
             case tpe => specialErasure(NoSymbol, tpe)
           }
           treeCopy.Literal(tree, Constant(erased))

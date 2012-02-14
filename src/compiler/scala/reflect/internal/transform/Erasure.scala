@@ -71,50 +71,56 @@ trait Erasure {
   abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
 
+    def eraseNormalClassRef(pre: Type, clazz: Symbol): Type =
+      typeRef(apply(rebindInnerClass(pre, clazz)), clazz, List()) // #2585
+
     protected def eraseInlineClassRef(clazz: Symbol): Type =
       scalaErasure(underlyingOfValueClass(clazz))
 
-    def apply(tp: Type): Type = {
-      tp match {
-        case ConstantType(_) =>
-          tp
-        case st: SubType =>
-          apply(st.supertype)
-        case TypeRef(pre, sym, args) =>
-          if (sym == ArrayClass)
-            if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
-            else if (args.head.typeSymbol.isBottomClass) ObjectArray
-            else typeRef(apply(pre), sym, args map this)
-          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
-          else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
-          else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
-          else if (sym.isInlineClass) eraseInlineClassRef(sym)
-          else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
-          else apply(sym.info) // alias type or abstract type
-        case PolyType(tparams, restpe) =>
-          apply(restpe)
-        case ExistentialType(tparams, restpe) =>
-          apply(restpe)
-        case mt @ MethodType(params, restpe) =>
-          MethodType(
-            cloneSymbolsAndModify(params, ErasureMap.this),
-            if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
-            // this replaces each typeref that refers to an argument
-            // by the type `p.tpe` of the actual argument p (p in params)
-            else apply(mt.resultType(params map (_.tpe))))
-        case RefinedType(parents, decls) =>
-          apply(mergeParents(parents))
-        case AnnotatedType(_, atp, _) =>
-          apply(atp)
-        case ClassInfoType(parents, decls, clazz) =>
-          ClassInfoType(
-            if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
-            else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
-            else removeLaterObjects(parents map this),
-            decls, clazz)
-        case _ =>
-          mapOver(tp)
-      }
+    def apply(tp: Type): Type = tp match {
+      case ConstantType(_) =>
+        tp
+      case st: SubType =>
+        apply(st.supertype)
+      case TypeRef(pre, sym, args) =>
+        if (sym == ArrayClass)
+          if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
+          else if (args.head.typeSymbol.isBottomClass) ObjectArray
+          else typeRef(apply(pre), sym, args map applyInArray)
+        else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
+        else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
+        else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
+        else if (sym.isInlineClass) eraseInlineClassRef(sym)
+        else if (sym.isClass) eraseNormalClassRef(pre, sym)
+        else apply(sym.info) // alias type or abstract type
+      case PolyType(tparams, restpe) =>
+        apply(restpe)
+      case ExistentialType(tparams, restpe) =>
+        apply(restpe)
+      case mt @ MethodType(params, restpe) =>
+        MethodType(
+          cloneSymbolsAndModify(params, ErasureMap.this),
+          if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
+          // this replaces each typeref that refers to an argument
+          // by the type `p.tpe` of the actual argument p (p in params)
+          else apply(mt.resultType(params map (_.tpe))))
+      case RefinedType(parents, decls) =>
+        apply(mergeParents(parents))
+      case AnnotatedType(_, atp, _) =>
+        apply(atp)
+      case ClassInfoType(parents, decls, clazz) =>
+        ClassInfoType(
+          if (clazz == ObjectClass || isPrimitiveValueClass(clazz)) Nil
+          else if (clazz == ArrayClass) List(erasedTypeRef(ObjectClass))
+          else removeLaterObjects(parents map this),
+          decls, clazz)
+      case _ =>
+        mapOver(tp)
+    }
+
+    private def applyInArray(tp: Type): Type = tp match {
+      case TypeRef(pre, sym, args) if (sym.isInlineClass) => eraseNormalClassRef(pre, sym)
+      case _ => apply(tp)
     }
   }
 
@@ -159,7 +165,7 @@ trait Erasure {
     } else
       scalaErasure(tp)
   }
-  
+
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedInlineTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
@@ -172,7 +178,7 @@ trait Erasure {
     else if (sym.isValue && sym.owner.isMethodWithExtension)
       specialErasureAvoiding(sym.owner.owner, tp)
     else
-      specialErasure(tp)      
+      specialErasure(tp)
 
   /** Scala's more precise erasure than java's is problematic as follows:
    *
@@ -193,9 +199,9 @@ trait Erasure {
     def mergeParents(parents: List[Type]): Type =
       intersectionDominator(parents)
   }
-  
+
   object scalaErasure extends ScalaErasureMap
-  
+
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedInlineTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
@@ -203,7 +209,7 @@ trait Erasure {
   object specialErasure extends ScalaErasureMap {
     override def eraseInlineClassRef(clazz: Symbol): Type = ErasedInlineType(clazz)
   }
-    
+
   def specialErasureAvoiding(clazz: Symbol, tpe: Type): Type = {
     tpe match {
       case PolyType(tparams, restpe) =>
