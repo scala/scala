@@ -13,7 +13,7 @@ import processInternal._
 import ProcessBuilder._
 
 /** Represents a process that is running or has finished running.
- *  It may be a compound process with several underlying native processes (such as 'a #&& b`).
+ *  It may be a compound process with several underlying native processes (such as `a #&& b`).
  *
  *  This trait is often not used directly, though its companion object contains
  *  factories for [[scala.sys.process.ProcessBuilder]], the main component of this
@@ -42,28 +42,28 @@ object Process extends ProcessImpl with ProcessCreation { }
  *  found on and used through [[scala.sys.process.Process]]'s companion object.
  */
 trait ProcessCreation {
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a `String`, including the
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a `String`, including the
     * parameters.
     *
     * @example {{{ apply("cat file.txt") }}}
     */
   def apply(command: String): ProcessBuilder                         = apply(command, None)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a sequence of `String`,
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a sequence of `String`,
     * where the head is the command and each element of the tail is a parameter.
     *
     * @example {{{ apply("cat" :: files) }}}
     */
   def apply(command: Seq[String]): ProcessBuilder                    = apply(command, None)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a command represented by a `String`,
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a command represented by a `String`,
     * and a sequence of `String` representing the arguments.
     *
     * @example {{{ apply("cat", files) }}}
     */
   def apply(command: String, arguments: Seq[String]): ProcessBuilder = apply(command +: arguments, None)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
+  /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
     * environment variables.
     *
     * @example {{{ apply("java", new java.ioFile("/opt/app"), "CLASSPATH" -> "library.jar") }}}
@@ -71,7 +71,7 @@ trait ProcessCreation {
   def apply(command: String, cwd: File, extraEnv: (String, String)*): ProcessBuilder =
     apply(command, Some(cwd), extraEnv: _*)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
+  /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir set to `File` and extra
     * environment variables.
     *
     * @example {{{ apply("java" :: javaArgs, new java.ioFile("/opt/app"), "CLASSPATH" -> "library.jar") }}}
@@ -79,7 +79,7 @@ trait ProcessCreation {
   def apply(command: Seq[String], cwd: File, extraEnv: (String, String)*): ProcessBuilder =
     apply(command, Some(cwd), extraEnv: _*)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] with working dir optionally set to
+  /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir optionally set to
     * `File` and extra environment variables.
     *
     * @example {{{ apply("java", params.get("cwd"), "CLASSPATH" -> "library.jar") }}}
@@ -93,7 +93,7 @@ trait ProcessCreation {
     }*/
   }
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] with working dir optionally set to
+  /** Creates a [[scala.sys.process.ProcessBuilder]] with working dir optionally set to
     * `File` and extra environment variables.
     *
     * @example {{{ apply("java" :: javaArgs, params.get("cwd"), "CLASSPATH" -> "library.jar") }}}
@@ -105,7 +105,7 @@ trait ProcessCreation {
     apply(jpb)
   }
 
-  /** create a [[scala.sys.process.ProcessBuilder]] from a `java.lang.ProcessBuilder`.
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a `java.lang.ProcessBuilder`.
     *
     * @example {{{
     * apply((new java.lang.ProcessBuilder("ls", "-l")) directory new java.io.File(System.getProperty("user.home")))
@@ -113,19 +113,19 @@ trait ProcessCreation {
     */
   def apply(builder: JProcessBuilder): ProcessBuilder = new Simple(builder)
 
-  /** create a [[scala.sys.process.ProcessBuilder]] from a `java.io.File`. This
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a `java.io.File`. This
     * `ProcessBuilder` can then be used as a `Source` or a `Sink`, so one can
     * pipe things from and to it.
     */
   def apply(file: File): FileBuilder                  = new FileImpl(file)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a `java.net.URL`. This
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a `java.net.URL`. This
     * `ProcessBuilder` can then be used as a `Source`, so that one can pipe things
     * from it.
     */
   def apply(url: URL): URLBuilder                     = new URLImpl(url)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a Scala XML Element.
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a Scala XML Element.
     * This can be used as a way to template strings.
     *
     * @example {{{
@@ -134,23 +134,23 @@ trait ProcessCreation {
     */
   def apply(command: scala.xml.Elem): ProcessBuilder  = apply(command.text.trim)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a `Boolean`. This can be
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a `Boolean`. This can be
     * to force an exit value.
     */
   def apply(value: Boolean): ProcessBuilder           = apply(value.toString, if (value) 0 else 1)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a `String` name and a
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a `String` name and a
     * `Boolean`. This can be used to force an exit value, with the name being
     * used for `toString`.
     */
   def apply(name: String, exitValue: => Int): ProcessBuilder = new Dummy(name, exitValue)
 
-  /** Create a sequence of [[scala.sys.process.ProcessBuilder.Source]] from a sequence of
+  /** Creates a sequence of [[scala.sys.process.ProcessBuilder.Source]] from a sequence of
     * something else for which there's an implicit conversion to `Source`.
     */
   def applySeq[T](builders: Seq[T])(implicit convert: T => Source): Seq[Source] = builders.map(convert)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from one or more
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from one or more
     * [[scala.sys.process.ProcessBuilder.Source]], which can then be
     * piped to something else.
     *
@@ -170,7 +170,7 @@ trait ProcessCreation {
     */
   def cat(file: Source, files: Source*): ProcessBuilder = cat(file +: files)
 
-  /** Create a [[scala.sys.process.ProcessBuilder]] from a non-empty sequence
+  /** Creates a [[scala.sys.process.ProcessBuilder]] from a non-empty sequence
     * of [[scala.sys.process.ProcessBuilder.Source]], which can then be
     * piped to something else.
     *
@@ -198,18 +198,41 @@ trait ProcessImplicits {
   /** Implicitly convert a `java.lang.ProcessBuilder` into a Scala one. */
   implicit def builderToProcess(builder: JProcessBuilder): ProcessBuilder = apply(builder)
 
-  /** Implicitly convert a `java.io.File` into a [[scala.sys.process.ProcessBuilder]] */
+  /** Implicitly convert a `java.io.File` into a
+    * [[scala.sys.process.ProcessBuilder.FileBuilder]], which can be used as
+    * either input or output of a process. For example:
+    * {{{
+    * import scala.sys.process._
+    * "ls" #> new java.io.File("dirContents.txt") !
+    * }}}
+    */
   implicit def fileToProcess(file: File): FileBuilder                     = apply(file)
 
-  /** Implicitly convert a `java.net.URL` into a [[scala.sys.process.ProcessBuilder]] */
+  /** Implicitly convert a `java.net.URL` into a
+    * [[scala.sys.process.ProcessBuilder.URLBuilder]] , which can be used as
+    * input to a process. For example:
+    * {{{
+    * import scala.sys.process._
+    * Seq("xmllint", "--html", "-") #< new java.net.URL("http://www.scala-lang.org") #> new java.io.File("fixed.html") !
+    * }}}
+    */
   implicit def urlToProcess(url: URL): URLBuilder                         = apply(url)
 
-  /** Implicitly convert a [[scala.xml.Elem]] into a [[scala.sys.process.ProcessBuilder]] */
+  /** Implicitly convert a [[scala.xml.Elem]] into a
+    * [[scala.sys.process.ProcessBuilder]]. This is done by obtaining the text
+    * elements of the element, trimming spaces, and then converting the result
+    * from string to a process. Importantly, tags are completely ignored, so
+    * they cannot be used to separate parameters.
+    */
   implicit def xmlToProcess(command: scala.xml.Elem): ProcessBuilder      = apply(command)
 
-  /** Implicitly convert a `String` into a [[scala.sys.process.ProcessBuilder]] */
+  /** Implicitly convert a `String` into a [[scala.sys.process.ProcessBuilder]]. */
   implicit def stringToProcess(command: String): ProcessBuilder           = apply(command)
 
-  /** Implicitly convert a sequence of `String` into a [[scala.sys.process.ProcessBuilder]] */
+  /** Implicitly convert a sequence of `String` into a
+    * [[scala.sys.process.ProcessBuilder]]. The first argument will be taken to
+    * be the command to be executed, and the remaining will be its arguments.
+    * When using this, arguments may contain spaces.
+    */
   implicit def stringSeqToProcess(command: Seq[String]): ProcessBuilder   = apply(command)
 }
