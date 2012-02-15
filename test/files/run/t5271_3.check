@@ -1,0 +1,19 @@
+{
+  object C extends Object with ScalaObject with Serializable {
+    def <init>() = {
+      super.<init>();
+      ()
+    };
+    def qwe: Int = 4
+  };
+  case class C extends Object with ScalaObject with Product with Serializable {
+    <caseaccessor> <paramaccessor> val foo : Int = _;
+    <caseaccessor> <paramaccessor> val bar : Int = _;
+    def <init>(foo: Int, bar: Int) = {
+      super.<init>();
+      ()
+    }
+  };
+  val c = C.apply(2, 2);
+  scala.this.Predef.println(c.foo.$times(c.bar).$eq$eq(C.qwe))
+}

@@ -286,7 +286,7 @@ trait Importers { self: SymbolTable =>
       new Modifiers(mods.flags, importName(mods.privateWithin), mods.annotations map importTree)
 
     def importImportSelector(sel: from.ImportSelector): ImportSelector =
-      new ImportSelector(importName(sel.name), sel.namePos, importName(sel.rename), sel.renamePos)
+      new ImportSelector(importName(sel.name), sel.namePos, if (sel.rename != null) importName(sel.rename) else null, sel.renamePos)
 
     def importTree(tree: from.Tree): Tree = {
       val mytree = tree match {
