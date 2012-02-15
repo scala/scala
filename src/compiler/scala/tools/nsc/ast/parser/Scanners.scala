@@ -180,7 +180,7 @@ trait Scanners extends ScannersCommon {
      *  @pre: inStringInterpolation
      */
     @inline private def inMultiLineInterpolation = 
-      sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART    
+      inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
     
     /** read next token and return last offset
      */
@@ -217,7 +217,9 @@ trait Scanners extends ScannersCommon {
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
         case STRINGLIT =>
-          if (inStringInterpolation)
+          if (inMultiLineInterpolation)
+            sepRegions = sepRegions.tail.tail
+          else if (inStringInterpolation)
             sepRegions = sepRegions.tail
         case _ =>
       }
@@ -386,7 +388,7 @@ trait Scanners extends ScannersCommon {
               if (ch == '\"') {
                 nextRawChar()
                 getStringPart(multiLine = true)
-                sepRegions = STRINGLIT :: sepRegions // indicate string part
+                sepRegions = STRINGPART :: sepRegions // indicate string part
                 sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
               } else {
                 token = STRINGLIT
