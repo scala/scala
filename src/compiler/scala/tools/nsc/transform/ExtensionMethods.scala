@@ -152,8 +152,8 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
         case stat @ ModuleDef(mods, name, tmpl @ Template(parents, self, body)) =>
           extensionDefs.remove(stat.symbol) match {
             case Some(buf) =>
-              val extensionDefs = buf.toList map { mdef => atOwner(stat.symbol) { localTyper.typed(mdef) }}
-              treeCopy.ModuleDef(stat, mods, name, treeCopy.Template(tmpl, parents, self, body ++ buf))
+              val extensionDefs = buf.toList map { mdef => atOwner(stat.symbol) { localTyper.typed(mdef) } }
+              treeCopy.ModuleDef(stat, mods, name, treeCopy.Template(tmpl, parents, self, body ++ extensionDefs))
             case None =>
               stat
           }
