@@ -10,30 +10,25 @@ package scala.collection.mutable;
 
 
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 
 
-abstract class MainNode<K, V> extends BasicNode {
+abstract class CNodeBase<K, V> extends MainNode<K, V> {
     
-    public static final AtomicReferenceFieldUpdater<MainNode, MainNode> updater = AtomicReferenceFieldUpdater.newUpdater(MainNode.class, MainNode.class, "prev");
+    public static final AtomicIntegerFieldUpdater<CNodeBase> updater = AtomicIntegerFieldUpdater.newUpdater(CNodeBase.class, "csize");
     
-    public volatile MainNode<K, V> prev = null;
+    public volatile int csize = -1;
     
-    public abstract int cachedSize(Object ct);
-    
-    public boolean CAS_PREV(MainNode<K, V> oldval, MainNode<K, V> nval) {
+    public boolean CAS_SIZE(int oldval, int nval) {
 	return updater.compareAndSet(this, oldval, nval);
     }
     
-    public void WRITE_PREV(MainNode<K, V> nval) {
+    public void WRITE_SIZE(int nval) {
 	updater.set(this, nval);
     }
     
-    // do we need this? unclear in the javadocs...
-    // apparently not - volatile reads are supposed to be safe
-    // irregardless of whether there are concurrent ARFU updates
-    public MainNode<K, V> READ_PREV() {
+    public int READ_SIZE() {
 	return updater.get(this);
     }
     

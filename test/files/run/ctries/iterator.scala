@@ -274,6 +274,16 @@ object IteratorSpec extends Spec {
       while (it.hasNext) it.next()
     }
     
+    "be duplicated" in {
+      val sz = 50
+      val ct = collection.parallel.mutable.ParCtrie((0 until sz) zip (0 until sz): _*)
+      val it = ct.splitter
+      for (_ <- 0 until (sz / 2)) it.next()
+      val dupit = it.dup
+      
+      it.toList shouldEqual dupit.toList
+    }
+    
   }
   
 }

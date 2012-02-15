@@ -13,6 +13,12 @@ package scala.collection.parallel.mutable
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.IterableSplitter
+import scala.collection.mutable.BasicNode
+import scala.collection.mutable.TNode
+import scala.collection.mutable.LNode
+import scala.collection.mutable.CNode
+import scala.collection.mutable.SNode
+import scala.collection.mutable.INode
 import scala.collection.mutable.Ctrie
 import scala.collection.mutable.CtrieIterator
 
@@ -34,6 +40,7 @@ extends ParMap[K, V]
    with ParCtrieCombiner[K, V]
    with Serializable
 {
+  import collection.parallel.tasksupport._
   
   def this() = this(new Ctrie)
   
@@ -46,8 +53,6 @@ extends ParMap[K, V]
   override def seq = ctrie
   
   def splitter = new ParCtrieSplitter(0, ctrie.readOnlySnapshot().asInstanceOf[Ctrie[K, V]], true)
-  
-  override def size = ctrie.size
   
   override def clear() = ctrie.clear()
   
@@ -71,7 +76,45 @@ extends ParMap[K, V]
     this
   }
   
+  override def size = {
+    val in = ctrie.readRoot()
+    val r = in.gcasRead(ctrie)
+    r match {
+      case tn: TNode[_, _] => tn.cachedSize(ctrie)
+      case ln: LNode[_, _] => ln.cachedSize(ctrie)
+      case cn: CNode[_, _] =>
+        executeAndWaitResult(new Size(0, cn.array.length, cn.array))
+        cn.cachedSize(ctrie)
+    }
+  }
+  
   override def stringPrefix = "ParCtrie"
+  
+  /* tasks */
+  
+  /** Computes Ctrie size in parallel. */
+  class Size(offset: Int, howmany: Int, array: Array[BasicNode]) extends Task[Int, Size] {
+    var result = -1
+    def leaf(prev: Option[Int]) = {
+      var sz = 0
+      var i = offset
+      val until = offset + howmany
+      while (i < until) {
+        array(i) match {
+          case sn: SNode[_, _] => sz += 1
+          case in: INode[K, V] => sz += in.cachedSize(ctrie)
+        }
+        i += 1
+      }
+      result = sz
+    }
+    def split = {
+      val fp = howmany / 2
+      Seq(new Size(offset, fp, array), new Size(offset + fp, howmany - fp, array))
+    }
+    def shouldSplitFurther = howmany > 1
+    override def merge(that: Size) = result = result + that.result
+  }
   
 }
 
@@ -81,8 +124,7 @@ extends CtrieIterator[K, V](lev, ct, mustInit)
    with IterableSplitter[(K, V)]
 {
   // only evaluated if `remaining` is invoked (which is not used by most tasks)
-  //lazy val totalsize = ct.iterator.size /* TODO improve to lazily compute sizes */
-  def totalsize: Int = throw new UnsupportedOperationException
+  lazy val totalsize = ct.par.size
   var iterated = 0
   
   protected override def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new ParCtrieSplitter[K, V](_lev, _ct, _mustInit)
@@ -92,7 +134,12 @@ extends CtrieIterator[K, V](lev, ct, mustInit)
     level < maxsplits
   }
   
-  def dup = null // TODO necessary for views
+  def dup = {
+    val it = newIterator(0, ct, false)
+    dupTo(it)
+    it.iterated = this.iterated
+    it
+  }
   
   override def next() = {
     iterated += 1
