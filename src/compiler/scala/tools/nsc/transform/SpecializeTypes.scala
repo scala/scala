@@ -819,7 +819,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           log("-->d SETTING PRIVATE WITHIN TO " + sym.enclosingPackage + " for " + sym)
         }
 
-        sym.resetFlag(FINAL)
+        //sym.resetFlag(FINAL)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
         typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
         wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
