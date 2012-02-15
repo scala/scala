@@ -1,33 +1,17 @@
-class Meter(val underlying: Double) extends AnyVal with Printable {
+import collection.generic.RowFactory
+
+class Meter(val unbox: Double) extends AnyVal with Boxed[Double] with Printable {
    def + (other: Meter): Meter = 
-     new Meter(this.underlying + other.underlying)
-   def / (other: Meter): Double = this.underlying / other.underlying
-   def / (factor: Double): Meter = new Meter(this.underlying / factor)
-   def < (other: Meter): Boolean = this.underlying < other.underlying
-   override def toString: String = underlying.toString+"m"
+     new Meter(this.unbox + other.unbox)
+   def / (other: Meter): Double = this.unbox / other.unbox
+   def / (factor: Double): Meter = new Meter(this.unbox / factor)
+   def < (other: Meter): Boolean = this.unbox < other.unbox
+   override def toString: String = unbox.toString+"m"
 }
-object Meter extends (Double => Meter) {
-
+object Meter extends RowFactory[Double, Meter] {
   def apply(x: Double): Meter = new Meter(x)
-
-  class FlatArray(underlying: Array[Double]) {
-    def length = underlying.length
-    def apply(i: Int): Meter = new Meter(underlying(i))
-    def update(i: Int, m: Meter) = underlying(i) = m.underlying
-    override def toString = underlying.toList map Meter mkString ("Meter.FlatArray(", ", ", ")")
-  }
-
-  object FlatArray {
-
-    def apply(xs: Meter*) = {
-      val elems = Array.ofDim[Double](xs.length)
-      for (i <- 0 until xs.length)
-        elems(i) = xs(i).asInstanceOf[Double]
-      new FlatArray(elems)
-    }
-  }
-
 }
+
 trait Printable extends Any { def print: Unit = Console.print(this) }
 
 object Test extends App {
@@ -71,9 +55,9 @@ object Test extends App {
   }
 
   { println("testing wrapped arrays")
-    val arr = Meter.FlatArray(x, y + x)
+    val arr = Meter.Row(x, y + x)
     println(arr)
-    def foo(x: Meter.FlatArray) {
+    def foo(x: Meter.Row) {
       for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
     }
     val m = arr(0)
