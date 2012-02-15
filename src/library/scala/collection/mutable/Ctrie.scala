@@ -360,6 +360,11 @@ private[mutable] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends INo
   
   final def isNullInode(ct: Ctrie[K, V]) = GCAS_READ(ct) eq null
   
+  final def cachedSize(ct: Ctrie[K, V]): Int = {
+    val m = GCAS_READ(ct)
+    m.cachedSize(ct)
+  }
+  
   /* this is a quiescent method! */
   def string(lev: Int) = "%sINode -> %s".format("  " * lev, mainnode match {
     case null => "<null>"
@@ -389,6 +394,8 @@ private[mutable] final class FailedNode[K, V](p: MainNode[K, V]) extends MainNod
   
   def string(lev: Int) = throw new UnsupportedOperationException
   
+  def cachedSize(ct: AnyRef): Int = throw new UnsupportedOperationException
+  
   override def toString = "FailedNode(%s)".format(p)
 }
 
@@ -414,6 +421,7 @@ extends MainNode[K, V] with KVNode[K, V] {
   final def copyTombed = new TNode(k, v, hc)
   final def copyUntombed = new SNode(k, v, hc)
   final def kvPair = (k, v)
+  final def cachedSize(ct: AnyRef): Int = 1
   final def string(lev: Int) = ("  " * lev) + "TNode(%s, %s, %x, !)".format(k, v, hc)
 }
 
@@ -432,12 +440,37 @@ extends MainNode[K, V] {
     }
   }
   def get(k: K) = listmap.get(k)
+  def cachedSize(ct: AnyRef): Int = listmap.size
   def string(lev: Int) = (" " * lev) + "LNode(%s)".format(listmap.mkString(", "))
 }
 
 
 private[mutable] final class CNode[K, V](final val bitmap: Int, final val array: Array[BasicNode], final val gen: Gen)
-extends MainNode[K, V] {
+extends CNodeBase[K, V] {
+  
+  // this should only be called from within read-only snapshots
+  final def cachedSize(ct: AnyRef) = {
+    val currsz = READ_SIZE()
+    if (currsz != -1) currsz
+    else {
+      val sz = computeSize(ct.asInstanceOf[Ctrie[K, V]])
+      while (READ_SIZE() == -1) CAS_SIZE(-1, sz)
+      READ_SIZE()
+    }
+  }
+  
+  private def computeSize(ct: Ctrie[K, V]): Int = {
+    var i = 0
+    var sz = 0
+    while (i < array.length) {
+      array(i) match {
+        case sn: SNode[_, _] => sz += 1
+        case in: INode[K, V] => sz += in.cachedSize(ct)
+      }
+      i += 1
+    }
+    sz
+  }
   
   final def updatedAt(pos: Int, nn: BasicNode, gen: Gen) = {
     val len = array.length
@@ -829,6 +862,15 @@ extends ConcurrentMap[K, V]
   def iterator: Iterator[(K, V)] =
     if (nonReadOnly) readOnlySnapshot().iterator
     else new CtrieIterator(0, this)
+  
+  private def cachedSize() = {
+    val r = RDCSS_READ_ROOT()
+    r.cachedSize(this)
+  }
+  
+  override def size: Int =
+    if (nonReadOnly) readOnlySnapshot().size
+    else cachedSize()
   
   override def stringPrefix = "Ctrie"
   
