@@ -124,8 +124,7 @@ extends CtrieIterator[K, V](lev, ct, mustInit)
    with IterableSplitter[(K, V)]
 {
   // only evaluated if `remaining` is invoked (which is not used by most tasks)
-  //lazy val totalsize = ct.iterator.size /* TODO improve to lazily compute sizes */
-  def totalsize: Int = throw new UnsupportedOperationException
+  lazy val totalsize = ct.par.size
   var iterated = 0
   
   protected override def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new ParCtrieSplitter[K, V](_lev, _ct, _mustInit)
