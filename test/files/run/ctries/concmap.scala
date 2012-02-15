@@ -164,6 +164,25 @@ object ConcurrentMapSpec extends Spec {
       for (i <- 0 until sz) assertEqual(ct.get(new Wrap(i)), None)
     }
     
+    "compute size correctly" in {
+      val ct = new Ctrie[Wrap, Int]
+      val sz = 36450
+      for (i <- 0 until sz) ct(new Wrap(i)) = i
+      
+      assertEqual(ct.size, sz)
+      assertEqual(ct.size, sz)
+    }
+    
+    "compute size correctly in parallel" in {
+      val ct = new Ctrie[Wrap, Int]
+      val sz = 36450
+      for (i <- 0 until sz) ct(new Wrap(i)) = i
+      val pct = ct.par
+      
+      assertEqual(pct.size, sz)
+      assertEqual(pct.size, sz)
+    }
+    
   }
   
 }

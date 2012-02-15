@@ -20,7 +20,7 @@ import annotation.switch
 
 
 
-private[mutable] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends INodeBase[K, V](g) {
+private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends INodeBase[K, V](g) {
   import INodeBase._
   
   WRITE(bn)
@@ -405,7 +405,7 @@ private[mutable] trait KVNode[K, V] {
 }
 
 
-private[mutable] final class SNode[K, V](final val k: K, final val v: V, final val hc: Int)
+private[collection] final class SNode[K, V](final val k: K, final val v: V, final val hc: Int)
 extends BasicNode with KVNode[K, V] {
   final def copy = new SNode(k, v, hc)
   final def copyTombed = new TNode(k, v, hc)
@@ -415,7 +415,7 @@ extends BasicNode with KVNode[K, V] {
 }
 
 
-private[mutable] final class TNode[K, V](final val k: K, final val v: V, final val hc: Int)
+private[collection] final class TNode[K, V](final val k: K, final val v: V, final val hc: Int)
 extends MainNode[K, V] with KVNode[K, V] {
   final def copy = new TNode(k, v, hc)
   final def copyTombed = new TNode(k, v, hc)
@@ -426,7 +426,7 @@ extends MainNode[K, V] with KVNode[K, V] {
 }
 
 
-private[mutable] final class LNode[K, V](final val listmap: ImmutableListMap[K, V])
+private[collection] final class LNode[K, V](final val listmap: ImmutableListMap[K, V])
 extends MainNode[K, V] {
   def this(k: K, v: V) = this(ImmutableListMap(k -> v))
   def this(k1: K, v1: V, k2: K, v2: V) = this(ImmutableListMap(k1 -> v1, k2 -> v2))
@@ -445,7 +445,7 @@ extends MainNode[K, V] {
 }
 
 
-private[mutable] final class CNode[K, V](final val bitmap: Int, final val array: Array[BasicNode], final val gen: Gen)
+private[collection] final class CNode[K, V](final val bitmap: Int, final val array: Array[BasicNode], final val gen: Gen)
 extends CNodeBase[K, V] {
   
   // this should only be called from within read-only snapshots
@@ -459,11 +459,18 @@ extends CNodeBase[K, V] {
     }
   }
   
+  // lends itself towards being parallelizable by choosing
+  // a random starting offset in the array
+  // => if there are concurrent size computations, they start
+  //    at different positions, so they are more likely to
+  //    to be independent
   private def computeSize(ct: Ctrie[K, V]): Int = {
     var i = 0
     var sz = 0
+    val offset = math.abs(util.Random.nextInt()) % array.length
     while (i < array.length) {
-      array(i) match {
+      val pos = (i + offset) % array.length
+      array(pos) match {
         case sn: SNode[_, _] => sz += 1
         case in: INode[K, V] => sz += in.cachedSize(ct)
       }
