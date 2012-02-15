@@ -1466,9 +1466,7 @@ trait Infer {
                                argtpes: List[Type], pt0: Type, varArgsOnly: Boolean = false): Unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
         val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
-        var secondTry = true
         tryTwice {
-          secondTry = !secondTry
           debuglog("infer method alt "+ tree.symbol +" with alternatives "+
                 (alts map pre.memberType) +", argtpes = "+ argtpes +", pt = "+ pt)
 
@@ -1490,11 +1488,8 @@ trait Infer {
             if (improves(alt, best)) alt else best)
           val competing = applicable.dropWhile(alt => best == alt || improves(best, alt))
           if (best == NoSymbol) {
-            if (pt == WildcardType) {
+            if (pt == WildcardType)
               NoBestMethodAlternativeError(tree, argtpes, pt)
-              if (secondTry)
-                setError(tree)
-            }
             else
               inferMethodAlternative(tree, undetparams, argtpes, WildcardType)
           } else if (!competing.isEmpty) {
