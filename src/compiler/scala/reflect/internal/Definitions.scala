@@ -71,7 +71,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       tpnme.Double  -> DOUBLE_TAG,
       tpnme.Boolean -> BOOL_TAG,
       tpnme.Unit    -> VOID_TAG,
-      tpnme.Object  -> TVAR_TAG
+      tpnme.Object  -> OBJECT_TAG
     )
 
     private def classesMap[T](f: Name => T) = symbolsMap(ScalaValueClassesNoUnit, f)
@@ -128,6 +128,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       FloatClass,
       DoubleClass
     )
+    def ScalaValueClassCompanions: List[Symbol] = ScalaValueClasses map (_.companionSymbol)
   }
 
   object definitions extends AbsDefinitions with ValueClassDefinitions {
@@ -209,8 +210,12 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val AnyClass             = newClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
     lazy val AnyRefClass          = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectClass.typeConstructor)
     lazy val ObjectClass          = getClass(sn.Object)
-    lazy val AnyCompanionClass    = getRequiredClass("scala.AnyCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
-    lazy val AnyValCompanionClass = getRequiredClass("scala.AnyValCompanion") initFlags (SEALED | ABSTRACT | TRAIT)
+
+    // Note: this is not the type alias AnyRef, it's a companion-like
+    // object used by the @specialize annotation.
+    def AnyRefModule = getMember(ScalaPackageClass, nme.AnyRef)
+    @deprecated("Use AnyRefModule", "2.10.0") 
+    def Predef_AnyRef = AnyRefModule
 
     // bottom types
     lazy val RuntimeNothingClass  = getClass(fulltpnme.RuntimeNothing)
@@ -265,9 +270,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     lazy val PredefModule: Symbol = getRequiredModule("scala.Predef")
     lazy val PredefModuleClass = PredefModule.moduleClass
-      // Note: this is not the type alias AnyRef, it's a val defined in Predef
-      // used by the @specialize annotation.
-      def Predef_AnyRef = getMember(PredefModule, nme.AnyRef)
+      
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
@@ -281,6 +284,11 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
+    
+    /** Specialization.
+     */
+    lazy val SpecializableModule  = getRequiredModule("scala.Specializable")
+    lazy val GroupOfSpecializable = SpecializableModule.info.member(newTypeName("Group"))
 
     lazy val ConsoleModule: Symbol      = getRequiredModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getRequiredModule("scala.runtime.ScalaRunTime")
@@ -883,8 +891,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     private lazy val boxedValueClassesSet = boxedClass.values.toSet + BoxedUnitClass
 
     /** Is symbol a value class? */
-    def isValueClass(sym: Symbol) = scalaValueClassesSet(sym)
-    def isNonUnitValueClass(sym: Symbol) = (sym != UnitClass) && isValueClass(sym)
+    def isValueClass(sym: Symbol)         = scalaValueClassesSet(sym)
+    def isNonUnitValueClass(sym: Symbol)  = isValueClass(sym) && (sym != UnitClass)
+    def isSpecializableClass(sym: Symbol) = isValueClass(sym) || (sym == AnyRefClass)
     def isScalaValueType(tp: Type) = scalaValueClassesSet(tp.typeSymbol)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */

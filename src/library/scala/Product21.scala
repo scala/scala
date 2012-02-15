@@ -23,7 +23,7 @@ trait Product21[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
    */
   override def productArity = 21
 
-
+  
   /** Returns the n-th projection of this product if 0 < n <= productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
@@ -33,7 +33,7 @@ trait Product21[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10, +T11, +T12, +
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match {
+  override def productElement(n: Int) = n match { 
     case 0 => _1
     case 1 => _2
     case 2 => _3

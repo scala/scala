@@ -88,6 +88,7 @@ object ClassfileConstants {
   final val ARRAY_TAG  = '['
   final val VOID_TAG   = 'V'
   final val TVAR_TAG   = 'T'
+  final val OBJECT_TAG = 'L'
   final val ANNOTATION_TAG = '@'
   final val SCALA_NOTHING = "scala.runtime.Nothing$"
   final val SCALA_NULL = "scala.runtime.Null$"

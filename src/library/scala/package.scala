@@ -28,6 +28,14 @@ package object scala {
   type NumberFormatException           = java.lang.NumberFormatException
   type AbstractMethodError             = java.lang.AbstractMethodError
 
+  // A dummy used by the specialization annotation.
+  // Normally it's bad juju to place objects inside package objects,
+  // but there's no choice here as we'd have to be AnyRef's companion
+  // and defined in the same file - except there is no such file.
+  object AnyRef extends Specializable {
+    override def toString = "object AnyRef"
+  }
+
   @deprecated("instead of `@serializable class C`, use `class C extends Serializable`", "2.9.0")
   type serializable = annotation.serializable
 

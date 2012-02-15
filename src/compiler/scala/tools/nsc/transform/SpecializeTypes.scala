@@ -6,11 +6,8 @@
 package scala.tools.nsc
 package transform
 
-
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
-
-
 
 /** Specialize code on types.
  *
@@ -71,10 +68,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     RootClass, BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isValueClass, isScalaValueType,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
-    AnyRefClass, ObjectClass, Predef_AnyRef,
-    uncheckedVarianceClass
+    AnyRefClass, ObjectClass, AnyRefModule,
+    GroupOfSpecializable, uncheckedVarianceClass
   }
-  
+
   /** TODO - this is a lot of maps.
    */
 
@@ -105,16 +102,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def isSpecialized(sym: Symbol)          = sym hasAnnotation SpecializedClass
   private def hasSpecializedFlag(sym: Symbol)     = sym hasFlag SPECIALIZED
   private def specializedTypes(tps: List[Symbol]) = tps filter isSpecialized
-  private def specializedOn(sym: Symbol) = sym getAnnotation SpecializedClass match {
-    case Some(AnnotationInfo(_, args, _)) => args
-    case _                                => Nil
+  private def specializedOn(sym: Symbol): List[Symbol] = {
+    sym getAnnotation SpecializedClass match {
+      case Some(ann @ AnnotationInfo(_, args, _)) =>
+        args map (_.tpe) flatMap { tp =>
+          tp baseType GroupOfSpecializable match {
+            case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
+              arg.typeArgs map (_.typeSymbol)
+            case _ =>
+              List(tp.typeSymbol)
+          }
+        }
+      case _ => Nil
+    }
   }
 
   // If we replace `isBoundedGeneric` with (tp <:< AnyRefClass.tpe),
   // then pos/spec-List.scala fails - why? Does this kind of check fail
   // for similar reasons? Does `sym.isAbstractType` make a difference?
   private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = (
-       specializedOn(sym).exists(_.symbol == Predef_AnyRef)    // specialized on AnyRef
+       (specializedOn(sym) contains AnyRefModule)
     && !isValueClass(tp.typeSymbol)
     && isBoundedGeneric(tp)
   )
@@ -322,28 +329,34 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  lazy val primitiveTypes = ScalaValueClasses map (_.tpe)
+  lazy val specializableTypes = (ScalaValueClasses :+ AnyRefClass) map (_.tpe) sorted
+
+  /** If the symbol is the companion of a value class, the value class.
+   *  Otherwise, AnyRef.
+   */
+  def specializesClass(sym: Symbol): Symbol = {
+    val c = sym.companionClass
+    if (isValueClass(c)) c else AnyRefClass
+  }
 
   /** Return the types `sym` should be specialized at. This may be some of the primitive types
    *  or AnyRef. AnyRef means that a new type parameter T will be generated later, known to be a
    *  subtype of AnyRef (T <: AnyRef).
    *  These are in a meaningful order for stability purposes.
    */
-  def concreteTypes(sym: Symbol): List[Type] = (
-    if (!isSpecialized(sym)) Nil      // no @specialized Annotation
-    else specializedOn(sym) match {
-      case Nil  => primitiveTypes     // specialized on everything
-      case args =>                    // specialized on args
-        (args map { tp =>
-          if (tp.symbol == Predef_AnyRef) {
-            if (isBoundedGeneric(sym.tpe))
-              reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
-            AnyRefClass.tpe
-          }
-          else tp.symbol.companionClass.tpe
-        }).sorted
-    }
-  )
+  def concreteTypes(sym: Symbol): List[Type] = {
+    val types = (
+      if (!isSpecialized(sym)) Nil      // no @specialized Annotation
+      else specializedOn(sym) match {
+        case Nil  => specializableTypes                             // specialized on everything
+        case args => args map (s => specializesClass(s).tpe) sorted // specialized on args
+      }
+    )
+    if (isBoundedGeneric(sym.tpe) && (types contains AnyRefClass))
+      reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
+
+    types
+  }
 
   /** Return a list of all type environments for all specializations
    *  of @specialized types in `tps`.

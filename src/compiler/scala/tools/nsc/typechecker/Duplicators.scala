@@ -7,7 +7,6 @@ package scala.tools.nsc
 package typechecker
 
 import scala.tools.nsc.symtab.Flags
-
 import scala.collection.{ mutable, immutable }
 
 /** Duplicate trees and re-type check them, taking care to replace
@@ -18,6 +17,7 @@ import scala.collection.{ mutable, immutable }
  */
 abstract class Duplicators extends Analyzer {
   import global._
+  import definitions.{ AnyRefClass, AnyValClass }
 
   def retyped(context: Context, tree: Tree): Tree = {
     resetClassOwners
@@ -308,17 +308,26 @@ abstract class Duplicators extends Analyzer {
           super.typed(atPos(tree.pos)(tree1))
 */
         case Match(scrut, cases) =>
-          val scrut1 = typed(scrut, EXPRmode | BYVALmode, WildcardType)
+          val scrut1   = typed(scrut, EXPRmode | BYVALmode, WildcardType)
           val scrutTpe = scrut1.tpe.widen
-          val cases1 = if (scrutTpe.isFinalType) cases filter {
-            case CaseDef(Bind(_, pat @ Typed(_, tpt)), EmptyTree, body) =>
-              // the typed pattern is not incompatible with the scrutinee type
-              scrutTpe.matchesPattern(fixType(tpt.tpe))
-            case CaseDef(Typed(_, tpt), EmptyTree, body) =>
-              // the typed pattern is not incompatible with the scrutinee type
-              scrutTpe.matchesPattern(fixType(tpt.tpe))
-            case _ => true
-          } else cases
+          val cases1 = {
+            if (scrutTpe.isFinalType) cases filter {
+              case CaseDef(Bind(_, pat @ Typed(_, tpt)), EmptyTree, body) =>
+                // the typed pattern is not incompatible with the scrutinee type
+                scrutTpe matchesPattern fixType(tpt.tpe)
+              case CaseDef(Typed(_, tpt), EmptyTree, body) =>
+                // the typed pattern is not incompatible with the scrutinee type
+                scrutTpe matchesPattern fixType(tpt.tpe)
+              case _ => true
+            }
+            // Without this, AnyRef specializations crash on patterns like
+            //   case _: Boolean => ...
+            // Not at all sure this is safe.
+            else if (scrutTpe <:< AnyRefClass.tpe)
+              cases filterNot (_.pat.tpe <:< AnyValClass.tpe)
+            else
+              cases
+          }
 
           super.typed(atPos(tree.pos)(Match(scrut, cases1)), mode, pt)
 
