@@ -154,7 +154,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           if (settings.Ygenjavap.isDefault) {
             if(settings.Ydumpclasses.isDefault)
               new ClassBytecodeWriter { }
-            else 
+            else
               new ClassBytecodeWriter with DumpBytecodeWriter { }
           }
           else new ClassBytecodeWriter with JavapBytecodeWriter { }
@@ -209,7 +209,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
     val BeanInfoSkipAttr    = definitions.getRequiredClass("scala.beans.BeanInfoSkip")
     val BeanDisplayNameAttr = definitions.getRequiredClass("scala.beans.BeanDisplayName")
     val BeanDescriptionAttr = definitions.getRequiredClass("scala.beans.BeanDescription")
-    
+
     final val ExcludedForwarderFlags = {
       import Flags._
       ( CASE | SPECIALIZED | LIFTED | PROTECTED | STATIC | BridgeAndPrivateFlags )
@@ -702,7 +702,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid with 
           if ((settings.check.value contains "genjvm")) {
             val normalizedTpe = atPhase(currentRun.erasurePhase)(erasure.prepareSigMap(memberTpe))
             val bytecodeTpe = owner.thisType.memberInfo(sym)
-            if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym, normalizedTpe) =:= bytecodeTpe)) {
+            if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
               clasz.cunit.warning(sym.pos,
                   """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
                      |signature: %s

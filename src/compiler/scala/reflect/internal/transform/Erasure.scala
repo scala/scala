@@ -118,7 +118,7 @@ trait Erasure {
         mapOver(tp)
     }
 
-    private def applyInArray(tp: Type): Type = tp match {
+    def applyInArray(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if (sym.isInlineClass) => eraseNormalClassRef(pre, sym)
       case _ => apply(tp)
     }
@@ -153,32 +153,42 @@ trait Erasure {
    *     parents |Ps|, but with duplicate references of Object removed.
    *   - for all other types, the type itself (with any sub-components erased)
    */
-  def erasure(sym: Symbol, tp: Type): Type = {
-    if (sym != NoSymbol && sym.enclClass.isJavaDefined) {
-      val res = javaErasure(tp)
-      if (verifyJavaErasure && sym.isMethod) {
-        val old = scalaErasure(tp)
-        if (!(res =:= old))
-          log("Identified divergence between java/scala erasure:\n  scala: " + old + "\n   java: " + res)
-      }
-      res
-    } else
-      scalaErasure(tp)
-  }
+  def erasure(sym: Symbol): ErasureMap =
+    if (sym == NoSymbol || !sym.enclClass.isJavaDefined) scalaErasure
+    else if (verifyJavaErasure && sym.isMethod) verifiedJavaErasure
+    else javaErasure
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedInlineTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
    */
-  def specialErasure(sym: Symbol, tp: Type): Type =
+  def specialErasure(sym: Symbol)(tp: Type): Type =
     if (sym != NoSymbol && sym.enclClass.isJavaDefined)
-      erasure(sym, tp)
+      erasure(sym)(tp)
     else if (sym.isTerm && sym.owner.isInlineClass)
       specialErasureAvoiding(sym.owner, tp)
     else if (sym.isValue && sym.owner.isMethodWithExtension)
       specialErasureAvoiding(sym.owner.owner, tp)
     else
-      specialErasure(tp)
+      specialScalaErasure(tp)
+
+  def specialErasureAvoiding(clazz: Symbol, tpe: Type): Type = {
+    tpe match {
+      case PolyType(tparams, restpe) =>
+        specialErasureAvoiding(clazz, restpe)
+      case ExistentialType(tparams, restpe) =>
+        specialErasureAvoiding(clazz, restpe)
+      case mt @ MethodType(params, restpe) =>
+        MethodType(
+          cloneSymbolsAndModify(params, specialErasureAvoiding(clazz, _)),
+          if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
+          else specialErasureAvoiding(clazz, (mt.resultType(params map (_.tpe)))))
+      case TypeRef(pre, `clazz`, args) =>
+        typeRef(pre, clazz, List())
+      case _ =>
+        specialScalaErasure(tpe)
+    }
+  }
 
   /** Scala's more precise erasure than java's is problematic as follows:
    *
@@ -200,31 +210,34 @@ trait Erasure {
       intersectionDominator(parents)
   }
 
+  class JavaErasureMap extends ErasureMap {
+    /** In java, always take the first parent.
+     *  An intersection such as `Object with Trait` erases to Object.
+     */
+    def mergeParents(parents: List[Type]): Type =
+      if (parents.isEmpty) ObjectClass.tpe
+      else parents.head
+  }
+
   object scalaErasure extends ScalaErasureMap
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedInlineTypes which
    *  are then later converted to the underlying parameter type in phase posterasure.
    */
-  object specialErasure extends ScalaErasureMap {
+  object specialScalaErasure extends ScalaErasureMap {
     override def eraseInlineClassRef(clazz: Symbol): Type = ErasedInlineType(clazz)
   }
 
-  def specialErasureAvoiding(clazz: Symbol, tpe: Type): Type = {
-    tpe match {
-      case PolyType(tparams, restpe) =>
-        specialErasureAvoiding(clazz, restpe)
-      case ExistentialType(tparams, restpe) =>
-        specialErasureAvoiding(clazz, restpe)
-      case mt @ MethodType(params, restpe) =>
-        MethodType(
-          cloneSymbolsAndModify(params, specialErasureAvoiding(clazz, _)),
-          if (restpe.typeSymbol == UnitClass) erasedTypeRef(UnitClass)
-          else specialErasureAvoiding(clazz, (mt.resultType(params map (_.tpe)))))
-      case TypeRef(pre, `clazz`, args) =>
-        typeRef(pre, clazz, List())
-      case _ =>
-        specialErasure(tpe)
+  object javaErasure extends JavaErasureMap
+
+  object verifiedJavaErasure extends JavaErasureMap {
+    override def apply(tp: Type): Type = {
+      val res = javaErasure(tp)
+      val old = scalaErasure(tp)
+      if (!(res =:= old))
+        log("Identified divergence between java/scala erasure:\n  scala: " + old + "\n   java: " + res)
+      res
     }
   }
 
@@ -263,18 +276,9 @@ trait Erasure {
     }
   }
 
-  object javaErasure extends ErasureMap {
-    /** In java, always take the first parent.
-     *  An intersection such as `Object with Trait` erases to Object.
-     */
-    def mergeParents(parents: List[Type]): Type =
-      if (parents.isEmpty) ObjectClass.tpe
-      else parents.head
-  }
-
   /** Type reference after erasure */
   def erasedTypeRef(sym: Symbol): Type =
-    typeRef(erasure(sym, sym.owner.tpe), sym, Nil)
+    typeRef(erasure(sym)(sym.owner.tpe), sym, Nil)
 
   /**  The symbol's erased info. This is the type's erasure, except for the following symbols:
    *
@@ -288,25 +292,25 @@ trait Erasure {
     if (sym == Object_asInstanceOf)
       sym.info
     else if (sym == Object_isInstanceOf || sym == ArrayClass)
-      PolyType(sym.info.typeParams, specialErasure(sym, sym.info.resultType))
+      PolyType(sym.info.typeParams, specialErasure(sym)(sym.info.resultType))
     else if (sym.isAbstractType)
       TypeBounds(WildcardType, WildcardType)
     else if (sym.isTerm && sym.owner == ArrayClass) {
       if (sym.isClassConstructor)
         tp match {
           case MethodType(params, TypeRef(pre, sym1, args)) =>
-            MethodType(cloneSymbolsAndModify(params, specialErasure(sym, _)),
-                       typeRef(specialErasure(sym, pre), sym1, args))
+            MethodType(cloneSymbolsAndModify(params, specialErasure(sym)),
+                       typeRef(specialErasure(sym)(pre), sym1, args))
         }
       else if (sym.name == nme.apply)
         tp
       else if (sym.name == nme.update)
         (tp: @unchecked) match {
           case MethodType(List(index, tvar), restpe) =>
-            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym, index.tpe)), tvar),
+            MethodType(List(index.cloneSymbol.setInfo(specialErasure(sym)(index.tpe)), tvar),
                        erasedTypeRef(UnitClass))
         }
-      else specialErasure(sym, tp)
+      else specialErasure(sym)(tp)
     } else if (
       sym.owner != NoSymbol &&
       sym.owner.owner == ArrayClass &&
@@ -316,7 +320,7 @@ trait Erasure {
       // symbol here
       tp
     } else {
-      specialErasure(sym, tp)
+      specialErasure(sym)(tp)
     }
   }
 }

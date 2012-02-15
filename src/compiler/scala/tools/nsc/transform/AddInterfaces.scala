@@ -11,7 +11,7 @@ import Flags._
 import scala.collection.{ mutable, immutable }
 import collection.mutable.ListBuffer
 
-abstract class AddInterfaces extends InfoTransform {
+abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment
   import definitions._             // standard classes and methods
 
@@ -20,14 +20,6 @@ abstract class AddInterfaces extends InfoTransform {
    *  methods in such traits.
    */
   override def phaseNewFlags: Long = lateDEFERRED | lateINTERFACE
-
-  /** Type reference after erasure; defined in Erasure.
-   */
-  def erasedTypeRef(sym: Symbol): Type
-
-  /** Erasure calculation; defined in Erasure.
-   */
-  def erasure(sym: Symbol, tpe: Type): Type
 
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
@@ -175,14 +167,14 @@ abstract class AddInterfaces extends InfoTransform {
       /** If `tp` refers to a non-interface trait, return a
        *  reference to its implementation class. Otherwise return `tp`.
        */
-      def mixinToImplClass(tp: Type): Type = erasure(sym,
+      def mixinToImplClass(tp: Type): Type = erasure(sym) {
         tp match { //@MATN: no normalize needed (comes after erasure)
           case TypeRef(pre, sym, _) if sym.needsImplClass =>
             typeRef(pre, implClass(sym), Nil)
           case _ =>
             tp
         }
-      )
+      }
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
           assert(phase == implClassPhase, tp)

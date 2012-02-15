@@ -290,7 +290,7 @@ abstract class Erasure extends AddInterfaces
               )
             )
           }
-          else jsig(erasure(sym0, tp), existentiallyBound, toplevel, primitiveOK)
+          else jsig(erasure(sym0)(tp), existentiallyBound, toplevel, primitiveOK)
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
           val poly = if (toplevel) polyParamSig(tparams) else ""
@@ -310,7 +310,7 @@ abstract class Erasure extends AddInterfaces
           println("something's wrong: "+sym0+":"+sym0.tpe+" has a bounded wildcard type")
           jsig(bounds.hi, existentiallyBound, toplevel, primitiveOK)
         case _ =>
-          val etp = erasure(sym0, tp)
+          val etp = erasure(sym0)(tp)
           if (etp eq tp) throw new UnknownSig
           else jsig(etp)
       }
@@ -793,7 +793,7 @@ abstract class Erasure extends AddInterfaces
         val other = opc.overridden
         //println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
         if (atPhase(currentRun.explicitouterPhase)(!member.isDeferred)) {
-          val otpe = erasure(owner, other.tpe)
+          val otpe = erasure(owner)(other.tpe)
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&
             !(deconstMap(other.tpe) =:= deconstMap(member.tpe)) &&
@@ -838,7 +838,7 @@ abstract class Erasure extends AddInterfaces
                             IF (typeTest) THEN bridgingCall ELSE REF(NoneModule)
                           } else bridgingCall
                       });
-                  debuglog("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner, member.tpe) + member.locationString + " =\n " + bridgeDef);
+                  debuglog("generating bridge from " + other + "(" + Flags.flagsToString(bridge.flags)  + ")" + ":" + otpe + other.locationString + " to " + member + ":" + erasure(owner)(member.tpe) + member.locationString + " =\n " + bridgeDef);
                   bridgeDef
                 }
               } :: bridges
@@ -910,7 +910,7 @@ abstract class Erasure extends AddInterfaces
                 gen.mkMethodCall(
                   qual1(),
                   fun.symbol,
-                  List(specialErasure(fun.symbol, arg.tpe)),
+                  List(specialErasure(fun.symbol)(arg.tpe)),
                   Nil
                 ),
                 isArrayTest(qual1())
@@ -943,7 +943,7 @@ abstract class Erasure extends AddInterfaces
             // need to do the cast in adaptMember
             treeCopy.Apply(
               tree,
-              SelectFromArray(qual, name, erasure(tree.symbol, qual.tpe)).copyAttrs(fn),
+              SelectFromArray(qual, name, erasure(tree.symbol)(qual.tpe)).copyAttrs(fn),
               args)
           }
         case Apply(fn @ Select(qual, _), Nil) if interceptedMethods(fn.symbol) =>
@@ -1064,7 +1064,7 @@ abstract class Erasure extends AddInterfaces
                          && ct.typeValue.typeSymbol != definitions.UnitClass =>
           val erased = ct.typeValue match {
             case TypeRef(pre, clazz, args) if clazz.isInlineClass => scalaErasure.eraseNormalClassRef(pre, clazz)
-            case tpe => specialErasure(NoSymbol, tpe)
+            case tpe => specialScalaErasure(tpe)
           }
           treeCopy.Literal(tree, Constant(erased))
 
@@ -1084,10 +1084,13 @@ abstract class Erasure extends AddInterfaces
           val tree1 = preErase(tree)
           tree1 match {
             case EmptyTree | TypeTree() =>
-              tree1 setType specialErasure(NoSymbol, tree1.tpe)
+              tree1 setType specialScalaErasure(tree1.tpe)
+            case ArrayValue(elemtpt, trees) =>
+              treeCopy.ArrayValue(
+                tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform) setType null
             case DefDef(_, _, _, _, tpt, _) =>
               val result = super.transform(tree1) setType null
-              tpt.tpe = specialErasure(tree1.symbol, tree1.symbol.tpe).resultType
+              tpt.tpe = specialErasure(tree1.symbol)(tree1.symbol.tpe).resultType
               result
             case _ =>
               super.transform(tree1) setType null

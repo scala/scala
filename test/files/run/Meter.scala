@@ -59,24 +59,26 @@ object Test extends App {
   val b: Any = y
   println("a == b: "+(a == b))
 
-  {
-  val arr = Array(x, y + x)
-  println(arr.deep)
-  def foo[T <: Printable](x: Array[T]) {
-    for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
-  }
-  val m = arr(0)
-  println(m)
-  foo(arr)
+  { println("testing native arrays")
+    val arr = Array(x, y + x)
+    println(arr.deep)
+    def foo[T <: Printable](x: Array[T]) {
+      for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
+    }
+    val m = arr(0)
+    println(m)
+    foo(arr)
   }
 
-  val arr = Meter.FlatArray(x, y + x)
-  println(arr)
-  def foo(x: Meter.FlatArray) {
-    for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
+  { println("testing wrapped arrays")
+    val arr = Meter.FlatArray(x, y + x)
+    println(arr)
+    def foo(x: Meter.FlatArray) {
+      for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
+    }
+    val m = arr(0)
+    println(m)
+    foo(arr)
   }
-  val m = arr(0)
-  println(m)
-  foo(arr)
 
 }
