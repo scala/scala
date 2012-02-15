@@ -13,7 +13,7 @@ package scala.collection.mutable;
 
 
 
-abstract class BasicNode {
+public abstract class BasicNode {
     
     public abstract String string(int lev);
     
