@@ -11,8 +11,7 @@ trait Eval {
     val settings = new Settings
     val reporter = new ConsoleReporter(settings)
     val toolbox = new ToolBox(reporter)
-    val ttree = toolbox.typeCheck(tree)
-    toolbox.runExpr(ttree)
+    toolbox.runExpr(tree)
   }
 }
 

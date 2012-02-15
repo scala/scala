@@ -8,6 +8,7 @@ package ast
 
 import symtab._
 import Flags._
+import scala.reflect.api.Modifier._
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.FreshNameCreator
@@ -289,10 +290,102 @@ trait Reifiers { self: Global =>
       var reifySymbols = false
       var reifyTypes = false
 
+      /** Preprocess a tree before reification */
+      private def trimTree(tree: Tree): Tree = {
+        def trimSyntheticCaseClassMembers(deff: Tree, stats: List[Tree]) = {
+          var stats1 = stats filterNot (stat => stat.isDef && {
+            if (stat.symbol.isCaseAccessorMethod && reifyDebug) println("discarding case accessor method: " + stat)
+            stat.symbol.isCaseAccessorMethod
+          })
+          stats1 = stats1 filterNot (memberDef => memberDef.isDef && {
+            val isSynthetic = memberDef.symbol.isSynthetic
+            // @xeno.by: this doesn't work for local classes, e.g. for ones that are top-level to a quasiquote (see comments to companionClass)
+            // that's why I replace the check with an assumption that all synthetic members are, in fact, generated of case classes
+//            val isCaseMember = deff.symbol.isCaseClass || deff.symbol.companionClass.isCaseClass
+            val isCaseMember = true
+            if (isSynthetic && isCaseMember && reifyDebug) println("discarding case class synthetic def: " + memberDef)
+            isSynthetic && isCaseMember
+          })
+          stats1 = stats1 map {
+            case valdef @ ValDef(mods, name, tpt, rhs) if valdef.symbol.isCaseAccessor =>
+              if (reifyDebug) println("resetting visibility of case accessor field: " + valdef)
+              val Modifiers(flags, privateWithin, annotations) = mods
+              val flags1 = flags & ~Flags.LOCAL & ~Flags.PRIVATE
+              val mods1 = Modifiers(flags1, privateWithin, annotations)
+              ValDef(mods1, name, tpt, rhs).copyAttrs(valdef)
+            case stat =>
+              stat
+          }
+          stats1
+        }
+
+        def trimSyntheticCaseClassCompanions(stats: List[Tree]) =
+          stats diff (stats collect { case moddef: ModuleDef => moddef } filter (moddef => {
+            val isSynthetic = moddef.symbol.isSynthetic
+            // @xeno.by: this doesn't work for local classes, e.g. for ones that are top-level to a quasiquote (see comments to companionClass)
+            // that's why I replace the check with an assumption that all synthetic modules are, in fact, companions of case classes
+//            val isCaseCompanion = moddef.symbol.companionClass.isCaseClass
+            val isCaseCompanion = true
+            // @xeno.by: we also have to do this ugly hack for the very same reason described above
+            // normally this sort of stuff is performed in reifyTree, which binds related symbols, however, local companions will be out of its reach
+            if (reifyDebug) println("boundSym: "+  moddef.symbol)
+            boundSyms += moddef.symbol
+            if (isSynthetic && isCaseCompanion && reifyDebug) println("discarding synthetic case class companion: " + moddef)
+            isSynthetic && isCaseCompanion
+          }))
+
+        tree match {
+          case tree if tree.isErroneous =>
+            tree
+          case ta @ TypeApply(hk, ts) =>
+            def isErased(tt: TypeTree) = tt.tpe != null && definedInLiftedCode(tt.tpe) && tt.original == null
+            val discard = ts collect { case tt: TypeTree => tt } exists isErased
+            if (reifyDebug && discard) println("discarding TypeApply: " + tree)
+            if (discard) hk else ta
+          case classDef @ ClassDef(mods, name, params, impl) =>
+            val Template(parents, self, body) = impl
+            val body1 = trimSyntheticCaseClassMembers(classDef, body)
+            var impl1 = Template(parents, self, body1).copyAttrs(impl)
+            ClassDef(mods, name, params, impl1).copyAttrs(classDef)
+          case moduledef @ ModuleDef(mods, name, impl) =>
+            val Template(parents, self, body) = impl
+            val body1 = trimSyntheticCaseClassMembers(moduledef, body)
+            var impl1 = Template(parents, self, body1).copyAttrs(impl)
+            ModuleDef(mods, name, impl1).copyAttrs(moduledef)
+          case template @ Template(parents, self, body) =>
+            val body1 = trimSyntheticCaseClassCompanions(body)
+            Template(parents, self, body1).copyAttrs(template)
+          case block @ Block(stats, expr) =>
+            val stats1 = trimSyntheticCaseClassCompanions(stats)
+            Block(stats1, expr).copyAttrs(block)
+          case valdef @ ValDef(mods, name, tpt, rhs) if valdef.symbol.isLazy =>
+            if (reifyDebug) println("dropping $lzy in lazy val's name: " + tree)
+            val name1 = if (name endsWith nme.LAZY_LOCAL) name dropRight nme.LAZY_LOCAL.length else name
+            ValDef(mods, name1, tpt, rhs).copyAttrs(valdef)
+          case unapply @ UnApply(fun, args) =>
+            def extractExtractor(tree: Tree): Tree = {
+              val Apply(fun, args) = tree
+              args match {
+                case List(Ident(special)) if special == nme.SELECTOR_DUMMY =>
+                  val Select(extractor, flavor) = fun
+                  assert(flavor == nme.unapply || flavor == nme.unapplySeq)
+                  extractor
+                case _ =>
+                  extractExtractor(fun)
+              }
+            }
+
+            if (reifyDebug) println("unapplying unapply: " + tree)
+            val fun1 = extractExtractor(fun)
+            Apply(fun1, args).copyAttrs(unapply)
+          case _ =>
+            tree
+        }
+      }
+
       /** Reify a tree */
-      private def reifyTree(tree: Tree): Tree = {
-        def reifyDefault(tree: Tree) =
-          reifyProduct(tree)
+      private def reifyTree(tree0: Tree): Tree = {
+        val tree = trimTree(tree0)
 
         var rtree = tree match {
           case tree if tree.isErroneous =>
@@ -311,29 +404,24 @@ trait Reifiers { self: Global =>
             } else reifyFree(tree)
           case tt: TypeTree if (tt.tpe != null) =>
             reifyTypeTree(tt)
-          case ta @ TypeApply(hk, ts) =>
-            def isErased(tt: TypeTree) = tt.tpe != null && definedInLiftedCode(tt.tpe) && tt.original == null
-            val discard = ts collect { case tt: TypeTree => tt } exists isErased
-            if (reifyDebug && discard) println("discarding TypeApply: " + tree)
-            if (discard) reifyTree(hk) else reifyDefault(ta)
           case Literal(constant @ Constant(tpe: Type)) if boundSyms exists (tpe contains _) =>
             CannotReifyClassOfBoundType(tree, tpe)
           case Literal(constant @ Constant(sym: Symbol)) if boundSyms contains sym =>
             CannotReifyClassOfBoundEnum(tree, constant.tpe)
           case tree if tree.isDef =>
             if (reifyDebug) println("boundSym: %s of type %s".format(tree.symbol, (tree.productIterator.toList collect { case tt: TypeTree => tt } headOption).getOrElse(TypeTree(tree.tpe))))
-            // registerReifiableSymbol(tree.symbol)
             boundSyms += tree.symbol
 
-            if (tree.symbol.sourceModule != NoSymbol) {
-              if (reifyDebug) println("boundSym (sourceModule): " + tree.symbol.sourceModule)
-              boundSyms += tree.symbol.sourceModule
-            }
-
-            if (tree.symbol.moduleClass != NoSymbol) {
-              if (reifyDebug) println("boundSym (moduleClass): " + tree.symbol.moduleClass)
-              boundSyms += tree.symbol.moduleClass
-            }
+            bindRelatedSymbol(tree.symbol.sourceModule, "sourceModule")
+            bindRelatedSymbol(tree.symbol.moduleClass, "moduleClass")
+            bindRelatedSymbol(tree.symbol.companionClass, "companionClass")
+            bindRelatedSymbol(tree.symbol.companionModule, "companionModule")
+            Some(tree.symbol) collect { case termSymbol: TermSymbol => bindRelatedSymbol(termSymbol.referenced, "referenced") }
+            def bindRelatedSymbol(related: Symbol, name: String): Unit =
+              if (related != null && related != NoSymbol) {
+                if (reifyDebug) println("boundSym (" + name + "): " + related)
+                boundSyms += related
+              }
 
             val prefix = tree.productPrefix
             val elements = (tree.productIterator map {
@@ -354,7 +442,7 @@ trait Reifiers { self: Global =>
             }).toList
             reifyProduct(prefix, elements)
           case _ =>
-            reifyDefault(tree)
+            reifyProduct(tree)
         }
 
         // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
@@ -396,10 +484,8 @@ trait Reifiers { self: Global =>
        *
        *  This workaround worked surprisingly well and allowed me to fix several important reification bugs, until the abstraction has leaked.
        *  Suddenly I found out that in certain contexts original trees do not contain symbols, but are just parser trees.
-       *  To the moment I know two such situations:
-       *  1) Unapplies: https://issues.scala-lang.org/browse/SI-5273?focusedCommentId=56057#comment-56057
-       *  2) Annotations: typedAnnotations does not typecheck the annotation in-place, but rather creates new trees and typechecks them, so the original remains symless
-       *  3) <sigh, what will I discover next?>
+       *  To the moment I know only one such situation: typedAnnotations does not typecheck the annotation in-place, but rather creates new trees and typechecks them, so the original remains symless.
+       *  This is laboriously worked around in the code below. I hope this will be the only workaround in this department.
        */
       private def reifyTypeTree(tt: TypeTree): Tree = {
         if (definedInLiftedCode(tt.tpe)) {
@@ -441,14 +527,15 @@ trait Reifiers { self: Global =>
           }
         } else {
           var rtt = mirrorCall(nme.TypeTree, reifyType(tt.tpe))
-          // @xeno.by: originals get typechecked during subsequent reflective compilation, which leads to subtle bugs
-          // https://issues.scala-lang.org/browse/SI-5273?focusedCommentId=56057#comment-56057
-          // until this is somehow sorted out, I disable reification of originals
-          // if (tt.original != null) {
-          //   val setOriginal = Select(rtt, newTermName("setOriginal"))
-          //   val reifiedOriginal = reify(tt.original)
-          //   rtt = Apply(setOriginal, List(reifiedOriginal))
-          // }
+          // @xeno.by: temporarily disabling reification of originals
+          // subsequent reflective compilation will try to typecheck them
+          // and this means that the reifier has to do additional efforts to ensure that this will succeed
+          // additional efforts + no clear benefit = will be implemented later
+//          if (tt.original != null) {
+//            val setOriginal = Select(rtt, newTermName("setOriginal"))
+//            val reifiedOriginal = reify(tt.original)
+//            rtt = Apply(setOriginal, List(reifiedOriginal))
+//          }
           rtt
         }
       }
