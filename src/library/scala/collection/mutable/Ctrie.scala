@@ -852,7 +852,7 @@ object Ctrie extends MutableMapFactory[Ctrie] {
 }
 
 
-private[collection] class CtrieIterator[K, V](var level: Int, ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
+private[collection] class CtrieIterator[K, V](var level: Int, private var ct: Ctrie[K, V], mustInit: Boolean = true) extends Iterator[(K, V)] {
   var stack = new Array[Array[BasicNode]](7)
   var stackpos = new Array[Int](7)
   var depth = -1
@@ -920,6 +920,25 @@ private[collection] class CtrieIterator[K, V](var level: Int, ct: Ctrie[K, V], m
   
   protected def newIterator(_lev: Int, _ct: Ctrie[K, V], _mustInit: Boolean) = new CtrieIterator[K, V](_lev, _ct, _mustInit)
   
+  protected def dupTo(it: CtrieIterator[K, V]) = {
+    it.level = this.level
+    it.ct = this.ct
+    it.depth = this.depth
+    it.current = this.current
+    
+    // these need a deep copy
+    Array.copy(this.stack, 0, it.stack, 0, 7)
+    Array.copy(this.stackpos, 0, it.stackpos, 0, 7)
+    
+    // this one needs to be evaluated
+    if (this.subiter == null) it.subiter = null
+    else {
+      val lst = this.subiter.toList
+      this.subiter = lst.iterator
+      it.subiter = lst.iterator
+    }
+  }
+  
   /** Returns a sequence of iterators over subsets of this iterator.
    *  It's used to ease the implementation of splitters for a parallel version of the Ctrie.
    */
@@ -955,7 +974,7 @@ private[collection] class CtrieIterator[K, V](var level: Int, ct: Ctrie[K, V], m
     Seq(this)
   }
   
-  private def print {
+  def printDebug {
     println("ctrie iterator")
     println(stackpos.mkString(","))
     println("depth: " + depth)

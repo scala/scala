@@ -92,7 +92,12 @@ extends CtrieIterator[K, V](lev, ct, mustInit)
     level < maxsplits
   }
   
-  def dup = null // TODO necessary for views
+  def dup = {
+    val it = newIterator(0, ct, false)
+    dupTo(it)
+    it.iterated = this.iterated
+    it
+  }
   
   override def next() = {
     iterated += 1
