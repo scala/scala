@@ -714,11 +714,9 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type) = {
+      def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type) =
         issueNormalTypeError(tree,
           applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
-        setError(tree)
-      }
 
       def AmbiguousMethodAlternativeError(tree: Tree, pre: Type, best: Symbol,
             firstCompeting: Symbol, argtpes: List[Type], pt: Type) = {
