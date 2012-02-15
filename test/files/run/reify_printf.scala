@@ -14,11 +14,10 @@ object Test extends App {
 
   val reporter = new ConsoleReporter(new Settings)
   val toolbox = new ToolBox(reporter, args mkString " ")
-  val ttree = toolbox.typeCheck(tree)
 
   val output = new ByteArrayOutputStream()
   Console.setOut(new PrintStream(output))
-  val evaluated = toolbox.runExpr(ttree)
+  val evaluated = toolbox.runExpr(tree)
 
   assert(output.toString() == "hello world", output.toString() +" ==     hello world")
 
