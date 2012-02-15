@@ -31,6 +31,8 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
   
   @inline final def CAS(old: MainNode[K, V], n: MainNode[K, V]) = INodeBase.updater.compareAndSet(this, old, n)
   
+  final def gcasRead(ct: Ctrie[K, V]): MainNode[K, V] = GCAS_READ(ct)
+  
   @inline final def GCAS_READ(ct: Ctrie[K, V]): MainNode[K, V] = {
     val m = /*READ*/mainnode
     val prevval = /*READ*/m.prev
@@ -41,7 +43,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
   @tailrec private def GCAS_Complete(m: MainNode[K, V], ct: Ctrie[K, V]): MainNode[K, V] = if (m eq null) null else {
     // complete the GCAS
     val prev = /*READ*/m.prev
-    val ctr = ct.RDCSS_READ_ROOT(true)
+    val ctr = ct.readRoot(true)
     
     prev match {
       case null =>
@@ -84,7 +86,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
     nin
   }
   
-  @inline final def copyToGen(ngen: Gen, ct: Ctrie[K, V]) = {
+  final def copyToGen(ngen: Gen, ct: Ctrie[K, V]) = {
     val nin = new INode[K, V](ngen)
     val main = GCAS_READ(ct)
     nin.WRITE(main)
@@ -317,7 +319,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen) extends 
                       case tn: TNode[K, V] =>
                         val ncn = cn.updatedAt(pos, tn.copyUntombed, gen).toContracted(lev - 5)
                         if (!parent.GCAS(cn, ncn, ct))
-                          if (ct.RDCSS_READ_ROOT().gen == startgen) cleanParent(nonlive)
+                          if (ct.readRoot().gen == startgen) cleanParent(nonlive)
                     }
                   }
                 case _ => // parent is no longer a cnode, we're done
@@ -549,7 +551,7 @@ extends CNodeBase[K, V] {
       val sub = arr(i)
       sub match {
         case in: INode[K, V] =>
-          val inodemain = in.GCAS_READ(ct)
+          val inodemain = in.gcasRead(ct)
           assert(inodemain ne null)
           tmparray(i) = resurrect(in, inodemain)
         case sn: SNode[K, V] =>
@@ -670,6 +672,8 @@ extends ConcurrentMap[K, V]
   
   @inline final def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
   
+  final def readRoot(abort: Boolean = false): INode[K, V] = RDCSS_READ_ROOT(abort)
+  
   @inline final def RDCSS_READ_ROOT(abort: Boolean = false): INode[K, V] = {
     val r = /*READ*/root
     r match {
@@ -688,7 +692,7 @@ extends ConcurrentMap[K, V]
           if (CAS_ROOT(desc, ov)) ov
           else RDCSS_Complete(abort)
         } else {
-          val oldmain = ov.GCAS_READ(this)
+          val oldmain = ov.gcasRead(this)
           if (oldmain eq exp) {
             if (CAS_ROOT(desc, nv)) {
               desc.committed = true
@@ -760,9 +764,9 @@ extends ConcurrentMap[K, V]
   
   override def empty: Ctrie[K, V] = new Ctrie[K, V]
   
-  @inline final def isReadOnly = rootupdater eq null
+  final def isReadOnly = rootupdater eq null
   
-  @inline final def nonReadOnly = rootupdater ne null
+  final def nonReadOnly = rootupdater ne null
   
   /** Returns a snapshot of this Ctrie.
    *  This operation is lock-free and linearizable.
@@ -775,7 +779,7 @@ extends ConcurrentMap[K, V]
    */
   @tailrec final def snapshot(): Ctrie[K, V] = {
     val r = RDCSS_READ_ROOT()
-    val expmain = r.GCAS_READ(this)
+    val expmain = r.gcasRead(this)
     if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new Ctrie(r.copyToGen(new Gen, this), rootupdater)
     else snapshot()
   }
@@ -794,14 +798,14 @@ extends ConcurrentMap[K, V]
    */
   @tailrec final def readOnlySnapshot(): collection.Map[K, V] = {
     val r = RDCSS_READ_ROOT()
-    val expmain = r.GCAS_READ(this)
+    val expmain = r.gcasRead(this)
     if (RDCSS_ROOT(r, expmain, r.copyToGen(new Gen, this))) new Ctrie(r, null)
     else readOnlySnapshot()
   }
   
   @tailrec final override def clear() {
     val r = RDCSS_READ_ROOT()
-    if (!RDCSS_ROOT(r, r.GCAS_READ(this), INode.newRootNode[K, V])) clear()
+    if (!RDCSS_ROOT(r, r.gcasRead(this), INode.newRootNode[K, V])) clear()
   }
   
   final def lookup(k: K): V = {
@@ -924,7 +928,7 @@ private[collection] class CtrieIterator[K, V](var level: Int, private var ct: Ct
     r
   } else Iterator.empty.next()
   
-  private def readin(in: INode[K, V]) = in.GCAS_READ(ct) match {
+  private def readin(in: INode[K, V]) = in.gcasRead(ct) match {
     case cn: CNode[K, V] =>
       depth += 1
       stack(depth) = cn.array
