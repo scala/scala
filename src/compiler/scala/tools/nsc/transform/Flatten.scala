@@ -60,12 +60,12 @@ abstract class Flatten extends InfoTransform {
   private val flattened = new TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if isFlattenablePrefix(pre) =>
-        assert(args.isEmpty && sym.toplevelClass != NoSymbol, sym.ownerChain)
-        typeRef(sym.toplevelClass.owner.thisType, sym, Nil)
+        assert(args.isEmpty && sym.enclosingTopLevelClass != NoSymbol, sym.ownerChain)
+        typeRef(sym.enclosingTopLevelClass.owner.thisType, sym, Nil)
       case ClassInfoType(parents, decls, clazz) =>
         var parents1 = parents
         val decls1 = scopeTransform(clazz) {
-          val decls1 = new Scope()
+          val decls1 = newScope
           if (clazz.isPackageClass) {
             atPhase(phase.next)(decls foreach (decls1 enter _))
           } else {
@@ -119,7 +119,7 @@ abstract class Flatten extends InfoTransform {
       val sym = tree.symbol
       val tree1 = tree match {
         case ClassDef(_, _, _, _) if sym.isNestedClass =>
-          liftedDefs(sym.toplevelClass.owner) += tree
+          liftedDefs(sym.enclosingTopLevelClass.owner) += tree
           EmptyTree
         case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
           atPhase(phase.next) {

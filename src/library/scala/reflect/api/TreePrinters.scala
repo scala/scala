@@ -31,18 +31,6 @@ trait TreePrinters { self: Universe =>
   // emits more or less verbatim representation of the provided tree
   // todo. when LiftCode becomes a macro, throw this code away and use that macro
   class RawTreePrinter(out: PrintWriter) extends TreePrinter {
-    import scala.reflect.api.Modifier
-    import scala.reflect.api.Modifier._
-
-    def copypasteModifier(mod: Modifier.Value): String = mod match {
-      case mod @ (
-           `protected` | `private` | `override` |
-           `abstract` | `final` | `sealed` |
-           `implicit` | `lazy` | `macro` |
-           `case` | `trait`) => "`" + mod.toString + "`"
-      case mod => mod.toString
-    }
-
     def print(args: Any*): Unit = args foreach {
       case EmptyTree =>
         print("EmptyTree")
@@ -77,14 +65,14 @@ trait TreePrinters { self: Universe =>
         print(")")
       case mods: Modifiers =>
         val parts = collection.mutable.ListBuffer[String]() 
-        parts += "Set(" + mods.allModifiers.map{copypasteModifier}.mkString(", ") + ")"
+        parts += "Set(" + mods.modifiers.map(_.sourceString).mkString(", ") + ")"
         parts += "newTypeName(\"" + mods.privateWithin.toString + "\")"
         parts += "List(" + mods.annotations.map{showRaw}.mkString(", ") + ")"
         
         var keep = 3
         if (keep == 3 && mods.annotations.isEmpty) keep -= 1
         if (keep == 2 && mods.privateWithin == EmptyTypeName) keep -= 1
-        if (keep == 1 && mods.allModifiers.isEmpty) keep -= 1
+        if (keep == 1 && mods.modifiers.isEmpty) keep -= 1
         
         print("Modifiers(", parts.take(keep).mkString(", "), ")")
       case name: Name =>

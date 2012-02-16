@@ -23,7 +23,7 @@ trait Product1[@specialized(Int, Long, Double) +T1] extends Product {
    */
   override def productArity = 1
 
-
+  
   /** Returns the n-th projection of this product if 0 < n <= productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
@@ -33,7 +33,7 @@ trait Product1[@specialized(Int, Long, Double) +T1] extends Product {
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match {
+  override def productElement(n: Int) = n match { 
     case 0 => _1
     case _ => throw new IndexOutOfBoundsException(n.toString())
  }

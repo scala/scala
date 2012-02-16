@@ -20,50 +20,50 @@ trait Macros { self: Analyzer =>
       macroArgs(fn) :+ args
     case TypeApply(fn, args) =>
       macroArgs(fn) :+ args
-    case Select(qual, name) if !isStaticMacro(tree.symbol) =>
+    case Select(qual, name) =>
       List(List(qual))
     case _ =>
       List(List())
   }
 
-  private def isStaticMacro(mac: Symbol): Boolean =
-    mac.owner.isModuleClass
-
   /**
-   * The definition of the method implementing a macro. Example:
+   *  The definition of the method implementing a macro. Example:
    *  Say we have in a class C
    *
    *    def macro foo[T](xs: List[T]): T = expr
    *
    *  Then the following macro method is generated for `foo`:
    *
-   *    def defmacro$foo(glob: scala.reflect.api.Universe)
-   *           (_this: glob.Tree)
-   *           (T: glob.Type)
-   *           (xs: glob.Tree): glob.Tree = {
-   *      implicit val $glob = glob
+   *    def defmacro$foo
+   *           (_context: scala.reflect.macro.Context)
+   *           (_this: _context.Tree)
+   *           (T: _context.TypeTree)
+   *           (xs: _context.Tree): _context.Tree = {
+   *      import _context._  // this means that all methods of Context can be used unqualified in macro's body
    *      expr
    *    }
    *
-   *    If `foo` is declared in an object, the second parameter list is () instead of (_this: glob.Tree).
+   *  If macro has no type arguments, the third parameter list is omitted (it's not empty, but omitted altogether).
+   *
+   *  To find out the desugared representation of your particular macro, compile it with -Ymacro-debug.
    */
   def macroMethDef(mdef: DefDef): Tree = {
     def paramDef(name: Name, tpt: Tree) = ValDef(Modifiers(PARAM), name, tpt, EmptyTree)
     val contextType = TypeTree(ReflectMacroContext.tpe)
-    val globParamSec = List(paramDef(nme.context, contextType))
-    def globSelect(name: Name) = Select(Ident(nme.context), name)
-    def globTree = globSelect(newTypeName("Tree"))
-    def globType = globSelect(newTypeName("Type"))
-    val thisParamSec = if (isStaticMacro(mdef.symbol)) List() else List(paramDef(newTermName("_this"), globTree))
-    def tparamInMacro(tdef: TypeDef) = paramDef(tdef.name.toTermName, globType)
+    val globParamSec = List(paramDef(nme.macroContext, contextType))
+    def globSelect(name: Name) = Select(Ident(nme.macroContext), name)
+    def globTree = globSelect(tpnme.Tree)
+    def globTypeTree = globSelect(tpnme.TypeTree)
+    val thisParamSec = List(paramDef(newTermName(nme.macroThis), globTree))
+    def tparamInMacro(tdef: TypeDef) = paramDef(tdef.name.toTermName, globTypeTree)
     def vparamInMacro(vdef: ValDef): ValDef = paramDef(vdef.name, vdef.tpt match {
       case tpt @ AppliedTypeTree(hk, _) if treeInfo.isRepeatedParamType(tpt) => AppliedTypeTree(hk, List(globTree))
       case _ => globTree
     })
     def wrapImplicit(tree: Tree) = atPos(tree.pos) {
       // implicit hasn't proven useful so far, so I'm disabling it
-      //val implicitDecl = ValDef(Modifiers(IMPLICIT), nme.contextImplicit, SingletonTypeTree(Ident(nme.context)), Ident(nme.context))
-      val importGlob = Import(Ident(nme.context), List(ImportSelector(nme.WILDCARD, -1, null, -1)))
+      //val implicitDecl = ValDef(Modifiers(IMPLICIT), nme.macroContextImplicit, SingletonTypeTree(Ident(nme.macroContext)), Ident(nme.macroContext))
+      val importGlob = Import(Ident(nme.macroContext), List(ImportSelector(nme.WILDCARD, -1, null, -1)))
       Block(List(importGlob), tree)
     }
     var formals = (mdef.vparamss map (_ map vparamInMacro))
@@ -82,7 +82,7 @@ trait Macros { self: Analyzer =>
 
   def addMacroMethods(templ: Template, namer: Namer): Unit = {
     for (ddef @ DefDef(mods, _, _, _, _, _) <- templ.body if mods hasFlag MACRO) {
-      val trace = scala.tools.nsc.util.trace when settings.debug.value
+      val trace = scala.tools.nsc.util.trace when settings.Ymacrodebug.value
       val sym = namer.enterSyntheticSym(trace("macro def: ")(macroMethDef(ddef)))
       trace("added to "+namer.context.owner.enclClass+": ")(sym)
     }
@@ -97,24 +97,52 @@ trait Macros { self: Analyzer =>
     override def defaultReflectiveClassLoader() = libraryClassLoader
   }
 
-  class MacroExpandError(val msg: String) extends Exception(msg)
-
   /** Return optionally address of companion object and implementation method symbol
-   *  of given macro; or None if implementation classfile cannot be loaded or does 
+   *  of given macro; or None if implementation classfile cannot be loaded or does
    *  not contain the macro implementation.
    */
   def macroImpl(mac: Symbol): Option[(AnyRef, mirror.Symbol)] = {
+    val debug = settings.Ymacrodebug.value
+    val trace = scala.tools.nsc.util.trace when debug
+    trace("looking for macro implementation: ")(mac.fullNameString)
+
     try {
       val mmeth = macroMeth(mac)
+      trace("found implementation at: ")(mmeth.fullNameString)
+
       if (mmeth == NoSymbol) None
       else {
-        val receiverClass: mirror.Symbol = mirror.classWithName(mmeth.owner.fullName)
+        val receiverClass: mirror.Symbol = mirror.symbolForName(mmeth.owner.fullName)
+        if (debug) {
+          println("receiverClass is: " + receiverClass.fullNameString)
+
+          val jreceiverClass = mirror.classToJava(receiverClass)
+          val jreceiverSource = jreceiverClass.getProtectionDomain.getCodeSource
+          println("jreceiverClass is %s from %s".format(jreceiverClass, jreceiverSource))
+
+          val jreceiverClasspath = jreceiverClass.getClassLoader match {
+            case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+            case _ => "<unknown>"
+          }
+          println("jreceiverClassLoader is %s with classpath %s".format(jreceiverClass.getClassLoader, jreceiverClasspath))
+        }
+
         val receiverObj = receiverClass.companionModule
-        if (receiverObj == NoSymbol) None
+        trace("receiverObj is: ")(receiverObj.fullNameString)
+
+        if (receiverObj == mirror.NoSymbol) None
         else {
-          val receiver = mirror.getCompanionObject(receiverClass)
+          val receiver = mirror.companionInstance(receiverClass)
           val rmeth = receiverObj.info.member(mirror.newTermName(mmeth.name.toString))
-          Some((receiver, rmeth))
+          if (debug) {
+            println("rmeth is: " + rmeth.fullNameString)
+            println("jrmeth is: " + mirror.methodToJava(rmeth))
+          }
+
+          if (rmeth == mirror.NoSymbol) None
+          else {
+            Some((receiver, rmeth))
+          }
         }
       }
     } catch {
@@ -127,53 +155,85 @@ trait Macros { self: Analyzer =>
    *  Or, if that fails, and the macro overrides a method return
    *  tree that calls this method instead of the macro.
    */
-  def macroExpand(tree: Tree): Any = {
+  def macroExpand(tree: Tree, context: Context): Option[Any] = {
+    val trace = scala.tools.nsc.util.trace when settings.Ymacrodebug.value
+    trace("macroExpand: ")(tree)
+
     val macroDef = tree.symbol
     macroImpl(macroDef) match {
       case Some((receiver, rmeth)) =>
         val argss = List(global) :: macroArgs(tree)
         val paramss = macroMeth(macroDef).paramss
+        trace("paramss: ")(paramss)
         val rawArgss = for ((as, ps) <- argss zip paramss) yield {
           if (isVarArgsList(ps)) as.take(ps.length - 1) :+ as.drop(ps.length - 1)
           else as
         }
         val rawArgs: Seq[Any] = rawArgss.flatten
+        trace("rawArgs: ")(rawArgs)
+        val savedInfolevel = nodePrinters.infolevel
         try {
-          mirror.invoke(receiver, rmeth, rawArgs: _*)
+          // @xeno.by: InfoLevel.Verbose examines and prints out infos of symbols
+          // by the means of this'es these symbols can climb up the lexical scope
+          // when these symbols will be examined by a node printer
+          // they will enumerate and analyze their children (ask for infos and tpes)
+          // if one of those children involves macro expansion, things might get nasty
+          // that's why I'm temporarily turning this behavior off
+          nodePrinters.infolevel = nodePrinters.InfoLevel.Quiet
+          Some(mirror.invoke(receiver, rmeth)(rawArgs: _*))
         } catch {
           case ex =>
             val realex = ReflectionUtils.unwrapThrowable(ex)
-            val stacktrace = new java.io.StringWriter()
-            realex.printStackTrace(new java.io.PrintWriter(stacktrace))
-            val msg = System.getProperty("line.separator") + stacktrace
-            throw new MacroExpandError("exception during macro expansion: " + msg)
+            val msg = if (settings.Ymacrodebug.value) {
+              val stacktrace = new java.io.StringWriter()
+              realex.printStackTrace(new java.io.PrintWriter(stacktrace))
+              System.getProperty("line.separator") + stacktrace
+            } else {
+              realex.getMessage
+            }
+            context.unit.error(tree.pos, "exception during macro expansion: " + msg)
+            None
+        } finally {
+          nodePrinters.infolevel = savedInfolevel
         }
       case None =>
-        val trace = scala.tools.nsc.util.trace when settings.debug.value
-        def notFound() = throw new MacroExpandError("macro implementation not found: " + macroDef.name)
-        def fallBackToOverridden(tree: Tree): Tree = {
+        def notFound() = {
+          context.unit.error(tree.pos, "macro implementation not found: " + macroDef.name)
+          None
+        }
+        def fallBackToOverridden(tree: Tree): Option[Tree] = {
           tree match {
             case Select(qual, name) if (macroDef.isMacro) =>
               macroDef.allOverriddenSymbols match {
-                case first :: others =>
-                  return Select(qual, name) setPos tree.pos setSymbol first
-                case _ => 
+                case first :: _ =>
+                  Some(Select(qual, name) setPos tree.pos setSymbol first)
+                case _ =>
                   trace("macro is not overridden: ")(tree)
                   notFound()
               }
             case Apply(fn, args) =>
-              Apply(fallBackToOverridden(fn), args) setPos tree.pos
+              fallBackToOverridden(fn) match {
+                case Some(fn1) => Some(Apply(fn1, args) setPos tree.pos)
+                case _         => None
+              }
             case TypeApply(fn, args) =>
-              TypeApply(fallBackToOverridden(fn), args) setPos tree.pos
+              fallBackToOverridden(fn) match {
+                case Some(fn1) => Some(TypeApply(fn1, args) setPos tree.pos)
+                case _         => None
+              }
             case _ =>
               trace("unexpected tree in fallback: ")(tree)
               notFound()
           }
         }
-        val tree1 = fallBackToOverridden(tree)
-        trace("falling back to ")(tree1)
-        currentRun.macroExpansionFailed = true
-        tree1
+        fallBackToOverridden(tree) match {
+          case Some(tree1) =>
+            trace("falling back to ")(tree1)
+            currentRun.macroExpansionFailed = true
+            Some(tree1)
+          case None =>
+            None
+        }
     }
   }
 }

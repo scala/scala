@@ -52,7 +52,7 @@ self =>
 
   protected[this] override def newCombiner = HashMapCombiner[K, V]
 
-  def splitter: IterableSplitter[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size) with SCPI
+  def splitter: IterableSplitter[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size)
 
   override def seq = trie
 
@@ -69,11 +69,8 @@ self =>
     case None => newc
   }
 
-  type SCPI = SignalContextPassingIterator[ParHashMapIterator]
-
   class ParHashMapIterator(var triter: Iterator[(K, V @uncheckedVariance)], val sz: Int)
-  extends super.ParIterator {
-  self: SignalContextPassingIterator[ParHashMapIterator] =>
+  extends IterableSplitter[(K, V)] {
     var i = 0
     def dup = triter match {
       case t: TrieIterator[_] =>
@@ -84,24 +81,24 @@ self =>
         dupFromIterator(buff.iterator)
     }
     private def dupFromIterator(it: Iterator[(K, V @uncheckedVariance)]) = {
-      val phit = new ParHashMapIterator(it, sz) with SCPI
+      val phit = new ParHashMapIterator(it, sz)
       phit.i = i
       phit
     }
-    def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
+    def split: Seq[IterableSplitter[(K, V)]] = if (remaining < 2) Seq(this) else triter match {
       case t: TrieIterator[_] =>
         val previousRemaining = remaining
         val ((fst, fstlength), snd) = t.split
         val sndlength = previousRemaining - fstlength
         Seq(
-          new ParHashMapIterator(fst, fstlength) with SCPI,
-          new ParHashMapIterator(snd, sndlength) with SCPI
+          new ParHashMapIterator(fst, fstlength),
+          new ParHashMapIterator(snd, sndlength)
         )
       case _ =>
         // iterator of the collision map case
         val buff = triter.toBuffer
         val (fp, sp) = buff.splitAt(buff.length / 2)
-        Seq(fp, sp) map { b => new ParHashMapIterator(b.iterator, b.length) with SCPI }
+        Seq(fp, sp) map { b => new ParHashMapIterator(b.iterator, b.length) }
     }
     def next(): (K, V) = {
       i += 1
@@ -304,14 +301,21 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), Has
       evaluateCombiners(trie)
       trie.asInstanceOf[HashMap[K, Repr]]
     }
-    private def evaluateCombiners(trie: HashMap[K, Combiner[V, Repr]]): Unit = trie match {
+    private def evaluateCombiners(trie: HashMap[K, Combiner[V, Repr]]): HashMap[K, Repr] = trie match {
       case hm1: HashMap.HashMap1[_, _] =>
-        hm1.asInstanceOf[HashMap.HashMap1[K, Repr]].value = hm1.value.result
-        hm1.kv = null
+        val evaledvalue = hm1.value.result
+        new HashMap.HashMap1[K, Repr](hm1.key, hm1.hash, evaledvalue, null)
       case hmc: HashMap.HashMapCollision1[_, _] =>
-        hmc.asInstanceOf[HashMap.HashMapCollision1[K, Repr]].kvs = hmc.kvs map { p => (p._1, p._2.result) }
-      case htm: HashMap.HashTrieMap[_, _] =>
-        for (hm <- htm.elems) evaluateCombiners(hm)
+        val evaledkvs = hmc.kvs map { p => (p._1, p._2.result) }
+        new HashMap.HashMapCollision1[K, Repr](hmc.hash, evaledkvs)
+      case htm: HashMap.HashTrieMap[k, v] =>
+        var i = 0
+        while (i < htm.elems.length) {
+          htm.elems(i) = evaluateCombiners(htm.elems(i)).asInstanceOf[HashMap[k, v]]
+          i += 1
+        }
+        htm.asInstanceOf[HashMap[K, Repr]]
+      case empty => empty.asInstanceOf[HashMap[K, Repr]]
     }
     def split = {
       val fp = howmany / 2

@@ -10,4 +10,5 @@ package scala
 
 /** A common supertype for companion classes which specialization takes into account.
  */
+@deprecated("Use Specializable instead", "2.10.0")
 private[scala] trait SpecializableCompanion

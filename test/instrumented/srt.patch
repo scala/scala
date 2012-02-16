@@ -1,0 +1,23 @@
+9a10,11
+> /* INSTRUMENTED VERSION */
+> 
+33a36,38
+>   var arrayApplyCount = 0
+>   var arrayUpdateCount = 0
+> 
+35c40,42
+<   def array_apply(xs: AnyRef, idx: Int): Any = xs match {
+---
+>   def array_apply(xs: AnyRef, idx: Int): Any = {
+>     arrayApplyCount += 1
+>     xs match {
+47a55
+>   }
+50c58,60
+<   def array_update(xs: AnyRef, idx: Int, value: Any): Unit = xs match {
+---
+>   def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
+>     arrayUpdateCount += 1
+>     xs match {
+62a73
+>   }

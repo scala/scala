@@ -30,7 +30,7 @@ trait AnyValReps {
                 " * @return the bitwise negation of this value\n" +
                 " * @example {{{\n" +
                 " * ~5 == -6\n" +
-                " * // in binary: ~00000101 == \n" +
+                " * // in binary: ~00000101 ==\n" +
                 " * //             11111010\n" +
                 " * }}}\n" +
                 " */") :: ops
@@ -44,9 +44,9 @@ trait AnyValReps {
                      "  * @return the bitwise OR of this value and x\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 | 0xaa) == 0xfa\n" +
-                     "  * // in binary:   11110000 \n" +
-                     "  * //            | 10101010 \n" +
-                     "  * //              -------- \n" +
+                     "  * // in binary:   11110000\n" +
+                     "  * //            | 10101010\n" +
+                     "  * //              --------\n" +
                      "  * //              11111010\n" +
                      "  * }}}\n" +
                      "  */"),
@@ -54,9 +54,9 @@ trait AnyValReps {
                      "  * @return the bitwise AND of this value and x\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 & 0xaa) == 0xa0\n" +
-                     "  * // in binary:   11110000 \n" +
-                     "  * //            & 10101010 \n" +
-                     "  * //              -------- \n" +
+                     "  * // in binary:   11110000\n" +
+                     "  * //            & 10101010\n" +
+                     "  * //              --------\n" +
                      "  * //              10100000\n" +
                      "  * }}}\n" +
                      "  */"),
@@ -64,9 +64,9 @@ trait AnyValReps {
                      "  * @return the bitwise XOR of this value and x\n" +
                      "  * @example {{{\n" +
                      "  * (0xf0 ^ 0xaa) == 0x5a\n" +
-                     "  * // in binary:   11110000 \n" +
-                     "  * //            ^ 10101010 \n" +
-                     "  * //              -------- \n" +
+                     "  * // in binary:   11110000\n" +
+                     "  * //            ^ 10101010\n" +
+                     "  * //              --------\n" +
                      "  * //              01011010\n" +
                      "  * }}}\n" +
                      "  */"))
@@ -83,11 +83,11 @@ trait AnyValReps {
 
           Op(">>>", "/**\n" +
                        "  * @return this value bit-shifted right by the specified number of bits,\n" +
-                       "  *         filling the new left bits with zeroes. \n" +
+                       "  *         filling the new left bits with zeroes.\n" +
                        "  * @example {{{ 21 >>> 3 == 2 // in binary: 010101 >>> 3 == 010 }}}\n" +
                        "  * @example {{{\n" +
-                       "  * -21 >>> 3 == 536870909 \n" +
-                       "  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 == \n" +
+                       "  * -21 >>> 3 == 536870909\n" +
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >>> 3 ==\n" +
                        "  * //            00011111 11111111 11111111 11111101\n" +
                        "  * }}}\n" +
                        "  */"),
@@ -97,8 +97,8 @@ trait AnyValReps {
                        "  *         filling in the right bits with the same value as the left-most bit of this.\n" +
                        "  *         The effect of this is to retain the sign of the value.\n" +
                        "  * @example {{{\n" +
-                       "  * -21 >> 3 == -3 \n" +
-                       "  * // in binary: 11111111 11111111 11111111 11101011 >> 3 == \n" +
+                       "  * -21 >> 3 == -3\n" +
+                       "  * // in binary: 11111111 11111111 11111111 11101011 >> 3 ==\n" +
                        "  * //            11111111 11111111 11111111 11111101\n" +
                        "  * }}}\n" +
                        "  */"))

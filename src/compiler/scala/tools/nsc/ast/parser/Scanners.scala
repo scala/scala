@@ -84,6 +84,8 @@ trait Scanners extends ScannersCommon {
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerCommon {
     private def isDigit(c: Char) = java.lang.Character isDigit c
+    
+    def isAtEnd = charOffset >= buf.length
 
     def flush = { charOffset = offset; nextChar(); this }
 
@@ -178,7 +180,7 @@ trait Scanners extends ScannersCommon {
      *  @pre: inStringInterpolation
      */
     @inline private def inMultiLineInterpolation = 
-      sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART    
+      inStringInterpolation && sepRegions.tail.nonEmpty && sepRegions.tail.head == STRINGPART
     
     /** read next token and return last offset
      */
@@ -215,7 +217,9 @@ trait Scanners extends ScannersCommon {
           if (!sepRegions.isEmpty && sepRegions.head == lastToken)
             sepRegions = sepRegions.tail
         case STRINGLIT =>
-          if (inStringInterpolation)
+          if (inMultiLineInterpolation)
+            sepRegions = sepRegions.tail.tail
+          else if (inStringInterpolation)
             sepRegions = sepRegions.tail
         case _ =>
       }
@@ -384,7 +388,7 @@ trait Scanners extends ScannersCommon {
               if (ch == '\"') {
                 nextRawChar()
                 getStringPart(multiLine = true)
-                sepRegions = STRINGLIT :: sepRegions // indicate string part
+                sepRegions = STRINGPART :: sepRegions // indicate string part
                 sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
               } else {
                 token = STRINGLIT
@@ -449,7 +453,7 @@ trait Scanners extends ScannersCommon {
         case ']' =>
           nextChar(); token = RBRACKET
         case SU =>
-          if (charOffset >= buf.length) token = EOF
+          if (isAtEnd) token = EOF
           else {
             syntaxError("illegal character")
             nextChar()
@@ -468,7 +472,7 @@ trait Scanners extends ScannersCommon {
             nextChar()
             getOperatorRest()
           } else {
-            syntaxError("illegal character")
+            syntaxError("illegal character '" + ("" + '\\' + 'u' + "%04x".format(ch: Int)) + "'")
             nextChar()
           }
       }
@@ -771,10 +775,10 @@ trait Scanners extends ScannersCommon {
       putChar(ch)
     }
 
-    private def getLitChars(delimiter: Char) =
-      while (ch != delimiter && (ch != CR && ch != LF && ch != SU || isUnicodeEscape)) {
+    private def getLitChars(delimiter: Char) = {
+      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape))
         getLitChar()
-      }
+    }
 
     /** read fractional part and exponent of floating point number
      *  if one is present.

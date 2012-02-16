@@ -3,8 +3,8 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(class A -> List(Changed(Definition(A.e))[method e changed from ()E to ()E flags: implicit <method>]), class E -> List())
-invalidate B.scala because inherited method changed [Changed(Definition(A.e))[method e changed from ()E to ()E flags: implicit <method>]]
+Changes: Map(class A -> List(Changed(Definition(A.e))[method e changed from ()E to ()E flags: implicit <method> <triedcooking>]), class E -> List())
+invalidate B.scala because inherited method changed [Changed(Definition(A.e))[method e changed from ()E to ()E flags: implicit <method> <triedcooking>]]
 compiling Set(B.scala)
 B.scala:2: error: could not find implicit value for parameter y: E
   val y = x(3)

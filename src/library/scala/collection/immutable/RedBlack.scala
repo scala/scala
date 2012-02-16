@@ -11,10 +11,13 @@
 package scala.collection
 package immutable
 
-/** A base class containing the implementations for `TreeMaps` and `TreeSets`.
+/** Old base class that was used by previous implementations of `TreeMaps` and `TreeSets`.
+ *
+ *  Deprecated due to various performance bugs (see [[https://issues.scala-lang.org/browse/SI-5331 SI-5331]] for more information).
  *
  *  @since 2.3
  */
+@deprecated("use `TreeMap` or `TreeSet` instead", "2.10")
 @SerialVersionUID(8691885935445612921L)
 abstract class RedBlack[A] extends Serializable {
 
@@ -287,5 +290,3 @@ abstract class RedBlack[A] extends Serializable {
     def isBlack = true
   }
 }
-
-

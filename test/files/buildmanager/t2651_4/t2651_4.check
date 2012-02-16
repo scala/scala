@@ -3,8 +3,8 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(trait A -> List(Changed(Definition(A.x))[method x changed from ()T to ()T flags: <deferred> <method>], Changed(Definition(A.y))[method y changed from (a: T)Unit to (a: T)Unit flags: <deferred> <method>], Changed(Definition(A.z))[method z changed from [B <: T]()Unit to [B <: T]()Unit flags: <deferred> <method>]))
-invalidate B.scala because inherited method changed [Changed(Definition(A.x))[method x changed from ()T to ()T flags: <deferred> <method>]]
+Changes: Map(trait A -> List(Changed(Definition(A.x))[method x changed from ()T to ()T flags: <deferred> <method> <triedcooking>], Changed(Definition(A.y))[method y changed from (a: T)Unit to (a: T)Unit flags: <deferred> <method>], Changed(Definition(A.z))[method z changed from [B <: T]()Unit to [B <: T]()Unit flags: <deferred> <method>]))
+invalidate B.scala because inherited method changed [Changed(Definition(A.x))[method x changed from ()T to ()T flags: <deferred> <method> <triedcooking>]]
 compiling Set(B.scala)
 B.scala:2: error: type mismatch;
  found   : Int(3)

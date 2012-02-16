@@ -14,7 +14,10 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
     // Avoiding deadlock if the compiler starts logging before
     // the lazy val is complete.
     if (intp.isInitializeComplete) {
-      if (intp.totalSilence) ()
+      if (intp.totalSilence) {
+        if (isReplTrace)
+          super.printMessage("[silent] " + msg)
+      }
       else super.printMessage(msg)
     }
     else Console.println("[init] " + msg)

@@ -1,9 +1,0 @@
-{
-  @serializable class C extends Object with ScalaObject {
-    def <init>() = {
-      super.<init>();
-      ()
-    }
-  };
-  ()
-}

@@ -447,7 +447,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             val closureClass   = clazz.newClass(nme.delayedInitArg.toTypeName, impl.pos, SYNTHETIC | FINAL)
             val closureParents = List(AbstractFunctionClass(0).tpe, ScalaObjectClass.tpe)
 
-            closureClass setInfoAndEnter new ClassInfoType(closureParents, new Scope, closureClass)
+            closureClass setInfoAndEnter new ClassInfoType(closureParents, newScope, closureClass)
 
             val outerField = (
               closureClass

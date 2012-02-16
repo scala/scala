@@ -1,0 +1,4 @@
+unicode-unterminated-quote.scala:2: error: unclosed string literal
+  val x = /u0022
+               ^
+one error found

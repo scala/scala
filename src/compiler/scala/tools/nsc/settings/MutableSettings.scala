@@ -95,8 +95,7 @@ class MutableSettings(val errorFn: String => Unit)
    */
   def copy(): Settings = {
     val s = new Settings()
-    val xs = userSetSettings flatMap (_.unparse)
-    s.processArguments(xs.toList, true)
+    s.processArguments(recreateArgs, true)
     s
   }
 

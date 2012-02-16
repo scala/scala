@@ -12,28 +12,28 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
 
   import definitions._
 
-  def classWithName(name: String): Symbol = {
+  def symbolForName(name: String): Symbol = {
     val clazz = javaClass(name, defaultReflectiveClassLoader())
     classToScala(clazz)
   }
   
-  def getCompanionObject(clazz: Symbol): AnyRef = {
+  def companionInstance(clazz: Symbol): AnyRef = {
     val singleton = ReflectionUtils.singletonInstance(clazz.fullName, defaultReflectiveClassLoader())
     singleton
   }
   
-  def getClass(obj: AnyRef): Symbol = classToScala(obj.getClass)
-  def getType(obj: AnyRef): Type = typeToScala(obj.getClass)
+  def symbolOfInstance(obj: Any): Symbol = classToScala(obj.getClass)
+  def typeOfInstance(obj: Any): Type = typeToScala(obj.getClass)
   // to do add getClass/getType for instances of primitive types, probably like this:
   // def getClass[T <: AnyVal : Manifest](x: T): Symbol = manifest[T].getClass
 
-  def getValue(receiver: AnyRef, field: Symbol): Any = {
+  def getValueOfField(receiver: AnyRef, field: Symbol): Any = {
     fieldToJava(field).get(receiver)
   }
-  def setValue(receiver: AnyRef, field: Symbol, value: Any): Unit = {
+  def setValueOfField(receiver: AnyRef, field: Symbol, value: Any): Unit = {
     fieldToJava(field).set(receiver, value)
   }
-  def invoke(receiver: AnyRef, meth: Symbol, args: Any*): Any = {
+  def invoke(receiver: AnyRef, meth: Symbol)(args: Any*): Any = {
     if (meth.owner == ArrayClass) {
       meth.name match {
         case nme.length => return Array.getLength(receiver)
@@ -51,7 +51,8 @@ class Mirror extends Universe with RuntimeTypes with TreeBuildUtil with ToolBoxe
 
   override def typeToClass(tpe: Type): java.lang.Class[_] = typeToJavaClass(tpe)
   override def symbolToClass(sym: Symbol): java.lang.Class[_] = classToJava(sym)
-
+  
+  override def inReflexiveMirror = true
 }
 
 object Mirror extends Mirror

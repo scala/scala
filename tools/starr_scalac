@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+
+CP=$($(dirname $BASH_SOURCE)/starrcp)
+
+java $JAVA_OPTS -classpath "$CP" scala.tools.nsc.Main -usejavacp "$@"

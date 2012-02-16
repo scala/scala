@@ -196,7 +196,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       def foreach[U](f: Tree => U): Unit = t foreach { x => f(x) ; () }
     }).toList
   }
-  
+
   implicit def installReplTypeOps(tp: Type): ReplTypeOps = new ReplTypeOps(tp)
   class ReplTypeOps(tp: Type) {
     def orElse(other: => Type): Type    = if (tp ne NoType) tp else other
@@ -831,7 +831,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       case xs            => sys.error("Internal error: eval object " + evalClass + ", " + xs.mkString("\n", "\n", ""))
     }
     private def compileAndSaveRun(label: String, code: String) = {
-      showCodeIfDebugging(code)
+      showCodeIfDebugging(packaged(code))
       val (success, run) = compileSourcesKeepingRun(new BatchSourceFile(label, packaged(code)))
       lastRun = run
       success
@@ -906,11 +906,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         if (!handlers.last.definesValue) ""
         else handlers.last.definesTerm match {
           case Some(vname) if typeOf contains vname =>
-            """
-            |lazy val %s = {
-            |  %s
-            |  %s
-            |}""".stripMargin.format(lineRep.resultName, lineRep.printName, fullPath(vname))
+            "lazy val %s = %s".format(lineRep.resultName, fullPath(vname))
           case _  => ""
         }
       // first line evaluates object to make sure constructor is run
@@ -956,7 +952,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
         typesOfDefinedTerms
 
         // compile the result-extraction object
-        beSilentDuring {
+        beQuietDuring {
           savingSettings(_.nowarn.value = true) {
             lineRep compile ResultObjectSourceCode(handlers)
           }
@@ -1078,7 +1074,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val clazz      = classOfTerm(id) getOrElse { return NoType }
       val staticSym  = tpe.typeSymbol
       val runtimeSym = getClassIfDefined(clazz.getName)
-      
+
       if ((runtimeSym != NoSymbol) && (runtimeSym != staticSym) && (runtimeSym isSubClass staticSym))
         runtimeSym.info
       else NoType
@@ -1125,6 +1121,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     val termname = newTypeName(name)
     findName(termname) getOrElse getModuleIfDefined(termname)
   }
+  def types[T: ClassManifest] : Symbol = types(classManifest[T].erasure.getName)
+  def terms[T: ClassManifest] : Symbol = terms(classManifest[T].erasure.getName)
+  def apply[T: ClassManifest] : Symbol = apply(classManifest[T].erasure.getName)
 
   /** the previous requests this interpreter has processed */
   private lazy val prevRequests       = mutable.ListBuffer[Request]()

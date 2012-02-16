@@ -33,17 +33,16 @@ abstract class TreeBrowsers {
 
   val borderSize = 10
 
-
   def create(): SwingBrowser = new SwingBrowser();
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
   case class ProgramTree(units: List[UnitTree]) extends Tree {
-    override def toString(): String = "Program"
+    override def toString: String = "Program"
   }
 
   /** Pseudo tree class, so that all JTree nodes are treated uniformly */
   case class UnitTree(unit: CompilationUnit) extends Tree {
-    override def toString(): String = unit.toString()
+    override def toString: String = unit.toString
   }
 
   /**

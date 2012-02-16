@@ -3,10 +3,10 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(object A -> List(Changed(Definition(A.x3))[method x3 changed from ()Int to ()String flags: <method>]))
-invalidate B.scala because it references changed definition [Changed(Definition(A.x3))[method x3 changed from ()Int to ()String flags: <method>]]
+Changes: Map(object A -> List(Changed(Definition(A.x3))[method x3 changed from ()Int to ()String flags: <method> <triedcooking>]))
+invalidate B.scala because it references changed definition [Changed(Definition(A.x3))[method x3 changed from ()Int to ()String flags: <method> <triedcooking>]]
 compiling Set(B.scala)
-Changes: Map(object B -> List(Changed(Definition(B.x2))[method x2 changed from ()Int to ()String flags: <method>]))
-invalidate A.scala because it references changed definition [Changed(Definition(B.x2))[method x2 changed from ()Int to ()String flags: <method>]]
+Changes: Map(object B -> List(Changed(Definition(B.x2))[method x2 changed from ()Int to ()String flags: <method> <triedcooking>]))
+invalidate A.scala because it references changed definition [Changed(Definition(B.x2))[method x2 changed from ()Int to ()String flags: <method> <triedcooking>]]
 compiling Set(A.scala, B.scala)
-Changes: Map(object A -> List(Changed(Definition(A.x0))[method x0 changed from ()Int to ()String flags: <method>], Changed(Definition(A.x1))[method x1 changed from ()Int to ()String flags: <method>], Changed(Definition(A.x2))[method x2 changed from ()Int to ()String flags: <method>]), object B -> List(Changed(Definition(B.x0))[method x0 changed from ()Int to ()String flags: <method>], Changed(Definition(B.x1))[method x1 changed from ()Int to ()String flags: <method>]))
+Changes: Map(object A -> List(Changed(Definition(A.x0))[method x0 changed from ()Int to ()String flags: <method>], Changed(Definition(A.x1))[method x1 changed from ()Int to ()String flags: <method> <triedcooking>], Changed(Definition(A.x2))[method x2 changed from ()Int to ()String flags: <method> <triedcooking>]), object B -> List(Changed(Definition(B.x0))[method x0 changed from ()Int to ()String flags: <method>], Changed(Definition(B.x1))[method x1 changed from ()Int to ()String flags: <method>]))

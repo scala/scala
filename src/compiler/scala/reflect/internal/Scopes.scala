@@ -37,9 +37,18 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def unapplySeq(decls: Scope): Some[Seq[Symbol]] = Some(decls.toList)
   }
 
-  class Scope(initElems: ScopeEntry) extends Iterable[Symbol] {
+  /** Note: constructor is protected to force everyone to use the factory methods newScope or newNestedScope instead.
+   *  This is necessary because when run from reflection every scope needs to have a 
+   *  SynchronizedScope as mixin. 
+   */
+  class Scope protected[Scopes] (initElems: ScopeEntry = null) extends Iterable[Symbol] {
+    
+    protected[Scopes] def this(base: Scope) = {
+      this(base.elems)
+      nestinglevel = base.nestinglevel + 1
+    }
 
-    var elems: ScopeEntry = initElems
+    private[scala] var elems: ScopeEntry = initElems
 
     /** The number of times this scope is nested in another
      */
@@ -65,20 +74,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     if (size >= MIN_HASH) createHash()
 
-    def this() = this(null: ScopeEntry)
-
-    def this(base: Scope) = {
-      this(base.elems)
-      nestinglevel = base.nestinglevel + 1
-    }
-
-    def this(decls: List[Symbol]) = {
-      this()
-      decls foreach enter
-    }
-
     /** Returns a new scope with the same content as this one. */
-    def cloneScope: Scope = new Scope(this.toList)
+    def cloneScope: Scope = newScopeWith(this.toList: _*)
 
     /** is the scope empty? */
     override def isEmpty: Boolean = elems eq null
@@ -123,7 +120,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      *  @param sym ...
      */
     def enterUnique(sym: Symbol) {
-      assert(lookup(sym.name) == NoSymbol)
+      assert(lookup(sym.name) == NoSymbol, (sym.fullLocationString, lookup(sym.name).fullLocationString))
       enter(sym)
     }
 
@@ -311,7 +308,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 
     override def filter(p: Symbol => Boolean): Scope =
-      if (!(toList forall p)) new Scope(toList filter p) else this
+      if (!(toList forall p)) newScopeWith(toList filter p: _*) else this
 
     override def mkString(start: String, sep: String, end: String) =
       toList.map(_.defString).mkString(start, sep, end)
@@ -321,21 +318,26 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   }
 
   /** Create a new scope */
-  def newScope: Scope = new Scope
+  def newScope: Scope = new Scope()
+  
+  /** Create a new scope nested in another one with which it shares its elements */
+  def newNestedScope(outer: Scope): Scope = new Scope(outer)
+
+  /** Create a new scope with given initial elements */
+  def newScopeWith(elems: Symbol*): Scope = {
+    val scope = newScope
+    elems foreach scope.enter
+    scope
+  }
 
   /** Create new scope for the members of package `pkg` */
-  def newPackageScope(pkgClass: Symbol): Scope = new Scope
+  def newPackageScope(pkgClass: Symbol): Scope = newScope
 
   /** Transform scope of members of `owner` using operation `op`
    *  This is overridden by the reflective compiler to avoid creating new scopes for packages
    */
   def scopeTransform(owner: Symbol)(op: => Scope): Scope = op
 
-  def newScopeWith(elems: Symbol*): Scope = {
-    val scope = newScope
-    elems foreach scope.enter
-    scope
-  }
 
   /** The empty scope (immutable).
    */
@@ -347,7 +349,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** The error scope.
    */
-  class ErrorScope(owner: Symbol) extends Scope(null: ScopeEntry)
+  class ErrorScope(owner: Symbol) extends Scope
 
   private final val maxRecursions = 1000
 

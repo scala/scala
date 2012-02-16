@@ -1,0 +1,132 @@
+t5429.scala:20: error: overriding value value in class A of type Int;
+ object value needs `override' modifier
+  object value      // fail
+         ^
+t5429.scala:21: error: overriding lazy value lazyvalue in class A of type Int;
+ object lazyvalue needs `override' modifier
+  object lazyvalue  // fail
+         ^
+t5429.scala:22: error: overriding method nullary in class A of type => Int;
+ object nullary needs `override' modifier
+  object nullary    // fail
+         ^
+t5429.scala:23: error: overriding method emptyArg in class A of type ()Int;
+ object emptyArg needs `override' modifier
+  object emptyArg   // fail
+         ^
+t5429.scala:27: error: overriding value value in class A0 of type Any;
+ object value needs `override' modifier
+  object value      // fail
+         ^
+t5429.scala:28: error: overriding lazy value lazyvalue in class A0 of type Any;
+ object lazyvalue needs `override' modifier
+  object lazyvalue  // fail
+         ^
+t5429.scala:29: error: overriding method nullary in class A0 of type => Any;
+ object nullary needs `override' modifier
+  object nullary    // fail
+         ^
+t5429.scala:30: error: overriding method emptyArg in class A0 of type ()Any;
+ object emptyArg needs `override' modifier
+  object emptyArg   // fail
+         ^
+t5429.scala:35: error: overriding value value in class A of type Int;
+ object value has incompatible type
+  override object value     // fail
+                  ^
+t5429.scala:36: error: overriding lazy value lazyvalue in class A of type Int;
+ object lazyvalue must be declared lazy to override a concrete lazy value
+  override object lazyvalue // fail
+                  ^
+t5429.scala:37: error: overriding method nullary in class A of type => Int;
+ object nullary has incompatible type
+  override object nullary   // fail
+                  ^
+t5429.scala:38: error: overriding method emptyArg in class A of type ()Int;
+ object emptyArg has incompatible type
+  override object emptyArg  // fail
+                  ^
+t5429.scala:39: error: object oneArg overrides nothing
+  override object oneArg    // fail
+                  ^
+t5429.scala:43: error: overriding lazy value lazyvalue in class A0 of type Any;
+ object lazyvalue must be declared lazy to override a concrete lazy value
+  override object lazyvalue // !!! this fails, but should succeed (lazy over lazy)
+                  ^
+t5429.scala:46: error: object oneArg overrides nothing
+  override object oneArg    // fail
+                  ^
+t5429.scala:50: error: overriding value value in class A of type Int;
+ value value needs `override' modifier
+  val value = 0       // fail
+      ^
+t5429.scala:51: error: overriding lazy value lazyvalue in class A of type Int;
+ value lazyvalue needs `override' modifier
+  val lazyvalue = 0   // fail
+      ^
+t5429.scala:52: error: overriding method nullary in class A of type => Int;
+ value nullary needs `override' modifier
+  val nullary = 5     // fail
+      ^
+t5429.scala:53: error: overriding method emptyArg in class A of type ()Int;
+ value emptyArg needs `override' modifier
+  val emptyArg = 10   // fail
+      ^
+t5429.scala:58: error: overriding lazy value lazyvalue in class A0 of type Any;
+ value lazyvalue must be declared lazy to override a concrete lazy value
+  override val lazyvalue = 0  // fail (non-lazy)
+               ^
+t5429.scala:61: error: value oneArg overrides nothing
+  override val oneArg = 15    // fail
+               ^
+t5429.scala:65: error: overriding value value in class A of type Int;
+ method value needs `override' modifier
+  def value = 0       // fail
+      ^
+t5429.scala:66: error: overriding lazy value lazyvalue in class A of type Int;
+ method lazyvalue needs `override' modifier
+  def lazyvalue = 2   // fail
+      ^
+t5429.scala:67: error: overriding method nullary in class A of type => Int;
+ method nullary needs `override' modifier
+  def nullary = 5     // fail
+      ^
+t5429.scala:68: error: overriding method emptyArg in class A of type ()Int;
+ method emptyArg needs `override' modifier
+  def emptyArg = 10   // fail
+      ^
+t5429.scala:72: error: overriding value value in class A0 of type Any;
+ method value needs to be a stable, immutable value
+  override def value = 0      // fail
+               ^
+t5429.scala:73: error: overriding lazy value lazyvalue in class A0 of type Any;
+ method lazyvalue needs to be a stable, immutable value
+  override def lazyvalue = 2  // fail
+               ^
+t5429.scala:76: error: method oneArg overrides nothing
+  override def oneArg = 15    // fail
+               ^
+t5429.scala:80: error: overriding value value in class A of type Int;
+ lazy value value needs `override' modifier
+  lazy val value = 0       // fail
+           ^
+t5429.scala:81: error: overriding lazy value lazyvalue in class A of type Int;
+ lazy value lazyvalue needs `override' modifier
+  lazy val lazyvalue = 2   // fail
+           ^
+t5429.scala:82: error: overriding method nullary in class A of type => Int;
+ lazy value nullary needs `override' modifier
+  lazy val nullary = 5     // fail
+           ^
+t5429.scala:83: error: overriding method emptyArg in class A of type ()Int;
+ lazy value emptyArg needs `override' modifier
+  lazy val emptyArg = 10   // fail
+           ^
+t5429.scala:87: error: overriding value value in class A0 of type Any;
+ lazy value value cannot override a concrete non-lazy value
+  override lazy val value = 0      // fail (strict over lazy)
+                    ^
+t5429.scala:91: error: value oneArg overrides nothing
+  override lazy val oneArg = 15    // fail
+                    ^
+34 errors found

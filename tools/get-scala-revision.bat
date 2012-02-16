@@ -15,7 +15,7 @@ if "%*"=="" (
 cd %_DIR%
 
 if exist .git\NUL (
-  git describe HEAD --abbrev=7 --match dev
+  git describe --abbrev=10 --always --tags
 )
 
 :end

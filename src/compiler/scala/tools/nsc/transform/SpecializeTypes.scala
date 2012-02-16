@@ -6,11 +6,8 @@
 package scala.tools.nsc
 package transform
 
-
 import scala.tools.nsc.symtab.Flags
 import scala.collection.{ mutable, immutable }
-
-
 
 /** Specialize code on types.
  *
@@ -71,10 +68,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     RootClass, BooleanClass, UnitClass, ArrayClass,
     ScalaValueClasses, isValueClass, isScalaValueType,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
-    AnyRefClass, ObjectClass, Predef_AnyRef,
-    uncheckedVarianceClass
+    AnyRefClass, ObjectClass, AnyRefModule,
+    GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
-  
+
   /** TODO - this is a lot of maps.
    */
 
@@ -105,16 +102,26 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def isSpecialized(sym: Symbol)          = sym hasAnnotation SpecializedClass
   private def hasSpecializedFlag(sym: Symbol)     = sym hasFlag SPECIALIZED
   private def specializedTypes(tps: List[Symbol]) = tps filter isSpecialized
-  private def specializedOn(sym: Symbol) = sym getAnnotation SpecializedClass match {
-    case Some(AnnotationInfo(_, args, _)) => args
-    case _                                => Nil
+  private def specializedOn(sym: Symbol): List[Symbol] = {
+    sym getAnnotation SpecializedClass match {
+      case Some(ann @ AnnotationInfo(_, args, _)) =>
+        args map (_.tpe) flatMap { tp =>
+          tp baseType GroupOfSpecializable match {
+            case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
+              arg.typeArgs map (_.typeSymbol)
+            case _ =>
+              List(tp.typeSymbol)
+          }
+        }
+      case _ => Nil
+    }
   }
 
   // If we replace `isBoundedGeneric` with (tp <:< AnyRefClass.tpe),
   // then pos/spec-List.scala fails - why? Does this kind of check fail
   // for similar reasons? Does `sym.isAbstractType` make a difference?
   private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = (
-       specializedOn(sym).exists(_.symbol == Predef_AnyRef)    // specialized on AnyRef
+       (specializedOn(sym) contains AnyRefModule)
     && !isValueClass(tp.typeSymbol)
     && isBoundedGeneric(tp)
   )
@@ -322,28 +329,34 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  lazy val primitiveTypes = ScalaValueClasses map (_.tpe)
+  lazy val specializableTypes = (ScalaValueClasses :+ AnyRefClass) map (_.tpe) sorted
+
+  /** If the symbol is the companion of a value class, the value class.
+   *  Otherwise, AnyRef.
+   */
+  def specializesClass(sym: Symbol): Symbol = {
+    val c = sym.companionClass
+    if (isValueClass(c)) c else AnyRefClass
+  }
 
   /** Return the types `sym` should be specialized at. This may be some of the primitive types
    *  or AnyRef. AnyRef means that a new type parameter T will be generated later, known to be a
    *  subtype of AnyRef (T <: AnyRef).
    *  These are in a meaningful order for stability purposes.
    */
-  def concreteTypes(sym: Symbol): List[Type] = (
-    if (!isSpecialized(sym)) Nil      // no @specialized Annotation
-    else specializedOn(sym) match {
-      case Nil  => primitiveTypes     // specialized on everything
-      case args =>                    // specialized on args
-        (args map { tp =>
-          if (tp.symbol == Predef_AnyRef) {
-            if (isBoundedGeneric(sym.tpe))
-              reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
-            AnyRefClass.tpe
-          }
-          else tp.symbol.companionClass.tpe
-        }).sorted
-    }
-  )
+  def concreteTypes(sym: Symbol): List[Type] = {
+    val types = (
+      if (!isSpecialized(sym)) Nil      // no @specialized Annotation
+      else specializedOn(sym) match {
+        case Nil  => specializableTypes                             // specialized on everything
+        case args => args map (s => specializesClass(s).tpe) sorted // specialized on args
+      }
+    )
+    if (isBoundedGeneric(sym.tpe) && (types contains AnyRefClass))
+      reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
+
+    types
+  }
 
   /** Return a list of all type environments for all specializations
    *  of @specialized types in `tps`.
@@ -502,7 +515,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       typeEnv(sClass) = env
       this.specializedClass((clazz, env0)) = sClass
 
-      val decls1                        = new Scope // declarations of the newly specialized class 'sClass'
+      val decls1                        = newScope  // declarations of the newly specialized class 'sClass'
       var oldClassTParams: List[Symbol] = Nil       // original unspecialized type parameters
       var newClassTParams: List[Symbol] = Nil       // unspecialized type parameters of 'specializedClass' (cloned)
 
@@ -819,7 +832,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           log("-->d SETTING PRIVATE WITHIN TO " + sym.enclosingPackage + " for " + sym)
         }
 
-        sym.resetFlag(FINAL)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
         typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
         wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
@@ -1089,7 +1101,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (tparams.nonEmpty) " (poly)" else "",
           clazz, parents1, phase)
         )
-        val newScope = new Scope(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz))
+        val newScope = newScopeWith(specializeClass(clazz, typeEnv(clazz)) ++ specialOverrides(clazz): _*)
         // If tparams.isEmpty, this is just the ClassInfoType.
         polyType(tparams, ClassInfoType(parents1, newScope, clazz))
       case _ =>
@@ -1711,8 +1723,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def makeArguments(fun: Symbol, vparams: List[Symbol]): List[Tree] = (
     //! TODO: make sure the param types are seen from the right prefix
-    for ((tp, arg) <- fun.info.paramTypes zip vparams) yield
-      gen.maybeMkAsInstanceOf(Ident(arg), tp, arg.tpe)
+    map2(fun.info.paramTypes, vparams)((tp, arg) => gen.maybeMkAsInstanceOf(Ident(arg), tp, arg.tpe))
   )
   private def findSpec(tp: Type): Type = tp match {
     case TypeRef(pre, sym, _ :: _) => specializedType(tp)
@@ -1721,9 +1732,27 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   class SpecializationTransformer(unit: CompilationUnit) extends Transformer {
     informProgress("specializing " + unit)
-    override def transform(tree: Tree) =
-      if (settings.nospecialization.value) tree
+    override def transform(tree: Tree) = {
+      val resultTree = if (settings.nospecialization.value) tree
       else atPhase(phase.next)(specializeCalls(unit).transform(tree))
+
+      // Remove the final modifier and @inline annotation from anything in the
+      // original class (since it's being overridden in at least onesubclass).
+      //
+      // We do this here so that the specialized subclasses will correctly copy
+      // final and @inline.
+      info.foreach {
+        case (sym, SpecialOverload(target, _)) => {
+          sym.resetFlag(FINAL)
+          target.resetFlag(FINAL)
+          sym.removeAnnotation(ScalaInlineClass)
+          target.removeAnnotation(ScalaInlineClass)
+        }
+        case _ => {}
+      }
+
+      resultTree
+    }
   }
 
   def printSpecStats() {

@@ -3,8 +3,8 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(object A -> List(Changed(Definition(A.x))[method x changed from (i: Function0)Unit to (i: Function0)Unit flags: <method>]))
-invalidate B.scala because it references changed definition [Changed(Definition(A.x))[method x changed from (i: Function0)Unit to (i: Function0)Unit flags: <method>]]
+Changes: Map(object A -> List(Changed(Definition(A.x))[method x changed from (i: Function0)Unit to (i: Function0)Unit flags: <method> <triedcooking>]))
+invalidate B.scala because it references changed definition [Changed(Definition(A.x))[method x changed from (i: Function0)Unit to (i: Function0)Unit flags: <method> <triedcooking>]]
 compiling Set(B.scala)
 B.scala:2: error: type mismatch;
  found   : String("3")

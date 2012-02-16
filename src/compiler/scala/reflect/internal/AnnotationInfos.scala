@@ -116,6 +116,11 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     // Classfile annot: args empty. Scala annot: assocs empty.
     assert(args.isEmpty || assocs.isEmpty, atp)
 
+    // @xeno.by: necessary for reification, see Reifiers.scala for more info
+    private var orig: Tree = EmptyTree
+    def original = orig
+    def setOriginal(t: Tree): this.type = { orig = t; this }
+
     override def toString = (
       atp +
       (if (!args.isEmpty) args.mkString("(", ", ", ")") else "") +
@@ -130,7 +135,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     private var forced = false
     private lazy val forcedInfo =
       try {
-        val result = lazyInfo 
+        val result = lazyInfo
         if (result.pos == NoPosition) result setPos pos
         result
       } finally forced = true
@@ -138,10 +143,12 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     def atp: Type                               = forcedInfo.atp
     def args: List[Tree]                        = forcedInfo.args
     def assocs: List[(Name, ClassfileAnnotArg)] = forcedInfo.assocs
+    def original: Tree                          = forcedInfo.original
+    def setOriginal(t: Tree): this.type         = { forcedInfo.setOriginal(t); this }
 
     // We should always be able to print things without forcing them.
     override def toString = if (forced) forcedInfo.toString else "@<?>"
-      
+
     override def pos: Position = if (forced) forcedInfo.pos else NoPosition
   }
 
@@ -166,10 +173,16 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
     def args: List[Tree]
     def assocs: List[(Name, ClassfileAnnotArg)]
 
+    // @xeno.by: necessary for reification, see Reifiers.scala for more info
+    def original: Tree
+    def setOriginal(t: Tree): this.type
+
     /** Hand rolling Product. */
     def _1 = atp
     def _2 = args
     def _3 = assocs
+    // @xeno.by: original hasn't become a product member for backward compatibility purposes
+    // def _4 = original
     def canEqual(other: Any) = other.isInstanceOf[AnnotationInfo]
     override def productPrefix = "AnnotationInfo"
 
@@ -178,7 +191,7 @@ trait AnnotationInfos extends api.AnnotationInfos { self: SymbolTable =>
 
     private var rawpos: Position = NoPosition
     def pos = rawpos
-    def setPos(pos: Position): this.type = {
+    def setPos(pos: Position): this.type = { // Syncnote: Setpos inaccessible to reflection, so no sync in rawpos necessary.
       rawpos = pos
       this
     }

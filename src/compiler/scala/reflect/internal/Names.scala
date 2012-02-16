@@ -387,6 +387,13 @@ trait Names extends api.Names {
      *  decode returns a String.
      */
 
+    /** !!! Duplicative but consistently named.
+     */
+    def decoded: String = decode
+    def encoded: String = "" + encode
+    // def decodedName: ThisNameType = newName(decoded)
+    def encodedName: ThisNameType = encode
+    
     /** Replace operator symbols by corresponding $op_name. */
     def encode: ThisNameType = {
       val str = toString

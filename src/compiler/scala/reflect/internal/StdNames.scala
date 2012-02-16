@@ -153,6 +153,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     final val ClassfileAnnotation: NameType = "ClassfileAnnotation"
     final val Enum: NameType                = "Enum"
 
+    final val Tree: NameType             = "Tree"
+    final val TypeTree: NameType         = "TypeTree"
+
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
     final val BooleanBeanPropertyAnnot: NameType = "BooleanBeanProperty"
@@ -272,6 +275,8 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     // val productElementName: NameType = "productElementName"
     val Ident: NameType                = "Ident"
     val StringContext: NameType        = "StringContext"
+    val This: NameType                 = "This"
+    val Tree : NameType                = "Tree"
     val TYPE_ : NameType               = "TYPE"
     val TypeTree: NameType             = "TypeTree"
     val UNIT : NameType                = "UNIT"
@@ -291,6 +296,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val array_update : NameType        = "array_update"
     val arraycopy: NameType            = "arraycopy"
     val asInstanceOf_ : NameType       = "asInstanceOf"
+    val asInstanceOf_Ob : NameType     = "$asInstanceOf"
     val asTypeConstructor: NameType    = "asTypeConstructor"
     val assert_ : NameType             = "assert"
     val assume_ : NameType             = "assume"
@@ -301,8 +307,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
     val conforms: NameType             = "conforms"
-    val context : NameType             = "_context"
-    val contextImplicit : NameType     = "$context"
     val copy: NameType                 = "copy"
     val delayedInit: NameType          = "delayedInit"
     val delayedInitArg: NameType       = "delayedInit$body"
@@ -336,12 +340,15 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val isDefinedAt: NameType          = "isDefinedAt"
     val isEmpty: NameType              = "isEmpty"
     val isInstanceOf_ : NameType       = "isInstanceOf"
+    val isInstanceOf_Ob : NameType     = "$isInstanceOf"
     val java: NameType                 = "java"
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"
     val lift_ : NameType               = "lift"
     val macro_ : NameType              = "macro"
+    val macroThis : NameType           = "_this"
+    val macroContext : NameType        = "_context"
     val main: NameType                 = "main"
     val map: NameType                  = "map"
     val mirror : NameType              = "mirror"
@@ -366,7 +373,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val self: NameType                 = "self"
     val setAccessible: NameType        = "setAccessible"
     val setAnnotations: NameType       = "setAnnotations"
-    val setTypeSig: NameType           = "setTypeSig"
+    val setSymbol: NameType            = "setSymbol"
+    val setType: NameType              = "setType"
+    val setTypeSignature: NameType     = "setTypeSignature"
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val thisModuleType: NameType       = "thisModuleType"
@@ -424,7 +433,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val toInteger: NameType   = "toInteger"
   }
 
-  object tpnme extends TypeNames /*with LibraryTypeNames*/ with TypeNameMangling {
+  object tpnme extends AbsTypeNames with TypeNames /*with LibraryTypeNames*/ with TypeNameMangling {
     type NameType = TypeName
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
@@ -461,7 +470,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
 
   val javanme = nme.javaKeywords
 
-  object nme extends TermNames /*with LibraryTermNames*/ with TermNameMangling {
+  object nme extends AbsTermNames with TermNames /*with LibraryTermNames*/ with TermNameMangling {
     type NameType = TermName
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
 
@@ -708,7 +717,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val BoxedCharacter      : TypeName
     val BoxedNumber         : TypeName
     val Class               : TypeName
-    val Code                : TypeName
     val Delegate            : TypeName
     val IOOBException       : TypeName // IndexOutOfBoundsException
     val InvTargetException  : TypeName // InvocationTargetException
@@ -843,7 +851,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     final val BoxedCharacter: TypeName      = "System.IConvertible"
     final val BoxedNumber: TypeName         = "System.IConvertible"
     final val Class: TypeName               = "System.Type"
-    final val Code: TypeName                = tpnme.NO_NAME
     final val Delegate: TypeName            = "System.MulticastDelegate"
     final val IOOBException: TypeName       = "System.IndexOutOfRangeException"
     final val InvTargetException: TypeName  = "System.Reflection.TargetInvocationException"
@@ -877,7 +884,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
   private class J2SENames extends JavaNames {
     final val BeanProperty: TypeName        = "scala.beans.BeanProperty"
     final val BooleanBeanProperty: TypeName = "scala.beans.BooleanBeanProperty"
-    final val Code: TypeName                = "scala.reflect.Code"
     final val JavaSerializable: TypeName    = "java.io.Serializable"
   }
 

@@ -3,57 +3,59 @@ package api
 
 /** A mirror establishes connections of
  *  runtime entities such as class names and object instances
- *  with a refexive universe.
+ *  with a reflexive universe.
  */
 trait Mirror extends Universe with RuntimeTypes with TreeBuildUtil {
 
   /** The Scala class symbol that has given fully qualified name
    *  @param name  The fully qualified name of the class to be returned
-   *  @throws java.lang.ClassNotFoundException if no class wiht that name exists
+   *  @throws java.lang.ClassNotFoundException if no class with that name exists
    *  to do: throws anything else?
    */
-  def classWithName(name: String): Symbol
+  def symbolForName(name: String): Symbol
   
-  /** Return a reference to the companion object of this class symbol
+  /** Return a reference to the companion object of the given class symbol.
    */
-  def getCompanionObject(clazz: Symbol): AnyRef
+  def companionInstance(clazz: Symbol): AnyRef
   
-  /** The Scala class symbol corresponding to the runtime class of given object
-   *  @param  The object from which the class is returned
+  /** The Scala class symbol corresponding to the runtime class of the given instance.
+   *  @param    instance    The instance
+   *  @return               The class Symbol for the instance
    *  @throws ?
    */
-  def getClass(obj: AnyRef): Symbol
+  def symbolOfInstance(instance: Any): Symbol
 
-  /** The Scala type corresponding to the runtime type of given object.
+  /** The Scala type corresponding to the runtime type of given instance.
    *  If the underlying class is parameterized, this will be an existential type,
    *  with unknown type arguments.
    *
-   *  @param  The object from which the type is returned
+   *  @param    instance    The instance.
+   *  @return               The Type of the given instance.
    *  @throws ?
    */
-  def getType(obj: AnyRef): Type
+  def typeOfInstance(instance: Any): Type
 
   /** The value of a field on a receiver instance.
    *  @param receiver   The receiver instance
    *  @param field      The field
    *  @return           The value contained in `receiver.field`.
    */
-  def getValue(receiver: AnyRef, field: Symbol): Any
+  def getValueOfField(receiver: AnyRef, field: Symbol): Any
 
   /** Sets the value of a field on a receiver instance.
    *  @param receiver   The receiver instance
    *  @param field      The field
    *  @param value      The new value to be stored in the field.
    */
-  def setValue(receiver: AnyRef, field: Symbol, value: Any): Unit
+  def setValueOfField(receiver: AnyRef, field: Symbol, value: Any): Unit
 
-  /** Invokes a method on a reciver instance with some arguments
+  /** Invokes a method on a receiver instance with some arguments
    *  @param receiver   The receiver instance
    *  @param meth       The method
    *  @param args       The method call's arguments
    *  @return   The result of invoking `receiver.meth(args)`
    */
-  def invoke(receiver: AnyRef, meth: Symbol, args: Any*): Any
+  def invoke(receiver: AnyRef, meth: Symbol)(args: Any*): Any
 
   /** Maps a Java class to a Scala type reference
    *  @param   clazz    The Java class object

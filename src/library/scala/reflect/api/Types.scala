@@ -6,7 +6,6 @@ trait Types { self: Universe =>
   /** This class declares operations that are visible in a Type.
    */
   abstract class AbsType {
-
     /** The type symbol associated with the type, or `NoSymbol` for types
      *  that do not refer to a type symbol.
      */
@@ -20,7 +19,7 @@ trait Types { self: Universe =>
 
     /** The collection of declarations in this type
      */
-    def allDeclarations: Iterable[Symbol]
+    def declarations: Iterable[Symbol]
 
     /** The member with given name, either directly declared or inherited,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -36,7 +35,7 @@ trait Types { self: Universe =>
      *  Members appear in the linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def allMembers: Iterable[Symbol]
+    def members: Iterable[Symbol]
 
     /** An iterable containing all non-private members of this type (directly declared or inherited)
      *  Members appear in the linearization order of their owners.
@@ -47,7 +46,7 @@ trait Types { self: Universe =>
     /** Substitute types in `to` for corresponding occurrences of references to
      *  symbols `from` in this type.
      */
-    def subst(from: List[Symbol], to: List[Type]): Type
+    def substituteTypes(from: List[Symbol], to: List[Type]): Type // !!! Too many things with names like "subst"
 
     /** If this is a parameterized types, the type arguments.
      *  Otherwise the empty list
@@ -56,7 +55,7 @@ trait Types { self: Universe =>
 
     /** Is this type a type constructor that is missing its type arguments?
      */
-    def isHigherKinded: Boolean
+    def isHigherKinded: Boolean   // !!! This should be called "isTypeConstructor", no?
 
     /**
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
@@ -66,7 +65,7 @@ trait Types { self: Universe =>
      *    TypeRef(pre, <List>, List()) is replaced by
      *    PolyType(X, TypeRef(pre, <List>, List(X)))
      */
-    def normalize: Type
+    def normalize: Type     // !!! Alternative name? "normalize" is used to mean too many things.
 
     /** Does this type conform to given type argument `that`? */
     def <:< (that: Type): Boolean
@@ -74,11 +73,11 @@ trait Types { self: Universe =>
     /** Is this type equivalent to given type argument `that`? */
     def =:= (that: Type): Boolean
 
-    /** The list of all baseclasses of this type (including its own typeSymbol)
+    /** The list of all base classes of this type (including its own typeSymbol)
      *  in reverse linearization order, starting with the class itself and ending
      *  in class Any.
      */
-    def baseClasses: List[Symbol]
+    def baseClasses: List[Symbol]   // !!! Alternative name, perhaps linearization?
 
     /** The least type instance of given class which is a supertype
      *  of this type.  Example:
@@ -104,9 +103,9 @@ trait Types { self: Universe =>
     def asSeenFrom(pre: Type, clazz: Symbol): Type
 
     /** The erased type corresponding to this type after
-     *  all transcformations from Scala to Java have been performed.
+     *  all transformations from Scala to Java have been performed.
      */
-    def erasedType: Type
+    def erasedType: Type    // !!! "erasedType", compare with "widen" (so "erase") or "underlying" (so "erased")
 
    /** Apply `f` to each part of this type, returning
     *  a new type. children get mapped before their parents */
@@ -125,37 +124,28 @@ trait Types { self: Universe =>
 
     /** Does this type contain a reference to given symbol? */
     def contains(sym: Symbol): Boolean
-  }
 
-  /** This class declares methods that are visible in a `SingleType`.
-   */
-  trait AbsSingletonType extends AbsType {
+    /** If this is a compound type, the list of its parent types;
+     *  otherwise the empty list
+     */
+    def parents: List[Type]
 
-    /** The type underlying a singleton type */
+    /** If this is a singleton type, returns the type underlying it;
+     *  otherwise returns this type itself.
+     */
     def underlying: Type
 
-    /** Widen from singleton type to its underlying non-singleton
-     *  base type by applying one or more `underlying` dereferences,
-     *  identity for all other types.
+    /** If this is a singleton type, widen it to its nearest underlying non-singleton
+     *  base type by applying one or more `underlying` dereferences.
+     *  If this is not a singleton type, returns this type itself.
      *
+     *  Example:
+     * 
      *  class Outer { class C ; val x: C }
      *  val o: Outer
      *  <o.x.type>.widen = o.C
      */
     def widen: Type
-  }
-
-  /** This class declares methods that are visible in a `CompoundType` (i.e.
-   *  a class/trait/object template or refined type of the form
-   *  {{{
-   *     P_1 with ... with P_m { D_1; ...; D_n }
-   *  }}}
-   *  P_n
-   */
-  trait AbsCompoundType extends AbsType {
-
-    /** The list of parent types of this compound type */
-    def parents: List[Type]
   }
 
   /** The type of Scala types, and also Scala type signatures.
@@ -293,7 +283,7 @@ trait Types { self: Universe =>
 
   /** A subtype of Type representing refined types as well as `ClassInfo` signatures.
    */
-  type CompoundType <: /*AbsCompoundType with*/ Type
+  type CompoundType <: Type
 
   /** The `RefinedType` type defines types of any of the forms on the left,
    *  with their RefinedType representations to the right.
@@ -408,11 +398,6 @@ trait Types { self: Universe =>
     def apply(parents: List[Type], decls: Scope, clazz: Symbol): ClassInfoType
     def unapply(tpe: ClassInfoType): Option[(List[Type], Scope, Symbol)]
   }
-
-
-
-
-
 
   abstract class NullaryMethodTypeExtractor {
     def apply(resultType: Type): NullaryMethodType

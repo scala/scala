@@ -36,158 +36,13 @@ trait SyntheticMethods extends ast.TreeDSL {
   import definitions._
   import CODE._
 
-  private object util {
-    private type CM[T] = ClassManifest[T]
-
-    def ValOrDefDef(sym: Symbol, body: Tree) =
-      if (sym.isLazy) ValDef(sym, body)
-      else DefDef(sym, body)
-
-    /** To avoid unchecked warnings on polymorphic classes.
-     */
-    def clazzTypeToTest(clazz: Symbol) = clazz.tpe.normalize match {
-      case TypeRef(_, sym, args) if args.nonEmpty => newExistentialType(sym.typeParams, clazz.tpe)
-      case tp                                     => tp
-    }
-
-    def makeMethodPublic(method: Symbol): Symbol = (
-      method setPrivateWithin NoSymbol resetFlag AccessFlags
-    )
-
-    def methodArg(method: Symbol, idx: Int): Tree = Ident(method.paramss.head(idx))
-
-    private def applyTypeInternal(manifests: List[CM[_]]): Type = {
-      val symbols = manifests map manifestToSymbol
-      val container :: args = symbols
-      val tparams = container.typeConstructor.typeParams
-
-      // Overly conservative at present - if manifests were more usable
-      // this could do a lot more.
-      require(symbols forall (_ ne NoSymbol), "Must find all manifests: " + symbols)
-      require(container.owner.isPackageClass, "Container must be a top-level class in a package: " + container)
-      require(tparams.size == args.size, "Arguments must match type constructor arity: " + tparams + ", " + args)
-      require(args forall (_.typeConstructor.typeParams.isEmpty), "Arguments must be unparameterized: " + args)
-
-      typeRef(container.typeConstructor.prefix, container, args map (_.tpe))
-    }
-
-    def manifestToSymbol(m: CM[_]): Symbol = m match {
-      case x: scala.reflect.AnyValManifest[_] => getMember(ScalaPackageClass, newTermName("" + x))
-      case _                                  => getClassIfDefined(m.erasure.getName)
-    }
-    def companionType[T](implicit m: CM[T]) =
-      getRequiredModule(m.erasure.getName).tpe
-
-    // Use these like `applyType[List, Int]` or `applyType[Map, Int, String]`
-    def applyType[M](implicit m1: CM[M]): Type =
-      applyTypeInternal(List(m1))
-
-    def applyType[M[X1], X1](implicit m1: CM[M[_]], m2: CM[X1]): Type =
-      applyTypeInternal(List(m1, m2))
-
-    def applyType[M[X1, X2], X1, X2](implicit m1: CM[M[_,_]], m2: CM[X1], m3: CM[X2]): Type =
-      applyTypeInternal(List(m1, m2, m3))
-
-    def applyType[M[X1, X2, X3], X1, X2, X3](implicit m1: CM[M[_,_,_]], m2: CM[X1], m3: CM[X2], m4: CM[X3]): Type =
-      applyTypeInternal(List(m1, m2, m3, m4))
-  }
-  import util._
-
-  class MethodSynthesis(val clazz: Symbol, localTyper: Typer) {
-    private def isOverride(method: Symbol) =
-      clazzMember(method.name).alternatives exists (sym => (sym != method) && !sym.isDeferred)
-
-    private def setMethodFlags(method: Symbol): Symbol = {
-      val overrideFlag = if (isOverride(method)) OVERRIDE else 0L
-
-      method setFlag (overrideFlag | SYNTHETIC) resetFlag DEFERRED
-    }
-
-    private def finishMethod(method: Symbol, f: Symbol => Tree): Tree = {
-      setMethodFlags(method)
-      clazz.info.decls enter method
-      logResult("finishMethod")(localTyper typed ValOrDefDef(method, f(method)))
-    }
-
-    private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
-      val m = clazz.newMethod(name.toTermName, clazz.pos.focus)
-      m setInfo info
-      finishMethod(m, f)
-    }
-    private def createInternal(name: Name, f: Symbol => Tree, infoFn: Symbol => Type): Tree = {
-      val m = clazz.newMethod(name.toTermName, clazz.pos.focus)
-      m setInfo infoFn(m)
-      finishMethod(m, f)
-    }
-    private def cloneInternal(original: Symbol, f: Symbol => Tree, name: Name): Tree = {
-      val m = original.cloneSymbol(clazz) setPos clazz.pos.focus
-      m.name = name
-      finishMethod(m, f)
-    }
-
-    private def cloneInternal(original: Symbol, f: Symbol => Tree): Tree =
-      cloneInternal(original, f, original.name)
-
-    def clazzMember(name: Name) = clazz.info nonPrivateMember name match {
-      case NoSymbol => log("In " + clazz + ", " + name + " not found: " + clazz.info) ; NoSymbol
-      case sym      => sym
-    }
-    def typeInClazz(sym: Symbol) = clazz.thisType memberType sym
-
-    /** Function argument takes the newly created method symbol of
-     *  the same type as `name` in clazz, and returns the tree to be
-     *  added to the template.
-     */
-    def overrideMethod(name: Name)(f: Symbol => Tree): Tree =
-      overrideMethod(clazzMember(name))(f)
-
-    def overrideMethod(original: Symbol)(f: Symbol => Tree): Tree =
-      cloneInternal(original, sym => f(sym setFlag OVERRIDE))
-
-    def deriveMethod(original: Symbol, nameFn: Name => Name)(f: Symbol => Tree): Tree =
-      cloneInternal(original, f, nameFn(original.name))
-
-    def createMethod(name: Name, paramTypes: List[Type], returnType: Type)(f: Symbol => Tree): Tree =
-      createInternal(name, f, (m: Symbol) => MethodType(m newSyntheticValueParams paramTypes, returnType))
-
-    def createMethod(name: Name, returnType: Type)(f: Symbol => Tree): Tree =
-      createInternal(name, f, NullaryMethodType(returnType))
-
-    def createMethod(original: Symbol)(f: Symbol => Tree): Tree =
-      createInternal(original.name, f, original.info)
-
-    def forwardMethod(original: Symbol, newMethod: Symbol)(transformArgs: List[Tree] => List[Tree]): Tree =
-      createMethod(original)(m => gen.mkMethodCall(newMethod, transformArgs(m.paramss.head map Ident)))
-
-    def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree) = {
-      createMethod(name, List(IntClass.tpe), returnType) { m =>
-        val arg0    = methodArg(m, 0)
-        val default = DEFAULT ==> THROW(IndexOutOfBoundsExceptionClass, arg0)
-        val cases   = range.map(num => CASE(LIT(num)) ==> f(num)).toList :+ default
-
-        Match(arg0, cases)
-      }
-    }
-
-    // def foo() = constant
-    def constantMethod(name: Name, value: Any): Tree = {
-      val constant = Constant(value)
-      createMethod(name, Nil, constant.tpe)(_ => Literal(constant))
-    }
-    // def foo = constant
-    def constantNullary(name: Name, value: Any): Tree = {
-      val constant = Constant(value)
-      createMethod(name, constant.tpe)(_ => Literal(constant))
-    }
-  }
-
   /** Add the synthetic methods to case classes.
    */
   def addSyntheticMethods(templ: Template, clazz0: Symbol, context: Context): Template = {
     if (phase.erasedTypes)
       return templ
 
-    val synthesizer = new MethodSynthesis(
+    val synthesizer = new ClassMethodSynthesis(
       clazz0,
       newTyper( if (reporter.hasErrors) context makeSilent false else context )
     )
@@ -212,11 +67,12 @@ trait SyntheticMethods extends ast.TreeDSL {
     // like Manifests and Arrays which are not robust and infer things
     // which they shouldn't.
     val accessorLub  = (
-      if (opt.experimental)
+      if (opt.experimental) {
         global.weakLub(accessors map (_.tpe.finalResultType))._1 match {
           case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
           case tp                                            => tp
         }
+      }
       else AnyClass.tpe
     )
 
@@ -258,11 +114,10 @@ trait SyntheticMethods extends ast.TreeDSL {
     /** The canEqual method for case classes.
      *    def canEqual(that: Any) = that.isInstanceOf[This]
      */
-    def canEqualMethod: Tree = {
-      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m =>
-        methodArg(m, 0) IS_OBJ clazzTypeToTest(clazz)
-      )
-    }
+    def canEqualMethod: Tree = (
+      createMethod(nme.canEqual_, List(AnyClass.tpe), BooleanClass.tpe)(m => 
+        Ident(m.firstParam) IS_OBJ classExistentialType(clazz))
+    )
 
     /** The equality method for case classes.
      *  0 args:
@@ -276,8 +131,8 @@ trait SyntheticMethods extends ast.TreeDSL {
      *    }
      */
     def equalsClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
-      val arg0      = methodArg(m, 0)
-      val thatTest  = gen.mkIsInstanceOf(arg0, clazzTypeToTest(clazz), true, false)
+      val arg0      = Ident(m.firstParam)
+      val thatTest  = gen.mkIsInstanceOf(arg0, classExistentialType(clazz), true, false)
       val thatCast  = gen.mkCast(arg0, clazz.tpe)
 
       def argsBody: Tree = {
@@ -331,7 +186,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       Object_hashCode -> (() => constantMethod(nme.hashCode_, clazz.name.decode.hashCode)),
       Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode))
       // Not needed, as reference equality is the default.
-      // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ methodArg(m, 0)))
+      // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ Ident(m.firstParam)))
     )
 
     /** If you serialize a singleton and then deserialize it twice,
@@ -381,7 +236,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       for (ddef @ DefDef(_, _, _, _, _, _) <- templ.body ; if isRewrite(ddef.symbol)) {
         val original = ddef.symbol
         val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
-          makeMethodPublic(newAcc)
+          newAcc.makePublic
           newAcc resetFlag (ACCESSOR | PARAMACCESSOR)
           ddef.rhs.duplicate
         }

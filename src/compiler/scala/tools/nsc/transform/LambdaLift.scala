@@ -65,7 +65,10 @@ abstract class LambdaLift extends InfoTransform {
     /** The set of symbols that need to be renamed. */
     private val renamable = newSymSet
 
-    private val renamableImplClasses = mutable.HashMap[Name, Symbol]() withDefaultValue NoSymbol
+    // (trait, name) -> owner
+    private val localTraits      = mutable.HashMap[(Symbol, Name), Symbol]()
+    // (owner, name) -> implClass
+    private val localImplClasses = mutable.HashMap[(Symbol, Name), Symbol]()
 
     /** A flag to indicate whether new free variables have been found */
     private var changedFreeVars: Boolean = _
@@ -167,8 +170,13 @@ abstract class LambdaLift extends InfoTransform {
               // arrangements, and then have separate methods which attempt to compensate
               // for that failure. There should be exactly one method for any given
               // entity which always gives the right answer.
-              if (sym.isImplClass) renamableImplClasses(nme.interfaceName(sym.name)) = sym
-              else renamable addEntry sym
+              if (sym.isImplClass)
+                localImplClasses((sym.owner, nme.interfaceName(sym.name))) = sym
+              else {
+                renamable addEntry sym
+                if (sym.isTrait)
+                  localTraits((sym, sym.name)) = sym.owner
+              }
             }
           case DefDef(_, _, _, _, _, _) =>
             if (sym.isLocal) {
@@ -237,14 +245,21 @@ abstract class LambdaLift extends InfoTransform {
 
         debuglog("renaming impl class in step with %s: %s => %s".format(traitSym, originalImplName, implSym.name))
       }
-
+      
       for (sym <- renamable) {
         // If we renamed a trait from Foo to Foo$1, we must rename the implementation
         // class from Foo$class to Foo$1$class.  (Without special consideration it would
-        // become Foo$class$1 instead.)
-        val implClass = if (sym.isTrait) renamableImplClasses(sym.name) else NoSymbol
-        if ((implClass ne NoSymbol) && (sym.owner == implClass.owner)) renameTrait(sym, implClass)
-        else renameSym(sym)
+        // become Foo$class$1 instead.) Since the symbols are being renamed out from
+        // under us, and there's no reliable link between trait symbol and impl symbol,
+        // we have maps from ((trait, name)) -> owner and ((owner, name)) -> impl.
+        localTraits remove ((sym, sym.name)) match {
+          case None        => renameSym(sym)
+          case Some(owner) =>
+            localImplClasses remove ((owner, sym.name)) match {
+              case Some(implSym)  => renameTrait(sym, implSym)
+              case _              => renameSym(sym) // pure interface, no impl class
+            }
+        }
       }
 
       atPhase(phase.next) {

@@ -9,6 +9,5 @@ compiling Set(B.scala)
 B.scala:2: error: type mismatch;
  found   : Int(5)
  required: String
-Error occurred in an application involving default arguments.
   val y = A.x(5)
               ^

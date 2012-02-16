@@ -9,15 +9,12 @@
     <!-- Pull in properties from build -->
     <property file="build.properties" />
     <!-- Initialize specific properties -->
-    <!--<property name="remote.snapshot.repository" value="http://scala-tools.org:8081/nexus/content/repositories/snapshots" />
-    <property name="remote.release.repository" value="http://scala-tools.org:8081/nexus/content/repositories/releases" />-->
-
-    <property name="remote.snapshot.repository" value="http://nexus.scala-tools.org/content/repositories/snapshots" />
-    <property name="remote.release.repository" value="http://nexus.scala-tools.org/content/repositories/releases" />
+    <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
+    <property name="remote.release.repository" value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
 
     <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
     <property name="local.release.repository" value="${user.home}/.m2/repository" />
-    <property name="repository.credentials.id" value="scala-tools.org" />
+    <property name="repository.credentials.id" value="sonatype-nexus" />
     <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
     <echo>Using server[${repository.credentials.id}] for maven repository credentials.

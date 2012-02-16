@@ -2,10 +2,12 @@ package scala.reflect
 package runtime
 
 trait TreeBuildUtil extends Universe with api.TreeBuildUtil {
-
-  def staticClass(fullname: String): Symbol = definitions.getRequiredClass(fullname)
-  def staticModule(fullname: String): Symbol = definitions.getRequiredModule(fullname)
-  def thisModuleType(fullname: String) = staticModule(fullname).moduleClass.thisType
+  /** A comment to the effect of why initialize was added to all these
+   *  would be appreciated.  (We may as well start somewhere.)
+   */
+  def staticClass(fullname: String)    = definitions.getRequiredClass(fullname).initialize
+  def staticModule(fullname: String)   = definitions.getRequiredModule(fullname).initialize
+  def thisModuleType(fullname: String) = staticModule(fullname).moduleClass.initialize.thisType
 
  /** Selects type symbol with given name from the defined members of prefix type
    */
@@ -39,7 +41,7 @@ trait TreeBuildUtil extends Universe with api.TreeBuildUtil {
     selectIn(owner.info, idx)
   }
 
-  def freeVar(name: String, info: Type, value: Any) = newFreeVar(newTermName(name), info, value)
+  def newFreeVar(name: String, info: Type, value: Any) = newFreeVar(newTermName(name), info, value)
 
   def modifiersFromInternalFlags(flags: Long, privateWithin: Name, annotations: List[Tree]): Modifiers =
     Modifiers(flags, privateWithin, annotations)

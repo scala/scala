@@ -84,11 +84,16 @@ abstract class AddInterfaces extends InfoTransform {
       atPhase(implClassPhase) {
         log("%s.implClass == %s".format(iface, iface.implClass))
         val implName = nme.implClassName(iface.name)
-        var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
-        impl.info
+        var impl     = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
+
+        // !!! Why does forcing the impl's info here lead to a crash?
+        // See test case pos/trait-force-info.scala for a minimization.
+        // It crashes like this:
+        //
+        // [log lazyvals] trait ContextTrees.implClass == class ContextTrees$class
+        // error: java.lang.AssertionError: assertion failed: (scala.tools.nsc.typechecker.Contexts$NoContext$,scala.tools.nsc.typechecker.Contexts,NoContext$,trait Contexts in package typechecker) /  while parsing (/scala/trunk/build/pack/lib/scala-compiler.jar(scala/tools/nsc/interactive/ContextTrees$class.class),Some(class ContextTrees$class))trait Contexts.NoContext$ linkedModule: <none>List()
 
         val originalImpl = impl
-        val originalImplString = originalImpl.hasFlagsToString(-1L)
         if (impl != NoSymbol) {
           // Unlink a pre-existing symbol only if the implementation class is
           // visible on the compilation classpath.  In general this is true under
@@ -114,8 +119,8 @@ abstract class AddInterfaces extends InfoTransform {
         impl setInfo new LazyImplClassType(iface)
         implClassMap(iface) = impl
         debuglog(
-          "generating impl class " + impl + " " + impl.hasFlagsToString(-1L) + " in " + iface.owner + (
-            if (originalImpl == NoSymbol) "" else " (cloned from " + originalImpl.fullLocationString + " " + originalImplString + ")"
+          "generating impl class " + impl.debugLocationString + " in " + iface.owner + (
+            if (originalImpl == NoSymbol) "" else " (cloned from " + originalImpl.debugLocationString + ")"
           )
         )
         impl
@@ -139,7 +144,7 @@ abstract class AddInterfaces extends InfoTransform {
      *  given the decls ifaceDecls of its interface.
      */
     private def implDecls(implClass: Symbol, ifaceDecls: Scope): Scope = {
-      val decls = new Scope
+      val decls = newScope
       if ((ifaceDecls lookup nme.MIXIN_CONSTRUCTOR) == NoSymbol)
         decls enter (
           implClass.newMethod(nme.MIXIN_CONSTRUCTOR, implClass.pos)
@@ -179,7 +184,7 @@ abstract class AddInterfaces extends InfoTransform {
       )
       def implType(tp: Type): Type = tp match {
         case ClassInfoType(parents, decls, _) =>
-          assert(phase == implClassPhase)
+          assert(phase == implClassPhase, tp)
           ClassInfoType(
             ObjectClass.tpe +: (parents.tail map mixinToImplClass filter (_.typeSymbol != ObjectClass)) :+ iface.tpe,
             implDecls(sym, decls),

@@ -35,6 +35,10 @@ abstract class TestFile(val kind: String) extends TestFileCommon {
     if (setOutDir)
       settings.outputDirs setSingleOutput setOutDirTo.path
 
+    // adding code.jar to the classpath (to provide Code.lift services for reification tests)
+    settings.classpath prepend PathSettings.srcCodeLib.toString
+    if (propIsSet("java.class.path")) setProp("java.class.path", PathSettings.srcCodeLib.toString + ";" + propOrElse("java.class.path", ""))
+
     // have to catch bad flags somewhere
     (flags forall (f => settings.processArgumentString(f)._1)) && {
       settings.classpath append fileManager.CLASSPATH

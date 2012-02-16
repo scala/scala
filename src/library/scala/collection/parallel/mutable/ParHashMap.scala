@@ -12,7 +12,6 @@ package mutable
 
 
 
-
 import collection.generic._
 import collection.mutable.DefaultEntry
 import collection.mutable.HashEntry
@@ -56,7 +55,7 @@ self =>
 
   override def seq = new collection.mutable.HashMap[K, V](hashTableContents)
 
-  def splitter = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
+  def splitter = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]])
 
   override def size = tableSize
 
@@ -93,14 +92,11 @@ self =>
 
   override def stringPrefix = "ParHashMap"
 
-  type SCPI = SignalContextPassingIterator[ParHashMapIterator]
-
   class ParHashMapIterator(start: Int, untilIdx: Int, totalSize: Int, e: DefaultEntry[K, V])
-  extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) with ParIterator {
-  me: SCPI =>
+  extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) {
     def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value);
     def newIterator(idxFrom: Int, idxUntil: Int, totalSz: Int, es: DefaultEntry[K, V]) =
-      new ParHashMapIterator(idxFrom, idxUntil, totalSz, es) with SCPI
+      new ParHashMapIterator(idxFrom, idxUntil, totalSz, es)
   }
 
   private def writeObject(out: java.io.ObjectOutputStream) {
@@ -164,10 +160,11 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
   import collection.parallel.tasksupport._
   private var mask = ParHashMapCombiner.discriminantmask
   private var nonmasklen = ParHashMapCombiner.nonmasklength
+  private var seedvalue = 27
 
   def +=(elem: (K, V)) = {
     sz += 1
-    val hc = improve(elemHashCode(elem._1))
+    val hc = improve(elemHashCode(elem._1), seedvalue)
     val pos = (hc >>> nonmasklen)
     if (buckets(pos) eq null) {
       // initialize bucket
@@ -180,7 +177,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
 
   def result: ParHashMap[K, V] = if (size >= (ParHashMapCombiner.numblocks * sizeMapBucketSize)) { // 1024
     // construct table
-    val table = new AddingHashTable(size, tableLoadFactor)
+    val table = new AddingHashTable(size, tableLoadFactor, seedvalue)
     val bucks = buckets.map(b => if (b ne null) b.headPtr else null)
     val insertcount = executeAndWaitResult(new FillBlocks(bucks, table, 0, bucks.length))
     table.setSize(insertcount)
@@ -214,11 +211,12 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
    *  and true if the key was successfully inserted. It does not update the number of elements
    *  in the table.
    */
-  private[ParHashMapCombiner] class AddingHashTable(numelems: Int, lf: Int) extends HashTable[K, DefaultEntry[K, V]] {
+  private[ParHashMapCombiner] class AddingHashTable(numelems: Int, lf: Int, _seedvalue: Int) extends HashTable[K, DefaultEntry[K, V]] {
     import HashTable._
     _loadFactor = lf
     table = new Array[HashEntry[K, DefaultEntry[K, V]]](capacity(sizeForThreshold(_loadFactor, numelems)))
     tableSize = 0
+    seedvalue = _seedvalue
     threshold = newThreshold(_loadFactor, table.length)
     sizeMapInit(table.length)
     def setSize(sz: Int) = tableSize = sz
@@ -289,7 +287,7 @@ extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntr
       insertcount
     }
     private def assertCorrectBlock(block: Int, k: K) {
-      val hc = improve(elemHashCode(k))
+      val hc = improve(elemHashCode(k), seedvalue)
       if ((hc >>> nonmasklen) != block) {
         println(hc + " goes to " + (hc >>> nonmasklen) + ", while expected block is " + block)
         assert((hc >>> nonmasklen) == block)

@@ -52,6 +52,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    */
   @transient protected var sizemap: Array[Int] = null
 
+  @transient var seedvalue: Int = tableSizeSeed
+  
+  protected def tableSizeSeed = Integer.bitCount(table.length - 1)
+  
   protected def initialSize: Int = HashTable.initialSize
 
   private def lastPopulatedIndex = {
@@ -70,14 +74,16 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   private[collection] def init[B](in: java.io.ObjectInputStream, f: (A, B) => Entry) {
     in.defaultReadObject
 
-    _loadFactor = in.readInt
+    _loadFactor = in.readInt()
     assert(_loadFactor > 0)
 
-    val size = in.readInt
+    val size = in.readInt()
     tableSize = 0
     assert(size >= 0)
-
-    val smDefined = in.readBoolean
+    
+    seedvalue = in.readInt()
+    
+    val smDefined = in.readBoolean()
 
     table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
     threshold = newThreshold(_loadFactor, table.size)
@@ -86,7 +92,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
     var index = 0
     while (index < size) {
-      addEntry(f(in.readObject.asInstanceOf[A], in.readObject.asInstanceOf[B]))
+      addEntry(f(in.readObject().asInstanceOf[A], in.readObject().asInstanceOf[B]))
       index += 1
     }
   }
@@ -103,6 +109,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     out.defaultWriteObject
     out.writeInt(_loadFactor)
     out.writeInt(tableSize)
+    out.writeInt(seedvalue)
     out.writeBoolean(isSizeMapDefined)
     foreachEntry { entry =>
       out.writeObject(entry.key)
@@ -314,7 +321,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   // this is of crucial importance when populating the table in parallel
   protected final def index(hcode: Int) = {
     val ones = table.length - 1
-    val improved = improve(hcode)
+    val improved = improve(hcode, seedvalue)
     val shifted = (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
     shifted
   }
@@ -325,6 +332,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
       table = c.table
       tableSize = c.tableSize
       threshold = c.threshold
+      seedvalue = c.seedvalue
       sizemap = c.sizemap
     }
     if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild
@@ -335,6 +343,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     table,
     tableSize,
     threshold,
+    seedvalue,
     sizemap
   )
 }
@@ -368,7 +377,7 @@ private[collection] object HashTable {
 
     protected def elemHashCode(key: KeyType) = key.##
 
-    protected final def improve(hcode: Int) = {
+    protected final def improve(hcode: Int, seed: Int) = {
       /* Murmur hash
        *  m = 0x5bd1e995
        *  r = 24
@@ -396,7 +405,7 @@ private[collection] object HashTable {
        * */
       var i = hcode * 0x9e3775cd
       i = java.lang.Integer.reverseBytes(i)
-      i * 0x9e3775cd
+      i = i * 0x9e3775cd
       // a slower alternative for byte reversal:
       // i = (i << 16) | (i >> 16)
       // i = ((i >> 8) & 0x00ff00ff) | ((i << 8) & 0xff00ff00)
@@ -420,6 +429,11 @@ private[collection] object HashTable {
       // h = h ^ (h >>> 14)
       // h = h + (h << 4)
       // h ^ (h >>> 10)
+      
+      // the rest of the computation is due to SI-5293
+      val rotation = seed % 32
+      val rotated = (i >>> rotation) | (i << (32 - rotation))
+      rotated
     }
   }
 
@@ -442,6 +456,7 @@ private[collection] object HashTable {
     val table: Array[HashEntry[A, Entry]],
     val tableSize: Int,
     val threshold: Int,
+    val seedvalue: Int,
     val sizemap: Array[Int]
   ) {
     import collection.DebugUtils._
@@ -452,6 +467,7 @@ private[collection] object HashTable {
       append("Table: [" + arrayString(table, 0, table.length) + "]")
       append("Table size: " + tableSize)
       append("Load factor: " + loadFactor)
+      append("Seedvalue: " + seedvalue)
       append("Threshold: " + threshold)
       append("Sizemap: [" + arrayString(sizemap, 0, sizemap.length) + "]")
     }

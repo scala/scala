@@ -34,7 +34,6 @@ import scala.collection.generic.Sizing
  */
 trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
 //self: EnvironmentPassingCombiner[Elem, To] =>
-  private[collection] final val tasksupport = getTaskSupport
 
   /** Combines the contents of the receiver builder and the `other` builder,
    *  producing a new builder containing both their elements.
@@ -62,7 +61,14 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
    *  @return        the parallel builder containing both the elements of this and the `other` builder
    */
   def combine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]): Combiner[N, NewTo]
-
+  
+  /** Returns `true` if this combiner has a thread-safe `+=` and is meant to be shared
+   *  across several threads constructing the collection.
+   *  
+   *  By default, this method returns `false`.
+   */
+  def canBeShared: Boolean = false
+  
 }
 
 

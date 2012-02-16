@@ -133,7 +133,7 @@ abstract class GenICode extends SubComponent  {
           if (!ctx1.bb.closed) ctx1.bb.close
           prune(ctx1.method)
         } else
-          ctx1.method.setCode(null)
+          ctx1.method.setCode(NoCode)
         ctx1
 
       case Template(_, _, body) =>
@@ -179,7 +179,7 @@ abstract class GenICode extends SubComponent  {
     }
 
     private def genThrow(expr: Tree, ctx: Context): (Context, TypeKind) = {
-      require(expr.tpe <:< ThrowableClass.tpe)
+      require(expr.tpe <:< ThrowableClass.tpe, expr.tpe)
 
       val thrownKind = toTypeKind(expr.tpe)
       val ctx1       = genLoad(expr, ctx, thrownKind)
@@ -480,7 +480,7 @@ abstract class GenICode extends SubComponent  {
      */
     private def msil_genLoadZeroOfNonEnumValuetype(ctx: Context, kind: TypeKind, pos: Position, leaveAddressOnStackInstead: Boolean) {
       val REFERENCE(clssym) = kind
-      assert(loaders.clrTypes.isNonEnumValuetype(clssym))
+      assert(loaders.clrTypes.isNonEnumValuetype(clssym), clssym)
       val local = ctx.makeLocal(pos, clssym.tpe, "tmp")
       ctx.method.addLocal(local)
       ctx.bb.emit(CIL_LOAD_LOCAL_ADDRESS(local), pos)
@@ -1064,7 +1064,7 @@ abstract class GenICode extends SubComponent  {
           var default: BasicBlock = afterCtx.bb
 
           for (caze @ CaseDef(pat, guard, body) <- cases) {
-            assert(guard == EmptyTree)
+            assert(guard == EmptyTree, guard)
             val tmpCtx = ctx1.newBlock
             pat match {
               case Literal(value) =>
@@ -1072,6 +1072,15 @@ abstract class GenICode extends SubComponent  {
                 targets = tmpCtx.bb :: targets
               case Ident(nme.WILDCARD) =>
                 default = tmpCtx.bb
+              case Alternative(alts) =>
+                alts foreach {
+                  case Literal(value) =>
+                    tags = value.intValue :: tags
+                    targets = tmpCtx.bb :: targets
+                  case _ =>
+                    abort("Invalid case in alternative in switch-like pattern match: " +
+                          tree + " at: " + tree.pos)
+                }
               case _ =>
                 abort("Invalid case statement in switch-like pattern match: " +
                       tree + " at: " + (tree.pos))

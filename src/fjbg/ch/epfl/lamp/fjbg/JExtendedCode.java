@@ -596,6 +596,16 @@ public class JExtendedCode extends JCode {
                            double minDensity) {
         assert keys.length == branches.length;
 
+        //The special case for empty keys. It makes sense to allow
+        //empty keys and generate LOOKUPSWITCH with defaultBranch
+        //only. This is exactly what javac does for switch statement
+        //that has only a default case.
+        if (keys.length == 0) {
+          emitLOOKUPSWITCH(keys, branches, defaultBranch);
+          return;
+        }
+        //the rest of the code assumes that keys.length > 0
+
         // sorting the tables
         // FIXME use quicksort
         for (int i = 1; i < keys.length; i++) {

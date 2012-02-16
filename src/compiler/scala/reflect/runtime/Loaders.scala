@@ -97,9 +97,9 @@ trait Loaders { self: SymbolTable =>
     0 < dp && dp < (name.length - 1)
   }
 
-  class PackageScope(pkgClass: Symbol) extends Scope {
+  class PackageScope(pkgClass: Symbol) extends Scope() with SynchronizedScope {
     assert(pkgClass.isType)
-    private var negatives = mutable.Set[Name]()
+    private val negatives = mutable.Set[Name]() // Syncnote: Performance only, so need not be protected.
     override def lookupEntry(name: Name): ScopeEntry = {
       val e = super.lookupEntry(name)
       if (e != null)

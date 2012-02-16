@@ -210,17 +210,33 @@ PROPERTIES
 INITIALISATION
 ============================================================================ -->
 
-  <condition property="starr.absent">
-    <not><available file="${lib.dir}/scala-library.jar"/></not>
-  </condition>
-
-  <target name="init.starr" if="starr.absent">
-    <echo level="warn" message="Downloading bootstrap libs.  (To do this by hand, run ./pull-binary-libs.sh)"/>
-    <exec osfamily="unix" vmlauncher="false" executable="./pull-binary-libs.sh" failifexecutionfails="true" />
-    <exec osfamily="windows" vmlauncher="false" executable="pull-binary-libs.sh" failifexecutionfails="true" />
+  <target name="init.jars.check">
+    <uptodate property="lib.jars.uptodate">
+      <srcfiles dir="${basedir}">
+        <include name="lib/**/*.desired.sha1"/>
+        <include name="test/files/**/*.desired.sha1"/>
+        <include name="tools/**/*.desired.sha1"/>
+      </srcfiles>
+      <mapper type="glob" from="*.desired.sha1" to="*"/>
+    </uptodate>
   </target>
 
-  <target name="init" depends="init.starr">
+  <target name="init.jars" depends="init.jars.check" unless="lib.jars.uptodate">
+    <echo level="warn" message="Updating bootstrap libs.  (To do this by hand, run ./pull-binary-libs.sh)"/>
+    <exec osfamily="unix" vmlauncher="false" executable="./pull-binary-libs.sh" failifexecutionfails="true" />
+    <exec osfamily="windows" vmlauncher="false" executable="pull-binary-libs.sh" failifexecutionfails="true" />
+    <!-- uptodate task needs to know these are what's in the sha. -->
+    <touch>
+      <fileset dir="${basedir}">
+        <include name="lib/**/*.desired.sha1"/>
+        <include name="test/files/**/*.desired.sha1"/>
+        <include name="tools/**/*.desired.sha1"/>
+      </fileset>
+      <mapper type="glob" from="*.desired.sha1" to="*"/>
+    </touch>
+  </target>
+
+  <target name="init" depends="init.jars">
   <!-- scalac.args.optimise is selectively overridden in certain antcall tasks. -->
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
@@ -240,17 +256,12 @@ INITIALISATION
       <os family="windows"/>
     </condition>
 
-    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="git.describe" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="git.describe" failifexecutionfails="false" />
+    <!-- Generating version string -->
+    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="version.number" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="tools/get-scala-revision.bat" outputproperty="version.number" failifexecutionfails="false" />
     <!-- some default in case something went wrong getting the revision -->
-    <property name="git.describe" value="-unknown-"/>
+    <property name="version.number" value="-unknown-"/>
     <property name="init.avail" value="yes"/>
-
-    <!-- Generating version number -->
-    <property file="${basedir}/build.number"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${git.describe}"/>
 
     <!-- And print-out what we are building -->
     <echo message="       build time: ${time.human}" />
@@ -1524,7 +1535,7 @@ DOCUMENTATION
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
-      docRootContent="${build-docs.dir}/library/lib/rootdoc.txt"> 
+      docRootContent="${src.dir}/library/rootdoc.txt"> 
       <src>
         <files includes="${src.dir}/actors"/>
         <files includes="${src.dir}/library/scala"/>
@@ -1607,7 +1618,8 @@ DOCUMENTATION
       docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
-      srcdir="${src.dir}/compiler">
+      srcdir="${src.dir}/compiler"
+      docRootContent="${src.dir}/compiler/rootdoc.txt"> 
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>

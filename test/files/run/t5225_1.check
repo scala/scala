@@ -1,0 +1,4 @@
+{
+  @new transient() @new volatile() var x: Int = 2;
+  ()
+}

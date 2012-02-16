@@ -3,7 +3,7 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(class A -> List(Changed(Class(A))[ tparams: List((type T,type T))], Changed(Definition(A.<init>))[constructor A changed from ()A[T] to ()A[T] flags: <method>]))
+Changes: Map(class A -> List(Changed(Class(A))[ tparams: List((type T,type T))], Changed(Definition(A.<init>))[constructor A changed from ()A[T] to ()A[T] flags: <method> <triedcooking>]))
 invalidate B.scala because it references changed class [Changed(Class(A))[ tparams: List((type T,type T))]]
 compiling Set(B.scala)
 B.scala:2: error: type mismatch;

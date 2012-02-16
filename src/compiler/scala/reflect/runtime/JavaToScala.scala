@@ -175,7 +175,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
       load(sym)
       completeRest()
     }
-    def completeRest(): Unit = {
+    def completeRest(): Unit = self.synchronized {
       val tparams = clazz.rawInfo.typeParams
 
       val parents = try {
@@ -241,16 +241,32 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    * The Scala owner of the Scala class corresponding to the Java class `jclazz`
    */
   private def sOwner(jclazz: jClass[_]): Symbol = {
-    if (jclazz.isMemberClass)
-      followStatic(classToScala(jclazz.getEnclosingClass), jclazz.getModifiers)
-    else if (jclazz.isLocalClass)
-      methodToScala(jclazz.getEnclosingMethod) orElse constrToScala(jclazz.getEnclosingConstructor)
-    else if (jclazz.isPrimitive || jclazz.isArray)
+    if (jclazz.isMemberClass) {
+      val jEnclosingClass = jclazz.getEnclosingClass
+      val sEnclosingClass = classToScala(jEnclosingClass)
+      followStatic(sEnclosingClass, jclazz.getModifiers)
+    } else if (jclazz.isLocalClass) {
+      val jEnclosingMethod = jclazz.getEnclosingMethod
+      if (jEnclosingMethod != null) {
+        methodToScala(jEnclosingMethod)
+      } else {
+        val jEnclosingConstructor = jclazz.getEnclosingConstructor
+        constrToScala(jEnclosingConstructor)
+      }
+    } else if (jclazz.isPrimitive || jclazz.isArray) {
       ScalaPackageClass
-    else if (jclazz.getPackage != null)
-      packageToScala(jclazz.getPackage)
-    else
+    } else if (jclazz.getPackage != null) {
+      val jPackage = jclazz.getPackage
+      packageToScala(jPackage)
+    } else {
+      // @eb: a weird classloader might return a null package for something with a non-empty package name
+      // for example, http://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
+      // in that case we could invoke packageNameToScala(jPackageName) and, probably, be okay
+      // however, I think, it's better to blow up, since weirdness of the class loader might bite us elsewhere
+      val jPackageName = jclazz.getName.substring(0, Math.max(jclazz.getName.lastIndexOf("."), 0))
+      assert(jPackageName == "")
       EmptyPackageClass
+    }
   }
 
   /**
@@ -295,8 +311,10 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    *  @return A Scala method object that corresponds to `jmeth`.
    */
   def methodToScala(jmeth: jMethod): Symbol = methodCache.toScala(jmeth) {
-    val owner = followStatic(classToScala(jmeth.getDeclaringClass), jmeth.getModifiers)
-    lookup(owner, jmeth.getName) suchThat (erasesTo(_, jmeth)) orElse jmethodAsScala(jmeth)
+    val jOwner = jmeth.getDeclaringClass
+    var sOwner = classToScala(jOwner)
+    sOwner = followStatic(sOwner, jmeth.getModifiers)
+    lookup(sOwner, jmeth.getName) suchThat (erasesTo(_, jmeth)) orElse jmethodAsScala(jmeth)
   }
 
   /**
@@ -344,6 +362,18 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
     pkg.moduleClass
   }
 
+  private def scalaSimpleName(jclazz: jClass[_]): TypeName = {
+    val owner = sOwner(jclazz)
+    val enclosingClass = jclazz.getEnclosingClass
+    var prefix = if (enclosingClass != null) enclosingClass.getName else ""
+    val isObject = owner.isModuleClass && !owner.isPackageClass
+    if (isObject && !prefix.endsWith(nme.MODULE_SUFFIX_STRING)) prefix += nme.MODULE_SUFFIX_STRING
+    assert(jclazz.getName.startsWith(prefix))
+    var name = jclazz.getName.substring(prefix.length)
+    name = name.substring(name.lastIndexOf(".") + 1)
+    newTypeName(name)
+  }
+
   /**
    * The Scala class that corresponds to a given Java class.
    *  @param jclazz  The Java class
@@ -353,28 +383,54 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
    */
   def classToScala(jclazz: jClass[_]): Symbol = classCache.toScala(jclazz) {
     val jname = javaTypeName(jclazz)
-    def lookup = sOwner(jclazz).info.decl(newTypeName(jclazz.getSimpleName))
-    
-    if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
-      val sym = lookup
-      assert(sym.isType, sym+"/"+jclazz+"/"+sOwner(jclazz)+"/"+jclazz.getSimpleName)
-      sym.asInstanceOf[ClassSymbol]
+    val owner = sOwner(jclazz)
+    val simpleName = scalaSimpleName(jclazz)
+
+    val sym = {
+      def lookup = {
+        def coreLookup(name: Name): Symbol = {
+          val sym = owner.info.decl(name)
+          sym orElse {
+            if (name.startsWith(nme.NAME_JOIN_STRING))
+              coreLookup(name.subName(1, name.length))
+            else
+              NoSymbol
+          }
+        }
+
+        if (nme.isModuleName(simpleName)) {
+          val moduleName = nme.stripModuleSuffix(simpleName).toTermName
+          val sym = coreLookup(moduleName)
+          if (sym == NoSymbol) sym else sym.moduleClass
+        } else {
+          coreLookup(simpleName)
+        }
+      }
+
+      if (jclazz.isMemberClass && !nme.isImplClassName(jname)) {
+        lookup
+      } else if (jclazz.isLocalClass || invalidClassName(jname)) {
+        // local classes and implementation classes not preserved by unpickling - treat as Java
+        jclassAsScala(jclazz)
+      } else if (jclazz.isArray) {
+        ArrayClass
+      } else javaTypeToValueClass(jclazz) orElse {
+        // jclazz is top-level - get signature
+        lookup
+        //        val (clazz, module) = createClassModule(
+        //          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
+        //        classCache enter (jclazz, clazz)
+        //        clazz
+      }
     }
-    else if (jclazz.isLocalClass || invalidClassName(jname)) {
-      // local classes and implementation classes not preserved by unpickling - treat as Java
-      jclassAsScala(jclazz)
+
+    if (!sym.isType) {
+      def msgNoSym = "no symbol could be loaded from %s (scala equivalent is %s) by name %s".format(owner, jclazz, simpleName)
+      def msgIsNotType = "not a type: symbol %s loaded from %s (scala equivalent is %s) by name %s".format(sym, owner, jclazz, simpleName)
+      assert(false, if (sym == NoSymbol) msgNoSym else msgIsNotType)
     }
-    else if (jclazz.isArray) {
-      ArrayClass
-    }
-    else javaTypeToValueClass(jclazz) orElse {
-      // jclazz is top-level - get signature
-      lookup
-      //        val (clazz, module) = createClassModule(
-      //          sOwner(jclazz), newTypeName(jclazz.getSimpleName), new TopClassCompleter(_, _))
-      //        classCache enter (jclazz, clazz)
-      //        clazz
-    }
+
+    sym.asInstanceOf[ClassSymbol]
   }
 
   /**
@@ -453,7 +509,7 @@ trait JavaToScala extends ConversionUtil { self: SymbolTable =>
   private def jclassAsScala(jclazz: jClass[_]): Symbol = jclassAsScala(jclazz, sOwner(jclazz))
 
   private def jclassAsScala(jclazz: jClass[_], owner: Symbol): Symbol = {
-    val name = newTypeName(jclazz.getSimpleName)
+    val name = scalaSimpleName(jclazz)
     val completer = (clazz: Symbol, module: Symbol) => new FromJavaClassCompleter(clazz, module, jclazz)
     val (clazz, module) = createClassModule(owner, name, completer)
     classCache enter (jclazz, clazz)
