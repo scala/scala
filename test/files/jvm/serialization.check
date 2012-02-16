@@ -156,8 +156,8 @@ x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
-x = Map(C -> 3, B -> 2, A -> 1)
-y = Map(C -> 3, A -> 1, B -> 2)
+x = Map(A -> 1, C -> 3, B -> 2)
+y = Map(A -> 1, C -> 3, B -> 2)
 x equals y: true, y equals x: true
 
 x = Set(buffers, title, layers)
@@ -283,8 +283,8 @@ x = ParArray(abc, def, etc)
 y = ParArray(abc, def, etc)
 x equals y: true, y equals x: true
 
-x = ParHashMap(1 -> 2, 2 -> 4)
-y = ParHashMap(1 -> 2, 2 -> 4)
+x = ParHashMap(2 -> 4, 1 -> 2)
+y = ParHashMap(2 -> 4, 1 -> 2)
 x equals y: true, y equals x: true
 
 x = ParCtrie(1 -> 2, 2 -> 4)
