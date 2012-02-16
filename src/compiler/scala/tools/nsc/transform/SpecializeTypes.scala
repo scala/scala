@@ -69,7 +69,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     ScalaValueClasses, isValueClass, isScalaValueType,
     SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass,
     AnyRefClass, ObjectClass, AnyRefModule,
-    GroupOfSpecializable, uncheckedVarianceClass
+    GroupOfSpecializable, uncheckedVarianceClass, ScalaInlineClass
   }
 
   /** TODO - this is a lot of maps.
@@ -832,7 +832,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           log("-->d SETTING PRIVATE WITHIN TO " + sym.enclosingPackage + " for " + sym)
         }
 
-        sym.resetFlag(FINAL)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
         typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
         wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
@@ -1733,9 +1732,27 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   class SpecializationTransformer(unit: CompilationUnit) extends Transformer {
     informProgress("specializing " + unit)
-    override def transform(tree: Tree) =
-      if (settings.nospecialization.value) tree
+    override def transform(tree: Tree) = {
+      val resultTree = if (settings.nospecialization.value) tree
       else atPhase(phase.next)(specializeCalls(unit).transform(tree))
+
+      // Remove the final modifier and @inline annotation from anything in the
+      // original class (since it's being overridden in at least onesubclass).
+      //
+      // We do this here so that the specialized subclasses will correctly copy
+      // final and @inline.
+      info.foreach {
+        case (sym, SpecialOverload(target, _)) => {
+          sym.resetFlag(FINAL)
+          target.resetFlag(FINAL)
+          sym.removeAnnotation(ScalaInlineClass)
+          target.removeAnnotation(ScalaInlineClass)
+        }
+        case _ => {}
+      }
+
+      resultTree
+    }
   }
 
   def printSpecStats() {
