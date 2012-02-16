@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent.akka
+package scala.concurrent.impl
 
 
 

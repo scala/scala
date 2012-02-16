@@ -15,7 +15,7 @@ import scala.util.Duration
 
 
 
-package object akka {
+package object impl {
   
   private val toBoxed = Map[Class[_], Class[_]](
     classOf[Boolean] -> classOf[jl.Boolean],

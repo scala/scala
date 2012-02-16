@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent.akka
+package scala.concurrent.impl
 
 
 
@@ -93,7 +93,7 @@ class ExecutionContextImpl(executorService: ExecutorService) extends ExecutionCo
         _taskStack.remove()
     }
   
-  private[akka] def dispatchFuture(task: () => Unit, force: Boolean = false): Unit =
+  private[impl] def dispatchFuture(task: () => Unit, force: Boolean = false): Unit =
     _taskStack.get match {
       case stack if (stack ne null) && !force => stack push task
       case _ => this.execute(

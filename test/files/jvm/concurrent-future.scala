@@ -22,7 +22,7 @@ object Test extends App {
     val f = future {
       output(1, "hai world")
     }
-    f onSuccess { _ =>
+    f onSuccess { case _ =>
       output(1, "kthxbye")
       done()
     }
@@ -33,9 +33,9 @@ object Test extends App {
     val f = future {
       output(2, "hai world")
     }
-    f onSuccess { _ =>
+    f onSuccess { case _ =>
       output(2, "awsum thx")
-      f onSuccess { _ =>
+      f onSuccess { case _ =>
         output(2, "kthxbye")
         done()
       }
@@ -49,7 +49,7 @@ object Test extends App {
       done()
       throw new Exception
     }
-    f onSuccess { _ =>
+    f onSuccess { case _ =>
       output(3, "onoes")
     }
   }
@@ -60,7 +60,7 @@ object Test extends App {
       output(4, "hai world")
       throw new Exception
     }
-    f onSuccess { _ =>
+    f onSuccess { case _ =>
       output(4, "onoes")
       done()
     }
@@ -76,7 +76,7 @@ object Test extends App {
       output(num, "hai world")
       throw cause
     }
-    f onSuccess { _ =>
+    f onSuccess { case _ =>
       output(num, "onoes")
       done()
     }
@@ -96,7 +96,7 @@ object Test extends App {
       output(8, "hai world")
       throw new FutureTimeoutException(null)
     }
-    f onSuccess { _ =>
+    f onSuccess { case _ =>
       output(8, "onoes")
       done()
     }

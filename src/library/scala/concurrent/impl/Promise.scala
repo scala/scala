@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent.akka
+package scala.concurrent.impl
 
 
 
@@ -19,6 +19,7 @@ import scala.util.Try
 import scala.util
 import scala.annotation.tailrec
 //import scala.concurrent.NonDeterministic
+
 
 
 trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {

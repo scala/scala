@@ -25,12 +25,12 @@ package object concurrent {
   /** A global execution environment for executing lightweight tasks.
    */
   lazy val executionContext =
-    new akka.ExecutionContextImpl(java.util.concurrent.Executors.newCachedThreadPool())
+    new impl.ExecutionContextImpl(java.util.concurrent.Executors.newCachedThreadPool())
   
   /** A global service for scheduling tasks for execution.
    */
-  lazy val scheduler =
-    new default.SchedulerImpl
+  // lazy val scheduler =
+  //   new default.SchedulerImpl
   
   val handledFutureException: PartialFunction[Throwable, Throwable] = {
     case t: Throwable if isFutureThrowable(t) => t

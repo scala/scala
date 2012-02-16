@@ -11,6 +11,7 @@ import scala.concurrent.{
 import scala.concurrent.future
 import scala.concurrent.promise
 import scala.concurrent.blocking
+import scala.util.{ Try, Success, Failure }
 
 import scala.util.Duration
 
@@ -23,13 +24,13 @@ trait TestBase {
     sv.take()
   }
   
-  def assert(cond: => Boolean) {
-    try {
-      Predef.assert(cond)
-    } catch {
-      case e => e.printStackTrace()
-    }
-  }
+  // def assert(cond: => Boolean) {
+  //   try {
+  //     Predef.assert(cond)
+  //   } catch {
+  //     case e => e.printStackTrace()
+  //   }
+  // }
 
 }
 
@@ -264,10 +265,10 @@ trait FutureProjections extends TestBase {
       throw cause
     }
     f.failed onComplete {
-      case Right(t) =>
+      case Success(t) =>
         assert(t == cause)
         done()
-      case Left(t) =>
+      case Failure(t) =>
         assert(false)
     }
   }
@@ -289,9 +290,9 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     f.failed onComplete {
-      case Right(t) =>
+      case Success(t) =>
         assert(false)
-      case Left(t) =>
+      case Failure(t) =>
         assert(t.isInstanceOf[NoSuchElementException])
         done()
     }
