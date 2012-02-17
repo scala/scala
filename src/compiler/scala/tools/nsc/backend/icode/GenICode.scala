@@ -393,15 +393,15 @@ abstract class GenICode extends SubComponent  {
         for (CaseDef(pat, _, body) <- catches.reverse) yield {
           def genWildcardHandler(sym: Symbol): (Symbol, TypeKind, Context => Context) =
             (sym, kind, ctx => {
-              ctx.bb.emit(DROP(REFERENCE(sym)))
+              ctx.bb.emit(DROP(REFERENCE(sym))) // drop the loaded exception
               genLoad(body, ctx, kind)
             })
 
           pat match {
             case Typed(Ident(nme.WILDCARD), tpt)  => genWildcardHandler(tpt.tpe.typeSymbol)
             case Ident(nme.WILDCARD)              => genWildcardHandler(ThrowableClass)
-            case Bind(name, _)                    =>
-              val exception = ctx.method addLocal new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false)
+            case Bind(_, _)                       =>
+              val exception = ctx.method addLocal new Local(pat.symbol, toTypeKind(pat.symbol.tpe), false) // the exception will be loaded and stored into this local
 
               (pat.symbol.tpe.typeSymbol, kind, {
                 ctx: Context =>
@@ -1054,7 +1054,7 @@ abstract class GenICode extends SubComponent  {
 
         case Match(selector, cases) =>
           debuglog("Generating SWITCH statement.");
-          var ctx1 = genLoad(selector, ctx, INT)
+          var ctx1 = genLoad(selector, ctx, INT) // TODO: Java 7 allows strings in switches (so, don't assume INT and don't convert the literals using intValue)
           val afterCtx = ctx1.newBlock
           var caseCtx: Context  = null
           generatedType = toTypeKind(tree.tpe)
@@ -2086,12 +2086,12 @@ abstract class GenICode extends SubComponent  {
           exh
         }) else None
 
-        val exhs = handlers.map { handler =>
-            val exh = this.newExceptionHandler(handler._1, handler._2, tree.pos)
+        val exhs = handlers.map { case (sym, kind, handler) =>  // def genWildcardHandler(sym: Symbol): (Symbol, TypeKind, Context => Context) =
+            val exh = this.newExceptionHandler(sym, kind, tree.pos)
             var ctx1 = outerCtx.enterExceptionHandler(exh)
             ctx1.addFinalizer(finalizer, finalizerCtx)
             loadException(ctx1, exh, tree.pos)
-            ctx1 = handler._3(ctx1)
+            ctx1 = handler(ctx1)
             // emit finalizer
             val ctx2 = emitFinalizer(ctx1)
             ctx2.bb.closeWith(JUMP(afterCtx.bb))

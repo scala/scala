@@ -203,7 +203,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             rhs.changeOwner(currentOwner -> fun.symbol)
 
             val exSym = currentOwner.newValueParameter(cpsNames.ex, pos).setInfo(ThrowableClass.tpe)
-            val catch2 = { localTyper.typedCases(tree, List(
+            val catch2 = { localTyper.typedCases(List(
               CaseDef(Bind(exSym, Typed(Ident("_"), TypeTree(ThrowableClass.tpe))),
                 Apply(Select(Ident(funSym), nme.isDefinedAt), List(Ident(exSym))),
                 Apply(Ident(funSym), List(Ident(exSym))))
