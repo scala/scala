@@ -14,6 +14,7 @@ import java.util.concurrent.{ThreadPoolExecutor, LinkedBlockingQueue, TimeUnit}
  *
  *  @author Philipp Haller
  */
+@deprecated("Use `ExecutionContext`s instead.", "2.10.0")
 object TaskRunners {
 
   implicit val threadRunner: FutureTaskRunner =

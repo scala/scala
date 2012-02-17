@@ -8,19 +8,17 @@
 
 package scala.concurrent
 
-/** The `TaskRunner` trait...
- *
- *  @author Philipp Haller
- */
-@deprecated("Use `ExecutionContext`s instead.", "2.10.0")
-trait TaskRunner {
 
-  type Task[T]
 
-  implicit def functionAsTask[S](fun: () => S): Task[S]
+import scala.annotation.implicitNotFound
+import scala.util.Duration
 
-  def execute[S](task: Task[S]): Unit
 
-  def shutdown(): Unit
 
+trait Awaitable[+T] {
+  @implicitNotFound(msg = "Waiting must be done by calling `blocking(timeout) b`, where `b` is the `Awaitable` object or a potentially blocking piece of code.")
+  def await(atMost: Duration)(implicit canawait: CanAwait): T
 }
+
+
+

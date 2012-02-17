@@ -12,6 +12,7 @@ package scala.concurrent
  *
  *  @author Philipp Haller
  */
+@deprecated("Not used.", "2.10.0")
 trait ManagedBlocker {
 
   /**

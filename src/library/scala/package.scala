@@ -27,7 +27,8 @@ package object scala {
   type NoSuchElementException          = java.util.NoSuchElementException
   type NumberFormatException           = java.lang.NumberFormatException
   type AbstractMethodError             = java.lang.AbstractMethodError
-
+  type InterruptedException            = java.lang.InterruptedException
+  
   // A dummy used by the specialization annotation.
   val AnyRef = new Specializable {
     override def toString = "object AnyRef"

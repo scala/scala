@@ -6,21 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.concurrent
+package scala.concurrent.impl;
 
-/** The `TaskRunner` trait...
- *
- *  @author Philipp Haller
- */
-@deprecated("Use `ExecutionContext`s instead.", "2.10.0")
-trait TaskRunner {
 
-  type Task[T]
 
-  implicit def functionAsTask[S](fun: () => S): Task[S]
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-  def execute[S](task: Task[S]): Unit
 
-  def shutdown(): Unit
 
+abstract class AbstractPromise {
+    private volatile Object _ref = null;
+    protected final static AtomicReferenceFieldUpdater<AbstractPromise, Object> updater =
+	AtomicReferenceFieldUpdater.newUpdater(AbstractPromise.class, Object.class, "_ref");
 }
