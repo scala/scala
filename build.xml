@@ -1535,6 +1535,7 @@ DOCUMENTATION
       docUncompilable="${src.dir}/library-aux"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
+      addparams="${scalac.args.all}"
       docRootContent="${src.dir}/library/rootdoc.txt"> 
       <src>
         <files includes="${src.dir}/actors"/>
@@ -1620,6 +1621,7 @@ DOCUMENTATION
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
       docRootContent="${src.dir}/compiler/rootdoc.txt"> 
+      addparams="${scalac.args.all}"
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>

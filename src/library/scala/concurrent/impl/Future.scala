@@ -8,13 +8,9 @@
 
 package scala.concurrent.impl
 
-
-
 import scala.concurrent.{Awaitable, ExecutionContext}
 import scala.util.{ Try, Success, Failure }
 //import scala.util.continuations._
-
-
 
 trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
   
@@ -50,7 +46,7 @@ trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
       case f @ Failure(t) => p complete f.asInstanceOf[Try[T]]
       case Success(v) =>
         p complete (try {
-          Success(boxedType(m.erasure).cast(v).asInstanceOf[T])
+          Success(Future.boxedType(m.erasure).cast(v).asInstanceOf[T])
         } catch {
           case e: ClassCastException ⇒ Failure(e)
         })
@@ -72,6 +68,22 @@ trait Future[+T] extends scala.concurrent.Future[T] with Awaitable[T] {
   
 }
 
+object Future {
+  import java.{ lang => jl }
 
+  private val toBoxed = Map[Class[_], Class[_]](
+    classOf[Boolean] -> classOf[jl.Boolean],
+    classOf[Byte]    -> classOf[jl.Byte],
+    classOf[Char]    -> classOf[jl.Character],
+    classOf[Short]   -> classOf[jl.Short],
+    classOf[Int]     -> classOf[jl.Integer],
+    classOf[Long]    -> classOf[jl.Long],
+    classOf[Float]   -> classOf[jl.Float],
+    classOf[Double]  -> classOf[jl.Double],
+    classOf[Unit]    -> classOf[scala.runtime.BoxedUnit]
+  )
 
-
+  def boxedType(c: Class[_]): Class[_] = {
+    if (c.isPrimitive) toBoxed(c) else c
+  }
+}

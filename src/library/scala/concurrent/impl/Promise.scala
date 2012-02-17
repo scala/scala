@@ -75,6 +75,7 @@ trait Promise[T] extends scala.concurrent.Promise[T] with Future[T] {
 
 
 object Promise {
+  def dur2long(dur: Duration): Long = if (dur.isFinite) dur.toNanos else Long.MaxValue
   
   def EmptyPending[T](): FState[T] = emptyPendingValue.asInstanceOf[FState[T]]
   
