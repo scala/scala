@@ -1505,10 +1505,9 @@ class Foo(x: Other) { x._1 } // no error in this order
       def alternativesSupported: Boolean
 
       def isDefault(x: CaseDef): Boolean
-      def defaultSym(): Symbol
-      def defaultBody(scrutSym: Symbol): Tree
-      def defaultCase(scrutSym: Symbol, body: Tree): CaseDef
-      def switchCase(scrutSym: Symbol, pattern: Tree, body: Tree): CaseDef
+      def defaultSym: Symbol
+      def defaultBody: Tree
+      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef
 
       private def sequence[T](xs: List[Option[T]]): Option[List[T]] =
         if (xs exists (_.isEmpty)) None else Some(xs.flatten)
@@ -1522,7 +1521,7 @@ class Foo(x: Other) { x._1 } // no error in this order
               Some(defaultCase(scrutSym, btm.substitution(body)))
             // constant (or typetest for typeSwitch)
             case SwitchableTreeMaker(pattern) :: (btm@BodyTreeMaker(body, _)) :: Nil =>
-              Some(switchCase(scrutSym, pattern, btm.substitution(body)))
+              Some(CaseDef(pattern, EmptyTree, btm.substitution(body)))
             // alternatives
             case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil if alternativesSupported =>
               val casePatterns = altss map {
@@ -1545,8 +1544,7 @@ class Foo(x: Other) { x._1 } // no error in this order
           caseDefs <- sequence(caseDefs)) yield
             if (caseDefs exists isDefault) caseDefs
             else {
-              val sym = defaultSym()
-              caseDefs :+ defaultCase(sym, defaultBody(sym))
+              caseDefs :+ defaultCase()
             }
         ) getOrElse Nil
       }
@@ -1574,17 +1572,11 @@ class Foo(x: Other) { x._1 } // no error in this order
         case _ => false
       }
 
-      def defaultSym(): Symbol = scrutSym
-      def defaultBody(scrutSym: Symbol): Tree = { import CODE._
-        MATCHERROR(REF(scrutSym))
-      }
-
-      def defaultCase(scrutSym: Symbol, body: Tree): CaseDef = { import CODE._
-        atPos(body.pos) { DEFAULT ==> body }
-      }
-
-      def switchCase(scrutSym: Symbol, pattern: Tree, body: Tree): CaseDef =
-        CaseDef(pattern, EmptyTree, body)
+      def defaultSym: Symbol = scrutSym
+      def defaultBody: Tree  = { import CODE._; MATCHERROR(REF(scrutSym)) }
+      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+        DEFAULT ==> body
+      }}
     }
 
     override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = { import CODE._
@@ -1631,19 +1623,11 @@ class Foo(x: Other) { x._1 } // no error in this order
         case _ => false
       }
 
-      def defaultSym(): Symbol = freshSym(NoPosition, ThrowableClass.tpe)
-      def defaultBody(scrutSym: Symbol): Tree = Throw(CODE.REF(scrutSym))
-      def defaultCase(scrutSym: Symbol, body: Tree): CaseDef = { import CODE._ ; atPos(scrutSym.pos) {
+      lazy val defaultSym: Symbol = freshSym(NoPosition, ThrowableClass.tpe)
+      def defaultBody: Tree       = Throw(CODE.REF(defaultSym))
+      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableClass.tpe)))) ==> body
       }}
-
-      def switchCase(scrutSym: Symbol, pattern: Tree, body: Tree): CaseDef = { import CODE._ ; atPos(scrutSym.pos) {
-        pattern match {
-          case Bind(_, _) => CASE (pattern) ==> body
-          case _ => CASE (Bind(scrutSym, pattern)) ==> body
-        }
-      }}
-
     }
 
     // TODO: drop null checks
@@ -1652,7 +1636,6 @@ class Foo(x: Other) { x._1 } // no error in this order
       if (caseDefsWithDefault isEmpty) None
       else Some(caseDefsWithDefault)
     }
-
   }
 
   trait OptimizedMatchMonadInterface extends MatchMonadInterface {
