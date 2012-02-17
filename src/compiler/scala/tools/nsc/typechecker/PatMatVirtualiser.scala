@@ -1701,9 +1701,8 @@ class Foo(x: Other) { x._1 } // no error in this order
       // only used to wrap the RHS of a body
       def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = {
         BLOCK(
-          if (dontStore(matchPt)) res // runOrElse hasn't been called yet, so matchRes.isMutable is irrelevant, also, tp may be a subtype of resTp used in runOrElse...
-          else (REF(matchRes) === res), // TODO -- move this statement after the keepGoing-assignment and mark the matchRes-assignment as a tailposition somehow   -- _asInstanceOf(res, tp.widen, force = true)
-          REF(keepGoing) === FALSE,
+          REF(keepGoing) === FALSE, // comes before assignment to matchRes, so the latter is in tail positions (can ignore the trailing zero -- will disappear when we flatten blocks, which is TODO)
+          if (dontStore(matchPt)) res else (REF(matchRes) === res), // runOrElse hasn't been called yet, so matchRes.isMutable is irrelevant, also, tp may be a subtype of resTp used in runOrElse...
           zero // to have a nice lub for lubs -- otherwise we'll get a boxed unit here -- TODO: get rid of all those dangling else zero's
         )
       }
