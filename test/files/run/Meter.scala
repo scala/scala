@@ -1,17 +1,21 @@
-import collection.generic.RowFactory
-
-class Meter(val unbox: Double) extends AnyVal with Boxed[Double] with Printable {
+class Meter(val underlying: Double) extends AnyVal with Printable {
    def + (other: Meter): Meter = 
-     new Meter(this.unbox + other.unbox)
-   def / (other: Meter): Double = this.unbox / other.unbox
-   def / (factor: Double): Meter = new Meter(this.unbox / factor)
-   def < (other: Meter): Boolean = this.unbox < other.unbox
-   override def toString: String = unbox.toString+"m"
+     new Meter(this.underlying + other.underlying)
+   def / (other: Meter): Double = this.underlying / other.underlying
+   def / (factor: Double): Meter = new Meter(this.underlying / factor)
+   def < (other: Meter): Boolean = this.underlying < other.underlying
+   override def toString: String = underlying.toString+"m"
 }
-object Meter extends RowFactory[Double, Meter] {
-  def apply(x: Double): Meter = new Meter(x)
-}
+object Meter extends (Double => Meter) {
 
+  def apply(x: Double): Meter = new Meter(x)
+
+  implicit val boxings = new BoxingConversions[Meter, Double] {
+    def box(x: Double) = new Meter(x)
+    def unbox(m: Meter) = m.underlying
+  }
+
+}
 trait Printable extends Any { def print: Unit = Console.print(this) }
 
 object Test extends App {
@@ -55,14 +59,19 @@ object Test extends App {
   }
 
   { println("testing wrapped arrays")
-    val arr = Meter.Row(x, y + x)
+    import collection.mutable.FlatArray
+    val arr = FlatArray(x, y + x)
     println(arr)
-    def foo(x: Meter.Row) {
+    def foo(x: FlatArray[Meter]) {
       for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
     }
     val m = arr(0)
     println(m)
     foo(arr)
+    val ys: Seq[Meter] = arr map (_ + new Meter(1))
+    println(ys)
+    val zs = arr map (_ / Meter(1))
+    println(zs)
   }
 
 }
