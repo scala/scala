@@ -941,10 +941,14 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           }
           if (tree.isType)
             adaptType()
-          else if (inExprModeButNot(mode, FUNmode) && tree.symbol != null && tree.symbol.isMacro && !tree.isDef) {
-            val tree1 = expandMacro(tree)
-            if (tree1.isErroneous) tree1 else typed(tree1, mode, pt) 
-          } else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
+          else if (inExprModeButNot(mode, FUNmode) && tree.symbol != null && tree.symbol.isMacro && !tree.isDef && !(tree exists (_.isErroneous)))
+            macroExpand(tree, this) match {
+              case Some(expanded: Tree) =>
+                typed(expanded, mode, pt)
+              case None =>
+                setError(tree) // error already reported
+            }
+          else if ((mode & (PATTERNmode | FUNmode)) == (PATTERNmode | FUNmode))
             adaptConstrPattern()
           else if (inAllModes(mode, EXPRmode | FUNmode) &&
             !tree.tpe.isInstanceOf[MethodType] &&
@@ -4535,13 +4539,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         }
       }
     }
-
-    def expandMacro(tree: Tree): Tree =
-      macroExpand(tree, context) match {
-        case Some(t: Tree) => t
-        case Some(t)       => MacroExpandError(tree, t)
-        case None          => setError(tree) // error already reported
-      }
 
     def atOwner(owner: Symbol): Typer =
       newTyper(context.make(context.tree, owner))
