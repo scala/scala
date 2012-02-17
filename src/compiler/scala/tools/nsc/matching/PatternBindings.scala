@@ -19,9 +19,10 @@ trait PatternBindings extends ast.TreeDSL
   import Debug._
 
   /** EqualsPattern **/
-  def isEquals(tpe: Type)             = cond(tpe) { case TypeRef(_, EqualsPatternClass, _) => true }
+  def isEquals(tpe: Type)             = tpe.typeSymbol == EqualsPatternClass
   def mkEqualsRef(tpe: Type)          = typeRef(NoPrefix, EqualsPatternClass, List(tpe))
-  def decodedEqualsType(tpe: Type)    = condOpt(tpe) { case TypeRef(_, EqualsPatternClass, List(arg)) => arg } getOrElse (tpe)
+  def decodedEqualsType(tpe: Type)    =
+    if (tpe.typeSymbol == EqualsPatternClass) tpe.typeArgs.head else tpe
 
   // A subtype test which creates fresh existentials for type
   // parameters on the right hand side.
