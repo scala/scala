@@ -17,7 +17,11 @@ object Test extends DirectTest {
 
   override def show(): Unit = {
     // redirect err to out, for inliner log
-    System.setErr(new PrintStream(System.out));
+    val prevErr = System.err
+    System.setErr(System.out)
     compile()
+    System.setErr(prevErr)
   }
+
+  override def isDebug = false // so we don't get the newSettings warning
 }

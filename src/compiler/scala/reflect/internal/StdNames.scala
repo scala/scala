@@ -330,6 +330,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val freeValue : NameType           = "freeValue"
     val genericArrayOps: NameType      = "genericArrayOps"
     val get: NameType                  = "get"
+    val getOrElse: NameType            = "getOrElse"
     val hasNext: NameType              = "hasNext"
     val hashCode_ : NameType           = if (forMSIL) "GetHashCode" else "hashCode"
     val hash_ : NameType               = "hash"

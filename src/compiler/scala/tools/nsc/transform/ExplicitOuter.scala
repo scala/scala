@@ -517,7 +517,7 @@ abstract class ExplicitOuter extends InfoTransform
           super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
 
         // entry point for pattern matcher translation
-        case mch: Match =>
+        case mch: Match if (!opt.virtPatmat) => // don't use old pattern matcher as fallback when the user wants the virtualizing one
           matchTranslation(mch)
 
         case _ =>

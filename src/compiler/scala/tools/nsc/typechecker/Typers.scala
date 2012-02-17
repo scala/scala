@@ -1987,7 +1987,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
-    def typedCases(tree: Tree, cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
+    def typedCases(cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
       cases mapConserve { cdef =>
         newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
       }
@@ -3318,7 +3318,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
           typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
         } else {
           val selector1 = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-          var cases1 = typedCases(tree, cases, packCaptured(selector1.tpe.widen), pt)
+          var cases1 = typedCases(cases, packCaptured(selector1.tpe.widen), pt)
 
           if (isPastTyper || !opt.virtPatmat) {
             val (owntype, needAdapt) = ptOrLub(cases1 map (_.tpe))
@@ -3334,7 +3334,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             (MatchTranslator(this)).translateMatch(selector1, cases1, owntype) match {
               case Block(vd :: Nil, tree@Match(selector, cases)) =>
                 val selector1 = checkDead(typed(selector, EXPRmode | BYVALmode, WildcardType))
-                var cases1 = typedCases(tree, cases, packCaptured(selector1.tpe.widen), pt)
+                var cases1 = typedCases(cases, packCaptured(selector1.tpe.widen), pt)
                 val (owntype, needAdapt) = ptOrLub(cases1 map (_.tpe))
                 if (needAdapt)
                   cases1 = cases1 map (adaptCase(_, owntype))
@@ -4242,7 +4242,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
         case Try(block, catches, finalizer) =>
           var block1 = typed(block, pt)
-          var catches1 = typedCases(tree, catches, ThrowableClass.tpe, pt)
+          var catches1 = typedCases(catches, ThrowableClass.tpe, pt)
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe)
           val (owntype, needAdapt) = ptOrLub(block1.tpe :: (catches1 map (_.tpe)))
@@ -4250,6 +4250,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             block1 = adapt(block1, mode, owntype)
             catches1 = catches1 map (adaptCase(_, owntype))
           }
+
+          if(!isPastTyper && opt.virtPatmat) {
+            catches1 = (MatchTranslator(this)).translateTry(catches1, owntype, tree.pos)
+          }
+
           treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
 
         case Throw(expr) =>
