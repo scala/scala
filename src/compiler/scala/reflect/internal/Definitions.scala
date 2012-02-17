@@ -70,8 +70,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       tpnme.Float   -> FLOAT_TAG,
       tpnme.Double  -> DOUBLE_TAG,
       tpnme.Boolean -> BOOL_TAG,
-      tpnme.Unit    -> VOID_TAG,
-      tpnme.Object  -> OBJECT_TAG
+      tpnme.Unit    -> VOID_TAG
     )
 
     private def classesMap[T](f: Name => T) = symbolsMap(ScalaValueClassesNoUnit, f)
@@ -80,7 +79,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     private def boxedName(name: Name) = sn.Boxed(name.toTypeName)
 
-    lazy val abbrvTag         = symbolsMap(ObjectClass :: ScalaValueClasses, nameToTag)
+    lazy val abbrvTag         = symbolsMap(ScalaValueClasses, nameToTag) withDefaultValue OBJECT_TAG
     lazy val numericWeight    = symbolsMapFilt(ScalaValueClasses, nameToWeight.keySet, nameToWeight)
     lazy val boxedModule      = classesMap(x => getModule(boxedName(x)))
     lazy val boxedClass       = classesMap(x => getClass(boxedName(x)))
@@ -213,7 +212,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
 
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
-    def AnyRefModule = getMember(ScalaPackageClass, nme.AnyRef)
+    lazy val AnyRefModule = getMember(ScalaPackageClass, nme.AnyRef)
     @deprecated("Use AnyRefModule", "2.10.0") 
     def Predef_AnyRef = AnyRefModule
 
