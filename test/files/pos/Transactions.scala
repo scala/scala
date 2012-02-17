@@ -1,4 +1,4 @@
-package scala.concurrent
+package scala.concurrent1
 
 class AbortException extends RuntimeException
 

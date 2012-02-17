@@ -15,6 +15,7 @@ import java.util.concurrent.{ExecutorService, Callable, TimeUnit}
  *
  *  @author Philipp Haller
  */
+@deprecated("Use `ExecutionContext`s instead.", "2.10.0")
 trait ThreadPoolRunner extends FutureTaskRunner {
 
   type Task[T] = Callable[T] with Runnable
