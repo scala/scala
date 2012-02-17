@@ -43,7 +43,7 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
     val outer     = newTermName("<outer>")
     val runOrElse = newTermName("runOrElse")
     val zero      = newTermName("zero")
-    val __match   = newTermName("__match")
+    val _match  = newTermName("__match") // don't call it __match, since that will trigger virtual pattern matching...
 
     def counted(str: String, i: Int) = newTermName(str+i)
   }
@@ -51,8 +51,8 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
   object MatchTranslator {
     def apply(typer: Typer): MatchTranslation = {
       import typer._
-      // typing `__match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
-      newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName.__match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
+      // typing `_match` to decide which MatchTranslator to create adds 4% to quick.comp.timer
+      newTyper(context.makeImplicit(reportAmbiguousErrors = false)).silent(_.typed(Ident(vpmName._match), EXPRmode, WildcardType), reportAmbiguousErrors = false) match {
           case SilentResultValue(ms) => new PureMatchTranslator(typer, ms)
           case _ => new OptimizingMatchTranslator(typer)
         }
@@ -116,6 +116,10 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
 
   trait MatchTranslation extends MatchMonadInterface { self: TreeMakers with CodegenCore =>
     import typer.{typed, context, silent, reallyExists}
+    private def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
+      case TypeRef(_, RepeatedParamClass, args) => appliedType(SeqClass.typeConstructor, args)
+      case _ => tp
+    }
 
     /** Implement a pattern match by turning its cases (including the implicit failure case)
       * into the corresponding (monadic) extractors, and combining them with the `orElse` combinator.
@@ -133,11 +137,6 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       //  and the only place that emits Matches after typers is for exception handling anyway)
       assert(phase.id <= currentRun.typerPhase.id, phase)
 
-      def repeatedToSeq(tp: Type): Type = (tp baseType RepeatedParamClass) match {
-        case TypeRef(_, RepeatedParamClass, args) => appliedType(SeqClass.typeConstructor, args)
-        case _ => tp
-      }
-
       val scrutType = repeatedToSeq(elimAnonymousClass(scrut.tpe.widen))
 
       val scrutSym  = freshSym(scrut.pos, pureType(scrutType))
@@ -145,6 +144,47 @@ trait PatMatVirtualiser extends ast.TreeDSL { self: Analyzer =>
       // pt = Any* occurs when compiling test/files/pos/annotDepMethType.scala  with -Xexperimental
       combineCases(scrut, scrutSym, cases map translateCase(scrutSym, okPt), okPt, matchOwner)
     }
+
+    // return list of typed CaseDefs that are supported by the backend (typed/bind/wildcard)
+    // we don't have a global scrutinee -- the caught exception must be bound in each of the casedefs
+    // there's no need to check the scrutinee for null -- "throw null" becomes "throw new NullPointerException"
+    // try to simplify to a type-based switch, or fall back to a catch-all case that runs a normal pattern match
+    // unlike translateMatch, we type our result before returning it
+    def translateTry(caseDefs: List[CaseDef], pt: Type, pos: Position): List[CaseDef] =
+      // if they're already simple enough to be handled by the back-end, we're done
+      if (caseDefs forall treeInfo.isCatchCase) caseDefs
+      else {
+        val okPt = repeatedToSeq(pt)
+        val switch = {
+          val bindersAndCases = caseDefs map { caseDef =>
+            // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
+            // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
+            val caseScrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
+            (caseScrutSym, propagateSubstitution(translateCase(caseScrutSym, okPt)(caseDef), EmptySubstitution))
+          }
+
+          (emitTypeSwitch(bindersAndCases, pt) map (_.map(fixerUpper(matchOwner, pos).apply(_).asInstanceOf[CaseDef])))
+        }
+
+        val catches = switch getOrElse {
+          val scrutSym = freshSym(pos, pureType(ThrowableClass.tpe))
+          val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, okPt)(caseDef), EmptySubstitution))}
+
+          val exSym = freshSym(pos, pureType(ThrowableClass.tpe), "ex")
+
+          List(
+              atPos(pos) {
+                CaseDef(
+                  Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
+                  EmptyTree,
+                  combineCasesNoSubstOnly(CODE.REF(exSym), scrutSym, casesNoSubstOnly, pt, matchOwner, scrut => Throw(CODE.REF(exSym)))
+                )
+              })
+        }
+
+        typer.typedCases(catches, ThrowableClass.tpe, WildcardType)
+      }
+
 
 
     /**  The translation of `pat if guard => body` has two aspects:
@@ -668,6 +708,10 @@ class Foo(x: Other) { x._1 } // no error in this order
     def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] =
       None
 
+    // for catch
+    def emitTypeSwitch(bindersAndCases: List[(Symbol, List[TreeMaker])], pt: Type): Option[List[CaseDef]] =
+      None
+
     abstract class TreeMaker {
       /** captures the scope and the value of the bindings in patterns
        * important *when* the substitution happens (can't accumulate and do at once after the full matcher has been constructed)
@@ -788,6 +832,7 @@ class Foo(x: Other) { x._1 } // no error in this order
     }
 
     // implements the run-time aspects of (§8.2) (typedPattern has already done the necessary type transformations)
+    // TODO: normalize construction, which yields a combination of a EqualityTestTreeMaker (when necessary) and a TypeTestTreeMaker
     case class TypeAndEqualityTestTreeMaker(prevBinder: Symbol, patBinder: Symbol, pt: Type, pos: Position) extends CondTreeMaker {
       val nextBinderTp = glb(List(patBinder.info.widen, pt))
 
@@ -843,6 +888,10 @@ class Foo(x: Other) { x._1 } // no error in this order
 
       val cond = typeAndEqualityTest(patBinder, pt)
       val res  = codegen._asInstanceOf(patBinder, nextBinderTp)
+
+      // TODO: remove this
+      def isStraightTypeTest = cond match { case TypeApply(_, _) => cond.symbol == Any_isInstanceOf case _ => false }
+
       override def toString = "TET"+(patBinder, pt)
     }
 
@@ -926,25 +975,30 @@ class Foo(x: Other) { x._1 } // no error in this order
     }
 
     // calls propagateSubstitution on the treemakers
-    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol): Tree = fixerUpper(owner, scrut.pos){
-      val casesUnOpt = casesRaw map (propagateSubstitution(_, EmptySubstitution)) // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
+    def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, owner: Symbol): Tree = {
+      val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution)) // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
+      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, owner, CODE.MATCHERROR(_))
+    }
 
-      emitSwitch(scrut, scrutSym, casesUnOpt, pt).getOrElse{
+    def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFail: Tree => Tree): Tree = fixerUpper(owner, scrut.pos){
+      emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt).getOrElse{
         val (matcher, hasDefault, toHoist) =
-          if (casesUnOpt nonEmpty) {
+          if (casesNoSubstOnly nonEmpty) {
             // when specified, need to propagate pt explicitly (type inferencer can't handle it)
             val optPt =
               if (isFullyDefined(pt)) inMatchMonad(pt)
               else NoType
 
-            // do this check on casesUnOpt, since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
+            // do this check on casesNoSubstOnly, since DCE will eliminate trivial cases like `case _ =>`, even if they're the last one
             // exhaustivity and reachability must be checked before optimization as well
-            val hasDefault = casesUnOpt.nonEmpty && {
-              val nonTrivLast = casesUnOpt.last
+            // TODO: improve, a trivial type test before the body still makes for a default case
+            // ("trivial" depends on whether we're emitting a straight match or an exception, or more generally, any supertype of scrutSym.tpe is a no-op)
+            val hasDefault = casesNoSubstOnly.nonEmpty && {
+              val nonTrivLast = casesNoSubstOnly.last
               nonTrivLast.nonEmpty && nonTrivLast.head.isInstanceOf[BodyTreeMaker]
             }
 
-            val (cases, toHoist) = optimizeCases(scrutSym, casesUnOpt, pt)
+            val (cases, toHoist) = optimizeCases(scrutSym, casesNoSubstOnly, pt)
 
             val combinedCases =
               cases.map(combineExtractors(_, pt)).reduceLeft(codegen.typedOrElse(optPt))
@@ -952,7 +1006,11 @@ class Foo(x: Other) { x._1 } // no error in this order
             (combinedCases, hasDefault, toHoist)
           } else (codegen.zero, false, Nil)
 
-        val expr = codegen.runOrElse(scrut, scrutSym, matcher, if (isFullyDefined(pt)) pt else NoType, hasDefault)
+        // catch-all
+        val catchAll =
+          if (hasDefault) None // no need for a catch-all when there's already a default
+          else Some(matchFail)
+        val expr = codegen.runOrElse(scrut, scrutSym, matcher, if (isFullyDefined(pt)) pt else NoType, catchAll)
         if (toHoist isEmpty) expr
         else Block(toHoist, expr)
       }
@@ -966,7 +1024,7 @@ class Foo(x: Other) { x._1 } // no error in this order
     // TODO: do this during tree construction, but that will require tracking the current owner in treemakers
     // TODO: assign more fine-grained positions
     // fixes symbol nesting, assigns positions
-    private def fixerUpper(origOwner: Symbol, pos: Position) = new Traverser {
+    protected def fixerUpper(origOwner: Symbol, pos: Position) = new Traverser {
       currentOwner = origOwner
 
       override def traverse(t: Tree) {
@@ -1019,7 +1077,7 @@ class Foo(x: Other) { x._1 } // no error in this order
 
     // codegen relevant to the structure of the translation (how extractors are combined)
     trait AbsCodegen {
-      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, hasDefault: Boolean): Tree
+      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, catchAll: Option[Tree => Tree]): Tree
       def one(res: Tree, bodyPt: Type, matchPt: Type): Tree
       def zero: Tree
       def flatMap(prev: Tree, b: Symbol, next: Tree): Tree
@@ -1098,10 +1156,10 @@ class Foo(x: Other) { x._1 } // no error in this order
     protected def matchMonadSym      = oneSig.finalResultType.typeSymbol
 
     import CODE._
-    def __match(n: Name): SelectStart = matchStrategy DOT n
+    def _match(n: Name): SelectStart = matchStrategy DOT n
 
     private lazy val oneSig: Type =
-      typer.typed(__match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message    
+      typer.typed(_match(vpmName.one), EXPRmode | POLYmode | TAPPmode | FUNmode, WildcardType).tpe  // TODO: error message    
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
@@ -1110,14 +1168,15 @@ class Foo(x: Other) { x._1 } // no error in this order
     object pureCodegen extends CommonCodegen { import CODE._
       //// methods in MatchingStrategy (the monad companion) -- used directly in translation
       // __match.runOrElse(`scrut`)(`scrutSym` => `matcher`)
-      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, hasDefault: Boolean): Tree
-        = __match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, matcher))
+      // TODO: consider catchAll, or virtualized matching will break in exception handlers
+      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, catchAll: Option[Tree => Tree]): Tree
+        = _match(vpmName.runOrElse) APPLY (scrut) APPLY (fun(scrutSym, matcher))
       // __match.one(`res`)
-      def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = (__match(vpmName.one)) (res)
+      def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = (_match(vpmName.one)) (res)
       // __match.zero
-      def zero: Tree = __match(vpmName.zero)
+      def zero: Tree = _match(vpmName.zero)
       // __match.guard(`c`, `then`)
-      def guard(c: Tree, then: Tree, tp: Type): Tree = __match(vpmName.guard) APPLY (c, then)
+      def guard(c: Tree, then: Tree, tp: Type): Tree = _match(vpmName.guard) APPLY (c, then)
 
       //// methods in the monad instance -- used directly in translation
       // `prev`.flatMap(`b` => `next`)
@@ -1437,94 +1496,145 @@ class Foo(x: Other) { x._1 } // no error in this order
     }
   }
 
-  //// SWITCHES
+  //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
   trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface { self: CodegenCore =>
-    object SwitchablePattern { def unapply(pat: Tree) = pat match {
-      case Literal(Constant((_: Byte ) | (_: Short) | (_: Int  ) | (_: Char ))) => true // TODO: Java 7 allows strings in switches
-      case _                                                                    => false
-    }}
+    abstract class SwitchMaker {
+      abstract class SwitchableTreeMakerExtractor { def unapply(x: TreeMaker): Option[Tree] }
+      val SwitchableTreeMaker: SwitchableTreeMakerExtractor
 
-    // def isSwitchable(cases: List[(List[TreeMaker], Tree)]): Boolean = {
-    //   def isSwitchableTreeMaker(tm: TreeMaker) = tm match {
-    //     case tm@EqualityTestTreeMaker(_, SwitchablePattern(), _) => true
-    //     case SubstOnlyTreeMaker(_)                               => true
-    //     case AlternativesTreeMaker(_, altss, _)                  => altss forall (_.forall(isSwitchableTreeMaker))
-    //     case _                                                   => false
-    //   }
-    // }
+      def alternativesSupported: Boolean
 
-    private val switchableTpes = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
+      def isDefault(x: CaseDef): Boolean
+      def defaultSym: Symbol
+      def defaultBody: Tree
+      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef
 
-    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = {
-      def sequence[T](xs: List[Option[T]]): Option[List[T]] =
+      private def sequence[T](xs: List[Option[T]]): Option[List[T]] =
         if (xs exists (_.isEmpty)) None else Some(xs.flatten)
 
-      def isSwitchableTpe(tpe: Type): Boolean =
-        switchableTpes contains tpe
-      def switchableConstToInt(x: Tree): Tree = {
-        val Literal(const) = x
-        const.tag match {
-          case IntTag => x
-          case ByteTag | ShortTag | CharTag => Literal(Constant(const.intValue))
-        }
-      }
+      // empty list ==> failure
+      def apply(cases: List[(Symbol, List[TreeMaker])], pt: Type): List[CaseDef] = {
+        val caseDefs = cases map { case (scrutSym, makers) =>
+          makers match {
+            // default case
+            case (btm@BodyTreeMaker(body, _)) :: Nil =>
+              Some(defaultCase(scrutSym, btm.substitution(body)))
+            // constant (or typetest for typeSwitch)
+            case SwitchableTreeMaker(pattern) :: (btm@BodyTreeMaker(body, _)) :: Nil =>
+              Some(CaseDef(pattern, EmptyTree, btm.substitution(body)))
+            // alternatives
+            case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil if alternativesSupported =>
+              val casePatterns = altss map {
+                case SwitchableTreeMaker(pattern) :: Nil =>
+                  Some(pattern)
+                case _ =>
+                  None
+              }
 
-      val caseDefs = cases map { makers =>
-        removeSubstOnly(makers) match {
-          // default case (don't move this to unfold, as it may only occur on the top level, not as an alternative -- well, except in degenerate matches)
-          case (btm@BodyTreeMaker(body, _)) :: Nil =>
-            Some(CaseDef(Ident(nme.WILDCARD), EmptyTree, btm.substitution(body)))
-          // constant
-          case (EqualityTestTreeMaker(_, const@SwitchablePattern(), _)) :: (btm@BodyTreeMaker(body, _)) :: Nil =>
-            Some(CaseDef(switchableConstToInt(const), EmptyTree, btm.substitution(body)))
-          // alternatives
-          case AlternativesTreeMaker(_, altss, _) :: (btm@BodyTreeMaker(body, _)) :: Nil => // assert(currLabel.isEmpty && nextLabel.isEmpty)
-            val caseConstants = altss map {
-              case EqualityTestTreeMaker(_, const@SwitchablePattern(), _) :: Nil =>
-                Some(switchableConstToInt(const))
-              case _ =>
-                None
-            }
-
-            sequence(caseConstants) map { contants =>
-              val substedBody  = btm.substitution(body)
-              CaseDef(Alternative(contants), EmptyTree, substedBody)
-            }
-          case _ =>
-            None //failure (can't translate pattern to a switch)
-        }
-      }
-
-      if (!isSwitchableTpe(scrut.tpe))
-        None // TODO: emit a cast of the scrutinee and a switch on the cast scrutinee if patterns allow switch but the type of the scrutinee doesn't
-      else {
-        sequence(caseDefs) map { caseDefs =>
-          import CODE._
-          val caseDefsWithDefault = {
-            def isDefault(x: CaseDef): Boolean = x match {
-              case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
-              case _ => false
-            }
-            val hasDefault = caseDefs exists isDefault
-            if (hasDefault) caseDefs else {
-              val default = atPos(scrut.pos) { DEFAULT ==> MATCHERROR(REF(scrutSym)) }
-              caseDefs :+ default
-            }
+              sequence(casePatterns) map { patterns =>
+                val substedBody  = btm.substitution(body)
+                CaseDef(Alternative(patterns), EmptyTree, substedBody)
+              }
+            case _ => //println("can't emit switch for "+ makers)
+              None //failure (can't translate pattern to a switch)
           }
-          val matcher = BLOCK(
-            if (scrut.tpe != IntClass.tpe) {
-              scrutSym setInfo IntClass.tpe
-              VAL(scrutSym) === (scrut DOT nme.toInt)
-            } else {
-              VAL(scrutSym) === scrut
-            },
-            Match(REF(scrutSym), caseDefsWithDefault) // match on scrutSym, not scrut to avoid duplicating scrut
-          )
-          // matcher filter (tree => tree.tpe == null) foreach println
-          // treeBrowser browse matcher
-          matcher // set type to avoid recursion in typedMatch
+        }
+
+        (for(
+          caseDefs <- sequence(caseDefs)) yield
+            if (caseDefs exists isDefault) caseDefs
+            else {
+              caseDefs :+ defaultCase()
+            }
+        ) getOrElse Nil
+      }
+    }
+
+    class RegularSwitchMaker(scrutSym: Symbol) extends SwitchMaker {
+      val switchableTpe = Set(ByteClass.tpe, ShortClass.tpe, IntClass.tpe, CharClass.tpe)
+      val alternativesSupported = true
+
+      object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat match {
+        case Literal(const@Constant((_: Byte ) | (_: Short) | (_: Int  ) | (_: Char ))) =>
+          Some(Literal(Constant(const.intValue))) // TODO: Java 7 allows strings in switches
+        case _ => None
+      }}
+
+      object SwitchableTreeMaker extends SwitchableTreeMakerExtractor {
+        def unapply(x: TreeMaker): Option[Tree] = x match {
+          case EqualityTestTreeMaker(_, SwitchablePattern(const), _) => Some(const)
+          case _ => None
         }
       }
+
+      def isDefault(x: CaseDef): Boolean = x match {
+        case CaseDef(Ident(nme.WILDCARD), EmptyTree, _) => true
+        case _ => false
+      }
+
+      def defaultSym: Symbol = scrutSym
+      def defaultBody: Tree  = { import CODE._; MATCHERROR(REF(scrutSym)) }
+      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+        DEFAULT ==> body
+      }}
+    }
+
+    override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type): Option[Tree] = { import CODE._
+      val regularSwitchMaker = new RegularSwitchMaker(scrutSym)
+      // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
+      if (regularSwitchMaker.switchableTpe(scrutSym.tpe)) {
+        val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
+        if (caseDefsWithDefault isEmpty) None
+        else {
+          // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
+          val scrutToInt: Tree =
+            if(scrutSym.tpe =:= IntClass.tpe) REF(scrutSym)
+            else (REF(scrutSym) DOT (nme.toInt))
+          Some(BLOCK(
+            VAL(scrutSym) === scrut,
+            Match(scrutToInt, caseDefsWithDefault)
+          ))
+        }
+      } else None
+    }
+
+    // for the catch-cases in a try/catch
+    private object typeSwitchMaker extends SwitchMaker {
+      def switchableTpe(tp: Type) = true
+      val alternativesSupported = false // TODO: needs either back-end support of flattening of alternatives during typers
+
+      // TODO: there are more treemaker-sequences that can be handled by type tests
+      // analyze the result of approximateTreeMaker rather than the TreeMaker itself
+      object SwitchableTreeMaker extends SwitchableTreeMakerExtractor {
+        def unapply(x: TreeMaker): Option[Tree] = x match {
+          case tm@TypeTestTreeMaker(_, _, _) =>
+            Some(Bind(tm.nextBinder, Typed(Ident(nme.WILDCARD), TypeTree(tm.nextBinderTp)) /* not used by back-end */)) //  -- TODO: use this if binder does not occur in the body
+          case tm@TypeAndEqualityTestTreeMaker(_, patBinder, pt, _) if tm.isStraightTypeTest =>
+            Some(Bind(tm.nextBinder, Typed(Ident(nme.WILDCARD), TypeTree(tm.nextBinderTp)) /* not used by back-end */))
+          case _ =>
+            None
+        }
+      }
+
+      def isDefault(x: CaseDef): Boolean = x match {
+        case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe)          => true
+        case CaseDef(Bind(_, Typed(Ident(nme.WILDCARD), tpt)), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) => true
+        case CaseDef(Ident(nme.WILDCARD), EmptyTree, _)                                                          => true
+        case _ => false
+      }
+
+      lazy val defaultSym: Symbol = freshSym(NoPosition, ThrowableClass.tpe)
+      def defaultBody: Tree       = Throw(CODE.REF(defaultSym))
+      def defaultCase(scrutSym: Symbol = defaultSym, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+        CASE (Bind(scrutSym, Typed(Ident(nme.WILDCARD), TypeTree(ThrowableClass.tpe)))) ==> body
+      }}
+    }
+
+    // TODO: drop null checks
+    override def emitTypeSwitch(bindersAndCases: List[(Symbol, List[TreeMaker])], pt: Type): Option[List[CaseDef]] = {
+      val caseDefsWithDefault = typeSwitchMaker(bindersAndCases, pt)
+      if (caseDefsWithDefault isEmpty) None
+      else Some(caseDefsWithDefault)
     }
   }
 
@@ -1551,33 +1661,31 @@ class Foo(x: Other) { x._1 } // no error in this order
 
       /** Inline runOrElse and get rid of Option allocations
        *
-       * runOrElse(scrut: scrutTp)(matcher): resTp = matcher(scrut) getOrElse (throw new MatchError(x))
+       * runOrElse(scrut: scrutTp)(matcher): resTp = matcher(scrut) getOrElse ${catchAll(`scrut`)}
        * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
       @inline private def dontStore(tp: Type) = (tp.typeSymbol eq UnitClass) || (tp.typeSymbol eq NothingClass)
       lazy val keepGoing = freshSym(NoPosition, BooleanClass.tpe, "keepGoing") setFlag MUTABLE
       lazy val matchRes  = freshSym(NoPosition, AnyClass.tpe, "matchRes") setFlag MUTABLE
-      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, hasDefault: Boolean) = {
+      def runOrElse(scrut: Tree, scrutSym: Symbol, matcher: Tree, resTp: Type, catchAll: Option[Tree => Tree]) = {
         matchRes.info = if (resTp ne NoType) resTp.widen else AnyClass.tpe // we don't always know resTp, and it might be AnyVal, in which case we can't assign NULL
         if (dontStore(resTp)) matchRes resetFlag MUTABLE  // don't assign to Unit-typed var's, in fact, make it a val -- conveniently also works around SI-5245
         BLOCK(
           VAL(zeroSym)   === REF(NoneModule),       // TODO: can we just get rid of explicitly emitted zero? don't know how to do that as a local rewrite...
-          VAL(scrutSym)  === scrut,                 // reuse the symbol of the function's argument to avoid creating a fresh one and substituting it for scrutSym in `matcher` -- the owner structure is repaired by fixerUpper
+          VAL(scrutSym)  === scrut,
           VAL(matchRes)  === mkZero(matchRes.info), // must cast to deal with GADT typing, hence the private mkZero above
           VAL(keepGoing) === TRUE,
           matcher,
-          if(hasDefault) REF(matchRes)
-          else (IF (REF(keepGoing)) THEN MATCHERROR(REF(scrutSym)) ELSE REF(matchRes))
+          catchAll map { catchAllGen => (IF (REF(keepGoing)) THEN catchAllGen(REF(scrutSym)) ELSE REF(matchRes)) } getOrElse REF(matchRes)
         )
       }
 
       // only used to wrap the RHS of a body
       def one(res: Tree, bodyPt: Type, matchPt: Type): Tree = {
         BLOCK(
-          if (dontStore(matchPt)) res // runOrElse hasn't been called yet, so matchRes.isMutable is irrelevant, also, tp may be a subtype of resTp used in runOrElse...
-          else (REF(matchRes) === res), // _asInstanceOf(res, tp.widen, force = true)
-          REF(keepGoing) === FALSE,
+          REF(keepGoing) === FALSE, // comes before assignment to matchRes, so the latter is in tail positions (can ignore the trailing zero -- will disappear when we flatten blocks, which is TODO)
+          if (dontStore(matchPt)) res else (REF(matchRes) === res), // runOrElse hasn't been called yet, so matchRes.isMutable is irrelevant, also, tp may be a subtype of resTp used in runOrElse...
           zero // to have a nice lub for lubs -- otherwise we'll get a boxed unit here -- TODO: get rid of all those dangling else zero's
         )
       }

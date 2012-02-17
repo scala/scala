@@ -1,2 +1,4 @@
 Map(a -> Some(1), b -> None)
+79
+undefined
 Map(a -> 1)

@@ -60,20 +60,17 @@ trait DataFlowAnalysis[L <: SemiLattice] {
       val output = f(point, in(point))
 
       if ((lattice.bottom == out(point)) || output != out(point)) {
-//        Console.println("Output changed at " + point
-//                        + " from: " + out(point) + " to: " + output
-//                        + " for input: " + in(point) + " and they are different: " + (output != out(point)))
+        // Console.println("Output changed at " + point
+        //                 + " from: " + out(point) + " to: " + output
+        //                 + " for input: " + in(point) + " and they are different: " + (output != out(point)))
         out(point) = output
         val succs = point.successors
         succs foreach { p =>
-          if (!worklist(p))
-            worklist += p;
-            if (!in.isDefinedAt(p))
-              assert(false, "Invalid successor for: " + point + " successor " + p + " does not exist")
-//          if (!p.exceptionHandlerHeader) {
-//            println("lubbing " + p.predecessors + " outs: " + p.predecessors.map(out.apply).mkString("\n", "\n", ""))
-            in(p) = lattice.lub(in(p) :: (p.predecessors map out.apply), p.exceptionHandlerStart)
-//          }
+          val updated = lattice.lub(in(p) :: (p.predecessors map out.apply), p.exceptionHandlerStart)
+          if(updated != in(p)) {
+            in(p) = updated
+            if (!worklist(p)) { worklist += p; }
+          }
         }
       }
     }
