@@ -1,0 +1,25 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> 
+
+scala> object Macros {
+  object Shmacros {
+    def macro foo(x: Int): Int = x
+  }
+  def macro bar(x: Int): Int = x
+}; class Macros {
+  def macro quux(x: Int): Int = x
+}
+defined module Macros
+defined class Macros
+
+scala> 
+
+scala> import Macros.Shmacros._
+import Macros.Shmacros._
+
+scala> println(foo(2) + Macros.bar(2) * new Macros().quux(4))
+10
+
+scala> 
