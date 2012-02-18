@@ -15,6 +15,7 @@ import scala.util.control.Exception.allCatch
  *
  *  @author  Martin Odersky, Stepan Koltsov, Philipp Haller
  */
+@deprecated("Use `future` instead.", "2.10.0")
 object ops
 {
   val defaultRunner: FutureTaskRunner = TaskRunners.threadRunner

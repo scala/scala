@@ -1205,7 +1205,7 @@ self =>
      */
     def wildcardType(start: Int) = {
       val pname = freshTypeName("_$")
-      val t = atPos(start) { Ident(pname) }
+      val t = atPos(start)(Ident(pname))
       val bounds = typeBounds()
       val param = atPos(t.pos union bounds.pos) { makeSyntheticTypeParam(pname, bounds) }
       placeholderTypes = param :: placeholderTypes

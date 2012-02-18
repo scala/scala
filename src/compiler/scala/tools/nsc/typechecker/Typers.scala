@@ -2169,6 +2169,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                   // error for this is issued in RefChecks.checkDefaultsInOverloaded
                   if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag &&
                       !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
+                    log("Double definition detected:\n  " +
+                      ((e.sym.getClass, e.sym.info, e.sym.ownerChain)) + "\n  " + 
+                      ((e1.sym.getClass, e1.sym.info, e1.sym.ownerChain)))
+                      
                     DefDefinedTwiceError(e.sym, e1.sym)
                     scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
                   }

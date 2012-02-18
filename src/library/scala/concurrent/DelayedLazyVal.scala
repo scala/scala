@@ -8,7 +8,6 @@
 
 package scala.concurrent
 
-import ops.future
 
 /** A `DelayedLazyVal` is a wrapper for lengthy computations which have a
  *  valid partially computed result.
@@ -27,21 +26,23 @@ import ops.future
 class DelayedLazyVal[T](f: () => T, body: => Unit) {
   @volatile private[this] var _isDone = false
   private[this] lazy val complete = f()
-
+  
   /** Whether the computation is complete.
    *
    *  @return true if the computation is complete.
    */
   def isDone = _isDone
-
+  
   /** The current result of f(), or the final result if complete.
    *
    *  @return the current value
    */
   def apply(): T = if (isDone) complete else f()
-
-  future {
+  
+  // TODO replace with scala.concurrent.future { ... }
+  ops.future {
     body
     _isDone = true
   }
+  
 }
