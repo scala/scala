@@ -1388,7 +1388,7 @@ trait Infer {
           NoBestExprAlternativeError(tree, pt)
         } else if (!competing.isEmpty) {
           if (secondTry) NoBestExprAlternativeError(tree, pt)
-          else { if (!pt.isErroneous) AmbiguousExprAlternativeError(tree, pre, best, competing.head, pt) }
+          else if (!pt.isErroneous) AmbiguousExprAlternativeError(tree, pre, best, competing.head, pt)
         } else {
 //          val applicable = alts1 filter (alt =>
 //            global.typer.infer.isWeaklyCompatible(pre.memberType(alt), pt))
@@ -1398,10 +1398,14 @@ trait Infer {
       }
     }
 
-    @inline private def inSilentMode(expr: Typer => Boolean): Boolean = {
-        val silentContext = context.makeSilent(context.ambiguousErrors)
-        val res = expr(newTyper(silentContext))
-        if (silentContext.hasErrors) false else res
+    @inline private def inSilentMode(context: Context)(expr: => Boolean): Boolean = {
+      val oldState = context.state
+      context.setBufferErrors()
+      val res = expr
+      val contextWithErrors = context.hasErrors
+      context.flushBuffer()
+      context.restoreState(oldState)
+      res && !contextWithErrors
     }
 
     // Checks against the name of the parameter and also any @deprecatedName.
@@ -1472,7 +1476,7 @@ trait Infer {
 
           val applicable = resolveOverloadedMethod(argtpes, {
             alts filter { alt =>
-              inSilentMode(typer0 => typer0.infer.isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt)) &&
+              inSilentMode(context)(isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt)) &&
               (!varArgsOnly || isVarArgsList(alt.tpe.params))
             }
           })
