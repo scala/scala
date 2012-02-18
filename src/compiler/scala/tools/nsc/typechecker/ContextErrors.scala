@@ -636,11 +636,6 @@ trait ContextErrors {
 
      def CyclicReferenceError(errPos: Position, lockedSym: Symbol) =
        issueTypeError(PosAndMsgTypeError(errPos, "illegal cyclic reference involving " + lockedSym))
-       
-     def MacroExpandError(tree: Tree, t: Any) = { 
-       issueNormalTypeError(tree, "macros must return a compiler-specific tree; returned class is: " + t.getClass)
-       setError(tree)
-     }
     }
   }
 

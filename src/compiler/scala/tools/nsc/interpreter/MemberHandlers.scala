@@ -118,8 +118,9 @@ trait MemberHandlers {
 
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
     private def vparamss = member.vparamss
-    // true if 0-arity
-    override def definesValue = vparamss.isEmpty || vparamss.head.isEmpty
+    private def isMacro = member.mods.hasFlag(scala.reflect.internal.Flags.MACRO)
+    // true if not a macro and 0-arity
+    override def definesValue = !isMacro && (vparamss.isEmpty || vparamss.head.isEmpty)
     override def resultExtractionCode(req: Request) =
       if (mods.isPublic) codegenln(name, ": ", req.typeOf(name)) else ""
   }

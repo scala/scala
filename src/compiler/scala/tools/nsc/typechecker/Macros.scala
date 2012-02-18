@@ -90,8 +90,19 @@ trait Macros { self: Analyzer =>
 
   lazy val mirror = new scala.reflect.runtime.Mirror {
     lazy val libraryClassLoader = {
+      // todo. this is more or less okay, but not completely correct
+      // see https://issues.scala-lang.org/browse/SI-5433 for more info
       val classpath = global.classPath.asURLs
-      ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+      var loader: ClassLoader = ScalaClassLoader.fromURLs(classpath, self.getClass.getClassLoader)
+
+      // an heuristic to detect REPL
+      if (global.settings.exposeEmptyPackage.value) {
+        import scala.tools.nsc.interpreter._
+        val virtualDirectory = global.settings.outputDirs.getSingleOutput.get
+        loader = new AbstractFileClassLoader(virtualDirectory, loader) {}
+      }
+
+      loader
     }
 
     override def defaultReflectiveClassLoader() = libraryClassLoader
@@ -112,19 +123,42 @@ trait Macros { self: Analyzer =>
 
       if (mmeth == NoSymbol) None
       else {
-        val receiverClass: mirror.Symbol = mirror.symbolForName(mmeth.owner.fullName)
+        trace("loading implementation class: ")(mmeth.owner.fullName)
+        trace("classloader is: ")("%s of type %s".format(mirror.libraryClassLoader, mirror.libraryClassLoader.getClass))
+        def inferClasspath(cl: ClassLoader) = cl match {
+          case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
+          case _ => "<unknown>"
+        }
+        trace("classpath is: ")(inferClasspath(mirror.libraryClassLoader))
+
+        // @xeno.by: relies on the fact that macros can only be defined in static classes
+        def classfile(sym: Symbol): String = {
+          def recur(sym: Symbol): String = sym match {
+            case sym if sym.owner.isPackageClass =>
+              val suffix = if (sym.isModuleClass) "$" else ""
+              sym.fullName + suffix
+            case sym =>
+              val separator = if (sym.owner.isModuleClass) "" else "$"
+              recur(sym.owner) + separator + sym.javaSimpleName
+          }
+
+          if (sym.isClass || sym.isModule) recur(sym)
+          else recur(sym.enclClass)
+        }
+
+        // @xeno.by: this doesn't work for inner classes
+        // neither does mmeth.owner.javaClassName, so I had to roll my own implementation
+        //val receiverName = mmeth.owner.fullName
+        val receiverName = classfile(mmeth.owner)
+        val receiverClass: mirror.Symbol = mirror.symbolForName(receiverName)
+
         if (debug) {
           println("receiverClass is: " + receiverClass.fullNameString)
 
           val jreceiverClass = mirror.classToJava(receiverClass)
           val jreceiverSource = jreceiverClass.getProtectionDomain.getCodeSource
           println("jreceiverClass is %s from %s".format(jreceiverClass, jreceiverSource))
-
-          val jreceiverClasspath = jreceiverClass.getClassLoader match {
-            case cl: java.net.URLClassLoader => "[" + (cl.getURLs mkString ",") + "]"
-            case _ => "<unknown>"
-          }
-          println("jreceiverClassLoader is %s with classpath %s".format(jreceiverClass.getClassLoader, jreceiverClasspath))
+          println("jreceiverClassLoader is %s with classpath %s".format(jreceiverClass.getClassLoader, inferClasspath(jreceiverClass.getClassLoader)))
         }
 
         val receiverObj = receiverClass.companionModule
@@ -132,7 +166,11 @@ trait Macros { self: Analyzer =>
 
         if (receiverObj == mirror.NoSymbol) None
         else {
-          val receiver = mirror.companionInstance(receiverClass)
+          // @xeno.by: yet another reflection method that doesn't work for inner classes
+          //val receiver = mirror.companionInstance(receiverClass)
+          val clazz = java.lang.Class.forName(receiverName, true, mirror.libraryClassLoader)
+          val receiver = clazz getField "MODULE$" get null
+
           val rmeth = receiverObj.info.member(mirror.newTermName(mmeth.name.toString))
           if (debug) {
             println("rmeth is: " + rmeth.fullNameString)
@@ -147,6 +185,7 @@ trait Macros { self: Analyzer =>
       }
     } catch {
       case ex: ClassNotFoundException =>
+        trace("implementation class failed to load: ")(ex.toString)
         None
     }
   }
@@ -155,7 +194,7 @@ trait Macros { self: Analyzer =>
    *  Or, if that fails, and the macro overrides a method return
    *  tree that calls this method instead of the macro.
    */
-  def macroExpand(tree: Tree, context: Context): Option[Any] = {
+  def macroExpand(tree: Tree, typer: Typer): Option[Any] = {
     val trace = scala.tools.nsc.util.trace when settings.Ymacrodebug.value
     trace("macroExpand: ")(tree)
 
@@ -180,7 +219,19 @@ trait Macros { self: Analyzer =>
           // if one of those children involves macro expansion, things might get nasty
           // that's why I'm temporarily turning this behavior off
           nodePrinters.infolevel = nodePrinters.InfoLevel.Quiet
-          Some(mirror.invoke(receiver, rmeth)(rawArgs: _*))
+          val expanded = mirror.invoke(receiver, rmeth)(rawArgs: _*)
+          expanded match {
+            case expanded: Tree =>
+              val expectedTpe = tree.tpe
+              val typed = typer.typed(expanded, EXPRmode, expectedTpe)
+              Some(typed)
+            case expanded if expanded.isInstanceOf[Tree] =>
+              typer.context.unit.error(tree.pos, "macro must return a compiler-specific tree; returned value is Tree, but it doesn't belong to this compiler's universe")
+              None
+            case expanded =>
+              typer.context.unit.error(tree.pos, "macro must return a compiler-specific tree; returned value is of class: " + expanded.getClass)
+              None
+          }
         } catch {
           case ex =>
             val realex = ReflectionUtils.unwrapThrowable(ex)
@@ -191,14 +242,14 @@ trait Macros { self: Analyzer =>
             } else {
               realex.getMessage
             }
-            context.unit.error(tree.pos, "exception during macro expansion: " + msg)
+            typer.context.unit.error(tree.pos, "exception during macro expansion: " + msg)
             None
         } finally {
           nodePrinters.infolevel = savedInfolevel
         }
       case None =>
         def notFound() = {
-          context.unit.error(tree.pos, "macro implementation not found: " + macroDef.name)
+          typer.context.unit.error(tree.pos, "macro implementation not found: " + macroDef.name)
           None
         }
         def fallBackToOverridden(tree: Tree): Option[Tree] = {
