@@ -104,15 +104,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def specializedTypes(tps: List[Symbol]) = tps filter isSpecialized
   private def specializedOn(sym: Symbol): List[Symbol] = {
     sym getAnnotation SpecializedClass match {
-      case Some(ann @ AnnotationInfo(_, args, _)) =>
+      case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
+      case Some(ann @ AnnotationInfo(_, args, _)) => {
         args map (_.tpe) flatMap { tp =>
           tp baseType GroupOfSpecializable match {
             case TypeRef(_, GroupOfSpecializable, arg :: Nil) =>
               arg.typeArgs map (_.typeSymbol)
-            case _ =>
+            case _ => 
               List(tp.typeSymbol)
           }
         }
+      }
       case _ => Nil
     }
   }
@@ -120,13 +122,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   // If we replace `isBoundedGeneric` with (tp <:< AnyRefClass.tpe),
   // then pos/spec-List.scala fails - why? Does this kind of check fail
   // for similar reasons? Does `sym.isAbstractType` make a difference?
-  private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = (
-    // !!! Come back to this, not sure it's recognizing AnyRefModule
-       (specializedOn(sym) exists (s => !isValueClass(s)))
-    && !isValueClass(tp.typeSymbol)
-    && isBoundedGeneric(tp)
-    // && (tp <:< AnyRefClass.tpe)
-  )
+  private def isSpecializedAnyRefSubtype(tp: Type, sym: Symbol) = {
+    specializedOn(sym).exists(s => !isValueClass(s)) &&
+    !isValueClass(tp.typeSymbol) &&
+    isBoundedGeneric(tp)
+    //(tp <:< AnyRefClass.tpe)
+  }
   private def isBoundedGeneric(tp: Type) = tp match {
     case TypeRef(_, sym, _) if sym.isAbstractType => (tp <:< AnyRefClass.tpe)
     case TypeRef(_, sym, _)                       => !isValueClass(sym)
@@ -346,13 +347,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  These are in a meaningful order for stability purposes.
    */
   def concreteTypes(sym: Symbol): List[Type] = {
-    val types = (
-      if (!isSpecialized(sym)) Nil      // no @specialized Annotation
-      else specializedOn(sym) match {
-        case Nil  => specializableTypes                             // specialized on everything
-        case args => args map (s => specializesClass(s).tpe) sorted // specialized on args
-      }
-    )
+    val types = if (!isSpecialized(sym))
+      Nil // no @specialized Annotation
+    else
+      specializedOn(sym) map (s => specializesClass(s).tpe) sorted
+
     if (isBoundedGeneric(sym.tpe) && (types contains AnyRefClass))
       reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefClass.tpe + ".")
 
