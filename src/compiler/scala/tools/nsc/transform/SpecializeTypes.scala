@@ -87,9 +87,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Map class symbols to the type environments where they were created. */
   private val typeEnv = mutable.HashMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
 
-  // holds mappings from regular type parameter symbols to symbols of
-  // specialized type parameters which are subtypes of AnyRef
-  private val anyrefSpecCache = perRunCaches.newMap[Symbol, Symbol]()
+  // holds mappings from regular type parameter symbols and their class to
+  // symbols of specialized type parameters which are subtypes of AnyRef
+  // e.g. (sym, clazz) => specializedSym
+  private val anyrefSpecCache = perRunCaches.newMap[(Symbol, Symbol), Symbol]()
 
   // holds mappings from members to the type variables in the class
   // that they were already specialized for, so that they don't get
@@ -435,7 +436,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  `sym` in the original class. It will create it if needed or use the one from the cache.
    */
   private def typeParamSubAnyRef(sym: Symbol, clazz: Symbol) = (
-    anyrefSpecCache.getOrElseUpdate(sym,
+    anyrefSpecCache.getOrElseUpdate((sym, clazz),
       clazz.newTypeParameter(sym.name append nme.SPECIALIZED_SUFFIX_NAME toTypeName, sym.pos)
         setInfo TypeBounds(sym.info.bounds.lo, AnyRefClass.tpe)
     ).tpe
@@ -447,8 +448,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     // remove class type parameters and those of normalized members.
     clazz :: decls foreach {
       _.tpe match {
-        case PolyType(tparams, _) => anyrefSpecCache --= tparams
-        case _                    => ()
+        case PolyType(tparams, _) => tparams.foreach {
+          s => anyrefSpecCache.remove((s, clazz))
+        }
+        case _ => ()
       }
     }
   )
@@ -1302,17 +1305,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       curTree = tree
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          // log("Attempting to specialize new %s(%s)".format(tpt, args.mkString(", ")))
-          if (findSpec(tpt.tpe).typeSymbol ne tpt.tpe.typeSymbol) {
+          log("Attempting to specialize new %s(%s)".format(tpt, args.mkString(", ")))
+          val found = findSpec(tpt.tpe)
+          if (found.typeSymbol ne tpt.tpe.typeSymbol) {
             // the ctor can be specialized
-            log("** instantiated specialized type: " + findSpec(tpt.tpe))
-            try {
-              atPos(tree.pos)(
-                localTyper.typed(
-                  Apply(
-                    Select(New(TypeTree(findSpec(tpt.tpe))), nme.CONSTRUCTOR),
-                    transformTrees(args))))
-            } catch {
+            log("** instantiated specialized type: " + found)
+            try localTyper.typedPos(tree.pos)(New(found, transformTrees(args): _*))
+            catch {
               case te: TypeError =>
                 reporter.error(tree.pos, te.msg)
                 super.transform(tree)

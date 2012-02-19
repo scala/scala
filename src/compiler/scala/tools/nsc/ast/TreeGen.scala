@@ -57,7 +57,7 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   // annotate the expression with @unchecked
   def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
     // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
-    // are very pick about things and it crashes the compiler with "unexpected new".
+    // are very picky about things and it crashes the compiler with "unexpected new".
     Annotated(New(scalaDot(UncheckedClass.name), List(Nil)), expr)
   }
   // if it's a Match, mark the selector unchecked; otherwise nothing.
@@ -181,10 +181,11 @@ abstract class TreeGen extends reflect.internal.TreeGen with TreeDSL {
   def mkModuleAccessDef(accessor: Symbol, msym: Symbol) =
     DefDef(accessor, Select(This(msym.owner), msym))
 
-  def newModule(accessor: Symbol, tpe: Type) =
-    New(TypeTree(tpe),
-        List(for (pt <- tpe.typeSymbol.primaryConstructor.info.paramTypes)
-             yield This(accessor.owner.enclClass)))
+  def newModule(accessor: Symbol, tpe: Type) = {
+    val ps = tpe.typeSymbol.primaryConstructor.info.paramTypes
+    if (ps.isEmpty) New(tpe)
+    else New(tpe, This(accessor.owner.enclClass))
+  }
 
   // def m: T;
   def mkModuleAccessDcl(accessor: Symbol) =

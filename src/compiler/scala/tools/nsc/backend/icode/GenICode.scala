@@ -94,7 +94,7 @@ abstract class GenICode extends SubComponent  {
 
       // !! modules should be eliminated by refcheck... or not?
       case ModuleDef(mods, name, impl) =>
-        abort("Modules should not reach backend!")
+        abort("Modules should not reach backend! " + tree)
 
       case ValDef(mods, name, tpt, rhs) =>
         ctx // we use the symbol to add fields
@@ -704,7 +704,8 @@ abstract class GenICode extends SubComponent  {
           ctx1
 
         case New(tpt) =>
-          abort("Unexpected New")
+          abort("Unexpected New(" + tpt.summaryString + "/" + tpt + ") received in icode.\n" +
+            "  Call was genLoad" + ((tree, ctx, expectedType)))
 
         case Apply(TypeApply(fun, targs), _) =>
           val sym = fun.symbol
