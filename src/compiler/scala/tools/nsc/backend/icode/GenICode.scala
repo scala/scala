@@ -876,6 +876,11 @@ abstract class GenICode extends SubComponent  {
             val (newCtx, resKind) = genPrimitiveOp(app, ctx, expectedType)
             generatedType = resKind
             newCtx
+          } else if (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions.value)) {
+            // XXX settings.noassertions.value temporarily retained to avoid
+            // breakage until a reasonable interface is settled upon.
+            debuglog("Eliding call from " + tree.symbol.owner + " to " + sym + " based on its elision threshold of " + sym.elisionLevel.get)
+            ctx
           } else {  // normal method call
             debuglog("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + sym.isStaticMember);
             val invokeStyle =
