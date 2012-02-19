@@ -277,7 +277,7 @@ object TupleOne extends Tuple(1)
 object TupleTwo extends Tuple(2)
 {
   override def imports = Tuple.zipImports
-  override def covariantSpecs = "@specialized(Int, Long, Double) "
+  override def covariantSpecs = "@specialized(Int, Long, Double, Char, Boolean, AnyRef) "
   override def moreMethods = """
   /** Swaps the elements of this `Tuple`.
    * @return a new Tuple where the first element is the second element of this Tuple and the
