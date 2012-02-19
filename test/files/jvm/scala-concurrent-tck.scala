@@ -321,7 +321,7 @@ trait FutureProjections extends TestBase {
     done =>
     val f = future { 0 }
     try {
-      blocking(f.failed, Duration(0, "ms"))
+      blocking(f.failed, Duration(500, "ms"))
       assert(false)
     } catch {
       case nsee: NoSuchElementException => done()
