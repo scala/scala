@@ -1383,15 +1383,25 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       cloneSymbol(owner)
 
     /** A clone of this symbol, but with given owner. */
-    final def cloneSymbol(owner: Symbol): Symbol = cloneSymbol(owner, this.rawflags)
-    final def cloneSymbol(owner: Symbol, newFlags: Long): Symbol = {
-      val newSym = cloneSymbolImpl(owner, newFlags)
-      ( newSym
+    final def cloneSymbol(newOwner: Symbol): Symbol =
+      cloneSymbol(newOwner, this.rawflags)
+    final def cloneSymbol(newOwner: Symbol, newFlags: Long): Symbol =
+      cloneSymbol(newOwner, newFlags, nme.NO_NAME)
+    final def cloneSymbol(newOwner: Symbol, newFlags: Long, newName: Name): Symbol = {
+      val clone = cloneSymbolImpl(newOwner, newFlags)
+      ( clone
           setPrivateWithin privateWithin
-          setInfo (info cloneInfo newSym)
+          setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
+      if (clone.thisSym != clone)
+        clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
+      if (newName != nme.NO_NAME)
+        clone.name = newName
+      
+      clone
     }
+    
     /** Internal method to clone a symbol's implementation with the given flags and no info. */
     def cloneSymbolImpl(owner: Symbol, newFlags: Long): Symbol
     def cloneSymbolImpl(owner: Symbol): Symbol = cloneSymbolImpl(owner, 0L)
@@ -2327,7 +2337,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def existentialBound: Type = abort("unexpected type: "+this.getClass+ " "+debugLocationString)
 
-    override def name: TypeName = super.name.asInstanceOf[TypeName]
+    override def name: TypeName = super.name.toTypeName
     final override def isType = true
     override def isNonClassType = true
     override def isAbstractType = {

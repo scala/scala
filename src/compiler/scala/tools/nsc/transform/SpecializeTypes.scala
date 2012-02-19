@@ -87,10 +87,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Map class symbols to the type environments where they were created. */
   private val typeEnv = mutable.HashMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
 
-  // holds mappings from regular type parameter symbols and their class to
-  // symbols of specialized type parameters which are subtypes of AnyRef
-  // e.g. (sym, clazz) => specializedSym
-  private val anyrefSpecCache = perRunCaches.newMap[(Symbol, Symbol), Symbol]()
+  //    Key: a specialized class or method
+  //  Value: a map from tparams in the original class to tparams in the specialized class.
+  private val anyrefSpecCache = perRunCaches.newMap[Symbol, mutable.Map[Symbol, Symbol]]()
 
   // holds mappings from members to the type variables in the class
   // that they were already specialized for, so that they don't get
@@ -432,29 +431,24 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case _                           => Set()
   }
 
-  /** Returns the type parameter in the specialized class `clazz` that corresponds to type parameter
-   *  `sym` in the original class. It will create it if needed or use the one from the cache.
+  /** Returns the type parameter in the specialized class `sClass` that corresponds to type parameter
+   *  `tparam` in the original class. It will create it if needed or use the one from the cache.
    */
-  private def typeParamSubAnyRef(sym: Symbol, clazz: Symbol) = (
-    anyrefSpecCache.getOrElseUpdate((sym, clazz),
-      clazz.newTypeParameter(sym.name append nme.SPECIALIZED_SUFFIX_NAME toTypeName, sym.pos)
-        setInfo TypeBounds(sym.info.bounds.lo, AnyRefClass.tpe)
+  private def typeParamSubAnyRef(tparam: Symbol, sClass: Symbol): Type = {
+    val sClassMap = anyrefSpecCache.getOrElseUpdate(sClass, mutable.Map[Symbol, Symbol]())
+
+    sClassMap.getOrElseUpdate(tparam,
+      tparam.cloneSymbol(sClass, tparam.flags, tparam.name append tpnme.SPECIALIZED_SUFFIX)
+        modifyInfo (info => TypeBounds(info.bounds.lo, AnyRefClass.tpe))
     ).tpe
-  )
+  }
 
   /** Cleans the anyrefSpecCache of all type parameter symbols of a class.
    */
-  private def cleanAnyRefSpecCache(clazz: Symbol, decls: List[Symbol]) = (
+  private def cleanAnyRefSpecCache(clazz: Symbol, decls: List[Symbol]) {
     // remove class type parameters and those of normalized members.
-    clazz :: decls foreach {
-      _.tpe match {
-        case PolyType(tparams, _) => tparams.foreach {
-          s => anyrefSpecCache.remove((s, clazz))
-        }
-        case _ => ()
-      }
-    }
-  )
+    clazz :: decls foreach (anyrefSpecCache remove _)
+  }
 
   /** Type parameters that survive when specializing in the specified environment. */
   def survivingParams(params: List[Symbol], env: TypeEnv) =
@@ -1710,7 +1704,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *    - there is a getter for the specialized field in the same class
      */
     def initializesSpecializedField(f: Symbol) = (
-         (f.name endsWith nme.SPECIALIZED_SUFFIX_NAME)
+         (f.name endsWith nme.SPECIALIZED_SUFFIX)
       && clazz.info.member(nme.originalName(f.name)).isPublic
       && clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol
     )

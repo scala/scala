@@ -76,12 +76,14 @@ trait NameManglers {
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SINGLETON_SUFFIX              = ".type"
-    val SPECIALIZED_SUFFIX_STRING     = "$sp"
     val SUPER_PREFIX_STRING           = "super$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
+    val SETTER_SUFFIX: TermName = encode("_=")
     
-    val SETTER_SUFFIX: TermName           = encode("_=")
-    val SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX_STRING
+    @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
+    def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
+    @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
+    def SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX.toTermName
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
@@ -120,7 +122,7 @@ trait NameManglers {
     }
     
     def unspecializedName(name: Name): Name = (
-      if (name endsWith SPECIALIZED_SUFFIX_NAME)
+      if (name endsWith SPECIALIZED_SUFFIX)
         name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
@@ -140,8 +142,8 @@ trait NameManglers {
      *  and another one belonging to the enclosing class, on Double.
      */
     def splitSpecializedName(name: Name): (Name, String, String) =
-      if (name endsWith SPECIALIZED_SUFFIX_NAME) {
-        val name1 = name dropRight SPECIALIZED_SUFFIX_NAME.length
+      if (name endsWith SPECIALIZED_SUFFIX) {
+        val name1 = name dropRight SPECIALIZED_SUFFIX.length
         val idxC  = name1 lastIndexOf 'c'
         val idxM  = name1 lastIndexOf 'm'
 

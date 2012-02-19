@@ -99,6 +99,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val MODULE_VAR_SUFFIX: NameType  = "$module"
     val ROOT: NameType               = "<root>"
     val PACKAGE: NameType            = "package"
+    val SPECIALIZED_SUFFIX: NameType = "$sp"
 
     // value types (and AnyRef) are all used as terms as well
     // as (at least) arguments to the @specialize annotation.
