@@ -2714,6 +2714,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    */
   def cloneSymbolsAndModify(syms: List[Symbol], infoFn: Type => Type): List[Symbol] =
     cloneSymbols(syms) map (_ modifyInfo infoFn)
+  def cloneSymbolsAtOwnerAndModify(syms: List[Symbol], owner: Symbol, infoFn: Type => Type): List[Symbol] =
+    cloneSymbolsAtOwner(syms, owner) map (_ modifyInfo infoFn)
 
   /** Functions which perform the standard clone/substituting on the given symbols and type,
    *  then call the creator function with the new symbols and type as arguments.

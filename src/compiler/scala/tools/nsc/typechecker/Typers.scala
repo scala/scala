@@ -3036,40 +3036,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       packSymbols(localSyms.toList, normalizedTpe)
     }
 
-    /** Replace type parameters with their TypeSkolems, which can later
-     *  be deskolemized to the original type param. (A skolem is a
-     *  representation of a bound variable when viewed inside its scope)
-     *  !!!Adriaan: this does not work for hk types.
-     */
-    def skolemizeTypeParams(tparams: List[TypeDef]): List[TypeDef] = {
-      class Deskolemizer extends LazyType {
-        override val typeParams = tparams map (_.symbol)
-        val typeSkolems  = typeParams map (_.newTypeSkolem setInfo this)
-        // Replace the symbols
-        def substitute() = map2(tparams, typeSkolems)(_ setSymbol _)
-        override def complete(sym: Symbol) {
-          // The info of a skolem is the skolemized info of the
-          // actual type parameter of the skolem
-          sym setInfo sym.deSkolemize.info.substSym(typeParams, typeSkolems)
-        }
-      }
-      (new Deskolemizer).substitute()
-    }
-    /** Convert to corresponding type parameters all skolems of method
-     *  parameters which appear in `tparams`.
-     */
-    def deskolemizeTypeParams(tparams: List[Symbol])(tp: Type): Type = {
-      class DeSkolemizeMap extends TypeMap {
-        def apply(tp: Type): Type = tp match {
-          case TypeRef(pre, sym, args) if sym.isTypeSkolem && (tparams contains sym.deSkolemize) =>
-            mapOver(typeRef(NoPrefix, sym.deSkolemize, args))
-          case _ =>
-            mapOver(tp)
-        }
-      }
-      new DeSkolemizeMap mapOver tp
-    }
-
     def typedClassOf(tree: Tree, tpt: Tree, noGen: Boolean = false) =
       if (!checkClassType(tpt, true, false) && noGen) tpt
       else atPos(tree.pos)(gen.mkClassOf(tpt.tpe))

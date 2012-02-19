@@ -15,6 +15,7 @@ abstract class SymbolTable extends api.Universe
                               with Symbols
                               with Types
                               with Kinds
+                              with ExistentialsAndSkolems
                               with Scopes
                               with Definitions
                               with Constants
