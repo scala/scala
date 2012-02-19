@@ -1205,13 +1205,19 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             sym == acc || acc.hasAccessorFlag && sym == acc.accessed
           if (acc.accessBoundary(clazz) != RootClass)
             unit.error(acc.pos, "Value class needs to have a publicly accessible val parameter")
-          else
-            for (stat <- body)
-              if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
-                unit.error(stat.pos, "This statement is not allowed in value class: "+stat)
+          if (acc.tpe.resultType.typeSymbol.isTypeParameter)
+            unit.error(acc.pos, "Type of parameter of value class may not be a type variable")
+          for (stat <- body)
+            if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
+              unit.error(stat.pos, 
+                if (stat.symbol hasFlag PARAMACCESSOR) "Illegal parameter for value class"
+                else "This statement is not allowed in value class: "+stat)
         case x =>
           unit.error(clazz.pos, "Value class needs to have exactly one public val parameter")
       }
+      for (tparam <- clazz.typeParams)
+        if (tparam hasAnnotation definitions.SpecializedClass)
+          unit.error(tparam.pos, "type parameter of value class may not be specialized")
     }
 
     def parentTypes(templ: Template): List[Tree] =
@@ -1437,10 +1443,10 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
         _.typedTemplate(cdef.impl, parentTypes(cdef.impl))
       }
       val impl2 = finishMethodSynthesis(impl1, clazz, context)
-      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.typeSymbol == AnyClass)
+      if (clazz.isTrait && clazz.info.parents.nonEmpty && clazz.info.firstParent.normalize.typeSymbol == AnyClass)
         for (stat <- impl2.body)
           if (!treeInfo.isAllowedInUniversalTrait(stat))
-            unit.error(stat.pos, "this statement is not allowed in trait extending from class Any: "+stat)
+            unit.error(stat.pos, "this statement is not allowed in universal trait extending from class Any: "+stat)
       if ((clazz != ClassfileAnnotationClass) &&
           (clazz isNonBottomSubClass ClassfileAnnotationClass))
         restrictionWarning(cdef.pos, unit,

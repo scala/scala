@@ -1,23 +1,46 @@
-class Meter(val underlying: Double) extends AnyVal with Printable {
-   def + (other: Meter): Meter = 
-     new Meter(this.underlying + other.underlying)
-   def / (other: Meter): Double = this.underlying / other.underlying
-   def / (factor: Double): Meter = new Meter(this.underlying / factor)
-   def < (other: Meter): Boolean = this.underlying < other.underlying
-   override def toString: String = underlying.toString+"m"
-}
-object Meter extends (Double => Meter) {
+package a {
+  class Meter(val underlying: Double) extends AnyVal with _root_.b.Printable {
+    def + (other: Meter): Meter = 
+      new Meter(this.underlying + other.underlying)
+    def / (other: Meter): Double = this.underlying / other.underlying
+    def / (factor: Double): Meter = new Meter(this.underlying / factor)
+    def < (other: Meter): Boolean = this.underlying < other.underlying
+    def toFoot: Foot = new Foot(this.underlying * 0.3048)
+    override def print = { Console.print(">>>"); super.print; proprint }
+    override def toString: String = underlying.toString+"m"
+  }
 
-  def apply(x: Double): Meter = new Meter(x)
+  object Meter extends (Double => Meter) {
+    
+    def apply(x: Double): Meter = new Meter(x)
 
-  implicit val boxings = new BoxingConversions[Meter, Double] {
-    def box(x: Double) = new Meter(x)
-    def unbox(m: Meter) = m.underlying
+    implicit val boxings = new BoxingConversions[Meter, Double] {
+      def box(x: Double) = new Meter(x)
+      def unbox(m: Meter) = m.underlying
+    }
+  }
+
+  class Foot(val unbox: Double) extends AnyVal {
+    def + (other: Foot): Foot = 
+      new Foot(this.unbox + other.unbox)
+    override def toString = unbox.toString+"ft"
+  }
+  object Foot {
+    implicit val boxings = new BoxingConversions[Foot, Double] {
+      def box(x: Double) = new Foot(x)
+      def unbox(m: Foot) = m.unbox
+    }
   }
 
 }
-trait Printable extends Any { def print: Unit = Console.print(this) }
-
+package b {
+  trait Printable extends Any { 
+    def print: Unit = Console.print(this) 
+    protected def proprint = Console.print("<<<")
+  }
+}
+import a._
+import _root_.b._
 object Test extends App {
 
   {
@@ -72,6 +95,8 @@ object Test extends App {
     println(ys)
     val zs = arr map (_ / Meter(1))
     println(zs)
+    val fs = arr map (_.toFoot)
+    println(fs)
   }
 
 }

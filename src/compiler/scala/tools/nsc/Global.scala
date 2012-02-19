@@ -438,12 +438,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val global: Global.this.type = Global.this
   } with Analyzer
 
-  object extensionMethods extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("typer")
-    val runsRightAfter = None
-  } with ExtensionMethods
-
   // phaseName = "superaccessors"
   object superAccessors extends {
     val global: Global.this.type = Global.this
@@ -451,10 +445,17 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val runsRightAfter = None
   } with SuperAccessors
 
+  // phaseName = "extmethods"
+  object extensionMethods extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("superaccessors")
+    val runsRightAfter = None
+  } with ExtensionMethods
+
   // phaseName = "pickler"
   object pickler extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("superaccessors")
+    val runsAfter = List("extmethods")
     val runsRightAfter = None
   } with Pickler
 
