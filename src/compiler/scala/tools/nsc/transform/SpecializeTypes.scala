@@ -1302,17 +1302,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       curTree = tree
       tree match {
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          // log("Attempting to specialize new %s(%s)".format(tpt, args.mkString(", ")))
-          if (findSpec(tpt.tpe).typeSymbol ne tpt.tpe.typeSymbol) {
+          log("Attempting to specialize new %s(%s)".format(tpt, args.mkString(", ")))
+          val found = findSpec(tpt.tpe)
+          if (found.typeSymbol ne tpt.tpe.typeSymbol) {
             // the ctor can be specialized
-            log("** instantiated specialized type: " + findSpec(tpt.tpe))
-            try {
-              atPos(tree.pos)(
-                localTyper.typed(
-                  Apply(
-                    Select(New(TypeTree(findSpec(tpt.tpe))), nme.CONSTRUCTOR),
-                    transformTrees(args))))
-            } catch {
+            log("** instantiated specialized type: " + found)
+            try localTyper.typedPos(tree.pos)(New(found, transformTrees(args): _*))
+            catch {
               case te: TypeError =>
                 reporter.error(tree.pos, te.msg)
                 super.transform(tree)

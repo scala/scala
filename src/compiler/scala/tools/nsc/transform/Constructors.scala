@@ -516,14 +516,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
         }
 
-      def delayedInitCall(closure: Tree) =
-        localTyper.typed {
-          atPos(impl.pos) {
-            Apply(
-              Select(This(clazz), delayedInitMethod),
-              List(New(TypeTree(closure.symbol.tpe), List(List(This(clazz))))))
-          }
-        }
+      def delayedInitCall(closure: Tree) = localTyper.typedPos(impl.pos) {
+        gen.mkMethodCall(This(clazz), delayedInitMethod, Nil, List(New(closure.symbol, This(clazz))))
+      }
 
       /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
       def splitAtSuper(stats: List[Tree]) = {

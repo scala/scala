@@ -224,18 +224,19 @@ trait Trees extends api.Trees { self: SymbolTable =>
       LabelDef(sym.name.toTermName, params map Ident, rhs) setSymbol sym
     }
 
-
   /** casedef shorthand */
   def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body)
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
 
-  /** 0-1 argument list new, based on a symbol.
+  /** 0-1 argument list new, based on a symbol or type.
    */
   def New(sym: Symbol, args: Tree*): Tree =
-    if (args.isEmpty) New(TypeTree(sym.tpe))
-    else New(TypeTree(sym.tpe), List(args.toList))
+    New(sym.tpe, args: _*)
+
+  def New(tpe: Type, args: Tree*): Tree =
+    New(TypeTree(tpe), List(args.toList))
 
   def Apply(sym: Symbol, args: Tree*): Tree =
     Apply(Ident(sym), args.toList)

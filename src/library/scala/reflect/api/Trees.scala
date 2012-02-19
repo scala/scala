@@ -486,11 +486,10 @@ trait Trees { self: Universe =>
    *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
    */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
-    assert(!argss.isEmpty)
     // todo. we need to expose names in scala.reflect.api
-//    val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
     val superRef: Tree = Select(New(tpt), nme.CONSTRUCTOR)
-    (superRef /: argss) (Apply)
+    if (argss.isEmpty) Apply(superRef, Nil)
+    else (superRef /: argss) (Apply)
   }
 
   /** Type annotation, eliminated by explicit outer */

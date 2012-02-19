@@ -189,7 +189,7 @@ abstract class UnCurry extends InfoTransform
                 List(TypeTree(meth.tpe.finalResultType))),
               List()),
             Throw(Ident(ex)))
-        val keyDef = ValDef(key, New(TypeTree(ObjectClass.tpe), List(List())))
+        val keyDef = ValDef(key, New(ObjectClass))
         val tryCatch = Try(body, List(CaseDef(pat, EmptyTree, rhs)), EmptyTree)
         Block(List(keyDef), tryCatch)
       }
@@ -357,9 +357,7 @@ abstract class UnCurry extends InfoTransform
         localTyper.typedPos(fun.pos) {
           Block(
             List(ClassDef(anonClass, NoMods, List(List()), List(List()), members, fun.pos)),
-            Typed(
-              New(TypeTree(anonClass.tpe), List(List())),
-              TypeTree(fun.tpe)))
+            Typed(New(anonClass), TypeTree(fun.tpe)))
         }
       }
     }

@@ -393,8 +393,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       // assumed true unless we see public/private/protected
       var isPackageAccess = true
       var annots: List[Tree] = Nil
-      def addAnnot(sym: Symbol) =
-        annots :+= New(TypeTree(sym.tpe), List(Nil))
+      def addAnnot(sym: Symbol) = annots :+= New(sym)
 
       while (true) {
         in.token match {

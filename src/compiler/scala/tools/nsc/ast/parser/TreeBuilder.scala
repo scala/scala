@@ -470,15 +470,11 @@ abstract class TreeBuilder {
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean): Tree =
     makeVisitor(cases, checkExhaustive, "x$")
 
-  private def makeUnchecked(expr: Tree): Tree = atPos(expr.pos) {
-    Annotated(New(scalaDot(definitions.UncheckedClass.name), List(Nil)), expr)
-  }
-
   /** Create visitor <x => x match cases> */
   def makeVisitor(cases: List[CaseDef], checkExhaustive: Boolean, prefix: String): Tree = {
-    val x = freshTermName(prefix)
-    val id = Ident(x)
-    val sel = if (checkExhaustive) id else makeUnchecked(id)
+    val x   = freshTermName(prefix)
+    val id  = Ident(x)
+    val sel = if (checkExhaustive) id else gen.mkUnchecked(id)
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
 
@@ -563,7 +559,7 @@ abstract class TreeBuilder {
       val vars = getVariables(pat1)
       val matchExpr = atPos((pat1.pos union rhs.pos).makeTransparent) {
         Match(
-          makeUnchecked(rhs),
+          gen.mkUnchecked(rhs),
           List(
             atPos(pat1.pos) {
               CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident, true))

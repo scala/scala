@@ -253,10 +253,10 @@ trait TreeDSL {
     }
 
     /** Top level accessible. */
-    def MATCHERROR(arg: Tree) = Throw(New(TypeTree(MatchErrorClass.tpe), List(List(arg))))
+    def MATCHERROR(arg: Tree) = Throw(New(MatchErrorClass, arg))
     /** !!! should generalize null guard from match error here. */
-    def THROW(sym: Symbol): Throw = Throw(New(TypeTree(sym.tpe), List(Nil)))
-    def THROW(sym: Symbol, msg: Tree): Throw = Throw(New(TypeTree(sym.tpe), List(List(msg.TOSTRING()))))
+    def THROW(sym: Symbol): Throw            = Throw(New(sym))
+    def THROW(sym: Symbol, msg: Tree): Throw = Throw(New(sym, msg.TOSTRING()))
 
     def NEW(tpt: Tree, args: Tree*): Tree   = New(tpt, List(args.toList))
     def NEW(sym: Symbol, args: Tree*): Tree = New(sym, args: _*)

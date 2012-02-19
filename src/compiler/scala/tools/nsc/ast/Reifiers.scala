@@ -580,7 +580,7 @@ trait Reifiers { self: Global =>
             ann.assocs map { case (nme, arg) => AssignOrNamedArg(Ident(nme), toScalaAnnotation(arg)) }
           }
 
-          New(TypeTree(ann.atp), List(args))
+          New(ann.atp, args: _*)
         }
       }
 
