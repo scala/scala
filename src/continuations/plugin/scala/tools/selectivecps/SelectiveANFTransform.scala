@@ -325,7 +325,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         log("cps type error: " + expr)
         //println("cps type error: " + expr + "/" + expr.tpe + "/" + getAnswerTypeAnn(expr.tpe))
 
-        println(cpsR + "/" + spc + "/" + bot)
+        //println(cpsR + "/" + spc + "/" + bot)
 
         unit.error(tree.pos, "found cps expression in non-cps position")
       } else {
