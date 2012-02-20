@@ -1451,26 +1451,6 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
 
           transform(qual)
 
-      case Apply(Select(New(tpt), name), args)
-      if (tpt.tpe.typeSymbol == ArrayClass && args.length >= 2) =>
-        unit.deprecationWarning(tree.pos,
-          "new Array(...) with multiple dimensions has been deprecated; use Array.ofDim(...) instead")
-        val manif = {
-          var etpe = tpt.tpe
-          for (_ <- args) { etpe = etpe.typeArgs.headOption.getOrElse(NoType) }
-          if (etpe == NoType) {
-            unit.error(tree.pos, "too many dimensions for array creation")
-            Literal(Constant(null))
-          } else {
-            localTyper.getManifestTree(tree, etpe, false)
-          }
-        }
-        val newResult = localTyper.typedPos(tree.pos) {
-          new ApplyToImplicitArgs(gen.mkMethodCall(ArrayModule, nme.ofDim, args), List(manif))
-        }
-        currentApplication = tree
-        newResult
-
       case Apply(fn, args) =>
         checkSensible(tree.pos, fn, args)
         currentApplication = tree
