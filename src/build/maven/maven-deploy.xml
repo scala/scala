@@ -58,13 +58,6 @@
         <artifact:pom id="plugin-@{name}.pom" file="plugins/@{name}/@{name}-pom-fixed.xml" />
       </sequential>
     </macrodef>
-    <!-- Simply attaching documentation -->
-    <macrodef name="attach-doc">
-      <attribute name="name" />
-      <sequential>
-        <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
-      </sequential>
-    </macrodef>
   </target>
   <!-- macros for local deployment -->
   <target name="deploy.local.init" depends="init.maven">
@@ -80,6 +73,7 @@
           <artifact:pom refid="@{name}.pom" />
           <artifact:localRepository path="@{repository}" id="${repository.credentials.id}" />
           <artifact:attach type="jar" file="@{name}/@{name}-src.jar" classifier="sources" />
+          <artifact:attach type="jar" file="@{name}/@{name}-docs.jar" classifier="javadoc" />
           <extra-attachments />
         </artifact:install>
       </sequential>
@@ -95,6 +89,8 @@
           <make-pom-plugin name="@{name}" version="@{version}" />
           <artifact:install file="plugins/@{name}/@{name}.jar">
             <artifact:pom refid="plugin-@{name}.pom" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-src.jar" classifier="sources" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-docs.jar" classifier="javadoc" />
             <artifact:localRepository path="@{repository}" id="${repository.credentials.id}" />
             <extra-attachments />
           </artifact:install>
@@ -107,24 +103,14 @@
       <attribute name="repository" />
       <attribute name="version" />
       <sequential>
-        <deploy-local name="scala-library" version="@{version}" repository="@{repository}">
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-library/scala-library-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-local>
-      	<deploy-local name="jline" version="@{version}" repository="@{repository}"/>
+        <deploy-local name="scala-library" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-local-plugin name="continuations" version="@{version}" repository="@{repository}"/>
         <deploy-local name="scala-dbc" version="@{version}" repository="@{repository}" />
         <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
       	<deploy-local name="scalap" version="@{version}" repository="@{repository}"/>
       	<deploy-local name="scala-partest" version="@{version}" repository="@{repository}"/>
-        <deploy-local-plugin name="continuations" version="@{version}" repository="@{repository}"/>
-        <!-- scala swing api is included in main library api
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-local>
-        -->
+      	<deploy-local name="jline" version="@{version}" repository="@{repository}"/>
       </sequential>
     </macrodef>
   </target>
@@ -159,6 +145,8 @@
           <make-pom-plugin name="@{name}" version="@{version}" />
           <artifact:deploy file="plugins/@{name}/@{name}.jar" settingsFile="${settings.file}">
             <artifact:pom refid="plugin-@{name}.pom" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-src.jar" classifier="sources" />
+            <artifact:attach type="jar" file="plugins/@{name}/@{name}-docs.jar" classifier="javadoc" />
             <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
             <extra-attachments />
           </artifact:deploy>
@@ -182,12 +170,6 @@
       	<deploy-remote name="scalap" version="@{version}" repository="@{repository}"/>
       	<deploy-remote name="scala-partest" version="@{version}" repository="@{repository}"/>
         <deploy-remote-plugin name="continuations" version="@{version}" repository="@{repository}"/> 
-        <!-- scala swing api is included in main library api
-          <extra-attachments>
-            <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
-          </extra-attachments>
-        </deploy-remote>
-        -->
       </sequential>
     </macrodef>
 
