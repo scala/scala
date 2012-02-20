@@ -1,0 +1,7 @@
+t5358.scala:3: error: class C inherits conflicting members:
+  method hi in trait A of type => String  and
+  method hi in trait B of type => String
+(Note: this can be resolved by declaring an override in class C.)
+class C extends A with B
+      ^
+one error found

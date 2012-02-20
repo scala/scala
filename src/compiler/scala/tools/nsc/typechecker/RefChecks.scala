@@ -282,6 +282,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         def otherTp  = self.memberType(other)
         def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
         def isRootOrNone(sym: Symbol) = sym == RootClass || sym == NoSymbol
+        def isNeitherInClass = (member.owner != clazz) && (other.owner != clazz)
         def objectOverrideErrorMsg = (
           "overriding " + other.fullLocationString + " with " + member.fullLocationString + ":\n" +
           "an overriding object must conform to the overridden object's class bound" +
@@ -383,7 +384,14 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             overrideError("cannot override final member");
             // synthetic exclusion needed for (at least) default getters.
           } else if (!other.isDeferred && !member.isAnyOverride && !member.isSynthetic) {
-            overrideError("needs `override' modifier");
+              if (isNeitherInClass && !(other.owner isSubClass member.owner))
+                emitOverrideError(
+                  clazz + " inherits conflicting members:\n  "
+                    + infoStringWithLocation(other) + "  and\n  " + infoStringWithLocation(member)
+                    + "\n(Note: this can be resolved by declaring an override in " + clazz + ".)"
+                )
+              else
+                overrideError("needs `override' modifier")
           } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
             overrideError("needs `abstract override' modifiers")
           } else if (member.isAnyOverride && (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
