@@ -181,7 +181,8 @@
       <attribute name="pom" />
       <attribute name="repository" />
       <attribute name="jar" />
-      <element name="extra-args" optional="yes" />
+      <attribute name="srcjar" />
+      <attribute name="docjar" />
       <sequential>
         <artifact:mvn>
           <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
@@ -189,9 +190,10 @@
           <arg value="-DrepositoryId=${repository.credentials.id}" />
           <arg value="-DpomFile=@{pom}" />
           <arg value="-Dfile=@{jar}" />
+          <arg value="-Dsources=@{srcjar}" />
+          <arg value="-Djavadoc=@{docjar}" />
           <arg value="-Pgpg" />
           <arg value="-Dgpg.useagent=true" />
-          <extra-args/>
         </artifact:mvn>
       </sequential>
     </macrodef>
@@ -205,23 +207,9 @@
         <deploy-remote-signed-single
            pom="@{name}/@{name}-pom-fixed.xml"
            repository="@{repository}"
-           jar="/@{name}/@{name}.jar" />
-        <deploy-remote-signed-single 
-           pom="@{name}/@{name}-pom-fixed.xml"
-           repository="@{repository}"
-           jar="@{name}/@{name}-src.jar">
-          <extra-args>
-            <arg value="-Dclassifier=sources" />
-          </extra-args>
-        </deploy-remote-signed-single>
-        <deploy-remote-signed-single 
-           pom="@{name}/@{name}-pom-fixed.xml"
-           repository="@{repository}"
-           jar="@{name}/@{name}-docs.jar">
-          <extra-args>
-            <arg value="-Dclassifier=javadoc" />
-          </extra-args>
-        </deploy-remote-signed-single>
+           jar="@{name}/@{name}.jar"
+           srcjar="@{name}/@{name}-src.jar"
+           docjar="@{name}/@{name}-docs.jar" />
       </sequential>
     </macrodef>
     <macrodef name="deploy-remote-plugin-signed">
@@ -234,23 +222,9 @@
         <deploy-remote-signed-single
            pom="plugins/@{name}/@{name}-pom-fixed.xml"
            repository="@{repository}"
-           jar="plugins/@{name}/@{name}.jar" />
-        <deploy-remote-signed-single 
-           pom="plugins/@{name}/@{name}-pom-fixed.xml"
-           repository="@{repository}"
-           jar="plugins/@{name}/@{name}-src.jar">
-          <extra-args>
-            <arg value="-Dclassifier=sources" />
-          </extra-args>
-        </deploy-remote-signed-single>
-        <deploy-remote-signed-single 
-           pom="plugins/@{name}/@{name}-pom-fixed.xml"
-           repository="@{repository}"
-           jar="plugins/@{name}/@{name}-docs.jar">
-          <extra-args>
-            <arg value="-Dclassifier=javadoc" />
-          </extra-args>
-        </deploy-remote-signed-single>
+           jar="plugins/@{name}/@{name}.jar"
+           srcjar="plugins/@{name}/@{name}-src.jar"
+           docjar="plugins/@{name}/@{name}-docs.jar" />
       </sequential>
     </macrodef>
     <macrodef name="deploy-remote-signed-all">
