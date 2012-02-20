@@ -1,6 +1,13 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2012 LAMP/EPFL
+ * @author Martin odersky
+ */
 package scala.tools.nsc
 package transform
 
+/** This phase maps ErasedValueTypes to the underlying unboxed representation and
+ *  performs peephole optimizations.
+ */
 trait PostErasure extends InfoTransform with TypingTransformers {
 
   val global: Global
@@ -12,25 +19,25 @@ trait PostErasure extends InfoTransform with TypingTransformers {
   def newTransformer(unit: CompilationUnit): Transformer = new PostErasureTransformer(unit)
   override def changesBaseClasses = false
 
-  object elimErasedInline extends TypeMap {
+  object elimErasedValueType extends TypeMap {
     def apply(tp: Type) = tp match {
-      case ErasedInlineType(clazz) => erasure.underlyingOfValueClass(clazz)
+      case ErasedValueType(clazz) => erasure.underlyingOfValueClass(clazz)
       case _ => mapOver(tp)
     }
   }
 
-  def transformInfo(sym: Symbol, tp: Type) = elimErasedInline(tp)
+  def transformInfo(sym: Symbol, tp: Type) = elimErasedValueType(tp)
 
   class PostErasureTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
     override def transform(tree: Tree) =
-      super.transform(tree) setType elimErasedInline(tree.tpe) match {
+      super.transform(tree) setType elimErasedValueType(tree.tpe) match {
         case // new C(arg).underlying  ==>  arg
           Apply(sel @ Select(
             Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)),
             acc), List())
         if atPhase(currentRun.erasurePhase) {
-          tpt.tpe.typeSymbol.isInlineClass &&
+          tpt.tpe.typeSymbol.isDerivedValueClass &&
           sel.symbol == tpt.tpe.typeSymbol.firstParamAccessor
         } =>
           if (settings.debug.value) log("Removing "+tree+" -> "+arg)
@@ -41,7 +48,7 @@ trait PostErasure extends InfoTransform with TypingTransformers {
             cmp),
             List(Apply(Select(New(tpt2), nme.CONSTRUCTOR), List(arg2))))
         if atPhase(currentRun.erasurePhase) {
-          tpt1.tpe.typeSymbol.isInlineClass &&
+          tpt1.tpe.typeSymbol.isDerivedValueClass &&
           (cmp == nme.EQ || cmp == nme.NE) &&
           tpt2.tpe.typeSymbol == tpt1.tpe.typeSymbol
         } =>

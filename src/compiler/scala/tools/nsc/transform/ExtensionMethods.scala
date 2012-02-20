@@ -1,9 +1,7 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2011 LAMP/EPFL
- * @author Gilles Dubochet
  * @author Martin Odersky
  */
-
 package scala.tools.nsc
 package transform
 
@@ -16,7 +14,8 @@ import scala.runtime.ScalaRunTime.{ isAnyVal, isTuple }
 import sun.tools.tree.OrExpression
 
 /**
- * Perform Step 1 in the inline classes SIP
+ * Perform Step 1 in the inline classes SIP: Creates extension methods for all
+ * methods in a value class, except parameter or super accessors, or constructors.
  *
  *  @author Martin Odersky
  *  @version 2.10
@@ -101,7 +100,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     override def transform(tree: Tree): Tree = {
       tree match {
         case Template(_, _, _) =>
-          if (currentOwner.isInlineClass) {
+          if (currentOwner.isDerivedValueClass) {
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             super.transform(tree)
           }
@@ -115,7 +114,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           companion.info.decls.enter(extensionMeth)
           val newInfo = extensionMethInfo(extensionMeth, origMeth.info, currentOwner)
           extensionMeth setInfo newInfo
-          log("Inline class %s spawns extension method.\n  Old: %s\n  New: %s".format(
+          log("Value class %s spawns extension method.\n  Old: %s\n  New: %s".format(
             currentOwner,
             origMeth.defString,
             extensionMeth.defString)) // extensionMeth.defStringSeenAs(origInfo

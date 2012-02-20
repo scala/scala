@@ -1263,7 +1263,7 @@ trait Namers extends MethodSynthesis {
           val clazz = tree.symbol
           val result = createNamer(tree).classSig(tparams, impl)
           clazz setInfo result
-          if (clazz.isInlineClass) {
+          if (clazz.isDerivedValueClass) {
             clazz setFlag FINAL
             ensureCompanionObject(cdef)
           }

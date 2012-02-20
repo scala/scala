@@ -1193,7 +1193,7 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       }
     }
 
-    private def validateInlineClass(clazz: Symbol, body: List[Tree]) = {
+    private def validateDerivedValueClass(clazz: Symbol, body: List[Tree]) = {
       if (clazz.isTrait)
         unit.error(clazz.pos, "Only classes (not traits) are allowed to extend AnyVal")
       if (!clazz.isStatic)
@@ -1213,7 +1213,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
                 if (stat.symbol hasFlag PARAMACCESSOR) "Illegal parameter for value class"
                 else "This statement is not allowed in value class: "+stat)
         case x =>
-          unit.error(clazz.pos, "Value class needs to have exactly one public val parameter")
+          println(clazz.info.decls.toList)
+          unit.error(clazz.pos, "Value class needs to have exactly one public val parameter, found: "+x.mkString(", "))
       }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
@@ -1573,8 +1574,8 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
 
       val body1 = typedStats(body, templ.symbol)
 
-      if (clazz.isInlineClass)
-        validateInlineClass(clazz, body1)
+      if (clazz.isDerivedValueClass)
+        validateDerivedValueClass(clazz, body1)
 
       treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe
     }

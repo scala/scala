@@ -159,7 +159,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
       val pairwise  = accessors map (acc => fn(Select(This(clazz), acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc)))
       val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(This(clazz)))
-      val tests     = if (clazz.isInlineClass || clazz.isFinal && syntheticCanEqual) pairwise else pairwise :+ canEq
+      val tests     = if (clazz.isDerivedValueClass || clazz.isFinal && syntheticCanEqual) pairwise else pairwise :+ canEq
 
       thatTest(eqmeth) AND Block(
         ValDef(otherSym, thatCast(eqmeth)),
@@ -192,14 +192,14 @@ trait SyntheticMethods extends ast.TreeDSL {
      *     val x$1 = that.asInstanceOf[this.C]
      *     (this.underlying == that.underlying
      */
-    def equalsInlineClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
+    def equalsDerivedValueClassMethod: Tree = createMethod(nme.equals_, List(AnyClass.tpe), BooleanClass.tpe) { m =>
       equalsCore(m, List(clazz.firstParamAccessor))
     }
 
     /** The hashcode method for value classes
      * def hashCode(): Int = this.underlying.hashCode
      */
-    def hashCodeInlineClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
+    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntClass.tpe) { m =>
       Select(
         Select(This(clazz), clazz.firstParamAccessor),
         nme.hashCode_)
@@ -240,8 +240,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     )
 
     def inlineClassMethods = List(
-      Any_hashCode -> (() => hashCodeInlineClassMethod),
-      Any_equals -> (() => equalsInlineClassMethod)
+      Any_hashCode -> (() => hashCodeDerivedValueClassMethod),
+      Any_equals -> (() => equalsDerivedValueClassMethod)
     )
 
     /** If you serialize a singleton and then deserialize it twice,
@@ -258,7 +258,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def synthesize(): List[Tree] = {
       val methods = (
-        if (clazz.isInlineClass) inlineClassMethods
+        if (clazz.isDerivedValueClass) inlineClassMethods
         else if (!clazz.isCase) Nil
         else if (clazz.isModuleClass) caseObjectMethods
         else caseClassMethods
