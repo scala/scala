@@ -1510,20 +1510,33 @@ LIBRARIES (MSIL, FJBG maybe later)
 DOCUMENTATION
 ============================================================================ -->
   
-  <target name="docs.start" depends="pack.done"/>
+  <target name="docs.start" depends="pack.done">
+    <macrodef name="doc-uptodate-check">
+      <attribute name="name" />
+      <attribute name="srcdir" />
+      <element name="source-includes" optional="yes" />
+      <sequential>
+        <uptodate property="docs.@{name}.available" targetfile="${build-docs.dir}/@{name}.complete">
+          <srcfiles dir="@{srcdir}">
+            <source-includes/>
+          </srcfiles>
+        </uptodate>
+      </sequential>
+    </macrodef>
+  </target>
   
   <target name="docs.pre-lib" depends="docs.start">
-    <uptodate property="docs.lib.available" targetfile="${build-docs.dir}/library.complete">
-      <srcfiles dir="${src.dir}">
+    <doc-uptodate-check name="library" srcdir="${src.dir}">
+      <source-includes>
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
         <include name="swing/**"/>
-      </srcfiles>
-    </uptodate>
+      </source-includes>
+    </doc-uptodate-check>
   </target>
 
-  <target name="docs.lib" depends="docs.pre-lib" unless="docs.lib.available">
+  <target name="docs.lib" depends="docs.pre-lib" unless="docs.library.available">
     <stopwatch name="docs.lib.timer"/>
     <mkdir dir="${build-docs.dir}/library"/>
     <scaladoc
@@ -1558,12 +1571,10 @@ DOCUMENTATION
   </target>
 
   <target name="docs.pre-man" depends="docs.lib">
-    <uptodate property="docs.man.available" targetfile="${build-docs.dir}/manual.complete">
-      <srcfiles dir="${src.dir}/manual"/>
-    </uptodate>
+    <doc-uptodate-check name="manual" srcdir="${src.dir}/manual"/>
   </target>
 
-  <target name="docs.manmaker" depends="docs.pre-man" unless="docs.man.available">
+  <target name="docs.manmaker" depends="docs.pre-man" unless="docs.manual.available">
     <mkdir dir="${build.dir}/manmaker/classes"/>
     <scalac
       destdir="${build.dir}/manmaker/classes"
@@ -1577,7 +1588,7 @@ DOCUMENTATION
     </path>
   </target>
 
-  <target name="docs.man" depends="docs.manmaker" unless="docs.man.available">
+  <target name="docs.man" depends="docs.manmaker" unless="docs.manual.available">
     <mkdir dir="${build-docs.dir}/manual/man/man1"/>
     <mkdir dir="${build-docs.dir}/manual/html"/>
     <mkdir dir="${build-docs.dir}/manual/genman/man1"/>
@@ -1604,12 +1615,10 @@ DOCUMENTATION
   </target>
 
   <target name="docs.pre-comp" depends="docs.man">
-    <uptodate property="docs.comp.available" targetfile="${build-docs.dir}/compiler.complete">
-      <srcfiles dir="${src.dir}/compiler"/>
-    </uptodate>
+    <doc-uptodate-check name="compiler" srcdir="${src.dir}/compiler"/>
   </target>
 
-  <target name="docs.comp" depends="docs.pre-comp" unless="docs.comp.available">
+  <target name="docs.comp" depends="docs.pre-comp" unless="docs.compiler.available">
     <stopwatch name="docs.comp.timer"/>
     <mkdir dir="${build-docs.dir}/compiler"/>
     <scaladoc
@@ -1620,15 +1629,103 @@ DOCUMENTATION
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler"
-      docRootContent="${src.dir}/compiler/rootdoc.txt"> 
-      addparams="${scalac.args.all}"
+      docRootContent="${src.dir}/compiler/rootdoc.txt"
+      addparams="${scalac.args.all}"> 
       <include name="**/*.scala"/>
     </scaladoc>
     <touch file="${build-docs.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="docs.comp.timer" action="total"/>
   </target>
 
+  <target name="docs.pre-jline" depends="docs.start">
+    <doc-uptodate-check name="jline" srcdir="${src.dir}/jline/src/main/java" />
+  </target>
+
+  <target name="docs.jline" depends="docs.pre-jline" unless="docs.jline.available">
+    <stopwatch name="docs.jline.timer"/>
+    <mkdir dir="${build-docs.dir}/jline"/>
+    <scaladoc
+      destdir="${build-docs.dir}/jline"
+      doctitle="Scala JLine"
+      docversion="${version.number}"
+      sourcepath="${src.dir}"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/jline/src/main/java"
+      addparams="${scalac.args.all}"> 
+      <include name="**/*.scala"/>
+      <include name="**/*.java"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/jline.complete" verbose="no"/>
+    <stopwatch name="docs.jline.timer" action="total"/>
+  </target>
+
+  <target name="docs.pre-scalap" depends="docs.start">
+    <doc-uptodate-check name="scalap" srcdir="${src.dir}/scalap" />
+  </target>
+
+  <target name="docs.scalap" depends="docs.pre-scalap" unless="docs.scalap.available">
+    <stopwatch name="docs.scalap.timer"/>
+    <mkdir dir="${build-docs.dir}/scalap"/>
+    <scaladoc
+      destdir="${build-docs.dir}/scalap"
+      doctitle="Scalap"
+      docversion="${version.number}"
+      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      sourcepath="${src.dir}"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/scalap"
+      addparams="${scalac.args.all}"> 
+      <include name="**/*.scala"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/scalap.complete" verbose="no"/>
+    <stopwatch name="docs.scalap.timer" action="total"/>
+  </target>
+
+  <target name="docs.pre-partest" depends="docs.start">
+    <doc-uptodate-check name="partest" srcdir="${src.dir}/partest" />
+  </target>
+
+  <target name="docs.partest" depends="docs.pre-partest" unless="docs.partest.available">
+    <stopwatch name="docs.partest.timer"/>
+    <mkdir dir="${build-docs.dir}/scala-partest"/>
+    <scaladoc
+      destdir="${build-docs.dir}/scala-partest"
+      doctitle="Scala Parallel Testing Framework"
+      docversion="${version.number}"
+      sourcepath="${src.dir}"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/partest"
+      addparams="${scalac.args.all}"> 
+      <include name="**/*.scala"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/partest.complete" verbose="no"/>
+    <stopwatch name="docs.partest.timer" action="total"/>
+  </target>
+
+  <target name="docs.pre-continuations-plugin" depends="docs.start">
+    <doc-uptodate-check name="continuations-plugin" srcdir="${src.dir}/continuations/plugin" />
+  </target>
+
+  <target name="docs.continuations-plugin" depends="docs.pre-continuations-plugin" unless="docs.continuations-plugin.available">
+    <stopwatch name="docs.continuations-plugin.timer"/>
+    <mkdir dir="${build-docs.dir}/continuations-plugin"/>
+    <scaladoc
+      destdir="${build-docs.dir}/continuations-plugin"
+      doctitle="Delimited Continuations Compiler Plugin"
+      docversion="${version.number}"
+      sourcepath="${src.dir}"
+      classpathref="pack.classpath"
+      srcdir="${src.dir}/continuations/plugin"
+      addparams="${scalac.args.all}"> 
+      <include name="**/*.scala"/>
+    </scaladoc>
+    <touch file="${build-docs.dir}/continuations-plugin.complete" verbose="no"/>
+    <stopwatch name="docs.continuations-plugin.timer" action="total"/>
+  </target>
+
   <target name="docs.done" depends="docs.man"/>
+
+  <target name="docs.all" depends="docs.jline, docs.comp, docs.man, docs.lib, docs.scalap, docs.partest, docs.continuations-plugin"/>
 
   <target name="docs.clean">
     <delete dir="${build-docs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
@@ -1921,8 +2018,12 @@ STABLE REFERENCE (STARR)
 FORWARDED TARGETS FOR PACKAGING
 ============================================================================ -->
   
-  <target name="distpack" depends="dist.done">
+  <target name="distpack" depends="dist.done, docs.all">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+
+  <target name="distpack-maven" depends="dist.done, docs.all">
+    <ant antfile="${src.dir}/build/pack.xml" target="pack-maven.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
   <target name="distpack-opt"
@@ -1932,6 +2033,13 @@ FORWARDED TARGETS FOR PACKAGING
     </antcall>
   </target>
   
+  <target name="distpack-maven-opt"
+    description="Builds an optimised maven distribution.">
+    <antcall target="distpack-maven">
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
+
   <!-- Used by the scala-installer script -->
   <target name="allallclean" depends="all.clean"/>
 

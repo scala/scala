@@ -6,6 +6,8 @@
 	<artifactId>scalap</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
+  <name>Scalap</name>
+  <description>bytecode analysis tool</description>
 	<url>http://www.scala-lang.org/</url>
 	<inceptionYear>2002</inceptionYear>
 	<organization>
@@ -48,4 +50,14 @@
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
+  <developers>
+    <developer>
+      <id>lamp</id>
+      <name>EPFL LAMP</name>
+    </developer>
+    <developer>
+      <id>Typesafe</id>
+      <name>Typesafe, Inc.</name>
+    </developer>
+  </developers>
 </project>
