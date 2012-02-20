@@ -625,7 +625,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def ClassType(arg: Type) =
       if (phase.erasedTypes || forMSIL) ClassClass.tpe
       else appliedType(ClassClass.typeConstructor, List(arg))
-    
+
     def vmClassType(arg: Type): Type = ClassType(arg)
     def vmSignature(sym: Symbol, info: Type): String = signature(info)    // !!!
 
@@ -721,7 +721,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     /** Remove all but one reference to class Object from a list of parents. */
     def removeRedundantObjects(tps: List[Type]): List[Type] = tps match {
       case Nil      => Nil
-      case x :: xs  => 
+      case x :: xs  =>
         if (x.typeSymbol == ObjectClass)
           x :: xs.filterNot(_.typeSymbol == ObjectClass)
         else
@@ -954,7 +954,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     /** Is the symbol that of a parent which is added during parsing? */
     lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
 
-    private lazy val scalaValueClassesSet = ScalaValueClasses.toSet
+    lazy val scalaValueClassesSet = ScalaValueClasses.toSet
     private lazy val boxedValueClassesSet = boxedClass.values.toSet + BoxedUnitClass
 
     /** Is symbol a value class? */

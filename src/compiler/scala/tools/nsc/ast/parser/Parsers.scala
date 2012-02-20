@@ -249,6 +249,8 @@ self =>
   final val InBlock = 1
   final val InTemplate = 2
 
+  lazy val ScalaValueClassNames: Set[Name] = definitions.scalaValueClassesSet map (_.name)
+
   import nme.raw
 
   abstract class Parser extends ParserCommon {
@@ -2750,7 +2752,7 @@ self =>
       atPos(tstart0) {
         // [Martin to Paul: This needs to be refined. We should only include the 9 primitive classes,
         // not any other value classes that happen to be defined in the Scala package.
-        if (inScalaPackage && (name == tpnme.AnyVal || (parents0 exists isReferenceToAnyVal)))
+        if (inScalaRootPackage && (name == tpnme.AnyVal || (ScalaValueClassNames contains name)))
           Template(parents0, self, anyvalConstructor :: body)
         else
           Template(anyrefParents, self, constrMods, vparamss, argss, body, o2p(tstart))
