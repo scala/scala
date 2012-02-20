@@ -6,6 +6,8 @@
 	<artifactId>scala-compiler</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
+  <name>Scala Compiler</name>
+  <description>Compiler for the Scala Programming Language</description>
 	<url>http://www.scala-lang.org/</url>
 	<inceptionYear>2002</inceptionYear>
 	<organization>
@@ -54,4 +56,14 @@
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
+  <developers>
+    <developer>
+      <id>lamp</id>
+      <name>EPFL LAMP</name>
+    </developer>
+    <developer>
+      <id>Typesafe</id>
+      <name>Typesafe, Inc.</name>
+    </developer>
+  </developers>
 </project>

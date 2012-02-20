@@ -6,6 +6,8 @@
 	<artifactId>jline</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
+  <name>jline</name>
+  <description>Like readline, but better</description>
 	<url>http://www.scala-lang.org/</url>
 	<inceptionYear>2011</inceptionYear>
 	<organization>
@@ -54,4 +56,14 @@
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
+  <developers>
+    <developer>
+      <id>lamp</id>
+      <name>EPFL LAMP</name>
+    </developer>
+    <developer>
+      <id>Typesafe</id>
+      <name>Typesafe, Inc.</name>
+    </developer>
+  </developers>
 </project>
