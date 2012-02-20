@@ -6,6 +6,8 @@
 	<artifactId>continuations</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
+  <name>Scala Continuations Plugin</name>
+  <description>Delimited continuations compilation for Scala</description>
 	<url>http://www.scala-lang.org/</url>
 	<inceptionYear>2010</inceptionYear>
 	<organization>
@@ -48,4 +50,14 @@
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
+  <developers>
+    <developer>
+      <id>lamp</id>
+      <name>EPFL LAMP</name>
+    </developer>
+    <developer>
+      <id>Typesafe</id>
+      <name>Typesafe, Inc.</name>
+    </developer>
+  </developers>
 </project>
