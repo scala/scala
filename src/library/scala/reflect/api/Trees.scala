@@ -74,17 +74,24 @@ trait Trees { self: Universe =>
     val id = nodeCount
     nodeCount += 1
 
-    private[this] var rawpos: Position = NoPosition
-
     /** Prefix under which to print this tree type.  Defaults to product
      *  prefix (e.g. DefTree) but because that is used in reification
      *  it cannot be altered without breaking reflection.
      */
     def printingPrefix = productPrefix
 
-    def pos = rawpos
-    def pos_=(pos: Position) = rawpos = pos
-    def setPos(pos: Position): this.type = { rawpos = pos; this }
+    def pos: Position = annotationToPosition(rawannot)
+    def pos_=(pos: Position): Unit = annotation = pos
+    def setPos(newpos: Position): this.type = { pos = newpos; this }
+
+    private[this] var rawannot: TreeAnnotation = NoTreeAnnotation
+    def annotation: TreeAnnotation = rawannot
+    def annotation_=(annot: TreeAnnotation): Unit = {
+      _checkSetAnnotation(this, annot)
+      rawannot = annot
+    }
+
+    def setAnnotation(annot: TreeAnnotation): this.type = { annotation = annot; this }
 
     private[this] var rawtpe: Type = _
 
@@ -223,7 +230,7 @@ trait Trees { self: Universe =>
       duplicateTree(this).asInstanceOf[this.type]
 
     private[scala] def copyAttrs(tree: Tree): this.type = {
-      pos = tree.pos
+      annotation = tree.annotation
       tpe = tree.tpe
       if (hasSymbol) symbol = tree.symbol
       this
