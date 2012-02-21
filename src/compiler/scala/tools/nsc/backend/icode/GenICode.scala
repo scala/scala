@@ -885,6 +885,7 @@ abstract class GenICode extends SubComponent  {
               ctx.bb.emit(CONSTANT(global.gen.mkConstantZero(expectedType.toType)), tree.pos)
               generatedType = expectedType
             }
+            else if (expectedType.isNothingType) unit.error(tree.pos, "Cannot elide where Nothing is required.")
             else {
               ctx.bb.emit(CONSTANT(Constant(null)), tree.pos)
               generatedType = NullReference
