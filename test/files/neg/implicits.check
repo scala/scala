@@ -8,4 +8,7 @@ implicits.scala:46: error: type mismatch;
  required: List[Mxml]
         children.toList.flatMap ( e => {
                                 ^
-two errors found
+implicits.scala:66: error: could not find implicit value for parameter x: Nothing
+  foo {
+      ^
+three errors found
