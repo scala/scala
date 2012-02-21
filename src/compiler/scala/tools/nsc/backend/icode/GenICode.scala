@@ -880,6 +880,20 @@ abstract class GenICode extends SubComponent  {
             // XXX settings.noassertions.value temporarily retained to avoid
             // breakage until a reasonable interface is settled upon.
             debuglog("Eliding call from " + tree.symbol.owner + " to " + sym + " based on its elision threshold of " + sym.elisionLevel.get)
+            val value = expectedType match {
+              case UNIT => ()
+              case BOOL => false
+              case BYTE => 0:Byte
+              case SHORT => 0:Short
+              case CHAR => '?'
+              case INT => 0
+              case LONG => 0L
+              case FLOAT => 0.0f
+              case DOUBLE => 0.0
+              case _ => null
+            }
+            ctx.bb.emit(CONSTANT(Constant(value)), tree.pos)
+            generatedType = if (expectedType.isInstanceOf[ValueTypeKind]) expectedType else NullReference
             ctx
           } else {  // normal method call
             debuglog("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + sym.isStaticMember);
