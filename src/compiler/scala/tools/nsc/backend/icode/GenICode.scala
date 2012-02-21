@@ -879,23 +879,19 @@ abstract class GenICode extends SubComponent  {
           } else if (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions.value)) {
             // XXX settings.noassertions.value temporarily retained to avoid
             // breakage until a reasonable interface is settled upon.
-            debuglog("Eliding call from " + tree.symbol.owner + " to " + sym + " based on its elision threshold of " + sym.elisionLevel.get)
-            val value = expectedType match {
-              case UNIT => ()
-              case BOOL => false
-              case BYTE => 0:Byte
-              case SHORT => 0:Short
-              case CHAR => '?'
-              case INT => 0
-              case LONG => 0L
-              case FLOAT => 0.0f
-              case DOUBLE => 0.0
-              case _ => null
+            debuglog("Eliding call from " + tree.symbol.owner + " to " + sym + 
+              " based on its elision threshold of " + sym.elisionLevel.get)
+            if (expectedType.isValueType) {
+              ctx.bb.emit(CONSTANT(global.gen.mkConstantZero(expectedType.toType)), tree.pos)
+              generatedType = expectedType
             }
-            ctx.bb.emit(CONSTANT(Constant(value)), tree.pos)
-            generatedType = if (expectedType.isInstanceOf[ValueTypeKind]) expectedType else NullReference
+            else {
+              ctx.bb.emit(CONSTANT(Constant(null)), tree.pos)
+              generatedType = NullReference
+            }
             ctx
-          } else {  // normal method call
+          }
+          else {  // normal method call
             debuglog("Gen CALL_METHOD with sym: " + sym + " isStaticSymbol: " + sym.isStaticMember);
             val invokeStyle =
               if (sym.isStaticMember)

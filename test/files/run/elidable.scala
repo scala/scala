@@ -59,7 +59,7 @@ object Test {
     println(f6())
     println(f7())
     println(f8())
-    println(f9())
+    println(f9().toInt)
     println(fa())
     println(fb())
     println(fc())
