@@ -56,3 +56,19 @@ class Mxml {
     }
 
 } 
+
+// SI-5316
+class Test3 {
+  def foo(p: => Any)(implicit x: Nothing): Unit = ()
+
+  object X
+
+  foo {
+    val a = 0
+
+    {
+      import X._
+      a
+    }
+  }
+}
