@@ -214,7 +214,7 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  final class Ensuring[A](val __resultOfEnsuring: A) extends AnyRef {
+  final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
     // `__resultOfEnsuring` must be a public val to allow inlining.
     // See comments in ArrowAssoc for more.
     @deprecated("Use __resultOfEnsuring instead", "2.10.0")
@@ -246,7 +246,7 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyRef {
+  final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
     // `__leftOfArrow` must be a public val to allow inlining. The val
     // used to be called `x`, but now goes by `__leftOfArrow`, as that
     // reduces the chances of a user's writing `foo.__leftOfArrow` and
