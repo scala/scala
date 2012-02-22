@@ -348,10 +348,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def toString = substituterString("Symbol", "Tree", from, to)
   }
 
+  /** Substitute clazz.this with `to`. `to` must be an attributed tree. 
+   */
   class ThisSubstituter(clazz: Symbol, to: => Tree) extends Transformer {
-    override def transform(tree: Tree) = tree match {
-      case This(_) if tree.symbol == clazz => to
-      case _ => super.transform(tree)
+    val newtpe = to.tpe
+    override def transform(tree: Tree) = {
+      if (tree.tpe ne null) tree.tpe = tree.tpe.substThis(clazz, newtpe)
+      tree match {
+        case This(_) if tree.symbol == clazz => to
+        case _ => super.transform(tree)
+      }
     }
   }
 
