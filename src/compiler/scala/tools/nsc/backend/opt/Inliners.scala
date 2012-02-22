@@ -550,9 +550,9 @@ abstract class Inliners extends SubComponent {
         val activeHandlers = caller.handlers filter (_ covered block)
 
         /* Map 'original' blocks to the ones inlined in the caller. */
-        val inlinedBlock: mutable.Map[BasicBlock, BasicBlock] = new mutable.HashMap
+        val inlinedBlock = mutable.Map[BasicBlock, BasicBlock]()
 
-        val varsInScope: mutable.Set[Local] = mutable.HashSet() ++= block.varsInScope
+        val varsInScope = mutable.HashSet[Local]() ++= block.varsInScope
 
         /** Side effects varsInScope when it sees SCOPE_ENTERs. */
         def instrBeforeFilter(i: Instruction): Boolean = {

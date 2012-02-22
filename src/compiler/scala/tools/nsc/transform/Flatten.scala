@@ -102,7 +102,7 @@ abstract class Flatten extends InfoTransform {
 
   class Flattener extends Transformer {
     /** Buffers for lifted out classes */
-    private val liftedDefs = new mutable.HashMap[Symbol, ListBuffer[Tree]]
+    private val liftedDefs = perRunCaches.newMap[Symbol, ListBuffer[Tree]]()
 
     override def transform(tree: Tree): Tree = {
       tree match {

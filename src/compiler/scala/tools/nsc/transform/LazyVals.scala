@@ -50,9 +50,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
    */
   class LazyValues(unit: CompilationUnit) extends TypingTransformer(unit) {
     /** map from method symbols to the number of lazy values it defines. */
-    private val lazyVals = new mutable.HashMap[Symbol, Int] {
-      override def default(meth: Symbol) = 0
-    }
+    private val lazyVals = perRunCaches.newMap[Symbol, Int]() withDefaultValue 0
 
     import symtab.Flags._
     import lazyVals._
@@ -233,9 +231,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     private def mkSetFlag(bmp: Symbol, mask: Tree, bmpRef: Tree): Tree =
       bmpRef === (bmpRef INT_| mask)
 
-    val bitmaps = new mutable.HashMap[Symbol, List[Symbol]] {
-      override def default(meth: Symbol) = Nil
-    }
+    val bitmaps = mutable.Map[Symbol, List[Symbol]]() withDefaultValue Nil
 
     /** Return the symbol corresponding of the right bitmap int inside meth,
      *  given offset.

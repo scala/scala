@@ -129,7 +129,7 @@ abstract class UnCurry extends InfoTransform
       appliedType(NonLocalReturnControlClass.typeConstructor, List(argtype))
 
     /** A hashmap from method symbols to non-local return keys */
-    private val nonLocalReturnKeys = new mutable.HashMap[Symbol, Symbol]
+    private val nonLocalReturnKeys = perRunCaches.newMap[Symbol, Symbol]()
 
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =

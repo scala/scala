@@ -79,13 +79,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   val specializedClass: mutable.Map[(Symbol, TypeEnv), Symbol] = new mutable.LinkedHashMap
 
   /** Map a method symbol to a list of its specialized overloads in the same class. */
-  private val overloads: mutable.Map[Symbol, List[Overload]] = mutable.HashMap[Symbol, List[Overload]]() withDefaultValue Nil
+  private val overloads = perRunCaches.newMap[Symbol, List[Overload]]() withDefaultValue Nil
 
   /** Map a symbol to additional information on specialization. */
-  private val info: mutable.Map[Symbol, SpecializedInfo] = perRunCaches.newMap[Symbol, SpecializedInfo]()
+  private val info = perRunCaches.newMap[Symbol, SpecializedInfo]()
 
   /** Map class symbols to the type environments where they were created. */
-  private val typeEnv = mutable.HashMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
+  private val typeEnv = perRunCaches.newMap[Symbol, TypeEnv]() withDefaultValue emptyEnv
 
   //    Key: a specialized class or method
   //  Value: a map from tparams in the original class to tparams in the specialized class.
@@ -97,7 +97,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private val wasSpecializedForTypeVars = perRunCaches.newMap[Symbol, Set[Symbol]]() withDefaultValue Set()
 
   /** Concrete methods that use a specialized type, or override such methods. */
-  private val concreteSpecMethods = new mutable.HashSet[Symbol]()
+  private val concreteSpecMethods = perRunCaches.newSet[Symbol]()
 
   private def isSpecialized(sym: Symbol)          = sym hasAnnotation SpecializedClass
   private def hasSpecializedFlag(sym: Symbol)     = sym hasFlag SPECIALIZED
@@ -1223,10 +1223,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   def specializeCalls(unit: CompilationUnit) = new TypingTransformer(unit) {
     /** Map a specializable method to it's rhs, when not deferred. */
-    val body: mutable.Map[Symbol, Tree] = new mutable.HashMap
+    val body = perRunCaches.newMap[Symbol, Tree]()
 
     /** Map a specializable method to its value parameter symbols. */
-    val parameters = mutable.HashMap[Symbol, List[Symbol]]()
+    val parameters = perRunCaches.newMap[Symbol, List[Symbol]]()
 
     /** Collect method bodies that are concrete specialized methods.
      */
