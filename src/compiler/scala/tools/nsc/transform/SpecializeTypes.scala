@@ -1719,7 +1719,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *        that here are not garbage collected at the end of a compiler run!
    */
   def addConcreteSpecMethod(m: Symbol) {
-    if (currentRun.compiles(m)) concreteSpecMethods += m
+    if (!forInteractive && currentRun.compiles(m)) concreteSpecMethods += m
   }
 
   private def makeArguments(fun: Symbol, vparams: List[Symbol]): List[Tree] = (
