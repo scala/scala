@@ -103,7 +103,7 @@ trait Namers extends MethodSynthesis {
     def enclosingNamerWithScope(scope: Scope) = {
       var cx = context
       while (cx != NoContext && cx.scope != scope) cx = cx.outer
-      if (cx == context) thisNamer
+      if (cx == NoContext || cx == context) thisNamer
       else newNamer(cx)
     }
 

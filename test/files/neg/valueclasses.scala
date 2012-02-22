@@ -24,7 +24,7 @@ class V9(val x: Int) extends AnyVal {
   val y = x    // fail
 }
 
-class V10[T](val x: T)  extends AnyVal // fail
+class V10[T](val x: T)  extends AnyVal // ok
 class V11[T](val x: List[T]) extends AnyVal // ok
 class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
 

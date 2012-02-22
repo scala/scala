@@ -34,13 +34,10 @@ class V8(var x: Int) extends AnyVal // fail
 valueclasses.scala:24: error: This statement is not allowed in value class: private[this] val y: Int = V9.this.x
   val y = x    // fail
       ^
-valueclasses.scala:27: error: Type of parameter of value class may not be a type variable
-class V10[T](val x: T)  extends AnyVal // fail
-                 ^
 valueclasses.scala:29: error: type parameter of value class may not be specialized
 class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
                        ^
 valueclasses.scala:31: error: Value class needs to have exactly one public val parameter
 class V13(x: Int) extends AnyVal // fail
       ^
-15 errors found
+14 errors found
