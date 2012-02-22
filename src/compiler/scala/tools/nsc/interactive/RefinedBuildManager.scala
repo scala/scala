@@ -22,6 +22,7 @@ import scala.tools.util.PathResolver
  *  changes require a compilation. It repeats this process until
  *  a fixpoint is reached.
  */
+@deprecated("Use sbt incremental compilation mechanism", "2.10.0")
 class RefinedBuildManager(val settings: Settings) extends Changes with BuildManager {
 
   class BuilderGlobal(settings: Settings, reporter : Reporter) extends scala.tools.nsc.Global(settings, reporter)  {
