@@ -40,7 +40,7 @@ import StringLike._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-trait StringLike[+Repr] extends collection.IndexedSeqOptimized[Char, Repr] with Ordered[String] {
+trait StringLike[+Repr] extends Any with collection.IndexedSeqOptimized[Char, Repr] with Ordered[String] {
 self =>
 
   /** Creates a string builder buffer as builder for this class */

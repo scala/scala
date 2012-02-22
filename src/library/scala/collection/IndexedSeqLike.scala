@@ -37,7 +37,7 @@ import scala.annotation.tailrec
  *  @define willNotTerminateInf
  *  @define mayNotTerminateInf
  */
-trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] {
+trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
   self =>
 
   def seq: IndexedSeq[A]
