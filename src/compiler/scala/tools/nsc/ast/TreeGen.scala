@@ -30,7 +30,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     else
       tree
   }
-  
+
   /** Builds a fully attributed wildcard import node.
    */
   def mkWildcardImport(pkg: Symbol): Import = {
@@ -98,7 +98,7 @@ abstract class TreeGen extends reflect.internal.TreeGen {
   def mkModuleVarDef(accessor: Symbol) = {
     val inClass    = accessor.owner.isClass
     val extraFlags = if (inClass) PrivateLocal | SYNTHETIC else 0
-    
+
     val mval = (
       accessor.owner.newVariable(nme.moduleVarName(accessor.name), accessor.pos.focus, MODULEVAR | extraFlags)
         setInfo accessor.tpe.finalResultType
@@ -188,6 +188,20 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     )
   }
 
+  /** Cast `tree` to type `pt` by creating
+   *  one of the calls of the form
+   *
+   *    x.asInstanceOf[`pt`]     up to phase uncurry
+   *    x.asInstanceOf[`pt`]()   if after uncurry but before erasure
+   *    x.$asInstanceOf[`pt`]()  if at or after erasure
+   */
+  def mkCast(tree: Tree, pt: Type): Tree = {
+    debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)
+    assert(!tree.tpe.isInstanceOf[MethodType], tree)
+    assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize))
+    atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = !phase.next.erasedTypes, wrapInApply = phase.id > currentRun.uncurryPhase.id))
+  }
+
   /** Generate a cast for tree Tree representing Array with
    *  elem type elemtp to expected type pt.
    */
@@ -196,6 +210,25 @@ abstract class TreeGen extends reflect.internal.TreeGen {
       mkCast(mkRuntimeCall(nme.toObjectArray, List(tree)), pt)
     else
       mkCast(tree, pt)
+
+  def mkZeroContravariantAfterTyper(tp: Type): Tree = {
+    // contravariant -- for replacing an argument in a method call
+    // must use subtyping, as otherwise we miss types like `Any with Int`
+    val tree =
+      if      (NullClass.tpe    <:< tp) Literal(Constant(null))
+      else if (UnitClass.tpe    <:< tp) Literal(Constant())
+      else if (BooleanClass.tpe <:< tp) Literal(Constant(false))
+      else if (FloatClass.tpe   <:< tp) Literal(Constant(0.0f))
+      else if (DoubleClass.tpe  <:< tp) Literal(Constant(0.0d))
+      else if (ByteClass.tpe    <:< tp) Literal(Constant(0.toByte))
+      else if (ShortClass.tpe   <:< tp) Literal(Constant(0.toShort))
+      else if (IntClass.tpe     <:< tp) Literal(Constant(0))
+      else if (LongClass.tpe    <:< tp) Literal(Constant(0L))
+      else if (CharClass.tpe    <:< tp) Literal(Constant(0.toChar))
+      else mkCast(Literal(Constant(null)), tp)
+
+    tree
+  }
 
   /** Translate names in Select/Ident nodes to type names.
    */

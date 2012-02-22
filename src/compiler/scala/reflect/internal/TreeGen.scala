@@ -148,22 +148,6 @@ abstract class TreeGen {
       None
   }
 
-  /** Cast `tree` to type `pt` */
-  def mkCast(tree: Tree, pt: Type): Tree = {
-    debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)
-    assert(!tree.tpe.isInstanceOf[MethodType], tree)
-    assert(!pt.typeSymbol.isPackageClass && !pt.typeSymbol.isPackageObjectClass, pt)
-    // called during (at least): typer, uncurry, explicitouter, cleanup.
-    // TODO: figure out the truth table for any/wrapInApply
-    // - the `any` flag seems to relate to erasure's adaptMember: "x.asInstanceOf[T] becomes x.$asInstanceOf[T]",
-    //   where asInstanceOf is Any_asInstanceOf and $asInstanceOf is Object_asInstanceOf
-    //   erasure will only unbox the value in a tree made by mkCast if `any && wrapInApply`
-    // - the `wrapInApply` flag need not be true if the tree will be adapted to have the empty argument list added before it gets to erasure
-    //   in fact, I think it should be false for trees that will be type checked during typer
-    assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize))
-    atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = false, wrapInApply = true))
-  }
-
   /** Builds a reference with stable type to given symbol */
   def mkAttributedStableRef(pre: Type, sym: Symbol): Tree =
     stabilize(mkAttributedRef(pre, sym))
@@ -263,25 +247,6 @@ abstract class TreeGen {
       case _            => Literal(Constant(null))
     }
     tree setType tp
-  }
-
-  def mkZeroContravariantAfterTyper(tp: Type): Tree = {
-    // contravariant -- for replacing an argument in a method call
-    // must use subtyping, as otherwise we miss types like `Any with Int`
-    val tree =
-      if      (NullClass.tpe    <:< tp) Literal(Constant(null))
-      else if (UnitClass.tpe    <:< tp) Literal(Constant())
-      else if (BooleanClass.tpe <:< tp) Literal(Constant(false))
-      else if (FloatClass.tpe   <:< tp) Literal(Constant(0.0f))
-      else if (DoubleClass.tpe  <:< tp) Literal(Constant(0.0d))
-      else if (ByteClass.tpe    <:< tp) Literal(Constant(0.toByte))
-      else if (ShortClass.tpe   <:< tp) Literal(Constant(0.toShort))
-      else if (IntClass.tpe     <:< tp) Literal(Constant(0))
-      else if (LongClass.tpe    <:< tp) Literal(Constant(0L))
-      else if (CharClass.tpe    <:< tp) Literal(Constant(0.toChar))
-      else mkCast(Literal(Constant(null)), tp)
-
-    tree
   }
 
   /** Builds a tuple */
