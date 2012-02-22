@@ -40,6 +40,12 @@ trait Trees extends reflect.internal.Trees { self: Global =>
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
        extends TermTree with RefTree
 
+  /** Derived value class injection (equivalent to: new C(arg) after easure); only used during erasure
+   *  The class C is stored as the symbol of the tree node.
+   */
+  case class InjectDerivedValue(arg: Tree)
+       extends SymTree
+
   /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends TypTree
 
@@ -159,6 +165,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       traverser.traverse(lhs); traverser.traverse(rhs)
     case SelectFromArray(qualifier, selector, erasure) =>
       traverser.traverse(qualifier)
+    case InjectDerivedValue(arg) =>
+      traverser.traverse(arg)
     case ReferenceToBoxed(idt) =>
       traverser.traverse(idt)
     case TypeTreeWithDeferredRefCheck() =>
@@ -170,6 +178,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def AssignOrNamedArg(tree: Tree, lhs: Tree, rhs: Tree): AssignOrNamedArg
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type): SelectFromArray
+    def InjectDerivedValue(tree: Tree, arg: Tree): InjectDerivedValue
     def ReferenceToBoxed(tree: Tree, idt: Ident): ReferenceToBoxed
     def TypeTreeWithDeferredRefCheck(tree: Tree): TypeTreeWithDeferredRefCheck
   }
@@ -184,6 +193,8 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       new AssignOrNamedArg(lhs, rhs).copyAttrs(tree)
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type) =
       new SelectFromArray(qualifier, selector, erasure).copyAttrs(tree)
+    def InjectDerivedValue(tree: Tree, arg: Tree) =
+      new InjectDerivedValue(arg)
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
@@ -206,6 +217,11 @@ trait Trees extends reflect.internal.Trees { self: Global =>
       case t @ SelectFromArray(qualifier0, selector0, _)
       if (qualifier0 == qualifier) && (selector0 == selector) => t
       case _ => this.treeCopy.SelectFromArray(tree, qualifier, selector, erasure)
+    }
+    def InjectDerivedValue(tree: Tree, arg: Tree) = tree match {
+      case t @ InjectDerivedValue(arg0)
+      if (arg0 == arg) => t
+      case _ => this.treeCopy.InjectDerivedValue(tree, arg)
     }
     def ReferenceToBoxed(tree: Tree, idt: Ident) = tree match {
       case t @ ReferenceToBoxed(idt0)
@@ -237,6 +253,9 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     case SelectFromArray(qualifier, selector, erasure) =>
       transformer.treeCopy.SelectFromArray(
         tree, transformer.transform(qualifier), selector, erasure)
+    case InjectDerivedValue(arg) =>
+      transformer.treeCopy.InjectDerivedValue(
+        tree, transformer.transform(arg))
     case ReferenceToBoxed(idt) =>
       transformer.treeCopy.ReferenceToBoxed(
         tree, transformer.transform(idt) match { case idt1: Ident => idt1 })
@@ -336,6 +355,7 @@ trait Trees extends reflect.internal.Trees { self: Global =>
    case AssignOrNamedArg(lhs, rhs) =>                              (eliminated by typer)
    case TypeTreeWithDeferredRefCheck() =>                          (created and eliminated by typer)
    case SelectFromArray(_, _, _) =>                                (created and eliminated by erasure)
+   case InjectDerivedValue(_) =>                                   (created and eliminated by erasure)
 
   */
 

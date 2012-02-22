@@ -410,12 +410,14 @@ abstract class Erasure extends AddInterfaces
   /** The modifier typer which retypes with erased types. */
   class Eraser(_context: Context) extends Typer(_context) {
 
-    private def isUnboxedType(tpe: Type) = tpe match {
-      case ErasedValueType(_) => true
-      case _ => isPrimitiveValueClass(tpe.typeSymbol)
-    }
+    private def isPrimitiveValueType(tpe: Type) = isPrimitiveValueClass(tpe.typeSymbol)
 
-    private def isUnboxedValueMember(sym: Symbol) =
+    private def isErasedValueType(tpe: Type) = tpe.isInstanceOf[ErasedValueType]
+
+    private def isDifferentErasedValueType(tpe: Type, other: Type) =
+      isErasedValueType(tpe) && (tpe ne other)
+
+    private def isPrimitiveValueMember(sym: Symbol) =
       sym != NoSymbol && isPrimitiveValueClass(sym.owner)
 
     private def box(tree: Tree, target: => String): Tree = {
@@ -534,14 +536,18 @@ abstract class Erasure extends AddInterfaces
         log("adapting " + tree + ":" + tree.tpe + " : " +  tree.tpe.parents + " to " + pt)//debug
       if (tree.tpe <:< pt)
         tree
-      else if (isUnboxedType(tree.tpe) && !isUnboxedType(pt)) {
+      else if (isDifferentErasedValueType(tree.tpe, pt))
+        adaptToType(box(tree, pt.toString), pt)
+      else if (isDifferentErasedValueType(pt, tree.tpe))
+        adaptToType(unbox(tree, pt), pt)
+      else if (isPrimitiveValueType(tree.tpe) && !isPrimitiveValueType(pt)) {
         adaptToType(box(tree, pt.toString), pt)
       } else if (tree.tpe.isInstanceOf[MethodType] && tree.tpe.params.isEmpty) {
         assert(tree.symbol.isStable, "adapt "+tree+":"+tree.tpe+" to "+pt)
         adaptToType(Apply(tree, List()) setPos tree.pos setType tree.tpe.resultType, pt)
-      } else if (pt <:< tree.tpe)
-        cast(tree, pt)
-      else if (isUnboxedType(pt) && !isUnboxedType(tree.tpe))
+//      } else if (pt <:< tree.tpe)
+//        cast(tree, pt)
+      } else if (isPrimitiveValueType(pt) && !isPrimitiveValueType(tree.tpe))
         adaptToType(unbox(tree, pt), pt)
       else
         cast(tree, pt)
@@ -564,7 +570,7 @@ abstract class Erasure extends AddInterfaces
       //Console.println("adaptMember: " + tree);
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
-        if tree.symbol == Any_asInstanceOf || tree.symbol == Object_asInstanceOf =>
+        if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
           val qualClass = qual1.tpe.typeSymbol
 /*
@@ -575,10 +581,10 @@ abstract class Erasure extends AddInterfaces
             atPos(tree.pos)(Apply(Select(qual1, "to" + targClass.name), List()))
           else
 */
-          if (isUnboxedType(targ.tpe)) unbox(qual1, targ.tpe)
+          if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) unbox(qual1, targ.tpe)
           else tree
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
-        if tree.symbol == Any_isInstanceOf || tree.symbol == Object_asInstanceOf =>
+        if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
             case ErasedValueType(clazz) => targ.setType(clazz.tpe)
             case _ =>
@@ -598,12 +604,13 @@ abstract class Erasure extends AddInterfaces
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
             var qual1 = typedQualifier(qual)
-            if ((isUnboxedType(qual1.tpe) && !isUnboxedValueMember(tree.symbol)))
+            if ((isPrimitiveValueType(qual1.tpe) && !isPrimitiveValueMember(tree.symbol)) ||
+                 isErasedValueType(qual1.tpe))
               qual1 = box(qual1, "owner "+tree.symbol.owner)
-            else if (!isUnboxedType(qual1.tpe) && isUnboxedValueMember(tree.symbol))
+            else if (!isPrimitiveValueType(qual1.tpe) && isPrimitiveValueMember(tree.symbol))
               qual1 = unbox(qual1, tree.symbol.owner.tpe)
 
-            if (isUnboxedValueMember(tree.symbol) && !isUnboxedType(qual1.tpe))
+            if (isPrimitiveValueMember(tree.symbol) && !isPrimitiveValueType(qual1.tpe))
               tree.symbol = NoSymbol
             else if (qual1.tpe.isInstanceOf[MethodType] && qual1.tpe.params.isEmpty) {
               assert(qual1.symbol.isStable, qual1.symbol);
@@ -632,7 +639,14 @@ abstract class Erasure extends AddInterfaces
      */
     override protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       val tree1 = try {
-        super.typed1(adaptMember(tree), mode, pt)
+        tree match {
+          case InjectDerivedValue(arg) =>
+            val clazz = tree.symbol
+            util.trace("transforming inject "+arg+":"+underlyingOfValueClass(clazz)+"/"+ErasedValueType(clazz))(
+                typed1(arg, mode, underlyingOfValueClass(clazz)) setType ErasedValueType(clazz))
+          case _ =>
+            super.typed1(adaptMember(tree), mode, pt)
+        }
       } catch {
         case er: TypeError =>
           Console.println("exception when typing " + tree)
@@ -968,7 +982,7 @@ abstract class Erasure extends AddInterfaces
             tree
 
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), List(arg)) if (tpt.tpe.typeSymbol.isDerivedValueClass) =>
-          arg
+          InjectDerivedValue(arg) setSymbol tpt.tpe.typeSymbol
         case Apply(fn, args) =>
           def qualifier = fn match {
             case Select(qual, _) => qual

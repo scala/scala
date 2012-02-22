@@ -1209,12 +1209,11 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             unit.error(acc.pos, "Type of parameter of value class may not be a type variable")
           for (stat <- body)
             if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
-              unit.error(stat.pos, 
+              unit.error(stat.pos,
                 if (stat.symbol hasFlag PARAMACCESSOR) "Illegal parameter for value class"
                 else "This statement is not allowed in value class: "+stat)
         case x =>
-          println(clazz.info.decls.toList)
-          unit.error(clazz.pos, "Value class needs to have exactly one public val parameter, found: "+x.mkString(", "))
+          unit.error(clazz.pos, "Value class needs to have exactly one public val parameter")
       }
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
