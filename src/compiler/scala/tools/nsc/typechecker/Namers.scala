@@ -73,7 +73,7 @@ trait Namers extends MethodSynthesis {
     classAndNamerOfModule.clear()
   }
 
-  abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors {
+  abstract class Namer(val context: Context) extends MethodSynth with NamerContextErrors { thisNamer =>
 
     import NamerErrorGen._
     val typer = newTyper(context)
@@ -98,6 +98,13 @@ trait Namers extends MethodSynthesis {
 
       owner.unsafeTypeParams foreach (paramContext.scope enter _)
       newNamer(paramContext)
+    }
+    
+    def enclosingNamerWithScope(scope: Scope) = {
+      var cx = context
+      while (cx != NoContext && cx.scope != scope) cx = cx.outer
+      if (cx == context) thisNamer
+      else newNamer(cx)
     }
 
     def enterValueParams(vparamss: List[List[ValDef]]): List[List[Symbol]] = {
@@ -1265,7 +1272,7 @@ trait Namers extends MethodSynthesis {
           clazz setInfo result
           if (clazz.isDerivedValueClass) {
             clazz setFlag FINAL
-            ensureCompanionObject(cdef)
+            enclosingNamerWithScope(clazz.owner.info.decls).ensureCompanionObject(cdef)
           }
           result
 

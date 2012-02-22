@@ -89,7 +89,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           MethodType(List(thisParam), restpe)
       }
       val GenPolyType(tparams, restpe) = origInfo cloneInfo extensionMeth
-      GenPolyType(tparams ::: newTypeParams, transform(restpe))
+      GenPolyType(tparams ::: newTypeParams, transform(restpe) substSym (clazz.typeParams, newTypeParams))
     }
 
     private def allParams(tpe: Type): List[Symbol] = tpe match {
@@ -103,8 +103,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           if (currentOwner.isDerivedValueClass) {
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             super.transform(tree)
-          }
-          else tree
+          } else if (currentOwner.isStaticOwner) {
+            super.transform(tree)
+          } else tree
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) if tree.symbol.isMethodWithExtension =>
           val companion = currentOwner.companionModule
           val origMeth = tree.symbol
@@ -121,7 +122,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
           def thisParamRef = gen.mkAttributedIdent(extensionMeth.info.params.head setPos extensionMeth.pos)
           val GenPolyType(extensionTpeParams, extensionMono) = extensionMeth.info
-          val origTpeParams = origMeth.typeParams ::: currentOwner.typeParams
+          val origTpeParams = (tparams map (_.symbol)) ::: currentOwner.typeParams
           val extensionBody = rhs
               .substTreeSyms(origTpeParams, extensionTpeParams)
               .substTreeSyms(vparamss.flatten map (_.symbol), allParams(extensionMono).tail)
