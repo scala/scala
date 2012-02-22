@@ -8,8 +8,12 @@
 
 package scala.runtime
 
-final class StringAdd(val self: Any) {
+final class StringFormat(val self: Any) extends AnyVal {
 
-  def +(other: String) = String.valueOf(self) + other
+  /** Returns string formatted according to given `format` string.
+   *  Format strings are as for `String.format`
+   *  (@see java.lang.String.format).
+   */
+  @inline def formatted(fmtstr: String): String = fmtstr format self
 
 }
