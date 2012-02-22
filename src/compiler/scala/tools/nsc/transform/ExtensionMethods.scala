@@ -109,7 +109,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val companion = currentOwner.companionModule
           val origMeth = tree.symbol
           val extensionName = extensionNames(origMeth).head
-          val extensionMeth = companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE | FINAL)
+          val extensionMeth = companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
             .setAnnotations(origMeth.annotations)
           companion.info.decls.enter(extensionMeth)
           val newInfo = extensionMethInfo(extensionMeth, origMeth.info, currentOwner)
