@@ -32,6 +32,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     AnyRefClass, ObjectClass, Predef_AnyRef,
     uncheckedVarianceClass
   }
+
   private def isSpecialized(sym: Symbol)          = sym hasAnnotation SpecializedClass
   private def hasSpecializedFlag(sym: Symbol)     = sym hasFlag SPECIALIZED
   private def specializedTypes(tps: List[Symbol]) = tps filter isSpecialized
@@ -1177,10 +1178,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   def specializeCalls(unit: CompilationUnit) = new TypingTransformer(unit) {
     /** Map a specializable method to it's rhs, when not deferred. */
-    val body: mutable.Map[Symbol, Tree] = new mutable.HashMap
+    val body = perRunCaches.newMap[Symbol, Tree]()
 
     /** Map a specializable method to its value parameter symbols. */
-    val parameters: mutable.Map[Symbol, List[List[Symbol]]] = new mutable.HashMap
+    val parameters = perRunCaches.newMap[Symbol, List[Symbol]]()
 
     /** Collect method bodies that are concrete specialized methods.
      */
