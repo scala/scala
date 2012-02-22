@@ -1205,8 +1205,6 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
             sym == acc || acc.hasAccessorFlag && sym == acc.accessed
           if (acc.accessBoundary(clazz) != RootClass)
             unit.error(acc.pos, "Value class needs to have a publicly accessible val parameter")
-          if (acc.tpe.resultType.typeSymbol.isTypeParameter)
-            unit.error(acc.pos, "Type of parameter of value class may not be a type variable")
           for (stat <- body)
             if (!treeInfo.isAllowedInUniversalTrait(stat) && !isUnderlyingAcc(stat.symbol))
               unit.error(stat.pos,
