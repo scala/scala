@@ -452,6 +452,19 @@ abstract class UnCurry extends InfoTransform
       }
     }
 
+    /** For removing calls to specially designated methods.
+     */
+    def elideIntoUnit(tree: Tree): Tree = Literal(Constant()) setPos tree.pos setType UnitClass.tpe
+    def isElidable(tree: Tree) = {
+      val sym = treeInfo.methPart(tree).symbol
+      // XXX settings.noassertions.value temporarily retained to avoid
+      // breakage until a reasonable interface is settled upon.
+      sym != null && sym.elisionLevel.exists(x => x < settings.elidebelow.value || settings.noassertions.value) && {
+        log("Eliding call from " + tree.symbol.owner + " to " + sym + " based on its elision threshold of " + sym.elisionLevel.get)
+        true
+      }
+    }
+
 // ------ The tree transformers --------------------------------------------------------
 
     def mainTransform(tree: Tree): Tree = {
@@ -489,7 +502,8 @@ abstract class UnCurry extends InfoTransform
         finally this.inConstructorFlag = saved
       }
 
-      tree match {
+      if (isElidable(tree)) elideIntoUnit(tree)
+      else tree match {
         case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)
           withNeedLift(false) {
