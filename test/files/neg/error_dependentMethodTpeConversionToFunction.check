@@ -1,0 +1,4 @@
+error_dependentMethodTpeConversionToFunction.scala:4: error: method with dependent type (x: AnyRef)x.type cannot be converted to function value
+  val x: Any => Any = foo
+                      ^
+one error found
