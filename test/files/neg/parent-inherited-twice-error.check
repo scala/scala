@@ -1,0 +1,7 @@
+parent-inherited-twice-error.scala:2: error: trait A is inherited twice
+class B extends A with A
+                ^
+parent-inherited-twice-error.scala:2: error: trait A is inherited twice
+class B extends A with A
+                       ^
+two errors found
