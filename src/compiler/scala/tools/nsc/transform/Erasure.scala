@@ -849,8 +849,8 @@ abstract class Erasure extends AddInterfaces
         case ClassDef(mods, name, tparams, impl) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
           treeCopy.ClassDef(tree, mods, name, List(), impl)
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
+        case DefDef(_,_,_,_,_,_) =>
+          copyDefDef(tree)(tparams = Nil)
         case TypeDef(_, _, _, _) =>
           EmptyTree
         case Apply(instanceOf @ TypeApply(fun @ Select(qual, name), args @ List(arg)), List()) // !!! todo: simplify by having GenericArray also extract trees

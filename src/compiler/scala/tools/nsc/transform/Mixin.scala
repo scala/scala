@@ -523,17 +523,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             addLateInterfaceMembers(currentOwner)
 
           tree
-        case DefDef(mods, name, tparams, List(vparams), tpt, rhs) =>
+        case DefDef(_, _, _, vparams :: Nil, _, _) =>
           if (currentOwner.isImplClass) {
             if (isImplementedStatically(sym)) {
               sym setFlag notOVERRIDE
               self = sym.newValueParameter(nme.SELF, sym.pos) setInfo toInterface(currentOwner.typeOfThis)
               val selfdef = ValDef(self) setType NoType
-              treeCopy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
-            } else {
-              EmptyTree
-            }
-          } else {
+              copyDefDef(tree)(vparamss = List(selfdef :: vparams))
+            } 
+            else EmptyTree
+          }
+          else {
             if (currentOwner.isTrait && sym.isSetter && !atPhase(currentRun.picklerPhase)(sym.isDeferred)) {
               sym.addAnnotation(TraitSetterAnnotationClass)
             }
@@ -699,15 +699,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  This rhs is typed and then mixin transformed.
        */
       def completeSuperAccessor(stat: Tree) = stat match {
-        case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree) if stat.symbol.isSuperAccessor =>
+        case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
           val rhs0 = (Super(clazz, tpnme.EMPTY) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
           val rhs1 = localTyped(stat.pos, rhs0, stat.symbol.tpe.resultType)
-          val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
 
-          debuglog("complete super acc " + stat.symbol.fullLocationString +
-                " " + rhs1 + " " + stat.symbol.alias.fullLocationString +
-                "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE))//debug
-          treeCopy.DefDef(stat, mods, name, tparams, List(vparams), tpt, rhs2)
+          debuglog(
+            "complete super acc " + stat.symbol.fullLocationString +
+            " " + rhs1 + " " + stat.symbol.alias.fullLocationString +
+            "/" + stat.symbol.alias.owner.hasFlag(lateINTERFACE)
+          )//debug
+
+          deriveDefDef(stat)(_ => atPhase(currentRun.mixinPhase)(transform(rhs1)))
         case _ =>
           stat
       }
@@ -883,14 +885,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def addCheckedGetters(clazz: Symbol, stats: List[Tree]): List[Tree] = {
         def dd(stat: DefDef) = {
-          val DefDef(mods, name, tp, vp, tpt, rhs) = stat
-          val sym = stat.symbol
-          def isUnit = sym.tpe.resultType.typeSymbol == UnitClass
-          def isEmpty = rhs == EmptyTree
+          val sym     = stat.symbol
+          def isUnit  = sym.tpe.resultType.typeSymbol == UnitClass
+          def isEmpty = stat.rhs == EmptyTree
 
           if (sym.isLazy && !isEmpty && !clazz.isImplClass) {
             assert(fieldOffset contains sym, sym)
-            treeCopy.DefDef(stat, mods, name, tp, vp, tpt,
+            deriveDefDef(stat)(rhs =>
               if (isUnit)
                 mkLazyDef(clazz, sym, List(rhs), UNIT, fieldOffset(sym))
               else {
@@ -901,7 +902,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           else if (needsInitFlag(sym) && !isEmpty && !clazz.hasFlag(IMPLCLASS | TRAIT)) {
             assert(fieldOffset contains sym, sym)
-            treeCopy.DefDef(stat, mods, name, tp, vp, tpt,
+            deriveDefDef(stat)(rhs =>
               (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos, sym))(
                 if (sym.tpe.resultType.typeSymbol == UnitClass) UNIT
                 else rhs
@@ -909,26 +910,24 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             )
           }
           else if (sym.isConstructor) {
-            treeCopy.DefDef(stat, mods, name, tp, vp, tpt, addInitBits(clazz, rhs))
+            deriveDefDef(stat)(addInitBits(clazz, _))
           }
           else if (settings.checkInit.value && !clazz.isTrait && sym.isSetter) {
             val getter = sym.getter(clazz)
             if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
-              treeCopy.DefDef(stat, mods, name, tp, vp, tpt,
-                Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter))), UNIT)
-              )
+              deriveDefDef(stat)(rhs => Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter))), UNIT))
             else stat
           }
           else if (sym.isModule && (!clazz.isTrait || clazz.isImplClass) && !sym.isBridge) {
-            treeCopy.DefDef(stat, mods, name, tp, vp, tpt,
-              typedPos(stat.pos) {
+            deriveDefDef(stat)(rhs =>
+              typedPos(stat.pos)(
                 mkInnerClassAccessorDoubleChecked(
                   // Martin to Hubert: I think this can be replaced by selfRef(tree.pos)
                   // @PP: It does not seem so, it crashes for me trying to bootstrap.
-                  if (clazz.isImplClass) gen.mkAttributedIdent(vp.head.head.symbol) else gen.mkAttributedThis(clazz),
+                  if (clazz.isImplClass) gen.mkAttributedIdent(stat.vparamss.head.head.symbol) else gen.mkAttributedThis(clazz),
                   rhs
                 )
-              }
+              )
             )
           }
           else stat

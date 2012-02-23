@@ -1232,7 +1232,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      */
     class CollectMethodBodies extends Traverser {
       override def traverse(tree: Tree) = tree match {
-        case DefDef(mods, name, tparams, vparams :: Nil, tpt, rhs) =>
+        case DefDef(_, _, _, vparams :: Nil, _, rhs) =>
           if (concreteSpecMethods(tree.symbol) || tree.symbol.isConstructor) {
             debuglog("!!! adding body of a defdef %s, symbol %s: %s".format(tree, tree.symbol, rhs))
             body(tree.symbol) = rhs
@@ -1402,7 +1402,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             self,
             atOwner(currentOwner)(transformTrees(body ::: specMembers)))
 
-        case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if info.isDefinedAt(symbol) =>
+        case ddef @ DefDef(_, _, _, vparamss, _, _) if info.isDefinedAt(symbol) =>
           // log("--> method: " + ddef + " in " + ddef.symbol.owner + ", " + info(symbol))
           if (symbol.isConstructor) {
 
@@ -1410,36 +1410,29 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val superRef: Tree = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
               forwardCtorCall(tree.pos, superRef, vparamss, symbol.owner)
             }
-            if (symbol.isPrimaryConstructor) localTyper typed {
-                atPos(symbol.pos)(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, Block(List(t), Literal(Constant()))))
-            } else {
-              // duplicate the original constructor
+            if (symbol.isPrimaryConstructor) 
+              localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant()))))
+            else  // duplicate the original constructor
               duplicateBody(ddef, info(symbol).target)
-            }
-          } else info(symbol) match {
-
+          }
+          else info(symbol) match {
             case Implementation(target) =>
               assert(body.isDefinedAt(target), "sym: " + symbol.fullName + " target: " + target.fullName)
               // we have an rhs, specialize it
               val tree1 = duplicateBody(ddef, target)
               debuglog("implementation: " + tree1)
-              val DefDef(mods, name, tparams, vparamss, tpt, rhs) = tree1
-              treeCopy.DefDef(tree1, mods, name, tparams, vparamss, tpt, transform(rhs))
+              deriveDefDef(tree1)(transform)
 
             case NormalizedMember(target) =>
               log("Normalized member: " + symbol + ", target: " + target)
               if (target.isDeferred || conflicting(typeEnv(symbol))) {
-                treeCopy.DefDef(
-                  tree, mods, name, tparams, vparamss, tpt,
-                  localTyper typed gen.mkSysErrorCall("boom! you stepped on a bug. This method should never be called.")
-                )
+                deriveDefDef(tree)(_ => localTyper typed gen.mkSysErrorCall("Fatal error in code generation: this should never be called."))
               }
               else {
                 // we have an rhs, specialize it
                 val tree1 = duplicateBody(ddef, target)
                 debuglog("implementation: " + tree1)
-                val DefDef(mods, name, tparams, vparamss, tpt, rhs) = tree1
-                treeCopy.DefDef(tree1, mods, name, tparams, vparamss, tpt, transform(rhs))
+                deriveDefDef(tree1)(transform)
               }
 
             case SpecialOverride(target) =>
@@ -1450,9 +1443,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val tree1 = addBody(ddef, target)
               (new ChangeOwnerTraverser(target, tree1.symbol))(tree1.rhs)
               debuglog("changed owners, now: " + tree1)
-              val DefDef(mods, name, tparams, vparamss, tpt, rhs) = tree1
-              treeCopy.DefDef(tree1, mods, name, tparams, vparamss, tpt, transform(rhs))
-
+              deriveDefDef(tree1)(transform)
 
             case SpecialOverload(original, env) =>
               debuglog("completing specialized " + symbol.fullName + " calling " + original)
@@ -1474,7 +1465,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               log("forward: " + fwd + ", " + ddef)
               val rhs1 = forwardCall(tree.pos, gen.mkAttributedRef(symbol.owner.thisType, fwd.target), vparamss)
               log("-->d completed forwarder to specialized overload: " + fwd.target + ": " + rhs1)
-              localTyper.typed(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
+              localTyper.typed(deriveDefDef(tree)(_ => rhs1))
 
             case SpecializedAccessor(target) =>
               val rhs1 = if (symbol.isGetter)
@@ -1482,13 +1473,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               else
                 Assign(gen.mkAttributedRef(target), Ident(vparamss.head.head.symbol))
               log("specialized accessor: " + target + " -> " + rhs1)
-              localTyper.typed(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs1))
+              localTyper.typed(deriveDefDef(tree)(_ => rhs1))
 
             case Abstract(targ) =>
               log("abstract: " + targ)
-              val DefDef(mods, name, tparams, vparamss, tpt, rhs) = tree
-              val t = treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, rhs)
-              localTyper.typed(t)
+              localTyper.typed(deriveDefDef(tree)(rhs => rhs))
           }
 
         case ValDef(mods, name, tpt, rhs) if symbol.hasFlag(SPECIALIZED) && !symbol.isParamAccessor =>
@@ -1555,7 +1544,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     private def addBody(tree: DefDef, source: Symbol): DefDef = {
       val symbol = tree.symbol
       debuglog("specializing body of" + symbol.defString)
-      val DefDef(mods, name, tparams, vparams :: Nil, tpt, _) = tree
+      val DefDef(_, _, tparams, vparams :: Nil, tpt, _) = tree
 //      val (_, origtparams) = splitParams(source.typeParams)
       val env = typeEnv(symbol)
       val boundTvars = env.keySet
@@ -1584,7 +1573,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val newBody = symSubstituter(body(source).duplicate)
       tpt.tpe = tpt.tpe.substSym(oldtparams, newtparams)
 
-      treeCopy.DefDef(tree, mods, name, tparams, List(newSyms map ValDef), tpt, newBody)
+      copyDefDef(tree)(vparamss = List(newSyms map ValDef), rhs = newBody)
     }
 
     /** Create trees for specialized members of 'sClass', based on the

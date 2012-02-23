@@ -1528,12 +1528,9 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
         // inside annotations.
         applyRefchecksToAnnotations(tree)
         var result: Tree = tree match {
-          case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(NativeAttr) =>
-            tree.symbol.resetFlag(DEFERRED)
-            transform(treeCopy.DefDef(
-              tree, mods, name, tparams, vparams, tpt,
-              typed(gen.mkSysErrorCall("native method stub"))
-            ))
+          case DefDef(_, _, _, _, _, EmptyTree) if sym hasAnnotation NativeAttr =>
+            sym resetFlag DEFERRED
+            transform(deriveDefDef(tree)(_ => typed(gen.mkSysErrorCall("native method stub"))))
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
             checkDeprecatedOvers(tree)

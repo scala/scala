@@ -223,13 +223,12 @@ abstract class TailCalls extends Transform {
       }
 
       tree match {
-        case dd @ DefDef(mods, name, tparams, vparams, tpt, rhs) =>
+        case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
           val newCtx = new Context(dd)
+          debuglog("Considering " + dd.name + " for tailcalls")
+          val newRHS = transform(rhs0, newCtx)
 
-          debuglog("Considering " + name + " for tailcalls")
-          val newRHS = transform(rhs, newCtx)
-
-          treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, {
+          deriveDefDef(tree)(rhs => 
             if (newCtx.isTransformed) {
               /** We have rewritten the tree, but there may be nested recursive calls remaining.
                *  If @tailrec is given we need to fail those now.
@@ -241,7 +240,7 @@ abstract class TailCalls extends Transform {
                 }
               }
               val newThis = newCtx.newThis(tree.pos)
-              val vpSyms  = vparams.flatten map (_.symbol)
+              val vpSyms  = vparamss0.flatten map (_.symbol)
 
               typedPos(tree.pos)(Block(
                 List(ValDef(newThis, This(currentClass))),
@@ -254,7 +253,7 @@ abstract class TailCalls extends Transform {
 
               newRHS
             }
-          })
+          )
 
         case Block(stats, expr) =>
           treeCopy.Block(tree,

@@ -13,7 +13,7 @@ trait Trees { self: Universe =>
 
   private[scala] var nodeCount = 0
 
-  type Modifiers <: AbsModifiers
+  type Modifiers >: Null <: AbsModifiers
 
   abstract class AbsModifiers {
     def modifiers: Set[Modifier]
@@ -659,6 +659,33 @@ trait Trees { self: Universe =>
   // ------ traversers, copiers, and transformers ---------------------------------------------
 
   val treeCopy = newLazyTreeCopier
+
+  def copyDefDef(tree: Tree)(
+    mods: Modifiers              = null,
+    name: Name                   = null,
+    tparams: List[TypeDef]       = null,
+    vparamss: List[List[ValDef]] = null,
+    tpt: Tree                    = null,
+    rhs: Tree                    = null
+  ): DefDef = tree match {
+    case DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0) =>
+      treeCopy.DefDef(tree,
+        if (mods eq null) mods0 else mods,
+        if (name eq null) name0 else name,
+        if (tparams eq null) tparams0 else tparams,
+        if (vparamss eq null) vparamss0 else vparamss,
+        if (tpt eq null) tpt0 else tpt,
+        if (rhs eq null) rhs0 else rhs
+      )
+    case t =>
+      sys.error("Not a DefDef: " + t + "/" + t.getClass)
+  }
+  def deriveDefDef(ddef: Tree)(applyToRhs: Tree => Tree): DefDef = ddef match {
+    case DefDef(mods0, name0, tparams0, vparamss0, tpt0, rhs0) =>
+      treeCopy.DefDef(ddef, mods0, name0, tparams0, vparamss0, tpt0, applyToRhs(rhs0))
+    case t =>
+      sys.error("Not a DefDef: " + t + "/" + t.getClass)
+  }
 
   class Traverser {
     protected var currentOwner: Symbol = definitions.RootClass

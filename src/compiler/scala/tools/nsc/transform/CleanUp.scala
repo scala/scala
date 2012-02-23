@@ -669,9 +669,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val newCtor = findStaticCtor(template) match {
           // in case there already were static ctors - augment existing ones
           // currently, however, static ctors aren't being generated anywhere else
-          case Some(ctor @ DefDef(mods, name, tparams, vparamss, tpt, rhs)) =>
+          case Some(ctor @ DefDef(_,_,_,_,_,_)) =>
             // modify existing static ctor
-            val newBlock = rhs match {
+            deriveDefDef(ctor) {
               case block @ Block(stats, expr) =>
                 // need to add inits to existing block
                 treeCopy.Block(block, newStaticInits.toList ::: stats, expr)
@@ -679,11 +679,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 // need to create a new block with inits and the old term
                 treeCopy.Block(term, newStaticInits.toList, term)
             }
-            treeCopy.DefDef(ctor, mods, name, tparams, vparamss, tpt, newBlock)
           case None =>
             // create new static ctor
             val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
-            val rhs            = Block(newStaticInits.toList, Literal(Constant()))
+            val rhs            = Block(newStaticInits.toList, Literal(Constant(())))
 
             localTyper.typedPos(template.pos)(DefDef(staticCtorSym, rhs))
         }

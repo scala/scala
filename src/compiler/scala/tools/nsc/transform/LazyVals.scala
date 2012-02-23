@@ -68,7 +68,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       curTree = tree
 
       tree match {
-        case DefDef(mods, name, tparams, vparams, tpt, rhs) => atOwner(tree.symbol) {
+        case DefDef(_, _, _, _, _, rhs) => atOwner(tree.symbol) {
           val res = if (!sym.owner.isClass && sym.isLazy) {
             val enclosingClassOrDummyOrMethod = {
               val enclMethod = sym.enclMethod
@@ -90,8 +90,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
           } else
             super.transform(rhs)
 
-          treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
-                  if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
+          deriveDefDef(tree)(_ => if (LocalLazyValFinder.find(res)) typed(addBitmapDefs(sym, res)) else res)
         }
 
         case Template(parents, self, body) => atOwner(currentOwner) {

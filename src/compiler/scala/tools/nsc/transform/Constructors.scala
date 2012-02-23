@@ -164,14 +164,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Triage all template definitions to go into defBuf/auxConstructorBuf, constrStatBuf, or constrPrefixBuf.
       for (stat <- stats) stat match {
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        case DefDef(_,_,_,_,_,rhs) =>
           // methods with constant result type get literals as their body
           // all methods except the primary constructor go into template
           stat.symbol.tpe match {
             case MethodType(List(), tp @ ConstantType(c)) =>
-              defBuf += treeCopy.DefDef(
-                stat, mods, name, tparams, vparamss, tpt,
-                Literal(c) setPos rhs.pos setType tp)
+              defBuf += deriveDefDef(stat)(Literal(c) setPos _.pos setType tp)
             case _ =>
               if (stat.symbol.isPrimaryConstructor) ()
               else if (stat.symbol.isConstructor) auxConstructorBuf += stat
@@ -547,13 +545,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       }
 
       // Assemble final constructor
-      defBuf += treeCopy.DefDef(
-        constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
+      defBuf += deriveDefDef(constr)(_ =>
         treeCopy.Block(
           constrBody,
           paramInits ::: constrPrefixBuf.toList ::: uptoSuperStats :::
             guardSpecializedInitializer(remainingConstrStats),
-          constrBody.expr));
+          constrBody.expr))
 
       // Followed by any auxiliary constructors
       defBuf ++= auxConstructorBuf

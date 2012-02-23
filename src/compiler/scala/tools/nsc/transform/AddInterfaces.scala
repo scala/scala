@@ -319,10 +319,8 @@ abstract class AddInterfaces extends InfoTransform {
         case ClassDef(mods, name, tparams, impl) if (sym.needsImplClass) =>
           implClass(sym).initialize // to force lateDEFERRED flags
           treeCopy.ClassDef(tree, mods | INTERFACE, name, tparams, ifaceTemplate(impl))
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs)
-        if (sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass) =>
-          treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt,
-                      addMixinConstructorCalls(rhs, sym.owner)) // (3)
+        case DefDef(_,_,_,_,_,_) if sym.isClassConstructor && sym.isPrimaryConstructor && sym.owner != ArrayClass =>
+          deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
         case Template(parents, self, body) =>
           val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
           treeCopy.Template(tree, parents1, emptyValDef, body)

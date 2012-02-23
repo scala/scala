@@ -458,9 +458,8 @@ abstract class UnCurry extends InfoTransform
      */
     private def replaceElidableTree(tree: Tree): Tree = {
       tree match {
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          val newRhs = Block(Nil, gen.mkZero(rhs.tpe)) setType rhs.tpe
-          treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, newRhs) setSymbol tree.symbol setType tree.tpe
+        case DefDef(_,_,_,_,_,_) =>
+          deriveDefDef(tree)(rhs => Block(Nil, gen.mkZero(rhs.tpe)) setType rhs.tpe) setSymbol tree.symbol setType tree.tpe
         case _ =>
           gen.mkZero(tree.tpe) setType tree.tpe
       }
@@ -628,14 +627,16 @@ abstract class UnCurry extends InfoTransform
           } else super.transform(tree).asInstanceOf[Template]
           newMembers.clear
           tmpl
-        case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-          val rhs1 = nonLocalReturnKeys.get(tree.symbol) match {
-            case None => rhs
-            case Some(k) => atPos(rhs.pos)(nonLocalReturnTry(rhs, k, tree.symbol))
-          }
-          val flatdd = treeCopy.DefDef(tree, mods, name, tparams, List(vparamss.flatten), tpt, rhs1)
-          if (dd.symbol hasAnnotation VarargsClass) addJavaVarargsForwarders(dd, flatdd, tree)
-          flatdd
+        case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
+          val flatdd = copyDefDef(dd)(
+            vparamss = List(vparamss0.flatten),
+            rhs = nonLocalReturnKeys get dd.symbol match {
+              case Some(k) => atPos(rhs0.pos)(nonLocalReturnTry(rhs0, k, dd.symbol))
+              case None    => rhs0
+            }
+          )
+          addJavaVarargsForwarders(dd, flatdd)
+
         case Try(body, catches, finalizer) =>
           if (opt.virtPatmat) { if(catches exists (cd => !treeInfo.isCatchCase(cd))) debugwarn("VPM BUG! illegal try/catch "+ catches); tree }
           else if (catches forall treeInfo.isCatchCase) tree
@@ -698,9 +699,9 @@ abstract class UnCurry extends InfoTransform
      * It looks for the method in the `repeatedParams` map, and generates a Java-style
      * varargs forwarder. It then adds the forwarder to the `newMembers` sequence.
      */
-    private def addJavaVarargsForwarders(dd: DefDef, flatdd: DefDef, tree: Tree): Unit = {
-      if (!repeatedParams.contains(dd.symbol))
-        return
+    private def addJavaVarargsForwarders(dd: DefDef, flatdd: DefDef): DefDef = {
+      if (!dd.symbol.hasAnnotation(VarargsClass) || !repeatedParams.contains(dd.symbol))
+        return flatdd
 
       def toSeqType(tp: Type): Type = {
         val arg = elementType(ArrayClass, tp)
@@ -721,7 +722,7 @@ abstract class UnCurry extends InfoTransform
 
       val reps          = repeatedParams(dd.symbol)
       val rpsymbols     = reps.map(_.symbol).toSet
-      val theTyper      = typer.atOwner(tree, currentClass)
+      val theTyper      = typer.atOwner(dd, currentClass)
       val flatparams    = flatdd.vparamss.head
 
       // create the type
@@ -773,10 +774,11 @@ abstract class UnCurry extends InfoTransform
         case None =>
           // enter symbol into scope
           currentClass.info.decls enter forwsym
-
           // add the method to `newMembers`
           newMembers += forwtree
       }
+      
+      flatdd
     }
   }
 }
