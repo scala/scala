@@ -149,14 +149,16 @@ trait ProcessBuilder extends Source with Sink {
     * the exit code is non-zero, an exception is thrown.  The newly started
     * process reads from standard input of the current process.
     */
-  def !!< : String
+  // def !!< : String
+  // Not in 2.9.1, can't be added to the interface
 
   /** Starts the process represented by this builder, blocks until it exits, and
     * returns the output as a String.  Standard error is sent to the provided
     * ProcessLogger.  If the exit code is non-zero, an exception is thrown.  The
     * newly started process reads from standard input of the current process.
     */
-  def !!<(log: ProcessLogger): String
+  // def !!<(log: ProcessLogger): String
+  // Not in 2.9.1, can't be added to the interface
 
   /** Starts the process represented by this builder.  The output is returned as
     * a Stream that blocks when lines are not available but the process has not
