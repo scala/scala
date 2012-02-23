@@ -37,21 +37,17 @@ trait NamesDefaults { self: Analyzer =>
   }
   def isNamed(arg: Tree) = nameOf(arg).isDefined
 
-  /** @param pos maps indicies from old to new */
+  /** @param pos maps indices from old to new */
   def reorderArgs[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
     val res = new Array[T](args.length)
-    // (hopefully) faster than zipWithIndex
-    (0 /: args) { case (index, arg) => res(pos(index)) = arg; index + 1 }
+    foreachWithIndex(args)((arg, index) => res(pos(index)) = arg)
     res.toList
   }
 
-  /** @param pos maps indicies from new to old (!) */
+  /** @param pos maps indices from new to old (!) */
   def reorderArgsInv[T: ClassManifest](args: List[T], pos: Int => Int): List[T] = {
     val argsArray = args.toArray
-    val res = new mutable.ListBuffer[T]
-    for (i <- 0 until argsArray.length)
-      res += argsArray(pos(i))
-    res.toList
+    argsArray.indices map (i => argsArray(pos(i))) toList
   }
 
   /** returns `true` if every element is equal to its index */
@@ -507,7 +503,7 @@ trait NamesDefaults { self: Analyzer =>
 
   /**
    * Removes name assignments from args. Additionally, returns an array mapping
-   * argument indicies from call-site-order to definition-site-order.
+   * argument indices from call-site-order to definition-site-order.
    *
    * Verifies that names are not specified twice, positional args don't appear
    * after named ones.

@@ -256,7 +256,7 @@ abstract class Duplicators extends Analyzer {
         case ldef @ LabelDef(name, params, rhs) =>
           // log("label def: " + ldef)
           ldef.tpe = null
-          val params1 = params map { p => Ident(updateSym(p.symbol)) }
+          val params1 = params map (p => Ident(updateSym(p.symbol)))
           super.typed(treeCopy.LabelDef(tree, name, params1, rhs), mode, pt)
 
         case Bind(name, _) =>

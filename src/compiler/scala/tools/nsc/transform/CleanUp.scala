@@ -47,7 +47,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       val Template(parents, self, body) = tree
       clearStatics()
       val newBody = transformTrees(body)
-      val templ   = treeCopy.Template(tree, parents, self, transformTrees(newStaticMembers.toList) ::: newBody)
+      val templ   = deriveTemplate(tree)(_ => transformTrees(newStaticMembers.toList) ::: newBody)
       try addStaticInits(templ) // postprocess to include static ctors
       finally clearStatics()
     }
@@ -686,7 +686,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
             localTyper.typedPos(template.pos)(DefDef(staticCtorSym, rhs))
         }
-        treeCopy.Template(template, template.parents, template.self, newCtor :: template.body)
+        deriveTemplate(template)(newCtor :: _)
       }
     }
 

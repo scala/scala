@@ -65,6 +65,16 @@ trait Collections {
     lb.toList
   }
   
+  final def foreachWithIndex[A, B](xs: List[A])(f: (A, Int) => Unit) {
+    var index = 0
+    var ys = xs
+    while (!ys.isEmpty) {
+      f(ys.head, index)
+      ys = ys.tail
+      index += 1
+    }
+  }
+
   final def mapWithIndex[A, B](xs: List[A])(f: (A, Int) => B): List[B] = {
     val lb = new ListBuffer[B]
     var index = 0

@@ -421,9 +421,9 @@ abstract class Erasure extends AddInterfaces
 
     /** Box `tree` of unboxed type */
     private def box(tree: Tree): Tree = tree match {
-      case LabelDef(name, params, rhs) =>
-        val rhs1 = box(rhs)
-        treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+      case LabelDef(_, _, _) =>
+        val ldef = deriveLabelDef(tree)(box)
+        ldef setType ldef.rhs.tpe
       case _ =>
         typedPos(tree.pos)(tree.tpe.typeSymbol match {
           case UnitClass  =>
@@ -460,9 +460,9 @@ abstract class Erasure extends AddInterfaces
         println("unbox shorten: "+tree) // this never seems to kick in during build and test; therefore disabled.
         adaptToType(unboxed, pt)
  */
-      case LabelDef(name, params, rhs) =>
-        val rhs1 = unbox(rhs, pt)
-        treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
+      case LabelDef(_, _, _) =>
+        val ldef = deriveLabelDef(tree)(unbox(_, pt))
+        ldef setType ldef.rhs.tpe
       case _ =>
         typedPos(tree.pos)(pt.typeSymbol match {
           case UnitClass  =>
@@ -604,8 +604,8 @@ abstract class Erasure extends AddInterfaces
           throw ex
       }
       def adaptCase(cdef: CaseDef): CaseDef = {
-        val body1 = adaptToType(cdef.body, tree1.tpe)
-        treeCopy.CaseDef(cdef, cdef.pat, cdef.guard, body1) setType body1.tpe
+        val newCdef = deriveCaseDef(cdef)(adaptToType(_, tree1.tpe))
+        newCdef setType newCdef.body.tpe
       }
       def adaptBranch(branch: Tree): Tree =
         if (branch == EmptyTree) branch else adaptToType(branch, tree1.tpe);
@@ -846,9 +846,9 @@ abstract class Erasure extends AddInterfaces
      */
     private val preTransformer = new TypingTransformer(unit) {
       def preErase(tree: Tree): Tree = tree match {
-        case ClassDef(mods, name, tparams, impl) =>
+        case ClassDef(_,_,_,_) =>
           debuglog("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
-          treeCopy.ClassDef(tree, mods, name, List(), impl)
+          copyClassDef(tree)(tparams = Nil)
         case DefDef(_,_,_,_,_,_) =>
           copyDefDef(tree)(tparams = Nil)
         case TypeDef(_, _, _, _) =>

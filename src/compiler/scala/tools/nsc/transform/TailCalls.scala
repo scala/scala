@@ -262,11 +262,7 @@ abstract class TailCalls extends Transform {
           )
 
         case CaseDef(pat, guard, body) =>
-          treeCopy.CaseDef(tree,
-            pat,
-            guard,
-            transform(body)
-          )
+          deriveCaseDef(tree)(transform)
 
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree,

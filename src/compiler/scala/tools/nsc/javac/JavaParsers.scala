@@ -658,7 +658,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       // create the companion so import A._ is not an error (see ticket #1700)
       val cdefNew =
         if (statics.isEmpty) cdef
-        else treeCopy.ClassDef(cdef, cdef.mods, cdef.name, cdef.tparams, implWithImport(importCompanionObject(cdef)))
+        else deriveClassDef(cdef)(_ => implWithImport(importCompanionObject(cdef)))
 
       List(makeCompanionObject(cdefNew, statics), cdefNew)
     }
