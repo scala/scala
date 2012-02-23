@@ -508,7 +508,7 @@ abstract class UnCurry extends InfoTransform
         // TODO - settings.noassertions.value temporarily retained to avoid
         // breakage until a reasonable interface is settled upon.
         if ((sym ne null) && (sym.elisionLevel.exists (_ < settings.elidebelow.value || settings.noassertions.value)))
-          super.transform(replaceElidableTree(tree))
+          replaceElidableTree(tree)
         else tree match {
           case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
             if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)

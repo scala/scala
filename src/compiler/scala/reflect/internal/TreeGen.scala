@@ -250,7 +250,10 @@ abstract class TreeGen {
    *    var x: T = _
    *  which is appropriate to the given Type.
    */
-  def mkZero(tp: Type): Tree = Literal(mkConstantZero(tp)) setType tp
+  def mkZero(tp: Type): Tree = tp.typeSymbol match {
+    case NothingClass => mkMethodCall(Predef_???, Nil) setType NothingClass.tpe
+    case _            => Literal(mkConstantZero(tp)) setType tp
+  }
 
   def mkConstantZero(tp: Type): Constant = tp.typeSymbol match {
     case UnitClass    => Constant(())

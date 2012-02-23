@@ -260,6 +260,8 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case _  => newTermName("x$" + i)
     }
     
+    val ??? = encode("???")
+    
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"
     val wrapShortArray: NameType   = "wrapShortArray"
