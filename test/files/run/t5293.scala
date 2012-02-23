@@ -70,8 +70,8 @@ object Test extends App {
   val scalaset = benchScala(set)
   val scalaparset = benchScalaPar(set)
   
-  assert(scalaset < (javaset * 4))
-  assert(scalaparset < (javaset * 4))
+  assert(scalaset < (javaset * 8), "scalaset: " + scalaset + " vs. javaset: " + javaset)
+  assert(scalaparset < (javaset * 8), "scalaparset: " + scalaparset + " vs. javaset: " + javaset)
 }
 
 
