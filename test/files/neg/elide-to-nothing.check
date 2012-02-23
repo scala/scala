@@ -1,0 +1,4 @@
+elide-to-nothing.scala:14: error: Cannot elide where Nothing is required.
+  val b: Nothing = unimplemented()
+                                ^
+one error found

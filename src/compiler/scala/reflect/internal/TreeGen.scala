@@ -250,20 +250,19 @@ abstract class TreeGen {
    *    var x: T = _
    *  which is appropriate to the given Type.
    */
-  def mkZero(tp: Type): Tree = {
-    val tree = tp.typeSymbol match {
-      case UnitClass    => Literal(Constant())
-      case BooleanClass => Literal(Constant(false))
-      case FloatClass   => Literal(Constant(0.0f))
-      case DoubleClass  => Literal(Constant(0.0d))
-      case ByteClass    => Literal(Constant(0.toByte))
-      case ShortClass   => Literal(Constant(0.toShort))
-      case IntClass     => Literal(Constant(0))
-      case LongClass    => Literal(Constant(0L))
-      case CharClass    => Literal(Constant(0.toChar))
-      case _            => Literal(Constant(null))
-    }
-    tree setType tp
+  def mkZero(tp: Type): Tree = Literal(mkConstantZero(tp)) setType tp
+
+  def mkConstantZero(tp: Type): Constant = tp.typeSymbol match {
+    case UnitClass    => Constant(())
+    case BooleanClass => Constant(false)
+    case FloatClass   => Constant(0.0f)
+    case DoubleClass  => Constant(0.0d)
+    case ByteClass    => Constant(0.toByte)
+    case ShortClass   => Constant(0.toShort)
+    case IntClass     => Constant(0)
+    case LongClass    => Constant(0L)
+    case CharClass    => Constant(0.toChar)
+    case _            => Constant(null)
   }
 
   def mkZeroContravariantAfterTyper(tp: Type): Tree = {
