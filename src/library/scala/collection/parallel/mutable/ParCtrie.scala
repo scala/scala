@@ -13,6 +13,7 @@ package scala.collection.parallel.mutable
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.IterableSplitter
+import scala.collection.parallel.Task
 import scala.collection.mutable.BasicNode
 import scala.collection.mutable.TNode
 import scala.collection.mutable.LNode
@@ -40,7 +41,6 @@ extends ParMap[K, V]
    with ParCtrieCombiner[K, V]
    with Serializable
 {
-  import collection.parallel.tasksupport._
   
   def this() = this(new Ctrie)
   
@@ -83,7 +83,7 @@ extends ParMap[K, V]
       case tn: TNode[_, _] => tn.cachedSize(ctrie)
       case ln: LNode[_, _] => ln.cachedSize(ctrie)
       case cn: CNode[_, _] =>
-        executeAndWaitResult(new Size(0, cn.array.length, cn.array))
+        tasksupport.executeAndWaitResult(new Size(0, cn.array.length, cn.array))
         cn.cachedSize(ctrie)
     }
   }

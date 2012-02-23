@@ -46,8 +46,16 @@ package object parallel {
       else new ThreadPoolTaskSupport
     } else new ThreadPoolTaskSupport
 
-  val tasksupport = getTaskSupport
-
+  val defaultTaskSupport: TaskSupport = getTaskSupport
+  
+  def setTaskSupport[Coll](c: Coll, t: TaskSupport): Coll = {
+    c match {
+      case pc: ParIterableLike[_, _, _] => pc.tasksupport = t
+      case _ => // do nothing
+    }
+    c
+  }
+  
   /* implicit conversions */
 
   implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new FactoryOps[From, Elem, To] {

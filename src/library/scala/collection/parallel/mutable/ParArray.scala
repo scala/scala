@@ -21,6 +21,7 @@ import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.SeqSplitter
 import scala.collection.parallel.ParSeqLike
+import scala.collection.parallel.Task
 import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
@@ -56,7 +57,6 @@ extends ParSeq[T]
    with Serializable
 {
 self =>
-  import collection.parallel.tasksupport._
 
   @transient private var array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
 
@@ -584,22 +584,22 @@ self =>
     val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
 
     // fill it in parallel
-    executeAndWaitResult(new Map[S](f, targetarr, 0, length))
+    tasksupport.executeAndWaitResult(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
     (new ParArray[S](targarrseq)).asInstanceOf[That]
   } else super.map(f)(bf)
 
   override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanBuildFrom[ParArray[T], U, That]): That =
-    if (parallelismLevel > 1 && buildsArray(cbf(repr))) {
+    if (tasksupport.parallelismLevel > 1 && buildsArray(cbf(repr))) {
       // reserve an array
       val targarrseq = new ArraySeq[U](length + 1)
       val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
       targetarr(0) = z
 
       // do a parallel prefix scan
-      if (length > 0) executeAndWaitResult(new CreateScanTree[U](0, size, z, op, splitter) mapResult {
-        tree => executeAndWaitResult(new ScanToArray(tree, z, op, targetarr))
+      if (length > 0) tasksupport.executeAndWaitResult(new CreateScanTree[U](0, size, z, op, splitter) mapResult {
+        tree => tasksupport.executeAndWaitResult(new ScanToArray(tree, z, op, targetarr))
       })
 
       // wrap the array into a parallel array
@@ -661,7 +661,7 @@ self =>
       val fp = howmany / 2
       List(new Map(f, targetarr, offset, fp), new Map(f, targetarr, offset + fp, howmany - fp))
     }
-    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, parallelismLevel)
+    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, tasksupport.parallelismLevel)
   }
 
   /* serialization */
