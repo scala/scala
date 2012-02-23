@@ -1,0 +1,4 @@
+abstraction-from-volatile-type-error.scala:9: error: illegal abstraction from value with volatile type a.Tv
+    val tv : a.Tv
+        ^
+one error found
