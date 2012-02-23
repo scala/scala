@@ -199,7 +199,9 @@ abstract class TreeGen extends reflect.internal.TreeGen {
     debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
     assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize))
-    atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = !phase.next.erasedTypes, wrapInApply = phase.id > currentRun.uncurryPhase.id))
+    atPos(tree.pos) {
+      mkAsInstanceOf(tree, pt, any = !phase.next.erasedTypes, wrapInApply = isAtPhaseAfter(currentRun.uncurryPhase))
+    }
   }
 
   /** Generate a cast for tree Tree representing Array with

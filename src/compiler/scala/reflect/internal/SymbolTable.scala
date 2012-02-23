@@ -41,7 +41,7 @@ abstract class SymbolTable extends api.Universe
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
   def debugwarn(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
-  
+
   /** Overridden when we know more about what was happening during a failure. */
   def supplementErrorMessage(msg: String): String = msg
 
@@ -113,6 +113,10 @@ abstract class SymbolTable extends api.Universe
   final def period(rid: RunId, pid: Phase#Id): Period =
     (currentRunId << 8) + pid
 
+  /** Are we later than given phase in compilation? */
+  final def isAtPhaseAfter(p: Phase) =
+    p != NoPhase && phase.id > p.id
+
   /** Perform given operation at given phase. */
   @inline final def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase
@@ -125,7 +129,7 @@ abstract class SymbolTable extends api.Universe
     atPhase(ph.next)(op)
 
   @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T =
-    if (target != NoPhase && phase.id > target.id) atPhase(target)(op) else op
+    if (isAtPhaseAfter(target)) atPhase(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
@@ -276,7 +280,7 @@ abstract class SymbolTable extends api.Universe
 
   /** The phase which has given index as identifier. */
   val phaseWithId: Array[Phase]
-  
+
   /** Is this symbol table part of reflexive mirror? In this case
    *  operations need to be made thread safe.
    */
