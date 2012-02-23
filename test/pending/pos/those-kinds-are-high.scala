@@ -27,11 +27,27 @@ class A {
   //
   //   List[Container[String] with Template[Container[Any] with Template[Container[Any] with Template[Any]]]
   //
+  // *** Update 2/24/2012
+  //
+  // Hey, now there are polytypes in the inferred type.
+  // Not sure if that is progress or regress.
+  //
+  // test/pending/pos/those-kinds-are-high.scala:36: error: type mismatch;
+  //  found   : C1[String]
+  //  required: ScalaObject with Container[String] with Template[ScalaObject with Container with Template[ScalaObject with Container with Template[[X]Container[X]]]]
+  //   def fFail = List(new C1[String], new C2[String])
+  //                    ^
+  // test/pending/pos/those-kinds-are-high.scala:36: error: type mismatch;
+  //  found   : C2[String]
+  //  required: ScalaObject with Container[String] with Template[ScalaObject with Container with Template[ScalaObject with Container with Template[[X]Container[X]]]]
+  //   def fFail = List(new C1[String], new C2[String])
+  //                                    ^
+  // two errors found
   
   /** Working version explicitly typed.
    */
   def fExplicit = List[Template[Container] with Container[String]](new C1[String], new C2[String])
   
   // nope
-  // def fFail = List(new C1[String], new C2[String])
+  def fFail = List(new C1[String], new C2[String])
 }
