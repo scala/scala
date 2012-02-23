@@ -326,7 +326,7 @@ abstract class LambdaLift extends InfoTransform {
               lifted(MethodType(sym.info.params ::: addParams, sym.info.resultType)))
             
             copyDefDef(tree)(vparamss = List(vparams ++ freeParams))
-          case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+          case ClassDef(mods, name, tparams, impl) =>
             // Disabled attempt to to add getters to freeParams
             // this does not work yet. Problem is that local symbols need local names
             // and references to local symbols need to be transformed into
@@ -338,8 +338,7 @@ abstract class LambdaLift extends InfoTransform {
             //   DefDef(getter, rhs) setPos tree.pos setType NoType
             // }
             // val newDefs = if (sym.isTrait) freeParams ::: (ps map paramGetter) else freeParams
-            treeCopy.ClassDef(tree, mods, name, tparams,
-                              treeCopy.Template(impl, parents, self, body ::: freeParams))
+            treeCopy.ClassDef(tree, mods, name, tparams, deriveTemplate(impl)(_ ::: freeParams))
         }
       case None =>
         tree
@@ -481,15 +480,14 @@ abstract class LambdaLift extends InfoTransform {
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
-        case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+        case ClassDef(mods, name, tparams, impl) =>
           val lifted = liftedDefs get stat.symbol match {
             case Some(xs) => xs reverseMap addLifted
             case _        => log("unexpectedly no lifted defs for " + stat.symbol) ; Nil
           }
-          val result = treeCopy.ClassDef(
-            stat, mods, name, tparams, treeCopy.Template(impl, parents, self, body ::: lifted))
-          liftedDefs -= stat.symbol
-          result
+          try treeCopy.ClassDef(stat, mods, name, tparams, deriveTemplate(impl)(_ ::: lifted))
+          finally liftedDefs -= stat.symbol
+
         case DefDef(_, _, _, _, _, Block(Nil, expr)) if !stat.symbol.isConstructor =>
           deriveDefDef(stat)(_ => expr)
         case _ =>

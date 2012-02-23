@@ -1503,12 +1503,12 @@ trait Typers extends Modes with Adaptations with PatMatVirtualiser {
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
       val self1 = templ.self match {
-        case vd @ ValDef(mods, name, tpt, EmptyTree) =>
+        case vd @ ValDef(_, _, tpt, EmptyTree) =>
           val tpt1 = checkNoEscaping.privates(
             clazz.thisSym,
             treeCopy.TypeTree(tpt).setOriginal(tpt) setType vd.symbol.tpe
           )
-          treeCopy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
+          copyValDef(vd)(tpt = tpt1, rhs = EmptyTree) setType NoType
       }
       // was:
       //          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))

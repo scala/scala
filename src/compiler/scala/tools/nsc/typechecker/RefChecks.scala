@@ -1548,8 +1548,7 @@ abstract class RefChecks extends InfoTransform with reflect.internal.transform.R
             checkOverloadedRestrictions(currentOwner)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
-            if (bridges.nonEmpty) treeCopy.Template(tree, parents, self, body ::: bridges)
-            else tree
+            if (bridges.nonEmpty) deriveTemplate(tree)(_ ::: bridges) else tree
 
           case dc@TypeTreeWithDeferredRefCheck() => assert(false, "adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc"); dc
           case tpt@TypeTree() =>

@@ -620,13 +620,11 @@ abstract class UnCurry extends InfoTransform
          * In particular, this case will add:
          * - synthetic Java varargs forwarders for repeated parameters
          */
-        case Template(parents, self, body) =>
+        case Template(_, _, _) =>
           localTyper = typer.atOwner(tree, currentClass)
-          val tmpl = if (!forMSIL || forMSIL) {
-            treeCopy.Template(tree, parents, self, transformTrees(newMembers.toList) ::: body)
-          } else super.transform(tree).asInstanceOf[Template]
-          newMembers.clear
-          tmpl
+          try deriveTemplate(tree)(transformTrees(newMembers.toList) ::: _)
+          finally newMembers.clear()
+
         case dd @ DefDef(_, _, _, vparamss0, _, rhs0) =>
           val flatdd = copyDefDef(dd)(
             vparamss = List(vparamss0.flatten),

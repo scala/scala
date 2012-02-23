@@ -272,7 +272,18 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)
-        super.traverse(t) // TODO: bug? shouldn't the traverse be outside of the if?
+        super.traverse(t)   // TODO: bug? shouldn't the traverse be outside of the if?
+        // @PP: it's pruning whenever it encounters a node with a
+        // position, which I interpret to mean that (in the author's
+        // mind at least) either the children of a positioned node will
+        // already be positioned, or the children of a positioned node
+        // do not merit positioning.
+        //
+        // Whatever the author's rationale, it does seem like a bad idea
+        // to press on through a positioned node to find unpositioned
+        // children beneath it and then to assign whatever happens to
+        // be in `pos` to such nodes. There are supposed to be some
+        // position invariants which I can't imagine surviving that.
       }
     }
   }

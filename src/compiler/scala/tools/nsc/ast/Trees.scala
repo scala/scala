@@ -79,16 +79,16 @@ trait Trees extends reflect.internal.Trees { self: Global =>
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val gvdefs = evdefs map {
-      case vdef @ ValDef(mods, name, tpt, rhs) =>
-        treeCopy.ValDef(
-          vdef.duplicate, mods, name,
-          atPos(focusPos(vdef.pos)) { TypeTree() setOriginal tpt setPos focusPos(tpt.pos) }, // atPos in case
-          EmptyTree)
+      case vdef @ ValDef(_, _, tpt, _) => copyValDef(vdef)(
+        // !!! I know "atPos in case" wasn't intentionally planted to
+        // add an air of mystery to this file, but it is the sort of
+        // comment which only its author could love.
+        tpt = atPos(focusPos(vdef.pos))(TypeTree() setOriginal tpt setPos focusPos(tpt.pos)), // atPos in case
+        rhs = EmptyTree
+      )
     }
-    val lvdefs = evdefs map {
-      case vdef @ ValDef(mods, name, tpt, rhs) =>
-        treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs)
-    }
+    val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = Modifiers(PRESUPER)) }
+
     val constrs = {
       if (constrMods hasFlag TRAIT) {
         if (body forall treeInfo.isInterfaceMember) List()
@@ -108,13 +108,11 @@ trait Trees extends reflect.internal.Trees { self: Global =>
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
-    // println("typed template, gvdefs = "+gvdefs+", parents = "+parents+", constrs = "+constrs)
     constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs))
-    // vparamss2 are used as field definitions for the class. remove defaults
-    val vparamss2 = vparamss map (vps => vps map { vd =>
-      treeCopy.ValDef(vd, vd.mods &~ DEFAULTPARAM, vd.name, vd.tpt, EmptyTree)
-    })
-    Template(parents, self, gvdefs ::: vparamss2.flatten ::: constrs ::: etdefs ::: rest)
+    // Field definitions for the class - remove defaults.
+    val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
+
+    Template(parents, self, gvdefs ::: fieldDefs ::: constrs ::: etdefs ::: rest)
   }
 
   /** Construct class definition with given class symbol, value parameters,

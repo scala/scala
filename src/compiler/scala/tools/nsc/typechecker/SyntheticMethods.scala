@@ -248,11 +248,11 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     if (phase.id > currentRun.typerPhase.id) templ
-    else treeCopy.Template(templ, templ.parents, templ.self,
+    else deriveTemplate(templ)(body => 
       if (clazz.isCase) caseTemplateBody()
       else synthesize() match {
-        case Nil  => templ.body // avoiding unnecessary copy
-        case ms   => templ.body ++ ms
+        case Nil  => body // avoiding unnecessary copy
+        case ms   => body ++ ms
       }
     )
   }

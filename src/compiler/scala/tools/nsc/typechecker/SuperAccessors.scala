@@ -177,7 +177,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case ModuleDef(_, _, _) =>
           checkCompanionNameClashes(sym)
           super.transform(tree)
-        case Template(parents, self, body) =>
+        case Template(_, _, body) =>
           val ownAccDefs = new ListBuffer[Tree]
           accDefs(currentOwner) = ownAccDefs
 
@@ -189,7 +189,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           val body1 = atOwner(currentOwner)(transformTrees(body))
           accDefs -= currentOwner
           ownAccDefs ++= body1
-          treeCopy.Template(tree, parents, self, ownAccDefs.toList)
+          deriveTemplate(tree)(_ => ownAccDefs.toList)
 
         case TypeApply(sel @ Select(This(_), name), args) =>
           mayNeedProtectedAccessor(sel, args, false)

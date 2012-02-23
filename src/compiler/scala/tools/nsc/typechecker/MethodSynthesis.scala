@@ -376,7 +376,7 @@ trait MethodSynthesis {
       override def keepClean = !mods.isParamAccessor
       override def derivedTree = (
         if (mods.isDeferred) EmptyTree
-        else treeCopy.ValDef(tree, mods | flagsExtra, name, tree.tpt, tree.rhs)
+        else copyValDef(tree)(mods = mods | flagsExtra, name = this.name)
       )
     }
     case class Param(tree: ValDef) extends DerivedFromValDef {
