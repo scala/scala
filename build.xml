@@ -2053,7 +2053,7 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
     </antcall>
   </target>
 
-  <target name="nightly-nopt" depends="all.done">
+  <target name="nightly-nopt" depends="all.done, docs.all">
     <!-- cannot antcall all.done, the properties defined in there (dist.dir) are not returned. need depends. -->
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
