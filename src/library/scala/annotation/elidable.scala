@@ -10,12 +10,15 @@ package scala.annotation
 
 import java.util.logging.Level
 
-/** An annotation for methods for which invocations might
- *  be removed in the generated code.
+/** An annotation for methods whose body might be removed in the generated
+ *  code.
  *
  *  Behavior is influenced by passing `-Xelide-below <arg>` to `scalac`.
- *  Methods marked elidable will be omitted from generated code if the
- *  priority given the annotation is lower than to the command line argument.
+ *  The body of methods marked elidable will be omitted from generated code
+ *  if the priority given the annotation is lower than to the command line
+ *  argument. If the method has a result type other than Unit, its return
+ *  value will be the zero value of the type (0 for numeric types, false for
+ *  boolean and null for reference types).
  *  Examples:
  *  {{{
  *  import annotation.elidable._
