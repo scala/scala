@@ -3903,7 +3903,6 @@ trait Types extends api.Types { self: SymbolTable =>
    */
   def rawToExistential = new TypeMap {
     private var expanded = immutable.Set[Symbol]()
-    private var generated = immutable.Set[Type]()
     def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         if (expanded contains sym) AnyRefClass.tpe
@@ -3914,10 +3913,6 @@ trait Types extends api.Types { self: SymbolTable =>
         } finally {
           expanded -= sym
         }
-      case ExistentialType(_, _) if !(generated contains tp) => // to avoid infinite expansions. todo: not sure whether this is needed
-        val result = mapOver(tp)
-        generated += result
-        result
       case _ =>
         mapOver(tp)
     }
@@ -4319,82 +4314,82 @@ trait Types extends api.Types { self: SymbolTable =>
       else mapOver(tp)
   }
 
-  class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
-    private val actualsIndexed = actuals.toIndexedSeq
+  class InstantiateDependentMap(params: List[Symbol], actuals0: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
+    private val actuals      = actuals0.toIndexedSeq
+    private val existentials = new Array[Symbol](actuals.size)
+    def existentialsNeeded: List[Symbol] = existentials.filter(_ ne null).toList
 
-    object ParamWithActual {
-      def unapply(sym: Symbol): Option[Type] = {
-        val pid = params indexOf sym
-        if(pid != -1) Some(actualsIndexed(pid)) else None
-      }
+    private object StableArg {
+      def unapply(param: Symbol) = Arg unapply param map actuals filter (tp =>
+        tp.isStable && (tp.typeSymbol != NothingClass)
+      )
+    }
+    private object Arg {
+      def unapply(param: Symbol) = Some(params indexOf param) filter (_ >= 0)
     }
 
-    def apply(tp: Type): Type =
-      mapOver(tp) match {
-        case SingleType(NoPrefix, ParamWithActual(arg)) if arg.isStable => arg // unsound to replace args by unstable actual #3873
-        // (soundly) expand type alias selections on implicit arguments, see depmet_implicit_oopsla* test cases -- typically, `param.isImplicit`
-        case tp1@TypeRef(SingleType(NoPrefix, ParamWithActual(arg)), sym, targs) =>
-          val res = typeRef(arg, sym, targs)
-          if(res.typeSymbolDirect isAliasType) res.dealias
-          else tp1
-        case tp1 => tp1 // don't return the original `tp`, which may be different from `tp1`, due to dropping annotations
-      }
-
-    def existentialsNeeded: List[Symbol] = existSyms.filter(_ ne null).toList
-
-    private val existSyms: Array[Symbol] = new Array(actualsIndexed.size)
-    private def haveExistential(i: Int) = {assert((i >= 0) && (i <= actualsIndexed.size)); existSyms(i) ne null}
+    def apply(tp: Type): Type = mapOver(tp) match {
+      // unsound to replace args by unstable actual #3873
+      case SingleType(NoPrefix, StableArg(arg)) => arg
+      // (soundly) expand type alias selections on implicit arguments, 
+      // see depmet_implicit_oopsla* test cases -- typically, `param.isImplicit`
+      case tp1 @ TypeRef(SingleType(NoPrefix, Arg(pid)), sym, targs) =>
+        val arg = actuals(pid)
+        val res = typeRef(arg, sym, targs)
+        if (res.typeSymbolDirect.isAliasType) res.dealias else tp1
+      // don't return the original `tp`, which may be different from `tp1`,
+      // due to dropping annotations
+      case tp1 => tp1
+    }
 
     /* Return the type symbol for referencing a parameter inside the existential quantifier.
      * (Only needed if the actual is unstable.)
      */
-    def existSymFor(actualIdx: Int) =
-      if (haveExistential(actualIdx)) existSyms(actualIdx)
-      else {
-        val oldSym = params(actualIdx)
-        val symowner = oldSym.owner
-        val bound = singletonBounds(actualsIndexed(actualIdx))
-
-        val sym = symowner.newExistential(newTypeName(oldSym.name + ".type"), oldSym.pos)
-        sym.setInfo(bound)
-        sym.setFlag(oldSym.flags)
-
-        existSyms(actualIdx) = sym
-        sym
+    private def existentialFor(pid: Int) = {
+      if (existentials(pid) eq null) {
+        val param = params(pid)
+        existentials(pid) = (
+          param.owner.newExistential(newTypeName(param.name + ".type"), param.pos, param.flags)
+            setInfo singletonBounds(actuals(pid))
+        )
       }
+      existentials(pid)
+    }
 
     //AM propagate more info to annotations -- this seems a bit ad-hoc... (based on code by spoon)
     override def mapOver(arg: Tree, giveup: ()=>Nothing): Tree = {
+      // TODO: this should be simplified; in the stable case, one can
+      // probably just use an Ident to the tree.symbol.
+      // 
+      // @PP: That leads to failure here, where stuff no longer has type
+      // 'String @Annot("stuff")' but 'String @Annot(x)'.
+      //
+      //   def m(x: String): String @Annot(x) = x
+      //   val stuff = m("stuff")
+      //
+      // (TODO cont.) Why an existential in the non-stable case?
+      //
+      // @PP: In the following:
+      //
+      //   def m = { val x = "three" ; val y: String @Annot(x) = x; y }
+      //
+      // m is typed as 'String @Annot(x) forSome { val x: String }'.
+      //
+      // Both examples are from run/constrained-types.scala.
       object treeTrans extends Transformer {
-        override def transform(tree: Tree): Tree = {
-          tree match {
-            case RefParamAt(pid) =>
-              // TODO: this should be simplified; in the stable case, one can probably
-              // just use an Ident to the tree.symbol. Why an existential in the non-stable case?
-              val actual = actualsIndexed(pid)
-              if (actual.isStable && actual.typeSymbol != NothingClass) {
-                gen.mkAttributedQualifier(actualsIndexed(pid), tree.symbol)
-              } else {
-                val sym = existSymFor(pid)
-                (Ident(sym.name)
-                 copyAttrs tree
-                 setType typeRef(NoPrefix, sym, Nil))
-              }
-            case _ => super.transform(tree)
-          }
-        }
-        object RefParamAt {
-          def unapply(tree: Tree): Option[Int] = tree match {
-            case Ident(_) => Some(params indexOf tree.symbol) filterNot (_ == -1)
-            case _        => None
-          }
+        override def transform(tree: Tree): Tree = tree.symbol match {
+          case StableArg(actual) =>
+            gen.mkAttributedQualifier(actual, tree.symbol)
+          case Arg(pid) =>
+            val sym = existentialFor(pid)
+            Ident(sym) copyAttrs tree setType typeRef(NoPrefix, sym, Nil)
+          case _ =>
+            super.transform(tree)
         }
       }
-
-      treeTrans.transform(arg)
+      treeTrans transform arg
     }
   }
-
 
   object StripAnnotationsMap extends TypeMap {
     def apply(tp: Type): Type = tp match {
