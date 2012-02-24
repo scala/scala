@@ -240,9 +240,11 @@ INITIALISATION
 
     <!-- Generating version number -->
     <property file="${basedir}/build.number"/>
+    <!-- As of git move, we set the internal version number based on how far from tags we are, which includes a version tag.  we keep
+         major/minor etc. for the maven deploy. -->
     <property
       name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}.${git.describe}"/>
+      value="${git.describe}"/>
 
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
