@@ -213,10 +213,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
+
+  private def atPhaseStackMessage = atPhaseStack match {
+    case Nil    => ""
+    case ps     => ps.reverseMap("->" + _).mkString("(", " ", ")")
+  }
+  private def shouldLogAtThisPhase = (
+       (settings.log.isSetByUser)
+    && ((settings.log containsPhase globalPhase) || (settings.log containsPhase phase))
+  )
+
+  def logAfterEveryPhase[T](msg: String)(op: => T) {
+    log("Running operation '%s' after every phase.\n" + describeAfterEveryPhase(op))
+  }
   // Over 200 closure objects are eliminated by inlining this.
   @inline final def log(msg: => AnyRef): Unit =
-    if (settings.log containsPhase globalPhase)
-      inform("[log " + phase + "] " + msg)
+    if (shouldLogAtThisPhase)
+      inform("[log %s%s] %s".format(globalPhase, atPhaseStackMessage, msg))
 
   def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
@@ -754,6 +767,51 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     line1 :: line2 :: descs mkString
   }
 
+  /** Returns List of (phase, value) pairs, including only those
+   *  where the value compares unequal to the previous phase's value.
+   */
+  def afterEachPhase[T](op: => T): List[(Phase, T)] = {
+    phaseDescriptors.map(_.ownPhase).foldLeft(List[(Phase, T)]()) { (res, ph) =>
+      val value = afterPhase(ph)(op)
+      if (res.nonEmpty && res.head._2 == value) res
+      else ((ph, value)) :: res
+    } reverse
+  }
+
+  /** Returns List of ChangeAfterPhase objects, encapsulating those
+   *  phase transitions where the result of the operation gave a different
+   *  list than it had when run during the previous phase.
+   */
+  def changesAfterEachPhase[T](op: => List[T]): List[ChangeAfterPhase[T]] = {
+    val ops = ((NoPhase, Nil)) :: afterEachPhase(op)
+
+    ops sliding 2 map {
+      case (_, before) :: (ph, after) :: Nil =>
+        val lost   = before filterNot (after contains _)
+        val gained = after filterNot (before contains _)
+        ChangeAfterPhase(ph, lost, gained)
+      case _ => ???
+    } toList
+  }
+  private def numberedPhase(ph: Phase) = "%2d/%s".format(ph.id, ph.name)
+
+  case class ChangeAfterPhase[+T](ph: Phase, lost: List[T], gained: List[T]) {
+    private def mkStr(what: String, xs: List[_]) = (
+      if (xs.isEmpty) ""
+      else xs.mkString(what + " after " + numberedPhase(ph) + " {\n  ", "\n  ", "\n}\n")
+    )
+    override def toString = mkStr("Lost", lost) + mkStr("Gained", gained)
+  }
+
+  def describeAfterEachPhase[T](op: => T): List[String] =
+    afterEachPhase(op) map { case (ph, t) => "[after %-15s] %s".format(numberedPhase(ph), t) }
+
+  def describeAfterEveryPhase[T](op: => T): String =
+    describeAfterEachPhase(op) map ("  " + _ + "\n") mkString
+
+  def printAfterEachPhase[T](op: => T): Unit =
+    describeAfterEachPhase(op) foreach (m => println("  " + m))
+
   // ----------- Runs ---------------------------------------
 
   private var curRun: Run = null
@@ -1027,9 +1085,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter) extends Symb
     val refchecksPhase     = phaseNamed("refchecks")
     val uncurryPhase       = phaseNamed("uncurry")
     // tailcalls, specialize
+    val specializePhase    = phaseNamed("specialize")
     val explicitouterPhase = phaseNamed("explicitouter")
     val erasurePhase       = phaseNamed("erasure")
     // lazyvals, lambdalift, constructors
+    val lambdaLiftPhase    = phaseNamed("lambdalift")
     val flattenPhase       = phaseNamed("flatten")
     val mixinPhase         = phaseNamed("mixin")
     val cleanupPhase       = phaseNamed("cleanup")

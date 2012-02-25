@@ -78,16 +78,18 @@ abstract class SymbolTable extends api.Universe
   type RunId = Int
   final val NoRunId = 0
 
+  private var phStack: List[Phase] = Nil
   private var ph: Phase = NoPhase
   private var per = NoPeriod
 
+  final def atPhaseStack: List[Phase] = phStack
   final def phase: Phase = ph
 
   final def phase_=(p: Phase) {
     //System.out.println("setting phase to " + p)
-    assert((p ne null) && p != NoPhase)
+    assert((p ne null) && p != NoPhase, p)
     ph = p
-    per = (currentRunId << 8) + p.id
+    per = period(currentRunId, p.id)
   }
 
   /** The current compiler run identifier. */
@@ -112,14 +114,18 @@ abstract class SymbolTable extends api.Universe
   final def phaseOf(period: Period): Phase = phaseWithId(phaseId(period))
 
   final def period(rid: RunId, pid: Phase#Id): Period =
-    (currentRunId << 8) + pid
+    (rid << 8) + pid
 
   /** Perform given operation at given phase. */
   @inline final def atPhase[T](ph: Phase)(op: => T): T = {
     val current = phase
     phase = ph
+    phStack ::= ph
     try op
-    finally phase = current
+    finally {
+      phase = current
+      phStack = phStack.tail
+    }
   }
   /** Since when it is to be "at" a phase is inherently ambiguous,
    *  a couple unambiguously named methods.

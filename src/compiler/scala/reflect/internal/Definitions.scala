@@ -814,6 +814,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
       try getModule(fullname.toTermName)
       catch { case _: MissingRequirementError => NoSymbol }
 
+    def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
+    def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
+
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol
       else owner.info.nonPrivateMember(name) match {
